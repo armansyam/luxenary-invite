@@ -1,0 +1,245 @@
+// S-Invite — Prisma Schema (SQLite)
+// Self-service invitation platform
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ============================================================
+// USERS (Client Accounts — Login via Google OAuth)
+// ============================================================
+model User {
+  id                String   @id @default(uuid())
+  googleId          String   @unique
+  email             String   @unique
+  name              String
+  avatarUrl         String?
+  role              UserRole @default(CLIENT) // CLIENT | ADMIN
+  driveAccessToken  String?
+  driveRefreshToken String?
+  driveTokenExpiry  DateTime?
+  createdAt         DateTime @default(now())
+
+  orders      Order[]
+  invitations Invitation[]
+
+  @@map("users")
+}
+
+// ============================================================
+// ORDERS (Transaksi Pembelian Paket)
+// ============================================================
+model Order {
+  id                String      @id @default(uuid())
+  userId            String
+  invoiceNumber     String      @unique
+  planType          PlanType
+  amount            Decimal
+  status            OrderStatus @default(PENDING)
+  paymentGatewayRef String?
+  snapToken         String?
+  paidAt            DateTime?
+  expiredAt         DateTime?
+  createdAt         DateTime    @default(now())
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invitation Invitation?
+
+  @@map("orders")
+}
+
+// ============================================================
+// INVITATIONS (Data Utama Undangan) - Unlimited per user
+// ============================================================
+model Invitation {
+  id              String           @id @default(uuid())
+  orderId         String?          @unique
+  userId          String
+  // URL format: domain.com/[groom]-[bride]/[invitationSlug]?to=[guestName]
+  // Subdomain: [groom]-[bride].domain.com (PREMIUM only)
+  groomSlug       String           // slugified groom name
+  brideSlug       String           // slugified bride name
+  invitationSlug  String           // slugified invitation name (unlimited per couple)
+  subdomain       String?          @unique // PREMIUM: custom subdomain
+  themeId         String           @default("moody-papercut")
+  groomName       String?
+  groomNickname   String?
+  groomParents    String?
+  groomInstagram  String?
+  brideName       String?
+  brideNickname   String?
+  brideParents    String?
+  brideInstagram  String?
+  openingQuote    String?
+  openingQuoteRef String?
+  loveStory       Json?            // array of {title, content} milestones
+  dresscode       Json?            // {colors: [], notes: ""}
+  bankAccounts    Json?            // array of {bank, number, name}
+  shippingAddress String?
+  liveStreamUrl   String?
+  eventData       Json?            // array of events (multi-event)
+  featureSettings Json?            // toggle: audio, countdown, rsvp, angpao, gallery, livestream, dresscode
+  status          InvitationStatus @default(DRAFT)
+  publishedAt     DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  order   Order?             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user    User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  media   InvitationMedia[]
+  guests  Guest[]
+  rsvps   Rsvp[]
+
+  @@unique([groomSlug, brideSlug, invitationSlug])
+  @@map("invitations")
+}
+
+// ============================================================
+// INVITATION MEDIA (4 Slot Foto Terpisah + Gallery)
+// ============================================================
+model InvitationMedia {
+  id           String    @id @default(uuid())
+  invitationId String
+  mediaSlot    MediaSlot
+  driveFileId  String?
+  driveViewUrl String?
+  localPath    String?
+  mimeType     String?
+  displayOrder Int       @default(0)
+  createdAt    DateTime  @default(now())
+
+  invitation Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+
+  @@map("invitation_media")
+}
+
+// ============================================================
+// GUESTS (Daftar Tamu)
+// ============================================================
+model Guest {
+  id           String   @id @default(uuid())
+  invitationId String
+  name         String
+  phone        String?  // Format: 628xxx
+  category     String?  // KELUARGA | VIP | TEMAN | UMUM
+  qrToken      String   @unique @default(uuid()) // UUID untuk QR Code
+  sessionInfo  String?  // Info sesi
+  guestLimit   Int?     // Batas tamu
+  waStatus     WaStatus @default(PENDING)
+  createdAt    DateTime @default(now())
+
+  invitation Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  rsvp       Rsvp?
+
+  @@map("guests")
+}
+
+// ============================================================
+// RSVPs (Konfirmasi Kehadiran)
+// ============================================================
+model Rsvp {
+  id           String   @id @default(uuid())
+  invitationId String
+  guestId      String   @unique
+  guestName    String
+  status       String   // hadir | tidak
+  guestCount   Int      @default(1)
+  message      String?
+  respondedAt  DateTime @default(now())
+
+  invitation Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  guest      Guest      @relation(fields: [guestId], references: [id], onDelete: Cascade)
+
+  @@map("rsvps")
+}
+
+// ============================================================
+// THEMES (Katalog Tema Undangan)
+// ============================================================
+model Theme {
+  id          String  @id // e.g. "heritage-aruna"
+  name        String
+  series      String  // heritage | premium | moody
+  description String?
+  previewUrl  String?
+  isPremium   Boolean @default(false)
+  isActive    Boolean @default(true)
+  sortOrder   Int     @default(0)
+  createdAt   DateTime @default(now())
+
+  @@map("themes")
+}
+
+// ============================================================
+// WEBHOOK LOGS (Monitoring Midtrans & Lainnya)
+// ============================================================
+model WebhookLog {
+  id          String   @id @default(uuid())
+  source      String   // midtrans | whatsapp
+  event       String   // payment.success | read.receipt
+  payload     Json
+  status      String   @default("received") // received | processed | failed
+  processedAt DateTime?
+  createdAt   DateTime @default(now())
+
+  @@map("webhook_logs")
+}
+
+// ============================================================
+// ADMIN SETTINGS (Dinamis)
+// ============================================================
+model AdminSetting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  label     String?
+  group     String   @default("general")
+  updatedAt DateTime @updatedAt
+
+  @@map("admin_settings")
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+enum UserRole {
+  CLIENT
+  ADMIN
+}
+
+enum PlanType {
+  BASIC
+  PREMIUM
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  EXPIRED
+  FAILED
+}
+
+enum InvitationStatus {
+  DRAFT
+  PUBLISHED
+  TAKEN_DOWN
+}
+
+enum WaStatus {
+  PENDING
+  SENT
+  READ
+}
+
+enum MediaSlot {
+  LANDING_COVER
+  DESKTOP_SIDEBAR
+  GLOBAL_FIXED_BG
+  GROOM_PHOTO
+  BRIDE_PHOTO
+  GALLERY
+}
