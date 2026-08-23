@@ -10,28 +10,62 @@ datasource db {
 }
 
 // ============================================================
-// USERS (Client Accounts — Login via Google OAuth)
+// 1. ADMINS (Khusus Tim Manajemen & Staff Luxenary)
+// ============================================================
+model Admin {
+  id           String    @id @default(uuid())
+  username     String    @unique
+  email        String    @unique
+  passwordHash String?
+  name         String
+  role         AdminRole @default(SUPER_ADMIN) // SUPER_ADMIN | FINANCE | SUPPORT
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @default(now()) @updatedAt
+
+  auditLogs    AdminAuditLog[]
+
+  @@map("admins")
+}
+
+model AdminAuditLog {
+  id        String   @id @default(uuid())
+  adminId   String
+  action    String   // e.g. "APPROVE_ORDER", "UPDATE_SETTINGS", "LOGIN"
+  details   String?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  admin     Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@map("admin_audit_logs")
+}
+
+// ============================================================
+// 2. USERS / CLIENTS (Calon Pengantin / Akun Klien)
 // ============================================================
 model User {
-  id                String   @id @default(uuid())
-  googleId          String   @unique
-  email             String   @unique
+  id                String       @id @default(uuid())
+  googleId          String?      @unique
+  email             String       @unique
   name              String
+  role              UserRole     @default(CLIENT)
+  phoneNumber       String?
   avatarUrl         String?
-  role              UserRole @default(CLIENT) // CLIENT | ADMIN
   driveAccessToken  String?
   driveRefreshToken String?
   driveTokenExpiry  DateTime?
-  createdAt         DateTime @default(now())
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @default(now()) @updatedAt
 
-  orders      Order[]
-  invitations Invitation[]
+  orders            Order[]
+  invitations       Invitation[]
 
   @@map("users")
 }
 
 // ============================================================
-// ORDERS (Transaksi Pembelian Paket)
+// 3. ORDERS (Transaksi Pembelian Paket)
 // ============================================================
 model Order {
   id                String      @id @default(uuid())
@@ -53,19 +87,30 @@ model Order {
 }
 
 // ============================================================
-// INVITATIONS (Data Utama Undangan) - Unlimited per user
+// 4. INVITATIONS (Data Utama Undangan)
 // ============================================================
 model Invitation {
   id              String           @id @default(uuid())
   orderId         String?          @unique
   userId          String
-  // URL format: domain.com/[groom]-[bride]/[invitationSlug]?to=[guestName]
-  // Subdomain: [groom]-[bride].domain.com (PREMIUM only)
-  groomSlug       String           // slugified groom name
-  brideSlug       String           // slugified bride name
-  invitationSlug  String           // slugified invitation name (unlimited per couple)
-  subdomain       String?          @unique // PREMIUM: custom subdomain
-  themeId         String           @default("moody-papercut")
+  themeId         String           @default("kila") // kila | aruna | ivanna | danila | papercut
+  subdomain       String?          @unique
+  customDomain    String?          @unique
+  invitationSlug  String           // /nasha-didan/wedding -> 'wedding'
+  groomSlug       String           // 'didan'
+  brideSlug       String           // 'nasha'
+  status          InvitationStatus @default(DRAFT)
+  publishedAt     DateTime?
+  expiresAt       DateTime?
+  eventData       String?          // Dynamic JSON Multi-Event Array
+  loveStory       String?          // Dynamic JSON Love Story Chapters Array
+  bankAccounts    String?          // Dynamic JSON Bank Accounts Array
+  shippingAddress String?          // Physical Gift Shipping Address
+  featureSettings String?          // Dynamic JSON Feature Settings & Color Palette
+  openingQuote    String?          // Opening Quote Text
+  openingQuoteRef String?          // Opening Quote Reference (e.g. QS. Ar-Rum : 21)
+  dresscode       String?
+  musicUrl        String?
   groomName       String?
   groomNickname   String?
   groomParents    String?
@@ -74,32 +119,24 @@ model Invitation {
   brideNickname   String?
   brideParents    String?
   brideInstagram  String?
-  openingQuote    String?
-  openingQuoteRef String?
-  loveStory       Json?            // array of {title, content} milestones
-  dresscode       Json?            // {colors: [], notes: ""}
-  bankAccounts    Json?            // array of {bank, number, name}
-  shippingAddress String?
   liveStreamUrl   String?
-  eventData       Json?            // array of events (multi-event)
-  featureSettings Json?            // toggle: audio, countdown, rsvp, angpao, gallery, livestream, dresscode
-  status          InvitationStatus @default(DRAFT)
-  publishedAt     DateTime?
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 
-  order   Order?             @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  user    User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order   Order?       @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   media   InvitationMedia[]
   guests  Guest[]
   rsvps   Rsvp[]
+  wishes  Wish[]
+  boothSessions BoothSession[]
 
   @@unique([groomSlug, brideSlug, invitationSlug])
   @@map("invitations")
 }
 
 // ============================================================
-// INVITATION MEDIA (4 Slot Foto Terpisah + Gallery)
+// 5. INVITATION MEDIA (Foto, Video, Audio)
 // ============================================================
 model InvitationMedia {
   id           String    @id @default(uuid())
@@ -114,72 +151,98 @@ model InvitationMedia {
 
   invitation Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
 
-  @@map("invitation_media")
+  @@map("media")
 }
 
 // ============================================================
-// GUESTS (Daftar Tamu)
+// 6. GUESTS (Daftar Tamu & Kuota)
 // ============================================================
 model Guest {
-  id           String   @id @default(uuid())
-  invitationId String
-  name         String
-  phone        String?  // Format: 628xxx
-  category     String?  // KELUARGA | VIP | TEMAN | UMUM
-  qrToken      String   @unique @default(uuid()) // UUID untuk QR Code
-  sessionInfo  String?  // Info sesi
-  guestLimit   Int?     // Batas tamu
-  waStatus     WaStatus @default(PENDING)
-  createdAt    DateTime @default(now())
+  id              String    @id @default(uuid())
+  invitationId    String
+  name            String
+  slug            String    // URL-safe version of name: 'budi-santoso'
+  category        String?   // VVIP | VIP | Keluarga | Teman Kantor | Umum
+  phone           String?
+  phoneNumber     String?
+  guestQuota      Int       @default(1)
+  tableNumber     String?
+  waStatus        WaStatus  @default(PENDING)
+  waSentAt        DateTime?
+  qrToken         String?   @unique
+  isTokenRedeemed Boolean   @default(false)
+  videoWishUrl    String?
+  videoRecordedAt DateTime?
+  sessionInfo     String?
+  createdAt       DateTime  @default(now())
 
-  invitation Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
-  rsvp       Rsvp?
+  invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  rsvps        Rsvp[]
+  boothSession BoothSession?
 
+  @@unique([invitationId, slug])
   @@map("guests")
 }
 
 // ============================================================
-// RSVPs (Konfirmasi Kehadiran)
+// 7. RSVPs (Konfirmasi Kehadiran)
 // ============================================================
 model Rsvp {
-  id           String   @id @default(uuid())
+  id           String    @id @default(uuid())
   invitationId String
-  guestId      String   @unique
+  guestId      String?
   guestName    String
-  status       String   // hadir | tidak
-  guestCount   Int      @default(1)
+  status       String    // hadir | tidak | ragu
+  guestCount   Int       @default(1)
   message      String?
-  respondedAt  DateTime @default(now())
+  respondedAt  DateTime  @default(now())
 
   invitation Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
-  guest      Guest      @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  guest      Guest?     @relation(fields: [guestId], references: [id], onDelete: SetNull)
 
   @@map("rsvps")
 }
 
 // ============================================================
-// THEMES (Katalog Tema Undangan)
+// 8. WISHES (Ucapan & Doa Tamu)
 // ============================================================
-model Theme {
-  id          String  @id // e.g. "heritage-aruna"
-  name        String
-  series      String  // heritage | premium | moody
-  description String?
-  previewUrl  String?
-  isPremium   Boolean @default(false)
-  isActive    Boolean @default(true)
-  sortOrder   Int     @default(0)
-  createdAt   DateTime @default(now())
+model Wish {
+  id           String   @id @default(uuid())
+  invitationId String
+  senderName   String
+  message      String
+  createdAt    DateTime @default(now())
 
-  @@map("themes")
+  invitation Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+
+  @@map("wishes")
 }
 
 // ============================================================
-// WEBHOOK LOGS (Monitoring Midtrans & Lainnya)
+// 9. BOOTH SESSIONS (Photobooth Check-in & Video Sharing)
+// ============================================================
+model BoothSession {
+  id           String    @id @default(uuid())
+  invitationId String
+  guestId      String?   @unique
+  guestName    String
+  scannedAt    DateTime  @default(now())
+  videoUrl     String?
+  status       String    @default("scanned") // scanned | uploaded | delivered
+  waDeliveredAt DateTime?
+
+  invitation Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  guest      Guest?     @relation(fields: [guestId], references: [id], onDelete: SetNull)
+
+  @@map("booth_sessions")
+}
+
+// ============================================================
+// 10. WEBHOOK LOGS
 // ============================================================
 model WebhookLog {
   id          String   @id @default(uuid())
-  source      String   // midtrans | whatsapp
+  source      String   // midtrans | ipaymu | xendit | whatsapp
   event       String   // payment.success | read.receipt
   payload     Json
   status      String   @default("received") // received | processed | failed
@@ -190,7 +253,7 @@ model WebhookLog {
 }
 
 // ============================================================
-// ADMIN SETTINGS (Dinamis)
+// 11. ADMIN SETTINGS
 // ============================================================
 model AdminSetting {
   id        String   @id @default(uuid())
@@ -204,16 +267,43 @@ model AdminSetting {
 }
 
 // ============================================================
+// 12. THEMES
+// ============================================================
+model Theme {
+  id          String   @id // 'kila', 'aruna', 'ivanna', 'danila', 'papercut'
+  name        String
+  description String?
+  thumbnail   String?
+  category    String   @default("luxury")
+  series      String?
+  previewUrl  String?
+  isPremium   Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  isFeatured  Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  price       Decimal  @default(0)
+  createdAt   DateTime @default(now())
+
+  @@map("themes")
+}
+
+// ============================================================
 // ENUMS
 // ============================================================
+enum AdminRole {
+  SUPER_ADMIN
+  FINANCE
+  SUPPORT
+}
+
 enum UserRole {
   CLIENT
   ADMIN
 }
 
 enum PlanType {
-  BASIC
-  PREMIUM
+  TRADITIONAL
+  MODERN
 }
 
 enum OrderStatus {

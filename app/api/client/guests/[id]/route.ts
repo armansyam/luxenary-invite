@@ -2,41 +2,61 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
 export async function GET(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
-  const { id } = await params;
+  try {
+    const resolvedParams = await Promise.resolve(params);
+    const id = resolvedParams?.id;
 
-  const guests = await prisma.guest.findMany({
-    where: { invitationId: id },
-    include: { rsvp: true },
-  });
+    if (!id) {
+      return NextResponse.json([]);
+    }
 
-  return NextResponse.json(guests);
+    const guests = await prisma.guest.findMany({
+      where: { invitationId: id },
+      include: { rsvps: true },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return NextResponse.json(guests || []);
+  } catch (err: any) {
+    return NextResponse.json([], { status: 200 });
+  }
 }
 
 export async function PUT(
   req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
-  const { id } = await params;
-  const body = await req.json();
+  try {
+    const resolvedParams = await Promise.resolve(params);
+    const id = resolvedParams?.id;
+    const body = await req.json();
 
-  const guest = await prisma.guest.update({
-    where: { id },
-    data: body,
-  });
+    const guest = await prisma.guest.update({
+      where: { id },
+      data: body,
+    });
 
-  return NextResponse.json(guest);
+    return NextResponse.json(guest);
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
 }
 
 export async function DELETE(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
-  const { id } = await params;
+  try {
+    const resolvedParams = await Promise.resolve(params);
+    const id = resolvedParams?.id;
 
-  await prisma.guest.delete({ where: { id } });
+    await prisma.guest.delete({ where: { id } });
 
-  return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
 }

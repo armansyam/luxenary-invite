@@ -2,13 +2,15 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-amber-500 selection:text-slate-950">
+    <div className="min-h-screen bg-[#faf8f5] text-[#2d2c2a] flex flex-col selection:bg-amber-200 selection:text-amber-900 font-sans">
       {/* Header / Navbar */}
-      <header className="border-b border-amber-500/20 bg-slate-900/60 backdrop-blur-md sticky top-0 z-50">
+      <header className="border-b border-[#eadecf] bg-[#faf8f5]/80 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-3xl">💍</span>
-            <span className="text-2xl font-bold tracking-wider bg-gradient-to-r from-amber-200 via-amber-400 to-amber-600 bg-clip-text text-transparent font-serif">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-700 to-amber-500 flex items-center justify-center text-white font-bold font-serif text-xl shadow-md shadow-amber-900/10">
+              L
+            </div>
+            <span className="text-xl font-bold tracking-wider text-amber-900 font-serif">
               LUXENARY INVITE
             </span>
           </div>
@@ -16,15 +18,15 @@ export default function Home() {
           <div className="flex items-center gap-4">
             <Link
               href="/demo"
-              className="text-sm font-medium text-amber-300 hover:text-amber-200 transition hidden sm:inline-block"
+              className="text-sm font-medium text-[#6e685f] hover:text-amber-900 transition hidden sm:inline-block"
             >
-              Lihat Demo Live
+              Lihat Demo Tema
             </Link>
             <Link
-              href="/login"
-              className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold rounded-full transition shadow-lg shadow-amber-500/20 text-sm"
+              href="/register"
+              className="px-5 py-2.5 bg-amber-800 hover:bg-amber-900 text-white font-semibold rounded-full transition shadow-sm text-sm"
             >
-              Masuk / Buat Undangan
+              Pilih Paket
             </Link>
           </div>
         </div>
@@ -32,130 +34,173 @@ export default function Home() {
 
       {/* Hero Section */}
       <main className="flex-1">
-        <section className="relative px-6 pt-20 pb-28 text-center max-w-5xl mx-auto overflow-hidden">
-          {/* Subtle Glow Backdrop */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-amber-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
-
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-300 text-xs font-semibold uppercase tracking-widest mb-6">
-            <span>✨</span> Next-Gen Wedding Invitation Platform
+        <section className="relative px-6 pt-16 pb-24 text-center max-w-4xl mx-auto">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-amber-800/15 bg-amber-50 text-amber-900 text-xs font-semibold uppercase tracking-widest mb-6">
+            Platform Undangan Pernikahan Digital Mandiri
           </div>
 
-          <h1 className="text-4xl sm:text-6xl md:text-7xl font-bold tracking-tight font-serif text-white leading-tight">
+          <h1 className="text-4xl sm:text-6xl md:text-7xl font-serif text-[#1e1c1a] leading-tight font-normal">
             Undangan Pernikahan Digital <br />
-            <span className="bg-gradient-to-r from-amber-200 via-amber-400 to-amber-600 bg-clip-text text-transparent">
-              Eksklusif &amp; Self-Service
+            <span className="italic text-amber-800 font-serif">
+              Elegan, Hangat &amp; Berkelas
             </span>
           </h1>
 
-          <p className="mt-6 text-lg sm:text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed">
-            Hadirkan momen terindah dengan tema mewah (Heritage, Moody, &amp; Premium Kila), custom subdomain, konfirmasi RSVP real-time, dan broadcast WhatsApp instan.
+          <p className="mt-6 text-base sm:text-lg text-[#6e685f] max-w-2xl mx-auto leading-relaxed">
+            Didesain khusus dengan sentuhan estetika mewah dan eksklusif. Hadirkan pengalaman berkesan dengan layout split desktop, custom subdomain, buku tamu real-time, dan video booth ucapan.
           </p>
 
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
-              href="/login"
-              className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-slate-950 font-bold text-base rounded-2xl transition shadow-xl shadow-amber-500/25 transform hover:-translate-y-0.5"
+              href="/register"
+              className="w-full sm:w-auto px-8 py-4 bg-amber-800 hover:bg-amber-900 text-white font-semibold text-base rounded-full transition shadow-md shadow-amber-900/10"
             >
-              Mulai Buat Undangan Gratis
+              Pilih Paket Undangan
             </Link>
             <Link
               href="/demo"
-              className="w-full sm:w-auto px-8 py-4 bg-slate-900/80 hover:bg-slate-800 border border-amber-500/40 text-amber-300 font-semibold text-base rounded-2xl transition"
+              className="w-full sm:w-auto px-8 py-4 bg-white hover:bg-[#f3ede4] border border-[#d8cdbf] text-amber-900 font-semibold text-base rounded-full transition"
             >
-              Pratinjau Tema Kila ↗
+              Pratinjau Tema Live
             </Link>
           </div>
         </section>
 
-        {/* Features Highlights */}
-        <section className="max-w-7xl mx-auto px-6 py-16">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-slate-900/60 border border-amber-500/20 rounded-2xl p-8 backdrop-blur-sm relative overflow-hidden group hover:border-amber-500/50 transition">
-              <div className="text-3xl mb-4">🌟</div>
-              <h3 className="text-xl font-bold text-white mb-2">Desain Kila &amp; Moody</h3>
-              <p className="text-slate-400 text-sm leading-relaxed">
-                Visual sinematik dengan split layout desktop, video background, audio autoplay, dan scroll-snap yang mulus.
+        {/* Feature Cards Section */}
+        <section className="max-w-6xl mx-auto px-6 py-12">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white border border-[#eadecf] rounded-2xl p-8 shadow-sm hover:shadow-md transition">
+              <div className="w-12 h-12 rounded-xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-800 mb-6">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-serif font-bold text-[#1e1c1a] mb-2">Desain Kalandra &amp; Prameswari</h3>
+              <p className="text-[#6e685f] text-sm leading-relaxed">
+                Estetika natural dengan split view desktop, transisi foto section overlap, audio player autoplay, dan CSS scroll snap mulus.
               </p>
             </div>
 
-            <div className="bg-slate-900/60 border border-amber-500/20 rounded-2xl p-8 backdrop-blur-sm relative overflow-hidden group hover:border-amber-500/50 transition">
-              <div className="text-3xl mb-4">⚡</div>
-              <h3 className="text-xl font-bold text-white mb-2">Manajemen Tamu &amp; WA</h3>
-              <p className="text-slate-400 text-sm leading-relaxed">
-                Generate link undangan personal (`?to=Nama+Tamu`), kirim pesan WhatsApp otomatis, dan QR Check-in tamu.
+            <div className="bg-white border border-[#eadecf] rounded-2xl p-8 shadow-sm hover:shadow-md transition">
+              <div className="w-12 h-12 rounded-xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-800 mb-6">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-serif font-bold text-[#1e1c1a] mb-2">Manajemen Tamu &amp; WhatsApp</h3>
+              <p className="text-[#6e685f] text-sm leading-relaxed">
+                Kirim tautan personal via WhatsApp 1-klik, validasi RSVP interaktif, dan check-in barcode kehadiran fisik di lokasi.
               </p>
             </div>
 
-            <div className="bg-slate-900/60 border border-amber-500/20 rounded-2xl p-8 backdrop-blur-sm relative overflow-hidden group hover:border-amber-500/50 transition">
-              <div className="text-3xl mb-4">💳</div>
-              <h3 className="text-xl font-bold text-white mb-2">Pembayaran Terintegrasi</h3>
-              <p className="text-slate-400 text-sm leading-relaxed">
-                Aktivasi instan otomatis dengan Midtrans Snap &amp; iPaymu, mendukung QRIS, Virtual Account, dan E-Wallet.
+            <div className="bg-white border border-[#eadecf] rounded-2xl p-8 shadow-sm hover:shadow-md transition">
+              <div className="w-12 h-12 rounded-xl bg-amber-50 border border-amber-200/60 flex items-center justify-center text-amber-800 mb-6">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-serif font-bold text-[#1e1c1a] mb-2">Video Wishes Booth</h3>
+              <p className="text-[#6e685f] text-sm leading-relaxed">
+                Tamu dapat memindai barcode di lokasi pesta untuk langsung merekam video ucapan doa restu yang tersimpan otomatis ke cloud.
               </p>
             </div>
           </div>
         </section>
 
-        {/* Pricing Table */}
-        <section className="max-w-5xl mx-auto px-6 py-20">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold font-serif text-white">Pilihan Paket Undangan</h2>
-            <p className="text-slate-400 mt-2 text-sm">Transparan, sekali bayar untuk selamanya tanpa biaya tersembunyi</p>
+        {/* Pricing Section */}
+        <section className="max-w-4xl mx-auto px-6 py-16">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl font-serif font-normal text-[#1e1c1a]">Pilihan Paket Undangan</h2>
+            <p className="text-[#6e685f] mt-1 text-sm">Biaya satu kali bayar untuk masa aktif selamanya</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Basic Plan */}
-            <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-8 flex flex-col justify-between">
+            <div className="bg-white border border-[#eadecf] rounded-3xl p-8 flex flex-col justify-between shadow-sm">
               <div>
-                <span className="px-3 py-1 bg-slate-800 text-slate-300 text-xs font-semibold rounded-full uppercase tracking-wider">
+                <span className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-semibold rounded-full uppercase tracking-wider">
                   Basic Package
                 </span>
-                <h3 className="text-2xl font-bold text-white mt-4">Standard Series</h3>
-                <div className="my-6">
-                  <span className="text-4xl font-extrabold text-white">Rp 99.000</span>
-                  <span className="text-slate-400 text-sm"> / undangan</span>
+                <h3 className="text-xl font-serif font-bold text-[#1e1c1a] mt-4">Standard Series</h3>
+                <div className="my-4">
+                  <span className="text-3xl font-bold text-[#1e1c1a]">Rp 99.000</span>
+                  <span className="text-[#6e685f] text-xs"> / undangan</span>
                 </div>
-                <ul className="space-y-3 text-sm text-slate-300">
-                  <li className="flex items-center gap-2">✓ URL Slug Eksklusif</li>
-                  <li className="flex items-center gap-2">✓ Tema Heritage &amp; Moody</li>
-                  <li className="flex items-center gap-2">✓ RSVP &amp; Buku Tamu Real-time</li>
-                  <li className="flex items-center gap-2">✓ Amplop Digital &amp; Rekening</li>
-                  <li className="flex items-center gap-2">✓ Unlimited Tamu Undangan</li>
+                <ul className="space-y-2.5 text-xs text-[#524d45]">
+                  <li className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-amber-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                    URL Path Slug Eksklusif
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-amber-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                    Tema Heritage Aruna &amp; Moody Papercut
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-amber-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                    RSVP &amp; Buku Doa Tamu Real-time
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-amber-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                    Amplop Digital &amp; Nomor Rekening
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-amber-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                    Unlimited Nama Tamu Undangan
+                  </li>
                 </ul>
               </div>
               <Link
                 href="/login"
-                className="mt-8 w-full py-3.5 bg-slate-800 hover:bg-slate-700 text-white font-semibold rounded-xl text-center transition"
+                className="mt-8 w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold rounded-full text-center transition text-sm"
               >
                 Pilih Basic
               </Link>
             </div>
 
             {/* Premium Plan */}
-            <div className="bg-gradient-to-b from-amber-950/40 via-slate-900/90 to-slate-900 border-2 border-amber-500/60 rounded-3xl p-8 flex flex-col justify-between relative shadow-2xl shadow-amber-500/10">
-              <div className="absolute -top-3 right-8 bg-amber-500 text-slate-950 text-xs font-extrabold px-3 py-1 rounded-full uppercase tracking-wider">
-                Paling Populer
+            <div className="bg-[#fffdfa] border-2 border-amber-800/40 rounded-3xl p-8 flex flex-col justify-between shadow-md relative">
+              <div className="absolute -top-3 right-6 bg-amber-800 text-white text-xs font-bold px-3 py-0.5 rounded-full uppercase tracking-wider">
+                Paling Favorit
               </div>
               <div>
-                <span className="px-3 py-1 bg-amber-500/20 text-amber-300 text-xs font-semibold rounded-full uppercase tracking-wider">
+                <span className="px-3 py-1 bg-amber-100 text-amber-900 text-xs font-semibold rounded-full uppercase tracking-wider">
                   Premium Package
                 </span>
-                <h3 className="text-2xl font-bold text-white mt-4">All-Access Premium</h3>
-                <div className="my-6">
-                  <span className="text-4xl font-extrabold text-amber-400">Rp 199.000</span>
-                  <span className="text-slate-400 text-sm"> / undangan</span>
+                <h3 className="text-xl font-serif font-bold text-[#1e1c1a] mt-4">All-Access Premium</h3>
+                <div className="my-4">
+                  <span className="text-3xl font-bold text-amber-900">Rp 199.000</span>
+                  <span className="text-[#6e685f] text-xs"> / undangan</span>
                 </div>
-                <ul className="space-y-3 text-sm text-slate-300">
-                  <li className="flex items-center gap-2 text-amber-300">✓ Semua Fitur Basic Termasuk</li>
-                  <li className="flex items-center gap-2">✓ <strong>Custom Subdomain</strong> (`nama.invited.id`)</li>
-                  <li className="flex items-center gap-2">✓ Semua Tema (Kila, Ivanna, Danila)</li>
-                  <li className="flex items-center gap-2">✓ Background Video &amp; HD Audio Player</li>
-                  <li className="flex items-center gap-2">✓ Tanpa Watermark Platform</li>
+                <ul className="space-y-2.5 text-xs text-[#524d45]">
+                  <li className="flex items-center gap-2 font-medium text-amber-900">
+                    <svg className="w-4 h-4 text-amber-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                    Semua Fitur Basic Termasuk
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-amber-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                    Custom Subdomain (nama.domain.com)
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-amber-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                    Semua Seri Tema (Kila, Ivanna, Danila)
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-amber-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                    Video Background &amp; HD Audio Player
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-amber-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                    Bebas Watermark Platform
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-amber-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                    Akses Video Wishes Booth On-Site
+                  </li>
                 </ul>
               </div>
               <Link
                 href="/login"
-                className="mt-8 w-full py-3.5 bg-gradient-to-r from-amber-400 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-slate-950 font-bold rounded-xl text-center transition shadow-lg shadow-amber-500/30"
+                className="mt-8 w-full py-3 bg-amber-800 hover:bg-amber-900 text-white font-semibold rounded-full text-center transition text-sm shadow-sm"
               >
                 Pilih Premium
               </Link>
@@ -165,13 +210,13 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-800 bg-slate-950 py-10 px-6 text-center text-sm text-slate-500">
+      <footer className="border-t border-[#eadecf] bg-[#f4ede4] py-8 px-6 text-center text-xs text-[#7d756b]">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p>© {new Date().getFullYear()} Luxenary Invite — Platform Undangan Digital Eksklusif.</p>
-          <div className="flex gap-6 text-slate-400">
-            <Link href="/demo" className="hover:text-amber-400 transition">Demo Tema</Link>
-            <Link href="/login" className="hover:text-amber-400 transition">Portal Klien</Link>
-            <Link href="/admin" className="hover:text-amber-400 transition">Admin</Link>
+          <p>© {new Date().getFullYear()} Luxenary Invite — Platform Undangan Pernikahan Digital.</p>
+          <div className="flex gap-6 text-[#524d45]">
+            <Link href="/demo" className="hover:text-amber-900 transition">Demo Tema</Link>
+            <Link href="/login" className="hover:text-amber-900 transition">Portal Klien</Link>
+            <Link href="/admin" className="hover:text-amber-900 transition">Admin</Link>
           </div>
         </div>
       </footer>

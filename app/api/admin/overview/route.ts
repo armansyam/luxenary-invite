@@ -1,8 +1,34 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+const DEFAULT_THEMES = [
+  { id: "kalandra", name: "Kalandra", category: "modern", series: "Modern", description: "Modern, Elegan & Minimalis", isPremium: true, sortOrder: 1, isActive: true },
+  { id: "valente", name: "Valente", category: "modern", series: "Modern", description: "High-Fashion, Editorial & Mewah", isPremium: true, sortOrder: 2, isActive: true },
+  { id: "aurelia", name: "Aurelia", category: "modern", series: "Modern", description: "Romantis, Sinematik & Anggun", isPremium: true, sortOrder: 3, isActive: true },
+  { id: "artisan", name: "Artisan", category: "modern", series: "Modern", description: "Artistik, Hangat & Vintage", isPremium: true, sortOrder: 4, isActive: true },
+  { id: "prameswari", name: "Prameswari", category: "traditional", series: "Traditional", description: "Sakral, Megah & Royal Keraton", isPremium: false, sortOrder: 5, isActive: true },
+];
+
 export async function GET() {
   try {
+    // Check if themes need initial seeding
+    let themes = await prisma.theme.findMany({ orderBy: { sortOrder: "asc" } });
+    if (themes.length === 0 || themes.some((t) => ["kila", "aruna", "ivanna", "danila", "papercut"].includes(t.id))) {
+      // Re-seed with new clean themes
+      for (const t of DEFAULT_THEMES) {
+        await prisma.theme.upsert({
+          where: { id: t.id },
+          create: t,
+          update: t,
+        });
+      }
+      // Clean up old theme IDs from database
+      await prisma.theme.deleteMany({
+        where: { id: { in: ["kila", "aruna", "ivanna", "danila", "papercut"] } },
+      });
+      themes = await prisma.theme.findMany({ orderBy: { sortOrder: "asc" } });
+    }
+
     const [
       invitationCount,
       orderCount,
@@ -11,7 +37,6 @@ export async function GET() {
       recentOrders,
       recentUsers,
       recentInvitations,
-      themes,
       webhookLogs,
     ] = await Promise.all([
       prisma.invitation.count(),
@@ -42,9 +67,6 @@ export async function GET() {
           status: true,
           createdAt: true,
         },
-      }),
-      prisma.theme.findMany({
-        orderBy: { sortOrder: "asc" },
       }),
       prisma.webhookLog.findMany({
         take: 10,

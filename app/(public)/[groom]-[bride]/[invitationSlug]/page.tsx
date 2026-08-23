@@ -20,14 +20,14 @@ export default async function PublicInvitationPage({ params }: PageProps) {
     },
   });
 
-  if (!invitation || invitation.status !== "PUBLISHED") {
+  if (!invitation) {
     notFound();
   }
 
   const data = await composeTemplateData(invitation.id);
   if (!data) notFound();
 
-  const html = renderTemplateFile("kila", data);
+  const html = renderTemplateFile(invitation.themeId || "kila", data);
 
   return (
     <div className="invitation-container">

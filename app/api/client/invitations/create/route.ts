@@ -52,9 +52,9 @@ export async function POST(req: Request) {
       groomSlug,
       brideSlug,
       invitationSlug,
-      themeId: themeId || "moody-papercut",
+      themeId: themeId || "kila",
       status: "DRAFT",
-      subdomain: planType === "PREMIUM" ? `${groomSlug}-${brideSlug}` : null,
+      subdomain: planType === "MODERN" || planType === "PREMIUM" ? `${groomSlug}-${brideSlug}` : null,
     },
   });
 

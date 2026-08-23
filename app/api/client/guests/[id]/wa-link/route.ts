@@ -28,8 +28,9 @@ export async function GET(
     `Assalamu'alaikum ${guest.name.split(" ")[0]},\n\nKami mengundang Bapak/Ibu dalam pernikahan kami.\n\nUndangan: ${invitationUrl}?to=${encodeURIComponent(guest.name)}\n\nHormat kami,\n${guest.invitation.groomName} & ${guest.invitation.brideName}`
   );
 
-  const waLink = guest.phone
-    ? `https://wa.me/${guest.phone.replace(/\D/g, "")}?text=${waMessage}`
+  const phoneVal = guest.phone || guest.phoneNumber;
+  const waLink = phoneVal
+    ? `https://wa.me/${phoneVal.replace(/\D/g, "")}?text=${waMessage}`
     : `https://api.whatsapp.com/send?phone=&text=${waMessage}`;
 
   return NextResponse.json({ waLink, guest });
@@ -61,8 +62,9 @@ export async function POST(
     `Assalamu'alaikum ${guest.name.split(" ")[0]},\n\nKami mengundang Bapak/Ibu dalam pernikahan kami.\n\nUndangan: ${invitationUrl}?to=${encodeURIComponent(guest.name)}\n\nHormat kami,\n${guest.invitation.groomName} & ${guest.invitation.brideName}`
   );
 
-  const waLink = guest.phone
-    ? `https://wa.me/${guest.phone.replace(/\D/g, "")}?text=${waMessage}`
+  const targetPhone = guest.phone || guest.phoneNumber;
+  const waLink = targetPhone
+    ? `https://wa.me/${targetPhone.replace(/\D/g, "")}?text=${waMessage}`
     : `https://api.whatsapp.com/send?phone=&text=${waMessage}`;
 
   // Update waStatus

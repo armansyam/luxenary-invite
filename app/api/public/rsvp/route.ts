@@ -60,35 +60,47 @@ export async function POST(req: NextRequest) {
     });
 
     if (!guest) {
+      const slug = guestName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
       guest = await prisma.guest.create({
         data: {
           invitationId,
           name: guestName,
+          slug: `${slug}-${Date.now().toString(36)}`,
           phone: phone || null,
           category: "UMUM",
-          guestLimit: Number(guestCount) || 1,
+          guestQuota: Number(guestCount) || 1,
         },
       });
     }
 
-    // Upsert RSVP
-    const rsvp = await prisma.rsvp.upsert({
-      where: { guestId: guest.id },
-      create: {
-        invitationId,
-        guestId: guest.id,
-        guestName,
-        status,
-        guestCount: Number(guestCount) || 1,
-        message: message || null,
-      },
-      update: {
-        status,
-        guestCount: Number(guestCount) || 1,
-        message: message || null,
-        respondedAt: new Date(),
-      },
+    // Find existing RSVP or create new
+    const existingRsvp = await prisma.rsvp.findFirst({
+      where: { invitationId, guestId: guest.id },
     });
+
+    let rsvp;
+    if (existingRsvp) {
+      rsvp = await prisma.rsvp.update({
+        where: { id: existingRsvp.id },
+        data: {
+          status,
+          guestCount: Number(guestCount) || 1,
+          message: message || null,
+          respondedAt: new Date(),
+        },
+      });
+    } else {
+      rsvp = await prisma.rsvp.create({
+        data: {
+          invitationId,
+          guestId: guest.id,
+          guestName,
+          status,
+          guestCount: Number(guestCount) || 1,
+          message: message || null,
+        },
+      });
+    }
 
     return NextResponse.json({
       success: true,

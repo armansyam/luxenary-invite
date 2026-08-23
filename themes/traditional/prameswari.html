@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>{{groomName}} &amp; {{brideName}} — Heritage Series Aruna</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Marcellus&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --heritage-gold: {{colorAccent}};
+      --heritage-gold-dark: {{colorPrimary}};
+      --heritage-bg: {{colorBgLight}};
+      --parchment-card: #fdfaf4;
+      --text-dark: {{colorBgDark}};
+      --text-muted: #6b5c4f;
+      --border-gold: rgba(179, 139, 77, 0.45);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: #181411;
+      color: var(--text-dark);
+      overflow-x: hidden;
+      width: 100%;
+    }
+    .serif-title { font-family: 'Cinzel Decorative', serif; }
+    .serif-body { font-family: 'Marcellus', serif; }
+
+    /* LAYER 1: DESKTOP LEFT SIDEBAR (CRYSTAL CLEAR PHOTO HERO) */
+    .desktop-sidebar { display: none; }
+
+    /* LAYER 2: HERITAGE GLOBAL BACKGROUND */
+    .heritage-bg {
+      position: fixed; inset: 0; z-index: 1;
+      background: linear-gradient(180deg, rgba(24, 20, 17, 0.4) 0%, rgba(24, 20, 17, 0.8) 100%),
+                  url('{{globalBgUrl}}') center/cover no-repeat;
+    }
+
+    /* LAYER 3: ROYAL PARCHMENT SCROLLABLE CONTAINER (100% EDGE-TO-EDGE) */
+    .scrollable-content {
+      position: relative; z-index: 2; min-height: 100vh;
+      width: 100% !important; max-width: 100% !important; margin: 0 !important;
+      background: var(--heritage-bg);
+      padding-top: 1rem;
+      padding-bottom: 90px;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .heritage-section {
+      padding: 0.75rem 1rem;
+      position: relative;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .heritage-card {
+      background: var(--parchment-card);
+      border: 1px solid var(--border-gold);
+      border-radius: 18px;
+      padding: 2.2rem 1.4rem;
+      width: 100%;
+      position: relative;
+      box-shadow: 0 10px 30px rgba(44, 33, 23, 0.08);
+    }
+    .heritage-card::before {
+      content: "";
+      position: absolute;
+      inset: 5px;
+      border: 1px dashed rgba(179, 139, 77, 0.35);
+      border-radius: 14px;
+      pointer-events: none;
+    }
+
+    .arch-ornament-header {
+      width: 70px; height: 14px; margin: 0 auto 0.8rem;
+      border-bottom: 2px solid var(--heritage-gold);
+      position: relative;
+    }
+    .arch-ornament-header::after {
+      content: "◆";
+      position: absolute;
+      bottom: -7px; left: 50%;
+      transform: translateX(-50%);
+      background: var(--parchment-card);
+      padding: 0 4px;
+      color: var(--heritage-gold);
+      font-size: 0.7rem;
+    }
+
+    /* LAYER 4: TRADITIONAL ARCH PORTRAIT COUPLE CARDS */
+    .couple-arch-container {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      width: 100%;
+      margin-top: 1rem;
+    }
+    .couple-arch-card {
+      background: #fbf7ee;
+      border: 1px solid var(--border-gold);
+      border-radius: 100px 100px 18px 18px;
+      padding: 1.8rem 1.2rem 1.5rem;
+      text-align: center;
+      position: relative;
+      box-shadow: 0 8px 25px rgba(110, 76, 37, 0.08);
+    }
+    .arch-photo-wrapper {
+      width: 150px;
+      height: 210px;
+      margin: 0 auto 1rem;
+      border-radius: 80px 80px 12px 12px;
+      overflow: hidden;
+      border: 3px solid var(--heritage-gold);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+      display: flex; align-items: center; justify-content: center;
+      background: #eee3cb;
+    }
+    .arch-photo-wrapper img {
+      width: 100%; height: 100%; object-fit: cover;
+    }
+
+    .couple-role {
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--heritage-gold-dark);
+      font-weight: 700;
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+    .couple-name {
+      font-size: 1.6rem;
+      color: var(--text-dark);
+      margin-bottom: 0.3rem;
+      font-weight: 400;
+    }
+    .couple-parents {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 0.8rem;
+    }
+    .btn-ig-heritage {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0.35rem 1rem;
+      background: #fff;
+      border: 1px solid var(--heritage-gold);
+      border-radius: 20px;
+      color: var(--heritage-gold-dark);
+      text-decoration: none;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    /* LAYER 5: WAX SEAL ENVELOPE OPENING MODAL */
+    .landing-cover {
+      position: fixed; inset: 0; z-index: 100;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, rgba(28, 22, 17, 0.45), rgba(28, 22, 17, 0.85)),
+                  url('{{landingCoverUrl}}') center/cover no-repeat;
+      backdrop-filter: blur(14px);
+      text-align: center; padding: 1.2rem;
+      transition: opacity 0.8s, visibility 0.8s;
+    }
+    .landing-cover.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+    .envelope-box {
+      background: #fbf7ee;
+      border: 2px solid var(--heritage-gold);
+      border-radius: 20px;
+      padding: 2.2rem 1.4rem 1.8rem;
+      width: 100%;
+      max-width: 320px;
+      position: relative;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+    }
+    .wax-seal-btn {
+      width: 64px; height: 64px; border-radius: 50%;
+      background: radial-gradient(circle, #c99a57 0%, #8b5a2b 100%);
+      border: 3px solid #fbf7ee;
+      color: #fff;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em;
+      box-shadow: 0 6px 20px rgba(139, 90, 43, 0.6);
+      margin: -50px auto 1rem;
+      cursor: pointer;
+    }
+    .wax-seal-btn span { font-size: 1rem; margin-bottom: 2px; }
+
+    .btn-open-heritage {
+      width: 100%; padding: 0.8rem;
+      background: var(--heritage-gold-dark);
+      border: none; border-radius: 30px;
+      color: #fff; font-weight: 700; font-size: 0.8rem;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      cursor: pointer; margin-top: 0.8rem;
+    }
+
+    .btn-qr-heritage {
+      width: 100%; padding: 0.7rem;
+      background: transparent;
+      border: 1px solid var(--heritage-gold);
+      border-radius: 30px;
+      color: var(--heritage-gold-dark);
+      font-weight: 600; font-size: 0.75rem;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      cursor: pointer; margin-top: 0.4rem;
+    }
+
+    /* Countdown Grid */
+    .countdown-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem; margin: 1.2rem 0;
+    }
+    .countdown-box {
+      background: #fbf7ee; border: 1px solid var(--border-gold);
+      border-radius: 10px; padding: 0.5rem 0.2rem;
+    }
+    .countdown-number { font-size: 1.2rem; font-weight: 700; color: var(--heritage-gold-dark); }
+    .countdown-label { font-size: 0.55rem; text-transform: uppercase; color: var(--text-muted); }
+
+    .btn-calendar {
+      display: inline-block; padding: 0.6rem 1.2rem;
+      background: #fff; border: 1px solid var(--heritage-gold);
+      color: var(--heritage-gold-dark); border-radius: 25px;
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+      text-decoration: none; margin-top: 0.4rem;
+    }
+
+    /* Event & Story */
+    .event-card, .bank-card, .wish-card, .story-item {
+      background: #fbf7ee; border: 1px solid var(--border-gold);
+      border-radius: 12px; padding: 1rem; margin-bottom: 0.8rem; text-align: left;
+    }
+    .story-chapter { font-size: 0.65rem; color: var(--heritage-gold-dark); font-weight: 700; text-transform: uppercase; }
+    .story-title { font-size: 1.1rem; color: var(--text-dark); margin: 0.2rem 0; font-weight: 600; }
+    .story-content { font-size: 0.8rem; color: var(--text-muted); line-height: 1.5; }
+
+    /* Gift Tabs */
+    .gift-tabs {
+      display: flex; gap: 0.4rem; margin-bottom: 1rem;
+      background: #fbf7ee; padding: 0.25rem; border-radius: 30px;
+      border: 1px solid var(--border-gold);
+    }
+    .gift-tab-btn {
+      flex: 1; padding: 0.45rem; border: none; border-radius: 20px;
+      font-size: 0.7rem; font-weight: 600; background: transparent; color: var(--text-muted); cursor: pointer;
+    }
+    .gift-tab-btn.active { background: var(--heritage-gold-dark); color: #fff; }
+
+    .btn-copy, .btn-submit-rsvp {
+      background: var(--heritage-gold-dark); color: #fff; border: none;
+      padding: 0.4rem 0.8rem; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.75rem;
+    }
+    .form-input, .form-select, .form-textarea {
+      width: 100%; padding: 0.65rem 0.8rem; background: #fff;
+      border: 1px solid var(--border-gold); border-radius: 8px;
+      color: var(--text-dark); margin-top: 0.3rem; margin-bottom: 0.75rem; font-size: 0.85rem;
+    }
+
+    /* Floating Dock */
+    .bottom-nav-dock {
+      position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+      background: rgba(253, 250, 244, 0.96); backdrop-filter: blur(16px);
+      border: 1px solid var(--border-gold); border-radius: 40px;
+      padding: 6px 12px; display: flex; align-items: center; gap: 8px;
+      box-shadow: 0 10px 30px rgba(44, 33, 23, 0.18); z-index: 80;
+      max-width: 92vw;
+    }
+    .dock-link {
+      display: flex; flex-direction: column; align-items: center; text-decoration: none;
+      color: var(--text-muted); font-size: 0.55rem; font-weight: 600; padding: 2px 4px;
+    }
+    .dock-link:hover { color: var(--heritage-gold-dark); }
+    .dock-icon { width: 16px; height: 16px; stroke-width: 1.8; margin-bottom: 2px; }
+
+    .music-btn {
+      position: fixed; top: 16px; right: 16px; width: 38px; height: 38px;
+      border-radius: 50%; background: #fdfaf4; border: 1px solid var(--heritage-gold);
+      color: var(--heritage-gold-dark); display: flex; align-items: center; justify-content: center;
+      z-index: 90; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+    }
+    .music-btn.playing { animation: spin 5s linear infinite; }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+
+    /* Popups */
+    .qr-modal {
+      position: fixed; inset: 0; z-index: 150;
+      background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: center; padding: 1.2rem;
+      opacity: 0; visibility: hidden; transition: all 0.3s ease;
+    }
+    .qr-modal.active { opacity: 1; visibility: visible; }
+    .qr-modal-card {
+      background: #fdfaf4; border: 1px solid var(--heritage-gold);
+      border-radius: 20px; padding: 1.8rem 1.4rem; width: 100%; max-width: 360px; text-align: center; position: relative;
+    }
+    .btn-close-modal {
+      position: absolute; top: 14px; right: 14px; background: #f5f0e6; border: 1px solid #ddd;
+      width: 28px; height: 28px; border-radius: 50%; cursor: pointer; color: var(--text-muted);
+    }
+    .access-badge { font-size: 0.65rem; font-weight: 700; color: var(--heritage-gold-dark); background: #f5f0e6; border: 1px solid var(--border-gold); padding: 0.25rem 0.75rem; border-radius: 20px; }
+    .access-couple { font-size: 1.6rem; color: var(--text-dark); margin: 0.6rem 0; }
+    .access-guest-box { background: #fbf7ee; border: 1px solid var(--border-gold); padding: 0.8rem; border-radius: 10px; margin-bottom: 1rem; text-align: left; }
+    .access-qr-img { width: 140px; height: 140px; margin: 0 auto 0.5rem; }
+
+    .souvenir-voucher-card {
+      background: linear-gradient(135deg, #2b2117, #18120c); color: #fff;
+      border-radius: 12px; padding: 1rem; margin-top: 1rem; text-align: center;
+      border: 1px solid var(--heritage-gold);
+    }
+
+    /* DESKTOP SPLIT SCREEN (>= 960px) — 70:30 CINEMATIC WIDESCREEN HERO */
+    @media (min-width: 960px) {
+      .desktop-sidebar {
+        display: flex; flex-direction: column; justify-content: flex-end;
+        position: fixed; left: 0; top: 0; width: 70%; height: 100vh; z-index: 10;
+        background: linear-gradient(to top, rgba(24, 20, 17, 0.88) 0%, rgba(24, 20, 17, 0.25) 30%, transparent 65%),
+                    url('{{sidebarPhotoUrl}}') center/cover no-repeat;
+        padding: 4.5rem; border-right: 2px solid var(--heritage-gold);
+      }
+      .desktop-sidebar h1 { font-size: 3.8rem; color: #fdfaf4; font-weight: 400; }
+      .heritage-bg { left: 70%; width: 30%; }
+      .scrollable-content { margin-left: 70% !important; width: 30% !important; max-width: 30% !important; display: flex; flex-direction: column; align-items: stretch; }
+      .heritage-section { width: 100%; }
+      .landing-cover { left: 70%; width: 30%; }
+      .bottom-nav-dock { left: calc(70% + 15%); }
+    }
+  </style>
+</head>
+<body>
+  <!-- LAYER 2: Heritage Global Background -->
+  <div class="heritage-bg"></div>
+
+  <!-- LAYER 1: Desktop Left Hero (Clear Photo) -->
+  <div class="desktop-sidebar">
+    <p class="serif-body" style="color:#f5eedf; letter-spacing:0.25em; text-transform:uppercase; font-size:0.9rem;">{{weddingTagline}}</p>
+    <h1 class="serif-title">{{groomName}} &amp; {{brideName}}</h1>
+  </div>
+
+  <!-- LAYER 5: Wax Seal Envelope Landing Modal -->
+  <div class="landing-cover" id="landingCover">
+    <div class="envelope-box">
+      <div class="wax-seal-btn" onclick="openInvitation()">
+        <span>✦</span>
+        BUKA
+      </div>
+      <p class="serif-body" style="color:var(--heritage-gold-dark); letter-spacing:0.2em; font-size:0.75rem; font-weight:600;">{{weddingTagline}}</p>
+      <h1 class="serif-title" style="font-size:2rem; color:var(--text-dark); margin:0.4rem 0 0.8rem; font-weight:400;">{{groomName}} &amp; {{brideName}}</h1>
+      
+      <div style="border:1px dashed var(--border-gold); padding:0.6rem 1rem; border-radius:10px; background:#fff; margin-bottom:0.8rem;">
+        <p style="font-size:0.7rem; color:var(--text-muted);">Kepada Yth. Bapak/Ibu/Saudara/i:</p>
+        <h3 style="color:var(--heritage-gold-dark); font-size:1rem; font-weight:700;" id="coverGuestName">Tamu Undangan</h3>
+      </div>
+
+      <button class="btn-open-heritage" onclick="openInvitation()">Buka Undangan</button>
+      <button class="btn-qr-heritage" onclick="openQrModal()">QR Check-In</button>
+    </div>
+  </div>
+
+  <!-- LAYER 3: Parchment Scrollable Frame -->
+  <div class="scrollable-content">
+    
+    <!-- SECTION 1: HOME & QUOTE -->
+    <section class="heritage-section" id="home">
+      <div class="heritage-card">
+        <div class="arch-ornament-header"></div>
+        <p class="serif-body" style="color:var(--heritage-gold-dark); font-size:0.75rem; letter-spacing:0.15em; font-weight:600;">{{weddingTagline}}</p>
+        <h1 class="serif-title" style="font-size:2.2rem; color:var(--text-dark); margin:0.5rem 0 0.6rem; font-weight:400;">{{groomName}} &amp; {{brideName}}</h1>
+        <p style="font-style:italic; font-size:0.8rem; line-height:1.6; color:var(--text-muted);">“{{openingQuote}}”</p>
+        <p style="color:var(--heritage-gold-dark); font-size:0.75rem; font-weight:700; margin-top:0.4rem;">{{openingQuoteRef}}</p>
+
+        <div class="countdown-grid">
+          <div class="countdown-box"><span class="countdown-number" id="cdDays">00</span><span class="countdown-label">Hari</span></div>
+          <div class="countdown-box"><span class="countdown-number" id="cdHours">00</span><span class="countdown-label">Jam</span></div>
+          <div class="countdown-box"><span class="countdown-number" id="cdMins">00</span><span class="countdown-label">Menit</span></div>
+          <div class="countdown-box"><span class="countdown-number" id="cdSecs">00</span><span class="countdown-label">Detik</span></div>
+        </div>
+
+        <a href="{{googleCalendarUrl}}" target="_blank" class="btn-calendar">
+          Ingatkan di Kalender
+        </a>
+      </div>
+    </section>
+
+    <!-- SECTION 2 & 3: TRADITIONAL ARCH PORTRAIT COUPLE CARDS -->
+    <section class="heritage-section" id="couple">
+      <div class="heritage-card">
+        <div class="arch-ornament-header"></div>
+        <h2 class="serif-body" style="color:var(--heritage-gold-dark); font-size:1.6rem; margin-bottom:1.2rem; font-weight:600;">Mempelai Mulia</h2>
+        
+        <div class="couple-arch-container">
+          <!-- GROOM ARCH -->
+          <div class="couple-arch-card">
+            <div class="arch-photo-wrapper">
+              <img src="{{groomPhotoUrl}}" alt="{{groomDisplayName}}">
+            </div>
+            <span class="couple-role">Mempelai Pria</span>
+            <h3 class="couple-name serif-title">{{groomDisplayName}}</h3>
+            <p class="couple-parents">{{groomParents}}</p>
+            <a href="https://instagram.com/{{groomInstagram}}" target="_blank" class="btn-ig-heritage">
+              <span>@{{groomInstagram}}</span>
+            </a>
+          </div>
+
+          <!-- BRIDE ARCH -->
+          <div class="couple-arch-card">
+            <div class="arch-photo-wrapper">
+              <img src="{{bridePhotoUrl}}" alt="{{brideDisplayName}}">
+            </div>
+            <span class="couple-role">Mempelai Wanita</span>
+            <h3 class="couple-name serif-title">{{brideDisplayName}}</h3>
+            <p class="couple-parents">{{brideParents}}</p>
+            <a href="https://instagram.com/{{brideInstagram}}" target="_blank" class="btn-ig-heritage">
+              <span>@{{brideInstagram}}</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 4: JOURNEY OF LOVE (DYNAMIC) -->
+    {{storySectionHtml}}
+
+    <!-- SECTION 5: RANGKAIAN ACARA -->
+    <section class="heritage-section" id="event">
+      <div class="heritage-card">
+        <div class="arch-ornament-header"></div>
+        <h2 class="serif-body" style="color:var(--heritage-gold-dark); font-size:1.6rem; margin-bottom:1rem; font-weight:600;">Rangkaian Acara</h2>
+        {{eventDataHtml}}
+        {{dressCodeHtml}}
+        {{guestNotesHtml}}
+      </div>
+    </section>
+
+    <!-- OPTIONAL SECTIONS: TURUT MENGUNDANG & SPECIAL MESSAGE -->
+    {{turutMengundangHtml}}
+    {{customMessageHtml}}
+
+    <!-- SECTION 6: LIVE & FILTER -->
+    {{weddingFilterHtml}}
+    {{liveStreamingHtml}}
+
+    <!-- SECTION 7: GALERI BAHAGIA (DYNAMIC) -->
+    {{gallerySectionHtml}}
+
+    <!-- SECTION 8: TANDA KASIH (DYNAMIC) -->
+    {{giftSectionHtml}}
+
+    <!-- SECTION 9: RSVP & DOA -->
+    <section class="heritage-section" id="rsvp">
+      <div class="heritage-card">
+        <div class="arch-ornament-header"></div>
+        <h2 class="serif-body" style="color:var(--heritage-gold-dark); font-size:1.6rem; margin-bottom:1rem; font-weight:600;">RSVP &amp; Doa Restu</h2>
+        <form onsubmit="submitRsvp(event)">
+          <input type="text" id="rsvpName" required class="form-input" placeholder="Nama Lengkap">
+          <select id="rsvpStatus" class="form-select">
+            <option value="hadir">Konfirmasi Hadir</option>
+            <option value="tidak">Berhalangan Hadir</option>
+          </select>
+          <input type="number" id="rsvpCount" min="1" max="5" value="1" class="form-input">
+          <textarea id="rsvpMessage" rows="3" class="form-textarea" placeholder="Tuliskan ucapan dan doa..."></textarea>
+          <button type="submit" id="btnSubmitRsvp" class="btn-submit-rsvp" style="width:100%; padding:0.8rem;">Kirim Konfirmasi</button>
+        </form>
+        <div id="wishesStream" style="margin-top:1.5rem; max-height:200px; overflow-y:auto;">
+          {{wishesHtml}}
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Bottom Navigation Dock -->
+  <nav class="bottom-nav-dock">
+    <a href="#home" class="dock-link">
+      <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+      <span>Home</span>
+    </a>
+    <a href="#couple" class="dock-link">
+      <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+      <span>Couple</span>
+    </a>
+    <a href="#event" class="dock-link">
+      <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+      <span>Event</span>
+    </a>
+    <a href="#gallery" class="dock-link">
+      <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+      <span>Gallery</span>
+    </a>
+    <a href="#rsvp" class="dock-link">
+      <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+      <span>RSVP</span>
+    </a>
+    <button onclick="openQrModal()" class="dock-link" style="background:none; border:none; cursor:pointer;">
+      <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+      <span>Ticket</span>
+    </button>
+  </nav>
+
+  <audio id="bgAudio" loop preload="auto"><source src="{{audioUrl}}" type="audio/ogg"><source src="{{audioUrl}}" type="audio/mpeg"></audio>
+  <button class="music-btn" id="musicBtn" onclick="toggleAudio()">
+    <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+    </svg>
+  </button>
+
+  <!-- QR Modal & Souvenir Voucher -->
+  <div class="qr-modal" id="qrModal" onclick="closeQrModal(event)">
+    <div class="qr-modal-card" onclick="event.stopPropagation()">
+      <button class="btn-close-modal" onclick="closeQrModal()">✕</button>
+      {{qrAccessCardHtml}}
+      
+      <div class="souvenir-voucher-card">
+        <span style="font-size:0.65rem; letter-spacing:0.2em; color:var(--heritage-gold); text-transform:uppercase; font-weight:700;">VOUCHER SOUVENIR</span>
+        <h4 style="font-size:1.2rem; margin:0.4rem 0 0.6rem; color:#fff;" class="serif-body">Kartu Pengambilan Souvenir</h4>
+        <p style="font-size:0.75rem; color:#d9d9d9; margin-bottom:0.6rem;">Tunjukkan kartu ini kepada penerima tamu untuk penukaran cinderamata.</p>
+        <div style="background:#fff; color:#1e1c1a; padding:0.4rem; border-radius:6px; font-family:monospace; font-weight:700; font-size:0.85rem;">
+          SOUVENIR-{{invitationId}}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const INVITATION_ID = "{{invitationId}}";
+    const TARGET_DATE = "{{targetDate}}";
+    let isPlaying = false;
+
+    function getGuestName() {
+      const p = new URLSearchParams(window.location.search);
+      return p.get('to') || p.get('u') || 'Tamu Undangan';
+    }
+    const gName = getGuestName();
+    document.getElementById('coverGuestName').textContent = gName;
+    const modalNameEl = document.getElementById('modalGuestName');
+    if (modalNameEl) modalNameEl.textContent = gName;
+    document.getElementById('rsvpName').value = gName !== 'Tamu Undangan' ? gName : '';
+
+    function openInvitation() {
+      document.getElementById('landingCover').classList.add('hidden');
+      const audio = document.getElementById('bgAudio');
+      if (audio) {
+        audio.play().then(() => {
+          isPlaying = true;
+          document.getElementById('musicBtn').classList.add('playing');
+        }).catch(e => console.log(e));
+      }
+    }
+
+    function openQrModal() { document.getElementById('qrModal').classList.add('active'); }
+    function closeQrModal() { document.getElementById('qrModal').classList.remove('active'); }
+
+    function toggleAudio() {
+      const audio = document.getElementById('bgAudio');
+      if (!audio) return;
+      if (isPlaying) { audio.pause(); isPlaying = false; document.getElementById('musicBtn').classList.remove('playing'); }
+      else { audio.play(); isPlaying = true; document.getElementById('musicBtn').classList.add('playing'); }
+    }
+
+    document.addEventListener('visibilitychange', function () {
+      const audio = document.getElementById('bgAudio');
+      if (!audio) return;
+      if (document.hidden) {
+        if (!audio.paused) {
+          audio.dataset.wasPlaying = 'true';
+          audio.pause();
+          document.getElementById('musicBtn').classList.remove('playing');
+        }
+      } else {
+        if (audio.dataset.wasPlaying === 'true') {
+          audio.play().then(() => {
+            document.getElementById('musicBtn').classList.add('playing');
+          });
+          audio.dataset.wasPlaying = '';
+        }
+      }
+    });
+
+    function switchGiftTab(tab, btn) {
+      document.querySelectorAll('.gift-tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      if (tab === 'amplop') {
+        document.getElementById('giftTabAmplop').style.display = 'block';
+        document.getElementById('giftTabKado').style.display = 'none';
+      } else {
+        document.getElementById('giftTabAmplop').style.display = 'none';
+        document.getElementById('giftTabKado').style.display = 'block';
+      }
+    }
+
+    function copyText(txt) {
+      navigator.clipboard.writeText(txt).then(() => alert('Teks disalin!'));
+    }
+
+    function initCountdown() {
+      const target = new Date(TARGET_DATE).getTime();
+      if (isNaN(target)) return;
+      setInterval(() => {
+        const diff = target - new Date().getTime();
+        if (diff > 0) {
+          document.getElementById('cdDays').textContent = String(Math.floor(diff / (86400000))).padStart(2, '0');
+          document.getElementById('cdHours').textContent = String(Math.floor((diff % 86400000) / 3600000)).padStart(2, '0');
+          document.getElementById('cdMins').textContent = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
+          document.getElementById('cdSecs').textContent = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+        }
+      }, 1000);
+    }
+    initCountdown();
+
+    async function submitRsvp(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btnSubmitRsvp');
+      btn.disabled = true; btn.textContent = 'Mengirim...';
+      try {
+        const res = await fetch('/api/public/rsvp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            invitationId: INVITATION_ID,
+            guestName: document.getElementById('rsvpName').value,
+            status: document.getElementById('rsvpStatus').value,
+            guestCount: document.getElementById('rsvpCount').value,
+            message: document.getElementById('rsvpMessage').value,
+          })
+        });
+        const d = await res.json();
+        if (d.success) {
+          alert('Konfirmasi berhasil dikirim!');
+          document.getElementById('rsvpMessage').value = '';
+        } else {
+          alert(d.error || 'Gagal mengirim RSVP');
+        }
+      } catch (e) {
+        alert('Koneksi gagal');
+      } finally {
+        btn.disabled = false; btn.textContent = 'Kirim Konfirmasi';
+      }
+    }
+
+    // Live Preview Auto-Sync Hot Reload Listener
+    try {
+      const bc = new BroadcastChannel("lux_preview_sync");
+      bc.onmessage = function(e) {
+        if (e.data && e.data.type === "INVITATION_SAVED") {
+          window.location.reload();
+        }
+      };
+    } catch (e) {}
+  </script>
+</body>
+</html>
