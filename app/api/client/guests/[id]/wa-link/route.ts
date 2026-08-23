@@ -20,7 +20,7 @@ export async function GET(
 
   // Build the invitation URL
   const baseUrl = process.env.BASE_URL || `http://localhost:3000`;
-  const invitationUrl = guest.subdomain
+  const invitationUrl = guest.invitation.subdomain
     ? `https://${guest.invitation.subdomain}`
     : `${baseUrl}/${guest.invitation.groomSlug}-${guest.invitation.brideSlug}/${guest.invitation.invitationSlug}`;
 
@@ -58,7 +58,7 @@ export async function POST(
     : `${baseUrl}/${guest.invitation.groomSlug}-${guest.invitation.brideSlug}/${guest.invitation.invitationSlug}`;
 
   const waMessage = encodeURIComponent(
-    `Assalamu'alaikum ${guest.name.split(" ")[0]},\n\nKami mengundang Bapak/Ibu dalam pernikahan kami.\n\nUndangan: ${invitationUrl}?to=${encodeURIComponent(guest.name)}\n\nHormat kami,\n${guest.invitation.groomName} & ${guest.invitation.brigeName || guest.invitation.brideName}`
+    `Assalamu'alaikum ${guest.name.split(" ")[0]},\n\nKami mengundang Bapak/Ibu dalam pernikahan kami.\n\nUndangan: ${invitationUrl}?to=${encodeURIComponent(guest.name)}\n\nHormat kami,\n${guest.invitation.groomName} & ${guest.invitation.brideName}`
   );
 
   const waLink = guest.phone

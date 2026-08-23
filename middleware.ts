@@ -1,34 +1,22 @@
-import { withAuth } from "next-auth/middleware";
+import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 
-export default withAuth(
-  function middleware(req) {
-    const token = req.nextauth.token;
-    const path = req.nextUrl.pathname;
+export default auth((req) => {
+  const token = req.auth?.user as any;
+  const path = req.nextUrl.pathname;
 
-    // Admin routes protection
-    if (path.startsWith("/admin") && token?.role !== "ADMIN") {
-      return NextResponse.redirect(new URL("/403", req.url));
-    }
-
-    return NextResponse.next();
-  },
-  {
-    callbacks: {
-      authorized: ({ token, req }) => {
-        const path = req.nextUrl.pathname;
-        // Public routes - no auth needed
-        if (path.startsWith("/api/auth") || path === "/login") return true;
-        // Client dashboard needs auth
-        if (path.startsWith("/dashboard")) return !!token;
-        // Admin needs auth + admin role
-        if (path.startsWith("/admin")) return !!token && token.role === "ADMIN";
-        // Everything else public
-        return true;
-      },
-    },
+  // Admin routes protection
+  if (path.startsWith("/admin") && token?.role !== "ADMIN") {
+    return NextResponse.redirect(new URL("/403", req.url));
   }
-);
+
+  // Client dashboard needs auth
+  if (path.startsWith("/dashboard") && !req.auth) {
+    return NextResponse.redirect(new URL("/login", req.url));
+  }
+
+  return NextResponse.next();
+});
 
 export const config = {
   matcher: [

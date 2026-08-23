@@ -226,7 +226,7 @@ export default function GuestsPage() {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">WhatsApp</label>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">WhatsApp</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kategori</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sesi</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Limit</th>
@@ -238,7 +238,7 @@ export default function GuestsPage() {
           <tbody className="divide-y divide-gray-200">
             {guests.length === 0 ? (
               <tr>
-                <td className="px-6 py-4 text-center text-gray-500" colSpan="8">
+                <td className="px-6 py-4 text-center text-gray-500" colSpan={8}>
                   Belum ada tamu. Tambah tamu pertama menggunakan tombol di atas.
                 </td>
               </tr>

@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
+import { auth } from "@/auth";
 
 function slugify(text: string): string {
   return text
@@ -11,7 +11,7 @@ function slugify(text: string): string {
 }
 
 export async function POST(req: Request) {
-  const session = await getServerSession();
+  const session = await auth();
   if (!session?.user?.email) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

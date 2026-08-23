@@ -9,8 +9,10 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@prisma/adapter-better-sqlite3": "^7.9.1",
     "@prisma/client": "^7.9.1",
     "axios": "^1.19.0",
+    "better-sqlite3": "^13.0.3",
     "next": "16.3.2",
     "next-auth": "^5.0.0-beta.32",
     "prisma": "^7.9.1",
@@ -25,6 +27,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.2",
     "tailwindcss": "^4",
+    "ts-node": "^10.9.2",
     "typescript": "^5"
   }
 }

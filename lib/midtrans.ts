@@ -17,7 +17,7 @@ export class MidtransGateway implements PaymentGateway {
     return { checkoutUrl: res.data.redirect_url };
   }
 
-  async verify(reference: string) {
+  async verify(reference: string): Promise<{ status: "PAID" | "FAILED" }> {
     const res = await axios.get(`${this.apiUrl}/${reference}/status`, {
       auth: { username: this.serverKey, password: "" },
     });

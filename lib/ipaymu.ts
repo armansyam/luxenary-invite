@@ -19,7 +19,7 @@ export class IPaymuGateway implements PaymentGateway {
     return { checkoutUrl: res.data.data.url };
   }
 
-  async verify(reference: string) {
+  async verify(reference: string): Promise<{ status: "PAID" | "FAILED" }> {
     const res = await axios.get(`${this.apiUrl}/payment/${reference}`, {
       headers: { "API-Key": this.apiKey },
     });

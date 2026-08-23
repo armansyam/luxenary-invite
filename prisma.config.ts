@@ -1,10 +1,10 @@
-import { defineConfig } from 'prisma/config';
+import { defineConfig } from 'prisma/config'
 
 export default defineConfig({
-  datasources: {
-    db: {
-      provider: 'sqlite',
-      url: 'file:./dev.db',
-    },
+  datasource: {
+    url: 'file:./dev.db',
   },
-});
+  migrations: {
+    seed: 'ts-node prisma/seed.ts',
+  },
+})

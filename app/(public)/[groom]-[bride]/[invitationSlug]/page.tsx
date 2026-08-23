@@ -3,22 +3,11 @@ import { prisma } from "@/lib/prisma";
 import { composeTemplateData } from "@/lib/themeEngine";
 import { renderTemplateFile } from "@/lib/renderTemplate";
 
-export async function generateStaticParams() {
-  const invitations = await prisma.invitation.findMany({
-    where: { status: "PUBLISHED" },
-    select: { groomSlug: true, brideSlug: true, invitationSlug: true },
-  });
-  return invitations.map((inv) => ({
-    groom: inv.groomSlug,
-    bride: inv.brideSlug,
-    invitationSlug: inv.invitationSlug,
-  }));
+interface PageProps {
+  params: Promise<{ groom: string; bride: string; invitationSlug: string }>;
 }
 
-export async function GET(
-  _req: Request,
-  { params }: { params: Promise<{ groom: string; bride: string; invitationSlug: string }> }
-) {
+export default async function PublicInvitationPage({ params }: PageProps) {
   const { groom, bride, invitationSlug } = await params;
 
   const invitation = await prisma.invitation.findUnique({
@@ -40,7 +29,9 @@ export async function GET(
 
   const html = renderTemplateFile("kila", data);
 
-  return new Response(html, {
-    headers: { "Content-Type": "text/html; charset=utf-8" },
-  });
+  return (
+    <div className="invitation-container">
+      <div dangerouslySetInnerHTML={{ __html: html }} />
+    </div>
+  );
 }
