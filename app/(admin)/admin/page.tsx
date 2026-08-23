@@ -586,13 +586,23 @@ export default function AdminPage() {
                       <h2 className="text-2xl font-bold text-gray-900">Katalog &amp; Manajemen Tema</h2>
                       <p className="text-sm text-gray-500 mt-0.5">Kelola daftar tema per kategori (Modern &amp; Traditional), status aktif, dan urutan</p>
                     </div>
-                    <button
-                      onClick={handleOpenNewTheme}
-                      className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm cursor-pointer"
-                    >
-                      <span>+</span>
-                      <span>Tambah Tema Baru</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <a
+                        href="/downloads/starter-blueprint.html"
+                        download="starter-blueprint.html"
+                        className="px-3.5 py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-bold rounded-xl transition flex items-center gap-1.5 border border-stone-300 shadow-2xs"
+                      >
+                        <span>📥</span>
+                        <span>Download Starter Blueprint HTML</span>
+                      </a>
+                      <button
+                        onClick={handleOpenNewTheme}
+                        className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+                      >
+                        <span>+</span>
+                        <span>Tambah Tema Baru</span>
+                      </button>
+                    </div>
                   </div>
 
                   {/* Category Filter Tabs */}
@@ -937,7 +947,12 @@ export default function AdminPage() {
                   className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm font-mono bg-gray-50 disabled:opacity-60"
                   required
                 />
-                <p className="text-[10px] text-gray-400 mt-1">File HTML harus berada di themes/modern/{themeForm.id || "id"}.html atau themes/traditional/{themeForm.id || "id"}.html</p>
+                <p className="text-[10px] text-gray-400 mt-1">
+                  File HTML disimpan di <code className="font-mono text-gray-600">themes/modern/{themeForm.id || "id"}.html</code> atau <code className="font-mono text-gray-600">themes/traditional/{themeForm.id || "id"}.html</code>.{" "}
+                  <a href="/downloads/starter-blueprint.html" download="starter-blueprint.html" className="text-amber-700 font-bold hover:underline">
+                    Unduh Starter Blueprint HTML
+                  </a>
+                </p>
               </div>
 
               <div>

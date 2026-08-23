@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Wedding of {{groomName}} &amp; {{brideName}}</title>
+
+  <!-- 1. GOOGLE FONTS -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&family=Cinzel:wght@500;700&family=Marcellus&display=swap" rel="stylesheet">
+
+  <style>
+    /* 2. WARNA DINAMIS DARI DATABASE */
+    :root {
+      --primary: {{colorPrimary}};
+      --secondary: {{colorSecondary}};
+      --accent: {{colorAccent}};
+      --bg-light: {{colorBgLight}};
+      --bg-dark: {{colorBgDark}};
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--bg-dark, #181411);
+      color: #2b2725;
+      overflow-x: hidden;
+    }
+
+    /* Style Sampul Pembuka (Cover Pop-up) */
+    .cover-overlay {
+      position: fixed; inset: 0; z-index: 9999;
+      background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.7)), url('{{landingCoverUrl}}') center/cover no-repeat;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      color: white; text-align: center; padding: 20px;
+      transition: transform 0.8s cubic-bezier(0.85, 0, 0.15, 1);
+    }
+    .cover-overlay.opened { transform: translateY(-100%); pointer-events: none; }
+
+    /* Tombol Musik Melayang */
+    .audio-btn {
+      position: fixed; bottom: 24px; right: 24px; z-index: 900;
+      width: 44px; height: 44px; border-radius: 50%;
+      background: rgba(255,255,255,0.9); border: 1px solid rgba(0,0,0,0.1);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15); display: flex;
+      align-items: center; justify-content: center; cursor: pointer;
+    }
+
+    /* Section Container */
+    .section {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- =================================================================== -->
+  <!-- 1. COVER PEMBUKA (PINTU MASUK UNDANGAN) -->
+  <!-- =================================================================== -->
+  <div id="coverOverlay" class="cover-overlay">
+    <p style="letter-spacing:3px; font-size:12px; text-transform:uppercase;">The Wedding of</p>
+    <h1 style="font-family:'Cinzel', serif; font-size:36px; margin:12px 0;">{{groomName}} &amp; {{brideName}}</h1>
+    <p style="font-size:13px; opacity:0.9; margin-bottom:24px;">Kepada Yth. Tamu Undangan</p>
+    
+    <button onclick="openInvitation()" style="padding:12px 28px; border-radius:30px; background:white; color:#111; font-weight:700; border:none; cursor:pointer; font-size:13px; box-shadow:0 4px 15px rgba(0,0,0,0.2);">
+      ✉ Buka Undangan
+    </button>
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- 2. KONTEN UTAMA UNDANGAN -->
+  <!-- =================================================================== -->
+  <main class="main-container">
+
+    <!-- A. KUTIPAN PEMBUKA -->
+    <section class="section quote-section">
+      <p class="quote-text">"{{openingQuote}}"</p>
+      <span class="quote-ref">{{openingQuoteRef}}</span>
+    </section>
+
+    <!-- B. PROFIL MEMPELAI -->
+    <section class="section couple-section">
+      <!-- Pria -->
+      <div class="couple-card">
+        <img src="{{groomPhotoUrl}}" alt="{{groomName}}" class="couple-photo" style="width:120px; height:120px; border-radius:50%; object-fit:cover;" />
+        <h2>{{groomDisplayName}}</h2>
+        <p class="parents">{{groomParents}}</p>
+        <p class="instagram">@{{groomInstagram}}</p>
+      </div>
+
+      <div class="divider" style="margin:20px 0; font-size:24px;">&amp;</div>
+
+      <!-- Wanita -->
+      <div class="couple-card">
+        <img src="{{bridePhotoUrl}}" alt="{{brideName}}" class="couple-photo" style="width:120px; height:120px; border-radius:50%; object-fit:cover;" />
+        <h2>{{brideDisplayName}}</h2>
+        <p class="parents">{{brideParents}}</p>
+        <p class="instagram">@{{brideInstagram}}</p>
+      </div>
+    </section>
+
+    <!-- C. HITUNG MUNDUR (COUNTDOWN) -->
+    <section class="section countdown-section">
+      <h3>Menghitung Hari Bahagia</h3>
+      <div id="countdownTimer" class="countdown-grid" style="display:flex; gap:12px; justify-content:center; margin-top:16px;">
+        <!-- Javascript akan mengisi angka countdown otomatis berdasarkan {{targetDate}} -->
+      </div>
+    </section>
+
+    <!-- D. SUSUNAN ACARA (AKAD / RESEPSI / ADAT) -->
+    <section class="section events-section">
+      <h2>Rangkaian Acara</h2>
+      <!-- Seluruh kartu acara + link Google Maps disuntik otomatis di sini: -->
+      {{eventDataHtml}}
+    </section>
+
+    <!-- E. CERITA CINTA (LOVE STORY) -->
+    <section class="section story-section">
+      <h2>Kisah Cinta</h2>
+      {{loveStoryHtml}}
+    </section>
+
+    <!-- F. GALERI FOTO -->
+    <section class="section gallery-section">
+      <h2>Galeri Momen</h2>
+      {{galleryHtml}}
+    </section>
+
+    <!-- G. AMPLOP DIGITAL & KADO FISIK -->
+    <section class="section gift-section">
+      <h2>Tanda Kasih (Amplop Digital)</h2>
+      <!-- Rekening bank & tombol salin otomatis ada di sini: -->
+      {{bankAccountsHtml}}
+
+      <!-- Alamat pengiriman kado: -->
+      <div class="shipping-box" style="margin-top:20px;">
+        <h4>Alamat Pengiriman Kado Fisik:</h4>
+        <p>{{shippingAddress}}</p>
+      </div>
+    </section>
+
+    <!-- H. QR CODE CHECK-IN TAMU -->
+    <section class="section qr-section">
+      {{accessBadgeHtml}}
+    </section>
+
+  </main>
+
+  <!-- =================================================================== -->
+  <!-- 3. AUDIO PLAYER & TOMBOL MUSIK -->
+  <!-- =================================================================== -->
+  <audio id="weddingAudio" loop preload="none">
+    <source src="{{musicUrl}}" type="audio/mpeg" />
+  </audio>
+
+  <button id="musicToggle" class="audio-btn" onclick="toggleAudio()" title="Putar Musik">
+    🎵
+  </button>
+
+  <!-- =================================================================== -->
+  <!-- 4. JAVASCRIPT STANDAR (COUNTDOWN & BUKA UNDANGAN) -->
+  <!-- =================================================================== -->
+  <script>
+    // A. Fungsi Buka Undangan & Autoplay Audio
+    function openInvitation() {
+      document.getElementById('coverOverlay').classList.add('opened');
+      const audio = document.getElementById('weddingAudio');
+      if (audio) {
+        audio.play().catch(function() { console.log('Autoplay ditahan browser'); });
+      }
+    }
+
+    // B. Toggle Audio Play/Pause
+    function toggleAudio() {
+      const audio = document.getElementById('weddingAudio');
+      const btn = document.getElementById('musicToggle');
+      if (audio.paused) {
+        audio.play();
+        btn.innerHTML = '🎵';
+      } else {
+        audio.pause();
+        btn.innerHTML = '🔇';
+      }
+    }
+
+    // C. Hitung Mundur Otomatis
+    (function() {
+      const target = new Date("{{targetDate}}").getTime();
+      const timerEl = document.getElementById('countdownTimer');
+      if (!timerEl || isNaN(target)) return;
+
+      function updateTimer() {
+        const now = new Date().getTime();
+        const diff = target - now;
+        if (diff <= 0) {
+          timerEl.innerHTML = '<p>Hari Bahagia Telah Tiba!</p>';
+          return;
+        }
+        const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const s = Math.floor((diff % (1000 * 60)) / 1000);
+
+        timerEl.innerHTML = 
+          '<div style="padding:10px; background:rgba(0,0,0,0.05); border-radius:8px;"><strong style="font-size:20px; display:block;">' + d + '</strong> Hari</div>' +
+          '<div style="padding:10px; background:rgba(0,0,0,0.05); border-radius:8px;"><strong style="font-size:20px; display:block;">' + h + '</strong> Jam</div>' +
+          '<div style="padding:10px; background:rgba(0,0,0,0.05); border-radius:8px;"><strong style="font-size:20px; display:block;">' + m + '</strong> Menit</div>' +
+          '<div style="padding:10px; background:rgba(0,0,0,0.05); border-radius:8px;"><strong style="font-size:20px; display:block;">' + s + '</strong> Detik</div>';
+      }
+      updateTimer();
+      setInterval(updateTimer, 1000);
+    })();
+  </script>
+</body>
+</html>
