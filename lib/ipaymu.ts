@@ -56,8 +56,12 @@ export class IPaymuGateway implements PaymentGateway {
     return crypto.createHmac("sha256", apiKey).update(toSign).digest("hex");
   }
 
-  async init(orderId: string, amount: number): Promise<{ checkoutUrl: string }> {
-    const { va, apiKey, baseUrl, appUrl } = await this.getConfig();
+  async init(orderId: string, amount: number, customAppUrl?: string): Promise<{ checkoutUrl: string }> {
+    const config = await this.getConfig();
+    const va = config.va;
+    const apiKey = config.apiKey;
+    const baseUrl = config.baseUrl;
+    const appUrl = customAppUrl || config.appUrl;
 
     if (!va || va === "0000000000000000" || !apiKey || apiKey === "your_ipaymu_api_key") {
       throw new Error("iPaymu belum dikonfigurasi dengan VA & API Key aktif. Silakan isi di Portal Admin (/admin) → tab Pengaturan.");

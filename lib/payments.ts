@@ -1,6 +1,7 @@
 import axios from "axios";
+
 export interface PaymentGateway {
-  init(orderId: string, amount: number): Promise<{ checkoutUrl: string }>;
+  init(orderId: string, amount: number, appUrl?: string): Promise<{ checkoutUrl: string }>;
   verify(reference: string): Promise<{ status: "PAID" | "FAILED" }>;
 }
 

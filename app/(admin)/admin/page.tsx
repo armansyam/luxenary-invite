@@ -831,8 +831,8 @@ export default function AdminPage() {
                   {/* Platform Settings */}
                   <SettingsCard
                     title="🌐 Konfigurasi Platform"
-                    description="Nama platform, URL domain, dan email support yang digunakan di seluruh sistem."
-                    onSave={() => saveSettings(["platform_name", "platform_url", "support_email"], setSavingPlatform, "platform")}
+                    description="Nama platform dan email support yang digunakan di seluruh sistem."
+                    onSave={() => saveSettings(["platform_name", "support_email"], setSavingPlatform, "platform")}
                     saving={savingPlatform}
                   >
                     {settingsSaved["platform"] && (
@@ -850,14 +850,11 @@ export default function AdminPage() {
                       />
                     </FieldRow>
 
-                    <FieldRow label="URL Platform (APP_URL)" description="URL ini digunakan untuk webhook dan redirect URL pembayaran.">
-                      <input
-                        type="url"
-                        value={settingsMap["platform_url"] || "http://localhost:3000"}
-                        onChange={(e) => setSetting("platform_url", e.target.value)}
-                        placeholder="https://luxenary.id"
-                        className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm font-mono bg-gray-50 focus:outline-none focus:border-amber-400 focus:bg-white transition"
-                      />
+                    <FieldRow label="Domain Host Platform" description="Domain ini otomatis terdeteksi dari host server aktif saat aplikasi dijalankan / di-deploy.">
+                      <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-mono flex items-center justify-between">
+                        <span>{typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"}</span>
+                        <span className="text-[10px] bg-emerald-200/80 px-2 py-0.5 rounded font-sans font-bold">● Auto-Detected</span>
+                      </div>
                     </FieldRow>
 
                     <FieldRow label="Email Support">
