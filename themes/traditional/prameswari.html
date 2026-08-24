@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>{{firstName}} & {{secondName}} — The Wedding</title>
+  <title>{{firstName}} &amp; {{secondName}} — The Wedding</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --gold: {{colorPrimary}};
-      --gold-dim: {{colorSecondary}};
-      --gold-pale: {{colorBgLight}};
+      --gold: #a67c52;
+      --gold-dim: #7a5430;
+      --gold-pale: #faf7f2;
       --bg-dark: #070709;
       --text-main: #f5f5f7;
       --text-muted: rgba(245, 245, 247, 0.65);
@@ -37,8 +37,7 @@
       display: flex; flex-direction: column;
       align-items: center; justify-content: space-between;
       padding: 3.5rem 2rem 4rem; text-align: center;
-      background: linear-gradient(to bottom, rgba(7,7,9,0.2) 0%, rgba(7,7,9,0.0) 25%, rgba(7,7,9,0.55) 60%, rgba(7,7,9,0.92) 100%),
-                  url('{{landingCoverUrl}}') center/cover no-repeat;
+      background-position: center; background-size: cover; background-repeat: no-repeat;
       transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.85s;
     }
     .cover-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
@@ -68,7 +67,7 @@
     /* DESKTOP FIXED LEFT HERO */
     .left-hero {
       display: none; position: fixed; left: 0; top: 0; width: 55%; height: 100vh;
-      z-index: 10; background: url('{{sidebarPhotoUrl}}') center/cover no-repeat; overflow: hidden;
+      z-index: 10; background-position: center; background-size: cover; background-repeat: no-repeat; overflow: hidden;
     }
     .left-hero::after {
       content: ''; position: absolute; inset: 0;
@@ -90,9 +89,7 @@
     .slide-opening {
       min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column;
       justify-content: space-between; align-items: center; padding: 3.5rem 2.2rem 3rem; text-align: center;
-      position: relative;
-      background: linear-gradient(to bottom, rgba(7,7,9,0.60) 0%, rgba(7,7,9,0.45) 40%, rgba(7,7,9,0.88) 100%),
-                  url('{{globalBgUrl}}') center/cover no-repeat;
+      position: relative; background-position: center; background-size: cover; background-repeat: no-repeat;
     }
     .opening-top-date { width: 100%; display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem; letter-spacing: 0.25em; color: rgba(255,255,255,0.75); text-transform: uppercase; }
     .opening-center { margin: auto 0; padding: 2rem 0; }
@@ -338,10 +335,10 @@
     }
   </style>
 </head>
-<body>
+<body style="--gold: {{colorPrimary}}; --gold-dim: {{colorSecondary}}; --gold-pale: {{colorBgLight}};">
 
   <!-- FIXED LEFT HERO (DESKTOP ONLY) -->
-  <div class="left-hero">
+  <div class="left-hero" style="background-image: url('{{sidebarPhotoUrl}}');">
     <div class="left-hero-content">
       <span class="left-hero-eyebrow">{{weddingTagline}}</span>
       <h1 class="serif left-hero-names">{{firstName}} <em>&amp;</em> {{secondName}}</h1>
@@ -350,7 +347,7 @@
   </div>
 
   <!-- COVER SCREEN -->
-  <div class="cover-screen" id="coverScreen">
+  <div class="cover-screen" id="coverScreen" style="background-image: linear-gradient(to bottom, rgba(7,7,9,0.2) 0%, rgba(7,7,9,0.0) 25%, rgba(7,7,9,0.55) 60%, rgba(7,7,9,0.92) 100%), url('{{landingCoverUrl}}');">
     <div class="cover-top">
       <span class="cover-date-part">{{weddingDateDay}}/{{weddingDateMonth}}</span>
       <span class="cover-date-part">{{weddingDateYear}}</span>
@@ -374,7 +371,7 @@
   <div class="right-panel" id="rightPanel">
 
     <!-- 1. SLIDE 1: OPENING VIEW (100vh FULLSCREEN) -->
-    <section class="slide-opening" id="home">
+    <section class="slide-opening" id="home" style="background-image: linear-gradient(to bottom, rgba(7,7,9,0.60) 0%, rgba(7,7,9,0.45) 40%, rgba(7,7,9,0.88) 100%), url('{{globalBgUrl}}');">
       <div class="opening-top-date">
         <span>{{weddingDateDay}}/{{weddingDateMonth}}</span>
         <span>{{weddingDateYear}}</span>
