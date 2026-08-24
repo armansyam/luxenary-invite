@@ -127,16 +127,23 @@
     }
 
     /* =============================================
+       GLOBAL BACKGROUND (RIGHT SPLIT ON DESKTOP, FULL ON MOBILE)
+       ============================================= */
+    .right-panel-bg {
+      position: fixed; inset: 0; z-index: 5; pointer-events: none;
+      background:
+        linear-gradient(to bottom, rgba(10,10,14,0.55) 0%, rgba(10,10,14,0.40) 45%, rgba(10,10,14,0.78) 100%),
+        url('{{globalBgUrl}}') center/cover no-repeat;
+    }
+
+    /* =============================================
        RIGHT SCROLLABLE CONTENT PANEL
        ============================================= */
     .right-panel {
       position: relative; z-index: 20;
       width: 100%;
       min-height: 100vh;
-      background:
-        linear-gradient(to bottom, rgba(10,10,12,0.88) 0%, rgba(10,10,12,0.78) 50%, rgba(10,10,12,0.92) 100%),
-        url('{{globalBgUrl}}') center/cover fixed no-repeat,
-        var(--dark);
+      background: transparent;
       padding-bottom: 90px;
       overflow-x: hidden;
     }
@@ -339,6 +346,7 @@
        ============================================= */
     @media (min-width: 860px) {
       .left-hero { display: block; }
+      .right-panel-bg { left: 55%; width: 45%; }
       .right-panel {
         margin-left: 55%;
         width: 45%;
@@ -369,6 +377,9 @@
       <h1 class="serif left-hero-names">{{groomName}}<br><em>&amp;</em><br>{{brideName}}</h1>
     </div>
   </div>
+
+  <!-- ===== RIGHT PANEL BACKGROUND (GLOBAL BG) ===== -->
+  <div class="right-panel-bg"></div>
 
   <!-- ===== COVER SCREEN ===== -->
   <div class="cover-screen" id="coverScreen">
