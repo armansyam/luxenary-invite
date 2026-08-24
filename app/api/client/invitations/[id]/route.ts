@@ -79,32 +79,51 @@ export async function PUT(
       }
     }
 
+    let mergedFeatureSettings = undefined;
+    if (body.featureSettings !== undefined) {
+      if (body.featureSettings === null) {
+        mergedFeatureSettings = null;
+      } else {
+        try {
+          const existingObj = currentInv?.featureSettings
+            ? (typeof currentInv.featureSettings === "object" ? currentInv.featureSettings : JSON.parse(currentInv.featureSettings || "{}"))
+            : {};
+          const incomingObj = typeof body.featureSettings === "object"
+            ? body.featureSettings
+            : JSON.parse(body.featureSettings || "{}");
+          mergedFeatureSettings = JSON.stringify({ ...existingObj, ...incomingObj });
+        } catch {
+          mergedFeatureSettings = toStr(body.featureSettings);
+        }
+      }
+    }
+
     const updated = await prisma.invitation.update({
       where: { id },
       data: {
-        groomName: body.groomName,
-        brideName: body.brideName,
-        groomNickname: body.groomNickname,
-        brideNickname: body.brideNickname,
+        groomName: body.groomName !== undefined ? body.groomName : undefined,
+        brideName: body.brideName !== undefined ? body.brideName : undefined,
+        groomNickname: body.groomNickname !== undefined ? body.groomNickname : undefined,
+        brideNickname: body.brideNickname !== undefined ? body.brideNickname : undefined,
         groomSlug: newGroomSlug || undefined,
         brideSlug: newBrideSlug || undefined,
-        groomParents: body.groomParents,
-        brideParents: body.brideParents,
-        groomInstagram: body.groomInstagram,
-        brideInstagram: body.brideInstagram,
-        openingQuote: body.openingQuote,
-        openingQuoteRef: body.openingQuoteRef,
-        themeId: body.themeId,
+        groomParents: body.groomParents !== undefined ? body.groomParents : undefined,
+        brideParents: body.brideParents !== undefined ? body.brideParents : undefined,
+        groomInstagram: body.groomInstagram !== undefined ? body.groomInstagram : undefined,
+        brideInstagram: body.brideInstagram !== undefined ? body.brideInstagram : undefined,
+        openingQuote: body.openingQuote !== undefined ? body.openingQuote : undefined,
+        openingQuoteRef: body.openingQuoteRef !== undefined ? body.openingQuoteRef : undefined,
+        themeId: body.themeId !== undefined ? body.themeId : undefined,
         subdomain: newSubdomain !== undefined ? newSubdomain : undefined,
         musicUrl: body.musicUrl !== undefined ? String(body.musicUrl || "") : undefined,
         status: body.status !== undefined ? body.status : undefined,
-        loveStory: toStr(body.loveStory),
-        dresscode: body.dresscode,
-        bankAccounts: toStr(body.bankAccounts),
-        shippingAddress: body.shippingAddress,
-        liveStreamUrl: body.liveStreamUrl,
-        eventData: toStr(body.eventData),
-        featureSettings: toStr(body.featureSettings),
+        loveStory: body.loveStory !== undefined ? toStr(body.loveStory) : undefined,
+        dresscode: body.dresscode !== undefined ? body.dresscode : undefined,
+        bankAccounts: body.bankAccounts !== undefined ? toStr(body.bankAccounts) : undefined,
+        shippingAddress: body.shippingAddress !== undefined ? body.shippingAddress : undefined,
+        liveStreamUrl: body.liveStreamUrl !== undefined ? body.liveStreamUrl : undefined,
+        eventData: body.eventData !== undefined ? toStr(body.eventData) : undefined,
+        featureSettings: mergedFeatureSettings,
       },
     });
 
