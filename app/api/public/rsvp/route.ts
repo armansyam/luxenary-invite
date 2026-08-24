@@ -51,32 +51,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invitation not found" }, { status: 404 });
     }
 
-    // Find or create guest record
-    let guest = await prisma.guest.findFirst({
+    // Find matching guest record if already invited, but DO NOT auto-create new guest
+    const matchingGuest = await prisma.guest.findFirst({
       where: {
         invitationId,
         name: { equals: guestName },
       },
     });
 
-    if (!guest) {
-      const slug = guestName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-      guest = await prisma.guest.create({
-        data: {
-          invitationId,
-          name: guestName,
-          slug: `${slug}-${Date.now().toString(36)}`,
-          phone: phone || null,
-          category: "UMUM",
-          guestQuota: Number(guestCount) || 1,
-        },
-      });
-    }
-
-    // Find existing RSVP or create new
-    const existingRsvp = await prisma.rsvp.findFirst({
-      where: { invitationId, guestId: guest.id },
-    });
+    // Find existing RSVP or create new to prevent duplication
+    const existingRsvp = matchingGuest
+      ? await prisma.rsvp.findFirst({ where: { invitationId, guestId: matchingGuest.id } })
+      : await prisma.rsvp.findFirst({ where: { invitationId, guestName: { equals: guestName } } });
 
     let rsvp;
     if (existingRsvp) {
@@ -93,7 +79,7 @@ export async function POST(req: NextRequest) {
       rsvp = await prisma.rsvp.create({
         data: {
           invitationId,
-          guestId: guest.id,
+          guestId: matchingGuest ? matchingGuest.id : null,
           guestName,
           status,
           guestCount: Number(guestCount) || 1,
