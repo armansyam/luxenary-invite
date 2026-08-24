@@ -6,40 +6,47 @@
   <title>{{firstName}} &amp; {{secondName}} — The Wedding</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,600;0,6..96,700;1,6..96,400;1,6..96,600&family=Great+Vibes&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Infant:ital,wght@0,400;0,600;1,400&family=Cormorant:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Lora:ital,wght@0,400;0,500;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Great+Vibes&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-page: #f7f5f2;
-      --bg-subtle: #eeece8;
-      --bg-card: #ffffff;
-      --bg-dark-sec: #212124;
-      --text-dark: #1e1e22;
-      --text-muted: #6e6b66;
-      --text-light: #f7f5f2;
-      --text-light-muted: rgba(247, 245, 242, 0.7);
-      --accent: #697665;
-      --accent-taupe: #b5a19a;
-      --border: rgba(30, 30, 34, 0.1);
-      --border-card: rgba(30, 30, 34, 0.08);
-      --shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.05);
-      --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.08);
-      --shadow-lg: 0 16px 45px rgba(0, 0, 0, 0.12);
-      --radius-lg: 24px;
-      --radius-md: 14px;
+      --bg-main: #101010;
+      --bg-card: #262627;
+      --bg-surface: #1a1a1c;
+      --text-main: #d9d9d9;
+      --text-heading: #f0f0f0;
+      --text-muted: #a7a7a7;
+      --accent: #b5a19a;
+      --accent-sage: #697665;
+      --border-subtle: #3c3d37;
+      --border-light: rgba(255, 255, 255, 0.12);
+      --radius-sm: 4px;
+      --radius-md: 10px;
+      --radius-lg: 20px;
       --radius-pill: 50px;
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      background: var(--bg-page);
-      color: var(--text-dark);
+      font-family: 'Lora', serif;
+      background: var(--bg-main);
+      color: var(--text-main);
       overflow-x: hidden;
       scroll-behavior: smooth;
       width: 100%;
     }
     h1, h2, h3, h4, .serif {
-      font-family: 'Bodoni Moda', serif;
-      font-weight: 400;
+      font-family: 'Cormorant', serif;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+    .eyebrow {
+      font-family: 'Cormorant Infant', serif;
+      font-size: 0.82rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 600;
+      display: block;
+      margin-bottom: 0.4rem;
     }
     .script-font {
       font-family: 'Great Vibes', cursive;
@@ -48,7 +55,7 @@
     /* SCROLL ANIMATION OBSERVER */
     .reveal {
       opacity: 0;
-      transform: translateY(28px);
+      transform: translateY(24px);
       transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1), transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .reveal.active {
@@ -57,16 +64,16 @@
     }
     .reveal-zoom {
       opacity: 0;
-      transform: scale(0.94);
+      transform: scale(0.95);
       transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1), transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .reveal-zoom.active {
       opacity: 1;
       transform: scale(1);
     }
-    .delay-1 { transition-delay: 0.12s; }
-    .delay-2 { transition-delay: 0.24s; }
-    .delay-3 { transition-delay: 0.36s; }
+    .delay-1 { transition-delay: 0.15s; }
+    .delay-2 { transition-delay: 0.3s; }
+    .delay-3 { transition-delay: 0.45s; }
 
     /* =========================================
        1. COVER SCREEN (POPUP PEMBUKA)
@@ -80,200 +87,200 @@
       transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.85s;
     }
     .cover-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
-    .cover-top { width: 100%; display: flex; justify-content: space-between; align-items: center; }
-    .cover-date-part { font-size: 0.78rem; letter-spacing: 0.25em; color: rgba(255, 255, 255, 0.9); text-transform: uppercase; font-weight: 500; }
+    .cover-top { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 0.3rem; }
+    .cover-tagline-top { font-family: 'Cormorant Infant', serif; font-size: 0.85rem; letter-spacing: 0.25em; text-transform: uppercase; color: #d9d9d9; }
     .cover-center { display: flex; flex-direction: column; align-items: center; margin: auto 0; }
-    .cover-tagline { font-size: 0.7rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--accent-taupe); margin-bottom: 0.8rem; display: block; font-weight: 600; }
-    .cover-names { font-size: clamp(3.0rem, 12vw, 5.2rem); line-height: 1.05; color: #ffffff; text-shadow: 0 4px 30px rgba(0,0,0,0.6); font-weight: 400; }
-    .cover-names em { font-style: italic; font-size: 0.7em; display: inline-block; margin: 0 0.1em; color: var(--accent-taupe); }
+    .cover-names {
+      font-size: clamp(2.8rem, 11vw, 4.8rem); line-height: 1.05; color: #d9d9d9;
+      text-transform: uppercase; font-family: 'Cormorant', serif; font-weight: 400;
+      -webkit-text-stroke: 0.5px #e9e9e9; text-shadow: 0 4px 25px rgba(0,0,0,0.7);
+    }
+    .cover-date-sub { font-family: 'Cormorant Infant', serif; font-size: 0.82rem; letter-spacing: 0.2em; text-transform: uppercase; color: #d9d9d9; margin-top: 0.6rem; }
     .cover-bottom { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 0.8rem; }
-    .cover-kepada-box {
-      background: rgba(33, 33, 36, 0.65); backdrop-filter: blur(14px);
-      border: 1px solid rgba(255, 255, 255, 0.2); border-radius: var(--radius-md);
-      padding: 1rem 1.6rem; width: 100%; max-width: 320px; box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    .cover-guest-box {
+      background: rgba(38, 38, 39, 0.82); backdrop-filter: blur(12px);
+      border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
+      padding: 1.2rem 1.6rem; width: 100%; max-width: 320px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
-    .cover-kepada { font-size: 0.62rem; letter-spacing: 0.28em; text-transform: uppercase; color: rgba(255, 255, 255, 0.7); display: block; margin-bottom: 0.25rem; }
-    .cover-guest-name { font-size: clamp(1.35rem, 5.5vw, 1.8rem); font-family: 'Bodoni Moda', serif; font-style: italic; color: #ffffff; line-height: 1.15; }
-    .cover-subtitle { font-size: 0.75rem; color: rgba(255, 255, 255, 0.75); line-height: 1.5; max-width: 300px; margin-top: 0.4rem; }
-    .cover-btn-group { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; width: 100%; max-width: 300px; margin-top: 0.4rem; }
+    .cover-kepada { font-family: 'Lora', serif; font-size: 0.72rem; letter-spacing: 0.1em; color: #a7a7a7; display: block; margin-bottom: 0.3rem; }
+    .cover-guest-name { font-size: clamp(1.25rem, 5vw, 1.65rem); font-family: 'Cormorant', serif; font-style: italic; color: #ffffff; line-height: 1.2; }
+    .cover-subtitle { font-size: 0.72rem; color: #d9d9d9; line-height: 1.5; margin-top: 0.4rem; font-family: 'Lora', serif; }
+    .cover-btn-group { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; width: 100%; max-width: 320px; margin-top: 0.4rem; }
     .btn-buka {
-      display: inline-block; padding: 0.88rem 2.4rem; border: none; border-radius: var(--radius-pill);
-      background: #ffffff; color: var(--text-dark); font-size: 0.72rem;
-      letter-spacing: 0.22em; text-transform: uppercase; cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif;
-      font-weight: 700; transition: all 0.3s ease; width: 100%; box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+      display: inline-block; padding: 0.85rem 2.2rem; border: none; border-radius: var(--radius-sm);
+      background: var(--bg-card); color: #d9d9d9; font-size: 0.75rem; border: 1px solid var(--border-subtle);
+      letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; font-family: 'Lora', serif;
+      font-weight: 500; transition: all 0.3s ease; width: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
     }
-    .btn-buka:hover { background: var(--bg-page); transform: translateY(-2px); }
+    .btn-buka:hover { background: #d9d9d9; color: #262627; }
     .btn-qr-ghost {
-      background: rgba(33, 33, 36, 0.4); border: 1px solid rgba(255, 255, 255, 0.35); border-radius: var(--radius-pill);
-      color: #ffffff; font-size: 0.65rem; letter-spacing: 0.18em; cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif;
-      text-transform: uppercase; padding: 0.55rem 1.6rem; transition: all 0.3s;
+      background: transparent; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
+      color: #a7a7a7; font-size: 0.7rem; letter-spacing: 0.18em; cursor: pointer; font-family: 'Lora', serif;
+      text-transform: uppercase; padding: 0.6rem 1.6rem; transition: all 0.3s; width: 100%;
     }
-    .btn-qr-ghost:hover { background: rgba(255, 255, 255, 0.15); }
+    .btn-qr-ghost:hover { background: rgba(255, 255, 255, 0.08); color: #ffffff; }
 
     /* =========================================
-       PAGE WRAPPER (WARM EDITORIAL CONTAINER)
+       PAGE CONTAINER (EDITORIAL CONTAINER)
        ========================================= */
     .page-wrap {
-      width: 100%; max-width: 520px; margin: 0 auto; background: var(--bg-page);
-      min-height: 100vh; padding-bottom: 100px; box-shadow: 0 0 50px rgba(0,0,0,0.06);
+      width: 100%; max-width: 500px; margin: 0 auto; background: var(--bg-main);
+      min-height: 100vh; padding-bottom: 110px; box-shadow: 0 0 50px rgba(0,0,0,0.5);
     }
 
     /* SECTION COMMON */
     .sec-flow { padding: 4.5rem 1.8rem; text-align: center; position: relative; }
-    .sec-eyebrow { font-size: 0.65rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--accent); display: block; margin-bottom: 0.45rem; font-weight: 700; }
-    .sec-title { font-size: clamp(2.0rem, 7vw, 2.8rem); color: var(--text-dark); line-height: 1.12; margin-bottom: 0.6rem; font-weight: 400; letter-spacing: 0.04em; }
-    .sec-sub { font-size: 0.82rem; color: var(--text-muted); line-height: 1.6; max-width: 400px; margin: 0 auto 1.8rem; }
-    .sec-divider { width: calc(100% - 3.6rem); height: 1px; background: var(--border); margin: 0 auto; }
+    .sec-title { font-size: clamp(2.2rem, 7.5vw, 3.2rem); color: var(--text-heading); line-height: 1.1; margin-bottom: 0.6rem; text-transform: uppercase; }
+    .sec-sub { font-size: 0.82rem; color: var(--text-muted); line-height: 1.65; max-width: 420px; margin: 0 auto 1.8rem; font-family: 'Lora', serif; }
+    .sec-divider { width: calc(100% - 3.6rem); height: 1px; background: var(--border-subtle); margin: 0 auto; }
 
     /* =========================================
-       2. OPENING VIEW (HERO)
+       2. OPENING VIEW (HERO BANNER)
        ========================================= */
-    .sec-hero-opening {
-      padding: 4.5rem 1.8rem 3.5rem; text-align: center; background: var(--bg-page);
-    }
-    .hero-top-date { font-size: 0.78rem; letter-spacing: 0.25em; color: var(--text-muted); text-transform: uppercase; margin-bottom: 2.2rem; font-weight: 500; }
-    .hero-tagline { font-size: 0.65rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--accent); display: block; margin-bottom: 0.6rem; font-weight: 700; }
-    .hero-title { font-size: clamp(2.6rem, 9.5vw, 4.0rem); color: var(--text-dark); line-height: 1.1; margin-bottom: 1.8rem; font-weight: 400; }
+    .sec-hero-opening { padding: 4.5rem 1.8rem 3.5rem; text-align: center; }
+    .hero-top-eyebrow { font-family: 'Cormorant Infant', serif; font-size: 0.85rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.5rem; display: block; }
+    .hero-title { font-size: clamp(2.4rem, 8.5vw, 3.6rem); color: var(--text-heading); text-transform: uppercase; line-height: 1.1; margin-bottom: 0.5rem; }
     .hero-title em { font-style: italic; font-size: 0.7em; color: var(--accent); }
-    .hero-photo-banner {
+    .hero-date-str { font-family: 'Cormorant Infant', serif; font-size: 0.82rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 2rem; display: block; }
+    .hero-photo-box {
       width: 100%; aspect-ratio: 4/5; border-radius: var(--radius-lg); overflow: hidden;
-      box-shadow: var(--shadow-md); margin-bottom: 2rem; border: 1px solid var(--border-card);
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6); margin-bottom: 2rem; border: 1px solid var(--border-subtle);
     }
-    .hero-photo-banner img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .hero-quote-box { max-width: 400px; margin: 0 auto; }
-    .hero-quote-text { font-family: 'Bodoni Moda', serif; font-style: italic; font-size: 1.02rem; color: var(--text-dark); line-height: 1.7; margin-bottom: 0.6rem; }
-    .hero-quote-ref { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); display: block; }
+    .hero-photo-box img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .hero-quote-box { max-width: 420px; margin: 0 auto; background: var(--bg-card); padding: 1.8rem 1.5rem; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); }
+    .hero-quote-text { font-style: italic; font-size: 0.92rem; color: #d9d9d9; line-height: 1.7; margin-bottom: 0.6rem; }
+    .hero-quote-ref { font-family: 'Cormorant Infant', serif; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); display: block; }
 
     /* =========================================
-       3. BRIDE & GROOM (FRAMED EDITORIAL CARDS)
+       3. BRIDE & GROOM (DEDICATED PROFILE CARDS)
        ========================================= */
-    .sec-couple-cards { padding: 4.5rem 1.8rem; background: var(--bg-subtle); text-align: center; }
-    .couple-cards-stack { display: flex; flex-direction: column; gap: 2.5rem; margin-top: 2rem; }
-    .couple-profile-card {
-      background: var(--bg-card); border-radius: var(--radius-lg); padding: 2rem 1.6rem 2.2rem;
-      box-shadow: var(--shadow-sm); border: 1px solid var(--border-card); text-align: center;
+    .sec-couple { padding: 4.5rem 1.8rem; background: var(--bg-surface); text-align: center; }
+    .couple-cards-stack { display: flex; flex-direction: column; gap: 2rem; margin-top: 2rem; }
+    .couple-card {
+      background: var(--bg-card); border-radius: var(--radius-lg); padding: 2.2rem 1.6rem;
+      border: 1px solid var(--border-subtle); box-shadow: 0 10px 30px rgba(0,0,0,0.4); text-align: center;
     }
-    .couple-card-photo-box {
+    .couple-photo-wrap {
       width: 100%; aspect-ratio: 1/1; max-width: 240px; margin: 0 auto 1.5rem;
-      border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-md); border: 1px solid var(--border-card);
+      border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border-subtle); box-shadow: 0 8px 25px rgba(0,0,0,0.5);
     }
-    .couple-card-photo-box img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.5s ease; }
-    .couple-profile-card:hover .couple-card-photo-box img { transform: scale(1.05); }
-    .couple-card-role { font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--accent); font-weight: 700; display: block; margin-bottom: 0.35rem; }
-    .couple-card-name { font-size: clamp(1.8rem, 6vw, 2.4rem); color: var(--text-dark); margin-bottom: 0.4rem; font-weight: 400; }
-    .couple-card-parent-lbl { font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 0.25rem; font-weight: 600; }
-    .couple-card-parents { font-size: 0.82rem; color: var(--text-muted); line-height: 1.55; margin-bottom: 1.2rem; }
-    .btn-ig-pill {
-      display: inline-flex; align-items: center; gap: 6px; padding: 0.5rem 1.3rem;
-      border: 1px solid var(--border); border-radius: var(--radius-pill); color: var(--text-dark); text-decoration: none;
-      font-size: 0.72rem; letter-spacing: 0.08em; font-weight: 600; transition: all 0.3s; background: var(--bg-subtle);
+    .couple-photo-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.45s ease; }
+    .couple-card:hover .couple-photo-wrap img { transform: scale(1.05); }
+    .couple-role-lbl { font-family: 'Cormorant Infant', serif; font-size: 0.75rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--accent); font-weight: 600; display: block; margin-bottom: 0.35rem; }
+    .couple-name { font-size: clamp(2.0rem, 6.5vw, 2.6rem); color: var(--text-heading); margin-bottom: 0.5rem; text-transform: uppercase; }
+    .couple-parents-lbl { font-family: 'Lora', serif; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 0.25rem; }
+    .couple-parents { font-size: 0.82rem; color: #d9d9d9; line-height: 1.6; margin-bottom: 1.4rem; }
+    .btn-ig {
+      display: inline-flex; align-items: center; gap: 6px; padding: 0.55rem 1.4rem;
+      border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: #d9d9d9; text-decoration: none;
+      font-size: 0.75rem; letter-spacing: 0.08em; font-family: 'Lora', serif; transition: all 0.3s; background: var(--bg-surface);
     }
-    .btn-ig-pill:hover { background: var(--text-dark); color: #ffffff; border-color: var(--text-dark); }
+    .btn-ig:hover { background: #d9d9d9; color: #262627; }
 
     /* =========================================
        4. SAVE THE DATE & COUNTDOWN & EVENTS
        ========================================= */
     .sec-events { padding: 4.5rem 1.8rem; text-align: center; }
-    .event-full-date-lbl { font-size: 0.92rem; letter-spacing: 0.12em; color: var(--text-dark); margin-bottom: 2rem; font-weight: 500; text-transform: uppercase; }
-    .countdown-boxes { display: flex; justify-content: center; gap: 10px; margin-bottom: 2.2rem; }
-    .cd-box-item {
-      flex: 1; max-width: 80px; background: var(--bg-card); border: 1px solid var(--border-card);
-      border-radius: var(--radius-md); padding: 0.85rem 0.4rem; box-shadow: var(--shadow-sm); text-align: center;
+    .event-full-date { font-family: 'Cormorant Infant', serif; font-size: 0.95rem; letter-spacing: 0.15em; color: #d9d9d9; text-transform: uppercase; margin-bottom: 2rem; display: block; }
+    .countdown-boxes { display: flex; justify-content: center; gap: 8px; margin-bottom: 2.2rem; }
+    .cd-box {
+      flex: 1; max-width: 82px; background: var(--bg-card); border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm); padding: 0.9rem 0.4rem; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
     }
-    .cd-box-val { display: block; font-size: clamp(1.8rem, 5.5vw, 2.3rem); font-family: 'Bodoni Moda', serif; font-weight: 400; color: var(--text-dark); line-height: 1; }
-    .cd-box-txt { display: block; font-size: 0.52rem; text-transform: uppercase; letter-spacing: 0.2em; color: var(--accent); margin-top: 0.4rem; font-weight: 700; }
-    .btn-cal-action {
-      display: inline-block; padding: 0.8rem 2.2rem; border: 1.5px solid var(--text-dark);
-      border-radius: var(--radius-pill); color: var(--text-dark); font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase;
-      text-decoration: none; transition: all 0.3s; margin-bottom: 3.5rem; font-weight: 700; cursor: pointer; background: transparent;
+    .cd-val { display: block; font-size: clamp(1.8rem, 5.5vw, 2.4rem); font-family: 'Cormorant', serif; font-weight: 600; color: #ffffff; line-height: 1; }
+    .cd-txt { display: block; font-family: 'Cormorant Infant', serif; font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.2em; color: var(--accent); margin-top: 0.4rem; font-weight: 600; }
+    .btn-cal {
+      display: inline-block; padding: 0.8rem 2.2rem; border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm); color: #d9d9d9; font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase;
+      text-decoration: none; transition: all 0.3s; margin-bottom: 3.5rem; font-family: 'Lora', serif; background: var(--bg-card);
     }
-    .btn-cal-action:hover { background: var(--text-dark); color: #ffffff; }
+    .btn-cal:hover { background: #d9d9d9; color: #262627; }
 
-    /* Event Cards List */
+    /* Event Blocks */
     .events-stack { display: flex; flex-direction: column; gap: 2rem; text-align: center; }
     .event-block-item {
-      background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-lg);
-      padding: 2.2rem 1.6rem; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
+      background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
+      padding: 2.2rem 1.6rem; display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
     }
-    .ev-cat { font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--accent); font-weight: 700; margin-bottom: 0.2rem; }
-    .ev-name { font-size: clamp(1.6rem, 5.5vw, 2.2rem); color: var(--text-dark); line-height: 1.15; font-weight: 400; letter-spacing: 0.05em; text-transform: uppercase; font-family: 'Bodoni Moda', serif; margin-bottom: 0.3rem; }
-    .ev-time { font-size: 0.92rem; color: var(--text-dark); margin-bottom: 0.5rem; font-weight: 600; letter-spacing: 0.05em; }
-    .ev-venue { font-size: 0.88rem; font-weight: 700; color: var(--text-dark); margin-bottom: 0.25rem; }
-    .ev-addr { font-size: 0.78rem; color: var(--text-muted); line-height: 1.55; max-width: 340px; margin: 0 auto 1.2rem; }
+    .ev-cat { font-family: 'Cormorant Infant', serif; font-size: 0.75rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--accent); font-weight: 600; margin-bottom: 0.2rem; }
+    .ev-name { font-size: clamp(1.8rem, 6vw, 2.4rem); color: var(--text-heading); line-height: 1.15; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 0.3rem; }
+    .ev-time { font-size: 0.92rem; color: #d9d9d9; margin-bottom: 0.5rem; letter-spacing: 0.05em; font-family: 'Lora', serif; }
+    .ev-venue { font-size: 0.95rem; font-weight: 600; color: #ffffff; margin-bottom: 0.25rem; font-family: 'Cormorant', serif; text-transform: uppercase; }
+    .ev-addr { font-size: 0.78rem; color: var(--text-muted); line-height: 1.55; max-width: 340px; margin: 0 auto 1.2rem; font-family: 'Lora', serif; }
     .btn-map-outline {
-      display: inline-block; padding: 0.65rem 1.8rem; border: 1px solid var(--text-dark);
-      border-radius: var(--radius-pill); color: var(--text-dark); font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase;
-      text-decoration: none; transition: all 0.3s; font-weight: 700;
+      display: inline-block; padding: 0.65rem 1.8rem; border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm); color: #d9d9d9; font-size: 0.68rem; letter-spacing: 0.2em; text-transform: uppercase;
+      text-decoration: none; transition: all 0.3s; font-family: 'Lora', serif; background: var(--bg-surface);
     }
-    .btn-map-outline:hover { background: var(--text-dark); color: #ffffff; }
+    .btn-map-outline:hover { background: #d9d9d9; color: #262627; }
 
-    .events-unified-container { display: flex; flex-direction: column; gap: 2.4rem; align-items: center; width: 100%; }
-    .events-sessions-stack { display: flex; flex-direction: column; gap: 1.8rem; width: 100%; }
+    .events-unified-container { display: flex; flex-direction: column; gap: 2.2rem; align-items: center; width: 100%; }
+    .events-sessions-stack { display: flex; flex-direction: column; gap: 1.6rem; width: 100%; }
     .unified-session {
-      background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-lg);
-      padding: 1.8rem 1.5rem; box-shadow: var(--shadow-sm);
+      background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
+      padding: 1.8rem 1.5rem;
     }
     .event-unified-venue-card {
-      background: var(--bg-subtle); border: 1px solid var(--border);
-      border-radius: var(--radius-lg); padding: 2rem 1.6rem; box-shadow: var(--shadow-sm); width: 100%; text-align: center;
+      background: var(--bg-surface); border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md); padding: 2rem 1.6rem; width: 100%; text-align: center;
     }
-    .venue-card-lbl { font-size: 0.62rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--accent); display: block; margin-bottom: 0.5rem; font-weight: 700; }
-    .ev-venue-unified { font-size: 1.4rem; color: var(--text-dark); margin-bottom: 0.4rem; font-weight: 400; font-family: 'Bodoni Moda', serif; }
-    .ev-addr-unified { font-size: 0.78rem; color: var(--text-muted); line-height: 1.55; max-width: 320px; margin: 0 auto 1.4rem; }
+    .venue-card-lbl { font-family: 'Cormorant Infant', serif; font-size: 0.72rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--accent); display: block; margin-bottom: 0.5rem; font-weight: 600; }
+    .ev-venue-unified { font-size: 1.5rem; color: #ffffff; margin-bottom: 0.4rem; text-transform: uppercase; }
+    .ev-addr-unified { font-size: 0.78rem; color: var(--text-muted); line-height: 1.55; max-width: 320px; margin: 0 auto 1.4rem; font-family: 'Lora', serif; }
 
     /* =========================================
        5. QR PASS CARD / CHECK-IN
        ========================================= */
     .access-pass-card {
-      background: var(--bg-card); border: 1px solid var(--border-card);
-      border-radius: var(--radius-lg); padding: 2.2rem 1.8rem; box-shadow: var(--shadow-md);
+      background: var(--bg-card); border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md); padding: 2.2rem 1.8rem; box-shadow: 0 15px 40px rgba(0,0,0,0.5);
       margin-top: 1.2rem; text-align: center;
     }
-    .pass-tagline { font-size: 0.62rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--accent); display: block; margin-bottom: 0.3rem; font-weight: 700; }
-    .pass-names { font-size: 1.8rem; color: var(--text-dark); margin-bottom: 0.2rem; font-family: 'Bodoni Moda', serif; }
+    .pass-tagline { font-family: 'Cormorant Infant', serif; font-size: 0.72rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--accent); display: block; margin-bottom: 0.3rem; font-weight: 600; }
+    .pass-names { font-size: 1.8rem; color: var(--text-heading); margin-bottom: 0.2rem; text-transform: uppercase; }
     .pass-names em { font-style: italic; font-size: 0.7em; color: var(--accent); }
-    .pass-date { font-size: 0.75rem; color: var(--text-muted); letter-spacing: 0.05em; margin-bottom: 1.5rem; }
-    .pass-qr-wrapper { background: var(--bg-subtle); padding: 14px; display: inline-block; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); margin-bottom: 1.4rem; border: 1px solid var(--border); }
+    .pass-date { font-family: 'Cormorant Infant', serif; font-size: 0.75rem; color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 1.5rem; }
+    .pass-qr-wrapper { background: #ffffff; padding: 14px; display: inline-block; border-radius: var(--radius-sm); box-shadow: 0 10px 30px rgba(0,0,0,0.4); margin-bottom: 1.4rem; }
     .pass-qr-img { width: 160px; height: 160px; display: block; }
     .pass-guest-box { margin-bottom: 1.2rem; }
-    .pass-guest-lbl { font-size: 0.58rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 0.2rem; font-weight: 600; }
-    .pass-guest-name { font-size: 1.35rem; color: var(--text-dark); font-style: italic; font-family: 'Bodoni Moda', serif; }
+    .pass-guest-lbl { font-family: 'Lora', serif; font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 0.2rem; }
+    .pass-guest-name { font-size: 1.4rem; color: #ffffff; font-style: italic; font-family: 'Cormorant', serif; }
     .pass-meta-grid {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: var(--bg-page);
-      border: 1px solid var(--border); padding: 0.8rem; margin-bottom: 1.2rem; border-radius: var(--radius-md);
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: var(--bg-surface);
+      border: 1px solid var(--border-subtle); padding: 0.8rem; margin-bottom: 1.2rem; border-radius: var(--radius-sm);
     }
-    .pass-meta-lbl { font-size: 0.52rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 0.2rem; font-weight: 600; }
-    .pass-meta-val { font-size: 0.78rem; color: var(--text-dark); font-weight: 700; }
-    .pass-souvenir-bar { border-top: 1px dashed var(--border); padding-top: 0.9rem; font-size: 0.72rem; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center; }
-    .souvenir-code { font-family: monospace; font-weight: 700; color: var(--text-dark); background: var(--bg-subtle); padding: 3px 8px; border-radius: 4px; border: 1px solid var(--border); }
+    .pass-meta-lbl { font-family: 'Cormorant Infant', serif; font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 0.2rem; }
+    .pass-meta-val { font-size: 0.78rem; color: #ffffff; font-weight: 500; }
+    .pass-souvenir-bar { border-top: 1px dashed var(--border-subtle); padding-top: 0.9rem; font-size: 0.72rem; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center; }
+    .souvenir-code { font-family: monospace; font-weight: 700; color: #ffffff; background: var(--bg-surface); padding: 3px 8px; border-radius: 4px; border: 1px solid var(--border-subtle); }
 
     /* =========================================
        6. JOURNEY OF LOVE
        ========================================= */
-    .sec-journey { padding: 4.8rem 1.8rem; background: var(--bg-subtle); text-align: center; position: relative; }
+    .sec-journey { padding: 4.8rem 1.8rem; background: var(--bg-surface); text-align: center; position: relative; }
     .journey-card {
-      background: var(--bg-card); border: 1px solid var(--border-card);
-      border-radius: var(--radius-lg); padding: 2.5rem 1.8rem 2.2rem; box-shadow: var(--shadow-md);
+      background: var(--bg-card); border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg); padding: 2.5rem 1.8rem 2.2rem; box-shadow: 0 15px 40px rgba(0,0,0,0.4);
     }
     .journey-previews { display: flex; justify-content: center; gap: 12px; margin-bottom: 2rem; }
-    .jp-item { flex: 1; max-width: 140px; aspect-ratio: 1/1; border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-sm); border: 1px solid var(--border-card); }
+    .jp-item { flex: 1; max-width: 140px; aspect-ratio: 1/1; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border-subtle); }
     .jp-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.4s ease; }
     .jp-item:hover img { transform: scale(1.06); }
-    .journey-title { font-size: clamp(1.8rem, 6vw, 2.4rem); letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-dark); margin-bottom: 2rem; font-weight: 400; }
+    .journey-title { font-size: clamp(1.8rem, 6vw, 2.4rem); letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-heading); margin-bottom: 2rem; }
     .journey-chapters { display: flex; flex-direction: column; gap: 1.6rem; text-align: left; }
     .journey-chapter-item { padding-bottom: 0.4rem; border-left: 2px solid var(--accent); padding-left: 1rem; }
-    .chapter-heading { font-size: 0.95rem; font-weight: 700; color: var(--text-dark); margin-bottom: 0.4rem; letter-spacing: 0.02em; }
-    .chapter-desc { font-size: 0.8rem; color: var(--text-muted); line-height: 1.65; }
-    .journey-footer { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border); }
-    .jf-line { flex: 1; height: 1px; background: var(--border); }
+    .chapter-heading { font-size: 1.05rem; font-weight: 600; color: #ffffff; margin-bottom: 0.4rem; letter-spacing: 0.05em; font-family: 'Cormorant', serif; }
+    .chapter-desc { font-size: 0.82rem; color: var(--text-muted); line-height: 1.65; font-family: 'Lora', serif; }
+    .journey-footer { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border-subtle); }
+    .jf-line { flex: 1; height: 1px; background: var(--border-subtle); }
     .jf-signature { font-style: italic; font-size: 1.35rem; color: var(--accent); font-family: 'Great Vibes', cursive; }
 
     /* =========================================
        7. OUR MOMENT (GALLERY & VIDEO)
        ========================================= */
-    .moment-quote { font-style: italic; font-size: 1.02rem; line-height: 1.65; color: var(--text-muted); max-width: 420px; margin: 0 auto 2rem; font-family: 'Bodoni Moda', serif; }
+    .moment-quote { font-style: italic; font-size: 0.95rem; line-height: 1.65; color: var(--text-muted); max-width: 420px; margin: 0 auto 2rem; }
     .moments-grid-10 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 2.2rem; }
-    .moment-photo-item { overflow: hidden; border-radius: var(--radius-md); cursor: pointer; position: relative; aspect-ratio: 1/1; border: 1px solid var(--border-card); box-shadow: var(--shadow-sm); }
+    .moment-photo-item { overflow: hidden; border-radius: var(--radius-sm); cursor: pointer; position: relative; aspect-ratio: 1/1; border: 1px solid var(--border-subtle); }
     .moment-photo-item.wide { grid-column: span 2; aspect-ratio: 16/10; }
     .moment-photo-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.45s ease; }
     .moment-photo-item:hover img { transform: scale(1.05); }
@@ -281,26 +288,26 @@
 
     /* LIGHTBOX MODALS */
     .gallery-modal-backdrop {
-      position: fixed; inset: 0; z-index: 350; background: rgba(20, 20, 24, 0.95); backdrop-filter: blur(20px);
+      position: fixed; inset: 0; z-index: 350; background: rgba(16, 16, 16, 0.96); backdrop-filter: blur(20px);
       display: flex; flex-direction: column; opacity: 0; visibility: hidden; transition: all 0.3s ease;
       overflow-y: auto; padding: 2rem 1.5rem;
     }
     .gallery-modal-backdrop.open { opacity: 1; visibility: visible; }
     .gallery-modal-container { max-width: 600px; width: 100%; margin: 0 auto; }
-    .gallery-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.8rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.15); }
-    .modal-gallery-title { font-size: 1.8rem; color: #fff; letter-spacing: 0.1em; font-family: 'Bodoni Moda', serif; }
+    .gallery-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.8rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-subtle); }
+    .modal-gallery-title { font-size: 1.8rem; color: #fff; letter-spacing: 0.1em; text-transform: uppercase; }
     .gallery-modal-close {
-      background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;
+      background: rgba(255,255,255,0.1); border: 1px solid var(--border-subtle); color: #ffffff;
       width: 34px; height: 34px; border-radius: 50%; font-size: 1rem; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
     }
     .gallery-modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .full-gallery-item { aspect-ratio: 1/1; overflow: hidden; border-radius: var(--radius-md); cursor: pointer; border: 1px solid rgba(255,255,255,0.12); }
+    .full-gallery-item { aspect-ratio: 1/1; overflow: hidden; border-radius: var(--radius-sm); cursor: pointer; border: 1px solid var(--border-subtle); }
     .full-gallery-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.35s; }
     .full-gallery-item:hover img { transform: scale(1.05); }
 
     .lux-zoom-backdrop {
-      position: fixed; inset: 0; z-index: 400; background: rgba(0,0,0,0.92); backdrop-filter: blur(14px);
+      position: fixed; inset: 0; z-index: 400; background: rgba(0,0,0,0.94); backdrop-filter: blur(14px);
       display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: all 0.3s; padding: 1.5rem;
     }
     .lux-zoom-backdrop.open { opacity: 1; visibility: visible; }
@@ -309,85 +316,85 @@
     .lux-zoom-nav.prev { left: 16px; }
     .lux-zoom-nav.next { right: 16px; }
     .lux-zoom-img-box { max-width: 90vw; max-height: 85vh; display: flex; align-items: center; justify-content: center; }
-    .lux-zoom-img-box img { max-width: 100%; max-height: 85vh; object-fit: contain; border-radius: 8px; box-shadow: 0 15px 50px rgba(0,0,0,0.8); }
+    .lux-zoom-img-box img { max-width: 100%; max-height: 85vh; object-fit: contain; border-radius: var(--radius-sm); box-shadow: 0 15px 50px rgba(0,0,0,0.8); }
 
     /* =========================================
        8. GIFT & BANK ACCOUNTS
        ========================================= */
-    .gift-tabs { display: flex; max-width: 280px; margin: 1.2rem auto; border: 1px solid var(--border); border-radius: var(--radius-pill); overflow: hidden; background: var(--bg-subtle); }
+    .gift-tabs { display: flex; max-width: 280px; margin: 1.2rem auto; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-surface); }
     .gift-tab-btn {
       flex: 1; padding: 0.65rem; background: transparent; border: none;
-      color: var(--text-muted); font-size: 0.68rem; font-weight: 700; cursor: pointer; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--text-muted); font-size: 0.72rem; font-weight: 500; cursor: pointer; letter-spacing: 0.1em; text-transform: uppercase; font-family: 'Lora', serif;
     }
-    .gift-tab-btn.active { background: var(--text-dark); color: #ffffff; }
-    .bank-card { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-md); padding: 1.2rem; margin-bottom: 0.9rem; text-align: left; box-shadow: var(--shadow-sm); }
-    .bank-label { font-weight: 700; color: var(--text-dark); font-size: 0.88rem; display: block; margin-bottom: 0.2rem; }
-    .bank-owner { color: var(--text-muted); font-size: 0.75rem; display: block; margin-bottom: 0.6rem; }
-    .bank-row { display: flex; align-items: center; justify-content: space-between; background: var(--bg-page); padding: 0.6rem 0.8rem; border: 1px solid var(--border); border-radius: 8px; }
-    .bank-number { font-family: monospace; font-size: 0.95rem; color: var(--text-dark); font-weight: 700; }
-    .btn-copy { background: var(--text-dark); color: #ffffff; border: none; border-radius: 6px; padding: 0.4rem 0.9rem; font-size: 0.68rem; font-weight: 700; cursor: pointer; letter-spacing: 0.05em; }
-    .btn-copy:hover { background: var(--accent); }
+    .gift-tab-btn.active { background: var(--bg-card); color: #ffffff; font-weight: 600; border: 1px solid var(--border-subtle); }
+    .bank-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 1.2rem; margin-bottom: 0.9rem; text-align: left; box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
+    .bank-label { font-family: 'Cormorant', serif; font-size: 1.1rem; color: #ffffff; display: block; margin-bottom: 0.2rem; text-transform: uppercase; }
+    .bank-owner { color: var(--text-muted); font-size: 0.75rem; display: block; margin-bottom: 0.6rem; font-family: 'Lora', serif; }
+    .bank-row { display: flex; align-items: center; justify-content: space-between; background: var(--bg-surface); padding: 0.6rem 0.8rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); }
+    .bank-number { font-family: monospace; font-size: 0.95rem; color: #ffffff; font-weight: 600; }
+    .btn-copy { background: var(--bg-card); color: #d9d9d9; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 0.4rem 0.9rem; font-size: 0.7rem; font-weight: 500; cursor: pointer; letter-spacing: 0.05em; font-family: 'Lora', serif; }
+    .btn-copy:hover { background: #d9d9d9; color: #262627; }
 
     /* =========================================
        9. RSVP & WISHES
        ========================================= */
-    .rsvp-form-wrap { text-align: left; margin-top: 1.5rem; background: var(--bg-card); padding: 2rem 1.6rem; border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); border: 1px solid var(--border-card); }
-    .form-row { margin-bottom: 1rem; }
-    .form-lbl { display: block; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; color: var(--accent); margin-bottom: 0.4rem; }
+    .rsvp-form-wrap { text-align: left; margin-top: 1.5rem; background: var(--bg-card); padding: 2rem 1.6rem; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); box-shadow: 0 10px 30px rgba(0,0,0,0.35); }
+    .form-row { margin-bottom: 1.1rem; }
+    .form-lbl { display: block; font-family: 'Cormorant Infant', serif; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.15em; color: var(--accent); margin-bottom: 0.4rem; }
     .form-in, .form-sel, .form-ta {
-      width: 100%; padding: 0.75rem 0.9rem; background: var(--bg-page);
-      border: 1px solid var(--border); border-radius: 8px; color: var(--text-dark); font-size: 0.85rem; outline: none; font-family: 'Plus Jakarta Sans', sans-serif; transition: border-color 0.2s;
+      width: 100%; padding: 0.75rem 0.9rem; background: var(--bg-surface);
+      border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: #ffffff; font-size: 0.85rem; outline: none; font-family: 'Lora', serif; transition: border-color 0.2s;
     }
-    .form-in:focus, .form-sel:focus, .form-ta:focus { border-color: var(--text-dark); background: #ffffff; }
+    .form-in:focus, .form-sel:focus, .form-ta:focus { border-color: var(--accent); }
     .btn-rsvp-submit {
-      width: 100%; padding: 0.95rem; background: var(--text-dark); color: #ffffff;
-      border: none; border-radius: var(--radius-pill); font-weight: 700; font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; transition: all 0.3s;
+      width: 100%; padding: 0.9rem; background: var(--bg-surface); color: #d9d9d9;
+      border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-weight: 600; font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; transition: all 0.3s; font-family: 'Lora', serif;
     }
-    .btn-rsvp-submit:hover { background: var(--accent); transform: translateY(-2px); }
+    .btn-rsvp-submit:hover { background: #d9d9d9; color: #262627; }
     .wishes-list { margin-top: 1.5rem; max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.8rem; }
-    .wish-item { padding: 0.9rem; background: var(--bg-page); border: 1px solid var(--border); border-radius: var(--radius-md); text-align: left; }
-    .wish-name { font-weight: 700; font-size: 0.82rem; color: var(--text-dark); margin-bottom: 0.2rem; }
-    .wish-msg { font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; }
+    .wish-item { padding: 0.9rem; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); text-align: left; }
+    .wish-name { font-weight: 600; font-size: 0.85rem; color: #ffffff; margin-bottom: 0.2rem; font-family: 'Cormorant', serif; text-transform: uppercase; }
+    .wish-msg { font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; font-family: 'Lora', serif; }
 
     /* =========================================
        10. FOOTER & CONTROLS
        ========================================= */
-    .site-footer { text-align: center; padding: 4.5rem 1.8rem; background: var(--bg-dark-sec); color: var(--text-light); }
-    .footer-name { font-size: 2.0rem; color: #ffffff; margin-bottom: 0.4rem; font-family: 'Bodoni Moda', serif; }
-    .footer-name em { font-style: italic; font-size: 0.75em; color: var(--accent-taupe); }
-    .footer-sub { font-size: 0.68rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--accent-taupe); font-weight: 600; margin-bottom: 1.2rem; }
-    .footer-note { font-size: 0.78rem; color: var(--text-light-muted); line-height: 1.6; max-width: 360px; margin: 0 auto; }
+    .site-footer { text-align: center; padding: 4.5rem 1.8rem; background: #080808; border-top: 1px solid var(--border-subtle); }
+    .footer-name { font-size: 2.0rem; color: #ffffff; margin-bottom: 0.4rem; text-transform: uppercase; }
+    .footer-name em { font-style: italic; font-size: 0.75em; color: var(--accent); }
+    .footer-sub { font-family: 'Cormorant Infant', serif; font-size: 0.75rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--accent); margin-bottom: 1.2rem; }
+    .footer-note { font-size: 0.78rem; color: var(--text-muted); line-height: 1.65; max-width: 360px; margin: 0 auto; font-family: 'Lora', serif; }
 
     .bottom-dock {
       position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
-      background: rgba(33, 33, 36, 0.92); backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 50px;
+      background: rgba(26, 26, 28, 0.92); backdrop-filter: blur(20px);
+      border: 1px solid var(--border-subtle); border-radius: 50px;
       padding: 6px 14px; display: flex; align-items: center; gap: 6px;
-      box-shadow: 0 10px 35px rgba(0,0,0,0.35); z-index: 80; max-width: 92vw;
+      box-shadow: 0 10px 35px rgba(0,0,0,0.6); z-index: 80; max-width: 92vw;
     }
     .dock-a {
       display: flex; flex-direction: column; align-items: center; text-decoration: none;
-      color: rgba(255, 255, 255, 0.6); font-size: 0.5rem; font-weight: 600; text-transform: uppercase; padding: 3px 8px; transition: color 0.2s;
+      color: rgba(217, 217, 217, 0.6); font-size: 0.5rem; font-weight: 600; text-transform: uppercase; padding: 3px 8px; transition: color 0.2s; font-family: 'Plus Jakarta Sans', sans-serif;
     }
     .dock-a:hover { color: #ffffff; }
     .dock-ico { width: 17px; height: 17px; stroke-width: 1.8; margin-bottom: 2px; }
 
     .music-fab {
       position: fixed; top: 18px; right: 18px; width: 40px; height: 40px;
-      border-radius: 50%; background: rgba(33, 33, 36, 0.88); border: 1px solid rgba(255, 255, 255, 0.2);
-      color: #ffffff; display: flex; align-items: center; justify-content: center;
-      z-index: 100; cursor: pointer; backdrop-filter: blur(12px); box-shadow: var(--shadow-md);
+      border-radius: 50%; background: rgba(38, 38, 39, 0.88); border: 1px solid var(--border-subtle);
+      color: #d9d9d9; display: flex; align-items: center; justify-content: center;
+      z-index: 100; cursor: pointer; backdrop-filter: blur(12px); box-shadow: 0 4px 20px rgba(0,0,0,0.5);
     }
     .music-fab.playing svg { animation: spin 5s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
     .modal-bg {
-      position: fixed; inset: 0; z-index: 300; background: rgba(0,0,0,0.85); backdrop-filter: blur(12px);
+      position: fixed; inset: 0; z-index: 300; background: rgba(0,0,0,0.88); backdrop-filter: blur(12px);
       display: flex; align-items: center; justify-content: center; padding: 1.4rem; opacity: 0; visibility: hidden; transition: all 0.3s;
     }
     .modal-bg.open { opacity: 1; visibility: visible; }
-    .modal-card { background: var(--bg-card); border: 1px solid var(--border-card); border-radius: var(--radius-lg); padding: 2.2rem 1.8rem; width: 100%; max-width: 360px; text-align: center; position: relative; box-shadow: var(--shadow-lg); }
-    .modal-close { position: absolute; top: 12px; right: 12px; background: var(--bg-subtle); border: 1px solid var(--border); width: 28px; height: 28px; border-radius: 50%; cursor: pointer; color: var(--text-muted); font-size: 0.75rem; font-weight: bold; }
+    .modal-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 2.2rem 1.8rem; width: 100%; max-width: 360px; text-align: center; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.7); }
+    .modal-close { position: absolute; top: 12px; right: 12px; background: var(--bg-surface); border: 1px solid var(--border-subtle); width: 28px; height: 28px; border-radius: 50%; cursor: pointer; color: var(--text-muted); font-size: 0.75rem; font-weight: bold; }
   </style>
 </head>
 <body style="--accent: {{colorPrimary}};">
@@ -395,26 +402,25 @@
   <!-- =========================================
        1. COVER SCREEN (POPUP PEMBUKA)
        ========================================= -->
-  <div class="cover-screen" id="coverScreen" style="background-image: linear-gradient(to bottom, rgba(20,20,24,0.3) 0%, rgba(20,20,24,0.05) 25%, rgba(20,20,24,0.65) 60%, rgba(20,20,24,0.95) 100%), url('{{landingCoverUrl}}');">
+  <div class="cover-screen" id="coverScreen" style="background-image: linear-gradient(to bottom, rgba(16,16,16,0.3) 0%, rgba(16,16,16,0.05) 25%, rgba(16,16,16,0.7) 65%, rgba(16,16,16,0.96) 100%), url('{{landingCoverUrl}}');">
     <div class="cover-top reveal active">
-      <span class="cover-date-part">{{weddingDateDay}}/{{weddingDateMonth}}</span>
-      <span class="cover-date-part">{{weddingDateYear}}</span>
+      <span class="cover-tagline-top">{{weddingTagline}}</span>
     </div>
 
     <div class="cover-center reveal-zoom active">
-      <span class="cover-tagline">{{weddingTagline}}</span>
-      <h1 class="cover-names serif">{{firstName}} <em>&amp;</em> {{secondName}}</h1>
+      <h1 class="cover-names serif">{{firstName}} &amp; {{secondName}}</h1>
+      <span class="cover-date-sub">{{weddingDate}}</span>
     </div>
 
     <div class="cover-bottom reveal active delay-1">
-      <div class="cover-kepada-box">
+      <div class="cover-guest-box">
         <span class="cover-kepada">Kepada Yth.</span>
         <h2 class="cover-guest-name serif" id="coverGuestName">Tamu Undangan</h2>
         <p class="cover-subtitle">Tanpa mengurangi rasa hormat, kami mengundang Anda untuk menghadiri acara pernikahan kami.</p>
       </div>
       <div class="cover-btn-group">
         <button class="btn-buka" onclick="openInvitation()">Buka Undangan</button>
-        <button class="btn-qr-ghost" onclick="openModal()" style="{{qrButtonDisplay}}">QR Check-In →</button>
+        <button class="btn-qr-ghost" onclick="openModal()" style="{{qrButtonDisplay}}">QR Check-In</button>
       </div>
     </div>
   </div>
@@ -426,11 +432,11 @@
 
     <!-- 1. SLIDE 1: OPENING VIEW (HERO) -->
     <section class="sec-hero-opening" id="home">
-      <p class="hero-top-date reveal">{{weddingDate}}</p>
-      <span class="hero-tagline reveal delay-1">{{weddingTagline}}</span>
+      <span class="hero-top-eyebrow reveal">{{weddingTagline}}</span>
       <h1 class="hero-title serif reveal delay-1">{{firstName}} <em>&amp;</em> {{secondName}}</h1>
+      <span class="hero-date-str reveal delay-1">{{weddingDate}}</span>
       
-      <div class="hero-photo-banner reveal-zoom delay-2">
+      <div class="hero-photo-box reveal-zoom delay-2">
         <img src="{{globalBgUrl}}" alt="{{firstName}} &amp; {{secondName}}">
       </div>
 
@@ -443,37 +449,37 @@
     <div class="sec-divider"></div>
 
     <!-- 2. SECTION: BRIDE & GROOM (DEDICATED PROFILE CARDS) -->
-    <section class="sec-couple-cards" id="couple">
-      <span class="sec-eyebrow reveal">BRIDE &amp; GROOM</span>
-      <h2 class="sec-title serif reveal delay-1">We Are Getting Married</h2>
+    <section class="sec-couple" id="couple">
+      <span class="eyebrow reveal">BRIDE &amp; GROOM</span>
+      <h2 class="sec-title serif reveal delay-1">Bride &amp; Groom</h2>
       <p class="sec-sub reveal delay-1">Dengan segala puji bagi Allah yang telah menciptakan mahluk-Nya berpasang-pasangan, Ya Allah izinkanlah kami merangkai cinta dalam ikatan pernikahan.</p>
 
       <div class="couple-cards-stack">
         <!-- Groom Card -->
-        <div class="couple-profile-card reveal-zoom">
-          <div class="couple-card-photo-box">
+        <div class="couple-card reveal-zoom">
+          <div class="couple-photo-wrap">
             <img src="{{groomPhotoUrl}}" alt="{{groomDisplayName}}">
           </div>
-          <span class="couple-card-role">THE GROOM</span>
-          <h3 class="couple-card-name serif">{{groomDisplayName}}</h3>
-          <span class="couple-card-parent-lbl">Putra Tercinta dari</span>
-          <p class="couple-card-parents">{{groomParents}}</p>
-          <a href="https://instagram.com/{{groomInstagram}}" target="_blank" rel="noreferrer" class="btn-ig-pill">
+          <span class="couple-role-lbl">THE GROOM</span>
+          <h3 class="couple-name serif">{{groomDisplayName}}</h3>
+          <span class="couple-parents-lbl">Putra Tercinta dari</span>
+          <p class="couple-parents">{{groomParents}}</p>
+          <a href="https://instagram.com/{{groomInstagram}}" target="_blank" rel="noreferrer" class="btn-ig">
             <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
             <span>@{{groomInstagram}}</span>
           </a>
         </div>
 
         <!-- Bride Card -->
-        <div class="couple-profile-card reveal-zoom delay-1">
-          <div class="couple-card-photo-box">
+        <div class="couple-card reveal-zoom delay-1">
+          <div class="couple-photo-wrap">
             <img src="{{bridePhotoUrl}}" alt="{{brideDisplayName}}">
           </div>
-          <span class="couple-card-role">THE BRIDE</span>
-          <h3 class="couple-card-name serif">{{brideDisplayName}}</h3>
-          <span class="couple-card-parent-lbl">Putri Tercinta dari</span>
-          <p class="couple-card-parents">{{brideParents}}</p>
-          <a href="https://instagram.com/{{brideInstagram}}" target="_blank" rel="noreferrer" class="btn-ig-pill">
+          <span class="couple-role-lbl">THE BRIDE</span>
+          <h3 class="couple-name serif">{{brideDisplayName}}</h3>
+          <span class="couple-parents-lbl">Putri Tercinta dari</span>
+          <p class="couple-parents">{{brideParents}}</p>
+          <a href="https://instagram.com/{{brideInstagram}}" target="_blank" rel="noreferrer" class="btn-ig">
             <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
             <span>@{{brideInstagram}}</span>
           </a>
@@ -488,18 +494,18 @@
 
     <!-- 4. SECTION: SAVE THE DATE & EVENTS -->
     <section class="sec-events sec-flow" id="event">
-      <span class="sec-eyebrow reveal">D-DAY COUNTDOWN</span>
+      <span class="eyebrow reveal">D-DAY COUNTDOWN</span>
       <h2 class="sec-title serif reveal delay-1">Save The Date</h2>
-      <p class="event-full-date-lbl reveal delay-1">{{weddingDate}}</p>
+      <span class="event-full-date reveal delay-1">{{weddingDate}}</span>
 
-      <!-- Clean Countdown Boxes -->
+      <!-- Boxed Countdown Timer -->
       <div class="countdown-boxes reveal-zoom delay-2">
-        <div class="cd-box-item"><span class="cd-box-val" id="cdDays">00</span><span class="cd-box-txt">HARI</span></div>
-        <div class="cd-box-item"><span class="cd-box-val" id="cdHours">00</span><span class="cd-box-txt">JAM</span></div>
-        <div class="cd-box-item"><span class="cd-box-val" id="cdMins">00</span><span class="cd-box-txt">MENIT</span></div>
-        <div class="cd-box-item"><span class="cd-box-val" id="cdSecs">00</span><span class="cd-box-txt">DETIK</span></div>
+        <div class="cd-box"><span class="cd-val" id="cdDays">00</span><span class="cd-txt">HARI</span></div>
+        <div class="cd-box"><span class="cd-val" id="cdHours">00</span><span class="cd-txt">JAM</span></div>
+        <div class="cd-box"><span class="cd-val" id="cdMins">00</span><span class="cd-txt">MENIT</span></div>
+        <div class="cd-box"><span class="cd-val" id="cdSecs">00</span><span class="cd-txt">DETIK</span></div>
       </div>
-      <a href="{{googleCalendarUrl}}" target="_blank" class="btn-cal-action reveal delay-2">SIMPAN TANGGAL</a>
+      <a href="{{googleCalendarUrl}}" target="_blank" class="btn-cal reveal delay-2">SIMPAN TANGGAL</a>
 
       <!-- Dynamic Events Stack -->
       <div class="events-stack reveal delay-3">
@@ -543,7 +549,7 @@
 
     <!-- 11. SECTION: RSVP & WISHES -->
     <section class="sec-flow" id="rsvp">
-      <span class="sec-eyebrow reveal">Greet &amp; Wish</span>
+      <span class="eyebrow reveal">Greet &amp; Wish</span>
       <h2 class="sec-title serif reveal delay-1">RSVP &amp; Doa Restu</h2>
 
       <div class="rsvp-form-wrap reveal delay-2">
@@ -633,9 +639,9 @@
     <div class="modal-card" onclick="event.stopPropagation()">
       <button class="modal-close" onclick="closeModal()">✕</button>
       {{qrAccessCardHtml}}
-      <div style="margin-top:1.2rem;padding:0.9rem;background:var(--bg-page);border:1px solid var(--border);border-radius:8px;text-align:center;">
-        <span style="font-size:0.6rem;letter-spacing:0.2em;color:var(--accent);text-transform:uppercase;font-weight:700;display:block;margin-bottom:0.4rem;">Voucher Souvenir</span>
-        <div style="font-family:monospace;font-weight:700;font-size:0.85rem;color:var(--text-dark);letter-spacing:0.12em;padding:0.45rem;background:var(--bg-subtle);border:1px solid var(--border);border-radius:4px;">SOUVENIR-{{invitationId}}</div>
+      <div style="margin-top:1.2rem;padding:0.9rem;background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);text-align:center;">
+        <span style="font-family:'Cormorant Infant',serif;font-size:0.65rem;letter-spacing:0.2em;color:var(--accent);text-transform:uppercase;font-weight:600;display:block;margin-bottom:0.4rem;">Voucher Souvenir</span>
+        <div style="font-family:monospace;font-weight:700;font-size:0.85rem;color:#ffffff;letter-spacing:0.12em;padding:0.45rem;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:4px;">SOUVENIR-{{invitationId}}</div>
       </div>
     </div>
   </div>
