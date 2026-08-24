@@ -2322,37 +2322,6 @@ export default function EditInvitation() {
         )}
       </section>
 
-      {/* Floating Bottom Quick Action Dock */}
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-white/95 backdrop-blur-md border border-stone-200/90 shadow-lg px-4 py-2.5 rounded-full flex items-center gap-3">
-        <div className="flex items-center gap-1.5 text-xs text-stone-600 pr-2 border-r border-stone-200">
-          <span className={`w-2 h-2 rounded-full ${saving ? "bg-amber-500 animate-ping" : isUploading ? "bg-blue-500 animate-ping" : hasAnyDirty ? "bg-amber-500 animate-pulse" : "bg-emerald-500"}`}></span>
-          <span>{saving ? "Menyimpan..." : isUploading ? "Mengunggah media..." : hasAnyDirty ? "Ada perubahan data" : lastSaved || "Semua tersimpan"}</span>
-        </div>
-        <button
-          type="button"
-          onClick={() => saveSection()}
-          disabled={saving || isUploading || !hasAnyDirty}
-          className={`px-4 py-1.5 font-bold rounded-full text-xs transition flex items-center gap-1.5 shadow-xs ${
-            !hasAnyDirty
-              ? "bg-stone-100 text-stone-400 border border-stone-200 cursor-not-allowed"
-              : "bg-amber-800 hover:bg-amber-900 text-white cursor-pointer"
-          }`}
-        >
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-          </svg>
-          <span>{saving ? "Menyimpan..." : isUploading ? "Mengunggah..." : !hasAnyDirty ? "Tersimpan" : "Simpan Semua"}</span>
-        </button>
-        <a
-          href={`/demo/preview?id=${invitationId}`}
-          target="_blank"
-          rel="noreferrer"
-          className="px-3.5 py-1.5 bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-full text-xs transition flex items-center gap-1"
-        >
-          <span>Buka Preview</span>
-        </a>
-      </div>
-
     </div>
   );
 }
