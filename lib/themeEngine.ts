@@ -210,41 +210,92 @@ export async function composeTemplateData(invitationId: string) {
     }
   } catch {}
 
-  // 1. Dynamic Events HTML (Benchmark Minimalist Stack)
-  const eventsHtml = Array.isArray(events) && events.length > 0
-    ? events.map((ev: any, idx: number) => `
+  // 1. Dynamic Events HTML with Smart Location & Maps Deduplication
+  const rawEventsList = Array.isArray(events) && events.length > 0
+    ? events
+    : [
+        {
+          badge: "SAKRAL",
+          title: "Akad Nikah",
+          time: "08.00 – 10.00 WITA",
+          location: "Grand Ballroom Phinisi Hotel Clarion",
+          address: "Jl. A.P. Pettarani, Makassar",
+          mapsUrl: "https://maps.google.com",
+        },
+        {
+          badge: "RESEPSI",
+          title: "Resepsi Pernikahan",
+          time: "11.00 – 14.00 WITA",
+          location: "Grand Ballroom Phinisi Hotel Clarion",
+          address: "Jl. A.P. Pettarani, Makassar",
+          mapsUrl: "https://maps.google.com",
+        },
+      ];
+
+  // Detect whether all events share the exact same location and mapsUrl
+  const normalizeLoc = (s: string) => (s || "").trim().toLowerCase();
+  const firstLoc = normalizeLoc(rawEventsList[0]?.location);
+  const firstAddr = normalizeLoc(rawEventsList[0]?.address);
+  const firstMap = (rawEventsList[0]?.mapsUrl || "").trim();
+
+  const isSameLocationForAll = rawEventsList.length > 1 && rawEventsList.every((ev: any) => {
+    const l = normalizeLoc(ev.location);
+    const a = normalizeLoc(ev.address);
+    const m = (ev.mapsUrl || "").trim();
+    return (l === firstLoc || (!l && firstLoc)) && (a === firstAddr || (!a && firstAddr)) && (m === firstMap || (!m && firstMap));
+  });
+
+  let eventsHtml = "";
+  if (isSameLocationForAll) {
+    // Skenario 1: Lokasi & Maps Sama (Satu Tempat, Beda Jam) -> Tampilkan 1 Blok Maps Bersama di Bawah
+    const sessionsListHtml = rawEventsList.map((ev: any, idx: number) => `
+      <div class="event-block-item unified-session">
+        <span class="ev-cat">${(ev.badge || (idx === 0 ? "SAKRAMEN / AKAD" : "RESEPSI")).toUpperCase()}</span>
+        <h3 class="ev-name serif">${(ev.title || (idx === 0 ? "Akad Nikah" : "Resepsi Pernikahan")).toUpperCase()}</h3>
+        <p class="ev-time">${ev.time || "08.00 – 10.00 WITA"}</p>
+        ${ev.notes ? `<p class="ev-notes" style="font-size:0.75rem; font-style:italic; margin-top:0.3rem; color:rgba(255,255,255,0.7);">${ev.notes}</p>` : ""}
+      </div>
+    `).join("");
+
+    const unifiedVenue = rawEventsList[0]?.location || "Grand Ballroom";
+    const unifiedAddress = rawEventsList[0]?.address || "";
+    const unifiedMapUrl = rawEventsList[0]?.mapsUrl || "";
+
+    eventsHtml = `
+      <div class="events-unified-container">
+        <div class="events-sessions-stack">
+          ${sessionsListHtml}
+        </div>
+        <div class="event-unified-venue-card">
+          <span class="venue-card-lbl">LOKASI ACARA</span>
+          <h4 class="ev-venue-unified serif">${unifiedVenue}</h4>
+          ${unifiedAddress ? `<p class="ev-addr-unified">${unifiedAddress}</p>` : ""}
+          ${unifiedMapUrl ? `
+            <a href="${unifiedMapUrl}" target="_blank" rel="noreferrer" class="btn-map-outline">
+              BUKA PETUNJUK ARAH (MAPS)
+            </a>
+          ` : ""}
+        </div>
+      </div>
+    `;
+  } else {
+    // Skenario 2: Lokasi Berbeda (Misal: Akad di Masjid, Resepsi di Hotel) -> Tampilkan Maps per Acara
+    eventsHtml = rawEventsList.map((ev: any, idx: number) => `
       <div class="event-block-item">
         <span class="ev-cat">${(ev.badge || (idx === 0 ? "SAKRAMEN / AKAD" : "RESEPSI")).toUpperCase()}</span>
         <h3 class="ev-name serif">${(ev.title || (idx === 0 ? "Akad Nikah" : "Resepsi Pernikahan")).toUpperCase()}</h3>
         <p class="ev-time">${ev.time || "08.00 – 10.00 WITA"}</p>
-        <h4 class="ev-venue">${ev.location || "Grand Ballroom"}</h4>
+        ${ev.location ? `<h4 class="ev-venue">${ev.location}</h4>` : ""}
         ${ev.address ? `<p class="ev-addr">${ev.address}</p>` : ""}
-        ${ev.notes ? `<p class="ev-notes" style="font-size:0.75rem; font-style:italic; margin-top:0.4rem; color:rgba(255,255,255,0.7);">${ev.notes}</p>` : ""}
+        ${ev.notes ? `<p class="ev-notes" style="font-size:0.75rem; font-style:italic; margin-top:0.3rem; color:rgba(255,255,255,0.7);">${ev.notes}</p>` : ""}
         ${ev.mapsUrl ? `
           <a href="${ev.mapsUrl}" target="_blank" rel="noreferrer" class="btn-map-outline">
             BUKA MAPS
           </a>
         ` : ""}
       </div>
-    `).join("")
-    : `
-      <div class="event-block-item">
-        <span class="ev-cat">SAKRAMEN / AKAD</span>
-        <h3 class="ev-name serif">AKAD NIKAH</h3>
-        <p class="ev-time">08.00 – 10.00 WITA</p>
-        <h4 class="ev-venue">Masjid Raya Makassar</h4>
-        <p class="ev-addr">Jl. Masjid Raya, Makassar</p>
-        <a href="https://maps.google.com" target="_blank" class="btn-map-outline">BUKA MAPS</a>
-      </div>
-      <div class="event-block-item">
-        <span class="ev-cat">RESEPSI</span>
-        <h3 class="ev-name serif">RESEPSI PERNIKAHAN</h3>
-        <p class="ev-time">11.00 – 14.00 WITA</p>
-        <h4 class="ev-venue">Grand Ballroom Phinisi Hotel Clarion</h4>
-        <p class="ev-addr">Jl. A.P. Pettarani, Makassar</p>
-        <a href="https://maps.google.com" target="_blank" class="btn-map-outline">BUKA MAPS</a>
-      </div>
-    `;
+    `).join("");
+  }
 
   // 2. Dynamic Love Story HTML (Benchmark Kila "JOURNEY OF LOVE" with Dual Previews & Signature)
   let storySectionHtml = "";

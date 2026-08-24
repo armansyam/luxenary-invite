@@ -793,7 +793,40 @@
       .slide-opening { padding: 4.5rem 3.5rem 4rem; }
       .slide-couple { padding: 4rem 3.5rem 5rem; }
     }
-  </style>
+  
+    /* Unified Venue Block when events share the same location */
+    .events-unified-container {
+      display: flex; flex-direction: column; gap: 2.8rem; align-items: center; width: 100%;
+    }
+    .events-sessions-stack {
+      display: flex; flex-direction: column; gap: 2.2rem; width: 100%;
+    }
+    .unified-session {
+      padding-bottom: 0.2rem;
+    }
+    .event-unified-venue-card {
+      background: rgba(255, 255, 255, 0.035);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 16px;
+      padding: 2rem 1.6rem;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+      width: 100%; max-width: 420px; margin: 0 auto;
+      text-align: center;
+    }
+    .venue-card-lbl {
+      font-size: 0.6rem; letter-spacing: 0.3em; text-transform: uppercase;
+      color: rgba(255,255,255,0.6); display: block; margin-bottom: 0.5rem; font-weight: 600;
+    }
+    .ev-venue-unified {
+      font-size: 1.45rem; color: #ffffff; margin-bottom: 0.4rem; font-weight: 400;
+    }
+    .ev-addr-unified {
+      font-size: 0.78rem; color: rgba(255,255,255,0.68); line-height: 1.55;
+      max-width: 320px; margin: 0 auto 1.4rem;
+    }
+
+</style>
 </head>
 <body>
 
