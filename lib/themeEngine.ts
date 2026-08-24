@@ -418,8 +418,9 @@ export async function composeTemplateData(invitationId: string) {
   // 5. OUR MOMENT Section (Max 10 photos on page + button to open full lightbox)
   let gallerySectionHtml = "";
   if (showGallery) {
-    const display10 = allPhotos.slice(0, 10);
-    const photos10Html = display10.map((imgUrl, i) => `
+    const displayCount = allPhotos.length <= 12 ? allPhotos.length : 12;
+    const displayPhotos = allPhotos.slice(0, displayCount);
+    const photosFeedHtml = displayPhotos.map((imgUrl, i) => `
       <div class="moment-photo-item" onclick="luxOpenZoom(${i})">
         <img src="${imgUrl}" alt="Our Moment ${i + 1}" loading="lazy" decoding="async">
       </div>
@@ -442,7 +443,7 @@ export async function composeTemplateData(invitationId: string) {
         ${videoPlayerHtml}
 
         <div class="moments-grid-10">
-          ${photos10Html}
+          ${photosFeedHtml}
         </div>
 
         <button type="button" class="btn-outline-box btn-show-gallery" onclick="luxOpenFullGallery()">
@@ -468,7 +469,7 @@ export async function composeTemplateData(invitationId: string) {
         <button class="lux-zoom-close" onclick="luxCloseZoom()">✕</button>
         <button class="lux-zoom-nav prev" onclick="luxPrevZoom(event)">‹</button>
         <div class="lux-zoom-img-box" onclick="event.stopPropagation()">
-          <img id="luxZoomActiveImg" src="${display10[0]}" alt="Zoom View">
+          <img id="luxZoomActiveImg" src="${displayPhotos[0]}" alt="Zoom View">
         </div>
         <button class="lux-zoom-nav next" onclick="luxNextZoom(event)">›</button>
       </div>
