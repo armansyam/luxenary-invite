@@ -439,6 +439,30 @@
       100% { transform: scale(1.08); opacity: 1; }
     }
 
+    /* DESKTOP FIXED LEFT HERO */
+    .left-hero {
+      display: none; position: fixed; left: 0; top: 0; width: 55%; height: 100vh;
+      z-index: 10; background-position: center; background-size: cover; background-repeat: no-repeat; overflow: hidden;
+    }
+    .left-hero::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(16,16,16,0.92) 0%, rgba(16,16,16,0.2) 45%, transparent 100%);
+    }
+    .left-hero-content { position: absolute; bottom: 4rem; left: 3.5rem; right: 3.5rem; z-index: 2; color: #fff; }
+    .left-hero-eyebrow { font-family: 'Cormorant Infant', serif; font-size: 0.75rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.6rem; display: block; font-weight: 600; }
+    .left-hero-names { font-size: clamp(2.6rem, 4.2vw, 4.2rem); line-height: 1.1; color: #ffffff; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+    .left-hero-names em { font-style: italic; font-size: 0.8em; margin: 0 0.15em; color: var(--accent); display: inline; }
+    .left-hero-date { font-family: 'Cormorant Infant', serif; font-size: 0.85rem; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(255,255,255,0.75); margin-top: 0.8rem; font-weight: 500; }
+
+    @media (min-width: 900px) {
+      .left-hero { display: block; }
+      .page-wrap { margin-left: 55%; width: 45%; max-width: none; min-width: 420px; }
+      .btn-top-menu { right: 2rem; }
+      .floating-actions-bottom { right: 2rem; }
+      .sec-flow, .sec-couple, .sec-events, .sec-journey { padding: 5.5rem 3rem; }
+      .sec-hero-slideshow { padding: 4.5rem 3rem 4rem; }
+    }
+
     .modal-bg {
       position: fixed; inset: 0; z-index: 300; background: rgba(0,0,0,0.88); backdrop-filter: blur(12px);
       display: flex; align-items: center; justify-content: center; padding: 1.4rem; opacity: 0; visibility: hidden; transition: all 0.3s;
@@ -449,6 +473,15 @@
   </style>
 </head>
 <body style="--accent: {{colorPrimary}};">
+
+  <!-- FIXED LEFT HERO (DESKTOP ONLY) -->
+  <div class="left-hero" style="background-image: url('{{sidebarPhotoUrl}}');">
+    <div class="left-hero-content">
+      <span class="left-hero-eyebrow">{{weddingTagline}}</span>
+      <h1 class="serif left-hero-names">{{firstName}} <em>&amp;</em> {{secondName}}</h1>
+      <p class="left-hero-date">{{weddingDate}}</p>
+    </div>
+  </div>
 
   <!-- =========================================
        1. COVER SCREEN (POPUP PEMBUKA)
