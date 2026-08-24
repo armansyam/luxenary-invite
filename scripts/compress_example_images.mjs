@@ -2,40 +2,46 @@ import fs from "fs";
 import path from "path";
 import sharp from "sharp";
 
-async function compressAllImages() {
-  const exampleDir = path.join(process.cwd(), "public", "example");
-  const files = fs.readdirSync(exampleDir);
+async function compressDirectory(dirName) {
+  const targetDir = path.join(process.cwd(), "public", dirName);
+  if (!fs.existsSync(targetDir)) return;
 
+  const files = fs.readdirSync(targetDir);
   const imageFiles = files.filter((f) => {
     const ext = path.extname(f).toLowerCase();
     return [".jpg", ".jpeg", ".png"].includes(ext);
   });
 
-  console.log(`Found ${imageFiles.length} images to compress in ${exampleDir}...`);
+  if (imageFiles.length === 0) {
+    console.log(`[${dirName}] No JPG/PNG files to process.`);
+    return;
+  }
+
+  console.log(`\n========================================`);
+  console.log(`📁 Processing ${dirName}: ${imageFiles.length} photos...`);
+  console.log(`========================================`);
 
   let count = 0;
-  let totalOriginalSize = 0;
-  let totalCompressedSize = 0;
+  let totalOrig = 0;
+  let totalComp = 0;
 
   for (let i = 0; i < imageFiles.length; i++) {
     const file = imageFiles[i];
-    const inputPath = path.join(exampleDir, file);
+    const inputPath = path.join(targetDir, file);
     const stat = fs.statSync(inputPath);
-    totalOriginalSize += stat.size;
+    totalOrig += stat.size;
 
-    // Clean filename: e.g. pio08901.webp or pio_08901.webp
     const baseName = path.basename(file, path.extname(file))
       .toLowerCase()
       .replace(/\s+/g, "_")
       .replace(/[^\w-]/g, "");
-    
+
     const outputFilename = `${baseName}.webp`;
-    const outputPath = path.join(exampleDir, outputFilename);
+    const outputPath = path.join(targetDir, outputFilename);
 
     try {
-      // Process with sharp: max 1600px width/height, quality 82, preserve crisp details
       await sharp(inputPath)
-        .rotate() // auto-orient based on EXIF
+        .rotate()
         .resize({
           width: 1600,
           height: 1600,
@@ -49,29 +55,32 @@ async function compressAllImages() {
         .toFile(outputPath);
 
       const newStat = fs.statSync(outputPath);
-      totalCompressedSize += newStat.size;
+      totalComp += newStat.size;
 
-      // Remove the old uncompressed jpg/png file
+      // Delete raw JPG/PNG
       fs.unlinkSync(inputPath);
 
       count++;
-      if (count % 15 === 0 || count === imageFiles.length) {
-        console.log(`[${count}/${imageFiles.length}] Processed: ${outputFilename} (${Math.round(stat.size / 1024)}KB -> ${Math.round(newStat.size / 1024)}KB)`);
+      if (count % 20 === 0 || count === imageFiles.length) {
+        console.log(`[${dirName}] [${count}/${imageFiles.length}] ${outputFilename} (${Math.round(stat.size / 1024)}KB -> ${Math.round(newStat.size / 1024)}KB)`);
       }
     } catch (err) {
-      console.error(`Error processing ${file}:`, err);
+      console.error(`[${dirName}] Error processing ${file}:`, err);
     }
   }
 
-  const origMB = (totalOriginalSize / (1024 * 1024)).toFixed(1);
-  const compMB = (totalCompressedSize / (1024 * 1024)).toFixed(1);
-  const savedPercent = (((totalOriginalSize - totalCompressedSize) / totalOriginalSize) * 100).toFixed(1);
+  const origMB = (totalOrig / (1024 * 1024)).toFixed(1);
+  const compMB = (totalComp / (1024 * 1024)).toFixed(1);
+  const saved = (((totalOrig - totalComp) / totalOrig) * 100).toFixed(1);
 
-  console.log(`\n🎉 COMPRESSION COMPLETE!`);
-  console.log(`- Total Files Processed: ${count}`);
-  console.log(`- Original Total Size: ${origMB} MB`);
-  console.log(`- Compressed WebP Total Size: ${compMB} MB`);
-  console.log(`- Total Bandwidth Saved: ${savedPercent}% reduction!`);
+  console.log(`✅ Finished ${dirName}: ${count} files (${origMB}MB -> ${compMB}MB, saved ${saved}%)`);
 }
 
-compressAllImages().catch(console.error);
+async function runAll() {
+  await compressDirectory("example2");
+  await compressDirectory("example3");
+  await compressDirectory("example4");
+  console.log(`\n🎉 ALL 3 FOLDERS COMPRESSED SUCCESSFULLY TO WEBP!`);
+}
+
+runAll().catch(console.error);
