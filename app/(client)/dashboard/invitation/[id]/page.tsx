@@ -694,23 +694,6 @@ export default function EditInvitation() {
             )}
           </div>
 
-          {/* Master Save Button */}
-          <button
-            type="button"
-            onClick={() => saveSection()}
-            disabled={saving || isUploading || !hasAnyDirty}
-            className={`px-4 py-2 font-bold rounded-xl text-xs transition flex items-center gap-1.5 shadow-xs ${
-              !hasAnyDirty
-                ? "bg-stone-100 text-stone-400 border border-stone-200 cursor-not-allowed"
-                : "bg-amber-800 hover:bg-amber-900 text-white cursor-pointer"
-            }`}
-          >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-            </svg>
-            <span>{saving ? "Menyimpan..." : isUploading ? "Mengunggah Media..." : !hasAnyDirty ? "Semua Tersimpan" : "Simpan Semua"}</span>
-          </button>
-
           <a
             href={`/demo/preview?id=${invitationId}`}
             target="_blank"
