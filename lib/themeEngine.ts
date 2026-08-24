@@ -418,10 +418,8 @@ export async function composeTemplateData(invitationId: string) {
   // 5. OUR MOMENT Section (Max 10 photos on page + button to open full lightbox)
   let gallerySectionHtml = "";
   if (showGallery) {
-    const displayCount = allPhotos.length <= 12 ? allPhotos.length : 12;
-    const displayPhotos = allPhotos.slice(0, displayCount);
-    const photosFeedHtml = displayPhotos.map((imgUrl, i) => `
-      <div class="moment-photo-item" onclick="luxOpenZoom(${i})">
+    const photosFeedHtml = allPhotos.map((imgUrl, i) => `
+      <div class="moment-photo-item" data-idx="${i}" onclick="luxOpenZoom(${i})">
         <img src="${imgUrl}" alt="Our Moment ${i + 1}" loading="lazy" decoding="async">
       </div>
     `).join("");
@@ -469,7 +467,7 @@ export async function composeTemplateData(invitationId: string) {
         <button class="lux-zoom-close" onclick="luxCloseZoom()">✕</button>
         <button class="lux-zoom-nav prev" onclick="luxPrevZoom(event)">‹</button>
         <div class="lux-zoom-img-box" onclick="event.stopPropagation()">
-          <img id="luxZoomActiveImg" src="${displayPhotos[0]}" alt="Zoom View">
+          <img id="luxZoomActiveImg" src="${allPhotos[0] || ''}" alt="Zoom View">
           <div class="lux-zoom-counter" id="luxZoomCounter">1 / ${allPhotos.length}</div>
         </div>
         <button class="lux-zoom-nav next" onclick="luxNextZoom(event)">›</button>
@@ -559,12 +557,21 @@ export async function composeTemplateData(invitationId: string) {
           if (counter) counter.textContent = (window.luxActivePhotoIdx + 1) + " / " + window.LUX_ALL_PHOTOS.length;
         };
 
-        // Smart Puzzle Grid Auto-Packing (100% flush rectangular frame, no holes)
+        // Smart Puzzle Grid Auto-Packing (100% flush rectangular frame, no holes, randomized shuffle)
         function initSmartPuzzleGallery() {
           const grid = document.querySelector('.moments-grid-10');
           if (!grid) return;
           const items = Array.from(grid.querySelectorAll('.moment-photo-item'));
           if (!items.length) return;
+
+          // Shuffle items randomly on each page refresh
+          for (let i = items.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            grid.appendChild(items[j]);
+            const temp = items[i];
+            items[i] = items[j];
+            items[j] = temp;
+          }
 
           let loadedCount = 0;
           items.forEach((item) => {
@@ -593,7 +600,7 @@ export async function composeTemplateData(invitationId: string) {
             }
           });
 
-          setTimeout(() => { packPuzzleSlots(items); }, 700);
+          setTimeout(() => { packPuzzleSlots(items); }, 600);
         }
 
         function packPuzzleSlots(items) {
