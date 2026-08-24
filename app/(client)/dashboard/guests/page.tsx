@@ -76,6 +76,7 @@ export default function GuestsPage() {
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
+  const [filterStatus, setFilterStatus] = useState<"all" | "SENT" | "PENDING">("all");
   const [copiedGuestId, setCopiedGuestId] = useState<string | null>(null);
 
   // WhatsApp Template Customization States
@@ -296,9 +297,21 @@ export default function GuestsPage() {
   };
 
   const filteredGuests = guests.filter((g) => {
-    const matchesCategory = filterCategory === "all" || (g.category || "").toLowerCase() === filterCategory.toLowerCase();
-    const matchesSearch = !search || g.name.toLowerCase().includes(search.toLowerCase()) || (g.phone && g.phone.includes(search));
-    return matchesCategory && matchesSearch;
+    const matchesStatus =
+      filterStatus === "all" ||
+      (filterStatus === "SENT" && g.waStatus === "SENT") ||
+      (filterStatus === "PENDING" && g.waStatus !== "SENT");
+
+    const matchesCategory =
+      filterCategory === "all" ||
+      (g.category || "").toLowerCase() === filterCategory.toLowerCase();
+
+    const matchesSearch =
+      !search ||
+      g.name.toLowerCase().includes(search.toLowerCase()) ||
+      (g.phone && g.phone.includes(search));
+
+    return matchesStatus && matchesCategory && matchesSearch;
   });
 
   const totalGuests = guests.length;
@@ -347,37 +360,67 @@ export default function GuestsPage() {
         </div>
       </div>
 
-      {/* Quick Summary Counter Bar */}
-      <div className="grid grid-cols-3 gap-3 bg-white p-4 rounded-2xl border border-stone-200 shadow-xs">
-        <div className="flex items-center gap-3 px-2 border-r border-stone-100">
-          <div className="w-8 h-8 rounded-xl bg-stone-100 flex items-center justify-center text-stone-600 font-bold text-xs">
+      {/* Quick Summary Counter Bar (Clickable Filter Cards) */}
+      <div className="grid grid-cols-3 gap-3">
+        <button
+          type="button"
+          onClick={() => setFilterStatus("all")}
+          className={`p-4 rounded-2xl border transition text-left cursor-pointer flex items-center gap-3 ${
+            filterStatus === "all"
+              ? "bg-white border-stone-900 shadow-md ring-2 ring-stone-900/10"
+              : "bg-white/80 border-stone-200 hover:bg-white hover:border-stone-300 shadow-2xs"
+          }`}
+        >
+          <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs ${
+            filterStatus === "all" ? "bg-stone-900 text-white" : "bg-stone-100 text-stone-600"
+          }`}>
             👥
           </div>
           <div>
-            <span className="text-[10px] text-stone-400 font-bold uppercase tracking-wider block">Total Tamu</span>
+            <span className="text-[10px] text-stone-400 font-bold uppercase tracking-wider block">Semua Tamu</span>
             <span className="text-sm sm:text-base font-bold text-stone-900">{totalGuests}</span>
           </div>
-        </div>
+        </button>
 
-        <div className="flex items-center gap-3 px-2 border-r border-stone-100">
-          <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-xs">
+        <button
+          type="button"
+          onClick={() => setFilterStatus("SENT")}
+          className={`p-4 rounded-2xl border transition text-left cursor-pointer flex items-center gap-3 ${
+            filterStatus === "SENT"
+              ? "bg-emerald-50/80 border-emerald-700 shadow-md ring-2 ring-emerald-700/20"
+              : "bg-white/80 border-stone-200 hover:bg-white hover:border-stone-300 shadow-2xs"
+          }`}
+        >
+          <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs ${
+            filterStatus === "SENT" ? "bg-emerald-700 text-white" : "bg-emerald-50 text-emerald-700"
+          }`}>
             ✓
           </div>
           <div>
             <span className="text-[10px] text-stone-400 font-bold uppercase tracking-wider block">Sudah Dikirim</span>
             <span className="text-sm sm:text-base font-bold text-emerald-700">{sentCount}</span>
           </div>
-        </div>
+        </button>
 
-        <div className="flex items-center gap-3 px-2">
-          <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold text-xs">
+        <button
+          type="button"
+          onClick={() => setFilterStatus("PENDING")}
+          className={`p-4 rounded-2xl border transition text-left cursor-pointer flex items-center gap-3 ${
+            filterStatus === "PENDING"
+              ? "bg-amber-50/80 border-amber-700 shadow-md ring-2 ring-amber-700/20"
+              : "bg-white/80 border-stone-200 hover:bg-white hover:border-stone-300 shadow-2xs"
+          }`}
+        >
+          <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs ${
+            filterStatus === "PENDING" ? "bg-amber-700 text-white" : "bg-amber-50 text-amber-700"
+          }`}>
             ⏳
           </div>
           <div>
             <span className="text-[10px] text-stone-400 font-bold uppercase tracking-wider block">Belum Dikirim</span>
             <span className="text-sm sm:text-base font-bold text-amber-700">{pendingCount}</span>
           </div>
-        </div>
+        </button>
       </div>
 
       {error && (
@@ -386,13 +429,65 @@ export default function GuestsPage() {
         </div>
       )}
 
-      {/* Filter & Search Toolbar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-stone-200 shadow-xs">
+      {/* Filter Toolbar (Status Tabs + Category Pills + Search) */}
+      <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-stone-200 shadow-xs space-y-3">
         
-        {/* Category Filters */}
-        <div className="flex bg-stone-100 p-1 rounded-xl gap-1 text-xs overflow-x-auto">
+        {/* Status Tabs Header */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-b border-stone-100 pb-3">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+            <span className="text-[11px] font-bold text-stone-400 uppercase tracking-wider mr-1 shrink-0">Status:</span>
+            {[
+              { id: "all", label: "Semua Tamu", count: totalGuests },
+              { id: "SENT", label: "✓ Sudah Terkirim", count: sentCount },
+              { id: "PENDING", label: "⏳ Belum Terkirim", count: pendingCount },
+            ].map((tab) => {
+              const isActive = filterStatus === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setFilterStatus(tab.id as any)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                    isActive
+                      ? tab.id === "SENT"
+                        ? "bg-emerald-700 text-white shadow-xs"
+                        : tab.id === "PENDING"
+                        ? "bg-amber-800 text-white shadow-xs"
+                        : "bg-stone-900 text-white shadow-xs"
+                      : "bg-stone-100 hover:bg-stone-200 text-stone-600"
+                  }`}
+                >
+                  <span>{tab.label}</span>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                    isActive ? "bg-white/25 text-white" : "bg-stone-200 text-stone-700"
+                  }`}>
+                    {tab.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Search Box */}
+          <div className="relative flex-1 sm:max-w-xs">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Cari nama atau nomor HP..."
+              className="w-full pl-9 pr-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
+            />
+            <svg className="w-4 h-4 text-stone-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+        </div>
+
+        {/* Category Pills */}
+        <div className="flex items-center gap-1.5 overflow-x-auto text-xs pt-0.5">
+          <span className="text-[11px] font-bold text-stone-400 uppercase tracking-wider mr-1 shrink-0">Kategori:</span>
           {[
-            { id: "all", label: `Semua (${totalGuests})` },
+            { id: "all", label: "Semua Kategori" },
             { id: "vip", label: "VIP" },
             { id: "keluarga", label: "Keluarga" },
             { id: "teman", label: "Teman" },
@@ -401,10 +496,10 @@ export default function GuestsPage() {
             <button
               key={tab.id}
               onClick={() => setFilterCategory(tab.id)}
-              className={`px-3 py-1.5 rounded-lg font-semibold transition whitespace-nowrap cursor-pointer ${
+              className={`px-3 py-1 rounded-lg text-xs font-semibold transition whitespace-nowrap cursor-pointer ${
                 filterCategory === tab.id
-                  ? "bg-white text-stone-900 shadow-xs font-bold"
-                  : "text-stone-500 hover:text-stone-900"
+                  ? "bg-amber-50 text-amber-900 border border-amber-300/80 font-bold"
+                  : "text-stone-500 hover:text-stone-900 hover:bg-stone-100"
               }`}
             >
               {tab.label}
@@ -412,19 +507,6 @@ export default function GuestsPage() {
           ))}
         </div>
 
-        {/* Search */}
-        <div className="relative flex-1 sm:max-w-xs">
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Cari nama tamu atau nomor HP..."
-            className="w-full pl-9 pr-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
-          />
-          <svg className="w-4 h-4 text-stone-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-        </div>
       </div>
 
       {/* HIGH-DENSITY EFFICIENT LIST TABLE */}
