@@ -2,44 +2,54 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { getApexRootDomain } from "@/lib/domainUtils";
 
 const THEMES = [
-  { id: "kila", name: "Premium Kila", series: "Premium", desc: "Split-screen hero, photo slides, glass dock", premium: true },
-  { id: "aruna", name: "Heritage Aruna", series: "Heritage", desc: "Wax seal 3D, kubah emas keraton, perkamen antik", premium: false },
-  { id: "ivanna", name: "Premium Ivanna", series: "Premium", desc: "Strict CSS scroll snap 100vh, watermark Bodoni", premium: true },
-  { id: "danila", name: "Premium Danila", series: "Premium", desc: "Video sutra bergerak, kelopak mawar, rose gold", premium: true },
-  { id: "papercut", name: "Moody Papercut", series: "Moody", desc: "Scrapbook kertas kraft, stitch dashed, polaroid", premium: false },
+  { id: "kalandra", name: "Kalandra", series: "Premium Series", desc: "Monochrome Editorial & Magazine Aesthetic", premium: true },
+  { id: "valente", name: "Valente", series: "Premium Series", desc: "Warm Terracotta & Romantic Cinema", premium: true },
+  { id: "wave", name: "Wave", series: "Modern Series", desc: "Moody & Dramatic Liquid Wave Curves", premium: true },
+  { id: "papercut", name: "Papercut", series: "Modern Series", desc: "Craft Scrapbook & Polaroid Cutout Aesthetic", premium: false },
+  { id: "prameswari", name: "Prameswari", series: "Traditional Series", desc: "Sakral, Megah & Royal Keraton", premium: false },
 ];
 
 export default function NewInvitation() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [plans, setPlans] = useState([
-    { type: "TRADITIONAL", name: "Traditional Series", price: 50000, features: ["Subdomain custom nama pasangan", "Tamu tak terbatas", "Buku Tamu & WA Direct Link", "RSVP & Ucapan Tamu", "Musik Latar", "Amplop Digital QRIS & Bank"] },
-    { type: "MODERN", name: "Modern Series", price: 100000, features: ["Subdomain custom nama pasangan", "Tamu tak terbatas", "Buku Tamu & WA Direct Link", "RSVP & Ucapan Tamu", "Musik Latar", "Amplop Digital QRIS & Bank"] },
-    { type: "PREMIUM", name: "Premium Series", price: 120000, features: ["Subdomain custom nama pasangan", "Tamu tak terbatas", "Buku Tamu & WA Direct Link", "RSVP & Ucapan Tamu", "Musik Latar", "Amplop Digital QRIS & Bank"] },
+    { type: "TRADITIONAL", name: "Traditional Series", price: 50000, features: [`Subdomain "nama-pengantin".localhost:3000`, "Tamu tak terbatas", "Buku Tamu & WA Direct Link", "RSVP & Ucapan Tamu", "Musik Latar", "Amplop Digital QRIS & Bank"] },
+    { type: "MODERN", name: "Modern Series", price: 100000, features: [`Subdomain "nama-pengantin".localhost:3000`, "Tamu tak terbatas", "Buku Tamu & WA Direct Link", "RSVP & Ucapan Tamu", "Musik Latar", "Amplop Digital QRIS & Bank"] },
+    { type: "PREMIUM", name: "Premium Series", price: 120000, features: [`Subdomain "nama-pengantin".localhost:3000`, "Tamu tak terbatas", "Buku Tamu & WA Direct Link", "RSVP & Ucapan Tamu", "Musik Latar", "Amplop Digital QRIS & Bank"] },
   ]);
 
   const [form, setForm] = useState({
     groomName: "",
     brideName: "",
     invitationName: "wedding",
-    themeId: "kila",
+    themeId: "kalandra",
     planType: "PREMIUM",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/admin/settings")
+    const domain = getApexRootDomain();
+    fetch("/api/admin/settings", { cache: "no-store" })
       .then((r) => r.json())
       .then((data) => {
         if (data.grouped?.pricing) {
           const p = data.grouped.pricing;
+          const commonFeatures = [
+            `Subdomain "nama-pengantin".${domain}`,
+            "Tamu tak terbatas",
+            "Buku Tamu & WA Direct Link",
+            "RSVP & Ucapan Tamu",
+            "Musik Latar",
+            "Amplop Digital QRIS & Bank",
+          ];
           setPlans([
-            { type: "TRADITIONAL", name: p.name_traditional || "Traditional Series", price: Number(p.price_traditional || 299000), features: ["Tema Prameswari, Aruna & Papercut", "Buku Tamu & WA Direct Link", "RSVP & Ucapan Tamu", "Musik Latar"] },
-            { type: "MODERN", name: p.name_modern || "Modern Series", price: Number(p.price_modern || 499000), features: ["Tema Kila, Ivanna, Danila", "Subdomain Custom", "Galeri Video Background", "Photobooth QR Session", "Tanpa Batas Tamu"] },
-            { type: "PREMIUM", name: p.name_premium || "Premium Series", price: Number(p.price_premium || 699000), features: ["Tema Kalandra, Valente, Aurelia, Artisan", "Full-Text Editorial & Luxury Motion", "Amplop Digital QRIS & Bank", "Bebas Ganti Seluruh Tema", "Akses VIP Priority"] },
+            { type: "TRADITIONAL", name: p.name_traditional || "Traditional Series", price: Number(p.price_traditional || 50000), features: commonFeatures },
+            { type: "MODERN", name: p.name_modern || "Modern Series", price: Number(p.price_modern || 100000), features: commonFeatures },
+            { type: "PREMIUM", name: p.name_premium || "Premium Series", price: Number(p.price_premium || 120000), features: commonFeatures },
           ]);
         }
       })

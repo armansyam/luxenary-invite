@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSession, signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { getApexRootDomain } from "@/lib/domainUtils";
 
 type Plan = {
   id: "TRADITIONAL" | "MODERN" | "PREMIUM";
@@ -18,6 +19,7 @@ type Plan = {
 export default function RegisterPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [rootDomain, setRootDomain] = useState("localhost:3000");
   const [plans, setPlans] = useState<Plan[]>([
     {
       id: "TRADITIONAL",
@@ -26,7 +28,7 @@ export default function RegisterPage() {
       desc: "Tema Traditional — Sakral, Megah & Bernuansa Tradisional",
       themes: ["Prameswari", "Dilla Lucky"],
       features: [
-        "Subdomain custom nama pasangan",
+        `Subdomain "nama-pengantin".localhost:3000`,
         "Tamu undangan tanpa batas",
         "Manajemen RSVP & ucapan doa",
         "Buku tamu & link WA 1-klik",
@@ -42,7 +44,7 @@ export default function RegisterPage() {
       desc: "Tema Modern — Minimalis, Kontemporer & Sinematik",
       themes: ["Wave", "Papercut", "Ameera"],
       features: [
-        "Subdomain custom nama pasangan",
+        `Subdomain "nama-pengantin".localhost:3000`,
         "Tamu undangan tanpa batas",
         "Manajemen RSVP & ucapan doa",
         "Buku tamu & link WA 1-klik",
@@ -58,7 +60,7 @@ export default function RegisterPage() {
       desc: "Tema Premium — Editorial, Full-Text & Luxury Visual Motion",
       themes: ["Kalandra", "Valente", "Aurelia", "Artisan"],
       features: [
-        "Subdomain custom nama pasangan",
+        `Subdomain "nama-pengantin".localhost:3000`,
         "Tamu undangan tanpa batas",
         "Manajemen RSVP & ucapan doa",
         "Buku tamu & link WA 1-klik",
@@ -72,8 +74,11 @@ export default function RegisterPage() {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Load pricing from admin settings dynamically
+  // Load dynamic domain & pricing from admin settings
   useEffect(() => {
+    const domain = getApexRootDomain();
+    setRootDomain(domain);
+
     fetch("/api/admin/settings", { cache: "no-store" })
       .then((r) => r.json())
       .then((data) => {
@@ -81,12 +86,22 @@ export default function RegisterPage() {
           const p = data.grouped.pricing;
           setPlans((prev) =>
             prev.map((plan) => {
+              const updatedFeatures = [
+                `Subdomain "nama-pengantin".${domain}`,
+                "Tamu undangan tanpa batas",
+                "Manajemen RSVP & ucapan doa",
+                "Buku tamu & link WA 1-klik",
+                "Galeri foto & musik latar",
+                "Amplop digital QRIS & transfer bank",
+              ];
+
               if (plan.id === "PREMIUM") {
                 return {
                   ...plan,
                   name: p.name_premium || plan.name,
                   price: Number(p.price_premium ?? plan.price),
                   desc: p.desc_premium || plan.desc,
+                  features: updatedFeatures,
                 };
               }
               if (plan.id === "MODERN") {
@@ -95,6 +110,7 @@ export default function RegisterPage() {
                   name: p.name_modern || plan.name,
                   price: Number(p.price_modern ?? plan.price),
                   desc: p.desc_modern || plan.desc,
+                  features: updatedFeatures,
                 };
               }
               return {
@@ -102,6 +118,7 @@ export default function RegisterPage() {
                 name: p.name_traditional || plan.name,
                 price: Number(p.price_traditional ?? plan.price),
                 desc: p.desc_traditional || plan.desc,
+                features: updatedFeatures,
               };
             })
           );
