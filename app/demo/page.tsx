@@ -176,7 +176,7 @@ export default function CatalogGridShowcase() {
               <Link
                 href={`/demo/${theme.id}`}
                 target="_blank"
-                className="relative aspect-[9/14] bg-stone-950 overflow-hidden block group cursor-pointer"
+                className="relative aspect-[9/14] bg-stone-950 overflow-hidden block cursor-pointer"
               >
                 <iframe
                   src={`/demo/${theme.id}?autoplay=1`}
@@ -184,12 +184,6 @@ export default function CatalogGridShowcase() {
                   title={theme.name}
                   loading="lazy"
                 />
-                {/* Clickable Hover Layer */}
-                <div className="absolute inset-0 bg-stone-950/0 group-hover:bg-stone-950/20 transition-colors flex items-center justify-center pointer-events-none">
-                  <span className="opacity-0 group-hover:opacity-100 transition-opacity px-4 py-2 rounded-full bg-stone-900/90 text-white text-xs font-bold shadow-lg backdrop-blur-sm">
-                    Buka Preview Penuh ↗
-                  </span>
-                </div>
               </Link>
 
               {/* Card Info & Action Button */}
