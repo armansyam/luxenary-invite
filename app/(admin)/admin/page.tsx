@@ -32,33 +32,129 @@ const Badge = ({ status }: { status: string }) => {
 };
 
 function SettingsCard({
-  title, description, children, onSave, saving,
+  title,
+  description,
+  isEditing,
+  onEdit,
+  onCancel,
+  onSave,
+  saving,
+  isDirty,
+  saveSuccess,
+  saveSuccessMessage = "Pengaturan berhasil disimpan!",
+  viewContent,
+  children,
 }: {
   title: string;
   description: string;
-  children: React.ReactNode;
-  onSave?: () => void;
+  isEditing: boolean;
+  onEdit: () => void;
+  onCancel: () => void;
+  onSave: () => void;
   saving?: boolean;
+  isDirty?: boolean;
+  saveSuccess?: boolean;
+  saveSuccessMessage?: string;
+  viewContent: React.ReactNode;
+  children: React.ReactNode;
 }) {
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-      <div className="mb-5">
-        <h3 className="font-bold text-gray-900 text-lg">{title}</h3>
-        <p className="text-sm text-gray-500 mt-0.5">{description}</p>
-      </div>
-      <div className="space-y-4">{children}</div>
-      {onSave && (
-        <div className="mt-6 pt-4 border-t border-gray-100">
-          <button
-            onClick={onSave}
-            disabled={saving}
-            className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-xl transition disabled:opacity-60 cursor-pointer flex items-center gap-2"
-          >
-            {saving ? (
-              <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>Menyimpan...</>
-            ) : "Simpan Perubahan"}
-          </button>
+    <div
+      className={`bg-white rounded-2xl shadow-sm border transition-all duration-200 p-6 ${
+        isEditing
+          ? "border-amber-400 ring-2 ring-amber-400/20"
+          : "border-gray-200 hover:border-gray-300"
+      }`}
+    >
+      {/* Card Header */}
+      <div className="flex items-start justify-between gap-4 mb-5 border-b border-gray-100 pb-4">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <h3 className="font-bold text-gray-900 text-lg">{title}</h3>
+            {isEditing ? (
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                ✏️ Mode Edit
+              </span>
+            ) : (
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-gray-100 text-gray-600">
+                🔒 Terkunci
+              </span>
+            )}
+          </div>
+          <p className="text-sm text-gray-500 mt-1">{description}</p>
         </div>
+
+        {!isEditing && (
+          <button
+            type="button"
+            onClick={onEdit}
+            className="px-4 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 shrink-0 shadow-2xs"
+          >
+            <span>✏️</span>
+            <span>Ubah</span>
+          </button>
+        )}
+      </div>
+
+      {/* Save Success Banner */}
+      {saveSuccess && !isEditing && (
+        <div className="mb-4 p-3.5 bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs rounded-xl font-semibold flex items-center gap-2">
+          <span className="text-base">✓</span>
+          <span>{saveSuccessMessage}</span>
+        </div>
+      )}
+
+      {/* Body: View Mode or Edit Mode */}
+      {isEditing ? (
+        <div className="space-y-4">
+          {children}
+
+          {/* Edit Mode Footer Buttons */}
+          <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between gap-3 flex-wrap">
+            <div className="text-xs">
+              {isDirty ? (
+                <span className="text-amber-700 font-semibold flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping inline-block"></span>
+                  Ada perubahan yang belum disimpan
+                </span>
+              ) : (
+                <span className="text-gray-400 italic">Tidak ada perubahan data</span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2.5">
+              <button
+                type="button"
+                onClick={onCancel}
+                disabled={saving}
+                className="px-4 py-2 border border-gray-300 hover:bg-gray-100 text-gray-700 rounded-xl text-xs font-semibold transition cursor-pointer disabled:opacity-50"
+              >
+                Batal
+              </button>
+
+              <button
+                type="button"
+                onClick={onSave}
+                disabled={!isDirty || saving}
+                className="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-2 shadow-xs"
+              >
+                {saving ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    <span>Menyimpan...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>💾</span>
+                    <span>Simpan Perubahan</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-3">{viewContent}</div>
       )}
     </div>
   );
@@ -88,6 +184,8 @@ export default function AdminPage() {
 
   // Settings state
   const [settingsMap, setSettingsMap] = useState<Record<string, string>>({});
+  const [initialSettingsMap, setInitialSettingsMap] = useState<Record<string, string>>({});
+  const [editSection, setEditSection] = useState<Record<string, boolean>>({});
   const [savingIpaymu, setSavingIpaymu] = useState(false);
   const [savingGoogle, setSavingGoogle] = useState(false);
   const [testingGoogle, setTestingGoogle] = useState(false);
@@ -140,6 +238,7 @@ export default function AdminPage() {
           const map: Record<string, string> = {};
           (data.settings || []).forEach((s: any) => { map[s.key] = s.value; });
           setSettingsMap(map);
+          setInitialSettingsMap(map);
         }
       })
       .catch(() => {});
@@ -154,6 +253,28 @@ export default function AdminPage() {
     setSettingsMap((prev) => ({ ...prev, [key]: value }));
   };
 
+  const toggleEditSection = (section: string) => {
+    setEditSection((prev) => ({ ...prev, [section]: !prev[section] }));
+  };
+
+  const cancelEdit = (section: string, keys: string[]) => {
+    setSettingsMap((prev) => {
+      const next = { ...prev };
+      keys.forEach((k) => {
+        next[k] = initialSettingsMap[k] !== undefined ? initialSettingsMap[k] : (prev[k] || "");
+      });
+      return next;
+    });
+    setEditSection((prev) => ({ ...prev, [section]: false }));
+    if (section === "google") {
+      setGoogleTestResult(null);
+    }
+  };
+
+  const isSectionDirty = (keys: string[]) => {
+    return keys.some((k) => (settingsMap[k] || "") !== (initialSettingsMap[k] || ""));
+  };
+
   const saveSettings = async (keys: string[], savingFn: (v: boolean) => void, group: string) => {
     savingFn(true);
     try {
@@ -164,8 +285,14 @@ export default function AdminPage() {
         body: JSON.stringify(updates),
       });
       if (res.ok) {
+        setInitialSettingsMap((prev) => {
+          const next = { ...prev };
+          keys.forEach((k) => { next[k] = settingsMap[k] || ""; });
+          return next;
+        });
+        setEditSection((prev) => ({ ...prev, [group]: false }));
         setSettingsSaved((p) => ({ ...p, [group]: true }));
-        setTimeout(() => setSettingsSaved((p) => ({ ...p, [group]: false })), 3000);
+        setTimeout(() => setSettingsSaved((p) => ({ ...p, [group]: false })), 4000);
       }
     } finally {
       savingFn(false);
@@ -744,26 +871,62 @@ export default function AdminPage() {
 
               {/* ── Settings ── */}
               {activeTab === "settings" && (
-                <div className="space-y-6 max-w-2xl">
+                <div className="space-y-6 max-w-3xl">
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900">Pengaturan Platform</h2>
-                    <p className="text-sm text-gray-500 mt-0.5">Konfigurasi payment gateway, harga paket, dan info platform</p>
+                    <p className="text-sm text-gray-500 mt-0.5">Konfigurasi payment gateway, Google OAuth API, harga paket, dan platform</p>
                   </div>
 
                   {/* iPaymu Settings */}
                   <SettingsCard
                     title="💳 iPaymu Payment Gateway"
                     description="Konfigurasi koneksi ke iPaymu sebagai payment gateway utama. Dapatkan VA dan API Key dari dashboard iPaymu."
+                    isEditing={Boolean(editSection["ipaymu"])}
+                    onEdit={() => toggleEditSection("ipaymu")}
+                    onCancel={() => cancelEdit("ipaymu", ["ipaymu_mode", "ipaymu_va", "ipaymu_api_key"])}
                     onSave={() => saveSettings(["ipaymu_mode", "ipaymu_va", "ipaymu_api_key"], setSavingIpaymu, "ipaymu")}
                     saving={savingIpaymu}
-                  >
-                    {settingsSaved["ipaymu"] && (
-                      <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm rounded-xl font-medium">
-                        ✓ Pengaturan iPaymu berhasil disimpan!
+                    isDirty={isSectionDirty(["ipaymu_mode", "ipaymu_va", "ipaymu_api_key"])}
+                    saveSuccess={settingsSaved["ipaymu"]}
+                    saveSuccessMessage="Pengaturan iPaymu berhasil disimpan!"
+                    viewContent={
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                            <span className="text-xs text-gray-500 block font-medium">Mode Gateway</span>
+                            <span className="text-sm font-bold text-gray-800 mt-0.5 inline-block">
+                              {settingsMap["ipaymu_mode"] === "production" ? "🟢 Produksi (Live)" : "🧪 Sandbox (Testing)"}
+                            </span>
+                          </div>
+                          <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                            <span className="text-xs text-gray-500 block font-medium">Virtual Account (VA)</span>
+                            <span className="text-sm font-mono font-bold text-gray-800 mt-0.5 inline-block">
+                              {settingsMap["ipaymu_va"] ? settingsMap["ipaymu_va"] : <em className="text-gray-400 font-sans font-normal">Belum diatur</em>}
+                            </span>
+                          </div>
+                          <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                            <span className="text-xs text-gray-500 block font-medium">API Key</span>
+                            <span className="text-sm font-mono font-bold text-gray-800 mt-0.5 inline-block">
+                              {settingsMap["ipaymu_api_key"] ? "••••••••••••••••" : <em className="text-gray-400 font-sans font-normal">Belum diatur</em>}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="p-3 bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-between gap-2 text-xs flex-wrap">
+                          <span className="text-gray-600 font-medium">
+                            URL Webhook: <code className="font-mono text-gray-900 font-semibold">{`${settingsMap["platform_url"] || (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000")}/api/webhook/ipaymu`}</code>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => navigator.clipboard.writeText(`${settingsMap["platform_url"] || (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000")}/api/webhook/ipaymu`)}
+                            className="px-3 py-1 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 rounded-lg font-semibold transition cursor-pointer"
+                          >
+                            Salin Webhook
+                          </button>
+                        </div>
                       </div>
-                    )}
-
-                    <FieldRow label="Mode" description="Gunakan Sandbox untuk pengujian, Produksi untuk transaksi nyata">
+                    }
+                  >
+                    <FieldRow label="Mode Gateway" description="Gunakan Sandbox untuk pengujian, Produksi untuk transaksi nyata">
                       <div className="flex gap-3">
                         {["sandbox", "production"].map((mode) => (
                           <button
@@ -771,7 +934,7 @@ export default function AdminPage() {
                             type="button"
                             onClick={() => setSetting("ipaymu_mode", mode)}
                             className={`px-4 py-2 rounded-xl text-sm font-semibold border transition cursor-pointer ${
-                              settingsMap["ipaymu_mode"] === mode
+                              (settingsMap["ipaymu_mode"] || "sandbox") === mode
                                 ? mode === "production"
                                   ? "bg-emerald-600 text-white border-emerald-600"
                                   : "bg-amber-500 text-white border-amber-500"
@@ -782,12 +945,6 @@ export default function AdminPage() {
                           </button>
                         ))}
                       </div>
-                      {settingsMap["ipaymu_mode"] === "sandbox" && (
-                        <p className="mt-1.5 text-xs text-amber-600 font-medium">⚠ Mode Sandbox aktif — transaksi tidak nyata</p>
-                      )}
-                      {settingsMap["ipaymu_mode"] === "production" && (
-                        <p className="mt-1.5 text-xs text-emerald-600 font-medium">✓ Mode Produksi aktif — transaksi nyata</p>
-                      )}
                     </FieldRow>
 
                     <FieldRow label="Virtual Account (VA)" description="Nomor VA iPaymu Anda (dari Dashboard → Akun → VA Number)">
@@ -814,13 +971,13 @@ export default function AdminPage() {
                       <div className="flex items-center gap-2">
                         <input
                           type="text"
-                          value={`${settingsMap["platform_url"] || "http://localhost:3000"}/api/webhook/ipaymu`}
+                          value={`${settingsMap["platform_url"] || (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000")}/api/webhook/ipaymu`}
                           readOnly
                           className="flex-1 px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-gray-100 text-gray-900 font-semibold select-all shadow-2xs"
                         />
                         <button
                           type="button"
-                          onClick={() => navigator.clipboard.writeText(`${settingsMap["platform_url"] || "http://localhost:3000"}/api/webhook/ipaymu`)}
+                          onClick={() => navigator.clipboard.writeText(`${settingsMap["platform_url"] || (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000")}/api/webhook/ipaymu`)}
                           className="px-3.5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300 rounded-xl text-xs font-semibold transition cursor-pointer"
                         >
                           Salin
@@ -833,15 +990,51 @@ export default function AdminPage() {
                   <SettingsCard
                     title="🔑 Google OAuth 2.0 (Login & Registrasi Klien)"
                     description="Kelola kredensial Google API Console untuk mengaktifkan fitur 1-Click Login dan Registrasi instan bagi calon pengantin via akun Google."
+                    isEditing={Boolean(editSection["google"])}
+                    onEdit={() => toggleEditSection("google")}
+                    onCancel={() => cancelEdit("google", ["google_auth_enabled", "google_client_id", "google_client_secret"])}
                     onSave={() => saveSettings(["google_auth_enabled", "google_client_id", "google_client_secret"], setSavingGoogle, "google")}
                     saving={savingGoogle}
-                  >
-                    {settingsSaved["google"] && (
-                      <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm rounded-xl font-medium">
-                        ✓ Pengaturan Google OAuth berhasil disimpan!
+                    isDirty={isSectionDirty(["google_auth_enabled", "google_client_id", "google_client_secret"])}
+                    saveSuccess={settingsSaved["google"]}
+                    saveSuccessMessage="Pengaturan Google OAuth berhasil disimpan!"
+                    viewContent={
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                            <span className="text-xs text-gray-500 block font-medium">Status Fitur Google</span>
+                            <span className="text-sm font-bold text-gray-800 mt-0.5 inline-block">
+                              {(settingsMap["google_auth_enabled"] ?? "true") === "true" ? "🟢 Aktif (Enabled)" : "⚪ Nonaktif (Disabled)"}
+                            </span>
+                          </div>
+                          <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                            <span className="text-xs text-gray-500 block font-medium">Google Client ID</span>
+                            <span className="text-xs font-mono font-bold text-gray-800 mt-0.5 block truncate" title={settingsMap["google_client_id"]}>
+                              {settingsMap["google_client_id"] ? settingsMap["google_client_id"] : <em className="text-gray-400 font-sans font-normal">Belum diatur</em>}
+                            </span>
+                          </div>
+                          <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                            <span className="text-xs text-gray-500 block font-medium">Google Client Secret</span>
+                            <span className="text-sm font-mono font-bold text-gray-800 mt-0.5 inline-block">
+                              {settingsMap["google_client_secret"] ? "••••••••••••••••" : <em className="text-gray-400 font-sans font-normal">Belum diatur</em>}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="p-3 bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-between gap-2 text-xs flex-wrap">
+                          <span className="text-gray-600 font-medium">
+                            Redirect Callback: <code className="font-mono text-gray-900 font-semibold">{`${typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"}/api/auth/callback/google`}</code>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => navigator.clipboard.writeText(`${typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"}/api/auth/callback/google`)}
+                            className="px-3 py-1 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 rounded-lg font-semibold transition cursor-pointer"
+                          >
+                            Salin Callback
+                          </button>
+                        </div>
                       </div>
-                    )}
-
+                    }
+                  >
                     <FieldRow label="Status Fitur Login Google" description="Aktifkan atau nonaktifkan tombol 'Masuk / Daftar dengan Google' di portal klien.">
                       <div className="flex gap-3">
                         {[
@@ -989,16 +1182,38 @@ export default function AdminPage() {
                   <SettingsCard
                     title="💰 Manajemen Harga Paket"
                     description="Atur harga dan deskripsi paket Traditional dan Modern yang ditampilkan di halaman registrasi."
+                    isEditing={Boolean(editSection["pricing"])}
+                    onEdit={() => toggleEditSection("pricing")}
+                    onCancel={() => cancelEdit("pricing", ["price_traditional", "price_modern", "desc_traditional", "desc_modern"])}
                     onSave={() => saveSettings(["price_traditional", "price_modern", "desc_traditional", "desc_modern"], setSavingPricing, "pricing")}
                     saving={savingPricing}
-                  >
-                    {settingsSaved["pricing"] && (
-                      <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm rounded-xl font-medium">
-                        ✓ Harga paket berhasil diperbarui!
+                    isDirty={isSectionDirty(["price_traditional", "price_modern", "desc_traditional", "desc_modern"])}
+                    saveSuccess={settingsSaved["pricing"]}
+                    saveSuccessMessage="Harga paket berhasil diperbarui!"
+                    viewContent={
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="p-4 bg-stone-50 rounded-xl border border-stone-200">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-xs font-bold text-amber-800 uppercase tracking-wider">Paket Traditional</span>
+                            <span className="text-base font-bold text-gray-900 font-mono">
+                              Rp {Number(settingsMap["price_traditional"] || 299000).toLocaleString("id-ID")}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-600">{settingsMap["desc_traditional"] || "Tema Heritage & Moody — Elegan, Bernuansa Tradisional"}</p>
+                        </div>
+                        <div className="p-4 bg-rose-50 rounded-xl border border-rose-200">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-xs font-bold text-rose-800 uppercase tracking-wider">Paket Modern</span>
+                            <span className="text-base font-bold text-gray-900 font-mono">
+                              Rp {Number(settingsMap["price_modern"] || 499000).toLocaleString("id-ID")}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-600">{settingsMap["desc_modern"] || "Tema Premium — Sinematik, Editorial, Kontemporer"}</p>
+                        </div>
                       </div>
-                    )}
-
-                    <div className="grid grid-cols-2 gap-4">
+                    }
+                  >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 space-y-3">
                         <div className="flex items-center gap-2">
                           <span className="w-2 h-2 rounded-full bg-amber-400"></span>
@@ -1051,15 +1266,31 @@ export default function AdminPage() {
                   <SettingsCard
                     title="🌐 Konfigurasi Platform"
                     description="Nama platform dan email support yang digunakan di seluruh sistem."
+                    isEditing={Boolean(editSection["platform"])}
+                    onEdit={() => toggleEditSection("platform")}
+                    onCancel={() => cancelEdit("platform", ["platform_name", "support_email"])}
                     onSave={() => saveSettings(["platform_name", "support_email"], setSavingPlatform, "platform")}
                     saving={savingPlatform}
-                  >
-                    {settingsSaved["platform"] && (
-                      <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm rounded-xl font-medium">
-                        ✓ Konfigurasi platform berhasil disimpan!
+                    isDirty={isSectionDirty(["platform_name", "support_email"])}
+                    saveSuccess={settingsSaved["platform"]}
+                    saveSuccessMessage="Konfigurasi platform berhasil disimpan!"
+                    viewContent={
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                          <span className="text-xs text-gray-500 block font-medium">Nama Platform</span>
+                          <span className="text-sm font-bold text-gray-800 mt-0.5 inline-block">{settingsMap["platform_name"] || "Luxenary Invite"}</span>
+                        </div>
+                        <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                          <span className="text-xs text-gray-500 block font-medium">Domain Host</span>
+                          <span className="text-xs font-mono font-bold text-emerald-700 mt-0.5 inline-block">{typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"}</span>
+                        </div>
+                        <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                          <span className="text-xs text-gray-500 block font-medium">Email Support</span>
+                          <span className="text-sm font-bold text-gray-800 mt-0.5 inline-block">{settingsMap["support_email"] || "support@luxenary.id"}</span>
+                        </div>
                       </div>
-                    )}
-
+                    }
+                  >
                     <FieldRow label="Nama Platform">
                       <input
                         type="text"
