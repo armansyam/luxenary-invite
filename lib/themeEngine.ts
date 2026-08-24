@@ -150,6 +150,7 @@ export async function composeTemplateData(invitationId: string) {
   const showGallery = featureSettings.showGallery !== undefined ? Boolean(featureSettings.showGallery) : true;
   const showGift = featureSettings.showGift !== undefined ? Boolean(featureSettings.showGift) : true;
   const showDresscode = featureSettings.showDresscode !== undefined ? Boolean(featureSettings.showDresscode) : true;
+  const showQrCheckin = featureSettings.showQrCheckin !== undefined ? Boolean(featureSettings.showQrCheckin) : true;
 
   // Resolve Photos
   const coverUrl = mediaMap.get("LANDING_COVER") || "https://images.unsplash.com/photo-1519741497674-611481863552?w=1200&q=85";
@@ -538,7 +539,7 @@ export async function composeTemplateData(invitationId: string) {
   }
 
   // 6. Section: QR Check-In / Kartu Akses Masuk
-  const qrAccessSectionHtml = `
+  const qrAccessSectionHtml = showQrCheckin ? `
     <section class="sec-flow" id="checkin">
       <span class="sec-eyebrow">QR CODE CHECK-IN</span>
       <h2 class="sec-main-title serif">KARTU AKSES MASUK</h2>
@@ -575,7 +576,7 @@ export async function composeTemplateData(invitationId: string) {
         </div>
       </div>
     </section>
-  `;
+  ` : "";
 
   // 7. Section: Dress Code
   const dressCodeColors = featureSettings.dressCodeColors || "";
@@ -796,7 +797,9 @@ export async function composeTemplateData(invitationId: string) {
     gallerySectionHtml,
     giftSectionHtml,
     wishesHtml,
-    qrAccessCardHtml,
+    qrAccessCardHtml: showQrCheckin ? qrAccessCardHtml : "",
+    qrButtonDisplay: showQrCheckin ? "" : "display:none;",
+    showQrCheckin,
 
     // Palette Tokens
     colorPrimary: palette.primary,

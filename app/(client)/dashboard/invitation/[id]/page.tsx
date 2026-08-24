@@ -416,7 +416,8 @@ export default function EditInvitation() {
       getFeatureSetting("turutMengundang", "") !== getSavedFeatureSetting("turutMengundang", "") ||
       getFeatureSetting("guestGuidance", "") !== getSavedFeatureSetting("guestGuidance", "") ||
       getFeatureSetting("instagramFilterUrl", "") !== getSavedFeatureSetting("instagramFilterUrl", "") ||
-      Boolean(getFeatureSetting("showDresscode", true)) !== Boolean(getSavedFeatureSetting("showDresscode", true))
+      Boolean(getFeatureSetting("showDresscode", true)) !== Boolean(getSavedFeatureSetting("showDresscode", true)) ||
+      Boolean(getFeatureSetting("showQrCheckin", true)) !== Boolean(getSavedFeatureSetting("showQrCheckin", true))
     );
 
     return {
@@ -532,6 +533,7 @@ export default function EditInvitation() {
   const showGallery = getFeatureSetting("showGallery", true);
   const showGift = getFeatureSetting("showGift", true);
   const showDresscode = getFeatureSetting("showDresscode", true);
+  const showQrCheckin = getFeatureSetting("showQrCheckin", true);
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-24 font-sans">
@@ -973,7 +975,21 @@ export default function EditInvitation() {
                       <h3 className="text-xs font-bold text-rose-950 uppercase tracking-wider">Mempelai Wanita (The Bride) — Tampil Pertama</h3>
                       <span className="text-[10px] font-bold bg-rose-100 text-rose-800 px-2.5 py-0.5 rounded-full">Pihak Mengundang</span>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="p-4 rounded-2xl border border-stone-200 bg-stone-50/50 space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-stone-900">Kartu Akses QR &amp; Check-In</label>
+                    <p className="text-[11px] text-stone-500">Tampilkan QR Code tiket dan tombol buka kartu akses untuk scanning buku tamu di lokasi acara</p>
+                  </div>
+                  <SectionHeaderToggle
+                    label=""
+                    checked={showQrCheckin}
+                    onChange={(v) => updateFeatureSetting("showQrCheckin", v)}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <Input label="Nama Lengkap Wanita *" value={invitation.brideName || ""} onChange={(v) => updateField("brideName", v)} placeholder="Nasha Selsabilla, S.Ds." />
                       <Input label="Nama Panggilan Wanita" value={invitation.brideNickname || ""} onChange={(v) => updateField("brideNickname", v)} placeholder="Nasha" />
                       <Input label="Nama Orang Tua Wanita" value={invitation.brideParents || ""} onChange={(v) => updateField("brideParents", v)} placeholder="Putri dari Bapak Tomm Posma & Ibu Endang Noffiyanti" />

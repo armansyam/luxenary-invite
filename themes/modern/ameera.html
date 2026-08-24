@@ -460,7 +460,7 @@
       <h2 class="cover-guest-name serif" id="coverGuestName">Tamu Undangan</h2>
       <p class="cover-subtitle">Dengan segala hormat, kami mengundang Anda untuk menghadiri acara pernikahan kami.</p>
       <button class="btn-buka" onclick="openInvitation()">Buka Undangan</button>
-      <button class="btn-qr-ghost" onclick="openModal()">QR Check-In →</button>
+      <button class="btn-qr-ghost" onclick="openModal()" style="{{qrButtonDisplay}}">QR Check-In →</button>
     </div>
   </div>
 
@@ -623,7 +623,7 @@
       <svg class="dock-ico" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
       <span>RSVP</span>
     </a>
-    <button onclick="openModal()" class="dock-a" style="background:none;border:none;cursor:pointer;">
+    <button onclick="openModal()" class="dock-a" style="background:none;border:none;cursor:pointer;{{qrButtonDisplay}}">
       <svg class="dock-ico" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
       <span>Ticket</span>
     </button>
