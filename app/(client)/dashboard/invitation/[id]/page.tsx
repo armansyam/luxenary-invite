@@ -485,6 +485,7 @@ export default function EditInvitation() {
     const dirty8 = (
       getFeatureSetting("videoGalleryUrl", "") !== getSavedFeatureSetting("videoGalleryUrl", "") ||
       getFeatureSetting("galleryDriveFolderUrl", "") !== getSavedFeatureSetting("galleryDriveFolderUrl", "") ||
+      getFeatureSetting("galleryPhotosList", "") !== getSavedFeatureSetting("galleryPhotosList", "") ||
       Boolean(getFeatureSetting("showGallery", true)) !== Boolean(getSavedFeatureSetting("showGallery", true))
     );
 
@@ -1816,6 +1817,20 @@ export default function EditInvitation() {
                   <div className="p-2.5 bg-blue-50/60 rounded-xl border border-blue-100 text-[11px] text-blue-900">
                     Pastikan akses link folder di Google Drive disetel ke <strong>&ldquo;Siapa saja yang memiliki link dapat melihat&rdquo;</strong>.
                   </div>
+                </div>
+
+                <div className="p-4 bg-stone-50 border border-stone-200 rounded-2xl space-y-3">
+                  <h4 className="text-xs font-bold text-stone-900">Daftar Link URL Foto Galeri (Alternatif Mandiri)</h4>
+                  <p className="text-[11px] text-stone-500 leading-relaxed">
+                    Tempelkan tautan foto langsung (1 baris per link) jika Anda memiliki hosting gambar eksternal / CDN foto pribadi.
+                  </p>
+                  <textarea
+                    rows={4}
+                    value={getFeatureSetting("galleryPhotosList", "")}
+                    onChange={(e) => updateFeatureSetting("galleryPhotosList", e.target.value)}
+                    placeholder="https://.../foto-prewed-1.jpg&#10;https://.../foto-prewed-2.jpg&#10;https://.../foto-prewed-3.jpg"
+                    className="w-full p-2.5 bg-white border border-stone-300 rounded-xl text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700/30 font-mono resize-none leading-relaxed"
+                  />
                 </div>
               </div>
             )}
