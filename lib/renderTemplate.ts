@@ -72,6 +72,17 @@ const AUTOPLAY_SHOWCASE_SCRIPT = `
   cleanCardDOM();
   document.addEventListener('DOMContentLoaded', cleanCardDOM);
 
+  // 2. Pre-decode and preload all images in the background so there is zero blank flash
+  function prefetchPageImages() {
+    const imgs = Array.from(document.querySelectorAll('img'));
+    imgs.forEach(img => {
+      if (img.loading === 'lazy') img.loading = 'eager';
+      if (img.decode) {
+        try { img.decode().catch(() => {}); } catch(e){}
+      }
+    });
+  }
+
   function findScrollTarget() {
     const rp = document.getElementById('rightPanel') || document.querySelector('.right-panel');
     if (rp && rp.scrollHeight > rp.clientHeight + 40) return rp;
@@ -100,7 +111,7 @@ const AUTOPLAY_SHOWCASE_SCRIPT = `
     if (cover) {
       cover.classList.add('opened');
       cover.style.transform = 'translateY(-100%)';
-      cover.style.transition = 'transform 0.75s cubic-bezier(0.16, 1, 0.3, 1)';
+      cover.style.transition = 'transform 0.85s cubic-bezier(0.16, 1, 0.3, 1)';
     }
     const coverBtn = document.querySelector('.btn-open-invitation') || document.querySelector('.btn-open') || document.querySelector('#btnOpen') || document.querySelector('.open-btn');
     if (coverBtn) {
@@ -113,18 +124,19 @@ const AUTOPLAY_SHOWCASE_SCRIPT = `
     if (cover) {
       cover.classList.remove('opened');
       cover.style.transform = 'translateY(0%)';
-      cover.style.transition = 'transform 0.55s ease-in-out';
+      cover.style.transition = 'transform 0.65s ease-in-out';
     }
   }
 
   function runAutoplay() {
     cleanCardDOM();
+    prefetchPageImages();
 
-    // Step 1: Display Cover for 1.2s
+    // Step 1: Relaxed Cover display (3.0s) giving plenty of time to admire cover & prefetch images
     setTimeout(() => {
       triggerOpenCover();
 
-      // Step 2: Begin lively, smooth scrolling down
+      // Step 2: Calm pause (1.4s) on the opening hero section before scrolling
       setTimeout(() => {
         const target = findScrollTarget();
         const isWin = target === window;
@@ -138,7 +150,7 @@ const AUTOPLAY_SHOWCASE_SCRIPT = `
         }
 
         let direction = 1; // 1 = down, -1 = up
-        let speed = 2.4; // natural, lively speed
+        let speed = 2.0; // calm, comfortable, elegant speed
 
         function scrollStep() {
           const max = getMax();
@@ -151,15 +163,15 @@ const AUTOPLAY_SHOWCASE_SCRIPT = `
           let next = cur + (direction * speed);
 
           if (direction === 1 && next >= max) {
-            // Reached bottom, pause for 1.4s, then rewind
+            // Reached bottom footer, pause for 2.0s to let visitor see closing
             setTimeout(() => {
               direction = -1;
-              speed = 7.0; // swift rewind to top
+              speed = 6.5; // smooth rewind to top
               requestAnimationFrame(scrollStep);
-            }, 1400);
+            }, 2000);
             return;
           } else if (direction === -1 && next <= 0) {
-            // Reached top, reset cover and loop
+            // Reached top, close cover and restart relaxed cycle
             if (isWin) window.scrollTo(0, 0);
             else target.scrollTop = 0;
 
@@ -169,10 +181,10 @@ const AUTOPLAY_SHOWCASE_SCRIPT = `
               triggerOpenCover();
               setTimeout(() => {
                 direction = 1;
-                speed = 2.4;
+                speed = 2.0;
                 requestAnimationFrame(scrollStep);
-              }, 900);
-            }, 1400);
+              }, 1400);
+            }, 3000);
             return;
           }
 
@@ -183,8 +195,8 @@ const AUTOPLAY_SHOWCASE_SCRIPT = `
         }
 
         requestAnimationFrame(scrollStep);
-      }, 900);
-    }, 1200);
+      }, 1400);
+    }, 3000);
   }
 
   if (document.readyState === 'complete' || document.readyState === 'interactive') {
