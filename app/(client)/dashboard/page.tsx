@@ -3,11 +3,13 @@
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 import { getInvitationPublicUrl } from "@/lib/domainUtils";
 
 export default function DashboardHome() {
   const { data: session } = useSession();
+  const router = useRouter();
   const [invitation, setInvitation] = useState<any>(null);
   const [stats, setStats] = useState({
     guestCount: 0,
@@ -50,11 +52,14 @@ export default function DashboardHome() {
           } catch (e) {
             console.error("Stats fetch error:", e);
           }
+          setLoading(false);
+        } else {
+          // New user has no invitations yet -> redirect to Onboarding Setup Wizard
+          router.replace("/dashboard/setup");
         }
-        setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, []);
+  }, [router]);
 
   const subdomainName = invitation?.subdomain || `${invitation?.groomSlug || "didan"}-${invitation?.brideSlug || "nasha"}`;
   const invUrl = getInvitationPublicUrl(subdomainName);

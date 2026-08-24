@@ -110,6 +110,22 @@ function CheckoutContent() {
     }
   };
 
+  const handleSimulatePayment = async () => {
+    if (!orderId) return;
+    setPaying(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/orders/${orderId}/approve`, {
+        method: "POST",
+      });
+      if (!res.ok) throw new Error("Gagal melakukan simulasi aktivasi.");
+      router.push(`/checkout/success?order=${orderId}`);
+    } catch (err: any) {
+      setError(err.message);
+      setPaying(false);
+    }
+  };
+
   if (status === "loading" || loading) {
     return (
       <div className="min-h-screen bg-stone-950 flex items-center justify-center">
@@ -137,7 +153,7 @@ function CheckoutContent() {
 
           {error && (
             <div className="mb-5 p-4 bg-red-900/40 border border-red-500/40 rounded-2xl text-red-300 text-sm">
-              ⚠ {error}
+              {error}
             </div>
           )}
 
@@ -179,21 +195,32 @@ function CheckoutContent() {
             </div>
           )}
 
-          <button
-            type="button"
-            onClick={handlePay}
-            disabled={!orderId || paying}
-            className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 text-white font-bold text-base hover:from-amber-600 hover:to-amber-700 transition shadow-lg shadow-amber-900/40 disabled:opacity-60 cursor-pointer flex items-center justify-center gap-2"
-          >
-            {paying ? (
-              <>
-                <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                Mengarahkan ke Pembayaran...
-              </>
-            ) : (
-              "Bayar Sekarang →"
-            )}
-          </button>
+          <div className="space-y-3">
+            <button
+              type="button"
+              onClick={handlePay}
+              disabled={!orderId || paying}
+              className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 text-white font-bold text-base hover:from-amber-600 hover:to-amber-700 transition shadow-lg shadow-amber-900/40 disabled:opacity-60 cursor-pointer flex items-center justify-center gap-2"
+            >
+              {paying ? (
+                <>
+                  <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                  Mengarahkan ke Pembayaran...
+                </>
+              ) : (
+                "Bayar via iPaymu (Gateway Online) →"
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSimulatePayment}
+              disabled={!orderId || paying}
+              className="w-full py-3 rounded-2xl bg-white/10 hover:bg-white/15 text-stone-200 border border-white/15 font-semibold text-xs transition cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              Simulasi Aktivasi Instan (Mode Uji Coba)
+            </button>
+          </div>
 
           <p className="text-center text-stone-500 text-xs mt-4">
             Pembayaran aman diproses oleh iPaymu. Mendukung Transfer Bank, QRIS, dan kartu kredit/debit.

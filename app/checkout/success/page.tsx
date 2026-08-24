@@ -11,8 +11,8 @@ function SuccessContent() {
   useEffect(() => {
     // Auto redirect ke dashboard setelah 6 detik
     const timer = setTimeout(() => {
-      router.replace("/dashboard");
-    }, 6000);
+      router.replace("/dashboard/setup");
+    }, 4000);
     return () => clearTimeout(timer);
   }, [router]);
 
@@ -26,9 +26,9 @@ function SuccessContent() {
           </svg>
         </div>
 
-        <h1 className="text-3xl font-bold text-white mb-3">Pembayaran Berhasil! 🎉</h1>
+        <h1 className="text-3xl font-bold text-white mb-3">Pembayaran Berhasil!</h1>
         <p className="text-stone-400 text-base mb-2">
-          Selamat! Akun undangan Anda telah aktif. Mulailah mendesain undangan impian Anda sekarang.
+          Selamat! Paket undangan Anda telah aktif. Masukkan data nama pasangan Anda untuk memulai.
         </p>
         {orderId && (
           <p className="text-stone-500 text-xs mb-8 font-mono">Order: {orderId}</p>
@@ -36,12 +36,12 @@ function SuccessContent() {
 
         <div className="space-y-3">
           <a
-            href="/dashboard"
+            href="/dashboard/setup"
             className="block w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-bold text-sm hover:from-emerald-600 hover:to-emerald-700 transition shadow-lg"
           >
-            Mulai Edit Undangan →
+            Lanjut ke Setup Nama Pasangan →
           </a>
-          <p className="text-stone-600 text-xs">Anda akan diarahkan otomatis dalam 6 detik...</p>
+          <p className="text-stone-600 text-xs">Mengarahkan otomatis ke form setup dalam 5 detik...</p>
         </div>
       </div>
     </div>

@@ -85,50 +85,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           });
         }
 
-        // Ensure Client has at least 1 invitation to edit
-        const invCount = await prisma.invitation.count({ where: { userId: user.id } });
-        if (invCount === 0) {
-          await prisma.invitation.create({
-            data: {
-              userId: user.id,
-              themeId: "kila",
-              groomSlug: "didan",
-              brideSlug: "nasha",
-              invitationSlug: "wedding",
-              groomName: "Didan Faadhilah, S.T.",
-              groomNickname: "Didan",
-              groomParents: "Putra dari Bapak Arif Yaniadi & Ibu Yuni Widiastuti",
-              groomInstagram: "didanfaadhilah",
-              brideName: "Nasha Selsabilla, S.Ds.",
-              brideNickname: "Nasha",
-              brideParents: "Putri dari Bapak Tomm Posma & Ibu Endang Noffiyanti",
-              brideInstagram: "nashasl",
-              openingQuote: "Dan di antara tanda-tanda (kebesaran)-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri...",
-              openingQuoteRef: "QS. AR-RUM : 21",
-              eventData: JSON.stringify([
-                { title: "Akad Nikah", date: "2026-10-05", time: "08:00 - 10:00 WITA", location: "Masjid Raya Makassar", address: "Jl. Masjid Raya, Makassar", mapsUrl: "https://maps.google.com", badge: "Sakral" },
-                { title: "Resepsi Pernikahan", date: "2026-10-05", time: "11:00 - 14:00 WITA", location: "Grand Ballroom Phinisi Hotel Clarion", address: "Jl. A.P. Pettarani, Makassar", mapsUrl: "https://maps.google.com", badge: "Umum" },
-              ]),
-              loveStory: JSON.stringify([
-                { title: "Awal Bertemu", date: "2020", content: "Pertama kali dipertemukan dalam sebuah kegiatan akademis di kampus." },
-                { title: "Lamaran Resmi", date: "2025", content: "Momen sakral saat kedua keluarga besar saling bersilaturahmi dan bersepakat." },
-              ]),
-              bankAccounts: JSON.stringify([
-                { bank: "BCA", number: "7330497518", name: "Didan Faadhilah" },
-              ]),
-              featureSettings: JSON.stringify({
-                colorPalette: "champagne",
-                isNoPhoto: false,
-                showStory: true,
-                showGallery: true,
-                showGift: true,
-                showDresscode: true,
-              }),
-              status: "DRAFT",
-            },
-          });
-        }
-
         return {
           id: user.id,
           name: user.name,

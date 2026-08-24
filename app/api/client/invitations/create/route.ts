@@ -22,41 +22,100 @@ export async function POST(req: Request) {
   }
 
   const body = await req.json();
-  const { groomName, brideName, invitationName, themeId, planType } = body;
+  const {
+    groomName,
+    brideName,
+    groomNickname,
+    brideNickname,
+    invitationName,
+    themeId,
+    planType,
+    weddingDate,
+    city
+  } = body;
 
-  if (!groomName || !brideName) {
-    return NextResponse.json({ error: "Missing groom or bride name" }, { status: 400 });
+  const finalGroomNick = groomNickname || groomName;
+  const finalBrideNick = brideNickname || brideName;
+
+  if (!finalGroomNick || !finalBrideNick) {
+    return NextResponse.json({ error: "Nama kedua mempelai wajib diisi." }, { status: 400 });
   }
 
-  const groomSlug = slugify(groomName);
-  const brideSlug = slugify(brideName);
-  const invitationSlug = slugify(invitationName || "reception");
+  const groomSlug = slugify(finalGroomNick);
+  const brideSlug = slugify(finalBrideNick);
+  const invitationSlug = slugify(invitationName || "wedding");
 
-  // Check uniqueness
-  const existing = await prisma.invitation.findUnique({
-    where: { groomSlug_brideSlug_invitationSlug: { groomSlug, brideSlug, invitationSlug } },
+  // Check uniqueness or append suffix if necessary
+  let finalSubdomain = `${groomSlug}-${brideSlug}`;
+  let finalGroomSlug = groomSlug;
+  let finalBrideSlug = brideSlug;
+
+  const existing = await prisma.invitation.findFirst({
+    where: {
+      OR: [
+        { subdomain: finalSubdomain },
+        {
+          groomSlug,
+          brideSlug,
+          invitationSlug,
+        },
+      ],
+    },
   });
 
   if (existing) {
-    return NextResponse.json(
-      { error: "URL undangan sudah ada. Gunakan nama undangan yang berbeda." },
-      { status: 409 }
-    );
+    const suffix = Date.now().toString(36).slice(-4);
+    finalSubdomain = `${groomSlug}-${brideSlug}-${suffix}`;
   }
+
+  const initialEvents = [
+    {
+      title: "Akad Nikah",
+      date: weddingDate || "2026-10-05",
+      time: "08:00 - 10:00 WITA",
+      location: city ? `Masjid Agung ${city}` : "Masjid Raya Makassar",
+      address: city ? `Jl. Protokol No. 1, ${city}` : "Jl. Masjid Raya No. 1, Makassar",
+      mapsUrl: "https://maps.google.com",
+      badge: "Sakral"
+    },
+    {
+      title: "Resepsi Pernikahan",
+      date: weddingDate || "2026-10-05",
+      time: "11:00 - 14:00 WITA",
+      location: city ? `Grand Ballroom ${city}` : "Grand Ballroom Phinisi Hotel Clarion",
+      address: city ? `Jl. Pettarani No. 1, ${city}` : "Jl. A.P. Pettarani No. 1, Makassar",
+      mapsUrl: "https://maps.google.com",
+      badge: "Umum"
+    }
+  ];
 
   const invitation = await prisma.invitation.create({
     data: {
       userId: user.id,
-      groomName,
-      brideName,
-      groomSlug,
-      brideSlug,
+      groomName: groomName || finalGroomNick,
+      brideName: brideName || finalBrideNick,
+      groomNickname: finalGroomNick,
+      brideNickname: finalBrideNick,
+      groomSlug: finalGroomSlug,
+      brideSlug: finalBrideSlug,
       invitationSlug,
-      themeId: themeId || "kila",
+      subdomain: finalSubdomain,
+      themeId: themeId || "kalandra",
+      openingQuote: "Dan di antara tanda-tanda (kebesaran)-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri...",
+      openingQuoteRef: "QS. AR-RUM : 21",
+      eventData: JSON.stringify(initialEvents),
+      featureSettings: JSON.stringify({
+        weddingTagline: "THE WEDDING OF",
+        colorPalette: "champagne",
+        showStory: true,
+        showGallery: true,
+        showGift: true,
+        showDresscode: true,
+        showMusic: true,
+      }),
       status: "DRAFT",
-      subdomain: planType === "MODERN" || planType === "PREMIUM" ? `${groomSlug}-${brideSlug}` : null,
     },
   });
 
-  return NextResponse.json({ invitationId: invitation.id });
+  return NextResponse.json({ success: true, invitationId: invitation.id, subdomain: finalSubdomain });
 }
