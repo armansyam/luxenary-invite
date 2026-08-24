@@ -89,6 +89,8 @@ export default function AdminPage() {
   // Settings state
   const [settingsMap, setSettingsMap] = useState<Record<string, string>>({});
   const [savingIpaymu, setSavingIpaymu] = useState(false);
+  const [savingGoogle, setSavingGoogle] = useState(false);
+  const [showGoogleSecret, setShowGoogleSecret] = useState(false);
   const [savingPricing, setSavingPricing] = useState(false);
   const [savingPlatform, setSavingPlatform] = useState(false);
   const [settingsSaved, setSettingsSaved] = useState<Record<string, boolean>>({});
@@ -769,6 +771,119 @@ export default function AdminPage() {
                         </button>
                       </div>
                     </FieldRow>
+                  </SettingsCard>
+
+                  {/* Google OAuth 2.0 Settings */}
+                  <SettingsCard
+                    title="🔑 Google OAuth 2.0 (Login & Registrasi Klien)"
+                    description="Kelola kredensial Google API Console untuk mengaktifkan fitur 1-Click Login dan Registrasi instan bagi calon pengantin via akun Google."
+                    onSave={() => saveSettings(["google_auth_enabled", "google_client_id", "google_client_secret"], setSavingGoogle, "google")}
+                    saving={savingGoogle}
+                  >
+                    {settingsSaved["google"] && (
+                      <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm rounded-xl font-medium">
+                        ✓ Pengaturan Google OAuth berhasil disimpan!
+                      </div>
+                    )}
+
+                    <FieldRow label="Status Fitur Login Google" description="Aktifkan atau nonaktifkan tombol 'Masuk / Daftar dengan Google' di portal klien.">
+                      <div className="flex gap-3">
+                        {[
+                          { id: "true", label: "🟢 Aktif (Enabled)" },
+                          { id: "false", label: "⚪ Nonaktif (Disabled)" },
+                        ].map((opt) => (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => setSetting("google_auth_enabled", opt.id)}
+                            className={`px-4 py-2 rounded-xl text-sm font-semibold border transition cursor-pointer ${
+                              (settingsMap["google_auth_enabled"] || "true") === opt.id
+                                ? opt.id === "true"
+                                  ? "bg-emerald-600 text-white border-emerald-600"
+                                  : "bg-stone-700 text-white border-stone-700"
+                                : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </FieldRow>
+
+                    <FieldRow label="Google Client ID" description="Client ID dari Google Cloud Console (contoh: 123456789-abc.apps.googleusercontent.com)">
+                      <input
+                        type="text"
+                        value={settingsMap["google_client_id"] || ""}
+                        onChange={(e) => setSetting("google_client_id", e.target.value)}
+                        placeholder="Contoh: 123456789012-xxxx.apps.googleusercontent.com"
+                        className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm font-mono bg-gray-50 focus:outline-none focus:border-amber-400 focus:bg-white transition"
+                      />
+                    </FieldRow>
+
+                    <FieldRow label="Google Client Secret" description="Client Secret rahasia yang digenerate oleh Google Cloud Console">
+                      <div className="relative">
+                        <input
+                          type={showGoogleSecret ? "text" : "password"}
+                          value={settingsMap["google_client_secret"] || ""}
+                          onChange={(e) => setSetting("google_client_secret", e.target.value)}
+                          placeholder="••••••••••••••••••••••••••••••••"
+                          className="w-full pl-3 pr-24 py-2.5 border border-gray-200 rounded-xl text-sm font-mono bg-gray-50 focus:outline-none focus:border-amber-400 focus:bg-white transition"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowGoogleSecret(!showGoogleSecret)}
+                          className="absolute right-2.5 top-2.5 text-xs text-stone-500 hover:text-stone-800 font-semibold px-2 py-0.5 bg-stone-200/80 rounded-md cursor-pointer"
+                        >
+                          {showGoogleSecret ? "Sembunyikan" : "Tampilkan"}
+                        </button>
+                      </div>
+                    </FieldRow>
+
+                    <FieldRow label="Authorized JavaScript Origins" description="Tambahkan URL ini ke 'Authorized JavaScript origins' di Google Cloud Console">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"}
+                          readOnly
+                          className="flex-1 px-3 py-2.5 border border-gray-200 rounded-xl text-sm font-mono bg-gray-100 text-gray-600"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => navigator.clipboard.writeText(typeof window !== "undefined" ? window.location.origin : "http://localhost:3000")}
+                          className="px-3 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-medium transition cursor-pointer"
+                        >
+                          Salin
+                        </button>
+                      </div>
+                    </FieldRow>
+
+                    <FieldRow label="Authorized Redirect URI (Callback URL)" description="Tambahkan URL ini ke 'Authorized redirect URIs' di Google Cloud Console">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={`${typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"}/api/auth/callback/google`}
+                          readOnly
+                          className="flex-1 px-3 py-2.5 border border-gray-200 rounded-xl text-sm font-mono bg-gray-100 text-gray-600"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => navigator.clipboard.writeText(`${typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"}/api/auth/callback/google`)}
+                          className="px-3 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-medium transition cursor-pointer"
+                        >
+                          Salin
+                        </button>
+                      </div>
+                    </FieldRow>
+
+                    <div className="p-3.5 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900 space-y-1.5 mt-2">
+                      <span className="font-bold block">📘 Panduan Singkat Google Cloud Console:</span>
+                      <ol className="list-decimal list-inside space-y-1 text-[11px] text-amber-800">
+                        <li>Buka <strong>console.cloud.google.com</strong> &rarr; Buat Project &rarr; Buka <strong>APIs &amp; Services &rarr; Credentials</strong>.</li>
+                        <li>Klik <strong>Create Credentials &rarr; OAuth client ID</strong>, pilih tipe <strong>Web application</strong>.</li>
+                        <li>Salin dan tempelkan <em>Authorized JavaScript Origins</em> dan <em>Authorized Redirect URI</em> di atas.</li>
+                        <li>Salin <strong>Client ID</strong> &amp; <strong>Client Secret</strong> yang didapat ke form ini, lalu klik Simpan.</li>
+                      </ol>
+                    </div>
                   </SettingsCard>
 
                   {/* Pricing Settings */}
