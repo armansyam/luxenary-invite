@@ -7,7 +7,7 @@
 // - /demo/[theme]/bride.webp
 // - /demo/[theme]/gallery_01.webp ... gallery_08.webp
 
-import { COLOR_PALETTES } from "@/lib/themeEngine";
+import { COLOR_PALETTES } from "@/lib/colorPalettes";
 
 export interface DemoThemeData {
   themeId: string;
