@@ -4,6 +4,8 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 
+import { getInvitationPublicUrl } from "@/lib/domainUtils";
+
 export default function DashboardHome() {
   const { data: session } = useSession();
   const [invitation, setInvitation] = useState<any>(null);
@@ -55,8 +57,7 @@ export default function DashboardHome() {
   }, []);
 
   const subdomainName = invitation?.subdomain || `${invitation?.groomSlug || "didan"}-${invitation?.brideSlug || "nasha"}`;
-  const invUrl = `https://${subdomainName}.luxenary.id`;
-  const localPreviewUrl = `/${invitation?.groomSlug || "didan"}-${invitation?.brideSlug || "nasha"}/${invitation?.invitationSlug || "wedding"}`;
+  const invUrl = getInvitationPublicUrl(subdomainName);
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(invUrl).then(() => {

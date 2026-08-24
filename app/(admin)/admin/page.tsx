@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 
+import { getApexRootDomain } from "@/lib/domainUtils";
+
 const tabs = [
   { id: "overview", label: "📊 Ringkasan", icon: "📊" },
   { id: "orders", label: "💳 Transaksi", icon: "💳" },
@@ -548,7 +550,7 @@ export default function AdminPage() {
                         {invitations.map((inv) => (
                           <tr key={inv.id} className="hover:bg-gray-50 transition">
                             <td className="px-5 py-3 text-sm font-semibold text-gray-900">{inv.groomName} & {inv.brideName}</td>
-                            <td className="px-5 py-3 text-xs font-mono text-amber-700">{inv.subdomain ? `${inv.subdomain}.luxenary.id` : `/${inv.groomSlug}-${inv.brideSlug}/${inv.invitationSlug}`}</td>
+                            <td className="px-5 py-3 text-xs font-mono text-amber-700">{inv.subdomain ? `${inv.subdomain}.${getApexRootDomain()}` : `/${inv.groomSlug}-${inv.brideSlug}/${inv.invitationSlug}`}</td>
                             <td className="px-5 py-3">
                               <div className="flex items-center gap-2">
                                 <span className="font-bold text-gray-900 text-sm capitalize">{inv.themeId}</span>

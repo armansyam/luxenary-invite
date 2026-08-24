@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { getInvitationPublicUrl } from "@/lib/domainUtils";
 
 interface Guest {
   id: string;
@@ -112,13 +113,11 @@ export default function GuestsPage() {
   const generateWaLink = (guest: Guest) => {
     const groom = invitationData?.groomName || "Didan";
     const bride = invitationData?.brideName || "Nasha";
-    const baseUrl = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
-    const invUrl = invitationData?.subdomain
-      ? `https://${invitationData.subdomain}.luxenary.id`
-      : `${baseUrl}/${invitationData?.groomSlug || "didan"}-${invitationData?.brideSlug || "nasha"}/${invitationData?.invitationSlug || "wedding"}`;
+    const sub = invitationData?.subdomain || `${invitationData?.groomSlug || "didan"}-${invitationData?.brideSlug || "nasha"}`;
+    const fullGuestUrl = getInvitationPublicUrl(sub, guest.name);
 
     const text = encodeURIComponent(
-      `Kepada Yth.\nBapak/Ibu/Saudara/i ${guest.name}\n\nTanpa mengurangi rasa hormat, perkenankan kami mengundang Bapak/Ibu/Saudara/i untuk menghadiri acara pernikahan kami:\n\n${invUrl}?to=${encodeURIComponent(guest.name)}\n\nMerupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu.\n\nTerima kasih.\n\nSalam hangat,\n${groom} & ${bride}`
+      `Kepada Yth.\nBapak/Ibu/Saudara/i ${guest.name}\n\nTanpa mengurangi rasa hormat, perkenankan kami mengundang Bapak/Ibu/Saudara/i untuk menghadiri acara pernikahan kami:\n\n${fullGuestUrl}\n\nMerupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu.\n\nTerima kasih.\n\nSalam hangat,\n${groom} & ${bride}`
     );
 
     const targetPhone = (guest.phone || guest.phoneNumber || "").replace(/\D/g, "");

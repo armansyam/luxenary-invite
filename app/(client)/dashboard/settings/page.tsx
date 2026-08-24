@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { getInvitationPublicUrl, getApexRootDomain } from "@/lib/domainUtils";
 
 export default function SettingsPage() {
   const [invitation, setInvitation] = useState<any>(null);
@@ -218,12 +219,12 @@ export default function SettingsPage() {
             <div>
               <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block">Tautan Aktif:</span>
               <a
-                href={`https://${formData.subdomain || "didan-nasha"}.luxenary.id`}
+                href={getInvitationPublicUrl(formData.subdomain || "didan-nasha")}
                 target="_blank"
                 rel="noreferrer"
                 className="text-xs sm:text-sm font-mono font-bold text-amber-900 hover:underline break-all"
               >
-                https://{formData.subdomain || "didan-nasha"}.luxenary.id
+                {getInvitationPublicUrl(formData.subdomain || "didan-nasha")}
               </a>
             </div>
             <button
@@ -273,7 +274,7 @@ export default function SettingsPage() {
                   placeholder="nasha-didan"
                   className="flex-1 py-3 px-1 text-xs text-stone-900 font-mono font-bold bg-transparent focus:outline-none"
                 />
-                <span className="pr-3.5 pl-1 text-xs text-stone-400 font-mono select-none">.luxenary.id</span>
+                <span className="pr-3.5 pl-1 text-xs text-stone-400 font-mono select-none">.{getApexRootDomain()}</span>
               </div>
 
               {subdomainStatus.message && (
