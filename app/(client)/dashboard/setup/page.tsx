@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { getApexRootDomain, getInvitationPublicUrl } from "@/lib/domainUtils";
 
 const THEMES = [
   {
@@ -82,7 +83,7 @@ const THEMES = [
 function SetupWizardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
 
   const planParam = searchParams.get("plan") || "PREMIUM";
 
@@ -99,17 +100,97 @@ function SetupWizardContent() {
   const [city, setCity] = useState("Makassar");
   const [themeId, setThemeId] = useState("kalandra");
 
-  // Slugify for preview
-  const groomSlug = groomNickname.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-") || "pria";
-  const brideSlug = brideNickname.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-") || "wanita";
-  const subdomainPreview = `${groomSlug}-${brideSlug}.luxenary.id`;
+  // Custom Editable Subdomain & Dynamic Host Resolver
+  const [subdomain, setSubdomain] = useState("");
+  const [isSubdomainCustomized, setIsSubdomainCustomized] = useState(false);
+  const [rootDomain, setRootDomain] = useState("");
+  const [subdomainStatus, setSubdomainStatus] = useState<{
+    checking: boolean;
+    available: boolean | null;
+    message: string;
+  }>({
+    checking: false,
+    available: null,
+    message: "",
+  });
 
-  // Filter themes based on plan or show all
-  const availableThemes = THEMES;
+  // Resolve dynamic host on mount
+  useEffect(() => {
+    setRootDomain(getApexRootDomain());
+  }, []);
+
+  // Update subdomain based on nicknames if not manually customized
+  useEffect(() => {
+    if (!isSubdomainCustomized) {
+      const gSlug = groomNickname.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+      const bSlug = brideNickname.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+      if (gSlug && bSlug) {
+        setSubdomain(`${gSlug}-${bSlug}`);
+      } else if (gSlug) {
+        setSubdomain(gSlug);
+      } else if (bSlug) {
+        setSubdomain(bSlug);
+      }
+    }
+  }, [groomNickname, brideNickname, isSubdomainCustomized]);
+
+  // Check Subdomain Availability (Debounced)
+  const checkSubdomainAvailability = useCallback(async (slugToCheck: string) => {
+    const clean = slugToCheck.toLowerCase().trim().replace(/[^a-z0-9-]/g, "");
+    if (!clean || clean.length < 3) {
+      setSubdomainStatus({
+        checking: false,
+        available: null,
+        message: "Minimal 3 karakter",
+      });
+      return;
+    }
+
+    setSubdomainStatus((prev) => ({ ...prev, checking: true }));
+
+    try {
+      const res = await fetch(`/api/client/subdomain/check?subdomain=${encodeURIComponent(clean)}`);
+      const data = await res.json();
+      setSubdomainStatus({
+        checking: false,
+        available: data.available,
+        message: data.message || (data.available ? "Tautan tersedia dan dapat digunakan" : "Tautan sudah digunakan"),
+      });
+    } catch {
+      setSubdomainStatus({
+        checking: false,
+        available: null,
+        message: "Gagal memeriksa ketersediaan",
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!subdomain) {
+      setSubdomainStatus({ checking: false, available: null, message: "" });
+      return;
+    }
+    const timer = setTimeout(() => {
+      checkSubdomainAvailability(subdomain);
+    }, 450);
+    return () => clearTimeout(timer);
+  }, [subdomain, checkSubdomainAvailability]);
+
+  const handleSubdomainChange = (val: string) => {
+    setIsSubdomainCustomized(true);
+    const cleaned = val.toLowerCase().replace(/[^a-z0-9-]/g, "");
+    setSubdomain(cleaned);
+  };
 
   const handleCompleteSetup = async () => {
     if (!groomNickname.trim() || !brideNickname.trim()) {
       setError("Nama panggilan kedua mempelai wajib diisi.");
+      setStep(1);
+      return;
+    }
+
+    if (subdomainStatus.available === false) {
+      setError("Tautan undangan yang Anda pilih tidak tersedia. Silakan ubah tautan undangan Anda.");
       setStep(1);
       return;
     }
@@ -126,6 +207,7 @@ function SetupWizardContent() {
           brideNickname: brideNickname.trim(),
           groomName: groomName.trim() || groomNickname.trim(),
           brideName: brideName.trim() || brideNickname.trim(),
+          subdomain: subdomain.trim(),
           weddingDate,
           city: city.trim(),
           themeId,
@@ -254,17 +336,49 @@ function SetupWizardContent() {
                 </div>
               </div>
 
-              {/* Subdomain Preview Pill */}
-              <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 flex items-center justify-between gap-3 flex-wrap">
-                <div>
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-amber-900 block">Tautan Undangan Anda:</span>
-                  <span className="text-xs font-mono font-bold text-amber-800 mt-0.5 inline-block">
-                    https://{subdomainPreview}
+              {/* Editable Dynamic Subdomain / URL Card with Real-time Check */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-amber-50/50 border border-amber-200/80 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-amber-950 uppercase tracking-wider block">
+                    Tautan Link Undangan (Dapat Diedit):
+                  </label>
+                  {subdomainStatus.checking ? (
+                    <span className="text-[11px] text-stone-500 font-medium flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 border-2 border-stone-400 border-t-transparent rounded-full animate-spin"></span>
+                      Memeriksa ketersediaan...
+                    </span>
+                  ) : subdomainStatus.available === true ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                      Tersedia
+                    </span>
+                  ) : subdomainStatus.available === false ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2.5 py-0.5 rounded-full">
+                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                      Tidak Tersedia
+                    </span>
+                  ) : null}
+                </div>
+
+                <div className="flex items-center bg-white border border-amber-900/20 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-amber-700/30">
+                  <span className="px-3.5 py-2.5 text-xs text-stone-400 font-mono select-none bg-stone-50 border-r border-stone-200">
+                    http://
+                  </span>
+                  <input
+                    type="text"
+                    value={subdomain}
+                    onChange={(e) => handleSubdomainChange(e.target.value)}
+                    placeholder="yus-ulfa"
+                    className="flex-1 px-3 py-2.5 text-xs font-mono font-bold text-amber-950 bg-white focus:outline-none"
+                  />
+                  <span className="px-3.5 py-2.5 text-xs text-stone-500 font-mono select-none bg-stone-50 border-l border-stone-200">
+                    .{rootDomain || "localhost:3000"}
                   </span>
                 </div>
-                <span className="px-2.5 py-1 bg-amber-100/80 text-amber-900 rounded-full text-[10px] font-bold">
-                  Auto-Generated
-                </span>
+
+                <p className="text-[11px] text-stone-500">
+                  {subdomainStatus.message || "Tautan dibuat otomatis mengikuti nama panggilan, dan dapat Anda sesuaikan bebas."}
+                </p>
               </div>
             </div>
 
@@ -274,6 +388,10 @@ function SetupWizardContent() {
                 onClick={() => {
                   if (!groomNickname.trim() || !brideNickname.trim()) {
                     setError("Harap isi nama panggilan kedua mempelai.");
+                    return;
+                  }
+                  if (subdomainStatus.available === false) {
+                    setError("Tautan yang dipilih sudah digunakan. Harap ubah tautan undangan.");
                     return;
                   }
                   setError(null);
@@ -367,7 +485,7 @@ function SetupWizardContent() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {availableThemes.map((theme) => {
+              {THEMES.map((theme) => {
                 const isSelected = themeId === theme.id;
                 return (
                   <div
@@ -412,6 +530,9 @@ function SetupWizardContent() {
                   <h4 className="text-lg font-serif font-bold text-white">
                     {groomNickname} &amp; {brideNickname}
                   </h4>
+                  <p className="text-xs font-mono text-stone-300 mt-0.5">
+                    {getInvitationPublicUrl(subdomain)}
+                  </p>
                 </div>
                 <span className="px-3 py-1 bg-white/10 rounded-full text-xs font-mono text-stone-300">
                   Tema: {THEMES.find((t) => t.id === themeId)?.name || themeId}

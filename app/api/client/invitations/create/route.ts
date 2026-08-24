@@ -31,7 +31,8 @@ export async function POST(req: Request) {
     themeId,
     planType,
     weddingDate,
-    city
+    city,
+    subdomain: requestedSubdomain,
   } = body;
 
   const finalGroomNick = groomNickname || groomName;
@@ -46,7 +47,7 @@ export async function POST(req: Request) {
   const invitationSlug = slugify(invitationName || "wedding");
 
   // Check uniqueness or append suffix if necessary
-  let finalSubdomain = `${groomSlug}-${brideSlug}`;
+  let finalSubdomain = requestedSubdomain ? slugify(requestedSubdomain) : `${groomSlug}-${brideSlug}`;
   let finalGroomSlug = groomSlug;
   let finalBrideSlug = brideSlug;
 
