@@ -107,7 +107,7 @@
     .left-hero {
       display: none; /* hidden on mobile */
       position: fixed; left: 0; top: 0; width: 55%; height: 100vh; z-index: 10;
-      background: url('{{sidebarPhotoUrl}}') center/cover no-repeat;
+      background: url('{{landingCoverUrl}}') center/cover no-repeat;
       overflow: hidden;
     }
     .left-hero::after {
@@ -134,6 +134,7 @@
       min-height: 100vh;
       background: var(--dark);
       padding-bottom: 90px;
+      overflow-x: hidden;
     }
 
     /* =============================================
@@ -334,14 +335,24 @@
        ============================================= */
     @media (min-width: 860px) {
       .left-hero { display: block; }
-      .right-panel { margin-left: 55%; }
+      .right-panel {
+        margin-left: 55%;
+        width: 45%;          /* CRITICAL: constrain so content centers within visible 45% */
+        min-width: 380px;
+      }
 
-      /* On desktop: cover replaces to right side only after opening */
+      /* Cover also confined to right 45% on desktop */
       .cover-screen { left: 55%; width: 45%; }
-      /* on desktop the cover is centered in the right half */
 
       .bottom-dock { left: calc(55% + 22.5%); }
-      .music-fab { right: calc(45% - 15px + 18px); }
+      .music-fab { right: 1.2rem; }
+
+      /* Wider section content on desktop right panel */
+      .sec { max-width: 100%; padding: 4rem 3rem; }
+      .quote-wrap p { font-size: 1.2rem; }
+      .countdown-wrap { gap: 0.8rem; }
+      .cd-box { padding: 1.1rem 0.5rem; min-width: 72px; }
+      .cd-num { font-size: 2rem; }
     }
   </style>
 </head>
