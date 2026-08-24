@@ -3,447 +3,436 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>{{groomName}} &amp; {{brideName}} — Premium Ivanna Series</title>
+  <title>{{groomName}} & {{brideName}} — The Wedding</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,600;0,6..96,700;1,6..96,400;1,6..96,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --ivanna-gold: {{colorAccent}};
-      --ivanna-gold-dark: {{colorPrimary}};
-      --ivanna-bg: {{colorBgDark}};
-      --card-glass: rgba(22, 20, 19, 0.88);
-      --card-border: rgba(197, 160, 89, 0.3);
+      --accent: {{colorPrimary}};
+      --accent-dim: {{colorSecondary}};
+      --accent-pale: {{colorBgLight}};
+      --ivanna-bg: #0f0e0d;
+      --ivanna-card: #181615;
       --text-main: #f5f2eb;
-      --text-muted: #a69e94;
+      --text-muted: rgba(245, 242, 235, 0.65);
+      --border: rgba(245, 242, 235, 0.15);
+      --border-accent: rgba(197, 160, 89, 0.35);
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    
     html, body {
       font-family: 'Plus Jakarta Sans', sans-serif;
       background: var(--ivanna-bg);
       color: var(--text-main);
-      min-height: 100dvh;
       overflow-x: hidden;
       scroll-behavior: smooth;
+      width: 100%;
     }
-    .serif-title { font-family: 'Bodoni Moda', serif; }
+    h1, h2, h3, .serif { font-family: 'Bodoni Moda', serif; font-weight: 400; }
 
-    /* LAYER 1: BACKDROP & MONOGRAM */
-    .global-snap-backdrop {
-      position: fixed; inset: 0; z-index: 1;
-      background: linear-gradient(180deg, rgba(15, 14, 13, 0.5) 0%, rgba(15, 14, 13, 0.9) 100%),
+    /* COVER SCREEN */
+    .cover-screen {
+      position: fixed; inset: 0; z-index: 200;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: space-between;
+      padding: 3.5rem 2rem 4rem;
+      text-align: center;
+      background: linear-gradient(to bottom, rgba(15,14,13,0.2) 0%, rgba(15,14,13,0.0) 25%, rgba(15,14,13,0.55) 60%, rgba(15,14,13,0.92) 100%),
+        url('{{landingCoverUrl}}') center/cover no-repeat;
+      transition: opacity 0.85s cubic-bezier(0.16,1,0.3,1), visibility 0.85s;
+    }
+    .cover-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+    .cover-top { width: 100%; display: flex; justify-content: space-between; align-items: center; }
+    .cover-date-part { font-size: 0.78rem; letter-spacing: 0.25em; color: rgba(255,255,255,0.85); font-weight: 400; text-transform: uppercase; }
+    .cover-center { display: flex; flex-direction: column; align-items: center; margin: auto 0; }
+    .cover-tagline { font-size: 0.68rem; letter-spacing: 0.38em; text-transform: uppercase; color: rgba(255,255,255,0.7); margin-bottom: 0.8rem; display: block; }
+    .cover-names { font-size: clamp(3.2rem, 13vw, 5.8rem); line-height: 1.0; color: #ffffff; text-shadow: 0 4px 30px rgba(0,0,0,0.5); font-weight: 400; }
+    .cover-names em { font-style: italic; font-size: 0.65em; display: block; margin: -0.1em 0; color: rgba(255,255,255,0.8); }
+
+    .cover-bottom { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 0.8rem; }
+    .cover-kepada { font-size: 0.62rem; letter-spacing: 0.32em; text-transform: uppercase; color: rgba(255,255,255,0.6); }
+    .cover-guest-name { font-size: clamp(1.4rem, 6vw, 2.1rem); font-family: 'Bodoni Moda', serif; font-style: italic; color: #ffffff; line-height: 1.1; }
+    .cover-subtitle { font-size: 0.75rem; color: rgba(255,255,255,0.65); line-height: 1.5; max-width: 320px; }
+    .btn-buka {
+      display: inline-block; padding: 0.9rem 2.8rem; border: 1.5px solid rgba(255,255,255,0.85);
+      background: rgba(0,0,0,0.25); backdrop-filter: blur(8px); color: #ffffff; font-size: 0.72rem;
+      letter-spacing: 0.25em; text-transform: uppercase; cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 600; transition: all 0.35s ease; width: 100%; max-width: 290px; margin-top: 0.5rem;
+    }
+    .btn-buka:hover { background: #ffffff; color: #0f0e0d; }
+    .btn-qr-ghost { background: transparent; border: none; color: rgba(255,255,255,0.55); font-size: 0.65rem; letter-spacing: 0.18em; cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; text-transform: uppercase; }
+    .btn-qr-ghost:hover { color: #ffffff; }
+
+    /* DESKTOP FIXED LEFT HERO PANEL */
+    .left-hero {
+      display: none; position: fixed; left: 0; top: 0; width: 55%; height: 100vh; z-index: 10;
+      background: url('{{sidebarPhotoUrl}}') center/cover no-repeat; overflow: hidden;
+    }
+    .left-hero::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(15,14,13,0.88) 0%, rgba(15,14,13,0.15) 45%, transparent 100%); }
+    .left-hero-content { position: absolute; bottom: 4rem; left: 3.5rem; z-index: 2; color: #fff; }
+    .left-hero-eyebrow { font-size: 0.68rem; letter-spacing: 0.35em; text-transform: uppercase; color: rgba(255,255,255,0.7); margin-bottom: 0.6rem; display: block; }
+    .left-hero-names { font-size: clamp(3.2rem, 5vw, 4.8rem); line-height: 1.02; color: #fff; font-weight: 400; }
+    .left-hero-names em { font-style: italic; font-size: 0.65em; display: block; margin: -0.1em 0; }
+
+    /* RIGHT SCROLLABLE CONTENT PANEL */
+    .right-panel { position: relative; z-index: 20; width: 100%; min-height: 100vh; background: transparent; padding-bottom: 90px; overflow-x: hidden; }
+
+    /* SLIDE 1: OPENING VIEW */
+    .slide-opening {
+      min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; justify-content: space-between; align-items: center;
+      padding: 3.5rem 2.2rem 3rem; text-align: center; position: relative;
+      background: linear-gradient(to bottom, rgba(15,14,13,0.60) 0%, rgba(15,14,13,0.45) 40%, rgba(15,14,13,0.88) 100%),
                   url('{{globalBgUrl}}') center/cover no-repeat;
     }
-    .floating-monogram {
-      position: fixed;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: min(28vw, 160px);
-      font-weight: 700;
-      color: rgba(197, 160, 89, 0.04);
-      z-index: 2;
-      pointer-events: none;
-      user-select: none;
-      letter-spacing: -0.05em;
-    }
+    .opening-top-date { width: 100%; display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem; letter-spacing: 0.25em; color: rgba(255,255,255,0.75); text-transform: uppercase; }
+    .opening-center { margin: auto 0; padding: 2rem 0; }
+    .opening-tagline { font-size: 0.68rem; letter-spacing: 0.38em; text-transform: uppercase; color: rgba(255,255,255,0.7); display: block; margin-bottom: 0.6rem; }
+    .opening-title { font-size: clamp(2.8rem, 10vw, 4.5rem); line-height: 1.05; color: #ffffff; font-weight: 400; }
+    .opening-title em { font-style: italic; font-size: 0.65em; display: block; margin: -0.1em 0; color: rgba(255,255,255,0.8); }
+    .opening-bottom { width: 100%; max-width: 380px; display: flex; flex-direction: column; align-items: center; gap: 0.8rem; }
+    .opening-quote-text { font-family: 'Bodoni Moda', serif; font-style: italic; font-size: 1.05rem; color: rgba(255,255,255,0.75); line-height: 1.75; }
+    .opening-quote-ref { font-size: 0.62rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: #ffffff; }
+    .scroll-indicator { display: flex; align-items: center; justify-content: center; margin-top: 0.8rem; animation: bounce 2s infinite; color: rgba(255,255,255,0.6); }
+    @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
 
-    .desktop-sidebar { display: none; }
+    /* SLIDE 2 & 3: COUPLE SLIDES */
+    .slide-couple {
+      position: relative; width: 100%; min-height: 100vh; min-height: 100dvh; background-size: cover; background-position: center;
+      display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; padding: 3rem 2.2rem 4.5rem;
+    }
+    .slide-couple::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(15,14,13,0.92) 0%, rgba(15,14,13,0.25) 45%, transparent 100%); z-index: 1; }
+    .couple-content { position: relative; z-index: 2; max-width: 380px; }
+    .couple-content.right { margin-left: auto; text-align: right; }
+    .couple-role { font-size: 0.62rem; letter-spacing: 0.32em; text-transform: uppercase; color: rgba(255,255,255,0.7); display: block; margin-bottom: 0.35rem; font-weight: 600; }
+    .couple-name { font-size: clamp(2.4rem, 8vw, 3.6rem); color: #fff; line-height: 1.05; margin-bottom: 0.5rem; font-weight: 400; }
+    .couple-label { font-size: 0.58rem; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(255,255,255,0.6); display: block; margin-bottom: 0.25rem; font-weight: 600; }
+    .couple-parents { font-size: 0.78rem; color: rgba(255,255,255,0.8); line-height: 1.55; margin-bottom: 1.1rem; }
+    .btn-ig-pill {
+      display: inline-flex; align-items: center; gap: 6px; padding: 0.45rem 1.1rem; border: 1px solid rgba(255,255,255,0.45);
+      border-radius: 50px; color: #ffffff; text-decoration: none; font-size: 0.7rem; letter-spacing: 0.08em; transition: all 0.3s;
+      background: rgba(0,0,0,0.2); backdrop-filter: blur(6px);
+    }
+    .btn-ig-pill:hover { border-color: #ffffff; background: rgba(255,255,255,0.15); }
 
-    /* LAYER 2: MOBILE-FRIENDLY SNAP VIEWPORT CONTAINER (100% EDGE-TO-EDGE) */
-    .snap-viewport-container {
-      position: relative; z-index: 10;
-      min-height: 100dvh;
-      width: 100% !important;
-      max-width: 100% !important;
-      margin: 0 !important;
-      padding-top: 1rem;
-      padding-bottom: 90px;
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
+    /* SECTIONS */
+    .sec-flow { padding: 5rem 2.2rem; max-width: 480px; margin: 0 auto; text-align: center; position: relative; }
+    .sec-eyebrow { font-size: 0.65rem; letter-spacing: 0.35em; text-transform: uppercase; color: rgba(255,255,255,0.6); display: block; margin-bottom: 0.5rem; }
+    .sec-main-title { font-size: clamp(2.2rem, 7vw, 3.2rem); color: #ffffff; line-height: 1.1; margin-bottom: 1.2rem; font-weight: 400; }
+    .event-full-date { font-size: 0.95rem; letter-spacing: 0.12em; color: #ffffff; margin-bottom: 1.8rem; font-weight: 400; }
 
-    .snap-slide {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      padding: 0.75rem 1rem;
-      text-align: center;
-      width: 100%;
-      box-sizing: border-box;
+    /* Countdown Clean */
+    .countdown-clean { display: flex; justify-content: center; gap: 1.8rem; margin: 1.5rem 0 2rem; }
+    .cd-item { text-align: center; }
+    .cd-val { display: block; font-size: clamp(2.2rem, 6vw, 3rem); font-weight: 400; color: #ffffff; line-height: 1; font-family: 'Bodoni Moda', serif; }
+    .cd-txt { display: block; font-size: 0.52rem; text-transform: uppercase; letter-spacing: 0.2em; color: rgba(255,255,255,0.55); margin-top: 0.4rem; font-weight: 600; }
+    .btn-outline-box {
+      display: inline-block; padding: 0.75rem 2.2rem; border: 1px solid rgba(255,255,255,0.7); border-radius: 0;
+      color: #ffffff; font-size: 0.68rem; letter-spacing: 0.2em; text-transform: uppercase; text-decoration: none;
+      transition: all 0.3s; margin-bottom: 3.5rem; font-weight: 600;
     }
+    .btn-outline-box:hover { background: #ffffff; color: #0f0e0d; }
 
-    /* Editorial Glass Card */
-    .editorial-card {
-      background: var(--card-glass);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid var(--card-border);
-      border-radius: 20px;
-      padding: 2rem 1.4rem;
-      width: 100%;
-      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
-      position: relative;
+    /* Events */
+    .events-stack { display: flex; flex-direction: column; gap: 3rem; text-align: center; }
+    .event-block-item { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; }
+    .ev-cat { font-size: 0.6rem; letter-spacing: 0.3em; text-transform: uppercase; color: rgba(255,255,255,0.55); font-weight: 600; }
+    .ev-name { font-size: clamp(1.8rem, 6vw, 2.5rem); color: #ffffff; line-height: 1.1; font-weight: 400; }
+    .ev-time { font-size: 0.9rem; color: rgba(255,255,255,0.85); margin: 0.2rem 0; letter-spacing: 0.05em; }
+    .ev-venue { font-size: 0.82rem; font-weight: 600; color: #ffffff; }
+    .ev-addr { font-size: 0.75rem; color: rgba(255,255,255,0.6); line-height: 1.5; max-width: 320px; margin-bottom: 0.8rem; }
+    .btn-map-outline {
+      display: inline-block; padding: 0.6rem 1.6rem; border: 1px solid rgba(255,255,255,0.5); border-radius: 0;
+      color: #ffffff; font-size: 0.65rem; letter-spacing: 0.18em; text-transform: uppercase; text-decoration: none;
+      transition: all 0.3s; font-weight: 600;
     }
+    .btn-map-outline:hover { background: #ffffff; color: #0f0e0d; }
 
-    .slide-monogram-tag {
-      font-size: 0.75rem;
-      letter-spacing: 0.25em;
-      color: var(--ivanna-gold);
-      margin-bottom: 0.5rem;
-      display: block;
-      font-weight: 600;
-      text-transform: uppercase;
-    }
+    .sec-divider { width: 100%; height: 1px; background: var(--border); margin: 0; }
 
-    /* LAYER 3: HIGH-FASHION EDITORIAL COUPLE SLIDES */
-    .couple-split-slide {
-      background-size: cover;
-      background-position: center;
-      justify-content: flex-end;
-      padding: 3rem 1.4rem 5rem;
-      text-align: left;
-      min-height: 100dvh;
-    }
-    .couple-split-slide::before {
-      content: ""; position: absolute; inset: 0;
-      background: linear-gradient(to top, rgba(15, 14, 13, 0.95) 0%, rgba(15, 14, 13, 0.25) 50%, transparent 100%);
-      z-index: 1;
-    }
-    .couple-split-slide .slide-content {
-      position: relative; z-index: 2; width: 100%;
-    }
-    .couple-split-slide.align-right {
-      text-align: right;
-    }
+    /* Gallery */
+    .gallery-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 1.5rem; }
+    .g-item { overflow: hidden; }
+    .g-item img { width: 100%; height: 160px; object-fit: cover; display: block; transition: transform 0.4s; }
+    .g-item:hover img { transform: scale(1.04); }
+    .g-item.wide { grid-column: span 2; }
+    .g-item.wide img { height: 220px; }
 
-    /* LAYER 5: LUXURY MONOGRAM COVER MODAL */
-    .landing-cover {
-      position: fixed; inset: 0; z-index: 100;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      background: linear-gradient(135deg, rgba(15, 14, 13, 0.6), rgba(15, 14, 13, 0.92)),
-                  url('{{landingCoverUrl}}') center/cover no-repeat;
-      backdrop-filter: blur(25px);
-      text-align: center; padding: 1.5rem 1.2rem;
-      transition: opacity 0.8s, visibility 0.8s;
-    }
-    .landing-cover.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+    /* Gift & Bank */
+    .gift-tabs { display: flex; max-width: 280px; margin: 1.2rem auto; border: 1px solid var(--border); }
+    .gift-tab-btn { flex: 1; padding: 0.6rem; background: transparent; border: none; color: var(--text-muted); font-size: 0.68rem; font-weight: 600; cursor: pointer; letter-spacing: 0.1em; text-transform: uppercase; }
+    .gift-tab-btn.active { background: #ffffff; color: #0f0e0d; font-weight: 700; }
+    .bank-card { background: rgba(255,255,255,0.04); border: 1px solid var(--border); padding: 1.2rem; margin-bottom: 0.9rem; text-align: left; }
+    .bank-label { font-weight: 600; color: #ffffff; font-size: 0.88rem; display: block; margin-bottom: 0.2rem; }
+    .bank-owner { color: var(--text-muted); font-size: 0.75rem; display: block; margin-bottom: 0.6rem; }
+    .bank-row { display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.3); padding: 0.55rem 0.8rem; border: 1px solid var(--border); }
+    .bank-number { font-family: monospace; font-size: 0.95rem; color: #ffffff; }
+    .btn-copy { background: #ffffff; color: #0f0e0d; border: none; padding: 0.35rem 0.8rem; font-size: 0.65rem; font-weight: 700; cursor: pointer; }
 
-    .btn-open-ivanna {
-      padding: 0.85rem 2rem;
-      background: var(--ivanna-gold);
-      border: none; border-radius: 4px;
-      color: #0f0e0d; font-weight: 700; font-size: 0.8rem;
-      letter-spacing: 0.15em; text-transform: uppercase;
-      cursor: pointer; transition: all 0.3s;
-      box-shadow: 0 6px 25px rgba(197, 160, 89, 0.3);
-      width: 100%;
-    }
-    .btn-open-ivanna:hover { background: #dfb872; }
+    /* RSVP Form */
+    .rsvp-form-wrap { text-align: left; margin-top: 1.5rem; }
+    .form-row { margin-bottom: 1rem; }
+    .form-lbl { display: block; font-size: 0.62rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.15em; color: var(--text-muted); margin-bottom: 0.4rem; }
+    .form-in, .form-sel, .form-ta { width: 100%; padding: 0.75rem 0.9rem; background: rgba(255,255,255,0.04); border: 1px solid var(--border); color: #ffffff; font-size: 0.85rem; outline: none; font-family: 'Plus Jakarta Sans', sans-serif; transition: border-color 0.2s; }
+    .form-in:focus, .form-sel:focus, .form-ta:focus { border-color: #ffffff; }
+    .btn-rsvp-submit { width: 100%; padding: 0.95rem; background: #ffffff; color: #0f0e0d; border: none; font-weight: 700; font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; transition: all 0.3s; }
+    .btn-rsvp-submit:hover { background: rgba(255,255,255,0.85); }
+    .wishes-list { margin-top: 1.5rem; max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.8rem; }
+    .wish-item { padding: 0.9rem; background: rgba(255,255,255,0.03); border: 1px solid var(--border); text-align: left; }
+    .wish-name { font-weight: 600; font-size: 0.82rem; color: #ffffff; margin-bottom: 0.2rem; }
+    .wish-msg { font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; }
 
-    .btn-qr-ivanna {
-      padding: 0.75rem 1.5rem; background: transparent;
-      border: 1px solid var(--ivanna-gold); border-radius: 4px;
-      color: var(--ivanna-gold); font-weight: 600; font-size: 0.75rem;
-      letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer;
-      width: 100%;
-    }
+    /* Footer */
+    .site-footer { text-align: center; padding: 4rem 1.5rem; background: #070709; border-top: 1px solid var(--border); }
+    .footer-name { font-size: 1.8rem; color: #ffffff; margin-bottom: 0.4rem; }
+    .footer-sub { font-size: 0.65rem; letter-spacing: 0.25em; text-transform: uppercase; color: rgba(255,255,255,0.5); }
 
-    /* Countdown Grid */
-    .countdown-grid {
-      display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem; margin: 1.2rem 0;
+    /* Controls */
+    .bottom-dock {
+      position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: rgba(15, 14, 13, 0.92); backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.15); border-radius: 50px; padding: 6px 14px; display: flex; align-items: center; gap: 6px;
+      box-shadow: 0 10px 35px rgba(0,0,0,0.5); z-index: 80; max-width: 92vw;
     }
-    .countdown-box {
-      background: rgba(15, 14, 13, 0.7);
-      border: 1px solid var(--card-border);
-      border-radius: 8px; padding: 0.5rem 0.2rem;
-    }
-    .countdown-number { font-size: 1.2rem; font-weight: 700; color: var(--ivanna-gold); }
-    .countdown-label { font-size: 0.55rem; text-transform: uppercase; color: var(--text-muted); }
+    .dock-a { display: flex; flex-direction: column; align-items: center; text-decoration: none; color: rgba(255,255,255,0.6); font-size: 0.5rem; font-weight: 600; text-transform: uppercase; padding: 3px 8px; transition: color 0.2s; }
+    .dock-a:hover { color: #ffffff; }
+    .dock-ico { width: 17px; height: 17px; stroke-width: 1.8; margin-bottom: 2px; }
 
-    .btn-calendar {
-      display: inline-block; padding: 0.6rem 1.2rem;
-      background: transparent; border: 1px solid var(--ivanna-gold);
-      color: var(--ivanna-gold); border-radius: 4px;
-      font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.08em; text-decoration: none; margin-top: 0.5rem;
+    .music-fab {
+      position: fixed; top: 18px; right: 18px; width: 40px; height: 40px; border-radius: 50%; background: rgba(15, 14, 13, 0.85);
+      border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.8); display: flex; align-items: center; justify-content: center;
+      z-index: 100; cursor: pointer; backdrop-filter: blur(12px);
     }
+    .music-fab.playing svg { animation: spin 5s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Event & Story */
-    .event-card, .bank-card, .wish-card, .story-item {
-      background: rgba(15, 14, 13, 0.6);
-      border: 1px solid var(--card-border);
-      border-radius: 10px; padding: 1rem; margin-bottom: 0.8rem; text-align: left;
-    }
-    .story-chapter { font-size: 0.65rem; color: var(--ivanna-gold); font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; }
-    .story-title { font-size: 1.1rem; color: #fff; margin: 0.2rem 0; font-weight: 600; }
-    .story-content { font-size: 0.8rem; color: var(--text-muted); line-height: 1.5; }
+    .modal-bg { position: fixed; inset: 0; z-index: 300; background: rgba(0,0,0,0.85); backdrop-filter: blur(12px); display: flex; align-items: center; justify-content: center; padding: 1.4rem; opacity: 0; visibility: hidden; transition: all 0.3s; }
+    .modal-bg.open { opacity: 1; visibility: visible; }
+    .modal-card { background: #141312; border: 1px solid var(--border); padding: 2.2rem 1.8rem; width: 100%; max-width: 360px; text-align: center; position: relative; }
+    .modal-close { position: absolute; top: 12px; right: 12px; background: rgba(255,255,255,0.06); border: 1px solid var(--border); width: 28px; height: 28px; border-radius: 50%; cursor: pointer; color: var(--text-muted); font-size: 0.75rem; font-weight: bold; }
 
-    /* Gift Tabs */
-    .gift-tabs {
-      display: flex; gap: 0.4rem; margin-bottom: 1rem;
-      background: rgba(15, 14, 13, 0.8); padding: 0.25rem; border-radius: 6px;
-      border: 1px solid var(--card-border);
-    }
-    .gift-tab-btn {
-      flex: 1; padding: 0.45rem; border: none; border-radius: 4px;
-      font-size: 0.7rem; font-weight: 600; background: transparent; color: var(--text-muted); cursor: pointer;
-    }
-    .gift-tab-btn.active { background: var(--ivanna-gold); color: #0f0e0d; }
-
-    .btn-copy, .btn-submit {
-      background: var(--ivanna-gold); color: #0f0e0d; border: none;
-      padding: 0.4rem 0.8rem; border-radius: 4px; font-weight: 700; cursor: pointer; font-size: 0.75rem;
-    }
-    .form-input, .form-select, .form-textarea {
-      width: 100%; padding: 0.65rem 0.8rem; background: rgba(15, 14, 13, 0.8);
-      border: 1px solid var(--card-border); border-radius: 4px;
-      color: var(--text-main); margin-bottom: 0.75rem; font-size: 0.85rem;
-    }
-
-    /* Floating Dock */
-    .bottom-nav-dock {
-      position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
-      background: rgba(22, 20, 19, 0.95); backdrop-filter: blur(16px);
-      border: 1px solid var(--card-border); border-radius: 40px;
-      padding: 6px 12px; display: flex; align-items: center; gap: 8px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6); z-index: 80;
-      max-width: 92vw;
-    }
-    .dock-link {
-      display: flex; flex-direction: column; align-items: center; text-decoration: none;
-      color: var(--text-muted); font-size: 0.55rem; font-weight: 600; padding: 2px 4px;
-    }
-    .dock-link:hover { color: var(--ivanna-gold); }
-    .dock-icon { width: 16px; height: 16px; stroke-width: 1.8; margin-bottom: 2px; }
-
-    .music-btn {
-      position: fixed; top: 16px; right: 16px; width: 38px; height: 38px;
-      border-radius: 50%; background: rgba(22, 20, 19, 0.9);
-      border: 1px solid var(--ivanna-gold); color: var(--ivanna-gold);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 90; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-    }
-    .music-btn.playing { animation: spin 5s linear infinite; }
-    @keyframes spin { 100% { transform: rotate(360deg); } }
-
-    /* Popups */
-    .qr-modal {
-      position: fixed; inset: 0; z-index: 150;
-      background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(10px);
-      display: flex; align-items: center; justify-content: center; padding: 1.2rem;
-      opacity: 0; visibility: hidden; transition: all 0.3s ease;
-    }
-    .qr-modal.active { opacity: 1; visibility: visible; }
-    .qr-modal-card {
-      background: #181615; border: 1px solid var(--ivanna-gold);
-      border-radius: 16px; padding: 1.8rem 1.4rem; width: 100%; max-width: 360px; text-align: center; position: relative;
-    }
-    .btn-close-modal {
-      position: absolute; top: 14px; right: 14px; background: #0f0e0d; border: 1px solid var(--card-border);
-      width: 28px; height: 28px; border-radius: 50%; cursor: pointer; color: var(--text-muted);
-    }
-    .access-badge { font-size: 0.65rem; font-weight: 700; color: var(--ivanna-gold); background: #0f0e0d; border: 1px solid var(--card-border); padding: 0.25rem 0.75rem; border-radius: 4px; }
-    .access-couple { font-size: 1.6rem; color: #fff; margin: 0.6rem 0; }
-    .access-guest-box { background: #0f0e0d; border: 1px solid var(--card-border); padding: 0.8rem; border-radius: 8px; margin-bottom: 1rem; text-align: left; }
-    .access-qr-img { width: 140px; height: 140px; margin: 0 auto 0.5rem; }
-
-    .souvenir-voucher-card {
-      background: linear-gradient(135deg, #24201c, #131210); color: #fff;
-      border-radius: 8px; padding: 1rem; margin-top: 1rem; text-align: center;
-      border: 1px solid var(--card-border);
-    }
-
-    /* DESKTOP SPLIT SCREEN (>= 960px) — 70:30 CINEMATIC WIDESCREEN HERO */
-    @media (min-width: 960px) {
-      .desktop-sidebar {
-        display: flex; flex-direction: column; justify-content: flex-end;
-        position: fixed; left: 0; top: 0; width: 70%; height: 100vh; z-index: 10;
-        background: linear-gradient(to top, rgba(15, 14, 13, 0.88) 0%, rgba(15, 14, 13, 0.25) 30%, transparent 65%),
-                    url('{{sidebarPhotoUrl}}') center/cover no-repeat;
-        padding: 4.5rem; border-right: 1px solid var(--card-border);
-      }
-      .desktop-sidebar h1 { font-size: 4.2rem; color: #fff; font-weight: 400; }
-      .global-snap-backdrop { left: 70%; width: 30%; }
-      .snap-viewport-container { margin-left: 70% !important; width: 30% !important; max-width: 30% !important; display: flex; flex-direction: column; align-items: stretch; }
-      .editorial-card { width: 100%; }
-      .snap-slide { width: 100% !important; max-width: 100% !important; margin: 0 !important; }
-      .couple-split-slide { width: 100% !important; max-width: 100% !important; margin: 0 !important; }
-      .landing-cover { left: 70%; width: 30%; }
-      .bottom-nav-dock { left: calc(70% + 15%); }
+    @media (min-width: 900px) {
+      .left-hero { display: block; }
+      .right-panel { margin-left: 55%; width: 45%; min-width: 420px; }
+      .bottom-dock { left: calc(55% + 22.5%); }
+      .music-fab { right: 2rem; }
+      .sec-flow { max-width: 100%; padding: 6rem 3.5rem; }
+      .slide-opening { padding: 4.5rem 3.5rem 4rem; }
+      .slide-couple { padding: 4rem 3.5rem 5rem; }
     }
   </style>
 </head>
 <body>
-  <!-- LAYER 1: Global Snap Backdrop & Watermark -->
-  <div class="global-snap-backdrop"></div>
-  <div class="floating-monogram serif-title">{{coupleMonogram}}</div>
 
-  <!-- Desktop Hero Sidebar (Clear Photo) -->
-  <div class="desktop-sidebar">
-    <div class="serif-title" style="color:var(--ivanna-gold); font-size:1.8rem; letter-spacing:0.2em;">{{coupleMonogram}}</div>
-    <p class="serif-title" style="color:#a69e94; font-size:0.9rem; letter-spacing:0.25em; text-transform:uppercase; margin:0.4rem 0;">{{weddingTagline}}</p>
-    <h1 class="serif-title">{{groomName}} &amp; {{brideName}}</h1>
-  </div>
-
-  <!-- LAYER 5: Luxury Monogram Landing Modal -->
-  <div class="landing-cover" id="landingCover">
-    <div class="serif-title" style="color:var(--ivanna-gold); font-size:2.5rem; letter-spacing:0.2em; margin-bottom:0.3rem;">{{coupleMonogram}}</div>
-    <p style="letter-spacing:0.25em; color:#a69e94; font-size:0.7rem; text-transform:uppercase; font-weight:600;">{{weddingTagline}}</p>
-    <h1 class="serif-title" style="font-size:2.6rem; margin:0.4rem 0 1.2rem; color:#fff; font-weight:400;">{{groomName}} &amp; {{brideName}}</h1>
-    
-    <div style="border:1px solid var(--card-border); padding:1rem 1.4rem; border-radius:8px; background:rgba(22, 20, 19, 0.8); margin-bottom:1.5rem; width:100%; max-width:300px;">
-      <p style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.1em;">Special Invitation For:</p>
-      <h3 style="color:var(--ivanna-gold); font-size:1.1rem; font-weight:600; margin-top:0.2rem;" id="coverGuestName">Tamu Undangan</h3>
-    </div>
-
-    <div style="display:flex; flex-direction:column; gap:0.5rem; width:100%; max-width:280px;">
-      <button class="btn-open-ivanna" onclick="openInvitation()">Buka Undangan</button>
-      <button class="btn-qr-ivanna" onclick="openQrModal()">QR Check-In</button>
+  <!-- FIXED LEFT HERO (DESKTOP ONLY) -->
+  <div class="left-hero">
+    <div class="left-hero-content">
+      <span class="left-hero-eyebrow">{{weddingTagline}}</span>
+      <h1 class="serif left-hero-names">{{groomName}}<br><em>&amp;</em><br>{{brideName}}</h1>
     </div>
   </div>
 
-  <!-- LAYER 2: Scroll Viewport Container -->
-  <div class="snap-viewport-container" id="snapContainer">
-    
-    <!-- SLIDE 1: HOME & QUOTE -->
-    <section class="snap-slide" id="home">
-      <div class="editorial-card">
-        <span class="slide-monogram-tag serif-title">{{weddingTagline}}</span>
-        <h1 class="serif-title" style="font-size:2.4rem; color:#fff; margin:0.5rem 0; font-weight:400;">{{groomName}} &amp; {{brideName}}</h1>
-        <p style="font-style:italic; font-size:0.8rem; line-height:1.6; color:var(--text-muted);">“{{openingQuote}}”</p>
-        <p style="color:var(--ivanna-gold); font-size:0.75rem; font-weight:600; margin-top:0.4rem;">{{openingQuoteRef}}</p>
+  <!-- COVER SCREEN -->
+  <div class="cover-screen" id="coverScreen">
+    <div class="cover-top">
+      <span class="cover-date-part">{{weddingDateDay}}/{{weddingDateMonth}}</span>
+      <span class="cover-date-part">{{weddingDateYear}}</span>
+    </div>
 
-        <div class="countdown-grid">
-          <div class="countdown-box"><span class="countdown-number" id="cdDays">00</span><span class="countdown-label">Hari</span></div>
-          <div class="countdown-box"><span class="countdown-number" id="cdHours">00</span><span class="countdown-label">Jam</span></div>
-          <div class="countdown-box"><span class="countdown-number" id="cdMins">00</span><span class="countdown-label">Menit</span></div>
-          <div class="countdown-box"><span class="countdown-number" id="cdSecs">00</span><span class="countdown-label">Detik</span></div>
+    <div class="cover-center">
+      <span class="cover-tagline">{{weddingTagline}}</span>
+      <h1 class="cover-names serif">{{groomName}}<em>&amp;</em>{{brideName}}</h1>
+    </div>
+
+    <div class="cover-bottom">
+      <span class="cover-kepada">Kepada</span>
+      <h2 class="cover-guest-name serif" id="coverGuestName">Tamu Undangan</h2>
+      <p class="cover-subtitle">Dengan segala hormat, kami mengundang Anda untuk menghadiri acara pernikahan kami.</p>
+      <button class="btn-buka" onclick="openInvitation()">Buka Undangan</button>
+      <button class="btn-qr-ghost" onclick="openModal()">QR Check-In →</button>
+    </div>
+  </div>
+
+  <!-- RIGHT SCROLLABLE PANEL -->
+  <div class="right-panel" id="rightPanel">
+
+    <!-- SLIDE 1: OPENING VIEW (100vh FULLSCREEN) -->
+    <section class="slide-opening" id="home">
+      <div class="opening-top-date">
+        <span>{{weddingDateDay}}/{{weddingDateMonth}}</span>
+        <span>{{weddingDateYear}}</span>
+      </div>
+
+      <div class="opening-center">
+        <span class="opening-tagline">{{weddingTagline}}</span>
+        <h1 class="opening-title serif">{{groomName}}<em>&amp;</em>{{brideName}}</h1>
+      </div>
+
+      <div class="opening-bottom">
+        <p class="opening-quote-text">"{{openingQuote}}"</p>
+        <cite class="opening-quote-ref">{{openingQuoteRef}}</cite>
+        <div class="scroll-indicator">
+          <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
         </div>
+      </div>
+    </section>
 
-        <a href="{{googleCalendarUrl}}" target="_blank" class="btn-calendar">
-          Save Date in Calendar
+    <!-- SLIDE 2: THE BRIDE (100vh FULL PHOTO) -->
+    <section class="slide-couple" id="bride" style="background-image: url('{{bridePhotoUrl}}');">
+      <div class="couple-content right">
+        <span class="couple-role">The Bride</span>
+        <h2 class="couple-name serif">{{brideDisplayName}}</h2>
+        <span class="couple-label">Putri Dari</span>
+        <p class="couple-parents">{{brideParents}}</p>
+        <a href="https://instagram.com/{{brideInstagram}}" target="_blank" class="btn-ig-pill">
+          <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+          @{{brideInstagram}}
         </a>
       </div>
     </section>
 
-    <!-- SLIDE 2: THE GROOM EDITORIAL SLIDE -->
-    <section class="snap-slide couple-split-slide" id="groom" style="background-image: url('{{groomPhotoUrl}}');">
-      <div class="slide-content">
-        <span style="font-size:0.7rem; letter-spacing:0.25em; color:var(--ivanna-gold); text-transform:uppercase; font-weight:700;">THE GROOM</span>
-        <h2 class="serif-title" style="font-size:2.2rem; color:#fff; margin:0.3rem 0; font-weight:400;">{{groomDisplayName}}</h2>
-        <p style="font-size:0.8rem; color:rgba(255,255,255,0.85); line-height:1.5; margin-bottom:1rem; max-width:300px;">{{groomParents}}</p>
-        <a href="https://instagram.com/{{groomInstagram}}" target="_blank" style="display:inline-flex; align-items:center; gap:6px; padding:0.4rem 1.1rem; border:1px solid var(--ivanna-gold); border-radius:4px; color:var(--ivanna-gold); text-decoration:none; font-size:0.75rem; font-weight:600;">
-          <span>@{{groomInstagram}}</span>
+    <!-- SLIDE 3: THE GROOM (100vh FULL PHOTO) -->
+    <section class="slide-couple" id="groom" style="background-image: url('{{groomPhotoUrl}}');">
+      <div class="couple-content">
+        <span class="couple-role">The Groom</span>
+        <h2 class="couple-name serif">{{groomDisplayName}}</h2>
+        <span class="couple-label">Putra Dari</span>
+        <p class="couple-parents">{{groomParents}}</p>
+        <a href="https://instagram.com/{{groomInstagram}}" target="_blank" class="btn-ig-pill">
+          <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+          @{{groomInstagram}}
         </a>
       </div>
     </section>
 
-    <!-- SLIDE 3: THE BRIDE EDITORIAL SLIDE -->
-    <section class="snap-slide couple-split-slide align-right" id="bride" style="background-image: url('{{bridePhotoUrl}}');">
-      <div class="slide-content">
-        <span style="font-size:0.7rem; letter-spacing:0.25em; color:var(--ivanna-gold); text-transform:uppercase; font-weight:700;">THE BRIDE</span>
-        <h2 class="serif-title" style="font-size:2.2rem; color:#fff; margin:0.3rem 0; font-weight:400;">{{brideDisplayName}}</h2>
-        <p style="font-size:0.8rem; color:rgba(255,255,255,0.85); line-height:1.5; margin-bottom:1rem; max-width:300px; margin-left:auto;">{{brideParents}}</p>
-        <a href="https://instagram.com/{{brideInstagram}}" target="_blank" style="display:inline-flex; align-items:center; gap:6px; padding:0.4rem 1.1rem; border:1px solid var(--ivanna-gold); border-radius:4px; color:var(--ivanna-gold); text-decoration:none; font-size:0.75rem; font-weight:600;">
-          <span>@{{brideInstagram}}</span>
-        </a>
-      </div>
-    </section>
-
-    <!-- SLIDE 4: LOVE STORY (DYNAMIC) -->
     {{storySectionHtml}}
 
-    <!-- SLIDE 5: EVENT SCHEDULE -->
-    <section class="snap-slide" id="event">
-      <div class="editorial-card">
-        <span class="slide-monogram-tag serif-title">WEDDING EVENTS</span>
-        <h2 class="serif-title" style="font-size:1.8rem; color:#fff; margin-bottom:0.8rem; font-weight:400;">Agenda Acara</h2>
+    <!-- SLIDE 4: SAVE THE DATE & EVENTS -->
+    <section class="sec-flow" id="event">
+      <span class="sec-eyebrow">Save The Date</span>
+      <h2 class="sec-main-title serif">Rangkaian Acara</h2>
+      <p class="event-full-date">{{weddingDate}}</p>
+
+      <div class="countdown-clean">
+        <div class="cd-item"><span class="cd-val" id="cdDays">00</span><span class="cd-txt">Hari</span></div>
+        <div class="cd-item"><span class="cd-val" id="cdHours">00</span><span class="cd-txt">Jam</span></div>
+        <div class="cd-item"><span class="cd-val" id="cdMins">00</span><span class="cd-txt">Menit</span></div>
+        <div class="cd-item"><span class="cd-val" id="cdSecs">00</span><span class="cd-txt">Detik</span></div>
+      </div>
+      <a href="{{googleCalendarUrl}}" target="_blank" class="btn-outline-box">Simpan Tanggal</a>
+
+      <div class="events-stack">
         {{eventDataHtml}}
         {{dressCodeHtml}}
         {{guestNotesHtml}}
       </div>
     </section>
 
-    <!-- OPTIONAL SECTIONS: TURUT MENGUNDANG & SPECIAL MESSAGE -->
     {{turutMengundangHtml}}
     {{customMessageHtml}}
+    {{weddingFilterHtml}}
+    {{liveStreamingHtml}}
 
-    <!-- SLIDE 6.5: GALLERY (DYNAMIC) -->
-    {{gallerySectionHtml}}
+    <div class="sec-divider"></div>
 
-    <!-- SLIDE 7: DIGITAL ENVELOPE (DYNAMIC) -->
+    <!-- SECTION: GALLERY -->
+    <section class="sec-flow" id="gallery">
+      {{gallerySectionHtml}}
+    </section>
+
+    <div class="sec-divider"></div>
+
+    <!-- SECTION: GIFT -->
     {{giftSectionHtml}}
 
-    <!-- SLIDE 8: RSVP & WISHES -->
-    <section class="snap-slide" id="rsvp">
-      <div class="editorial-card">
-        <span class="slide-monogram-tag serif-title">CONFIRMATION</span>
-        <h2 class="serif-title" style="font-size:1.8rem; color:#fff; margin-bottom:0.8rem; font-weight:400;">RSVP &amp; Prayers</h2>
-        <form onsubmit="submitRsvp(event)">
-          <input type="text" id="rsvpName" required class="form-input" placeholder="Nama Anda">
-          <select id="rsvpStatus" class="form-select">
-            <option value="hadir">Konfirmasi Hadir</option>
-            <option value="tidak">Berhalangan</option>
-          </select>
-          <input type="number" id="rsvpCount" min="1" max="5" value="1" class="form-input">
-          <textarea id="rsvpMessage" rows="2" class="form-textarea" placeholder="Doa restu..."></textarea>
-          <button type="submit" id="btnSubmitRsvp" class="btn-submit" style="width:100%; padding:0.75rem;">Kirim RSVP</button>
+    <div class="sec-divider"></div>
+
+    <!-- SECTION: RSVP & WISHES -->
+    <section class="sec-flow" id="rsvp">
+      <span class="sec-eyebrow">Greet &amp; Wish</span>
+      <h2 class="sec-main-title serif">RSVP &amp; Doa Restu</h2>
+
+      <div class="rsvp-form-wrap">
+        <form id="rsvpForm" onsubmit="submitRsvp(event)">
+          <div class="form-row">
+            <label class="form-lbl">Nama Lengkap</label>
+            <input type="text" id="rsvpName" required class="form-in" placeholder="Nama Anda">
+          </div>
+          <div class="form-row">
+            <label class="form-lbl">Konfirmasi Kehadiran</label>
+            <select id="rsvpStatus" class="form-sel">
+              <option value="hadir">Konfirmasi Hadir</option>
+              <option value="tidak">Berhalangan Hadir</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label class="form-lbl">Jumlah Tamu</label>
+            <input type="number" id="rsvpCount" min="1" max="5" value="1" class="form-in">
+          </div>
+          <div class="form-row">
+            <label class="form-lbl">Ucapan &amp; Doa Restu</label>
+            <textarea id="rsvpMessage" rows="4" class="form-ta" placeholder="Tuliskan ucapan dan doa terbaik Anda..."></textarea>
+          </div>
+          <button type="submit" id="btnSubmit" class="btn-rsvp-submit">Kirim Konfirmasi &amp; Doa</button>
         </form>
-        <div id="wishesStream" style="margin-top:1rem; max-height:150px; overflow-y:auto;">
+
+        <div class="wishes-list" id="wishesList">
           {{wishesHtml}}
         </div>
       </div>
     </section>
+
+    <!-- FOOTER -->
+    <footer class="site-footer">
+      <h2 class="footer-name serif">{{groomName}} &amp; {{brideName}}</h2>
+      <p class="footer-sub">{{weddingDate}}</p>
+    </footer>
   </div>
 
-  <!-- Bottom Navigation Dock -->
-  <nav class="bottom-nav-dock">
-    <a href="#home" class="dock-link">
-      <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+  <!-- FLOATING NAVIGATION DOCK -->
+  <nav class="bottom-dock">
+    <a href="#home" class="dock-a">
+      <svg class="dock-ico" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
       <span>Home</span>
     </a>
-    <a href="#groom" class="dock-link">
-      <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+    <a href="#bride" class="dock-a">
+      <svg class="dock-ico" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
       <span>Couple</span>
     </a>
-    <a href="#event" class="dock-link">
-      <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+    <a href="#event" class="dock-a">
+      <svg class="dock-ico" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
       <span>Event</span>
     </a>
-    <a href="#gift" class="dock-link">
-      <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V6a2 2 0 10-2 2h2zm-7 4h14a2 2 0 012 2v7a2 2 0 01-2 2H5a2 2 0 01-2-2v-7a2 2 0 012-2z"/></svg>
-      <span>Gift</span>
+    <a href="#gallery" class="dock-a">
+      <svg class="dock-ico" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+      <span>Gallery</span>
     </a>
-    <button onclick="openQrModal()" class="dock-link" style="background:none; border:none; cursor:pointer;">
-      <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+    <a href="#rsvp" class="dock-a">
+      <svg class="dock-ico" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+      <span>RSVP</span>
+    </a>
+    <button onclick="openModal()" class="dock-a" style="background:none;border:none;cursor:pointer;">
+      <svg class="dock-ico" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
       <span>Ticket</span>
     </button>
   </nav>
 
-  <audio id="bgAudio" loop preload="auto"><source src="{{audioUrl}}" type="audio/ogg"><source src="{{audioUrl}}" type="audio/mpeg"></audio>
-  <button class="music-btn" id="musicBtn" onclick="toggleAudio()">
-    <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
-      <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
-    </svg>
+  <!-- FLOATING MUSIC BUTTON -->
+  <audio id="bgAudio" loop preload="auto">
+    <source src="{{audioUrl}}" type="audio/ogg">
+    <source src="{{audioUrl}}" type="audio/mpeg">
+  </audio>
+  <button class="music-fab" id="musicFab" onclick="toggleAudio()" aria-label="Toggle Music">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
   </button>
 
-  <!-- QR Modal & Souvenir Voucher -->
-  <div class="qr-modal" id="qrModal" onclick="closeQrModal(event)">
-    <div class="qr-modal-card" onclick="event.stopPropagation()">
-      <button class="btn-close-modal" onclick="closeQrModal()">✕</button>
+  <!-- QR / TICKET MODAL -->
+  <div class="modal-bg" id="modalBg" onclick="closeModal(event)">
+    <div class="modal-card" onclick="event.stopPropagation()">
+      <button class="modal-close" onclick="closeModal()">✕</button>
       {{qrAccessCardHtml}}
-      
-      <div class="souvenir-voucher-card">
-        <span style="font-size:0.65rem; letter-spacing:0.2em; color:var(--ivanna-gold); text-transform:uppercase; font-weight:700;">VOUCHER SOUVENIR</span>
-        <h4 style="font-size:1.2rem; margin:0.4rem 0 0.6rem; color:#fff;" class="serif-title">Kartu Pengambilan Souvenir</h4>
-        <p style="font-size:0.75rem; color:#a69e94; margin-bottom:0.6rem;">Tunjukkan kartu ini kepada penerima tamu untuk penukaran souvenir.</p>
-        <div style="background:#0f0e0d; border:1px solid var(--ivanna-gold); color:var(--ivanna-gold); padding:0.4rem; border-radius:4px; font-family:monospace; font-weight:700; font-size:0.85rem;">
-          SOUVENIR-{{invitationId}}
-        </div>
+      <div style="margin-top:1.2rem;padding:0.9rem;background:rgba(255,255,255,0.04);border:1px solid var(--border);text-align:center;">
+        <span style="font-size:0.6rem;letter-spacing:0.2em;color:rgba(255,255,255,0.6);text-transform:uppercase;font-weight:600;display:block;margin-bottom:0.4rem;">Voucher Souvenir</span>
+        <div style="font-family:monospace;font-weight:700;font-size:0.85rem;color:#ffffff;letter-spacing:0.12em;padding:0.45rem;background:rgba(0,0,0,0.4);border:1px solid var(--border);">SOUVENIR-{{invitationId}}</div>
       </div>
     </div>
   </div>
@@ -457,78 +446,116 @@
       const p = new URLSearchParams(window.location.search);
       return p.get('to') || p.get('u') || 'Tamu Undangan';
     }
-    const gName = getGuestName();
-    document.getElementById('coverGuestName').textContent = gName;
-    const modalNameEl = document.getElementById('modalGuestName');
-    if (modalNameEl) modalNameEl.textContent = gName;
-    document.getElementById('rsvpName').value = gName !== 'Tamu Undangan' ? gName : '';
+    const gn = getGuestName();
+    const coverGn = document.getElementById('coverGuestName');
+    if (coverGn) coverGn.textContent = gn;
+    const modalGn = document.getElementById('modalGuestName');
+    if (modalGn) modalGn.textContent = gn;
+    const rsvpNameIn = document.getElementById('rsvpName');
+    if (rsvpNameIn && gn !== 'Tamu Undangan') rsvpNameIn.value = gn;
 
     function openInvitation() {
-      document.getElementById('landingCover').classList.add('hidden');
-      const audio = document.getElementById('bgAudio');
-      if (audio) {
-        audio.play().then(() => {
-          isPlaying = true;
-          document.getElementById('musicBtn').classList.add('playing');
-        }).catch(e => console.log(e));
+      const cover = document.getElementById('coverScreen');
+      if (cover) cover.classList.add('hidden');
+      playAudio();
+    }
+
+    function openModal() {
+      const modal = document.getElementById('modalBg');
+      if (modal) modal.classList.add('open');
+    }
+    function closeModal(e) {
+      if (!e || e.target === document.getElementById('modalBg')) {
+        const modal = document.getElementById('modalBg');
+        if (modal) modal.classList.remove('open');
       }
     }
 
-    function openQrModal() { document.getElementById('qrModal').classList.add('active'); }
-    function closeQrModal() { document.getElementById('qrModal').classList.remove('active'); }
+    const audio = document.getElementById('bgAudio');
+    const musicFab = document.getElementById('musicFab');
 
-    function toggleAudio() {
-      const audio = document.getElementById('bgAudio');
+    function playAudio() {
       if (!audio) return;
-      if (isPlaying) { audio.pause(); isPlaying = false; document.getElementById('musicBtn').classList.remove('playing'); }
-      else { audio.play(); isPlaying = true; document.getElementById('musicBtn').classList.add('playing'); }
+      audio.play().then(() => {
+        isPlaying = true;
+        if (musicFab) musicFab.classList.add('playing');
+      }).catch(() => {});
     }
 
-    document.addEventListener('visibilitychange', function () {
-      const audio = document.getElementById('bgAudio');
+    function toggleAudio() {
+      if (!audio) return;
+      if (isPlaying) {
+        audio.pause();
+        isPlaying = false;
+        if (musicFab) musicFab.classList.remove('playing');
+      } else {
+        audio.play();
+        isPlaying = true;
+        if (musicFab) musicFab.classList.add('playing');
+      }
+    }
+
+    document.addEventListener('visibilitychange', () => {
       if (!audio) return;
       if (document.hidden) {
         if (!audio.paused) {
           audio.dataset.wasPlaying = 'true';
           audio.pause();
-          document.getElementById('musicBtn').classList.remove('playing');
+          if (musicFab) musicFab.classList.remove('playing');
         }
       } else {
         if (audio.dataset.wasPlaying === 'true') {
           audio.play().then(() => {
-            document.getElementById('musicBtn').classList.add('playing');
+            if (musicFab) musicFab.classList.add('playing');
           });
           audio.dataset.wasPlaying = '';
         }
       }
     });
 
-    function switchGiftTab(tab, btn) {
+    function switchGiftTab(type, btn) {
       document.querySelectorAll('.gift-tab-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      if (tab === 'amplop') {
-        document.getElementById('giftTabAmplop').style.display = 'block';
-        document.getElementById('giftTabKado').style.display = 'none';
-      } else {
-        document.getElementById('giftTabAmplop').style.display = 'none';
-        document.getElementById('giftTabKado').style.display = 'block';
+      const amplop = document.getElementById('giftTabAmplop');
+      const kado = document.getElementById('giftTabKado');
+      if (amplop && kado) {
+        amplop.style.display = type === 'amplop' ? 'block' : 'none';
+        kado.style.display = type === 'kado' ? 'block' : 'none';
       }
     }
 
-    function copyText(txt) {
-      navigator.clipboard.writeText(txt).then(() => alert('Nomor rekening disalin!'));
+    function copyText(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        alert('Nomor rekening berhasil disalin!');
+      }).catch(() => {
+        const el = document.createElement('textarea');
+        el.value = text;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+        alert('Nomor rekening berhasil disalin!');
+      });
     }
 
     function initCountdown() {
       const target = new Date(TARGET_DATE).getTime();
       if (isNaN(target)) return;
       setInterval(() => {
-        const diff = target - new Date().getTime();
+        const diff = target - Date.now();
         if (diff > 0) {
-          document.getElementById('cdDays').textContent = String(Math.floor(diff / 86400000)).padStart(2, '0');
-          document.getElementById('cdHours').textContent = String(Math.floor((diff % 86400000) / 3600000)).padStart(2, '0');
-          document.getElementById('cdMins').textContent = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
-          document.getElementById('cdSecs').textContent = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+          const d = Math.floor(diff / 86400000);
+          const h = Math.floor((diff % 86400000) / 3600000);
+          const m = Math.floor((diff % 3600000) / 60000);
+          const s = Math.floor((diff % 60000) / 1000);
+          const elD = document.getElementById('cdDays');
+          const elH = document.getElementById('cdHours');
+          const elM = document.getElementById('cdMins');
+          const elS = document.getElementById('cdSecs');
+          if (elD) elD.textContent = String(d).padStart(2, '0');
+          if (elH) elH.textContent = String(h).padStart(2, '0');
+          if (elM) elM.textContent = String(m).padStart(2, '0');
+          if (elS) elS.textContent = String(s).padStart(2, '0');
         }
       }, 1000);
     }
@@ -536,43 +563,44 @@
 
     async function submitRsvp(e) {
       e.preventDefault();
-      const btn = document.getElementById('btnSubmitRsvp');
-      btn.disabled = true; btn.textContent = 'Mengirim...';
+      const btn = document.getElementById('btnSubmit');
+      const name = document.getElementById('rsvpName').value.trim();
+      const status = document.getElementById('rsvpStatus').value;
+      const count = document.getElementById('rsvpCount').value;
+      const message = document.getElementById('rsvpMessage').value.trim();
+
+      if (!name) { alert('Silakan isi nama Anda'); return; }
+
+      btn.disabled = true;
+      btn.textContent = 'Mengirim...';
+
       try {
         const res = await fetch('/api/public/rsvp', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            invitationId: INVITATION_ID,
-            guestName: document.getElementById('rsvpName').value,
-            status: document.getElementById('rsvpStatus').value,
-            guestCount: document.getElementById('rsvpCount').value,
-            message: document.getElementById('rsvpMessage').value,
-          })
+          body: JSON.stringify({ invitationId: INVITATION_ID, guestName: name, status, guestCount: count, message })
         });
-        const d = await res.json();
-        if (d.success) {
-          alert('Konfirmasi berhasil dikirim!');
+        const data = await res.json();
+        if (data.success) {
+          alert('Konfirmasi dan doa berhasil dikirim!');
           document.getElementById('rsvpMessage').value = '';
         } else {
-          alert(d.error || 'Gagal mengirim RSVP');
+          alert(data.error || 'Gagal mengirim RSVP');
         }
-      } catch (e) {
-        alert('Koneksi gagal');
+      } catch (err) {
+        alert('Terjadi kendala koneksi.');
       } finally {
-        btn.disabled = false; btn.textContent = 'Kirim RSVP';
+        btn.disabled = false;
+        btn.textContent = 'Kirim Konfirmasi & Doa';
       }
     }
 
-    // Live Preview Auto-Sync Hot Reload Listener
     try {
       const bc = new BroadcastChannel("lux_preview_sync");
-      bc.onmessage = function(e) {
-        if (e.data && e.data.type === "INVITATION_SAVED") {
-          window.location.reload();
-        }
+      bc.onmessage = (e) => {
+        if (e.data?.type === "INVITATION_SAVED") window.location.reload();
       };
-    } catch (e) {}
+    } catch {}
   </script>
 </body>
 </html>
