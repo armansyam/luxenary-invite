@@ -43,12 +43,22 @@ function CheckoutContent() {
         const settings = await settingsRes.json();
         const pricing = settings.grouped?.pricing || {};
 
-        const isPremium = planParam === "PREMIUM" || planParam === "MODERN";
-        const price = isPremium ? Number(pricing.price_modern || 499000) : Number(pricing.price_traditional || 299000);
-        const desc = isPremium ? (pricing.desc_modern || "") : (pricing.desc_traditional || "");
+        let name = "Traditional Series";
+        let price = Number(pricing.price_traditional || 299000);
+        let desc = pricing.desc_traditional || "Tema Traditional — Sakral, Megah & Bernuansa Tradisional";
+
+        if (planParam === "PREMIUM") {
+          name = "Premium Series";
+          price = Number(pricing.price_premium || 699000);
+          desc = pricing.desc_premium || "Tema Premium — Editorial, Full-Text & Luxury Visual Motion";
+        } else if (planParam === "MODERN") {
+          name = "Modern Series";
+          price = Number(pricing.price_modern || 499000);
+          desc = pricing.desc_modern || "Tema Modern — Minimalis, Kontemporer & Sinematik";
+        }
 
         setPlanData({
-          name: isPremium ? "Premium" : "Traditional",
+          name,
           price,
           desc,
         });

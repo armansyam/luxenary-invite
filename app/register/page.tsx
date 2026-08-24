@@ -5,7 +5,7 @@ import { useSession, signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
 type Plan = {
-  id: "TRADITIONAL" | "PREMIUM" | "MODERN";
+  id: "TRADITIONAL" | "MODERN" | "PREMIUM";
   name: string;
   price: number;
   desc: string;
@@ -21,20 +21,29 @@ export default function RegisterPage() {
   const [plans, setPlans] = useState<Plan[]>([
     {
       id: "TRADITIONAL",
-      name: "Traditional",
+      name: "Traditional Series",
       price: 299000,
       desc: "Tema Traditional — Sakral, Megah & Bernuansa Tradisional",
-      themes: ["Prameswari (Royal Keraton)"],
-      features: ["Hingga 200 tamu undangan", "Manajemen RSVP online", "Galeri foto", "Musik latar", "Live streaming", "Photobooth QR"],
+      themes: ["Prameswari", "Dilla Lucky", "Aruna", "Papercut"],
+      features: ["Hingga 200 tamu undangan", "Manajemen RSVP online", "Galeri foto & musik latar", "Buku tamu & WA Direct Link"],
       color: "amber",
     },
     {
-      id: "PREMIUM",
-      name: "Premium",
+      id: "MODERN",
+      name: "Modern Series",
       price: 499000,
-      desc: "Tema Premium — Full-Text Editorial, Minimalis, Sinematik & Vintage",
+      desc: "Tema Modern — Minimalis, Kontemporer & Sinematik",
+      themes: ["Kila", "Ivanna", "Danila"],
+      features: ["Tamu tak terbatas", "Manajemen RSVP & ucapan", "Galeri video background", "Musik latar", "Subdomain custom", "Live streaming & Photobooth QR"],
+      color: "slate",
+    },
+    {
+      id: "PREMIUM",
+      name: "Premium Series",
+      price: 699000,
+      desc: "Tema Premium — Editorial, Full-Text & Luxury Visual Motion",
       themes: ["Kalandra", "Valente", "Aurelia", "Artisan"],
-      features: ["Tamu tak terbatas", "Manajemen RSVP online", "Galeri video & foto", "Musik latar", "Live streaming", "Photobooth QR", "Subdomain custom", "Amplop digital QRIS"],
+      features: ["Semua Fitur Modern Series", "Full-Text Editorial Layout", "Luxury Motion Animation", "Amplop digital QRIS & Bank", "Bebas ganti ke seluruh tema", "Akses VIP & Priority Support"],
       badge: "Terpopuler",
       color: "purple",
     },
@@ -50,15 +59,27 @@ export default function RegisterPage() {
         if (data.grouped?.pricing) {
           const p = data.grouped.pricing;
           setPlans((prev) =>
-            prev.map((plan) => ({
-              ...plan,
-              price: (plan.id === "PREMIUM" || plan.id === "MODERN")
-                ? Number(p.price_modern || plan.price)
-                : Number(p.price_traditional || plan.price),
-              desc: (plan.id === "PREMIUM" || plan.id === "MODERN")
-                ? (p.desc_modern || plan.desc)
-                : (p.desc_traditional || plan.desc),
-            }))
+            prev.map((plan) => {
+              if (plan.id === "PREMIUM") {
+                return {
+                  ...plan,
+                  price: Number(p.price_premium || plan.price),
+                  desc: p.desc_premium || plan.desc,
+                };
+              }
+              if (plan.id === "MODERN") {
+                return {
+                  ...plan,
+                  price: Number(p.price_modern || plan.price),
+                  desc: p.desc_modern || plan.desc,
+                };
+              }
+              return {
+                ...plan,
+                price: Number(p.price_traditional || plan.price),
+                desc: p.desc_traditional || plan.desc,
+              };
+            })
           );
         }
       })
@@ -115,72 +136,82 @@ export default function RegisterPage() {
           </span>
         </h1>
         <p className="text-stone-400 text-base max-w-md mx-auto">
-          Buat undangan pernikahan digital mewah dalam hitungan menit. Pilih paket yang sesuai kebutuhan Anda.
+          Buat undangan pernikahan digital mewah dalam hitungan menit. Pilih kategori paket yang sesuai kebutuhan Anda.
         </p>
       </div>
 
       {/* Plan Cards */}
       <div className="flex-1 flex items-start justify-center px-4 pb-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl w-full">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl w-full">
           {plans.map((plan) => (
             <div
               key={plan.id}
-              className={`relative rounded-3xl border transition-all duration-300 overflow-hidden ${
+              className={`relative rounded-3xl border transition-all duration-300 overflow-hidden flex flex-col justify-between ${
                 selectedPlan === plan.id
                   ? "border-amber-400 shadow-2xl shadow-amber-900/40 scale-[1.02]"
                   : "border-white/10 hover:border-white/20 hover:scale-[1.01]"
-              } ${plan.id === "MODERN" ? "bg-gradient-to-br from-stone-800 to-rose-950/40" : "bg-gradient-to-br from-stone-800 to-stone-900/80"}`}
+              } ${
+                plan.id === "PREMIUM"
+                  ? "bg-gradient-to-br from-purple-950/40 via-stone-900 to-stone-950 border-purple-500/30"
+                  : plan.id === "MODERN"
+                  ? "bg-gradient-to-br from-slate-900 via-stone-900 to-stone-950"
+                  : "bg-gradient-to-br from-amber-950/30 via-stone-900 to-stone-950"
+              }`}
             >
               {plan.badge && (
-                <div className="absolute top-4 right-4 px-3 py-1 bg-gradient-to-r from-rose-500 to-pink-600 text-white text-xs font-bold rounded-full shadow">
+                <div className="absolute top-4 right-4 px-3 py-1 bg-gradient-to-r from-purple-500 to-amber-500 text-white text-xs font-bold rounded-full shadow">
                   {plan.badge}
                 </div>
               )}
 
-              <div className="p-7">
-                <div className="mb-5">
-                  <h2 className="text-2xl font-bold text-white mb-1">{plan.name}</h2>
-                  <p className="text-stone-400 text-sm">{plan.desc}</p>
-                </div>
-
-                <div className="mb-6">
-                  <span className="text-4xl font-bold text-white">
-                    Rp {plan.price.toLocaleString("id-ID")}
-                  </span>
-                  <span className="text-stone-400 text-sm ml-1">/ sekali bayar</span>
-                </div>
-
-                {/* Themes */}
-                <div className="mb-5">
-                  <p className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-2">Tema Tersedia:</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {plan.themes.map((t) => (
-                      <span key={t} className="px-2.5 py-1 bg-white/10 text-white text-xs rounded-full font-medium">
-                        {t}
-                      </span>
-                    ))}
+              <div className="p-7 flex-1 flex flex-col justify-between">
+                <div>
+                  <div className="mb-5">
+                    <h2 className="text-2xl font-bold text-white mb-1">{plan.name}</h2>
+                    <p className="text-stone-400 text-xs leading-relaxed">{plan.desc}</p>
                   </div>
-                </div>
 
-                {/* Features */}
-                <ul className="space-y-2.5 mb-7">
-                  {plan.features.map((f) => (
-                    <li key={f} className="flex items-center gap-2.5 text-sm text-stone-300">
-                      <svg className="w-4 h-4 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                      </svg>
-                      {f}
-                    </li>
-                  ))}
-                </ul>
+                  <div className="mb-6">
+                    <span className="text-3xl lg:text-4xl font-bold text-white">
+                      Rp {plan.price.toLocaleString("id-ID")}
+                    </span>
+                    <span className="text-stone-400 text-xs ml-1">/ sekali bayar</span>
+                  </div>
+
+                  {/* Themes */}
+                  <div className="mb-5">
+                    <p className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-2">Tema Tersedia:</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {plan.themes.map((t) => (
+                        <span key={t} className="px-2.5 py-1 bg-white/10 text-white text-xs rounded-full font-medium">
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Features */}
+                  <ul className="space-y-2.5 mb-7">
+                    {plan.features.map((f) => (
+                      <li key={f} className="flex items-center gap-2.5 text-xs text-stone-300">
+                        <svg className="w-4 h-4 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span>{f}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
 
                 <button
                   type="button"
                   onClick={() => handleChoosePlan(plan.id)}
                   disabled={loading && selectedPlan === plan.id}
-                  className={`w-full py-3.5 rounded-2xl font-bold text-sm transition cursor-pointer disabled:opacity-60 ${
-                    plan.id === "MODERN"
-                      ? "bg-gradient-to-r from-amber-500 to-amber-600 text-white hover:from-amber-600 hover:to-amber-700 shadow-lg shadow-amber-900/40"
+                  className={`w-full py-3.5 rounded-2xl font-bold text-sm transition cursor-pointer disabled:opacity-60 mt-4 ${
+                    plan.id === "PREMIUM"
+                      ? "bg-gradient-to-r from-amber-500 via-amber-600 to-purple-600 text-white hover:opacity-95 shadow-lg shadow-amber-900/40"
+                      : plan.id === "MODERN"
+                      ? "bg-white text-stone-900 hover:bg-stone-100 shadow-md"
                       : "bg-white/10 text-white border border-white/20 hover:bg-white/20"
                   }`}
                 >

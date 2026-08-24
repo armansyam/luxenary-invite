@@ -14,8 +14,10 @@ const DEFAULT_SETTINGS: Array<{ key: string; value: string; label: string; group
   { key: "google_client_secret", value: "", label: "Google Client Secret", group: "google" },
   { key: "price_traditional", value: "299000", label: "Harga Paket Traditional (IDR)", group: "pricing" },
   { key: "price_modern", value: "499000", label: "Harga Paket Modern (IDR)", group: "pricing" },
-  { key: "desc_traditional", value: "Tema Heritage & Moody — Elegan, Bernuansa Tradisional", label: "Deskripsi Paket Traditional", group: "pricing" },
-  { key: "desc_modern", value: "Tema Premium — Sinematik, Editorial, Kontemporer", label: "Deskripsi Paket Modern", group: "pricing" },
+  { key: "price_premium", value: "699000", label: "Harga Paket Premium (IDR)", group: "pricing" },
+  { key: "desc_traditional", value: "Tema Traditional — Sakral, Megah & Bernuansa Tradisional", label: "Deskripsi Paket Traditional", group: "pricing" },
+  { key: "desc_modern", value: "Tema Modern — Minimalis, Kontemporer & Sinematik", label: "Deskripsi Paket Modern", group: "pricing" },
+  { key: "desc_premium", value: "Tema Premium — Editorial, Full-Text & Luxury Visual Motion", label: "Deskripsi Paket Premium", group: "pricing" },
 ];
 
 async function seedDefaultSettings() {

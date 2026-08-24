@@ -1308,39 +1308,48 @@ export default function AdminPage() {
                   {/* Pricing Settings */}
                   <SettingsCard
                     title="Manajemen Harga Paket"
-                    description="Atur harga dan deskripsi paket Traditional dan Modern yang ditampilkan di halaman registrasi."
+                    description="Atur harga dan deskripsi untuk 3 kategori paket: Traditional Series, Modern Series, dan Premium Series."
                     isEditing={Boolean(editSection["pricing"])}
                     onEdit={() => toggleEditSection("pricing")}
-                    onCancel={() => cancelEdit("pricing", ["price_traditional", "price_modern", "desc_traditional", "desc_modern"])}
-                    onSave={() => saveSettings(["price_traditional", "price_modern", "desc_traditional", "desc_modern"], setSavingPricing, "pricing")}
+                    onCancel={() => cancelEdit("pricing", ["price_traditional", "price_modern", "price_premium", "desc_traditional", "desc_modern", "desc_premium"])}
+                    onSave={() => saveSettings(["price_traditional", "price_modern", "price_premium", "desc_traditional", "desc_modern", "desc_premium"], setSavingPricing, "pricing")}
                     saving={savingPricing}
-                    isDirty={isSectionDirty(["price_traditional", "price_modern", "desc_traditional", "desc_modern"])}
+                    isDirty={isSectionDirty(["price_traditional", "price_modern", "price_premium", "desc_traditional", "desc_modern", "desc_premium"])}
                     saveSuccess={settingsSaved["pricing"]}
                     saveSuccessMessage="Harga paket berhasil diperbarui"
                     viewContent={
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
                         <div className="p-4 bg-stone-50 rounded-xl border border-stone-200">
                           <div className="flex items-center justify-between mb-1.5">
-                            <span className="text-xs font-bold text-amber-800 uppercase tracking-wider">Paket Traditional</span>
-                            <span className="text-base font-bold text-gray-900 font-mono">
+                            <span className="text-xs font-bold text-amber-800 uppercase tracking-wider">Traditional</span>
+                            <span className="text-sm font-bold text-gray-900 font-mono">
                               Rp {Number(settingsMap["price_traditional"] || 299000).toLocaleString("id-ID")}
                             </span>
                           </div>
-                          <p className="text-xs text-gray-600">{settingsMap["desc_traditional"] || "Tema Heritage & Moody — Elegan, Bernuansa Tradisional"}</p>
+                          <p className="text-xs text-gray-600 leading-relaxed">{settingsMap["desc_traditional"] || "Tema Traditional — Sakral, Megah & Bernuansa Tradisional"}</p>
                         </div>
-                        <div className="p-4 bg-rose-50 rounded-xl border border-rose-200">
+                        <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
                           <div className="flex items-center justify-between mb-1.5">
-                            <span className="text-xs font-bold text-rose-800 uppercase tracking-wider">Paket Modern</span>
-                            <span className="text-base font-bold text-gray-900 font-mono">
+                            <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">Modern</span>
+                            <span className="text-sm font-bold text-gray-900 font-mono">
                               Rp {Number(settingsMap["price_modern"] || 499000).toLocaleString("id-ID")}
                             </span>
                           </div>
-                          <p className="text-xs text-gray-600">{settingsMap["desc_modern"] || "Tema Premium — Sinematik, Editorial, Kontemporer"}</p>
+                          <p className="text-xs text-gray-600 leading-relaxed">{settingsMap["desc_modern"] || "Tema Modern — Minimalis, Kontemporer & Sinematik"}</p>
+                        </div>
+                        <div className="p-4 bg-purple-50/70 rounded-xl border border-purple-200">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-xs font-bold text-purple-800 uppercase tracking-wider">Premium Series</span>
+                            <span className="text-sm font-bold text-gray-900 font-mono">
+                              Rp {Number(settingsMap["price_premium"] || 699000).toLocaleString("id-ID")}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-600 leading-relaxed">{settingsMap["desc_premium"] || "Tema Premium — Editorial, Full-Text & Luxury Visual Motion"}</p>
                         </div>
                       </div>
                     }
                   >
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
                       <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 space-y-3">
                         <div className="flex items-center gap-2">
                           <span className="w-2 h-2 rounded-full bg-amber-500"></span>
@@ -1356,17 +1365,17 @@ export default function AdminPage() {
                         </FieldRow>
                         <FieldRow label="Deskripsi">
                           <textarea
-                            rows={2}
-                            value={settingsMap["desc_traditional"] || "Tema Traditional — Sakral & Royal Keraton"}
+                            rows={3}
+                            value={settingsMap["desc_traditional"] || "Tema Traditional — Sakral, Megah & Bernuansa Tradisional"}
                             onChange={(e) => setSetting("desc_traditional", e.target.value)}
                             className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition resize-none"
                           />
                         </FieldRow>
                       </div>
 
-                      <div className="p-4 bg-rose-50 rounded-xl border border-rose-200 space-y-3">
+                      <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
                         <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+                          <span className="w-2 h-2 rounded-full bg-slate-600"></span>
                           <span className="text-sm font-bold text-gray-800">Paket Modern</span>
                         </div>
                         <FieldRow label="Harga (IDR)">
@@ -1374,15 +1383,38 @@ export default function AdminPage() {
                             type="number"
                             value={settingsMap["price_modern"] || "499000"}
                             onChange={(e) => setSetting("price_modern", e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-rose-400 focus:ring-1 focus:ring-rose-400 transition"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 transition"
                           />
                         </FieldRow>
                         <FieldRow label="Deskripsi">
                           <textarea
-                            rows={2}
-                            value={settingsMap["desc_modern"] || "Tema Modern — Minimalis, Editorial & Sinematik"}
+                            rows={3}
+                            value={settingsMap["desc_modern"] || "Tema Modern — Minimalis, Kontemporer & Sinematik"}
                             onChange={(e) => setSetting("desc_modern", e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-rose-400 focus:ring-1 focus:ring-rose-400 transition resize-none"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 transition resize-none"
+                          />
+                        </FieldRow>
+                      </div>
+
+                      <div className="p-4 bg-purple-50/70 rounded-xl border border-purple-200 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-purple-600"></span>
+                          <span className="text-sm font-bold text-gray-800">Paket Premium</span>
+                        </div>
+                        <FieldRow label="Harga (IDR)">
+                          <input
+                            type="number"
+                            value={settingsMap["price_premium"] || "699000"}
+                            onChange={(e) => setSetting("price_premium", e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
+                          />
+                        </FieldRow>
+                        <FieldRow label="Deskripsi">
+                          <textarea
+                            rows={3}
+                            value={settingsMap["desc_premium"] || "Tema Premium — Editorial, Full-Text & Luxury Visual Motion"}
+                            onChange={(e) => setSetting("desc_premium", e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition resize-none"
                           />
                         </FieldRow>
                       </div>
