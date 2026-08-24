@@ -28,7 +28,7 @@ export default function RegisterPage() {
       desc: "Tema Traditional — Sakral, Megah & Bernuansa Tradisional",
       themes: ["Prameswari", "Dilla Lucky"],
       features: [
-        `Link invitation "nama-pasangan".localhost:3000/nama-tamu`,
+        "Tautan link personal per nama tamu",
         "Tamu undangan tanpa batas",
         "Manajemen RSVP & ucapan doa",
         "Buku tamu & link WA 1-klik",
@@ -44,7 +44,7 @@ export default function RegisterPage() {
       desc: "Tema Modern — Minimalis, Kontemporer & Sinematik",
       themes: ["Wave", "Papercut", "Ameera"],
       features: [
-        `Link invitation "nama-pasangan".localhost:3000/nama-tamu`,
+        "Tautan link personal per nama tamu",
         "Tamu undangan tanpa batas",
         "Manajemen RSVP & ucapan doa",
         "Buku tamu & link WA 1-klik",
@@ -60,7 +60,7 @@ export default function RegisterPage() {
       desc: "Tema Premium — Editorial, Full-Text & Luxury Visual Motion",
       themes: ["Kalandra", "Valente", "Aurelia", "Artisan"],
       features: [
-        `Link invitation "nama-pasangan".localhost:3000/nama-tamu`,
+        "Tautan link personal per nama tamu",
         "Tamu undangan tanpa batas",
         "Manajemen RSVP & ucapan doa",
         "Buku tamu & link WA 1-klik",
@@ -84,24 +84,24 @@ export default function RegisterPage() {
       .then((data) => {
         if (data.grouped?.pricing) {
           const p = data.grouped.pricing;
+          const commonFeatures = [
+            "Tautan link personal per nama tamu",
+            "Tamu undangan tanpa batas",
+            "Manajemen RSVP & ucapan doa",
+            "Buku tamu & link WA 1-klik",
+            "Galeri foto & musik latar",
+            "Amplop digital QRIS & transfer bank",
+          ];
+
           setPlans((prev) =>
             prev.map((plan) => {
-              const updatedFeatures = [
-                `Link invitation "nama-pasangan".${domain}/nama-tamu`,
-                "Tamu undangan tanpa batas",
-                "Manajemen RSVP & ucapan doa",
-                "Buku tamu & link WA 1-klik",
-                "Galeri foto & musik latar",
-                "Amplop digital QRIS & transfer bank",
-              ];
-
               if (plan.id === "PREMIUM") {
                 return {
                   ...plan,
                   name: p.name_premium || plan.name,
                   price: Number(p.price_premium ?? plan.price),
                   desc: p.desc_premium || plan.desc,
-                  features: updatedFeatures,
+                  features: commonFeatures,
                 };
               }
               if (plan.id === "MODERN") {
@@ -110,7 +110,7 @@ export default function RegisterPage() {
                   name: p.name_modern || plan.name,
                   price: Number(p.price_modern ?? plan.price),
                   desc: p.desc_modern || plan.desc,
-                  features: updatedFeatures,
+                  features: commonFeatures,
                 };
               }
               return {
@@ -118,7 +118,7 @@ export default function RegisterPage() {
                 name: p.name_traditional || plan.name,
                 price: Number(p.price_traditional ?? plan.price),
                 desc: p.desc_traditional || plan.desc,
-                features: updatedFeatures,
+                features: commonFeatures,
               };
             })
           );
@@ -232,13 +232,20 @@ export default function RegisterPage() {
                   </div>
 
                   {/* Features */}
-                  <ul className="space-y-2.5 mb-7">
-                    {plan.features.map((f) => (
-                      <li key={f} className="flex items-center gap-2.5 text-xs text-stone-300">
-                        <svg className="w-4 h-4 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <ul className="space-y-3 mb-7">
+                    {plan.features.map((f, idx) => (
+                      <li key={f} className="flex items-start gap-2.5 text-xs text-stone-300">
+                        <svg className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                         </svg>
-                        <span>{f}</span>
+                        <div className="flex-1">
+                          <span className="leading-snug">{f}</span>
+                          {idx === 0 && (
+                            <div className="mt-1.5 font-mono text-[11px] text-amber-300/95 bg-white/5 border border-white/10 px-2 py-0.5 rounded-md inline-flex items-center">
+                              nama-pasangan.{rootDomain || "localhost:3000"}/tamu
+                            </div>
+                          )}
+                        </div>
                       </li>
                     ))}
                   </ul>
