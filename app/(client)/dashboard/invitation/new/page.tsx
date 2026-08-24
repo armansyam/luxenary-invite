@@ -15,9 +15,9 @@ export default function NewInvitation() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [plans, setPlans] = useState([
-    { type: "TRADITIONAL", name: "Traditional Series", price: 299000, features: ["Tema Prameswari, Aruna & Papercut", "Buku Tamu & WA Direct Link", "RSVP & Ucapan Tamu", "Musik Latar"] },
-    { type: "MODERN", name: "Modern Series", price: 499000, features: ["Tema Kila, Ivanna, Danila", "Subdomain Custom", "Galeri Video Background", "Photobooth QR Session", "Tanpa Batas Tamu"] },
-    { type: "PREMIUM", name: "Premium Series", price: 699000, features: ["Tema Kalandra, Valente, Aurelia, Artisan", "Full-Text Editorial & Luxury Motion", "Amplop Digital QRIS & Bank", "Bebas Ganti Seluruh Tema", "Akses VIP Priority"] },
+    { type: "TRADITIONAL", name: "Traditional Series", price: 50000, features: ["Subdomain custom nama pasangan", "Tamu tak terbatas", "Buku Tamu & WA Direct Link", "RSVP & Ucapan Tamu", "Musik Latar", "Amplop Digital QRIS & Bank"] },
+    { type: "MODERN", name: "Modern Series", price: 100000, features: ["Subdomain custom nama pasangan", "Tamu tak terbatas", "Buku Tamu & WA Direct Link", "RSVP & Ucapan Tamu", "Musik Latar", "Amplop Digital QRIS & Bank"] },
+    { type: "PREMIUM", name: "Premium Series", price: 120000, features: ["Subdomain custom nama pasangan", "Tamu tak terbatas", "Buku Tamu & WA Direct Link", "RSVP & Ucapan Tamu", "Musik Latar", "Amplop Digital QRIS & Bank"] },
   ]);
 
   const [form, setForm] = useState({
