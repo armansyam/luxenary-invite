@@ -14,9 +14,17 @@ export async function getGoogleDriveFolderPhotos(folderUrlOrId: string): Promise
   if (!folderUrlOrId || typeof folderUrlOrId !== "string") return [];
 
   const trimmed = folderUrlOrId.trim();
-  let folderId = trimmed;
+  if (!trimmed) return [];
 
-  const match = trimmed.match(/folders\/([a-zA-Z0-9_-]+)/);
+  // Check if user pasted a single file link instead of a folder link
+  const singleFileMatch = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || trimmed.match(/[?&]id=([a-zA-Z0-9_-]{25,50})/);
+  if (singleFileMatch && !trimmed.includes("folders/")) {
+    const fileId = singleFileMatch[1];
+    return [`/api/cdn/drive?id=${fileId}&w=1200`];
+  }
+
+  let folderId = trimmed;
+  const match = trimmed.match(/folders\/([a-zA-Z0-9_-]+)/) || trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/);
   if (match) {
     folderId = match[1];
   }
@@ -33,6 +41,7 @@ export async function getGoogleDriveFolderPhotos(folderUrlOrId: string): Promise
     const res = await fetch(`https://drive.google.com/drive/folders/${folderId}`, {
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
       },
       next: { revalidate: 600 },
     });
@@ -44,14 +53,32 @@ export async function getGoogleDriveFolderPhotos(folderUrlOrId: string): Promise
 
     const html = await res.text();
 
-    // Extract all file data-ids from the folder table/grid
-    const dataIdMatches = [...html.matchAll(/data-id="([a-zA-Z0-9_-]{25,50})"/g)].map((m) => m[1]);
-    const validIds = [...new Set(dataIdMatches)].filter(
+    // Extract all file data-ids from the folder table/grid and scripts
+    const matchedIds: string[] = [];
+    
+    // 1. data-id matches
+    for (const m of html.matchAll(/data-id="([a-zA-Z0-9_-]{25,50})"/g)) {
+      matchedIds.push(m[1]);
+    }
+    // 2. lh3.googleusercontent.com/d/ matches
+    for (const m of html.matchAll(/googleusercontent\.com\/d\/([a-zA-Z0-9_-]{25,50})/g)) {
+      matchedIds.push(m[1]);
+    }
+    // 3. /file/d/ matches
+    for (const m of html.matchAll(/\/file\/d\/([a-zA-Z0-9_-]{25,50})/g)) {
+      matchedIds.push(m[1]);
+    }
+    // 4. Standard 33-char drive IDs in JS arrays
+    for (const m of html.matchAll(/\["([a-zA-Z0-9_-]{33})"/g)) {
+      matchedIds.push(m[1]);
+    }
+
+    const validIds = [...new Set(matchedIds)].filter(
       (id) => id !== folderId && id.length >= 28 && !id.startsWith("AIza") && !id.startsWith("AA2Yr")
     );
 
     if (validIds.length > 0) {
-      // Map to edge-cached CDN proxy endpoints or Google CDN thumbnail endpoints
+      // Map to edge-cached CDN proxy endpoints
       const photoUrls = validIds.map((id) => `/api/cdn/drive?id=${id}&w=1200`);
       driveFolderCache.set(folderId, {
         photos: photoUrls,
