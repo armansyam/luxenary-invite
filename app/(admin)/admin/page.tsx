@@ -1317,21 +1317,23 @@ export default function AdminPage() {
 
                   {/* Pricing Settings */}
                   <SettingsCard
-                    title="Manajemen Harga Paket"
-                    description="Atur harga dan deskripsi untuk 3 kategori paket: Traditional Series, Modern Series, dan Premium Series."
+                    title="Manajemen Harga & Paket"
+                    description="Atur nama paket, harga, dan deskripsi untuk 3 kategori paket undangan."
                     isEditing={Boolean(editSection["pricing"])}
                     onEdit={() => toggleEditSection("pricing")}
-                    onCancel={() => cancelEdit("pricing", ["price_traditional", "price_modern", "price_premium", "desc_traditional", "desc_modern", "desc_premium"])}
-                    onSave={() => saveSettings(["price_traditional", "price_modern", "price_premium", "desc_traditional", "desc_modern", "desc_premium"], setSavingPricing, "pricing")}
+                    onCancel={() => cancelEdit("pricing", ["name_traditional", "name_modern", "name_premium", "price_traditional", "price_modern", "price_premium", "desc_traditional", "desc_modern", "desc_premium"])}
+                    onSave={() => saveSettings(["name_traditional", "name_modern", "name_premium", "price_traditional", "price_modern", "price_premium", "desc_traditional", "desc_modern", "desc_premium"], setSavingPricing, "pricing")}
                     saving={savingPricing}
-                    isDirty={isSectionDirty(["price_traditional", "price_modern", "price_premium", "desc_traditional", "desc_modern", "desc_premium"])}
+                    isDirty={isSectionDirty(["name_traditional", "name_modern", "name_premium", "price_traditional", "price_modern", "price_premium", "desc_traditional", "desc_modern", "desc_premium"])}
                     saveSuccess={settingsSaved["pricing"]}
-                    saveSuccessMessage="Harga paket berhasil diperbarui"
+                    saveSuccessMessage="Harga dan nama paket berhasil diperbarui"
                     viewContent={
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
                         <div className="p-4 bg-stone-50 rounded-xl border border-stone-200">
                           <div className="flex items-center justify-between mb-1.5">
-                            <span className="text-xs font-bold text-amber-800 uppercase tracking-wider">Traditional</span>
+                            <span className="text-xs font-bold text-amber-800 uppercase tracking-wider">
+                              {settingsMap["name_traditional"] || "Traditional Series"}
+                            </span>
                             <span className="text-sm font-bold text-gray-900 font-mono">
                               Rp {Number(settingsMap["price_traditional"] || 299000).toLocaleString("id-ID")}
                             </span>
@@ -1340,7 +1342,9 @@ export default function AdminPage() {
                         </div>
                         <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
                           <div className="flex items-center justify-between mb-1.5">
-                            <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">Modern</span>
+                            <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                              {settingsMap["name_modern"] || "Modern Series"}
+                            </span>
                             <span className="text-sm font-bold text-gray-900 font-mono">
                               Rp {Number(settingsMap["price_modern"] || 499000).toLocaleString("id-ID")}
                             </span>
@@ -1349,7 +1353,9 @@ export default function AdminPage() {
                         </div>
                         <div className="p-4 bg-purple-50/70 rounded-xl border border-purple-200">
                           <div className="flex items-center justify-between mb-1.5">
-                            <span className="text-xs font-bold text-purple-800 uppercase tracking-wider">Premium Series</span>
+                            <span className="text-xs font-bold text-purple-800 uppercase tracking-wider">
+                              {settingsMap["name_premium"] || "Premium Series"}
+                            </span>
                             <span className="text-sm font-bold text-gray-900 font-mono">
                               Rp {Number(settingsMap["price_premium"] || 699000).toLocaleString("id-ID")}
                             </span>
@@ -1363,8 +1369,17 @@ export default function AdminPage() {
                       <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 space-y-3">
                         <div className="flex items-center gap-2">
                           <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-                          <span className="text-sm font-bold text-gray-800">Paket Traditional</span>
+                          <span className="text-sm font-bold text-gray-800">Paket 1 (Traditional)</span>
                         </div>
+                        <FieldRow label="Nama Paket">
+                          <input
+                            type="text"
+                            value={settingsMap["name_traditional"] || "Traditional Series"}
+                            onChange={(e) => setSetting("name_traditional", e.target.value)}
+                            placeholder="Contoh: Traditional Series"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition"
+                          />
+                        </FieldRow>
                         <FieldRow label="Harga (IDR)">
                           <input
                             type="number"
@@ -1386,8 +1401,17 @@ export default function AdminPage() {
                       <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
                         <div className="flex items-center gap-2">
                           <span className="w-2 h-2 rounded-full bg-slate-600"></span>
-                          <span className="text-sm font-bold text-gray-800">Paket Modern</span>
+                          <span className="text-sm font-bold text-gray-800">Paket 2 (Modern)</span>
                         </div>
+                        <FieldRow label="Nama Paket">
+                          <input
+                            type="text"
+                            value={settingsMap["name_modern"] || "Modern Series"}
+                            onChange={(e) => setSetting("name_modern", e.target.value)}
+                            placeholder="Contoh: Modern Series"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 transition"
+                          />
+                        </FieldRow>
                         <FieldRow label="Harga (IDR)">
                           <input
                             type="number"
@@ -1409,8 +1433,17 @@ export default function AdminPage() {
                       <div className="p-4 bg-purple-50/70 rounded-xl border border-purple-200 space-y-3">
                         <div className="flex items-center gap-2">
                           <span className="w-2 h-2 rounded-full bg-purple-600"></span>
-                          <span className="text-sm font-bold text-gray-800">Paket Premium</span>
+                          <span className="text-sm font-bold text-gray-800">Paket 3 (Premium)</span>
                         </div>
+                        <FieldRow label="Nama Paket">
+                          <input
+                            type="text"
+                            value={settingsMap["name_premium"] || "Premium Series"}
+                            onChange={(e) => setSetting("name_premium", e.target.value)}
+                            placeholder="Contoh: Premium Series"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
+                          />
+                        </FieldRow>
                         <FieldRow label="Harga (IDR)">
                           <input
                             type="number"

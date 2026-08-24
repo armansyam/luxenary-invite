@@ -37,9 +37,9 @@ export default function NewInvitation() {
         if (data.grouped?.pricing) {
           const p = data.grouped.pricing;
           setPlans([
-            { type: "TRADITIONAL", name: "Traditional Series", price: Number(p.price_traditional || 299000), features: ["Tema Prameswari, Aruna & Papercut", "Buku Tamu & WA Direct Link", "RSVP & Ucapan Tamu", "Musik Latar"] },
-            { type: "MODERN", name: "Modern Series", price: Number(p.price_modern || 499000), features: ["Tema Kila, Ivanna, Danila", "Subdomain Custom", "Galeri Video Background", "Photobooth QR Session", "Tanpa Batas Tamu"] },
-            { type: "PREMIUM", name: "Premium Series", price: Number(p.price_premium || 699000), features: ["Tema Kalandra, Valente, Aurelia, Artisan", "Full-Text Editorial & Luxury Motion", "Amplop Digital QRIS & Bank", "Bebas Ganti Seluruh Tema", "Akses VIP Priority"] },
+            { type: "TRADITIONAL", name: p.name_traditional || "Traditional Series", price: Number(p.price_traditional || 299000), features: ["Tema Prameswari, Aruna & Papercut", "Buku Tamu & WA Direct Link", "RSVP & Ucapan Tamu", "Musik Latar"] },
+            { type: "MODERN", name: p.name_modern || "Modern Series", price: Number(p.price_modern || 499000), features: ["Tema Kila, Ivanna, Danila", "Subdomain Custom", "Galeri Video Background", "Photobooth QR Session", "Tanpa Batas Tamu"] },
+            { type: "PREMIUM", name: p.name_premium || "Premium Series", price: Number(p.price_premium || 699000), features: ["Tema Kalandra, Valente, Aurelia, Artisan", "Full-Text Editorial & Luxury Motion", "Amplop Digital QRIS & Bank", "Bebas Ganti Seluruh Tema", "Akses VIP Priority"] },
           ]);
         }
       })

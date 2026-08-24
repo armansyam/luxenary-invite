@@ -63,6 +63,7 @@ export default function RegisterPage() {
               if (plan.id === "PREMIUM") {
                 return {
                   ...plan,
+                  name: p.name_premium || plan.name,
                   price: Number(p.price_premium || plan.price),
                   desc: p.desc_premium || plan.desc,
                 };
@@ -70,12 +71,14 @@ export default function RegisterPage() {
               if (plan.id === "MODERN") {
                 return {
                   ...plan,
+                  name: p.name_modern || plan.name,
                   price: Number(p.price_modern || plan.price),
                   desc: p.desc_modern || plan.desc,
                 };
               }
               return {
                 ...plan,
+                name: p.name_traditional || plan.name,
                 price: Number(p.price_traditional || plan.price),
                 desc: p.desc_traditional || plan.desc,
               };
