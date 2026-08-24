@@ -27,7 +27,7 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body {
       font-family: 'Lora', serif;
-      background: var(--bg-main);
+      background: #000000;
       color: var(--text-main);
       overflow-x: hidden;
       scroll-behavior: smooth;
@@ -76,6 +76,15 @@
     .delay-3 { transition-delay: 0.45s; }
 
     /* =========================================
+       PAGE WRAPPER (CENTERED EDITORIAL MAGAZINE)
+       ========================================= */
+    .page-wrap {
+      width: 100%; max-width: 500px; margin: 0 auto; background: var(--bg-main);
+      min-height: 100vh; position: relative; box-shadow: 0 0 60px rgba(0,0,0,0.8);
+      overflow-x: hidden;
+    }
+
+    /* =========================================
        1. COVER SCREEN (POPUP PEMBUKA)
        ========================================= */
     .cover-screen {
@@ -98,7 +107,7 @@
     .cover-date-sub { font-family: 'Cormorant Infant', serif; font-size: 0.82rem; letter-spacing: 0.2em; text-transform: uppercase; color: #d9d9d9; margin-top: 0.6rem; }
     .cover-bottom { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 0.8rem; }
     .cover-guest-box {
-      background: rgba(38, 38, 39, 0.82); backdrop-filter: blur(12px);
+      background: rgba(38, 38, 39, 0.85); backdrop-filter: blur(12px);
       border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
       padding: 1.2rem 1.6rem; width: 100%; max-width: 320px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
@@ -121,40 +130,51 @@
     .btn-qr-ghost:hover { background: rgba(255, 255, 255, 0.08); color: #ffffff; }
 
     /* =========================================
-       PAGE CONTAINER (EDITORIAL CONTAINER)
+       2. HERO SLIDESHOW (100vh FULL PHOTO CROSSFADE)
        ========================================= */
-    .page-wrap {
-      width: 100%; max-width: 500px; margin: 0 auto; background: var(--bg-main);
-      min-height: 100vh; padding-bottom: 110px; box-shadow: 0 0 50px rgba(0,0,0,0.5);
+    .sec-hero-slideshow {
+      position: relative; width: 100%; height: 100vh; height: 100dvh;
+      overflow: hidden; display: flex; flex-direction: column;
+      justify-content: space-between; align-items: center;
+      padding: 3.5rem 1.8rem 3.5rem; text-align: center;
     }
+    .slideshow-bg-container {
+      position: absolute; inset: 0; z-index: 1; pointer-events: none;
+    }
+    .slideshow-slide {
+      position: absolute; inset: 0; background-size: cover; background-position: center;
+      opacity: 0; transition: opacity 1.5s ease-in-out, transform 6s ease-out;
+      transform: scale(1.04);
+    }
+    .slideshow-slide.active {
+      opacity: 1; transform: scale(1);
+    }
+    .slideshow-scrim {
+      position: absolute; inset: 0; z-index: 2;
+      background: linear-gradient(to bottom, rgba(16,16,16,0.6) 0%, rgba(16,16,16,0.15) 30%, rgba(16,16,16,0.2) 65%, rgba(16,16,16,0.95) 100%);
+    }
+    .hero-content-top { position: relative; z-index: 3; width: 100%; }
+    .hero-tagline-top { font-family: 'Cormorant Infant', serif; font-size: 0.85rem; letter-spacing: 0.25em; text-transform: uppercase; color: #d9d9d9; display: block; margin-bottom: 0.4rem; }
+    .hero-title-main {
+      font-size: clamp(2.4rem, 8.5vw, 3.8rem); line-height: 1.1; color: #ffffff;
+      text-transform: uppercase; font-family: 'Cormorant', serif; font-weight: 600;
+      text-shadow: 0 4px 20px rgba(0,0,0,0.8);
+    }
+    .hero-date-main { font-family: 'Cormorant Infant', serif; font-size: 0.85rem; letter-spacing: 0.2em; text-transform: uppercase; color: #d9d9d9; margin-top: 0.5rem; display: block; }
+    .hero-content-bottom { position: relative; z-index: 3; width: 100%; max-width: 440px; margin-top: auto; }
+    .hero-quote-text { font-style: italic; font-size: 0.95rem; line-height: 1.7; color: rgba(245, 245, 245, 0.92); text-shadow: 0 2px 10px rgba(0,0,0,0.9); margin-bottom: 0.4rem; }
+    .hero-quote-ref { font-family: 'Cormorant Infant', serif; font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); display: block; font-weight: 600; }
 
     /* SECTION COMMON */
-    .sec-flow { padding: 4.5rem 1.8rem; text-align: center; position: relative; }
+    .sec-flow { padding: 4.8rem 1.8rem; text-align: center; position: relative; }
     .sec-title { font-size: clamp(2.2rem, 7.5vw, 3.2rem); color: var(--text-heading); line-height: 1.1; margin-bottom: 0.6rem; text-transform: uppercase; }
     .sec-sub { font-size: 0.82rem; color: var(--text-muted); line-height: 1.65; max-width: 420px; margin: 0 auto 1.8rem; font-family: 'Lora', serif; }
     .sec-divider { width: calc(100% - 3.6rem); height: 1px; background: var(--border-subtle); margin: 0 auto; }
 
     /* =========================================
-       2. OPENING VIEW (HERO BANNER)
-       ========================================= */
-    .sec-hero-opening { padding: 4.5rem 1.8rem 3.5rem; text-align: center; }
-    .hero-top-eyebrow { font-family: 'Cormorant Infant', serif; font-size: 0.85rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.5rem; display: block; }
-    .hero-title { font-size: clamp(2.4rem, 8.5vw, 3.6rem); color: var(--text-heading); text-transform: uppercase; line-height: 1.1; margin-bottom: 0.5rem; }
-    .hero-title em { font-style: italic; font-size: 0.7em; color: var(--accent); }
-    .hero-date-str { font-family: 'Cormorant Infant', serif; font-size: 0.82rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 2rem; display: block; }
-    .hero-photo-box {
-      width: 100%; aspect-ratio: 4/5; border-radius: var(--radius-lg); overflow: hidden;
-      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6); margin-bottom: 2rem; border: 1px solid var(--border-subtle);
-    }
-    .hero-photo-box img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .hero-quote-box { max-width: 420px; margin: 0 auto; background: var(--bg-card); padding: 1.8rem 1.5rem; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); }
-    .hero-quote-text { font-style: italic; font-size: 0.92rem; color: #d9d9d9; line-height: 1.7; margin-bottom: 0.6rem; }
-    .hero-quote-ref { font-family: 'Cormorant Infant', serif; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); display: block; }
-
-    /* =========================================
        3. BRIDE & GROOM (DEDICATED PROFILE CARDS)
        ========================================= */
-    .sec-couple { padding: 4.5rem 1.8rem; background: var(--bg-surface); text-align: center; }
+    .sec-couple { padding: 4.8rem 1.8rem; background: var(--bg-surface); text-align: center; }
     .couple-cards-stack { display: flex; flex-direction: column; gap: 2rem; margin-top: 2rem; }
     .couple-card {
       background: var(--bg-card); border-radius: var(--radius-lg); padding: 2.2rem 1.6rem;
@@ -180,7 +200,7 @@
     /* =========================================
        4. SAVE THE DATE & COUNTDOWN & EVENTS
        ========================================= */
-    .sec-events { padding: 4.5rem 1.8rem; text-align: center; }
+    .sec-events { padding: 4.8rem 1.8rem; text-align: center; }
     .event-full-date { font-family: 'Cormorant Infant', serif; font-size: 0.95rem; letter-spacing: 0.15em; color: #d9d9d9; text-transform: uppercase; margin-bottom: 2rem; display: block; }
     .countdown-boxes { display: flex; justify-content: center; gap: 8px; margin-bottom: 2.2rem; }
     .cd-box {
@@ -359,34 +379,65 @@
     /* =========================================
        10. FOOTER & CONTROLS
        ========================================= */
-    .site-footer { text-align: center; padding: 4.5rem 1.8rem; background: #080808; border-top: 1px solid var(--border-subtle); }
+    .site-footer { text-align: center; padding: 4.5rem 1.8rem 5rem; background: #080808; border-top: 1px solid var(--border-subtle); }
     .footer-name { font-size: 2.0rem; color: #ffffff; margin-bottom: 0.4rem; text-transform: uppercase; }
     .footer-name em { font-style: italic; font-size: 0.75em; color: var(--accent); }
     .footer-sub { font-family: 'Cormorant Infant', serif; font-size: 0.75rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--accent); margin-bottom: 1.2rem; }
     .footer-note { font-size: 0.78rem; color: var(--text-muted); line-height: 1.65; max-width: 360px; margin: 0 auto; font-family: 'Lora', serif; }
 
-    .bottom-dock {
-      position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
-      background: rgba(26, 26, 28, 0.92); backdrop-filter: blur(20px);
-      border: 1px solid var(--border-subtle); border-radius: 50px;
-      padding: 6px 14px; display: flex; align-items: center; gap: 6px;
-      box-shadow: 0 10px 35px rgba(0,0,0,0.6); z-index: 80; max-width: 92vw;
+    /* =========================================
+       11. FLOATING CONTROLS & SIDE MENU
+       ========================================= */
+    /* Top Right Menu Hamburger Button */
+    .btn-top-menu {
+      position: fixed; top: 18px; right: 18px; width: 44px; height: 44px;
+      border-radius: 12px; background: rgba(30, 30, 32, 0.85); backdrop-filter: blur(12px);
+      border: 1px solid var(--border-subtle); color: #ffffff; display: flex;
+      align-items: center; justify-content: center; z-index: 120; cursor: pointer;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.5); transition: transform 0.2s;
     }
-    .dock-a {
-      display: flex; flex-direction: column; align-items: center; text-decoration: none;
-      color: rgba(217, 217, 217, 0.6); font-size: 0.5rem; font-weight: 600; text-transform: uppercase; padding: 3px 8px; transition: color 0.2s; font-family: 'Plus Jakarta Sans', sans-serif;
-    }
-    .dock-a:hover { color: #ffffff; }
-    .dock-ico { width: 17px; height: 17px; stroke-width: 1.8; margin-bottom: 2px; }
+    .btn-top-menu:hover { transform: scale(1.05); }
 
-    .music-fab {
-      position: fixed; top: 18px; right: 18px; width: 40px; height: 40px;
-      border-radius: 50%; background: rgba(38, 38, 39, 0.88); border: 1px solid var(--border-subtle);
-      color: #d9d9d9; display: flex; align-items: center; justify-content: center;
-      z-index: 100; cursor: pointer; backdrop-filter: blur(12px); box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    /* Side Navigation Drawer */
+    .side-nav-drawer {
+      position: fixed; top: 0; right: 0; bottom: 0; width: 280px; max-width: 80vw;
+      background: rgba(22, 22, 24, 0.97); backdrop-filter: blur(20px);
+      border-left: 1px solid var(--border-subtle); z-index: 150; padding: 4rem 1.8rem 2rem;
+      display: flex; flex-direction: column; gap: 1.2rem; transform: translateX(100%);
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: -10px 0 40px rgba(0,0,0,0.7);
     }
-    .music-fab.playing svg { animation: spin 5s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    .side-nav-drawer.open { transform: translateX(0); }
+    .side-nav-close {
+      position: absolute; top: 16px; right: 16px; width: 34px; height: 34px;
+      border-radius: 50%; background: var(--bg-card); border: 1px solid var(--border-subtle);
+      color: #ffffff; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+    .side-nav-link {
+      font-family: 'Cormorant', serif; font-size: 1.25rem; color: #d9d9d9;
+      text-decoration: none; text-transform: uppercase; letter-spacing: 0.08em;
+      padding: 0.6rem 0; border-bottom: 1px solid rgba(255,255,255,0.06); transition: color 0.2s, padding-left 0.2s;
+    }
+    .side-nav-link:hover { color: var(--accent); padding-left: 6px; }
+
+    /* Bottom Right Floating Controls (Fullscreen + Audio) */
+    .floating-actions-bottom {
+      position: fixed; bottom: 20px; right: 20px; z-index: 100;
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+    }
+    .btn-fullscreen, .btn-audio-fab {
+      width: 42px; height: 42px; border-radius: 50%;
+      background: rgba(30, 30, 32, 0.88); backdrop-filter: blur(12px);
+      border: 1px solid var(--border-subtle); color: #d9d9d9;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; box-shadow: 0 6px 20px rgba(0,0,0,0.6); transition: transform 0.2s, background 0.2s;
+    }
+    .btn-fullscreen:hover, .btn-audio-fab:hover { background: #d9d9d9; color: #101010; transform: scale(1.08); }
+    .btn-audio-fab.playing svg { animation: soundPulse 1.8s ease-in-out infinite alternate; }
+    @keyframes soundPulse {
+      0% { transform: scale(0.92); opacity: 0.8; }
+      100% { transform: scale(1.08); opacity: 1; }
+    }
 
     .modal-bg {
       position: fixed; inset: 0; z-index: 300; background: rgba(0,0,0,0.88); backdrop-filter: blur(12px);
@@ -425,28 +476,65 @@
     </div>
   </div>
 
+  <!-- TOP RIGHT MENU HAMBURGER BUTTON -->
+  <button class="btn-top-menu" id="btnTopMenu" onclick="toggleSideNav()" aria-label="Open Navigation">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+  </button>
+
+  <!-- SIDE NAVIGATION DRAWER -->
+  <div class="side-nav-drawer" id="sideNavDrawer">
+    <button class="side-nav-close" onclick="toggleSideNav()">✕</button>
+    <a href="#home" class="side-nav-link" onclick="toggleSideNav()">Home</a>
+    <a href="#couple" class="side-nav-link" onclick="toggleSideNav()">Bride &amp; Groom</a>
+    <a href="#event" class="side-nav-link" onclick="toggleSideNav()">Wedding Event</a>
+    <a href="#story" class="side-nav-link" onclick="toggleSideNav()">Love Story</a>
+    <a href="#moments" class="side-nav-link" onclick="toggleSideNav()">Gallery</a>
+    <a href="#rsvp" class="side-nav-link" onclick="toggleSideNav()">RSVP &amp; Wishes</a>
+    <a href="#gift" class="side-nav-link" onclick="toggleSideNav()">Wedding Gift</a>
+    <a href="javascript:void(0)" class="side-nav-link" onclick="openModal(); toggleSideNav();" style="{{qrButtonDisplay}}">Souvenir Card</a>
+  </div>
+
+  <!-- FLOATING ACTIONS (BOTTOM RIGHT: FULLSCREEN & AUDIO) -->
+  <div class="floating-actions-bottom">
+    <button class="btn-fullscreen" onclick="toggleFullScreen()" title="Fullscreen Mode" aria-label="Toggle Fullscreen">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+    </button>
+
+    <audio id="bgAudio" loop preload="auto">
+      <source src="{{audioUrl}}" type="audio/ogg">
+      <source src="{{audioUrl}}" type="audio/mpeg">
+    </audio>
+    <button class="btn-audio-fab" id="musicFab" onclick="toggleAudio()" aria-label="Toggle Music" title="Audio Player">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+    </button>
+  </div>
+
   <!-- =========================================
        MAIN SCROLLABLE PAGE (EDITORIAL MAGAZINE)
        ========================================= -->
   <main class="page-wrap" id="mainPage">
 
-    <!-- 1. SLIDE 1: OPENING VIEW (HERO) -->
-    <section class="sec-hero-opening" id="home">
-      <span class="hero-top-eyebrow reveal">{{weddingTagline}}</span>
-      <h1 class="hero-title serif reveal delay-1">{{firstName}} <em>&amp;</em> {{secondName}}</h1>
-      <span class="hero-date-str reveal delay-1">{{weddingDate}}</span>
-      
-      <div class="hero-photo-box reveal-zoom delay-2">
-        <img src="{{globalBgUrl}}" alt="{{firstName}} &amp; {{secondName}}">
+    <!-- 1. SLIDE 1: OPENING VIEW WITH BACKGROUND SLIDESHOW -->
+    <section class="sec-hero-slideshow" id="home">
+      <!-- Background Slideshow Layer (2-3 Photos) -->
+      <div class="slideshow-bg-container">
+        <div class="slideshow-slide active" style="background-image: url('{{landingCoverUrl}}');"></div>
+        <div class="slideshow-slide" style="background-image: url('{{globalBgUrl}}');"></div>
+        <div class="slideshow-slide" style="background-image: url('{{sidebarPhotoUrl}}');"></div>
+      </div>
+      <div class="slideshow-scrim"></div>
+
+      <div class="hero-content-top reveal">
+        <span class="hero-tagline-top">{{weddingTagline}}</span>
+        <h1 class="hero-title-main">{{firstName}} &amp; {{secondName}}</h1>
+        <span class="hero-date-main">{{weddingDate}}</span>
       </div>
 
-      <div class="hero-quote-box reveal delay-3">
+      <div class="hero-content-bottom reveal delay-2">
         <p class="hero-quote-text">"{{openingQuote}}"</p>
         <cite class="hero-quote-ref">{{openingQuoteRef}}</cite>
       </div>
     </section>
-
-    <div class="sec-divider"></div>
 
     <!-- 2. SECTION: BRIDE & GROOM (DEDICATED PROFILE CARDS) -->
     <section class="sec-couple" id="couple">
@@ -597,43 +685,6 @@
     </footer>
   </main>
 
-  <!-- FLOATING NAVIGATION DOCK -->
-  <nav class="bottom-dock">
-    <a href="#home" class="dock-a">
-      <svg class="dock-ico" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-      <span>Home</span>
-    </a>
-    <a href="#couple" class="dock-a">
-      <svg class="dock-ico" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
-      <span>Couple</span>
-    </a>
-    <a href="#event" class="dock-a">
-      <svg class="dock-ico" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-      <span>Event</span>
-    </a>
-    <a href="#moments" class="dock-a">
-      <svg class="dock-ico" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-      <span>Gallery</span>
-    </a>
-    <a href="#rsvp" class="dock-a">
-      <svg class="dock-ico" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
-      <span>RSVP</span>
-    </a>
-    <button onclick="openModal()" class="dock-a" style="background:none;border:none;cursor:pointer;{{qrButtonDisplay}}">
-      <svg class="dock-ico" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
-      <span>Ticket</span>
-    </button>
-  </nav>
-
-  <!-- FLOATING MUSIC BUTTON -->
-  <audio id="bgAudio" loop preload="auto">
-    <source src="{{audioUrl}}" type="audio/ogg">
-    <source src="{{audioUrl}}" type="audio/mpeg">
-  </audio>
-  <button class="music-fab" id="musicFab" onclick="toggleAudio()" aria-label="Toggle Music">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
-  </button>
-
   <!-- QR / TICKET MODAL -->
   <div class="modal-bg" id="modalBg" onclick="closeModal(event)">
     <div class="modal-card" onclick="event.stopPropagation()">
@@ -651,6 +702,19 @@
     const TARGET_DATE = "{{targetDate}}";
     let isPlaying = false;
 
+    // Background Slideshow Carousel Logic (Transitions every 3.5s)
+    function initSlideshow() {
+      const slides = document.querySelectorAll('.slideshow-slide');
+      if (slides.length <= 1) return;
+      let currentSlide = 0;
+      setInterval(() => {
+        slides[currentSlide].classList.remove('active');
+        currentSlide = (currentSlide + 1) % slides.length;
+        slides[currentSlide].classList.add('active');
+      }, 3500);
+    }
+    document.addEventListener("DOMContentLoaded", initSlideshow);
+
     // Scroll Reveal Observer
     document.addEventListener("DOMContentLoaded", () => {
       const observer = new IntersectionObserver((entries) => {
@@ -663,6 +727,21 @@
 
       document.querySelectorAll(".reveal, .reveal-zoom").forEach(el => observer.observe(el));
     });
+
+    // Side Navigation Drawer Toggle
+    function toggleSideNav() {
+      const drawer = document.getElementById('sideNavDrawer');
+      if (drawer) drawer.classList.toggle('open');
+    }
+
+    // Fullscreen Toggle
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+      }
+    }
 
     function getGuestName() {
       const p = new URLSearchParams(window.location.search);
