@@ -96,6 +96,33 @@ const COLOR_PALETTES = [
   { id: "monochrome", name: "Monochrome Dark & Silver", hex: "#262626", desc: "Minimalis editorial hitam-putih" },
 ];
 
+const MUSIC_PRESETS = [
+  {
+    id: "canon-in-d",
+    title: "Canon in D — Johann Pachelbel",
+    genre: "Piano & Strings Klasik Romantis",
+    url: "/music/canon-in-d.ogg",
+  },
+  {
+    id: "pachelbel-piano",
+    title: "Canon in D — Piano Solo (Lee Galloway)",
+    genre: "Solo Piano Syahdu & Khidmat",
+    url: "/music/pachelbel-piano.ogg",
+  },
+  {
+    id: "canon-gigue",
+    title: "Canon & Gigue in D — Strings & Organ",
+    genre: "Orkestra Strings Sakral & Megah",
+    url: "/music/canon-gigue.ogg",
+  },
+  {
+    id: "moonlight-sonata",
+    title: "Moonlight Sonata Mvt. 2 — Beethoven",
+    genre: "Piano Klasik Lembut & Romantis",
+    url: "/music/moonlight-sonata.ogg",
+  },
+];
+
 const EVENT_PRESETS = [
   "Akad Nikah",
   "Resepsi Pernikahan",
@@ -121,10 +148,63 @@ export default function EditInvitation() {
   const [uploadingCount, setUploadingCount] = useState(0);
   const [lastSaved, setLastSaved] = useState<string>("");
   const [savedSnapshot, setSavedSnapshot] = useState<any>(null);
+  const [playingAudioUrl, setPlayingAudioUrl] = useState<string | null>(null);
+  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
+  const [uploadingAudio, setUploadingAudio] = useState(false);
 
   const isUploading = uploadingCount > 0;
   const handleUploadStart = () => setUploadingCount((c) => c + 1);
   const handleUploadEnd = () => setUploadingCount((c) => Math.max(0, c - 1));
+
+  const togglePlayPreview = (url: string) => {
+    if (playingAudioUrl === url) {
+      audioElement?.pause();
+      setPlayingAudioUrl(null);
+    } else {
+      audioElement?.pause();
+      const audio = new Audio(url);
+      audio.play().catch(() => {});
+      audio.onended = () => setPlayingAudioUrl(null);
+      setAudioElement(audio);
+      setPlayingAudioUrl(url);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      audioElement?.pause();
+    };
+  }, [audioElement]);
+
+  const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !invitationId) return;
+
+    setUploadingAudio(true);
+    try {
+      const data = new FormData();
+      data.append("file", file);
+      data.append("invitationId", invitationId);
+      data.append("slot", "MUSIC");
+
+      const res = await fetch("/api/client/upload", {
+        method: "POST",
+        body: data,
+      });
+
+      if (!res.ok) throw new Error("Gagal mengunggah file audio");
+      const result = await res.json();
+      if (result.url) {
+        updateField("musicUrl", result.url);
+        updateFeatureSetting("musicUrl", result.url);
+        updateFeatureSetting("showMusic", true);
+      }
+    } catch (err: any) {
+      alert(err.message || "Gagal mengunggah file musik");
+    } finally {
+      setUploadingAudio(false);
+    }
+  };
 
   // Independent Section Collapse States (true = collapsed/tutup, false = expanded/buka)
   const defaultCollapsed: Record<string, boolean> = {
@@ -559,6 +639,7 @@ export default function EditInvitation() {
   const selectedThemeObj = THEMES.find((t) => t.id === currentThemeId) || THEMES[0];
   const selectedPaletteObj = COLOR_PALETTES.find((p) => p.id === currentPalette) || COLOR_PALETTES[0];
 
+  const showMusic = getFeatureSetting("showMusic", true);
   const showStory = getFeatureSetting("showStory", true);
   const showGallery = getFeatureSetting("showGallery", true);
   const showGift = getFeatureSetting("showGift", true);
@@ -819,8 +900,8 @@ export default function EditInvitation() {
       <section className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
         <div className="p-5 sm:p-6 border-b border-stone-100 flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-base font-bold text-stone-900">2. Sampul &amp; Visual Utama Undangan</h2>
-            <p className="text-xs text-stone-500">Foto sampul pop-up saat pertama dibuka dan visual hero desktop</p>
+            <h2 className="text-base font-bold text-stone-900">2. Sampul, Visual &amp; Musik Latar</h2>
+            <p className="text-xs text-stone-500">Foto sampul pop-up, visual desktop widescreen, dan musik latar otomatis</p>
           </div>
           <button
             type="button"
@@ -829,7 +910,7 @@ export default function EditInvitation() {
               collapsed.sec2 ? "bg-amber-50 text-amber-900 hover:bg-amber-100" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
             }`}
           >
-            {collapsed.sec2 ? "Edit Visual" : "Tutup"}
+            {collapsed.sec2 ? "Edit Visual & Musik" : "Tutup"}
           </button>
         </div>
 
@@ -847,8 +928,8 @@ export default function EditInvitation() {
               </span>
               <span>•</span>
               <span className="flex items-center gap-1.5">
-                <span className={`w-2 h-2 rounded-full ${media["GLOBAL_FIXED_BG"] ? "bg-emerald-500" : "bg-stone-300"}`}></span>
-                <span>Background Kolom: <strong>{media["GLOBAL_FIXED_BG"] ? "Terpasang" : "Default"}</strong></span>
+                <span className={`w-2 h-2 rounded-full ${showMusic ? "bg-emerald-500" : "bg-stone-300"}`}></span>
+                <span>Musik Latar: <strong>{showMusic ? (invitation.musicUrl ? "Aktif" : "Canon in D") : "Hening"}</strong></span>
               </span>
             </div>
             <button
@@ -856,11 +937,11 @@ export default function EditInvitation() {
               onClick={() => toggleSection("sec2")}
               className="text-xs font-bold text-amber-800 hover:underline"
             >
-              Ubah Foto &rarr;
+              Ubah Visual &amp; Musik &rarr;
             </button>
           </div>
         ) : (
-          <div className="p-5 sm:p-7 space-y-5">
+          <div className="p-5 sm:p-7 space-y-6">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-stone-700">Mode Tanpa Foto:</span>
               <SectionHeaderToggle
@@ -918,13 +999,167 @@ export default function EditInvitation() {
               </div>
             )}
 
+            {/* Musik Latar Pernikahan */}
+            <div className="p-4 sm:p-5 rounded-2xl border border-amber-200/80 bg-amber-50/30 space-y-4">
+              <div className="flex items-center justify-between gap-3 border-b border-amber-200/60 pb-3">
+                <div>
+                  <h3 className="text-xs font-bold text-stone-900 uppercase tracking-wider">Musik Latar Pernikahan (Audio Background)</h3>
+                  <p className="text-[11px] text-stone-500">Audio yang otomatis diputar saat tamu menekan tombol &ldquo;Buka Undangan&rdquo;</p>
+                </div>
+                <SectionHeaderToggle
+                  label=""
+                  checked={showMusic}
+                  onChange={(v) => updateFeatureSetting("showMusic", v)}
+                />
+              </div>
+
+              {showMusic && (
+                <div className="space-y-4">
+                  {/* Current Active Music Bar */}
+                  <div className="p-3 bg-white rounded-xl border border-stone-200 flex items-center justify-between gap-3 shadow-2xs">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <button
+                        type="button"
+                        onClick={() => togglePlayPreview(invitation.musicUrl || MUSIC_PRESETS[0].url)}
+                        className={`w-9 h-9 rounded-full flex items-center justify-center text-white transition shrink-0 cursor-pointer ${
+                          playingAudioUrl === (invitation.musicUrl || MUSIC_PRESETS[0].url)
+                            ? "bg-amber-800 ring-2 ring-amber-600 animate-pulse"
+                            : "bg-stone-900 hover:bg-stone-800"
+                        }`}
+                        title="Dengarkan Musik"
+                      >
+                        {playingAudioUrl === (invitation.musicUrl || MUSIC_PRESETS[0].url) ? (
+                          <span className="text-xs font-bold">❚❚</span>
+                        ) : (
+                          <span className="text-xs font-bold ml-0.5">▶</span>
+                        )}
+                      </button>
+                      <div className="min-w-0">
+                        <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block">Lagu Terpasang:</span>
+                        <p className="text-xs font-bold text-stone-900 truncate">
+                          {MUSIC_PRESETS.find((p) => p.url === invitation.musicUrl)?.title ||
+                            (invitation.musicUrl?.includes("uploads/invitations")
+                              ? "🎵 File Musik Khusus (Upload Sendiri)"
+                              : invitation.musicUrl?.includes("youtube.com") || invitation.musicUrl?.includes("youtu.be")
+                              ? "▶ Lagu dari YouTube"
+                              : (invitation.musicUrl ? "Musik Kustom (Tautan Eksternal)" : "Canon in D — Johann Pachelbel"))}
+                        </p>
+                        <span className="text-[10px] text-stone-500 block truncate">
+                          {MUSIC_PRESETS.find((p) => p.url === invitation.musicUrl)?.genre || (invitation.musicUrl || "Piano & Strings Klasik Sakral")}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Direct Upload Option */}
+                  <div className="p-3.5 bg-white rounded-xl border border-dashed border-amber-800/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <span className="text-xs font-bold text-stone-900 block">Upload File Musik (.mp3 / .m4a)</span>
+                      <span className="text-[11px] text-stone-500">Pilih lagu dari laptop atau HP Anda (Maksimal 15 MB)</span>
+                    </div>
+                    <label className={`px-4 py-2 bg-amber-800 hover:bg-amber-900 text-white font-bold rounded-xl text-xs transition shadow-xs flex items-center gap-1.5 shrink-0 cursor-pointer ${uploadingAudio ? "opacity-60 cursor-not-allowed" : ""}`}>
+                      {uploadingAudio ? (
+                        <>
+                          <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                          <span>Mengunggah...</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-4 h-4 text-amber-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                          </svg>
+                          <span>Upload Lagu (.mp3)</span>
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        accept="audio/mp3,audio/mpeg,audio/wav,audio/m4a,audio/*"
+                        className="sr-only"
+                        onChange={handleAudioUpload}
+                        disabled={uploadingAudio}
+                      />
+                    </label>
+                  </div>
+
+                  {/* Curated Presets Selection */}
+                  <div>
+                    <span className="block text-[11px] font-bold text-stone-700 mb-2">Atau Pilih Lagu Pernikahan Sakral Pilihan:</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {MUSIC_PRESETS.map((preset) => {
+                        const isSelected = (invitation.musicUrl || MUSIC_PRESETS[0].url) === preset.url;
+                        const isPlaying = playingAudioUrl === preset.url;
+
+                        return (
+                          <div
+                            key={preset.id}
+                            className={`p-3 rounded-xl border transition flex items-center justify-between gap-2.5 ${
+                              isSelected
+                                ? "border-amber-800 bg-amber-50/80 ring-1 ring-amber-800/40"
+                                : "border-stone-200 bg-white hover:border-stone-300"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <button
+                                type="button"
+                                onClick={() => togglePlayPreview(preset.url)}
+                                className={`w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] transition shrink-0 cursor-pointer ${
+                                  isPlaying ? "bg-amber-800 animate-pulse" : "bg-stone-800 hover:bg-stone-700"
+                                }`}
+                                title="Dengarkan Contoh"
+                              >
+                                {isPlaying ? "❚❚" : "▶"}
+                              </button>
+                              <div className="min-w-0">
+                                <h4 className="text-xs font-bold text-stone-900 truncate">{preset.title}</h4>
+                                <p className="text-[10px] text-stone-500 truncate">{preset.genre}</p>
+                              </div>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                updateField("musicUrl", preset.url);
+                                updateFeatureSetting("musicUrl", preset.url);
+                              }}
+                              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition shrink-0 cursor-pointer ${
+                                isSelected
+                                  ? "bg-amber-800 text-white"
+                                  : "bg-stone-100 hover:bg-stone-200 text-stone-700"
+                              }`}
+                            >
+                              {isSelected ? "✓ Terpilih" : "Pilih"}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Custom URL Option */}
+                  <div className="pt-2 border-t border-amber-200/50">
+                    <label className="block text-[11px] font-bold text-stone-700 mb-1">Atau Gunakan Tautan Audio Kustom (MP3 / YouTube):</label>
+                    <input
+                      type="url"
+                      value={invitation.musicUrl || ""}
+                      onChange={(e) => {
+                        updateField("musicUrl", e.target.value);
+                        updateFeatureSetting("musicUrl", e.target.value);
+                      }}
+                      placeholder="https://domain.com/audio/wedding-song.mp3 atau https://youtube.com/watch?v=..."
+                      className="w-full p-2.5 bg-white border border-stone-200 rounded-xl text-xs text-stone-900 font-mono focus:outline-none focus:ring-2 focus:ring-amber-700/30"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="pt-4 border-t border-stone-100 flex justify-end">
               <button
                 type="button"
                 onClick={() => saveSection("sec2")}
-                disabled={saving || isUploading || !isDirty.sec2}
+                disabled={saving || isUploading || uploadingAudio || !isDirty.sec2}
                 className={`px-5 py-2.5 font-bold rounded-xl text-xs transition flex items-center gap-2 shadow-xs ${
-                  isUploading
+                  isUploading || uploadingAudio
                     ? "bg-blue-50 text-blue-700 border border-blue-200 cursor-not-allowed"
                     : !isDirty.sec2
                     ? "bg-stone-100 text-stone-400 border border-stone-200 cursor-not-allowed"
@@ -932,7 +1167,7 @@ export default function EditInvitation() {
                 }`}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                <span>{saving ? "Menyimpan..." : isUploading ? "Sedang Mengunggah Media..." : !isDirty.sec2 ? "Tersimpan" : "Simpan Sampul & Visual"}</span>
+                <span>{saving ? "Menyimpan..." : isUploading || uploadingAudio ? "Sedang Mengunggah..." : !isDirty.sec2 ? "Tersimpan" : "Simpan Sampul & Musik"}</span>
               </button>
             </div>
           </div>
