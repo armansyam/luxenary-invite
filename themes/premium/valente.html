@@ -296,14 +296,17 @@
     .jf-signature { font-style: italic; font-size: 1.35rem; color: var(--accent); font-family: 'Great Vibes', cursive; }
 
     /* =========================================
-       7. OUR MOMENT (GALLERY & VIDEO)
+       7. OUR MOMENT (3-COLUMN DYNAMIC MASONRY)
        ========================================= */
     .moment-quote { font-style: italic; font-size: 0.95rem; line-height: 1.65; color: var(--text-muted); max-width: 420px; margin: 0 auto 2rem; }
-    .moments-grid-10 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 2.2rem; }
-    .moment-photo-item { overflow: hidden; border-radius: var(--radius-sm); cursor: pointer; position: relative; aspect-ratio: 1/1; border: 1px solid var(--border-subtle); }
-    .moment-photo-item.wide { grid-column: span 2; aspect-ratio: 16/10; }
-    .moment-photo-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.45s ease; }
-    .moment-photo-item:hover img { transform: scale(1.05); }
+    .moments-grid-10 { columns: 3; column-gap: 6px; margin-bottom: 2.2rem; width: 100%; }
+    .moment-photo-item {
+      break-inside: avoid; margin-bottom: 6px; overflow: hidden; border-radius: 8px; cursor: pointer;
+      position: relative; border: 1px solid var(--border-subtle); box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      transition: transform 0.3s ease;
+    }
+    .moment-photo-item:hover { transform: scale(1.03); }
+    .moment-photo-item img { width: 100%; height: auto; display: block; }
     .btn-show-gallery { margin-bottom: 0 !important; }
 
     /* LIGHTBOX MODALS */
@@ -321,9 +324,12 @@
       width: 34px; height: 34px; border-radius: 50%; font-size: 1rem; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
     }
-    .gallery-modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .full-gallery-item { aspect-ratio: 1/1; overflow: hidden; border-radius: var(--radius-sm); cursor: pointer; border: 1px solid var(--border-subtle); }
-    .full-gallery-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.35s; }
+    .gallery-modal-grid { columns: 3; column-gap: 6px; }
+    .full-gallery-item {
+      break-inside: avoid; margin-bottom: 6px; overflow: hidden; border-radius: 8px; cursor: pointer;
+      border: 1px solid var(--border-subtle);
+    }
+    .full-gallery-item img { width: 100%; height: auto; display: block; transition: transform 0.35s; }
     .full-gallery-item:hover img { transform: scale(1.05); }
 
     .lux-zoom-backdrop {

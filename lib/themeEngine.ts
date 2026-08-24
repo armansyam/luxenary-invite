@@ -420,7 +420,7 @@ export async function composeTemplateData(invitationId: string) {
   if (showGallery) {
     const display10 = allPhotos.slice(0, 10);
     const photos10Html = display10.map((imgUrl, i) => `
-      <div class="moment-photo-item ${i % 3 === 0 ? 'wide' : ''}" onclick="luxOpenZoom(${i})">
+      <div class="moment-photo-item" onclick="luxOpenZoom(${i})">
         <img src="${imgUrl}" alt="Our Moment ${i + 1}" loading="lazy" decoding="async">
       </div>
     `).join("");
