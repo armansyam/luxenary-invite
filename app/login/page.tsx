@@ -62,7 +62,7 @@ export default function ClientLoginPage() {
             disabled={loading}
             className="w-full py-3.5 bg-amber-700 hover:bg-amber-800 text-white font-bold rounded-xl text-xs transition shadow-md shadow-amber-900/20 flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
           >
-            💍 {loading ? "Membuka Studio..." : "Masuk ke Studio Undangan (/dashboard)"}
+            <span>{loading ? "Membuka Studio..." : "Masuk ke Studio Undangan (/dashboard)"}</span>
           </button>
         </div>
 
@@ -130,7 +130,7 @@ export default function ClientLoginPage() {
             ← Showroom Tema Demo
           </a>
           <a href="/admin/login" className="text-stone-400 hover:text-stone-700 transition">
-            Portal Admin 🔒
+            Portal Admin
           </a>
         </div>
       </div>
