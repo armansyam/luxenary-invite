@@ -110,21 +110,7 @@ function CheckoutContent() {
     }
   };
 
-  const handleSimulatePayment = async () => {
-    if (!orderId) return;
-    setPaying(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/admin/orders/${orderId}/approve`, {
-        method: "POST",
-      });
-      if (!res.ok) throw new Error("Gagal melakukan simulasi aktivasi.");
-      router.push(`/checkout/success?order=${orderId}`);
-    } catch (err: any) {
-      setError(err.message);
-      setPaying(false);
-    }
-  };
+
 
   if (status === "loading" || loading) {
     return (
@@ -197,6 +183,7 @@ function CheckoutContent() {
 
           <div className="space-y-3">
             <button
+              id="btn-pay-now"
               type="button"
               onClick={handlePay}
               disabled={!orderId || paying}
@@ -205,17 +192,22 @@ function CheckoutContent() {
               {paying ? (
                 <>
                   <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                  Mengarahkan ke Pembayaran...
+                  <span>Mengarahkan ke Halaman Pembayaran...</span>
                 </>
               ) : (
-                "Bayar Sekarang (iPaymu Online Gateway) →"
+                <span>Bayar Sekarang →</span>
               )}
             </button>
           </div>
 
-          <p className="text-center text-stone-500 text-xs mt-4">
-            Pembayaran aman &amp; otomatis terverifikasi. Mendukung QRIS, Transfer Virtual Account Bank, dan E-Wallet.
-          </p>
+          <div className="flex items-center justify-center gap-4 mt-5">
+            <div className="flex items-center gap-1.5 text-stone-500">
+              <svg className="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+              <span className="text-[11px]">Terenkripsi SSL</span>
+            </div>
+            <div className="w-px h-3 bg-stone-700" />
+            <span className="text-[11px] text-stone-500">QRIS · Transfer Bank · E-Wallet</span>
+          </div>
         </div>
       </div>
     </div>

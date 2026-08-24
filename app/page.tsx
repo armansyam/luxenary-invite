@@ -34,35 +34,60 @@ export default function Home() {
 
       {/* Hero Section */}
       <main className="flex-1">
-        <section className="relative px-6 pt-16 pb-24 text-center max-w-4xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-amber-800/15 bg-amber-50 text-amber-900 text-xs font-semibold uppercase tracking-widest mb-6">
-            Platform Undangan Pernikahan Digital Mandiri
-          </div>
+        <section
+          className="relative w-full overflow-hidden"
+          style={{ minHeight: "85vh" }}
+        >
+          {/* Background image */}
+          <div
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+            style={{
+              backgroundImage: "url('/homepage.webp')",
+              backgroundPosition: "center 30%",
+            }}
+          />
 
-          <h1 className="text-4xl sm:text-6xl md:text-7xl font-serif text-[#1e1c1a] leading-tight font-normal">
-            Undangan Pernikahan Digital <br />
-            <span className="italic text-amber-800 font-serif">
-              Elegan, Hangat &amp; Berkelas
-            </span>
-          </h1>
+          {/* Gradient fade bottom — transparent to page bg */}
+          <div
+            className="absolute inset-x-0 bottom-0"
+            style={{
+              height: "45%",
+              background:
+                "linear-gradient(to bottom, transparent 0%, #faf8f5cc 55%, #faf8f5 100%)",
+            }}
+          />
 
-          <p className="mt-6 text-base sm:text-lg text-[#6e685f] max-w-2xl mx-auto leading-relaxed">
-            Didesain khusus dengan sentuhan estetika mewah dan eksklusif. Hadirkan pengalaman berkesan dengan layout split desktop, custom subdomain, buku tamu real-time, dan video booth ucapan.
-          </p>
+          {/* Content — posisi atas, foto terlihat penuh di bawah */}
+          <div className="relative z-10 flex flex-col items-center justify-start text-center px-6 pt-14 pb-0 min-h-[85vh]">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-amber-800/20 bg-white/60 backdrop-blur-sm text-amber-900 text-xs font-semibold uppercase tracking-widest mb-6 shadow-sm">
+              Platform Undangan Pernikahan Digital Mandiri
+            </div>
 
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              href="/register"
-              className="w-full sm:w-auto px-8 py-4 bg-amber-800 hover:bg-amber-900 text-white font-semibold text-base rounded-full transition shadow-md shadow-amber-900/10"
-            >
-              Pilih Paket Undangan
-            </Link>
-            <Link
-              href="/demo"
-              className="w-full sm:w-auto px-8 py-4 bg-white hover:bg-[#f3ede4] border border-[#d8cdbf] text-amber-900 font-semibold text-base rounded-full transition"
-            >
-              Pratinjau Tema Live
-            </Link>
+            <h1 className="text-4xl sm:text-6xl md:text-7xl font-serif text-[#1e1c1a] leading-tight font-normal drop-shadow-sm">
+              Undangan Pernikahan Digital <br />
+              <span className="italic text-amber-800 font-serif">
+                Elegan, Hangat &amp; Berkelas
+              </span>
+            </h1>
+
+            <p className="mt-6 text-base sm:text-lg text-[#6e685f] max-w-2xl mx-auto leading-relaxed">
+              Didesain khusus dengan sentuhan estetika mewah dan eksklusif. Hadirkan pengalaman berkesan dengan layout split desktop, custom subdomain, buku tamu real-time, dan video booth ucapan.
+            </p>
+
+            <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link
+                href="/register"
+                className="w-full sm:w-auto px-8 py-4 bg-amber-800 hover:bg-amber-900 text-white font-semibold text-base rounded-full transition shadow-md shadow-amber-900/10"
+              >
+                Pilih Paket Undangan
+              </Link>
+              <Link
+                href="/demo"
+                className="w-full sm:w-auto px-8 py-4 bg-white/80 backdrop-blur-sm hover:bg-white border border-[#d8cdbf] text-amber-900 font-semibold text-base rounded-full transition shadow-sm"
+              >
+                Pratinjau Tema Live
+              </Link>
+            </div>
           </div>
         </section>
 

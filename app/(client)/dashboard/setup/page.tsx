@@ -273,8 +273,8 @@ function SetupWizardContent() {
         throw new Error(data.error || "Gagal membuat undangan.");
       }
 
-      // Success -> Redirect to Dashboard Studio
-      router.push("/dashboard");
+      // Success → Redirect directly to the invitation editor
+      router.push(`/dashboard/invitation/${data.invitationId}`);
     } catch (err: any) {
       setError(err.message || "Terjadi kesalahan. Silakan coba lagi.");
       setLoading(false);

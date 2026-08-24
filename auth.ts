@@ -3,6 +3,7 @@ import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { authConfig } from "./auth.config";
 import { prisma } from "@/lib/prisma";
+import bcrypt from "bcryptjs";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -16,48 +17,92 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
       async authorize(credentials) {
         const portal = (credentials?.portal as string)?.toUpperCase() || "CLIENT";
-        const emailOrUser = (credentials?.email as string)?.trim().toLowerCase() || (portal === "ADMIN" ? "admin@luxenary.id" : "client@luxenary.id");
+        const emailOrUser = (credentials?.email as string)?.trim().toLowerCase() || "";
+        const password = (credentials?.password as string) || "";
 
-        // 1. ADMIN PORTAL LOGIN -> ISOLATED 'admins' TABLE
-        if (portal === "ADMIN" || emailOrUser.includes("admin")) {
-          let admin = await prisma.admin.findFirst({
+        // ─── 1. ADMIN PORTAL ────────────────────────────────────────────────────
+        if (portal === "ADMIN") {
+          if (!emailOrUser || !password) return null;
+
+          // Resolve admin by email or username
+          const admin = await prisma.admin.findFirst({
             where: {
               OR: [
                 { email: emailOrUser },
+                { username: emailOrUser },
                 { username: emailOrUser.replace("@luxenary.id", "") },
               ],
             },
           });
 
           if (!admin) {
-            admin = await prisma.admin.create({
-              data: {
-                username: "admin",
-                email: "admin@luxenary.id",
-                name: "Super Administrator Luxenary",
+            // Auto-bootstrap first admin if no admin exists in DB at all
+            const adminCount = await prisma.admin.count();
+            if (adminCount === 0) {
+              const defaultPass = process.env.ADMIN_PASSWORD || "luxenary-admin-2026";
+              const isDefaultPass = password === defaultPass;
+              if (!isDefaultPass) return null;
+
+              const hash = await bcrypt.hash(password, 12);
+              const newAdmin = await prisma.admin.create({
+                data: {
+                  username: "admin",
+                  email: "admin@luxenary.id",
+                  name: "Super Administrator Luxenary",
+                  role: "SUPER_ADMIN",
+                  passwordHash: hash,
+                  lastLoginAt: new Date(),
+                },
+              });
+
+              await prisma.adminAuditLog.create({
+                data: {
+                  adminId: newAdmin.id,
+                  action: "ADMIN_FIRST_SETUP",
+                  details: "Admin pertama berhasil dibuat dan login.",
+                },
+              }).catch(() => {});
+
+              return {
+                id: newAdmin.id,
+                name: newAdmin.name,
+                email: newAdmin.email,
                 role: "SUPER_ADMIN",
-                lastLoginAt: new Date(),
-              },
-            });
+                isAdmin: true,
+              };
+            }
+            return null; // Admin not found
+          }
+
+          // Verify password
+          if (admin.passwordHash) {
+            const isValid = await bcrypt.compare(password, admin.passwordHash);
+            if (!isValid) return null;
           } else {
-            admin = await prisma.admin.update({
+            // No hash set yet — allow login with env default password and set hash
+            const defaultPass = process.env.ADMIN_PASSWORD || "luxenary-admin-2026";
+            if (password !== defaultPass) return null;
+
+            // Upgrade: store hash
+            const hash = await bcrypt.hash(password, 12);
+            await prisma.admin.update({
               where: { id: admin.id },
-              data: { lastLoginAt: new Date() },
+              data: { passwordHash: hash },
             });
           }
 
-          // Record Security Audit Log
-          try {
-            await prisma.adminAuditLog.create({
-              data: {
-                adminId: admin.id,
-                action: "ADMIN_LOGIN",
-                details: `Login sukses via Admin Portal (${admin.email})`,
-              },
-            });
-          } catch (e) {
-            console.error("Audit log error:", e);
-          }
+          await prisma.admin.update({
+            where: { id: admin.id },
+            data: { lastLoginAt: new Date() },
+          });
+
+          await prisma.adminAuditLog.create({
+            data: {
+              adminId: admin.id,
+              action: "ADMIN_LOGIN",
+              details: `Login sukses via Admin Portal (${admin.email})`,
+            },
+          }).catch(() => {});
 
           return {
             id: admin.id,
@@ -68,22 +113,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           };
         }
 
-        // 2. CLIENT PORTAL LOGIN -> ISOLATED 'users' TABLE
-        const clientEmail = emailOrUser.includes("@") ? emailOrUser : `${emailOrUser}@luxenary.id`;
-        let user = await prisma.user.findUnique({
-          where: { email: clientEmail },
+        // ─── 2. CLIENT PORTAL ───────────────────────────────────────────────────
+        if (!emailOrUser || !emailOrUser.includes("@")) return null;
+
+        const user = await prisma.user.findUnique({
+          where: { email: emailOrUser },
         });
 
-        if (!user) {
-          user = await prisma.user.create({
-            data: {
-              googleId: `client-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-              email: clientEmail,
-              name: clientEmail.split("@")[0] || "Mempelai",
-              role: "CLIENT",
-            },
-          });
-        }
+        // Only allow existing users (registered via Google OAuth or admin-created)
+        if (!user) return null;
 
         return {
           id: user.id,
