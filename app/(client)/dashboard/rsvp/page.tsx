@@ -15,8 +15,15 @@ export default function RsvpPage() {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [search, setSearch] = useState("");
 
-  useEffect(() => {
-    fetch("/api/client/rsvps")
+  const loadRsvps = () => {
+    setLoading(true);
+    fetch("/api/client/invitations")
+      .then((res) => res.json())
+      .then((invs: any[]) => {
+        const invId = Array.isArray(invs) && invs.length > 0 ? invs[0].id : "";
+        const url = invId ? `/api/client/rsvps?invitationId=${invId}` : "/api/client/rsvps";
+        return fetch(url);
+      })
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
@@ -26,11 +33,18 @@ export default function RsvpPage() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadRsvps();
   }, []);
 
   const filteredRsvps = rsvps.filter((r) => {
-    const matchesFilter = filterStatus === "all" || r.status.toLowerCase() === filterStatus.toLowerCase();
-    const matchesSearch = !search || r.guestName.toLowerCase().includes(search.toLowerCase()) || (r.message && r.message.toLowerCase().includes(search.toLowerCase()));
+    const matchesFilter = filterStatus === "all" || (r.status || "").toLowerCase() === filterStatus.toLowerCase();
+    const matchesSearch =
+      !search ||
+      (r.guestName && r.guestName.toLowerCase().includes(search.toLowerCase())) ||
+      (r.message && r.message.toLowerCase().includes(search.toLowerCase()));
     return matchesFilter && matchesSearch;
   });
 
@@ -41,8 +55,8 @@ export default function RsvpPage() {
     }
     const headers = ["Nama Tamu", "Status Kehadiran", "Jumlah Pax", "Pesan / Doa", "Waktu Respon"];
     const rows = rsvps.map((r) => [
-      `"${r.guestName}"`,
-      `"${r.status.toUpperCase()}"`,
+      `"${r.guestName || ""}"`,
+      `"${(r.status || "").toUpperCase()}"`,
       r.guestCount || 1,
       `"${(r.message || "").replace(/"/g, '""')}"`,
       `"${new Date(r.respondedAt).toLocaleString("id-ID")}"`,
@@ -59,73 +73,126 @@ export default function RsvpPage() {
   };
 
   return (
-    <div className="space-y-6 font-sans">
+    <div className="space-y-6 font-sans pb-20">
       
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 sm:p-7 rounded-2xl sm:rounded-3xl border border-stone-200 shadow-xs">
         <div>
-          <h1 className="text-xl sm:text-2xl font-serif font-bold text-stone-900">
+          <span className="text-[11px] font-bold tracking-widest text-amber-800 uppercase block">Konfirmasi Kehadiran</span>
+          <h1 className="text-xl sm:text-2xl font-serif font-bold text-stone-900 mt-0.5">
             Rekap Konfirmasi Kehadiran &amp; Doa
           </h1>
-          <p className="text-xs text-stone-500 mt-0.5">
-            Daftar tamu yang telah mengisi konfirmasi RSVP dan doa restu secara live
+          <p className="text-xs text-stone-500 mt-1">
+            Data konfirmasi kehadiran (RSVP) dan doa restu tersinkronisasi otomatis secara live saat tamu mengisi di website undangan
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={handleExportCSV}
-          className="px-4 py-2.5 bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-2 cursor-pointer shadow-xs"
-        >
-          <svg className="w-4 h-4 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          <span>Ekspor CSV / Excel</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Refresh Button */}
+          <button
+            type="button"
+            onClick={loadRsvps}
+            className="p-2.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl text-xs font-semibold transition cursor-pointer"
+            title="Muat Ulang Data"
+          >
+            <svg className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
+
+          {/* Export CSV Button */}
+          <button
+            type="button"
+            onClick={handleExportCSV}
+            className="px-4 py-2.5 bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+          >
+            <svg className="w-4 h-4 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span>Ekspor CSV / Excel</span>
+          </button>
+        </div>
       </div>
 
-      {/* Stats Counter Bar */}
+      {/* Stats Counter Bar (Clickable Filter Cards) */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs">
+        
+        {/* Total Responses */}
+        <button
+          type="button"
+          onClick={() => setFilterStatus("all")}
+          className={`p-4 rounded-2xl border transition text-left cursor-pointer ${
+            filterStatus === "all"
+              ? "bg-white border-stone-900 shadow-md ring-2 ring-stone-900/10"
+              : "bg-white/80 border-stone-200 hover:bg-white hover:border-stone-300 shadow-2xs"
+          }`}
+        >
           <span className="text-[11px] font-bold text-stone-500 uppercase tracking-wider block">Total Respon</span>
           <p className="text-xl sm:text-2xl font-bold text-stone-900 mt-1">{stats.totalResponses}</p>
           <span className="text-[10px] text-stone-400">Konfirmasi masuk</span>
-        </div>
+        </button>
 
-        <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs">
+        {/* Attending */}
+        <button
+          type="button"
+          onClick={() => setFilterStatus("hadir")}
+          className={`p-4 rounded-2xl border transition text-left cursor-pointer ${
+            filterStatus === "hadir"
+              ? "bg-emerald-50/80 border-emerald-700 shadow-md ring-2 ring-emerald-700/20"
+              : "bg-white/80 border-stone-200 hover:bg-white hover:border-stone-300 shadow-2xs"
+          }`}
+        >
           <span className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider block">Hadir</span>
           <p className="text-xl sm:text-2xl font-bold text-emerald-700 mt-1">{stats.attending}</p>
           <span className="text-[10px] text-stone-400">Total pax tamu</span>
-        </div>
+        </button>
 
-        <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs">
+        {/* Declined */}
+        <button
+          type="button"
+          onClick={() => setFilterStatus("tidak")}
+          className={`p-4 rounded-2xl border transition text-left cursor-pointer ${
+            filterStatus === "tidak"
+              ? "bg-rose-50/80 border-rose-700 shadow-md ring-2 ring-rose-700/20"
+              : "bg-white/80 border-stone-200 hover:bg-white hover:border-stone-300 shadow-2xs"
+          }`}
+        >
           <span className="text-[11px] font-bold text-rose-700 uppercase tracking-wider block">Tidak Hadir</span>
           <p className="text-xl sm:text-2xl font-bold text-rose-700 mt-1">{stats.declined}</p>
           <span className="text-[10px] text-stone-400">Berhalangan</span>
-        </div>
+        </button>
 
-        <div className="bg-white p-4 rounded-2xl border border-stone-200 shadow-xs">
+        {/* Uncertain */}
+        <button
+          type="button"
+          onClick={() => setFilterStatus("ragu")}
+          className={`p-4 rounded-2xl border transition text-left cursor-pointer ${
+            filterStatus === "ragu"
+              ? "bg-amber-50/80 border-amber-700 shadow-md ring-2 ring-amber-700/20"
+              : "bg-white/80 border-stone-200 hover:bg-white hover:border-stone-300 shadow-2xs"
+          }`}
+        >
           <span className="text-[11px] font-bold text-amber-700 uppercase tracking-wider block">Masih Ragu</span>
           <p className="text-xl sm:text-2xl font-bold text-amber-700 mt-1">{stats.uncertain}</p>
           <span className="text-[10px] text-stone-400">Belum pasti</span>
-        </div>
+        </button>
       </div>
 
       {/* Filter & Search Bar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-stone-200 shadow-xs">
         
         {/* Filter Tabs */}
-        <div className="flex bg-stone-100 p-1 rounded-xl gap-1 text-xs">
+        <div className="flex bg-stone-100 p-1 rounded-xl gap-1 text-xs overflow-x-auto">
           {[
-            { id: "all", label: "Semua" },
-            { id: "hadir", label: "Hadir" },
-            { id: "tidak", label: "Tidak Hadir" },
-            { id: "ragu", label: "Ragu-ragu" },
+            { id: "all", label: `Semua (${stats.totalResponses})` },
+            { id: "hadir", label: `Hadir (${stats.attending} Pax)` },
+            { id: "tidak", label: `Tidak Hadir (${stats.declined})` },
+            { id: "ragu", label: `Ragu-ragu (${stats.uncertain})` },
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setFilterStatus(tab.id)}
-              className={`px-3 py-1.5 rounded-lg font-semibold transition ${
+              className={`px-3 py-1.5 rounded-lg font-semibold transition whitespace-nowrap cursor-pointer ${
                 filterStatus === tab.id
                   ? "bg-white text-stone-900 shadow-xs font-bold"
                   : "text-stone-500 hover:text-stone-900"
@@ -151,7 +218,7 @@ export default function RsvpPage() {
         </div>
       </div>
 
-      {/* RSVP Content (Mobile-First Cards + Desktop Table) */}
+      {/* RSVP Content (High-Density List) */}
       {loading ? (
         <div className="bg-white p-12 rounded-2xl border border-stone-200 text-center text-stone-400 text-xs">
           Memuat rekap konfirmasi RSVP...
@@ -164,63 +231,61 @@ export default function RsvpPage() {
             </svg>
           </div>
           <p className="text-sm font-semibold text-stone-700">Belum ada data konfirmasi yang sesuai</p>
-          <p className="text-xs text-stone-400">Konfirmasi RSVP dari tamu akan otomatis muncul di sini</p>
+          <p className="text-xs text-stone-400">Konfirmasi RSVP dari tamu akan otomatis muncul di sini saat tamu mengisi form di website undangan</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {/* Mobile Card List */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {filteredRsvps.map((rsvp) => {
-              const isHadir = rsvp.status.toLowerCase() === "hadir";
-              const isTidak = rsvp.status.toLowerCase() === "tidak";
-              return (
-                <div
-                  key={rsvp.id}
-                  className="bg-white p-4 sm:p-5 rounded-2xl border border-stone-200/90 shadow-xs space-y-3"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <h4 className="text-sm font-bold text-stone-900">{rsvp.guestName}</h4>
-                      <span className="text-[11px] text-stone-400">
-                        {new Date(rsvp.respondedAt).toLocaleDateString("id-ID", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
-                    </div>
+        <div className="bg-white rounded-2xl sm:rounded-3xl border border-stone-200 shadow-xs overflow-hidden divide-y divide-stone-100">
+          {filteredRsvps.map((rsvp) => {
+            const isHadir = (rsvp.status || "").toLowerCase() === "hadir";
+            const isTidak = (rsvp.status || "").toLowerCase() === "tidak";
 
-                    <div className="flex flex-col items-end gap-1">
-                      <span
-                        className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                          isHadir
-                            ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                            : isTidak
-                            ? "bg-rose-50 text-rose-800 border border-rose-200"
-                            : "bg-amber-50 text-amber-800 border border-amber-200"
-                        }`}
-                      >
-                        {rsvp.status}
+            return (
+              <div
+                key={rsvp.id}
+                className="p-4 sm:px-6 sm:py-4.5 hover:bg-stone-50/60 transition flex flex-col sm:flex-row sm:items-start justify-between gap-3"
+              >
+                <div className="space-y-1 flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h4 className="text-xs sm:text-sm font-bold text-stone-900">{rsvp.guestName}</h4>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                        isHadir
+                          ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                          : isTidak
+                          ? "bg-rose-50 text-rose-800 border border-rose-200"
+                          : "bg-amber-50 text-amber-800 border border-amber-200"
+                      }`}
+                    >
+                      {rsvp.status}
+                    </span>
+                    {isHadir && (
+                      <span className="text-[10px] bg-stone-100 text-stone-700 px-2 py-0.5 rounded-full font-semibold">
+                        {rsvp.guestCount || 1} Pax Tamu
                       </span>
-                      {isHadir && (
-                        <span className="text-[10px] text-stone-500 font-semibold">
-                          {rsvp.guestCount || 1} Pax
-                        </span>
-                      )}
-                    </div>
+                    )}
                   </div>
 
                   {rsvp.message && (
-                    <div className="p-3 bg-stone-50 rounded-xl border border-stone-100 text-xs text-stone-700 leading-relaxed italic">
+                    <p className="text-xs text-stone-700 bg-stone-50 p-3 rounded-xl border border-stone-100 leading-relaxed italic mt-2">
                       &ldquo;{rsvp.message}&rdquo;
-                    </div>
+                    </p>
                   )}
                 </div>
-              );
-            })}
-          </div>
+
+                <div className="text-left sm:text-right shrink-0">
+                  <span className="text-[11px] text-stone-400 font-mono block">
+                    {new Date(rsvp.respondedAt).toLocaleDateString("id-ID", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
