@@ -7,7 +7,7 @@ interface ThemeItem {
   id: string;
   name: string;
   series: string;
-  category: "premium" | "traditional";
+  category: "premium" | "traditional" | "modern";
   desc: string;
 }
 
@@ -46,6 +46,13 @@ const THEMES: ThemeItem[] = [
     series: "Traditional Series",
     category: "traditional",
     desc: "Sakral, Megah & Royal Keraton",
+  },
+  {
+    id: "wave",
+    name: "Wave",
+    series: "Modern Series",
+    category: "modern",
+    desc: "Dark, Moody & Dramatic — Gelombang Elegan",
   },
 ];
 
@@ -99,6 +106,7 @@ export default function CatalogGridShowcase() {
           {[
             { id: "all", label: "Semua Tema" },
             { id: "premium", label: "Premium Series" },
+            { id: "modern", label: "Modern Series" },
             { id: "traditional", label: "Traditional Series" },
           ].map((cat) => (
             <button
@@ -134,8 +142,12 @@ export default function CatalogGridShowcase() {
                 <span className="text-[10px] font-mono text-stone-400 truncate max-w-[140px]">
                   {theme.id}.luxenary.id
                 </span>
-                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${theme.category === "traditional" ? "bg-amber-800/80 text-amber-200" : "bg-purple-900/80 text-purple-200"}`}>
-                  {theme.category === "traditional" ? "Traditional" : "Premium"}
+                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                  theme.category === "traditional" ? "bg-amber-800/80 text-amber-200" :
+                  theme.category === "modern" ? "bg-slate-700/80 text-slate-200" :
+                  "bg-purple-900/80 text-purple-200"
+                }`}>
+                  {theme.category === "traditional" ? "Traditional" : theme.category === "modern" ? "Modern" : "Premium"}
                 </span>
               </div>
 

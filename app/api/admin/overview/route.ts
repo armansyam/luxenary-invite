@@ -7,6 +7,7 @@ const DEFAULT_THEMES = [
   { id: "aurelia", name: "Aurelia", category: "premium", series: "Premium", description: "Romantis, Sinematik & Anggun", isPremium: true, sortOrder: 3, isActive: true },
   { id: "artisan", name: "Artisan", category: "premium", series: "Premium", description: "Artistik, Hangat & Vintage", isPremium: true, sortOrder: 4, isActive: true },
   { id: "prameswari", name: "Prameswari", category: "traditional", series: "Traditional", description: "Sakral, Megah & Royal Keraton", isPremium: false, sortOrder: 5, isActive: true },
+  { id: "wave", name: "Wave", category: "modern", series: "Modern", description: "Dark, Moody & Dramatic — Gelombang Elegan", isPremium: false, sortOrder: 6, isActive: true },
 ];
 
 export async function GET() {

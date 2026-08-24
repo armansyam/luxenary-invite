@@ -1,13 +1,18 @@
 import fs from "fs";
 import path from "path";
 
-const THEME_MAP: Record<string, { file: string; folder: "premium" | "traditional" }> = {
-  // Clean IDs
+const THEME_MAP: Record<string, { file: string; folder: "premium" | "traditional" | "modern" }> = {
+  // Premium Series
   "kalandra": { file: "kalandra.html", folder: "premium" },
   "valente": { file: "valente.html", folder: "premium" },
   "aurelia": { file: "aurelia.html", folder: "premium" },
   "artisan": { file: "artisan.html", folder: "premium" },
+
+  // Traditional Series
   "prameswari": { file: "prameswari.html", folder: "traditional" },
+
+  // Modern Series
+  "wave": { file: "wave.html", folder: "modern" },
 
   // Backward compatibility alias mapping
   "kila": { file: "kalandra.html", folder: "premium" },

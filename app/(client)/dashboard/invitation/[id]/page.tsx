@@ -49,6 +49,15 @@ const THEMES = [
     cover: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=600&q=80",
     tag: "Traditional",
   },
+  {
+    id: "wave",
+    name: "Wave",
+    subtitle: "Modern Series",
+    category: "modern",
+    desc: "Dark, Moody & Dramatic — Gelombang Elegan",
+    cover: "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=600&q=80",
+    tag: "Moody",
+  },
 ];
 
 const COLOR_PALETTES = [
