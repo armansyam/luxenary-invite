@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { getApexRootDomain, getInvitationPublicUrl } from "@/lib/domainUtils";
+import { BrandLogo } from "@/components/BrandLogo";
 
 const THEMES = [
   // PREMIUM SERIES
@@ -287,11 +288,9 @@ function SetupWizardContent() {
       <header className="border-b border-stone-200 bg-white/80 backdrop-blur-md px-6 py-4 sticky top-0 z-30">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="w-8 h-8 rounded-xl bg-stone-900 text-white flex items-center justify-center font-serif font-bold text-sm">
-              L
-            </span>
+            <BrandLogo size="sm" lightBg />
             <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-stone-900 block">Luxenary Studio</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-stone-900 block">Wedding Studio</span>
               <span className="text-[11px] text-stone-500">Panduan Penyiapan Undangan Klien</span>
             </div>
           </div>

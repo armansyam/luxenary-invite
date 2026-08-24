@@ -16,6 +16,14 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Luxenary Invite",
   description: "Platform undangan pernikahan digital self-service",
+  icons: {
+    icon: [
+      { url: "/assets/brand/favicon.png", type: "image/png" },
+      { url: "/favicon.ico" },
+    ],
+    shortcut: "/assets/brand/favicon.png",
+    apple: "/assets/brand/favicon.png",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

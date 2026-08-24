@@ -6,6 +6,9 @@ const DEFAULT_SETTINGS: Array<{ key: string; value: string; label: string; group
   { key: "platform_name", value: "Luxenary Invite", label: "Nama Platform", group: "platform" },
   { key: "platform_url", value: "http://localhost:3000", label: "URL Platform (APP_URL)", group: "platform" },
   { key: "support_email", value: "support@luxenary.id", label: "Email Support", group: "platform" },
+  { key: "support_whatsapp", value: "6281234567890", label: "Nomor WhatsApp Support / Admin", group: "platform" },
+  { key: "hero_tagline", value: "Undangan Pernikahan Digital Elegan, Hangat & Berkelas", label: "Tagline Hero", group: "platform" },
+  { key: "hero_subtitle", value: "Didesain khusus dengan sentuhan estetika mewah dan eksklusif. Hadirkan pengalaman berkesan dengan layout split desktop, custom subdomain, buku tamu real-time, dan video booth ucapan.", label: "Deskripsi Hero", group: "platform" },
   { key: "ipaymu_mode", value: "sandbox", label: "Mode iPaymu (sandbox/production)", group: "ipaymu" },
   { key: "ipaymu_va", value: "", label: "Virtual Account iPaymu", group: "ipaymu" },
   { key: "ipaymu_api_key", value: "", label: "API Key iPaymu", group: "ipaymu" },
@@ -21,6 +24,10 @@ const DEFAULT_SETTINGS: Array<{ key: string; value: string; label: string; group
   { key: "desc_traditional", value: "Tema Traditional — Sakral, Megah & Bernuansa Tradisional", label: "Deskripsi Paket Traditional", group: "pricing" },
   { key: "desc_modern", value: "Tema Modern — Minimalis, Kontemporer & Sinematik", label: "Deskripsi Paket Modern", group: "pricing" },
   { key: "desc_premium", value: "Tema Premium — Editorial, Full-Text & Luxury Visual Motion", label: "Deskripsi Paket Premium", group: "pricing" },
+  { key: "backup_auto_enabled", value: "true", label: "Auto-Backup Harian Aktif", group: "backup" },
+  { key: "backup_auto_time", value: "02:00", label: "Waktu Eksekusi Auto-Backup (HH:mm)", group: "backup" },
+  { key: "backup_path", value: "/data/backups", label: "Path Direktori Backup", group: "backup" },
+  { key: "backup_retention_count", value: "10", label: "Batas Jumlah Snapshot Disimpan", group: "backup" },
 ];
 
 async function seedDefaultSettings() {

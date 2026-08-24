@@ -2,6 +2,7 @@
 
 import { signIn } from "next-auth/react";
 import { useState } from "react";
+import { BrandLogo } from "@/components/BrandLogo";
 
 export default function ClientLoginPage() {
   const [loading, setLoading] = useState(false);
@@ -18,8 +19,8 @@ export default function ClientLoginPage() {
       <div className="max-w-sm w-full bg-white border border-amber-900/10 rounded-3xl p-8 sm:p-10 shadow-xl relative z-10 text-stone-900 space-y-7">
         {/* Brand Header */}
         <div className="text-center space-y-2">
-          <div className="w-14 h-14 bg-amber-700 rounded-2xl flex items-center justify-center font-serif text-3xl font-bold text-white mx-auto shadow-lg shadow-amber-800/25">
-            L
+          <div className="flex justify-center">
+            <BrandLogo size="lg" lightBg />
           </div>
           <span className="text-[11px] font-bold uppercase tracking-widest text-amber-700 block">Luxenary Wedding Studio</span>
           <h1 className="text-2xl font-serif font-bold text-stone-900">Masuk ke Studio</h1>

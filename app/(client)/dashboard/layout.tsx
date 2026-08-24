@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
+import { BrandLogo } from "@/components/BrandLogo";
 
 const navItems = [
   {
@@ -68,13 +69,7 @@ export default function ClientDashboardLayout({
           
           {/* Brand */}
           <Link href="/dashboard" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-lg bg-amber-800 flex items-center justify-center font-serif text-white font-bold text-sm shadow-sm group-hover:bg-amber-900 transition">
-              L
-            </div>
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-amber-800 block -mb-0.5">Luxenary</span>
-              <span className="text-xs sm:text-sm font-bold text-stone-900 tracking-tight">Wedding Studio</span>
-            </div>
+            <BrandLogo size="sm" lightBg showName />
           </Link>
 
           {/* Desktop Navigation */}

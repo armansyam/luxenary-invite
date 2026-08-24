@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { signOut } from "next-auth/react";
 import { getApexRootDomain, getInvitationPublicUrl } from "@/lib/domainUtils";
+import { BrandLogo } from "@/components/BrandLogo";
 
 const tabs = [
   {
@@ -56,6 +58,15 @@ const tabs = [
       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      </svg>
+    ),
+  },
+  {
+    id: "database",
+    label: "Database & Backup",
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
       </svg>
     ),
   },
@@ -221,8 +232,9 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
 
   // Data state
-  const [stats, setStats] = useState({ invitationCount: 0, orderCount: 0, guestCount: 0, userCount: 0 });
+  const [stats, setStats] = useState<any>({ invitationCount: 0, orderCount: 0, guestCount: 0, userCount: 0, publishedInvitationCount: 0, draftInvitationCount: 0, rsvpCount: 0, videoWishCount: 0 });
   const [orders, setOrders] = useState<any[]>([]);
+  const [allOrders, setAllOrders] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [invitations, setInvitations] = useState<any[]>([]);
   const [themes, setThemes] = useState<any[]>([]);
@@ -240,6 +252,32 @@ export default function AdminPage() {
   const [savingPricing, setSavingPricing] = useState(false);
   const [savingPlatform, setSavingPlatform] = useState(false);
   const [settingsSaved, setSettingsSaved] = useState<Record<string, boolean>>({});
+
+  // Branding Upload state
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);         // URL tersimpan di server
+  const [faviconUrl, setFaviconUrl] = useState<string | null>(null);   // URL tersimpan di server
+  const [pendingLogo, setPendingLogo] = useState<File | null>(null);   // File dipilih, belum disimpan
+  const [pendingFavicon, setPendingFavicon] = useState<File | null>(null);
+  const [previewLogo, setPreviewLogo] = useState<string | null>(null); // URL.createObjectURL untuk preview
+  const [previewFavicon, setPreviewFavicon] = useState<string | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingFavicon, setUploadingFavicon] = useState(false);
+  const [brandUploadMsg, setBrandUploadMsg] = useState<{ type: "logo" | "favicon"; ok: boolean; msg: string } | null>(null);
+
+  // Database Backup state
+  const [snapshots, setSnapshots] = useState<any[]>([]);
+  const [loadingSnapshots, setLoadingSnapshots] = useState(false);
+  const [creatingSnapshot, setCreatingSnapshot] = useState(false);
+  const [restoringSnapshot, setRestoringSnapshot] = useState<string | null>(null);
+  const [deletingSnapshot, setDeletingSnapshot] = useState<string | null>(null);
+  const [showUploadSnapshot, setShowUploadSnapshot] = useState(false);
+  const [pendingRestoreFile, setPendingRestoreFile] = useState<File | null>(null);
+  const [uploadingRestoreFile, setUploadingRestoreFile] = useState(false);
+  const [savingBackupSettings, setSavingBackupSettings] = useState(false);
+  const [backupActionMsg, setBackupActionMsg] = useState<{ ok: boolean; msg: string } | null>(null);
+
+  // Mobile menu open state
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Theme Management Modal / Form State
   const [showThemeModal, setShowThemeModal] = useState(false);
@@ -266,8 +304,9 @@ export default function AdminPage() {
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
-          setStats(data.stats);
+          setStats(data.stats || {});
           setOrders(data.orders || []);
+          setAllOrders(data.allOrders || []);
           setUsers(data.users || []);
           setInvitations(data.invitations || []);
           setThemes(data.themes || []);
@@ -292,10 +331,174 @@ export default function AdminPage() {
       .catch(() => {});
   }, []);
 
+  const loadBrandAssets = useCallback(() => {
+    fetch("/api/admin/upload-brand")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.logo) setLogoUrl(data.logo + "?t=" + Date.now());
+        if (data.favicon) setFaviconUrl(data.favicon + "?t=" + Date.now());
+      })
+      .catch(() => {});
+  }, []);
+
+  const uploadBrandAsset = async (type: "logo" | "favicon") => {
+    const file = type === "logo" ? pendingLogo : pendingFavicon;
+    if (!file) return;
+    const setUploading = type === "logo" ? setUploadingLogo : setUploadingFavicon;
+    setUploading(true);
+    setBrandUploadMsg(null);
+    try {
+      const fd = new FormData();
+      fd.append("type", type);
+      fd.append("file", file);
+      const res = await fetch("/api/admin/upload-brand", { method: "POST", body: fd });
+      const data = await res.json();
+      if (data.success) {
+        if (type === "logo") {
+          setLogoUrl(data.url);
+          setPendingLogo(null);
+          setPreviewLogo(null);
+        } else {
+          setFaviconUrl(data.url);
+          setPendingFavicon(null);
+          setPreviewFavicon(null);
+        }
+        setBrandUploadMsg({ type, ok: true, msg: data.message });
+      } else {
+        setBrandUploadMsg({ type, ok: false, msg: data.error || "Upload gagal" });
+      }
+    } catch (err: any) {
+      setBrandUploadMsg({ type, ok: false, msg: err.message || "Upload gagal" });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const loadSnapshots = useCallback(() => {
+    setLoadingSnapshots(true);
+    fetch("/api/admin/database/backup")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success) {
+          setSnapshots(data.snapshots || []);
+        }
+        setLoadingSnapshots(false);
+      })
+      .catch(() => setLoadingSnapshots(false));
+  }, []);
+
+  const handleCreateSnapshot = async () => {
+    setCreatingSnapshot(true);
+    setBackupActionMsg(null);
+    try {
+      const res = await fetch("/api/admin/database/backup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ label: "manual" }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setBackupActionMsg({ ok: true, msg: data.message });
+        loadSnapshots();
+      } else {
+        setBackupActionMsg({ ok: false, msg: data.error || "Gagal membuat snapshot" });
+      }
+    } catch (err: any) {
+      setBackupActionMsg({ ok: false, msg: err.message || "Gagal membuat snapshot" });
+    } finally {
+      setCreatingSnapshot(false);
+    }
+  };
+
+  const handleRestoreSnapshot = async (filename: string) => {
+    if (!window.confirm(`PERINGATAN: Anda akan me-restore database dari snapshot:\n${filename}\n\nSistem akan otomatis membuat safety backup terlebih dahulu sebelum menimpa. Lanjutkan?`)) {
+      return;
+    }
+    setRestoringSnapshot(filename);
+    setBackupActionMsg(null);
+    try {
+      const res = await fetch("/api/admin/database/restore", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setBackupActionMsg({
+          ok: true,
+          msg: `${data.message} (Safety backup tersimpan: ${data.safetyBackup})`,
+        });
+        loadSnapshots();
+        loadOverviewData();
+      } else {
+        setBackupActionMsg({ ok: false, msg: data.error || "Gagal restore database" });
+      }
+    } catch (err: any) {
+      setBackupActionMsg({ ok: false, msg: err.message || "Gagal restore database" });
+    } finally {
+      setRestoringSnapshot(null);
+    }
+  };
+
+  const handleUploadAndRestore = async () => {
+    if (!pendingRestoreFile) return;
+    if (!window.confirm(`PERINGATAN: Database aktif akan ditimpa dengan file:\n${pendingRestoreFile.name}\n\nSistem akan membuat safety backup database saat ini secara otomatis. Lanjutkan proses restore?`)) {
+      return;
+    }
+    setUploadingRestoreFile(true);
+    setBackupActionMsg(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", pendingRestoreFile);
+      const res = await fetch("/api/admin/database/restore", { method: "POST", body: fd });
+      const data = await res.json();
+      if (data.success) {
+        setBackupActionMsg({
+          ok: true,
+          msg: `${data.message} (Safety backup otomatis: ${data.safetyBackup})`,
+        });
+        setPendingRestoreFile(null);
+        setShowUploadSnapshot(false);
+        loadSnapshots();
+        loadOverviewData();
+      } else {
+        setBackupActionMsg({ ok: false, msg: data.error || "Gagal restore file upload" });
+      }
+    } catch (err: any) {
+      setBackupActionMsg({ ok: false, msg: err.message || "Gagal restore file upload" });
+    } finally {
+      setUploadingRestoreFile(false);
+    }
+  };
+
+  const handleDeleteSnapshot = async (filename: string) => {
+    if (!window.confirm(`Hapus file snapshot "${filename}" secara permanen?`)) return;
+    setDeletingSnapshot(filename);
+    setBackupActionMsg(null);
+    try {
+      const res = await fetch(`/api/admin/database/backup?filename=${encodeURIComponent(filename)}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (data.success) {
+        setBackupActionMsg({ ok: true, msg: data.message });
+        loadSnapshots();
+      } else {
+        setBackupActionMsg({ ok: false, msg: data.error || "Gagal menghapus snapshot" });
+      }
+    } catch (err: any) {
+      setBackupActionMsg({ ok: false, msg: err.message || "Gagal menghapus snapshot" });
+    } finally {
+      setDeletingSnapshot(null);
+    }
+  };
+
   useEffect(() => {
     loadOverviewData();
     loadSettings();
-  }, [loadOverviewData, loadSettings]);
+    loadBrandAssets();
+    loadSnapshots();
+  }, [loadOverviewData, loadSettings, loadBrandAssets, loadSnapshots]);
 
   const setSetting = (key: string, value: string) => {
     setSettingsMap((prev) => ({ ...prev, [key]: value }));
@@ -346,12 +549,6 @@ export default function AdminPage() {
       savingFn(false);
     }
   };
-
-  // Revenue stats
-  const totalRevenue = orders.filter((o) => o.status === "PAID").reduce((s: number, o: any) => s + Number(o.amount), 0);
-  const totalPending = orders.filter((o) => o.status === "PENDING").reduce((s: number, o: any) => s + Number(o.amount), 0);
-  const paidCount = orders.filter((o) => o.status === "PAID").length;
-  const pendingCount = orders.filter((o) => o.status === "PENDING").length;
 
   // Theme actions
   const handleOpenNewTheme = () => {
@@ -555,182 +752,662 @@ export default function AdminPage() {
     }
   };
 
+  // Overview computed metrics & analytics
+  const orderList = allOrders.length > 0 ? allOrders : orders;
+  const totalRevenue = orderList.filter((o) => o.status === "PAID").reduce((sum, o) => sum + Number(o.amount), 0);
+  const totalPending = orderList.filter((o) => o.status === "PENDING").reduce((sum, o) => sum + Number(o.amount), 0);
+  const paidCount = orderList.filter((o) => o.status === "PAID").length;
+  const pendingCount = orderList.filter((o) => o.status === "PENDING").length;
+  const totalOrdersCount = orderList.length;
+  const conversionRate = totalOrdersCount > 0 ? Math.round((paidCount / totalOrdersCount) * 100) : 0;
+
+  // Plan Sales Breakdown
+  const traditionalOrders = orderList.filter((o) => o.planType === "TRADITIONAL" && o.status === "PAID");
+  const modernOrders = orderList.filter((o) => o.planType === "MODERN" && o.status === "PAID");
+  const premiumOrders = orderList.filter((o) => o.planType === "PREMIUM" && o.status === "PAID");
+
+  const traditionalRev = traditionalOrders.reduce((sum, o) => sum + Number(o.amount), 0);
+  const modernRev = modernOrders.reduce((sum, o) => sum + Number(o.amount), 0);
+  const premiumRev = premiumOrders.reduce((sum, o) => sum + Number(o.amount), 0);
+
+  // Top themes calculation
+  const themeUsageMap: Record<string, number> = {};
+  invitations.forEach((inv) => {
+    const t = inv.themeId || "kalandra";
+    themeUsageMap[t] = (themeUsageMap[t] || 0) + 1;
+  });
+  const sortedThemeUsage = Object.entries(themeUsageMap)
+    .map(([themeId, count]) => {
+      const match = themes.find((th) => th.id === themeId);
+      return {
+        themeId,
+        name: match?.name || themeId,
+        category: match?.category || "modern",
+        count,
+      };
+    })
+    .sort((a, b) => b.count - a.count);
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col text-gray-900">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
+      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
+            {/* Left: Mobile Toggle + Brand */}
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center text-white font-bold text-sm">L</div>
+              {/* Mobile Hamburger Button */}
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="md:hidden p-2 -ml-1.5 rounded-xl text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition cursor-pointer"
+                aria-label="Toggle Menu Panel"
+              >
+                {mobileMenuOpen ? (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                )}
+              </button>
+
+              <BrandLogo size="sm" lightBg brandName={settingsMap["platform_name"]} />
               <div>
-                <h1 className="text-lg font-bold text-gray-900 leading-none">Luxenary Admin</h1>
-                <p className="text-xs text-gray-400">Control Panel</p>
+                <h1 className="text-base sm:text-lg font-bold text-gray-900 leading-none truncate max-w-[160px] sm:max-w-none">
+                  {settingsMap["platform_name"] || "Luxenary"} Admin
+                </h1>
+                <p className="text-[11px] text-gray-400 mt-0.5">Control Panel</p>
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              <a href="/demo" target="_blank" className="text-xs font-medium text-amber-700 hover:underline">Lihat Demo</a>
-              <a href="/dashboard" className="text-xs font-medium text-gray-500 hover:text-gray-800">Dashboard Klien</a>
+
+            {/* Right Header Navigation & Logout */}
+            <div className="flex items-center gap-3 sm:gap-4">
+              <a href="/demo" target="_blank" className="text-xs font-medium text-amber-700 hover:underline hidden sm:inline-block">
+                Lihat Demo
+              </a>
+              <a href="/dashboard" className="text-xs font-medium text-gray-500 hover:text-gray-800 hidden sm:inline-block">
+                Dashboard Klien
+              </a>
+              <span className="text-gray-300 hidden sm:inline-block">|</span>
+              <button
+                type="button"
+                onClick={() => signOut({ callbackUrl: "/admin/login" })}
+                className="text-xs font-semibold text-rose-600 hover:text-rose-700 transition cursor-pointer px-2 py-1 rounded-lg hover:bg-rose-50"
+              >
+                Logout
+              </button>
             </div>
           </div>
         </div>
       </header>
 
+      {/* ── Mobile Drawer Sidebar & Backdrop Overlay ── */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-40 md:hidden flex">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/40 backdrop-blur-2xs transition-opacity"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+
+          {/* Drawer Sidebar */}
+          <aside className="relative z-50 w-64 max-w-[80vw] bg-white h-full shadow-2xl flex flex-col justify-between overflow-y-auto animate-in slide-in-from-left duration-200">
+            <div>
+              <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <BrandLogo size="xs" lightBg brandName={settingsMap["platform_name"]} />
+                  <span className="text-xs font-bold text-gray-900 truncate">Menu Navigasi</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-1 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition cursor-pointer"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <nav className="py-3 px-3 space-y-1">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      setActiveTab(tab.id);
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition cursor-pointer ${
+                      activeTab === tab.id
+                        ? "bg-amber-50 text-amber-900 border border-amber-200/80 font-bold shadow-2xs"
+                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                    }`}
+                  >
+                    <span className="shrink-0">{tab.icon}</span>
+                    <span className="truncate">{tab.label}</span>
+                  </button>
+                ))}
+              </nav>
+            </div>
+
+            {/* Mobile Footer Links & Logout */}
+            <div className="p-4 border-t border-gray-100 space-y-3">
+              <div className="flex items-center justify-between text-xs font-medium text-gray-600 pb-2 border-b border-gray-100">
+                <a href="/demo" target="_blank" className="hover:text-amber-700">Lihat Demo ↗</a>
+                <a href="/dashboard" className="hover:text-gray-900">Dashboard Klien</a>
+              </div>
+              <button
+                type="button"
+                onClick={() => signOut({ callbackUrl: "/admin/login" })}
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50/80 transition cursor-pointer"
+              >
+                <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                <span>Logout</span>
+              </button>
+            </div>
+          </aside>
+        </div>
+      )}
+
       <div className="flex flex-1">
-        {/* Sidebar */}
-        <aside className="w-56 bg-white border-r border-gray-200 shadow-sm shrink-0">
-          <nav className="py-4 space-y-0.5">
+        {/* Desktop Sidebar — Hidden di Mobile, Sticky & Fixed di Layar Besar */}
+        <aside className="hidden md:flex w-60 bg-white border-r border-gray-200 shadow-2xs shrink-0 sticky top-16 h-[calc(100vh-4rem)] flex-col justify-between overflow-y-auto">
+          <nav className="py-4 space-y-1 px-3">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition cursor-pointer ${
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium transition cursor-pointer ${
                   activeTab === tab.id
-                    ? "bg-amber-50 text-amber-800 border-r-4 border-amber-600 font-semibold"
+                    ? "bg-amber-50 text-amber-900 border border-amber-200/80 font-bold shadow-2xs"
                     : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                 }`}
               >
-                <span>{tab.icon}</span>
-                <span>{tab.label.replace(/^[^\s]+ /, "")}</span>
+                <span className="shrink-0">{tab.icon}</span>
+                <span className="truncate">{tab.label}</span>
               </button>
             ))}
           </nav>
+
+          {/* Footer Sidebar Logout */}
+          <div className="p-3 border-t border-gray-100">
+            <button
+              type="button"
+              onClick={() => signOut({ callbackUrl: "/admin/login" })}
+              className="w-full flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50/70 transition cursor-pointer"
+            >
+              <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              <span>Logout</span>
+            </button>
+          </div>
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-6 overflow-y-auto max-w-6xl">
+        <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto max-w-6xl w-full">
           {loading ? (
             <div className="flex items-center justify-center py-20">
               <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-amber-600"></div>
             </div>
           ) : (
             <>
-              {/* ── Overview ── */}
+              {/* ── Overview / Dashboard Utama ── */}
               {activeTab === "overview" && (
                 <div className="space-y-6">
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-900">Ringkasan Sistem</h2>
-                    <p className="text-sm text-gray-500 mt-0.5">Metrik dan aktivitas platform Luxenary Invite</p>
+                  {/* Top Bar: Title & Quick Shortcuts */}
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-5 sm:p-6 rounded-2xl sm:rounded-3xl border border-gray-200 shadow-xs">
+                    <div>
+                      <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200/80 text-amber-900 text-[10px] font-bold uppercase tracking-wider mb-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse" />
+                        <span>Pusat Kendali Administrator</span>
+                      </div>
+                      <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+                        {settingsMap["platform_name"] || "Luxenary"} Executive Dashboard
+                      </h2>
+                      <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
+                        Ringkasan performa finansial, analitik paket, aktivitas mempelai &amp; status operasional sistem.
+                      </p>
+                    </div>
+
+                    {/* Quick Action Buttons */}
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={handleCreateSnapshot}
+                        disabled={creatingSnapshot}
+                        className="px-3.5 py-2 bg-gray-900 hover:bg-stone-800 text-white rounded-xl text-xs font-semibold transition flex items-center gap-1.5 shadow-2xs cursor-pointer disabled:opacity-50"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+                        </svg>
+                        <span>{creatingSnapshot ? "Snapshotting..." : "+ Snapshot DB"}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab("themes")}
+                        className="px-3.5 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200/80 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                      >
+                        <svg className="w-3.5 h-3.5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span>Kelola Tema</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab("settings")}
+                        className="px-3.5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                      >
+                        <svg className="w-3.5 h-3.5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <span>Pengaturan</span>
+                      </button>
+                    </div>
                   </div>
 
-                  {/* Stats Grid */}
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    {[
-                      {
-                        label: "Total Klien",
-                        value: stats.userCount,
-                        color: "text-blue-600",
-                        bg: "bg-blue-50 text-blue-600",
-                        icon: (
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                  {/* ── Primary Financial & Growth Metrics (4 Cards) ── */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {/* 1. Total Revenue */}
+                    <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-gray-200 shadow-2xs flex flex-col justify-between relative overflow-hidden group hover:border-emerald-300 transition">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-gray-500">Pendapatan Bersih (PAID)</span>
+                        <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-xs">
+                          Rp
+                        </div>
+                      </div>
+                      <div className="my-3">
+                        <p className="text-2xl sm:text-3xl font-bold text-emerald-700 tracking-tight">
+                          Rp {totalRevenue.toLocaleString("id-ID")}
+                        </p>
+                      </div>
+                      <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-500">
+                        <span>{paidCount} transaksi berhasil</span>
+                        <span className="font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
+                          {conversionRate}% Konversi
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 2. Pending Revenue */}
+                    <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-gray-200 shadow-2xs flex flex-col justify-between relative overflow-hidden group hover:border-amber-300 transition">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-gray-500">Menunggu Pembayaran</span>
+                        <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold text-xs">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
-                        ),
-                      },
-                      {
-                        label: "Total Undangan",
-                        value: stats.invitationCount,
-                        color: "text-amber-600",
-                        bg: "bg-amber-50 text-amber-600",
-                        icon: (
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        </div>
+                      </div>
+                      <div className="my-3">
+                        <p className="text-2xl sm:text-3xl font-bold text-amber-800 tracking-tight">
+                          Rp {totalPending.toLocaleString("id-ID")}
+                        </p>
+                      </div>
+                      <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-500">
+                        <span>{pendingCount} invoice checkout aktif</span>
+                        <span className="font-semibold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md">
+                          Pending
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 3. Total Undangan */}
+                    <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-gray-200 shadow-2xs flex flex-col justify-between relative overflow-hidden group hover:border-purple-300 transition">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-gray-500">Undangan Mempelai</span>
+                        <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold text-xs">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                           </svg>
-                        ),
-                      },
-                      {
-                        label: "Total Transaksi",
-                        value: stats.orderCount,
-                        color: "text-purple-600",
-                        bg: "bg-purple-50 text-purple-600",
-                        icon: (
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                          </svg>
-                        ),
-                      },
-                      {
-                        label: "Tamu Terdaftar",
-                        value: stats.guestCount,
-                        color: "text-emerald-600",
-                        bg: "bg-emerald-50 text-emerald-600",
-                        icon: (
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-                          </svg>
-                        ),
-                      },
-                    ].map((s) => (
-                      <div key={s.label} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-                        <div className={`w-10 h-10 ${s.bg} rounded-xl flex items-center justify-center mb-3`}>{s.icon}</div>
-                        <p className="text-xs font-medium text-gray-500">{s.label}</p>
-                        <p className={`mt-1 text-3xl font-bold ${s.color}`}>{s.value}</p>
+                        </div>
                       </div>
-                    ))}
+                      <div className="my-3">
+                        <p className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
+                          {stats.invitationCount || 0}
+                        </p>
+                      </div>
+                      <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-500">
+                        <span>{stats.publishedInvitationCount || invitations.filter(i=>i.status==='PUBLISHED').length} Online Aktif</span>
+                        <span className="font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md">
+                          {stats.draftInvitationCount || invitations.filter(i=>i.status==='DRAFT').length} Draf
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 4. Tamu & Interaksi */}
+                    <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-gray-200 shadow-2xs flex flex-col justify-between relative overflow-hidden group hover:border-blue-300 transition">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-gray-500">Tamu &amp; Interaksi</span>
+                        <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold text-xs">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                          </svg>
+                        </div>
+                      </div>
+                      <div className="my-3">
+                        <p className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
+                          {stats.guestCount || 0}
+                        </p>
+                      </div>
+                      <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-500">
+                        <span>{stats.rsvpCount || 0} RSVP Konfirmasi</span>
+                        <span className="font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md">
+                          {stats.userCount || 0} Akun Klien
+                        </span>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Revenue Stats */}
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                    <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-2xl p-5 text-white">
-                      <p className="text-emerald-100 text-sm font-medium">Total Pendapatan (PAID)</p>
-                      <p className="text-3xl font-bold mt-1">Rp {totalRevenue.toLocaleString("id-ID")}</p>
-                      <p className="text-emerald-200 text-xs mt-1">{paidCount} transaksi lunas</p>
-                    </div>
-                    <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl p-5 text-white">
-                      <p className="text-amber-100 text-sm font-medium">Menunggu Pembayaran</p>
-                      <p className="text-3xl font-bold mt-1">Rp {totalPending.toLocaleString("id-ID")}</p>
-                      <p className="text-amber-100 text-xs mt-1">{pendingCount} transaksi pending</p>
-                    </div>
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-                      <p className="text-gray-500 text-sm font-medium">Tingkat Konversi</p>
-                      <p className="text-3xl font-bold mt-1 text-gray-900">
-                        {orders.length > 0 ? Math.round((paidCount / orders.length) * 100) : 0}%
-                      </p>
-                      <p className="text-gray-400 text-xs mt-1">{paidCount} dari {orders.length} order berhasil</p>
-                    </div>
-                  </div>
-
-                  {/* Recent Data */}
+                  {/* ── Analytics Visual Grid (2 Cards: Package Sales Breakdown & Theme Popularity) ── */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-                      <h3 className="font-bold text-gray-900 mb-3">Undangan Terbaru</h3>
-                      {invitations.length === 0 ? (
-                        <p className="text-sm text-gray-400 italic">Belum ada undangan</p>
+                    {/* Widget 1: Penjualan per Kategori Paket */}
+                    <div className="bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-gray-200 p-6 space-y-4">
+                      <div className="flex items-center justify-between border-b border-gray-100 pb-3.5">
+                        <div>
+                          <h3 className="font-bold text-gray-900 text-base">Distribusi Penjualan per Paket</h3>
+                          <p className="text-xs text-gray-400 mt-0.5">Pendapatan dan volume transaksi lunas berdasarkan tier paket</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab("orders")}
+                          className="text-xs font-semibold text-amber-800 hover:underline cursor-pointer"
+                        >
+                          Lihat Detail &rarr;
+                        </button>
+                      </div>
+
+                      <div className="space-y-4 pt-1">
+                        {/* Traditional */}
+                        <div className="p-3.5 bg-stone-50 rounded-2xl border border-stone-200/80 space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-bold text-amber-900 uppercase tracking-wide">
+                              {settingsMap["name_traditional"] || "Traditional Series"}
+                            </span>
+                            <span className="font-bold text-gray-900">
+                              Rp {traditionalRev.toLocaleString("id-ID")}
+                            </span>
+                          </div>
+                          <div className="w-full bg-stone-200 h-2 rounded-full overflow-hidden">
+                            <div
+                              className="bg-amber-700 h-full rounded-full transition-all duration-500"
+                              style={{ width: `${paidCount > 0 ? (traditionalOrders.length / paidCount) * 100 : 0}%` }}
+                            />
+                          </div>
+                          <div className="flex items-center justify-between text-[11px] text-gray-500">
+                            <span>{traditionalOrders.length} order lunas</span>
+                            <span>{paidCount > 0 ? Math.round((traditionalOrders.length / paidCount) * 100) : 0}% dari total penjualan</span>
+                          </div>
+                        </div>
+
+                        {/* Modern */}
+                        <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-bold text-slate-800 uppercase tracking-wide">
+                              {settingsMap["name_modern"] || "Modern Series"}
+                            </span>
+                            <span className="font-bold text-gray-900">
+                              Rp {modernRev.toLocaleString("id-ID")}
+                            </span>
+                          </div>
+                          <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                            <div
+                              className="bg-slate-700 h-full rounded-full transition-all duration-500"
+                              style={{ width: `${paidCount > 0 ? (modernOrders.length / paidCount) * 100 : 0}%` }}
+                            />
+                          </div>
+                          <div className="flex items-center justify-between text-[11px] text-gray-500">
+                            <span>{modernOrders.length} order lunas</span>
+                            <span>{paidCount > 0 ? Math.round((modernOrders.length / paidCount) * 100) : 0}% dari total penjualan</span>
+                          </div>
+                        </div>
+
+                        {/* Premium */}
+                        <div className="p-3.5 bg-purple-50/70 rounded-2xl border border-purple-200/80 space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-bold text-purple-900 uppercase tracking-wide">
+                              {settingsMap["name_premium"] || "Premium Series"}
+                            </span>
+                            <span className="font-bold text-gray-900">
+                              Rp {premiumRev.toLocaleString("id-ID")}
+                            </span>
+                          </div>
+                          <div className="w-full bg-purple-200 h-2 rounded-full overflow-hidden">
+                            <div
+                              className="bg-purple-700 h-full rounded-full transition-all duration-500"
+                              style={{ width: `${paidCount > 0 ? (premiumOrders.length / paidCount) * 100 : 0}%` }}
+                            />
+                          </div>
+                          <div className="flex items-center justify-between text-[11px] text-gray-500">
+                            <span>{premiumOrders.length} order lunas</span>
+                            <span>{paidCount > 0 ? Math.round((premiumOrders.length / paidCount) * 100) : 0}% dari total penjualan</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Widget 2: Popularitas Tema Terpilih Mempelai */}
+                    <div className="bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-gray-200 p-6 space-y-4">
+                      <div className="flex items-center justify-between border-b border-gray-100 pb-3.5">
+                        <div>
+                          <h3 className="font-bold text-gray-900 text-base">Popularitas Tema Pilihan Mempelai</h3>
+                          <p className="text-xs text-gray-400 mt-0.5">Ranking tema yang paling diminati oleh pasangan pengantin</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab("themes")}
+                          className="text-xs font-semibold text-amber-800 hover:underline cursor-pointer"
+                        >
+                          Katalog Tema &rarr;
+                        </button>
+                      </div>
+
+                      {sortedThemeUsage.length === 0 ? (
+                        <div className="p-8 text-center text-gray-400 italic text-xs">
+                          Belum ada data penggunaan tema oleh mempelai.
+                        </div>
                       ) : (
-                        <div className="divide-y divide-gray-50">
-                          {invitations.slice(0, 5).map((inv) => (
-                            <div key={inv.id} className="py-2.5 flex items-center justify-between">
-                              <div>
-                                <p className="font-semibold text-gray-800 text-sm">{inv.groomName || "Groom"} & {inv.brideName || "Bride"}</p>
-                                <p className="text-xs text-gray-400">Tema: <span className="capitalize font-semibold text-amber-700">{inv.themeId}</span></p>
+                        <div className="space-y-3 pt-1">
+                          {sortedThemeUsage.slice(0, 4).map((item, idx) => {
+                            const pct = invitations.length > 0 ? Math.round((item.count / invitations.length) * 100) : 0;
+                            return (
+                              <div key={item.themeId} className="p-3 bg-gray-50 rounded-xl border border-gray-200 space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <span className="w-5 h-5 rounded-full bg-amber-100 text-amber-900 text-[10px] font-bold flex items-center justify-center shrink-0">
+                                      #{idx + 1}
+                                    </span>
+                                    <span className="font-bold text-gray-900 text-xs">{item.name}</span>
+                                    <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-md bg-white border border-gray-200 text-gray-600">
+                                      {item.category}
+                                    </span>
+                                  </div>
+                                  <span className="text-xs font-bold text-gray-900 font-mono">
+                                    {item.count} Undangan ({pct}%)
+                                  </span>
+                                </div>
+                                <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden">
+                                  <div
+                                    className="bg-amber-600 h-full rounded-full"
+                                    style={{ width: `${pct}%` }}
+                                  />
+                                </div>
                               </div>
-                              <Badge status={inv.status} />
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* ── Recent Live Activity (2 Cards: Recent Invitations & Recent Orders) ── */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                    {/* Widget 3: Undangan Mempelai Terbaru */}
+                    <div className="bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-gray-200 p-6 space-y-4">
+                      <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-amber-600" />
+                          <h3 className="font-bold text-gray-900 text-base">Undangan Mempelai Terkini</h3>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab("invitations")}
+                          className="text-xs font-semibold text-amber-800 hover:underline cursor-pointer"
+                        >
+                          Lihat Semua ({invitations.length}) &rarr;
+                        </button>
+                      </div>
+
+                      {invitations.length === 0 ? (
+                        <p className="text-sm text-gray-400 italic py-6 text-center">Belum ada undangan dibuat</p>
+                      ) : (
+                        <div className="divide-y divide-gray-100">
+                          {invitations.slice(0, 5).map((inv) => (
+                            <div key={inv.id} className="py-3 flex items-center justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="font-bold text-gray-900 text-sm truncate">
+                                  {inv.groomNickname || inv.groomName || "Mempelai Pria"} &amp; {inv.brideNickname || inv.brideName || "Mempelai Wanita"}
+                                </p>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <span className="text-[11px] text-gray-500 font-mono">
+                                    /{inv.groomSlug || "pria"}-{inv.brideSlug || "wanita"}/{inv.invitationSlug || "wedding"}
+                                  </span>
+                                  <span className="text-[10px] font-semibold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/60 uppercase">
+                                    {inv.themeId}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2 shrink-0">
+                                <Badge status={inv.status} />
+                                <a
+                                  href={getInvitationPublicUrl(inv.subdomain || inv.invitationSlug || "wedding")}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="p-1.5 text-gray-400 hover:text-amber-800 hover:bg-gray-100 rounded-lg transition"
+                                  title="Pratinjau Undangan Langsung"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                  </svg>
+                                </a>
+                              </div>
                             </div>
                           ))}
                         </div>
                       )}
                     </div>
 
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-                      <h3 className="font-bold text-gray-900 mb-3">Transaksi Terkini</h3>
-                      {orders.length === 0 ? (
-                        <p className="text-sm text-gray-400 italic">Belum ada transaksi</p>
+                    {/* Widget 4: Transaksi Terkini */}
+                    <div className="bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-gray-200 p-6 space-y-4">
+                      <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-emerald-600" />
+                          <h3 className="font-bold text-gray-900 text-base">Aktivitas Transaksi Pembayaran</h3>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab("orders")}
+                          className="text-xs font-semibold text-amber-800 hover:underline cursor-pointer"
+                        >
+                          Lihat Semua ({orderList.length}) &rarr;
+                        </button>
+                      </div>
+
+                      {orderList.length === 0 ? (
+                        <p className="text-sm text-gray-400 italic py-6 text-center">Belum ada transaksi terekam</p>
                       ) : (
-                        <div className="divide-y divide-gray-50">
-                          {orders.slice(0, 5).map((ord) => (
-                            <div key={ord.id} className="py-2.5 flex items-center justify-between">
-                              <div>
-                                <p className="font-mono text-xs text-gray-600">{ord.invoiceNumber}</p>
-                                <p className="text-xs text-gray-400">{ord.user?.name || ord.user?.email}</p>
+                        <div className="divide-y divide-gray-100">
+                          {orderList.slice(0, 5).map((ord) => (
+                            <div key={ord.id} className="py-3 flex items-center justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="font-mono text-xs font-bold text-gray-800 truncate">{ord.invoiceNumber}</p>
+                                <p className="text-xs text-gray-400 truncate mt-0.5">{ord.user?.name || ord.user?.email || "Klien"}</p>
                               </div>
-                              <div className="text-right">
-                                <p className="font-bold text-sm text-gray-900">Rp {Number(ord.amount).toLocaleString("id-ID")}</p>
-                                <Badge status={ord.status} />
+                              <div className="text-right shrink-0">
+                                <p className="font-bold text-sm text-gray-900 font-mono">
+                                  Rp {Number(ord.amount).toLocaleString("id-ID")}
+                                </p>
+                                <div className="mt-0.5">
+                                  <Badge status={ord.status} />
+                                </div>
                               </div>
                             </div>
                           ))}
                         </div>
                       )}
+                    </div>
+                  </div>
+
+                  {/* ── System Status & Shortcuts (3 Mini Cards) ── */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Database & Snapshot */}
+                    <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-2xs flex flex-col justify-between">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-gray-900">Database &amp; Snapshot</span>
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        {snapshots.length} snapshot tersimpan di <code>{settingsMap["backup_path"] || "/data/backups"}</code>.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab("database")}
+                        className="mt-3 text-xs font-semibold text-amber-800 hover:underline inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        <span>Kelola Database &amp; Snapshot</span>
+                        <span>&rarr;</span>
+                      </button>
+                    </div>
+
+                    {/* Webhook & Monitoring */}
+                    <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-2xs flex flex-col justify-between">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-gray-900">Monitoring Webhook</span>
+                        <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-gray-100 text-gray-700">
+                          {logs.length} Log
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        Status webhook payment gateway &amp; event listener aktif.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab("logs")}
+                        className="mt-3 text-xs font-semibold text-amber-800 hover:underline inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        <span>Lihat Log Monitoring</span>
+                        <span>&rarr;</span>
+                      </button>
+                    </div>
+
+                    {/* Tema Katalog */}
+                    <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-2xs flex flex-col justify-between">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-gray-900">Koleksi Desain Tema</span>
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900">
+                          {themes.filter((t) => t.isActive).length} Aktif
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        Katalog tema Traditional, Modern, dan Premium siap pakai.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab("themes")}
+                        className="mt-3 text-xs font-semibold text-amber-800 hover:underline inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        <span>Atur Katalog &amp; Sinkronisasi</span>
+                        <span>&rarr;</span>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -1584,60 +2261,742 @@ export default function AdminPage() {
                     </div>
                   </SettingsCard>
 
+                  {/* Branding — Logo & Favicon */}
+                  <div
+                    className={`bg-white rounded-2xl shadow-sm border transition-all duration-200 p-6 ${
+                      editSection["branding"]
+                        ? "border-amber-400 ring-2 ring-amber-400/20"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-4 mb-4 border-b border-gray-100 pb-4">
+                      <div>
+                        <h3 className="font-bold text-gray-900 text-lg">Branding — Logo &amp; Favicon</h3>
+                        <p className="text-sm text-gray-500 mt-0.5">
+                          Identitas visual platform yang otomatis terpasang dan tersinkronisasi di seluruh halaman.
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          toggleEditSection("branding");
+                          setPendingLogo(null);
+                          setPendingFavicon(null);
+                          setPreviewLogo(null);
+                          setPreviewFavicon(null);
+                          setBrandUploadMsg(null);
+                        }}
+                        className="px-3.5 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-800 border border-gray-300 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 shrink-0 shadow-2xs"
+                      >
+                        <svg className="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        <span>{editSection["branding"] ? "Tutup Form" : "Ubah File"}</span>
+                      </button>
+                    </div>
+
+                    {/* Upload Message */}
+                    {brandUploadMsg && (
+                      <div className={`mb-4 p-3 rounded-xl text-xs font-medium flex items-center gap-2 ${
+                        brandUploadMsg.ok
+                          ? "bg-emerald-50 border border-emerald-300 text-emerald-900"
+                          : "bg-rose-50 border border-rose-300 text-rose-900"
+                      }`}>
+                        <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          {brandUploadMsg.ok
+                            ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          }
+                        </svg>
+                        <span>[{brandUploadMsg.type.toUpperCase()}] {brandUploadMsg.msg}</span>
+                      </div>
+                    )}
+
+                    {/* ── Minimized Summary View (Saat tidak mode edit) ── */}
+                    {!editSection["branding"] ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* Summary Logo */}
+                        <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-white border border-gray-200 flex items-center justify-center overflow-hidden shrink-0">
+                              {logoUrl ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
+                              ) : (
+                                <span className="font-bold font-serif text-amber-800 text-sm">L</span>
+                              )}
+                            </div>
+                            <div>
+                              <span className="text-xs font-bold text-gray-800 block">Logo Platform</span>
+                              <span className="text-[11px] text-gray-500 truncate block max-w-[180px]">
+                                {logoUrl ? "logo.webp (Optimal)" : "Menggunakan Monogram"}
+                              </span>
+                            </div>
+                          </div>
+                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                            logoUrl ? "bg-emerald-100 text-emerald-800" : "bg-gray-200 text-gray-600"
+                          }`}>
+                            {logoUrl ? "● Terpasang" : "Default"}
+                          </span>
+                        </div>
+
+                        {/* Summary Favicon */}
+                        <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-white border border-gray-200 flex items-center justify-center overflow-hidden shrink-0">
+                              {faviconUrl ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={faviconUrl} alt="Favicon" className="w-6 h-6 object-contain" />
+                              ) : (
+                                <span className="font-bold text-gray-400 text-xs">ICO</span>
+                              )}
+                            </div>
+                            <div>
+                              <span className="text-xs font-bold text-gray-800 block">Favicon Tab</span>
+                              <span className="text-[11px] text-gray-500 truncate block max-w-[180px]">
+                                {faviconUrl ? "favicon.png (64×64)" : "favicon.ico"}
+                              </span>
+                            </div>
+                          </div>
+                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                            faviconUrl ? "bg-emerald-100 text-emerald-800" : "bg-gray-200 text-gray-600"
+                          }`}>
+                            {faviconUrl ? "● Terpasang" : "Default"}
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      /* ── Expanded Form Edit Mode ── */
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                        {/* ── Logo Upload ── */}
+                        <div className="space-y-3 p-4 bg-gray-50/70 rounded-xl border border-gray-200">
+                          <div>
+                            <p className="text-sm font-bold text-gray-800">Upload Logo Baru</p>
+                            <p className="text-xs text-gray-400 mt-0.5">Format: WebP, maks. 800px. Menimpa logo sebelumnya.</p>
+                          </div>
+
+                          <div className="p-3 bg-white rounded-xl border border-gray-200 flex items-center gap-3">
+                            <div className="w-14 h-14 rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden shrink-0">
+                              {(previewLogo || logoUrl) ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={previewLogo ?? logoUrl!} alt="Logo preview" className="w-full h-full object-contain" />
+                              ) : (
+                                <span className="font-bold font-serif text-gray-400 text-sm">L</span>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0 space-y-1">
+                              <p className="text-xs text-gray-500 truncate">
+                                {pendingLogo
+                                  ? <span className="text-amber-800 font-bold">Terpilih: {pendingLogo.name}</span>
+                                  : logoUrl ? "/assets/brand/logo.webp" : "Belum ada logo"
+                                }
+                              </p>
+                              <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition bg-gray-100 hover:bg-gray-200 text-gray-700">
+                                Pilih File Logo
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const f = e.target.files?.[0];
+                                    if (!f) return;
+                                    setPendingLogo(f);
+                                    setPreviewLogo(URL.createObjectURL(f));
+                                    setBrandUploadMsg(null);
+                                    e.target.value = "";
+                                  }}
+                                />
+                              </label>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-end gap-2 pt-1">
+                            {pendingLogo && (
+                              <button
+                                type="button"
+                                onClick={() => { setPendingLogo(null); setPreviewLogo(null); }}
+                                disabled={uploadingLogo}
+                                className="px-3 py-1.5 border border-gray-300 hover:bg-gray-100 text-gray-600 rounded-lg text-xs font-semibold transition"
+                              >
+                                Batal
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => uploadBrandAsset("logo")}
+                              disabled={!pendingLogo || uploadingLogo}
+                              className="px-4 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 shadow-xs"
+                            >
+                              {uploadingLogo ? (
+                                <><span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> Menyimpan...</>
+                              ) : "Simpan Logo"}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* ── Favicon Upload ── */}
+                        <div className="space-y-3 p-4 bg-gray-50/70 rounded-xl border border-gray-200">
+                          <div>
+                            <p className="text-sm font-bold text-gray-800">Upload Favicon Baru</p>
+                            <p className="text-xs text-gray-400 mt-0.5">Format: PNG 64×64px. Menimpa favicon sebelumnya.</p>
+                          </div>
+
+                          <div className="p-3 bg-white rounded-xl border border-gray-200 flex items-center gap-3">
+                            <div className="w-14 h-14 rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden shrink-0">
+                              {(previewFavicon || faviconUrl) ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={previewFavicon ?? faviconUrl!} alt="Favicon preview" className="w-8 h-8 object-contain" />
+                              ) : (
+                                <span className="font-bold text-gray-400 text-xs">ICO</span>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0 space-y-1">
+                              <p className="text-xs text-gray-500 truncate">
+                                {pendingFavicon
+                                  ? <span className="text-amber-800 font-bold">Terpilih: {pendingFavicon.name}</span>
+                                  : faviconUrl ? "/assets/brand/favicon.png" : "Belum ada favicon"
+                                }
+                              </p>
+                              <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition bg-gray-100 hover:bg-gray-200 text-gray-700">
+                                Pilih File Favicon
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    const f = e.target.files?.[0];
+                                    if (!f) return;
+                                    setPendingFavicon(f);
+                                    setPreviewFavicon(URL.createObjectURL(f));
+                                    setBrandUploadMsg(null);
+                                    e.target.value = "";
+                                  }}
+                                />
+                              </label>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-end gap-2 pt-1">
+                            {pendingFavicon && (
+                              <button
+                                type="button"
+                                onClick={() => { setPendingFavicon(null); setPreviewFavicon(null); }}
+                                disabled={uploadingFavicon}
+                                className="px-3 py-1.5 border border-gray-300 hover:bg-gray-100 text-gray-600 rounded-lg text-xs font-semibold transition"
+                              >
+                                Batal
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => uploadBrandAsset("favicon")}
+                              disabled={!pendingFavicon || uploadingFavicon}
+                              className="px-4 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 shadow-xs"
+                            >
+                              {uploadingFavicon ? (
+                                <><span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> Menyimpan...</>
+                              ) : "Simpan Favicon"}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   {/* Platform Settings */}
                   <SettingsCard
-                    title="Konfigurasi Platform"
-                    description="Nama platform dan email support yang digunakan di seluruh sistem."
+                    title="Konfigurasi Platform & Tampilan"
+                    description="Nama platform, kontak resmi, dan teks headline hero yang digunakan di seluruh sistem."
                     isEditing={Boolean(editSection["platform"])}
                     onEdit={() => toggleEditSection("platform")}
-                    onCancel={() => cancelEdit("platform", ["platform_name", "support_email"])}
-                    onSave={() => saveSettings(["platform_name", "support_email"], setSavingPlatform, "platform")}
+                    onCancel={() => cancelEdit("platform", ["platform_name", "support_email", "support_whatsapp", "hero_tagline", "hero_subtitle"])}
+                    onSave={() => saveSettings(["platform_name", "support_email", "support_whatsapp", "hero_tagline", "hero_subtitle"], setSavingPlatform, "platform")}
                     saving={savingPlatform}
-                    isDirty={isSectionDirty(["platform_name", "support_email"])}
+                    isDirty={isSectionDirty(["platform_name", "support_email", "support_whatsapp", "hero_tagline", "hero_subtitle"])}
                     saveSuccess={settingsSaved["platform"]}
-                    saveSuccessMessage="Konfigurasi platform berhasil disimpan"
+                    saveSuccessMessage="Konfigurasi platform & tampilan berhasil disimpan"
                     viewContent={
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
-                          <span className="text-xs text-gray-500 block font-medium">Nama Platform</span>
-                          <span className="text-sm font-bold text-gray-800 mt-0.5 inline-block">{settingsMap["platform_name"] || "Luxenary Invite"}</span>
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                          <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                            <span className="text-xs text-gray-500 block font-medium">Nama Platform</span>
+                            <span className="text-sm font-bold text-gray-800 mt-0.5 inline-block">{settingsMap["platform_name"] || "Luxenary Invite"}</span>
+                          </div>
+                          <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                            <span className="text-xs text-gray-500 block font-medium">Domain Host</span>
+                            <span className="text-xs font-mono font-bold text-emerald-700 mt-0.5 inline-block">{typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"}</span>
+                          </div>
+                          <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                            <span className="text-xs text-gray-500 block font-medium">Email Support</span>
+                            <span className="text-sm font-bold text-gray-800 mt-0.5 inline-block">{settingsMap["support_email"] || "support@luxenary.id"}</span>
+                          </div>
+                          <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                            <span className="text-xs text-gray-500 block font-medium">WhatsApp Admin / CS</span>
+                            <span className="text-sm font-bold text-emerald-700 mt-0.5 inline-block">+{settingsMap["support_whatsapp"] || "6281234567890"}</span>
+                          </div>
                         </div>
-                        <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
-                          <span className="text-xs text-gray-500 block font-medium">Domain Host</span>
-                          <span className="text-xs font-mono font-bold text-emerald-700 mt-0.5 inline-block">{typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"}</span>
-                        </div>
-                        <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
-                          <span className="text-xs text-gray-500 block font-medium">Email Support</span>
-                          <span className="text-sm font-bold text-gray-800 mt-0.5 inline-block">{settingsMap["support_email"] || "support@luxenary.id"}</span>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                            <span className="text-xs text-gray-500 block font-medium">Tagline Hero (Halaman Utama)</span>
+                            <span className="text-xs font-semibold text-gray-800 mt-0.5 inline-block">{settingsMap["hero_tagline"] || "Undangan Pernikahan Digital Elegan, Hangat & Berkelas"}</span>
+                          </div>
+                          <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                            <span className="text-xs text-gray-500 block font-medium">Deskripsi Subtitle Hero</span>
+                            <span className="text-xs text-gray-600 mt-0.5 line-clamp-2">{settingsMap["hero_subtitle"] || "Didesain khusus dengan sentuhan estetika mewah dan eksklusif..."}</span>
+                          </div>
                         </div>
                       </div>
                     }
                   >
-                    <FieldRow label="Nama Platform">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FieldRow label="Nama Platform">
+                        <input
+                          type="text"
+                          value={settingsMap["platform_name"] || "Luxenary Invite"}
+                          onChange={(e) => setSetting("platform_name", e.target.value)}
+                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
+                        />
+                      </FieldRow>
+
+                      <FieldRow label="Domain Host Platform" description="Domain terdeteksi otomatis dari host server aktif.">
+                        <div className="p-2.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-mono flex items-center justify-between">
+                          <span>{typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"}</span>
+                          <span className="text-[10px] bg-emerald-200/80 px-2 py-0.5 rounded font-sans font-bold">● Auto</span>
+                        </div>
+                      </FieldRow>
+
+                      <FieldRow label="Email Support">
+                        <input
+                          type="email"
+                          value={settingsMap["support_email"] || "support@luxenary.id"}
+                          onChange={(e) => setSetting("support_email", e.target.value)}
+                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
+                        />
+                      </FieldRow>
+
+                      <FieldRow label="Nomor WhatsApp Admin / CS" description="Gunakan kode negara tanpa +, contoh: 6281234567890">
+                        <input
+                          type="text"
+                          value={settingsMap["support_whatsapp"] || "6281234567890"}
+                          onChange={(e) => setSetting("support_whatsapp", e.target.value.replace(/[^0-9]/g, ""))}
+                          placeholder="6281234567890"
+                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
+                        />
+                      </FieldRow>
+                    </div>
+
+                    <FieldRow label="Tagline Hero (Headline Besar Halaman Utama)">
                       <input
                         type="text"
-                        value={settingsMap["platform_name"] || "Luxenary Invite"}
-                        onChange={(e) => setSetting("platform_name", e.target.value)}
+                        value={settingsMap["hero_tagline"] || "Undangan Pernikahan Digital Elegan, Hangat & Berkelas"}
+                        onChange={(e) => setSetting("hero_tagline", e.target.value)}
                         className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
                       />
                     </FieldRow>
 
-                    <FieldRow label="Domain Host Platform" description="Domain ini otomatis terdeteksi dari host server aktif saat aplikasi dijalankan / di-deploy.">
-                      <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-mono flex items-center justify-between">
-                        <span>{typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"}</span>
-                        <span className="text-[10px] bg-emerald-200/80 px-2 py-0.5 rounded font-sans font-bold">● Auto-Detected</span>
-                      </div>
-                    </FieldRow>
-
-                    <FieldRow label="Email Support">
-                      <input
-                        type="email"
-                        value={settingsMap["support_email"] || "support@luxenary.id"}
-                        onChange={(e) => setSetting("support_email", e.target.value)}
-                        className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
+                    <FieldRow label="Deskripsi / Subtitle Hero Halaman Utama">
+                      <textarea
+                        rows={3}
+                        value={settingsMap["hero_subtitle"] || "Didesain khusus dengan sentuhan estetika mewah dan eksklusif. Hadirkan pengalaman berkesan dengan layout split desktop, custom subdomain, buku tamu real-time, dan video booth ucapan."}
+                        onChange={(e) => setSetting("hero_subtitle", e.target.value)}
+                        className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition resize-none shadow-2xs"
                       />
                     </FieldRow>
                   </SettingsCard>
+                </div>
+              )}
+
+              {/* ── Database & Backup ── */}
+              {activeTab === "database" && (
+                <div className="space-y-6">
+                  {/* Header & Status Banner */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-900">Database &amp; Snapshot Manager</h2>
+                      <p className="text-sm text-gray-500 mt-0.5">
+                        Kelola backup, snapshot SQLite mandiri, jadwal auto-backup, dan pemulihan data (restore).
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleCreateSnapshot}
+                      disabled={creatingSnapshot}
+                      className="px-5 py-2.5 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 cursor-pointer"
+                    >
+                      {creatingSnapshot ? (
+                        <>
+                          <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          <span>Membuat Snapshot...</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                          </svg>
+                          <span>Buat Snapshot Sekarang</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Feedback Message */}
+                  {backupActionMsg && (
+                    <div className={`p-4 rounded-2xl text-xs font-medium flex items-center gap-2.5 ${
+                      backupActionMsg.ok
+                        ? "bg-emerald-50 border border-emerald-300 text-emerald-900"
+                        : "bg-rose-50 border border-rose-300 text-rose-900"
+                    }`}>
+                      <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        {backupActionMsg.ok
+                          ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        }
+                      </svg>
+                      <span>{backupActionMsg.msg}</span>
+                    </div>
+                  )}
+
+                  {/* Database Info Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-2xs">
+                      <span className="text-xs text-gray-500 font-medium block">Database Engine &amp; File Aktif</span>
+                      <span className="text-sm font-bold text-gray-900 mt-1 inline-block">SQLite (`dev.db`)</span>
+                      <span className="text-[11px] text-emerald-600 font-semibold block mt-0.5">● Connected &amp; Running</span>
+                    </div>
+                    <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-2xs">
+                      <span className="text-xs text-gray-500 font-medium block">Total Snapshot Tersedia</span>
+                      <span className="text-2xl font-bold text-gray-900 mt-1 inline-block">{snapshots.length}</span>
+                      <span className="text-[11px] text-gray-400 block mt-0.5">File `.db` di server</span>
+                    </div>
+                    <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-2xs">
+                      <span className="text-xs text-gray-500 font-medium block">Path Direktori Backup</span>
+                      <span className="text-xs font-mono font-bold text-amber-900 mt-1 inline-block bg-amber-50 px-2 py-1 rounded-md border border-amber-200/60">
+                        {settingsMap["backup_path"] || "/data/backups"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* ── Card 1: Upload File Snapshot & Restore ── */}
+                  <div className={`bg-white rounded-2xl shadow-sm border transition-all duration-200 p-6 ${
+                    showUploadSnapshot ? "border-amber-400 ring-2 ring-amber-400/20" : "border-gray-200 hover:border-gray-300"
+                  }`}>
+                    <div className="flex items-start justify-between gap-4 mb-3 border-b border-gray-100 pb-3.5">
+                      <div>
+                        <h3 className="font-bold text-gray-900 text-lg">Upload &amp; Restore Snapshot (.db)</h3>
+                        <p className="text-sm text-gray-500 mt-0.5">
+                          Pulihkan database dari file backup eksternal. Safety backup dibuat otomatis sebelum data ditimpa.
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowUploadSnapshot(!showUploadSnapshot);
+                          setPendingRestoreFile(null);
+                        }}
+                        className="px-3.5 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-800 border border-gray-300 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 shrink-0 shadow-2xs"
+                      >
+                        <svg className="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        </svg>
+                        <span>{showUploadSnapshot ? "Tutup Form" : "Upload File"}</span>
+                      </button>
+                    </div>
+
+                    {!showUploadSnapshot ? (
+                      <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-between text-xs text-gray-600">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                          <span>Format didukung: <strong>.db, .sqlite</strong>. File aktif saat ini: <strong>SQLite (`dev.db`)</strong></span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowUploadSnapshot(true)}
+                          className="text-amber-800 hover:underline font-semibold text-xs cursor-pointer"
+                        >
+                          Pilih file snapshot &rarr;
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="p-5 bg-gray-50 rounded-2xl border border-gray-200 space-y-4 pt-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                          <div className="space-y-1">
+                            <p className="text-xs font-semibold text-gray-700">Pilih File Snapshot Database</p>
+                            <p className="text-xs text-gray-500">
+                              {pendingRestoreFile ? (
+                                <span className="text-amber-800 font-bold">File terpilih: {pendingRestoreFile.name} ({(pendingRestoreFile.size / 1024).toFixed(1)} KB)</span>
+                              ) : (
+                                "Belum ada file dipilih (format didukung: .db, .sqlite)"
+                              )}
+                            </p>
+                          </div>
+
+                          <label className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs font-semibold rounded-xl cursor-pointer transition text-center shrink-0">
+                            Pilih File .db
+                            <input
+                              type="file"
+                              accept=".db,.sqlite"
+                              className="hidden"
+                              onChange={(e) => {
+                                const f = e.target.files?.[0];
+                                if (f) {
+                                  setPendingRestoreFile(f);
+                                  setBackupActionMsg(null);
+                                }
+                                e.target.value = "";
+                              }}
+                            />
+                          </label>
+                        </div>
+
+                        {/* Warning & Simpan / Restore Actions */}
+                        <div className="pt-3 border-t border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="text-xs text-stone-500 flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                            <span>Sistem otomatis membuat safety backup sebelum restore dieksekusi.</span>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {pendingRestoreFile && (
+                              <button
+                                type="button"
+                                onClick={() => setPendingRestoreFile(null)}
+                                disabled={uploadingRestoreFile}
+                                className="px-4 py-2 border border-gray-300 hover:bg-gray-100 text-gray-700 rounded-xl text-xs font-semibold transition cursor-pointer"
+                              >
+                                Batal
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={handleUploadAndRestore}
+                              disabled={!pendingRestoreFile || uploadingRestoreFile}
+                              className="px-5 py-2 bg-rose-700 hover:bg-rose-800 text-white rounded-xl text-xs font-bold transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-2 shadow-xs"
+                            >
+                              {uploadingRestoreFile ? (
+                                <>
+                                  <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                  <span>Me-restore Database...</span>
+                                </>
+                              ) : (
+                                <span>Simpan &amp; Restore Sekarang</span>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* ── Card 2: Pengaturan Jadwal Auto-Backup (Dinamis) ── */}
+                  <SettingsCard
+                    title="Jadwal Auto-Backup Database"
+                    description="Atur waktu otomatis pembuatan snapshot database setiap hari dan batas rotasi retensi file."
+                    isEditing={Boolean(editSection["backup"])}
+                    onEdit={() => toggleEditSection("backup")}
+                    onCancel={() => cancelEdit("backup", ["backup_auto_enabled", "backup_auto_time", "backup_path", "backup_retention_count"])}
+                    onSave={() => saveSettings(["backup_auto_enabled", "backup_auto_time", "backup_path", "backup_retention_count"], setSavingBackupSettings, "backup")}
+                    saving={savingBackupSettings}
+                    isDirty={isSectionDirty(["backup_auto_enabled", "backup_auto_time", "backup_path", "backup_retention_count"])}
+                    saveSuccess={settingsSaved["backup"]}
+                    saveSuccessMessage="Pengaturan auto-backup berhasil disimpan"
+                    viewContent={
+                      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                        <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                          <span className="text-xs text-gray-500 block font-medium">Status Auto-Backup</span>
+                          <span className={`text-sm font-bold mt-0.5 inline-block ${
+                            settingsMap["backup_auto_enabled"] === "false" ? "text-rose-600" : "text-emerald-700"
+                          }`}>
+                            {settingsMap["backup_auto_enabled"] === "false" ? "Nonaktif" : "Aktif Harian"}
+                          </span>
+                        </div>
+                        <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                          <span className="text-xs text-gray-500 block font-medium">Jam Eksekusi</span>
+                          <span className="text-sm font-bold text-gray-800 mt-0.5 inline-block">
+                            Pukul {settingsMap["backup_auto_time"] || "02:00"} WIB
+                          </span>
+                        </div>
+                        <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                          <span className="text-xs text-gray-500 block font-medium">Direktori Backup</span>
+                          <span className="text-xs font-mono font-bold text-amber-900 mt-0.5 inline-block truncate max-w-full">
+                            {settingsMap["backup_path"] || "/data/backups"}
+                          </span>
+                        </div>
+                        <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                          <span className="text-xs text-gray-500 block font-medium">Batas Retensi File</span>
+                          <span className="text-sm font-bold text-gray-800 mt-0.5 inline-block">
+                            {settingsMap["backup_retention_count"] || "10"} Snapshot Terbaru
+                          </span>
+                        </div>
+                      </div>
+                    }
+                  >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FieldRow label="Status Auto-Backup">
+                        <select
+                          value={settingsMap["backup_auto_enabled"] ?? "true"}
+                          onChange={(e) => setSetting("backup_auto_enabled", e.target.value)}
+                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
+                        >
+                          <option value="true">Aktif (Jalankan Backup Otomatis)</option>
+                          <option value="false">Nonaktif</option>
+                        </select>
+                      </FieldRow>
+
+                      <FieldRow label="Waktu Eksekusi Harian" description="Format 24 jam (HH:mm), contoh: 02:00">
+                        <input
+                          type="time"
+                          value={settingsMap["backup_auto_time"] || "02:00"}
+                          onChange={(e) => setSetting("backup_auto_time", e.target.value)}
+                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
+                        />
+                      </FieldRow>
+
+                      <FieldRow label="Path Direktori Penyimpanan" description="Default /data/backups (otomatis fallback ke ./data/backups jika lokal)">
+                        <input
+                          type="text"
+                          value={settingsMap["backup_path"] || "/data/backups"}
+                          onChange={(e) => setSetting("backup_path", e.target.value)}
+                          placeholder="/data/backups"
+                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
+                        />
+                      </FieldRow>
+
+                      <FieldRow label="Jumlah Retensi Snapshot Tersimpan" description="Snapshot tertua otomatis dibersihkan jika melebihi batas">
+                        <input
+                          type="number"
+                          min="3"
+                          max="100"
+                          value={settingsMap["backup_retention_count"] || "10"}
+                          onChange={(e) => setSetting("backup_retention_count", e.target.value)}
+                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
+                        />
+                      </FieldRow>
+                    </div>
+                  </SettingsCard>
+
+                  {/* ── Card 3: Daftar Riwayat Snapshot Server ── */}
+                  <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+                      <div>
+                        <h3 className="font-bold text-gray-900 text-lg">Daftar Snapshot Tersimpan</h3>
+                        <p className="text-sm text-gray-500 mt-0.5">{snapshots.length} file snapshot tersimpan di server</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={loadSnapshots}
+                        className="px-3 py-1.5 text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition cursor-pointer"
+                      >
+                        ↻ Refresh
+                      </button>
+                    </div>
+
+                    {loadingSnapshots ? (
+                      <div className="p-12 text-center text-gray-400">
+                        <span className="inline-block w-6 h-6 border-2 border-amber-600 border-t-transparent rounded-full animate-spin mb-2" />
+                        <p className="text-xs">Memuat daftar snapshot...</p>
+                      </div>
+                    ) : snapshots.length === 0 ? (
+                      <div className="p-12 text-center text-gray-400 italic">
+                        Belum ada file snapshot tersimpan. Klik &quot;Buat Snapshot Sekarang&quot; untuk membuat backup pertama.
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs">
+                          <thead className="bg-gray-50/80 text-gray-500 uppercase font-semibold border-b border-gray-100">
+                            <tr>
+                              <th className="px-5 py-3.5">Nama File Snapshot</th>
+                              <th className="px-5 py-3.5">Tipe</th>
+                              <th className="px-5 py-3.5">Ukuran</th>
+                              <th className="px-5 py-3.5">Waktu Pembuatan</th>
+                              <th className="px-5 py-3.5 text-right">Aksi</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100 text-gray-700">
+                            {snapshots.map((snap) => (
+                              <tr key={snap.filename} className="hover:bg-gray-50/60 transition">
+                                <td className="px-5 py-3.5 font-mono font-medium text-gray-900">
+                                  {snap.filename}
+                                </td>
+                                <td className="px-5 py-3.5">
+                                  {snap.isSafetyBackup ? (
+                                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                                      Safety Backup
+                                    </span>
+                                  ) : (
+                                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                      Snapshot
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="px-5 py-3.5 font-semibold text-gray-800">
+                                  {snap.sizeFormatted}
+                                </td>
+                                <td className="px-5 py-3.5 text-gray-500">
+                                  {new Date(snap.createdAt).toLocaleString("id-ID", {
+                                    day: "2-digit",
+                                    month: "short",
+                                    year: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                    second: "2-digit",
+                                  })}
+                                </td>
+                                <td className="px-5 py-3.5 text-right">
+                                  <div className="flex items-center justify-end gap-2">
+                                    {/* Download */}
+                                    <a
+                                      href={`/api/admin/database/download?filename=${encodeURIComponent(snap.filename)}`}
+                                      className="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-semibold text-[11px] transition inline-flex items-center gap-1"
+                                      title="Download file .db"
+                                    >
+                                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                      </svg>
+                                      <span>Download</span>
+                                    </a>
+
+                                    {/* Restore */}
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRestoreSnapshot(snap.filename)}
+                                      disabled={restoringSnapshot === snap.filename}
+                                      className="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-lg font-semibold text-[11px] transition inline-flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                                      title="Restore database ke snapshot ini"
+                                    >
+                                      {restoringSnapshot === snap.filename ? (
+                                        <span className="w-3 h-3 border-2 border-amber-800 border-t-transparent rounded-full animate-spin" />
+                                      ) : (
+                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                        </svg>
+                                      )}
+                                      <span>Restore</span>
+                                    </button>
+
+                                    {/* Delete */}
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteSnapshot(snap.filename)}
+                                      disabled={deletingSnapshot === snap.filename}
+                                      className="px-2 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg font-semibold text-[11px] transition inline-flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                                      title="Hapus snapshot ini"
+                                    >
+                                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 

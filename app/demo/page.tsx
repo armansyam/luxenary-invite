@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { BrandLogo } from "@/components/BrandLogo";
 
 interface ThemeItem {
   id: string;
@@ -90,12 +91,10 @@ export default function CatalogGridShowcase() {
       <header className="bg-white/80 backdrop-blur-md border-b border-stone-200 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3 group cursor-pointer">
-            <span className="w-8 h-8 rounded-lg bg-stone-900 text-white flex items-center justify-center font-serif font-bold text-base group-hover:bg-amber-800 transition">
-              L
-            </span>
+            <BrandLogo size="sm" lightBg />
             <div>
-              <h1 className="text-base font-bold text-stone-900 tracking-tight group-hover:text-amber-900 transition">LUXENARY INVITATION</h1>
-              <p className="text-[11px] text-stone-500 font-medium">Katalog Koleksi Undangan Pernikahan Digital</p>
+              <h1 className="text-base font-bold text-stone-900 tracking-tight group-hover:text-amber-900 transition">KATALOG TEMA</h1>
+              <p className="text-[11px] text-stone-500 font-medium">Koleksi Desain Undangan Pernikahan Digital</p>
             </div>
           </Link>
 

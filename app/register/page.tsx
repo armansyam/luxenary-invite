@@ -1,5 +1,7 @@
 "use client";
 
+import { BrandLogo } from "@/components/BrandLogo";
+
 import { useState, useEffect } from "react";
 import { useSession, signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -155,10 +157,7 @@ export default function RegisterPage() {
       {/* Header */}
       <header className="px-6 py-5 flex items-center justify-between">
         <a href="/" className="flex items-center gap-2.5 group">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-amber-700 flex items-center justify-center text-white font-bold text-sm shadow">
-            L
-          </div>
-          <span className="text-white font-bold text-lg tracking-tight">Luxenary Invite</span>
+          <BrandLogo size="sm" showName />
         </a>
         <a href="/login" className="text-stone-300 text-sm hover:text-white transition font-medium">
           Sudah punya akun? Login →

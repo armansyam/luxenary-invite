@@ -151,6 +151,7 @@ export default function EditInvitation() {
   const [playingAudioUrl, setPlayingAudioUrl] = useState<string | null>(null);
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
   const [uploadingAudio, setUploadingAudio] = useState(false);
+  const [adminWhatsapp, setAdminWhatsapp] = useState<string>("6281234567890");
 
   const isUploading = uploadingCount > 0;
   const handleUploadStart = () => setUploadingCount((c) => c + 1);
@@ -246,6 +247,15 @@ export default function EditInvitation() {
   };
 
   useEffect(() => {
+    fetch("/api/public/settings")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.support_whatsapp) {
+          setAdminWhatsapp(data.support_whatsapp);
+        }
+      })
+      .catch(() => {});
+
     fetch(`/api/client/invitations/${invitationId}`)
       .then((r) => r.json())
       .then((inv) => {
@@ -680,7 +690,7 @@ export default function EditInvitation() {
             </div>
           </div>
           <a
-            href="https://wa.me/6281234567890?text=Halo%20Admin%20Luxenary,%20mohon%20bantuan%20buka%20kunci%20darurat%20undangan%20saya"
+            href={`https://wa.me/${adminWhatsapp}?text=Halo%20Admin,%20mohon%20bantuan%20buka%20kunci%20darurat%20undangan%20saya`}
             target="_blank"
             rel="noreferrer"
             className="px-4 py-2.5 bg-amber-700 hover:bg-amber-600 text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5 flex-shrink-0 shadow-sm"

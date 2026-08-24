@@ -1,5 +1,7 @@
 "use client";
 
+import { BrandLogo } from "@/components/BrandLogo";
+
 import { useState, useEffect, Suspense } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -124,8 +126,7 @@ function CheckoutContent() {
     <div className="min-h-screen bg-gradient-to-br from-stone-950 via-stone-900 to-amber-950 flex flex-col">
       <header className="px-6 py-5 flex items-center justify-between">
         <a href="/" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-amber-700 flex items-center justify-center text-white font-bold text-sm">L</div>
-          <span className="text-white font-bold text-lg tracking-tight">Luxenary Invite</span>
+          <BrandLogo size="sm" showName />
         </a>
         <a href="/register" className="text-stone-400 text-sm hover:text-white transition">← Ubah Paket</a>
       </header>
