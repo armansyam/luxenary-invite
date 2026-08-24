@@ -559,6 +559,67 @@ export async function composeTemplateData(invitationId: string) {
           if (counter) counter.textContent = (window.luxActivePhotoIdx + 1) + " / " + window.LUX_ALL_PHOTOS.length;
         };
 
+        // Smart Puzzle Grid Auto-Packing (100% flush rectangular frame, no holes)
+        function initSmartPuzzleGallery() {
+          const grid = document.querySelector('.moments-grid-10');
+          if (!grid) return;
+          const items = Array.from(grid.querySelectorAll('.moment-photo-item'));
+          if (!items.length) return;
+
+          let loadedCount = 0;
+          items.forEach((item) => {
+            const img = item.querySelector('img');
+            if (!img) return;
+
+            function processImage() {
+              if (img.naturalWidth && img.naturalHeight) {
+                if (img.naturalWidth > img.naturalHeight * 1.12) {
+                  item.classList.add('is-landscape');
+                } else {
+                  item.classList.remove('is-landscape');
+                }
+              }
+              loadedCount++;
+              if (loadedCount >= items.length) {
+                packPuzzleSlots(items);
+              }
+            }
+
+            if (img.complete && img.naturalWidth > 0) {
+              processImage();
+            } else {
+              img.addEventListener('load', processImage);
+              img.addEventListener('error', () => { loadedCount++; });
+            }
+          });
+
+          setTimeout(() => { packPuzzleSlots(items); }, 700);
+        }
+
+        function packPuzzleSlots(items) {
+          let totalSlots = 0;
+          const targetMaxSlots = 12;
+          let bestCutoff = items.length;
+
+          for (let i = 0; i < items.length; i++) {
+            const slotCost = items[i].classList.contains('is-landscape') ? 2 : 1;
+            if (totalSlots + slotCost > targetMaxSlots) break;
+            totalSlots += slotCost;
+            if (totalSlots % 4 === 0) {
+              bestCutoff = i + 1;
+            }
+          }
+
+          items.forEach((item, idx) => {
+            if (idx < bestCutoff) {
+              item.style.display = 'block';
+            } else {
+              item.style.display = 'none';
+            }
+          });
+        }
+        document.addEventListener('DOMContentLoaded', initSmartPuzzleGallery);
+
         // Touch swipe support for mobile lightbox
         (function() {
           let touchStartX = 0;
