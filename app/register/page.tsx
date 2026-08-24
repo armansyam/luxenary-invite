@@ -5,7 +5,7 @@ import { useSession, signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
 type Plan = {
-  id: "TRADITIONAL" | "MODERN";
+  id: "TRADITIONAL" | "PREMIUM" | "MODERN";
   name: string;
   price: number;
   desc: string;
@@ -29,17 +29,17 @@ export default function RegisterPage() {
       color: "amber",
     },
     {
-      id: "MODERN",
-      name: "Modern",
+      id: "PREMIUM",
+      name: "Premium",
       price: 499000,
-      desc: "Tema Modern — Minimalis, Editorial, Sinematik & Vintage",
+      desc: "Tema Premium — Full-Text Editorial, Minimalis, Sinematik & Vintage",
       themes: ["Kalandra", "Valente", "Aurelia", "Artisan"],
       features: ["Tamu tak terbatas", "Manajemen RSVP online", "Galeri video & foto", "Musik latar", "Live streaming", "Photobooth QR", "Subdomain custom", "Amplop digital QRIS"],
       badge: "Terpopuler",
-      color: "rose",
+      color: "purple",
     },
   ]);
-  const [selectedPlan, setSelectedPlan] = useState<"TRADITIONAL" | "MODERN" | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Load pricing from admin settings
@@ -52,10 +52,10 @@ export default function RegisterPage() {
           setPlans((prev) =>
             prev.map((plan) => ({
               ...plan,
-              price: plan.id === "MODERN"
+              price: (plan.id === "PREMIUM" || plan.id === "MODERN")
                 ? Number(p.price_modern || plan.price)
                 : Number(p.price_traditional || plan.price),
-              desc: plan.id === "MODERN"
+              desc: (plan.id === "PREMIUM" || plan.id === "MODERN")
                 ? (p.desc_modern || plan.desc)
                 : (p.desc_traditional || plan.desc),
             }))
@@ -65,7 +65,7 @@ export default function RegisterPage() {
       .catch(() => {});
   }, []);
 
-  const handleChoosePlan = async (planId: "TRADITIONAL" | "MODERN") => {
+  const handleChoosePlan = async (planId: string) => {
     setSelectedPlan(planId);
     if (!session?.user) {
       // Simpan pilihan plan di sessionStorage lalu redirect ke login

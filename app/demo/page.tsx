@@ -7,7 +7,7 @@ interface ThemeItem {
   id: string;
   name: string;
   series: string;
-  category: "modern" | "traditional";
+  category: "premium" | "traditional";
   desc: string;
 }
 
@@ -15,29 +15,29 @@ const THEMES: ThemeItem[] = [
   {
     id: "kalandra",
     name: "Kalandra",
-    series: "Modern Series",
-    category: "modern",
+    series: "Premium Series",
+    category: "premium",
     desc: "Modern, Elegan & Minimalis",
   },
   {
     id: "valente",
     name: "Valente",
-    series: "Modern Series",
-    category: "modern",
+    series: "Premium Series",
+    category: "premium",
     desc: "High-Fashion, Editorial & Mewah",
   },
   {
     id: "aurelia",
     name: "Aurelia",
-    series: "Modern Series",
-    category: "modern",
+    series: "Premium Series",
+    category: "premium",
     desc: "Romantis, Sinematik & Anggun",
   },
   {
     id: "artisan",
     name: "Artisan",
-    series: "Modern Series",
-    category: "modern",
+    series: "Premium Series",
+    category: "premium",
     desc: "Artistik, Hangat & Vintage",
   },
   {
@@ -98,7 +98,7 @@ export default function CatalogGridShowcase() {
         <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
           {[
             { id: "all", label: "Semua Tema" },
-            { id: "modern", label: "Modern Series" },
+            { id: "premium", label: "Premium Series" },
             { id: "traditional", label: "Traditional Series" },
           ].map((cat) => (
             <button
@@ -134,8 +134,8 @@ export default function CatalogGridShowcase() {
                 <span className="text-[10px] font-mono text-stone-400 truncate max-w-[140px]">
                   {theme.id}.luxenary.id
                 </span>
-                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${theme.category === "traditional" ? "bg-amber-800/80 text-amber-200" : "bg-stone-700 text-stone-200"}`}>
-                  {theme.category === "traditional" ? "Traditional" : "Modern"}
+                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${theme.category === "traditional" ? "bg-amber-800/80 text-amber-200" : "bg-purple-900/80 text-purple-200"}`}>
+                  {theme.category === "traditional" ? "Traditional" : "Premium"}
                 </span>
               </div>
 

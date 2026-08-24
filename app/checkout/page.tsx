@@ -8,7 +8,7 @@ function CheckoutContent() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const planParam = searchParams.get("plan") as "TRADITIONAL" | "MODERN" | null;
+  const planParam = searchParams.get("plan");
 
   const [planData, setPlanData] = useState<{ name: string; price: number; desc: string } | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
@@ -43,12 +43,12 @@ function CheckoutContent() {
         const settings = await settingsRes.json();
         const pricing = settings.grouped?.pricing || {};
 
-        const isModern = planParam === "MODERN";
-        const price = isModern ? Number(pricing.price_modern || 499000) : Number(pricing.price_traditional || 299000);
-        const desc = isModern ? (pricing.desc_modern || "") : (pricing.desc_traditional || "");
+        const isPremium = planParam === "PREMIUM" || planParam === "MODERN";
+        const price = isPremium ? Number(pricing.price_modern || 499000) : Number(pricing.price_traditional || 299000);
+        const desc = isPremium ? (pricing.desc_modern || "") : (pricing.desc_traditional || "");
 
         setPlanData({
-          name: isModern ? "Modern" : "Traditional",
+          name: isPremium ? "Premium" : "Traditional",
           price,
           desc,
         });

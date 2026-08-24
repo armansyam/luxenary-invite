@@ -97,8 +97,8 @@ export default function AdminPage() {
   const [themeForm, setThemeForm] = useState({
     id: "",
     name: "",
-    category: "modern",
-    series: "Modern",
+    category: "premium",
+    series: "Premium",
     description: "",
     sortOrder: 1,
     isActive: true,
@@ -178,8 +178,8 @@ export default function AdminPage() {
     setThemeForm({
       id: "",
       name: "",
-      category: "modern",
-      series: "Modern",
+      category: "premium",
+      series: "Premium",
       description: "",
       sortOrder: (themes.length + 1),
       isActive: true,
@@ -194,8 +194,8 @@ export default function AdminPage() {
     setThemeForm({
       id: th.id,
       name: th.name,
-      category: th.category || "modern",
-      series: th.series || (th.category === "traditional" ? "Traditional" : "Modern"),
+      category: th.category || "premium",
+      series: th.series || (th.category === "traditional" ? "Traditional" : "Premium"),
       description: th.description || "",
       sortOrder: th.sortOrder || 1,
       isActive: th.isActive !== false,
@@ -609,7 +609,7 @@ export default function AdminPage() {
                   <div className="flex items-center gap-2 border-b border-gray-200 pb-3">
                     {[
                       { id: "all", label: `Semua Tema (${themes.length})` },
-                      { id: "modern", label: `Modern Series (${themes.filter((t) => (t.category || "modern") === "modern").length})` },
+                      { id: "premium", label: `Premium Series (${themes.filter((t) => (t.category || "premium") === "premium").length})` },
                       { id: "traditional", label: `Traditional Series (${themes.filter((t) => t.category === "traditional").length})` },
                     ].map((cat) => (
                       <button
@@ -628,7 +628,7 @@ export default function AdminPage() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                    {(themeCategoryFilter === "all" ? themes : themes.filter((t) => (t.category || "modern") === themeCategoryFilter)).map((theme) => (
+                    {(themeCategoryFilter === "all" ? themes : themes.filter((t) => (t.category || "premium") === themeCategoryFilter)).map((theme) => (
                       <div key={theme.id} className={`bg-white rounded-2xl shadow-sm border p-5 space-y-3 transition ${theme.isActive === false ? 'opacity-60 border-dashed border-gray-300' : 'border-gray-100'}`}>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
@@ -640,7 +640,7 @@ export default function AdminPage() {
                           <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${
                             theme.category === "traditional" ? "bg-amber-100 text-amber-800" : "bg-purple-100 text-purple-800"
                           }`}>
-                            {theme.category === "traditional" ? "Traditional" : "Modern"}
+                            {theme.category === "traditional" ? "Traditional" : "Premium"}
                           </span>
                         </div>
 
@@ -945,7 +945,7 @@ export default function AdminPage() {
                   required
                 />
                 <p className="text-[10px] text-gray-400 mt-1">
-                  File HTML disimpan di <code className="font-mono text-gray-600">themes/modern/{themeForm.id || "id"}.html</code> atau <code className="font-mono text-gray-600">themes/traditional/{themeForm.id || "id"}.html</code>.{" "}
+                  File HTML disimpan di <code className="font-mono text-gray-600">themes/premium/{themeForm.id || "id"}.html</code> atau <code className="font-mono text-gray-600">themes/traditional/{themeForm.id || "id"}.html</code>.{" "}
                   <a href="/downloads/starter-blueprint.html" download="starter-blueprint.html" className="text-amber-700 font-bold hover:underline">
                     Unduh Starter Blueprint HTML
                   </a>
@@ -969,10 +969,10 @@ export default function AdminPage() {
                   <label className="block text-xs font-bold text-gray-700 mb-1">Kategori</label>
                   <select
                     value={themeForm.category}
-                    onChange={(e) => setThemeForm({ ...themeForm, category: e.target.value, series: e.target.value === "traditional" ? "Traditional" : "Modern" })}
+                    onChange={(e) => setThemeForm({ ...themeForm, category: e.target.value, series: e.target.value === "traditional" ? "Traditional" : "Premium" })}
                     className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white font-medium"
                   >
-                    <option value="modern">Modern</option>
+                    <option value="premium">Premium</option>
                     <option value="traditional">Traditional</option>
                   </select>
                 </div>
