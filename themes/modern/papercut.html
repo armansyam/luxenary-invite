@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>{{groomName}} & {{brideName}} — The Wedding</title>
+  <title>{{firstName}} & {{secondName}} — The Wedding</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -133,6 +133,23 @@
     }
     .btn-outline-box:hover { background: #ffffff; color: #1a1410; }
 
+    
+    /* Journey of Love */
+    .sec-journey { padding: 4.5rem 1.8rem; max-width: 480px; margin: 0 auto; text-align: center; position: relative; }
+    .journey-card { background: rgba(255, 255, 255, 0.035); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 18px; padding: 2.5rem 1.8rem 2.2rem; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4); }
+    .journey-previews { display: flex; justify-content: center; gap: 12px; margin-bottom: 2rem; }
+    .jp-item { flex: 1; max-width: 140px; aspect-ratio: 1/1; border-radius: 14px; overflow: hidden; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.15); }
+    .jp-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.4s ease; }
+    .jp-item:hover img { transform: scale(1.06); }
+    .journey-title { font-size: clamp(1.8rem, 6vw, 2.4rem); letter-spacing: 0.15em; text-transform: uppercase; color: #ffffff; margin-bottom: 2rem; font-weight: 400; }
+    .journey-chapters { display: flex; flex-direction: column; gap: 1.6rem; text-align: left; }
+    .journey-chapter-item { padding-bottom: 0.4rem; }
+    .chapter-heading { font-size: 0.95rem; font-weight: 600; color: #ffffff; margin-bottom: 0.4rem; letter-spacing: 0.02em; }
+    .chapter-desc { font-size: 0.78rem; color: rgba(255, 255, 255, 0.68); line-height: 1.65; }
+    .journey-footer { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; margin-top: 2rem; padding-top: 1rem; }
+    .jf-line { flex: 1; height: 1px; background: rgba(255, 255, 255, 0.18); }
+    .jf-signature { font-style: italic; font-size: 1.15rem; color: rgba(255, 255, 255, 0.85); font-family: serif; }
+
     /* Events */
     .events-stack { display: flex; flex-direction: column; gap: 3rem; text-align: center; }
     .event-block-item { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; }
@@ -227,7 +244,7 @@
   <div class="left-hero">
     <div class="left-hero-content">
       <span class="left-hero-eyebrow">{{weddingTagline}}</span>
-      <h1 class="serif left-hero-names">{{groomName}}<br><em>&amp;</em><br>{{brideName}}</h1>
+      <h1 class="serif left-hero-names">{{firstName}}<br><em>&amp;</em><br>{{secondName}}</h1>
     </div>
   </div>
 
@@ -240,7 +257,7 @@
 
     <div class="cover-center">
       <span class="cover-tagline">{{weddingTagline}}</span>
-      <h1 class="cover-names serif">{{groomName}}<em>&amp;</em>{{brideName}}</h1>
+      <h1 class="cover-names serif">{{firstName}}<em>&amp;</em>{{secondName}}</h1>
     </div>
 
     <div class="cover-bottom">
@@ -264,7 +281,7 @@
 
       <div class="opening-center">
         <span class="opening-tagline">{{weddingTagline}}</span>
-        <h1 class="opening-title serif">{{groomName}}<em>&amp;</em>{{brideName}}</h1>
+        <h1 class="opening-title serif">{{firstName}}<em>&amp;</em>{{secondName}}</h1>
       </div>
 
       <div class="opening-bottom">
@@ -279,13 +296,13 @@
     <!-- SLIDE 2: THE BRIDE (100vh FULL PHOTO) -->
     <section class="slide-couple" id="bride" style="background-image: url('{{bridePhotoUrl}}');">
       <div class="couple-content right">
-        <span class="couple-role">The Bride</span>
-        <h2 class="couple-name serif">{{brideDisplayName}}</h2>
-        <span class="couple-label">Putri Dari</span>
-        <p class="couple-parents">{{brideParents}}</p>
-        <a href="https://instagram.com/{{brideInstagram}}" target="_blank" class="btn-ig-pill">
+        <span class="couple-role">{{firstRole}}</span>
+        <h2 class="couple-name serif">{{firstDisplayName}}</h2>
+        <span class="couple-label">{{firstParentLabel}}</span>
+        <p class="couple-parents">{{firstParents}}</p>
+        <a href="https://instagram.com/{{firstInstagram}}" target="_blank" class="btn-ig-pill">
           <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-          @{{brideInstagram}}
+          @{{firstInstagram}}
         </a>
       </div>
     </section>
@@ -293,13 +310,13 @@
     <!-- SLIDE 3: THE GROOM (100vh FULL PHOTO) -->
     <section class="slide-couple" id="groom" style="background-image: url('{{groomPhotoUrl}}');">
       <div class="couple-content">
-        <span class="couple-role">The Groom</span>
-        <h2 class="couple-name serif">{{groomDisplayName}}</h2>
-        <span class="couple-label">Putra Dari</span>
-        <p class="couple-parents">{{groomParents}}</p>
-        <a href="https://instagram.com/{{groomInstagram}}" target="_blank" class="btn-ig-pill">
+        <span class="couple-role">{{secondRole}}</span>
+        <h2 class="couple-name serif">{{secondDisplayName}}</h2>
+        <span class="couple-label">{{secondParentLabel}}</span>
+        <p class="couple-parents">{{secondParents}}</p>
+        <a href="https://instagram.com/{{secondInstagram}}" target="_blank" class="btn-ig-pill">
           <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-          @{{groomInstagram}}
+          @{{secondInstagram}}
         </a>
       </div>
     </section>
@@ -383,7 +400,7 @@
 
     <!-- FOOTER -->
     <footer class="site-footer">
-      <h2 class="footer-name serif">{{groomName}} &amp; {{brideName}}</h2>
+      <h2 class="footer-name serif">{{firstName}} &amp; {{secondName}}</h2>
       <p class="footer-sub">{{weddingDate}}</p>
     </footer>
   </div>
@@ -394,7 +411,7 @@
       <svg class="dock-ico" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
       <span>Home</span>
     </a>
-    <a href="#bride" class="dock-a">
+    <a href="#host1" class="dock-a">
       <svg class="dock-ico" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
       <span>Couple</span>
     </a>
