@@ -51,7 +51,13 @@
     .btn-qr-cover { background: transparent; border: none; color: rgba(255,255,255,0.5); font-size: 0.6rem; letter-spacing: 0.12em; cursor: pointer; font-family: 'Inter', sans-serif; margin-top: 0.5rem; }
 
     /* ===== PAGE ===== */
-    .page { position: relative; z-index: 10; background: var(--paper); padding-bottom: 90px; }
+    .page {
+      position: relative; z-index: 10;
+      background: linear-gradient(to bottom, rgba(245,240,232,0.92) 0%, rgba(245,240,232,0.85) 50%, rgba(245,240,232,0.94) 100%),
+                  url('{{globalBgUrl}}') center/cover fixed no-repeat,
+                  var(--paper);
+      padding-bottom: 90px;
+    }
 
     /* ===== TORN PAPER LAYER ===== */
     .torn-top { width: 100%; height: 50px; background: url("data:image/svg+xml,%3Csvg viewBox='0 0 1440 50' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0,25 Q90,48 180,20 Q270,-5 360,30 Q450,55 540,15 Q630,-8 720,35 Q810,60 900,18 Q990,-5 1080,32 Q1170,58 1260,20 Q1350,-5 1440,28 L1440,0 L0,0 Z' fill='%23ede7d8'/%3E%3C/svg%3E") bottom/100% 100% no-repeat; }

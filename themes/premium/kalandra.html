@@ -133,7 +133,10 @@
       position: relative; z-index: 20;
       width: 100%;
       min-height: 100vh;
-      background: var(--dark);
+      background:
+        linear-gradient(to bottom, rgba(10,10,12,0.88) 0%, rgba(10,10,12,0.78) 50%, rgba(10,10,12,0.92) 100%),
+        url('{{globalBgUrl}}') center/cover fixed no-repeat,
+        var(--dark);
       padding-bottom: 90px;
       overflow-x: hidden;
     }
