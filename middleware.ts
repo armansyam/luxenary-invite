@@ -53,7 +53,9 @@ export default auth((req) => {
     if (parts.length > 1 && parts[0] !== "www" && parts[0] !== "admin" && parts[0] !== "api") {
       const subdomain = parts[0];
       if (pathname === "/" || pathname === "") {
-        return NextResponse.rewrite(new URL(`/s/${subdomain}`, req.url));
+        const rewriteUrl = new URL(`/s/${subdomain}`, req.url);
+        rewriteUrl.search = req.nextUrl.search;
+        return NextResponse.rewrite(rewriteUrl);
       }
     }
   }

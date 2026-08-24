@@ -263,7 +263,9 @@ export default function SettingsPage() {
               </div>
 
               <div className="flex items-center rounded-xl border border-stone-200 bg-stone-50 overflow-hidden focus-within:border-amber-700 focus-within:ring-2 focus-within:ring-amber-700/20">
-                <span className="pl-3.5 pr-1 text-xs text-stone-400 font-mono select-none">https://</span>
+                <span className="pl-3.5 pr-1 text-xs text-stone-400 font-mono select-none">
+                  {typeof window !== "undefined" && window.location.protocol === "http:" ? "http://" : "https://"}
+                </span>
                 <input
                   type="text"
                   value={formData.subdomain}

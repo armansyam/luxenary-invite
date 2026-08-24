@@ -1,6 +1,8 @@
 /**
  * Centralized dynamic domain and invitation URL resolver:
- * Automatically detects current runtime host (localhost, staging, custom domain, or production apex).
+ * Formats URLs in pure subdomain structure:
+ * - Localhost:  http://[subdomain].localhost:3000
+ * - Production: https://[subdomain].luxenary.id
  */
 
 export function getApexRootDomain(): string {
@@ -8,12 +10,17 @@ export function getApexRootDomain(): string {
     const hostname = window.location.hostname;
     const port = window.location.port ? `:${window.location.port}` : "";
     
-    // Local development
-    if (hostname === "localhost" || hostname === "127.0.0.1" || hostname.startsWith("192.168.") || hostname.startsWith("10.")) {
+    // Localhost
+    if (hostname === "localhost" || hostname.endsWith(".localhost")) {
+      return `localhost${port}`;
+    }
+
+    // IP Access
+    if (hostname === "127.0.0.1" || hostname.startsWith("192.168.") || hostname.startsWith("10.")) {
       return `${hostname}${port}`;
     }
 
-    // Subdomain-stripped apex domain (e.g. app.luxenary.id -> luxenary.id)
+    // Live Apex Domain (strip app/admin/studio prefix if present)
     const parts = hostname.split(".");
     if (parts.length > 2 && (parts[0] === "app" || parts[0] === "admin" || parts[0] === "studio" || parts[0] === "www")) {
       return parts.slice(1).join(".") + port;
@@ -28,30 +35,35 @@ export function getApexRootDomain(): string {
 }
 
 /**
- * Returns the full, clickable public invitation URL for guests:
- * - On localhost / IP dev: returns `${origin}/s/${subdomain}`
- * - On production / custom host: returns `https://${subdomain}.${apexDomain}`
+ * Returns the full, pure subdomain public invitation URL:
+ * - Localhost:  http://[subdomain].localhost:3000(?to=...)
+ * - Production: https://[subdomain].[apexDomain](?to=...)
  */
 export function getInvitationPublicUrl(subdomain: string, guestSlug?: string): string {
   const cleanSub = (subdomain || "wedding").toLowerCase().trim();
   const query = guestSlug ? `?to=${encodeURIComponent(guestSlug)}` : "";
 
   if (typeof window !== "undefined") {
-    const { protocol, hostname, port, origin } = window.location;
+    const { protocol, hostname, port } = window.location;
+    const portSuffix = port ? `:${port}` : "";
 
-    // In local development or raw IP, use pathname routing /s/[subdomain] for 100% instant reliability
-    if (hostname === "localhost" || hostname === "127.0.0.1" || hostname.startsWith("192.168.") || hostname.startsWith("10.")) {
-      return `${origin}/s/${cleanSub}${query}`;
+    // Localhost Subdomain support (supported natively in modern browsers)
+    if (hostname === "localhost" || hostname.endsWith(".localhost")) {
+      return `${protocol}//${cleanSub}.localhost${portSuffix}${query}`;
     }
 
-    // Production / Live Domain
+    // Raw IP fallback
+    if (hostname === "127.0.0.1" || hostname.startsWith("192.168.") || hostname.startsWith("10.")) {
+      return `${protocol}//${hostname}${portSuffix}/s/${cleanSub}${query}`;
+    }
+
+    // Live Domain Subdomain
     const parts = hostname.split(".");
     let apex = hostname;
     if (parts.length > 2 && (parts[0] === "app" || parts[0] === "admin" || parts[0] === "studio" || parts[0] === "www")) {
       apex = parts.slice(1).join(".");
     }
 
-    const portSuffix = port ? `:${port}` : "";
     return `${protocol}//${cleanSub}.${apex}${portSuffix}${query}`;
   }
 
