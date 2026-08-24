@@ -107,7 +107,8 @@
     .left-hero {
       display: none; /* hidden on mobile */
       position: fixed; left: 0; top: 0; width: 55%; height: 100vh; z-index: 10;
-      background: url('{{landingCoverUrl}}') center/cover no-repeat;
+      /* sidebarPhotoUrl = slot "Desktop Sidebar (70% Kiri)" di editor */
+      background: url('{{sidebarPhotoUrl}}') center/cover no-repeat;
       overflow: hidden;
     }
     .left-hero::after {
