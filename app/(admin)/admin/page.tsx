@@ -1,28 +1,84 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-
 import { getApexRootDomain, getInvitationPublicUrl } from "@/lib/domainUtils";
 
 const tabs = [
-  { id: "overview", label: "📊 Ringkasan", icon: "📊" },
-  { id: "orders", label: "💳 Transaksi", icon: "💳" },
-  { id: "users", label: "👥 Klien", icon: "👥" },
-  { id: "invitations", label: "💌 Undangan", icon: "💌" },
-  { id: "themes", label: "🎨 Tema", icon: "🎨" },
-  { id: "settings", label: "⚙️ Pengaturan", icon: "⚙️" },
-  { id: "logs", label: "🔍 Monitoring", icon: "🔍" },
+  {
+    id: "overview",
+    label: "Ringkasan",
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+      </svg>
+    ),
+  },
+  {
+    id: "orders",
+    label: "Transaksi",
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+      </svg>
+    ),
+  },
+  {
+    id: "users",
+    label: "Klien",
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+      </svg>
+    ),
+  },
+  {
+    id: "invitations",
+    label: "Undangan",
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+      </svg>
+    ),
+  },
+  {
+    id: "themes",
+    label: "Tema",
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4 5 5 0 014-5h10a4 4 0 014 4v1a4 4 0 01-4 4H7zM7 7h10M7 11h10" />
+      </svg>
+    ),
+  },
+  {
+    id: "settings",
+    label: "Pengaturan",
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      </svg>
+    ),
+  },
+  {
+    id: "logs",
+    label: "Monitoring",
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+    ),
+  },
 ];
 
 const Badge = ({ status }: { status: string }) => {
   const map: Record<string, string> = {
-    PAID: "bg-emerald-100 text-emerald-800",
-    PENDING: "bg-amber-100 text-amber-800",
-    FAILED: "bg-red-100 text-red-700",
-    EXPIRED: "bg-gray-100 text-gray-600",
-    PUBLISHED: "bg-green-100 text-green-800",
-    DRAFT: "bg-amber-100 text-amber-700",
-    TAKEN_DOWN: "bg-red-100 text-red-700",
+    PAID: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+    PENDING: "bg-amber-50 text-amber-700 border border-amber-200",
+    FAILED: "bg-rose-50 text-rose-700 border border-rose-200",
+    EXPIRED: "bg-gray-100 text-gray-600 border border-gray-200",
+    PUBLISHED: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+    DRAFT: "bg-amber-50 text-amber-700 border border-amber-200",
+    TAKEN_DOWN: "bg-rose-50 text-rose-700 border border-rose-200",
   };
   return (
     <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${map[status] || "bg-gray-100 text-gray-700"}`}>
@@ -41,7 +97,7 @@ function SettingsCard({
   saving,
   isDirty,
   saveSuccess,
-  saveSuccessMessage = "Pengaturan berhasil disimpan!",
+  saveSuccessMessage = "Pengaturan berhasil disimpan",
   viewContent,
   children,
 }: {
@@ -69,28 +125,19 @@ function SettingsCard({
       {/* Card Header */}
       <div className="flex items-start justify-between gap-4 mb-5 border-b border-gray-100 pb-4">
         <div>
-          <div className="flex items-center gap-2.5">
-            <h3 className="font-bold text-gray-900 text-lg">{title}</h3>
-            {isEditing ? (
-              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
-                ✏️ Mode Edit
-              </span>
-            ) : (
-              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-gray-100 text-gray-600">
-                🔒 Terkunci
-              </span>
-            )}
-          </div>
-          <p className="text-sm text-gray-500 mt-1">{description}</p>
+          <h3 className="font-bold text-gray-900 text-lg">{title}</h3>
+          <p className="text-sm text-gray-500 mt-0.5">{description}</p>
         </div>
 
         {!isEditing && (
           <button
             type="button"
             onClick={onEdit}
-            className="px-4 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 shrink-0 shadow-2xs"
+            className="px-3.5 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-800 border border-gray-300 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 shrink-0 shadow-2xs"
           >
-            <span>✏️</span>
+            <svg className="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
             <span>Ubah</span>
           </button>
         )}
@@ -98,8 +145,10 @@ function SettingsCard({
 
       {/* Save Success Banner */}
       {saveSuccess && !isEditing && (
-        <div className="mb-4 p-3.5 bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs rounded-xl font-semibold flex items-center gap-2">
-          <span className="text-base">✓</span>
+        <div className="mb-4 p-3 bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs rounded-xl font-medium flex items-center gap-2">
+          <svg className="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
           <span>{saveSuccessMessage}</span>
         </div>
       )}
@@ -113,12 +162,12 @@ function SettingsCard({
           <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between gap-3 flex-wrap">
             <div className="text-xs">
               {isDirty ? (
-                <span className="text-amber-700 font-semibold flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping inline-block"></span>
+                <span className="text-amber-700 font-medium flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block"></span>
                   Ada perubahan yang belum disimpan
                 </span>
               ) : (
-                <span className="text-gray-400 italic">Tidak ada perubahan data</span>
+                <span className="text-gray-400">Tidak ada perubahan data</span>
               )}
             </div>
 
@@ -136,7 +185,7 @@ function SettingsCard({
                 type="button"
                 onClick={onSave}
                 disabled={!isDirty || saving}
-                className="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-2 shadow-xs"
+                className="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center gap-2 shadow-xs"
               >
                 {saving ? (
                   <>
@@ -144,10 +193,7 @@ function SettingsCard({
                     <span>Menyimpan...</span>
                   </>
                 ) : (
-                  <>
-                    <span>💾</span>
-                    <span>Simpan Perubahan</span>
-                  </>
+                  <span>Simpan Perubahan</span>
                 )}
               </button>
             </div>
@@ -521,13 +567,53 @@ export default function AdminPage() {
                   {/* Stats Grid */}
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     {[
-                      { label: "Total Klien", value: stats.userCount, color: "text-blue-600", bg: "bg-blue-50", icon: "👥" },
-                      { label: "Total Undangan", value: stats.invitationCount, color: "text-amber-600", bg: "bg-amber-50", icon: "💌" },
-                      { label: "Total Transaksi", value: stats.orderCount, color: "text-purple-600", bg: "bg-purple-50", icon: "💳" },
-                      { label: "Tamu Terdaftar", value: stats.guestCount, color: "text-emerald-600", bg: "bg-emerald-50", icon: "🎟" },
+                      {
+                        label: "Total Klien",
+                        value: stats.userCount,
+                        color: "text-blue-600",
+                        bg: "bg-blue-50 text-blue-600",
+                        icon: (
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                          </svg>
+                        ),
+                      },
+                      {
+                        label: "Total Undangan",
+                        value: stats.invitationCount,
+                        color: "text-amber-600",
+                        bg: "bg-amber-50 text-amber-600",
+                        icon: (
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                          </svg>
+                        ),
+                      },
+                      {
+                        label: "Total Transaksi",
+                        value: stats.orderCount,
+                        color: "text-purple-600",
+                        bg: "bg-purple-50 text-purple-600",
+                        icon: (
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                          </svg>
+                        ),
+                      },
+                      {
+                        label: "Tamu Terdaftar",
+                        value: stats.guestCount,
+                        color: "text-emerald-600",
+                        bg: "bg-emerald-50 text-emerald-600",
+                        icon: (
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+                          </svg>
+                        ),
+                      },
                     ].map((s) => (
                       <div key={s.label} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-                        <div className={`w-10 h-10 ${s.bg} rounded-xl flex items-center justify-center text-xl mb-3`}>{s.icon}</div>
+                        <div className={`w-10 h-10 ${s.bg} rounded-xl flex items-center justify-center mb-3`}>{s.icon}</div>
                         <p className="text-xs font-medium text-gray-500">{s.label}</p>
                         <p className={`mt-1 text-3xl font-bold ${s.color}`}>{s.value}</p>
                       </div>
@@ -744,15 +830,16 @@ export default function AdminPage() {
                                     href={publicUrl}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="text-amber-700 hover:text-amber-900 font-bold text-xs underline"
+                                    className="text-amber-700 hover:text-amber-900 font-semibold text-xs underline"
                                   >
                                     Preview
                                   </a>
                                   <button
                                     onClick={() => handleUnlockTheme(inv.id)}
-                                    className="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-lg text-xs font-bold transition cursor-pointer"
+                                    className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-lg text-xs font-semibold transition cursor-pointer"
+                                    title="Buka akses semua tema untuk undangan ini"
                                   >
-                                    🔓 Tema
+                                    Buka Akses Tema
                                   </button>
                                 </div>
                               </td>
@@ -777,14 +864,16 @@ export default function AdminPage() {
                       <a
                         href="/downloads/starter-blueprint.html"
                         download="starter-blueprint.html"
-                        className="px-3.5 py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-bold rounded-xl transition flex items-center gap-1.5 border border-stone-300 shadow-2xs"
+                        className="px-3.5 py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-semibold rounded-xl transition flex items-center gap-1.5 border border-stone-300 shadow-2xs"
                       >
-                        <span>📥</span>
-                        <span>Download Starter Blueprint HTML</span>
+                        <svg className="w-3.5 h-3.5 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        <span>Download Blueprint HTML</span>
                       </a>
                       <button
                         onClick={handleOpenNewTheme}
-                        className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+                        className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-xl transition flex items-center gap-1.5 shadow-sm cursor-pointer"
                       >
                         <span>+</span>
                         <span>Tambah Tema Baru</span>
@@ -804,7 +893,7 @@ export default function AdminPage() {
                         key={cat.id}
                         type="button"
                         onClick={() => setThemeCategoryFilter(cat.id)}
-                        className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                        className={`px-4 py-2 rounded-xl text-xs font-semibold transition cursor-pointer ${
                           themeCategoryFilter === cat.id
                             ? "bg-amber-800 text-white shadow-xs"
                             : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
@@ -825,7 +914,7 @@ export default function AdminPage() {
                               #{theme.id}
                             </span>
                           </div>
-                          <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${
+                          <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full ${
                             theme.category === "traditional" ? "bg-amber-100 text-amber-800" :
                             theme.category === "modern" ? "bg-slate-100 text-slate-700" :
                             "bg-purple-100 text-purple-800"
@@ -840,15 +929,18 @@ export default function AdminPage() {
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => handleToggleThemeStatus(theme)}
-                              className={`px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer transition ${theme.isActive !== false ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-gray-100 text-gray-600'}`}
+                              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold cursor-pointer transition ${
+                                theme.isActive !== false ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-gray-100 text-gray-600 border border-gray-200'
+                              }`}
                             >
-                              {theme.isActive !== false ? "● Aktif" : "○ Non-aktif"}
+                              <span className={`w-1.5 h-1.5 rounded-full ${theme.isActive !== false ? 'bg-emerald-500' : 'bg-gray-400'}`}></span>
+                              <span>{theme.isActive !== false ? "Aktif" : "Non-aktif"}</span>
                             </button>
                             <span className="text-gray-400 text-[10px]">Urutan: #{theme.sortOrder || 1}</span>
                           </div>
                           
                           <div className="flex items-center gap-2">
-                            <a href={`/demo/${theme.id}`} target="_blank" className="text-amber-700 hover:underline font-bold text-xs">Preview</a>
+                            <a href={`/demo/${theme.id}`} target="_blank" className="text-amber-700 hover:underline font-semibold text-xs">Preview</a>
                             <button
                               onClick={() => handleOpenEditTheme(theme)}
                               className="text-gray-600 hover:text-gray-900 font-semibold text-xs cursor-pointer"
@@ -879,7 +971,7 @@ export default function AdminPage() {
 
                   {/* iPaymu Settings */}
                   <SettingsCard
-                    title="💳 iPaymu Payment Gateway"
+                    title="iPaymu Payment Gateway"
                     description="Konfigurasi koneksi ke iPaymu sebagai payment gateway utama. Dapatkan VA dan API Key dari dashboard iPaymu."
                     isEditing={Boolean(editSection["ipaymu"])}
                     onEdit={() => toggleEditSection("ipaymu")}
@@ -888,26 +980,36 @@ export default function AdminPage() {
                     saving={savingIpaymu}
                     isDirty={isSectionDirty(["ipaymu_mode", "ipaymu_va", "ipaymu_api_key"])}
                     saveSuccess={settingsSaved["ipaymu"]}
-                    saveSuccessMessage="Pengaturan iPaymu berhasil disimpan!"
+                    saveSuccessMessage="Pengaturan iPaymu berhasil disimpan"
                     viewContent={
                       <div className="space-y-3">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                           <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
                             <span className="text-xs text-gray-500 block font-medium">Mode Gateway</span>
-                            <span className="text-sm font-bold text-gray-800 mt-0.5 inline-block">
-                              {settingsMap["ipaymu_mode"] === "production" ? "🟢 Produksi (Live)" : "🧪 Sandbox (Testing)"}
-                            </span>
+                            <div className="mt-1">
+                              {settingsMap["ipaymu_mode"] === "production" ? (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                  Produksi (Live)
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                  Sandbox (Testing)
+                                </span>
+                              )}
+                            </div>
                           </div>
                           <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
                             <span className="text-xs text-gray-500 block font-medium">Virtual Account (VA)</span>
-                            <span className="text-sm font-mono font-bold text-gray-800 mt-0.5 inline-block">
-                              {settingsMap["ipaymu_va"] ? settingsMap["ipaymu_va"] : <em className="text-gray-400 font-sans font-normal">Belum diatur</em>}
+                            <span className="text-sm font-mono font-bold text-gray-800 mt-1 inline-block">
+                              {settingsMap["ipaymu_va"] ? settingsMap["ipaymu_va"] : <em className="text-gray-400 font-sans font-normal text-xs">Belum diatur</em>}
                             </span>
                           </div>
                           <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
                             <span className="text-xs text-gray-500 block font-medium">API Key</span>
-                            <span className="text-sm font-mono font-bold text-gray-800 mt-0.5 inline-block">
-                              {settingsMap["ipaymu_api_key"] ? "••••••••••••••••" : <em className="text-gray-400 font-sans font-normal">Belum diatur</em>}
+                            <span className="text-sm font-mono font-bold text-gray-800 mt-1 inline-block">
+                              {settingsMap["ipaymu_api_key"] ? "••••••••••••••••" : <em className="text-gray-400 font-sans font-normal text-xs">Belum diatur</em>}
                             </span>
                           </div>
                         </div>
@@ -933,15 +1035,20 @@ export default function AdminPage() {
                             key={mode}
                             type="button"
                             onClick={() => setSetting("ipaymu_mode", mode)}
-                            className={`px-4 py-2 rounded-xl text-sm font-semibold border transition cursor-pointer ${
+                            className={`px-4 py-2 rounded-xl text-sm font-semibold border transition cursor-pointer flex items-center gap-1.5 ${
                               (settingsMap["ipaymu_mode"] || "sandbox") === mode
                                 ? mode === "production"
                                   ? "bg-emerald-600 text-white border-emerald-600"
-                                  : "bg-amber-500 text-white border-amber-500"
+                                  : "bg-amber-600 text-white border-amber-600"
                                 : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
                             }`}
                           >
-                            {mode === "sandbox" ? "🧪 Sandbox" : "🟢 Produksi"}
+                            <span className={`w-1.5 h-1.5 rounded-full ${
+                              (settingsMap["ipaymu_mode"] || "sandbox") === mode
+                                ? "bg-white"
+                                : mode === "production" ? "bg-emerald-500" : "bg-amber-500"
+                            }`}></span>
+                            <span>{mode === "sandbox" ? "Sandbox" : "Produksi"}</span>
                           </button>
                         ))}
                       </div>
@@ -988,7 +1095,7 @@ export default function AdminPage() {
 
                   {/* Google OAuth 2.0 Settings */}
                   <SettingsCard
-                    title="🔑 Google OAuth 2.0 (Login & Registrasi Klien)"
+                    title="Google OAuth 2.0 (Login & Registrasi Klien)"
                     description="Kelola kredensial Google API Console untuk mengaktifkan fitur 1-Click Login dan Registrasi instan bagi calon pengantin via akun Google."
                     isEditing={Boolean(editSection["google"])}
                     onEdit={() => toggleEditSection("google")}
@@ -997,26 +1104,36 @@ export default function AdminPage() {
                     saving={savingGoogle}
                     isDirty={isSectionDirty(["google_auth_enabled", "google_client_id", "google_client_secret"])}
                     saveSuccess={settingsSaved["google"]}
-                    saveSuccessMessage="Pengaturan Google OAuth berhasil disimpan!"
+                    saveSuccessMessage="Pengaturan Google OAuth berhasil disimpan"
                     viewContent={
                       <div className="space-y-3">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                           <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
                             <span className="text-xs text-gray-500 block font-medium">Status Fitur Google</span>
-                            <span className="text-sm font-bold text-gray-800 mt-0.5 inline-block">
-                              {(settingsMap["google_auth_enabled"] ?? "true") === "true" ? "🟢 Aktif (Enabled)" : "⚪ Nonaktif (Disabled)"}
-                            </span>
+                            <div className="mt-1">
+                              {(settingsMap["google_auth_enabled"] ?? "true") === "true" ? (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                  Aktif
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+                                  Nonaktif
+                                </span>
+                              )}
+                            </div>
                           </div>
                           <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
                             <span className="text-xs text-gray-500 block font-medium">Google Client ID</span>
-                            <span className="text-xs font-mono font-bold text-gray-800 mt-0.5 block truncate" title={settingsMap["google_client_id"]}>
+                            <span className="text-xs font-mono font-bold text-gray-800 mt-1 block truncate" title={settingsMap["google_client_id"]}>
                               {settingsMap["google_client_id"] ? settingsMap["google_client_id"] : <em className="text-gray-400 font-sans font-normal">Belum diatur</em>}
                             </span>
                           </div>
                           <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
                             <span className="text-xs text-gray-500 block font-medium">Google Client Secret</span>
-                            <span className="text-sm font-mono font-bold text-gray-800 mt-0.5 inline-block">
-                              {settingsMap["google_client_secret"] ? "••••••••••••••••" : <em className="text-gray-400 font-sans font-normal">Belum diatur</em>}
+                            <span className="text-sm font-mono font-bold text-gray-800 mt-1 inline-block">
+                              {settingsMap["google_client_secret"] ? "••••••••••••••••" : <em className="text-gray-400 font-sans font-normal text-xs">Belum diatur</em>}
                             </span>
                           </div>
                         </div>
@@ -1038,14 +1155,14 @@ export default function AdminPage() {
                     <FieldRow label="Status Fitur Login Google" description="Aktifkan atau nonaktifkan tombol 'Masuk / Daftar dengan Google' di portal klien.">
                       <div className="flex gap-3">
                         {[
-                          { id: "true", label: "🟢 Aktif (Enabled)" },
-                          { id: "false", label: "⚪ Nonaktif (Disabled)" },
+                          { id: "true", label: "Aktif" },
+                          { id: "false", label: "Nonaktif" },
                         ].map((opt) => (
                           <button
                             key={opt.id}
                             type="button"
                             onClick={() => setSetting("google_auth_enabled", opt.id)}
-                            className={`px-4 py-2 rounded-xl text-sm font-semibold border transition cursor-pointer ${
+                            className={`px-4 py-2 rounded-xl text-sm font-semibold border transition cursor-pointer flex items-center gap-1.5 ${
                               (settingsMap["google_auth_enabled"] || "true") === opt.id
                                 ? opt.id === "true"
                                   ? "bg-emerald-600 text-white border-emerald-600"
@@ -1053,7 +1170,12 @@ export default function AdminPage() {
                                 : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
                             }`}
                           >
-                            {opt.label}
+                            <span className={`w-1.5 h-1.5 rounded-full ${
+                              (settingsMap["google_auth_enabled"] || "true") === opt.id
+                                ? "bg-white"
+                                : opt.id === "true" ? "bg-emerald-500" : "bg-gray-400"
+                            }`}></span>
+                            <span>{opt.label}</span>
                           </button>
                         ))}
                       </div>
@@ -1138,10 +1260,7 @@ export default function AdminPage() {
                             <span>Memverifikasi ke Server Google...</span>
                           </>
                         ) : (
-                          <>
-                            <span>⚡</span>
-                            <span>Uji Kredensial Google Sebelum Simpan</span>
-                          </>
+                          <span>Uji Kredensial Google</span>
                         )}
                       </button>
                       {!settingsMap["google_client_id"] && (
@@ -1157,30 +1276,38 @@ export default function AdminPage() {
                             : "bg-rose-50 border-rose-300 text-rose-900"
                         }`}
                       >
-                        <span className="text-base leading-none">{googleTestResult.success ? "✅" : "❌"}</span>
+                        {googleTestResult.success ? (
+                          <svg className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        ) : (
+                          <svg className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        )}
                         <div className="flex-1 leading-relaxed">
                           <strong className="block font-bold text-sm mb-0.5">
-                            {googleTestResult.success ? "Kredensial Valid & Terhubung!" : "Kredensial Ditolak Google"}
+                            {googleTestResult.success ? "Kredensial Valid & Terhubung" : "Kredensial Ditolak Google"}
                           </strong>
                           <span>{googleTestResult.message}</span>
                         </div>
                       </div>
                     )}
 
-                    <div className="p-3.5 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900 space-y-1.5 mt-2">
-                      <span className="font-bold block">📘 Panduan Singkat Google Cloud Console:</span>
-                      <ol className="list-decimal list-inside space-y-1 text-[11px] text-amber-800">
-                        <li>Buka <strong>console.cloud.google.com</strong> &rarr; Buat Project &rarr; Buka <strong>APIs &amp; Services &rarr; Credentials</strong>.</li>
-                        <li>Klik <strong>Create Credentials &rarr; OAuth client ID</strong>, pilih tipe <strong>Web application</strong>.</li>
+                    <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200 text-xs text-gray-800 space-y-1.5 mt-2">
+                      <span className="font-bold block text-gray-900">Panduan Konfigurasi Google Cloud Console:</span>
+                      <ol className="list-decimal list-inside space-y-1 text-[11px] text-gray-600">
+                        <li>Buka <strong className="text-gray-800">console.cloud.google.com</strong> &rarr; Buat Project &rarr; Buka <strong className="text-gray-800">APIs &amp; Services &rarr; Credentials</strong>.</li>
+                        <li>Klik <strong className="text-gray-800">Create Credentials &rarr; OAuth client ID</strong>, pilih tipe <strong className="text-gray-800">Web application</strong>.</li>
                         <li>Salin dan tempelkan <em>Authorized JavaScript Origins</em> dan <em>Authorized Redirect URI</em> di atas.</li>
-                        <li>Salin <strong>Client ID</strong> &amp; <strong>Client Secret</strong> yang didapat ke form ini, lalu klik tombol Uji Kredensial &amp; Simpan.</li>
+                        <li>Salin <strong className="text-gray-800">Client ID</strong> &amp; <strong className="text-gray-800">Client Secret</strong> yang didapat ke form ini, lalu klik tombol Uji Kredensial &amp; Simpan.</li>
                       </ol>
                     </div>
                   </SettingsCard>
 
                   {/* Pricing Settings */}
                   <SettingsCard
-                    title="💰 Manajemen Harga Paket"
+                    title="Manajemen Harga Paket"
                     description="Atur harga dan deskripsi paket Traditional dan Modern yang ditampilkan di halaman registrasi."
                     isEditing={Boolean(editSection["pricing"])}
                     onEdit={() => toggleEditSection("pricing")}
@@ -1189,7 +1316,7 @@ export default function AdminPage() {
                     saving={savingPricing}
                     isDirty={isSectionDirty(["price_traditional", "price_modern", "desc_traditional", "desc_modern"])}
                     saveSuccess={settingsSaved["pricing"]}
-                    saveSuccessMessage="Harga paket berhasil diperbarui!"
+                    saveSuccessMessage="Harga paket berhasil diperbarui"
                     viewContent={
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="p-4 bg-stone-50 rounded-xl border border-stone-200">
@@ -1216,7 +1343,7 @@ export default function AdminPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 space-y-3">
                         <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+                          <span className="w-2 h-2 rounded-full bg-amber-500"></span>
                           <span className="text-sm font-bold text-gray-800">Paket Traditional</span>
                         </div>
                         <FieldRow label="Harga (IDR)">
@@ -1239,7 +1366,7 @@ export default function AdminPage() {
 
                       <div className="p-4 bg-rose-50 rounded-xl border border-rose-200 space-y-3">
                         <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-rose-400"></span>
+                          <span className="w-2 h-2 rounded-full bg-rose-500"></span>
                           <span className="text-sm font-bold text-gray-800">Paket Modern</span>
                         </div>
                         <FieldRow label="Harga (IDR)">
@@ -1264,7 +1391,7 @@ export default function AdminPage() {
 
                   {/* Platform Settings */}
                   <SettingsCard
-                    title="🌐 Konfigurasi Platform"
+                    title="Konfigurasi Platform"
                     description="Nama platform dan email support yang digunakan di seluruh sistem."
                     isEditing={Boolean(editSection["platform"])}
                     onEdit={() => toggleEditSection("platform")}
@@ -1273,7 +1400,7 @@ export default function AdminPage() {
                     saving={savingPlatform}
                     isDirty={isSectionDirty(["platform_name", "support_email"])}
                     saveSuccess={settingsSaved["platform"]}
-                    saveSuccessMessage="Konfigurasi platform berhasil disimpan!"
+                    saveSuccessMessage="Konfigurasi platform berhasil disimpan"
                     viewContent={
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
