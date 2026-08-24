@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { getApexRootDomain, getInvitationPublicUrl } from "@/lib/domainUtils";
 
 const THEMES = [
+  // PREMIUM SERIES
   {
     id: "kalandra",
     name: "Kalandra",
@@ -38,6 +39,7 @@ const THEMES = [
     tagline: "Minimalist Typographic Layout & Warm Grain",
     accent: "#736b5e",
   },
+  // MODERN SERIES
   {
     id: "wave",
     name: "Wave",
@@ -62,6 +64,7 @@ const THEMES = [
     tagline: "Contemporary Heritage & Modern Contrast",
     accent: "#3d342d",
   },
+  // TRADITIONAL SERIES
   {
     id: "prameswari",
     name: "Prameswari",
@@ -85,7 +88,15 @@ function SetupWizardContent() {
   const searchParams = useSearchParams();
   const { data: session } = useSession();
 
-  const planParam = searchParams.get("plan") || "PREMIUM";
+  const queryPlan = searchParams.get("plan");
+  const queryOrder = searchParams.get("order");
+
+  const [currentPlan, setCurrentPlan] = useState<string>(queryPlan?.toUpperCase() || "PREMIUM");
+  const [planNames, setPlanNames] = useState<Record<string, string>>({
+    TRADITIONAL: "Traditional Series",
+    MODERN: "Modern Series",
+    PREMIUM: "Premium Series",
+  });
 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -114,10 +125,52 @@ function SetupWizardContent() {
     message: "",
   });
 
-  // Resolve dynamic host on mount
+  // Resolve dynamic host and admin settings on mount
   useEffect(() => {
     setRootDomain(getApexRootDomain());
-  }, []);
+
+    // Fetch custom package names from admin settings
+    fetch("/api/admin/settings")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.grouped?.pricing) {
+          const p = data.grouped.pricing;
+          setPlanNames({
+            TRADITIONAL: p.name_traditional || "Traditional Series",
+            MODERN: p.name_modern || "Modern Series",
+            PREMIUM: p.name_premium || "Premium Series",
+          });
+        }
+      })
+      .catch(() => {});
+
+    // Resolve order planType if order ID provided in URL
+    if (queryOrder) {
+      fetch(`/api/client/orders/${queryOrder}/status`)
+        .then((r) => r.json())
+        .then((order) => {
+          if (order.planType) {
+            setCurrentPlan(order.planType.toUpperCase());
+          }
+        })
+        .catch(() => {});
+    }
+  }, [queryOrder]);
+
+  // Filter themes strictly based on the user's purchased package category
+  const filteredThemes = THEMES.filter((t) => t.category === currentPlan);
+  // Fallback to all if somehow none matched
+  const availableThemes = filteredThemes.length > 0 ? filteredThemes : THEMES;
+
+  // Set default themeId when plan changes
+  useEffect(() => {
+    if (availableThemes.length > 0) {
+      const currentSelectedExists = availableThemes.some((t) => t.id === themeId);
+      if (!currentSelectedExists) {
+        setThemeId(availableThemes[0].id);
+      }
+    }
+  }, [currentPlan, availableThemes, themeId]);
 
   // Update subdomain based on nicknames if not manually customized
   useEffect(() => {
@@ -211,7 +264,7 @@ function SetupWizardContent() {
           weddingDate,
           city: city.trim(),
           themeId,
-          planType: planParam,
+          planType: currentPlan,
         }),
       });
 
@@ -473,19 +526,22 @@ function SetupWizardContent() {
           </div>
         )}
 
-        {/* STEP 3: Pilihan Tema Awal */}
+        {/* STEP 3: Pilihan Tema Sesuai Kategori Paket */}
         {step === 3 && (
           <div className="space-y-6 animate-fadeIn">
             <div className="text-center space-y-2">
-              <span className="text-xs font-bold text-amber-800 uppercase tracking-widest">Langkah 3</span>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-100 text-amber-900 rounded-full text-xs font-bold mb-1">
+                <span>Paket Anda:</span>
+                <span className="font-extrabold">{planNames[currentPlan] || currentPlan}</span>
+              </div>
               <h1 className="text-2xl sm:text-3xl font-serif font-bold text-stone-900">Pilih Desain Tema Perdana</h1>
               <p className="text-xs sm:text-sm text-stone-500 max-w-md mx-auto">
-                Pilih gaya tata letak awal yang Anda sukai. Anda tetap bebas mengganti tema kapan saja nanti di studio.
+                Berikut adalah koleksi tema yang tersedia untuk {planNames[currentPlan] || currentPlan}. Pilih tema awal yang Anda sukai.
               </p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {THEMES.map((theme) => {
+              {availableThemes.map((theme) => {
                 const isSelected = themeId === theme.id;
                 return (
                   <div

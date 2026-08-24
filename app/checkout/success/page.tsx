@@ -9,12 +9,11 @@ function SuccessContent() {
   const orderId = searchParams.get("order");
 
   useEffect(() => {
-    // Auto redirect ke dashboard setelah 6 detik
     const timer = setTimeout(() => {
-      router.replace("/dashboard/setup");
+      router.replace(orderId ? `/dashboard/setup?order=${orderId}` : "/dashboard/setup");
     }, 4000);
     return () => clearTimeout(timer);
-  }, [router]);
+  }, [router, orderId]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-stone-950 via-stone-900 to-emerald-950 flex flex-col items-center justify-center px-4">
@@ -36,12 +35,12 @@ function SuccessContent() {
 
         <div className="space-y-3">
           <a
-            href="/dashboard/setup"
+            href={orderId ? `/dashboard/setup?order=${orderId}` : "/dashboard/setup"}
             className="block w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-bold text-sm hover:from-emerald-600 hover:to-emerald-700 transition shadow-lg"
           >
             Lanjut ke Setup Nama Pasangan →
           </a>
-          <p className="text-stone-600 text-xs">Mengarahkan otomatis ke form setup dalam 5 detik...</p>
+          <p className="text-stone-600 text-xs">Mengarahkan otomatis ke form setup dalam 4 detik...</p>
         </div>
       </div>
     </div>
