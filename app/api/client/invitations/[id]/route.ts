@@ -58,6 +58,27 @@ export async function PUT(
 
     const toStr = (v: any) => (v ? (typeof v === "object" ? JSON.stringify(v) : String(v)) : null);
 
+    const currentInv = await prisma.invitation.findUnique({ where: { id } });
+
+    // Auto-generate slugs if names are provided
+    const newGroomSlug = (body.groomNickname || body.groomName)
+      ? String(body.groomNickname || body.groomName).toLowerCase().replace(/[^a-z0-9]/g, "")
+      : undefined;
+    const newBrideSlug = (body.brideNickname || body.brideName)
+      ? String(body.brideNickname || body.brideName).toLowerCase().replace(/[^a-z0-9]/g, "")
+      : undefined;
+
+    let newSubdomain = body.subdomain !== undefined
+      ? (body.subdomain ? String(body.subdomain).trim().toLowerCase() : null)
+      : undefined;
+
+    // If subdomain is empty or matches old default didan-nasha, sync to couple's names
+    if (newSubdomain === undefined && (!currentInv?.subdomain || currentInv.subdomain === "didan-nasha")) {
+      if (newGroomSlug && newBrideSlug) {
+        newSubdomain = `${newGroomSlug}-${newBrideSlug}`;
+      }
+    }
+
     const updated = await prisma.invitation.update({
       where: { id },
       data: {
@@ -65,6 +86,8 @@ export async function PUT(
         brideName: body.brideName,
         groomNickname: body.groomNickname,
         brideNickname: body.brideNickname,
+        groomSlug: newGroomSlug || undefined,
+        brideSlug: newBrideSlug || undefined,
         groomParents: body.groomParents,
         brideParents: body.brideParents,
         groomInstagram: body.groomInstagram,
@@ -72,7 +95,7 @@ export async function PUT(
         openingQuote: body.openingQuote,
         openingQuoteRef: body.openingQuoteRef,
         themeId: body.themeId,
-        subdomain: body.subdomain !== undefined ? (body.subdomain ? String(body.subdomain).trim().toLowerCase() : null) : undefined,
+        subdomain: newSubdomain !== undefined ? newSubdomain : undefined,
         musicUrl: body.musicUrl !== undefined ? String(body.musicUrl || "") : undefined,
         status: body.status !== undefined ? body.status : undefined,
         loveStory: toStr(body.loveStory),

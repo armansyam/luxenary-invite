@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 
-import { getApexRootDomain } from "@/lib/domainUtils";
+import { getApexRootDomain, getInvitationPublicUrl } from "@/lib/domainUtils";
 
 const tabs = [
   { id: "overview", label: "📊 Ringkasan", icon: "📊" },
@@ -549,33 +549,63 @@ export default function AdminPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-50">
-                        {invitations.map((inv) => (
-                          <tr key={inv.id} className="hover:bg-gray-50 transition">
-                            <td className="px-5 py-3 text-sm font-semibold text-gray-900">{inv.groomName} & {inv.brideName}</td>
-                            <td className="px-5 py-3 text-xs font-mono text-amber-700">{inv.subdomain ? `${inv.subdomain}.${getApexRootDomain()}` : `/${inv.groomSlug}-${inv.brideSlug}/${inv.invitationSlug}`}</td>
-                            <td className="px-5 py-3">
-                              <div className="flex items-center gap-2">
-                                <span className="font-bold text-gray-900 text-sm capitalize">{inv.themeId}</span>
-                                <select
-                                  value={inv.themeId}
-                                  onChange={(e) => handleSwitchTheme(inv.id, e.target.value)}
-                                  className="text-xs bg-gray-50 border border-gray-200 rounded p-1 text-gray-700 font-medium capitalize"
+                        {invitations.map((inv) => {
+                          const coupleName = `${inv.groomNickname || inv.groomName || "Mempelai Pria"} & ${inv.brideNickname || inv.brideName || "Mempelai Wanita"}`;
+                          const activeSub = inv.subdomain || `${inv.groomSlug || "didan"}-${inv.brideSlug || "nasha"}`;
+                          const publicUrl = getInvitationPublicUrl(activeSub);
+
+                          return (
+                            <tr key={inv.id} className="hover:bg-gray-50 transition">
+                              <td className="px-5 py-3 text-sm font-semibold text-gray-900">
+                                {coupleName}
+                              </td>
+                              <td className="px-5 py-3 text-xs font-mono text-amber-700">
+                                <a
+                                  href={publicUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="hover:underline flex items-center gap-1 font-semibold"
                                 >
-                                  {themes.map((t) => (
-                                    <option key={t.id} value={t.id} className="capitalize">{t.name || t.id}</option>
-                                  ))}
-                                </select>
-                              </div>
-                            </td>
-                            <td className="px-5 py-3"><Badge status={inv.status} /></td>
-                            <td className="px-5 py-3">
-                              <div className="flex items-center gap-2">
-                                <a href={`/${inv.groomSlug}-${inv.brideSlug}/${inv.invitationSlug}`} target="_blank" className="text-amber-700 hover:text-amber-900 font-bold text-xs underline">Preview</a>
-                                <button onClick={() => handleUnlockTheme(inv.id)} className="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-lg text-xs font-bold transition cursor-pointer">🔓 Tema</button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
+                                  <span>{activeSub}.{getApexRootDomain()}</span>
+                                  <span className="text-[10px] text-stone-400">↗</span>
+                                </a>
+                              </td>
+                              <td className="px-5 py-3">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold text-gray-900 text-sm capitalize">{inv.themeId}</span>
+                                  <select
+                                    value={inv.themeId}
+                                    onChange={(e) => handleSwitchTheme(inv.id, e.target.value)}
+                                    className="text-xs bg-gray-50 border border-gray-200 rounded p-1 text-gray-700 font-medium capitalize cursor-pointer"
+                                  >
+                                    {themes.map((t) => (
+                                      <option key={t.id} value={t.id} className="capitalize">{t.name || t.id}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </td>
+                              <td className="px-5 py-3"><Badge status={inv.status} /></td>
+                              <td className="px-5 py-3">
+                                <div className="flex items-center gap-2">
+                                  <a
+                                    href={publicUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-amber-700 hover:text-amber-900 font-bold text-xs underline"
+                                  >
+                                    Preview
+                                  </a>
+                                  <button
+                                    onClick={() => handleUnlockTheme(inv.id)}
+                                    className="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-lg text-xs font-bold transition cursor-pointer"
+                                  >
+                                    🔓 Tema
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>

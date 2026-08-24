@@ -58,7 +58,7 @@ export async function GET() {
         select: { id: true, name: true, email: true, role: true, createdAt: true },
       }),
       prisma.invitation.findMany({
-        take: 10,
+        take: 50,
         orderBy: { createdAt: "desc" },
         select: {
           id: true,
@@ -67,9 +67,18 @@ export async function GET() {
           invitationSlug: true,
           groomName: true,
           brideName: true,
+          groomNickname: true,
+          brideNickname: true,
           themeId: true,
           status: true,
+          subdomain: true,
           createdAt: true,
+          user: {
+            select: {
+              name: true,
+              email: true,
+            },
+          },
         },
       }),
       prisma.webhookLog.findMany({
