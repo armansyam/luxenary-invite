@@ -1041,7 +1041,9 @@ export function composeDemoTemplateData(themeId: string, paletteKey: string = "c
         <p class="pass-date">${demo.weddingDateFormatted}</p>
         
         <div class="pass-qr-wrapper">
-          <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=LUX-DEMO-${demo.themeId.toUpperCase()}" alt="QR Check-In" class="pass-qr-img">
+          <svg viewBox="0 0 100 100" class="pass-qr-img" style="width:140px; height:140px; background:#ffffff; padding:10px; border-radius:10px; box-shadow:0 4px 15px rgba(0,0,0,0.15);">
+            <path d="M10,10 h30 v30 h-30 z M16,16 v18 h18 v-18 z M22,22 h6 v6 h-6 z M60,10 h30 v30 h-30 z M66,16 v18 h18 v-18 z M72,22 h6 v6 h-6 z M10,60 h30 v30 h-30 z M16,66 v18 h18 v-18 z M22,72 h6 v6 h-6 z M48,12 h8 v8 h-8 z M48,28 h8 v8 h-8 z M48,48 h16 v8 h-16 z M72,48 h16 v8 h-16 z M48,68 h8 v16 h-8 z M68,68 h20 v8 h-20 z M68,84 h20 v8 h-20 z" fill="#111111" />
+          </svg>
         </div>
 
         <div class="pass-guest-box">
