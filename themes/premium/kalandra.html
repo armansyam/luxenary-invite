@@ -189,16 +189,26 @@
       display: block;
     }
     .left-hero-names {
-      font-size: clamp(3.2rem, 5vw, 4.8rem);
-      line-height: 1.02;
-      color: #fff;
+      font-size: clamp(2.6rem, 4.2vw, 4rem);
+      line-height: 1.1;
+      color: #ffffff;
       font-weight: 300;
+      letter-spacing: 0.02em;
     }
     .left-hero-names em {
       font-style: italic;
-      font-size: 0.65em;
-      display: block;
-      margin: -0.1em 0;
+      font-size: 0.8em;
+      margin: 0 0.15em;
+      color: rgba(255,255,255,0.75);
+      display: inline;
+    }
+    .left-hero-date {
+      font-size: 0.78rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.75);
+      margin-top: 0.8rem;
+      font-weight: 400;
     }
 
     /* =============================================
@@ -791,7 +801,8 @@
   <div class="left-hero">
     <div class="left-hero-content">
       <span class="left-hero-eyebrow">{{weddingTagline}}</span>
-      <h1 class="serif left-hero-names">{{firstName}}<br><em>&amp;</em><br>{{secondName}}</h1>
+      <h1 class="serif left-hero-names">{{firstName}} <em>&amp;</em> {{secondName}}</h1>
+      <p class="left-hero-date">{{weddingDate}}</p>
     </div>
   </div>
 

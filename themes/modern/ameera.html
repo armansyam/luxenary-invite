@@ -71,8 +71,28 @@
     .left-hero::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(13,14,18,0.88) 0%, rgba(13,14,18,0.15) 45%, transparent 100%); }
     .left-hero-content { position: absolute; bottom: 4rem; left: 3.5rem; z-index: 2; color: #fff; }
     .left-hero-eyebrow { font-size: 0.68rem; letter-spacing: 0.35em; text-transform: uppercase; color: rgba(255,255,255,0.7); margin-bottom: 0.6rem; display: block; }
-    .left-hero-names { font-size: clamp(3.2rem, 5vw, 4.8rem); line-height: 1.02; color: #fff; font-weight: 400; }
-    .left-hero-names em { font-style: italic; font-size: 0.65em; display: block; margin: -0.1em 0; }
+    .left-hero-names {
+      font-size: clamp(2.6rem, 4.2vw, 4rem);
+      line-height: 1.1;
+      color: #ffffff;
+      font-weight: 300;
+      letter-spacing: 0.02em;
+    }
+    .left-hero-names em {
+      font-style: italic;
+      font-size: 0.8em;
+      margin: 0 0.15em;
+      color: rgba(255,255,255,0.75);
+      display: inline;
+    }
+    .left-hero-date {
+      font-size: 0.78rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.75);
+      margin-top: 0.8rem;
+      font-weight: 400;
+    }
 
     /* RIGHT SCROLLABLE CONTENT PANEL */
     .right-panel { position: relative; z-index: 20; width: 100%; min-height: 100vh; background: transparent; padding-bottom: 90px; overflow-x: hidden; }
@@ -385,7 +405,8 @@
   <div class="left-hero">
     <div class="left-hero-content">
       <span class="left-hero-eyebrow">{{weddingTagline}}</span>
-      <h1 class="serif left-hero-names">{{firstName}}<br><em>&amp;</em><br>{{secondName}}</h1>
+      <h1 class="serif left-hero-names">{{firstName}} <em>&amp;</em> {{secondName}}</h1>
+      <p class="left-hero-date">{{weddingDate}}</p>
     </div>
   </div>
 
