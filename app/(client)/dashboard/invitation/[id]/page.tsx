@@ -352,14 +352,16 @@ export default function EditInvitation() {
     // Sec 1: Tema, Warna & Tagline
     const dirty1 = (
       invitation.themeId !== savedSnapshot.invitation?.themeId ||
-      getFeatureSetting("colorPalette", "GOLD_CHAMPAGNE") !== getSavedFeatureSetting("colorPalette", "GOLD_CHAMPAGNE") ||
+      getFeatureSetting("colorPalette", "champagne") !== getSavedFeatureSetting("colorPalette", "champagne") ||
       getFeatureSetting("weddingTagline", "THE WEDDING OF") !== getSavedFeatureSetting("weddingTagline", "THE WEDDING OF")
     );
 
     // Sec 2: Sampul & Visual
     const dirty2 = (
       JSON.stringify(media) !== JSON.stringify(savedSnapshot.media || {}) ||
-      Boolean(getFeatureSetting("isNoPhoto", false)) !== Boolean(getSavedFeatureSetting("isNoPhoto", false))
+      Boolean(getFeatureSetting("isNoPhoto", false)) !== Boolean(getSavedFeatureSetting("isNoPhoto", false)) ||
+      (invitation.musicUrl || "") !== (savedSnapshot.invitation?.musicUrl || "") ||
+      Boolean(getFeatureSetting("showMusic", true)) !== Boolean(getSavedFeatureSetting("showMusic", true))
     );
 
     // Sec 3: Profil Mempelai
@@ -388,36 +390,60 @@ export default function EditInvitation() {
       JSON.stringify(events) !== JSON.stringify(savedSnapshot.events || [])
     );
 
-    // Sec 6: Kisah Cinta
+    // Sec 6: Kartu Akses QR & Check-In
     const dirty6 = (
+      Boolean(getFeatureSetting("showQrCheckin", true)) !== Boolean(getSavedFeatureSetting("showQrCheckin", true))
+    );
+
+    // Sec 7: Kisah Cinta
+    const dirty7 = (
       JSON.stringify(stories) !== JSON.stringify(savedSnapshot.stories || []) ||
       Boolean(getFeatureSetting("showStory", true)) !== Boolean(getSavedFeatureSetting("showStory", true))
     );
 
-    // Sec 7: Galeri & Video
-    const dirty7 = (
+    // Sec 8: Galeri & Video
+    const dirty8 = (
       getFeatureSetting("videoGalleryUrl", "") !== getSavedFeatureSetting("videoGalleryUrl", "") ||
       getFeatureSetting("galleryDriveFolderUrl", "") !== getSavedFeatureSetting("galleryDriveFolderUrl", "") ||
       Boolean(getFeatureSetting("showGallery", true)) !== Boolean(getSavedFeatureSetting("showGallery", true))
     );
 
-    // Sec 8: Rekening & Hadiah
-    const dirty8 = (
+    // Sec 9: Rekening & Hadiah
+    const dirty9 = (
       JSON.stringify(bankList) !== JSON.stringify(savedSnapshot.bankList || []) ||
       (invitation.shippingAddress || "") !== (savedSnapshot.invitation?.shippingAddress || "") ||
       getFeatureSetting("qrisImageUrl", "") !== getSavedFeatureSetting("qrisImageUrl", "") ||
       Boolean(getFeatureSetting("showGift", true)) !== Boolean(getSavedFeatureSetting("showGift", true))
     );
 
-    // Sec 9: Fitur Tambahan
-    const dirty9 = (
+    // Sec 10: Dresscode
+    const dirty10 = (
       (invitation.dresscode || "") !== (savedSnapshot.invitation?.dresscode || "") ||
+      getFeatureSetting("dressCodeColors", "") !== getSavedFeatureSetting("dressCodeColors", "") ||
+      getFeatureSetting("dressCodeNote", "") !== getSavedFeatureSetting("dressCodeNote", "") ||
+      Boolean(getFeatureSetting("showDresscode", true)) !== Boolean(getSavedFeatureSetting("showDresscode", true))
+    );
+
+    // Sec 11: Live Streaming
+    const dirty11 = (
       (invitation.liveStreamUrl || "") !== (savedSnapshot.invitation?.liveStreamUrl || "") ||
+      getFeatureSetting("liveStreamYoutubeUrl", "") !== getSavedFeatureSetting("liveStreamYoutubeUrl", "") ||
+      getFeatureSetting("liveStreamInstagramUrl", "") !== getSavedFeatureSetting("liveStreamInstagramUrl", "") ||
+      getFeatureSetting("liveStreamZoomUrl", "") !== getSavedFeatureSetting("liveStreamZoomUrl", "") ||
+      Boolean(getFeatureSetting("showLiveStream", false)) !== Boolean(getSavedFeatureSetting("showLiveStream", false))
+    );
+
+    // Sec 12: Instagram Filter
+    const dirty12 = (
+      getFeatureSetting("instagramFilterUrl", "") !== getSavedFeatureSetting("instagramFilterUrl", "") ||
+      Boolean(getFeatureSetting("showFilter", false)) !== Boolean(getSavedFeatureSetting("showFilter", false))
+    );
+
+    // Sec 13: Turut Mengundang & Himbauan
+    const dirty13 = (
       getFeatureSetting("turutMengundang", "") !== getSavedFeatureSetting("turutMengundang", "") ||
       getFeatureSetting("guestGuidance", "") !== getSavedFeatureSetting("guestGuidance", "") ||
-      getFeatureSetting("instagramFilterUrl", "") !== getSavedFeatureSetting("instagramFilterUrl", "") ||
-      Boolean(getFeatureSetting("showDresscode", true)) !== Boolean(getSavedFeatureSetting("showDresscode", true)) ||
-      Boolean(getFeatureSetting("showQrCheckin", true)) !== Boolean(getSavedFeatureSetting("showQrCheckin", true))
+      Boolean(getFeatureSetting("showTurutMengundang", true)) !== Boolean(getSavedFeatureSetting("showTurutMengundang", true))
     );
 
     return {
@@ -430,6 +456,10 @@ export default function EditInvitation() {
       sec7: dirty7,
       sec8: dirty8,
       sec9: dirty9,
+      sec10: dirty10,
+      sec11: dirty11,
+      sec12: dirty12,
+      sec13: dirty13,
     };
   }, [invitation, media, events, stories, bankList, savedSnapshot]);
 
@@ -534,6 +564,9 @@ export default function EditInvitation() {
   const showGift = getFeatureSetting("showGift", true);
   const showDresscode = getFeatureSetting("showDresscode", true);
   const showQrCheckin = getFeatureSetting("showQrCheckin", true);
+  const showLiveStream = getFeatureSetting("showLiveStream", false);
+  const showFilter = getFeatureSetting("showFilter", false);
+  const showTurutMengundang = getFeatureSetting("showTurutMengundang", true);
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-24 font-sans">
@@ -975,21 +1008,7 @@ export default function EditInvitation() {
                       <h3 className="text-xs font-bold text-rose-950 uppercase tracking-wider">Mempelai Wanita (The Bride) — Tampil Pertama</h3>
                       <span className="text-[10px] font-bold bg-rose-100 text-rose-800 px-2.5 py-0.5 rounded-full">Pihak Mengundang</span>
                     </div>
-                    <div className="p-4 rounded-2xl border border-stone-200 bg-stone-50/50 space-y-2">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-stone-900">Kartu Akses QR &amp; Check-In</label>
-                    <p className="text-[11px] text-stone-500">Tampilkan QR Code tiket dan tombol buka kartu akses untuk scanning buku tamu di lokasi acara</p>
-                  </div>
-                  <SectionHeaderToggle
-                    label=""
-                    checked={showQrCheckin}
-                    onChange={(v) => updateFeatureSetting("showQrCheckin", v)}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <Input label="Nama Lengkap Wanita *" value={invitation.brideName || ""} onChange={(v) => updateField("brideName", v)} placeholder="Nasha Selsabilla, S.Ds." />
                       <Input label="Nama Panggilan Wanita" value={invitation.brideNickname || ""} onChange={(v) => updateField("brideNickname", v)} placeholder="Nasha" />
                       <Input label="Nama Orang Tua Wanita" value={invitation.brideParents || ""} onChange={(v) => updateField("brideParents", v)} placeholder="Putri dari Bapak Tomm Posma & Ibu Endang Noffiyanti" />
@@ -1315,12 +1334,12 @@ export default function EditInvitation() {
         )}
       </section>
 
-      {/* 6. SEKSI KISAH CINTA (SEC6) */}
+      {/* 6. SEKSI KARTU AKSES QR & CHECK-IN (SEC6) */}
       <section className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
         <div className="p-5 sm:p-6 border-b border-stone-100 flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-base font-bold text-stone-900">6. Kisah Cinta (Journey of Love)</h2>
-            <p className="text-xs text-stone-500">Tuliskan babak perjalanan cinta dari awal bertemu hingga pernikahan</p>
+            <h2 className="text-base font-bold text-stone-900">6. Kartu Akses QR &amp; Check-In Tamu</h2>
+            <p className="text-xs text-stone-500">Tampilkan QR Code tiket dan tombol buka kartu akses untuk scanning buku tamu di lokasi acara</p>
           </div>
           <button
             type="button"
@@ -1329,18 +1348,94 @@ export default function EditInvitation() {
               collapsed.sec6 ? "bg-amber-50 text-amber-900 hover:bg-amber-100" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
             }`}
           >
-            {collapsed.sec6 ? "Edit Kisah" : "Tutup"}
+            {collapsed.sec6 ? "Edit QR Pass" : "Tutup"}
           </button>
         </div>
 
         {collapsed.sec6 ? (
           <div className="p-5 bg-stone-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="text-xs text-stone-600">
-              <span>Status: <strong>{showStory ? `${stories.length} Babak Kisah Terpasang` : "Seksi Dinonaktifkan"}</strong></span>
+              <span>Status: <strong>{showQrCheckin ? "Aktif (QR & Voucher Souvenir Ditampilkan)" : "Dinonaktifkan"}</strong></span>
             </div>
             <button
               type="button"
               onClick={() => toggleSection("sec6")}
+              className="text-xs font-bold text-amber-800 hover:underline"
+            >
+              Ubah Pengaturan &rarr;
+            </button>
+          </div>
+        ) : (
+          <div className="p-5 sm:p-7 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-xs font-bold text-stone-900">Aktifkan Kartu Akses QR &amp; Check-In:</span>
+                <p className="text-[11px] text-stone-500">Tamu dapat menunjukkan QR Code saat tiba di meja resepsionis untuk check-in cepat</p>
+              </div>
+              <SectionHeaderToggle
+                label=""
+                checked={showQrCheckin}
+                onChange={(v) => updateFeatureSetting("showQrCheckin", v)}
+              />
+            </div>
+
+            {showQrCheckin && (
+              <div className="p-4 rounded-2xl border border-amber-200/70 bg-amber-50/40 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  <h4 className="text-xs font-bold text-amber-950">Fitur Check-In Aktif</h4>
+                </div>
+                <p className="text-[11px] text-stone-600 leading-relaxed">
+                  Tombol <strong>&ldquo;QR Check-In&rdquo;</strong> di cover pembuka dan navigasi samping akan aktif. Setiap tamu yang membuka link unik mereka akan mendapatkan QR Code otomatis dan kode voucher souvenir <code>SOUVENIR-{invitationId?.slice(0, 8).toUpperCase()}</code>.
+                </p>
+              </div>
+            )}
+
+            <div className="pt-4 border-t border-stone-100 flex justify-end">
+              <button
+                type="button"
+                onClick={() => saveSection("sec6")}
+                disabled={saving || !isDirty.sec6}
+                className={`px-5 py-2.5 font-bold rounded-xl text-xs transition flex items-center gap-2 shadow-xs ${
+                  !isDirty.sec6
+                    ? "bg-stone-100 text-stone-400 border border-stone-200 cursor-not-allowed"
+                    : "bg-amber-800 hover:bg-amber-900 text-white cursor-pointer"
+                }`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                <span>{!isDirty.sec6 ? "Tersimpan" : "Simpan Pengaturan QR"}</span>
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* 7. SEKSI KISAH CINTA (SEC7) */}
+      <section className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
+        <div className="p-5 sm:p-6 border-b border-stone-100 flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-bold text-stone-900">7. Kisah Cinta (Journey of Love)</h2>
+            <p className="text-xs text-stone-500">Tuliskan babak perjalanan cinta dari awal bertemu hingga pernikahan</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => toggleSection("sec7")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+              collapsed.sec7 ? "bg-amber-50 text-amber-900 hover:bg-amber-100" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+            }`}
+          >
+            {collapsed.sec7 ? "Edit Kisah" : "Tutup"}
+          </button>
+        </div>
+
+        {collapsed.sec7 ? (
+          <div className="p-5 bg-stone-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="text-xs text-stone-600">
+              <span>Status: <strong>{showStory ? `${stories.length} Babak Kisah Terpasang` : "Seksi Dinonaktifkan"}</strong></span>
+            </div>
+            <button
+              type="button"
+              onClick={() => toggleSection("sec7")}
               className="text-xs font-bold text-amber-800 hover:underline"
             >
               Ubah Kisah &rarr;
@@ -1349,7 +1444,7 @@ export default function EditInvitation() {
         ) : (
           <div className="p-5 sm:p-7 space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-stone-700">Tampilkan Seksi:</span>
+              <span className="text-xs font-bold text-stone-700">Tampilkan Seksi Kisah Cinta:</span>
               <div className="flex items-center gap-3">
                 <SectionHeaderToggle
                   label=""
@@ -1398,49 +1493,49 @@ export default function EditInvitation() {
             <div className="pt-4 border-t border-stone-100 flex justify-end">
               <button
                 type="button"
-                onClick={() => saveSection("sec6")}
-                disabled={saving || !isDirty.sec6}
+                onClick={() => saveSection("sec7")}
+                disabled={saving || !isDirty.sec7}
                 className={`px-5 py-2.5 font-bold rounded-xl text-xs transition flex items-center gap-2 shadow-xs ${
-                  !isDirty.sec6
+                  !isDirty.sec7
                     ? "bg-stone-100 text-stone-400 border border-stone-200 cursor-not-allowed"
                     : "bg-amber-800 hover:bg-amber-900 text-white cursor-pointer"
                 }`}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                <span>{!isDirty.sec6 ? "Tersimpan" : "Simpan Kisah Cinta"}</span>
+                <span>{!isDirty.sec7 ? "Tersimpan" : "Simpan Kisah Cinta"}</span>
               </button>
             </div>
           </div>
         )}
       </section>
 
-      {/* 7. SEKSI GALERI & VIDEO (SEC7) */}
+      {/* 8. SEKSI GALERI & VIDEO (SEC8) */}
       <section className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
         <div className="p-5 sm:p-6 border-b border-stone-100 flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-base font-bold text-stone-900">7. Galeri Foto Pre-Wedding &amp; Video Teaser</h2>
-            <p className="text-xs text-stone-500">Mendukung Folder Google Drive (CDN stream), rotasi 6-grid acak, dan modal galeri penuh</p>
+            <h2 className="text-base font-bold text-stone-900">8. Galeri Foto Pre-Wedding &amp; Video Teaser</h2>
+            <p className="text-xs text-stone-500">Mendukung Folder Google Drive (CDN stream), Smart Puzzle Grid dinamis acak, dan modal galeri penuh</p>
           </div>
           <button
             type="button"
-            onClick={() => toggleSection("sec7")}
+            onClick={() => toggleSection("sec8")}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-              collapsed.sec7 ? "bg-amber-50 text-amber-900 hover:bg-amber-100" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+              collapsed.sec8 ? "bg-amber-50 text-amber-900 hover:bg-amber-100" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
             }`}
           >
-            {collapsed.sec7 ? "Edit Galeri" : "Tutup"}
+            {collapsed.sec8 ? "Edit Galeri" : "Tutup"}
           </button>
         </div>
 
-        {collapsed.sec7 ? (
+        {collapsed.sec8 ? (
           <div className="p-5 bg-stone-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="text-xs text-stone-600 space-y-0.5">
-              <p>Status Galeri: <strong>{showGallery ? "Aktif" : "Dinonaktifkan"}</strong></p>
+              <p>Status Galeri: <strong>{showGallery ? "Aktif (Smart Puzzle Grid)" : "Dinonaktifkan"}</strong></p>
               <p>Google Drive: <span className="font-mono text-stone-500">{getFeatureSetting("galleryDriveFolderUrl", "") ? "Folder Terhubung" : "Preset Demo"}</span></p>
             </div>
             <button
               type="button"
-              onClick={() => toggleSection("sec7")}
+              onClick={() => toggleSection("sec8")}
               className="text-xs font-bold text-amber-800 hover:underline"
             >
               Ubah Galeri &rarr;
@@ -1449,7 +1544,7 @@ export default function EditInvitation() {
         ) : (
           <div className="p-5 sm:p-7 space-y-5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-stone-700">Tampilkan Galeri:</span>
+              <span className="text-xs font-bold text-stone-700">Tampilkan Galeri Pre-Wedding:</span>
               <SectionHeaderToggle
                 label=""
                 checked={showGallery}
@@ -1460,7 +1555,7 @@ export default function EditInvitation() {
             {showGallery && (
               <div className="space-y-4">
                 <div className="p-4 bg-amber-50/60 border border-amber-200/80 rounded-2xl space-y-2">
-                  <h4 className="text-xs font-bold text-amber-900">Video Teaser Pre-Wedding (YouTube / Vimeo / MP4)</h4>
+                  <h4 className="text-xs font-bold text-amber-900">Video Teaser Pre-Wedding (YouTube / Vimeo)</h4>
                   <p className="text-[11px] text-stone-600">Tempelkan link video YouTube biasa (misal: <code>https://youtu.be/...</code>) untuk memutar teaser video di atas galeri.</p>
                   <input
                     type="text"
@@ -1474,7 +1569,7 @@ export default function EditInvitation() {
                 <div className="p-4 bg-stone-50 border border-stone-200 rounded-2xl space-y-3">
                   <h4 className="text-xs font-bold text-stone-900">Link Folder Google Drive (Live Stream CDN)</h4>
                   <p className="text-[11px] text-stone-500 leading-relaxed">
-                    Tempelkan 1 tautan folder Google Drive publik. Sistem otomatis men-stream <strong>6 foto acak</strong> di halaman utama dan menampilkan tombol <strong>&ldquo;Lihat Galeri Lengkap&rdquo;</strong> (interaktif lightbox hingga 50 foto) tanpa membebani server.
+                    Tempelkan 1 tautan folder Google Drive publik. Sistem otomatis men-stream foto acak dalam format <strong>Smart Puzzle Grid (Zero Crop)</strong> dan tombol <strong>&ldquo;Lihat Semua Foto&rdquo;</strong> tanpa membebani storage server.
                   </p>
                   <input
                     type="url"
@@ -1493,41 +1588,41 @@ export default function EditInvitation() {
             <div className="pt-4 border-t border-stone-100 flex justify-end">
               <button
                 type="button"
-                onClick={() => saveSection("sec7")}
-                disabled={saving || !isDirty.sec7}
+                onClick={() => saveSection("sec8")}
+                disabled={saving || !isDirty.sec8}
                 className={`px-5 py-2.5 font-bold rounded-xl text-xs transition flex items-center gap-2 shadow-xs ${
-                  !isDirty.sec7
+                  !isDirty.sec8
                     ? "bg-stone-100 text-stone-400 border border-stone-200 cursor-not-allowed"
                     : "bg-amber-800 hover:bg-amber-900 text-white cursor-pointer"
                 }`}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                <span>{!isDirty.sec7 ? "Tersimpan" : "Simpan Pengaturan Galeri"}</span>
+                <span>{!isDirty.sec8 ? "Tersimpan" : "Simpan Pengaturan Galeri"}</span>
               </button>
             </div>
           </div>
         )}
       </section>
 
-      {/* 8. SEKSI TANDA KASIH & AMPLOP (SEC8) */}
+      {/* 9. SEKSI TANDA KASIH & AMPLOP (SEC9) */}
       <section className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
         <div className="p-5 sm:p-6 border-b border-stone-100 flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-base font-bold text-stone-900">8. Tanda Kasih &amp; Amplop Digital</h2>
+            <h2 className="text-base font-bold text-stone-900">9. Tanda Kasih &amp; Amplop Digital</h2>
             <p className="text-xs text-stone-500">Kelola nomor rekening bank, QRIS statis, dan alamat pengiriman kado fisik</p>
           </div>
           <button
             type="button"
-            onClick={() => toggleSection("sec8")}
+            onClick={() => toggleSection("sec9")}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-              collapsed.sec8 ? "bg-amber-50 text-amber-900 hover:bg-amber-100" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+              collapsed.sec9 ? "bg-amber-50 text-amber-900 hover:bg-amber-100" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
             }`}
           >
-            {collapsed.sec8 ? "Edit Amplop" : "Tutup"}
+            {collapsed.sec9 ? "Edit Amplop" : "Tutup"}
           </button>
         </div>
 
-        {collapsed.sec8 ? (
+        {collapsed.sec9 ? (
           <div className="p-5 bg-stone-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="text-xs text-stone-600 space-y-0.5">
               <p>Status: <strong>{showGift ? `${bankList.length} Rekening Terdaftar` : "Dinonaktifkan"}</strong></p>
@@ -1535,7 +1630,7 @@ export default function EditInvitation() {
             </div>
             <button
               type="button"
-              onClick={() => toggleSection("sec8")}
+              onClick={() => toggleSection("sec9")}
               className="text-xs font-bold text-amber-800 hover:underline"
             >
               Ubah Rekening &rarr;
@@ -1641,128 +1736,353 @@ export default function EditInvitation() {
             <div className="pt-4 border-t border-stone-100 flex justify-end">
               <button
                 type="button"
-                onClick={() => saveSection("sec8")}
-                disabled={saving || isUploading || !isDirty.sec8}
+                onClick={() => saveSection("sec9")}
+                disabled={saving || isUploading || !isDirty.sec9}
                 className={`px-5 py-2.5 font-bold rounded-xl text-xs transition flex items-center gap-2 shadow-xs ${
                   isUploading
                     ? "bg-blue-50 text-blue-700 border border-blue-200 cursor-not-allowed"
-                    : !isDirty.sec8
+                    : !isDirty.sec9
                     ? "bg-stone-100 text-stone-400 border border-stone-200 cursor-not-allowed"
                     : "bg-amber-800 hover:bg-amber-900 text-white cursor-pointer"
                 }`}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                <span>{saving ? "Menyimpan..." : isUploading ? "Sedang Mengunggah QRIS..." : !isDirty.sec8 ? "Tersimpan" : "Simpan Rekening & Hadiah"}</span>
+                <span>{saving ? "Menyimpan..." : isUploading ? "Sedang Mengunggah QRIS..." : !isDirty.sec9 ? "Tersimpan" : "Simpan Rekening & Hadiah"}</span>
               </button>
             </div>
           </div>
         )}
       </section>
 
-      {/* 9. SEKSI FITUR TAMBAHAN & LIVE STREAM (SEC9) */}
+      {/* 10. SEKSI DRESS CODE (SEC10) */}
       <section className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
         <div className="p-5 sm:p-6 border-b border-stone-100 flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-base font-bold text-stone-900">9. Turut Mengundang &amp; Fitur Tambahan</h2>
-            <p className="text-xs text-stone-500">Keluarga besar yang mengundang, panduan busana, filter Instagram &amp; live stream</p>
+            <h2 className="text-base font-bold text-stone-900">10. Panduan Busana (Dress Code Guide)</h2>
+            <p className="text-xs text-stone-500">Atur palet warna pakaian dan anjuran busana untuk para tamu undangan</p>
           </div>
           <button
             type="button"
-            onClick={() => toggleSection("sec9")}
+            onClick={() => toggleSection("sec10")}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-              collapsed.sec9 ? "bg-amber-50 text-amber-900 hover:bg-amber-100" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+              collapsed.sec10 ? "bg-amber-50 text-amber-900 hover:bg-amber-100" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
             }`}
           >
-            {collapsed.sec9 ? "Edit Tambahan" : "Tutup"}
+            {collapsed.sec10 ? "Edit Dress Code" : "Tutup"}
           </button>
         </div>
 
-        {collapsed.sec9 ? (
+        {collapsed.sec10 ? (
           <div className="p-5 bg-stone-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="text-xs text-stone-600 space-y-0.5">
-              <p>Dresscode: <strong>{showDresscode ? (invitation.dresscode || "Aktif") : "Nonaktif"}</strong></p>
-              <p>Live Streaming: <strong>{invitation.liveStreamUrl ? "Terhubung" : "Belum diisi"}</strong></p>
+            <div className="text-xs text-stone-600">
+              <span>Status: <strong>{showDresscode ? (invitation.dresscode || "Aktif") : "Dinonaktifkan"}</strong></span>
             </div>
             <button
               type="button"
-              onClick={() => toggleSection("sec9")}
+              onClick={() => toggleSection("sec10")}
               className="text-xs font-bold text-amber-800 hover:underline"
             >
-              Ubah Pengaturan &rarr;
+              Ubah Dress Code &rarr;
             </button>
           </div>
         ) : (
           <div className="p-5 sm:p-7 space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-stone-700 mb-1">Daftar Turut Mengundang (1 Nama per Baris):</label>
-              <textarea
-                rows={3}
-                value={getFeatureSetting("turutMengundang", "")}
-                onChange={(e) => updateFeatureSetting("turutMengundang", e.target.value)}
-                placeholder={`Bpk. H. Arif Yaniadi & Ibu Yuni Widiastuti\nBpk. Tomm Posma & Ibu Endang Noffiyanti\nKeluarga Besar Kerukunan Sulawesi Selatan`}
-                className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30 leading-relaxed font-mono"
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-stone-700">Tampilkan Panduan Dress Code:</span>
+              <SectionHeaderToggle
+                label=""
+                checked={showDresscode}
+                onChange={(v) => updateFeatureSetting("showDresscode", v)}
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="p-4 rounded-2xl border border-stone-200 bg-stone-50/50 space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="block text-xs font-bold text-stone-900">Panduan Dresscode</label>
-                  <SectionHeaderToggle
-                    label=""
-                    checked={showDresscode}
-                    onChange={(v) => updateFeatureSetting("showDresscode", v)}
+            {showDresscode && (
+              <div className="space-y-4 mt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Input
+                    label="Nuansa / Aturan Dress Code"
+                    value={invitation.dresscode || ""}
+                    onChange={(v) => updateField("dresscode", v)}
+                    placeholder="Contoh: Formal / Nuansa Pastel & Earthy"
+                  />
+                  <Input
+                    label="Palet Warna Hex (Pisahkan dengan koma)"
+                    value={getFeatureSetting("dressCodeColors", "#a67c52, #2b2725, #faf7f2")}
+                    onChange={(v) => updateFeatureSetting("dressCodeColors", v)}
+                    placeholder="#a67c52, #2b2725, #faf7f2"
                   />
                 </div>
-                <input
-                  type="text"
-                  value={invitation.dresscode || ""}
-                  onChange={(e) => updateField("dresscode", e.target.value)}
-                  placeholder="Contoh: Formal / Nuansa Pastel & Earthy"
-                  className="w-full p-2.5 bg-white border border-stone-200 rounded-xl text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700/30"
-                />
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">Catatan Tambahan Busana (Opsional)</label>
+                  <textarea
+                    rows={2}
+                    value={getFeatureSetting("dressCodeNote", "")}
+                    onChange={(e) => updateFeatureSetting("dressCodeNote", e.target.value)}
+                    placeholder="Contoh: Diharapkan mengenakan pakaian bernuansa earthy tone untuk keserasian foto bersama."
+                    className="w-full p-2.5 bg-white border border-stone-200 rounded-xl text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700/30"
+                  />
+                </div>
               </div>
-
-              <div className="p-4 rounded-2xl border border-stone-200 bg-stone-50/50 space-y-2">
-                <label className="block text-xs font-bold text-stone-900">Himbauan &amp; Kenyamanan Tamu</label>
-                <input
-                  type="text"
-                  value={getFeatureSetting("guestGuidance", "")}
-                  onChange={(e) => updateFeatureSetting("guestGuidance", e.target.value)}
-                  placeholder="Contoh: Hadir tepat waktu, parkir VIP di utara"
-                  className="w-full p-2.5 bg-white border border-stone-200 rounded-xl text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700/30"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
-                label="Link Filter Instagram"
-                value={getFeatureSetting("instagramFilterUrl", "")}
-                onChange={(v) => updateFeatureSetting("instagramFilterUrl", v)}
-                placeholder="https://www.instagram.com/ar/..."
-              />
-              <Input
-                label="Link Siaran Langsung (YouTube / Zoom)"
-                value={invitation.liveStreamUrl || ""}
-                onChange={(v) => updateField("liveStreamUrl", v)}
-                placeholder="https://youtube.com/live/..."
-              />
-            </div>
+            )}
 
             <div className="pt-4 border-t border-stone-100 flex justify-end">
               <button
                 type="button"
-                onClick={() => saveSection("sec9")}
-                disabled={saving || !isDirty.sec9}
+                onClick={() => saveSection("sec10")}
+                disabled={saving || !isDirty.sec10}
                 className={`px-5 py-2.5 font-bold rounded-xl text-xs transition flex items-center gap-2 shadow-xs ${
-                  !isDirty.sec9
+                  !isDirty.sec10
                     ? "bg-stone-100 text-stone-400 border border-stone-200 cursor-not-allowed"
                     : "bg-amber-800 hover:bg-amber-900 text-white cursor-pointer"
                 }`}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                <span>{!isDirty.sec9 ? "Tersimpan" : "Simpan Fitur Tambahan"}</span>
+                <span>{!isDirty.sec10 ? "Tersimpan" : "Simpan Dress Code"}</span>
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* 11. SEKSI LIVE STREAMING (SEC11) */}
+      <section className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
+        <div className="p-5 sm:p-6 border-b border-stone-100 flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-bold text-stone-900">11. Siaran Langsung (Live Streaming)</h2>
+            <p className="text-xs text-stone-500">Tautkan link siaran virtual YouTube Live, Instagram Live, atau Zoom Meeting</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => toggleSection("sec11")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+              collapsed.sec11 ? "bg-amber-50 text-amber-900 hover:bg-amber-100" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+            }`}
+          >
+            {collapsed.sec11 ? "Edit Live Stream" : "Tutup"}
+          </button>
+        </div>
+
+        {collapsed.sec11 ? (
+          <div className="p-5 bg-stone-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="text-xs text-stone-600">
+              <span>Status: <strong>{showLiveStream ? "Aktif" : "Dinonaktifkan"}</strong></span>
+            </div>
+            <button
+              type="button"
+              onClick={() => toggleSection("sec11")}
+              className="text-xs font-bold text-amber-800 hover:underline"
+            >
+              Ubah Link Live &rarr;
+            </button>
+          </div>
+        ) : (
+          <div className="p-5 sm:p-7 space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-stone-700">Tampilkan Siaran Langsung:</span>
+              <SectionHeaderToggle
+                label=""
+                checked={showLiveStream}
+                onChange={(v) => updateFeatureSetting("showLiveStream", v)}
+              />
+            </div>
+
+            {showLiveStream && (
+              <div className="space-y-3 mt-2">
+                <Input
+                  label="Link YouTube Live"
+                  value={getFeatureSetting("liveStreamYoutubeUrl", invitation.liveStreamUrl || "")}
+                  onChange={(v) => { updateFeatureSetting("liveStreamYoutubeUrl", v); updateField("liveStreamUrl", v); }}
+                  placeholder="https://youtube.com/live/..."
+                />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Input
+                    label="Link Instagram Live (Opsional)"
+                    value={getFeatureSetting("liveStreamInstagramUrl", "")}
+                    onChange={(v) => updateFeatureSetting("liveStreamInstagramUrl", v)}
+                    placeholder="https://instagram.com/..."
+                  />
+                  <Input
+                    label="Link Zoom Meeting (Opsional)"
+                    value={getFeatureSetting("liveStreamZoomUrl", "")}
+                    onChange={(v) => updateFeatureSetting("liveStreamZoomUrl", v)}
+                    placeholder="https://zoom.us/j/..."
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="pt-4 border-t border-stone-100 flex justify-end">
+              <button
+                type="button"
+                onClick={() => saveSection("sec11")}
+                disabled={saving || !isDirty.sec11}
+                className={`px-5 py-2.5 font-bold rounded-xl text-xs transition flex items-center gap-2 shadow-xs ${
+                  !isDirty.sec11
+                    ? "bg-stone-100 text-stone-400 border border-stone-200 cursor-not-allowed"
+                    : "bg-amber-800 hover:bg-amber-900 text-white cursor-pointer"
+                }`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                <span>{!isDirty.sec11 ? "Tersimpan" : "Simpan Live Streaming"}</span>
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* 12. SEKSI FILTER INSTAGRAM (SEC12) */}
+      <section className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
+        <div className="p-5 sm:p-6 border-b border-stone-100 flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-bold text-stone-900">12. Filter Instagram (Wedding Frame AR)</h2>
+            <p className="text-xs text-stone-500">Tautkan link effect / filter Instagram Story resmi pernikahan Anda</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => toggleSection("sec12")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+              collapsed.sec12 ? "bg-amber-50 text-amber-900 hover:bg-amber-100" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+            }`}
+          >
+            {collapsed.sec12 ? "Edit Filter" : "Tutup"}
+          </button>
+        </div>
+
+        {collapsed.sec12 ? (
+          <div className="p-5 bg-stone-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="text-xs text-stone-600">
+              <span>Status: <strong>{showFilter ? (getFeatureSetting("instagramFilterUrl", "") ? "Terhubung" : "Aktif") : "Dinonaktifkan"}</strong></span>
+            </div>
+            <button
+              type="button"
+              onClick={() => toggleSection("sec12")}
+              className="text-xs font-bold text-amber-800 hover:underline"
+            >
+              Ubah Filter &rarr;
+            </button>
+          </div>
+        ) : (
+          <div className="p-5 sm:p-7 space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-stone-700">Tampilkan Tombol Filter Instagram:</span>
+              <SectionHeaderToggle
+                label=""
+                checked={showFilter}
+                onChange={(v) => updateFeatureSetting("showFilter", v)}
+              />
+            </div>
+
+            {showFilter && (
+              <div className="space-y-3 mt-2">
+                <Input
+                  label="Link Filter Instagram Story"
+                  value={getFeatureSetting("instagramFilterUrl", "")}
+                  onChange={(v) => updateFeatureSetting("instagramFilterUrl", v)}
+                  placeholder="https://www.instagram.com/ar/123456789/..."
+                />
+              </div>
+            )}
+
+            <div className="pt-4 border-t border-stone-100 flex justify-end">
+              <button
+                type="button"
+                onClick={() => saveSection("sec12")}
+                disabled={saving || !isDirty.sec12}
+                className={`px-5 py-2.5 font-bold rounded-xl text-xs transition flex items-center gap-2 shadow-xs ${
+                  !isDirty.sec12
+                    ? "bg-stone-100 text-stone-400 border border-stone-200 cursor-not-allowed"
+                    : "bg-amber-800 hover:bg-amber-900 text-white cursor-pointer"
+                }`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                <span>{!isDirty.sec12 ? "Tersimpan" : "Simpan Filter Instagram"}</span>
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* 13. SEKSI TURUT MENGUNDANG & HIMBAUAN (SEC13) */}
+      <section className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
+        <div className="p-5 sm:p-6 border-b border-stone-100 flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-bold text-stone-900">13. Turut Mengundang &amp; Himbauan Tamu</h2>
+            <p className="text-xs text-stone-500">Daftar keluarga besar yang turut mengundang dan catatan kenyamanan tamu</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => toggleSection("sec13")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+              collapsed.sec13 ? "bg-amber-50 text-amber-900 hover:bg-amber-100" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+            }`}
+          >
+            {collapsed.sec13 ? "Edit Keluarga" : "Tutup"}
+          </button>
+        </div>
+
+        {collapsed.sec13 ? (
+          <div className="p-5 bg-stone-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="text-xs text-stone-600">
+              <span>Status: <strong>{showTurutMengundang ? "Aktif" : "Dinonaktifkan"}</strong></span>
+            </div>
+            <button
+              type="button"
+              onClick={() => toggleSection("sec13")}
+              className="text-xs font-bold text-amber-800 hover:underline"
+            >
+              Ubah Daftar &rarr;
+            </button>
+          </div>
+        ) : (
+          <div className="p-5 sm:p-7 space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-stone-700">Tampilkan Seksi Turut Mengundang:</span>
+              <SectionHeaderToggle
+                label=""
+                checked={showTurutMengundang}
+                onChange={(v) => updateFeatureSetting("showTurutMengundang", v)}
+              />
+            </div>
+
+            {showTurutMengundang && (
+              <div className="space-y-4 mt-2">
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">Daftar Turut Mengundang (1 Nama per Baris):</label>
+                  <textarea
+                    rows={4}
+                    value={getFeatureSetting("turutMengundang", "")}
+                    onChange={(e) => updateFeatureSetting("turutMengundang", e.target.value)}
+                    placeholder={`Bpk. H. Arif Yaniadi & Ibu Yuni Widiastuti\nBpk. Tomm Posma & Ibu Endang Noffiyanti\nKeluarga Besar Kerukunan Sulawesi Selatan`}
+                    className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30 leading-relaxed font-mono"
+                  />
+                </div>
+
+                <div className="p-4 rounded-2xl border border-stone-200 bg-stone-50/50 space-y-2">
+                  <label className="block text-xs font-bold text-stone-900">Himbauan &amp; Kenyamanan Tamu (Protokol/Parkir)</label>
+                  <input
+                    type="text"
+                    value={getFeatureSetting("guestGuidance", "")}
+                    onChange={(e) => updateFeatureSetting("guestGuidance", e.target.value)}
+                    placeholder="Contoh: Tamu diharapkan hadir 15 menit sebelum acara. Area parkir VIP tersedia di sisi utara gedung."
+                    className="w-full p-2.5 bg-white border border-stone-200 rounded-xl text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700/30"
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="pt-4 border-t border-stone-100 flex justify-end">
+              <button
+                type="button"
+                onClick={() => saveSection("sec13")}
+                disabled={saving || !isDirty.sec13}
+                className={`px-5 py-2.5 font-bold rounded-xl text-xs transition flex items-center gap-2 shadow-xs ${
+                  !isDirty.sec13
+                    ? "bg-stone-100 text-stone-400 border border-stone-200 cursor-not-allowed"
+                    : "bg-amber-800 hover:bg-amber-900 text-white cursor-pointer"
+                }`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                <span>{!isDirty.sec13 ? "Tersimpan" : "Simpan Turut Mengundang"}</span>
               </button>
             </div>
           </div>

@@ -151,6 +151,9 @@ export async function composeTemplateData(invitationId: string) {
   const showGift = featureSettings.showGift !== undefined ? Boolean(featureSettings.showGift) : true;
   const showDresscode = featureSettings.showDresscode !== undefined ? Boolean(featureSettings.showDresscode) : true;
   const showQrCheckin = featureSettings.showQrCheckin !== undefined ? Boolean(featureSettings.showQrCheckin) : true;
+  const showLiveStream = featureSettings.showLiveStream !== undefined ? Boolean(featureSettings.showLiveStream) : true;
+  const showFilter = featureSettings.showFilter !== undefined ? Boolean(featureSettings.showFilter) : true;
+  const showTurutMengundang = featureSettings.showTurutMengundang !== undefined ? Boolean(featureSettings.showTurutMengundang) : true;
 
   // Resolve Photos
   const coverUrl = mediaMap.get("LANDING_COVER") || "https://images.unsplash.com/photo-1519741497674-611481863552?w=1200&q=85";
@@ -722,7 +725,7 @@ export async function composeTemplateData(invitationId: string) {
   const liveStreamInstagramUrl = featureSettings.liveStreamInstagramUrl || "";
   const liveStreamZoomUrl = featureSettings.liveStreamZoomUrl || "";
   let liveStreamingHtml = "";
-  if (liveStreamYoutubeUrl || liveStreamInstagramUrl || liveStreamZoomUrl) {
+  if (showLiveStream && (liveStreamYoutubeUrl || liveStreamInstagramUrl || liveStreamZoomUrl)) {
     liveStreamingHtml = `
       <section class="sec-flow" id="live">
         <span class="sec-eyebrow">VIRTUAL CEREMONY</span>
@@ -741,7 +744,7 @@ export async function composeTemplateData(invitationId: string) {
   // 9. Section: Wedding Frame / Instagram Filter
   const instagramFilterUrl = featureSettings.instagramFilterUrl || "";
   let weddingFilterHtml = "";
-  if (instagramFilterUrl) {
+  if (showFilter && instagramFilterUrl) {
     weddingFilterHtml = `
       <section class="sec-flow" id="frame">
         <span class="sec-eyebrow">CAPTURE YOUR MOMENT</span>
@@ -755,7 +758,7 @@ export async function composeTemplateData(invitationId: string) {
   // 10. Section: Turut Mengundang
   const turutMengundangList = featureSettings.turutMengundang || "";
   let turutMengundangHtml = "";
-  if (turutMengundangList && turutMengundangList.trim() !== "") {
+  if (showTurutMengundang && turutMengundangList && turutMengundangList.trim() !== "") {
     const lines = turutMengundangList.split("\n").filter((l: string) => l.trim() !== "");
     turutMengundangHtml = `
       <section class="sec-flow" id="turut-mengundang">
