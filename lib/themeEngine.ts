@@ -75,22 +75,17 @@ export const COLOR_PALETTES: Record<string, ColorPalette> = {
   },
 };
 
-const NUMBER_WORDS = ["One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten"];
+const NUMBER_WORDS = ["One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve"];
 
-/**
- * Helper to parse YouTube or Vimeo video URL into embed URL
- */
 function parseVideoEmbed(url: string): string | null {
   if (!url) return null;
   const trimmed = url.trim();
 
-  // YouTube matchers
   const ytMatch = trimmed.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/);
   if (ytMatch && ytMatch[1]) {
     return `https://www.youtube.com/embed/${ytMatch[1]}?enablejsapi=1&rel=0`;
   }
 
-  // Vimeo matchers
   const vimeoMatch = trimmed.match(/(?:vimeo\.com\/)(\d+)/);
   if (vimeoMatch && vimeoMatch[1]) {
     return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
@@ -99,10 +94,6 @@ function parseVideoEmbed(url: string): string | null {
   return trimmed;
 }
 
-/**
- * Compose rich template data from the database record,
- * matching authentic benchmarks with full dynamic support.
- */
 export async function composeTemplateData(invitationId: string) {
   const inv = await prisma.invitation.findUnique({
     where: { id: invitationId },
@@ -110,7 +101,7 @@ export async function composeTemplateData(invitationId: string) {
       media: true,
       rsvps: {
         orderBy: { respondedAt: "desc" },
-        take: 20,
+        take: 30,
       },
     },
   });
@@ -123,7 +114,6 @@ export async function composeTemplateData(invitationId: string) {
     else if (m.localPath) mediaMap.set(String(m.mediaSlot), m.localPath);
   }
 
-  // Parse dynamic JSON fields
   let events = [];
   try {
     events = typeof inv.eventData === "string" ? JSON.parse(inv.eventData) : inv.eventData || [];
@@ -152,11 +142,9 @@ export async function composeTemplateData(invitationId: string) {
     featureSettings = {};
   }
 
-  // Resolve active color palette
   const activePaletteId = featureSettings.colorPalette || "champagne";
   const palette = COLOR_PALETTES[activePaletteId] || COLOR_PALETTES.champagne;
 
-  // Feature Switches
   const isNoPhoto = Boolean(featureSettings.isNoPhoto);
   const showStory = featureSettings.showStory !== undefined ? Boolean(featureSettings.showStory) : true;
   const showGallery = featureSettings.showGallery !== undefined ? Boolean(featureSettings.showGallery) : true;
@@ -171,8 +159,6 @@ export async function composeTemplateData(invitationId: string) {
   const bridePhoto = mediaMap.get("BRIDE_PHOTO") || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&q=80";
 
   // Dynamic Couple Display Order Resolution
-  // If displayOrder is GROOM_FIRST: Groom is 1st host, Bride is 2nd host
-  // If displayOrder is BRIDE_FIRST: Bride is 1st host, Groom is 2nd host
   const isGroomFirst = featureSettings.displayOrder === "GROOM_FIRST" || (!featureSettings.displayOrder && Boolean(inv.groomName));
 
   const groomName = inv.groomName || inv.groomNickname || "Didan Faadhilah";
@@ -186,7 +172,7 @@ export async function composeTemplateData(invitationId: string) {
   const groomInstagram = (inv.groomInstagram || "didanfaadhilah").replace(/^@+/, "");
   const brideInstagram = (inv.brideInstagram || "nashasl").replace(/^@+/, "");
 
-  // 1st Host (Primary Inviter) vs 2nd Host
+  // 1st Host vs 2nd Host
   const firstName = isGroomFirst ? groomNickname : brideNickname;
   const secondName = isGroomFirst ? brideNickname : groomNickname;
   const firstFullName = isGroomFirst ? groomName : brideName;
@@ -224,7 +210,7 @@ export async function composeTemplateData(invitationId: string) {
     }
   } catch {}
 
-  // 1. Dynamic Events HTML (Benchmark Clean Attarivitation Minimalist Stack)
+  // 1. Dynamic Events HTML (Benchmark Minimalist Stack)
   const eventsHtml = Array.isArray(events) && events.length > 0
     ? events.map((ev: any, idx: number) => `
       <div class="event-block-item">
@@ -304,19 +290,57 @@ export async function composeTemplateData(invitationId: string) {
     `;
   }
 
-  // 3. YouTube Video Player Embed Generator
+  // 3. Gathering All Available Photos for OUR MOMENTS Gallery
+  let allPhotos: string[] = [];
+  const galleryDriveFolderUrl = featureSettings.galleryDriveFolderUrl || "";
+  const customPhotosList = featureSettings.galleryPhotosList || "";
+
+  if (galleryDriveFolderUrl && galleryDriveFolderUrl.trim() !== "") {
+    try {
+      const drivePhotos = await getGoogleDriveFolderPhotos(galleryDriveFolderUrl);
+      if (drivePhotos && drivePhotos.length > 0) allPhotos.push(...drivePhotos);
+    } catch (err) {}
+  }
+
+  if (customPhotosList && customPhotosList.trim() !== "") {
+    const manualUrls = customPhotosList.split("\n").map((s: string) => s.trim()).filter((s: string) => s.length > 5);
+    manualUrls.forEach((u: string) => {
+      if (!allPhotos.includes(u)) allPhotos.push(u);
+    });
+  }
+
+  const galleryMedia = inv.media.filter((m) => String(m.mediaSlot).startsWith("GALLERY"));
+  galleryMedia.forEach((gm) => {
+    const u = gm.driveViewUrl || gm.localPath;
+    if (u && !allPhotos.includes(u)) allPhotos.push(u);
+  });
+
+  if (allPhotos.length === 0) {
+    allPhotos = [
+      "https://images.unsplash.com/photo-1519741497674-611481863552?w=1000&q=85",
+      "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=1000&q=85",
+      "https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=1000&q=85",
+      "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=1000&q=85",
+      "https://images.unsplash.com/photo-1532712938310-34cb3982ef74?w=1000&q=85",
+      "https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=1000&q=85",
+      "https://images.unsplash.com/photo-1520854221256-17451cc331bf?w=1000&q=85",
+      "https://images.unsplash.com/photo-1544078751-58fee2d8a03b?w=1000&q=85",
+    ];
+  }
+
+  // 4. Video Player HTML
   const videoGalleryRawUrl = featureSettings.videoGalleryUrl || "";
   const embedVideoUrl = parseVideoEmbed(videoGalleryRawUrl);
   let videoPlayerHtml = "";
   if (embedVideoUrl) {
     if (embedVideoUrl.includes("youtube.com/embed") || embedVideoUrl.includes("player.vimeo.com")) {
       videoPlayerHtml = `
-        <div class="video-teaser-box" style="margin-bottom:1.5rem; width:100%; border-radius:14px; overflow:hidden; box-shadow:0 8px 30px rgba(0,0,0,0.15); border:1px solid rgba(166,124,82,0.3);">
-          <div style="position:relative; padding-bottom:56.25%; height:0; overflow:hidden;">
+        <div class="video-teaser-box" style="margin: 1.5rem auto 2rem; max-width: 480px; width: 100%; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.15);">
+          <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;">
             <iframe 
               src="${embedVideoUrl}" 
-              title="Video Teaser Pre-Wedding"
-              style="position:absolute; top:0; left:0; width:100%; height:100%; border:0;" 
+              title="Pre-Wedding Teaser"
+              style="position: absolute; top:0; left:0; width:100%; height:100%; border:0;" 
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
               allowfullscreen>
             </iframe>
@@ -325,7 +349,7 @@ export async function composeTemplateData(invitationId: string) {
       `;
     } else {
       videoPlayerHtml = `
-        <div class="video-teaser-box" style="margin-bottom:1.5rem; width:100%; border-radius:14px; overflow:hidden; box-shadow:0 8px 30px rgba(0,0,0,0.15); border:1px solid rgba(166,124,82,0.3);">
+        <div class="video-teaser-box" style="margin: 1.5rem auto 2rem; max-width: 480px; width: 100%; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.15);">
           <video controls playsinline style="width:100%; display:block;">
             <source src="${videoGalleryRawUrl}" type="video/mp4">
           </video>
@@ -334,62 +358,242 @@ export async function composeTemplateData(invitationId: string) {
     }
   }
 
-  // 4. Dynamic Gallery
+  // 5. OUR MOMENT Section (Max 10 photos on page + button to open full lightbox)
   let gallerySectionHtml = "";
   if (showGallery) {
-    let allPhotos: string[] = [];
-    const galleryDriveFolderUrl = featureSettings.galleryDriveFolderUrl || "";
-    const customPhotosList = featureSettings.galleryPhotosList || "";
+    const display10 = allPhotos.slice(0, 10);
+    const photos10Html = display10.map((imgUrl, i) => `
+      <div class="moment-photo-item ${i % 3 === 0 ? 'wide' : ''}" onclick="luxOpenZoom(${i})">
+        <img src="${imgUrl}" alt="Our Moment ${i + 1}" loading="lazy" decoding="async">
+      </div>
+    `).join("");
 
-    if (galleryDriveFolderUrl && galleryDriveFolderUrl.trim() !== "") {
-      try {
-        const drivePhotos = await getGoogleDriveFolderPhotos(galleryDriveFolderUrl);
-        if (drivePhotos && drivePhotos.length > 0) allPhotos.push(...drivePhotos);
-      } catch (err) {}
-    }
-
-    if (customPhotosList && customPhotosList.trim() !== "") {
-      const manualUrls = customPhotosList.split("\n").map((s: string) => s.trim()).filter((s: string) => s.length > 5);
-      manualUrls.forEach((u: string) => {
-        if (!allPhotos.includes(u)) allPhotos.push(u);
-      });
-    }
-
-    const galleryMedia = inv.media.filter((m) => String(m.mediaSlot).startsWith("GALLERY"));
-    galleryMedia.forEach((gm) => {
-      const u = gm.driveViewUrl || gm.localPath;
-      if (u && !allPhotos.includes(u)) allPhotos.push(u);
-    });
-
-    if (allPhotos.length === 0) {
-      allPhotos = [
-        "https://images.unsplash.com/photo-1519741497674-611481863552?w=1000&q=85",
-        "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=1000&q=85",
-        "https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=1000&q=85",
-        "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=1000&q=85",
-        "https://images.unsplash.com/photo-1532712938310-34cb3982ef74?w=1000&q=85",
-        "https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=1000&q=85",
-      ];
-    }
-
-    const grid6 = allPhotos.slice(0, 6);
-    const gridHtml = grid6.map((imgUrl) => `
-      <div class="g-item" onclick="luxOpenZoom('${imgUrl}')">
-        <img src="${imgUrl}" alt="Gallery" loading="lazy" decoding="async">
+    const allPhotosGridHtml = allPhotos.map((imgUrl, i) => `
+      <div class="full-gallery-item" onclick="luxOpenZoom(${i})">
+        <img src="${imgUrl}" alt="Photo ${i + 1}" loading="lazy" decoding="async">
       </div>
     `).join("");
 
     gallerySectionHtml = `
-      <span class="sec-eyebrow">Memories</span>
-      <h2 class="sec-main-title serif">Our Gallery</h2>
-      ${videoPlayerHtml}
-      <div class="gallery-grid">
-        ${gridHtml}
+      <section class="sec-flow" id="moments">
+        <span class="sec-eyebrow">GALLERY</span>
+        <h2 class="sec-main-title serif">OUR MOMENT</h2>
+        <p class="moment-quote serif">
+          “And I’d choose you; in a hundred lifetimes, in a hundred worlds, in any version of reality, I’d find you and I’d choose you.”
+        </p>
+
+        ${videoPlayerHtml}
+
+        <div class="moments-grid-10">
+          ${photos10Html}
+        </div>
+
+        <button type="button" class="btn-outline-box btn-show-gallery" onclick="luxOpenFullGallery()">
+          LIHAT SEMUA FOTO (${allPhotos.length} FOTO)
+        </button>
+      </section>
+
+      <!-- FULL GALLERY LIGHTBOX MODAL -->
+      <div class="gallery-modal-backdrop" id="luxFullGalleryModal" onclick="luxCloseFullGallery(event)">
+        <div class="gallery-modal-container" onclick="event.stopPropagation()">
+          <div class="gallery-modal-header">
+            <h3 class="serif modal-gallery-title">OUR MOMENTS</h3>
+            <button class="gallery-modal-close" onclick="luxCloseFullGallery()">✕</button>
+          </div>
+          <div class="gallery-modal-grid">
+            ${allPhotosGridHtml}
+          </div>
+        </div>
       </div>
+
+      <!-- IMAGE ZOOM LIGHTBOX -->
+      <div class="lux-zoom-backdrop" id="luxZoomModal" onclick="luxCloseZoom(event)">
+        <button class="lux-zoom-close" onclick="luxCloseZoom()">✕</button>
+        <button class="lux-zoom-nav prev" onclick="luxPrevZoom(event)">‹</button>
+        <div class="lux-zoom-img-box" onclick="event.stopPropagation()">
+          <img id="luxZoomActiveImg" src="${display10[0]}" alt="Zoom View">
+        </div>
+        <button class="lux-zoom-nav next" onclick="luxNextZoom(event)">›</button>
+      </div>
+
+      <script>
+        window.LUX_ALL_PHOTOS = ${JSON.stringify(allPhotos)};
+        window.luxActivePhotoIdx = 0;
+
+        window.luxOpenFullGallery = function() {
+          const m = document.getElementById('luxFullGalleryModal');
+          if (m) {
+            m.classList.add('open');
+            document.body.style.overflow = 'hidden';
+          }
+        };
+
+        window.luxCloseFullGallery = function(e) {
+          if (!e || e.target === document.getElementById('luxFullGalleryModal')) {
+            const m = document.getElementById('luxFullGalleryModal');
+            if (m) {
+              m.classList.remove('open');
+              document.body.style.overflow = '';
+            }
+          }
+        };
+
+        window.luxOpenZoom = function(idx) {
+          window.luxActivePhotoIdx = idx >= 0 && idx < window.LUX_ALL_PHOTOS.length ? idx : 0;
+          const zoom = document.getElementById('luxZoomModal');
+          const img = document.getElementById('luxZoomActiveImg');
+          if (img && window.LUX_ALL_PHOTOS[window.luxActivePhotoIdx]) {
+            img.src = window.LUX_ALL_PHOTOS[window.luxActivePhotoIdx];
+          }
+          if (zoom) {
+            zoom.classList.add('open');
+            document.body.style.overflow = 'hidden';
+          }
+        };
+
+        window.luxCloseZoom = function(e) {
+          if (!e || e.target === document.getElementById('luxZoomModal')) {
+            const zoom = document.getElementById('luxZoomModal');
+            if (zoom) {
+              zoom.classList.remove('open');
+              const fg = document.getElementById('luxFullGalleryModal');
+              if (!fg || !fg.classList.contains('open')) {
+                document.body.style.overflow = '';
+              }
+            }
+          }
+        };
+
+        window.luxNextZoom = function(e) {
+          if (e) e.stopPropagation();
+          window.luxActivePhotoIdx = (window.luxActivePhotoIdx + 1) % window.LUX_ALL_PHOTOS.length;
+          const img = document.getElementById('luxZoomActiveImg');
+          if (img) img.src = window.LUX_ALL_PHOTOS[window.luxActivePhotoIdx];
+        };
+
+        window.luxPrevZoom = function(e) {
+          if (e) e.stopPropagation();
+          window.luxActivePhotoIdx = (window.luxActivePhotoIdx - 1 + window.LUX_ALL_PHOTOS.length) % window.LUX_ALL_PHOTOS.length;
+          const img = document.getElementById('luxZoomActiveImg');
+          if (img) img.src = window.LUX_ALL_PHOTOS[window.luxActivePhotoIdx];
+        };
+      </script>
     `;
   }
 
-  // 5. Bank Accounts & Gift Section
+  // 6. Section: QR Check-In / Kartu Akses Masuk
+  const qrAccessSectionHtml = `
+    <section class="sec-flow" id="checkin">
+      <span class="sec-eyebrow">QR CODE CHECK-IN</span>
+      <h2 class="sec-main-title serif">KARTU AKSES MASUK</h2>
+      <p class="sec-sub">Silakan tunjukkan QR Code ini kepada penerima tamu undangan di lokasi acara.</p>
+      
+      <div class="access-pass-card">
+        <span class="pass-tagline">${featureSettings.weddingTagline || "THE WEDDING OF"}</span>
+        <h3 class="pass-names serif">${firstName} <em>&amp;</em> ${secondName}</h3>
+        <p class="pass-date">${weddingDate}</p>
+        
+        <div class="pass-qr-wrapper">
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=LUX-${inv.id}" alt="QR Check-In" class="pass-qr-img">
+        </div>
+
+        <div class="pass-guest-box">
+          <span class="pass-guest-lbl">KEPADA YTH.</span>
+          <h4 class="pass-guest-name serif" id="passGuestName">Tamu Undangan</h4>
+        </div>
+
+        <div class="pass-meta-grid">
+          <div class="pass-meta-item">
+            <span class="pass-meta-lbl">SESI</span>
+            <span class="pass-meta-val">Sesi 1 (Akad &amp; Resepsi)</span>
+          </div>
+          <div class="pass-meta-item">
+            <span class="pass-meta-lbl">LIMIT</span>
+            <span class="pass-meta-val">1 - 2 Orang</span>
+          </div>
+        </div>
+
+        <div class="pass-souvenir-bar">
+          <span class="souvenir-lbl">VOUCHER SOUVENIR:</span>
+          <span class="souvenir-code">SOUVENIR-${inv.id.slice(0, 8).toUpperCase()}</span>
+        </div>
+      </div>
+    </section>
+  `;
+
+  // 7. Section: Dress Code
+  const dressCodeColors = featureSettings.dressCodeColors || "";
+  const dressCodeNote = featureSettings.dressCodeNote || "";
+  let dressCodeHtml = "";
+  if (showDresscode && (dressCodeColors || dressCodeNote)) {
+    const colorBadges = dressCodeColors
+      ? dressCodeColors.split(",").map((c: string) => `<span style="width:28px; height:28px; border-radius:50%; background:${c.trim()}; display:inline-block; border:2px solid rgba(255,255,255,0.7); box-shadow:0 4px 10px rgba(0,0,0,0.35);"></span>`).join("")
+      : `<span style="width:28px; height:28px; border-radius:50%; background:#a67c52; display:inline-block; border:2px solid rgba(255,255,255,0.7);"></span><span style="width:28px; height:28px; border-radius:50%; background:#2b2725; display:inline-block; border:2px solid rgba(255,255,255,0.7);"></span><span style="width:28px; height:28px; border-radius:50%; background:#faf7f2; display:inline-block; border:2px solid rgba(255,255,255,0.7);"></span>`;
+
+    dressCodeHtml = `
+      <section class="sec-flow" id="dresscode">
+        <span class="sec-eyebrow">A GUIDE TO</span>
+        <h2 class="sec-main-title serif">DRESS CODES</h2>
+        <p class="sec-sub">Kami mengundang tamu undangan untuk mengenakan palet warna berikut untuk keseragaman foto:</p>
+        <div style="display:flex; justify-content:center; gap:12px; margin: 1.5rem 0;">${colorBadges}</div>
+        ${dressCodeNote ? `<p style="margin:0; font-size:0.8rem; color:rgba(255,255,255,0.75); line-height:1.5;">${dressCodeNote}</p>` : ""}
+      </section>
+    `;
+  }
+
+  // 8. Section: Live Streaming (Live Wedding)
+  const liveStreamYoutubeUrl = featureSettings.liveStreamYoutubeUrl || inv.liveStreamUrl || "";
+  const liveStreamInstagramUrl = featureSettings.liveStreamInstagramUrl || "";
+  const liveStreamZoomUrl = featureSettings.liveStreamZoomUrl || "";
+  let liveStreamingHtml = "";
+  if (liveStreamYoutubeUrl || liveStreamInstagramUrl || liveStreamZoomUrl) {
+    liveStreamingHtml = `
+      <section class="sec-flow" id="live">
+        <span class="sec-eyebrow">VIRTUAL CEREMONY</span>
+        <h2 class="sec-main-title serif">LIVE WEDDING</h2>
+        <p class="sec-sub">${weddingDate} • 08.00 – Selesai WITA</p>
+        <p class="sec-sub" style="margin-top:0.4rem;">Bagi keluarga &amp; sahabat yang berhalangan hadir langsung, prosesi pernikahan dapat disaksikan melalui siaran virtual:</p>
+        <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:0.8rem; margin-top:1.5rem;">
+          ${liveStreamYoutubeUrl ? `<a href="${liveStreamYoutubeUrl}" target="_blank" class="btn-map-outline">YOUTUBE LIVE ↗</a>` : ""}
+          ${liveStreamInstagramUrl ? `<a href="${liveStreamInstagramUrl}" target="_blank" class="btn-map-outline">INSTAGRAM LIVE ↗</a>` : ""}
+          ${liveStreamZoomUrl ? `<a href="${liveStreamZoomUrl}" target="_blank" class="btn-map-outline">ZOOM MEETING ↗</a>` : ""}
+        </div>
+      </section>
+    `;
+  }
+
+  // 9. Section: Wedding Frame / Instagram Filter
+  const instagramFilterUrl = featureSettings.instagramFilterUrl || "";
+  let weddingFilterHtml = "";
+  if (instagramFilterUrl) {
+    weddingFilterHtml = `
+      <section class="sec-flow" id="frame">
+        <span class="sec-eyebrow">CAPTURE YOUR MOMENT</span>
+        <h2 class="sec-main-title serif">WEDDING FRAME</h2>
+        <p class="sec-sub">Unggah dan abadikan momen Anda saat menghadiri pernikahan kami menggunakan Wedding Frame resmi kami di Instagram.</p>
+        <a href="${instagramFilterUrl}" target="_blank" class="btn-outline-box" style="margin-top:1.8rem;">BUKA FILTER INSTAGRAM ↗</a>
+      </section>
+    `;
+  }
+
+  // 10. Section: Turut Mengundang
+  const turutMengundangList = featureSettings.turutMengundang || "";
+  let turutMengundangHtml = "";
+  if (turutMengundangList && turutMengundangList.trim() !== "") {
+    const lines = turutMengundangList.split("\n").filter((l: string) => l.trim() !== "");
+    turutMengundangHtml = `
+      <section class="sec-flow" id="turut-mengundang">
+        <span class="sec-eyebrow">KELUARGA BESAR</span>
+        <h2 class="sec-main-title serif">TURUT MENGUNDANG</h2>
+        <p class="sec-sub">Keluarga Besar &amp; Kerabat yang turut berbahagia:</p>
+        <div style="display:flex; flex-direction:column; gap:0.6rem; margin-top:1.5rem; font-size:0.88rem; color:rgba(255,255,255,0.85);">
+          ${lines.map((line: string) => `<p style="margin:0; padding:0.4rem 0; border-bottom:1px dashed rgba(255,255,255,0.12);">${line.trim()}</p>`).join("")}
+        </div>
+      </section>
+    `;
+  }
+
+  // 11. Section: Bank Accounts & Gift Section
   let giftSectionHtml = "";
   const qrisImageUrl = featureSettings.qrisImageUrl || "";
   if (showGift) {
@@ -410,9 +614,9 @@ export async function composeTemplateData(invitationId: string) {
 
     giftSectionHtml = `
       <section class="sec-flow" id="gift">
-        <span class="sec-eyebrow">Wedding Gift</span>
-        <h2 class="sec-main-title serif">Tanda Kasih</h2>
-        <p style="font-size:0.8rem; color:rgba(255,255,255,0.7); margin-bottom:1.5rem; line-height:1.5;">
+        <span class="sec-eyebrow">WEDDING GIFT</span>
+        <h2 class="sec-main-title serif">TANDA KASIH</h2>
+        <p class="sec-sub">
           Doa restu Anda merupakan karunia yang sangat berarti bagi kami. Bagi Anda yang ingin memberikan tanda kasih:
         </p>
 
@@ -442,67 +646,25 @@ export async function composeTemplateData(invitationId: string) {
     `;
   }
 
-  // 6. Turut Mengundang
-  const turutMengundangList = featureSettings.turutMengundang || "";
-  let turutMengundangHtml = "";
-  if (turutMengundangList && turutMengundangList.trim() !== "") {
-    const lines = turutMengundangList.split("\n").filter((l: string) => l.trim() !== "");
-    turutMengundangHtml = `
-      <section class="sec-flow" id="turut-mengundang">
-        <span class="sec-eyebrow">Keluarga Besar</span>
-        <h2 class="sec-main-title serif">Turut Mengundang</h2>
-        <div style="display:flex; flex-direction:column; gap:0.5rem; font-size:0.85rem; color:rgba(255,255,255,0.85);">
-          ${lines.map((line: string) => `<p style="margin:0; padding:0.3rem 0; border-bottom:1px dashed rgba(255,255,255,0.15);">${line.trim()}</p>`).join("")}
-        </div>
-      </section>
-    `;
-  }
-
-  // 7. Dresscode
-  const dressCodeColors = featureSettings.dressCodeColors || "";
-  const dressCodeNote = featureSettings.dressCodeNote || "";
-  let dressCodeHtml = "";
-  if (showDresscode && (dressCodeColors || dressCodeNote)) {
-    const colorBadges = dressCodeColors
-      ? dressCodeColors.split(",").map((c: string) => `<span style="width:22px; height:22px; border-radius:50%; background:${c.trim()}; display:inline-block; border:1.5px solid rgba(255,255,255,0.7); box-shadow:0 2px 6px rgba(0,0,0,0.15);"></span>`).join("")
-      : "";
-    dressCodeHtml = `
-      <div style="margin-top:1.5rem; padding:1.2rem; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.12); border-radius:12px; text-align:center;">
-        <span style="font-size:0.65rem; letter-spacing:0.25em; text-transform:uppercase; color:rgba(255,255,255,0.6); display:block; margin-bottom:0.4rem; font-weight:600;">Dress Code</span>
-        ${colorBadges ? `<div style="display:flex; justify-content:center; gap:8px; margin:0.5rem 0;">${colorBadges}</div>` : ""}
-        ${dressCodeNote ? `<p style="margin:0; font-size:0.75rem; color:rgba(255,255,255,0.7); line-height:1.5;">${dressCodeNote}</p>` : ""}
-      </div>
-    `;
-  }
-
-  // 8. Guest Notes
-  const guestGuidance = featureSettings.guestGuidance || "";
-  let guestNotesHtml = "";
-  if (guestGuidance && guestGuidance.trim() !== "") {
-    guestNotesHtml = `
-      <div style="margin-top:1.5rem; padding:1.2rem; background:rgba(255,255,255,0.03); border-left:3px solid rgba(255,255,255,0.6); text-align:left;">
-        <span style="font-size:0.65rem; letter-spacing:0.2em; text-transform:uppercase; color:rgba(255,255,255,0.6); display:block; margin-bottom:0.3rem; font-weight:600;">Himbauan Acara</span>
-        <p style="margin:0; font-size:0.78rem; line-height:1.5; color:rgba(255,255,255,0.8);">${guestGuidance}</p>
-      </div>
-    `;
-  }
-
-  // 9. RSVP & Wishes
+  // 12. Section: RSVP & Wishes Feed
   const wishesHtml = inv.rsvps.length > 0
     ? inv.rsvps.map((r: any) => `
       <div class="wish-item">
-        <span class="wish-name">${r.guestName}</span>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
+          <span class="wish-name">${r.guestName}</span>
+          <span style="font-size:0.65rem; padding:2px 8px; border-radius:50px; background:${r.status === 'hadir' ? 'rgba(74,222,128,0.15)' : 'rgba(248,113,113,0.15)'}; color:${r.status === 'hadir' ? '#4ade80' : '#f87171'}; font-weight:600;">${r.status === 'hadir' ? 'Hadir' : 'Berhalangan'}</span>
+        </div>
         ${r.message ? `<p class="wish-msg">“${r.message}”</p>` : ""}
       </div>
     `).join("")
     : `<p style="font-size:0.8rem; font-style:italic; color:rgba(255,255,255,0.5); text-align:center;">Jadilah yang pertama mengirimkan ucapan &amp; doa restu.</p>`;
 
-  // 10. QR Access Modal HTML
+  // 13. QR Access Card HTML for Modal
   const qrAccessCardHtml = `
     <div style="text-align:center; padding:1rem 0;">
       <span style="font-size:0.65rem; letter-spacing:0.3em; text-transform:uppercase; color:rgba(255,255,255,0.6); display:block; margin-bottom:0.4rem; font-weight:600;">Check-In Ticket</span>
       <h3 style="font-size:1.4rem; color:#fff; font-family:'Cormorant Garamond',serif; margin-bottom:0.2rem;" id="modalGuestName">Tamu Undangan</h3>
-      <p style="font-size:0.75rem; color:rgba(255,255,255,0.65); margin-bottom:1.2rem;">Tunjukkan kode QR ini kepada petugas buku tamu di lokasi acara.</p>
+      <p style="font-size:0.75rem; color:rgba(255,255,255,0.65); margin-bottom:1.2rem;">Tunjukkan kode QR ini kepada penerima tamu di lokasi acara.</p>
       <div style="background:#ffffff; padding:14px; display:inline-block; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.5);">
         <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=LUX-${inv.id}" alt="QR Check-In" style="width:160px; height:160px; display:block;">
       </div>
@@ -517,7 +679,7 @@ export async function composeTemplateData(invitationId: string) {
     themeId: inv.themeId || "kalandra",
     weddingTagline: featureSettings.weddingTagline || "THE WEDDING OF",
     
-    // Dynamic Ordering (Host 1 vs Host 2)
+    // Dynamic Host Ordering
     firstName,
     secondName,
     firstFullName,
@@ -537,7 +699,7 @@ export async function composeTemplateData(invitationId: string) {
     firstPhotoUrl,
     secondPhotoUrl,
 
-    // Specific Groom & Bride variables
+    // Specific Groom & Bride
     groomName,
     brideName,
     groomNickname,
@@ -567,17 +729,16 @@ export async function composeTemplateData(invitationId: string) {
     weddingDateYear,
     googleCalendarUrl,
 
-    // Dynamic Section Blocks
+    // Dynamic Section Blocks (Chronological Sequence)
     eventDataHtml: eventsHtml,
     storySectionHtml,
+    qrAccessSectionHtml,
+    dressCodeHtml,
+    liveStreamingHtml,
+    weddingFilterHtml,
+    turutMengundangHtml,
     gallerySectionHtml,
     giftSectionHtml,
-    dressCodeHtml,
-    guestNotesHtml,
-    turutMengundangHtml,
-    customMessageHtml: "",
-    weddingFilterHtml: "",
-    liveStreamingHtml: "",
     wishesHtml,
     qrAccessCardHtml,
 
