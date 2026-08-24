@@ -39,12 +39,12 @@ function CheckoutContent() {
       setError(null);
       try {
         // Ambil harga dari admin settings
-        const settingsRes = await fetch("/api/admin/settings");
+        const settingsRes = await fetch("/api/admin/settings", { cache: "no-store" });
         const settings = await settingsRes.json();
         const pricing = settings.grouped?.pricing || {};
 
         let name = pricing.name_traditional || "Traditional Series";
-        let price = Number(pricing.price_traditional || 299000);
+        let price = Number(pricing.price_traditional || 50000);
         let desc = pricing.desc_traditional || "Tema Traditional — Sakral, Megah & Bernuansa Tradisional";
 
         if (planParam === "PREMIUM") {

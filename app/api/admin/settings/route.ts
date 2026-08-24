@@ -44,7 +44,16 @@ export async function GET() {
       if (!grouped[s.group]) grouped[s.group] = {};
       grouped[s.group][s.key] = s.value;
     }
-    return NextResponse.json({ success: true, settings, grouped });
+    return NextResponse.json(
+      { success: true, settings, grouped },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      }
+    );
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

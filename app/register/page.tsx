@@ -22,25 +22,25 @@ export default function RegisterPage() {
     {
       id: "TRADITIONAL",
       name: "Traditional Series",
-      price: 299000,
+      price: 50000,
       desc: "Tema Traditional — Sakral, Megah & Bernuansa Tradisional",
-      themes: ["Prameswari", "Dilla Lucky", "Aruna", "Papercut"],
+      themes: ["Prameswari", "Dilla Lucky"],
       features: ["Hingga 200 tamu undangan", "Manajemen RSVP online", "Galeri foto & musik latar", "Buku tamu & WA Direct Link"],
       color: "amber",
     },
     {
       id: "MODERN",
       name: "Modern Series",
-      price: 499000,
+      price: 100000,
       desc: "Tema Modern — Minimalis, Kontemporer & Sinematik",
-      themes: ["Kila", "Ivanna", "Danila"],
+      themes: ["Wave", "Papercut", "Ameera"],
       features: ["Tamu tak terbatas", "Manajemen RSVP & ucapan", "Galeri video background", "Musik latar", "Subdomain custom", "Live streaming & Photobooth QR"],
       color: "slate",
     },
     {
       id: "PREMIUM",
       name: "Premium Series",
-      price: 699000,
+      price: 120000,
       desc: "Tema Premium — Editorial, Full-Text & Luxury Visual Motion",
       themes: ["Kalandra", "Valente", "Aurelia", "Artisan"],
       features: ["Semua Fitur Modern Series", "Full-Text Editorial Layout", "Luxury Motion Animation", "Amplop digital QRIS & Bank", "Bebas ganti ke seluruh tema", "Akses VIP & Priority Support"],
@@ -51,9 +51,9 @@ export default function RegisterPage() {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Load pricing from admin settings
+  // Load pricing from admin settings dynamically
   useEffect(() => {
-    fetch("/api/admin/settings")
+    fetch("/api/admin/settings", { cache: "no-store" })
       .then((r) => r.json())
       .then((data) => {
         if (data.grouped?.pricing) {
@@ -64,7 +64,7 @@ export default function RegisterPage() {
                 return {
                   ...plan,
                   name: p.name_premium || plan.name,
-                  price: Number(p.price_premium || plan.price),
+                  price: Number(p.price_premium ?? plan.price),
                   desc: p.desc_premium || plan.desc,
                 };
               }
@@ -72,14 +72,14 @@ export default function RegisterPage() {
                 return {
                   ...plan,
                   name: p.name_modern || plan.name,
-                  price: Number(p.price_modern || plan.price),
+                  price: Number(p.price_modern ?? plan.price),
                   desc: p.desc_modern || plan.desc,
                 };
               }
               return {
                 ...plan,
                 name: p.name_traditional || plan.name,
-                price: Number(p.price_traditional || plan.price),
+                price: Number(p.price_traditional ?? plan.price),
                 desc: p.desc_traditional || plan.desc,
               };
             })
