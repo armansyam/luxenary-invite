@@ -16,9 +16,9 @@ export default function NewInvitation() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [plans, setPlans] = useState([
-    { type: "TRADITIONAL", name: "Traditional Series", price: 50000, features: [`Subdomain "nama-pengantin".localhost:3000`, "Tamu tak terbatas", "Buku Tamu & WA Direct Link", "RSVP & Ucapan Tamu", "Musik Latar", "Amplop Digital QRIS & Bank"] },
-    { type: "MODERN", name: "Modern Series", price: 100000, features: [`Subdomain "nama-pengantin".localhost:3000`, "Tamu tak terbatas", "Buku Tamu & WA Direct Link", "RSVP & Ucapan Tamu", "Musik Latar", "Amplop Digital QRIS & Bank"] },
-    { type: "PREMIUM", name: "Premium Series", price: 120000, features: [`Subdomain "nama-pengantin".localhost:3000`, "Tamu tak terbatas", "Buku Tamu & WA Direct Link", "RSVP & Ucapan Tamu", "Musik Latar", "Amplop Digital QRIS & Bank"] },
+    { type: "TRADITIONAL", name: "Traditional Series", price: 50000, features: [`Link invitation "nama-pasangan".localhost:3000/nama-tamu`, "Tamu tak terbatas", "Buku Tamu & WA Direct Link", "RSVP & Ucapan Tamu", "Musik Latar", "Amplop Digital QRIS & Bank"] },
+    { type: "MODERN", name: "Modern Series", price: 100000, features: [`Link invitation "nama-pasangan".localhost:3000/nama-tamu`, "Tamu tak terbatas", "Buku Tamu & WA Direct Link", "RSVP & Ucapan Tamu", "Musik Latar", "Amplop Digital QRIS & Bank"] },
+    { type: "PREMIUM", name: "Premium Series", price: 120000, features: [`Link invitation "nama-pasangan".localhost:3000/nama-tamu`, "Tamu tak terbatas", "Buku Tamu & WA Direct Link", "RSVP & Ucapan Tamu", "Musik Latar", "Amplop Digital QRIS & Bank"] },
   ]);
 
   const [form, setForm] = useState({
@@ -39,7 +39,7 @@ export default function NewInvitation() {
         if (data.grouped?.pricing) {
           const p = data.grouped.pricing;
           const commonFeatures = [
-            `Subdomain "nama-pengantin".${domain}`,
+            `Link invitation "nama-pasangan".${domain}/nama-tamu`,
             "Tamu tak terbatas",
             "Buku Tamu & WA Direct Link",
             "RSVP & Ucapan Tamu",

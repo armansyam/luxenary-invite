@@ -28,7 +28,7 @@ export default function RegisterPage() {
       desc: "Tema Traditional — Sakral, Megah & Bernuansa Tradisional",
       themes: ["Prameswari", "Dilla Lucky"],
       features: [
-        `Subdomain "nama-pengantin".localhost:3000`,
+        `Link invitation "nama-pasangan".localhost:3000/nama-tamu`,
         "Tamu undangan tanpa batas",
         "Manajemen RSVP & ucapan doa",
         "Buku tamu & link WA 1-klik",
@@ -44,7 +44,7 @@ export default function RegisterPage() {
       desc: "Tema Modern — Minimalis, Kontemporer & Sinematik",
       themes: ["Wave", "Papercut", "Ameera"],
       features: [
-        `Subdomain "nama-pengantin".localhost:3000`,
+        `Link invitation "nama-pasangan".localhost:3000/nama-tamu`,
         "Tamu undangan tanpa batas",
         "Manajemen RSVP & ucapan doa",
         "Buku tamu & link WA 1-klik",
@@ -60,7 +60,7 @@ export default function RegisterPage() {
       desc: "Tema Premium — Editorial, Full-Text & Luxury Visual Motion",
       themes: ["Kalandra", "Valente", "Aurelia", "Artisan"],
       features: [
-        `Subdomain "nama-pengantin".localhost:3000`,
+        `Link invitation "nama-pasangan".localhost:3000/nama-tamu`,
         "Tamu undangan tanpa batas",
         "Manajemen RSVP & ucapan doa",
         "Buku tamu & link WA 1-klik",
@@ -87,7 +87,7 @@ export default function RegisterPage() {
           setPlans((prev) =>
             prev.map((plan) => {
               const updatedFeatures = [
-                `Subdomain "nama-pengantin".${domain}`,
+                `Link invitation "nama-pasangan".${domain}/nama-tamu`,
                 "Tamu undangan tanpa batas",
                 "Manajemen RSVP & ucapan doa",
                 "Buku tamu & link WA 1-klik",
