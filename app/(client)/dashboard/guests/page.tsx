@@ -21,6 +21,51 @@ interface Guest {
   }[];
 }
 
+const DEFAULT_WA_TEMPLATE = `Kepada Yth.
+Bapak/Ibu/Saudara/i {nama_tamu}
+
+Tanpa mengurangi rasa hormat, perkenankan kami mengundang Bapak/Ibu/Saudara/i untuk menghadiri acara pernikahan kami:
+
+{link_undangan}
+
+Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu.
+
+Terima kasih.
+
+Salam hangat,
+{nama_mempelai}`;
+
+const WA_PRESETS = [
+  {
+    id: "formal",
+    name: "Formal & Sakral",
+    badge: "Populer",
+    desc: "Bahasa sopan standar undangan pernikahan",
+    text: `Kepada Yth.\nBapak/Ibu/Saudara/i {nama_tamu}\n\nTanpa mengurangi rasa hormat, perkenankan kami mengundang Bapak/Ibu/Saudara/i untuk menghadiri acara pernikahan kami:\n\n{link_undangan}\n\nMerupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu.\n\nTerima kasih.\n\nSalam hangat,\n{nama_mempelai}`,
+  },
+  {
+    id: "islami",
+    name: "Islami Penuh Berkah",
+    badge: "Islami",
+    desc: "Dengan salam pembuka & penutup bernuansa Islami",
+    text: `Assalamu'alaikum Warahmatullahi Wabarakatuh\n\nKepada Yth.\nBapak/Ibu/Saudara/i {nama_tamu}\n\nDengan memohon rahmat dan ridho Allah SWT, kami bermaksud menyelenggarakan perayaan pernikahan kami:\n\n{link_undangan}\n\nKehadiran dan doa restu Bapak/Ibu/Saudara/i merupakan kehormatan serta kebahagiaan bagi kami.\n\nWassalamu'alaikum Warahmatullahi Wabarakatuh.\n\nSalam hormat,\n{nama_mempelai}`,
+  },
+  {
+    id: "modern",
+    name: "Modern & Santai",
+    badge: "Teman / Sahabat",
+    desc: "Cocok untuk teman sebaya, sahabat, atau rekan kerja",
+    text: `Halo {nama_tamu}! 👋\n\nKami mengundang kamu untuk hadir dan merayakan momen bahagia pernikahan kami:\n\n{link_undangan}\n\nInfo Kehadiran: {kuota_tamu} ({sesi_acara})\n\nBuka tautan di atas untuk melihat detail acara, lokasi maps, dan konfirmasi kehadiran (RSVP).\n\nCan't wait to celebrate with you!\n\nSalam hangat,\n{nama_mempelai}`,
+  },
+  {
+    id: "singkat",
+    name: "Singkat & Elegan",
+    badge: "Ringkas",
+    desc: "Format ringkas langsung ke inti tautan undangan",
+    text: `Kepada Yth. {nama_tamu},\n\nKami mengundang Anda untuk hadir di hari bahagia pernikahan kami:\n\n{link_undangan}\n\nMohon doa restu untuk perjalanan baru kami.\n\nSalam bahagia,\n{nama_mempelai}`,
+  },
+];
+
 export default function GuestsPage() {
   const [invitationId, setInvitationId] = useState<string>("");
   const [invitationData, setInvitationData] = useState<any>(null);
@@ -28,8 +73,14 @@ export default function GuestsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
+
+  // WhatsApp Template Customization States
+  const [waTemplate, setWaTemplate] = useState(DEFAULT_WA_TEMPLATE);
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  const [templateSaveSuccess, setTemplateSaveSuccess] = useState(false);
 
   const [newGuest, setNewGuest] = useState({
     name: "",
@@ -44,9 +95,21 @@ export default function GuestsPage() {
       .then((res) => res.json())
       .then((invs: any[]) => {
         if (Array.isArray(invs) && invs.length > 0) {
-          setInvitationId(invs[0].id);
-          setInvitationData(invs[0]);
-          loadGuests(invs[0].id);
+          const inv = invs[0];
+          setInvitationId(inv.id);
+          setInvitationData(inv);
+
+          // Extract existing saved WA template if any
+          let feat: any = {};
+          try {
+            feat = typeof inv.featureSettings === "string" ? JSON.parse(inv.featureSettings) : (inv.featureSettings || {});
+          } catch {}
+
+          if (feat.waTemplate) {
+            setWaTemplate(feat.waTemplate);
+          }
+
+          loadGuests(inv.id);
         } else {
           setLoading(false);
         }
@@ -110,21 +173,92 @@ export default function GuestsPage() {
     }
   };
 
-  const generateWaLink = (guest: Guest) => {
-    const groom = invitationData?.groomName || "Didan";
-    const bride = invitationData?.brideName || "Nasha";
-    const sub = invitationData?.subdomain || `${invitationData?.groomSlug || "didan"}-${invitationData?.brideSlug || "nasha"}`;
-    const fullGuestUrl = getInvitationPublicUrl(sub, guest.name);
+  // Save Custom WhatsApp Template Handler
+  const handleSaveTemplate = async () => {
+    if (!invitationId || savingTemplate) return;
+    setSavingTemplate(true);
+    setError(null);
 
-    const text = encodeURIComponent(
-      `Kepada Yth.\nBapak/Ibu/Saudara/i ${guest.name}\n\nTanpa mengurangi rasa hormat, perkenankan kami mengundang Bapak/Ibu/Saudara/i untuk menghadiri acara pernikahan kami:\n\n${fullGuestUrl}\n\nMerupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu.\n\nTerima kasih.\n\nSalam hangat,\n${groom} & ${bride}`
+    try {
+      let currentFeat: any = {};
+      try {
+        currentFeat = typeof invitationData?.featureSettings === "string"
+          ? JSON.parse(invitationData.featureSettings)
+          : (invitationData?.featureSettings || {});
+      } catch {}
+
+      const updatedFeat = {
+        ...currentFeat,
+        waTemplate: waTemplate.trim(),
+      };
+
+      const res = await fetch(`/api/client/invitations/${invitationId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          featureSettings: updatedFeat,
+        }),
+      });
+
+      if (res.ok) {
+        setInvitationData((prev: any) => ({
+          ...prev,
+          featureSettings: updatedFeat,
+        }));
+        setTemplateSaveSuccess(true);
+        setTimeout(() => setTemplateSaveSuccess(false), 3000);
+      } else {
+        setError("Gagal menyimpan template pesan WhatsApp");
+      }
+    } catch (err: any) {
+      setError(err.message || "Gagal menyimpan template");
+    } finally {
+      setSavingTemplate(false);
+    }
+  };
+
+  // Helper to render customized text for a guest
+  const renderWaText = (guestName: string, guestLimit: number = 2, sessionInfo: string = "Akad & Resepsi") => {
+    const groom = invitationData?.groomNickname || invitationData?.groomName || "Didan";
+    const bride = invitationData?.brideNickname || invitationData?.brideName || "Nasha";
+    
+    let feat: any = {};
+    try {
+      feat = typeof invitationData?.featureSettings === "string" ? JSON.parse(invitationData.featureSettings) : (invitationData?.featureSettings || {});
+    } catch {}
+
+    const displayOrder = feat.displayOrder || "BRIDE_FIRST";
+    const coupleName = displayOrder === "BRIDE_FIRST" ? `${bride} & ${groom}` : `${groom} & ${bride}`;
+    const sub = invitationData?.subdomain || `${invitationData?.groomSlug || "didan"}-${invitationData?.brideSlug || "nasha"}`;
+    const fullGuestUrl = getInvitationPublicUrl(sub, guestName);
+
+    const template = waTemplate || DEFAULT_WA_TEMPLATE;
+
+    return template
+      .replace(/{nama_tamu}/g, guestName)
+      .replace(/{link_undangan}/g, fullGuestUrl)
+      .replace(/{nama_mempelai}/g, coupleName)
+      .replace(/{kuota_tamu}/g, `${guestLimit} Pax`)
+      .replace(/{sesi_acara}/g, sessionInfo);
+  };
+
+  const generateWaLink = (guest: Guest) => {
+    const renderedText = renderWaText(
+      guest.name,
+      guest.guestLimit || guest.guestQuota || 2,
+      guest.sessionInfo || "Akad & Resepsi"
     );
 
+    const text = encodeURIComponent(renderedText);
     const targetPhone = (guest.phone || guest.phoneNumber || "").replace(/\D/g, "");
     if (targetPhone) {
       return `https://wa.me/${targetPhone}?text=${text}`;
     }
     return `https://api.whatsapp.com/send?text=${text}`;
+  };
+
+  const insertVariableTag = (tag: string) => {
+    setWaTemplate((prev) => prev + tag);
   };
 
   const filteredGuests = guests.filter((g) => {
@@ -134,33 +268,49 @@ export default function GuestsPage() {
   });
 
   return (
-    <div className="space-y-6 font-sans">
+    <div className="space-y-6 font-sans pb-20">
       
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 sm:p-7 rounded-2xl sm:rounded-3xl border border-stone-200 shadow-xs">
         <div>
-          <h1 className="text-xl sm:text-2xl font-serif font-bold text-stone-900">
+          <span className="text-[11px] font-bold tracking-widest text-amber-800 uppercase block">Manajemen Undangan</span>
+          <h1 className="text-xl sm:text-2xl font-serif font-bold text-stone-900 mt-0.5">
             Buku Tamu &amp; Pengiriman WhatsApp
           </h1>
-          <p className="text-xs text-stone-500 mt-0.5">
-            Kelola nama penerima undangan, atur kuota kehadiran, dan bagikan tautan via WhatsApp
+          <p className="text-xs text-stone-500 mt-1">
+            Kelola nama penerima undangan, atur kuota kehadiran, dan sesuaikan template pesan WhatsApp 1-klik
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setShowAddModal(true)}
-          className="px-4 py-2.5 bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-2 cursor-pointer shadow-xs"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          <span>Tambah Tamu Baru</span>
-        </button>
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+          {/* Edit WhatsApp Template Button */}
+          <button
+            type="button"
+            onClick={() => setShowTemplateModal(true)}
+            className="px-3.5 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300/80 text-xs font-bold rounded-xl transition flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+          >
+            <svg className="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            <span>Edit Template WhatsApp</span>
+          </button>
+
+          {/* Add Guest Button */}
+          <button
+            type="button"
+            onClick={() => setShowAddModal(true)}
+            className="px-4 py-2.5 bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-2 cursor-pointer shadow-xs shrink-0"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            <span>Tambah Tamu</span>
+          </button>
+        </div>
       </div>
 
       {error && (
-        <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
+        <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
           {error}
         </div>
       )}
@@ -180,7 +330,7 @@ export default function GuestsPage() {
             <button
               key={tab.id}
               onClick={() => setFilterCategory(tab.id)}
-              className={`px-3 py-1.5 rounded-lg font-semibold transition whitespace-nowrap ${
+              className={`px-3 py-1.5 rounded-lg font-semibold transition whitespace-nowrap cursor-pointer ${
                 filterCategory === tab.id
                   ? "bg-white text-stone-900 shadow-xs font-bold"
                   : "text-stone-500 hover:text-stone-900"
@@ -206,7 +356,7 @@ export default function GuestsPage() {
         </div>
       </div>
 
-      {/* Guest List (Mobile Cards + Desktop View) */}
+      {/* Guest List (Cards) */}
       {loading ? (
         <div className="bg-white p-12 rounded-2xl border border-stone-200 text-center text-stone-400 text-xs">
           Memuat daftar tamu undangan...
@@ -219,7 +369,7 @@ export default function GuestsPage() {
             </svg>
           </div>
           <p className="text-sm font-bold text-stone-700">Belum ada tamu yang terdaftar</p>
-          <p className="text-xs text-stone-400">Klik tombol &ldquo;Tambah Tamu Baru&rdquo; untuk mulai memasukkan daftar undangan Anda</p>
+          <p className="text-xs text-stone-400">Klik tombol &ldquo;Tambah Tamu&rdquo; untuk mulai memasukkan daftar undangan Anda</p>
           <button
             type="button"
             onClick={() => setShowAddModal(true)}
@@ -232,7 +382,7 @@ export default function GuestsPage() {
         <div className="space-y-3">
           
           {/* Mobile Card List */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
             {filteredGuests.map((guest) => {
               const waUrl = generateWaLink(guest);
               return (
@@ -292,6 +442,175 @@ export default function GuestsPage() {
         </div>
       )}
 
+      {/* WHATSAPP TEMPLATE EDITOR MODAL */}
+      {showTemplateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/65 backdrop-blur-xs overflow-y-auto">
+          <div className="bg-white rounded-3xl p-5 sm:p-7 max-w-4xl w-full shadow-2xl border border-stone-200 space-y-5 my-8">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+              <div>
+                <h3 className="text-base sm:text-lg font-serif font-bold text-stone-900">
+                  Kustomisasi Template Pesan WhatsApp
+                </h3>
+                <p className="text-xs text-stone-500">
+                  Ubah format kata-kata undangan sesuai gaya bahasa Anda. Tautan undangan akan otomatis menyesuaikan subdomain aktif.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowTemplateModal(false)}
+                className="p-1.5 text-stone-400 hover:text-stone-700 rounded-lg cursor-pointer"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+              
+              {/* Left Column: Editor & Variables */}
+              <div className="lg:col-span-7 space-y-4">
+                
+                {/* Preset Selector */}
+                <div>
+                  <label className="block text-[11px] font-bold text-stone-700 mb-1.5">Pilihan Cepat Format Pesan:</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {WA_PRESETS.map((preset) => (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() => setWaTemplate(preset.text)}
+                        className={`p-2.5 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
+                          waTemplate === preset.text
+                            ? "border-emerald-700 bg-emerald-50/70 ring-1 ring-emerald-700/30"
+                            : "border-stone-200 bg-stone-50 hover:bg-white hover:border-stone-300"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-1 mb-0.5">
+                          <span className="text-xs font-bold text-stone-900">{preset.name}</span>
+                          <span className="text-[9px] px-1.5 py-0.2 bg-stone-200/80 text-stone-700 rounded-md font-semibold">{preset.badge}</span>
+                        </div>
+                        <span className="text-[10px] text-stone-500 line-clamp-1">{preset.desc}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Variable Tags (Click to Insert) */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-[11px] font-bold text-stone-700">Variabel Dinamis (Klik untuk Menambahkan):</label>
+                    <span className="text-[10px] text-stone-400">Otomatis diganti sesuai data tamu</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {[
+                      { tag: "{nama_tamu}", label: "Nama Tamu", desc: "Contoh: Bpk. Abiyoga" },
+                      { tag: "{link_undangan}", label: "Link Undangan", desc: "URL Subdomain Khusus Tamu" },
+                      { tag: "{nama_mempelai}", label: "Nama Mempelai", desc: "Didan & Nasha" },
+                      { tag: "{kuota_tamu}", label: "Kuota Tamu", desc: "2 Pax" },
+                      { tag: "{sesi_acara}", label: "Sesi Acara", desc: "Akad & Resepsi" },
+                    ].map((item) => (
+                      <button
+                        key={item.tag}
+                        type="button"
+                        onClick={() => insertVariableTag(item.tag)}
+                        className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300/80 rounded-lg text-[11px] font-mono font-semibold transition cursor-pointer shadow-2xs"
+                        title={item.desc}
+                      >
+                        + {item.tag}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Textarea Editor */}
+                <div>
+                  <label className="block text-[11px] font-bold text-stone-700 mb-1">Teks Format Pesan WhatsApp:</label>
+                  <textarea
+                    rows={10}
+                    value={waTemplate}
+                    onChange={(e) => setWaTemplate(e.target.value)}
+                    placeholder="Tulis format pesan WhatsApp..."
+                    className="w-full p-3 bg-stone-50 border border-stone-200 rounded-2xl text-xs text-stone-900 font-mono leading-relaxed focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700/30"
+                  />
+                  <div className="flex items-center justify-between mt-1 text-[10px] text-stone-400">
+                    <span>Gunakan tanda bintang *teks* untuk cetak tebal, _teks_ untuk miring</span>
+                    <button
+                      type="button"
+                      onClick={() => setWaTemplate(DEFAULT_WA_TEMPLATE)}
+                      className="text-stone-500 hover:text-stone-800 underline cursor-pointer"
+                    >
+                      Reset ke Template Standar
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Live Chat Simulation Preview */}
+              <div className="lg:col-span-5 flex flex-col justify-between space-y-3 bg-stone-100 p-4 rounded-2xl border border-stone-200">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between border-b border-stone-200 pb-2">
+                    <span className="text-[11px] font-bold text-stone-700 uppercase tracking-wider flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                      <span>Live Preview WhatsApp</span>
+                    </span>
+                    <span className="text-[10px] text-stone-500">Simulasi untuk: <strong>Bpk. Abiyoga</strong></span>
+                  </div>
+
+                  {/* WhatsApp Bubble Preview Box */}
+                  <div className="p-3.5 bg-[#d9fdd3] text-stone-900 rounded-2xl rounded-tr-xs border border-emerald-200/80 shadow-xs text-xs whitespace-pre-wrap font-sans leading-relaxed break-words">
+                    {renderWaText("Bpk. Abiyoga", 2, "Akad & Resepsi")}
+                    <div className="text-right text-[9px] text-stone-400 mt-1 font-mono">
+                      12:00 ✓✓
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-white/80 rounded-xl border border-stone-200 text-[11px] text-stone-600 space-y-1">
+                  <span className="font-bold text-stone-800 block">💡 Tips Pengiriman:</span>
+                  <p>
+                    Tautan <code className="text-amber-800 font-bold font-mono text-[10px]">{"{link_undangan}"}</code> otomatis mengarah ke subdomain undangan Anda dan menyertakan nama tamu sehingga ucapan nama tamu personal otomatis muncul saat mereka membuka web.
+                  </p>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Footer Action Buttons */}
+            <div className="pt-3 border-t border-stone-100 flex items-center justify-between gap-3">
+              <div>
+                {templateSaveSuccess && (
+                  <span className="text-xs font-bold text-emerald-700 flex items-center gap-1">
+                    ✓ Template WhatsApp Berhasil Disimpan!
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowTemplateModal(false)}
+                  className="px-4 py-2.5 text-xs font-semibold text-stone-600 hover:bg-stone-100 rounded-xl transition cursor-pointer"
+                >
+                  Tutup
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveTemplate}
+                  disabled={savingTemplate}
+                  className="px-6 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl transition shadow-xs cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  {savingTemplate ? "Menyimpan..." : "Simpan Template"}
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
       {/* Add Guest Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
@@ -302,7 +621,7 @@ export default function GuestsPage() {
               <button
                 type="button"
                 onClick={() => setShowAddModal(false)}
-                className="p-1.5 text-stone-400 hover:text-stone-700 rounded-lg"
+                className="p-1.5 text-stone-400 hover:text-stone-700 rounded-lg cursor-pointer"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -377,14 +696,14 @@ export default function GuestsPage() {
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2.5 text-xs font-semibold text-stone-600 hover:bg-stone-100 rounded-xl transition"
+                  className="px-4 py-2.5 text-xs font-semibold text-stone-600 hover:bg-stone-100 rounded-xl transition cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-5 py-2.5 bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold rounded-xl transition shadow-xs disabled:opacity-50"
+                  className="px-5 py-2.5 bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold rounded-xl transition shadow-xs disabled:opacity-50 cursor-pointer"
                 >
                   {loading ? "Menyimpan..." : "Simpan Tamu"}
                 </button>
