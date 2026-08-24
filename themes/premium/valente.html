@@ -571,7 +571,7 @@
       </div>
       <div class="cover-btn-group">
         <button class="btn-buka" onclick="openInvitation()">Buka Undangan</button>
-        <button class="btn-qr-ghost" onclick="openModal()" style="{{qrButtonDisplay}}">QR Check-In</button>
+        {{qrCoverButtonHtml}}
       </div>
     </div>
   </div>
@@ -591,7 +591,7 @@
     <a href="#moments" class="side-nav-link" onclick="toggleSideNav()">Gallery</a>
     <a href="#rsvp" class="side-nav-link" onclick="toggleSideNav()">RSVP &amp; Wishes</a>
     <a href="#gift" class="side-nav-link" onclick="toggleSideNav()">Wedding Gift</a>
-    <a href="javascript:void(0)" class="side-nav-link" onclick="openModal(); toggleSideNav();" style="{{qrButtonDisplay}}">Souvenir Card</a>
+    {{qrSideNavButtonHtml}}
   </div>
 
   <!-- FLOATING ACTIONS (BOTTOM RIGHT: FULLSCREEN & AUDIO) -->
