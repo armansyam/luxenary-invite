@@ -337,12 +337,12 @@
       .left-hero { display: block; }
       .right-panel {
         margin-left: 55%;
-        width: 45%;          /* CRITICAL: constrain so content centers within visible 45% */
+        width: 45%;
         min-width: 380px;
       }
 
-      /* Cover also confined to right 45% on desktop */
-      .cover-screen { left: 55%; width: 45%; }
+      /* Cover stays FULLSCREEN on desktop — split only visible after opening */
+      /* (cover-screen keeps its default position: fixed; inset: 0) */
 
       .bottom-dock { left: calc(55% + 22.5%); }
       .music-fab { right: 1.2rem; }
