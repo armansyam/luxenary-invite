@@ -1,6 +1,70 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
+export function getInvitationLockStatus(inv: any) {
+  // 1. Check if Admin Emergency Unlock is actively running
+  if (inv.adminUnlockedUntil && new Date(inv.adminUnlockedUntil) > new Date()) {
+    return {
+      isLocked: false,
+      isCoreLocked: false,
+      isEmergencyUnlocked: true,
+      unlockExpiresAt: inv.adminUnlockedUntil,
+      lockReason: null,
+    };
+  }
+
+  // 2. Check if explicitly marked as permanently locked
+  if (inv.isLockedPermanently) {
+    return {
+      isLocked: true,
+      isCoreLocked: true,
+      isEmergencyUnlocked: false,
+      unlockExpiresAt: null,
+      lockReason: "LOCKED_PERMANENT",
+    };
+  }
+
+  // 3. Check if wedding event date has passed (Hari H + 1 day grace period)
+  let hasPassed = false;
+  if (inv.eventData) {
+    try {
+      const parsed = typeof inv.eventData === "string" ? JSON.parse(inv.eventData) : inv.eventData;
+      if (Array.isArray(parsed)) {
+        for (const ev of parsed) {
+          if (ev.date) {
+            const evDate = new Date(ev.date).getTime();
+            // 24 hours grace period after event day
+            if (Date.now() > evDate + 24 * 3600 * 1000) {
+              hasPassed = true;
+              break;
+            }
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
+  if (hasPassed) {
+    return {
+      isLocked: true,
+      isCoreLocked: true,
+      isEmergencyUnlocked: false,
+      unlockExpiresAt: null,
+      lockReason: "EVENT_DATE_PASSED",
+    };
+  }
+
+  // 4. Before Hari H: General fields editable, but core couple names & date are protected
+  const hasExistingNames = Boolean(inv.groomName && inv.brideName);
+  return {
+    isLocked: false,
+    isCoreLocked: hasExistingNames,
+    isEmergencyUnlocked: false,
+    unlockExpiresAt: null,
+    lockReason: null,
+  };
+}
+
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> | { id: string } }
@@ -18,7 +82,6 @@ export async function GET(
     }
 
     if (!invitation) {
-      // Fallback to first active invitation
       invitation = await prisma.invitation.findFirst({
         orderBy: { createdAt: "desc" },
         include: { media: true },
@@ -29,7 +92,6 @@ export async function GET(
       return NextResponse.json({ error: "Undangan tidak ditemukan" }, { status: 404 });
     }
 
-    // Convert media array to key-value map for convenience
     const mediaMap: Record<string, string> = {};
     if (invitation.media && Array.isArray(invitation.media)) {
       for (const m of invitation.media) {
@@ -38,9 +100,12 @@ export async function GET(
       }
     }
 
+    const lockStatus = getInvitationLockStatus(invitation);
+
     return NextResponse.json({
       ...invitation,
       mediaMap,
+      ...lockStatus,
     });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
@@ -59,20 +124,53 @@ export async function PUT(
     const toStr = (v: any) => (v ? (typeof v === "object" ? JSON.stringify(v) : String(v)) : null);
 
     const currentInv = await prisma.invitation.findUnique({ where: { id } });
+    if (!currentInv) {
+      return NextResponse.json({ error: "Undangan tidak ditemukan" }, { status: 404 });
+    }
+
+    const lockStatus = getInvitationLockStatus(currentInv);
+
+    // If completely locked, reject edit
+    if (lockStatus.isLocked) {
+      return NextResponse.json(
+        {
+          error:
+            "Undangan ini telah terkunci permanen karena tanggal acara telah terlewati. Hubungi Administrator untuk membuka kunci darurat.",
+        },
+        { status: 403 }
+      );
+    }
 
     // Auto-generate slugs if names are provided
-    const newGroomSlug = (body.groomNickname || body.groomName)
-      ? String(body.groomNickname || body.groomName).toLowerCase().replace(/[^a-z0-9]/g, "")
-      : undefined;
-    const newBrideSlug = (body.brideNickname || body.brideName)
-      ? String(body.brideNickname || body.brideName).toLowerCase().replace(/[^a-z0-9]/g, "")
-      : undefined;
+    let newGroomSlug = undefined;
+    let newBrideSlug = undefined;
 
-    let newSubdomain = body.subdomain !== undefined
+    // Check if core names can be modified (only if emergency unlocked or names not set yet)
+    const canEditCore = lockStatus.isEmergencyUnlocked || !lockStatus.isCoreLocked;
+
+    let groomNameToSave = undefined;
+    let brideNameToSave = undefined;
+    let groomNicknameToSave = undefined;
+    let brideNicknameToSave = undefined;
+
+    if (canEditCore) {
+      if (body.groomName !== undefined) groomNameToSave = body.groomName;
+      if (body.brideName !== undefined) brideNameToSave = body.brideName;
+      if (body.groomNickname !== undefined) groomNicknameToSave = body.groomNickname;
+      if (body.brideNickname !== undefined) brideNicknameToSave = body.brideNickname;
+
+      if (body.groomNickname || body.groomName) {
+        newGroomSlug = String(body.groomNickname || body.groomName).toLowerCase().replace(/[^a-z0-9]/g, "");
+      }
+      if (body.brideNickname || body.brideName) {
+        newBrideSlug = String(body.brideNickname || body.brideName).toLowerCase().replace(/[^a-z0-9]/g, "");
+      }
+    }
+
+    let newSubdomain = canEditCore && body.subdomain !== undefined
       ? (body.subdomain ? String(body.subdomain).trim().toLowerCase() : null)
       : undefined;
 
-    // If subdomain is empty or matches old default didan-nasha, sync to couple's names
     if (newSubdomain === undefined && (!currentInv?.subdomain || currentInv.subdomain === "didan-nasha")) {
       if (newGroomSlug && newBrideSlug) {
         newSubdomain = `${newGroomSlug}-${newBrideSlug}`;
@@ -101,12 +199,12 @@ export async function PUT(
     const updated = await prisma.invitation.update({
       where: { id },
       data: {
-        groomName: body.groomName !== undefined ? body.groomName : undefined,
-        brideName: body.brideName !== undefined ? body.brideName : undefined,
-        groomNickname: body.groomNickname !== undefined ? body.groomNickname : undefined,
-        brideNickname: body.brideNickname !== undefined ? body.brideNickname : undefined,
-        groomSlug: newGroomSlug || undefined,
-        brideSlug: newBrideSlug || undefined,
+        groomName: groomNameToSave,
+        brideName: brideNameToSave,
+        groomNickname: groomNicknameToSave,
+        brideNickname: brideNicknameToSave,
+        groomSlug: newGroomSlug,
+        brideSlug: newBrideSlug,
         groomParents: body.groomParents !== undefined ? body.groomParents : undefined,
         brideParents: body.brideParents !== undefined ? body.brideParents : undefined,
         groomInstagram: body.groomInstagram !== undefined ? body.groomInstagram : undefined,
@@ -114,7 +212,7 @@ export async function PUT(
         openingQuote: body.openingQuote !== undefined ? body.openingQuote : undefined,
         openingQuoteRef: body.openingQuoteRef !== undefined ? body.openingQuoteRef : undefined,
         themeId: body.themeId !== undefined ? body.themeId : undefined,
-        subdomain: newSubdomain !== undefined ? newSubdomain : undefined,
+        subdomain: newSubdomain,
         musicUrl: body.musicUrl !== undefined ? String(body.musicUrl || "") : undefined,
         status: body.status !== undefined ? body.status : undefined,
         loveStory: body.loveStory !== undefined ? toStr(body.loveStory) : undefined,
@@ -127,7 +225,7 @@ export async function PUT(
       },
     });
 
-    // If media map (key-value) is sent with the PUT payload, save it directly
+    // Save media updates
     if (body.media && typeof body.media === "object" && !Array.isArray(body.media)) {
       const VALID_ENUM_SLOTS = ["LANDING_COVER", "DESKTOP_SIDEBAR", "GLOBAL_FIXED_BG", "GROOM_PHOTO", "BRIDE_PHOTO", "GALLERY"];
       for (const [slot, url] of Object.entries(body.media)) {
@@ -161,7 +259,7 @@ export async function PUT(
       }
     }
 
-    return NextResponse.json(updated);
+    return NextResponse.json({ ...updated, ...getInvitationLockStatus(updated) });
   } catch (err: any) {
     console.error("Error updating invitation:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });

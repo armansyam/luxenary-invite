@@ -653,6 +653,44 @@ export default function EditInvitation() {
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-24 font-sans">
       
+      {/* Emergency Unlock Banner */}
+      {invitation.isEmergencyUnlocked && (
+        <div className="p-4 bg-amber-50 border border-amber-300 text-amber-950 rounded-2xl flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+            <p className="text-xs font-semibold">
+              Kunci Darurat Aktif: Administrator telah membuka akses edit darurat hingga {invitation.unlockExpiresAt ? new Date(invitation.unlockExpiresAt).toLocaleString('id-ID') : "24 Jam kedepan"}.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Post-Event Permanent Lock Banner */}
+      {invitation.isLocked && (
+        <div className="p-5 bg-stone-900 text-white rounded-2xl sm:rounded-3xl border border-stone-800 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-sm flex-shrink-0 mt-0.5">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+            </div>
+            <div>
+              <h3 className="font-bold text-sm text-white">Undangan Terkunci (Arsip Seumur Hidup)</h3>
+              <p className="text-xs text-stone-300 mt-0.5 leading-relaxed">
+                Tanggal acara pernikahan telah terlewati. Undangan Anda tetap aktif online seumur hidup sebagai kenang-kenangan. Form editor telah dikunci permanen untuk menjaga keaslian arsip.
+              </p>
+            </div>
+          </div>
+          <a
+            href="https://wa.me/6281234567890?text=Halo%20Admin%20Luxenary,%20mohon%20bantuan%20buka%20kunci%20darurat%20undangan%20saya"
+            target="_blank"
+            rel="noreferrer"
+            className="px-4 py-2.5 bg-amber-700 hover:bg-amber-600 text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5 flex-shrink-0 shadow-sm"
+          >
+            <span>Hubungi Admin</span>
+            <span>↗</span>
+          </a>
+        </div>
+      )}
+
       {/* Top Header Action Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 sm:p-7 rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200">
         <div>

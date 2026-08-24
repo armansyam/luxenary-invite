@@ -481,6 +481,34 @@ export default function AdminPage() {
     } catch (err: any) { alert("Gagal: " + err.message); }
   };
 
+  const handleToggleEmergencyUnlock = async (inv: any) => {
+    const isCurrentlyUnlocked = inv.adminUnlockedUntil && new Date(inv.adminUnlockedUntil) > new Date();
+    const actionLabel = isCurrentlyUnlocked
+      ? `Kunci kembali undangan ${inv.groomName || ""} & ${inv.brideName || ""}?`
+      : `Buka kunci darurat edit undangan untuk ${inv.groomName || ""} & ${inv.brideName || ""} selama 24 jam?`;
+    if (!confirm(actionLabel)) return;
+
+    try {
+      const res = await fetch(`/api/admin/invitations/${inv.id}/unlock`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          durationHours: 24,
+          lockImmediately: isCurrentlyUnlocked,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(data.message);
+        loadOverviewData();
+      } else {
+        alert(data.error || "Gagal mengubah status kunci");
+      }
+    } catch (e: any) {
+      alert("Error: " + e.message);
+    }
+  };
+
   const handleSwitchTheme = async (invId: string, newTheme: string) => {
     try {
       const res = await fetch(`/api/client/invitations/${invId}`);
@@ -813,7 +841,7 @@ export default function AdminPage() {
                     <table className="min-w-full divide-y divide-gray-100">
                       <thead className="bg-gray-50">
                         <tr>
-                          {["Pasangan", "Subdomain / URL", "Tema", "Status", "Aksi"].map((h) => (
+                          {["Pasangan", "Subdomain / URL", "Tema", "Status", "Proteksi Editor", "Aksi"].map((h) => (
                             <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{h}</th>
                           ))}
                         </tr>
@@ -823,6 +851,7 @@ export default function AdminPage() {
                           const coupleName = `${inv.groomNickname || inv.groomName || "Mempelai Pria"} & ${inv.brideNickname || inv.brideName || "Mempelai Wanita"}`;
                           const activeSub = inv.subdomain || `${inv.groomSlug || "didan"}-${inv.brideSlug || "nasha"}`;
                           const publicUrl = getInvitationPublicUrl(activeSub);
+                          const isEmergencyUnlocked = inv.adminUnlockedUntil && new Date(inv.adminUnlockedUntil) > new Date();
 
                           return (
                             <tr key={inv.id} className="hover:bg-gray-50 transition">
@@ -856,7 +885,22 @@ export default function AdminPage() {
                               </td>
                               <td className="px-5 py-3"><Badge status={inv.status} /></td>
                               <td className="px-5 py-3">
-                                <div className="flex items-center gap-2">
+                                {isEmergencyUnlocked ? (
+                                  <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-100 text-amber-900 border border-amber-300 inline-block">
+                                    Kunci Darurat Aktif
+                                  </span>
+                                ) : inv.isLockedPermanently ? (
+                                  <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-red-100 text-red-800 border border-red-200 inline-block">
+                                    Terkunci Permanen
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 inline-block">
+                                    Bisa Diedit
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-5 py-3">
+                                <div className="flex items-center gap-2 flex-wrap">
                                   <a
                                     href={publicUrl}
                                     target="_blank"
@@ -866,11 +910,23 @@ export default function AdminPage() {
                                     Preview
                                   </a>
                                   <button
+                                    type="button"
+                                    onClick={() => handleToggleEmergencyUnlock(inv)}
+                                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer border ${
+                                      isEmergencyUnlocked
+                                        ? "bg-red-50 hover:bg-red-100 text-red-700 border-red-300"
+                                        : "bg-stone-100 hover:bg-stone-200 text-stone-800 border-stone-300"
+                                    }`}
+                                    title={isEmergencyUnlocked ? "Kunci kembali sekarang" : "Buka kunci darurat edit untuk klien selama 24 jam"}
+                                  >
+                                    {isEmergencyUnlocked ? "Kunci Kembali" : "Buka Kunci Darurat"}
+                                  </button>
+                                  <button
                                     onClick={() => handleUnlockTheme(inv.id)}
                                     className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-lg text-xs font-semibold transition cursor-pointer"
                                     title="Buka akses semua tema untuk undangan ini"
                                   >
-                                    Buka Akses Tema
+                                    Akses Tema
                                   </button>
                                 </div>
                               </td>
