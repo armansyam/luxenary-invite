@@ -255,6 +255,8 @@ export default function AdminPage() {
     isPremium: true,
   });
   const [themeSaving, setThemeSaving] = useState(false);
+  const [themeSyncing, setThemeSyncing] = useState(false);
+  const [themeSyncResult, setThemeSyncResult] = useState<any>(null);
   const [themeError, setThemeError] = useState<string | null>(null);
   const [themeCategoryFilter, setThemeCategoryFilter] = useState<string>("all");
 
@@ -438,6 +440,25 @@ export default function AdminPage() {
       loadOverviewData();
     } catch (err: any) {
       alert("Gagal: " + err.message);
+    }
+  };
+
+  const handleSyncThemes = async () => {
+    try {
+      setThemeSyncing(true);
+      setThemeSyncResult(null);
+      const res = await fetch("/api/admin/themes/sync", { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        setThemeSyncResult(data);
+        loadOverviewData();
+      } else {
+        alert(data.error || "Gagal menyinkronkan tema");
+      }
+    } catch (err: any) {
+      alert("Gagal: " + err.message);
+    } finally {
+      setThemeSyncing(false);
     }
   };
 
@@ -870,7 +891,19 @@ export default function AdminPage() {
                       <h2 className="text-2xl font-bold text-gray-900">Katalog &amp; Manajemen Tema</h2>
                       <p className="text-sm text-gray-500 mt-0.5">Kelola daftar tema per kategori (Modern &amp; Traditional), status aktif, dan urutan</p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={handleSyncThemes}
+                        disabled={themeSyncing}
+                        className="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white text-xs font-semibold rounded-xl transition flex items-center gap-1.5 shadow-xs cursor-pointer"
+                        title="Scan ulang folder themes/, daftarkan tema baru, dan bersihkan cache demo"
+                      >
+                        <svg className={`w-3.5 h-3.5 ${themeSyncing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        <span>{themeSyncing ? "Menyinkronkan..." : "Sinkronisasi Tema & Cache"}</span>
+                      </button>
                       <a
                         href="/downloads/starter-blueprint.html"
                         download="starter-blueprint.html"
@@ -879,7 +912,7 @@ export default function AdminPage() {
                         <svg className="w-3.5 h-3.5 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                         </svg>
-                        <span>Download Blueprint HTML</span>
+                        <span>Download Blueprint</span>
                       </a>
                       <button
                         onClick={handleOpenNewTheme}
@@ -890,6 +923,37 @@ export default function AdminPage() {
                       </button>
                     </div>
                   </div>
+
+                  {/* Sync Result Banner */}
+                  {themeSyncResult && (
+                    <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                          <h4 className="text-xs font-bold text-emerald-900">
+                            {themeSyncResult.message} ({themeSyncResult.syncedCount} Tema Terdeteksi)
+                          </h4>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setThemeSyncResult(null)}
+                          className="text-[11px] font-medium text-emerald-700 hover:text-emerald-900 cursor-pointer"
+                        >
+                          ✕ Tutup
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 pt-1">
+                        {themeSyncResult.discoveredThemes?.map((th: any) => (
+                          <div key={th.id} className="text-[11px] bg-white/80 border border-emerald-100 p-2 rounded-lg flex items-center justify-between">
+                            <span className="font-semibold text-stone-800">{th.name}</span>
+                            <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${th.isHealthValid ? 'bg-emerald-100 text-emerald-800 font-bold' : 'bg-amber-100 text-amber-800 font-bold'}`}>
+                              {th.isHealthValid ? "✓ Sync" : "⚠️ Cek Token"}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Category Filter Tabs */}
                   <div className="flex items-center gap-2 border-b border-gray-200 pb-3">
