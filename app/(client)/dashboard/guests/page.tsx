@@ -244,8 +244,8 @@ export default function GuestsPage() {
 
   // Helper to render customized text for a guest
   const renderWaText = (guestName: string, guestLimit: number = 2, sessionInfo: string = "Akad & Resepsi") => {
-    const groom = invitationData?.groomNickname || invitationData?.groomName || "Didan";
-    const bride = invitationData?.brideNickname || invitationData?.brideName || "Nasha";
+    const groom = invitationData?.groomNickname || invitationData?.groomName || "Mempelai Pria";
+    const bride = invitationData?.brideNickname || invitationData?.brideName || "Mempelai Wanita";
     
     let feat: any = {};
     try {
@@ -254,7 +254,7 @@ export default function GuestsPage() {
 
     const displayOrder = feat.displayOrder || "BRIDE_FIRST";
     const coupleName = displayOrder === "BRIDE_FIRST" ? `${bride} & ${groom}` : `${groom} & ${bride}`;
-    const sub = invitationData?.subdomain || `${invitationData?.groomSlug || "didan"}-${invitationData?.brideSlug || "nasha"}`;
+    const sub = invitationData?.subdomain || (invitationData?.groomSlug && invitationData?.brideSlug ? `${invitationData.groomSlug}-${invitationData.brideSlug}` : "wedding");
     const fullGuestUrl = getInvitationPublicUrl(sub, guestName);
 
     const template = waTemplate || DEFAULT_WA_TEMPLATE;
@@ -283,7 +283,7 @@ export default function GuestsPage() {
   };
 
   const handleCopyGuestLink = (guest: Guest) => {
-    const sub = invitationData?.subdomain || `${invitationData?.groomSlug || "didan"}-${invitationData?.brideSlug || "nasha"}`;
+    const sub = invitationData?.subdomain || (invitationData?.groomSlug && invitationData?.brideSlug ? `${invitationData.groomSlug}-${invitationData.brideSlug}` : "wedding");
     const fullGuestUrl = getInvitationPublicUrl(sub, guest.name);
 
     navigator.clipboard.writeText(fullGuestUrl).then(() => {
@@ -725,7 +725,7 @@ export default function GuestsPage() {
                     {[
                       { tag: "{nama_tamu}", label: "Nama Tamu", desc: "Contoh: Bpk. Abiyoga" },
                       { tag: "{link_undangan}", label: "Link Undangan", desc: "URL Subdomain Khusus Tamu" },
-                      { tag: "{nama_mempelai}", label: "Nama Mempelai", desc: "Didan & Nasha" },
+                      { tag: "{nama_mempelai}", label: "Nama Mempelai", desc: "Nama Kedua Mempelai" },
                       { tag: "{kuota_tamu}", label: "Kuota Tamu", desc: "2 Pax" },
                       { tag: "{sesi_acara}", label: "Sesi Acara", desc: "Akad & Resepsi" },
                     ].map((item) => (

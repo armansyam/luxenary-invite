@@ -103,7 +103,7 @@ export default function ClientDashboardLayout({
           {/* User Profile & Logout */}
           <div className="flex items-center gap-3">
             <span className="text-xs font-semibold text-stone-700 hidden sm:block">
-              {session?.user?.name || "Didan & Nasha"}
+              {session?.user?.name || "Mempelai"}
             </span>
             <button
               onClick={() => signOut({ callbackUrl: "/login" })}

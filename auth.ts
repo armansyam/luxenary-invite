@@ -79,7 +79,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             data: {
               googleId: `client-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
               email: clientEmail,
-              name: "Didan & Nasha",
+              name: clientEmail.split("@")[0] || "Mempelai",
               role: "CLIENT",
             },
           });
