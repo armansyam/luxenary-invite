@@ -14,6 +14,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "PlanType tidak valid. Gunakan TRADITIONAL, MODERN, atau PREMIUM." }, { status: 400 });
     }
 
+    // Resolve / Ensure valid client User in database (handles admin testing or cross-session accounts)
+    let validUserId = userId;
+    let targetUser = await prisma.user.findUnique({ where: { id: userId } });
+
+    if (!targetUser) {
+      const emailToUse = buyerEmail || "client@luxenary.id";
+      targetUser = await prisma.user.findUnique({ where: { email: emailToUse } });
+
+      if (!targetUser) {
+        targetUser = await prisma.user.create({
+          data: {
+            email: emailToUse,
+            name: buyerName || emailToUse.split("@")[0] || "Mempelai",
+            role: "CLIENT",
+          },
+        });
+      }
+      validUserId = targetUser.id;
+    }
+
     // Baca harga dari AdminSetting database
     const priceKey = planType === "PREMIUM" ? "price_premium" : planType === "MODERN" ? "price_modern" : "price_traditional";
     const defaultAmount = planType === "PREMIUM" ? 699000 : planType === "MODERN" ? 499000 : 299000;
@@ -24,15 +44,22 @@ export async function POST(req: NextRequest) {
 
     // Cek apakah user punya order PENDING yang belum dibayar — cegah duplikasi
     const existingPending = await prisma.order.findFirst({
-      where: { userId, status: "PENDING", planType: planType as "TRADITIONAL" | "MODERN" | "PREMIUM" },
+      where: { userId: validUserId, status: "PENDING", planType: planType as "TRADITIONAL" | "MODERN" | "PREMIUM" },
     });
 
     if (existingPending) {
-      // Return existing order agar client bisa lanjut ke pembayaran
+      // Update amount jika harga di admin setting berubah
+      if (Number(existingPending.amount) !== amount) {
+        await prisma.order.update({
+          where: { id: existingPending.id },
+          data: { amount },
+        });
+      }
+
       return NextResponse.json({
         orderId: existingPending.id,
         invoiceNumber: existingPending.invoiceNumber,
-        amount: Number(existingPending.amount),
+        amount,
         planType,
         existing: true,
       });
@@ -40,7 +67,7 @@ export async function POST(req: NextRequest) {
 
     const order = await prisma.order.create({
       data: {
-        userId,
+        userId: validUserId,
         invoiceNumber,
         planType: planType as "TRADITIONAL" | "MODERN" | "PREMIUM",
         amount,
