@@ -52,15 +52,58 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const updates = Array.isArray(body) ? body : [body];
     const results = [];
+    
+    // Map of setting keys to environment variables
+    const envKeyMap: Record<string, string> = {
+      google_client_id: "GOOGLE_CLIENT_ID",
+      google_client_secret: "GOOGLE_CLIENT_SECRET",
+      ipaymu_va: "IPAYMU_VA",
+      ipaymu_api_key: "IPAYMU_API_KEY",
+      ipaymu_mode: "IPAYMU_SANDBOX",
+      platform_url: "APP_URL",
+    };
+
+    const envUpdates: Record<string, string> = {};
+
     for (const { key, value, group } of updates) {
       if (!key) continue;
+      const strVal = String(value ?? "");
       const updated = await prisma.adminSetting.upsert({
         where: { key },
-        create: { key, value: String(value ?? ""), group: group || "general" },
-        update: { value: String(value ?? "") },
+        create: { key, value: strVal, group: group || "general" },
+        update: { value: strVal },
       });
       results.push(updated);
+
+      if (envKeyMap[key]) {
+        const envVar = envKeyMap[key];
+        const finalVal = key === "ipaymu_mode" ? (strVal === "sandbox" ? "true" : "false") : strVal;
+        process.env[envVar] = finalVal;
+        envUpdates[envVar] = finalVal;
+      }
     }
+
+    // Safely sync to .env file on disk if exists
+    try {
+      const fs = await import("fs");
+      const path = await import("path");
+      const envPath = path.join(process.cwd(), ".env");
+      if (fs.existsSync(envPath) && Object.keys(envUpdates).length > 0) {
+        let envContent = fs.readFileSync(envPath, "utf-8");
+        for (const [envVar, envVal] of Object.entries(envUpdates)) {
+          const regex = new RegExp(`^${envVar}=.*$`, "m");
+          if (regex.test(envContent)) {
+            envContent = envContent.replace(regex, `${envVar}="${envVal}"`);
+          } else {
+            envContent += `\n${envVar}="${envVal}"`;
+          }
+        }
+        fs.writeFileSync(envPath, envContent, "utf-8");
+      }
+    } catch (fsErr) {
+      console.warn("Could not sync .env file:", fsErr);
+    }
+
     return NextResponse.json({ success: true, updated: results });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
