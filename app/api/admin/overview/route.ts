@@ -46,14 +46,15 @@ export async function GET() {
       prisma.invitation.count(),
       prisma.order.count(),
       prisma.guest.count(),
-      prisma.user.count(),
+      prisma.user.count({ where: { role: "CLIENT" } }),
       prisma.order.findMany({
         take: 10,
         orderBy: { createdAt: "desc" },
         include: { user: { select: { name: true, email: true } } },
       }),
       prisma.user.findMany({
-        take: 10,
+        where: { role: "CLIENT" },
+        take: 50,
         orderBy: { createdAt: "desc" },
         select: { id: true, name: true, email: true, role: true, createdAt: true },
       }),

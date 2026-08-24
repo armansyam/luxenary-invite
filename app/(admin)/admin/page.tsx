@@ -741,7 +741,7 @@ export default function AdminPage() {
                 <div className="space-y-5">
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900">Daftar Klien</h2>
-                    <p className="text-sm text-gray-500">{users.length} klien terdaftar</p>
+                    <p className="text-sm text-gray-500">{users.filter((u) => u.role !== "ADMIN").length} klien terdaftar</p>
                   </div>
                   <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                     <table className="min-w-full divide-y divide-gray-100">
@@ -753,18 +753,28 @@ export default function AdminPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-50">
-                        {users.map((usr) => (
-                          <tr key={usr.id} className="hover:bg-gray-50 transition">
-                            <td className="px-5 py-3 text-sm font-semibold text-gray-900">{usr.name}</td>
-                            <td className="px-5 py-3 text-sm text-gray-600">{usr.email}</td>
-                            <td className="px-5 py-3">
-                              <span className={`px-2.5 py-0.5 text-xs font-bold rounded-full ${usr.role === "ADMIN" ? "bg-purple-100 text-purple-800" : "bg-blue-100 text-blue-800"}`}>
-                                {usr.role}
-                              </span>
+                        {users
+                          .filter((usr) => usr.role !== "ADMIN")
+                          .map((usr) => (
+                            <tr key={usr.id} className="hover:bg-gray-50 transition">
+                              <td className="px-5 py-3 text-sm font-semibold text-gray-900">{usr.name}</td>
+                              <td className="px-5 py-3 text-sm text-gray-600 font-mono text-xs">{usr.email}</td>
+                              <td className="px-5 py-3">
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                                  Klien
+                                </span>
+                              </td>
+                              <td className="px-5 py-3 text-xs text-gray-500">{new Date(usr.createdAt).toLocaleDateString("id-ID")}</td>
+                            </tr>
+                          ))}
+                        {users.filter((usr) => usr.role !== "ADMIN").length === 0 && (
+                          <tr>
+                            <td colSpan={4} className="px-5 py-8 text-center text-xs text-gray-400">
+                              Belum ada akun klien terdaftar.
                             </td>
-                            <td className="px-5 py-3 text-xs text-gray-400">{new Date(usr.createdAt).toLocaleDateString("id-ID")}</td>
                           </tr>
-                        ))}
+                        )}
                       </tbody>
                     </table>
                   </div>
