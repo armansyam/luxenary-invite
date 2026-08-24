@@ -234,15 +234,20 @@ export async function composeTemplateData(invitationId: string) {
 
   // Detect whether all events share the exact same location and mapsUrl
   const normalizeLoc = (s: string) => (s || "").trim().toLowerCase();
+  const firstDate = (rawEventsList[0]?.date || "").trim();
   const firstLoc = normalizeLoc(rawEventsList[0]?.location);
   const firstAddr = normalizeLoc(rawEventsList[0]?.address);
   const firstMap = (rawEventsList[0]?.mapsUrl || "").trim();
 
   const isSameLocationForAll = rawEventsList.length > 1 && rawEventsList.every((ev: any) => {
+    const d = (ev.date || "").trim();
     const l = normalizeLoc(ev.location);
     const a = normalizeLoc(ev.address);
     const m = (ev.mapsUrl || "").trim();
-    return (l === firstLoc || (!l && firstLoc)) && (a === firstAddr || (!a && firstAddr)) && (m === firstMap || (!m && firstMap));
+    const isSameDate = !d || !firstDate || d === firstDate;
+    const isSameLocation = (l === firstLoc || (!l && firstLoc)) && (a === firstAddr || (!a && firstAddr));
+    const isSameMapsUrl = m === firstMap || (!m && firstMap);
+    return isSameDate && isSameLocation && isSameMapsUrl;
   });
 
   let eventsHtml = "";
