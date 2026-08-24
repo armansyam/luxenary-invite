@@ -208,22 +208,13 @@ function CheckoutContent() {
                   Mengarahkan ke Pembayaran...
                 </>
               ) : (
-                "Bayar via iPaymu (Gateway Online) →"
+                "Bayar Sekarang (iPaymu Online Gateway) →"
               )}
-            </button>
-
-            <button
-              type="button"
-              onClick={handleSimulatePayment}
-              disabled={!orderId || paying}
-              className="w-full py-3 rounded-2xl bg-white/10 hover:bg-white/15 text-stone-200 border border-white/15 font-semibold text-xs transition cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              Simulasi Aktivasi Instan (Mode Uji Coba)
             </button>
           </div>
 
           <p className="text-center text-stone-500 text-xs mt-4">
-            Pembayaran aman diproses oleh iPaymu. Mendukung Transfer Bank, QRIS, dan kartu kredit/debit.
+            Pembayaran aman &amp; otomatis terverifikasi. Mendukung QRIS, Transfer Virtual Account Bank, dan E-Wallet.
           </p>
         </div>
       </div>
