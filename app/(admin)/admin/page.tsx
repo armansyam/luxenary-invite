@@ -90,6 +90,8 @@ export default function AdminPage() {
   const [settingsMap, setSettingsMap] = useState<Record<string, string>>({});
   const [savingIpaymu, setSavingIpaymu] = useState(false);
   const [savingGoogle, setSavingGoogle] = useState(false);
+  const [testingGoogle, setTestingGoogle] = useState(false);
+  const [googleTestResult, setGoogleTestResult] = useState<{ success: boolean; message: string } | null>(null);
   const [showGoogleSecret, setShowGoogleSecret] = useState(false);
   const [savingPricing, setSavingPricing] = useState(false);
   const [savingPlatform, setSavingPlatform] = useState(false);
@@ -307,8 +309,32 @@ export default function AdminPage() {
     } catch (err: any) { alert("Gagal: " + err.message); }
   };
 
+  const handleTestGoogle = async () => {
+    setTestingGoogle(true);
+    setGoogleTestResult(null);
+    try {
+      const res = await fetch("/api/admin/test-google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clientId: settingsMap["google_client_id"] || "",
+          clientSecret: settingsMap["google_client_secret"] || "",
+        }),
+      });
+      const data = await res.json();
+      setGoogleTestResult(data);
+    } catch (err: any) {
+      setGoogleTestResult({
+        success: false,
+        message: "Gagal menguji koneksi: " + err.message,
+      });
+    } finally {
+      setTestingGoogle(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50 flex flex-col text-gray-900">
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -770,7 +796,7 @@ export default function AdminPage() {
                         value={settingsMap["ipaymu_va"] || ""}
                         onChange={(e) => setSetting("ipaymu_va", e.target.value)}
                         placeholder="Contoh: 0000000000000000"
-                        className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm font-mono bg-gray-50 focus:outline-none focus:border-amber-400 focus:bg-white transition"
+                        className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
                       />
                     </FieldRow>
 
@@ -780,7 +806,7 @@ export default function AdminPage() {
                         value={settingsMap["ipaymu_api_key"] || ""}
                         onChange={(e) => setSetting("ipaymu_api_key", e.target.value)}
                         placeholder="••••••••••••••••••••••••••••••••"
-                        className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm font-mono bg-gray-50 focus:outline-none focus:border-amber-400 focus:bg-white transition"
+                        className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
                       />
                     </FieldRow>
 
@@ -790,12 +816,12 @@ export default function AdminPage() {
                           type="text"
                           value={`${settingsMap["platform_url"] || "http://localhost:3000"}/api/webhook/ipaymu`}
                           readOnly
-                          className="flex-1 px-3 py-2.5 border border-gray-200 rounded-xl text-sm font-mono bg-gray-100 text-gray-600"
+                          className="flex-1 px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-gray-100 text-gray-900 font-semibold select-all shadow-2xs"
                         />
                         <button
                           type="button"
                           onClick={() => navigator.clipboard.writeText(`${settingsMap["platform_url"] || "http://localhost:3000"}/api/webhook/ipaymu`)}
-                          className="px-3 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-medium transition cursor-pointer"
+                          className="px-3.5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300 rounded-xl text-xs font-semibold transition cursor-pointer"
                         >
                           Salin
                         </button>
@@ -846,7 +872,7 @@ export default function AdminPage() {
                         value={settingsMap["google_client_id"] || ""}
                         onChange={(e) => setSetting("google_client_id", e.target.value)}
                         placeholder="Contoh: 123456789012-xxxx.apps.googleusercontent.com"
-                        className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm font-mono bg-gray-50 focus:outline-none focus:border-amber-400 focus:bg-white transition"
+                        className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
                       />
                     </FieldRow>
 
@@ -857,12 +883,12 @@ export default function AdminPage() {
                           value={settingsMap["google_client_secret"] || ""}
                           onChange={(e) => setSetting("google_client_secret", e.target.value)}
                           placeholder="••••••••••••••••••••••••••••••••"
-                          className="w-full pl-3 pr-24 py-2.5 border border-gray-200 rounded-xl text-sm font-mono bg-gray-50 focus:outline-none focus:border-amber-400 focus:bg-white transition"
+                          className="w-full pl-3.5 pr-24 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
                         />
                         <button
                           type="button"
                           onClick={() => setShowGoogleSecret(!showGoogleSecret)}
-                          className="absolute right-2.5 top-2.5 text-xs text-stone-500 hover:text-stone-800 font-semibold px-2 py-0.5 bg-stone-200/80 rounded-md cursor-pointer"
+                          className="absolute right-2.5 top-2.5 text-xs text-stone-700 hover:text-stone-900 font-semibold px-2.5 py-1 bg-stone-200 hover:bg-stone-300 rounded-md cursor-pointer transition"
                         >
                           {showGoogleSecret ? "Sembunyikan" : "Tampilkan"}
                         </button>
@@ -875,12 +901,12 @@ export default function AdminPage() {
                           type="text"
                           value={typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"}
                           readOnly
-                          className="flex-1 px-3 py-2.5 border border-gray-200 rounded-xl text-sm font-mono bg-gray-100 text-gray-600"
+                          className="flex-1 px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-gray-100 text-gray-900 font-semibold select-all shadow-2xs"
                         />
                         <button
                           type="button"
                           onClick={() => navigator.clipboard.writeText(typeof window !== "undefined" ? window.location.origin : "http://localhost:3000")}
-                          className="px-3 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-medium transition cursor-pointer"
+                          className="px-3.5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300 rounded-xl text-xs font-semibold transition cursor-pointer"
                         >
                           Salin
                         </button>
@@ -893,17 +919,60 @@ export default function AdminPage() {
                           type="text"
                           value={`${typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"}/api/auth/callback/google`}
                           readOnly
-                          className="flex-1 px-3 py-2.5 border border-gray-200 rounded-xl text-sm font-mono bg-gray-100 text-gray-600"
+                          className="flex-1 px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-gray-100 text-gray-900 font-semibold select-all shadow-2xs"
                         />
                         <button
                           type="button"
                           onClick={() => navigator.clipboard.writeText(`${typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"}/api/auth/callback/google`)}
-                          className="px-3 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-medium transition cursor-pointer"
+                          className="px-3.5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300 rounded-xl text-xs font-semibold transition cursor-pointer"
                         >
                           Salin
                         </button>
                       </div>
                     </FieldRow>
+
+                    {/* Test Google Credentials Probe */}
+                    <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-3 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={handleTestGoogle}
+                        disabled={testingGoogle || !settingsMap["google_client_id"]}
+                        className="px-4 py-2.5 bg-stone-800 hover:bg-stone-900 text-white rounded-xl text-xs font-semibold transition disabled:opacity-50 flex items-center gap-2 cursor-pointer shadow-sm"
+                      >
+                        {testingGoogle ? (
+                          <>
+                            <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                            <span>Memverifikasi ke Server Google...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>⚡</span>
+                            <span>Uji Kredensial Google Sebelum Simpan</span>
+                          </>
+                        )}
+                      </button>
+                      {!settingsMap["google_client_id"] && (
+                        <span className="text-xs text-gray-500">Masukkan Client ID terlebih dahulu untuk menguji.</span>
+                      )}
+                    </div>
+
+                    {googleTestResult && (
+                      <div
+                        className={`p-3.5 rounded-xl border text-xs font-medium flex items-start gap-2.5 ${
+                          googleTestResult.success
+                            ? "bg-emerald-50 border-emerald-300 text-emerald-900"
+                            : "bg-rose-50 border-rose-300 text-rose-900"
+                        }`}
+                      >
+                        <span className="text-base leading-none">{googleTestResult.success ? "✅" : "❌"}</span>
+                        <div className="flex-1 leading-relaxed">
+                          <strong className="block font-bold text-sm mb-0.5">
+                            {googleTestResult.success ? "Kredensial Valid & Terhubung!" : "Kredensial Ditolak Google"}
+                          </strong>
+                          <span>{googleTestResult.message}</span>
+                        </div>
+                      </div>
+                    )}
 
                     <div className="p-3.5 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900 space-y-1.5 mt-2">
                       <span className="font-bold block">📘 Panduan Singkat Google Cloud Console:</span>
@@ -911,7 +980,7 @@ export default function AdminPage() {
                         <li>Buka <strong>console.cloud.google.com</strong> &rarr; Buat Project &rarr; Buka <strong>APIs &amp; Services &rarr; Credentials</strong>.</li>
                         <li>Klik <strong>Create Credentials &rarr; OAuth client ID</strong>, pilih tipe <strong>Web application</strong>.</li>
                         <li>Salin dan tempelkan <em>Authorized JavaScript Origins</em> dan <em>Authorized Redirect URI</em> di atas.</li>
-                        <li>Salin <strong>Client ID</strong> &amp; <strong>Client Secret</strong> yang didapat ke form ini, lalu klik Simpan.</li>
+                        <li>Salin <strong>Client ID</strong> &amp; <strong>Client Secret</strong> yang didapat ke form ini, lalu klik tombol Uji Kredensial &amp; Simpan.</li>
                       </ol>
                     </div>
                   </SettingsCard>
@@ -940,7 +1009,7 @@ export default function AdminPage() {
                             type="number"
                             value={settingsMap["price_traditional"] || "299000"}
                             onChange={(e) => setSetting("price_traditional", e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:border-amber-400 transition"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition"
                           />
                         </FieldRow>
                         <FieldRow label="Deskripsi">
@@ -948,7 +1017,7 @@ export default function AdminPage() {
                             rows={2}
                             value={settingsMap["desc_traditional"] || "Tema Traditional — Sakral & Royal Keraton"}
                             onChange={(e) => setSetting("desc_traditional", e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs bg-white focus:outline-none focus:border-amber-400 transition resize-none"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition resize-none"
                           />
                         </FieldRow>
                       </div>
@@ -963,7 +1032,7 @@ export default function AdminPage() {
                             type="number"
                             value={settingsMap["price_modern"] || "499000"}
                             onChange={(e) => setSetting("price_modern", e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:border-rose-400 transition"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-rose-400 focus:ring-1 focus:ring-rose-400 transition"
                           />
                         </FieldRow>
                         <FieldRow label="Deskripsi">
@@ -971,7 +1040,7 @@ export default function AdminPage() {
                             rows={2}
                             value={settingsMap["desc_modern"] || "Tema Modern — Minimalis, Editorial & Sinematik"}
                             onChange={(e) => setSetting("desc_modern", e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs bg-white focus:outline-none focus:border-rose-400 transition resize-none"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-rose-400 focus:ring-1 focus:ring-rose-400 transition resize-none"
                           />
                         </FieldRow>
                       </div>
@@ -996,7 +1065,7 @@ export default function AdminPage() {
                         type="text"
                         value={settingsMap["platform_name"] || "Luxenary Invite"}
                         onChange={(e) => setSetting("platform_name", e.target.value)}
-                        className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:outline-none focus:border-amber-400 focus:bg-white transition"
+                        className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
                       />
                     </FieldRow>
 
@@ -1012,7 +1081,7 @@ export default function AdminPage() {
                         type="email"
                         value={settingsMap["support_email"] || "support@luxenary.id"}
                         onChange={(e) => setSetting("support_email", e.target.value)}
-                        className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:outline-none focus:border-amber-400 focus:bg-white transition"
+                        className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
                       />
                     </FieldRow>
                   </SettingsCard>
@@ -1084,18 +1153,18 @@ export default function AdminPage() {
 
             <form onSubmit={handleSaveTheme} className="space-y-3">
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">ID Tema (Nama file HTML)</label>
+                <label className="block text-xs font-bold text-gray-800 mb-1">ID Tema (Nama file HTML)</label>
                 <input
                   type="text"
                   value={themeForm.id}
                   onChange={(e) => setThemeForm({ ...themeForm, id: e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, "") })}
                   placeholder="contoh: kalandra, jawa, sunda"
                   disabled={Boolean(editingTheme)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm font-mono bg-gray-50 disabled:opacity-60"
+                  className="w-full px-3.5 py-2 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 disabled:bg-gray-100 disabled:text-gray-500 disabled:opacity-60 focus:outline-none focus:border-amber-500"
                   required
                 />
-                <p className="text-[10px] text-gray-400 mt-1">
-                  File HTML disimpan di <code className="font-mono text-gray-600">themes/premium/{themeForm.id || "id"}.html</code> atau <code className="font-mono text-gray-600">themes/traditional/{themeForm.id || "id"}.html</code>.{" "}
+                <p className="text-[10px] text-gray-500 mt-1">
+                  File HTML disimpan di <code className="font-mono text-gray-700 font-semibold">themes/premium/{themeForm.id || "id"}.html</code> atau <code className="font-mono text-gray-700 font-semibold">themes/traditional/{themeForm.id || "id"}.html</code>.{" "}
                   <a href="/downloads/starter-blueprint.html" download="starter-blueprint.html" className="text-amber-700 font-bold hover:underline">
                     Unduh Starter Blueprint HTML
                   </a>
@@ -1103,24 +1172,24 @@ export default function AdminPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Nama Tema</label>
+                <label className="block text-xs font-bold text-gray-800 mb-1">Nama Tema</label>
                 <input
                   type="text"
                   value={themeForm.name}
                   onChange={(e) => setThemeForm({ ...themeForm, name: e.target.value })}
                   placeholder="contoh: Kalandra"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white"
+                  className="w-full px-3.5 py-2 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500"
                   required
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Kategori</label>
+                  <label className="block text-xs font-bold text-gray-800 mb-1">Kategori</label>
                   <select
                     value={themeForm.category}
                     onChange={(e) => setThemeForm({ ...themeForm, category: e.target.value, series: e.target.value === "traditional" ? "Traditional" : e.target.value === "modern" ? "Modern" : "Premium" })}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white font-medium"
+                    className="w-full px-3.5 py-2 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 font-medium focus:outline-none focus:border-amber-500"
                   >
                     <option value="premium">Premium</option>
                     <option value="modern">Modern</option>
@@ -1128,29 +1197,29 @@ export default function AdminPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Urutan (Sort)</label>
+                  <label className="block text-xs font-bold text-gray-800 mb-1">Urutan (Sort)</label>
                   <input
                     type="number"
                     value={themeForm.sortOrder}
                     onChange={(e) => setThemeForm({ ...themeForm, sortOrder: Number(e.target.value) })}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white"
+                    className="w-full px-3.5 py-2 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Deskripsi Singkat</label>
+                <label className="block text-xs font-bold text-gray-800 mb-1">Deskripsi Singkat</label>
                 <input
                   type="text"
                   value={themeForm.description}
                   onChange={(e) => setThemeForm({ ...themeForm, description: e.target.value })}
                   placeholder="contoh: Modern, Elegan & Minimalis"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-white"
+                  className="w-full px-3.5 py-2 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500"
                 />
               </div>
 
               <div className="flex items-center gap-4 pt-1">
-                <label className="flex items-center gap-2 text-xs font-medium text-gray-700 cursor-pointer">
+                <label className="flex items-center gap-2 text-xs font-medium text-gray-800 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={themeForm.isActive}
