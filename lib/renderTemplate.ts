@@ -30,91 +30,167 @@ const THEME_MAP: Record<string, { file: string; folder: "premium" | "traditional
 };
 
 const AUTOPLAY_SHOWCASE_SCRIPT = `
+<style id="luxCardCleanStyles">
+  /* Card Preview Mode: Completely hide all floating UI buttons and dock navigation */
+  .music-fab, #musicFab, .floating-music, .audio-player,
+  .fullscreen-btn, #fullscreenBtn, .btn-fullscreen, .btn-fs, .floating-action,
+  .bottom-dock, nav.bottom-dock, .dock-container, nav.bottom-nav, .dock, .bottom-nav,
+  button[onclick*="toggleFullscreen"], button[onclick*="toggleAudio"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+</style>
+
 <script>
 (function() {
   const isAutoplay = new URLSearchParams(window.location.search).get('autoplay') === '1';
-  if (!isAutoplay) return;
+  if (!isAutoplay) {
+    const s = document.getElementById('luxCardCleanStyles');
+    if (s) s.remove();
+    return;
+  }
 
-  // Mute audio during card preview
-  const audio = document.getElementById('bgAudio');
-  if (audio) { audio.muted = true; }
+  // 1. Completely destroy audio and floating control nodes in card preview
+  function cleanCardDOM() {
+    const selectors = [
+      'audio', '#bgAudio', '.music-fab', '#musicFab', '.floating-music',
+      '.fullscreen-btn', '#fullscreenBtn', '.btn-fullscreen', '.btn-fs',
+      '.bottom-dock', 'nav.bottom-dock', '.dock-container', 'nav.bottom-nav'
+    ];
+    selectors.forEach(sel => {
+      document.querySelectorAll(sel).forEach(el => {
+        if (el.tagName === 'AUDIO') {
+          try { el.pause(); el.src = ''; el.removeAttribute('src'); } catch(e){}
+        }
+        try { el.remove(); } catch(e){ el.style.display = 'none'; }
+      });
+    });
+  }
 
-  // Step 1: Wait 1.8s on cover, then trigger openInvitation
-  setTimeout(() => {
-    if (typeof openInvitation === 'function') {
-      openInvitation();
-    } else {
-      const cover = document.getElementById('coverScreen') || document.querySelector('.cover-screen') || document.querySelector('.screen-cover');
-      if (cover) cover.classList.add('opened');
-    }
+  cleanCardDOM();
+  document.addEventListener('DOMContentLoaded', cleanCardDOM);
 
-    // Step 2: After cover opens (1.5s transition), start smooth continuous scrolling
-    setTimeout(() => {
-      startAutoScrollLoop();
-    }, 1500);
-  }, 1800);
-
-  function startAutoScrollLoop() {
-    const scrollContainer = document.getElementById('rightPanel') || window;
-    const isWindow = scrollContainer === window;
+  function findScrollTarget() {
+    const rp = document.getElementById('rightPanel') || document.querySelector('.right-panel');
+    if (rp && rp.scrollHeight > rp.clientHeight + 40) return rp;
     
-    function getMaxScroll() {
-      if (isWindow) {
-        return Math.max(document.documentElement.scrollHeight, document.body.scrollHeight) - window.innerHeight;
-      } else {
-        return scrollContainer.scrollHeight - scrollContainer.clientHeight;
+    const sc = document.querySelector('.scroll-wrapper') || document.querySelector('.main-content') || document.getElementById('mainContent') || document.getElementById('app');
+    if (sc && sc.scrollHeight > sc.clientHeight + 40) return sc;
+
+    if (document.documentElement.scrollHeight > window.innerHeight + 40) return window;
+    if (document.body.scrollHeight > window.innerHeight + 40) return document.body;
+
+    const allDivs = document.querySelectorAll('div, section, main');
+    for (let i = 0; i < allDivs.length; i++) {
+      const el = allDivs[i];
+      if (el.scrollHeight > el.clientHeight + 80 && el.clientHeight > 150) {
+        return el;
       }
     }
+    return window;
+  }
 
-    let direction = 1; // 1 = down, -1 = up
-    let speed = 1.1; // pixels per frame
-
-    function step() {
-      const maxScroll = getMaxScroll();
-      if (maxScroll <= 0) {
-        requestAnimationFrame(step);
-        return;
-      }
-
-      let current = isWindow ? (window.pageYOffset || document.documentElement.scrollTop) : scrollContainer.scrollTop;
-      let next = current + (direction * speed);
-
-      if (direction === 1 && next >= maxScroll) {
-        // Reached bottom, pause for 2.5s, then scroll back up
-        setTimeout(() => {
-          direction = -1;
-          speed = 3.2; // scroll up faster
-          requestAnimationFrame(step);
-        }, 2500);
-        return;
-      } else if (direction === -1 && next <= 0) {
-        // Reached top, reset to cover and loop again
-        if (isWindow) window.scrollTo(0, 0);
-        else scrollContainer.scrollTop = 0;
-
-        const cover = document.getElementById('coverScreen') || document.querySelector('.cover-screen') || document.querySelector('.screen-cover');
-        if (cover) cover.classList.remove('opened');
-
-        setTimeout(() => {
-          if (typeof openInvitation === 'function') openInvitation();
-          else if (cover) cover.classList.add('opened');
-
-          setTimeout(() => {
-            direction = 1;
-            speed = 1.1;
-            requestAnimationFrame(step);
-          }, 1500);
-        }, 2200);
-        return;
-      }
-
-      if (isWindow) window.scrollTo(0, next);
-      else scrollContainer.scrollTop = next;
-
-      requestAnimationFrame(step);
+  function triggerOpenCover() {
+    if (typeof openInvitation === 'function') {
+      try { openInvitation(); } catch(e){}
     }
+    const cover = document.getElementById('coverScreen') || document.querySelector('.cover-screen') || document.querySelector('.screen-cover') || document.querySelector('.landing-cover');
+    if (cover) {
+      cover.classList.add('opened');
+      cover.style.transform = 'translateY(-100%)';
+      cover.style.transition = 'transform 0.75s cubic-bezier(0.16, 1, 0.3, 1)';
+    }
+    const coverBtn = document.querySelector('.btn-open-invitation') || document.querySelector('.btn-open') || document.querySelector('#btnOpen') || document.querySelector('.open-btn');
+    if (coverBtn) {
+      try { coverBtn.click(); } catch(e){}
+    }
+  }
 
-    requestAnimationFrame(step);
+  function triggerCloseCover() {
+    const cover = document.getElementById('coverScreen') || document.querySelector('.cover-screen') || document.querySelector('.screen-cover') || document.querySelector('.landing-cover');
+    if (cover) {
+      cover.classList.remove('opened');
+      cover.style.transform = 'translateY(0%)';
+      cover.style.transition = 'transform 0.55s ease-in-out';
+    }
+  }
+
+  function runAutoplay() {
+    cleanCardDOM();
+
+    // Step 1: Display Cover for 1.2s
+    setTimeout(() => {
+      triggerOpenCover();
+
+      // Step 2: Begin lively, smooth scrolling down
+      setTimeout(() => {
+        const target = findScrollTarget();
+        const isWin = target === window;
+
+        function getMax() {
+          if (isWin) {
+            return Math.max(document.documentElement.scrollHeight, document.body.scrollHeight) - window.innerHeight;
+          } else {
+            return target.scrollHeight - target.clientHeight;
+          }
+        }
+
+        let direction = 1; // 1 = down, -1 = up
+        let speed = 2.4; // natural, lively speed
+
+        function scrollStep() {
+          const max = getMax();
+          if (max <= 10) {
+            requestAnimationFrame(scrollStep);
+            return;
+          }
+
+          let cur = isWin ? (window.pageYOffset || document.documentElement.scrollTop || 0) : target.scrollTop;
+          let next = cur + (direction * speed);
+
+          if (direction === 1 && next >= max) {
+            // Reached bottom, pause for 1.4s, then rewind
+            setTimeout(() => {
+              direction = -1;
+              speed = 7.0; // swift rewind to top
+              requestAnimationFrame(scrollStep);
+            }, 1400);
+            return;
+          } else if (direction === -1 && next <= 0) {
+            // Reached top, reset cover and loop
+            if (isWin) window.scrollTo(0, 0);
+            else target.scrollTop = 0;
+
+            triggerCloseCover();
+
+            setTimeout(() => {
+              triggerOpenCover();
+              setTimeout(() => {
+                direction = 1;
+                speed = 2.4;
+                requestAnimationFrame(scrollStep);
+              }, 900);
+            }, 1400);
+            return;
+          }
+
+          if (isWin) window.scrollTo(0, next);
+          else target.scrollTop = next;
+
+          requestAnimationFrame(scrollStep);
+        }
+
+        requestAnimationFrame(scrollStep);
+      }, 900);
+    }, 1200);
+  }
+
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    runAutoplay();
+  } else {
+    document.addEventListener('DOMContentLoaded', runAutoplay);
   }
 })();
 </script>

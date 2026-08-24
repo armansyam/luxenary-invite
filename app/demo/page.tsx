@@ -182,7 +182,6 @@ export default function CatalogGridShowcase() {
                   src={`/demo/${theme.id}?autoplay=1`}
                   className="w-[200%] h-[200%] transform scale-50 origin-top-left border-none pointer-events-none select-none"
                   title={theme.name}
-                  loading="lazy"
                 />
               </Link>
 
