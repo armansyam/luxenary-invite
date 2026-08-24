@@ -3,481 +3,564 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>{{groomName}} &amp; {{brideName}} — The Wedding Celebration</title>
+  <title>{{groomName}} & {{brideName}} — The Wedding</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --primary-gold: {{colorPrimary}};
-      --primary-gold-dark: {{colorSecondary}};
-      --primary-gold-light: {{colorBgLight}};
-      --bg-cream: #faf7f2;
-      --text-main: #2b2725;
-      --text-muted: #6b635c;
-      --card-bg: rgba(255, 255, 255, 0.94);
-      --card-border: rgba(166, 124, 82, 0.25);
+      --gold: {{colorPrimary}};
+      --gold-dim: {{colorSecondary}};
+      --gold-pale: {{colorBgLight}};
+      --dark: #0a0a0c;
+      --dark-2: #111114;
+      --dark-3: #161619;
+      --text: #f2efe9;
+      --text-muted: rgba(242, 239, 233, 0.52);
+      --border: rgba(242, 239, 233, 0.1);
     }
-
     * { margin: 0; padding: 0; box-sizing: border-box; }
-
     html, body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      background: #11100f;
-      color: var(--text-main);
+      font-family: 'Jost', sans-serif;
+      background: var(--dark);
+      color: var(--text);
       overflow-x: hidden;
       scroll-behavior: smooth;
       width: 100%;
     }
+    h1, h2, h3, .serif { font-family: 'Cormorant Garamond', serif; font-weight: 400; }
 
-    h1, h2, h3, .serif-font {
-      font-family: 'Cormorant Garamond', serif;
-    }
-
-    /* LAYER 1: DESKTOP LEFT SIDEBAR (CRYSTAL CLEAR PHOTO HERO) */
-    .desktop-sidebar { display: none; }
-
-    /* LAYER 2: GLOBAL FIXED BACKGROUND */
-    .global-fixed-bg {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100vh; z-index: 1;
-      background: linear-gradient(to bottom, rgba(20, 18, 16, 0.4), rgba(20, 18, 16, 0.75)),
-                  url('{{globalBgUrl}}') center/cover no-repeat;
-    }
-
-    /* LAYER 3: SCROLLABLE CARD CONTAINER (TRANSLUCENT 100% EDGE-TO-EDGE) */
-    .scrollable-content {
-      position: relative; z-index: 10;
-      width: 100%; max-width: 100%; margin: 0;
-      background: transparent;
-      padding-top: 1rem;
-      padding-bottom: 90px;
-      overflow-x: hidden;
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    .section-card {
+    /* =============================================
+       MOBILE COVER — FULL VIEWPORT PHOTO
+       ============================================= */
+    .cover-screen {
+      position: fixed; inset: 0; z-index: 200;
       display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      padding: 0.75rem 1rem; text-align: center; position: relative;
+      align-items: center; justify-content: space-between;
+      padding: 3rem 1.6rem 3.5rem;
+      text-align: center;
+      background: linear-gradient(
+          to bottom,
+          rgba(5,5,8,0.15) 0%,
+          rgba(5,5,8,0.0) 30%,
+          rgba(5,5,8,0.55) 65%,
+          rgba(5,5,8,0.88) 100%
+        ),
+        url('{{landingCoverUrl}}') center/cover no-repeat;
+      transition: opacity 0.85s cubic-bezier(0.16,1,0.3,1), visibility 0.85s;
+    }
+    .cover-screen.hidden {
+      opacity: 0; visibility: hidden; pointer-events: none;
+    }
+
+    .cover-top {
+      width: 100%; display: flex; justify-content: space-between;
+      align-items: flex-start;
+    }
+    .cover-date-part {
+      font-size: 0.72rem; letter-spacing: 0.22em; color: rgba(255,255,255,0.85);
+      font-weight: 400; text-transform: uppercase; line-height: 1;
+    }
+
+    .cover-center {
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .cover-tagline {
+      font-size: 0.62rem; letter-spacing: 0.35em; text-transform: uppercase;
+      color: rgba(255,255,255,0.7); margin-bottom: 0.5rem;
+    }
+    .cover-names {
+      font-size: clamp(3rem, 12vw, 5.5rem); line-height: 1.0;
+      color: #ffffff; text-shadow: 0 4px 30px rgba(0,0,0,0.5);
+      font-weight: 300;
+    }
+    .cover-names em {
+      font-style: italic; font-size: 0.65em; display: block; margin: -0.15em 0;
+    }
+
+    .cover-bottom { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+    .cover-kepada { font-size: 0.6rem; letter-spacing: 0.3em; text-transform: uppercase; color: rgba(255,255,255,0.6); }
+    .cover-guest-name {
+      font-size: clamp(1.4rem, 6vw, 2rem);
+      font-family: 'Cormorant Garamond', serif; font-style: italic;
+      color: #ffffff; line-height: 1.1;
+    }
+    .cover-subtitle { font-size: 0.73rem; color: rgba(255,255,255,0.6); line-height: 1.5; max-width: 300px; margin-top: -0.3rem; }
+    .btn-buka {
+      display: inline-block; padding: 0.85rem 2.5rem;
+      border: 1.5px solid rgba(255,255,255,0.9); border-radius: 0;
+      background: transparent; color: #ffffff; font-size: 0.72rem;
+      letter-spacing: 0.25em; text-transform: uppercase; cursor: pointer;
+      font-family: 'Jost', sans-serif; font-weight: 500;
+      transition: all 0.35s ease; width: 100%; max-width: 280px;
+    }
+    .btn-buka:hover { background: #ffffff; color: #0a0a0c; }
+    .btn-qr-ghost {
+      background: transparent; border: none; color: rgba(255,255,255,0.55);
+      font-size: 0.65rem; letter-spacing: 0.15em; cursor: pointer;
+      font-family: 'Jost', sans-serif; text-transform: uppercase;
+    }
+
+    /* =============================================
+       DESKTOP FIXED LEFT HERO PANEL (>= 860px)
+       ============================================= */
+    .left-hero {
+      display: none; /* hidden on mobile */
+      position: fixed; left: 0; top: 0; width: 55%; height: 100vh; z-index: 10;
+      background: url('{{sidebarPhotoUrl}}') center/cover no-repeat;
+      overflow: hidden;
+    }
+    .left-hero::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(5,5,8,0.7) 0%, rgba(5,5,8,0.1) 50%, transparent 100%);
+    }
+    .left-hero-content {
+      position: absolute; bottom: 3.5rem; left: 3rem; z-index: 2; color: #fff;
+    }
+    .left-hero-eyebrow {
+      font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase;
+      color: rgba(255,255,255,0.7); margin-bottom: 0.5rem; display: block;
+    }
+    .left-hero-names {
+      font-size: 3.5rem; line-height: 1.05; color: #fff; font-weight: 300;
+    }
+
+    /* =============================================
+       RIGHT SCROLLABLE CONTENT PANEL
+       ============================================= */
+    .right-panel {
+      position: relative; z-index: 20;
       width: 100%;
-      box-sizing: border-box;
+      min-height: 100vh;
+      background: var(--dark);
+      padding-bottom: 90px;
     }
 
-    .card {
-      background: rgba(255, 255, 255, 0.92);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      padding: 2.2rem 1.4rem; border-radius: 24px;
-      border: 1px solid rgba(255, 255, 255, 0.6);
-      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.18);
-      width: 100%; max-width: 440px; margin: 0 auto;
+    /* =============================================
+       SECTIONS
+       ============================================= */
+    .sec {
+      padding: 4rem 1.8rem;
+      max-width: 440px; margin: 0 auto;
+      text-align: center;
+    }
+    .eyebrow {
+      font-size: 0.58rem; letter-spacing: 0.35em; text-transform: uppercase;
+      color: var(--gold); font-weight: 500; display: block; margin-bottom: 0.6rem;
+    }
+    .sec-title { font-size: clamp(2rem, 8vw, 3rem); color: var(--text); line-height: 1.1; margin-bottom: 0.8rem; }
+    .ornament-line {
+      display: flex; align-items: center; gap: 0.7rem;
+      margin: 1rem auto 1.6rem; max-width: 260px;
+    }
+    .ornament-line::before, .ornament-line::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+    .ornament-line span { font-size: 0.75rem; color: var(--gold); }
+
+    /* Quote block (opening) */
+    .quote-wrap {
+      padding: 1.4rem 0; text-align: center; margin-bottom: 0.5rem;
+    }
+    .quote-wrap p {
+      font-family: 'Cormorant Garamond', serif; font-style: italic;
+      font-size: 1.15rem; color: var(--text-muted); line-height: 1.8;
+    }
+    .quote-wrap cite {
+      display: block; margin-top: 0.7rem;
+      font-size: 0.62rem; font-weight: 600; letter-spacing: 0.15em;
+      text-transform: uppercase; color: var(--gold); font-style: normal;
     }
 
-    /* LAYER 4: FULL VIEWPORT PHOTO SECTIONS (GROOM & BRIDE) — 100% FULL BLEED NO GAPS */
-    .section-full-photo {
-      position: relative; min-height: 100vh;
+    /* Scroll arrow */
+    .scroll-arrow {
+      display: flex; align-items: center; justify-content: center;
+      margin: 1.5rem auto 0; animation: bounce 2s infinite;
+      color: var(--text-muted);
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(6px); }
+    }
+
+    /* Countdown */
+    .countdown-wrap { display: flex; justify-content: center; gap: 0.6rem; margin: 2rem 0 1.5rem; }
+    .cd-box {
+      flex: 1; min-width: 0; padding: 0.9rem 0.4rem; text-align: center;
+      border: 1px solid var(--border); border-radius: 4px;
+      background: rgba(255,255,255,0.025);
+    }
+    .cd-num { display: block; font-size: 1.8rem; font-weight: 600; color: var(--text); line-height: 1; font-family: 'Cormorant Garamond', serif; }
+    .cd-lbl { display: block; font-size: 0.5rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--text-muted); margin-top: 0.3rem; }
+    .btn-cal {
+      display: inline-block; padding: 0.65rem 1.6rem; border: 1px solid var(--border);
+      color: var(--text-muted); border-radius: 2px; font-size: 0.68rem;
+      text-decoration: none; letter-spacing: 0.12em; text-transform: uppercase;
+      transition: all 0.3s;
+    }
+    .btn-cal:hover { border-color: var(--gold); color: var(--gold-pale); }
+
+    /* Divider full-bleed */
+    .divider-fullbleed {
+      width: 100%; height: 1px; background: var(--border); margin: 0;
+    }
+
+    /* Full Photo Section (Groom / Bride) */
+    .full-photo {
+      position: relative; width: 100%; min-height: 85vh;
+      background-size: cover; background-position: center;
       display: flex; flex-direction: column; justify-content: flex-end;
-      padding: 3rem 1.4rem 5rem; background-size: cover; background-position: center;
-      color: #ffffff; overflow: hidden; width: 100% !important; max-width: 100% !important; margin: 0 !important;
+      overflow: hidden;
     }
-    .section-full-photo::before {
-      content: ""; position: absolute; inset: 0;
-      background: linear-gradient(to top, rgba(15, 12, 10, 0.88) 0%, rgba(15, 12, 10, 0.15) 50%, transparent 100%);
+    .full-photo::before {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(5,5,8,0.92) 0%, rgba(5,5,8,0.2) 45%, transparent 100%);
       z-index: 1;
     }
-    .section-full-photo .photo-content { position: relative; z-index: 2; width: 100%; }
-    .section-full-photo.align-right { text-align: right; align-items: flex-end; }
-    .section-full-photo.align-left { text-align: left; align-items: flex-start; }
-
-    .photo-role {
-      font-size: 0.75rem; letter-spacing: 0.25em; text-transform: uppercase;
-      color: var(--primary-gold-light); font-weight: 700; margin-bottom: 0.3rem;
+    .full-photo-content {
+      position: relative; z-index: 2; padding: 2.5rem 1.8rem 3rem;
     }
-    .photo-name { font-size: 2.2rem; font-weight: 400; color: #ffffff; line-height: 1.1; margin-bottom: 0.5rem; }
-    .photo-divider { width: 45px; height: 2px; background: var(--primary-gold-light); margin-bottom: 0.6rem; }
-    .align-right .photo-divider { margin-left: auto; margin-right: 0; }
-    .photo-parents { font-size: 0.8rem; color: rgba(255, 255, 255, 0.85); line-height: 1.5; margin-bottom: 1rem; max-width: 300px; }
-    .btn-ig-pill {
-      display: inline-flex; align-items: center; gap: 6px; padding: 0.4rem 1.1rem;
-      background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.5);
-      border-radius: 30px; color: #ffffff; text-decoration: none; font-size: 0.75rem;
-      backdrop-filter: blur(10px); transition: all 0.3s;
+    .full-photo-content.right { text-align: right; }
+    .fp-role {
+      font-size: 0.58rem; letter-spacing: 0.3em; text-transform: uppercase;
+      color: rgba(255,255,255,0.6); display: block; margin-bottom: 0.4rem;
     }
-    .btn-ig-pill:hover { background: #ffffff; color: #1e1c1a; }
-
-    /* LAYER 5: LANDING COVER MODAL */
-    .landing-cover {
-      position: fixed; inset: 0; z-index: 100;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      background: linear-gradient(135deg, rgba(20, 18, 16, 0.4), rgba(20, 18, 16, 0.75)),
-                  url('{{landingCoverUrl}}') center/cover no-repeat;
-      backdrop-filter: blur(12px); text-align: center; padding: 1.2rem;
-      transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.8s;
+    .fp-name { font-size: clamp(2rem, 8vw, 3.5rem); color: #fff; line-height: 1.05; margin-bottom: 0.3rem; }
+    .fp-line { width: 36px; height: 1px; background: rgba(255,255,255,0.5); margin-bottom: 0.5rem; }
+    .right .fp-line { margin-left: auto; }
+    .fp-parents { font-size: 0.77rem; color: rgba(255,255,255,0.75); line-height: 1.55; margin-bottom: 0.9rem; max-width: 280px; }
+    .right .fp-parents { margin-left: auto; }
+    .btn-ig {
+      display: inline-flex; align-items: center; gap: 5px; padding: 0.38rem 0.9rem;
+      border: 1px solid rgba(255,255,255,0.35); border-radius: 2px;
+      color: rgba(255,255,255,0.8); text-decoration: none; font-size: 0.68rem;
+      letter-spacing: 0.05em; transition: all 0.3s;
     }
-    .landing-cover.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
-
-    .cover-date {
-      font-size: 0.8rem; letter-spacing: 0.25em; color: #f5eedf; font-weight: 700;
-      margin-bottom: 0.4rem; text-transform: uppercase;
-    }
-    .cover-title {
-      font-size: 2.8rem; font-weight: 400; color: #ffffff; line-height: 1.1;
-      margin: 0.5rem 0 1.2rem; text-shadow: 0 2px 10px rgba(0,0,0,0.3);
-    }
-    .guest-badge {
-      background: rgba(255, 255, 255, 0.95); border: 1px solid rgba(166, 124, 82, 0.35);
-      border-radius: 16px; padding: 1rem 1.2rem; margin-bottom: 1.5rem; width: 100%;
-      max-width: 300px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-    }
-    .guest-badge p { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.2rem; }
-    .guest-badge h4 { font-size: 1.15rem; color: #1e1c1a; font-weight: 600; }
-
-    .cover-btn-group { display: flex; flex-direction: column; gap: 0.6rem; width: 100%; max-width: 280px; }
-    .btn-open {
-      padding: 0.85rem 1.8rem; background: #ffffff; border: none; border-radius: 50px;
-      color: #1e1c1a; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.1em;
-      text-transform: uppercase; cursor: pointer; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-      transition: all 0.3s ease; width: 100%;
-    }
-    .btn-open:hover { background: var(--primary-gold); color: #ffffff; }
-    .btn-qr-checkin {
-      padding: 0.75rem 1.5rem; background: rgba(255, 255, 255, 0.2);
-      border: 1px solid rgba(255, 255, 255, 0.8); border-radius: 50px;
-      color: #ffffff; font-weight: 600; font-size: 0.75rem; letter-spacing: 0.08em;
-      text-transform: uppercase; cursor: pointer; backdrop-filter: blur(8px);
-      width: 100%;
-    }
-
-    .title-couple { font-size: 2.6rem; color: #1e1c1a; margin-bottom: 0.5rem; line-height: 1.1; font-weight: 400; }
-    .subtitle-section { font-size: 2rem; color: var(--primary-gold); margin-bottom: 1rem; font-weight: 400; }
-    .quote-text { font-style: italic; font-size: 0.85rem; line-height: 1.7; color: var(--text-muted); margin-bottom: 0.8rem; }
-    .quote-ref { font-size: 0.75rem; font-weight: 600; color: var(--primary-gold); letter-spacing: 0.05em; }
-
-    /* Journey of Love */
-    .story-item {
-      text-align: left; padding-left: 1rem; border-left: 2px solid var(--primary-gold);
-      margin-bottom: 1.2rem; position: relative;
-    }
-    .story-chapter {
-      font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.15em;
-      color: var(--primary-gold); font-weight: 700; display: block; margin-bottom: 0.2rem;
-    }
-    .story-title { font-size: 1.15rem; color: #1e1c1a; margin-bottom: 0.2rem; font-weight: 600; }
-    .story-content { font-size: 0.8rem; color: var(--text-muted); line-height: 1.5; }
-
-    /* Countdown Timer */
-    .countdown-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem; margin: 1.2rem 0; }
-    .countdown-box { background: #faf7f2; border: 1px solid rgba(166, 124, 82, 0.2); border-radius: 10px; padding: 0.5rem 0.2rem; }
-    .countdown-number { font-size: 1.2rem; font-weight: 700; color: var(--primary-gold); display: block; }
-    .countdown-label { font-size: 0.55rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); }
-
-    .btn-calendar {
-      display: inline-block; padding: 0.65rem 1.4rem; background: #ffffff;
-      border: 1px solid var(--primary-gold); color: var(--primary-gold-dark);
-      border-radius: 30px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.08em; text-decoration: none; margin-top: 0.4rem;
-    }
+    .btn-ig:hover { border-color: #fff; color: #fff; }
 
     /* Event Cards */
-    .event-card { background: #faf7f2; border: 1px solid rgba(166, 124, 82, 0.2); border-radius: 14px; padding: 1.2rem; margin-bottom: 0.8rem; text-align: left; }
-    .event-title { font-size: 1.2rem; color: #1e1c1a; margin-bottom: 0.3rem; font-weight: 600; }
-    .event-datetime, .event-location { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.3rem; line-height: 1.4; }
-    .btn-maps { display: inline-block; margin-top: 0.4rem; font-size: 0.7rem; font-weight: 700; color: var(--primary-gold); text-decoration: none; border-bottom: 1px solid var(--primary-gold); }
+    .event-list { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 1.5rem; }
+    .event-item {
+      padding: 1.2rem 1.2rem 1.2rem 1.6rem; border-left: 1px solid var(--gold);
+      text-align: left;
+      background: rgba(255,255,255,0.02);
+    }
+    .ev-name { font-size: 0.62rem; letter-spacing: 0.2em; color: var(--gold); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 0.3rem; }
+    .ev-title { font-size: 1.1rem; color: var(--text); margin-bottom: 0.3rem; }
+    .ev-detail { font-size: 0.77rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 0.2rem; }
+    .btn-map { display: inline-block; margin-top: 0.55rem; font-size: 0.65rem; font-weight: 600; color: var(--gold); border-bottom: 1px solid var(--gold); text-decoration: none; letter-spacing: 0.08em; transition: opacity 0.2s; }
+    .btn-map:hover { opacity: 0.7; }
+
+    /* Story */
+    .story-list { text-align: left; margin-top: 1.5rem; }
+    .story-item { padding-left: 1.2rem; border-left: 1px solid var(--border); margin-bottom: 1.5rem; position: relative; }
+    .story-item::before { content: ''; width: 6px; height: 6px; background: var(--gold); border-radius: 50%; position: absolute; left: -3.5px; top: 5px; }
+    .story-ch { font-size: 0.55rem; text-transform: uppercase; letter-spacing: 0.2em; color: var(--gold); font-weight: 600; display: block; margin-bottom: 0.2rem; }
+    .story-heading { font-size: 1rem; color: var(--text); margin-bottom: 0.2rem; font-weight: 500; }
+    .story-body { font-size: 0.77rem; color: var(--text-muted); line-height: 1.6; }
 
     /* Gallery */
-    .gallery-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.6rem; margin-top: 0.8rem; }
-    .gallery-item img { width: 100%; height: 130px; object-fit: cover; border-radius: 12px; }
+    .gallery-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; margin-top: 1.5rem; }
+    .g-item { overflow: hidden; }
+    .g-item img { width: 100%; height: 140px; object-fit: cover; display: block; transition: transform 0.4s ease; }
+    .g-item:hover img { transform: scale(1.04); }
+    .g-item.wide { grid-column: span 2; }
+    .g-item.wide img { height: 200px; }
 
-    /* Wedding Gift Tabs */
-    .gift-tabs { display: flex; gap: 0.4rem; margin-bottom: 1rem; background: #faf7f2; padding: 0.25rem; border-radius: 30px; border: 1px solid rgba(166, 124, 82, 0.2); }
-    .gift-tab-btn { flex: 1; padding: 0.45rem; border: none; border-radius: 20px; font-size: 0.7rem; font-weight: 600; cursor: pointer; background: transparent; color: var(--text-muted); }
-    .gift-tab-btn.active { background: var(--primary-gold); color: #fff; }
-    .bank-card { background: #faf7f2; border: 1px solid rgba(166, 124, 82, 0.25); border-radius: 12px; padding: 1rem; margin-bottom: 0.8rem; text-align: left; }
-    .bank-header { display: flex; justify-content: space-between; margin-bottom: 0.3rem; }
-    .bank-name { font-weight: 700; color: #1e1c1a; font-size: 0.85rem; }
-    .bank-owner { color: var(--text-muted); font-size: 0.75rem; }
-    .bank-number-box { display: flex; align-items: center; justify-content: space-between; background: #fff; padding: 0.5rem 0.7rem; border-radius: 8px; border: 1px solid #eee; }
-    .bank-number { font-family: monospace; font-size: 0.9rem; color: #1e1c1a; }
-    .btn-copy { background: var(--primary-gold); color: #fff; border: none; padding: 0.35rem 0.7rem; border-radius: 6px; font-size: 0.7rem; font-weight: 600; cursor: pointer; }
+    /* Gift */
+    .gift-tabs { display: flex; gap: 0; margin: 1rem auto; max-width: 280px; border: 1px solid var(--border); }
+    .gift-tab-btn { flex: 1; padding: 0.55rem; border: none; background: transparent; color: var(--text-muted); font-size: 0.68rem; font-weight: 600; cursor: pointer; letter-spacing: 0.08em; text-transform: uppercase; transition: all 0.2s; }
+    .gift-tab-btn.active { background: var(--gold); color: #fff; }
+    .bank-card { border: 1px solid var(--border); padding: 1rem 1.1rem; margin-bottom: 0.7rem; text-align: left; }
+    .bank-top { display: flex; justify-content: space-between; margin-bottom: 0.3rem; }
+    .bank-name { font-weight: 700; color: var(--text); font-size: 0.82rem; }
+    .bank-owner { color: var(--text-muted); font-size: 0.72rem; margin-bottom: 0.5rem; }
+    .bank-num-row { display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.04); padding: 0.5rem 0.7rem; border: 1px solid var(--border); }
+    .bank-num { font-family: monospace; font-size: 0.92rem; color: var(--text); letter-spacing: 0.05em; }
+    .btn-copy { background: var(--gold); color: #fff; border: none; padding: 0.3rem 0.65rem; font-size: 0.65rem; font-weight: 600; cursor: pointer; }
 
-    /* RSVP Form */
-    .rsvp-form { text-align: left; margin-top: 0.8rem; }
-    .form-group { margin-bottom: 0.75rem; }
-    .form-label { display: block; font-size: 0.7rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.2rem; }
-    .form-input, .form-select, .form-textarea { width: 100%; padding: 0.65rem 0.8rem; background: #fff; border: 1px solid rgba(166, 124, 82, 0.3); border-radius: 8px; color: #1e1c1a; font-size: 0.85rem; outline: none; }
-    .btn-submit-rsvp { width: 100%; padding: 0.75rem; background: var(--primary-gold); color: #fff; border: none; border-radius: 8px; font-weight: 600; font-size: 0.8rem; cursor: pointer; }
+    /* RSVP */
+    .rsvp-wrap { text-align: left; margin-top: 1.5rem; }
+    .form-row { margin-bottom: 0.9rem; }
+    .form-lbl { display: block; font-size: 0.62rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 0.3rem; }
+    .form-in, .form-sel, .form-ta { width: 100%; padding: 0.7rem 0.9rem; background: rgba(255,255,255,0.04); border: 1px solid var(--border); color: var(--text); font-size: 0.84rem; outline: none; font-family: 'Jost', sans-serif; transition: border-color 0.2s; }
+    .form-in:focus, .form-sel:focus, .form-ta:focus { border-color: var(--gold); }
+    .form-sel option { background: #111114; }
+    .btn-submit { width: 100%; padding: 0.9rem; background: var(--gold); color: #fff; border: none; font-weight: 700; font-size: 0.78rem; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; transition: opacity 0.3s; }
+    .btn-submit:hover { opacity: 0.85; }
 
-    /* Bottom Navigation Dock */
-    .bottom-nav-dock {
-      position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
-      background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(16px);
-      border: 1px solid rgba(166, 124, 82, 0.3); border-radius: 40px;
-      padding: 6px 12px; display: flex; align-items: center; gap: 8px;
-      box-shadow: 0 10px 30px rgba(50, 40, 30, 0.15); z-index: 80;
-      max-width: 92vw;
-    }
-    .dock-link {
-      display: flex; flex-direction: column; align-items: center; text-decoration: none;
-      color: var(--text-muted); font-size: 0.55rem; font-weight: 600; padding: 2px 4px;
-    }
-    .dock-link:hover { color: var(--primary-gold); }
-    .dock-icon { width: 16px; height: 16px; stroke-width: 1.8; margin-bottom: 2px; }
+    .wishes-list { margin-top: 1.5rem; max-height: 260px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.7rem; }
+    .wish-item { padding: 0.8rem 0.9rem; border: 1px solid var(--border); border-left: 2px solid var(--gold); }
+    .wish-name { font-weight: 700; font-size: 0.78rem; color: var(--text); margin-bottom: 0.15rem; }
+    .wish-msg { font-size: 0.75rem; color: var(--text-muted); line-height: 1.55; }
 
-    .music-btn {
-      position: fixed; top: 16px; right: 16px; width: 38px; height: 38px;
-      border-radius: 50%; background: rgba(255, 255, 255, 0.9);
-      border: 1px solid var(--primary-gold); color: var(--primary-gold);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 90; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    }
-    .music-btn.playing { animation: spin 5s linear infinite; }
-    @keyframes spin { 100% { transform: rotate(360deg); } }
+    /* Footer */
+    .site-footer { text-align: center; padding: 3rem 1.6rem 1.5rem; border-top: 1px solid var(--border); }
+    .footer-names { font-size: 1.8rem; color: var(--text); margin-bottom: 0.3rem; }
+    .footer-sub { font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-muted); }
 
-    /* Modals */
-    .qr-modal {
-      position: fixed; inset: 0; z-index: 150; background: rgba(0, 0, 0, 0.7);
-      backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center;
-      padding: 1.2rem; opacity: 0; visibility: hidden; transition: all 0.3s ease;
+    /* Bottom Dock */
+    .bottom-dock {
+      position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+      background: rgba(10,10,12,0.9); backdrop-filter: blur(20px);
+      border: 1px solid var(--border); border-radius: 50px;
+      padding: 7px 14px; display: flex; align-items: center; gap: 4px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+      z-index: 80; max-width: 92vw;
     }
-    .qr-modal.active { opacity: 1; visibility: visible; }
-    .qr-modal-card {
-      background: #ffffff; border: 1px solid rgba(166, 124, 82, 0.3); border-radius: 20px;
-      padding: 1.8rem 1.4rem; width: 100%; max-width: 360px; text-align: center; position: relative;
-    }
-    .btn-close-modal {
-      position: absolute; top: 14px; right: 14px; background: #faf7f2; border: 1px solid #eee;
-      width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-weight: bold; color: var(--text-muted);
-    }
-    .access-badge { font-size: 0.65rem; font-weight: 700; color: var(--primary-gold); background: #faf7f2; border: 1px solid var(--card-border); padding: 0.25rem 0.75rem; border-radius: 20px; }
-    .access-couple { font-size: 1.6rem; color: #1e1c1a; margin: 0.6rem 0; }
-    .access-guest-box { background: #faf7f2; padding: 0.8rem; border-radius: 10px; margin-bottom: 1rem; text-align: left; }
-    .access-qr-img { width: 140px; height: 140px; margin: 0 auto 0.5rem; border-radius: 8px; }
+    .dock-a { display: flex; flex-direction: column; align-items: center; text-decoration: none; color: var(--text-muted); font-size: 0.48rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; padding: 3px 6px; transition: color 0.2s; }
+    .dock-a:hover, .dock-a svg { color: var(--gold-pale); }
+    .dock-ico { width: 16px; height: 16px; stroke-width: 1.8; margin-bottom: 2px; }
 
-    .souvenir-voucher-card {
-      background: linear-gradient(135deg, #2b2725, #1e1c1a); color: #fff;
-      border-radius: 12px; padding: 1rem; margin-top: 1rem; text-align: center;
-      border: 1px solid rgba(245, 238, 223, 0.3);
+    /* Music button */
+    .music-fab {
+      position: fixed; top: 18px; right: 18px; width: 38px; height: 38px;
+      border-radius: 50%; background: rgba(10,10,12,0.82); border: 1px solid var(--border);
+      color: var(--text-muted); display: flex; align-items: center; justify-content: center;
+      z-index: 100; cursor: pointer; backdrop-filter: blur(12px); transition: all 0.3s;
     }
+    .music-fab:hover { border-color: var(--gold); color: var(--gold-pale); }
+    .music-fab.playing svg { animation: spin 5s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* DESKTOP SPLIT SCREEN (>= 960px) — 70:30 CINEMATIC WIDESCREEN HERO */
-    @media (min-width: 960px) {
-      .desktop-sidebar {
-        display: flex; flex-direction: column; justify-content: flex-end;
-        position: fixed; left: 0; top: 0; width: 70%; height: 100vh; z-index: 10;
-        background: linear-gradient(to top, rgba(15, 12, 10, 0.88) 0%, rgba(15, 12, 10, 0.25) 30%, transparent 65%),
-                    url('{{sidebarPhotoUrl}}') center/cover no-repeat;
-        padding: 4.5rem; border-right: 1px solid rgba(166, 124, 82, 0.3);
-      }
-      .desktop-sidebar h1 { font-size: 4.5rem; color: #fff; line-height: 1.1; font-weight: 400; }
-      .global-fixed-bg { left: 70%; width: 30%; }
-      .scrollable-content { margin-left: 70%; width: 30%; max-width: 30%; display: flex; flex-direction: column; align-items: stretch; }
-      .section-card { width: 100%; }
-      .section-full-photo { width: 100% !important; max-width: 100% !important; margin: 0 !important; }
-      .landing-cover { left: 70%; width: 30%; }
-      .bottom-nav-dock { left: calc(70% + 15%); }
+    /* QR Modal */
+    .modal-bg { position: fixed; inset: 0; z-index: 300; background: rgba(0,0,0,0.8); backdrop-filter: blur(12px); display: flex; align-items: center; justify-content: center; padding: 1.4rem; opacity: 0; visibility: hidden; transition: all 0.3s; }
+    .modal-bg.open { opacity: 1; visibility: visible; }
+    .modal-card { background: var(--dark-3); border: 1px solid var(--border); padding: 2rem 1.6rem; width: 100%; max-width: 360px; text-align: center; position: relative; }
+    .modal-close { position: absolute; top: 12px; right: 12px; background: rgba(255,255,255,0.06); border: 1px solid var(--border); width: 28px; height: 28px; border-radius: 50%; cursor: pointer; color: var(--text-muted); font-size: 0.75rem; font-weight: bold; }
+
+    /* =============================================
+       DESKTOP LAYOUT >= 860px
+       ============================================= */
+    @media (min-width: 860px) {
+      .left-hero { display: block; }
+      .right-panel { margin-left: 55%; }
+
+      /* On desktop: cover replaces to right side only after opening */
+      .cover-screen { left: 55%; width: 45%; }
+      /* on desktop the cover is centered in the right half */
+
+      .bottom-dock { left: calc(55% + 22.5%); }
+      .music-fab { right: calc(45% - 15px + 18px); }
     }
   </style>
 </head>
 <body>
-  <!-- LAYER 2: Global Fixed Background -->
-  <div class="global-fixed-bg"></div>
 
-  <!-- LAYER 1: Desktop Left Hero (Visible Prewedding Photo) -->
-  <div class="desktop-sidebar">
-    <div class="hero-date" style="font-size:1.1rem; letter-spacing:0.25em; color:#f5eedf; font-weight:700; margin-bottom:0.5rem;">2026</div>
-    <p style="font-size:0.95rem; color:var(--primary-gold-light); letter-spacing:0.2em; text-transform:uppercase;">{{weddingTagline}}</p>
-    <h1>{{groomName}} &amp; {{brideName}}</h1>
-  </div>
-
-  <!-- LAYER 5: Landing Cover Modal -->
-  <div class="landing-cover" id="landingCover">
-    <div class="cover-date">{{weddingTagline}}</div>
-    <h1 class="cover-title serif-font">{{groomName}} &amp; {{brideName}}</h1>
-
-    <div class="guest-badge">
-      <p>Kepada Yth. Bapak/Ibu/Saudara/i:</p>
-      <h4 id="coverGuestName">Tamu Undangan</h4>
-    </div>
-
-    <div class="cover-btn-group">
-      <button class="btn-open" onclick="openInvitation()">Buka Undangan</button>
-      <button class="btn-qr-checkin" onclick="openQrModal()">QR Check-In</button>
+  <!-- ===== FIXED LEFT HERO (DESKTOP ONLY) ===== -->
+  <div class="left-hero">
+    <div class="left-hero-content">
+      <span class="left-hero-eyebrow">{{weddingTagline}}</span>
+      <h1 class="serif left-hero-names">{{groomName}}<br><em>&amp;</em><br>{{brideName}}</h1>
     </div>
   </div>
 
-  <!-- LAYER 3: Scrollable Content Frame -->
-  <div class="scrollable-content" id="scrollContent">
-    <!-- SECTION 1: HOME -->
-    <section class="section-card" id="home">
-      <div class="card">
-        <p style="letter-spacing:0.2em; text-transform:uppercase; font-size:0.75rem; color:var(--primary-gold); margin-bottom:0.5rem; font-weight:700;">
-          {{weddingTagline}}
-        </p>
-        <h1 class="title-couple serif-font">{{groomName}} &amp; {{brideName}}</h1>
-        <p class="quote-text">“{{openingQuote}}”</p>
-        <p class="quote-ref">{{openingQuoteRef}}</p>
+  <!-- ===== COVER SCREEN ===== -->
+  <div class="cover-screen" id="coverScreen">
+    <!-- Top: date display -->
+    <div class="cover-top">
+      <span class="cover-date-part">{{weddingDateDay}}/{{weddingDateMonth}}</span>
+      <span class="cover-date-part">{{weddingDateYear}}</span>
+    </div>
 
-        <div class="countdown-grid" id="countdownGrid">
-          <div class="countdown-box"><span class="countdown-number" id="cdDays">00</span><span class="countdown-label">Hari</span></div>
-          <div class="countdown-box"><span class="countdown-number" id="cdHours">00</span><span class="countdown-label">Jam</span></div>
-          <div class="countdown-box"><span class="countdown-number" id="cdMins">00</span><span class="countdown-label">Menit</span></div>
-          <div class="countdown-box"><span class="countdown-number" id="cdSecs">00</span><span class="countdown-label">Detik</span></div>
-        </div>
+    <!-- Center: names -->
+    <div class="cover-center">
+      <span class="cover-tagline">The Wedding Of</span>
+      <h1 class="cover-names serif">
+        {{groomName}}
+        <em>&amp;</em>
+        {{brideName}}
+      </h1>
+    </div>
 
-        <a href="{{googleCalendarUrl}}" target="_blank" class="btn-calendar">
-          Simpan Tanggal di Kalender
-        </a>
+    <!-- Bottom: guest + button -->
+    <div class="cover-bottom">
+      <span class="cover-kepada">Kepada</span>
+      <h2 class="cover-guest-name serif" id="coverGuestName">Tamu Undangan</h2>
+      <p class="cover-subtitle">Dengan segala hormat, kami mengundang Anda untuk menghadiri acara pernikahan kami.</p>
+      <button class="btn-buka" onclick="openInvitation()">Buka Undangan</button>
+      <button class="btn-qr-ghost" onclick="openModal()">QR Check-In →</button>
+    </div>
+  </div>
+
+  <!-- ===== RIGHT PANEL (SCROLLABLE CONTENT) ===== -->
+  <div class="right-panel" id="rightPanel">
+
+    <!-- SECTION 0: OPENING QUOTE + COUNTDOWN -->
+    <section class="sec" id="home" style="padding-top:5rem;">
+      <span class="eyebrow">{{weddingTagline}}</span>
+      <h1 class="sec-title serif">{{groomName}} &amp; {{brideName}}</h1>
+      <div class="ornament-line"><span>✦</span></div>
+
+      <div class="quote-wrap">
+        <p>"{{openingQuote}}"</p>
+        <cite>{{openingQuoteRef}}</cite>
+      </div>
+
+      <!-- Countdown -->
+      <div class="countdown-wrap">
+        <div class="cd-box"><span class="cd-num" id="cdDays">00</span><span class="cd-lbl">Hari</span></div>
+        <div class="cd-box"><span class="cd-num" id="cdHours">00</span><span class="cd-lbl">Jam</span></div>
+        <div class="cd-box"><span class="cd-num" id="cdMins">00</span><span class="cd-lbl">Menit</span></div>
+        <div class="cd-box"><span class="cd-num" id="cdSecs">00</span><span class="cd-lbl">Detik</span></div>
+      </div>
+      <a href="{{googleCalendarUrl}}" target="_blank" class="btn-cal">Simpan di Kalender</a>
+
+      <div class="scroll-arrow">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
       </div>
     </section>
 
-    <!-- SECTION 2: THE GROOM (FULL PHOTO SLIDE) -->
-    <section class="section-full-photo align-left" id="groom" style="background-image: url('{{groomPhotoUrl}}');">
-      <div class="photo-content">
-        <span class="photo-role">The Groom</span>
-        <h2 class="photo-name serif-font">{{groomDisplayName}}</h2>
-        <div class="photo-divider"></div>
-        <p class="photo-parents">{{groomParents}}</p>
-        <a href="https://instagram.com/{{groomInstagram}}" target="_blank" class="btn-ig-pill">
-          <span>@{{groomInstagram}}</span>
-        </a>
+    <div class="divider-fullbleed"></div>
+
+    <!-- SECTION: GROOM FULL PHOTO -->
+    <section class="full-photo" id="groom" style="background-image: url('{{groomPhotoUrl}}');">
+      <div class="full-photo-content">
+        <span class="fp-role">The Groom</span>
+        <h2 class="fp-name serif">{{groomDisplayName}}</h2>
+        <div class="fp-line"></div>
+        <p class="fp-parents">{{groomParents}}</p>
+        <a href="https://instagram.com/{{groomInstagram}}" target="_blank" class="btn-ig">@{{groomInstagram}}</a>
       </div>
     </section>
 
-    <!-- SECTION 3: THE BRIDE (FULL PHOTO SLIDE) -->
-    <section class="section-full-photo align-right" id="bride" style="background-image: url('{{bridePhotoUrl}}');">
-      <div class="photo-content">
-        <span class="photo-role">The Bride</span>
-        <h2 class="photo-name serif-font">{{brideDisplayName}}</h2>
-        <div class="photo-divider"></div>
-        <p class="photo-parents">{{brideParents}}</p>
-        <a href="https://instagram.com/{{brideInstagram}}" target="_blank" class="btn-ig-pill">
-          <span>@{{brideInstagram}}</span>
-        </a>
+    <!-- SECTION: BRIDE FULL PHOTO -->
+    <section class="full-photo" id="bride" style="background-image: url('{{bridePhotoUrl}}');">
+      <div class="full-photo-content right">
+        <span class="fp-role">The Bride</span>
+        <h2 class="fp-name serif">{{brideDisplayName}}</h2>
+        <div class="fp-line"></div>
+        <p class="fp-parents">{{brideParents}}</p>
+        <a href="https://instagram.com/{{brideInstagram}}" target="_blank" class="btn-ig">@{{brideInstagram}}</a>
       </div>
     </section>
 
-    <!-- SECTION 4: JOURNEY OF LOVE (DYNAMIC) -->
+    <div class="divider-fullbleed"></div>
+
+    <!-- SECTION: LOVE STORY -->
     {{storySectionHtml}}
 
-    <!-- SECTION 5: AGENDA ACARA -->
-    <section class="section-card" id="event">
-      <div class="card">
-        <h2 class="subtitle-section serif-font">Rangkaian Acara</h2>
+    <div class="divider-fullbleed"></div>
+
+    <!-- SECTION: EVENTS -->
+    <section class="sec" id="event">
+      <span class="eyebrow">Save The Date</span>
+      <h2 class="sec-title serif">Rangkaian Acara</h2>
+      <div class="ornament-line"><span>✦</span></div>
+      <div class="event-list">
         {{eventDataHtml}}
         {{dressCodeHtml}}
         {{guestNotesHtml}}
       </div>
     </section>
 
-    <!-- OPTIONAL SECTIONS: TURUT MENGUNDANG & SPECIAL MESSAGE -->
     {{turutMengundangHtml}}
     {{customMessageHtml}}
-
-    <!-- SECTION 6: LIVE & FILTER -->
     {{weddingFilterHtml}}
     {{liveStreamingHtml}}
 
-    <!-- SECTION 7: GALLERY (DYNAMIC) -->
-    {{gallerySectionHtml}}
+    <div class="divider-fullbleed"></div>
 
-    <!-- SECTION 8: WEDDING GIFT (DYNAMIC) -->
+    <!-- SECTION: GALLERY -->
+    <section class="sec" id="gallery">
+      {{gallerySectionHtml}}
+    </section>
+
+    <div class="divider-fullbleed"></div>
+
+    <!-- SECTION: GIFT -->
     {{giftSectionHtml}}
 
-    <!-- SECTION 9: RSVP & WISHES -->
-    <section class="section-card" id="rsvp">
-      <div class="card">
-        <h2 class="subtitle-section serif-font">RSVP &amp; Doa Restu</h2>
-        
-        <form class="rsvp-form" id="rsvpForm" onsubmit="submitRsvp(event)">
-          <div class="form-group">
-            <label class="form-label">Nama Anda</label>
-            <input type="text" id="rsvpName" required class="form-input" placeholder="Masukkan nama lengkap">
+    <div class="divider-fullbleed"></div>
+
+    <!-- SECTION: RSVP + WISHES -->
+    <section class="sec" id="rsvp">
+      <span class="eyebrow">Greet &amp; Wish</span>
+      <h2 class="sec-title serif">RSVP &amp; Doa Restu</h2>
+      <div class="ornament-line"><span>✦</span></div>
+
+      <div class="rsvp-wrap">
+        <form id="rsvpForm" onsubmit="submitRsvp(event)">
+          <div class="form-row">
+            <label class="form-lbl">Nama Anda</label>
+            <input type="text" id="rsvpName" required class="form-in" placeholder="Nama lengkap">
           </div>
-          
-          <div class="form-group">
-            <label class="form-label">Konfirmasi Kehadiran</label>
-            <select id="rsvpStatus" class="form-select">
+          <div class="form-row">
+            <label class="form-lbl">Konfirmasi Kehadiran</label>
+            <select id="rsvpStatus" class="form-sel">
               <option value="hadir">Konfirmasi Hadir</option>
               <option value="tidak">Berhalangan Hadir</option>
             </select>
           </div>
-
-          <div class="form-group">
-            <label class="form-label">Jumlah Tamu</label>
-            <input type="number" id="rsvpCount" min="1" max="5" value="1" class="form-input">
+          <div class="form-row">
+            <label class="form-lbl">Jumlah Tamu</label>
+            <input type="number" id="rsvpCount" min="1" max="5" value="1" class="form-in">
           </div>
-
-          <div class="form-group">
-            <label class="form-label">Ucapan &amp; Doa Restu</label>
-            <textarea id="rsvpMessage" rows="2" class="form-textarea" placeholder="Tuliskan doa terbaik untuk mempelai..."></textarea>
+          <div class="form-row">
+            <label class="form-lbl">Ucapan &amp; Doa</label>
+            <textarea id="rsvpMessage" rows="3" class="form-ta" placeholder="Tuliskan doa terbaik…"></textarea>
           </div>
-
-          <button type="submit" id="btnSubmitRsvp" class="btn-submit-rsvp">
-            Kirim Konfirmasi &amp; Doa
-          </button>
+          <button type="submit" id="btnSubmit" class="btn-submit">Kirim Konfirmasi &amp; Doa</button>
         </form>
-
-        <div class="wishes-stream" id="wishesStream" style="margin-top:1.2rem; max-height:220px; overflow-y:auto;">
-          {{wishesHtml}}
-        </div>
+        <div class="wishes-list" id="wishesList">{{wishesHtml}}</div>
       </div>
     </section>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+      <p class="footer-names serif">{{groomName}} &amp; {{brideName}}</p>
+      <p class="footer-sub">{{weddingDate}}</p>
+    </footer>
   </div>
 
   <!-- Bottom Navigation Dock -->
-  <nav class="bottom-nav-dock">
-    <a href="#home" class="dock-link">
-      <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+  <nav class="bottom-dock">
+    <a href="#home" class="dock-a">
+      <svg class="dock-ico" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
       <span>Home</span>
     </a>
-    <a href="#groom" class="dock-link">
-      <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+    <a href="#groom" class="dock-a">
+      <svg class="dock-ico" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
       <span>Couple</span>
     </a>
-    <a href="#event" class="dock-link">
-      <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+    <a href="#event" class="dock-a">
+      <svg class="dock-ico" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
       <span>Event</span>
     </a>
-    <a href="#gallery" class="dock-link">
-      <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+    <a href="#gallery" class="dock-a">
+      <svg class="dock-ico" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
       <span>Gallery</span>
     </a>
-    <a href="#rsvp" class="dock-link">
-      <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+    <a href="#rsvp" class="dock-a">
+      <svg class="dock-ico" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
       <span>RSVP</span>
     </a>
-    <button onclick="openQrModal()" class="dock-link" style="background:none; border:none; cursor:pointer;">
-      <svg class="dock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+    <button onclick="openModal()" class="dock-a" style="background:none;border:none;cursor:pointer;">
+      <svg class="dock-ico" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
       <span>Ticket</span>
     </button>
   </nav>
 
-  <!-- Audio Background Player -->
+  <!-- Music FAB -->
   <audio id="bgAudio" loop preload="auto">
-    <source src="{{audioUrl}}" type="audio/ogg"><source src="{{audioUrl}}" type="audio/mpeg">
+    <source src="{{audioUrl}}" type="audio/ogg">
+    <source src="{{audioUrl}}" type="audio/mpeg">
   </audio>
-
-  <button class="music-btn" id="musicBtn" onclick="toggleAudio()" title="Musik">
-    <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+  <button class="music-fab" id="musicFab" onclick="toggleAudio()" title="Musik">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
       <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
     </svg>
   </button>
 
-  <!-- Pop-up QR Modal -->
-  <div class="qr-modal" id="qrModal" onclick="closeQrModal(event)">
-    <div class="qr-modal-card" onclick="event.stopPropagation()">
-      <button class="btn-close-modal" onclick="closeQrModal()">✕</button>
+  <!-- QR Modal -->
+  <div class="modal-bg" id="modalBg" onclick="closeModal(event)">
+    <div class="modal-card" onclick="event.stopPropagation()">
+      <button class="modal-close" onclick="closeModal()">✕</button>
       {{qrAccessCardHtml}}
-      
-      <div class="souvenir-voucher-card">
-        <span style="font-size:0.65rem; letter-spacing:0.2em; color:var(--primary-gold-light); text-transform:uppercase; font-weight:700;">VOUCHER SOUVENIR</span>
-        <h4 class="serif-font" style="font-size:1.2rem; margin:0.4rem 0 0.6rem; color:#fff;">Kartu Pengambilan Souvenir</h4>
-        <p style="font-size:0.75rem; color:#d9d9d9; margin-bottom:0.6rem;">Tunjukkan kartu ini kepada penerima tamu untuk penukaran cinderamata.</p>
-        <div style="background:#fff; color:#1e1c1a; padding:0.4rem; border-radius:6px; font-family:monospace; font-weight:700; font-size:0.85rem;">
-          SOUVENIR-{{invitationId}}
-        </div>
+      <div style="margin-top:1rem;padding:1rem;border:1px solid var(--border);text-align:center;">
+        <span style="font-size:0.58rem;letter-spacing:0.25em;color:var(--gold);text-transform:uppercase;font-weight:700;display:block;margin-bottom:0.5rem;">Voucher Souvenir</span>
+        <p style="font-size:0.72rem;color:var(--text-muted);margin-bottom:0.5rem;">Tunjukkan kartu ini kepada penerima tamu untuk penukaran cinderamata.</p>
+        <div style="background:rgba(255,255,255,0.06);padding:0.45rem;font-family:monospace;font-weight:700;font-size:0.82rem;color:var(--text);letter-spacing:0.1em;">SOUVENIR-{{invitationId}}</div>
       </div>
     </div>
   </div>
@@ -487,166 +570,110 @@
     const TARGET_DATE = "{{targetDate}}";
     let isPlaying = false;
 
-    function getGuestNameFromUrl() {
-      const params = new URLSearchParams(window.location.search);
-      return params.get('to') || params.get('u') || 'Tamu Undangan';
+    // Guest name from URL
+    function getGuest() {
+      const p = new URLSearchParams(window.location.search);
+      return p.get('to') || p.get('u') || 'Tamu Undangan';
     }
-
-    const guestName = getGuestNameFromUrl();
+    const guestName = getGuest();
     document.getElementById('coverGuestName').textContent = guestName;
     const modalNameEl = document.getElementById('modalGuestName');
     if (modalNameEl) modalNameEl.textContent = guestName;
-    document.getElementById('rsvpName').value = guestName !== 'Tamu Undangan' ? guestName : '';
+    const rsvpNameEl = document.getElementById('rsvpName');
+    if (rsvpNameEl && guestName !== 'Tamu Undangan') rsvpNameEl.value = guestName;
 
+    // Open invitation
     function openInvitation() {
-      document.getElementById('landingCover').classList.add('hidden');
+      document.getElementById('coverScreen').classList.add('hidden');
       playAudio();
     }
 
-    function openQrModal() {
-      document.getElementById('qrModal').classList.add('active');
-    }
-
-    function closeQrModal() {
-      document.getElementById('qrModal').classList.remove('active');
-    }
-
-    const audio = document.getElementById('bgAudio');
-    const musicBtn = document.getElementById('musicBtn');
-
-    function playAudio() {
-      if (audio) {
-        audio.play().then(() => {
-          isPlaying = true;
-          musicBtn.classList.add('playing');
-        }).catch(err => {
-          console.warn('Autoplay blocked:', err);
-        });
+    // Modal
+    function openModal() { document.getElementById('modalBg').classList.add('open'); }
+    function closeModal(e) {
+      if (!e || e.target === document.getElementById('modalBg')) {
+        document.getElementById('modalBg').classList.remove('open');
       }
     }
 
+    // Audio
+    const audio = document.getElementById('bgAudio');
+    const musicFab = document.getElementById('musicFab');
+    function playAudio() {
+      if (!audio) return;
+      audio.play().then(() => { isPlaying = true; musicFab.classList.add('playing'); }).catch(() => {});
+    }
     function toggleAudio() {
       if (!audio) return;
-      if (isPlaying) {
-        audio.pause();
-        isPlaying = false;
-        musicBtn.classList.remove('playing');
-      } else {
-        audio.play();
-        isPlaying = true;
-        musicBtn.classList.add('playing');
-      }
+      if (isPlaying) { audio.pause(); isPlaying = false; musicFab.classList.remove('playing'); }
+      else { audio.play(); isPlaying = true; musicFab.classList.add('playing'); }
     }
-
-    document.addEventListener('visibilitychange', function () {
+    document.addEventListener('visibilitychange', () => {
       if (!audio) return;
       if (document.hidden) {
-        if (!audio.paused) {
-          audio.dataset.wasPlaying = 'true';
-          audio.pause();
-          musicBtn.classList.remove('playing');
-        }
+        if (!audio.paused) { audio.dataset.was = 'true'; audio.pause(); musicFab.classList.remove('playing'); }
       } else {
-        if (audio.dataset.wasPlaying === 'true') {
-          audio.play().then(() => {
-            musicBtn.classList.add('playing');
-          });
-          audio.dataset.wasPlaying = '';
-        }
+        if (audio.dataset.was === 'true') { audio.play().then(() => musicFab.classList.add('playing')); audio.dataset.was = ''; }
       }
     });
 
+    // Gift tabs
     function switchGiftTab(tab, btn) {
       document.querySelectorAll('.gift-tab-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      if (tab === 'amplop') {
-        document.getElementById('giftTabAmplop').style.display = 'block';
-        document.getElementById('giftTabKado').style.display = 'none';
-      } else {
-        document.getElementById('giftTabAmplop').style.display = 'none';
-        document.getElementById('giftTabKado').style.display = 'block';
-      }
+      const a = document.getElementById('giftTabAmplop');
+      const k = document.getElementById('giftTabKado');
+      if (a && k) { a.style.display = tab === 'amplop' ? 'block' : 'none'; k.style.display = tab === 'kado' ? 'block' : 'none'; }
     }
 
+    // Copy to clipboard
     function copyText(text) {
-      navigator.clipboard.writeText(text).then(() => {
-        alert('Berhasil disalin!');
+      navigator.clipboard.writeText(text).then(() => alert('Berhasil disalin!')).catch(() => {
+        const el = document.createElement('textarea'); el.value = text;
+        document.body.appendChild(el); el.select(); document.execCommand('copy');
+        document.body.removeChild(el); alert('Berhasil disalin!');
       });
     }
 
+    // Countdown
     function initCountdown() {
       const target = new Date(TARGET_DATE).getTime();
       if (isNaN(target)) return;
-
       setInterval(() => {
-        const now = new Date().getTime();
-        const diff = target - now;
-
+        const diff = target - Date.now();
         if (diff > 0) {
-          const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-          const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-          const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-          const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-          document.getElementById('cdDays').textContent = String(days).padStart(2, '0');
-          document.getElementById('cdHours').textContent = String(hours).padStart(2, '0');
-          document.getElementById('cdMins').textContent = String(minutes).padStart(2, '0');
-          document.getElementById('cdSecs').textContent = String(seconds).padStart(2, '0');
+          document.getElementById('cdDays').textContent = String(Math.floor(diff / 86400000)).padStart(2, '0');
+          document.getElementById('cdHours').textContent = String(Math.floor((diff % 86400000) / 3600000)).padStart(2, '0');
+          document.getElementById('cdMins').textContent = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
+          document.getElementById('cdSecs').textContent = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
         }
       }, 1000);
     }
     initCountdown();
 
+    // RSVP submit
     async function submitRsvp(e) {
       e.preventDefault();
-      const btn = document.getElementById('btnSubmitRsvp');
+      const btn = document.getElementById('btnSubmit');
       const name = document.getElementById('rsvpName').value.trim();
       const status = document.getElementById('rsvpStatus').value;
       const count = document.getElementById('rsvpCount').value;
       const message = document.getElementById('rsvpMessage').value.trim();
-
-      if (!name) {
-        alert('Silakan isi nama Anda');
-        return;
-      }
-
-      btn.disabled = true;
-      btn.textContent = 'Mengirim...';
-
+      if (!name) { alert('Silakan isi nama Anda'); return; }
+      btn.disabled = true; btn.textContent = 'Mengirim...';
       try {
         const res = await fetch('/api/public/rsvp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            invitationId: INVITATION_ID,
-            guestName: name,
-            status: status,
-            guestCount: count,
-            message: message,
-          }),
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ invitationId: INVITATION_ID, guestName: name, status, guestCount: count, message }),
         });
         const data = await res.json();
-        if (data.success) {
-          alert('Konfirmasi dan doa berhasil dikirim!');
-          document.getElementById('rsvpMessage').value = '';
-        }
-      } catch (err) {
-        alert('Koneksi bermasalah');
-      } finally {
-        btn.disabled = false;
-        btn.textContent = 'Kirim Konfirmasi & Doa';
-      }
+        if (data.success) { alert('Konfirmasi dan doa berhasil dikirim!'); document.getElementById('rsvpMessage').value = ''; }
+      } catch { alert('Koneksi bermasalah'); }
+      finally { btn.disabled = false; btn.textContent = 'Kirim Konfirmasi & Doa'; }
     }
 
-    // Live Preview Auto-Sync Hot Reload Listener
-    try {
-      const bc = new BroadcastChannel("lux_preview_sync");
-      bc.onmessage = function(e) {
-        if (e.data && e.data.type === "INVITATION_SAVED") {
-          window.location.reload();
-        }
-      };
-    } catch (e) {}
+    // Live preview hot-reload
+    try { const bc = new BroadcastChannel("lux_preview_sync"); bc.onmessage = e => { if (e.data?.type === "INVITATION_SAVED") window.location.reload(); }; } catch {}
   </script>
 </body>
 </html>

@@ -10,9 +10,12 @@ const THEME_MAP: Record<string, { file: string; folder: "premium" | "traditional
 
   // Traditional Series
   "prameswari": { file: "prameswari.html", folder: "traditional" },
+  "dillalucky": { file: "dillalucky.html", folder: "traditional" },
 
   // Modern Series
   "wave": { file: "wave.html", folder: "modern" },
+  "papercut": { file: "papercut.html", folder: "modern" },
+  "ameera": { file: "ameera.html", folder: "modern" },
 
   // Backward compatibility alias mapping
   "kila": { file: "kalandra.html", folder: "premium" },
@@ -21,8 +24,7 @@ const THEME_MAP: Record<string, { file: string; folder: "premium" | "traditional
   "premium-ivanna": { file: "valente.html", folder: "premium" },
   "danila": { file: "aurelia.html", folder: "premium" },
   "premium-danila": { file: "aurelia.html", folder: "premium" },
-  "papercut": { file: "artisan.html", folder: "premium" },
-  "moody-papercut": { file: "artisan.html", folder: "premium" },
+  "moody-papercut": { file: "papercut.html", folder: "modern" },
   "aruna": { file: "prameswari.html", folder: "traditional" },
   "heritage-aruna": { file: "prameswari.html", folder: "traditional" },
 };

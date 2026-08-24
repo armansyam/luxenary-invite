@@ -8,6 +8,9 @@ const DEFAULT_THEMES = [
   { id: "artisan", name: "Artisan", category: "premium", series: "Premium", description: "Artistik, Hangat & Vintage", isPremium: true, sortOrder: 4, isActive: true },
   { id: "prameswari", name: "Prameswari", category: "traditional", series: "Traditional", description: "Sakral, Megah & Royal Keraton", isPremium: false, sortOrder: 5, isActive: true },
   { id: "wave", name: "Wave", category: "modern", series: "Modern", description: "Dark, Moody & Dramatic — Gelombang Elegan", isPremium: false, sortOrder: 6, isActive: true },
+  { id: "papercut", name: "Papercut", category: "modern", series: "Modern", description: "Moody Papercut — Kraft Paper Aesthetic & Artistik", isPremium: false, sortOrder: 7, isActive: true },
+  { id: "dillalucky", name: "Dilla Lucky", category: "traditional", series: "Traditional", description: "Islami Sakral — Batik Ornament & Penuh Berkah", isPremium: false, sortOrder: 8, isActive: true },
+  { id: "ameera", name: "Ameera", category: "modern", series: "Modern", description: "Heritage Modern — Elegan Dark & Nuansa Warisan Budaya", isPremium: false, sortOrder: 9, isActive: true },
 ];
 
 export async function GET() {

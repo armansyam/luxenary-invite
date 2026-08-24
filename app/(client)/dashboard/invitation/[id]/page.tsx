@@ -58,6 +58,33 @@ const THEMES = [
     cover: "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=600&q=80",
     tag: "Moody",
   },
+  {
+    id: "papercut",
+    name: "Papercut",
+    subtitle: "Modern Series",
+    category: "modern",
+    desc: "Moody Papercut — Kraft Paper Aesthetic & Artistik",
+    cover: "https://images.unsplash.com/photo-1513279922550-250c24738d87?w=600&q=80",
+    tag: "Papercut",
+  },
+  {
+    id: "ameera",
+    name: "Ameera",
+    subtitle: "Modern Series",
+    category: "modern",
+    desc: "Heritage Modern — Elegan Dark & Nuansa Warisan",
+    cover: "https://images.unsplash.com/photo-1469371670807-013ccf25f16a?w=600&q=80",
+    tag: "Heritage",
+  },
+  {
+    id: "dillalucky",
+    name: "Dilla Lucky",
+    subtitle: "Traditional Series",
+    category: "traditional",
+    desc: "Islami Sakral — Batik Ornament & Penuh Berkah",
+    cover: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=600&q=80",
+    tag: "Islami",
+  },
 ];
 
 const COLOR_PALETTES = [

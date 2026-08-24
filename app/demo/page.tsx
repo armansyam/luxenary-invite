@@ -54,6 +54,27 @@ const THEMES: ThemeItem[] = [
     category: "modern",
     desc: "Dark, Moody & Dramatic — Gelombang Elegan",
   },
+  {
+    id: "papercut",
+    name: "Papercut",
+    series: "Modern Series",
+    category: "modern",
+    desc: "Moody Papercut — Kraft Paper Aesthetic & Artistik",
+  },
+  {
+    id: "ameera",
+    name: "Ameera",
+    series: "Modern Series",
+    category: "modern",
+    desc: "Heritage Modern — Elegan Dark & Nuansa Warisan",
+  },
+  {
+    id: "dillalucky",
+    name: "Dilla Lucky",
+    series: "Traditional Series",
+    category: "traditional",
+    desc: "Islami Sakral — Batik Ornament & Penuh Berkah",
+  },
 ];
 
 export default function CatalogGridShowcase() {
