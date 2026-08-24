@@ -470,6 +470,7 @@ export async function composeTemplateData(invitationId: string) {
         <button class="lux-zoom-nav prev" onclick="luxPrevZoom(event)">‹</button>
         <div class="lux-zoom-img-box" onclick="event.stopPropagation()">
           <img id="luxZoomActiveImg" src="${displayPhotos[0]}" alt="Zoom View">
+          <div class="lux-zoom-counter" id="luxZoomCounter">1 / ${allPhotos.length}</div>
         </div>
         <button class="lux-zoom-nav next" onclick="luxNextZoom(event)">›</button>
       </div>
@@ -478,45 +479,63 @@ export async function composeTemplateData(invitationId: string) {
         window.LUX_ALL_PHOTOS = ${JSON.stringify(allPhotos)};
         window.luxActivePhotoIdx = 0;
 
+        function ensureModalsOnBody() {
+          const m1 = document.getElementById('luxFullGalleryModal');
+          if (m1 && m1.parentNode !== document.body) document.body.appendChild(m1);
+          const m2 = document.getElementById('luxZoomModal');
+          if (m2 && m2.parentNode !== document.body) document.body.appendChild(m2);
+        }
+        document.addEventListener('DOMContentLoaded', ensureModalsOnBody);
+
         window.luxOpenFullGallery = function() {
+          ensureModalsOnBody();
           const m = document.getElementById('luxFullGalleryModal');
           if (m) {
             m.classList.add('open');
             document.body.style.overflow = 'hidden';
+            document.documentElement.style.overflow = 'hidden';
           }
         };
 
         window.luxCloseFullGallery = function(e) {
-          if (!e || e.target === document.getElementById('luxFullGalleryModal')) {
+          if (!e || e.target === document.getElementById('luxFullGalleryModal') || e.target.classList.contains('gallery-modal-close')) {
             const m = document.getElementById('luxFullGalleryModal');
             if (m) {
               m.classList.remove('open');
               document.body.style.overflow = '';
+              document.documentElement.style.overflow = '';
             }
           }
         };
 
         window.luxOpenZoom = function(idx) {
+          ensureModalsOnBody();
           window.luxActivePhotoIdx = idx >= 0 && idx < window.LUX_ALL_PHOTOS.length ? idx : 0;
           const zoom = document.getElementById('luxZoomModal');
           const img = document.getElementById('luxZoomActiveImg');
+          const counter = document.getElementById('luxZoomCounter');
           if (img && window.LUX_ALL_PHOTOS[window.luxActivePhotoIdx]) {
             img.src = window.LUX_ALL_PHOTOS[window.luxActivePhotoIdx];
+          }
+          if (counter) {
+            counter.textContent = (window.luxActivePhotoIdx + 1) + " / " + window.LUX_ALL_PHOTOS.length;
           }
           if (zoom) {
             zoom.classList.add('open');
             document.body.style.overflow = 'hidden';
+            document.documentElement.style.overflow = 'hidden';
           }
         };
 
         window.luxCloseZoom = function(e) {
-          if (!e || e.target === document.getElementById('luxZoomModal')) {
+          if (!e || e.target === document.getElementById('luxZoomModal') || e.target.classList.contains('lux-zoom-close')) {
             const zoom = document.getElementById('luxZoomModal');
             if (zoom) {
               zoom.classList.remove('open');
               const fg = document.getElementById('luxFullGalleryModal');
               if (!fg || !fg.classList.contains('open')) {
                 document.body.style.overflow = '';
+                document.documentElement.style.overflow = '';
               }
             }
           }
@@ -526,15 +545,46 @@ export async function composeTemplateData(invitationId: string) {
           if (e) e.stopPropagation();
           window.luxActivePhotoIdx = (window.luxActivePhotoIdx + 1) % window.LUX_ALL_PHOTOS.length;
           const img = document.getElementById('luxZoomActiveImg');
+          const counter = document.getElementById('luxZoomCounter');
           if (img) img.src = window.LUX_ALL_PHOTOS[window.luxActivePhotoIdx];
+          if (counter) counter.textContent = (window.luxActivePhotoIdx + 1) + " / " + window.LUX_ALL_PHOTOS.length;
         };
 
         window.luxPrevZoom = function(e) {
           if (e) e.stopPropagation();
           window.luxActivePhotoIdx = (window.luxActivePhotoIdx - 1 + window.LUX_ALL_PHOTOS.length) % window.LUX_ALL_PHOTOS.length;
           const img = document.getElementById('luxZoomActiveImg');
+          const counter = document.getElementById('luxZoomCounter');
           if (img) img.src = window.LUX_ALL_PHOTOS[window.luxActivePhotoIdx];
+          if (counter) counter.textContent = (window.luxActivePhotoIdx + 1) + " / " + window.LUX_ALL_PHOTOS.length;
         };
+
+        // Touch swipe support for mobile lightbox
+        (function() {
+          let touchStartX = 0;
+          let touchStartY = 0;
+          document.addEventListener('touchstart', function(e) {
+            const zoom = document.getElementById('luxZoomModal');
+            if (zoom && zoom.classList.contains('open')) {
+              touchStartX = e.changedTouches[0].screenX;
+              touchStartY = e.changedTouches[0].screenY;
+            }
+          }, { passive: true });
+
+          document.addEventListener('touchend', function(e) {
+            const zoom = document.getElementById('luxZoomModal');
+            if (zoom && zoom.classList.contains('open')) {
+              const diffX = e.changedTouches[0].screenX - touchStartX;
+              const diffY = e.changedTouches[0].screenY - touchStartY;
+              if (Math.abs(diffX) > 45 && Math.abs(diffX) > Math.abs(diffY)) {
+                if (diffX < 0) window.luxNextZoom();
+                else window.luxPrevZoom();
+              } else if (diffY > 80 && Math.abs(diffY) > Math.abs(diffX)) {
+                window.luxCloseZoom();
+              }
+            }
+          }, { passive: true });
+        })();
       </script>
     `;
   }
