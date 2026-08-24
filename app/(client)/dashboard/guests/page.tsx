@@ -76,6 +76,7 @@ export default function GuestsPage() {
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
+  const [copiedGuestId, setCopiedGuestId] = useState<string | null>(null);
 
   // WhatsApp Template Customization States
   const [waTemplate, setWaTemplate] = useState(DEFAULT_WA_TEMPLATE);
@@ -173,6 +174,29 @@ export default function GuestsPage() {
     }
   };
 
+  // Toggle Checkbox Status (Auto-Save to DB)
+  const toggleWaStatus = async (guestId: string, currentStatus: string) => {
+    const nextStatus = currentStatus === "SENT" ? "PENDING" : "SENT";
+
+    // Optimistic state update
+    setGuests((prev) =>
+      prev.map((g) => (g.id === guestId ? { ...g, waStatus: nextStatus } : g))
+    );
+
+    try {
+      await fetch(`/api/client/guests/${guestId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ waStatus: nextStatus }),
+      });
+    } catch {
+      // Rollback on error
+      setGuests((prev) =>
+        prev.map((g) => (g.id === guestId ? { ...g, waStatus: currentStatus } : g))
+      );
+    }
+  };
+
   // Save Custom WhatsApp Template Handler
   const handleSaveTemplate = async () => {
     if (!invitationId || savingTemplate) return;
@@ -257,6 +281,16 @@ export default function GuestsPage() {
     return `https://api.whatsapp.com/send?text=${text}`;
   };
 
+  const handleCopyGuestLink = (guest: Guest) => {
+    const sub = invitationData?.subdomain || `${invitationData?.groomSlug || "didan"}-${invitationData?.brideSlug || "nasha"}`;
+    const fullGuestUrl = getInvitationPublicUrl(sub, guest.name);
+
+    navigator.clipboard.writeText(fullGuestUrl).then(() => {
+      setCopiedGuestId(guest.id);
+      setTimeout(() => setCopiedGuestId(null), 2000);
+    });
+  };
+
   const insertVariableTag = (tag: string) => {
     setWaTemplate((prev) => prev + tag);
   };
@@ -266,6 +300,10 @@ export default function GuestsPage() {
     const matchesSearch = !search || g.name.toLowerCase().includes(search.toLowerCase()) || (g.phone && g.phone.includes(search));
     return matchesCategory && matchesSearch;
   });
+
+  const totalGuests = guests.length;
+  const sentCount = guests.filter((g) => g.waStatus === "SENT").length;
+  const pendingCount = totalGuests - sentCount;
 
   return (
     <div className="space-y-6 font-sans pb-20">
@@ -278,7 +316,7 @@ export default function GuestsPage() {
             Buku Tamu &amp; Pengiriman WhatsApp
           </h1>
           <p className="text-xs text-stone-500 mt-1">
-            Kelola nama penerima undangan, atur kuota kehadiran, dan sesuaikan template pesan WhatsApp 1-klik
+            Kelola nama penerima undangan, checklist status pengiriman, dan sesuaikan template pesan WhatsApp
           </p>
         </div>
 
@@ -292,7 +330,7 @@ export default function GuestsPage() {
             <svg className="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
-            <span>Edit Template WhatsApp</span>
+            <span>Edit Template WA</span>
           </button>
 
           {/* Add Guest Button */}
@@ -309,6 +347,39 @@ export default function GuestsPage() {
         </div>
       </div>
 
+      {/* Quick Summary Counter Bar */}
+      <div className="grid grid-cols-3 gap-3 bg-white p-4 rounded-2xl border border-stone-200 shadow-xs">
+        <div className="flex items-center gap-3 px-2 border-r border-stone-100">
+          <div className="w-8 h-8 rounded-xl bg-stone-100 flex items-center justify-center text-stone-600 font-bold text-xs">
+            👥
+          </div>
+          <div>
+            <span className="text-[10px] text-stone-400 font-bold uppercase tracking-wider block">Total Tamu</span>
+            <span className="text-sm sm:text-base font-bold text-stone-900">{totalGuests}</span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 px-2 border-r border-stone-100">
+          <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-xs">
+            ✓
+          </div>
+          <div>
+            <span className="text-[10px] text-stone-400 font-bold uppercase tracking-wider block">Sudah Dikirim</span>
+            <span className="text-sm sm:text-base font-bold text-emerald-700">{sentCount}</span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 px-2">
+          <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold text-xs">
+            ⏳
+          </div>
+          <div>
+            <span className="text-[10px] text-stone-400 font-bold uppercase tracking-wider block">Belum Dikirim</span>
+            <span className="text-sm sm:text-base font-bold text-amber-700">{pendingCount}</span>
+          </div>
+        </div>
+      </div>
+
       {error && (
         <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
           {error}
@@ -321,7 +392,7 @@ export default function GuestsPage() {
         {/* Category Filters */}
         <div className="flex bg-stone-100 p-1 rounded-xl gap-1 text-xs overflow-x-auto">
           {[
-            { id: "all", label: "Semua" },
+            { id: "all", label: `Semua (${totalGuests})` },
             { id: "vip", label: "VIP" },
             { id: "keluarga", label: "Keluarga" },
             { id: "teman", label: "Teman" },
@@ -356,7 +427,7 @@ export default function GuestsPage() {
         </div>
       </div>
 
-      {/* Guest List (Cards) */}
+      {/* HIGH-DENSITY EFFICIENT LIST TABLE */}
       {loading ? (
         <div className="bg-white p-12 rounded-2xl border border-stone-200 text-center text-stone-400 text-xs">
           Memuat daftar tamu undangan...
@@ -379,55 +450,117 @@ export default function GuestsPage() {
           </button>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="bg-white rounded-2xl sm:rounded-3xl border border-stone-200 shadow-xs overflow-hidden">
           
-          {/* Mobile Card List */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-            {filteredGuests.map((guest) => {
+          {/* Table Header (Desktop) */}
+          <div className="hidden md:grid md:grid-cols-12 gap-3 px-5 py-3 bg-stone-50/80 border-b border-stone-200 text-[11px] font-bold text-stone-500 uppercase tracking-wider items-center">
+            <div className="col-span-1 text-center">Terkirim</div>
+            <div className="col-span-4">Nama Tamu &amp; Kontak</div>
+            <div className="col-span-2">Kategori</div>
+            <div className="col-span-2">Kuota &amp; Sesi</div>
+            <div className="col-span-3 text-right">Aksi Pengiriman</div>
+          </div>
+
+          {/* Table Body (High Density List Rows) */}
+          <div className="divide-y divide-stone-100">
+            {filteredGuests.map((guest, idx) => {
               const waUrl = generateWaLink(guest);
+              const isSent = guest.waStatus === "SENT";
+
               return (
                 <div
                   key={guest.id}
-                  className="bg-white p-4 sm:p-5 rounded-2xl border border-stone-200 shadow-xs space-y-3 flex flex-col justify-between"
+                  className={`p-3.5 sm:px-5 sm:py-3.5 transition flex flex-col md:grid md:grid-cols-12 gap-2.5 md:gap-3 md:items-center ${
+                    isSent ? "bg-emerald-50/20 hover:bg-emerald-50/40" : "hover:bg-stone-50/80"
+                  }`}
                 >
-                  <div className="space-y-1.5">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <h4 className="text-sm font-bold text-stone-900">{guest.name}</h4>
-                        <span className="text-[11px] text-stone-500 font-mono">
-                          {guest.phone || guest.phoneNumber || "Tanpa nomor WhatsApp"}
-                        </span>
-                      </div>
-                      <span className="px-2 py-0.5 rounded-full bg-stone-100 border border-stone-200 text-stone-700 text-[10px] font-bold uppercase tracking-wider">
-                        {guest.category || "UMUM"}
+                  
+                  {/* Column 1: Checkbox (Status Terkirim) */}
+                  <div className="flex md:col-span-1 items-center justify-between md:justify-center">
+                    <label className="flex items-center gap-2 cursor-pointer select-none group" title="Centang jika undangan sudah dikirim ke tamu ini">
+                      <input
+                        type="checkbox"
+                        checked={isSent}
+                        onChange={() => toggleWaStatus(guest.id, guest.waStatus)}
+                        className="w-4 h-4 text-emerald-700 rounded border-stone-300 focus:ring-emerald-700 cursor-pointer"
+                      />
+                      <span className="md:hidden text-xs font-bold text-stone-700">
+                        {isSent ? "✓ Sudah Dikirim" : "Belum Dikirim"}
                       </span>
-                    </div>
+                    </label>
 
-                    <div className="flex items-center gap-3 text-[11px] text-stone-500 pt-1">
-                      <span>Kuota: <strong>{guest.guestQuota || guest.guestLimit || 1} Pax</strong></span>
-                      <span>•</span>
-                      <span>Sesi: <strong>{guest.sessionInfo || "Reguler"}</strong></span>
-                    </div>
+                    {/* Mobile Index Badge */}
+                    <span className="md:hidden text-[10px] text-stone-400 font-mono">#{idx + 1}</span>
                   </div>
 
-                  {/* Actions */}
-                  <div className="pt-2 border-t border-stone-100 flex items-center justify-between gap-2">
+                  {/* Column 2: Guest Name & Phone */}
+                  <div className="md:col-span-4 min-w-0">
+                    <h4 className="text-xs sm:text-sm font-bold text-stone-900 truncate">{guest.name}</h4>
+                    <span className="text-[11px] text-stone-500 font-mono block truncate">
+                      {guest.phone || guest.phoneNumber || "Tanpa No. WhatsApp"}
+                    </span>
+                  </div>
+
+                  {/* Column 3: Category Badge */}
+                  <div className="md:col-span-2 flex items-center gap-2">
+                    <span className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                      (guest.category || "").toUpperCase() === "VIP"
+                        ? "bg-amber-100 text-amber-900 border border-amber-300/60"
+                        : (guest.category || "").toUpperCase() === "KELUARGA"
+                        ? "bg-purple-100 text-purple-900 border border-purple-300/60"
+                        : (guest.category || "").toUpperCase() === "TEMAN"
+                        ? "bg-blue-100 text-blue-900 border border-blue-300/60"
+                        : "bg-stone-100 text-stone-700 border border-stone-200"
+                    }`}>
+                      {guest.category || "UMUM"}
+                    </span>
+                  </div>
+
+                  {/* Column 4: Quota & Session */}
+                  <div className="md:col-span-2 text-xs text-stone-600">
+                    <span className="font-semibold text-stone-900">{guest.guestQuota || guest.guestLimit || 1} Pax</span>
+                    <span className="text-stone-400 mx-1">·</span>
+                    <span className="text-[11px] text-stone-500">{guest.sessionInfo || "Reguler"}</span>
+                  </div>
+
+                  {/* Column 5: Action Buttons (WhatsApp, Copy Link, Delete) */}
+                  <div className="md:col-span-3 flex items-center justify-end gap-1.5 pt-2 md:pt-0 border-t md:border-0 border-stone-100">
+                    
+                    {/* Copy Link Button */}
+                    <button
+                      type="button"
+                      onClick={() => handleCopyGuestLink(guest)}
+                      className="px-2.5 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg text-xs font-semibold transition flex items-center gap-1 cursor-pointer"
+                      title="Salin Link Undangan Tamu Ini"
+                    >
+                      <svg className="w-3.5 h-3.5 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                      </svg>
+                      <span>{copiedGuestId === guest.id ? "Tersalin!" : "Salin"}</span>
+                    </button>
+
+                    {/* Send WhatsApp Button */}
                     <a
                       href={waUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="flex-1 py-2 px-3 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                      onClick={() => {
+                        if (!isSent) toggleWaStatus(guest.id, guest.waStatus);
+                      }}
+                      className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                      title="Buka WhatsApp untuk Mengirim Undangan"
                     >
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3.5 h-3.5 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                       </svg>
-                      <span>Kirim WhatsApp</span>
+                      <span>Kirim WA</span>
                     </a>
 
+                    {/* Delete Button */}
                     <button
                       type="button"
                       onClick={() => handleDeleteGuest(guest.id)}
-                      className="p-2 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition cursor-pointer"
+                      className="p-1.5 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
                       title="Hapus Tamu"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -435,10 +568,12 @@ export default function GuestsPage() {
                       </svg>
                     </button>
                   </div>
+
                 </div>
               );
             })}
           </div>
+
         </div>
       )}
 
