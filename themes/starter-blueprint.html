@@ -5,198 +5,737 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>The Wedding of {{groomName}} &amp; {{brideName}}</title>
 
-  <!-- 1. GOOGLE FONTS -->
-  <!-- 100% Self-Hosted Local Google Fonts (Zero External Latency) -->
-  <link rel="stylesheet" href="/fonts/fonts.css">
+  <!-- =================================================================== -->
+  <!-- 1. GOOGLE FONTS (Self-Hosted Local Zero Latency)                   -->
+  <!-- =================================================================== -->
+  <link rel="stylesheet" href="/fonts/fonts.css" />
 
   <style>
-    /* 2. WARNA DINAMIS DARI DATABASE */
+    /* =================================================================== */
+    /* 2. DESIGN SYSTEM & DYNAMIC PALETTE                                   */
+    /* =================================================================== */
     :root {
       --primary: {{colorPrimary}};
       --secondary: {{colorSecondary}};
       --accent: {{colorAccent}};
       --bg-light: {{colorBgLight}};
       --bg-dark: {{colorBgDark}};
+      --text-main: #2b2725;
+      --text-muted: #736b63;
+      --radius-sm: 8px;
+      --radius-md: 16px;
+      --radius-lg: 24px;
+      --radius-full: 9999px;
+      --shadow-subtle: 0 4px 20px rgba(0, 0, 0, 0.06);
+      --shadow-elevated: 0 12px 36px rgba(0, 0, 0, 0.12);
     }
 
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
     body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
       background: var(--bg-dark, #181411);
-      color: #2b2725;
+      color: var(--text-main, #2b2725);
+      line-height: 1.6;
       overflow-x: hidden;
     }
 
-    /* Style Sampul Pembuka (Cover Pop-up) */
-    .cover-overlay {
-      position: fixed; inset: 0; z-index: 9999;
-      background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.7)), url('{{landingCoverUrl}}') center/cover no-repeat;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      color: white; text-align: center; padding: 20px;
-      transition: transform 0.8s cubic-bezier(0.85, 0, 0.15, 1);
-    }
-    .cover-overlay.opened { transform: translateY(-100%); pointer-events: none; }
-
-    /* Tombol Musik Melayang */
-    .audio-btn {
-      position: fixed; bottom: 24px; right: 24px; z-index: 900;
-      width: 44px; height: 44px; border-radius: 50%;
-      background: rgba(255,255,255,0.9); border: 1px solid rgba(0,0,0,0.1);
-      box-shadow: 0 4px 15px rgba(0,0,0,0.15); display: flex;
-      align-items: center; justify-content: center; cursor: pointer;
+    /* Serif Headings */
+    .serif, h1, h2, h3, h4, .font-serif {
+      font-family: 'Cinzel', 'Marcellus', Georgia, serif;
+      letter-spacing: 0.02em;
     }
 
-    /* Section Container */
-    .section {
-      max-width: 600px;
+    /* Container Wrapper */
+    .app-container {
+      max-width: 640px;
       margin: 0 auto;
-      padding: 40px 20px;
+      min-height: 100vh;
+      background: #ffffff;
+      position: relative;
+      box-shadow: 0 0 50px rgba(0, 0, 0, 0.25);
+    }
+
+    /* Section Flow Standard */
+    .sec-flow {
+      padding: 56px 24px;
+      position: relative;
       text-align: center;
+    }
+
+    .sec-eyebrow {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--primary, #b5833c);
+      margin-bottom: 8px;
+    }
+
+    .sec-main-title {
+      font-size: 26px;
+      font-weight: 600;
+      color: #1a1614;
+      margin-bottom: 16px;
+    }
+
+    .sec-sub {
+      font-size: 13px;
+      color: var(--text-muted, #736b63);
+      max-width: 480px;
+      margin: 0 auto 24px;
+      line-height: 1.7;
+    }
+
+    /* Divider */
+    .sec-divider {
+      width: 48px;
+      height: 2px;
+      background: var(--primary, #b5833c);
+      margin: 20px auto;
+      opacity: 0.6;
+    }
+
+    /* =================================================================== */
+    /* 3. COVER POP-UP (PINTU GERBANG PEMBUKA)                             */
+    /* =================================================================== */
+    .cover-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 0.75) 100%),
+                  url('{{landingCoverUrl}}') center/cover no-repeat;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      color: #ffffff;
+      text-align: center;
+      padding: 60px 24px 48px;
+      transition: transform 0.85s cubic-bezier(0.85, 0, 0.15, 1);
+    }
+
+    .cover-overlay.opened {
+      transform: translateY(-100%);
+      pointer-events: none;
+    }
+
+    .cover-monogram {
+      width: 56px;
+      height: 56px;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      letter-spacing: 0.1em;
+      margin-bottom: 12px;
+      backdrop-filter: blur(8px);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .cover-names {
+      font-size: 34px;
+      font-weight: 500;
+      line-height: 1.2;
+      margin: 12px 0 8px;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+    }
+
+    .cover-tagline {
+      font-size: 11px;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      opacity: 0.85;
+    }
+
+    .cover-guest-card {
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: var(--radius-md);
+      padding: 16px 24px;
+      width: 100%;
+      max-width: 320px;
+      margin-bottom: 24px;
+    }
+
+    .cover-btn-open {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 32px;
+      border-radius: var(--radius-full);
+      background: #ffffff;
+      color: #111111;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .cover-btn-open:hover {
+      transform: scale(1.03);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
+    }
+
+    /* =================================================================== */
+    /* 4. FLOATING AUDIO & NAVIGATION DOCK                                 */
+    /* =================================================================== */
+    .audio-fab {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 900;
+      width: 46px;
+      height: 46px;
+      border-radius: var(--radius-full);
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      backdrop-filter: blur(12px);
+      transition: transform 0.2s;
+    }
+
+    .audio-fab.playing {
+      animation: rotateDisc 8s linear infinite;
+    }
+
+    @keyframes rotateDisc {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* =================================================================== */
+    /* 5. COUPLE PROFILE SECTION                                           */
+    /* =================================================================== */
+    .couple-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 36px;
+      margin-top: 24px;
+    }
+
+    .couple-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .couple-photo-wrap {
+      width: 140px;
+      height: 140px;
+      border-radius: var(--radius-full);
+      overflow: hidden;
+      border: 3px solid var(--primary, #b5833c);
+      padding: 4px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow-elevated);
+    }
+
+    .couple-photo-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: var(--radius-full);
+    }
+
+    .couple-name {
+      font-size: 22px;
+      font-weight: 600;
+      color: #1a1614;
+      margin-bottom: 4px;
+    }
+
+    .couple-role {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--primary, #b5833c);
+      margin-bottom: 8px;
+    }
+
+    .couple-parents {
+      font-size: 12px;
+      color: var(--text-muted, #736b63);
+      max-width: 280px;
+      line-height: 1.6;
+    }
+
+    .couple-ig {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #1a1614;
+      margin-top: 10px;
+      text-decoration: none;
+    }
+
+    /* =================================================================== */
+    /* 6. COUNTDOWN TIMER                                                  */
+    /* =================================================================== */
+    .countdown-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      max-width: 420px;
+      margin: 24px auto 0;
+    }
+
+    .countdown-box {
+      background: #fdfbf7;
+      border: 1px solid #eee5d8;
+      border-radius: var(--radius-md);
+      padding: 16px 8px;
+      text-align: center;
+    }
+
+    .countdown-num {
+      font-size: 24px;
+      font-weight: 700;
+      color: #1a1614;
+      display: block;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .countdown-lbl {
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-muted, #736b63);
+      font-weight: 600;
+    }
+
+    /* =================================================================== */
+    /* 7. EVENTS & CALENDAR BUTTON                                         */
+    /* =================================================================== */
+    .btn-cal {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: var(--radius-full);
+      background: var(--primary, #b5833c);
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-decoration: none;
+      margin-top: 20px;
+      box-shadow: 0 4px 14px rgba(181, 131, 60, 0.3);
+      transition: opacity 0.2s;
+    }
+
+    .btn-cal:hover { opacity: 0.92; }
+
+    /* =================================================================== */
+    /* 8. RSVP & WISHES (BUKU TAMU)                                        */
+    /* =================================================================== */
+    .rsvp-form-box {
+      background: #fdfbf7;
+      border: 1px solid #eee5d8;
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      text-align: left;
+      margin-top: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: #1a1614;
+      margin-bottom: 6px;
+    }
+
+    .form-input, .form-select, .form-textarea {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid #dcd4c7;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-family: inherit;
+      background: #ffffff;
+      color: #1a1614;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      border-color: var(--primary, #b5833c);
+    }
+
+    .btn-submit-rsvp {
+      width: 100%;
+      padding: 14px;
+      border-radius: var(--radius-sm);
+      background: #1a1614;
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-submit-rsvp:hover { background: #332d2a; }
+
+    .wishes-feed-list {
+      margin-top: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      text-align: left;
+    }
+
+    .wish-item {
+      background: #ffffff;
+      border: 1px solid #eee5d8;
+      border-radius: var(--radius-md);
+      padding: 16px;
+      box-shadow: var(--shadow-subtle);
+    }
+
+    .wish-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: #1a1614;
+    }
+
+    .wish-msg {
+      font-size: 12px;
+      color: var(--text-muted, #736b63);
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+
+    /* =================================================================== */
+    /* 9. FOOTER & CLOSING                                                 */
+    /* =================================================================== */
+    .closing-sec {
+      padding: 60px 24px 90px;
+      background: #fbf9f5;
+      text-align: center;
+      border-top: 1px solid #eee5d8;
     }
   </style>
 </head>
 <body>
 
   <!-- =================================================================== -->
-  <!-- 1. COVER PEMBUKA (PINTU MASUK UNDANGAN) -->
+  <!-- 1. COVER PEMBUKA (PINTU GERBANG UTAMA)                              -->
   <!-- =================================================================== -->
   <div id="coverOverlay" class="cover-overlay">
-    <p style="letter-spacing:3px; font-size:12px; text-transform:uppercase;">The Wedding of</p>
-    <h1 style="font-family:'Cinzel', serif; font-size:36px; margin:12px 0;">{{groomName}} &amp; {{brideName}}</h1>
-    <p style="font-size:13px; opacity:0.9; margin-bottom:24px;">Kepada Yth. Tamu Undangan</p>
-    
-    <button onclick="openInvitation()" style="padding:12px 28px; border-radius:30px; background:white; color:#111; font-weight:700; border:none; cursor:pointer; font-size:13px; box-shadow:0 4px 15px rgba(0,0,0,0.2);">
-      ✉ Buka Undangan
-    </button>
+    <div class="cover-top">
+      <div class="cover-monogram serif">{{coupleMonogram}}</div>
+      <p class="cover-tagline">{{weddingTagline}}</p>
+    </div>
+
+    <div class="cover-center">
+      <h1 class="cover-names serif">{{groomName}} &amp; {{brideName}}</h1>
+      <p style="font-size:13px; opacity:0.9; margin-top:8px;">{{weddingDate}}</p>
+    </div>
+
+    <div class="cover-bottom" style="width:100%; display:flex; flex-direction:column; align-items:center;">
+      <div class="cover-guest-card">
+        <p style="font-size:11px; letter-spacing:0.1em; text-transform:uppercase; opacity:0.8; margin-bottom:4px;">Kepada Yth. Tamu Undangan</p>
+        <p style="font-size:16px; font-weight:700;">Bapak / Ibu / Sahabat</p>
+      </div>
+
+      <button type="button" class="cover-btn-open" onclick="openInvitation()">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+        Buka Undangan
+      </button>
+
+      <!-- Tombol Trigger Akses QR Pass (Jika Diaktifkan) -->
+      {{qrCoverButtonHtml}}
+    </div>
   </div>
 
   <!-- =================================================================== -->
-  <!-- 2. KONTEN UTAMA UNDANGAN -->
+  <!-- 2. KONTEN UTAMA UNDANGAN                                            -->
   <!-- =================================================================== -->
-  <main class="main-container">
+  <div class="app-container">
 
-    <!-- A. KUTIPAN PEMBUKA -->
-    <section class="section quote-section">
-      <p class="quote-text">"{{openingQuote}}"</p>
-      <span class="quote-ref">{{openingQuoteRef}}</span>
+    <!-- SEKSI 1: KUTIPAN PEMBUKA & AYAT -->
+    <section class="sec-flow" id="quote">
+      <span class="sec-eyebrow">HOLY MATRIMONY</span>
+      <p style="font-size:14px; font-style:italic; line-height:1.8; color:#3a3532; max-width:500px; margin:0 auto;">
+        "{{openingQuote}}"
+      </p>
+      <div class="sec-divider"></div>
+      <p style="font-size:12px; font-weight:700; letter-spacing:0.1em; color:var(--primary, #b5833c);">
+        {{openingQuoteRef}}
+      </p>
     </section>
 
-    <!-- B. PROFIL MEMPELAI -->
-    <section class="section couple-section">
-      <!-- Pria -->
-      <div class="couple-card">
-        <img src="{{groomPhotoUrl}}" alt="{{groomName}}" class="couple-photo" style="width:120px; height:120px; border-radius:50%; object-fit:cover;" />
-        <h2>{{groomDisplayName}}</h2>
-        <p class="parents">{{groomParents}}</p>
-        <p class="instagram">@{{groomInstagram}}</p>
-      </div>
+    <!-- SEKSI 2: PROFIL KEDUA MEMPELAI -->
+    <section class="sec-flow" id="couple">
+      <span class="sec-eyebrow">THE BRIDE &amp; GROOM</span>
+      <h2 class="sec-main-title serif">Mempelai Bahagia</h2>
+      <p class="sec-sub">Maha Suci Allah yang telah menciptakan makhluk-Nya berpasang-pasangan untuk membina mahligai rumah tangga yang sakinah, mawaddah, warahmah.</p>
 
-      <div class="divider" style="margin:20px 0; font-size:24px;">&amp;</div>
+      <div class="couple-grid">
+        <!-- Mempelai Pria -->
+        <div class="couple-card">
+          <div class="couple-photo-wrap">
+            <img src="{{groomPhotoUrl}}" alt="{{groomName}}" loading="lazy" />
+          </div>
+          <span class="couple-role">{{groomRole}}</span>
+          <h3 class="couple-name serif">{{groomDisplayName}}</h3>
+          <p class="couple-parents">{{groomParents}}</p>
+          <a href="https://instagram.com/{{groomInstagram}}" target="_blank" class="couple-ig">
+            <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+            @{{groomInstagram}}
+          </a>
+        </div>
 
-      <!-- Wanita -->
-      <div class="couple-card">
-        <img src="{{bridePhotoUrl}}" alt="{{brideName}}" class="couple-photo" style="width:120px; height:120px; border-radius:50%; object-fit:cover;" />
-        <h2>{{brideDisplayName}}</h2>
-        <p class="parents">{{brideParents}}</p>
-        <p class="instagram">@{{brideInstagram}}</p>
+        <div style="font-size:28px; color:var(--primary, #b5833c); font-family:serif;">&amp;</div>
+
+        <!-- Mempelai Wanita -->
+        <div class="couple-card">
+          <div class="couple-photo-wrap">
+            <img src="{{bridePhotoUrl}}" alt="{{brideName}}" loading="lazy" />
+          </div>
+          <span class="couple-role">{{brideRole}}</span>
+          <h3 class="couple-name serif">{{brideDisplayName}}</h3>
+          <p class="couple-parents">{{brideParents}}</p>
+          <a href="https://instagram.com/{{brideInstagram}}" target="_blank" class="couple-ig">
+            <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+            @{{brideInstagram}}
+          </a>
+        </div>
       </div>
     </section>
 
-    <!-- C. HITUNG MUNDUR (COUNTDOWN) -->
-    <section class="section countdown-section">
-      <h3>Menghitung Hari Bahagia</h3>
-      <div id="countdownTimer" class="countdown-grid" style="display:flex; gap:12px; justify-content:center; margin-top:16px;">
-        <!-- Javascript akan mengisi angka countdown otomatis berdasarkan {{targetDate}} -->
+    <!-- SEKSI 3: HITUNG MUNDUR (COUNTDOWN TIMER) -->
+    <section class="sec-flow" id="countdown" style="background:#fdfbf7;">
+      <span class="sec-eyebrow">SAVE THE DATE</span>
+      <h2 class="sec-main-title serif">Menghitung Hari Bahagia</h2>
+      <p class="sec-sub">Kami sangat menantikan kehadiran Bapak/Ibu/Sahabat sekalian untuk merayakan momen sakral ini bersama kami.</p>
+
+      <div class="countdown-grid" id="countdownTimer">
+        <div class="countdown-box"><span class="countdown-num" id="cdDays">00</span><span class="countdown-lbl">Hari</span></div>
+        <div class="countdown-box"><span class="countdown-num" id="cdHours">00</span><span class="countdown-lbl">Jam</span></div>
+        <div class="countdown-box"><span class="countdown-num" id="cdMins">00</span><span class="countdown-lbl">Menit</span></div>
+        <div class="countdown-box"><span class="countdown-num" id="cdSecs">00</span><span class="countdown-lbl">Detik</span></div>
       </div>
+
+      <!-- Tombol Simpan ke Kalender -->
+      <a href="{{googleCalendarUrl}}" target="_blank" class="btn-cal">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        Simpan ke Google Calendar
+      </a>
     </section>
 
-    <!-- D. SUSUNAN ACARA (AKAD / RESEPSI / ADAT) -->
-    <section class="section events-section">
-      <h2>Rangkaian Acara</h2>
-      <!-- Seluruh kartu acara + link Google Maps disuntik otomatis di sini: -->
+    <!-- SEKSI 4: SUSUNAN ACARA & LOKASI -->
+    <section class="sec-flow" id="events">
+      <span class="sec-eyebrow">SCHEDULE &amp; VENUE</span>
+      <h2 class="sec-main-title serif">Rangkaian Acara</h2>
       {{eventDataHtml}}
     </section>
 
-    <!-- E. CERITA CINTA (LOVE STORY) -->
-    <section class="section story-section">
-      <h2>Kisah Cinta</h2>
-      {{loveStoryHtml}}
-    </section>
+    <!-- SEKSI 5: KISAH CINTA (LOVE STORY) -->
+    {{storySectionHtml}}
 
-    <!-- F. GALERI FOTO -->
-    <section class="section gallery-section">
-      <h2>Galeri Momen</h2>
-      {{galleryHtml}}
-    </section>
+    <!-- SEKSI 6: GALERI FOTO & VIDEO -->
+    {{gallerySectionHtml}}
 
-    <!-- G. AMPLOP DIGITAL & KADO FISIK -->
-    <section class="section gift-section">
-      <h2>Tanda Kasih (Amplop Digital)</h2>
-      <!-- Rekening bank & tombol salin otomatis ada di sini: -->
-      {{bankAccountsHtml}}
+    <!-- SEKSI 7: PANDUAN BUSANA (DRESS CODE) -->
+    {{dressCodeHtml}}
 
-      <!-- Alamat pengiriman kado: -->
-      <div class="shipping-box" style="margin-top:20px;">
-        <h4>Alamat Pengiriman Kado Fisik:</h4>
-        <p>{{shippingAddress}}</p>
+    <!-- SEKSI 8: SIARAN LANGSUNG (LIVE STREAMING) -->
+    {{liveStreamingHtml}}
+
+    <!-- SEKSI 9: FILTER INSTAGRAM STORY -->
+    {{weddingFilterHtml}}
+
+    <!-- SEKSI 10: TANDA KASIH (AMPLOP DIGITAL & KADO) -->
+    {{giftSectionHtml}}
+
+    <!-- SEKSI 11: TURUT MENGUNDANG -->
+    {{turutMengundangHtml}}
+
+    <!-- SEKSI 12: KENANGAN TAMU (GUEST MEMORIES BOOTH) -->
+    {{memoriesSectionHtml}}
+
+    <!-- SEKSI 13: KARTU AKSES QR CHECK-IN TAMU -->
+    {{qrAccessSectionHtml}}
+
+    <!-- SEKSI 14: FORM RSVP & BUKU TAMU UCAPAN REAL-TIME -->
+    <section class="sec-flow" id="rsvp" style="background:#fdfbf7;">
+      <span class="sec-eyebrow">WISHES &amp; RSVP</span>
+      <h2 class="sec-main-title serif">Buku Tamu &amp; Kehadiran</h2>
+      <p class="sec-sub">Untaian doa dan konfirmasi kehadiran Anda merupakan kado terindah bagi kami.</p>
+
+      <div class="rsvp-form-box">
+        <form onsubmit="handleRsvpSubmit(event)">
+          <div class="form-group">
+            <label class="form-label">Nama Lengkap</label>
+            <input type="text" id="rsvpName" class="form-input" placeholder="Masukkan nama Anda" required />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Konfirmasi Kehadiran</label>
+            <select id="rsvpStatus" class="form-select">
+              <option value="HADIR">Hadir dengan Senang Hati</option>
+              <option value="TIDAK_HADIR">Mohon Maaf, Berhalangan Hadir</option>
+              <option value="RAGU">Masih Ragu</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Jumlah Tamu</label>
+            <select id="rsvpGuests" class="form-select">
+              <option value="1">1 Orang</option>
+              <option value="2">2 Orang</option>
+              <option value="3">3 Orang</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Ucapan &amp; Doa Restu</label>
+            <textarea id="rsvpMessage" class="form-textarea" rows="3" placeholder="Tuliskan ucapan dan doa terbaik Anda..." required></textarea>
+          </div>
+
+          <button type="submit" class="btn-submit-rsvp">KIRIM UCAPAN &amp; KONFIRMASI</button>
+        </form>
+      </div>
+
+      <!-- Feed Doa Ucapan Tamu Real-Time -->
+      <div class="wishes-feed-list" id="wishesFeed">
+        {{wishesHtml}}
       </div>
     </section>
 
-    <!-- H. QR CODE CHECK-IN TAMU -->
-    <section class="section qr-section">
-      {{accessBadgeHtml}}
-    </section>
+    <!-- SEKSI 15: SALAM PENUTUP -->
+    <footer class="closing-sec">
+      <p style="font-size:13px; color:var(--text-muted, #736b63); max-width:480px; margin:0 auto 16px; line-height:1.7;">
+        Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Sahabat berkenan hadir dan memberikan doa restu bagi kami.
+      </p>
+      <p style="font-size:11px; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; color:var(--primary, #b5833c);">
+        Kami Yang Berbahagia,
+      </p>
+      <h3 class="serif" style="font-size:24px; margin-top:8px; color:#1a1614;">
+        {{groomName}} &amp; {{brideName}}
+      </h3>
+      <p style="font-size:12px; color:var(--text-muted, #736b63); margin-top:4px;">Beserta Keluarga Besar Kedua Mempelai</p>
+    </footer>
 
-  </main>
+  </div>
 
   <!-- =================================================================== -->
-  <!-- 3. AUDIO PLAYER & TOMBOL MUSIK -->
+  <!-- 3. PEMUTAR MUSIK LATAR                                              -->
   <!-- =================================================================== -->
   <audio id="weddingAudio" loop preload="none">
     <source src="{{musicUrl}}" type="audio/mpeg" />
   </audio>
 
-  <button id="musicToggle" class="audio-btn" onclick="toggleAudio()" title="Putar Musik">
-    🎵
+  <button id="musicToggle" class="audio-fab" onclick="toggleAudio()" title="Putar / Hentikan Musik">
+    <svg id="musicIconPlay" width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
   </button>
 
   <!-- =================================================================== -->
-  <!-- 4. JAVASCRIPT STANDAR (COUNTDOWN & BUKA UNDANGAN) -->
+  <!-- 4. JAVASCRIPT LOGIC (STANDAR & PRODUCTION READY)                    -->
   <!-- =================================================================== -->
   <script>
-    // A. Fungsi Buka Undangan & Autoplay Audio
+    // A. Buka Undangan & Autoplay Audio
     function openInvitation() {
-      document.getElementById('coverOverlay').classList.add('opened');
+      const cover = document.getElementById('coverOverlay');
+      if (cover) cover.classList.add('opened');
       const audio = document.getElementById('weddingAudio');
+      const fab = document.getElementById('musicToggle');
       if (audio) {
-        audio.play().catch(function() { console.log('Autoplay ditahan browser'); });
+        audio.play().then(function() {
+          if (fab) fab.classList.add('playing');
+        }).catch(function() {
+          console.log('Autoplay ditahan oleh kebijakan peramban');
+        });
       }
     }
 
-    // B. Toggle Audio Play/Pause
+    // B. Toggle Play/Pause Musik
     function toggleAudio() {
       const audio = document.getElementById('weddingAudio');
-      const btn = document.getElementById('musicToggle');
+      const fab = document.getElementById('musicToggle');
+      if (!audio) return;
       if (audio.paused) {
         audio.play();
-        btn.innerHTML = '🎵';
+        if (fab) fab.classList.add('playing');
       } else {
         audio.pause();
-        btn.innerHTML = '🔇';
+        if (fab) fab.classList.remove('playing');
       }
     }
 
-    // C. Hitung Mundur Otomatis
-    (function() {
-      const target = new Date("{{targetDate}}").getTime();
-      const timerEl = document.getElementById('countdownTimer');
-      if (!timerEl || isNaN(target)) return;
+    // C. Salin Teks Rekening / Alamat
+    function copyText(text) {
+      if (!navigator.clipboard) {
+        const input = document.createElement('input');
+        input.value = text;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+      } else {
+        navigator.clipboard.writeText(text);
+      }
+      alert('Berhasil disalin: ' + text);
+    }
 
-      function updateTimer() {
+    // D. Switch Tab Amplop / Kado
+    function switchGiftTab(tab, btn) {
+      const tabAmplop = document.getElementById('giftTabAmplop');
+      const tabKado = document.getElementById('giftTabKado');
+      document.querySelectorAll('.gift-tab-btn').forEach(function(b) { b.classList.remove('active'); });
+      if (btn) btn.classList.add('active');
+      if (tab === 'amplop') {
+        if (tabAmplop) tabAmplop.style.display = 'block';
+        if (tabKado) tabKado.style.display = 'none';
+      } else {
+        if (tabAmplop) tabAmplop.style.display = 'none';
+        if (tabKado) tabKado.style.display = 'block';
+      }
+    }
+
+    // E. Hitung Mundur Otomatis
+    (function() {
+      const targetStr = "{{targetDate}}";
+      const target = new Date(targetStr).getTime();
+      if (isNaN(target)) return;
+
+      function updateCountdown() {
         const now = new Date().getTime();
         const diff = target - now;
         if (diff <= 0) {
-          timerEl.innerHTML = '<p>Hari Bahagia Telah Tiba!</p>';
+          const el = document.getElementById('countdownTimer');
+          if (el) el.innerHTML = '<div style="grid-column:span 4; font-weight:700; color:var(--primary);">HARI BAHAGIA TELAH TIBA!</div>';
           return;
         }
         const d = Math.floor(diff / (1000 * 60 * 60 * 24));
@@ -204,15 +743,39 @@
         const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
         const s = Math.floor((diff % (1000 * 60)) / 1000);
 
-        timerEl.innerHTML = 
-          '<div style="padding:10px; background:rgba(0,0,0,0.05); border-radius:8px;"><strong style="font-size:20px; display:block;">' + d + '</strong> Hari</div>' +
-          '<div style="padding:10px; background:rgba(0,0,0,0.05); border-radius:8px;"><strong style="font-size:20px; display:block;">' + h + '</strong> Jam</div>' +
-          '<div style="padding:10px; background:rgba(0,0,0,0.05); border-radius:8px;"><strong style="font-size:20px; display:block;">' + m + '</strong> Menit</div>' +
-          '<div style="padding:10px; background:rgba(0,0,0,0.05); border-radius:8px;"><strong style="font-size:20px; display:block;">' + s + '</strong> Detik</div>';
+        const cdD = document.getElementById('cdDays');
+        const cdH = document.getElementById('cdHours');
+        const cdM = document.getElementById('cdMins');
+        const cdS = document.getElementById('cdSecs');
+        if (cdD) cdD.textContent = d < 10 ? '0' + d : d;
+        if (cdH) cdH.textContent = h < 10 ? '0' + h : h;
+        if (cdM) cdM.textContent = m < 10 ? '0' + m : m;
+        if (cdS) cdS.textContent = s < 10 ? '0' + s : s;
       }
-      updateTimer();
-      setInterval(updateTimer, 1000);
+      updateCountdown();
+      setInterval(updateCountdown, 1000);
     })();
+
+    // F. Handler Kirim Form RSVP
+    function handleRsvpSubmit(e) {
+      e.preventDefault();
+      const name = document.getElementById('rsvpName').value;
+      const status = document.getElementById('rsvpStatus').value;
+      const msg = document.getElementById('rsvpMessage').value;
+
+      const feed = document.getElementById('wishesFeed');
+      if (feed) {
+        const newItem = document.createElement('div');
+        newItem.className = 'wish-item';
+        newItem.innerHTML = '<div style="display:flex; justify-content:space-between; align-items:center;">' +
+          '<span class="wish-name">' + name + '</span>' +
+          '<span style="font-size:10px; padding:2px 8px; border-radius:12px; background:rgba(74,222,128,0.15); color:#16a34a; font-weight:700;">' + status + '</span>' +
+          '</div><p class="wish-msg">' + msg + '</p>';
+        feed.prepend(newItem);
+      }
+      alert('Terima kasih, konfirmasi kehadiran dan doa restu Anda telah terkirim!');
+      e.target.reset();
+    }
   </script>
 </body>
 </html>
