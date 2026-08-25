@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 
@@ -6,10 +7,17 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId, planType, buyerName, buyerEmail } = await req.json();
+    const session = await auth();
+    const body = await req.json().catch(() => ({}));
+    const { planType, buyerName, buyerEmail } = body;
+    let userId = session?.user?.id || body.userId;
 
-    if (!userId || !planType) {
-      return NextResponse.json({ error: "Missing userId atau planType" }, { status: 400 });
+    if (!userId && !buyerEmail) {
+      return NextResponse.json({ error: "Missing userId atau buyerEmail" }, { status: 400 });
+    }
+
+    if (!planType) {
+      return NextResponse.json({ error: "Missing planType" }, { status: 400 });
     }
 
     if (!["TRADITIONAL", "MODERN", "PREMIUM"].includes(planType)) {

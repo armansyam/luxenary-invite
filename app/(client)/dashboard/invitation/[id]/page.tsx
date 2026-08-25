@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useParams } from "next/navigation";
 
 const THEMES = [
+  // ── Premium Store (themes/premium/) ──
   {
     id: "kalandra",
     name: "Kalandra",
@@ -40,6 +41,44 @@ const THEMES = [
     cover: "https://images.unsplash.com/photo-1513279922550-250c24738d87?w=600&q=80",
     tag: "Vintage",
   },
+
+  // ── Traditional Store (themes/traditional/) ──
+  {
+    id: "badrika",
+    name: "Badrika",
+    subtitle: "Traditional",
+    category: "traditional",
+    desc: "Walimatul 'Urs & Saoraja Royal",
+    cover: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=600&q=80",
+    tag: "Saoraja",
+  },
+  {
+    id: "candani",
+    name: "Candani",
+    subtitle: "Traditional",
+    category: "traditional",
+    desc: "Pesona Nusantara Floral",
+    cover: "https://images.unsplash.com/photo-1519741497674-611481863552?w=600&q=80",
+    tag: "Nusantara",
+  },
+  {
+    id: "dillalucky",
+    name: "Dilla Lucky",
+    subtitle: "Traditional",
+    category: "traditional",
+    desc: "Islami Sakral — Batik Ornament & Penuh Berkah",
+    cover: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=600&q=80",
+    tag: "Islami",
+  },
+  {
+    id: "mayang",
+    name: "Mayang",
+    subtitle: "Traditional",
+    category: "traditional",
+    desc: "Nuansa Adat & Anggun",
+    cover: "https://images.unsplash.com/photo-1532712938310-34cb3982ef74?w=600&q=80",
+    tag: "Traditional",
+  },
   {
     id: "prameswari",
     name: "Prameswari",
@@ -47,16 +86,36 @@ const THEMES = [
     category: "traditional",
     desc: "Sakral, Megah & Royal Keraton",
     cover: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=600&q=80",
-    tag: "Traditional",
+    tag: "Keraton",
   },
+
+  // ── Modern Store (themes/modern/) ──
   {
-    id: "wave",
-    name: "Wave",
+    id: "ameera",
+    name: "Ameera",
     subtitle: "Modern",
     category: "modern",
-    desc: "Dark, Moody & Dramatic — Gelombang Elegan",
-    cover: "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=600&q=80",
-    tag: "Moody",
+    desc: "Heritage Modern — Elegan Dark & Nuansa Warisan",
+    cover: "https://images.unsplash.com/photo-1469371670807-013ccf25f16a?w=600&q=80",
+    tag: "Heritage",
+  },
+  {
+    id: "chronicle",
+    name: "Chronicle",
+    subtitle: "Modern",
+    category: "modern",
+    desc: "High-Fashion Vogue Editorial",
+    cover: "https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=600&q=80",
+    tag: "Editorial",
+  },
+  {
+    id: "lumina",
+    name: "Lumina",
+    subtitle: "Modern",
+    category: "modern",
+    desc: "Minimalist Glass & Cinema",
+    cover: "https://images.unsplash.com/photo-1519741497674-611481863552?w=600&q=80",
+    tag: "Glass",
   },
   {
     id: "papercut",
@@ -68,22 +127,22 @@ const THEMES = [
     tag: "Papercut",
   },
   {
-    id: "ameera",
-    name: "Ameera",
+    id: "solaria",
+    name: "Solaria",
     subtitle: "Modern",
     category: "modern",
-    desc: "Heritage Modern — Elegan Dark & Nuansa Warisan",
-    cover: "https://images.unsplash.com/photo-1469371670807-013ccf25f16a?w=600&q=80",
-    tag: "Heritage",
+    desc: "Romantic Sunset Glow",
+    cover: "https://images.unsplash.com/photo-1532712938310-34cb3982ef74?w=600&q=80",
+    tag: "Sunset",
   },
   {
-    id: "dillalucky",
-    name: "Dilla Lucky",
-    subtitle: "Traditional",
-    category: "traditional",
-    desc: "Islami Sakral — Batik Ornament & Penuh Berkah",
-    cover: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=600&q=80",
-    tag: "Islami",
+    id: "wave",
+    name: "Wave",
+    subtitle: "Modern",
+    category: "modern",
+    desc: "Dark, Moody & Dramatic — Gelombang Elegan",
+    cover: "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=600&q=80",
+    tag: "Moody",
   },
 ];
 
@@ -1045,55 +1104,61 @@ export default function EditInvitation() {
           </div>
         ) : (
           <div className="p-5 sm:p-7 space-y-6">
-            {/* 5 Theme Mockups */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {THEMES.map((th) => {
-                const isSelected = (invitation.themeId || "kila") === th.id;
-                return (
-                  <div
-                    key={th.id}
-                    onClick={() => updateField("themeId", th.id)}
-                    className={`rounded-2xl border overflow-hidden cursor-pointer transition flex flex-col ${
-                      isSelected
-                        ? "border-amber-800 bg-amber-50/30 ring-2 ring-amber-800/20 shadow-sm"
-                        : "border-stone-200 hover:border-stone-300 bg-white"
-                    }`}
-                  >
-                    <div className="relative aspect-video overflow-hidden bg-stone-100">
-                      <img src={th.cover} alt={th.name} className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" />
-                      <span className="absolute top-2.5 left-2.5 text-[9px] font-bold tracking-wider uppercase bg-black/70 backdrop-blur-xs text-white px-2 py-0.5 rounded">
-                        {th.tag}
-                      </span>
-                      {isSelected && (
-                        <span className="absolute top-2.5 right-2.5 w-6 h-6 rounded-full bg-amber-800 text-white flex items-center justify-center text-xs font-bold shadow-md">
-                          ✓
-                        </span>
-                      )}
-                    </div>
-                    <div className="p-3.5 space-y-1 flex-1 flex flex-col justify-between">
-                      <div>
-                        <h3 className="font-bold text-stone-900 text-xs">{th.name}</h3>
-                        <p className="text-[10px] text-stone-500 line-clamp-2 mt-0.5 leading-relaxed">{th.desc}</p>
+            {/* Theme Mockups for this Category / Store */}
+            {(() => {
+              const currentCat = (selectedThemeObj.category || "premium").toLowerCase();
+              const categoryThemes = THEMES.filter((t) => (t.category || "").toLowerCase() === currentCat);
+              return (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  {categoryThemes.map((th) => {
+                    const isSelected = (invitation.themeId || "kalandra") === th.id;
+                    return (
+                      <div
+                        key={th.id}
+                        onClick={() => updateField("themeId", th.id)}
+                        className={`rounded-2xl border overflow-hidden cursor-pointer transition flex flex-col ${
+                          isSelected
+                            ? "border-amber-800 bg-amber-50/30 ring-2 ring-amber-800/20 shadow-sm"
+                            : "border-stone-200 hover:border-stone-300 bg-white"
+                        }`}
+                      >
+                        <div className="relative aspect-video overflow-hidden bg-stone-100">
+                          <img src={th.cover} alt={th.name} className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" />
+                          <span className="absolute top-2.5 left-2.5 text-[9px] font-bold tracking-wider uppercase bg-black/70 backdrop-blur-xs text-white px-2 py-0.5 rounded">
+                            {th.tag}
+                          </span>
+                          {isSelected && (
+                            <span className="absolute top-2.5 right-2.5 w-6 h-6 rounded-full bg-amber-800 text-white flex items-center justify-center text-xs font-bold shadow-md">
+                              ✓
+                            </span>
+                          )}
+                        </div>
+                        <div className="p-3.5 space-y-1 flex-1 flex flex-col justify-between">
+                          <div>
+                            <h3 className="font-bold text-stone-900 text-xs">{th.name}</h3>
+                            <p className="text-[10px] text-stone-500 line-clamp-2 mt-0.5 leading-relaxed">{th.desc}</p>
+                          </div>
+                          <div className="pt-2 flex items-center justify-between border-t border-stone-100">
+                            <a
+                              href={`/demo/${th.id}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-[10px] font-bold text-amber-800 hover:underline"
+                            >
+                              Lihat Demo &rarr;
+                            </a>
+                            <span className={`text-[10px] font-bold ${isSelected ? "text-amber-900" : "text-stone-400"}`}>
+                              {isSelected ? "Terpilih" : "Pilih"}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="pt-2 flex items-center justify-between border-t border-stone-100">
-                        <a
-                          href={`/demo/${th.id}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="text-[10px] font-bold text-amber-800 hover:underline"
-                        >
-                          Lihat Demo &rarr;
-                        </a>
-                        <span className={`text-[10px] font-bold ${isSelected ? "text-amber-900" : "text-stone-400"}`}>
-                          {isSelected ? "Terpilih" : "Pilih"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
 
             {/* Color Palette Grid */}
             <div>
@@ -2802,7 +2867,7 @@ export default function EditInvitation() {
                     className="w-full p-2.5 bg-white border border-amber-300 rounded-xl text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700/30 font-mono"
                   />
                   <p className="text-[11px] text-amber-900/80 leading-relaxed">
-                    <strong>Panduan:</strong> Buat 1 folder di Google Drive Anda, ubah aksesnya menjadi <em>&ldquo;Siapa saja yang memiliki link (Viewer)&rdquo;</em>, lalu tempel link-nya di sini agar foto tamu otomatis ter-stream.
+                    <strong>Panduan Akses:</strong> Buat 1 folder di Google Drive Anda, ubah akses sharing folder menjadi <em>&ldquo;Siapa saja yang memiliki link &rarr; Editor (Pengedit)&rdquo;</em>, lalu tempel link-nya di sini agar sistem dapat menerima upload foto tamu secara instan sekaligus men-stream ke galeri.
                   </p>
                 </div>
                 {/* Link Permanen Galeri Kenangan Tamu */}

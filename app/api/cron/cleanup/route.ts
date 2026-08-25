@@ -1,9 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 import fs from "fs";
 import path from "path";
 
 export const dynamic = "force-dynamic";
+
+async function isAuthorized(req: NextRequest): Promise<boolean> {
+  const authHeader = req.headers.get("authorization");
+  const cronSecret = process.env.CRON_SECRET;
+  
+  if (cronSecret && authHeader === `Bearer ${cronSecret}`) {
+    return true;
+  }
+  
+  const session = await auth();
+  const isAdmin = (session?.user as any)?.isAdmin === true || (session?.user as any)?.role === "ADMIN" || (session?.user as any)?.role === "SUPER_ADMIN";
+  return isAdmin;
+}
 
 /**
  * Auto-Cleanup Routine:
@@ -13,6 +27,10 @@ export const dynamic = "force-dynamic";
  */
 export async function POST(req: NextRequest) {
   try {
+    if (!(await isAuthorized(req))) {
+      return NextResponse.json({ error: "Unauthorized: Invalid or missing CRON_SECRET / Admin session" }, { status: 401 });
+    }
+
     const body = await req.json().catch(() => ({}));
     const daysThreshold = Number(body.daysThreshold) || 7; // Default 7 hari
 

@@ -418,10 +418,7 @@
       </div>
     </section>
 
-    <!-- 4. SECTION: JOURNEY OF LOVE -->
-    {{storySectionHtml}}
-
-    <!-- 5. SECTION: SAVE THE DATE & EVENTS -->
+    <!-- 4. SECTION: SAVE THE DATE & EVENTS -->
     <section class="sec-flow" id="event">
       <h2 class="sec-main-title serif">SAVE THE DATE</h2>
       <p class="event-full-date">{{weddingDate}}</p>
@@ -439,29 +436,35 @@
       </div>
     </section>
 
-    <!-- 6. SECTION: KARTU AKSES MASUK / QR CHECK-IN -->
-    {{qrAccessSectionHtml}}
-
-    <!-- 7. SECTION: A GUIDE TO DRESS CODES -->
+    <!-- 5. SECTION: A GUIDE TO DRESS CODES -->
     {{dressCodeHtml}}
 
-    <!-- 8. SECTION: LIVE WEDDING (VIRTUAL CEREMONY) -->
+    <!-- 6. SECTION: LIVE WEDDING (VIRTUAL CEREMONY) -->
     {{liveStreamingHtml}}
+
+    <!-- 7. SECTION: JOURNEY OF LOVE -->
+    {{storySectionHtml}}
+
+    <!-- 8. SECTION: OUR MOMENT (GALLERY & VIDEO) -->
+    <div id="moments">
+      {{gallerySectionHtml}}
+    </div>
 
     <!-- 9. SECTION: WEDDING FRAME / FILTER INSTAGRAM -->
     {{weddingFilterHtml}}
 
-    <!-- 10. SECTION: TURUT MENGUNDANG -->
+    <!-- 10. SECTION: GUEST MEMORIES -->
+    <div id="memories">
+      {{memoriesSectionHtml}}
+    </div>
+
+    <!-- 11. SECTION: WEDDING GIFT -->
+    {{giftSectionHtml}}
+
+    <!-- 12. SECTION: TURUT MENGUNDANG -->
     {{turutMengundangHtml}}
 
-    <div class="sec-divider"></div>
-
-    <!-- 11. SECTION: OUR MOMENT (GALLERY & VIDEO) -->
-    {{gallerySectionHtml}}
-
-    <div class="sec-divider"></div>
-
-    <!-- 12. SECTION: RSVP & WISHES -->
+    <!-- 13. SECTION: RSVP & WISHES -->
     <section class="sec-flow" id="rsvp">
       <span class="sec-eyebrow">Greet &amp; Wish</span>
       <h2 class="sec-main-title serif">RSVP &amp; Doa Restu</h2>
@@ -496,12 +499,10 @@
       </div>
     </section>
 
-    <div class="sec-divider"></div>
+    <!-- 14. SECTION: KARTU AKSES MASUK / QR CHECK-IN -->
+    {{qrAccessSectionHtml}}
 
-    <!-- 13. SECTION: WEDDING GIFT -->
-    {{giftSectionHtml}}
-
-    <!-- 14. FOOTER / THANK YOU -->
+    <!-- 15. FOOTER / THANK YOU -->
     <footer class="site-footer" id="footer">
       <h2 class="footer-name serif">{{firstName}} &amp; {{secondName}}</h2>
       <p class="footer-sub">{{weddingDate}}</p>

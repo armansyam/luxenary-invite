@@ -1587,6 +1587,244 @@ export function composeDemoTemplateData(
     </div>
   `;
 
+  // 11. Wedding Instagram Filter Section
+  const weddingFilterHtml = `
+    <section class="sec-flow" id="wedding-filter">
+      <span class="sec-eyebrow">INSTAGRAM FILTER</span>
+      <h2 class="sec-main-title serif">WEDDING FILTER</h2>
+      <p class="sec-sub">Abadikan momen istimewa pernikahan kami menggunakan filter resmi Instagram kami:</p>
+      <div style="display:flex; justify-content:center; margin-top:1.5rem;">
+        <a href="https://instagram.com/ar/${demo.themeId}-wedding" target="_blank" class="btn-map-outline" style="display:inline-flex; align-items:center; gap:8px;">
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+          <span>BUKA INSTAGRAM FILTER ↗</span>
+        </a>
+      </div>
+    </section>
+  `;
+
+  // 12. Guest Memories Live Upload Section (In-Page Upload + 5-Circle Marquee + Direct Galery)
+  const sampleMemoriesPool = [
+    { name: "Budi Santoso", img: `/demo/${demo.themeId}/memory_01.webp`, alt: `/demo/${demo.themeId}/gallery_01.webp` },
+    { name: "Sahabat SMA", img: `/demo/${demo.themeId}/memory_02.webp`, alt: `/demo/${demo.themeId}/gallery_02.webp` },
+    { name: "Rina & Teman", img: `/demo/${demo.themeId}/memory_03.webp`, alt: `/demo/${demo.themeId}/gallery_03.webp` },
+    { name: "Tante Maya", img: `/demo/${demo.themeId}/memory_04.webp`, alt: `/demo/${demo.themeId}/gallery_04.webp` },
+    { name: "Dimas Pratama", img: `/demo/${demo.themeId}/gallery_05.webp`, alt: `/demo/${demo.themeId}/cover.webp` },
+    { name: "Keluarga Solo", img: `/demo/${demo.themeId}/gallery_06.webp`, alt: `/demo/${demo.themeId}/hero.webp` },
+    { name: "Alumni Teknik", img: `/demo/${demo.themeId}/gallery_07.webp`, alt: `/demo/${demo.themeId}/groom.webp` },
+    { name: "Eko & Nia", img: `/demo/${demo.themeId}/gallery_08.webp`, alt: `/demo/${demo.themeId}/bride.webp` },
+  ];
+
+  // Pick random sampled items up to 10
+  const randomSampleMemories = [...sampleMemoriesPool].sort(() => 0.5 - Math.random()).slice(0, 10);
+  const totalCount = randomSampleMemories.length;
+  const isMarquee = totalCount > 5;
+
+  const storyCirclesHtml = randomSampleMemories.map((sm) => `
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('${sm.img}', '${sm.name}')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="${sm.img}" onerror="this.onerror=null;this.src='${sm.alt}';" alt="${sm.name}" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        ${sm.name.split(" ")[0]}
+      </span>
+    </div>
+  `).join("");
+
+  const memoriesSectionHtml = `
+    <section class="sec-flow slide-section" id="section-memories" style="position: relative; padding: 3rem 1rem;">
+      <div class="sec-content-box reveal-on-scroll" style="max-width: 580px; margin: 0 auto; text-align: center;">
+        <span class="sec-eyebrow">AFTER-EVENT MEMORIES</span>
+        <h2 class="sec-main-title serif">KENANGAN TAMU</h2>
+        <p class="sec-sub" style="max-width: 480px; margin: 0 auto 1.5rem auto; font-size: 0.82rem; line-height: 1.6; opacity: 0.8;">
+          Punya foto candid atau video seru selama menghadiri pernikahan kami? Bagikan momen spesial Anda langsung di sini:
+        </p>
+
+        <!-- 1. KOTAK UPLOAD IN-PAGE (Langsung di halaman yang sama) -->
+        <div class="memories-inpage-upload-card" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 20px; padding: 1.4rem; margin-bottom: 1.8rem; text-align: left; backdrop-filter: blur(12px); box-shadow: 0 10px 30px rgba(0,0,0,0.35);">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.6rem;">
+            <span style="font-size: 1.1rem;">📸</span>
+            <span class="serif" style="font-weight: 700; font-size: 0.95rem; color: #fff; letter-spacing: 0.03em;">Unggah Momen Kondangan</span>
+          </div>
+
+          <form onsubmit="luxHandleInPageMemorySubmit(event)" style="display: flex; flex-direction: column; gap: 10px;">
+            <div>
+              <label style="display: block; font-size: 0.72rem; font-weight: 600; color: rgba(255,255,255,0.7); margin-bottom: 3px;">NAMA ANDA *</label>
+              <input type="text" id="inpageMemName" required placeholder="Contoh: Budi Santoso & Istri" style="width: 100%; padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.4); color: #fff; font-size: 0.82rem; outline: none;" />
+            </div>
+            <div>
+              <label style="display: block; font-size: 0.72rem; font-weight: 600; color: rgba(255,255,255,0.7); margin-bottom: 3px;">PESAN / UCAPAN SINGKAT</label>
+              <input type="text" id="inpageMemMsg" placeholder="Tuliskan ucapan untuk kedua mempelai..." style="width: 100%; padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.4); color: #fff; font-size: 0.82rem; outline: none;" />
+            </div>
+            <div>
+              <label style="display: block; font-size: 0.72rem; font-weight: 600; color: rgba(255,255,255,0.7); margin-bottom: 3px;">PILIH FOTO DARI HP / KAMERA *</label>
+              <input type="file" id="inpageMemFile" accept="image/*" required style="width: 100%; padding: 7px 10px; border-radius: 10px; border: 1px dashed rgba(255,255,255,0.25); background: rgba(255,255,255,0.03); color: rgba(255,255,255,0.8); font-size: 0.78rem;" />
+            </div>
+            <button type="submit" id="inpageMemSubmitBtn" style="margin-top: 6px; padding: 10px 16px; border-radius: 50px; background: #ffffff; color: #000000; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.05em; border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(255,255,255,0.18); transition: transform 0.15s ease;">
+              📸  KIRIM FOTO MOMEN
+            </button>
+            <div id="inpageMemAlert" style="display: none; color: #4ade80; font-size: 0.78rem; text-align: center; margin-top: 6px; font-weight: 600;">
+              ✓ Foto berhasil diunggah langsung ke album kenangan!
+            </div>
+          </form>
+        </div>
+
+        <!-- 2. HIGHLIGHT LINGKARAN (5 LINGKARAN DI LAYAR, LOOPING MARQUEE JIKA > 5) -->
+        <div class="memories-highlights-wrapper" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 14px 10px; margin-bottom: 1.5rem; overflow: hidden;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; font-size: 10px; font-weight: 700; opacity: 0.85; padding: 0 6px;">
+            <span style="display: flex; align-items: center; gap: 6px;">
+              <span style="width: 7px; height: 7px; border-radius: 99px; background: #10b981; display: inline-block;"></span>
+              KAMI SUDAH MEMBAGIKAN MOMEN
+            </span>
+            <span style="font-size: 9px; opacity: 0.5; font-family: monospace;">Acak (${totalCount} Foto)</span>
+          </div>
+
+          <!-- Story Circle Container -->
+          <div class="story-circles-track-wrapper" style="overflow: hidden; width: 100%; position: relative; mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent); -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);">
+            <div class="story-circles-track" style="display: flex; gap: 14px; width: max-content; margin: 0 auto; ${isMarquee ? 'animation: luxStoryLoop 24s linear infinite;' : 'justify-content: center;'}">
+              ${storyCirclesHtml}
+              ${isMarquee ? storyCirclesHtml : ''}
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. TOMBOL DIRECT KE HALAMAN GALERI WEB (galery.js) -->
+        <div style="text-align: center;">
+          <a href="/demo/${demo.themeId}/galery" class="btn-outline-box" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; font-size: 12px; font-weight: 700; border-radius: 50px; text-decoration: none; border: 1px solid currentColor; color: inherit; transition: all 0.2s ease;">
+            <span>✨ BUKA GALERI MOMEN LENGKAP</span>
+            <span style="font-size: 14px;">↗</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- LIGHTBOX ZOOM MODAL FOR CIRCLE PREVIEW -->
+    <div id="luxMemoryZoomModal" onclick="luxCloseMemoryZoom()" style="display: none; position: fixed; inset: 0; z-index: 999999; background: rgba(0,0,0,0.92); backdrop-filter: blur(12px); align-items: center; justify-content: center; flex-direction: column; padding: 1rem;">
+      <button type="button" onclick="luxCloseMemoryZoom()" style="position: absolute; top: 18px; right: 18px; background: none; border: none; color: #fff; font-size: 26px; cursor: pointer;">✕</button>
+      <img id="luxMemoryZoomImg" src="" alt="Zoom" style="max-width: 88vw; max-height: 75vh; border-radius: 16px; object-fit: contain; box-shadow: 0 10px 40px rgba(0,0,0,0.8);" onclick="event.stopPropagation()" />
+      <p id="luxMemoryZoomName" style="color: #fff; font-weight: 700; font-size: 0.95rem; margin-top: 12px;"></p>
+    </div>
+
+    <style>
+      @keyframes luxStoryLoop {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(-50%); }
+      }
+      .story-circles-track:hover {
+        animation-play-state: paused !important;
+      }
+    </style>
+
+    <script>
+      window.luxOpenMemoryZoom = function(src, name) {
+        const m = document.getElementById('luxMemoryZoomModal');
+        const img = document.getElementById('luxMemoryZoomImg');
+        const nm = document.getElementById('luxMemoryZoomName');
+        if (m && img) {
+          if (m.parentNode !== document.body) document.body.appendChild(m);
+          img.src = src;
+          if (nm) nm.textContent = 'Momen dari: ' + name;
+          m.style.display = 'flex';
+          document.body.style.overflow = 'hidden';
+        }
+      };
+
+      window.luxCloseMemoryZoom = function() {
+        const m = document.getElementById('luxMemoryZoomModal');
+        if (m) {
+          m.style.display = 'none';
+          document.body.style.overflow = '';
+        }
+      };
+
+      window.luxHandleInPageMemorySubmit = function(e) {
+        e.preventDefault();
+        const btn = document.getElementById('inpageMemSubmitBtn');
+        const alert = document.getElementById('inpageMemAlert');
+        const nameInput = document.getElementById('inpageMemName');
+        const fileInput = document.getElementById('inpageMemFile');
+        if (btn) { btn.disabled = true; btn.textContent = 'Mengunggah ke Galeri...'; }
+        setTimeout(() => {
+          if (alert) alert.style.display = 'block';
+          if (btn) { btn.disabled = false; btn.textContent = '📸  KIRIM FOTO MOMEN'; }
+          if (nameInput) nameInput.value = '';
+          if (fileInput) fileInput.value = '';
+          setTimeout(() => {
+            if (alert) alert.style.display = 'none';
+          }, 3500);
+        }, 1000);
+      };
+    </script>
+
+    <!-- IN-PAGE MEMORIES UPLOAD MODAL -->
+    <div id="luxMemoryUploadModal" class="gallery-modal-backdrop" onclick="luxCloseUploadMemoryModal(event)" style="display:none; position:fixed; inset:0; z-index:99999; background:rgba(0,0,0,0.8); backdrop-filter:blur(10px); align-items:center; justify-content:center; padding:1rem;">
+      <div class="gallery-modal-container" onclick="event.stopPropagation()" style="max-width:440px; width:100%; text-align:left; padding:1.5rem; background:#121216; border:1px solid rgba(255,255,255,0.18); border-radius:20px; box-shadow:0 20px 50px rgba(0,0,0,0.8);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.2rem; border-bottom:1px solid rgba(255,255,255,0.12); padding-bottom:0.8rem;">
+          <h3 class="serif" style="margin:0; font-size:1.2rem; color:#fff;">Upload Momen Kondangan</h3>
+          <button type="button" onclick="luxCloseUploadMemoryModal()" style="background:none; border:none; color:#aaa; font-size:1.4rem; cursor:pointer;">✕</button>
+        </div>
+        
+        <form onsubmit="luxHandleDemoMemorySubmit(event)" style="display:flex; flex-direction:column; gap:12px;">
+          <div>
+            <label style="display:block; font-size:0.75rem; color:#ccc; margin-bottom:4px; font-weight:600;">NAMA ANDA</label>
+            <input type="text" id="demoMemAuthor" placeholder="Nama Tamu Undangan" required style="width:100%; padding:8px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.06); color:#fff; font-size:0.85rem;" />
+          </div>
+          <div>
+            <label style="display:block; font-size:0.75rem; color:#ccc; margin-bottom:4px; font-weight:600;">PESAN / UCAPAN SINGKAT</label>
+            <input type="text" id="demoMemCaption" placeholder="Tuliskan ucapan manis..." style="width:100%; padding:8px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.2); background:rgba(255,255,255,0.06); color:#fff; font-size:0.85rem;" />
+          </div>
+          <div>
+            <label style="display:block; font-size:0.75rem; color:#ccc; margin-bottom:4px; font-weight:600;">PILIH FOTO DARI HP / KAMERA</label>
+            <input type="file" id="demoMemFile" accept="image/*" required style="width:100%; padding:8px 12px; border-radius:8px; border:1px dashed rgba(255,255,255,0.3); background:rgba(255,255,255,0.04); color:#fff; font-size:0.8rem;" />
+          </div>
+          <button type="submit" id="demoMemSubmitBtn" class="btn-outline-box" style="margin-top:8px; width:100%; padding:10px; background:#fff; color:#000; font-weight:700; border:none; border-radius:8px; cursor:pointer;">
+            KIRIM FOTO MOMEN
+          </button>
+          <div id="demoMemSuccessAlert" style="display:none; color:#4ade80; font-size:0.8rem; text-align:center; margin-top:8px; font-weight:600;">
+            ✓ Foto berhasil diunggah ke galeri momen pernikahan!
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      window.luxOpenUploadMemoryModal = function() {
+        const m = document.getElementById('luxMemoryUploadModal');
+        if (m) {
+          if (m.parentNode !== document.body) document.body.appendChild(m);
+          m.style.display = 'flex';
+          document.body.style.overflow = 'hidden';
+        }
+      };
+
+      window.luxCloseUploadMemoryModal = function(e) {
+        if (!e || e.target === document.getElementById('luxMemoryUploadModal') || e.target.tagName === 'BUTTON') {
+          const m = document.getElementById('luxMemoryUploadModal');
+          if (m) {
+            m.style.display = 'none';
+            document.body.style.overflow = '';
+          }
+        }
+      };
+
+      window.luxHandleDemoMemorySubmit = function(e) {
+        e.preventDefault();
+        const btn = document.getElementById('demoMemSubmitBtn');
+        const alert = document.getElementById('demoMemSuccessAlert');
+        if (btn) { btn.disabled = true; btn.textContent = 'Mengunggah...'; }
+        setTimeout(() => {
+          if (alert) alert.style.display = 'block';
+          if (btn) { btn.disabled = false; btn.textContent = 'KIRIM FOTO MOMEN'; }
+          setTimeout(() => {
+            luxCloseUploadMemoryModal();
+            if (alert) alert.style.display = 'none';
+          }, 1800);
+        }, 1000);
+      };
+    </script>
+  `;
+
   const googleCalendarUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`The Wedding of ${demo.groomName} & ${demo.brideName}`)}&dates=${demo.weddingDateYear}${demo.weddingDateMonth}${demo.weddingDateDay}T010000Z/${demo.weddingDateYear}${demo.weddingDateMonth}${demo.weddingDateDay}T140000Z&location=${encodeURIComponent(demo.events[0]?.location || demo.city)}`;
 
   return {
@@ -1654,7 +1892,8 @@ export function composeDemoTemplateData(
     qrAccessSectionHtml,
     dressCodeHtml,
     liveStreamingHtml,
-    weddingFilterHtml: "",
+    weddingFilterHtml,
+    memoriesSectionHtml,
     turutMengundangHtml,
     qrCoverButtonHtml,
     qrDockButtonHtml,

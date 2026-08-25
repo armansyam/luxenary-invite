@@ -501,12 +501,7 @@
       </div>
     </section>
 
-    <!-- 4. SECTION: JOURNEY OF LOVE -->
-    <div class="reveal-zoom">
-      {{storySectionHtml}}
-    </div>
-
-    <!-- 5. SECTION: SAVE THE DATE & EVENTS -->
+    <!-- 4. SECTION: SAVE THE DATE & EVENTS -->
     <section class="sec-flow" id="event">
       <h2 class="sec-main-title serif reveal">SAVE THE DATE</h2>
       <p class="event-full-date reveal delay-1">{{weddingDate}}</p>
@@ -519,24 +514,29 @@
       </div>
       <a href="{{googleCalendarUrl}}" target="_blank" class="btn-outline-box reveal delay-2">SIMPAN TANGGAL</a>
 
-      <div class="events-stack reveal delay-3">
-        {{eventDataHtml}}
+      <div class="events-grid">
+        {{eventCardsHtml}}
       </div>
     </section>
 
-    <!-- 6. SECTION: KARTU AKSES MASUK / QR CHECK-IN -->
-    <div class="reveal-zoom">
-      {{qrAccessSectionHtml}}
-    </div>
-
-    <!-- 7. SECTION: A GUIDE TO DRESS CODES -->
+    <!-- 5. SECTION: A GUIDE TO DRESS CODES -->
     <div class="reveal">
       {{dressCodeHtml}}
     </div>
 
-    <!-- 8. SECTION: LIVE WEDDING (VIRTUAL CEREMONY) -->
+    <!-- 6. SECTION: LIVE WEDDING (VIRTUAL CEREMONY) -->
     <div class="reveal">
       {{liveStreamingHtml}}
+    </div>
+
+    <!-- 7. SECTION: JOURNEY OF LOVE -->
+    <div class="reveal-zoom">
+      {{storySectionHtml}}
+    </div>
+
+    <!-- 8. SECTION: OUR MOMENT (GALLERY & VIDEO) -->
+    <div class="reveal-zoom" id="moments">
+      {{gallerySectionHtml}}
     </div>
 
     <!-- 9. SECTION: WEDDING FRAME / FILTER INSTAGRAM -->
@@ -544,21 +544,20 @@
       {{weddingFilterHtml}}
     </div>
 
-    <!-- 10. SECTION: TURUT MENGUNDANG -->
+    <!-- 10. SECTION: GUEST MEMORIES -->
+    <div class="reveal" id="memories">
+      {{memoriesSectionHtml}}
+    </div>
+
+    <!-- 11. SECTION: WEDDING GIFT -->
+    {{giftSectionHtml}}
+
+    <!-- 12. SECTION: TURUT MENGUNDANG -->
     <div class="reveal">
       {{turutMengundangHtml}}
     </div>
 
-    <div class="sec-divider"></div>
-
-    <!-- 11. SECTION: OUR MOMENT (GALLERY & VIDEO) -->
-    <div class="reveal-zoom">
-      {{gallerySectionHtml}}
-    </div>
-
-    <div class="sec-divider"></div>
-
-    <!-- 12. SECTION: RSVP & WISHES -->
+    <!-- 13. SECTION: RSVP & WISHES -->
     <section class="sec-flow" id="rsvp">
       <span class="sec-eyebrow">Greet &amp; Wish</span>
       <h2 class="sec-main-title serif">RSVP &amp; Doa Restu</h2>
@@ -593,12 +592,12 @@
       </div>
     </section>
 
-    <div class="sec-divider"></div>
+    <!-- 14. SECTION: KARTU AKSES MASUK / QR CHECK-IN -->
+    <div class="reveal-zoom">
+      {{qrAccessSectionHtml}}
+    </div>
 
-    <!-- 13. SECTION: WEDDING GIFT -->
-    {{giftSectionHtml}}
-
-    <!-- 14. FOOTER / THANK YOU -->
+    <!-- 15. FOOTER / THANK YOU -->
     <footer class="site-footer" id="footer">
       <h2 class="footer-name serif">{{firstName}} &amp; {{secondName}}</h2>
       <p class="footer-sub">{{weddingDate}}</p>

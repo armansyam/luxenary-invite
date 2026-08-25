@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { getApexRootDomain, getInvitationPublicUrl } from "@/lib/domainUtils";
@@ -365,10 +365,20 @@ export default function AdminPage() {
   const [demoStudioTheme, setDemoStudioTheme] = useState<any | null>(null);
   const [demoStudioTab, setDemoStudioTab] = useState<"visual" | "profile" | "stories">("visual");
   const [demoStudioData, setDemoStudioData] = useState<any>({});
+  const [initialDemoStudioData, setInitialDemoStudioData] = useState<any>({});
+  const [stagedDemoFiles, setStagedDemoFiles] = useState<Record<string, File>>({});
   const [demoStudioLoading, setDemoStudioLoading] = useState(false);
   const [demoStudioSaving, setDemoStudioSaving] = useState(false);
   const [demoStudioUploadSuccess, setDemoStudioUploadSuccess] = useState<string | null>(null);
   const [uploadingSlot, setUploadingSlot] = useState<string | null>(null);
+  const [updatedDemoSlots, setUpdatedDemoSlots] = useState<Record<string, number>>({});
+  const [localPreviews, setLocalPreviews] = useState<Record<string, string>>({});
+
+  const isDemoStudioDirty = useMemo(() => {
+    const hasStagedFiles = Object.keys(stagedDemoFiles).length > 0;
+    const hasDataChanges = JSON.stringify(demoStudioData) !== JSON.stringify(initialDemoStudioData);
+    return hasStagedFiles || hasDataChanges;
+  }, [stagedDemoFiles, demoStudioData, initialDemoStudioData]);
 
   const loadOverviewData = useCallback(() => {
     setLoading(true);
@@ -737,6 +747,9 @@ export default function AdminPage() {
     setDemoStudioLoading(true);
     setDemoStudioTab("visual");
     setDemoStudioUploadSuccess(null);
+    setUpdatedDemoSlots({});
+    setLocalPreviews({});
+    setStagedDemoFiles({});
     setShowDemoStudioModal(true);
 
     try {
@@ -744,102 +757,111 @@ export default function AdminPage() {
       const json = await res.json();
       if (json.success && json.data) {
         setDemoStudioData(json.data);
+        setInitialDemoStudioData(JSON.parse(JSON.stringify(json.data)));
       } else {
         setDemoStudioData({});
+        setInitialDemoStudioData({});
       }
     } catch {
       setDemoStudioData({});
+      setInitialDemoStudioData({});
     } finally {
       setDemoStudioLoading(false);
     }
   };
 
-  const handleUploadDemoAsset = async (slot: string, file: File) => {
-    if (!demoStudioTheme) return;
-    setUploadingSlot(slot);
-    setDemoStudioUploadSuccess(null);
-
-    const fd = new FormData();
-    fd.append("slot", slot);
-    fd.append("file", file);
-
+  const handleStageDemoAsset = (slot: string, file: File) => {
     try {
-      const res = await fetch(`/api/admin/themes/${demoStudioTheme.id}/demo-asset`, {
-        method: "POST",
-        body: fd,
-      });
-      const data = await res.json();
-      if (data.success) {
-        setDemoStudioUploadSuccess(`✓ Aset ${slot} berhasil diperbarui!`);
-        if (slot.startsWith("gallery_")) {
-          const galleryPhotos = [...(demoStudioData.galleryPhotos || [])];
-          const idx = parseInt(slot.replace("gallery_", ""), 10) - 1;
-          if (idx >= 0 && idx < 8) {
-            galleryPhotos[idx] = data.url;
-            setDemoStudioData({ ...demoStudioData, galleryPhotos });
-          }
-        } else if (slot === "cover") {
-          setDemoStudioData({ ...demoStudioData, landingCoverUrl: data.url });
-        } else if (slot === "hero") {
-          setDemoStudioData({ ...demoStudioData, sidebarPhotoUrl: data.url });
-        } else if (slot === "groom") {
-          setDemoStudioData({ ...demoStudioData, groomPhotoUrl: data.url });
-        } else if (slot === "bride") {
-          setDemoStudioData({ ...demoStudioData, bridePhotoUrl: data.url });
-        } else if (slot === "background") {
-          setDemoStudioData({ ...demoStudioData, globalBgUrl: data.url });
-        }
-      } else {
-        alert(data.error || "Gagal mengunggah aset");
-      }
+      const localUrl = URL.createObjectURL(file);
+      setLocalPreviews((prev) => ({ ...prev, [slot]: localUrl }));
+      setStagedDemoFiles((prev) => ({ ...prev, [slot]: file }));
+      setDemoStudioUploadSuccess(null);
     } catch (err: any) {
-      alert("Error: " + err.message);
-    } finally {
-      setUploadingSlot(null);
+      alert("Gagal memuat file gambar lokal: " + err.message);
     }
   };
 
-  const handleSaveDemoData = async () => {
-    if (!demoStudioTheme) return;
+  const handleDiscardStagedAsset = (slot: string) => {
+    setStagedDemoFiles((prev) => {
+      const next = { ...prev };
+      delete next[slot];
+      return next;
+    });
+    setLocalPreviews((prev) => {
+      const next = { ...prev };
+      delete next[slot];
+      return next;
+    });
+  };
+
+  const handleSaveAllDemoChanges = async () => {
+    if (!demoStudioTheme || !isDemoStudioDirty) return;
     setDemoStudioSaving(true);
+    setDemoStudioUploadSuccess(null);
+
     try {
-      const res = await fetch(`/api/admin/themes/${demoStudioTheme.id}/demo-data`, {
+      // 1. Upload all staged files to server
+      const slots = Object.keys(stagedDemoFiles);
+      if (slots.length > 0) {
+        for (const slot of slots) {
+          setUploadingSlot(slot);
+          const file = stagedDemoFiles[slot];
+          const fd = new FormData();
+          fd.append("slot", slot);
+          fd.append("file", file);
+
+          const res = await fetch(`/api/admin/themes/${demoStudioTheme.id}/demo-asset`, {
+            method: "POST",
+            body: fd,
+          });
+          const data = await res.json();
+          if (!data.success) {
+            throw new Error(`Gagal mengunggah foto slot ${slot}: ${data.error || "Gagal upload"}`);
+          }
+        }
+      }
+
+      // 2. Save text profile & story demo data
+      const dataRes = await fetch(`/api/admin/themes/${demoStudioTheme.id}/demo-data`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(demoStudioData),
       });
-      const data = await res.json();
-      if (data.success) {
-        setDemoStudioUploadSuccess(`✓ Data & cerita demo tema ${demoStudioTheme.name} berhasil disimpan!`);
-        setTimeout(() => setDemoStudioUploadSuccess(null), 3000);
-      } else {
-        alert(data.error || "Gagal menyimpan data demo");
+      const dataJson = await dataRes.json();
+      if (!dataJson.success) {
+        throw new Error(dataJson.error || "Gagal menyimpan data demo");
       }
+
+      // 3. Mark successfully saved
+      const now = Date.now();
+      const newUpdatedSlots: Record<string, number> = { ...updatedDemoSlots };
+      slots.forEach((s) => {
+        newUpdatedSlots[s] = now;
+      });
+      setUpdatedDemoSlots(newUpdatedSlots);
+      setInitialDemoStudioData(JSON.parse(JSON.stringify(demoStudioData)));
+      setStagedDemoFiles({});
+      setDemoStudioUploadSuccess(`✓ Semua perubahan demo tema ${demoStudioTheme.name} berhasil disimpan permanen!`);
+      setTimeout(() => setDemoStudioUploadSuccess(null), 4000);
     } catch (err: any) {
       alert("Error: " + err.message);
     } finally {
+      setUploadingSlot(null);
       setDemoStudioSaving(false);
     }
   };
 
-  // Invitation theme actions
-  const handleUnlockTheme = async (invId: string) => {
-    if (!confirm("Buka kunci tema untuk klien ini?")) return;
-    try {
-      const res = await fetch(`/api/client/invitations/${invId}`);
-      const invData = await res.json();
-      let feat: any = {};
-      try { feat = typeof invData.featureSettings === "object" ? invData.featureSettings : JSON.parse(invData.featureSettings || "{}"); } catch { feat = {}; }
-      feat = { ...feat, themeLocked: false };
-      await fetch(`/api/client/invitations/${invId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...invData, featureSettings: feat }),
-      });
-      alert("✓ Tema berhasil dibuka kembali!");
-      loadOverviewData();
-    } catch (err: any) { alert("Gagal: " + err.message); }
+  const handleCloseDemoStudio = () => {
+    if (isDemoStudioDirty) {
+      if (!confirm("Ada draft perubahan yang belum disimpan. Yakin ingin menutup tanpa menyimpan?")) {
+        return;
+      }
+    }
+    setShowDemoStudioModal(false);
+    setStagedDemoFiles({});
+    setLocalPreviews({});
   };
+
 
   const handleToggleEmergencyUnlock = async (inv: any) => {
     const isCurrentlyUnlocked = inv.adminUnlockedUntil && new Date(inv.adminUnlockedUntil) > new Date();
@@ -988,35 +1010,23 @@ export default function AdminPage() {
     })
     .sort((a, b) => b.count - a.count);
 
-  if (status === "loading") {
-    return (
-      <div className="min-h-screen bg-stone-950 flex flex-col items-center justify-center text-amber-400 font-mono text-xs gap-3">
-        <span className="w-6 h-6 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
-        <span>MEMVERIFIKASI OTORISASI ADMINISTRATOR...</span>
-      </div>
-    );
-  }
-
   if (
     status === "unauthenticated" ||
-    !(
-      (session?.user as any)?.isAdmin === true ||
-      (session?.user as any)?.role === "ADMIN" ||
-      (session?.user as any)?.role === "SUPER_ADMIN"
-    )
+    (status === "authenticated" &&
+      !(
+        (session?.user as any)?.isAdmin === true ||
+        (session?.user as any)?.role === "ADMIN" ||
+        (session?.user as any)?.role === "SUPER_ADMIN"
+      ))
   ) {
-    return (
-      <div className="min-h-screen bg-stone-950 flex flex-col items-center justify-center text-rose-400 font-mono text-xs gap-3">
-        <span>AKSES DITOLAK. MENGALIHKAN KE PORTAL LOGIN...</span>
-      </div>
-    );
+    return null;
   }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col text-gray-900">
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Left: Mobile Toggle + Brand */}
             <div className="flex items-center gap-3">
@@ -1133,7 +1143,7 @@ export default function AdminPage() {
         </div>
       )}
 
-      <div className="flex flex-1">
+      <div className="flex flex-1 min-w-0 w-full">
         {/* Desktop Sidebar — Hidden di Mobile, Sticky & Fixed di Layar Besar */}
         <aside className="hidden md:flex w-60 bg-white border-r border-gray-200 shadow-2xs shrink-0 sticky top-16 h-[calc(100vh-4rem)] flex-col justify-between overflow-y-auto">
           <nav className="py-4 space-y-1 px-3">
@@ -1169,7 +1179,7 @@ export default function AdminPage() {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto max-w-6xl w-full">
+        <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 overflow-y-auto w-full">
           {loading ? (
             <div className="flex items-center justify-center py-20">
               <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-amber-600"></div>
@@ -1643,44 +1653,223 @@ export default function AdminPage() {
                     <button onClick={loadOverviewData} className="px-3 py-1.5 text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition cursor-pointer">↻ Refresh</button>
                   </div>
 
-                  <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                    <table className="min-w-full divide-y divide-gray-100">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          {["Invoice", "Klien", "Paket", "Metode", "Jumlah", "Bukti Transfer", "Status", "Tanggal", "Aksi"].map((h) => (
-                            <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{h}</th>
+                  {/* ── Desktop Widescreen Table View ── */}
+                  <div className="hidden md:block bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div className="overflow-x-auto w-full">
+                      <table className="min-w-full divide-y divide-gray-100">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            {["Invoice", "Klien", "Paket", "Metode", "Jumlah", "Bukti Transfer", "Status", "Tanggal", "Aksi"].map((h) => (
+                              <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-50">
+                          {orders.length === 0 ? (
+                            <tr><td colSpan={9} className="px-5 py-8 text-center text-gray-400 italic">Belum ada transaksi</td></tr>
+                          ) : orders.map((ord) => (
+                            <tr key={ord.id} className="hover:bg-gray-50 transition">
+                              <td className="px-4 py-3 text-xs font-mono text-gray-700 font-bold">{ord.invoiceNumber}</td>
+                              <td className="px-4 py-3 text-xs text-gray-800 font-medium">
+                                <div className="font-semibold text-gray-900">{ord.user?.name || "Klien"}</div>
+                                <div className="text-gray-400 text-[11px] font-mono">{ord.user?.email}</div>
+                              </td>
+                              <td className="px-4 py-3 text-xs font-semibold text-gray-900">{ord.planType}</td>
+                              <td className="px-4 py-3 text-xs">
+                                {ord.paymentMethod === "MANUAL_TRANSFER" ? (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                                    Transfer Bank
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-sky-50 text-sky-800 border border-sky-200">
+                                    QRIS / Otomatis
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-xs font-bold text-gray-900 font-mono">Rp {Number(ord.amount).toLocaleString("id-ID")}</td>
+                              <td className="px-4 py-3 text-xs">
+                                {ord.proofImageUrl ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => setPreviewProofOrder(ord)}
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-lg text-[11px] font-bold transition cursor-pointer shadow-2xs"
+                                  >
+                                    <svg className="w-3.5 h-3.5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                    <span>Lihat Struk</span>
+                                  </button>
+                                ) : (
+                                  <span className="text-gray-400 text-xs">-</span>
+                                )}
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="space-y-1">
+                                  {/* Status kontekstual sesuai metode & kondisi */}
+                                  {ord.status === "PENDING" && ord.paymentMethod === "MANUAL_TRANSFER" && !ord.proofImageUrl && (
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600 border border-gray-200">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+                                      Menunggu Bukti
+                                    </span>
+                                  )}
+                                  {ord.status === "PENDING" && ord.paymentMethod === "MANUAL_TRANSFER" && ord.proofImageUrl && (
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                      Menunggu Verifikasi
+                                    </span>
+                                  )}
+                                  {ord.status === "PENDING" && ord.paymentMethod !== "MANUAL_TRANSFER" && (
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-sky-50 text-sky-800 border border-sky-200">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse"></span>
+                                      Menunggu Pembayaran
+                                    </span>
+                                  )}
+                                  {ord.status === "PAID" && (
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                      Lunas
+                                    </span>
+                                  )}
+                                  {ord.status === "EXPIRED" && (
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-500 border border-gray-200">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+                                      QRIS Kedaluwarsa
+                                    </span>
+                                  )}
+                                  {ord.status === "FAILED" && (
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                                      Ditolak
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 text-[11px] text-gray-400">{new Date(ord.createdAt).toLocaleDateString("id-ID")}</td>
+                              <td className="px-4 py-3">
+                                {/* Tombol Konfirmasi/Tolak HANYA untuk Transfer Manual yang sudah upload struk */}
+                                {ord.status === "PENDING" && ord.paymentMethod === "MANUAL_TRANSFER" && ord.proofImageUrl && (
+                                  <div className="flex items-center gap-1.5">
+                                    <button
+                                      onClick={() => handleApproveOrder(ord.id)}
+                                      disabled={processingOrderAction}
+                                      className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-semibold transition cursor-pointer disabled:opacity-50"
+                                    >
+                                      Konfirmasi
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                       setRejectModalOrder(ord);
+                                       setRejectReasonInput("Bukti transfer tidak valid atau dana belum masuk.");
+                                      }}
+                                      disabled={processingOrderAction}
+                                      className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 rounded-lg text-xs font-semibold transition cursor-pointer disabled:opacity-50"
+                                    >
+                                      Tolak
+                                    </button>
+                                  </div>
+                                )}
+                                {/* QRIS: Menunggu otomatis dari webhook gateway */}
+                                {ord.status === "PENDING" && ord.paymentMethod !== "MANUAL_TRANSFER" && (
+                                  <span className="text-[10px] text-gray-400 italic">Auto via gateway</span>
+                                )}
+                                {/* Transfer Manual: Menunggu klien upload struk */}
+                                {ord.status === "PENDING" && ord.paymentMethod === "MANUAL_TRANSFER" && !ord.proofImageUrl && (
+                                  <span className="text-[10px] text-gray-400 italic">Menunggu bukti upload</span>
+                                )}
+                                {ord.status === "FAILED" && ord.rejectReason && (
+                                  <span className="text-[10px] text-rose-600 italic block max-w-[120px] truncate" title={ord.rejectReason}>
+                                    {ord.rejectReason}
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
                           ))}
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-50">
-                        {orders.length === 0 ? (
-                          <tr><td colSpan={9} className="px-5 py-8 text-center text-gray-400 italic">Belum ada transaksi</td></tr>
-                        ) : orders.map((ord) => (
-                          <tr key={ord.id} className="hover:bg-gray-50 transition">
-                            <td className="px-4 py-3 text-xs font-mono text-gray-700 font-bold">{ord.invoiceNumber}</td>
-                            <td className="px-4 py-3 text-xs text-gray-800 font-medium">
-                              <div className="font-semibold text-gray-900">{ord.user?.name || "Klien"}</div>
-                              <div className="text-gray-400 text-[11px] font-mono">{ord.user?.email}</div>
-                            </td>
-                            <td className="px-4 py-3 text-xs font-semibold text-gray-900">{ord.planType}</td>
-                            <td className="px-4 py-3 text-xs">
-                              {ord.paymentMethod === "MANUAL_TRANSFER" ? (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
-                                  Transfer Bank
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-sky-50 text-sky-800 border border-sky-200">
-                                  QRIS / Otomatis
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* ── Mobile-Native Compact Feed View ── */}
+                  <div className="block md:hidden space-y-3">
+                    {orders.length === 0 ? (
+                      <div className="p-8 text-center bg-white rounded-2xl border border-gray-200 text-gray-400 text-xs italic">
+                        Belum ada transaksi
+                      </div>
+                    ) : (
+                      orders.map((ord) => (
+                        <div key={ord.id} className="bg-white rounded-2xl p-4 border border-gray-200 shadow-2xs space-y-2.5">
+                          {/* Top: Invoice + Status */}
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-mono font-bold text-xs text-gray-900 truncate">{ord.invoiceNumber}</span>
+                            <div>
+                              {ord.status === "PENDING" && ord.paymentMethod === "MANUAL_TRANSFER" && !ord.proofImageUrl && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600 border border-gray-200">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+                                  Menunggu Bukti
                                 </span>
                               )}
-                            </td>
-                            <td className="px-4 py-3 text-xs font-bold text-gray-900 font-mono">Rp {Number(ord.amount).toLocaleString("id-ID")}</td>
-                            <td className="px-4 py-3 text-xs">
+                              {ord.status === "PENDING" && ord.paymentMethod === "MANUAL_TRANSFER" && ord.proofImageUrl && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                  Verifikasi
+                                </span>
+                              )}
+                              {ord.status === "PENDING" && ord.paymentMethod !== "MANUAL_TRANSFER" && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-sky-50 text-sky-800 border border-sky-200">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse"></span>
+                                  Pending
+                                </span>
+                              )}
+                              {ord.status === "PAID" && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                  Lunas
+                                </span>
+                              )}
+                              {ord.status === "EXPIRED" && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-500 border border-gray-200">
+                                  Kedaluwarsa
+                                </span>
+                              )}
+                              {ord.status === "FAILED" && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                                  Ditolak
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Client info */}
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-semibold text-gray-900">{ord.user?.name || "Klien"}</span>
+                            <span className="text-gray-400 font-mono text-[11px] truncate max-w-[160px]">{ord.user?.email}</span>
+                          </div>
+
+                          {/* Meta & Amount Row */}
+                          <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-xs">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-amber-900 bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded-md text-[10px] uppercase">
+                                {ord.planType}
+                              </span>
+                              <span className="text-[10px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md font-medium">
+                                {ord.paymentMethod === "MANUAL_TRANSFER" ? "Transfer" : "QRIS"}
+                              </span>
+                            </div>
+                            <div className="text-right">
+                              <span className="font-bold text-gray-900 font-mono text-sm">Rp {Number(ord.amount).toLocaleString("id-ID")}</span>
+                              <span className="text-[10px] text-gray-400 block">{new Date(ord.createdAt).toLocaleDateString("id-ID")}</span>
+                            </div>
+                          </div>
+
+                          {/* Manual transfer proof & actions */}
+                          {ord.paymentMethod === "MANUAL_TRANSFER" && (
+                            <div className="pt-2 border-t border-gray-100 flex items-center justify-between gap-2">
                               {ord.proofImageUrl ? (
                                 <button
                                   type="button"
                                   onClick={() => setPreviewProofOrder(ord)}
-                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-lg text-[11px] font-bold transition cursor-pointer shadow-2xs"
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-lg text-xs font-bold transition cursor-pointer"
                                 >
                                   <svg className="w-3.5 h-3.5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -1689,59 +1878,15 @@ export default function AdminPage() {
                                   <span>Lihat Struk</span>
                                 </button>
                               ) : (
-                                <span className="text-gray-400 text-xs">-</span>
+                                <span className="text-[11px] text-gray-400 italic">Belum ada struk</span>
                               )}
-                            </td>
-                            <td className="px-4 py-3">
-                              <div className="space-y-1">
-                                {/* Status kontekstual sesuai metode & kondisi */}
-                                {ord.status === "PENDING" && ord.paymentMethod === "MANUAL_TRANSFER" && !ord.proofImageUrl && (
-                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600 border border-gray-200">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
-                                    Menunggu Bukti
-                                  </span>
-                                )}
-                                {ord.status === "PENDING" && ord.paymentMethod === "MANUAL_TRANSFER" && ord.proofImageUrl && (
-                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-                                    Menunggu Verifikasi
-                                  </span>
-                                )}
-                                {ord.status === "PENDING" && ord.paymentMethod !== "MANUAL_TRANSFER" && (
-                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-sky-50 text-sky-800 border border-sky-200">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse"></span>
-                                    Menunggu Pembayaran
-                                  </span>
-                                )}
-                                {ord.status === "PAID" && (
-                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                    Lunas
-                                  </span>
-                                )}
-                                {ord.status === "EXPIRED" && (
-                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-500 border border-gray-200">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
-                                    QRIS Kedaluwarsa
-                                  </span>
-                                )}
-                                {ord.status === "FAILED" && (
-                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-                                    Ditolak
-                                  </span>
-                                )}
-                              </div>
-                            </td>
-                            <td className="px-4 py-3 text-[11px] text-gray-400">{new Date(ord.createdAt).toLocaleDateString("id-ID")}</td>
-                            <td className="px-4 py-3">
-                              {/* Tombol Konfirmasi/Tolak HANYA untuk Transfer Manual yang sudah upload struk */}
-                              {ord.status === "PENDING" && ord.paymentMethod === "MANUAL_TRANSFER" && ord.proofImageUrl && (
-                                <div className="flex items-center gap-1.5">
+
+                              {ord.status === "PENDING" && ord.proofImageUrl && (
+                                <div className="flex items-center gap-1.5 ml-auto">
                                   <button
                                     onClick={() => handleApproveOrder(ord.id)}
                                     disabled={processingOrderAction}
-                                    className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-semibold transition cursor-pointer disabled:opacity-50"
+                                    className="px-3 py-1 bg-emerald-600 text-white rounded-lg text-xs font-semibold transition cursor-pointer disabled:opacity-50"
                                   >
                                     Konfirmasi
                                   </button>
@@ -1751,30 +1896,17 @@ export default function AdminPage() {
                                       setRejectReasonInput("Bukti transfer tidak valid atau dana belum masuk.");
                                     }}
                                     disabled={processingOrderAction}
-                                    className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 rounded-lg text-xs font-semibold transition cursor-pointer disabled:opacity-50"
+                                    className="px-3 py-1 bg-rose-50 text-rose-800 border border-rose-200 rounded-lg text-xs font-semibold transition cursor-pointer disabled:opacity-50"
                                   >
                                     Tolak
                                   </button>
                                 </div>
                               )}
-                              {/* QRIS: Menunggu otomatis dari webhook gateway */}
-                              {ord.status === "PENDING" && ord.paymentMethod !== "MANUAL_TRANSFER" && (
-                                <span className="text-[10px] text-gray-400 italic">Auto via gateway</span>
-                              )}
-                              {/* Transfer Manual: Menunggu klien upload struk */}
-                              {ord.status === "PENDING" && ord.paymentMethod === "MANUAL_TRANSFER" && !ord.proofImageUrl && (
-                                <span className="text-[10px] text-gray-400 italic">Menunggu bukti upload</span>
-                              )}
-                              {ord.status === "FAILED" && ord.rejectReason && (
-                                <span className="text-[10px] text-rose-600 italic block max-w-[120px] truncate" title={ord.rejectReason}>
-                                  {ord.rejectReason}
-                                </span>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               )}
@@ -1786,40 +1918,75 @@ export default function AdminPage() {
                     <h2 className="text-2xl font-bold text-gray-900">Daftar Klien</h2>
                     <p className="text-sm text-gray-500">{users.filter((u) => u.role !== "ADMIN").length} klien terdaftar</p>
                   </div>
-                  <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                    <table className="min-w-full divide-y divide-gray-100">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          {["Nama", "Email", "Role", "Terdaftar"].map((h) => (
-                            <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-50">
-                        {users
-                          .filter((usr) => usr.role !== "ADMIN")
-                          .map((usr) => (
-                            <tr key={usr.id} className="hover:bg-gray-50 transition">
-                              <td className="px-5 py-3 text-sm font-semibold text-gray-900">{usr.name}</td>
-                              <td className="px-5 py-3 text-sm text-gray-600 font-mono text-xs">{usr.email}</td>
-                              <td className="px-5 py-3">
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                                  Klien
-                                </span>
-                              </td>
-                              <td className="px-5 py-3 text-xs text-gray-500">{new Date(usr.createdAt).toLocaleDateString("id-ID")}</td>
-                            </tr>
-                          ))}
-                        {users.filter((usr) => usr.role !== "ADMIN").length === 0 && (
+
+                  {/* ── Desktop Widescreen Table View ── */}
+                  <div className="hidden md:block bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div className="overflow-x-auto w-full">
+                      <table className="min-w-full divide-y divide-gray-100">
+                        <thead className="bg-gray-50">
                           <tr>
-                            <td colSpan={4} className="px-5 py-8 text-center text-xs text-gray-400">
-                              Belum ada akun klien terdaftar.
-                            </td>
+                            {["Nama", "Email", "Role", "Terdaftar"].map((h) => (
+                              <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{h}</th>
+                            ))}
                           </tr>
-                        )}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                          {users
+                            .filter((usr) => usr.role !== "ADMIN")
+                            .map((usr) => (
+                              <tr key={usr.id} className="hover:bg-gray-50 transition">
+                                <td className="px-5 py-3 text-sm font-semibold text-gray-900">{usr.name}</td>
+                                <td className="px-5 py-3 text-sm text-gray-600 font-mono text-xs">{usr.email}</td>
+                                <td className="px-5 py-3">
+                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                                    Klien
+                                  </span>
+                                </td>
+                                <td className="px-5 py-3 text-xs text-gray-500">{new Date(usr.createdAt).toLocaleDateString("id-ID")}</td>
+                              </tr>
+                            ))}
+                          {users.filter((usr) => usr.role !== "ADMIN").length === 0 && (
+                            <tr>
+                              <td colSpan={4} className="px-5 py-8 text-center text-xs text-gray-400">
+                                Belum ada akun klien terdaftar.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* ── Mobile-Native Contact Feed View ── */}
+                  <div className="block md:hidden space-y-2.5">
+                    {users.filter((u) => u.role !== "ADMIN").length === 0 ? (
+                      <div className="p-8 text-center bg-white rounded-2xl border border-gray-200 text-gray-400 text-xs italic">
+                        Belum ada akun klien terdaftar.
+                      </div>
+                    ) : (
+                      users
+                        .filter((usr) => usr.role !== "ADMIN")
+                        .map((usr) => (
+                          <div key={usr.id} className="bg-white rounded-2xl p-3.5 border border-gray-200 shadow-2xs flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-900 font-bold flex items-center justify-center text-xs shrink-0">
+                                {(usr.name || "K")[0].toUpperCase()}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="font-semibold text-xs text-gray-900 truncate">{usr.name || "Klien"}</div>
+                                <div className="text-gray-500 text-[11px] font-mono truncate">{usr.email}</div>
+                              </div>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 mb-0.5">
+                                Klien
+                              </span>
+                              <span className="text-[10px] text-gray-400 block">{new Date(usr.createdAt).toLocaleDateString("id-ID")}</span>
+                            </div>
+                          </div>
+                        ))
+                    )}
                   </div>
                 </div>
               )}
@@ -1831,104 +1998,192 @@ export default function AdminPage() {
                     <h2 className="text-2xl font-bold text-gray-900">Katalog Undangan Klien</h2>
                     <p className="text-sm text-gray-500">{invitations.length} undangan terdaftar</p>
                   </div>
-                  <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                    <table className="min-w-full divide-y divide-gray-100">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          {["Pasangan", "Subdomain / URL", "Tema", "Status", "Proteksi Editor", "Aksi"].map((h) => (
-                            <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-50">
-                        {invitations.map((inv) => {
-                          const coupleName = `${inv.groomNickname || inv.groomName || "Mempelai Pria"} & ${inv.brideNickname || inv.brideName || "Mempelai Wanita"}`;
-                          const activeSub = inv.subdomain || `${inv.groomSlug || "didan"}-${inv.brideSlug || "nasha"}`;
-                          const publicUrl = getInvitationPublicUrl(activeSub);
-                          const isEmergencyUnlocked = inv.adminUnlockedUntil && new Date(inv.adminUnlockedUntil) > new Date();
 
-                          return (
-                            <tr key={inv.id} className="hover:bg-gray-50 transition">
-                              <td className="px-5 py-3 text-sm font-semibold text-gray-900">
-                                {coupleName}
-                              </td>
-                              <td className="px-5 py-3 text-xs font-mono text-amber-700">
-                                <a
-                                  href={publicUrl}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="hover:underline flex items-center gap-1 font-semibold"
-                                >
-                                  <span>{activeSub}.{getApexRootDomain()}</span>
-                                  <span className="text-[10px] text-stone-400">↗</span>
-                                </a>
-                              </td>
-                              <td className="px-5 py-3">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-bold text-gray-900 text-sm capitalize">{inv.themeId}</span>
-                                  <select
-                                    value={inv.themeId}
-                                    onChange={(e) => handleSwitchTheme(inv.id, e.target.value)}
-                                    className="text-xs bg-gray-50 border border-gray-200 rounded p-1 text-gray-700 font-medium capitalize cursor-pointer"
-                                  >
-                                    {themes.map((t) => (
-                                      <option key={t.id} value={t.id} className="capitalize">{t.name || t.id}</option>
-                                    ))}
-                                  </select>
-                                </div>
-                              </td>
-                              <td className="px-5 py-3"><Badge status={inv.status} /></td>
-                              <td className="px-5 py-3">
-                                {isEmergencyUnlocked ? (
-                                  <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-100 text-amber-900 border border-amber-300 inline-block">
-                                    Kunci Darurat Aktif
-                                  </span>
-                                ) : inv.isLockedPermanently ? (
-                                  <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-red-100 text-red-800 border border-red-200 inline-block">
-                                    Terkunci Permanen
-                                  </span>
-                                ) : (
-                                  <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 inline-block">
-                                    Bisa Diedit
-                                  </span>
-                                )}
-                              </td>
-                              <td className="px-5 py-3">
-                                <div className="flex items-center gap-2 flex-wrap">
+                  {/* ── Desktop Widescreen Table View ── */}
+                  <div className="hidden md:block bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div className="overflow-x-auto w-full">
+                      <table className="min-w-full divide-y divide-gray-100">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            {["Pasangan", "Subdomain / URL", "Tema", "Status", "Proteksi Editor", "Aksi"].map((h) => (
+                              <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                          {invitations.map((inv) => {
+                            const coupleName = `${inv.groomNickname || inv.groomName || "Mempelai Pria"} & ${inv.brideNickname || inv.brideName || "Mempelai Wanita"}`;
+                            const activeSub = inv.subdomain || `${inv.groomSlug || "didan"}-${inv.brideSlug || "nasha"}`;
+                            const publicUrl = getInvitationPublicUrl(activeSub);
+                            const isEmergencyUnlocked = inv.adminUnlockedUntil && new Date(inv.adminUnlockedUntil) > new Date();
+
+                            return (
+                              <tr key={inv.id} className="hover:bg-gray-50 transition">
+                                <td className="px-5 py-3 text-sm font-semibold text-gray-900">
+                                  {coupleName}
+                                </td>
+                                <td className="px-5 py-3 text-xs font-mono text-amber-700">
                                   <a
                                     href={publicUrl}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="text-amber-700 hover:text-amber-900 font-semibold text-xs underline"
+                                    className="hover:underline flex items-center gap-1 font-semibold"
                                   >
-                                    Preview
+                                    <span>{activeSub}.{getApexRootDomain()}</span>
+                                    <span className="text-[10px] text-stone-400">↗</span>
                                   </a>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleToggleEmergencyUnlock(inv)}
-                                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer border ${
-                                      isEmergencyUnlocked
-                                        ? "bg-red-50 hover:bg-red-100 text-red-700 border-red-300"
-                                        : "bg-stone-100 hover:bg-stone-200 text-stone-800 border-stone-300"
-                                    }`}
-                                    title={isEmergencyUnlocked ? "Kunci kembali sekarang" : "Buka kunci darurat edit untuk klien selama 24 jam"}
-                                  >
-                                    {isEmergencyUnlocked ? "Kunci Kembali" : "Buka Kunci Darurat"}
-                                  </button>
-                                  <button
-                                    onClick={() => handleUnlockTheme(inv.id)}
-                                    className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-lg text-xs font-semibold transition cursor-pointer"
-                                    title="Buka akses semua tema untuk undangan ini"
-                                  >
-                                    Akses Tema
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+                                </td>
+                                <td className="px-5 py-3">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-bold text-gray-900 text-sm capitalize">{inv.themeId}</span>
+                                    <select
+                                      value={inv.themeId}
+                                      onChange={(e) => handleSwitchTheme(inv.id, e.target.value)}
+                                      className="text-xs bg-gray-50 border border-gray-200 rounded-lg p-1 text-gray-700 font-medium capitalize cursor-pointer"
+                                    >
+                                      {themes.map((t) => (
+                                        <option key={t.id} value={t.id} className="capitalize">{t.name || t.id}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                </td>
+                                <td className="px-5 py-3"><Badge status={inv.status} /></td>
+                                <td className="px-5 py-3">
+                                  {isEmergencyUnlocked ? (
+                                    <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-100 text-amber-900 border border-amber-300 inline-block">
+                                      Kunci Darurat Aktif
+                                    </span>
+                                  ) : inv.isLockedPermanently ? (
+                                    <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-red-100 text-red-800 border border-red-200 inline-block">
+                                      Terkunci Permanen
+                                    </span>
+                                  ) : (
+                                    <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 inline-block">
+                                      Bisa Diedit
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="px-5 py-3">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <a
+                                      href={publicUrl}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="text-amber-700 hover:text-amber-900 font-semibold text-xs underline"
+                                    >
+                                      Preview
+                                    </a>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleToggleEmergencyUnlock(inv)}
+                                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer border ${
+                                        isEmergencyUnlocked
+                                          ? "bg-red-50 hover:bg-red-100 text-red-700 border-red-300"
+                                          : "bg-stone-100 hover:bg-stone-200 text-stone-800 border-stone-300"
+                                      }`}
+                                      title={isEmergencyUnlocked ? "Kunci kembali sekarang" : "Buka kunci darurat edit untuk klien selama 24 jam"}
+                                    >
+                                      {isEmergencyUnlocked ? "Kunci Kembali" : "Buka Kunci Darurat"}
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* ── Mobile-Native Invitation Card List View ── */}
+                  <div className="block md:hidden space-y-3">
+                    {invitations.length === 0 ? (
+                      <div className="p-8 text-center bg-white rounded-2xl border border-gray-200 text-gray-400 text-xs italic">
+                        Belum ada undangan terdaftar
+                      </div>
+                    ) : (
+                      invitations.map((inv) => {
+                        const coupleName = `${inv.groomNickname || inv.groomName || "Mempelai Pria"} & ${inv.brideNickname || inv.brideName || "Mempelai Wanita"}`;
+                        const activeSub = inv.subdomain || `${inv.groomSlug || "didan"}-${inv.brideSlug || "nasha"}`;
+                        const publicUrl = getInvitationPublicUrl(activeSub);
+                        const isEmergencyUnlocked = inv.adminUnlockedUntil && new Date(inv.adminUnlockedUntil) > new Date();
+
+                        return (
+                          <div key={inv.id} className="bg-white rounded-2xl p-4 border border-gray-200 shadow-2xs space-y-3">
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <h3 className="font-bold text-sm text-gray-900">{coupleName}</h3>
+                                <a
+                                  href={publicUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-xs font-mono text-amber-700 hover:underline inline-flex items-center gap-1 mt-0.5"
+                                >
+                                  <span>{activeSub}.{getApexRootDomain()}</span>
+                                  <span className="text-[10px] text-stone-400">↗</span>
+                                </a>
+                              </div>
+                              <Badge status={inv.status} />
+                            </div>
+
+                            {/* Theme switcher */}
+                            <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-xs">
+                              <span className="text-gray-500 font-medium">Tema:</span>
+                              <select
+                                value={inv.themeId}
+                                onChange={(e) => handleSwitchTheme(inv.id, e.target.value)}
+                                className="text-xs bg-gray-50 border border-gray-200 rounded-lg p-1.5 text-gray-800 font-semibold capitalize cursor-pointer max-w-[170px]"
+                              >
+                                {themes.map((t) => (
+                                  <option key={t.id} value={t.id} className="capitalize">{t.name || t.id}</option>
+                                ))}
+                              </select>
+                            </div>
+
+                            {/* Editor Protection Status */}
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-gray-500 font-medium">Editor:</span>
+                              {isEmergencyUnlocked ? (
+                                <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+                                  Kunci Darurat Aktif
+                                </span>
+                              ) : inv.isLockedPermanently ? (
+                                <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-red-100 text-red-800 border border-red-200">
+                                  Terkunci Permanen
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                  Bisa Diedit
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                              <a
+                                href={publicUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg transition"
+                              >
+                                Preview
+                              </a>
+                              <button
+                                type="button"
+                                onClick={() => handleToggleEmergencyUnlock(inv)}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer border ${
+                                  isEmergencyUnlocked
+                                    ? "bg-red-50 hover:bg-red-100 text-red-700 border-red-300"
+                                    : "bg-stone-100 hover:bg-stone-200 text-stone-800 border-stone-300"
+                                }`}
+                              >
+                                {isEmergencyUnlocked ? "Kunci" : "Buka Darurat"}
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
                   </div>
                 </div>
               )}
@@ -2017,7 +2272,7 @@ export default function AdminPage() {
 
                     return (
                       <>
-                        <div className="flex items-center gap-2 border-b border-gray-200 pb-3 flex-wrap">
+                        <div className="flex items-center gap-2 border-b border-gray-200 pb-3 overflow-x-auto no-scrollbar">
                           {[
                             { id: "all", label: `Semua Tema (${validThemes.length})` },
                             { id: "premium", label: `Premium (${countPremium})` },
@@ -2028,7 +2283,7 @@ export default function AdminPage() {
                               key={cat.id}
                               type="button"
                               onClick={() => setThemeCategoryFilter(cat.id)}
-                              className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                              className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
                                 themeCategoryFilter === cat.id
                                   ? "bg-amber-800 text-white shadow-xs"
                                   : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
@@ -2039,94 +2294,100 @@ export default function AdminPage() {
                           ))}
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                           {displayedThemes.map((theme) => {
                             const cat = (theme.category || "modern").toLowerCase();
                             return (
                               <div
                                 key={theme.id}
-                                className={`bg-white rounded-2xl shadow-sm border p-5 space-y-3.5 transition ${
-                                  theme.isActive === false ? "opacity-60 border-dashed border-gray-300" : "border-gray-100 hover:border-gray-200 hover:shadow-md"
+                                className={`bg-white rounded-2xl border p-5 flex flex-col justify-between space-y-3.5 transition shadow-2xs ${
+                                  theme.isActive === false
+                                    ? "opacity-60 border-dashed border-gray-300"
+                                    : "border-gray-200 hover:border-gray-300 hover:shadow-md"
                                 }`}
                               >
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-2">
-                                    <h3 className="font-bold text-gray-900 text-base">{theme.name}</h3>
-                                    <span className="font-mono text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
-                                      #{theme.id}
-                                    </span>
-                                  </div>
-                                  <span
-                                    className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full border ${
-                                      cat === "traditional"
-                                        ? "bg-amber-50 text-amber-800 border-amber-200"
-                                        : cat === "modern"
-                                        ? "bg-slate-50 text-slate-700 border-slate-200"
-                                        : "bg-purple-50 text-purple-800 border-purple-200"
-                                    }`}
-                                  >
-                                    {cat === "traditional" ? "Traditional" : cat === "modern" ? "Modern" : "Premium"}
-                                  </span>
-                                </div>
-
-                                <p className="text-xs text-gray-600 leading-relaxed font-medium line-clamp-2">
-                                  {theme.description || "Desain eksklusif Luxenary Invite"}
-                                </p>
-
-                                {/* Paket Access Indicator */}
-                                {cat === "traditional" && (
-                                  <div className="text-[11px] text-amber-900 bg-amber-50/70 px-2.5 py-1.5 rounded-xl border border-amber-200/60 font-medium flex items-center gap-1.5">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-600 shrink-0"></span>
-                                    <span>Tersedia di Paket: <strong>Traditional, Modern, Premium</strong></span>
-                                  </div>
-                                )}
-                                {cat === "modern" && (
-                                  <div className="text-[11px] text-slate-800 bg-slate-50 px-2.5 py-1.5 rounded-xl border border-slate-200 font-medium flex items-center gap-1.5">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-slate-600 shrink-0"></span>
-                                    <span>Tersedia di Paket: <strong>Modern & Premium</strong></span>
-                                  </div>
-                                )}
-                                {cat === "premium" && (
-                                  <div className="text-[11px] text-purple-900 bg-purple-50/70 px-2.5 py-1.5 rounded-xl border border-purple-200/80 font-medium flex items-center gap-1.5">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-purple-600 shrink-0"></span>
-                                    <span>Eksklusif untuk Paket: <strong>Premium</strong></span>
-                                  </div>
-                                )}
-
-                                <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-xs">
-                                  <div className="flex items-center gap-2">
-                                    <button
-                                      onClick={() => handleToggleThemeStatus(theme)}
-                                      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold cursor-pointer transition ${
-                                        theme.isActive !== false ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-gray-100 text-gray-600 border border-gray-200"
+                                <div className="space-y-2">
+                                  {/* Top Row: Name + Status Dot + Category Badge */}
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                      <div className="flex items-center gap-2">
+                                        <h3 className="font-bold text-gray-900 text-base">{theme.name}</h3>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleToggleThemeStatus(theme)}
+                                          className={`w-2 h-2 rounded-full cursor-pointer transition ${
+                                            theme.isActive !== false
+                                              ? "bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]"
+                                              : "bg-gray-300"
+                                          }`}
+                                          title={theme.isActive !== false ? "Tema Aktif (Klik untuk non-aktifkan)" : "Tema Non-aktif (Klik untuk aktifkan)"}
+                                        />
+                                      </div>
+                                      <span className="text-[11px] font-mono text-gray-400">/{theme.id}</span>
+                                    </div>
+                                    <span
+                                      className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full border shrink-0 ${
+                                        cat === "traditional"
+                                          ? "bg-amber-50 text-amber-800 border-amber-200"
+                                          : cat === "modern"
+                                          ? "bg-slate-50 text-slate-700 border-slate-200"
+                                          : "bg-purple-50 text-purple-800 border-purple-200"
                                       }`}
                                     >
-                                      <span className={`w-1.5 h-1.5 rounded-full ${theme.isActive !== false ? "bg-emerald-500" : "bg-gray-400"}`}></span>
-                                      <span>{theme.isActive !== false ? "Aktif" : "Non-aktif"}</span>
-                                    </button>
-                                    <span className="text-gray-400 text-[10px]">Urutan: #{theme.sortOrder || 1}</span>
+                                      {cat === "traditional" ? "Traditional" : cat === "modern" ? "Modern" : "Premium"}
+                                    </span>
                                   </div>
-                                  
+
+                                  {/* Description / Tagline */}
+                                  <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">
+                                    {theme.description || "Desain eksklusif Luxenary Invite"}
+                                  </p>
+                                </div>
+
+                                {/* Bottom Action Row */}
+                                <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
                                   <div className="flex items-center gap-2">
+                                    <a
+                                      href={`/demo/${theme.id}`}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="px-3 py-1.5 bg-gray-900 hover:bg-gray-800 text-white rounded-xl text-xs font-semibold transition inline-flex items-center gap-1.5 shadow-2xs"
+                                    >
+                                      <span>Preview</span>
+                                      <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                      </svg>
+                                    </a>
                                     <button
+                                      type="button"
                                       onClick={() => handleOpenDemoStudio(theme)}
-                                      className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200/80 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer shadow-2xs"
+                                      className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200/80 rounded-xl text-xs font-semibold transition inline-flex items-center gap-1 cursor-pointer"
                                       title="Kelola foto, musik & data cerita demo tema ini"
                                     >
-                                      <span>Demo Studio</span>
+                                      <span>Studio</span>
                                     </button>
-                                    <a href={`/demo/${theme.id}`} target="_blank" className="text-gray-600 hover:text-gray-900 font-semibold text-xs">Preview</a>
+                                  </div>
+
+                                  <div className="flex items-center gap-1">
                                     <button
+                                      type="button"
                                       onClick={() => handleOpenEditTheme(theme)}
-                                      className="text-gray-600 hover:text-gray-900 font-semibold text-xs cursor-pointer"
+                                      className="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition cursor-pointer"
+                                      title="Edit Metadata Tema"
                                     >
-                                      Edit
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                      </svg>
                                     </button>
                                     <button
+                                      type="button"
                                       onClick={() => handleDeleteTheme(theme.id, theme.name)}
-                                      className="text-rose-600 hover:text-rose-800 font-semibold text-xs cursor-pointer"
+                                      className="p-1.5 text-gray-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition cursor-pointer"
+                                      title="Hapus Tema"
                                     >
-                                      Hapus
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                      </svg>
                                     </button>
                                   </div>
                                 </div>
@@ -2142,14 +2403,14 @@ export default function AdminPage() {
 
               {/* ── Settings ── */}
               {activeTab === "settings" && (
-                <div className="space-y-6 max-w-3xl">
+                <div className="space-y-6 max-w-5xl w-full">
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900">Pengaturan Platform</h2>
                     <p className="text-sm text-gray-500 mt-0.5">Konfigurasi payment gateway, Google OAuth API, harga paket, dan platform</p>
                   </div>
 
                   {/* ── Sub-Tab Navigation ── */}
-                  <div className="flex gap-1 p-1 bg-gray-100 rounded-xl border border-gray-200">
+                  <div className="flex gap-1.5 p-1.5 bg-gray-100 rounded-2xl border border-gray-200 overflow-x-auto no-scrollbar">
                     {([
                       { id: "pembayaran", label: "Pembayaran" },
                       { id: "gateway",    label: "Gateway QRIS" },
@@ -2161,9 +2422,9 @@ export default function AdminPage() {
                         key={t.id}
                         type="button"
                         onClick={() => setActiveSettingsTab(t.id)}
-                        className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                        className={`flex-1 min-w-[100px] py-2 px-3.5 rounded-xl text-xs font-semibold transition cursor-pointer shrink-0 text-center ${
                           activeSettingsTab === t.id
-                            ? "bg-white text-gray-900 shadow-sm border border-gray-200"
+                            ? "bg-white text-gray-900 shadow-sm border border-gray-200 font-bold"
                             : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
                         }`}
                       >
@@ -4121,98 +4382,157 @@ export default function AdminPage() {
                         Belum ada file snapshot tersimpan. Klik &quot;Buat Snapshot Sekarang&quot; untuk membuat backup pertama.
                       </div>
                     ) : (
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs">
-                          <thead className="bg-gray-50/80 text-gray-500 uppercase font-semibold border-b border-gray-100">
-                            <tr>
-                              <th className="px-5 py-3.5">Nama File Snapshot</th>
-                              <th className="px-5 py-3.5">Tipe</th>
-                              <th className="px-5 py-3.5">Ukuran</th>
-                              <th className="px-5 py-3.5">Waktu Pembuatan</th>
-                              <th className="px-5 py-3.5 text-right">Aksi</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-100 text-gray-700">
-                            {snapshots.map((snap) => (
-                              <tr key={snap.filename} className="hover:bg-gray-50/60 transition">
-                                <td className="px-5 py-3.5 font-mono font-medium text-gray-900">
-                                  {snap.filename}
-                                </td>
-                                <td className="px-5 py-3.5">
-                                  {snap.isSafetyBackup ? (
-                                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
-                                      Safety Backup
-                                    </span>
-                                  ) : (
-                                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                      Snapshot
-                                    </span>
-                                  )}
-                                </td>
-                                <td className="px-5 py-3.5 font-semibold text-gray-800">
-                                  {snap.sizeFormatted}
-                                </td>
-                                <td className="px-5 py-3.5 text-gray-500">
+                      <>
+                        {/* ── Desktop Table ── */}
+                        <div className="hidden md:block overflow-x-auto">
+                          <table className="w-full text-left text-xs">
+                            <thead className="bg-gray-50/80 text-gray-500 uppercase font-semibold border-b border-gray-100">
+                              <tr>
+                                <th className="px-5 py-3.5">Nama File Snapshot</th>
+                                <th className="px-5 py-3.5">Tipe</th>
+                                <th className="px-5 py-3.5">Ukuran</th>
+                                <th className="px-5 py-3.5">Waktu Pembuatan</th>
+                                <th className="px-5 py-3.5 text-right">Aksi</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 text-gray-700">
+                              {snapshots.map((snap) => (
+                                <tr key={snap.filename} className="hover:bg-gray-50/60 transition">
+                                  <td className="px-5 py-3.5 font-mono font-medium text-gray-900">
+                                    {snap.filename}
+                                  </td>
+                                  <td className="px-5 py-3.5">
+                                    {snap.isSafetyBackup ? (
+                                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                                        Safety Backup
+                                      </span>
+                                    ) : (
+                                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                        Snapshot
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="px-5 py-3.5 font-semibold text-gray-800">
+                                    {snap.sizeFormatted}
+                                  </td>
+                                  <td className="px-5 py-3.5 text-gray-500">
+                                    {new Date(snap.createdAt).toLocaleString("id-ID", {
+                                      day: "2-digit",
+                                      month: "short",
+                                      year: "numeric",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                      second: "2-digit",
+                                    })}
+                                  </td>
+                                  <td className="px-5 py-3.5 text-right">
+                                    <div className="flex items-center justify-end gap-2">
+                                      {/* Download */}
+                                      <a
+                                        href={`/api/admin/database/download?filename=${encodeURIComponent(snap.filename)}`}
+                                        className="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-semibold text-[11px] transition inline-flex items-center gap-1"
+                                        title="Download file .db"
+                                      >
+                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                        </svg>
+                                        <span>Download</span>
+                                      </a>
+
+                                      {/* Restore */}
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRestoreSnapshot(snap.filename)}
+                                        disabled={restoringSnapshot === snap.filename}
+                                        className="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-lg font-semibold text-[11px] transition inline-flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                                        title="Restore database ke snapshot ini"
+                                      >
+                                        {restoringSnapshot === snap.filename ? (
+                                          <span className="w-3 h-3 border-2 border-amber-800 border-t-transparent rounded-full animate-spin" />
+                                        ) : (
+                                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                          </svg>
+                                        )}
+                                        <span>Restore</span>
+                                      </button>
+
+                                      {/* Delete */}
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeleteSnapshot(snap.filename)}
+                                        disabled={deletingSnapshot === snap.filename}
+                                        className="px-2 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg font-semibold text-[11px] transition inline-flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                                        title="Hapus snapshot ini"
+                                      >
+                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* ── Mobile-Native Snapshot Cards ── */}
+                        <div className="block md:hidden divide-y divide-gray-100">
+                          {snapshots.map((snap) => (
+                            <div key={snap.filename} className="p-4 space-y-2.5">
+                              <div className="flex items-start justify-between gap-2">
+                                <span className="font-mono font-medium text-xs text-gray-900 break-all">{snap.filename}</span>
+                                {snap.isSafetyBackup ? (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200 shrink-0">
+                                    Safety
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                                    Snapshot
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center justify-between text-xs text-gray-500">
+                                <span className="font-semibold text-gray-800">{snap.sizeFormatted}</span>
+                                <span className="text-[11px] text-gray-400">
                                   {new Date(snap.createdAt).toLocaleString("id-ID", {
                                     day: "2-digit",
                                     month: "short",
                                     year: "numeric",
                                     hour: "2-digit",
                                     minute: "2-digit",
-                                    second: "2-digit",
                                   })}
-                                </td>
-                                <td className="px-5 py-3.5 text-right">
-                                  <div className="flex items-center justify-end gap-2">
-                                    {/* Download */}
-                                    <a
-                                      href={`/api/admin/database/download?filename=${encodeURIComponent(snap.filename)}`}
-                                      className="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-semibold text-[11px] transition inline-flex items-center gap-1"
-                                      title="Download file .db"
-                                    >
-                                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                      </svg>
-                                      <span>Download</span>
-                                    </a>
-
-                                    {/* Restore */}
-                                    <button
-                                      type="button"
-                                      onClick={() => handleRestoreSnapshot(snap.filename)}
-                                      disabled={restoringSnapshot === snap.filename}
-                                      className="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-lg font-semibold text-[11px] transition inline-flex items-center gap-1 cursor-pointer disabled:opacity-50"
-                                      title="Restore database ke snapshot ini"
-                                    >
-                                      {restoringSnapshot === snap.filename ? (
-                                        <span className="w-3 h-3 border-2 border-amber-800 border-t-transparent rounded-full animate-spin" />
-                                      ) : (
-                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                        </svg>
-                                      )}
-                                      <span>Restore</span>
-                                    </button>
-
-                                    {/* Delete */}
-                                    <button
-                                      type="button"
-                                      onClick={() => handleDeleteSnapshot(snap.filename)}
-                                      disabled={deletingSnapshot === snap.filename}
-                                      className="px-2 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg font-semibold text-[11px] transition inline-flex items-center gap-1 cursor-pointer disabled:opacity-50"
-                                      title="Hapus snapshot ini"
-                                    >
-                                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                      </svg>
-                                    </button>
-                                  </div>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-end gap-2 pt-1">
+                                <a
+                                  href={`/api/admin/database/download?filename=${encodeURIComponent(snap.filename)}`}
+                                  className="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-semibold text-xs transition inline-flex items-center gap-1"
+                                >
+                                  Download
+                                </a>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRestoreSnapshot(snap.filename)}
+                                  disabled={restoringSnapshot === snap.filename}
+                                  className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-lg font-semibold text-xs transition inline-flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                                >
+                                  {restoringSnapshot === snap.filename ? "Restoring..." : "Restore"}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteSnapshot(snap.filename)}
+                                  disabled={deletingSnapshot === snap.filename}
+                                  className="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg font-semibold text-xs transition inline-flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                                >
+                                  Hapus
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
                     )}
                   </div>
                 </div>
@@ -4419,7 +4739,7 @@ export default function AdminPage() {
                 </a>
                 <button
                   type="button"
-                  onClick={() => setShowDemoStudioModal(false)}
+                  onClick={handleCloseDemoStudio}
                   className="px-3 py-1.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-300 hover:text-white font-bold text-xs transition cursor-pointer"
                 >
                   Tutup
@@ -4505,47 +4825,91 @@ export default function AdminPage() {
                             { slot: "background", label: "Background Global", file: "background.webp", desc: "Latar belakang fixed blur tema" },
                             { slot: "groom", label: "Mempelai Pria", file: "groom.webp", desc: "Foto profil pria" },
                             { slot: "bride", label: "Mempelai Wanita", file: "bride.webp", desc: "Foto profil wanita" },
-                          ].map((item) => (
-                            <div key={item.slot} className="bg-gray-50 border border-gray-200 rounded-2xl p-4 space-y-3 flex flex-col justify-between">
-                              <div>
-                                <div className="flex items-center justify-between mb-1">
-                                  <span className="font-bold text-xs text-gray-900">{item.label}</span>
-                                  <span className="font-mono text-[10px] text-gray-400">{item.file}</span>
-                                </div>
-                                <p className="text-[11px] text-gray-500 leading-tight">{item.desc}</p>
-                              </div>
-
-                              <div className="relative aspect-video rounded-xl bg-gray-200 overflow-hidden border border-gray-300">
-                                <img
-                                  src={`/demo/${demoStudioTheme.id}/${item.file}`}
-                                  alt={item.label}
-                                  className="w-full h-full object-cover"
-                                  onError={(e) => {
-                                    (e.target as HTMLElement).style.display = "none";
-                                  }}
-                                />
-                                {uploadingSlot === item.slot && (
-                                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white text-xs font-bold">
-                                    Mengunggah...
+                          ].map((item) => {
+                            const isStaged = Boolean(stagedDemoFiles[item.slot]);
+                            const isSaved = Boolean(updatedDemoSlots[item.slot]) && !isStaged;
+                            const isCurrentUploading = uploadingSlot === item.slot;
+                            const imgSrc = localPreviews[item.slot] || `/demo/${demoStudioTheme.id}/${item.file}?v=${updatedDemoSlots[item.slot] || 1}`;
+                            return (
+                              <div
+                                key={item.slot}
+                                className={`border rounded-2xl p-4 space-y-3 flex flex-col justify-between transition-all ${
+                                  isStaged
+                                    ? "bg-amber-50/60 border-amber-400 ring-2 ring-amber-500/25 shadow-sm"
+                                    : isSaved
+                                    ? "bg-emerald-50/40 border-emerald-300 ring-1 ring-emerald-500/15"
+                                    : "bg-gray-50 border-gray-200"
+                                }`}
+                              >
+                                <div>
+                                  <div className="flex items-center justify-between mb-1">
+                                    <span className="font-bold text-xs text-gray-900">{item.label}</span>
+                                    {isStaged ? (
+                                      <span className="text-[10px] font-bold text-amber-800 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-md flex items-center gap-1">
+                                        <span>●</span> Draft Baru
+                                      </span>
+                                    ) : isSaved ? (
+                                      <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-md flex items-center gap-1">
+                                        <span>✓</span> Tersimpan
+                                      </span>
+                                    ) : (
+                                      <span className="font-mono text-[10px] text-gray-400">{item.file}</span>
+                                    )}
                                   </div>
-                                )}
-                              </div>
+                                  <p className="text-[11px] text-gray-500 leading-tight">{item.desc}</p>
+                                </div>
 
-                              <label className="w-full py-2 bg-white hover:bg-amber-50 text-stone-800 hover:text-amber-900 border border-gray-300 hover:border-amber-300 rounded-xl text-xs font-bold transition text-center cursor-pointer block shadow-2xs">
-                                <span>Ganti Foto</span>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  className="hidden"
-                                  onChange={(e) => {
-                                    if (e.target.files && e.target.files[0]) {
-                                      handleUploadDemoAsset(item.slot, e.target.files[0]);
-                                    }
-                                  }}
-                                />
-                              </label>
-                            </div>
-                          ))}
+                                <div className="relative aspect-video rounded-xl bg-gray-200 overflow-hidden border border-gray-300">
+                                  <img
+                                    key={isStaged ? localPreviews[item.slot] : updatedDemoSlots[item.slot] || imgSrc}
+                                    src={imgSrc}
+                                    alt={item.label}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      (e.target as HTMLElement).style.display = "none";
+                                    }}
+                                  />
+                                  {isCurrentUploading && (
+                                    <div className="absolute inset-0 bg-stone-950/75 backdrop-blur-xs flex flex-col items-center justify-center gap-1.5 text-white p-2 text-center z-10 animate-fade-in">
+                                      <svg className="animate-spin h-5 w-5 text-amber-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                      </svg>
+                                      <span className="text-[10px] font-bold text-amber-300 tracking-wider uppercase">Menyimpan WebP...</span>
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                  <label className="flex-1 py-2 bg-white hover:bg-amber-50 text-stone-800 hover:text-amber-900 border border-gray-300 hover:border-amber-300 rounded-xl text-xs font-bold transition text-center cursor-pointer block shadow-2xs">
+                                    <span>{isStaged ? "Ganti Lagi" : "Ganti Foto"}</span>
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      disabled={demoStudioSaving}
+                                      className="hidden"
+                                      onChange={(e) => {
+                                        if (e.target.files && e.target.files[0]) {
+                                          handleStageDemoAsset(item.slot, e.target.files[0]);
+                                        }
+                                      }}
+                                    />
+                                  </label>
+                                  {isStaged && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDiscardStagedAsset(item.slot)}
+                                      disabled={demoStudioSaving}
+                                      title="Batalkan draft foto ini"
+                                      className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl text-xs font-bold transition cursor-pointer"
+                                    >
+                                      Batal
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
 
@@ -4558,40 +4922,181 @@ export default function AdminPage() {
                           {Array.from({ length: 8 }).map((_, idx) => {
                             const slotName = `gallery_0${idx + 1}`;
                             const fileName = `${slotName}.webp`;
+                            const isStaged = Boolean(stagedDemoFiles[slotName]);
+                            const isSaved = Boolean(updatedDemoSlots[slotName]) && !isStaged;
+                            const isCurrentUploading = uploadingSlot === slotName;
+                            const imgSrc = localPreviews[slotName] || `/demo/${demoStudioTheme.id}/${fileName}?v=${updatedDemoSlots[slotName] || 1}`;
                             return (
-                              <div key={slotName} className="bg-gray-50 border border-gray-200 rounded-2xl p-3 space-y-2">
+                              <div
+                                key={slotName}
+                                className={`border rounded-2xl p-3 space-y-2 transition-all ${
+                                  isStaged
+                                    ? "bg-amber-50/60 border-amber-400 ring-2 ring-amber-500/25 shadow-sm"
+                                    : isSaved
+                                    ? "bg-emerald-50/40 border-emerald-300 ring-1 ring-emerald-500/15"
+                                    : "bg-gray-50 border-gray-200"
+                                }`}
+                              >
                                 <div className="flex items-center justify-between text-[11px] font-bold text-gray-800">
                                   <span>Galeri #{idx + 1}</span>
-                                  <span className="font-mono text-[9px] text-gray-400">{fileName}</span>
+                                  {isStaged ? (
+                                    <span className="text-[9px] font-bold text-amber-800 bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                                      <span>●</span> Draft
+                                    </span>
+                                  ) : isSaved ? (
+                                    <span className="text-[9px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                                      <span>✓</span> Tersimpan
+                                    </span>
+                                  ) : (
+                                    <span className="font-mono text-[9px] text-gray-400">{fileName}</span>
+                                  )}
                                 </div>
                                 <div className="relative aspect-square rounded-xl bg-gray-200 overflow-hidden border border-gray-300">
                                   <img
-                                    src={`/demo/${demoStudioTheme.id}/${fileName}`}
+                                    key={isStaged ? localPreviews[slotName] : updatedDemoSlots[slotName] || imgSrc}
+                                    src={imgSrc}
                                     alt={`Gallery ${idx + 1}`}
                                     className="w-full h-full object-cover"
                                     onError={(e) => {
                                       (e.target as HTMLElement).style.display = "none";
                                     }}
                                   />
-                                  {uploadingSlot === slotName && (
-                                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white text-[10px] font-bold">
-                                      Uploading...
+                                  {isCurrentUploading && (
+                                    <div className="absolute inset-0 bg-stone-950/75 backdrop-blur-xs flex flex-col items-center justify-center gap-1 text-white p-1.5 text-center z-10 animate-fade-in">
+                                      <svg className="animate-spin h-4 w-4 text-amber-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                      </svg>
+                                      <span className="text-[9px] font-bold text-amber-300 uppercase tracking-wider">Menyimpan...</span>
                                     </div>
                                   )}
                                 </div>
-                                <label className="w-full py-1.5 bg-white hover:bg-amber-50 text-stone-800 hover:text-amber-900 border border-gray-300 hover:border-amber-300 rounded-lg text-[11px] font-bold transition text-center cursor-pointer block shadow-2xs">
-                                  <span>Ganti</span>
-                                  <input
-                                    type="file"
-                                    accept="image/*"
-                                    className="hidden"
-                                    onChange={(e) => {
-                                      if (e.target.files && e.target.files[0]) {
-                                        handleUploadDemoAsset(slotName, e.target.files[0]);
+                                <div className="flex items-center gap-1.5">
+                                  <label className="flex-1 py-1.5 bg-white hover:bg-amber-50 text-stone-800 hover:text-amber-900 border border-gray-300 hover:border-amber-300 rounded-lg text-[11px] font-bold transition text-center cursor-pointer block shadow-2xs">
+                                    <span>{isStaged ? "Ganti" : "Pilih"}</span>
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      disabled={demoStudioSaving}
+                                      className="hidden"
+                                      onChange={(e) => {
+                                        if (e.target.files && e.target.files[0]) {
+                                          handleStageDemoAsset(slotName, e.target.files[0]);
+                                        }
+                                      }}
+                                    />
+                                  </label>
+                                  {isStaged && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDiscardStagedAsset(slotName)}
+                                      disabled={demoStudioSaving}
+                                      title="Batalkan draft foto ini"
+                                      className="px-2 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg text-[11px] font-bold transition cursor-pointer"
+                                    >
+                                      ✕
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* 3. Contoh Foto Kenangan Tamu / Guest Memories Showcase */}
+                      <div>
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-bold text-gray-900 text-xs uppercase tracking-wider">
+                            3. Contoh Foto Kenangan Tamu (Guest Memories Demo Showcase)
+                          </h4>
+                          <span className="text-[11px] text-amber-900 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md font-medium">
+                            memory_01 s/d memory_04
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+                          {Array.from({ length: 4 }).map((_, idx) => {
+                            const slotName = `memory_0${idx + 1}`;
+                            const fileName = `${slotName}.webp`;
+                            const isStaged = Boolean(stagedDemoFiles[slotName]);
+                            const isSaved = Boolean(updatedDemoSlots[slotName]) && !isStaged;
+                            const isCurrentUploading = uploadingSlot === slotName;
+                            const imgSrc = localPreviews[slotName] || `/demo/${demoStudioTheme.id}/${fileName}?v=${updatedDemoSlots[slotName] || 1}`;
+                            return (
+                              <div
+                                key={slotName}
+                                className={`border rounded-2xl p-3 space-y-2 transition-all ${
+                                  isStaged
+                                    ? "bg-amber-50/60 border-amber-400 ring-2 ring-amber-500/25 shadow-sm"
+                                    : isSaved
+                                    ? "bg-emerald-50/40 border-emerald-300 ring-1 ring-emerald-500/15"
+                                    : "bg-gray-50 border-gray-200"
+                                }`}
+                              >
+                                <div className="flex items-center justify-between text-[11px] font-bold text-gray-800">
+                                  <span>Momen #{idx + 1}</span>
+                                  {isStaged ? (
+                                    <span className="text-[9px] font-bold text-amber-800 bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                                      <span>●</span> Draft
+                                    </span>
+                                  ) : isSaved ? (
+                                    <span className="text-[9px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                                      <span>✓</span> Tersimpan
+                                    </span>
+                                  ) : (
+                                    <span className="font-mono text-[9px] text-gray-400">{fileName}</span>
+                                  )}
+                                </div>
+                                <div className="relative aspect-square rounded-xl bg-gray-200 overflow-hidden border border-gray-300">
+                                  <img
+                                    key={isStaged ? localPreviews[slotName] : updatedDemoSlots[slotName] || imgSrc}
+                                    src={imgSrc}
+                                    alt={`Memory ${idx + 1}`}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      const img = e.target as HTMLImageElement;
+                                      if (!img.src.includes("gallery_0")) {
+                                        img.src = `/demo/${demoStudioTheme.id}/gallery_0${idx + 1}.webp?v=${updatedDemoSlots[slotName] || 1}`;
                                       }
                                     }}
                                   />
-                                </label>
+                                  {isCurrentUploading && (
+                                    <div className="absolute inset-0 bg-stone-950/75 backdrop-blur-xs flex flex-col items-center justify-center gap-1 text-white p-1.5 text-center z-10 animate-fade-in">
+                                      <svg className="animate-spin h-4 w-4 text-amber-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                      </svg>
+                                      <span className="text-[9px] font-bold text-amber-300 uppercase tracking-wider">Menyimpan...</span>
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <label className="flex-1 py-1.5 bg-white hover:bg-amber-50 text-stone-800 hover:text-amber-900 border border-gray-300 hover:border-amber-300 rounded-lg text-[11px] font-bold transition text-center cursor-pointer block shadow-2xs">
+                                    <span>{isStaged ? "Ganti" : "Pilih"}</span>
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      disabled={demoStudioSaving}
+                                      className="hidden"
+                                      onChange={(e) => {
+                                        if (e.target.files && e.target.files[0]) {
+                                          handleStageDemoAsset(slotName, e.target.files[0]);
+                                        }
+                                      }}
+                                    />
+                                  </label>
+                                  {isStaged && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDiscardStagedAsset(slotName)}
+                                      disabled={demoStudioSaving}
+                                      title="Batalkan draft foto ini"
+                                      className="px-2 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg text-[11px] font-bold transition cursor-pointer"
+                                    >
+                                      ✕
+                                    </button>
+                                  )}
+                                </div>
                               </div>
                             );
                           })}
@@ -4873,25 +5378,45 @@ export default function AdminPage() {
             </div>
 
             {/* Modal Footer */}
-            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between shrink-0">
-              <span className="text-xs text-gray-500">
-                Perubahan pada tab profil &amp; cerita akan langsung aktif setelah disimpan.
-              </span>
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+              <div className="flex items-center gap-2 text-xs">
+                {isDemoStudioDirty ? (
+                  <div className="flex items-center gap-2 text-amber-900 font-semibold bg-amber-100/70 border border-amber-300/80 px-2.5 py-1 rounded-lg">
+                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0"></span>
+                    <span>Ada perubahan draft yang belum disimpan.</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-gray-400">
+                    <span className="w-2 h-2 rounded-full bg-gray-300 shrink-0"></span>
+                    <span>Tidak ada perubahan baru.</span>
+                  </div>
+                )}
+              </div>
               <div className="flex items-center gap-2.5">
                 <button
                   type="button"
-                  onClick={() => setShowDemoStudioModal(false)}
+                  onClick={handleCloseDemoStudio}
                   className="px-4 py-2 border border-gray-300 rounded-xl text-xs font-semibold text-gray-700 hover:bg-white transition cursor-pointer"
                 >
-                  Tutup
+                  {isDemoStudioDirty ? "Batal" : "Tutup"}
                 </button>
                 <button
                   type="button"
-                  onClick={handleSaveDemoData}
-                  disabled={demoStudioSaving}
-                  className="px-6 py-2 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-stone-950 rounded-xl text-xs font-bold transition disabled:opacity-60 shadow-sm cursor-pointer"
+                  onClick={handleSaveAllDemoChanges}
+                  disabled={!isDemoStudioDirty || demoStudioSaving}
+                  className={`px-6 py-2 rounded-xl text-xs font-bold transition shadow-sm flex items-center gap-2 ${
+                    isDemoStudioDirty && !demoStudioSaving
+                      ? "bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-stone-950 cursor-pointer shadow-md"
+                      : "bg-gray-200 text-gray-400 border border-gray-300 cursor-not-allowed opacity-60"
+                  }`}
                 >
-                  {demoStudioSaving ? "Menyimpan..." : "Simpan Perubahan Demo"}
+                  {demoStudioSaving && (
+                    <svg className="animate-spin h-3.5 w-3.5 text-stone-950" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  )}
+                  <span>{demoStudioSaving ? "Menyimpan ke Demo..." : "Simpan Perubahan Demo"}</span>
                 </button>
               </div>
             </div>

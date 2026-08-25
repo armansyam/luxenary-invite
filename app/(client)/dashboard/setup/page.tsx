@@ -90,13 +90,13 @@ function SetupWizardContent() {
     }
   }, [queryOrder]);
 
-  // Filter themes hierarchically based on the user's purchased package tier
+  // Filter themes strictly based on the user's purchased package tier (1:1 Direct Mapping)
   const filteredThemes = themesList.filter((t) => {
     const cat = (t.category || "").toUpperCase();
     const plan = currentPlan.toUpperCase();
-    if (plan === "PREMIUM") return true; // Premium gets access to ALL themes (Traditional, Modern, Premium)
-    if (plan === "MODERN") return cat === "MODERN" || cat === "TRADITIONAL"; // Modern gets Modern + Traditional
-    if (plan === "TRADITIONAL") return cat === "TRADITIONAL"; // Traditional gets Traditional
+    if (plan === "PREMIUM") return cat === "PREMIUM";
+    if (plan === "MODERN") return cat === "MODERN";
+    if (plan === "TRADITIONAL") return cat === "TRADITIONAL";
     return true;
   });
   const availableThemes = filteredThemes.length > 0 ? filteredThemes : themesList;

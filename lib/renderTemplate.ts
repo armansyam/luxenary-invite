@@ -405,6 +405,145 @@ const INLINE_LIVE_EDITOR_SCRIPT = `
 </script>
 `;
 
+const UNIFIED_CLIENT_RUNTIME_SCRIPT = `
+<script id="luxUnifiedClientRuntime">
+
+(function() {
+  // 1. Dynamic Guest Name Resolver via ?to= / ?u=
+  function resolveGuestName() {
+    try {
+      const p = new URLSearchParams(window.location.search);
+      const gn = p.get('to') || p.get('u') || '';
+      if (!gn) return;
+      
+      const selectors = [
+        '#coverGuestName', '#guestName', '#guestNameDisplay', '.cover-guest-val',
+        '#modalGuestName', '#passGuestName', '.guest-recipient-name', '#recipientName'
+      ];
+      selectors.forEach(function(sel) {
+        document.querySelectorAll(sel).forEach(function(el) {
+          el.textContent = gn;
+        });
+      });
+      
+      const rsvpInput = document.getElementById('rsvpName');
+      if (rsvpInput && !rsvpInput.value) {
+        rsvpInput.value = gn;
+      }
+    } catch(e){}
+  }
+
+  // 2. Universal Toast Notification
+  window.showToast = window.showToast || function(msg, type) {
+    var toast = document.getElementById('luxToast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'luxToast';
+      toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(20,20,24,0.95);color:#fff;padding:12px 24px;border-radius:50px;font-size:0.8rem;letter-spacing:0.04em;font-weight:500;z-index:99999;box-shadow:0 10px 35px rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.18);backdrop-filter:blur(16px);display:flex;align-items:center;gap:8px;opacity:0;transition:all 0.35s cubic-bezier(0.16,1,0.3,1);pointer-events:none;';
+      document.body.appendChild(toast);
+    }
+    var icon = (type !== 'error')
+      ? '<svg width="16" height="16" fill="none" stroke="#34d399" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>'
+      : '<svg width="16" height="16" fill="none" stroke="#f87171" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>';
+    toast.innerHTML = icon + '<span>' + msg + '</span>';
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateX(-50%) translateY(0)';
+    clearTimeout(window._luxToastTimer);
+    window._luxToastTimer = setTimeout(function() {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateX(-50%) translateY(20px)';
+    }, 3500);
+  };
+
+  // 3. Universal Copy Clipboard Helper
+  window.copyText = window.copyText || function(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function() {
+        window.showToast('Berhasil disalin ke papan klip!');
+      }).catch(function() {
+        fallbackCopy(text);
+      });
+    } else {
+      fallbackCopy(text);
+    }
+    function fallbackCopy(t) {
+      var el = document.createElement('textarea');
+      el.value = t;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      window.showToast('Berhasil disalin ke papan klip!');
+    }
+  };
+
+  // 4. Universal Modal Open / Close
+  window.openModal = window.openModal || function() {
+    var modal = document.getElementById('modalBg');
+    if (modal) modal.classList.add('open');
+  };
+  window.closeModal = window.closeModal || function(e) {
+    if (!e || e.target === document.getElementById('modalBg') || (e.target && e.target.classList && e.target.classList.contains('modal-close'))) {
+      var modal = document.getElementById('modalBg');
+      if (modal) modal.classList.remove('open');
+    }
+  };
+
+  // 5. Universal AJAX RSVP Submission
+  window.submitRsvp = window.submitRsvp || async function(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    var btn = document.getElementById('btnSubmit') || document.getElementById('submitRsvpBtn');
+    var nameEl = document.getElementById('rsvpName');
+    var statusEl = document.getElementById('rsvpStatus');
+    var countEl = document.getElementById('rsvpCount');
+    var msgEl = document.getElementById('rsvpMessage');
+    var name = nameEl ? nameEl.value.trim() : '';
+    var status = statusEl ? statusEl.value : 'hadir';
+    var count = countEl ? countEl.value : '1';
+    var message = msgEl ? msgEl.value.trim() : '';
+
+    if (!name) { window.showToast('Silakan isi nama Anda', 'error'); return; }
+    if (btn) { btn.disabled = true; btn.textContent = 'Mengirim...'; }
+
+    try {
+      var invId = typeof INVITATION_ID !== 'undefined' ? INVITATION_ID : '{{invitationId}}';
+      var res = await fetch('/api/public/rsvp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ invitationId: invId, guestName: name, status: status, guestCount: count, message: message })
+      });
+      var data = await res.json();
+      if (data.success) {
+        window.showToast('Konfirmasi kehadiran & doa restu berhasil dikirim!');
+        if (message) {
+          var wishesList = document.getElementById('wishesList');
+          if (wishesList) {
+            var newWishItem = document.createElement('div');
+            newWishItem.className = 'wish-item';
+            newWishItem.innerHTML = '<div class="wish-name">' + name + ' <span style="font-size:0.68rem;opacity:0.7;font-weight:normal;">• ' + (status === 'hadir' ? 'Hadir' : 'Berhalangan') + '</span></div><div class="wish-msg">“' + message + '”</div>';
+            wishesList.insertBefore(newWishItem, wishesList.firstChild);
+          }
+        }
+        if (msgEl) msgEl.value = '';
+      } else {
+        window.showToast(data.error || 'Gagal mengirim RSVP', 'error');
+      }
+    } catch (err) {
+      window.showToast('Terjadi kendala koneksi.', 'error');
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = 'Kirim Konfirmasi & Doa'; }
+    }
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', resolveGuestName);
+  } else {
+    resolveGuestName();
+  }
+})();
+</script>
+`;
+
 /**
  * Render a template file by replacing {{key}} placeholders with values from `data`.
  * Automatically resolves from themes/premium/, themes/traditional/, or themes/modern/.
@@ -437,17 +576,17 @@ export function renderTemplateFile(
 
   let tpl = fs.readFileSync(tplPath, "utf-8");
 
-  // Automatic placement for Guest Memories if template doesn't explicitly have the placeholder
+  // Fallback placement for Guest Memories if template doesn't explicitly have the placeholder
   if (!tpl.includes("{{memoriesSectionHtml}}") && data.memoriesSectionHtml) {
-    if (tpl.includes("{{wishesHtml}}")) {
-      tpl = tpl.replace("{{wishesHtml}}", `{{memoriesSectionHtml}}\n{{wishesHtml}}`);
+    if (tpl.includes("{{turutMengundangHtml}}")) {
+      tpl = tpl.replace("{{turutMengundangHtml}}", `{{turutMengundangHtml}}\n    {{memoriesSectionHtml}}`);
     } else if (tpl.includes("{{giftSectionHtml}}")) {
-      tpl = tpl.replace("{{giftSectionHtml}}", `{{giftSectionHtml}}\n{{memoriesSectionHtml}}`);
+      tpl = tpl.replace("{{giftSectionHtml}}", `{{giftSectionHtml}}\n    {{memoriesSectionHtml}}`);
     }
   }
 
-  // Injections: Autoplay Script & Inline Live Editor Script
-  const injectedScripts = `${AUTOPLAY_SHOWCASE_SCRIPT}\n${options?.editMode || data.__editMode ? INLINE_LIVE_EDITOR_SCRIPT : ""}`;
+  // Injections: Unified Runtime, Autoplay Script & Inline Live Editor Script
+  const injectedScripts = `${UNIFIED_CLIENT_RUNTIME_SCRIPT}\n${AUTOPLAY_SHOWCASE_SCRIPT}\n${options?.editMode || data.__editMode ? INLINE_LIVE_EDITOR_SCRIPT : ""}`;
 
   if (tpl.includes("</body>")) {
     tpl = tpl.replace("</body>", `${injectedScripts}\n</body>`);
@@ -455,8 +594,23 @@ export function renderTemplateFile(
     tpl += injectedScripts;
   }
 
-  return tpl.replace(/\{\{(\w+)\}\}/g, (_, key: string) => {
-    const val = data[key];
+
+  return tpl.replace(/\{\{([\w.]+)\}\}/g, (_, key: string) => {
+    let val = data[key];
+    if (val === undefined && key.includes(".")) {
+      const parts = key.split(".");
+      let curr: any = data;
+      for (const p of parts) {
+        if (curr && typeof curr === "object") {
+          curr = curr[p];
+        } else {
+          curr = undefined;
+          break;
+        }
+      }
+      val = curr;
+    }
     return val !== undefined && val !== null ? String(val) : "";
   });
 }
+

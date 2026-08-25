@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getGoogleDriveFolderPhotos } from "@/lib/driveHelper";
+import { escapeHtml } from "@/lib/escapeHtml";
 
 export interface ColorPalette {
   id: string;
@@ -848,13 +849,14 @@ export async function composeTemplateData(invitationId: string) {
     ? inv.rsvps.map((r: any) => `
       <div class="wish-item">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
-          <span class="wish-name">${r.guestName}</span>
+          <span class="wish-name">${escapeHtml(r.guestName)}</span>
           <span style="font-size:0.65rem; padding:2px 8px; border-radius:50px; background:${r.status === 'hadir' ? 'rgba(74,222,128,0.15)' : 'rgba(248,113,113,0.15)'}; color:${r.status === 'hadir' ? '#4ade80' : '#f87171'}; font-weight:600;">${r.status === 'hadir' ? 'Hadir' : 'Berhalangan'}</span>
         </div>
-        ${r.message ? `<p class="wish-msg">“${r.message}”</p>` : ""}
+        ${r.message ? `<p class="wish-msg">“${escapeHtml(r.message)}”</p>` : ""}
       </div>
     `).join("")
     : `<p style="font-size:0.8rem; font-style:italic; color:rgba(255,255,255,0.5); text-align:center;">Jadilah yang pertama mengirimkan ucapan &amp; doa restu.</p>`;
+
 
   // 13. QR Access Card HTML for Modal
   const qrAccessCardHtml = `
@@ -885,10 +887,14 @@ export async function composeTemplateData(invitationId: string) {
 
   let memoriesSectionHtml = "";
   if (showGuestMemories) {
+    // 10 Random samples from full memory pool
     const shuffledMemories = [...guestMemories].sort(() => 0.5 - Math.random()).slice(0, 10);
+    const totalMemCount = shuffledMemories.length;
+    const isMarquee = totalMemCount > 5;
+
     const storyAvatarsHtml = shuffledMemories.map((sm: any) => `
-      <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; flex-shrink: 0; cursor: pointer;" onclick="luxOpenMemoryPreview('${sm.mediaUrl}', '${sm.senderName}', '${(sm.message || "").replace(/'/g, "\\'")}', '${sm.mediaType}')">
-        <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.4);">
+      <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; flex-shrink: 0; width: 68px; cursor: pointer;" onclick="luxOpenMemoryPreview('${sm.mediaUrl}', '${sm.senderName}', '${(sm.message || "").replace(/'/g, "\\'")}', '${sm.mediaType}')">
+        <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
           <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
             ${sm.mediaType === "VIDEO" ? `
               <span style="font-size: 16px;">🎥</span>
@@ -897,111 +903,150 @@ export async function composeTemplateData(invitationId: string) {
             `}
           </div>
         </div>
-        <span style="font-size: 11px; max-width: 62px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.9; color: inherit;">
+        <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; color: inherit; text-align: center;">
           ${(sm.senderName || "Tamu").split(" ")[0]}
         </span>
       </div>
     `).join("");
 
-    const memoryItemsHtml = guestMemories.map((m: any) => `
-      <div class="guest-memory-card" style="break-inside: avoid; margin-bottom: 16px; border-radius: 16px; overflow: hidden; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); backdrop-filter: blur(8px);">
-        ${m.mediaType === "VIDEO" ? `
-          <div style="position: relative; cursor: pointer;" onclick="luxOpenMemoryPreview('${m.mediaUrl}', '${m.senderName}', '${(m.message || "").replace(/'/g, "\\'")}', 'VIDEO')">
-            <video src="${m.mediaUrl}" playsinline preload="metadata" style="width: 100%; max-height: 320px; object-fit: cover; display: block; border-radius: 15px 15px 0 0; background: #000;"></video>
-            <div style="position: absolute; inset: 0; background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;">
-              <div style="width: 38px; height: 38px; border-radius: 999px; background: rgba(212,175,55,0.9); color: #000; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; padding-left: 2px;">▶</div>
-            </div>
-          </div>
-        ` : `
-          <img src="${m.mediaUrl}" alt="Momen dari ${m.senderName}" loading="lazy" style="width: 100%; max-height: 340px; object-fit: cover; display: block; cursor: pointer;" onclick="luxOpenMemoryPreview('${m.mediaUrl}', '${m.senderName}', '${(m.message || "").replace(/'/g, "\\'")}', 'PHOTO')" />
-        `}
-        <div style="padding: 12px 14px;">
-          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-            <span style="font-weight: 700; font-size: 13px; color: inherit;">${m.senderName}</span>
-            <span style="font-size: 10px; opacity: 0.6;">${new Date(m.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "short" })}</span>
-          </div>
-          ${m.message ? `<p style="font-size: 12px; margin-top: 6px; line-height: 1.4; opacity: 0.85;">${m.message}</p>` : ""}
-        </div>
-      </div>
-    `).join("");
-
     memoriesSectionHtml = `
-      <section class="sec-flow" id="guest-memories" style="position: relative; padding: 48px 20px;">
-        <span class="sec-eyebrow" data-lux-field="customLabels.memoriesEyebrow">${memoriesSectionEyebrow}</span>
-        <h2 class="sec-main-title serif" data-lux-field="customLabels.memoriesTitle">${memoriesSectionTitle}</h2>
-        <p class="moment-quote serif" data-lux-field="customLabels.memoriesSubtitle" style="max-width: 520px; margin: 0 auto 20px auto;">
-          ${memoriesSectionSubtitle}
-        </p>
+      <section class="sec-flow slide-section" id="guest-memories" style="position: relative; padding: 3rem 1rem;">
+        <div class="sec-content-box reveal-on-scroll" style="max-width: 580px; margin: 0 auto; text-align: center;">
+          <span class="sec-eyebrow" data-lux-field="customLabels.memoriesEyebrow">${memoriesSectionEyebrow}</span>
+          <h2 class="sec-main-title serif" data-lux-field="customLabels.memoriesTitle">${memoriesSectionTitle}</h2>
+          <p class="moment-quote serif" data-lux-field="customLabels.memoriesSubtitle" style="max-width: 480px; margin: 0 auto 1.5rem auto; font-size: 0.82rem; line-height: 1.6; opacity: 0.8;">
+            ${memoriesSectionSubtitle}
+          </p>
 
-        <!-- Minimalist Trigger CTA Button -->
-        <div style="margin: 16px auto 24px auto; text-align: center;">
-          <button type="button" class="btn-outline-box btn-share-memory" onclick="luxOpenMemoryModal()" style="display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 13px 28px; font-weight: 700; font-size: 13px; letter-spacing: 0.05em; border-radius: 9999px; cursor: pointer; border: 1px solid currentColor; background: transparent; transition: all 0.2s ease;">
-            <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            <span>+ BAGIKAN MOMEN ANDA</span>
-          </button>
-        </div>
-
-        <!-- Instagram Story Highlights Avatar Rail ("Kami Sudah Membagikan Momen") -->
-        ${shuffledMemories.length > 0 ? `
-          <div style="max-width: 580px; margin: 0 auto 28px auto; padding: 16px 14px; border-radius: 24px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); overflow: hidden;">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; font-size: 11px; font-weight: 700; opacity: 0.85; letter-spacing: 0.05em; padding: 0 4px;">
-              <span style="display: flex; align-items: center; gap: 6px;">
-                <span style="width: 7px; height: 7px; border-radius: 99px; background: #10b981; display: inline-block;"></span>
-                KAMI SUDAH MEMBAGIKAN MOMEN
-              </span>
-              <span style="font-size: 10px; opacity: 0.6; font-family: monospace;">Auto-Slide ⚡</span>
+          <!-- 1. KOTAK UPLOAD IN-PAGE (Langsung di halaman tanpa redirect) -->
+          <div class="memories-inpage-upload-card" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 20px; padding: 1.4rem; margin-bottom: 1.8rem; text-align: left; backdrop-filter: blur(12px); box-shadow: 0 10px 30px rgba(0,0,0,0.35);">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.6rem;">
+              <span style="font-size: 1.1rem;">📸</span>
+              <span class="serif" style="font-weight: 700; font-size: 0.95rem; color: #fff; letter-spacing: 0.03em;">Unggah Momen Kondangan</span>
             </div>
 
-            <!-- Auto-sliding marquee track -->
-            <div class="lux-story-marquee-wrapper" style="overflow: hidden; width: 100%; position: relative; mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent); -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);">
-              <div class="lux-story-marquee-track" style="display: flex; gap: 16px; width: max-content; animation: luxMarquee 22s linear infinite;">
-                ${storyAvatarsHtml}
-                ${storyAvatarsHtml}
+            <form id="luxInpageMemoryForm" onsubmit="luxSubmitInpageMemory(event)" style="display: flex; flex-direction: column; gap: 10px;">
+              <input type="hidden" name="invitationId" value="${invitationId}">
+              <div>
+                <label style="display: block; font-size: 0.72rem; font-weight: 600; color: rgba(255,255,255,0.7); margin-bottom: 3px;">NAMA ANDA *</label>
+                <input type="text" id="luxInpageSender" name="senderName" required placeholder="Contoh: Budi Santoso & Istri" style="width: 100%; padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.4); color: #fff; font-size: 0.82rem; outline: none; box-sizing: border-box;" />
+              </div>
+              <div>
+                <label style="display: block; font-size: 0.72rem; font-weight: 600; color: rgba(255,255,255,0.7); margin-bottom: 3px;">EMAIL ANDA *</label>
+                <input type="email" id="luxInpageEmail" name="senderEmail" required placeholder="contoh: budi@gmail.com" style="width: 100%; padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.4); color: #fff; font-size: 0.82rem; outline: none; box-sizing: border-box;" />
+              </div>
+              <div>
+                <label style="display: block; font-size: 0.72rem; font-weight: 600; color: rgba(255,255,255,0.7); margin-bottom: 3px;">PESAN / UCAPAN SINGKAT</label>
+                <input type="text" id="luxInpageMsg" name="message" placeholder="Tuliskan ucapan untuk kedua mempelai..." style="width: 100%; padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.4); color: #fff; font-size: 0.82rem; outline: none; box-sizing: border-box;" />
+              </div>
+              <div>
+                <label style="display: block; font-size: 0.72rem; font-weight: 600; color: rgba(255,255,255,0.7); margin-bottom: 3px;">PILIH FOTO ATAU VIDEO *</label>
+                <input type="file" id="luxInpageFile" accept="image/*,video/mp4,video/quicktime" required style="width: 100%; padding: 7px 10px; border-radius: 10px; border: 1px dashed rgba(255,255,255,0.25); background: rgba(255,255,255,0.03); color: rgba(255,255,255,0.8); font-size: 0.78rem; box-sizing: border-box;" />
+              </div>
+              <button type="submit" id="luxInpageSubmitBtn" style="margin-top: 6px; padding: 10px 16px; border-radius: 50px; background: #ffffff; color: #000000; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.05em; border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(255,255,255,0.18); transition: transform 0.15s ease;">
+                📸  KIRIM FOTO MOMEN
+              </button>
+              <div id="luxInpageAlert" style="display: none; color: #4ade80; font-size: 0.78rem; text-align: center; margin-top: 6px; font-weight: 600;">
+                ✓ Foto berhasil diunggah langsung ke album kenangan!
+              </div>
+            </form>
+          </div>
+
+          <!-- 2. HIGHLIGHT LINGKARAN (5 LINGKARAN DI LAYAR, LOOPING MARQUEE JIKA > 5) -->
+          ${shuffledMemories.length > 0 ? `
+            <div class="memories-highlights-wrapper" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 14px 10px; margin-bottom: 1.5rem; overflow: hidden;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; font-size: 10px; font-weight: 700; opacity: 0.85; padding: 0 6px;">
+                <span style="display: flex; align-items: center; gap: 6px;">
+                  <span style="width: 7px; height: 7px; border-radius: 99px; background: #10b981; display: inline-block;"></span>
+                  KAMI SUDAH MEMBAGIKAN MOMEN
+                </span>
+                <span style="font-size: 9px; opacity: 0.5; font-family: monospace;">Acak (${totalMemCount} Foto)</span>
+              </div>
+
+              <!-- Story Circles Track -->
+              <div class="story-circles-track-wrapper" style="overflow: hidden; width: 100%; position: relative; mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent); -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);">
+                <div class="story-circles-track" style="display: flex; gap: 14px; width: max-content; margin: 0 auto; ${isMarquee ? 'animation: luxStoryLoop 24s linear infinite;' : 'justify-content: center;'}">
+                  ${storyAvatarsHtml}
+                  ${isMarquee ? storyAvatarsHtml : ''}
+                </div>
               </div>
             </div>
+          ` : ""}
 
-            <div style="text-align: center; margin-top: 14px; pt: 8px;">
-              <a href="/${inv.groomSlug}-${inv.brideSlug}/${inv.invitationSlug}/memories" style="font-size: 11px; font-weight: 700; color: inherit; text-decoration: none; opacity: 0.9; display: inline-flex; align-items: center; gap: 6px; border-bottom: 1px dashed currentColor; padding-bottom: 2px;">
-                <span>✨ Lihat Semua Momen &amp; Video di Halaman Galeri</span>
-                <span style="font-size: 13px;">↗</span>
-              </a>
-            </div>
-          </div>
-
-          <style>
-            @keyframes luxMarquee {
-              0% { transform: translateX(0); }
-              100% { transform: translateX(-50%); }
-            }
-            .lux-story-marquee-track:hover,
-            .lux-story-marquee-track:active {
-              animation-play-state: paused !important;
-            }
-          </style>
-        ` : ""}
-
-        <!-- Live Memories Photo Stream Grid -->
-        ${guestMemories.length > 0 ? `
-          <div class="guest-memories-masonry" style="column-count: 2; column-gap: 16px; max-width: 640px; margin: 0 auto;">
-            ${memoryItemsHtml}
-          </div>
-
-          <!-- Dedicated Full Page Gallery Link Button -->
-          <div style="margin-top: 28px; text-align: center;">
-            <a href="/${inv.groomSlug}-${inv.brideSlug}/${inv.invitationSlug}/memories" class="btn-outline-box" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 22px; font-size: 12px; font-weight: 700; border-radius: 999px; text-decoration: none; border: 1px solid currentColor; color: inherit;">
-              <span>LIHAT SEMUA KENANGAN (${guestMemories.length} MEDIA)</span>
-              <span>&rarr;</span>
+          <!-- 3. TOMBOL DIRECT KE HALAMAN GALERI WEB (galery.js) -->
+          <div style="text-align: center;">
+            <a href="/${inv.groomSlug}-${inv.brideSlug}/${inv.invitationSlug}/galery" class="btn-outline-box" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; font-size: 12px; font-weight: 700; border-radius: 50px; text-decoration: none; border: 1px solid currentColor; color: inherit; transition: all 0.2s ease;">
+              <span>✨ BUKA GALERI MOMEN LENGKAP</span>
+              <span style="font-size: 14px;">↗</span>
             </a>
           </div>
-        ` : `
-          <div style="text-align: center; padding: 24px; opacity: 0.6; font-size: 13px; font-style: italic;">
-            Belum ada foto yang dibagikan. Jadilah yang pertama mengabadikan momen spesial bersama kami!
-          </div>
-        `}
+        </div>
       </section>
+
+      <style>
+        @keyframes luxStoryLoop {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .story-circles-track:hover {
+          animation-play-state: paused !important;
+        }
+      </style>
+
+      <script>
+        window.luxSubmitInpageMemory = async function(e) {
+          e.preventDefault();
+          const btn = document.getElementById('luxInpageSubmitBtn');
+          const alert = document.getElementById('luxInpageAlert');
+          const senderInput = document.getElementById('luxInpageSender');
+          const emailInput = document.getElementById('luxInpageEmail');
+          const msgInput = document.getElementById('luxInpageMsg');
+          const fileInput = document.getElementById('luxInpageFile');
+
+          if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+            alert("Pilih file foto terlebih dahulu.");
+            return;
+          }
+
+          if (btn) { btn.disabled = true; btn.textContent = 'Mengunggah ke Galeri...'; }
+
+          try {
+            const formData = new FormData();
+            formData.append('invitationId', '${invitationId}');
+            formData.append('senderName', senderInput.value);
+            formData.append('senderEmail', emailInput.value);
+            formData.append('message', msgInput.value || '');
+            formData.append('file', fileInput.files[0]);
+
+            const res = await fetch('/api/public/memories/upload', {
+              method: 'POST',
+              body: formData,
+            });
+
+            if (res.ok) {
+              if (alert) {
+                alert.textContent = '✓ Foto berhasil diunggah langsung ke album kenangan!';
+                alert.style.display = 'block';
+              }
+              senderInput.value = '';
+              emailInput.value = '';
+              msgInput.value = '';
+              fileInput.value = '';
+              setTimeout(() => {
+                if (alert) alert.style.display = 'none';
+              }, 4000);
+            } else {
+              const err = await res.json();
+              alert.textContent = 'Gagal mengunggah: ' + (err.error || 'Terjadi kesalahan');
+              alert.style.display = 'block';
+            }
+          } catch (err) {
+            console.error(err);
+          } finally {
+            if (btn) { btn.disabled = false; btn.textContent = '📸  KIRIM FOTO MOMEN'; }
+          }
+        };
+      </script>
 
       <!-- LIGHTBOX PREVIEW POP-UP FOR MEMORIES -->
       <div id="luxMemoryPreviewModal" onclick="luxCloseMemoryPreview(event)" style="display: none; position: fixed; inset: 0; z-index: 999999; background: rgba(0,0,0,0.92); backdrop-filter: blur(10px); align-items: center; justify-content: center; flex-direction: column; padding: 16px;">
@@ -1264,7 +1309,17 @@ export async function composeTemplateData(invitationId: string) {
           }
 
           if (caption) {
-            caption.innerHTML = '<div style="font-weight: 700; font-size: 14px; color: #fff;">' + (name || '') + '</div>' + (msg ? '<div style="font-size: 12px; opacity: 0.8; margin-top: 4px; font-style: italic;">“' + msg + '”</div>' : '');
+            caption.textContent = '';
+            const nameEl = document.createElement('div');
+            nameEl.style.cssText = 'font-weight: 700; font-size: 14px; color: #fff;';
+            nameEl.textContent = name || '';
+            caption.appendChild(nameEl);
+            if (msg) {
+              const msgEl = document.createElement('div');
+              msgEl.style.cssText = 'font-size: 12px; opacity: 0.8; margin-top: 4px; font-style: italic;';
+              msgEl.textContent = '“' + msg + '”';
+              caption.appendChild(msgEl);
+            }
           }
 
           modal.style.display = 'flex';

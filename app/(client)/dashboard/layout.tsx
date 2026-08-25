@@ -68,21 +68,11 @@ export default function ClientDashboardLayout({
     }
   }, [status, router]);
 
-  if (status === "loading") {
-    return (
-      <div className="min-h-screen bg-[#faf8f5] flex flex-col items-center justify-center text-amber-900 font-sans text-xs gap-3">
-        <span className="w-6 h-6 border-2 border-amber-800 border-t-transparent rounded-full animate-spin" />
-        <span>Memverifikasi sesi portal klien...</span>
-      </div>
-    );
-  }
-
-  if (status === "unauthenticated" || !session?.user) {
-    return (
-      <div className="min-h-screen bg-[#faf8f5] flex flex-col items-center justify-center text-amber-900 font-sans text-xs gap-3">
-        <span>Sesi tidak valid. Mengalihkan ke halaman login...</span>
-      </div>
-    );
+  if (
+    status === "unauthenticated" ||
+    (status === "authenticated" && !session?.user)
+  ) {
+    return null;
   }
 
   return (

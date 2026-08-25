@@ -1,11 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 import { createDatabaseSnapshot } from "@/lib/databaseBackup";
 
 export const dynamic = "force-dynamic";
 
+async function isAuthorized(req: NextRequest): Promise<boolean> {
+  const authHeader = req.headers.get("authorization");
+  const cronSecret = process.env.CRON_SECRET;
+  
+  if (cronSecret && authHeader === `Bearer ${cronSecret}`) {
+    return true;
+  }
+  
+  const session = await auth();
+  const isAdmin = (session?.user as any)?.isAdmin === true || (session?.user as any)?.role === "ADMIN" || (session?.user as any)?.role === "SUPER_ADMIN";
+  return isAdmin;
+}
+
 export async function GET(req: NextRequest) {
   try {
+    if (!(await isAuthorized(req))) {
+      return NextResponse.json({ error: "Unauthorized: Invalid or missing CRON_SECRET / Admin session" }, { status: 401 });
+    }
+
     // 1. Cek apakah fitur auto-backup diaktifkan
     const autoSetting = await prisma.adminSetting.findUnique({ where: { key: "backup_auto_enabled" } });
     const isEnabled = autoSetting?.value === "true";
