@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { getApexRootDomain, getInvitationPublicUrl } from "@/lib/domainUtils";
+import { getApexRootDomain, getInvitationPublicUrl, getMonthYearSlug } from "@/lib/domainUtils";
 import { BrandLogo } from "@/components/BrandLogo";
 
 function SetupWizardContent() {
@@ -359,9 +359,12 @@ function SetupWizardContent() {
                   </span>
                 </div>
 
-                <p className="text-[11px] text-stone-500">
-                  {subdomainStatus.message || "Tautan dibuat otomatis mengikuti nama panggilan, dan dapat Anda sesuaikan bebas."}
-                </p>
+                <div className="pt-1 flex flex-col gap-1 text-[11px] text-stone-500">
+                  <p>{subdomainStatus.message || "Tautan dibuat otomatis mengikuti nama panggilan, dan dapat Anda sesuaikan bebas."}</p>
+                  <p className="text-[10px] text-amber-900/80 bg-amber-100/50 p-2 rounded-lg border border-amber-200/60">
+                    <strong>Link Arsip Abadi (Seumur Hidup):</strong> <code>http://{rootDomain || "localhost:3000"}/{subdomain || "mempelai"}/{weddingDate ? getMonthYearSlug(weddingDate) : "okt-2026"}</code>
+                  </p>
+                </div>
               </div>
             </div>
 

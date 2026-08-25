@@ -40,6 +40,9 @@ const DEFAULT_SETTINGS: Array<{ key: string; value: string; label: string; group
   { key: "backup_auto_time", value: "02:00", label: "Waktu Eksekusi Auto-Backup (HH:mm)", group: "backup" },
   { key: "backup_path", value: "/data/backups", label: "Path Direktori Backup", group: "backup" },
   { key: "backup_retention_count", value: "10", label: "Batas Jumlah Snapshot Disimpan", group: "backup" },
+  { key: "subdomain_grace_days", value: "7", label: "Masa Tenggang Subdomain (Hari Pasca Acara)", group: "subdomain" },
+  { key: "subdomain_auto_recycle", value: "true", label: "Otomatis Lepas Subdomain ke Pool", group: "subdomain" },
+  { key: "gdrive_webhook_url", value: "", label: "Master Google Drive Webhook URL", group: "storage" },
 ];
 
 async function seedDefaultSettings() {

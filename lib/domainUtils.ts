@@ -72,3 +72,68 @@ export function getInvitationPublicUrl(subdomain: string, guestSlug?: string): s
   const cleanRoot = root.replace(/^https?:\/\//, "").replace(/\/$/, "");
   return `https://${cleanSub}.${cleanRoot}${query}`;
 }
+
+/**
+ * Generates an Indonesian short month-year slug (e.g., "okt-2026", "nov-2026").
+ */
+export function getMonthYearSlug(dateInput?: string | Date | null): string {
+  const MONTHS = ["jan", "feb", "mar", "apr", "mei", "jun", "jul", "agu", "sep", "okt", "nov", "des"];
+  let date: Date;
+
+  if (!dateInput) {
+    date = new Date();
+  } else if (typeof dateInput === "string") {
+    date = new Date(dateInput);
+    if (isNaN(date.getTime())) date = new Date();
+  } else {
+    date = dateInput;
+  }
+
+  const monthShort = MONTHS[date.getMonth()] || "okt";
+  const year = date.getFullYear();
+  return `${monthShort}-${year}`;
+}
+
+/**
+ * Returns the permanent canonical path URL:
+ * - Localhost:  http://localhost:3000/[groom]-[bride]/[invitationSlug](?to=...)
+ * - Production: https://[apexDomain]/[groom]-[bride]/[invitationSlug](?to=...)
+ */
+export function getPermanentPathUrl(
+  groomSlug: string,
+  brideSlug: string,
+  invitationSlug: string,
+  guestSlug?: string
+): string {
+  const g = (groomSlug || "groom").toLowerCase().trim();
+  const b = (brideSlug || "bride").toLowerCase().trim();
+  const s = (invitationSlug || "wedding").toLowerCase().trim();
+  const query = guestSlug ? `?to=${encodeURIComponent(guestSlug)}` : "";
+
+  if (typeof window !== "undefined") {
+    const { protocol, hostname, port } = window.location;
+    const portSuffix = port ? `:${port}` : "";
+    return `${protocol}//${hostname}${portSuffix}/${g}-${b}/${s}${query}`;
+  }
+
+  const root = process.env.NEXT_PUBLIC_ROOT_DOMAIN || process.env.NEXT_PUBLIC_APP_URL || "luxenary.id";
+  const cleanRoot = root.replace(/^https?:\/\//, "").replace(/\/$/, "");
+  return `https://${cleanRoot}/${g}-${b}/${s}${query}`;
+}
+
+/**
+ * Checks if a wedding event date has exceeded the grace period (default: 7 days).
+ */
+export function isSubdomainExpired(eventDateInput?: string | Date | null, gracePeriodDays: number = 7): boolean {
+  if (!eventDateInput) return false;
+  try {
+    const eventDate = new Date(eventDateInput);
+    if (isNaN(eventDate.getTime())) return false;
+
+    const expiryTime = eventDate.getTime() + gracePeriodDays * 24 * 60 * 60 * 1000;
+    return Date.now() > expiryTime;
+  } catch {
+    return false;
+  }
+}
+

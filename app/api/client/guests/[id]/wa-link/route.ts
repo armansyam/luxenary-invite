@@ -1,12 +1,13 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { getInvitationPublicUrl, getPermanentPathUrl } from "@/lib/domainUtils";
 
 /**
  * Generate a WhatsApp link for sending the invitation
  * to a specific guest.
  */
 export async function GET(
-  req: Request,
+  _req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
@@ -18,14 +19,13 @@ export async function GET(
 
   if (!guest) return NextResponse.json({ error: "Guest not found" }, { status: 404 });
 
-  // Build the invitation URL
-  const baseUrl = process.env.BASE_URL || `http://localhost:3000`;
-  const invitationUrl = guest.invitation.subdomain
-    ? `https://${guest.invitation.subdomain}`
-    : `${baseUrl}/${guest.invitation.groomSlug}-${guest.invitation.brideSlug}/${guest.invitation.invitationSlug}`;
+  const inv = guest.invitation;
+  const invitationUrl = inv.subdomain
+    ? getInvitationPublicUrl(inv.subdomain, guest.name)
+    : getPermanentPathUrl(inv.groomSlug, inv.brideSlug, inv.invitationSlug, guest.name);
 
   const waMessage = encodeURIComponent(
-    `Assalamu'alaikum ${guest.name.split(" ")[0]},\n\nKami mengundang Bapak/Ibu dalam pernikahan kami.\n\nUndangan: ${invitationUrl}?to=${encodeURIComponent(guest.name)}\n\nHormat kami,\n${guest.invitation.groomName} & ${guest.invitation.brideName}`
+    `Assalamu'alaikum ${guest.name.split(" ")[0]},\n\nKami mengundang Bapak/Ibu dalam pernikahan kami.\n\nUndangan: ${invitationUrl}\n\nHormat kami,\n${inv.groomName || inv.groomNickname || "Pengantin Pria"} & ${inv.brideName || inv.brideNickname || "Pengantin Wanita"}`
   );
 
   const phoneVal = guest.phone || guest.phoneNumber;
@@ -33,7 +33,7 @@ export async function GET(
     ? `https://wa.me/${phoneVal.replace(/\D/g, "")}?text=${waMessage}`
     : `https://api.whatsapp.com/send?phone=&text=${waMessage}`;
 
-  return NextResponse.json({ waLink, guest });
+  return NextResponse.json({ waLink, guest, invitationUrl });
 }
 
 /**
@@ -53,13 +53,13 @@ export async function POST(
 
   if (!guest) return NextResponse.json({ error: "Guest not found" }, { status: 404 });
 
-  const baseUrl = process.env.BASE_URL || `http://localhost:3000`;
-  const invitationUrl = guest.invitation.subdomain
-    ? `https://${guest.invitation.subdomain}`
-    : `${baseUrl}/${guest.invitation.groomSlug}-${guest.invitation.brideSlug}/${guest.invitation.invitationSlug}`;
+  const inv = guest.invitation;
+  const invitationUrl = inv.subdomain
+    ? getInvitationPublicUrl(inv.subdomain, guest.name)
+    : getPermanentPathUrl(inv.groomSlug, inv.brideSlug, inv.invitationSlug, guest.name);
 
   const waMessage = encodeURIComponent(
-    `Assalamu'alaikum ${guest.name.split(" ")[0]},\n\nKami mengundang Bapak/Ibu dalam pernikahan kami.\n\nUndangan: ${invitationUrl}?to=${encodeURIComponent(guest.name)}\n\nHormat kami,\n${guest.invitation.groomName} & ${guest.invitation.brideName}`
+    `Assalamu'alaikum ${guest.name.split(" ")[0]},\n\nKami mengundang Bapak/Ibu dalam pernikahan kami.\n\nUndangan: ${invitationUrl}\n\nHormat kami,\n${inv.groomName || inv.groomNickname || "Pengantin Pria"} & ${inv.brideName || inv.brideNickname || "Pengantin Wanita"}`
   );
 
   const targetPhone = guest.phone || guest.phoneNumber;
@@ -74,9 +74,8 @@ export async function POST(
   });
 
   if (sendMode === "redirect") {
-    return NextResponse.json({ waLink, redirect: true });
+    return NextResponse.json({ waLink, redirect: true, invitationUrl });
   }
 
-  // If using API mode (future integration with WaBridge/360Dialog), we'd POST here
-  return NextResponse.json({ waLink, status: "sent" });
+  return NextResponse.json({ waLink, status: "sent", invitationUrl });
 }

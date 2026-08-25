@@ -175,7 +175,9 @@ export default function SettingsPage() {
       <div className="p-5 sm:p-6 bg-amber-50/60 border border-amber-200/80 rounded-2xl sm:rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="text-base">🎨</span>
+            <svg className="w-4 h-4 text-amber-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4 5 5 0 0110 0 4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+            </svg>
             <h3 className="text-xs sm:text-sm font-bold text-amber-950">Ingin Mengubah Konten &amp; Desain Undangan?</h3>
           </div>
           <p className="text-xs text-stone-600 leading-relaxed max-w-xl">
@@ -250,13 +252,11 @@ export default function SettingsPage() {
                 )}
                 {subdomainStatus.state === "available" && (
                   <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 flex items-center gap-1">
-                    <span>✓</span>
                     <span>Tersedia</span>
                   </span>
                 )}
                 {subdomainStatus.state === "unavailable" && (
                   <span className="text-[10px] font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200 flex items-center gap-1">
-                    <span>✕</span>
                     <span>Sudah dipakai</span>
                   </span>
                 )}
@@ -289,7 +289,7 @@ export default function SettingsPage() {
             <div className="flex items-center justify-end gap-2 pt-2 border-t border-stone-100">
               {saveSuccess.subdomain && (
                 <span className="text-xs text-emerald-700 font-semibold flex items-center gap-1">
-                  ✓ Tersimpan
+                  Tersimpan
                 </span>
               )}
               <button
@@ -380,7 +380,7 @@ export default function SettingsPage() {
             <div className="flex items-center justify-end gap-2 pt-2 border-t border-stone-100">
               {saveSuccess.status && (
                 <span className="text-xs text-emerald-700 font-semibold flex items-center gap-1">
-                  ✓ Tersimpan
+                  Tersimpan
                 </span>
               )}
               <button

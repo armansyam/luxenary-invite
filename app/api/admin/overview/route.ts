@@ -1,53 +1,57 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
+import fs from "fs";
+import path from "path";
 
 export const dynamic = "force-dynamic";
 
-async function verifyAdminSession() {
-  const session = await auth();
-  const isAdmin = (session?.user as any)?.isAdmin === true || (session?.user as any)?.role === "SUPER_ADMIN" || (session?.user as any)?.role === "ADMIN";
-  if (!session?.user || !isAdmin) {
-    return false;
-  }
-  return true;
-}
-
-const DEFAULT_THEMES = [
-  { id: "kalandra", name: "Kalandra", category: "premium", series: "Premium", description: "Modern, Elegan & Minimalis", isPremium: true, sortOrder: 1, isActive: true },
-  { id: "valente", name: "Valente", category: "premium", series: "Premium", description: "High-Fashion, Editorial & Mewah", isPremium: true, sortOrder: 2, isActive: true },
-  { id: "aurelia", name: "Aurelia", category: "premium", series: "Premium", description: "Romantis, Sinematik & Anggun", isPremium: true, sortOrder: 3, isActive: true },
-  { id: "artisan", name: "Artisan", category: "premium", series: "Premium", description: "Artistik, Hangat & Vintage", isPremium: true, sortOrder: 4, isActive: true },
-  { id: "prameswari", name: "Prameswari", category: "traditional", series: "Traditional", description: "Sakral, Megah & Royal Keraton", isPremium: false, sortOrder: 5, isActive: true },
-  { id: "wave", name: "Wave", category: "modern", series: "Modern", description: "Dark, Moody & Dramatic — Gelombang Elegan", isPremium: false, sortOrder: 6, isActive: true },
-  { id: "papercut", name: "Papercut", category: "modern", series: "Modern", description: "Moody Papercut — Kraft Paper Aesthetic & Artistik", isPremium: false, sortOrder: 7, isActive: true },
-  { id: "dillalucky", name: "Dilla Lucky", category: "traditional", series: "Traditional", description: "Islami Sakral — Batik Ornament & Penuh Berkah", isPremium: false, sortOrder: 8, isActive: true },
-  { id: "ameera", name: "Ameera", category: "modern", series: "Modern", description: "Heritage Modern — Elegan Dark & Nuansa Warisan Budaya", isPremium: false, sortOrder: 9, isActive: true },
-];
-
 export async function GET() {
   try {
-    const isAuthorized = await verifyAdminSession();
-    if (!isAuthorized) {
-      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if themes need initial seeding
-    let themes = await prisma.theme.findMany({ orderBy: { sortOrder: "asc" } });
-    if (themes.length === 0 || themes.some((t) => ["kila", "aruna", "ivanna", "danila"].includes(t.id))) {
-      // Re-seed with new clean themes
-      for (const t of DEFAULT_THEMES) {
-        await prisma.theme.upsert({
-          where: { id: t.id },
-          create: t,
-          update: t,
+    const isAdmin =
+      (session.user as any).role === "SUPER_ADMIN" ||
+      (session.user as any).role === "ADMIN" ||
+      (session.user as any).isAdmin === true;
+
+    if (!isAdmin) {
+      return NextResponse.json({ error: "Forbidden. Admin only." }, { status: 403 });
+    }
+
+    // Load available themes
+    const themesDir = path.join(process.cwd(), "themes");
+    let themes: any[] = [];
+    if (fs.existsSync(themesDir)) {
+      const walk = (dir: string): string[] => {
+        let results: string[] = [];
+        const list = fs.readdirSync(dir);
+        list.forEach((file) => {
+          const fullPath = path.join(dir, file);
+          const stat = fs.statSync(fullPath);
+          if (stat && stat.isDirectory()) {
+            results = results.concat(walk(fullPath));
+          } else if (file.endsWith(".html")) {
+            results.push(fullPath);
+          }
         });
-      }
-      // Clean up old theme IDs from database
-      await prisma.theme.deleteMany({
-        where: { id: { in: ["kila", "aruna", "ivanna", "danila"] } },
+        return results;
+      };
+
+      const files = walk(themesDir);
+      themes = files.map((filePath) => {
+        const id = path.basename(filePath, ".html");
+        const category = path.basename(path.dirname(filePath));
+        return {
+          id,
+          name: id.charAt(0).toUpperCase() + id.slice(1),
+          category: category.toUpperCase(),
+          filePath,
+        };
       });
-      themes = await prisma.theme.findMany({ orderBy: { sortOrder: "asc" } });
     }
 
     const [
@@ -72,20 +76,51 @@ export async function GET() {
       prisma.guest.count(),
       prisma.rsvp.count().catch(() => 0),
       prisma.wish.count().catch(() => 0),
-      prisma.user.count({ where: { role: "CLIENT" } }),
+      // Hanya hitung klien yang SUDAH LUNAS (PAID) atau memiliki undangan
+      prisma.user.count({
+        where: {
+          role: "CLIENT",
+          OR: [
+            { orders: { some: { status: "PAID" } } },
+            { invitations: { some: {} } },
+          ],
+        },
+      }),
       prisma.order.findMany({
         select: { id: true, amount: true, status: true, planType: true, createdAt: true },
       }),
       prisma.order.findMany({
-        take: 10,
+        take: 50,
         orderBy: { createdAt: "desc" },
         include: { user: { select: { name: true, email: true } } },
       }),
+      // Daftar Klien Resmi: Hanya user yang SUDAH LUNAS atau SUDAH MEMILIKI UNDANGAN
       prisma.user.findMany({
-        where: { role: "CLIENT" },
+        where: {
+          role: "CLIENT",
+          OR: [
+            { orders: { some: { status: "PAID" } } },
+            { invitations: { some: {} } },
+          ],
+        },
         take: 50,
         orderBy: { createdAt: "desc" },
-        select: { id: true, name: true, email: true, role: true, createdAt: true },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          createdAt: true,
+          orders: {
+            where: { status: "PAID" },
+            select: { planType: true, amount: true, paidAt: true },
+            take: 1,
+          },
+          invitations: {
+            select: { id: true, subdomain: true, status: true },
+            take: 1,
+          },
+        },
       }),
       prisma.invitation.findMany({
         take: 50,

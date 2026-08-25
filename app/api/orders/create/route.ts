@@ -2,9 +2,11 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(req: NextRequest) {
   try {
-    const { userId, planType, buyerName, buyerEmail, buyerPhone } = await req.json();
+    const { userId, planType, buyerName, buyerEmail } = await req.json();
 
     if (!userId || !planType) {
       return NextResponse.json({ error: "Missing userId atau planType" }, { status: 400 });
@@ -14,7 +16,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "PlanType tidak valid. Gunakan TRADITIONAL, MODERN, atau PREMIUM." }, { status: 400 });
     }
 
-    // Resolve / Ensure valid client User in database (handles admin testing or cross-session accounts)
+    // Resolve / Ensure valid client User in database
     let validUserId = userId;
     let targetUser = await prisma.user.findUnique({ where: { id: userId } });
 
@@ -34,36 +36,68 @@ export async function POST(req: NextRequest) {
       validUserId = targetUser.id;
     }
 
-    // Baca harga dari AdminSetting database
+    // Baca harga paket realtime dari AdminSetting database
     const priceKey = planType === "PREMIUM" ? "price_premium" : planType === "MODERN" ? "price_modern" : "price_traditional";
     const defaultAmount = planType === "PREMIUM" ? 699000 : planType === "MODERN" ? 499000 : 299000;
     const priceSetting = await prisma.adminSetting.findUnique({ where: { key: priceKey } });
     const amount = priceSetting ? Number(priceSetting.value) : defaultAmount;
 
-    const invoiceNumber = `INV-LUX-${Date.now()}-${randomUUID().slice(0, 6).toUpperCase()}`;
-
-    // Cek apakah user punya order PENDING yang belum dibayar — cegah duplikasi
+    // Cek apakah user punya order PENDING yang belum dibayar
     const existingPending = await prisma.order.findFirst({
-      where: { userId: validUserId, status: "PENDING", planType: planType as "TRADITIONAL" | "MODERN" | "PREMIUM" },
+      where: {
+        userId: validUserId,
+        status: "PENDING",
+      },
+      orderBy: { createdAt: "desc" },
     });
 
     if (existingPending) {
-      // Update amount jika harga di admin setting berubah
-      if (Number(existingPending.amount) !== amount) {
-        await prisma.order.update({
-          where: { id: existingPending.id },
-          data: { amount },
-        });
-      }
+      // Hapus jika ada duplikat draf order pending lama lainnya untuk user ini
+      await prisma.order.deleteMany({
+        where: {
+          userId: validUserId,
+          status: "PENDING",
+          id: { not: existingPending.id },
+        },
+      });
+
+      // Update planType & amount langsung ke order aktif, reset bukti transfer jika paket berubah
+      const isPlanChanged = existingPending.planType !== planType;
+
+      const updated = await prisma.order.update({
+        where: { id: existingPending.id },
+        data: {
+          planType: planType as "TRADITIONAL" | "MODERN" | "PREMIUM",
+          amount,
+          ...(isPlanChanged
+            ? {
+                proofImageUrl: null,
+                proofUploadedAt: null,
+                rejectReason: null,
+              }
+            : {}),
+        },
+      });
 
       return NextResponse.json({
-        orderId: existingPending.id,
-        invoiceNumber: existingPending.invoiceNumber,
+        orderId: updated.id,
+        invoiceNumber: updated.invoiceNumber,
         amount,
         planType,
         existing: true,
+        planChanged: isPlanChanged,
       });
     }
+
+    // Hapus order pending lama sebelum membuat order baru jika ada
+    await prisma.order.deleteMany({
+      where: {
+        userId: validUserId,
+        status: "PENDING",
+      },
+    });
+
+    const invoiceNumber = `INV-LUX-${Date.now()}-${randomUUID().slice(0, 6).toUpperCase()}`;
 
     const order = await prisma.order.create({
       data: {

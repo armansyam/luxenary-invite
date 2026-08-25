@@ -1,5 +1,5 @@
 /**
- * Google Drive Public Folder Photo Stream Extractor with In-Memory Caching
+ * Google Drive Public Folder Photo Stream Extractor & Webhook Uploader
  */
 
 interface CacheEntry {
@@ -9,6 +9,112 @@ interface CacheEntry {
 
 const driveFolderCache = new Map<string, CacheEntry>();
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes cache
+
+/**
+ * Standard Google Apps Script Master Code to paste into script.google.com
+ */
+export const GOOGLE_APPS_SCRIPT_MASTER_CODE = `/**
+ * Luxenary Invite — Master Google Drive Webhook Handler
+ * Deploy as Web App -> Execute as: Me -> Who has access: Anyone
+ */
+function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+    var folderId = data.folderId;
+    if (!folderId) {
+      return ContentService.createTextOutput(JSON.stringify({ success: false, error: "Missing folderId" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    var targetFolder = DriveApp.getFolderById(folderId);
+    var decoded = Utilities.base64Decode(data.base64File);
+    var blob = Utilities.newBlob(decoded, data.mimeType || "image/webp", data.fileName || "moment.webp");
+    var file = targetFolder.createFile(blob);
+
+    // Make file readable for public CDN preview
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+
+    var fileId = file.getId();
+    var viewUrl = "https://lh3.googleusercontent.com/d/" + fileId;
+
+    return ContentService.createTextOutput(JSON.stringify({
+      success: true,
+      fileId: fileId,
+      viewUrl: viewUrl,
+      thumbnailUrl: viewUrl,
+      fileName: file.getName(),
+      size: file.getSize()
+    })).setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ success: false, error: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}`;
+
+/**
+ * Extracts raw Google Drive Folder ID from a URL or bare string.
+ */
+export function extractGoogleDriveFolderId(urlOrId: string): string | null {
+  if (!urlOrId || typeof urlOrId !== "string") return null;
+  const trimmed = urlOrId.trim();
+  if (!trimmed) return null;
+
+  const match = trimmed.match(/folders\/([a-zA-Z0-9_-]+)/) || trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (match) {
+    return match[1];
+  }
+  if (trimmed.length >= 25 && !trimmed.includes("/") && !trimmed.includes(".")) {
+    return trimmed;
+  }
+  return null;
+}
+
+/**
+ * Uploads a file stream directly to Google Drive via Google Apps Script Webhook (Zero Disk Usage on Server).
+ */
+export async function uploadToGoogleDriveWebhook(
+  webhookUrl: string,
+  folderId: string,
+  fileData: { fileName: string; mimeType: string; buffer: Buffer; senderName: string }
+): Promise<{ fileId: string; viewUrl: string; thumbnailUrl: string } | null> {
+  if (!webhookUrl || !folderId) return null;
+
+  try {
+    const payload = {
+      folderId,
+      fileName: fileData.fileName,
+      mimeType: fileData.mimeType,
+      base64File: fileData.buffer.toString("base64"),
+      senderName: fileData.senderName,
+    };
+
+    const res = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      console.error(`[GoogleDriveWebhook] Upload failed with HTTP status ${res.status}`);
+      return null;
+    }
+
+    const data = await res.json();
+    if (data.success && data.fileId) {
+      return {
+        fileId: data.fileId,
+        viewUrl: data.viewUrl || `https://lh3.googleusercontent.com/d/${data.fileId}`,
+        thumbnailUrl: data.thumbnailUrl || `/api/cdn/drive?id=${data.fileId}&w=800`,
+      };
+    }
+
+    console.error("[GoogleDriveWebhook] Response error:", data.error);
+    return null;
+  } catch (err: any) {
+    console.error("[GoogleDriveWebhook] Network error:", err?.message || err);
+    return null;
+  }
+}
 
 export async function getGoogleDriveFolderPhotos(folderUrlOrId: string): Promise<string[]> {
   if (!folderUrlOrId || typeof folderUrlOrId !== "string") return [];
@@ -23,12 +129,7 @@ export async function getGoogleDriveFolderPhotos(folderUrlOrId: string): Promise
     return [`/api/cdn/drive?id=${fileId}&w=1200`];
   }
 
-  let folderId = trimmed;
-  const match = trimmed.match(/folders\/([a-zA-Z0-9_-]+)/) || trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-  if (match) {
-    folderId = match[1];
-  }
-
+  const folderId = extractGoogleDriveFolderId(trimmed);
   if (!folderId || folderId.length < 15) return [];
 
   // Check in-memory cache

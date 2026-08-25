@@ -56,6 +56,12 @@ export default function CatalogGridShowcase() {
 
           <div className="flex items-center gap-3">
             <Link
+              href="/portfolio"
+              className="text-xs font-bold text-stone-600 hover:text-amber-900 transition mr-2"
+            >
+              Portofolio
+            </Link>
+            <Link
               href="/register"
               className="px-4 py-2 bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold rounded-full transition shadow-sm cursor-pointer"
             >
@@ -136,14 +142,14 @@ export default function CatalogGridShowcase() {
                   </span>
                 </div>
 
-                {/* Live Scaled HTML Theme View Frame */}
+                {/* Live Scaled HTML Theme View Frame with Auto-scroll Animation */}
                 <Link
                   href={`/demo/${theme.id}`}
                   target="_blank"
                   className="relative aspect-[9/14] bg-stone-950 overflow-hidden block cursor-pointer"
                 >
                   <iframe
-                    src={`/demo/${theme.id}`}
+                    src={`/demo/${theme.id}?autoplay=1`}
                     loading="lazy"
                     className="w-[200%] h-[200%] transform scale-50 origin-top-left border-none pointer-events-none select-none"
                     title={theme.name}

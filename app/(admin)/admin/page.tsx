@@ -5,6 +5,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { getApexRootDomain, getInvitationPublicUrl } from "@/lib/domainUtils";
 import { BrandLogo } from "@/components/BrandLogo";
+import { GOOGLE_APPS_SCRIPT_MASTER_CODE } from "@/lib/driveHelper";
 
 const tabs = [
   {
@@ -270,7 +271,36 @@ export default function AdminPage() {
   const [showGoogleSecret, setShowGoogleSecret] = useState(false);
   const [savingPricing, setSavingPricing] = useState(false);
   const [savingPlatform, setSavingPlatform] = useState(false);
+  const [savingSubdomainSettings, setSavingSubdomainSettings] = useState(false);
+  const [savingGdriveSettings, setSavingGdriveSettings] = useState(false);
+  const [copiedGdriveScript, setCopiedGdriveScript] = useState(false);
+  const [recyclingSubdomains, setRecyclingSubdomains] = useState(false);
+  const [recycleResult, setRecycleResult] = useState<{ success: boolean; message: string } | null>(null);
   const [settingsSaved, setSettingsSaved] = useState<Record<string, boolean>>({});
+
+  const handleManualRecycleSubdomains = async () => {
+    setRecyclingSubdomains(true);
+    setRecycleResult(null);
+    try {
+      const res = await fetch("/api/admin/subdomains/recycle", { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        setRecycleResult({
+          success: true,
+          message: data.message || `Berhasil melepas ${data.releasedCount || 0} subdomain kedaluwarsa ke pool.`,
+        });
+      } else {
+        throw new Error(data.error || "Gagal melakukan daur ulang.");
+      }
+    } catch (err: any) {
+      setRecycleResult({
+        success: false,
+        message: err?.message || "Terjadi kesalahan saat mendaur ulang subdomain.",
+      });
+    } finally {
+      setRecyclingSubdomains(false);
+    }
+  };
 
   // Branding Upload state
   const [logoUrl, setLogoUrl] = useState<string | null>(null);         // URL tersimpan di server
@@ -293,7 +323,14 @@ export default function AdminPage() {
   const [pendingRestoreFile, setPendingRestoreFile] = useState<File | null>(null);
   const [uploadingRestoreFile, setUploadingRestoreFile] = useState(false);
   const [savingBackupSettings, setSavingBackupSettings] = useState(false);
+  const [savingPaymentSettings, setSavingPaymentSettings] = useState(false);
   const [backupActionMsg, setBackupActionMsg] = useState<{ ok: boolean; msg: string } | null>(null);
+
+  // Order Proof Verification & Reject Modal State
+  const [previewProofOrder, setPreviewProofOrder] = useState<any | null>(null);
+  const [rejectModalOrder, setRejectModalOrder] = useState<any | null>(null);
+  const [rejectReasonInput, setRejectReasonInput] = useState<string>("");
+  const [processingOrderAction, setProcessingOrderAction] = useState(false);
 
   // Mobile menu open state
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -316,6 +353,16 @@ export default function AdminPage() {
   const [themeSyncResult, setThemeSyncResult] = useState<any>(null);
   const [themeError, setThemeError] = useState<string | null>(null);
   const [themeCategoryFilter, setThemeCategoryFilter] = useState<string>("all");
+
+  // Theme Demo Studio State
+  const [showDemoStudioModal, setShowDemoStudioModal] = useState(false);
+  const [demoStudioTheme, setDemoStudioTheme] = useState<any | null>(null);
+  const [demoStudioTab, setDemoStudioTab] = useState<"visual" | "profile" | "stories">("visual");
+  const [demoStudioData, setDemoStudioData] = useState<any>({});
+  const [demoStudioLoading, setDemoStudioLoading] = useState(false);
+  const [demoStudioSaving, setDemoStudioSaving] = useState(false);
+  const [demoStudioUploadSuccess, setDemoStudioUploadSuccess] = useState<string | null>(null);
+  const [uploadingSlot, setUploadingSlot] = useState<string | null>(null);
 
   const loadOverviewData = useCallback(() => {
     setLoading(true);
@@ -678,6 +725,97 @@ export default function AdminPage() {
     }
   };
 
+  // Demo Studio Action Handlers
+  const handleOpenDemoStudio = async (theme: any) => {
+    setDemoStudioTheme(theme);
+    setDemoStudioLoading(true);
+    setDemoStudioTab("visual");
+    setDemoStudioUploadSuccess(null);
+    setShowDemoStudioModal(true);
+
+    try {
+      const res = await fetch(`/api/admin/themes/${theme.id}/demo-data`);
+      const json = await res.json();
+      if (json.success && json.data) {
+        setDemoStudioData(json.data);
+      } else {
+        setDemoStudioData({});
+      }
+    } catch {
+      setDemoStudioData({});
+    } finally {
+      setDemoStudioLoading(false);
+    }
+  };
+
+  const handleUploadDemoAsset = async (slot: string, file: File) => {
+    if (!demoStudioTheme) return;
+    setUploadingSlot(slot);
+    setDemoStudioUploadSuccess(null);
+
+    const fd = new FormData();
+    fd.append("slot", slot);
+    fd.append("file", file);
+
+    try {
+      const res = await fetch(`/api/admin/themes/${demoStudioTheme.id}/demo-asset`, {
+        method: "POST",
+        body: fd,
+      });
+      const data = await res.json();
+      if (data.success) {
+        setDemoStudioUploadSuccess(`✓ Aset ${slot} berhasil diperbarui!`);
+        if (slot.startsWith("gallery_")) {
+          const galleryPhotos = [...(demoStudioData.galleryPhotos || [])];
+          const idx = parseInt(slot.replace("gallery_", ""), 10) - 1;
+          if (idx >= 0 && idx < 8) {
+            galleryPhotos[idx] = data.url;
+            setDemoStudioData({ ...demoStudioData, galleryPhotos });
+          }
+        } else if (slot === "cover") {
+          setDemoStudioData({ ...demoStudioData, landingCoverUrl: data.url });
+        } else if (slot === "hero") {
+          setDemoStudioData({ ...demoStudioData, sidebarPhotoUrl: data.url });
+        } else if (slot === "groom") {
+          setDemoStudioData({ ...demoStudioData, groomPhotoUrl: data.url });
+        } else if (slot === "bride") {
+          setDemoStudioData({ ...demoStudioData, bridePhotoUrl: data.url });
+        } else if (slot === "background") {
+          setDemoStudioData({ ...demoStudioData, globalBgUrl: data.url });
+        }
+      } else {
+        alert(data.error || "Gagal mengunggah aset");
+      }
+    } catch (err: any) {
+      alert("Error: " + err.message);
+    } finally {
+      setUploadingSlot(null);
+    }
+  };
+
+  const handleSaveDemoData = async () => {
+    if (!demoStudioTheme) return;
+    setDemoStudioSaving(true);
+    try {
+      const res = await fetch(`/api/admin/themes/${demoStudioTheme.id}/demo-data`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(demoStudioData),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setDemoStudioUploadSuccess(`✓ Data & cerita demo tema ${demoStudioTheme.name} berhasil disimpan!`);
+        setTimeout(() => setDemoStudioUploadSuccess(null), 3000);
+      } else {
+        alert(data.error || "Gagal menyimpan data demo");
+      }
+    } catch (err: any) {
+      alert("Error: " + err.message);
+    } finally {
+      setDemoStudioSaving(false);
+    }
+  };
+
   // Invitation theme actions
   const handleUnlockTheme = async (invId: string) => {
     if (!confirm("Buka kunci tema untuk klien ini?")) return;
@@ -739,12 +877,49 @@ export default function AdminPage() {
   };
 
   const handleApproveOrder = async (orderId: string) => {
-    if (!confirm("Tandai order ini sebagai LUNAS secara manual?")) return;
+    if (!confirm("Konfirmasi pembayaran ini? Akses studio undangan klien akan segera diaktifkan.")) return;
+    setProcessingOrderAction(true);
     try {
       const res = await fetch(`/api/admin/orders/${orderId}/approve`, { method: "POST" });
-      if (res.ok) { alert("✓ Order berhasil dikonfirmasi!"); loadOverviewData(); }
-      else { const d = await res.json(); alert("Error: " + d.error); }
-    } catch (err: any) { alert("Gagal: " + err.message); }
+      if (res.ok) {
+        alert("Order berhasil dikonfirmasi! Akun klien telah aktif.");
+        setPreviewProofOrder(null);
+        loadOverviewData();
+      } else {
+        const d = await res.json();
+        alert("Error: " + d.error);
+      }
+    } catch (err: any) {
+      alert("Gagal: " + err.message);
+    } finally {
+      setProcessingOrderAction(false);
+    }
+  };
+
+  const handleRejectOrder = async () => {
+    if (!rejectModalOrder) return;
+    setProcessingOrderAction(true);
+    try {
+      const res = await fetch(`/api/admin/orders/${rejectModalOrder.id}/reject`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: rejectReasonInput || "Bukti transfer tidak valid atau dana belum masuk." }),
+      });
+      if (res.ok) {
+        alert("Order telah ditolak.");
+        setRejectModalOrder(null);
+        setPreviewProofOrder(null);
+        setRejectReasonInput("");
+        loadOverviewData();
+      } else {
+        const d = await res.json();
+        alert("Error: " + d.error);
+      }
+    } catch (err: any) {
+      alert("Gagal: " + err.message);
+    } finally {
+      setProcessingOrderAction(false);
+    }
   };
 
   const handleTestGoogle = async () => {
@@ -1466,30 +1641,128 @@ export default function AdminPage() {
                     <table className="min-w-full divide-y divide-gray-100">
                       <thead className="bg-gray-50">
                         <tr>
-                          {["Invoice", "Klien", "Paket", "Jumlah", "Status", "Tanggal", "Aksi"].map((h) => (
-                            <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{h}</th>
+                          {["Invoice", "Klien", "Paket", "Metode", "Jumlah", "Bukti Transfer", "Status", "Tanggal", "Aksi"].map((h) => (
+                            <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{h}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-50">
                         {orders.length === 0 ? (
-                          <tr><td colSpan={7} className="px-5 py-8 text-center text-gray-400 italic">Belum ada transaksi</td></tr>
+                          <tr><td colSpan={9} className="px-5 py-8 text-center text-gray-400 italic">Belum ada transaksi</td></tr>
                         ) : orders.map((ord) => (
                           <tr key={ord.id} className="hover:bg-gray-50 transition">
-                            <td className="px-5 py-3 text-xs font-mono text-gray-700">{ord.invoiceNumber}</td>
-                            <td className="px-5 py-3 text-sm text-gray-800">{ord.user?.name || ord.user?.email}</td>
-                            <td className="px-5 py-3 text-sm font-semibold text-gray-900">{ord.planType}</td>
-                            <td className="px-5 py-3 text-sm font-bold text-gray-900">Rp {Number(ord.amount).toLocaleString("id-ID")}</td>
-                            <td className="px-5 py-3"><Badge status={ord.status} /></td>
-                            <td className="px-5 py-3 text-xs text-gray-400">{new Date(ord.createdAt).toLocaleDateString("id-ID")}</td>
-                            <td className="px-5 py-3">
-                              {ord.status === "PENDING" && (
+                            <td className="px-4 py-3 text-xs font-mono text-gray-700 font-bold">{ord.invoiceNumber}</td>
+                            <td className="px-4 py-3 text-xs text-gray-800 font-medium">
+                              <div className="font-semibold text-gray-900">{ord.user?.name || "Klien"}</div>
+                              <div className="text-gray-400 text-[11px] font-mono">{ord.user?.email}</div>
+                            </td>
+                            <td className="px-4 py-3 text-xs font-semibold text-gray-900">{ord.planType}</td>
+                            <td className="px-4 py-3 text-xs">
+                              {ord.paymentMethod === "MANUAL_TRANSFER" ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                                  Transfer Bank
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-sky-50 text-sky-800 border border-sky-200">
+                                  QRIS / Otomatis
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-xs font-bold text-gray-900 font-mono">Rp {Number(ord.amount).toLocaleString("id-ID")}</td>
+                            <td className="px-4 py-3 text-xs">
+                              {ord.proofImageUrl ? (
                                 <button
-                                  onClick={() => handleApproveOrder(ord.id)}
-                                  className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-semibold transition cursor-pointer"
+                                  type="button"
+                                  onClick={() => setPreviewProofOrder(ord)}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-lg text-[11px] font-bold transition cursor-pointer shadow-2xs"
                                 >
-                                  ✓ Konfirmasi Manual
+                                  <svg className="w-3.5 h-3.5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                  </svg>
+                                  <span>Lihat Struk</span>
                                 </button>
+                              ) : (
+                                <span className="text-gray-400 text-xs">-</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="space-y-1">
+                                {/* Status kontekstual sesuai metode & kondisi */}
+                                {ord.status === "PENDING" && ord.paymentMethod === "MANUAL_TRANSFER" && !ord.proofImageUrl && (
+                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600 border border-gray-200">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+                                    Menunggu Bukti
+                                  </span>
+                                )}
+                                {ord.status === "PENDING" && ord.paymentMethod === "MANUAL_TRANSFER" && ord.proofImageUrl && (
+                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                    Menunggu Verifikasi
+                                  </span>
+                                )}
+                                {ord.status === "PENDING" && ord.paymentMethod !== "MANUAL_TRANSFER" && (
+                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-sky-50 text-sky-800 border border-sky-200">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse"></span>
+                                    Menunggu Pembayaran
+                                  </span>
+                                )}
+                                {ord.status === "PAID" && (
+                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                    Lunas
+                                  </span>
+                                )}
+                                {ord.status === "EXPIRED" && (
+                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-500 border border-gray-200">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+                                    QRIS Kedaluwarsa
+                                  </span>
+                                )}
+                                {ord.status === "FAILED" && (
+                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                                    Ditolak
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-[11px] text-gray-400">{new Date(ord.createdAt).toLocaleDateString("id-ID")}</td>
+                            <td className="px-4 py-3">
+                              {/* Tombol Konfirmasi/Tolak HANYA untuk Transfer Manual yang sudah upload struk */}
+                              {ord.status === "PENDING" && ord.paymentMethod === "MANUAL_TRANSFER" && ord.proofImageUrl && (
+                                <div className="flex items-center gap-1.5">
+                                  <button
+                                    onClick={() => handleApproveOrder(ord.id)}
+                                    disabled={processingOrderAction}
+                                    className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-semibold transition cursor-pointer disabled:opacity-50"
+                                  >
+                                    Konfirmasi
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setRejectModalOrder(ord);
+                                      setRejectReasonInput("Bukti transfer tidak valid atau dana belum masuk.");
+                                    }}
+                                    disabled={processingOrderAction}
+                                    className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 rounded-lg text-xs font-semibold transition cursor-pointer disabled:opacity-50"
+                                  >
+                                    Tolak
+                                  </button>
+                                </div>
+                              )}
+                              {/* QRIS: Menunggu otomatis dari webhook gateway */}
+                              {ord.status === "PENDING" && ord.paymentMethod !== "MANUAL_TRANSFER" && (
+                                <span className="text-[10px] text-gray-400 italic">Auto via gateway</span>
+                              )}
+                              {/* Transfer Manual: Menunggu klien upload struk */}
+                              {ord.status === "PENDING" && ord.paymentMethod === "MANUAL_TRANSFER" && !ord.proofImageUrl && (
+                                <span className="text-[10px] text-gray-400 italic">Menunggu bukti upload</span>
+                              )}
+                              {ord.status === "FAILED" && ord.rejectReason && (
+                                <span className="text-[10px] text-rose-600 italic block max-w-[120px] truncate" title={ord.rejectReason}>
+                                  {ord.rejectReason}
+                                </span>
                               )}
                             </td>
                           </tr>
@@ -1710,7 +1983,7 @@ export default function AdminPage() {
                           onClick={() => setThemeSyncResult(null)}
                           className="text-[11px] font-medium text-emerald-700 hover:text-emerald-900 cursor-pointer"
                         >
-                          ✕ Tutup
+                          Tutup
                         </button>
                       </div>
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 pt-1">
@@ -1718,7 +1991,7 @@ export default function AdminPage() {
                           <div key={th.id} className="text-[11px] bg-white/80 border border-emerald-100 p-2 rounded-lg flex items-center justify-between">
                             <span className="font-semibold text-stone-800">{th.name}</span>
                             <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${th.isHealthValid ? 'bg-emerald-100 text-emerald-800 font-bold' : 'bg-amber-100 text-amber-800 font-bold'}`}>
-                              {th.isHealthValid ? "✓ Sync" : "⚠️ Cek Token"}
+                              {th.isHealthValid ? "Tersinkron" : "Cek Token"}
                             </span>
                           </div>
                         ))}
@@ -1785,7 +2058,14 @@ export default function AdminPage() {
                           </div>
                           
                           <div className="flex items-center gap-2">
-                            <a href={`/demo/${theme.id}`} target="_blank" className="text-amber-700 hover:underline font-semibold text-xs">Preview</a>
+                            <button
+                              onClick={() => handleOpenDemoStudio(theme)}
+                              className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200/80 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer shadow-2xs"
+                              title="Kelola foto, musik & data cerita demo tema ini"
+                            >
+                              <span>Demo Studio</span>
+                            </button>
+                            <a href={`/demo/${theme.id}`} target="_blank" className="text-gray-600 hover:text-gray-900 font-semibold text-xs">Preview</a>
                             <button
                               onClick={() => handleOpenEditTheme(theme)}
                               className="text-gray-600 hover:text-gray-900 font-semibold text-xs cursor-pointer"
@@ -1813,6 +2093,183 @@ export default function AdminPage() {
                     <h2 className="text-2xl font-bold text-gray-900">Pengaturan Platform</h2>
                     <p className="text-sm text-gray-500 mt-0.5">Konfigurasi payment gateway, Google OAuth API, harga paket, dan platform</p>
                   </div>
+
+                  {/* Dual Payment Mode & Bank Transfer Settings */}
+                  <SettingsCard
+                    title="Mode Pembayaran & Rekening Bank Manual"
+                    description="Pilih metode pembayaran yang diizinkan untuk klien (QRIS Otomatis, Transfer Bank Manual, atau Keduanya), atur rekening tujuan transfer resmi, dan atur batas waktu kedaluwarsa invoice."
+                    isEditing={Boolean(editSection["payment_mode"])}
+                    onEdit={() => toggleEditSection("payment_mode")}
+                    onCancel={() =>
+                      cancelEdit("payment_mode", [
+                        "payment_mode",
+                        "payment_expiry_minutes",
+                        "bank_name",
+                        "bank_account_number",
+                        "bank_account_holder",
+                        "bank_instructions",
+                      ])
+                    }
+                    onSave={() =>
+                      saveSettings(
+                        [
+                          "payment_mode",
+                          "payment_expiry_minutes",
+                          "bank_name",
+                          "bank_account_number",
+                          "bank_account_holder",
+                          "bank_instructions",
+                        ],
+                        setSavingPaymentSettings,
+                        "payment_mode"
+                      )
+                    }
+                    saving={savingPaymentSettings}
+                    isDirty={isSectionDirty([
+                      "payment_mode",
+                      "payment_expiry_minutes",
+                      "bank_name",
+                      "bank_account_number",
+                      "bank_account_holder",
+                      "bank_instructions",
+                    ])}
+                    saveSuccess={settingsSaved["payment_mode"]}
+                    saveSuccessMessage="Pengaturan metode pembayaran & rekening bank berhasil disimpan"
+                    viewContent={
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                          <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                            <span className="text-xs text-gray-500 block font-medium">Mode Pembayaran Aktif</span>
+                            <div className="mt-1">
+                              {(settingsMap["payment_mode"] || "BOTH") === "BOTH" ? (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                  QRIS + Transfer Manual
+                                </span>
+                              ) : settingsMap["payment_mode"] === "GATEWAY" ? (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-200">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-sky-500"></span>
+                                  Hanya QRIS / Otomatis
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                  Hanya Transfer Bank
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                            <span className="text-xs text-gray-500 block font-medium">Masa Berlaku Invoice</span>
+                            <span className="text-sm font-mono font-bold text-gray-800 mt-1 inline-block">
+                              {settingsMap["payment_expiry_minutes"] || "60"} Menit
+                            </span>
+                          </div>
+
+                          <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                            <span className="text-xs text-gray-500 block font-medium">Rekening Tujuan</span>
+                            <span className="text-xs font-bold text-gray-800 mt-1 inline-block">
+                              {settingsMap["bank_name"] || "BCA"} - {settingsMap["bank_account_number"] || "8735098123"}
+                            </span>
+                            <span className="text-[11px] text-gray-500 block font-medium">
+                              a.n {settingsMap["bank_account_holder"] || "PT Luxenary Karya Digital"}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-200 text-xs text-amber-950">
+                          <span className="font-bold block mb-0.5">Petunjuk Transfer untuk Klien:</span>
+                          <p className="text-amber-900/80 leading-relaxed text-[11px]">
+                            {settingsMap["bank_instructions"] ||
+                              "Silakan transfer tepat sesuai total tagihan invoice. Setelah transfer, unggah foto bukti transfer untuk diverifikasi admin."}
+                          </p>
+                        </div>
+                      </div>
+                    }
+                  >
+                    <div className="space-y-4">
+                      <FieldRow label="Mode Pembayaran yang Dibuka">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                          {[
+                            { id: "BOTH", label: "QRIS + Transfer Manual", desc: "Klien bebas memilih metode" },
+                            { id: "GATEWAY", label: "Hanya QRIS / Otomatis", desc: "Auto verifikasi via iPaymu" },
+                            { id: "MANUAL", label: "Hanya Transfer Manual", desc: "Verifikasi via upload struk" },
+                          ].map((opt) => (
+                            <button
+                              key={opt.id}
+                              type="button"
+                              onClick={() => setSetting("payment_mode", opt.id)}
+                              className={`p-3 rounded-xl border text-left transition cursor-pointer ${
+                                (settingsMap["payment_mode"] || "BOTH") === opt.id
+                                  ? "border-amber-600 bg-amber-50 text-amber-950 ring-1 ring-amber-500"
+                                  : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
+                              }`}
+                            >
+                              <span className="text-xs font-bold block">{opt.label}</span>
+                              <span className="text-[10px] text-gray-500 block mt-0.5">{opt.desc}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </FieldRow>
+
+                      <FieldRow label="Masa Berlaku Tagihan / QRIS (Menit)">
+                        <input
+                          type="number"
+                          min="5"
+                          max="1440"
+                          value={settingsMap["payment_expiry_minutes"] || "60"}
+                          onChange={(e) => setSetting("payment_expiry_minutes", e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition"
+                        />
+                        <p className="text-[11px] text-gray-400 mt-1">Invoice otomatis kedaluwarsa jika tidak dibayar dalam durasi ini (contoh: 60 menit).</p>
+                      </FieldRow>
+
+                      <div className="pt-3 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <FieldRow label="Nama Bank">
+                          <input
+                            type="text"
+                            value={settingsMap["bank_name"] || "BCA (Bank Central Asia)"}
+                            onChange={(e) => setSetting("bank_name", e.target.value)}
+                            placeholder="Contoh: BCA / Mandiri / BRI"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition"
+                          />
+                        </FieldRow>
+
+                        <FieldRow label="Nomor Rekening">
+                          <input
+                            type="text"
+                            value={settingsMap["bank_account_number"] || "8735098123"}
+                            onChange={(e) => setSetting("bank_account_number", e.target.value)}
+                            placeholder="Contoh: 8735098123"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition"
+                          />
+                        </FieldRow>
+
+                        <FieldRow label="Atas Nama (Pemilik)">
+                          <input
+                            type="text"
+                            value={settingsMap["bank_account_holder"] || "PT Luxenary Karya Digital"}
+                            onChange={(e) => setSetting("bank_account_holder", e.target.value)}
+                            placeholder="Contoh: PT Luxenary Karya Digital"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition"
+                          />
+                        </FieldRow>
+                      </div>
+
+                      <FieldRow label="Petunjuk Transfer Bank">
+                        <textarea
+                          rows={3}
+                          value={
+                            settingsMap["bank_instructions"] ||
+                            "Silakan transfer tepat sesuai total tagihan invoice. Setelah transfer, unggah foto bukti transfer di bawah ini untuk diverifikasi admin."
+                          }
+                          onChange={(e) => setSetting("bank_instructions", e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition resize-none"
+                        />
+                      </FieldRow>
+                    </div>
+                  </SettingsCard>
 
                   {/* iPaymu Settings */}
                   <SettingsCard
@@ -2299,6 +2756,228 @@ export default function AdminPage() {
                     </div>
                   </SettingsCard>
 
+                  {/* Subdomain Lifecycle & Archiving Settings */}
+                  <SettingsCard
+                    title="Siklus Hidup & Daur Ulang Subdomain"
+                    description="Atur masa tenggang (grace period) keaktifan subdomain setelah acara selesai, dan otomatisasi pelepasan subdomain ke pool agar dapat digunakan kembali oleh pasangan baru."
+                    isEditing={Boolean(editSection["subdomain"])}
+                    onEdit={() => toggleEditSection("subdomain")}
+                    onCancel={() => cancelEdit("subdomain", ["subdomain_grace_days", "subdomain_auto_recycle"])}
+                    onSave={() => saveSettings(["subdomain_grace_days", "subdomain_auto_recycle"], setSavingSubdomainSettings, "subdomain")}
+                    saving={savingSubdomainSettings}
+                    isDirty={isSectionDirty(["subdomain_grace_days", "subdomain_auto_recycle"])}
+                    saveSuccess={settingsSaved["subdomain"]}
+                    saveSuccessMessage="Pengaturan siklus hidup subdomain berhasil disimpan"
+                    viewContent={
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                          <div className="p-4 bg-amber-50/50 rounded-xl border border-amber-200">
+                            <span className="text-xs text-amber-950 font-bold block mb-1">Masa Tenggang (Grace Period)</span>
+                            <div className="flex items-baseline gap-1.5">
+                              <span className="text-2xl font-mono font-bold text-amber-900">
+                                {settingsMap["subdomain_grace_days"] || "7"}
+                              </span>
+                              <span className="text-xs text-amber-800 font-medium">Hari pasca acara pernikahan</span>
+                            </div>
+                            <p className="text-[11px] text-stone-500 mt-2">
+                              Subdomain tetap aktif selama {settingsMap["subdomain_grace_days"] || "7"} hari setelah acara sebelum dilepas ke pool.
+                            </p>
+                          </div>
+
+                          <div className="p-4 bg-stone-50 rounded-xl border border-stone-200">
+                            <span className="text-xs text-stone-900 font-bold block mb-1">Status Auto-Recycle ke Pool</span>
+                            <div className="mt-1">
+                              {(settingsMap["subdomain_auto_recycle"] || "true") === "true" ? (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                  Otomatis Daur Ulang Aktif
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-stone-100 text-stone-700 border border-stone-300">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-stone-400"></span>
+                                  Pelepasan Manual Saja
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-stone-500 mt-2">
+                              Undangan lama tetap dapat diakses seumur hidup via link path: <code>luxenary.id/[pasangan]/[bln-thn]</code>.
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Manual Trigger & Maintenance Action */}
+                        <div className="p-4 bg-stone-900 text-white rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                          <div>
+                            <h4 className="text-xs font-bold text-white flex items-center gap-2">
+                              <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+                              <span>Pembersihan Subdomain Kedaluwarsa</span>
+                            </h4>
+                            <p className="text-[11px] text-stone-300 mt-0.5">
+                              Eksekusi manual untuk melepaskan semua subdomain yang telah lewat masa tenggang (&gt; {settingsMap["subdomain_grace_days"] || "7"} hari).
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleManualRecycleSubdomains}
+                            disabled={recyclingSubdomains}
+                            className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl text-xs transition flex items-center justify-center gap-1.5 shrink-0 disabled:opacity-50 cursor-pointer shadow-sm"
+                          >
+                            {recyclingSubdomains ? (
+                              <>
+                                <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                                <span>Memproses...</span>
+                              </>
+                            ) : (
+                              <>
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                                <span>Jalankan Pembersihan Sekarang</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+
+                        {recycleResult && (
+                          <div className={`p-3.5 rounded-xl border text-xs flex items-center gap-2 ${
+                            recycleResult.success
+                              ? "bg-emerald-50 border-emerald-300 text-emerald-950 font-medium"
+                              : "bg-rose-50 border-rose-300 text-rose-950 font-medium"
+                          }`}>
+                            <span>{recycleResult.success ? "✓" : "✕"}</span>
+                            <span>{recycleResult.message}</span>
+                          </div>
+                        )}
+                      </div>
+                    }
+                  >
+                    <div className="space-y-4">
+                      <FieldRow label="Masa Tenggang Subdomain (Hari)" description="Jumlah hari subdomain tetap aktif setelah tanggal acara pernikahan selesai sebelum dilepas kembali ke pool (contoh: 7, 14, 30 hari).">
+                        <input
+                          type="number"
+                          min="1"
+                          max="365"
+                          value={settingsMap["subdomain_grace_days"] || "7"}
+                          onChange={(e) => setSetting("subdomain_grace_days", e.target.value)}
+                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition font-mono"
+                        />
+                      </FieldRow>
+
+                      <FieldRow label="Otomatis Daur Ulang Subdomain" description="Jika aktif, sistem otomatis melepaskan subdomain kedaluwarsa saat ada pendaftaran baru atau query berkala.">
+                        <div className="flex gap-3">
+                          {[
+                            { id: "true", label: "Aktif (Otomatis Lepas)" },
+                            { id: "false", label: "Manual Saja" },
+                          ].map((opt) => (
+                            <button
+                              key={opt.id}
+                              type="button"
+                              onClick={() => setSetting("subdomain_auto_recycle", opt.id)}
+                              className={`px-4 py-2 rounded-xl text-sm font-semibold border transition cursor-pointer flex items-center gap-1.5 ${
+                                (settingsMap["subdomain_auto_recycle"] || "true") === opt.id
+                                  ? opt.id === "true"
+                                    ? "bg-emerald-600 text-white border-emerald-600"
+                                    : "bg-stone-700 text-white border-stone-700"
+                                  : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
+                              }`}
+                            >
+                              <span className={`w-1.5 h-1.5 rounded-full ${
+                                (settingsMap["subdomain_auto_recycle"] || "true") === opt.id
+                                  ? "bg-white"
+                                  : opt.id === "true" ? "bg-emerald-500" : "bg-gray-400"
+                              }`}></span>
+                              <span>{opt.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </FieldRow>
+                    </div>
+                  </SettingsCard>
+
+                  {/* Google Drive Master Webhook & Cloud Storage Settings */}
+                  <SettingsCard
+                    title="Penyimpanan Cloud & Master Google Drive Webhook"
+                    description="Kelola integrasi Zero-Disk Storage untuk dokumentasi kenangan tamu. File foto dan video tamu langsung di-stream ke folder Google Drive pengantin tanpa membebani harddisk server."
+                    isEditing={Boolean(editSection["gdrive"])}
+                    onEdit={() => toggleEditSection("gdrive")}
+                    onCancel={() => cancelEdit("gdrive", ["gdrive_webhook_url"])}
+                    onSave={() => saveSettings(["gdrive_webhook_url"], setSavingGdriveSettings, "gdrive")}
+                    saving={savingGdriveSettings}
+                    isDirty={isSectionDirty(["gdrive_webhook_url"])}
+                    saveSuccess={settingsSaved["gdrive"]}
+                    saveSuccessMessage="Master Webhook Google Drive berhasil disimpan"
+                    viewContent={
+                      <div className="space-y-4">
+                        <div className="p-4 bg-emerald-50/50 rounded-xl border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="space-y-1">
+                            <span className="text-xs font-bold text-emerald-950 block">Status Zero-Disk Storage</span>
+                            <p className="text-xs text-emerald-800">
+                              {settingsMap["gdrive_webhook_url"]
+                                ? "● Master Webhook Google Drive Aktif & Terhubung (Harddisk Server 0 Byte)"
+                                : "○ Mode Penyimpanan Lokal (Belum Ada Webhook Google Drive)"}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(GOOGLE_APPS_SCRIPT_MASTER_CODE);
+                              setCopiedGdriveScript(true);
+                              setTimeout(() => setCopiedGdriveScript(false), 2500);
+                            }}
+                            className="px-3 py-1.5 bg-white hover:bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-lg text-xs font-bold transition flex items-center gap-1.5 self-start sm:self-auto cursor-pointer shadow-2xs"
+                          >
+                            <svg className="w-3.5 h-3.5 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                            </svg>
+                            <span>{copiedGdriveScript ? "✓ Skrip Tersalin!" : "Salin Skrip Google Webhook"}</span>
+                          </button>
+                        </div>
+
+                        {settingsMap["gdrive_webhook_url"] && (
+                          <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                            <span className="text-[11px] font-bold text-gray-500 block mb-1">URL Webhook Aktif:</span>
+                            <code className="text-xs font-mono text-gray-800 break-all select-all">
+                              {settingsMap["gdrive_webhook_url"]}
+                            </code>
+                          </div>
+                        )}
+                      </div>
+                    }
+                  >
+                    <div className="space-y-4">
+                      <FieldRow
+                        label="Master Google Drive Webhook URL"
+                        description="URL Web App dari Google Apps Script (script.google.com). Buka script.google.com > Paste Skrip > Deploy as Web App (Execute as: Me, Access: Anyone) > Salin URL-nya ke sini."
+                      >
+                        <div className="space-y-2">
+                          <input
+                            type="url"
+                            placeholder="https://script.google.com/macros/s/AKfycb.../exec"
+                            value={settingsMap["gdrive_webhook_url"] || ""}
+                            onChange={(e) => setSetting("gdrive_webhook_url", e.target.value)}
+                            className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition font-mono"
+                          />
+                          <div className="flex items-center justify-between">
+                            <p className="text-[11px] text-gray-500">
+                              Belum punya skrip? Salin kode skrip siap pakai di samping.
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(GOOGLE_APPS_SCRIPT_MASTER_CODE);
+                                setCopiedGdriveScript(true);
+                                setTimeout(() => setCopiedGdriveScript(false), 2500);
+                              }}
+                              className="text-xs font-bold text-amber-800 hover:underline flex items-center gap-1 cursor-pointer"
+                            >
+                              <span>{copiedGdriveScript ? "✓ Berhasil Disalin!" : "Salin Skrip Master (.gs)"}</span>
+                            </button>
+                          </div>
+                        </div>
+                      </FieldRow>
+                    </div>
+                  </SettingsCard>
+
                   {/* Branding — Logo & Favicon */}
                   <div
                     className={`bg-white rounded-2xl shadow-sm border transition-all duration-200 p-6 ${
@@ -2359,7 +3038,6 @@ export default function AdminPage() {
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-lg bg-white border border-gray-200 flex items-center justify-center overflow-hidden shrink-0">
                               {logoUrl ? (
-                                // eslint-disable-next-line @next/next/no-img-element
                                 <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
                               ) : (
                                 <span className="font-bold font-serif text-amber-800 text-sm">L</span>
@@ -2384,7 +3062,6 @@ export default function AdminPage() {
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-lg bg-white border border-gray-200 flex items-center justify-center overflow-hidden shrink-0">
                               {faviconUrl ? (
-                                // eslint-disable-next-line @next/next/no-img-element
                                 <img src={faviconUrl} alt="Favicon" className="w-6 h-6 object-contain" />
                               ) : (
                                 <span className="font-bold text-gray-400 text-xs">ICO</span>
@@ -2417,7 +3094,6 @@ export default function AdminPage() {
                           <div className="p-3 bg-white rounded-xl border border-gray-200 flex items-center gap-3">
                             <div className="w-14 h-14 rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden shrink-0">
                               {(previewLogo || logoUrl) ? (
-                                // eslint-disable-next-line @next/next/no-img-element
                                 <img src={previewLogo ?? logoUrl!} alt="Logo preview" className="w-full h-full object-contain" />
                               ) : (
                                 <span className="font-bold font-serif text-gray-400 text-sm">L</span>
@@ -2483,7 +3159,6 @@ export default function AdminPage() {
                           <div className="p-3 bg-white rounded-xl border border-gray-200 flex items-center gap-3">
                             <div className="w-14 h-14 rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden shrink-0">
                               {(previewFavicon || faviconUrl) ? (
-                                // eslint-disable-next-line @next/next/no-img-element
                                 <img src={previewFavicon ?? faviconUrl!} alt="Favicon preview" className="w-8 h-8 object-contain" />
                               ) : (
                                 <span className="font-bold text-gray-400 text-xs">ICO</span>
@@ -3197,6 +3872,663 @@ export default function AdminPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Theme Demo Studio Modal ── */}
+      {showDemoStudioModal && demoStudioTheme && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-6">
+          <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[92vh] shadow-2xl flex flex-col overflow-hidden border border-gray-100 animate-in fade-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="px-6 py-4 bg-stone-950 border-b border-stone-800 flex items-center justify-between text-white shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M7 21a4 4 0 01-4-4 5 5 0 0110 0 4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold font-serif text-lg text-stone-100">
+                      Theme Demo Studio: {demoStudioTheme.name}
+                    </h3>
+                    <span className="font-mono text-[10px] bg-stone-800 text-amber-400 px-2 py-0.5 rounded-full uppercase">
+                      #{demoStudioTheme.id}
+                    </span>
+                  </div>
+                  <p className="text-xs text-stone-400">
+                    Kelola aset foto showroom, musik bawaan, dan cerita pasangan demo tema
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2.5">
+                <a
+                  href={`/demo/${demoStudioTheme.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-500 text-stone-950 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+                >
+                  <span>Lihat Demo Live</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setShowDemoStudioModal(false)}
+                  className="px-3 py-1.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-300 hover:text-white font-bold text-xs transition cursor-pointer"
+                >
+                  Tutup
+                </button>
+              </div>
+            </div>
+
+            {/* Success Feedback Alert */}
+            {demoStudioUploadSuccess && (
+              <div className="mx-6 mt-4 p-3 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-800 text-xs font-bold flex items-center gap-2">
+                <span>{demoStudioUploadSuccess}</span>
+              </div>
+            )}
+
+            {/* Navigation Tabs */}
+            <div className="px-6 border-b border-gray-100 bg-gray-50 flex items-center gap-2 pt-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setDemoStudioTab("visual")}
+                className={`px-4 py-2.5 text-xs font-bold rounded-t-xl transition border-b-2 cursor-pointer ${
+                  demoStudioTab === "visual"
+                    ? "bg-white text-stone-900 border-amber-600 shadow-2xs"
+                    : "text-gray-500 hover:text-gray-800 border-transparent"
+                }`}
+              >
+                Aset Visual &amp; Audio ({demoStudioTheme.id})
+              </button>
+              <button
+                type="button"
+                onClick={() => setDemoStudioTab("profile")}
+                className={`px-4 py-2.5 text-xs font-bold rounded-t-xl transition border-b-2 cursor-pointer ${
+                  demoStudioTab === "profile"
+                    ? "bg-white text-stone-900 border-amber-600 shadow-2xs"
+                    : "text-gray-500 hover:text-gray-800 border-transparent"
+                }`}
+              >
+                Profil Pasangan &amp; Acara
+              </button>
+              <button
+                type="button"
+                onClick={() => setDemoStudioTab("stories")}
+                className={`px-4 py-2.5 text-xs font-bold rounded-t-xl transition border-b-2 cursor-pointer ${
+                  demoStudioTab === "stories"
+                    ? "bg-white text-stone-900 border-amber-600 shadow-2xs"
+                    : "text-gray-500 hover:text-gray-800 border-transparent"
+                }`}
+              >
+                Kisah Cinta &amp; Rekening
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {demoStudioLoading ? (
+                <div className="py-20 text-center text-gray-400 text-sm">
+                  <div className="animate-spin w-8 h-8 border-2 border-amber-600 border-t-transparent rounded-full mx-auto mb-3"></div>
+                  Memuat data demo tema...
+                </div>
+              ) : (
+                <>
+                  {/* TAB 1: VISUAL & AUDIO ASSETS */}
+                  {demoStudioTab === "visual" && (
+                    <div className="space-y-6">
+                      <div className="p-4 bg-amber-50/60 border border-amber-200/70 rounded-2xl text-amber-900 text-xs leading-relaxed">
+                        <div>
+                          <strong>Panduan Aset:</strong> Foto yang diunggah akan otomatis dikonversi dan disimpan ke folder{" "}
+                          <code className="font-mono bg-amber-100 px-1 py-0.5 rounded text-amber-950 font-bold">
+                            public/demo/{demoStudioTheme.id}/
+                          </code>{" "}
+                          sebagai WebP beresolusi optimal dan langsung tampil di halaman showroom demo publik.
+                        </div>
+                      </div>
+
+                      {/* Main Cover & Hero Slots Grid */}
+                      <div>
+                        <h4 className="font-bold text-gray-900 text-xs uppercase tracking-wider mb-3">
+                          1. Foto Utama &amp; Banner Hero
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {[
+                            { slot: "cover", label: "Landing Cover", file: "cover.webp", desc: "Tampilan layar pembuka & sampul awal" },
+                            { slot: "hero", label: "Hero / Sidebar", file: "hero.webp", desc: "Foto portrait sidebar desktop & hero" },
+                            { slot: "background", label: "Background Global", file: "background.webp", desc: "Latar belakang fixed blur tema" },
+                            { slot: "groom", label: "Mempelai Pria", file: "groom.webp", desc: "Foto profil pria" },
+                            { slot: "bride", label: "Mempelai Wanita", file: "bride.webp", desc: "Foto profil wanita" },
+                          ].map((item) => (
+                            <div key={item.slot} className="bg-gray-50 border border-gray-200 rounded-2xl p-4 space-y-3 flex flex-col justify-between">
+                              <div>
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="font-bold text-xs text-gray-900">{item.label}</span>
+                                  <span className="font-mono text-[10px] text-gray-400">{item.file}</span>
+                                </div>
+                                <p className="text-[11px] text-gray-500 leading-tight">{item.desc}</p>
+                              </div>
+
+                              <div className="relative aspect-video rounded-xl bg-gray-200 overflow-hidden border border-gray-300">
+                                <img
+                                  src={`/demo/${demoStudioTheme.id}/${item.file}`}
+                                  alt={item.label}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    (e.target as HTMLElement).style.display = "none";
+                                  }}
+                                />
+                                {uploadingSlot === item.slot && (
+                                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white text-xs font-bold">
+                                    Mengunggah...
+                                  </div>
+                                )}
+                              </div>
+
+                              <label className="w-full py-2 bg-white hover:bg-amber-50 text-stone-800 hover:text-amber-900 border border-gray-300 hover:border-amber-300 rounded-xl text-xs font-bold transition text-center cursor-pointer block shadow-2xs">
+                                <span>Ganti Foto</span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    if (e.target.files && e.target.files[0]) {
+                                      handleUploadDemoAsset(item.slot, e.target.files[0]);
+                                    }
+                                  }}
+                                />
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* 8 Gallery Photos Grid */}
+                      <div>
+                        <h4 className="font-bold text-gray-900 text-xs uppercase tracking-wider mb-3">
+                          2. Delapan Foto Galeri Showroom Demo (gallery_01 s/d gallery_08)
+                        </h4>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+                          {Array.from({ length: 8 }).map((_, idx) => {
+                            const slotName = `gallery_0${idx + 1}`;
+                            const fileName = `${slotName}.webp`;
+                            return (
+                              <div key={slotName} className="bg-gray-50 border border-gray-200 rounded-2xl p-3 space-y-2">
+                                <div className="flex items-center justify-between text-[11px] font-bold text-gray-800">
+                                  <span>Galeri #{idx + 1}</span>
+                                  <span className="font-mono text-[9px] text-gray-400">{fileName}</span>
+                                </div>
+                                <div className="relative aspect-square rounded-xl bg-gray-200 overflow-hidden border border-gray-300">
+                                  <img
+                                    src={`/demo/${demoStudioTheme.id}/${fileName}`}
+                                    alt={`Gallery ${idx + 1}`}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      (e.target as HTMLElement).style.display = "none";
+                                    }}
+                                  />
+                                  {uploadingSlot === slotName && (
+                                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white text-[10px] font-bold">
+                                      Uploading...
+                                    </div>
+                                  )}
+                                </div>
+                                <label className="w-full py-1.5 bg-white hover:bg-amber-50 text-stone-800 hover:text-amber-900 border border-gray-300 hover:border-amber-300 rounded-lg text-[11px] font-bold transition text-center cursor-pointer block shadow-2xs">
+                                  <span>Ganti</span>
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                      if (e.target.files && e.target.files[0]) {
+                                        handleUploadDemoAsset(slotName, e.target.files[0]);
+                                      }
+                                    }}
+                                  />
+                                </label>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TAB 2: COUPLE PROFILE & EVENTS */}
+                  {demoStudioTab === "profile" && (
+                    <div className="space-y-5">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-gray-800 mb-1">Tagline Undangan Demo</label>
+                          <input
+                            type="text"
+                            value={demoStudioData.tagline || ""}
+                            onChange={(e) => setDemoStudioData({ ...demoStudioData, tagline: e.target.value })}
+                            placeholder="THE WEDDING OF"
+                            className="w-full px-3.5 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-gray-800 mb-1">Kota / Lokasi Umum</label>
+                          <input
+                            type="text"
+                            value={demoStudioData.city || ""}
+                            onChange={(e) => setDemoStudioData({ ...demoStudioData, city: e.target.value })}
+                            placeholder="Jakarta"
+                            className="w-full px-3.5 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Groom & Bride Info */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 p-4 bg-gray-50 border border-gray-200 rounded-2xl">
+                        {/* Groom */}
+                        <div className="space-y-3">
+                          <span className="text-xs font-bold text-amber-900 uppercase font-mono block">Mempelai Pria (Demo)</span>
+                          <div>
+                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Nama Panggilan</label>
+                            <input
+                              type="text"
+                              value={demoStudioData.groomName || ""}
+                              onChange={(e) => setDemoStudioData({ ...demoStudioData, groomName: e.target.value })}
+                              placeholder="Raditya"
+                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Nama Lengkap &amp; Gelar</label>
+                            <input
+                              type="text"
+                              value={demoStudioData.groomDisplayName || ""}
+                              onChange={(e) => setDemoStudioData({ ...demoStudioData, groomDisplayName: e.target.value })}
+                              placeholder="Raditya Pratama, S.T."
+                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Keterangan Orang Tua</label>
+                            <input
+                              type="text"
+                              value={demoStudioData.groomParents || ""}
+                              onChange={(e) => setDemoStudioData({ ...demoStudioData, groomParents: e.target.value })}
+                              placeholder="Putra Kedua dari Bpk. Ir. Hendra..."
+                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Instagram (@)</label>
+                            <input
+                              type="text"
+                              value={demoStudioData.groomInstagram || ""}
+                              onChange={(e) => setDemoStudioData({ ...demoStudioData, groomInstagram: e.target.value })}
+                              placeholder="raditya.pratama"
+                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Bride */}
+                        <div className="space-y-3">
+                          <span className="text-xs font-bold text-amber-900 uppercase font-mono block">Mempelai Wanita (Demo)</span>
+                          <div>
+                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Nama Panggilan</label>
+                            <input
+                              type="text"
+                              value={demoStudioData.brideName || ""}
+                              onChange={(e) => setDemoStudioData({ ...demoStudioData, brideName: e.target.value })}
+                              placeholder="Alana"
+                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Nama Lengkap &amp; Gelar</label>
+                            <input
+                              type="text"
+                              value={demoStudioData.brideDisplayName || ""}
+                              onChange={(e) => setDemoStudioData({ ...demoStudioData, brideDisplayName: e.target.value })}
+                              placeholder="Alana Khairunnisa, B.Des."
+                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Keterangan Orang Tua</label>
+                            <input
+                              type="text"
+                              value={demoStudioData.brideParents || ""}
+                              onChange={(e) => setDemoStudioData({ ...demoStudioData, brideParents: e.target.value })}
+                              placeholder="Putri Pertama dari Bpk. Dr. Faisal..."
+                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Instagram (@)</label>
+                            <input
+                              type="text"
+                              value={demoStudioData.brideInstagram || ""}
+                              onChange={(e) => setDemoStudioData({ ...demoStudioData, brideInstagram: e.target.value })}
+                              placeholder="alana.khairunnisa"
+                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Quotes & Dates */}
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-xs font-bold text-gray-800 mb-1">Kutipan Pembuka (Opening Quote)</label>
+                          <textarea
+                            rows={2}
+                            value={demoStudioData.openingQuote || ""}
+                            onChange={(e) => setDemoStudioData({ ...demoStudioData, openingQuote: e.target.value })}
+                            className="w-full px-3.5 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500 resize-none"
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-bold text-gray-800 mb-1">Referensi / Dalil Kutipan</label>
+                            <input
+                              type="text"
+                              value={demoStudioData.openingQuoteRef || ""}
+                              onChange={(e) => setDemoStudioData({ ...demoStudioData, openingQuoteRef: e.target.value })}
+                              placeholder="QS. AR-RUM : 21"
+                              className="w-full px-3.5 py-2 border border-gray-300 rounded-xl text-xs bg-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-gray-800 mb-1">Format Tanggal Pernikahan Teks</label>
+                            <input
+                              type="text"
+                              value={demoStudioData.weddingDateFormatted || ""}
+                              onChange={(e) => setDemoStudioData({ ...demoStudioData, weddingDateFormatted: e.target.value })}
+                              placeholder="Sabtu, 14 November 2026"
+                              className="w-full px-3.5 py-2 border border-gray-300 rounded-xl text-xs bg-white"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TAB 3: LOVE STORIES & BANK ACCOUNTS */}
+                  {demoStudioTab === "stories" && (
+                    <div className="space-y-6">
+                      <div>
+                        <h4 className="font-bold text-gray-900 text-xs uppercase tracking-wider mb-3">
+                          Kisah Cinta Demo (Love Story Chapters)
+                        </h4>
+                        <div className="space-y-3">
+                          {(demoStudioData.stories || []).map((story: any, sIdx: number) => (
+                            <div key={sIdx} className="p-4 bg-gray-50 border border-gray-200 rounded-2xl space-y-2">
+                              <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                  <label className="block text-[10px] font-bold text-gray-600 mb-1">Bab / Chapter</label>
+                                  <input
+                                    type="text"
+                                    value={story.chapter || ""}
+                                    onChange={(e) => {
+                                      const stories = [...(demoStudioData.stories || [])];
+                                      stories[sIdx].chapter = e.target.value;
+                                      setDemoStudioData({ ...demoStudioData, stories });
+                                    }}
+                                    className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] font-bold text-gray-600 mb-1">Judul Bab</label>
+                                  <input
+                                    type="text"
+                                    value={story.title || ""}
+                                    onChange={(e) => {
+                                      const stories = [...(demoStudioData.stories || [])];
+                                      stories[sIdx].title = e.target.value;
+                                      setDemoStudioData({ ...demoStudioData, stories });
+                                    }}
+                                    className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
+                                  />
+                                </div>
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-bold text-gray-600 mb-1">Isi Cerita</label>
+                                <textarea
+                                  rows={2}
+                                  value={story.content || ""}
+                                  onChange={(e) => {
+                                    const stories = [...(demoStudioData.stories || [])];
+                                    stories[sIdx].content = e.target.value;
+                                    setDemoStudioData({ ...demoStudioData, stories });
+                                  }}
+                                  className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white resize-none"
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Bank Accounts */}
+                      <div>
+                        <h4 className="font-bold text-gray-900 text-xs uppercase tracking-wider mb-3">
+                          Rekening Hadiah Digital Demo
+                        </h4>
+                        <div className="space-y-3">
+                          {(demoStudioData.banks || []).map((bank: any, bIdx: number) => (
+                            <div key={bIdx} className="p-4 bg-gray-50 border border-gray-200 rounded-2xl grid grid-cols-3 gap-3">
+                              <div>
+                                <label className="block text-[10px] font-bold text-gray-600 mb-1">Nama Bank</label>
+                                <input
+                                  type="text"
+                                  value={bank.bank || ""}
+                                  onChange={(e) => {
+                                    const banks = [...(demoStudioData.banks || [])];
+                                    banks[bIdx].bank = e.target.value;
+                                    setDemoStudioData({ ...demoStudioData, banks });
+                                  }}
+                                  placeholder="Bank BCA"
+                                  className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-bold text-gray-600 mb-1">Nomor Rekening</label>
+                                <input
+                                  type="text"
+                                  value={bank.number || ""}
+                                  onChange={(e) => {
+                                    const banks = [...(demoStudioData.banks || [])];
+                                    banks[bIdx].number = e.target.value;
+                                    setDemoStudioData({ ...demoStudioData, banks });
+                                  }}
+                                  placeholder="8830192831"
+                                  className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white font-mono"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-bold text-gray-600 mb-1">Atas Nama</label>
+                                <input
+                                  type="text"
+                                  value={bank.name || ""}
+                                  onChange={(e) => {
+                                    const banks = [...(demoStudioData.banks || [])];
+                                    banks[bIdx].name = e.target.value;
+                                    setDemoStudioData({ ...demoStudioData, banks });
+                                  }}
+                                  placeholder="Raditya Pratama"
+                                  className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between shrink-0">
+              <span className="text-xs text-gray-500">
+                Perubahan pada tab profil &amp; cerita akan langsung aktif setelah disimpan.
+              </span>
+              <div className="flex items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setShowDemoStudioModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-xl text-xs font-semibold text-gray-700 hover:bg-white transition cursor-pointer"
+                >
+                  Tutup
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveDemoData}
+                  disabled={demoStudioSaving}
+                  className="px-6 py-2 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-stone-950 rounded-xl text-xs font-bold transition disabled:opacity-60 shadow-sm cursor-pointer"
+                >
+                  {demoStudioSaving ? "Menyimpan..." : "Simpan Perubahan Demo"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal Pratinjau Bukti Transfer ── */}
+      {previewProofOrder && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-150">
+          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] shadow-2xl flex flex-col overflow-hidden border border-gray-100">
+            {/* Header */}
+            <div className="px-6 py-4 bg-stone-950 text-white flex items-center justify-between shrink-0">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-bold text-base text-white">Bukti Transfer Pembayaran</h3>
+                  <span className="font-mono text-xs bg-amber-500/20 border border-amber-500/40 text-amber-300 px-2 py-0.5 rounded-full font-bold">
+                    {previewProofOrder.invoiceNumber}
+                  </span>
+                </div>
+                <p className="text-xs text-stone-400 mt-0.5">
+                  {previewProofOrder.user?.name || "Klien"} ({previewProofOrder.user?.email}) &bull; Rp {Number(previewProofOrder.amount).toLocaleString("id-ID")}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewProofOrder(null)}
+                className="p-1 text-stone-400 hover:text-white rounded-lg transition cursor-pointer"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Body: Image Preview */}
+            <div className="flex-1 overflow-y-auto p-6 bg-stone-900 flex items-center justify-center min-h-[300px]">
+              {previewProofOrder.proofImageUrl ? (
+                <div className="relative group max-h-[60vh]">
+                  <img
+                    src={previewProofOrder.proofImageUrl}
+                    alt="Bukti Transfer"
+                    className="max-h-[58vh] max-w-full rounded-2xl shadow-xl object-contain mx-auto border border-white/10"
+                  />
+                  <div className="absolute top-3 right-3">
+                    <a
+                      href={previewProofOrder.proofImageUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 bg-black/70 hover:bg-black text-white text-xs font-bold rounded-xl backdrop-blur-xs transition flex items-center gap-1.5 border border-white/20"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                      <span>Buka Ukuran Penuh</span>
+                    </a>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-stone-400 text-xs italic">Bukti gambar tidak tersedia</p>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between shrink-0">
+              <button
+                type="button"
+                onClick={() => setPreviewProofOrder(null)}
+                className="px-4 py-2 border border-gray-300 rounded-xl text-xs font-semibold text-gray-700 hover:bg-white transition cursor-pointer"
+              >
+                Tutup
+              </button>
+
+              {previewProofOrder.status === "PENDING" && (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRejectModalOrder(previewProofOrder);
+                      setRejectReasonInput("Bukti transfer tidak valid atau nominal tidak sesuai.");
+                    }}
+                    disabled={processingOrderAction}
+                    className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 rounded-xl text-xs font-bold transition cursor-pointer disabled:opacity-50"
+                  >
+                    Tolak Transaksi
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleApproveOrder(previewProofOrder.id)}
+                    disabled={processingOrderAction}
+                    className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                  >
+                    {processingOrderAction ? "Memproses..." : "Konfirmasi LUNAS"}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal Tolak Transaksi ── */}
+      {rejectModalOrder && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-150">
+          <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl p-6 border border-gray-100 space-y-4">
+            <div>
+              <h3 className="font-bold text-gray-900 text-base">Tolak Pembayaran</h3>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Invoice: <span className="font-mono font-bold text-gray-800">{rejectModalOrder.invoiceNumber}</span>
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-gray-700">
+                Alasan Penolakan (akan disimpan di sistem):
+              </label>
+              <textarea
+                rows={3}
+                value={rejectReasonInput}
+                onChange={(e) => setRejectReasonInput(e.target.value)}
+                placeholder="Contoh: Bukti transfer buram / dana belum masuk rekening / nominal tidak sesuai"
+                className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500 transition resize-none"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+              <button
+                type="button"
+                onClick={() => setRejectModalOrder(null)}
+                className="px-4 py-2 border border-gray-300 rounded-xl text-xs font-semibold text-gray-700 hover:bg-gray-50 transition cursor-pointer"
+              >
+                Batalkan
+              </button>
+              <button
+                type="button"
+                onClick={handleRejectOrder}
+                disabled={processingOrderAction}
+                className="px-5 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer disabled:opacity-50"
+              >
+                {processingOrderAction ? "Memproses..." : "Tolak Pesanan"}
+              </button>
+            </div>
           </div>
         </div>
       )}

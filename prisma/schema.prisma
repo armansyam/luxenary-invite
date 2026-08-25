@@ -74,8 +74,12 @@ model Order {
   planType          PlanType
   amount            Decimal
   status            OrderStatus @default(PENDING)
+  paymentMethod     String?     @default("GATEWAY") // GATEWAY | MANUAL_TRANSFER
   paymentGatewayRef String?
   snapToken         String?
+  proofImageUrl     String?
+  proofUploadedAt   DateTime?
+  rejectReason      String?
   paidAt            DateTime?
   expiredAt         DateTime?
   createdAt         DateTime    @default(now())
@@ -132,6 +136,7 @@ model Invitation {
   rsvps   Rsvp[]
   wishes  Wish[]
   boothSessions BoothSession[]
+  guestMemories GuestMemory[]
 
   @@unique([groomSlug, brideSlug, invitationSlug])
   @@map("invitations")
@@ -218,6 +223,26 @@ model Wish {
   invitation Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
 
   @@map("wishes")
+}
+
+// ============================================================
+// 8B. GUEST MEMORIES (Foto & Video Kenangan Tamu Pasca-Acara)
+// ============================================================
+model GuestMemory {
+  id           String     @id @default(uuid())
+  invitationId String
+  senderName   String
+  senderEmail  String
+  message      String?
+  mediaType    String     @default("PHOTO") // "PHOTO" | "VIDEO"
+  mediaUrl     String
+  thumbnailUrl String?
+  driveFileId  String?
+  createdAt    DateTime   @default(now())
+
+  invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+
+  @@map("guest_memories")
 }
 
 // ============================================================

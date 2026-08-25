@@ -40,8 +40,11 @@ export async function POST(req: Request) {
       params.append("client_secret", clientSecret);
     }
     params.append("code", "probe_test_token_validation");
-    params.append("grant_type", "authorization_code");
-    params.append("redirect_uri", "http://localhost:3000/api/auth/callback/google");
+    const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
+    const protocol = req.headers.get("x-forwarded-proto") || (host?.includes("localhost") ? "http" : "https");
+    const appOrigin = host ? `${protocol}://${host}` : (process.env.NEXTAUTH_URL || process.env.APP_URL || "http://localhost:3000");
+
+    params.append("redirect_uri", `${appOrigin}/api/auth/callback/google`);
 
     const googleRes = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",

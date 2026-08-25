@@ -3,7 +3,6 @@ import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 
 declare global {
   // allow global `var prisma` in development (hot reloading)
-  // eslint-disable-next-line no-var
   var prisma: PrismaClient | undefined;
 }
 

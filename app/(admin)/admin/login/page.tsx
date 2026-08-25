@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 export default function AdminLoginPage() {
+  const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -31,7 +33,7 @@ export default function AdminLoginPage() {
         setError("Kredensial administrator salah atau akses ditolak. Periksa kembali username dan password.");
         setLoading(false);
       } else {
-        window.location.href = "/admin";
+        router.replace("/admin");
       }
     } catch (e) {
       console.error(e);

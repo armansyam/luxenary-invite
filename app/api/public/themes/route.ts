@@ -12,12 +12,21 @@ export async function GET() {
     });
 
     const themes = dbThemes.map((t) => {
-      const demoData = DEMO_REGISTRY[t.id.toLowerCase()];
+      const themeKey = t.id.toLowerCase();
+      const demoData = DEMO_REGISTRY[themeKey];
       const tagline = t.description || demoData?.tagline || "";
+      const series =
+        t.series ||
+        (t.category.toLowerCase() === "premium"
+          ? "Premium"
+          : t.category.toLowerCase() === "traditional"
+          ? "Traditional"
+          : "Modern");
+
       return {
         id: t.id,
         name: t.name,
-        series: t.series || (t.category.toLowerCase() === "premium" ? "Premium" : t.category.toLowerCase() === "traditional" ? "Traditional" : "Modern"),
+        series: series,
         category: t.category.toUpperCase(),
         tagline: tagline,
         desc: tagline,
@@ -29,7 +38,8 @@ export async function GET() {
         "Cache-Control": "no-store, no-cache, must-revalidate",
       },
     });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const errorMsg = error instanceof Error ? error.message : "Gagal memuat daftar tema";
+    return NextResponse.json({ error: errorMsg }, { status: 500 });
   }
 }

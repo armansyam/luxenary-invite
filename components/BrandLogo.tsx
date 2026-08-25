@@ -52,7 +52,6 @@ export function BrandLogo({ size = "md", lightBg = false, showName = false, bran
         } shadow-sm`}
       >
         {hasLogo ? (
-          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={LOGO_URL}
             alt="Logo"

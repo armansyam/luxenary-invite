@@ -1,8 +1,7 @@
-import { renderTemplateFile } from "@/lib/renderTemplate";
-import { composeDemoTemplateData } from "@/lib/demoRegistry";
 import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import { compileAndSaveStaticDemo } from "@/lib/demoPublisher";
 
 export const dynamic = "force-dynamic";
 
@@ -11,32 +10,59 @@ export async function GET(
   { params }: { params: Promise<{ theme: string }> }
 ) {
   const { theme } = await params;
-  const { searchParams } = new URL(req.url);
-  const paletteKey = searchParams.get("palette") || "champagne";
-
   const cleanTheme = theme.toLowerCase().trim();
 
-  // Dynamic file discovery across all theme subfolders (premium, traditional, modern, root)
-  const premiumPath = path.join(process.cwd(), "themes", "premium", `${cleanTheme}.html`);
-  const traditionalPath = path.join(process.cwd(), "themes", "traditional", `${cleanTheme}.html`);
-  const modernPath = path.join(process.cwd(), "themes", "modern", `${cleanTheme}.html`);
-  const rootPath = path.join(process.cwd(), "themes", `${cleanTheme}.html`);
+  const staticFilePath = path.join(process.cwd(), "public", "demo", cleanTheme, "index.html");
 
-  const themeExists =
-    fs.existsSync(premiumPath) ||
-    fs.existsSync(traditionalPath) ||
-    fs.existsSync(modernPath) ||
-    fs.existsSync(rootPath);
+  // 1. If static compiled demo exists, serve it directly (Instant < 2ms response)
+  if (fs.existsSync(staticFilePath)) {
+    const staticHtml = fs.readFileSync(staticFilePath, "utf-8");
+    return new NextResponse(staticHtml, {
+      headers: {
+        "Content-Type": "text/html; charset=utf-8",
+        "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
+      },
+    });
+  }
 
-  const selectedTheme = themeExists ? cleanTheme : "kalandra";
+  // 2. Fallback: Compile on the fly, save to disk for future requests, and return
+  try {
+    let customDemoData = undefined;
+    try {
+      const { prisma } = await import("@/lib/prisma");
+      const setting = await prisma.adminSetting.findUnique({
+        where: { key: `theme_demo_${cleanTheme}` },
+      });
+      if (setting && setting.value) {
+        customDemoData = JSON.parse(setting.value);
+      }
+    } catch {}
 
-  const data = composeDemoTemplateData(selectedTheme, paletteKey);
-  const html = renderTemplateFile(selectedTheme, data);
+    compileAndSaveStaticDemo(cleanTheme, customDemoData);
 
-  return new NextResponse(html, {
-    headers: {
-      "Content-Type": "text/html; charset=utf-8",
-      "Cache-Control": "no-store, max-age=0, must-revalidate",
-    },
-  });
+    if (fs.existsSync(staticFilePath)) {
+      const compiledHtml = fs.readFileSync(staticFilePath, "utf-8");
+      return new NextResponse(compiledHtml, {
+        headers: {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
+        },
+      });
+    }
+  } catch (err) {
+    console.error("[StaticDemoServeError]:", err);
+  }
+
+  // 3. Ultimate Fallback to kalandra static demo
+  const fallbackPath = path.join(process.cwd(), "public", "demo", "kalandra", "index.html");
+  if (fs.existsSync(fallbackPath)) {
+    const fallbackHtml = fs.readFileSync(fallbackPath, "utf-8");
+    return new NextResponse(fallbackHtml, {
+      headers: {
+        "Content-Type": "text/html; charset=utf-8",
+      },
+    });
+  }
+
+  return new NextResponse("Theme not found", { status: 404 });
 }

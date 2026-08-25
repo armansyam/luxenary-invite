@@ -1,9 +1,9 @@
 import { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { composeTemplateData } from "@/lib/themeEngine";
-import { renderTemplateFile } from "@/lib/renderTemplate";
 import { generateInvitationMetadata } from "@/lib/metadataHelper";
+import { isSubdomainExpired } from "@/lib/domainUtils";
+import { getPublishedHtml, buildAndSavePublishedHtml } from "@/lib/staticPublisher";
 
 interface PageProps {
   params: Promise<{ subdomain: string }>;
@@ -15,51 +15,66 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   const { to } = await searchParams;
   if (!subdomain) return {};
 
-  let invitation = await prisma.invitation.findUnique({
+  const invitation = await prisma.invitation.findUnique({
     where: { subdomain },
   });
-
-  if (!invitation && subdomain.includes("-")) {
-    const [groom, bride] = subdomain.split("-");
-    if (groom && bride) {
-      invitation = await prisma.invitation.findFirst({
-        where: { groomSlug: groom, brideSlug: bride },
-      });
-    }
-  }
 
   if (!invitation) return {};
 
   return generateInvitationMetadata(invitation.id, to);
 }
 
-export default async function SubdomainInvitationPage({ params }: PageProps) {
+export default async function SubdomainInvitationPage({ params, searchParams }: PageProps) {
   const { subdomain } = await params;
+  const resolvedSearchParams = await searchParams;
+  const to = resolvedSearchParams?.to;
+
   if (!subdomain) notFound();
 
-  // Find invitation by unique subdomain
-  let invitation = await prisma.invitation.findUnique({
+  // Strict lookup by active unique subdomain
+  const invitation = await prisma.invitation.findUnique({
     where: { subdomain },
   });
 
-  // Fallback: check if subdomain matches groom-bride slug combination
-  if (!invitation && subdomain.includes("-")) {
-    const [groom, bride] = subdomain.split("-");
-    if (groom && bride) {
-      invitation = await prisma.invitation.findFirst({
-        where: { groomSlug: groom, brideSlug: bride },
-      });
-    }
+  if (!invitation) {
+    // If subdomain is vacant / released, redirect to homepage with info
+    redirect("/?notice=subdomain-available");
   }
 
-  if (!invitation) {
+  // Check if subdomain has expired (> 7 days post event)
+  let eventDateToTest: string | null = null;
+  try {
+    if (invitation.eventData) {
+      const parsed = JSON.parse(invitation.eventData);
+      if (Array.isArray(parsed) && parsed[0]?.date) {
+        eventDateToTest = parsed[0].date;
+      }
+    }
+  } catch {}
+
+  if (isSubdomainExpired(eventDateToTest, 7)) {
+    // Auto-release subdomain back to pool (invitation remains published on canonical path)
+    await prisma.invitation.update({
+      where: { id: invitation.id },
+      data: { subdomain: null },
+    });
+
+    // Seamlessly redirect to the permanent canonical path
+    const query = to ? `?to=${encodeURIComponent(to)}` : "";
+    redirect(`/${invitation.groomSlug}-${invitation.brideSlug}/${invitation.invitationSlug}${query}`);
+  }
+
+  // 1. Direct Static Serving: Load standalone HTML file if already baked
+  let html = getPublishedHtml(invitation.id);
+
+  // 2. If not baked yet, compile standalone HTML and save for future instant requests
+  if (!html) {
+    html = await buildAndSavePublishedHtml(invitation.id);
+  }
+
+  if (!html) {
     notFound();
   }
-
-  const data = await composeTemplateData(invitation.id);
-  if (!data) notFound();
-
-  const html = renderTemplateFile(invitation.themeId || "kila", data);
 
   return (
     <div className="invitation-container">
@@ -67,3 +82,4 @@ export default async function SubdomainInvitationPage({ params }: PageProps) {
     </div>
   );
 }
+

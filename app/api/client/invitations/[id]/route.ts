@@ -278,6 +278,16 @@ export async function PUT(
       }
     }
 
+    // If invitation is PUBLISHED, auto-rebake standalone HTML file
+    if (updated.status === "PUBLISHED") {
+      try {
+        const { buildAndSavePublishedHtml } = await import("@/lib/staticPublisher");
+        await buildAndSavePublishedHtml(updated.id);
+      } catch (bakeErr) {
+        console.error("Auto-bake standalone HTML failed:", bakeErr);
+      }
+    }
+
     return NextResponse.json({ ...updated, ...getInvitationLockStatus(updated) });
   } catch (err: any) {
     console.error("Error updating invitation:", err);

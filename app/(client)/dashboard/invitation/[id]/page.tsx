@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useParams } from "next/navigation";
 
 const THEMES = [
@@ -153,6 +153,11 @@ export default function EditInvitation() {
   const [uploadingAudio, setUploadingAudio] = useState(false);
   const [adminWhatsapp, setAdminWhatsapp] = useState<string>("6281234567890");
 
+  // Dual-Native Studio State: Form Mode vs Live Visual Editor
+  const [activeStudioTab, setActiveStudioTab] = useState<"form" | "live">("form");
+  const [previewDevice, setPreviewDevice] = useState<"mobile" | "desktop">("mobile");
+  const liveIframeRef = useRef<HTMLIFrameElement>(null);
+
   const isUploading = uploadingCount > 0;
   const handleUploadStart = () => setUploadingCount((c) => c + 1);
   const handleUploadEnd = () => setUploadingCount((c) => Math.max(0, c - 1));
@@ -209,18 +214,66 @@ export default function EditInvitation() {
 
   // Independent Section Collapse States (true = collapsed/tutup, false = expanded/buka)
   const defaultCollapsed: Record<string, boolean> = {
-    sec1: true,  // Tema & Warna
-    sec2: true,  // Sampul & Visual
-    sec3: true,  // Profil Mempelai
-    sec4: true,  // Doa Pembuka
-    sec5: true,  // Rangkaian Acara
-    sec6: true,  // Kisah Cinta
-    sec7: true,  // Galeri & Video
-    sec8: true,  // Amplop & Rekening
-    sec9: true,  // Fitur Tambahan
+    sec1: true,  // 1. Tema & Warna
+    sec2: true,  // 2. Sampul & Musik
+    sec3: true,  // 3. Profil Mempelai
+    sec4: true,  // 4. Doa Pembuka & Pappaseng
+    sec5: true,  // 5. Rangkaian Acara
+    sec6: true,  // 6. Pengaturan QR Code & Check-in
+    sec7: true,  // 7. Kisah Cinta (Love Story)
+    sec8: true,  // 8. Pengaturan Galeri Foto & Video
+    sec9: true,  // 9. Rekening Bank & Hadiah Digital
+    sec10: true, // 10. Panduan Busana (Dress Code)
+    sec11: true, // 11. Siaran Langsung (Live Streaming)
+    sec12: true, // 12. Filter Instagram Story
+    sec13: true, // 13. Turut Mengundang & Himbauan
+    sec14: true, // 14. Galeri Kenangan Tamu (After-Event)
   };
 
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>(defaultCollapsed);
+  const [guestMemoriesList, setGuestMemoriesList] = useState<any[]>([]);
+  const [loadingMemories, setLoadingMemories] = useState(false);
+  const [deletingMemoryId, setDeletingMemoryId] = useState<string | null>(null);
+
+  const fetchGuestMemories = useCallback(async () => {
+    if (!invitationId) return;
+    setLoadingMemories(true);
+    try {
+      const res = await fetch(`/api/client/invitations/${invitationId}/memories`);
+      const data = await res.json();
+      if (data.success) {
+        setGuestMemoriesList(data.memories || []);
+      }
+    } catch (e) {
+      console.error("Failed to fetch guest memories:", e);
+    } finally {
+      setLoadingMemories(false);
+    }
+  }, [invitationId]);
+
+  useEffect(() => {
+    fetchGuestMemories();
+  }, [fetchGuestMemories]);
+
+  const handleDeleteMemory = async (memoryId: string) => {
+    if (!confirm("Apakah Anda yakin ingin menghapus foto/video kenangan ini?")) return;
+    setDeletingMemoryId(memoryId);
+    try {
+      const res = await fetch(`/api/client/invitations/${invitationId}/memories?memoryId=${memoryId}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (data.success) {
+        setGuestMemoriesList((prev) => prev.filter((m) => m.id !== memoryId));
+      } else {
+        alert(data.error || "Gagal menghapus.");
+      }
+    } catch (err: any) {
+      alert(err.message || "Gagal menghapus.");
+    } finally {
+      setDeletingMemoryId(null);
+    }
+  };
 
   // Restore persisted collapsed state from localStorage on load
   useEffect(() => {
@@ -433,6 +486,62 @@ export default function EditInvitation() {
     }
   };
 
+  const updateCustomLabel = (key: string, value: string) => {
+    setInvitation((prev: any) => {
+      let currentFs: any = {};
+      try {
+        currentFs = typeof prev.featureSettings === "object" ? prev.featureSettings : JSON.parse(prev.featureSettings || "{}");
+      } catch {
+        currentFs = {};
+      }
+      const customLabels = currentFs.customLabels || {};
+      return {
+        ...prev,
+        featureSettings: {
+          ...currentFs,
+          customLabels: {
+            ...customLabels,
+            [key]: value,
+          },
+        },
+      };
+    });
+  };
+
+  const getCustomLabel = (key: string, fallback: string = "") => {
+    const fs = getFeatureSetting("customLabels", {});
+    return fs && fs[key] !== undefined ? fs[key] : fallback;
+  };
+
+  const getSavedCustomLabel = (key: string, fallback: string = "") => {
+    const fs = getSavedFeatureSetting("customLabels", {});
+    return fs && fs[key] !== undefined ? fs[key] : fallback;
+  };
+
+  // Two-Way Sync: Listen to Live Visual Editor messages
+  useEffect(() => {
+    const handleMessage = (e: MessageEvent) => {
+      if (!e.data || typeof e.data !== "object") return;
+      if (e.data.type === "LUX_INLINE_EDIT_CHANGE") {
+        const { field, value } = e.data;
+        if (!field) return;
+
+        if (field.startsWith("customLabels.")) {
+          const labelKey = field.replace("customLabels.", "");
+          updateCustomLabel(labelKey, value);
+        } else {
+          setInvitation((prev: any) => ({ ...prev, [field]: value }));
+        }
+      } else if (e.data.type === "LUX_INLINE_SAVE_REQUEST") {
+        saveSection();
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [invitation, events, stories, bankList, media]);
+
   // Precise Per-Section Dirty State Tracking
   const isDirty = useMemo(() => {
     if (!savedSnapshot || !invitation) {
@@ -537,6 +646,15 @@ export default function EditInvitation() {
       Boolean(getFeatureSetting("showTurutMengundang", true)) !== Boolean(getSavedFeatureSetting("showTurutMengundang", true))
     );
 
+    // Sec 14: Galeri Kenangan Tamu (After-Event)
+    const dirty14 = (
+      Boolean(getFeatureSetting("showGuestMemories", true)) !== Boolean(getSavedFeatureSetting("showGuestMemories", true)) ||
+      getFeatureSetting("guestMemoriesDriveFolderUrl", "") !== getSavedFeatureSetting("guestMemoriesDriveFolderUrl", "") ||
+      getCustomLabel("memoriesTitle", "Abadikan Momen Indah") !== getSavedCustomLabel("memoriesTitle", "Abadikan Momen Indah") ||
+      getCustomLabel("memoriesEyebrow", "AFTER-EVENT MEMORIES") !== getSavedCustomLabel("memoriesEyebrow", "AFTER-EVENT MEMORIES") ||
+      getCustomLabel("memoriesSubtitle", "") !== getSavedCustomLabel("memoriesSubtitle", "")
+    );
+
     return {
       sec1: dirty1,
       sec2: dirty2,
@@ -551,7 +669,9 @@ export default function EditInvitation() {
       sec11: dirty11,
       sec12: dirty12,
       sec13: dirty13,
+      sec14: dirty14,
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [invitation, media, events, stories, bankList, savedSnapshot]);
 
   const hasAnyDirty = Object.values(isDirty).some(Boolean);
@@ -743,18 +863,140 @@ export default function EditInvitation() {
           </div>
 
           <a
-            href={`/demo/preview?id=${invitationId}`}
+            href={`/api/client/invitations/${invitationId}/preview?mode=edit`}
             target="_blank"
             rel="noreferrer"
             className="px-4 py-2 bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-xl text-xs transition flex items-center gap-1.5 shadow-xs"
           >
-            <span>Live Preview</span>
+            <span>Buka di Tab Baru</span>
             <svg className="w-3.5 h-3.5 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>
           </a>
         </div>
       </div>
+
+      {/* Dual Native Studio Mode Switcher */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between p-2 bg-white rounded-2xl border border-stone-200 shadow-xs gap-3">
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setActiveStudioTab("form")}
+            className={`flex-1 sm:flex-none px-5 py-2.5 rounded-xl font-bold text-xs transition flex items-center justify-center gap-2 ${
+              activeStudioTab === "form"
+                ? "bg-stone-900 text-white shadow-sm"
+                : "text-stone-600 hover:text-stone-900 bg-stone-50"
+            }`}
+          >
+            <svg className="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            <span>Edit Undangan (Form Data)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveStudioTab("live")}
+            className={`flex-1 sm:flex-none px-5 py-2.5 rounded-xl font-bold text-xs transition flex items-center justify-center gap-2 ${
+              activeStudioTab === "live"
+                ? "bg-amber-800 text-white shadow-sm"
+                : "text-stone-600 hover:text-stone-900 bg-stone-50"
+            }`}
+          >
+            <svg className="w-4 h-4 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+            </svg>
+            <span>Live Editor (Visual Click-to-Edit)</span>
+          </button>
+        </div>
+
+        {activeStudioTab === "live" && (
+          <div className="flex items-center justify-end gap-2 pr-1">
+            <div className="flex items-center bg-stone-100 p-1 rounded-xl border border-stone-200 text-xs">
+              <button
+                type="button"
+                onClick={() => setPreviewDevice("mobile")}
+                className={`px-3 py-1.5 rounded-lg font-semibold transition flex items-center gap-1.5 ${previewDevice === "mobile" ? "bg-white text-stone-900 shadow-xs" : "text-stone-600 hover:text-stone-900"}`}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                <span>Mobile</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setPreviewDevice("desktop")}
+                className={`px-3 py-1.5 rounded-lg font-semibold transition flex items-center gap-1.5 ${previewDevice === "desktop" ? "bg-white text-stone-900 shadow-xs" : "text-stone-600 hover:text-stone-900"}`}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                <span>Layar Penuh</span>
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (liveIframeRef.current) {
+                  liveIframeRef.current.src = liveIframeRef.current.src;
+                }
+              }}
+              title="Muat Ulang Canvas"
+              className="p-2 bg-stone-100 hover:bg-stone-200 border border-stone-200 rounded-xl text-stone-700 transition"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+          </div>
+        )}
+      </div>
+
+      {activeStudioTab === "live" ? (
+        /* ==========================================================================
+           LIVE VISUAL INLINE EDITOR CANVAS (CANVA / NOTION STYLE)
+           ========================================================================== */
+        <div className="bg-stone-950 rounded-3xl p-4 sm:p-8 border border-stone-800 shadow-xl flex flex-col items-center min-h-[850px]">
+          <div className="w-full flex items-center justify-between pb-4 border-b border-stone-800 mb-6 text-xs text-stone-400">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span className="text-white font-medium">Mode Visual Click-to-Edit</span>
+              <span className="text-stone-600">•</span>
+              <span className="hidden sm:inline">Klik langsung teks judul, kutipan doa, atau nama untuk mengedit</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => saveSection()}
+                disabled={saving}
+                className="px-4 py-1.5 bg-gradient-to-r from-amber-700 to-amber-600 hover:from-amber-600 hover:to-amber-500 text-white font-bold rounded-lg text-xs transition shadow-sm"
+              >
+                {saving ? "Menyimpan..." : "Simpan Semua"}
+              </button>
+            </div>
+          </div>
+
+          <div
+            className={`transition-all duration-300 rounded-2xl overflow-hidden border border-stone-700/60 shadow-2xl bg-black flex justify-center ${
+              previewDevice === "mobile"
+                ? "w-[390px] h-[780px] max-w-full"
+                : "w-full h-[850px]"
+            }`}
+          >
+            <iframe
+              ref={liveIframeRef}
+              src={`/api/client/invitations/${invitationId}/preview?mode=edit`}
+              className="w-full h-full border-0 bg-stone-900"
+              title="Live Visual Editor"
+            />
+          </div>
+        </div>
+      ) : (
+        /* ==========================================================================
+           STRUCTURED FORM EDITOR (13 SECTIONS)
+           ========================================================================== */
+        <div className="space-y-6">
 
       {/* 1. SEKSI TEMA & PALET WARNA (SEC1) */}
       <section className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
@@ -1071,9 +1313,9 @@ export default function EditInvitation() {
                         <p className="text-xs font-bold text-stone-900 truncate">
                           {MUSIC_PRESETS.find((p) => p.url === invitation.musicUrl)?.title ||
                             (invitation.musicUrl?.includes("uploads/invitations")
-                              ? "🎵 File Musik Khusus (Upload Sendiri)"
+                              ? "File Musik Khusus (Upload Sendiri)"
                               : invitation.musicUrl?.includes("youtube.com") || invitation.musicUrl?.includes("youtu.be")
-                              ? "▶ Lagu dari YouTube"
+                              ? "Lagu dari YouTube"
                               : (invitation.musicUrl ? "Musik Kustom (Tautan Eksternal)" : "Canon in D — Johann Pachelbel"))}
                         </p>
                         <span className="text-[10px] text-stone-500 block truncate">
@@ -1444,7 +1686,7 @@ export default function EditInvitation() {
         {collapsed.sec4 ? (
           <div className="p-5 bg-stone-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="space-y-0.5 text-xs text-stone-600 max-w-2xl">
-              <p className="italic line-clamp-1">"{invitation.openingQuote || "-"}"</p>
+              <p className="italic line-clamp-1">&ldquo;{invitation.openingQuote || "-"}&rdquo;</p>
               <p className="font-bold text-amber-900">{invitation.openingQuoteRef || "-"}</p>
             </div>
             <button
@@ -1457,17 +1699,89 @@ export default function EditInvitation() {
           </div>
         ) : (
           <div className="p-5 sm:p-7 space-y-4">
+            {/* Quick Presets for Multi-Religious / Universal Quotes */}
             <div>
-              <label className="block text-xs font-bold text-stone-700 mb-1">Teks Kutipan Doa</label>
+              <label className="block text-xs font-bold text-stone-700 mb-2">Pilih Preset Cepat Doa / Ayat:</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                {[
+                  {
+                    label: "Islam — QS. Ar-Rum : 21",
+                    quote: "Dan di antara tanda-tanda (kebesaran)-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri, agar kamu cenderung dan merasa tenteram kepadanya, dan Dia menjadikan di antaramu rasa kasih dan sayang.",
+                    ref: "QS. AR-RUM : 21",
+                    title: "Pappaseng & Doa",
+                  },
+                  {
+                    label: "Kristen — 1 Korintus 13:4-7",
+                    quote: "Kasih itu sabar; kasih itu murah hati; ia tidak cemburu. Ia tidak memegahkan diri dan tidak sombong. Ia menutupi segala sesuatu, percaya segala sesuatu, mengharapkan segala sesuatu, sabar menanggung segala sesuatu.",
+                    ref: "1 KORINTUS 13 : 4-7",
+                    title: "Ayat Suci & Doa",
+                  },
+                  {
+                    label: "Kristen — Kejadian 2:24",
+                    quote: "Sebab itu seorang laki-laki akan meninggalkan ayahnya dan ibunya dan bersatu dengan isterinya, sehingga keduanya menjadi satu daging.",
+                    ref: "KEJADIAN 2 : 24",
+                    title: "Pemberkatan & Doa",
+                  },
+                  {
+                    label: "Hindu — Rgveda X.85.42",
+                    quote: "Semoga kedua mempelai ini tetap bersatu, semoga panjang umur dan menikmati kebahagiaan bersama anak cucu, bersukacita dalam rumah tangga mereka sendiri.",
+                    ref: "RGVEDA X.85.42",
+                    title: "Doa & Sloka",
+                  },
+                  {
+                    label: "Buddha — Mangala Sutta",
+                    quote: "Saling menghormati dan hidup dalam keselarasan, saling mendukung dalam kebajikan dan kebijaksanaan, itulah berkah utama dalam hidup berumah tangga.",
+                    ref: "MANGALA SUTTA",
+                    title: "Berkah & Doa",
+                  },
+                  {
+                    label: "Universal — Janji Suci",
+                    quote: "Dan jika aku harus memilih kembali dalam seratus kehidupan, dalam seratus dunia, dalam versi realitas apa pun, aku akan tetap mencari dan memilih dirimu.",
+                    ref: "OUR SACRED PROMISE",
+                    title: "Doa & Harapan",
+                  },
+                ].map((p, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      updateField("openingQuote", p.quote);
+                      updateField("openingQuoteRef", p.ref);
+                      updateCustomLabel("quoteTitle", p.title);
+                    }}
+                    className="text-left p-2.5 bg-stone-50 hover:bg-amber-50 border border-stone-200 hover:border-amber-300 rounded-xl text-[11px] font-semibold text-stone-800 hover:text-amber-950 transition"
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-stone-100">
+              <Input
+                label="Judul Seksi Doa (Bebas Kustom)"
+                value={getCustomLabel("quoteTitle", "Pappaseng & Doa")}
+                onChange={(v) => updateCustomLabel("quoteTitle", v)}
+                placeholder="Pappaseng & Doa / Doa & Harapan / Ayat Suci"
+              />
+              <Input
+                label="Referensi Sumber Kutipan"
+                value={invitation.openingQuoteRef || ""}
+                onChange={(v) => updateField("openingQuoteRef", v)}
+                placeholder="QS. AR-RUM : 21 / 1 KORINTUS 13:4-7"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-stone-700 mb-1">Teks Kutipan Doa / Ayat / Puisi</label>
               <textarea
                 rows={3}
                 value={invitation.openingQuote || ""}
                 onChange={(e) => updateField("openingQuote", e.target.value)}
                 className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30 leading-relaxed"
-                placeholder="Dan di antara tanda-tanda (kebesaran)-Nya ialah Dia menciptakan pasangan-pasangan untukmu..."
+                placeholder="Tuliskan teks doa, ayat, atau kutipan indah di sini..."
               />
             </div>
-            <Input label="Referensi Sumber Kutipan" value={invitation.openingQuoteRef || ""} onChange={(v) => updateField("openingQuoteRef", v)} placeholder="QS. AR-RUM : 21" />
 
             <div className="pt-4 border-t border-stone-100 flex justify-end">
               <button
@@ -1732,6 +2046,12 @@ export default function EditInvitation() {
 
             {showStory && (
               <div className="space-y-3 mt-2">
+                <Input
+                  label="Judul Seksi Kisah Cinta (Bebas Kustom)"
+                  value={getCustomLabel("storyTitle", "Kisah Cinta")}
+                  onChange={(v) => updateCustomLabel("storyTitle", v)}
+                  placeholder="Kisah Cinta / Our Love Story / Perjalanan Kami"
+                />
                 {stories.map((st, idx) => (
                   <div key={idx} className="p-4 rounded-2xl border border-stone-200 bg-stone-50/50 space-y-2">
                     <div className="flex items-center justify-between">
@@ -1821,6 +2141,13 @@ export default function EditInvitation() {
 
             {showGallery && (
               <div className="space-y-4">
+                <Input
+                  label="Judul Seksi Galeri (Bebas Kustom)"
+                  value={getCustomLabel("galleryTitle", "Galeri Momen")}
+                  onChange={(v) => updateCustomLabel("galleryTitle", v)}
+                  placeholder="Galeri Momen / Our Moments / Ceritaku / Album Kenangan"
+                />
+
                 <div className="p-4 bg-amber-50/60 border border-amber-200/80 rounded-2xl space-y-2">
                   <h4 className="text-xs font-bold text-amber-900">Video Teaser Pre-Wedding (YouTube / Vimeo)</h4>
                   <p className="text-[11px] text-stone-600">Tempelkan link video YouTube biasa (misal: <code>https://youtu.be/...</code>) untuk memutar teaser video di atas galeri.</p>
@@ -2369,6 +2696,248 @@ export default function EditInvitation() {
           </div>
         )}
       </section>
+
+      {/* 14. SEKSI GALERI KENANGAN TAMU (SEC14) */}
+      <section className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
+        <div className="p-5 sm:p-6 border-b border-stone-100 flex items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-base font-bold text-stone-900">14. Galeri Kenangan Tamu (After-Event)</h2>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-200">
+                Live Photo Drop
+              </span>
+            </div>
+            <p className="text-xs text-stone-500">Tampung foto candid &amp; video ucapan yang dibagikan tamu ke album Google Drive pengantin</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => toggleSection("sec14")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+              collapsed.sec14 ? "bg-amber-50 text-amber-900 hover:bg-amber-100" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+            }`}
+          >
+            {collapsed.sec14 ? "Kelola Kenangan" : "Tutup"}
+          </button>
+        </div>
+
+        {collapsed.sec14 ? (
+          <div className="p-5 bg-stone-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="text-xs text-stone-600 flex items-center gap-3">
+              <span>Status: <strong>{getFeatureSetting("showGuestMemories", true) ? "Aktif" : "Dinonaktifkan"}</strong></span>
+              <span className="text-stone-300">•</span>
+              <span><strong>{guestMemoriesList.length}</strong> Foto/Video Masuk</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => toggleSection("sec14")}
+              className="text-xs font-bold text-amber-800 hover:underline cursor-pointer"
+            >
+              Buka Pengaturan &rarr;
+            </button>
+          </div>
+        ) : (
+          <div className="p-5 sm:p-7 space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-xs font-bold text-stone-800 block">Aktifkan Seksi Galeri Kenangan Tamu:</span>
+                <span className="text-[11px] text-stone-500">Menampilkan tombol pop-up modal &ldquo;Bagikan Momen&rdquo; di halaman undangan</span>
+              </div>
+              <SectionHeaderToggle
+                label=""
+                checked={getFeatureSetting("showGuestMemories", true)}
+                onChange={(v) => updateFeatureSetting("showGuestMemories", v)}
+              />
+            </div>
+
+            {getFeatureSetting("showGuestMemories", true) && (
+              <div className="space-y-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-stone-700 mb-1">Judul Seksi di Undangan:</label>
+                    <input
+                      type="text"
+                      value={getCustomLabel("memoriesTitle", "Abadikan Momen Indah")}
+                      onChange={(e) => updateCustomLabel("memoriesTitle", e.target.value)}
+                      placeholder="Abadikan Momen Indah"
+                      className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-stone-700 mb-1">Eyebrow / Subjudul Atas:</label>
+                    <input
+                      type="text"
+                      value={getCustomLabel("memoriesEyebrow", "AFTER-EVENT MEMORIES")}
+                      onChange={(e) => updateCustomLabel("memoriesEyebrow", e.target.value)}
+                      placeholder="AFTER-EVENT MEMORIES"
+                      className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30 font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">Deskripsi / Ajakan Berbagi Momen:</label>
+                  <textarea
+                    rows={2}
+                    value={getCustomLabel("memoriesSubtitle", "Punya foto candid atau video seru selama menghadiri pernikahan kami? Bagikan momen spesial Anda langsung ke album pribadi kami.")}
+                    onChange={(e) => updateCustomLabel("memoriesSubtitle", e.target.value)}
+                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30 resize-none"
+                  />
+                </div>
+
+                {/* Google Drive Folder Link Container */}
+                <div className="p-4 rounded-2xl border border-amber-200 bg-amber-50/50 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-amber-950">
+                      Link Folder Google Drive Penampung (Opsional)
+                    </label>
+                    <span className="text-[10px] font-semibold text-amber-800 bg-amber-100/80 px-2 py-0.5 rounded-md">
+                      Stream CDN
+                    </span>
+                  </div>
+                  <input
+                    type="url"
+                    value={getFeatureSetting("guestMemoriesDriveFolderUrl", "")}
+                    onChange={(e) => updateFeatureSetting("guestMemoriesDriveFolderUrl", e.target.value)}
+                    placeholder="https://drive.google.com/drive/folders/1ABCxyz..."
+                    className="w-full p-2.5 bg-white border border-amber-300 rounded-xl text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700/30 font-mono"
+                  />
+                  <p className="text-[11px] text-amber-900/80 leading-relaxed">
+                    <strong>Panduan:</strong> Buat 1 folder di Google Drive Anda, ubah aksesnya menjadi <em>&ldquo;Siapa saja yang memiliki link (Viewer)&rdquo;</em>, lalu tempel link-nya di sini agar foto tamu otomatis ter-stream.
+                  </p>
+                </div>
+                {/* Link Permanen Galeri Kenangan Tamu */}
+                <div className="p-4 rounded-2xl border border-stone-200 bg-stone-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <span className="text-[10px] font-bold text-amber-800 tracking-wider uppercase block font-mono">
+                      LINK PERMANEN ALBUM KENANGAN (SEUMUR HIDUP)
+                    </span>
+                    <span className="text-xs font-mono font-bold text-stone-900 break-all">
+                      {typeof window !== "undefined" ? window.location.origin : "https://luxenary.id"}
+                      {`/${invitation.groomSlug}-${invitation.brideSlug}/${invitation.invitationSlug}/memories`}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const url = `${window.location.origin}/${invitation.groomSlug}-${invitation.brideSlug}/${invitation.invitationSlug}/memories`;
+                        navigator.clipboard.writeText(url);
+                        alert("Link galeri kenangan berhasil disalin!");
+                      }}
+                      className="px-3 py-1.5 bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 rounded-xl text-xs font-bold transition cursor-pointer shadow-2xs"
+                    >
+                      Salin Link
+                    </button>
+                    <a
+                      href={`/${invitation.groomSlug}-${invitation.brideSlug}/${invitation.invitationSlug}/memories`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs font-bold transition inline-flex items-center gap-1 shadow-2xs"
+                    >
+                      <span>Buka Galeri</span>
+                    </a>
+                  </div>
+                </div>
+
+                {/* Real-time Submissions Monitoring List */}
+                <div className="pt-4 border-t border-stone-200 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-bold text-stone-900 flex items-center gap-2">
+                      <span>Daftar Foto &amp; Video Masuk dari Tamu</span>
+                      <span className="px-2 py-0.5 bg-stone-200 text-stone-800 rounded-full text-[10px] font-mono">
+                        {guestMemoriesList.length}
+                      </span>
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={fetchGuestMemories}
+                      disabled={loadingMemories}
+                      className="text-xs text-amber-800 font-bold hover:underline cursor-pointer flex items-center gap-1.5"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      <span>Refresh</span>
+                    </button>
+                  </div>
+
+                  {guestMemoriesList.length === 0 ? (
+                    <div className="p-6 rounded-2xl bg-stone-50 border border-stone-200 text-center text-xs text-stone-500 font-medium">
+                      Belum ada kiriman foto atau video dari tamu. Saat acara berlangsung, foto yang dikirim tamu akan muncul di sini secara otomatis.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-96 overflow-y-auto pr-1">
+                      {guestMemoriesList.map((item) => (
+                        <div key={item.id} className="p-3 bg-stone-50 border border-stone-200 rounded-2xl flex gap-3 items-start relative group">
+                          <div className="w-16 h-16 rounded-xl overflow-hidden bg-stone-200 shrink-0 border border-stone-300 flex items-center justify-center">
+                            {item.mediaType === "VIDEO" ? (
+                              <div className="text-xs font-bold text-stone-600 text-center">Video</div>
+                            ) : (
+                              <img src={item.mediaUrl} alt={item.senderName} className="w-full h-full object-cover" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-1">
+                              <h4 className="text-xs font-bold text-stone-900 truncate">{item.senderName}</h4>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteMemory(item.id)}
+                                disabled={deletingMemoryId === item.id}
+                                className="text-[11px] text-rose-600 hover:text-rose-800 font-bold transition cursor-pointer p-1"
+                                title="Hapus kiriman ini"
+                              >
+                                {deletingMemoryId === item.id ? "..." : "✕"}
+                              </button>
+                            </div>
+                            <p className="text-[10px] text-stone-500 font-mono truncate">{item.senderEmail}</p>
+                            {item.message && (
+                              <p className="text-[11px] text-stone-700 mt-1 line-clamp-2 italic">
+                                &ldquo;{item.message}&rdquo;
+                              </p>
+                            )}
+                            <div className="flex items-center justify-between gap-2 mt-2 pt-1 border-t border-stone-200/60">
+                              <span className="text-[10px] text-stone-400">
+                                {new Date(item.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                              </span>
+                              <a
+                                href={item.mediaUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[10px] font-bold text-amber-800 hover:underline inline-flex items-center gap-1"
+                              >
+                                <span>Lihat Full ↗</span>
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="pt-4 border-t border-stone-100 flex justify-end">
+              <button
+                type="button"
+                onClick={() => saveSection("sec14")}
+                disabled={saving || !isDirty.sec14}
+                className={`px-5 py-2.5 font-bold rounded-xl text-xs transition flex items-center gap-2 shadow-xs ${
+                  !isDirty.sec14
+                    ? "bg-stone-100 text-stone-400 border border-stone-200 cursor-not-allowed"
+                    : "bg-amber-800 hover:bg-amber-900 text-white cursor-pointer"
+                }`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                <span>{!isDirty.sec14 ? "Tersimpan" : "Simpan Galeri Kenangan"}</span>
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
+
+        </div>
+      )}
 
     </div>
   );

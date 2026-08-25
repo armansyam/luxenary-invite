@@ -55,7 +55,7 @@ const WA_PRESETS = [
     name: "Modern & Santai",
     badge: "Teman / Sahabat",
     desc: "Cocok untuk teman sebaya, sahabat, atau rekan kerja",
-    text: `Halo {nama_tamu}! 👋\n\nKami mengundang kamu untuk hadir dan merayakan momen bahagia pernikahan kami:\n\n{link_undangan}\n\nInfo Kehadiran: {kuota_tamu} ({sesi_acara})\n\nBuka tautan di atas untuk melihat detail acara, lokasi maps, dan konfirmasi kehadiran (RSVP).\n\nCan't wait to celebrate with you!\n\nSalam hangat,\n{nama_mempelai}`,
+    text: `Halo {nama_tamu}!\n\nKami mengundang kamu untuk hadir dan merayakan momen bahagia pernikahan kami:\n\n{link_undangan}\n\nInfo Kehadiran: {kuota_tamu} ({sesi_acara})\n\nBuka tautan di atas untuk melihat detail acara, lokasi maps, dan konfirmasi kehadiran (RSVP).\n\nCan't wait to celebrate with you!\n\nSalam hangat,\n{nama_mempelai}`,
   },
   {
     id: "singkat",
@@ -92,6 +92,20 @@ export default function GuestsPage() {
     guestLimit: 2,
   });
 
+  const loadGuests = (invId: string) => {
+    setLoading(true);
+    fetch(`/api/client/guests/${invId}`)
+      .then((res) => res.json())
+      .then((data: Guest[]) => {
+        setGuests(Array.isArray(data) ? data : []);
+        setLoading(false);
+      })
+      .catch(() => {
+        setError("Gagal memuat daftar tamu");
+        setLoading(false);
+      });
+  };
+
   useEffect(() => {
     fetch(`/api/client/invitations`)
       .then((res) => res.json())
@@ -121,20 +135,6 @@ export default function GuestsPage() {
         setLoading(false);
       });
   }, []);
-
-  const loadGuests = (invId: string) => {
-    setLoading(true);
-    fetch(`/api/client/guests/${invId}`)
-      .then((res) => res.json())
-      .then((data: Guest[]) => {
-        setGuests(Array.isArray(data) ? data : []);
-        setLoading(false);
-      })
-      .catch(() => {
-        setError("Gagal memuat daftar tamu");
-        setLoading(false);
-      });
-  };
 
   const handleAddGuest = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -374,7 +374,9 @@ export default function GuestsPage() {
           <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs ${
             filterStatus === "all" ? "bg-stone-900 text-white" : "bg-stone-100 text-stone-600"
           }`}>
-            👥
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
           </div>
           <div>
             <span className="text-[10px] text-stone-400 font-bold uppercase tracking-wider block">Semua Tamu</span>
@@ -394,7 +396,9 @@ export default function GuestsPage() {
           <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs ${
             filterStatus === "SENT" ? "bg-emerald-700 text-white" : "bg-emerald-50 text-emerald-700"
           }`}>
-            ✓
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+            </svg>
           </div>
           <div>
             <span className="text-[10px] text-stone-400 font-bold uppercase tracking-wider block">Sudah Dikirim</span>
@@ -414,7 +418,9 @@ export default function GuestsPage() {
           <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs ${
             filterStatus === "PENDING" ? "bg-amber-700 text-white" : "bg-amber-50 text-amber-700"
           }`}>
-            ⏳
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
           </div>
           <div>
             <span className="text-[10px] text-stone-400 font-bold uppercase tracking-wider block">Belum Dikirim</span>
@@ -438,8 +444,8 @@ export default function GuestsPage() {
             <span className="text-[11px] font-bold text-stone-400 uppercase tracking-wider mr-1 shrink-0">Status:</span>
             {[
               { id: "all", label: "Semua Tamu", count: totalGuests },
-              { id: "SENT", label: "✓ Sudah Terkirim", count: sentCount },
-              { id: "PENDING", label: "⏳ Belum Terkirim", count: pendingCount },
+              { id: "SENT", label: "Sudah Terkirim", count: sentCount },
+              { id: "PENDING", label: "Belum Dikirim", count: pendingCount },
             ].map((tab) => {
               const isActive = filterStatus === tab.id;
               return (
@@ -780,13 +786,13 @@ export default function GuestsPage() {
                   <div className="p-3.5 bg-[#d9fdd3] text-stone-900 rounded-2xl rounded-tr-xs border border-emerald-200/80 shadow-xs text-xs whitespace-pre-wrap font-sans leading-relaxed break-words">
                     {renderWaText("Bpk. Abiyoga", 2, "Akad & Resepsi")}
                     <div className="text-right text-[9px] text-stone-400 mt-1 font-mono">
-                      12:00 ✓✓
+                      12:00
                     </div>
                   </div>
                 </div>
 
                 <div className="p-3 bg-white/80 rounded-xl border border-stone-200 text-[11px] text-stone-600 space-y-1">
-                  <span className="font-bold text-stone-800 block">💡 Tips Pengiriman:</span>
+                  <span className="font-bold text-stone-800 block">Panduan Pengiriman:</span>
                   <p>
                     Tautan <code className="text-amber-800 font-bold font-mono text-[10px]">{"{link_undangan}"}</code> otomatis mengarah ke subdomain undangan Anda dan menyertakan nama tamu sehingga ucapan nama tamu personal otomatis muncul saat mereka membuka web.
                   </p>
@@ -800,7 +806,7 @@ export default function GuestsPage() {
               <div>
                 {templateSaveSuccess && (
                   <span className="text-xs font-bold text-emerald-700 flex items-center gap-1">
-                    ✓ Template WhatsApp Berhasil Disimpan!
+                    Template WhatsApp Berhasil Disimpan
                   </span>
                 )}
               </div>

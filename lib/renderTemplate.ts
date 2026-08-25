@@ -214,11 +214,206 @@ const AUTOPLAY_SHOWCASE_SCRIPT = `
 </script>
 `;
 
+const INLINE_LIVE_EDITOR_SCRIPT = `
+<style id="luxInlineEditorStyles">
+  [data-lux-field] {
+    outline: 1.5px dashed rgba(212, 175, 55, 0.45);
+    outline-offset: 4px;
+    cursor: text !important;
+    position: relative;
+    transition: outline 0.2s, background-color 0.2s;
+    border-radius: 4px;
+  }
+  [data-lux-field]:hover {
+    outline: 2px solid #d4af37 !important;
+    background-color: rgba(212, 175, 55, 0.12) !important;
+  }
+  [data-lux-field]:focus {
+    outline: 2px solid #f3e5ab !important;
+    background-color: rgba(212, 175, 55, 0.2) !important;
+  }
+  .lux-live-editor-dock {
+    position: fixed;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 999999;
+    background: rgba(15, 23, 42, 0.96);
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    padding: 8px 18px;
+    border-radius: 50px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8), 0 0 20px rgba(212, 175, 55, 0.2);
+    backdrop-filter: blur(16px);
+    color: #ffffff;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 12px;
+    user-select: none;
+  }
+  .lux-dock-btn {
+    padding: 5px 14px;
+    border-radius: 20px;
+    border: none;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: transform 0.2s, opacity 0.2s;
+  }
+  .lux-dock-btn-save {
+    background: linear-gradient(90deg, #d4af37 0%, #f3e5ab 100%);
+    color: #071712;
+  }
+  .lux-dock-btn-save:hover { transform: scale(1.05); }
+  .lux-dock-btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
+  .lux-dock-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #f3e5ab;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .lux-dock-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 8px #10b981;
+  }
+</style>
+
+<script id="luxInlineEditorEngine">
+(function() {
+  const isEditMode = new URLSearchParams(window.location.search).get('mode') === 'edit' || window.__LUX_EDIT_MODE__ === true;
+  if (!isEditMode) return;
+
+  const pendingChanges = {};
+
+  function createEditorDock() {
+    if (document.getElementById('luxLiveEditorDock')) return;
+    const dock = document.createElement('div');
+    dock.id = 'luxLiveEditorDock';
+    dock.className = 'lux-live-editor-dock';
+    dock.innerHTML = \`
+      <div class="lux-dock-status">
+        <span class="lux-dock-dot"></span>
+        <span>Live Editor</span>
+      </div>
+      <span style="opacity: 0.35;">|</span>
+      <span id="luxChangeCounter" style="font-size: 11px; opacity: 0.85;">Klik teks mana saja untuk mengedit</span>
+      <button id="luxSaveBtn" class="lux-dock-btn lux-dock-btn-save" style="display:none;" onclick="window.luxSaveInlineChanges()">Simpan</button>
+    \`;
+    document.body.appendChild(dock);
+  }
+
+  function initEditableFields() {
+    createEditorDock();
+
+    // Map common text tags if data-lux-field not explicitly set
+    const fallbackMappings = [
+      { sel: '#section-quote p.font-royal-quote, #section-quote p:not(.sec-eyebrow)', field: 'openingQuote' },
+      { sel: '#section-quote span:last-of-type', field: 'openingQuoteRef' },
+      { sel: '#section-quote .sec-heading', field: 'customLabels.quoteTitle' },
+      { sel: '#section-couple .sec-heading', field: 'customLabels.coupleTitle' },
+      { sel: '#section-events .sec-heading', field: 'customLabels.eventsTitle' },
+      { sel: '#moments .sec-main-title', field: 'customLabels.galleryTitle' },
+      { sel: '#story .journey-title', field: 'customLabels.storyTitle' },
+      { sel: '#gift .sec-main-title', field: 'customLabels.giftTitle' },
+      { sel: '#section-wishes .sec-heading', field: 'customLabels.wishesTitle' }
+    ];
+
+    fallbackMappings.forEach(m => {
+      document.querySelectorAll(m.sel).forEach(el => {
+        if (!el.hasAttribute('data-lux-field')) {
+          el.setAttribute('data-lux-field', m.field);
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-lux-field]').forEach(el => {
+      el.setAttribute('contenteditable', 'true');
+      el.setAttribute('spellcheck', 'false');
+
+      el.addEventListener('input', function() {
+        const fieldKey = el.getAttribute('data-lux-field');
+        const newVal = el.innerText.trim();
+        pendingChanges[fieldKey] = newVal;
+
+        const saveBtn = document.getElementById('luxSaveBtn');
+        const counter = document.getElementById('luxChangeCounter');
+        if (saveBtn) saveBtn.style.display = 'inline-block';
+        const changeCount = Object.keys(pendingChanges).length;
+        if (counter) counter.innerText = changeCount + ' teks diubah (belum tersimpan)';
+
+        // Post message to parent dashboard
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({
+            type: 'LUX_INLINE_EDIT_CHANGE',
+            field: fieldKey,
+            value: newVal,
+            allChanges: pendingChanges
+          }, '*');
+        }
+      });
+    });
+  }
+
+  window.luxSaveInlineChanges = async function() {
+    const saveBtn = document.getElementById('luxSaveBtn');
+    const counter = document.getElementById('luxChangeCounter');
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.innerText = 'Menyimpan...';
+    }
+
+    try {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({
+          type: 'LUX_INLINE_SAVE_REQUEST',
+          changes: pendingChanges
+        }, '*');
+      }
+
+      try {
+        const bc = new BroadcastChannel('lux_preview_sync');
+        bc.postMessage({ type: 'LUX_INLINE_SAVED', changes: pendingChanges });
+      } catch(e){}
+
+      if (counter) counter.innerText = '✓ Semua perubahan tersimpan';
+      if (saveBtn) saveBtn.style.display = 'none';
+      Object.keys(pendingChanges).forEach(k => delete pendingChanges[k]);
+    } catch(err) {
+      if (counter) counter.innerText = 'Gagal menyimpan. Coba lagi.';
+    } finally {
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.innerText = 'Simpan';
+      }
+    }
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initEditableFields);
+  } else {
+    initEditableFields();
+  }
+})();
+</script>
+`;
+
 /**
  * Render a template file by replacing {{key}} placeholders with values from `data`.
  * Automatically resolves from themes/premium/, themes/traditional/, or themes/modern/.
  */
-export function renderTemplateFile(templateName: string, data: Record<string, any>): string {
+export function renderTemplateFile(
+  templateName: string,
+  data: Record<string, any>,
+  options?: { editMode?: boolean }
+): string {
   const info = THEME_MAP[templateName] || { file: `${templateName}.html`, folder: "premium" };
 
   let tplPath = path.join(process.cwd(), "themes", info.folder, info.file);
@@ -242,11 +437,22 @@ export function renderTemplateFile(templateName: string, data: Record<string, an
 
   let tpl = fs.readFileSync(tplPath, "utf-8");
 
-  // Inject Autoplay script right before </body> if present
+  // Automatic placement for Guest Memories if template doesn't explicitly have the placeholder
+  if (!tpl.includes("{{memoriesSectionHtml}}") && data.memoriesSectionHtml) {
+    if (tpl.includes("{{wishesHtml}}")) {
+      tpl = tpl.replace("{{wishesHtml}}", `{{memoriesSectionHtml}}\n{{wishesHtml}}`);
+    } else if (tpl.includes("{{giftSectionHtml}}")) {
+      tpl = tpl.replace("{{giftSectionHtml}}", `{{giftSectionHtml}}\n{{memoriesSectionHtml}}`);
+    }
+  }
+
+  // Injections: Autoplay Script & Inline Live Editor Script
+  const injectedScripts = `${AUTOPLAY_SHOWCASE_SCRIPT}\n${options?.editMode || data.__editMode ? INLINE_LIVE_EDITOR_SCRIPT : ""}`;
+
   if (tpl.includes("</body>")) {
-    tpl = tpl.replace("</body>", `${AUTOPLAY_SHOWCASE_SCRIPT}\n</body>`);
+    tpl = tpl.replace("</body>", `${injectedScripts}\n</body>`);
   } else {
-    tpl += AUTOPLAY_SHOWCASE_SCRIPT;
+    tpl += injectedScripts;
   }
 
   return tpl.replace(/\{\{(\w+)\}\}/g, (_, key: string) => {

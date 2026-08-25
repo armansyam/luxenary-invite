@@ -1,0 +1,1593 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Julian &amp; Valerie — The Wedding</title>
+  <!-- 100% Self-Hosted Local Google Fonts (Zero External Latency) -->
+  <link rel="stylesheet" href="/fonts/fonts.css">
+  <style>
+    :root {
+      --bg-main: #101010;
+      --bg-card: #262627;
+      --bg-surface: #1a1a1c;
+      --text-main: #d9d9d9;
+      --text-heading: #f0f0f0;
+      --text-muted: #a7a7a7;
+      --accent: #b5a19a;
+      --accent-sage: #697665;
+      --border-subtle: #3c3d37;
+      --border-light: rgba(255, 255, 255, 0.12);
+      --radius-sm: 4px;
+      --radius-md: 10px;
+      --radius-lg: 20px;
+      --radius-pill: 50px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      font-family: 'Lora', serif;
+      background: #000000;
+      color: var(--text-main);
+      overflow-x: hidden;
+      scroll-behavior: smooth;
+      width: 100%;
+    }
+    h1, h2, h3, h4, .serif {
+      font-family: 'Cormorant', serif;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+    .eyebrow {
+      font-family: 'Cormorant Infant', serif;
+      font-size: 0.82rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 600;
+      display: block;
+      margin-bottom: 0.4rem;
+    }
+    .script-font {
+      font-family: 'Great Vibes', cursive;
+    }
+
+    /* SILKY SCROLL REVEAL ANIMATIONS (MATCHING BEANCA MOTION EFFECTS) */
+    .reveal, .reveal-up {
+      opacity: 0;
+      transform: translate3d(0, 36px, 0);
+      transition: opacity 1.1s cubic-bezier(0.16, 1, 0.3, 1), transform 1.1s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: opacity, transform;
+    }
+    .reveal.active, .reveal-up.active {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+    .reveal-zoom {
+      opacity: 0;
+      transform: scale3d(0.90, 0.90, 0.90) translate3d(0, 24px, 0);
+      transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: opacity, transform;
+    }
+    .reveal-zoom.active {
+      opacity: 1;
+      transform: scale3d(1, 1, 1) translate3d(0, 0, 0);
+    }
+    .reveal-fade {
+      opacity: 0;
+      transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: opacity;
+    }
+    .reveal-fade.active {
+      opacity: 1;
+    }
+    .delay-1 { transition-delay: 0.15s; }
+    .delay-2 { transition-delay: 0.3s; }
+    .delay-3 { transition-delay: 0.45s; }
+    .delay-4 { transition-delay: 0.6s; }
+
+    /* =========================================
+       PAGE WRAPPER (CENTERED EDITORIAL MAGAZINE)
+       ========================================= */
+    .page-wrap {
+      width: 100%; max-width: 500px; margin: 0 auto; background: var(--bg-main);
+      min-height: 100vh; position: relative; box-shadow: 0 0 60px rgba(0,0,0,0.8);
+      overflow-x: hidden;
+    }
+
+    /* =========================================
+       1. COVER SCREEN (POPUP PEMBUKA - CINEMATIC SLIDE UP)
+       ========================================= */
+    .cover-screen {
+      position: fixed; inset: 0; z-index: 200;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: space-between;
+      padding: 3.5rem 2rem 4rem; text-align: center;
+      background-position: center; background-size: cover; background-repeat: no-repeat;
+      transition: transform 1.25s cubic-bezier(0.76, 0, 0.24, 1), opacity 1.2s cubic-bezier(0.76, 0, 0.24, 1), visibility 1.25s;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95);
+      will-change: transform, opacity;
+    }
+    .cover-screen.slide-up-hidden {
+      transform: translate3d(0, -100%, 0);
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .cover-top { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 0.3rem; }
+    .cover-tagline-top { font-family: 'Cormorant Infant', serif; font-size: 0.85rem; letter-spacing: 0.25em; text-transform: uppercase; color: #d9d9d9; }
+    .cover-center { display: flex; flex-direction: column; align-items: center; margin: auto 0; }
+    .cover-names {
+      font-size: clamp(2.8rem, 11vw, 4.8rem); line-height: 1.05; color: #d9d9d9;
+      text-transform: uppercase; font-family: 'Cormorant', serif; font-weight: 400;
+      -webkit-text-stroke: 0.5px #e9e9e9; text-shadow: 0 4px 25px rgba(0,0,0,0.7);
+    }
+    .cover-date-sub { font-family: 'Cormorant Infant', serif; font-size: 0.82rem; letter-spacing: 0.2em; text-transform: uppercase; color: #d9d9d9; margin-top: 0.6rem; }
+    .cover-bottom { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 0.8rem; }
+    .cover-guest-box {
+      background: rgba(38, 38, 39, 0.85); backdrop-filter: blur(12px);
+      border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
+      padding: 1.2rem 1.6rem; width: 100%; max-width: 320px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .cover-kepada { font-family: 'Lora', serif; font-size: 0.72rem; letter-spacing: 0.1em; color: #a7a7a7; display: block; margin-bottom: 0.3rem; }
+    .cover-guest-name { font-size: clamp(1.25rem, 5vw, 1.65rem); font-family: 'Cormorant', serif; font-style: italic; color: #ffffff; line-height: 1.2; }
+    .cover-subtitle { font-size: 0.72rem; color: #d9d9d9; line-height: 1.5; margin-top: 0.4rem; font-family: 'Lora', serif; }
+    .cover-btn-group { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; width: 100%; max-width: 320px; margin-top: 0.4rem; }
+    .btn-buka {
+      display: inline-block; padding: 0.85rem 2.2rem; border: none; border-radius: var(--radius-sm);
+      background: var(--bg-card); color: #d9d9d9; font-size: 0.75rem; border: 1px solid var(--border-subtle);
+      letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; font-family: 'Lora', serif;
+      font-weight: 500; transition: all 0.3s ease; width: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+    .btn-buka:hover { background: #d9d9d9; color: #262627; }
+    .btn-qr-ghost {
+      background: transparent; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
+      color: #a7a7a7; font-size: 0.7rem; letter-spacing: 0.18em; cursor: pointer; font-family: 'Lora', serif;
+      text-transform: uppercase; padding: 0.6rem 1.6rem; transition: all 0.3s; width: 100%;
+    }
+    .btn-qr-ghost:hover { background: rgba(255, 255, 255, 0.08); color: #ffffff; }
+
+    /* =========================================
+       2. HERO SLIDESHOW (100vh FULL PHOTO CROSSFADE)
+       ========================================= */
+    .sec-hero-slideshow {
+      position: relative; width: 100%; height: 100vh; height: 100dvh;
+      overflow: hidden; display: flex; flex-direction: column;
+      justify-content: space-between; align-items: center;
+      padding: 3.5rem 1.8rem 3.5rem; text-align: center;
+    }
+    .slideshow-bg-container {
+      position: absolute; inset: 0; z-index: 1; pointer-events: none;
+    }
+    .slideshow-slide {
+      position: absolute; inset: 0; background-size: cover; background-position: center;
+      opacity: 0; transition: opacity 1.5s ease-in-out, transform 6s ease-out;
+      transform: scale(1.04);
+    }
+    .slideshow-slide.active {
+      opacity: 1; transform: scale(1);
+    }
+    .slideshow-scrim {
+      position: absolute; inset: 0; z-index: 2;
+      background: linear-gradient(to bottom, rgba(16,16,16,0.6) 0%, rgba(16,16,16,0.15) 30%, rgba(16,16,16,0.2) 65%, rgba(16,16,16,0.95) 100%);
+    }
+    .hero-content-top { position: relative; z-index: 3; width: 100%; }
+    .hero-tagline-top { font-family: 'Cormorant Infant', serif; font-size: 0.85rem; letter-spacing: 0.25em; text-transform: uppercase; color: #d9d9d9; display: block; margin-bottom: 0.4rem; }
+    .hero-title-main {
+      font-size: clamp(2.4rem, 8.5vw, 3.8rem); line-height: 1.1; color: #ffffff;
+      text-transform: uppercase; font-family: 'Cormorant', serif; font-weight: 600;
+      text-shadow: 0 4px 20px rgba(0,0,0,0.8);
+    }
+    .hero-date-main { font-family: 'Cormorant Infant', serif; font-size: 0.85rem; letter-spacing: 0.2em; text-transform: uppercase; color: #d9d9d9; margin-top: 0.5rem; display: block; }
+    .hero-content-bottom { position: relative; z-index: 3; width: 100%; max-width: 440px; margin-top: auto; }
+    .hero-quote-text { font-style: italic; font-size: 0.95rem; line-height: 1.7; color: rgba(245, 245, 245, 0.92); text-shadow: 0 2px 10px rgba(0,0,0,0.9); margin-bottom: 0.4rem; }
+    .hero-quote-ref { font-family: 'Cormorant Infant', serif; font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); display: block; font-weight: 600; }
+
+    /* SECTION COMMON */
+    .sec-flow { padding: 4.8rem 1.8rem; text-align: center; position: relative; }
+    .sec-eyebrow, .eyebrow {
+      font-family: 'Cormorant Infant', serif; font-size: 0.75rem; letter-spacing: 0.28em;
+      text-transform: uppercase; color: var(--accent); display: block; margin-bottom: 0.5rem; font-weight: 600;
+    }
+    .sec-main-title, .sec-title {
+      font-size: clamp(2.2rem, 7.5vw, 3.2rem); color: var(--text-heading);
+      line-height: 1.1; margin-bottom: 0.6rem; text-transform: uppercase; font-family: 'Cormorant', serif; font-weight: 400;
+    }
+    .sec-sub { font-size: 0.82rem; color: var(--text-muted); line-height: 1.65; max-width: 420px; margin: 0 auto 1.8rem; font-family: 'Lora', serif; }
+    .sec-divider { width: calc(100% - 3.6rem); height: 1px; background: var(--border-subtle); margin: 0 auto; }
+    .btn-outline-box, .btn-map-outline {
+      display: inline-block; padding: 0.75rem 2.2rem;
+      border: 1px solid var(--border-subtle); background: var(--bg-card);
+      border-radius: var(--radius-sm); color: #ffffff; font-size: 0.72rem;
+      letter-spacing: 0.2em; text-transform: uppercase; text-decoration: none;
+      transition: all 0.3s ease; font-weight: 600; cursor: pointer;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3); font-family: 'Cormorant Infant', serif;
+    }
+    .btn-outline-box:hover, .btn-map-outline:hover {
+      background: #ffffff; color: #101010; border-color: #ffffff;
+    }
+
+    /* =========================================
+       3. BRIDE & GROOM (DEDICATED PROFILE CARDS)
+       ========================================= */
+    .sec-couple { padding: 4.8rem 1.8rem; background: var(--bg-surface); text-align: center; }
+    .couple-cards-stack { display: flex; flex-direction: column; gap: 2rem; margin-top: 2rem; }
+    .couple-card {
+      background: var(--bg-card); border-radius: var(--radius-lg); padding: 2.2rem 1.6rem;
+      border: 1px solid var(--border-subtle); box-shadow: 0 10px 30px rgba(0,0,0,0.4); text-align: center;
+    }
+    .couple-photo-wrap {
+      width: 100%; aspect-ratio: 1/1; max-width: 240px; margin: 0 auto 1.5rem;
+      border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border-subtle); box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+    }
+    .couple-photo-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.45s ease; }
+    .couple-card:hover .couple-photo-wrap img { transform: scale(1.05); }
+    .couple-role-lbl { font-family: 'Cormorant Infant', serif; font-size: 0.75rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--accent); font-weight: 600; display: block; margin-bottom: 0.35rem; }
+    .couple-name { font-size: clamp(2.0rem, 6.5vw, 2.6rem); color: var(--text-heading); margin-bottom: 0.5rem; text-transform: uppercase; }
+    .couple-parents-lbl { font-family: 'Lora', serif; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 0.25rem; }
+    .couple-parents { font-size: 0.82rem; color: #d9d9d9; line-height: 1.6; margin-bottom: 1.4rem; }
+    .btn-ig {
+      display: inline-flex; align-items: center; gap: 6px; padding: 0.55rem 1.4rem;
+      border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: #d9d9d9; text-decoration: none;
+      font-size: 0.75rem; letter-spacing: 0.08em; font-family: 'Lora', serif; transition: all 0.3s; background: var(--bg-surface);
+    }
+    .btn-ig:hover { background: #d9d9d9; color: #262627; }
+
+    /* =========================================
+       4. SAVE THE DATE & COUNTDOWN & EVENTS
+       ========================================= */
+    .sec-events { padding: 4.8rem 1.8rem; text-align: center; }
+    .event-full-date { font-family: 'Cormorant Infant', serif; font-size: 0.95rem; letter-spacing: 0.15em; color: #d9d9d9; text-transform: uppercase; margin-bottom: 2rem; display: block; }
+    .countdown-boxes { display: flex; justify-content: center; gap: 8px; margin-bottom: 2.2rem; }
+    .cd-box {
+      flex: 1; max-width: 82px; background: var(--bg-card); border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm); padding: 0.9rem 0.4rem; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+    .cd-val { display: block; font-size: clamp(1.8rem, 5.5vw, 2.4rem); font-family: 'Cormorant', serif; font-weight: 600; color: #ffffff; line-height: 1; }
+    .cd-txt { display: block; font-family: 'Cormorant Infant', serif; font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.2em; color: var(--accent); margin-top: 0.4rem; font-weight: 600; }
+    .btn-cal {
+      display: inline-block; padding: 0.8rem 2.2rem; border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm); color: #d9d9d9; font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase;
+      text-decoration: none; transition: all 0.3s; margin-bottom: 3.5rem; font-family: 'Lora', serif; background: var(--bg-card);
+    }
+    .btn-cal:hover { background: #d9d9d9; color: #262627; }
+
+    /* Event Blocks */
+    .events-stack { display: flex; flex-direction: column; gap: 2rem; text-align: center; }
+    .event-block-item {
+      background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
+      padding: 2.2rem 1.6rem; display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
+    }
+    .ev-cat { font-family: 'Cormorant Infant', serif; font-size: 0.75rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--accent); font-weight: 600; margin-bottom: 0.2rem; }
+    .ev-name { font-size: clamp(1.8rem, 6vw, 2.4rem); color: var(--text-heading); line-height: 1.15; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 0.3rem; }
+    .ev-time { font-size: 0.92rem; color: #d9d9d9; margin-bottom: 0.5rem; letter-spacing: 0.05em; font-family: 'Lora', serif; }
+    .ev-venue { font-size: 0.95rem; font-weight: 600; color: #ffffff; margin-bottom: 0.25rem; font-family: 'Cormorant', serif; text-transform: uppercase; }
+    .ev-addr { font-size: 0.78rem; color: var(--text-muted); line-height: 1.55; max-width: 340px; margin: 0 auto 1.2rem; font-family: 'Lora', serif; }
+    .btn-map-outline {
+      display: inline-block; padding: 0.65rem 1.8rem; border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm); color: #d9d9d9; font-size: 0.68rem; letter-spacing: 0.2em; text-transform: uppercase;
+      text-decoration: none; transition: all 0.3s; font-family: 'Lora', serif; background: var(--bg-surface);
+    }
+    .btn-map-outline:hover { background: #d9d9d9; color: #262627; }
+
+    .events-unified-container { display: flex; flex-direction: column; gap: 2.2rem; align-items: center; width: 100%; }
+    .events-sessions-stack { display: flex; flex-direction: column; gap: 1.6rem; width: 100%; }
+    .unified-session {
+      background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
+      padding: 1.8rem 1.5rem;
+    }
+    .event-unified-venue-card {
+      background: var(--bg-surface); border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md); padding: 2rem 1.6rem; width: 100%; text-align: center;
+    }
+    .venue-card-lbl { font-family: 'Cormorant Infant', serif; font-size: 0.72rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--accent); display: block; margin-bottom: 0.5rem; font-weight: 600; }
+    .ev-venue-unified { font-size: 1.5rem; color: #ffffff; margin-bottom: 0.4rem; text-transform: uppercase; }
+    .ev-addr-unified { font-size: 0.78rem; color: var(--text-muted); line-height: 1.55; max-width: 320px; margin: 0 auto 1.4rem; font-family: 'Lora', serif; }
+
+    /* =========================================
+       5. QR PASS CARD / CHECK-IN
+       ========================================= */
+    .access-pass-card {
+      background: var(--bg-card); border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md); padding: 2.2rem 1.8rem; box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+      margin-top: 1.2rem; text-align: center;
+    }
+    .pass-tagline { font-family: 'Cormorant Infant', serif; font-size: 0.72rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--accent); display: block; margin-bottom: 0.3rem; font-weight: 600; }
+    .pass-names { font-size: 1.8rem; color: var(--text-heading); margin-bottom: 0.2rem; text-transform: uppercase; }
+    .pass-names em { font-style: italic; font-size: 0.7em; color: var(--accent); }
+    .pass-date { font-family: 'Cormorant Infant', serif; font-size: 0.75rem; color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 1.5rem; }
+    .pass-qr-wrapper { background: #ffffff; padding: 14px; display: inline-block; border-radius: var(--radius-sm); box-shadow: 0 10px 30px rgba(0,0,0,0.4); margin-bottom: 1.4rem; }
+    .pass-qr-img { width: 160px; height: 160px; display: block; }
+    .pass-guest-box { margin-bottom: 1.2rem; }
+    .pass-guest-lbl { font-family: 'Lora', serif; font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 0.2rem; }
+    .pass-guest-name { font-size: 1.4rem; color: #ffffff; font-style: italic; font-family: 'Cormorant', serif; }
+    .pass-meta-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: var(--bg-surface);
+      border: 1px solid var(--border-subtle); padding: 0.8rem; margin-bottom: 1.2rem; border-radius: var(--radius-sm);
+    }
+    .pass-meta-lbl { font-family: 'Cormorant Infant', serif; font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 0.2rem; }
+    .pass-meta-val { font-size: 0.78rem; color: #ffffff; font-weight: 500; }
+    .pass-souvenir-bar { border-top: 1px dashed var(--border-subtle); padding-top: 0.9rem; font-size: 0.72rem; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center; }
+    .souvenir-code { font-family: monospace; font-weight: 700; color: #ffffff; background: var(--bg-surface); padding: 3px 8px; border-radius: 4px; border: 1px solid var(--border-subtle); }
+
+    /* =========================================
+       6. JOURNEY OF LOVE
+       ========================================= */
+    .sec-journey { padding: 4.8rem 1.8rem; background: var(--bg-surface); text-align: center; position: relative; }
+    .journey-card {
+      background: var(--bg-card); border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg); padding: 2.5rem 1.8rem 2.2rem; box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+    }
+    .journey-previews { display: flex; justify-content: center; gap: 12px; margin-bottom: 2rem; }
+    .jp-item { flex: 1; max-width: 140px; aspect-ratio: 1/1; border-radius: var(--radius-md); overflow: hidden; border: 1px solid var(--border-subtle); }
+    .jp-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.4s ease; }
+    .jp-item:hover img { transform: scale(1.06); }
+    .journey-title { font-size: clamp(1.8rem, 6vw, 2.4rem); letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-heading); margin-bottom: 2rem; }
+    .journey-chapters { display: flex; flex-direction: column; gap: 1.6rem; text-align: left; }
+    .journey-chapter-item { padding-bottom: 0.4rem; border-left: 2px solid var(--accent); padding-left: 1rem; }
+    .chapter-heading { font-size: 1.05rem; font-weight: 600; color: #ffffff; margin-bottom: 0.4rem; letter-spacing: 0.05em; font-family: 'Cormorant', serif; }
+    .chapter-desc { font-size: 0.82rem; color: var(--text-muted); line-height: 1.65; font-family: 'Lora', serif; }
+    .journey-footer { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border-subtle); }
+    .jf-line { flex: 1; height: 1px; background: var(--border-subtle); }
+    .jf-signature { font-style: italic; font-size: 1.35rem; color: var(--accent); font-family: 'Great Vibes', cursive; }
+
+    /* =========================================
+       7. OUR MOMENT (SMART PUZZLE GRID)
+       ========================================= */
+    .moment-quote { font-style: italic; font-size: 0.95rem; line-height: 1.65; color: var(--text-muted); max-width: 420px; margin: 0 auto 2rem; }
+    .moments-grid-10 {
+      display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-flow: dense;
+      gap: 5px; margin-bottom: 2.2rem; width: 100%;
+    }
+    .moment-photo-item {
+      position: relative; overflow: hidden; border-radius: 6px; cursor: pointer;
+      border: 1px solid var(--border-subtle); box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      transition: transform 0.3s ease; aspect-ratio: 3/4;
+    }
+    .moment-photo-item.is-landscape {
+      grid-column: span 2; aspect-ratio: 3/2;
+    }
+    .moment-photo-item:hover { transform: scale(1.03); }
+    .moment-photo-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .btn-show-gallery { margin-bottom: 0 !important; }
+
+    /* LIGHTBOX MODALS */
+    .gallery-modal-backdrop {
+      position: fixed; inset: 0; z-index: 350; background: rgba(16, 16, 16, 0.96); backdrop-filter: blur(20px);
+      display: flex; flex-direction: column; opacity: 0; visibility: hidden; transition: all 0.3s ease;
+      overflow-y: auto; padding: 2rem 1.5rem;
+    }
+    .gallery-modal-backdrop.open { opacity: 1; visibility: visible; }
+    .gallery-modal-container { max-width: 600px; width: 100%; margin: 0 auto; }
+    .gallery-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.8rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-subtle); }
+    .modal-gallery-title { font-size: 1.8rem; color: #fff; letter-spacing: 0.1em; text-transform: uppercase; }
+    .gallery-modal-close {
+      background: rgba(255,255,255,0.1); border: 1px solid var(--border-subtle); color: #ffffff;
+      width: 34px; height: 34px; border-radius: 50%; font-size: 1rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .gallery-modal-grid { columns: 4; column-gap: 5px; }
+    .full-gallery-item {
+      break-inside: avoid; margin-bottom: 5px; overflow: hidden; border-radius: 6px; cursor: pointer;
+      border: 1px solid var(--border-subtle);
+    }
+    .full-gallery-item img { width: 100%; height: auto; display: block; transition: transform 0.35s; }
+    .full-gallery-item:hover img { transform: scale(1.05); }
+
+    .lux-zoom-backdrop {
+      position: fixed !important; inset: 0 !important; z-index: 99999 !important; background: rgba(0,0,0,0.96); backdrop-filter: blur(16px);
+      display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: all 0.3s ease;
+      padding: 1.5rem 1rem; touch-action: none; overscroll-behavior: contain;
+    }
+    .lux-zoom-backdrop.open { opacity: 1; visibility: visible; }
+    .lux-zoom-close {
+      position: fixed; top: 18px; right: 18px; background: rgba(35,35,38,0.85); backdrop-filter: blur(10px);
+      border: 1px solid var(--border-subtle); color: #fff; width: 42px; height: 42px; border-radius: 50%;
+      font-size: 1.2rem; cursor: pointer; z-index: 100000; display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.6); transition: transform 0.2s;
+    }
+    .lux-zoom-close:hover { transform: scale(1.08); background: #d9d9d9; color: #101010; }
+    .lux-zoom-nav {
+      position: fixed; top: 50%; transform: translateY(-50%); background: rgba(35,35,38,0.85); backdrop-filter: blur(10px);
+      border: 1px solid var(--border-subtle); color: #fff; width: 44px; height: 44px; border-radius: 50%;
+      font-size: 1.8rem; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 100000;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+    }
+    .lux-zoom-nav.prev { left: 14px; }
+    .lux-zoom-nav.next { right: 14px; }
+    .lux-zoom-img-box {
+      max-width: 90vw; max-height: 80vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      position: relative; z-index: 99999;
+    }
+    .lux-zoom-img-box img { max-width: 100%; max-height: 75vh; object-fit: contain; border-radius: var(--radius-sm); box-shadow: 0 15px 50px rgba(0,0,0,0.9); }
+    .lux-zoom-counter {
+      font-family: 'Cormorant Infant', serif; font-size: 0.8rem; letter-spacing: 0.2em; color: var(--accent);
+      margin-top: 0.8rem; font-weight: 600; text-transform: uppercase; background: rgba(0,0,0,0.6); padding: 4px 12px; border-radius: 20px; border: 1px solid var(--border-subtle);
+    }
+
+    /* =========================================
+       8. GIFT & BANK ACCOUNTS
+       ========================================= */
+    .gift-tabs { display: flex; max-width: 280px; margin: 1.2rem auto; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-surface); }
+    .gift-tab-btn {
+      flex: 1; padding: 0.65rem; background: transparent; border: none;
+      color: var(--text-muted); font-size: 0.72rem; font-weight: 500; cursor: pointer; letter-spacing: 0.1em; text-transform: uppercase; font-family: 'Lora', serif;
+    }
+    .gift-tab-btn.active { background: var(--bg-card); color: #ffffff; font-weight: 600; border: 1px solid var(--border-subtle); }
+    .bank-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 1.2rem; margin-bottom: 0.9rem; text-align: left; box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
+    .bank-label { font-family: 'Cormorant', serif; font-size: 1.1rem; color: #ffffff; display: block; margin-bottom: 0.2rem; text-transform: uppercase; }
+    .bank-owner { color: var(--text-muted); font-size: 0.75rem; display: block; margin-bottom: 0.6rem; font-family: 'Lora', serif; }
+    .bank-row { display: flex; align-items: center; justify-content: space-between; background: var(--bg-surface); padding: 0.6rem 0.8rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); }
+    .bank-number { font-family: monospace; font-size: 0.95rem; color: #ffffff; font-weight: 600; }
+    .btn-copy { background: var(--bg-card); color: #d9d9d9; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 0.4rem 0.9rem; font-size: 0.7rem; font-weight: 500; cursor: pointer; letter-spacing: 0.05em; font-family: 'Lora', serif; }
+    .btn-copy:hover { background: #d9d9d9; color: #262627; }
+
+    /* =========================================
+       9. RSVP & WISHES
+       ========================================= */
+    .rsvp-form-wrap { text-align: left; margin-top: 1.5rem; background: var(--bg-card); padding: 2rem 1.6rem; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); box-shadow: 0 10px 30px rgba(0,0,0,0.35); }
+    .form-row { margin-bottom: 1.1rem; }
+    .form-lbl { display: block; font-family: 'Cormorant Infant', serif; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.15em; color: var(--accent); margin-bottom: 0.4rem; }
+    .form-in, .form-sel, .form-ta {
+      width: 100%; padding: 0.75rem 0.9rem; background: var(--bg-surface);
+      border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: #ffffff; font-size: 0.85rem; outline: none; font-family: 'Lora', serif; transition: border-color 0.2s;
+    }
+    .form-in:focus, .form-sel:focus, .form-ta:focus { border-color: var(--accent); }
+    .btn-rsvp-submit {
+      width: 100%; padding: 0.9rem; background: var(--bg-surface); color: #d9d9d9;
+      border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-weight: 600; font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; transition: all 0.3s; font-family: 'Lora', serif;
+    }
+    .btn-rsvp-submit:hover { background: #d9d9d9; color: #262627; }
+    .wishes-list { margin-top: 1.5rem; max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.8rem; }
+    .wish-item { padding: 0.9rem; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); text-align: left; }
+    .wish-name { font-weight: 600; font-size: 0.85rem; color: #ffffff; margin-bottom: 0.2rem; font-family: 'Cormorant', serif; text-transform: uppercase; }
+    .wish-msg { font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; font-family: 'Lora', serif; }
+
+    /* =========================================
+       10. FOOTER & CONTROLS
+       ========================================= */
+    .site-footer { text-align: center; padding: 4.5rem 1.8rem 5rem; background: #080808; border-top: 1px solid var(--border-subtle); }
+    .footer-name { font-size: 2.0rem; color: #ffffff; margin-bottom: 0.4rem; text-transform: uppercase; }
+    .footer-name em { font-style: italic; font-size: 0.75em; color: var(--accent); }
+    .footer-sub { font-family: 'Cormorant Infant', serif; font-size: 0.75rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--accent); margin-bottom: 1.2rem; }
+    .footer-note { font-size: 0.78rem; color: var(--text-muted); line-height: 1.65; max-width: 360px; margin: 0 auto; font-family: 'Lora', serif; }
+
+    /* =========================================
+       11. FLOATING CONTROLS & SIDE MENU
+       ========================================= */
+    /* Top Right Menu Hamburger Button */
+    .btn-top-menu {
+      position: fixed; top: 18px; right: 18px; width: 44px; height: 44px;
+      border-radius: 12px; background: rgba(30, 30, 32, 0.85); backdrop-filter: blur(12px);
+      border: 1px solid var(--border-subtle); color: #ffffff; display: flex;
+      align-items: center; justify-content: center; z-index: 120; cursor: pointer;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.5); transition: transform 0.2s;
+    }
+    .btn-top-menu:hover { transform: scale(1.05); }
+
+    /* Side Navigation Drawer */
+    .side-nav-drawer {
+      position: fixed; top: 0; right: 0; bottom: 0; width: 280px; max-width: 80vw;
+      background: rgba(22, 22, 24, 0.97); backdrop-filter: blur(20px);
+      border-left: 1px solid var(--border-subtle); z-index: 150; padding: 4rem 1.8rem 2rem;
+      display: flex; flex-direction: column; gap: 1.2rem; transform: translateX(100%);
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: -10px 0 40px rgba(0,0,0,0.7);
+    }
+    .side-nav-drawer.open { transform: translateX(0); }
+    .side-nav-close {
+      position: absolute; top: 16px; right: 16px; width: 34px; height: 34px;
+      border-radius: 50%; background: var(--bg-card); border: 1px solid var(--border-subtle);
+      color: #ffffff; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+    .side-nav-link {
+      font-family: 'Cormorant', serif; font-size: 1.25rem; color: #d9d9d9;
+      text-decoration: none; text-transform: uppercase; letter-spacing: 0.08em;
+      padding: 0.6rem 0; border-bottom: 1px solid rgba(255,255,255,0.06); transition: color 0.2s, padding-left 0.2s;
+    }
+    .side-nav-link:hover { color: var(--accent); padding-left: 6px; }
+
+    /* Bottom Right Floating Controls (Fullscreen + Audio) */
+    .floating-actions-bottom {
+      position: fixed; bottom: 20px; right: 20px; z-index: 100;
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+    }
+    .btn-fullscreen, .btn-audio-fab {
+      width: 42px; height: 42px; border-radius: 50%;
+      background: rgba(30, 30, 32, 0.88); backdrop-filter: blur(12px);
+      border: 1px solid var(--border-subtle); color: #d9d9d9;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; box-shadow: 0 6px 20px rgba(0,0,0,0.6); transition: transform 0.2s, background 0.2s;
+    }
+    .btn-fullscreen:hover, .btn-audio-fab:hover { background: #d9d9d9; color: #101010; transform: scale(1.08); }
+    .btn-audio-fab.playing svg { animation: soundPulse 1.8s ease-in-out infinite alternate; }
+    @keyframes soundPulse {
+      0% { transform: scale(0.92); opacity: 0.8; }
+      100% { transform: scale(1.08); opacity: 1; }
+    }
+
+    /* DESKTOP FIXED LEFT HERO */
+    .left-hero {
+      display: none; position: fixed; left: 0; top: 0; width: 55%; height: 100vh;
+      z-index: 10; background-position: center; background-size: cover; background-repeat: no-repeat; overflow: hidden;
+    }
+    .left-hero::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(16,16,16,0.92) 0%, rgba(16,16,16,0.2) 45%, transparent 100%);
+    }
+    .left-hero-content { position: absolute; bottom: 4rem; left: 3.5rem; right: 3.5rem; z-index: 2; color: #fff; }
+    .left-hero-eyebrow { font-family: 'Cormorant Infant', serif; font-size: 0.75rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.6rem; display: block; font-weight: 600; }
+    .left-hero-names { font-size: clamp(2.6rem, 4.2vw, 4.2rem); line-height: 1.1; color: #ffffff; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+    .left-hero-names em { font-style: italic; font-size: 0.8em; margin: 0 0.15em; color: var(--accent); display: inline; }
+    .left-hero-date { font-family: 'Cormorant Infant', serif; font-size: 0.85rem; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(255,255,255,0.75); margin-top: 0.8rem; font-weight: 500; }
+
+    @media (min-width: 900px) {
+      .left-hero { display: block; }
+      .page-wrap { margin-left: 55%; width: 45%; max-width: none; min-width: 420px; }
+      .btn-top-menu { right: 2rem; }
+      .floating-actions-bottom { right: 2rem; }
+      .sec-flow, .sec-couple, .sec-events, .sec-journey { padding: 5.5rem 3rem; }
+      .sec-hero-slideshow { padding: 4.5rem 3rem 4rem; }
+    }
+
+    .modal-bg {
+      position: fixed; inset: 0; z-index: 300; background: rgba(0,0,0,0.88); backdrop-filter: blur(12px);
+      display: flex; align-items: center; justify-content: center; padding: 1.4rem; opacity: 0; visibility: hidden; transition: all 0.3s;
+    }
+    .modal-bg.open { opacity: 1; visibility: visible; }
+    .modal-card { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 2.2rem 1.8rem; width: 100%; max-width: 360px; text-align: center; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.7); }
+    .modal-close { position: absolute; top: 12px; right: 12px; background: var(--bg-surface); border: 1px solid var(--border-subtle); width: 28px; height: 28px; border-radius: 50%; cursor: pointer; color: var(--text-muted); font-size: 0.75rem; font-weight: bold; }
+  </style>
+</head>
+<body style="--accent: #a67c52;">
+
+  <!-- FIXED LEFT HERO (DESKTOP ONLY) -->
+  <div class="left-hero" style="background-image: url('/demo/valente/hero.webp');">
+    <div class="left-hero-content">
+      <span class="left-hero-eyebrow">A CELEBRATION OF LOVE</span>
+      <h1 class="serif left-hero-names">Julian <em>&amp;</em> Valerie</h1>
+      <p class="left-hero-date">Sabtu, 05 Desember 2026</p>
+    </div>
+  </div>
+
+  <!-- =========================================
+       1. COVER SCREEN (POPUP PEMBUKA)
+       ========================================= -->
+  <div class="cover-screen" id="coverScreen" style="background-image: linear-gradient(to bottom, rgba(16,16,16,0.3) 0%, rgba(16,16,16,0.05) 25%, rgba(16,16,16,0.7) 65%, rgba(16,16,16,0.96) 100%), url('/demo/valente/cover.webp');">
+    <div class="cover-top reveal active">
+      <span class="cover-tagline-top">A CELEBRATION OF LOVE</span>
+    </div>
+
+    <div class="cover-center reveal-zoom active">
+      <h1 class="cover-names serif">Julian &amp; Valerie</h1>
+      <span class="cover-date-sub">Sabtu, 05 Desember 2026</span>
+    </div>
+
+    <div class="cover-bottom reveal active delay-1">
+      <div class="cover-guest-box">
+        <span class="cover-kepada">Kepada Yth.</span>
+        <h2 class="cover-guest-name serif" id="coverGuestName">Tamu Undangan</h2>
+        <p class="cover-subtitle">Tanpa mengurangi rasa hormat, kami mengundang Anda untuk menghadiri acara pernikahan kami.</p>
+      </div>
+      <div class="cover-btn-group">
+        <button class="btn-buka" onclick="openInvitation()">Buka Undangan</button>
+        <button type="button" class="btn-open-qr-cover" onclick="luxOpenAccessModal()">Kartu Akses QR</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOP RIGHT MENU HAMBURGER BUTTON -->
+  <button class="btn-top-menu" id="btnTopMenu" onclick="toggleSideNav()" aria-label="Open Navigation">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+  </button>
+
+  <!-- SIDE NAVIGATION DRAWER -->
+  <div class="side-nav-drawer" id="sideNavDrawer">
+    <button class="side-nav-close" onclick="toggleSideNav()">✕</button>
+    <a href="#home" class="side-nav-link" onclick="toggleSideNav()">Home</a>
+    <a href="#couple" class="side-nav-link" onclick="toggleSideNav()">Bride &amp; Groom</a>
+    <a href="#event" class="side-nav-link" onclick="toggleSideNav()">Wedding Event</a>
+    <a href="#story" class="side-nav-link" onclick="toggleSideNav()">Love Story</a>
+    <a href="#moments" class="side-nav-link" onclick="toggleSideNav()">Gallery</a>
+    <a href="#rsvp" class="side-nav-link" onclick="toggleSideNav()">RSVP &amp; Wishes</a>
+    <a href="#gift" class="side-nav-link" onclick="toggleSideNav()">Wedding Gift</a>
+    
+  </div>
+
+  <!-- FLOATING ACTIONS (BOTTOM RIGHT: FULLSCREEN & AUDIO) -->
+  <div class="floating-actions-bottom">
+    <button class="btn-fullscreen" onclick="toggleFullScreen()" title="Fullscreen Mode" aria-label="Toggle Fullscreen">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+    </button>
+
+    <audio id="bgAudio" loop preload="auto">
+      <source src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=romantic-wedding-113528.mp3" type="audio/ogg">
+      <source src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=romantic-wedding-113528.mp3" type="audio/mpeg">
+    </audio>
+    <button class="btn-audio-fab" id="musicFab" onclick="toggleAudio()" aria-label="Toggle Music" title="Audio Player">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+    </button>
+  </div>
+
+  <!-- =========================================
+       MAIN SCROLLABLE PAGE (EDITORIAL MAGAZINE)
+       ========================================= -->
+  <main class="page-wrap" id="mainPage">
+
+    <!-- 1. SLIDE 1: OPENING VIEW WITH BACKGROUND SLIDESHOW -->
+    <section class="sec-hero-slideshow" id="home">
+      <!-- Background Slideshow Layer (2-3 Photos) -->
+      <div class="slideshow-bg-container">
+        <div class="slideshow-slide active" style="background-image: url('/demo/valente/cover.webp');"></div>
+        <div class="slideshow-slide" style="background-image: url('/demo/valente/background.webp');"></div>
+        <div class="slideshow-slide" style="background-image: url('/demo/valente/hero.webp');"></div>
+      </div>
+      <div class="slideshow-scrim"></div>
+
+      <div class="hero-content-top reveal">
+        <span class="hero-tagline-top">A CELEBRATION OF LOVE</span>
+        <h1 class="hero-title-main">Julian &amp; Valerie</h1>
+        <span class="hero-date-main">Sabtu, 05 Desember 2026</span>
+      </div>
+
+      <div class="hero-content-bottom reveal delay-2">
+        <p class="hero-quote-text">"Two souls with but a single thought, two hearts that beat as one."</p>
+        <cite class="hero-quote-ref">JOHN KEATS</cite>
+      </div>
+    </section>
+
+    <!-- 2. SECTION: BRIDE & GROOM (DEDICATED PROFILE CARDS) -->
+    <section class="sec-couple" id="couple">
+      <span class="eyebrow reveal">BRIDE &amp; GROOM</span>
+      <h2 class="sec-title serif reveal delay-1">Bride &amp; Groom</h2>
+      <p class="sec-sub reveal delay-1">Dengan segala puji bagi Allah yang telah menciptakan mahluk-Nya berpasang-pasangan, Ya Allah izinkanlah kami merangkai cinta dalam ikatan pernikahan.</p>
+
+      <div class="couple-cards-stack">
+        <!-- Groom Card -->
+        <div class="couple-card reveal-zoom">
+          <div class="couple-photo-wrap">
+            <img src="/demo/valente/groom.webp" alt="Julian Alexander, B.A.">
+          </div>
+          <span class="couple-role-lbl">THE GROOM</span>
+          <h3 class="couple-name serif">Julian Alexander, B.A.</h3>
+          <span class="couple-parents-lbl">Putra Tercinta dari</span>
+          <p class="couple-parents">Son of Mr. Robert Alexander & Mrs. Shirley Wijaya</p>
+          <a href="https://instagram.com/julian.alex" target="_blank" rel="noreferrer" class="btn-ig">
+            <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+            <span>@julian.alex</span>
+          </a>
+        </div>
+
+        <!-- Bride Card -->
+        <div class="couple-card reveal-zoom delay-1">
+          <div class="couple-photo-wrap">
+            <img src="/demo/valente/bride.webp" alt="Valerie Santoso, M.M.">
+          </div>
+          <span class="couple-role-lbl">THE BRIDE</span>
+          <h3 class="couple-name serif">Valerie Santoso, M.M.</h3>
+          <span class="couple-parents-lbl">Putri Tercinta dari</span>
+          <p class="couple-parents">Daughter of Mr. David Santoso & Mrs. Linda Hartono</p>
+          <a href="https://instagram.com/valeriesantoso" target="_blank" rel="noreferrer" class="btn-ig">
+            <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+            <span>@valeriesantoso</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. SECTION: JOURNEY OF LOVE -->
+    <div class="reveal-zoom">
+      
+    <section class="sec-flow" id="story">
+      <span class="sec-eyebrow">OUR JOURNEY</span>
+      <h2 class="sec-main-title serif">LOVE STORY</h2>
+      <div class="journey-card-container">
+        <div class="journey-chapters">
+          
+    <div class="story-chapter-block">
+      <span class="sc-label">CHAPTER 01</span>
+      <h3 class="sc-title serif">The First Glimpse</h3>
+      <p class="sc-desc">We crossed paths on a summer sunset in Uluwatu back in 2020.</p>
+    </div>
+  
+    <div class="story-chapter-block">
+      <span class="sc-label">CHAPTER 02</span>
+      <h3 class="sc-title serif">Adventures Together</h3>
+      <p class="sc-desc">From spontaneous road trips to climbing mountain ridges together.</p>
+    </div>
+  
+    <div class="story-chapter-block">
+      <span class="sc-label">CHAPTER 03</span>
+      <h3 class="sc-title serif">Forever & Always</h3>
+      <p class="sc-desc">Under the stars of Labuan Bajo, he knelt down and asked the question of a lifetime.</p>
+    </div>
+  
+        </div>
+        <div class="journey-footer">
+          <div class="jf-line"></div>
+          <span class="jf-signature serif">Julian &amp; Valerie</span>
+        </div>
+      </div>
+    </section>
+  
+    </div>
+
+    <!-- 4. SECTION: SAVE THE DATE & EVENTS -->
+    <section class="sec-events sec-flow" id="event">
+      <span class="eyebrow reveal">D-DAY COUNTDOWN</span>
+      <h2 class="sec-title serif reveal delay-1">Save The Date</h2>
+      <span class="event-full-date reveal delay-1">Sabtu, 05 Desember 2026</span>
+
+      <!-- Boxed Countdown Timer -->
+      <div class="countdown-boxes reveal-zoom delay-2">
+        <div class="cd-box"><span class="cd-val" id="cdDays">00</span><span class="cd-txt">HARI</span></div>
+        <div class="cd-box"><span class="cd-val" id="cdHours">00</span><span class="cd-txt">JAM</span></div>
+        <div class="cd-box"><span class="cd-val" id="cdMins">00</span><span class="cd-txt">MENIT</span></div>
+        <div class="cd-box"><span class="cd-val" id="cdSecs">00</span><span class="cd-txt">DETIK</span></div>
+      </div>
+      <a href="https://www.google.com/calendar/render?action=TEMPLATE&text=The%20Wedding%20of%20Julian%20%26%20Valerie&dates=20261205T010000Z/20261205T140000Z&location=Cliffside%20Chapel%2C%20The%20Mulia%20Resort" target="_blank" class="btn-cal reveal delay-2">SIMPAN TANGGAL</a>
+
+      <!-- Dynamic Events Stack -->
+      <div class="events-stack reveal delay-3">
+        
+    <div class="events-unified-container">
+      <div class="events-sessions-stack">
+        
+    <div class="event-block-item unified-session">
+      <span class="ev-cat">HOLY MATRIMONY</span>
+      <h3 class="ev-name serif">HOLY MATRIMONY</h3>
+      <p class="ev-time">15.30 WITA</p>
+    </div>
+  
+    <div class="event-block-item unified-session">
+      <span class="ev-cat">SUNSET RECEPTION</span>
+      <h3 class="ev-name serif">SUNSET DINNER & AFTER PARTY</h3>
+      <p class="ev-time">18.30 WITA</p>
+    </div>
+  
+      </div>
+      <div class="event-unified-venue-card">
+        <span class="venue-card-lbl">LOKASI ACARA</span>
+        <h4 class="ev-venue-unified serif">Cliffside Chapel, The Mulia Resort</h4>
+        <p class="ev-address-unified">Jl. Raya Nusa Dua Selatan, Sawangan, Nusa Dua, Bali</p>
+        <a href="https://maps.google.com" target="_blank" class="btn-map-outline">
+          BUKA GOOGLE MAPS ↗
+        </a>
+      </div>
+    </div>
+  
+      </div>
+    </section>
+
+    <!-- 5. SECTION: KARTU AKSES MASUK / QR CHECK-IN -->
+    <div class="reveal-zoom">
+      
+    <section class="sec-flow" id="checkin">
+      <span class="sec-eyebrow">QR CODE CHECK-IN</span>
+      <h2 class="sec-main-title serif">KARTU AKSES MASUK</h2>
+      <p class="sec-sub">Silakan tunjukkan QR Code ini kepada penerima tamu undangan di lokasi acara.</p>
+      
+      <div class="access-pass-card">
+        <span class="pass-tagline">A CELEBRATION OF LOVE</span>
+        <h3 class="pass-names serif">Julian <em>&amp;</em> Valerie</h3>
+        <p class="pass-date">Sabtu, 05 Desember 2026</p>
+        
+        <div class="pass-qr-wrapper">
+          <svg viewBox="0 0 100 100" class="pass-qr-img" style="width:140px; height:140px; background:#ffffff; padding:10px; border-radius:10px; box-shadow:0 4px 15px rgba(0,0,0,0.15);">
+            <path d="M10,10 h30 v30 h-30 z M16,16 v18 h18 v-18 z M22,22 h6 v6 h-6 z M60,10 h30 v30 h-30 z M66,16 v18 h18 v-18 z M72,22 h6 v6 h-6 z M10,60 h30 v30 h-30 z M16,66 v18 h18 v-18 z M22,72 h6 v6 h-6 z M48,12 h8 v8 h-8 z M48,28 h8 v8 h-8 z M48,48 h16 v8 h-16 z M72,48 h16 v8 h-16 z M48,68 h8 v16 h-8 z M68,68 h20 v8 h-20 z M68,84 h20 v8 h-20 z" fill="#111111" />
+          </svg>
+        </div>
+
+        <div class="pass-guest-box">
+          <span class="pass-guest-lbl">KEPADA YTH.</span>
+          <h4 class="pass-guest-name serif" id="passGuestName">Tamu Undangan</h4>
+        </div>
+
+        <div class="pass-meta-grid">
+          <div class="pass-meta-item">
+            <span class="pass-meta-lbl">SESI</span>
+            <span class="pass-meta-val">Sesi 1 (Akad &amp; Resepsi)</span>
+          </div>
+          <div class="pass-meta-item">
+            <span class="pass-meta-lbl">LIMIT</span>
+            <span class="pass-meta-val">1 - 2 Orang</span>
+          </div>
+        </div>
+
+        <div class="pass-souvenir-bar">
+          <span class="souvenir-lbl">VOUCHER SOUVENIR:</span>
+          <span class="souvenir-code">SOUVENIR-VALENTE</span>
+        </div>
+      </div>
+    </section>
+  
+    </div>
+
+    <!-- 6. SECTION: A GUIDE TO DRESS CODES -->
+    <div class="reveal">
+      
+    <section class="sec-flow" id="dresscode">
+      <span class="sec-eyebrow">A GUIDE TO</span>
+      <h2 class="sec-main-title serif">DRESS CODES</h2>
+      <p class="sec-sub">Kami mengundang tamu undangan untuk mengenakan palet warna berikut:</p>
+      <div style="display:flex; justify-content:center; gap:12px; margin: 1.5rem 0;">
+    <span style="width:28px; height:28px; border-radius:50%; background:#a85d42; display:inline-block; border:2px solid rgba(255,255,255,0.7); box-shadow:0 4px 10px rgba(0,0,0,0.35);"></span>
+  
+    <span style="width:28px; height:28px; border-radius:50%; background:#d4a373; display:inline-block; border:2px solid rgba(255,255,255,0.7); box-shadow:0 4px 10px rgba(0,0,0,0.35);"></span>
+  
+    <span style="width:28px; height:28px; border-radius:50%; background:#fefae0; display:inline-block; border:2px solid rgba(255,255,255,0.7); box-shadow:0 4px 10px rgba(0,0,0,0.35);"></span>
+  </div>
+      <p style="margin:0; font-size:0.8rem; color:rgba(255,255,255,0.75); line-height:1.5;">Sunset Warm Terracotta & Champagne Beach Chic</p>
+    </section>
+  
+    </div>
+
+    <!-- 7. SECTION: LIVE WEDDING (VIRTUAL CEREMONY) -->
+    <div class="reveal">
+      
+    <section class="sec-flow" id="live">
+      <span class="sec-eyebrow">VIRTUAL CEREMONY</span>
+      <h2 class="sec-main-title serif">LIVE STREAMING</h2>
+      <p class="sec-sub">Sabtu, 05 Desember 2026 • 08.00 – Selesai</p>
+      <p class="sec-sub" style="margin-top:0.4rem;">Bagi keluarga &amp; sahabat yang menyaksikan dari jauh, bergabunglah melalui siaran daring:</p>
+      <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:0.8rem; margin-top:1.5rem;">
+        <a href="https://instagram.com/valeriesantoso" target="_blank" class="btn-map-outline">INSTAGRAM LIVE ↗</a>
+        <a href="https://youtube.com" target="_blank" class="btn-map-outline">YOUTUBE LIVE ↗</a>
+      </div>
+    </section>
+  
+    </div>
+
+    <!-- 8. SECTION: WEDDING FRAME / FILTER INSTAGRAM -->
+    <div class="reveal">
+      
+    </div>
+
+    <!-- 9. SECTION: TURUT MENGUNDANG -->
+    <div class="reveal">
+      
+    <section class="sec-flow" id="turut-mengundang">
+      <span class="sec-eyebrow">KELUARGA BESAR</span>
+      <h2 class="sec-main-title serif">TURUT MENGUNDANG</h2>
+      <p class="sec-sub">Keluarga Besar &amp; Kerabat yang turut berbahagia:</p>
+      <div style="display:flex; flex-direction:column; gap:0.6rem; margin-top:1.5rem; font-size:0.88rem; color:rgba(255,255,255,0.85);">
+        <p style="margin:0; padding:0.4rem 0; border-bottom:1px dashed rgba(255,255,255,0.12);">The Alexander Family (Singapore)</p><p style="margin:0; padding:0.4rem 0; border-bottom:1px dashed rgba(255,255,255,0.12);">The Santoso Family (Surabaya)</p>
+      </div>
+    </section>
+  
+    </div>
+
+    <div class="sec-divider"></div>
+
+    <!-- 10. SECTION: OUR MOMENT (GALLERY & VIDEO) -->
+    <div class="reveal-zoom">
+      
+    <section class="sec-flow" id="moments">
+      <span class="sec-eyebrow">GALLERY</span>
+      <h2 class="sec-main-title serif">OUR MOMENT</h2>
+      <p class="moment-quote serif">
+        “And I’d choose you; in a hundred lifetimes, in a hundred worlds, in any version of reality, I’d find you and I’d choose you.”
+      </p>
+
+      <div class="moments-grid-10">
+        
+    <div class="moment-photo-item" data-idx="0" onclick="luxOpenZoom(0)">
+      <img src="/demo/valente/gallery_01.webp" alt="Our Moment 1" loading="lazy" decoding="async">
+    </div>
+  
+    <div class="moment-photo-item" data-idx="1" onclick="luxOpenZoom(1)">
+      <img src="/demo/valente/gallery_02.webp" alt="Our Moment 2" loading="lazy" decoding="async">
+    </div>
+  
+    <div class="moment-photo-item" data-idx="2" onclick="luxOpenZoom(2)">
+      <img src="/demo/valente/gallery_03.webp" alt="Our Moment 3" loading="lazy" decoding="async">
+    </div>
+  
+    <div class="moment-photo-item" data-idx="3" onclick="luxOpenZoom(3)">
+      <img src="/demo/valente/gallery_04.webp" alt="Our Moment 4" loading="lazy" decoding="async">
+    </div>
+  
+    <div class="moment-photo-item" data-idx="4" onclick="luxOpenZoom(4)">
+      <img src="/demo/valente/gallery_05.webp" alt="Our Moment 5" loading="lazy" decoding="async">
+    </div>
+  
+    <div class="moment-photo-item" data-idx="5" onclick="luxOpenZoom(5)">
+      <img src="/demo/valente/gallery_06.webp" alt="Our Moment 6" loading="lazy" decoding="async">
+    </div>
+  
+    <div class="moment-photo-item" data-idx="6" onclick="luxOpenZoom(6)">
+      <img src="/demo/valente/gallery_07.webp" alt="Our Moment 7" loading="lazy" decoding="async">
+    </div>
+  
+    <div class="moment-photo-item" data-idx="7" onclick="luxOpenZoom(7)">
+      <img src="/demo/valente/gallery_08.webp" alt="Our Moment 8" loading="lazy" decoding="async">
+    </div>
+  
+      </div>
+
+      <button type="button" class="btn-outline-box btn-show-gallery" onclick="luxOpenFullGallery()">
+        LIHAT SEMUA FOTO (8 FOTO)
+      </button>
+    </section>
+
+    <!-- FULL GALLERY LIGHTBOX MODAL -->
+    <div class="gallery-modal-backdrop" id="luxFullGalleryModal" onclick="luxCloseFullGallery(event)">
+      <div class="gallery-modal-container" onclick="event.stopPropagation()">
+        <div class="gallery-modal-header">
+          <h3 class="serif modal-gallery-title">OUR MOMENTS</h3>
+          <button class="gallery-modal-close" onclick="luxCloseFullGallery()">✕</button>
+        </div>
+        <div class="gallery-modal-grid">
+          
+    <div class="full-gallery-item" onclick="luxOpenZoom(0)">
+      <img src="/demo/valente/gallery_01.webp" alt="Photo 1" loading="lazy" decoding="async">
+    </div>
+  
+    <div class="full-gallery-item" onclick="luxOpenZoom(1)">
+      <img src="/demo/valente/gallery_02.webp" alt="Photo 2" loading="lazy" decoding="async">
+    </div>
+  
+    <div class="full-gallery-item" onclick="luxOpenZoom(2)">
+      <img src="/demo/valente/gallery_03.webp" alt="Photo 3" loading="lazy" decoding="async">
+    </div>
+  
+    <div class="full-gallery-item" onclick="luxOpenZoom(3)">
+      <img src="/demo/valente/gallery_04.webp" alt="Photo 4" loading="lazy" decoding="async">
+    </div>
+  
+    <div class="full-gallery-item" onclick="luxOpenZoom(4)">
+      <img src="/demo/valente/gallery_05.webp" alt="Photo 5" loading="lazy" decoding="async">
+    </div>
+  
+    <div class="full-gallery-item" onclick="luxOpenZoom(5)">
+      <img src="/demo/valente/gallery_06.webp" alt="Photo 6" loading="lazy" decoding="async">
+    </div>
+  
+    <div class="full-gallery-item" onclick="luxOpenZoom(6)">
+      <img src="/demo/valente/gallery_07.webp" alt="Photo 7" loading="lazy" decoding="async">
+    </div>
+  
+    <div class="full-gallery-item" onclick="luxOpenZoom(7)">
+      <img src="/demo/valente/gallery_08.webp" alt="Photo 8" loading="lazy" decoding="async">
+    </div>
+  
+        </div>
+      </div>
+    </div>
+
+    <!-- IMAGE ZOOM LIGHTBOX -->
+    <div class="lux-zoom-backdrop" id="luxZoomModal" onclick="luxCloseZoom(event)">
+      <button class="lux-zoom-close" onclick="luxCloseZoom()">✕</button>
+      <button class="lux-zoom-nav prev" onclick="luxPrevZoom(event)">‹</button>
+      <div class="lux-zoom-img-box" onclick="event.stopPropagation()">
+        <img id="luxZoomActiveImg" src="/demo/valente/gallery_01.webp" alt="Zoom View">
+        <div class="lux-zoom-counter" id="luxZoomCounter">1 / 8</div>
+      </div>
+      <button class="lux-zoom-nav next" onclick="luxNextZoom(event)">›</button>
+    </div>
+
+    <script>
+      window.LUX_ALL_PHOTOS = ["/demo/valente/gallery_01.webp","/demo/valente/gallery_02.webp","/demo/valente/gallery_03.webp","/demo/valente/gallery_04.webp","/demo/valente/gallery_05.webp","/demo/valente/gallery_06.webp","/demo/valente/gallery_07.webp","/demo/valente/gallery_08.webp"];
+      window.luxActivePhotoIdx = 0;
+
+      function ensureModalsOnBody() {
+        const m1 = document.getElementById('luxFullGalleryModal');
+        if (m1 && m1.parentNode !== document.body) document.body.appendChild(m1);
+        const m2 = document.getElementById('luxZoomModal');
+        if (m2 && m2.parentNode !== document.body) document.body.appendChild(m2);
+      }
+      document.addEventListener('DOMContentLoaded', ensureModalsOnBody);
+
+      window.luxOpenFullGallery = function() {
+        ensureModalsOnBody();
+        const m = document.getElementById('luxFullGalleryModal');
+        if (m) {
+          m.classList.add('open');
+          document.body.style.overflow = 'hidden';
+          document.documentElement.style.overflow = 'hidden';
+        }
+      };
+
+      window.luxCloseFullGallery = function(e) {
+        if (!e || e.target === document.getElementById('luxFullGalleryModal') || e.target.classList.contains('gallery-modal-close')) {
+          const m = document.getElementById('luxFullGalleryModal');
+          if (m) {
+            m.classList.remove('open');
+            document.body.style.overflow = '';
+            document.documentElement.style.overflow = '';
+          }
+        }
+      };
+
+      window.luxOpenZoom = function(idx) {
+        ensureModalsOnBody();
+        window.luxActivePhotoIdx = idx >= 0 && idx < window.LUX_ALL_PHOTOS.length ? idx : 0;
+        const zoom = document.getElementById('luxZoomModal');
+        const img = document.getElementById('luxZoomActiveImg');
+        const counter = document.getElementById('luxZoomCounter');
+        if (img && window.LUX_ALL_PHOTOS[window.luxActivePhotoIdx]) {
+          img.src = window.LUX_ALL_PHOTOS[window.luxActivePhotoIdx];
+        }
+        if (counter) {
+          counter.textContent = (window.luxActivePhotoIdx + 1) + " / " + window.LUX_ALL_PHOTOS.length;
+        }
+        if (zoom) {
+          zoom.classList.add('open');
+          document.body.style.overflow = 'hidden';
+          document.documentElement.style.overflow = 'hidden';
+        }
+      };
+
+      window.luxCloseZoom = function(e) {
+        if (!e || e.target === document.getElementById('luxZoomModal') || e.target.classList.contains('lux-zoom-close')) {
+          const zoom = document.getElementById('luxZoomModal');
+          if (zoom) {
+            zoom.classList.remove('open');
+            const fg = document.getElementById('luxFullGalleryModal');
+            if (!fg || !fg.classList.contains('open')) {
+              document.body.style.overflow = '';
+              document.documentElement.style.overflow = '';
+            }
+          }
+        }
+      };
+
+      window.luxNextZoom = function(e) {
+        if (e) e.stopPropagation();
+        window.luxActivePhotoIdx = (window.luxActivePhotoIdx + 1) % window.LUX_ALL_PHOTOS.length;
+        const img = document.getElementById('luxZoomActiveImg');
+        const counter = document.getElementById('luxZoomCounter');
+        if (img) img.src = window.LUX_ALL_PHOTOS[window.luxActivePhotoIdx];
+        if (counter) counter.textContent = (window.luxActivePhotoIdx + 1) + " / " + window.LUX_ALL_PHOTOS.length;
+      };
+
+      window.luxPrevZoom = function(e) {
+        if (e) e.stopPropagation();
+        window.luxActivePhotoIdx = (window.luxActivePhotoIdx - 1 + window.LUX_ALL_PHOTOS.length) % window.LUX_ALL_PHOTOS.length;
+        const img = document.getElementById('luxZoomActiveImg');
+        const counter = document.getElementById('luxZoomCounter');
+        if (img) img.src = window.LUX_ALL_PHOTOS[window.luxActivePhotoIdx];
+        if (counter) counter.textContent = (window.luxActivePhotoIdx + 1) + " / " + window.LUX_ALL_PHOTOS.length;
+      };
+    </script>
+  
+    </div>
+
+    <div class="sec-divider"></div>
+
+    <!-- 11. SECTION: RSVP & WISHES -->
+    <section class="sec-flow" id="rsvp">
+      <span class="eyebrow reveal">Greet &amp; Wish</span>
+      <h2 class="sec-title serif reveal delay-1">RSVP &amp; Doa Restu</h2>
+
+      <div class="rsvp-form-wrap reveal delay-2">
+        <form id="rsvpForm" onsubmit="submitRsvp(event)">
+          <div class="form-row">
+            <label class="form-lbl">Nama Lengkap</label>
+            <input type="text" id="rsvpName" required class="form-in" placeholder="Nama Anda">
+          </div>
+          <div class="form-row">
+            <label class="form-lbl">Konfirmasi Kehadiran</label>
+            <select id="rsvpStatus" class="form-sel">
+              <option value="hadir">Konfirmasi Hadir</option>
+              <option value="tidak">Berhalangan Hadir</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label class="form-lbl">Jumlah Tamu</label>
+            <input type="number" id="rsvpCount" min="1" max="5" value="1" class="form-in">
+          </div>
+          <div class="form-row">
+            <label class="form-lbl">Ucapan &amp; Doa Restu</label>
+            <textarea id="rsvpMessage" rows="4" class="form-ta" placeholder="Tuliskan ucapan dan doa terbaik Anda..."></textarea>
+          </div>
+          <button type="submit" id="btnSubmit" class="btn-rsvp-submit">Kirim Konfirmasi &amp; Doa</button>
+        </form>
+
+        <div class="wishes-list" id="wishesList">
+          
+    <div class="wish-item">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
+        <span class="wish-name">Budi Santoso &amp; Rekan Kerja</span>
+        <span style="font-size:0.65rem; padding:2px 8px; border-radius:50px; background:rgba(74,222,128,0.15); color:#4ade80; font-weight:600;">Hadir (2 Orang)</span>
+      </div>
+      <p class="wish-msg">“Selamat berbahagia untuk Julian &amp; Valerie! Semoga menjadi keluarga yang senantiasa dipenuhi rahmat dan cinta abadi.”</p>
+    </div>
+    <div class="wish-item">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
+        <span class="wish-name">Sahabat Terbaik</span>
+        <span style="font-size:0.65rem; padding:2px 8px; border-radius:50px; background:rgba(74,222,128,0.15); color:#4ade80; font-weight:600;">Hadir (1 Orang)</span>
+      </div>
+      <p class="wish-msg">“Lancar sampai hari H yaa! Cantik dan gagah banget, can't wait to celebrate your special day!”</p>
+    </div>
+  
+        </div>
+      </div>
+    </section>
+
+    <div class="sec-divider"></div>
+
+    <!-- 12. SECTION: WEDDING GIFT -->
+    <div class="reveal">
+      
+    <section class="sec-flow" id="gift">
+      <span class="sec-eyebrow">WEDDING GIFT</span>
+      <h2 class="sec-main-title serif">TANDA KASIH</h2>
+      <p class="sec-sub">
+        Doa restu Anda merupakan karunia yang sangat berarti bagi kami. Bagi Anda yang ingin memberikan tanda kasih:
+      </p>
+
+      <div class="gift-tabs">
+        <button class="gift-tab-btn active" onclick="switchGiftTab('amplop', this)">Transfer Bank / QRIS</button>
+        <button class="gift-tab-btn" onclick="switchGiftTab('kado', this)">Kirim Kado</button>
+      </div>
+
+      <div id="giftTabAmplop">
+        
+    <div class="bank-card">
+      <span class="bank-label">BCA</span>
+      <span class="bank-owner">a.n Valerie Santoso</span>
+      <div class="bank-row">
+        <span class="bank-number">5271890234</span>
+        <button class="btn-copy" onclick="copyText('5271890234')">Salin</button>
+      </div>
+    </div>
+  
+      </div>
+
+      <div id="giftTabKado" style="display:none;" class="bank-card">
+        <span class="bank-label">Alamat Pengiriman Kado</span>
+        <p style="font-size:0.8rem; color:rgba(255,255,255,0.7); line-height:1.5; margin:0.4rem 0 0.8rem;">
+          Kediaman Mempelai, Bali, Indonesia
+        </p>
+        <button class="btn-copy" onclick="copyText('Kediaman Mempelai, Bali, Indonesia')">Salin Alamat</button>
+      </div>
+    </section>
+  
+    </div>
+
+    <!-- 13. FOOTER / THANK YOU -->
+    <footer class="site-footer" id="footer">
+      <h2 class="footer-name serif reveal">Julian <em>&amp;</em> Valerie</h2>
+      <p class="footer-sub reveal delay-1">Sabtu, 05 Desember 2026</p>
+      <p class="footer-note reveal delay-2">Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu.</p>
+    </footer>
+  </main>
+
+  <!-- QR / TICKET MODAL -->
+  <div class="modal-bg" id="modalBg" onclick="closeModal(event)">
+    <div class="modal-card" onclick="event.stopPropagation()">
+      <button class="modal-close" onclick="closeModal()">✕</button>
+      
+      <div style="margin-top:1.2rem;padding:0.9rem;background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);text-align:center;">
+        <span style="font-family:'Cormorant Infant',serif;font-size:0.65rem;letter-spacing:0.2em;color:var(--accent);text-transform:uppercase;font-weight:600;display:block;margin-bottom:0.4rem;">Voucher Souvenir</span>
+        <div style="font-family:monospace;font-weight:700;font-size:0.85rem;color:#ffffff;letter-spacing:0.12em;padding:0.45rem;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:4px;">SOUVENIR-demo-valente</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const INVITATION_ID = "demo-valente";
+    const TARGET_DATE = "2026-12-05T16:00:00";
+    let isPlaying = false;
+
+    // Background Slideshow Carousel Logic (Transitions every 3.5s)
+    function initSlideshow() {
+      const slides = document.querySelectorAll('.slideshow-slide');
+      if (slides.length <= 1) return;
+      let currentSlide = 0;
+      setInterval(() => {
+        slides[currentSlide].classList.remove('active');
+        currentSlide = (currentSlide + 1) % slides.length;
+        slides[currentSlide].classList.add('active');
+      }, 3500);
+    }
+    document.addEventListener("DOMContentLoaded", initSlideshow);
+
+    // Scroll Reveal Observer
+    document.addEventListener("DOMContentLoaded", () => {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("active");
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { rootMargin: "0px 0px -40px 0px", threshold: 0.12 });
+
+      document.querySelectorAll(".reveal, .reveal-up, .reveal-zoom, .reveal-fade").forEach(el => observer.observe(el));
+    });
+
+    // Side Navigation Drawer Toggle
+    function toggleSideNav() {
+      const drawer = document.getElementById('sideNavDrawer');
+      if (drawer) drawer.classList.toggle('open');
+    }
+
+    // Fullscreen Toggle
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+      }
+    }
+
+    function getGuestName() {
+      const p = new URLSearchParams(window.location.search);
+      return p.get('to') || p.get('u') || 'Tamu Undangan';
+    }
+    const gn = getGuestName();
+    const coverGn = document.getElementById('coverGuestName');
+    if (coverGn) coverGn.textContent = gn;
+    const modalGn = document.getElementById('modalGuestName');
+    if (modalGn) modalGn.textContent = gn;
+    const passGn = document.getElementById('passGuestName');
+    if (passGn) passGn.textContent = gn;
+    const rsvpNameIn = document.getElementById('rsvpName');
+    if (rsvpNameIn && gn !== 'Tamu Undangan') rsvpNameIn.value = gn;
+
+    function openInvitation() {
+      const cover = document.getElementById('coverScreen');
+      if (cover) cover.classList.add('slide-up-hidden');
+      playAudio();
+      setTimeout(() => {
+        const home = document.getElementById('home');
+        if (home) {
+          home.querySelectorAll(".reveal, .reveal-up, .reveal-zoom, .reveal-fade").forEach(el => el.classList.add("active"));
+        }
+      }, 350);
+    }
+
+    function openModal() {
+      const modal = document.getElementById('modalBg');
+      if (modal) modal.classList.add('open');
+    }
+    function closeModal(e) {
+      if (!e || e.target === document.getElementById('modalBg')) {
+        const modal = document.getElementById('modalBg');
+        if (modal) modal.classList.remove('open');
+      }
+    }
+
+    const audio = document.getElementById('bgAudio');
+    const musicFab = document.getElementById('musicFab');
+
+    function playAudio() {
+      if (!audio) return;
+      audio.play().then(() => {
+        isPlaying = true;
+        if (musicFab) musicFab.classList.add('playing');
+      }).catch(() => {});
+    }
+
+    function toggleAudio() {
+      if (!audio) return;
+      if (isPlaying) {
+        audio.pause();
+        isPlaying = false;
+        if (musicFab) musicFab.classList.remove('playing');
+      } else {
+        audio.play();
+        isPlaying = true;
+        if (musicFab) musicFab.classList.add('playing');
+      }
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (!audio) return;
+      if (document.hidden) {
+        if (!audio.paused) {
+          audio.dataset.wasPlaying = 'true';
+          audio.pause();
+          if (musicFab) musicFab.classList.remove('playing');
+        }
+      } else {
+        if (audio.dataset.wasPlaying === 'true') {
+          audio.play().then(() => {
+            if (musicFab) musicFab.classList.add('playing');
+          });
+          audio.dataset.wasPlaying = '';
+        }
+      }
+    });
+
+    function switchGiftTab(type, btn) {
+      document.querySelectorAll('.gift-tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const amplop = document.getElementById('giftTabAmplop');
+      const kado = document.getElementById('giftTabKado');
+      if (amplop && kado) {
+        amplop.style.display = type === 'amplop' ? 'block' : 'none';
+        kado.style.display = type === 'kado' ? 'block' : 'none';
+      }
+    }
+
+    function showToast(msg, type = 'success') {
+      let toast = document.getElementById('luxToast');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'luxToast';
+        toast.style.cssText = 'position:fixed;bottom:80px;right:24px;background:rgba(20,20,24,0.95);color:#fff;padding:12px 24px;border-radius:50px;font-size:0.8rem;letter-spacing:0.04em;font-weight:500;z-index:99999;box-shadow:0 10px 35px rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.18);backdrop-filter:blur(16px);display:flex;align-items:center;gap:8px;opacity:0;transition:all 0.35s cubic-bezier(0.16,1,0.3,1);pointer-events:none;';
+        document.body.appendChild(toast);
+      }
+      const icon = type === 'success'
+        ? '<svg width="16" height="16" fill="none" stroke="#34d399" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>'
+        : '<svg width="16" height="16" fill="none" stroke="#f87171" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>';
+      toast.innerHTML = icon + '<span>' + msg + '</span>';
+      toast.style.opacity = '1';
+      toast.style.transform = 'translateY(0)';
+      clearTimeout(window._luxToastTimer);
+      window._luxToastTimer = setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(20px)';
+      }, 3500);
+    }
+
+    function copyText(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('Nomor rekening berhasil disalin!');
+      }).catch(() => {
+        const el = document.createElement('textarea');
+        el.value = text;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+        showToast('Nomor rekening berhasil disalin!');
+      });
+    }
+
+    function initCountdown() {
+      const target = new Date(TARGET_DATE).getTime();
+      if (isNaN(target)) return;
+      setInterval(() => {
+        const diff = target - Date.now();
+        if (diff > 0) {
+          const d = Math.floor(diff / 86400000);
+          const h = Math.floor((diff % 86400000) / 3600000);
+          const m = Math.floor((diff % 3600000) / 60000);
+          const s = Math.floor((diff % 60000) / 1000);
+          const elD = document.getElementById('cdDays');
+          const elH = document.getElementById('cdHours');
+          const elM = document.getElementById('cdMins');
+          const elS = document.getElementById('cdSecs');
+          if (elD) elD.textContent = String(d).padStart(2, '0');
+          if (elH) elH.textContent = String(h).padStart(2, '0');
+          if (elM) elM.textContent = String(m).padStart(2, '0');
+          if (elS) elS.textContent = String(s).padStart(2, '0');
+        }
+      }, 1000);
+    }
+    initCountdown();
+
+    async function submitRsvp(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btnSubmit');
+      const name = document.getElementById('rsvpName').value.trim();
+      const status = document.getElementById('rsvpStatus').value;
+      const count = document.getElementById('rsvpCount').value;
+      const message = document.getElementById('rsvpMessage').value.trim();
+
+      if (!name) { showToast('Silakan isi nama Anda', 'error'); return; }
+
+      btn.disabled = true;
+      btn.textContent = 'Mengirim...';
+
+      try {
+        const res = await fetch('/api/public/rsvp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ invitationId: INVITATION_ID, guestName: name, status, guestCount: count, message })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('Konfirmasi kehadiran & doa restu berhasil dikirim!');
+          if (message) {
+            const wishesList = document.getElementById('wishesList');
+            if (wishesList) {
+              const newWishItem = document.createElement('div');
+              newWishItem.className = 'wish-item';
+              newWishItem.innerHTML = '<div class="wish-name">' + name + ' <span style="font-size:0.68rem;opacity:0.7;font-weight:normal;">• ' + (status === 'hadir' ? 'Hadir (' + count + ' tamu)' : 'Berhalangan') + '</span></div><div class="wish-msg">' + message + '</div>';
+              wishesList.insertBefore(newWishItem, wishesList.firstChild);
+            }
+          }
+          document.getElementById('rsvpMessage').value = '';
+        } else {
+          showToast(data.error || 'Gagal mengirim RSVP', 'error');
+        }
+      } catch (err) {
+        showToast('Terjadi kendala koneksi.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Kirim Konfirmasi & Doa';
+      }
+    }
+
+    try {
+      const bc = new BroadcastChannel("lux_preview_sync");
+      bc.onmessage = (e) => {
+        if (e.data?.type === "INVITATION_SAVED") window.location.reload();
+      };
+    } catch {}
+  </script>
+
+<style id="luxCardCleanStyles">
+  /* Card Preview Mode: Completely hide all floating UI buttons and dock navigation */
+  .music-fab, #musicFab, .floating-music, .audio-player,
+  .fullscreen-btn, #fullscreenBtn, .btn-fullscreen, .btn-fs, .floating-action,
+  .bottom-dock, nav.bottom-dock, .dock-container, nav.bottom-nav, .dock, .bottom-nav,
+  button[onclick*="toggleFullscreen"], button[onclick*="toggleAudio"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+</style>
+
+<script>
+(function() {
+  const isAutoplay = new URLSearchParams(window.location.search).get('autoplay') === '1';
+  if (!isAutoplay) {
+    const s = document.getElementById('luxCardCleanStyles');
+    if (s) s.remove();
+    return;
+  }
+
+  // 1. Completely destroy audio and floating control nodes in card preview
+  function cleanCardDOM() {
+    const selectors = [
+      'audio', '#bgAudio', '.music-fab', '#musicFab', '.floating-music',
+      '.fullscreen-btn', '#fullscreenBtn', '.btn-fullscreen', '.btn-fs',
+      '.bottom-dock', 'nav.bottom-dock', '.dock-container', 'nav.bottom-nav'
+    ];
+    selectors.forEach(sel => {
+      document.querySelectorAll(sel).forEach(el => {
+        if (el.tagName === 'AUDIO') {
+          try { el.pause(); el.src = ''; el.removeAttribute('src'); } catch(e){}
+        }
+        try { el.remove(); } catch(e){ el.style.display = 'none'; }
+      });
+    });
+  }
+
+  cleanCardDOM();
+  document.addEventListener('DOMContentLoaded', cleanCardDOM);
+
+  // 2. Pre-decode and preload all images in the background so there is zero blank flash
+  function prefetchPageImages() {
+    const imgs = Array.from(document.querySelectorAll('img'));
+    imgs.forEach(img => {
+      if (img.loading === 'lazy') img.loading = 'eager';
+      if (img.decode) {
+        try { img.decode().catch(() => {}); } catch(e){}
+      }
+    });
+  }
+
+  function findScrollTarget() {
+    const rp = document.getElementById('rightPanel') || document.querySelector('.right-panel') || document.querySelector('.main-scroll-panel');
+    if (rp && rp.scrollHeight > rp.clientHeight + 40) return rp;
+    
+    const sc = document.querySelector('.scroll-wrapper') || document.querySelector('.main-content') || document.getElementById('mainContent') || document.getElementById('app');
+    if (sc && sc.scrollHeight > sc.clientHeight + 40) return sc;
+
+    if (document.documentElement.scrollHeight > window.innerHeight + 40) return window;
+    if (document.body.scrollHeight > window.innerHeight + 40) return document.body;
+
+    const allDivs = document.querySelectorAll('div, section, main');
+    for (let i = 0; i < allDivs.length; i++) {
+      const el = allDivs[i];
+      if (el.scrollHeight > el.clientHeight + 80 && el.clientHeight > 150) {
+        return el;
+      }
+    }
+    return window;
+  }
+
+  function triggerOpenCover() {
+    if (typeof openInvitation === 'function') {
+      try { openInvitation(); } catch(e){}
+    }
+    const cover = document.getElementById('coverScreen') || document.querySelector('.cover-screen') || document.querySelector('.screen-cover') || document.querySelector('.landing-cover');
+    if (cover) {
+      cover.classList.add('opened');
+      cover.style.transform = 'translateY(-100%)';
+      cover.style.transition = 'transform 0.85s cubic-bezier(0.16, 1, 0.3, 1)';
+    }
+    const coverBtn = document.querySelector('.btn-open-invitation') || document.querySelector('.btn-open') || document.querySelector('#btnOpen') || document.querySelector('.open-btn');
+    if (coverBtn) {
+      try { coverBtn.click(); } catch(e){}
+    }
+  }
+
+  function triggerCloseCover() {
+    const cover = document.getElementById('coverScreen') || document.querySelector('.cover-screen') || document.querySelector('.screen-cover') || document.querySelector('.landing-cover');
+    if (cover) {
+      cover.classList.remove('opened');
+      cover.style.transform = 'translateY(0%)';
+      cover.style.transition = 'transform 0.65s ease-in-out';
+    }
+  }
+
+  function runAutoplay() {
+    cleanCardDOM();
+    prefetchPageImages();
+
+    // Step 1: Relaxed Cover display (3.0s) giving plenty of time to admire cover & prefetch images
+    setTimeout(() => {
+      triggerOpenCover();
+
+      // Step 2: Calm pause (1.4s) on the opening hero section before scrolling
+      setTimeout(() => {
+        const target = findScrollTarget();
+        const isWin = target === window;
+
+        function getMax() {
+          if (isWin) {
+            return Math.max(document.documentElement.scrollHeight, document.body.scrollHeight) - window.innerHeight;
+          } else {
+            return target.scrollHeight - target.clientHeight;
+          }
+        }
+
+        let direction = 1; // 1 = down, -1 = up
+        let speed = 2.0; // calm, comfortable, elegant speed
+
+        function scrollStep() {
+          const max = getMax();
+          if (max <= 10) {
+            requestAnimationFrame(scrollStep);
+            return;
+          }
+
+          let cur = isWin ? (window.pageYOffset || document.documentElement.scrollTop || 0) : target.scrollTop;
+          let next = cur + (direction * speed);
+
+          if (direction === 1 && next >= max) {
+            // Reached bottom footer, pause for 2.0s to let visitor see closing
+            setTimeout(() => {
+              direction = -1;
+              speed = 6.5; // smooth rewind to top
+              requestAnimationFrame(scrollStep);
+            }, 2000);
+            return;
+          } else if (direction === -1 && next <= 0) {
+            // Reached top, close cover and restart relaxed cycle
+            if (isWin) window.scrollTo(0, 0);
+            else target.scrollTop = 0;
+
+            triggerCloseCover();
+
+            setTimeout(() => {
+              triggerOpenCover();
+              setTimeout(() => {
+                direction = 1;
+                speed = 2.0;
+                requestAnimationFrame(scrollStep);
+              }, 1400);
+            }, 3000);
+            return;
+          }
+
+          if (isWin) window.scrollTo(0, next);
+          else target.scrollTop = next;
+
+          requestAnimationFrame(scrollStep);
+        }
+
+        requestAnimationFrame(scrollStep);
+      }, 1400);
+    }, 3000);
+  }
+
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    runAutoplay();
+  } else {
+    document.addEventListener('DOMContentLoaded', runAutoplay);
+  }
+})();
+</script>
+
+
+</body>
+</html>

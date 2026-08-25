@@ -14,7 +14,13 @@ export default async function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
           <BrandLogo size="sm" lightBg showName brandName={platformName} />
 
-          <div className="flex items-center gap-5 sm:gap-6">
+          <div className="flex items-center gap-4 sm:gap-6">
+            <Link
+              href="/portfolio"
+              className="text-xs sm:text-sm font-medium text-[#6e685f] hover:text-amber-900 transition"
+            >
+              Portofolio
+            </Link>
             <Link
               href="/demo"
               className="text-xs sm:text-sm font-medium text-[#6e685f] hover:text-amber-900 transition hidden sm:inline-block"

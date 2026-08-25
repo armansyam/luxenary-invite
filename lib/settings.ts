@@ -19,6 +19,11 @@ export interface PublicPlatformSettings {
   supportEmail: string;
   supportWhatsapp: string;
   packages: PricingPackageItem[];
+  paymentMode: "BOTH" | "GATEWAY" | "MANUAL";
+  bankName: string;
+  bankAccountNumber: string;
+  bankAccountHolder: string;
+  bankInstructions: string;
 }
 
 export async function getAdminSetting(key: string, defaultValue = ""): Promise<string> {
@@ -62,6 +67,13 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
       "Didesain khusus dengan sentuhan estetika mewah dan eksklusif. Hadirkan pengalaman berkesan dengan layout split desktop, custom subdomain, buku tamu real-time, dan video booth ucapan.",
     supportEmail: map["support_email"] || "support@luxenary.id",
     supportWhatsapp: map["support_whatsapp"] || "6281234567890",
+    paymentMode: (map["payment_mode"] as any) || "BOTH",
+    bankName: map["bank_name"] || "BCA (Bank Central Asia)",
+    bankAccountNumber: map["bank_account_number"] || "8735098123",
+    bankAccountHolder: map["bank_account_holder"] || "PT Luxenary Karya Digital",
+    bankInstructions:
+      map["bank_instructions"] ||
+      "Silakan transfer tepat sesuai total tagihan invoice. Setelah transfer, unggah foto bukti transfer di bawah ini untuk diverifikasi admin.",
     packages: [
       {
         id: "TRADITIONAL",

@@ -57,6 +57,11 @@ export default auth((req) => {
         rewriteUrl.search = req.nextUrl.search;
         return NextResponse.rewrite(rewriteUrl);
       }
+      if (pathname === "/memories") {
+        const rewriteUrl = new URL(`/s/${subdomain}/memories`, req.url);
+        rewriteUrl.search = req.nextUrl.search;
+        return NextResponse.rewrite(rewriteUrl);
+      }
     }
   }
 

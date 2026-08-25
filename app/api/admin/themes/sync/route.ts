@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import fs from "fs";
 import path from "path";
@@ -20,10 +20,14 @@ interface DiscoveredTheme {
   isHealthValid: boolean;
 }
 
-export async function POST(req: NextRequest) {
+export async function POST() {
   try {
     const session = await auth();
-    const isAdmin = (session?.user as any)?.isAdmin === true || (session?.user as any)?.role === "SUPER_ADMIN" || (session?.user as any)?.role === "ADMIN";
+    const isAdmin =
+      (session?.user as { isAdmin?: boolean; role?: string })?.isAdmin === true ||
+      (session?.user as { isAdmin?: boolean; role?: string })?.role === "SUPER_ADMIN" ||
+      (session?.user as { isAdmin?: boolean; role?: string })?.role === "ADMIN";
+
     if (!session?.user || !isAdmin) {
       return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
     }
@@ -108,6 +112,10 @@ export async function POST(req: NextRequest) {
       syncedCount++;
     }
 
+    // Pre-compile all demo themes into static index.html files
+    const { compileAllStaticDemos } = await import("@/lib/demoPublisher");
+    const precompiledCount = await compileAllStaticDemos();
+
     // Purge / Invalidate Next.js cache for showroom and all demo pages
     revalidatePath("/demo");
     revalidatePath("/demo/[theme]", "page");
@@ -116,15 +124,17 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: "Sinkronisasi tema dan pembersihan cache berhasil 100%",
+      message: `Sinkronisasi tema berhasil! ${syncedCount} tema tersinkron dan ${precompiledCount} file HTML demo statis telah diperbarui.`,
       syncedCount,
+      precompiledCount,
       discoveredThemes: discovered,
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
-    console.error("Theme Sync Error:", error);
+  } catch (error: unknown) {
+    const errorMsg = error instanceof Error ? error.message : "Gagal melakukan sinkronisasi tema";
+    console.error("Theme Sync Error:", errorMsg);
     return NextResponse.json(
-      { success: false, error: error.message || "Gagal melakukan sinkronisasi tema" },
+      { success: false, error: errorMsg },
       { status: 500 }
     );
   }

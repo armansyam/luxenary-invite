@@ -67,14 +67,29 @@ export async function GET(req: Request) {
         subdomain: cleanSubdomain,
         ...(invitationId ? { NOT: { id: invitationId } } : {}),
       },
-      select: { id: true },
+      select: { id: true, eventData: true },
     });
 
     if (existing) {
-      return NextResponse.json({
-        available: false,
-        message: "Subdomain sudah digunakan oleh pasangan lain. Silakan gunakan kombinasi lain.",
-      });
+      let eventDateToTest: string | null = null;
+      try {
+        if (existing.eventData) {
+          const parsed = JSON.parse(existing.eventData);
+          if (Array.isArray(parsed) && parsed[0]?.date) {
+            eventDateToTest = parsed[0].date;
+          }
+        }
+      } catch {}
+
+      // If holding invitation has expired (> 7 days post event), it can be recycled!
+      const isExpired = eventDateToTest ? (new Date(eventDateToTest).getTime() + 7 * 24 * 60 * 60 * 1000 < Date.now()) : false;
+
+      if (!isExpired) {
+        return NextResponse.json({
+          available: false,
+          message: "Subdomain sedang aktif digunakan oleh pasangan lain. Silakan gunakan kombinasi lain.",
+        });
+      }
     }
 
     return NextResponse.json({

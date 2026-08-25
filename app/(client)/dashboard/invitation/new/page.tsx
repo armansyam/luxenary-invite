@@ -97,8 +97,8 @@ export default function NewInvitation() {
       </div>
 
       {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
-          ⚠ {error}
+        <div className="mb-6 p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-sm font-medium">
+          {error}
         </div>
       )}
 
@@ -273,7 +273,7 @@ export default function NewInvitation() {
                   Membuat Studio...
                 </>
               ) : (
-                "✦ Selesai & Buka Studio Editor"
+                "Selesai & Buka Studio Editor"
               )}
             </button>
           </div>

@@ -1,9 +1,8 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { composeTemplateData } from "@/lib/themeEngine";
-import { renderTemplateFile } from "@/lib/renderTemplate";
 import { generateInvitationMetadata } from "@/lib/metadataHelper";
+import { getPublishedHtml, buildAndSavePublishedHtml } from "@/lib/staticPublisher";
 
 interface PageProps {
   params: Promise<{ groom: string; bride: string; invitationSlug: string }>;
@@ -46,10 +45,17 @@ export default async function PublicInvitationPage({ params }: PageProps) {
     notFound();
   }
 
-  const data = await composeTemplateData(invitation.id);
-  if (!data) notFound();
+  // 1. Direct Static Serving: Load standalone HTML file if already baked
+  let html = getPublishedHtml(invitation.id);
 
-  const html = renderTemplateFile(invitation.themeId || "kila", data);
+  // 2. If not baked yet, compile standalone HTML and save for future instant requests
+  if (!html) {
+    html = await buildAndSavePublishedHtml(invitation.id);
+  }
+
+  if (!html) {
+    notFound();
+  }
 
   return (
     <div className="invitation-container">

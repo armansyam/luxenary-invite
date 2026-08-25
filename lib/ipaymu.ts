@@ -67,10 +67,31 @@ export class IPaymuGateway implements PaymentGateway {
       throw new Error("iPaymu belum dikonfigurasi dengan VA & API Key aktif. Silakan isi di Portal Admin (/admin) → tab Pengaturan.");
     }
 
+    // Baca masa kedaluwarsa QRIS dari admin setting (dalam menit, dikirim ke iPaymu)
+    let expiryMinutes = 60;
+    try {
+      const expirySetting = await prisma.adminSetting.findUnique({ where: { key: "payment_expiry_minutes" } });
+      if (expirySetting && !isNaN(Number(expirySetting.value))) {
+        expiryMinutes = Math.max(5, Math.min(1440, Number(expirySetting.value)));
+      }
+    } catch {}
+
+    // Baca data buyer dari order
+    let buyerName = "Klien Luxenary";
+    let buyerEmail = "client@luxenary.id";
+    try {
+      const order = await prisma.order.findUnique({
+        where: { id: orderId },
+        include: { user: { select: { name: true, email: true } } },
+      });
+      if (order?.user?.name) buyerName = order.user.name;
+      if (order?.user?.email) buyerEmail = order.user.email;
+    } catch {}
+
     const timestamp = Math.floor(Date.now() / 1000).toString();
 
     const body = {
-      product: [`Luxenary Invite — Order ${orderId}`],
+      product: [`Luxenary Invite — Paket ${orderId.slice(-6).toUpperCase()}`],
       qty: [1],
       price: [amount],
       amount,
@@ -79,9 +100,10 @@ export class IPaymuGateway implements PaymentGateway {
       cancelUrl: `${appUrl}/checkout/pending?order=${orderId}`,
       referenceId: orderId,
       paymentMethod: "redirect",
-      buyerName: "Klien Luxenary",
-      buyerEmail: "client@luxenary.id",
+      buyerName,
+      buyerEmail,
       buyerPhone: "",
+      expired: expiryMinutes, // Masa berlaku QRIS dalam menit — sync dengan admin setting
     };
 
     const bodyStr = JSON.stringify(body);

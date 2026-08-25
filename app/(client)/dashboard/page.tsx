@@ -54,7 +54,16 @@ export default function DashboardHome() {
           }
           setLoading(false);
         } else {
-          // New user has no invitations yet -> redirect to Onboarding Setup Wizard
+          // User belum memiliki undangan -> Cek tahapan onboarding terakhir (Resume State Machine)
+          try {
+            const stateRes = await fetch("/api/client/onboarding-state", { cache: "no-store" });
+            const stateData = await stateRes.json();
+            if (stateData.redirectUrl) {
+              router.replace(stateData.redirectUrl);
+              return;
+            }
+          } catch {}
+
           router.replace("/dashboard/setup");
         }
       })
@@ -118,16 +127,29 @@ export default function DashboardHome() {
           </div>
 
           {/* Action Buttons */}
-          <div className="pt-2 flex flex-col sm:flex-row gap-2.5 sm:items-center">
+          <div className="pt-2 flex flex-col sm:flex-row gap-2.5 sm:items-center flex-wrap">
             <Link
               href={editorUrl}
-              className="w-full sm:w-auto px-6 py-3 bg-amber-800 hover:bg-amber-700 text-white font-bold rounded-xl text-xs transition shadow-md flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full sm:w-auto px-5 py-3 bg-amber-800 hover:bg-amber-700 text-white font-bold rounded-xl text-xs transition shadow-md flex items-center justify-center gap-2 cursor-pointer"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               </svg>
               <span>Edit Undangan (Studio)</span>
             </Link>
+
+            <a
+              href={`/${invitation?.groomSlug || "didan"}-${invitation?.brideSlug || "nasha"}/${invitation?.invitationSlug || "okt-2026"}/memories`}
+              target="_blank"
+              rel="noreferrer"
+              className="w-full sm:w-auto px-4 py-3 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-stone-950 font-bold rounded-xl text-xs transition shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <svg className="w-4 h-4 text-stone-950" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span>Galeri Momen Tamu</span>
+            </a>
 
             <div className="grid grid-cols-2 sm:flex items-center gap-2">
               <button
@@ -155,10 +177,18 @@ export default function DashboardHome() {
             </div>
           </div>
 
-          {/* URL Bar */}
-          <div className="pt-3 border-t border-stone-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-stone-400 font-mono bg-stone-950/40 p-2.5 rounded-xl">
-            <span className="truncate text-amber-200/90">{invUrl}</span>
-            <span className="text-[11px] font-sans text-stone-500 sm:text-right">Link Publik Undangan Anda</span>
+          {/* URL Bars (Undangan + Galeri Kenangan) */}
+          <div className="pt-3 border-t border-stone-800 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-stone-400 font-mono">
+            <div className="bg-stone-950/40 p-2.5 rounded-xl flex items-center justify-between gap-2">
+              <span className="truncate text-amber-200/90">{invUrl}</span>
+              <span className="text-[10px] font-sans text-stone-500 shrink-0">Web Undangan</span>
+            </div>
+            <div className="bg-stone-950/40 p-2.5 rounded-xl flex items-center justify-between gap-2">
+              <span className="truncate text-amber-400">
+                {`/${invitation?.groomSlug || "didan"}-${invitation?.brideSlug || "nasha"}/${invitation?.invitationSlug || "okt-2026"}/memories`}
+              </span>
+              <span className="text-[10px] font-sans text-stone-500 shrink-0">Galeri Momen</span>
+            </div>
           </div>
         </div>
       </div>
@@ -212,19 +242,19 @@ export default function DashboardHome() {
       </div>
 
       {/* 3. Core Quick Action Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
         
         {/* Card 1: Studio Editor */}
-        <div className="bg-white p-5 sm:p-6 rounded-2xl border border-stone-200/80 shadow-xs flex flex-col justify-between space-y-4 hover:border-amber-700/40 transition">
+        <div className="bg-white p-5 rounded-2xl border border-stone-200/80 shadow-xs flex flex-col justify-between space-y-4 hover:border-amber-700/40 transition">
           <div className="space-y-2">
             <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200/80 flex items-center justify-center text-amber-800">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
               </svg>
             </div>
-            <h3 className="text-base font-bold text-stone-900">Studio Editor Undangan</h3>
+            <h3 className="text-sm font-bold text-stone-900">Studio Editor Undangan</h3>
             <p className="text-xs text-stone-500 leading-relaxed">
-              Atur susunan multi-acara (Akad, Resepsi, Mappacci, Mapparola), foto prewedding, video teaser YouTube, dan rekening bank.
+              Atur susunan multi-acara, foto prewedding, video YouTube, dan rekening bank.
             </p>
           </div>
           <Link
@@ -236,16 +266,16 @@ export default function DashboardHome() {
         </div>
 
         {/* Card 2: Guest Management */}
-        <div className="bg-white p-5 sm:p-6 rounded-2xl border border-stone-200/80 shadow-xs flex flex-col justify-between space-y-4 hover:border-emerald-600/40 transition">
+        <div className="bg-white p-5 rounded-2xl border border-stone-200/80 shadow-xs flex flex-col justify-between space-y-4 hover:border-emerald-600/40 transition">
           <div className="space-y-2">
             <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200/80 flex items-center justify-center text-emerald-800">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
             </div>
-            <h3 className="text-base font-bold text-stone-900">Buku Tamu &amp; WhatsApp</h3>
+            <h3 className="text-sm font-bold text-stone-900">Buku Tamu &amp; WhatsApp</h3>
             <p className="text-xs text-stone-500 leading-relaxed">
-              Tambah daftar nama tamu, atur kuota kehadiran (Pax), dan buat link undangan personal WhatsApp 1-klik.
+              Daftar nama tamu, atur kuota Pax, dan buat link personal WhatsApp 1-klik.
             </p>
           </div>
           <Link
@@ -257,16 +287,16 @@ export default function DashboardHome() {
         </div>
 
         {/* Card 3: RSVP & Wishes */}
-        <div className="bg-white p-5 sm:p-6 rounded-2xl border border-stone-200/80 shadow-xs flex flex-col justify-between space-y-4 hover:border-blue-600/40 transition">
+        <div className="bg-white p-5 rounded-2xl border border-stone-200/80 shadow-xs flex flex-col justify-between space-y-4 hover:border-blue-600/40 transition">
           <div className="space-y-2">
             <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200/80 flex items-center justify-center text-blue-800">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
               </svg>
             </div>
-            <h3 className="text-base font-bold text-stone-900">RSVP &amp; Doa Restu</h3>
+            <h3 className="text-sm font-bold text-stone-900">RSVP &amp; Doa Restu</h3>
             <p className="text-xs text-stone-500 leading-relaxed">
-              Pantau konfirmasi kehadiran dari para tamu, baca doa restu yang masuk, dan ekspor data kehadiran ke spreadsheet.
+              Pantau konfirmasi kehadiran dari para tamu, baca doa, dan ekspor spreadsheet.
             </p>
           </div>
           <Link
@@ -275,6 +305,30 @@ export default function DashboardHome() {
           >
             Lihat Rekap RSVP
           </Link>
+        </div>
+
+        {/* Card 4: Galeri Kenangan Tamu (Memory Vault) */}
+        <div className="bg-white p-5 rounded-2xl border border-amber-200 shadow-xs flex flex-col justify-between space-y-4 hover:border-amber-500 transition bg-gradient-to-b from-amber-50/30 to-white">
+          <div className="space-y-2">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-900 font-bold text-sm">
+              <svg className="w-5 h-5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+            <h3 className="text-sm font-bold text-stone-900">Galeri Kenangan Tamu</h3>
+            <p className="text-xs text-stone-500 leading-relaxed">
+              Album foto candid &amp; video ucapan dari sahabat yang dibagikan pasca acara.
+            </p>
+          </div>
+          <a
+            href={`/${invitation?.groomSlug || "didan"}-${invitation?.brideSlug || "nasha"}/${invitation?.invitationSlug || "okt-2026"}/memories`}
+            target="_blank"
+            rel="noreferrer"
+            className="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs transition text-center inline-flex items-center justify-center gap-1 shadow-xs"
+          >
+            <span>Buka Galeri Momen</span>
+          </a>
         </div>
       </div>
     </div>

@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 
+import { getMonthYearSlug, isSubdomainExpired } from "@/lib/domainUtils";
+
 function slugify(text: string): string {
   return text
     .toLowerCase()
@@ -71,24 +73,55 @@ export async function POST(req: Request) {
 
   const groomSlug = slugify(finalGroomNick);
   const brideSlug = slugify(finalBrideNick);
-  const invitationSlug = slugify(invitationName || "wedding");
 
-  let finalSubdomain = requestedSubdomain ? slugify(requestedSubdomain) : `${groomSlug}-${brideSlug}`;
-  let finalGroomSlug = groomSlug;
-  let finalBrideSlug = brideSlug;
+  // 1. Permanent Canonical Path Slug: Month-Year format (e.g. "okt-2026")
+  const defaultMonthYearSlug = getMonthYearSlug(weddingDate);
+  const baseInvitationSlug = slugify(invitationName || defaultMonthYearSlug);
+  let invitationSlug = baseInvitationSlug;
 
-  const existing = await prisma.invitation.findFirst({
-    where: {
-      OR: [
-        { subdomain: finalSubdomain },
-        { groomSlug, brideSlug, invitationSlug },
-      ],
-    },
+  // Collision disambiguation for path: [groom]-[bride]/[invitationSlug]
+  let collisionCounter = 1;
+  while (true) {
+    const existingPath = await prisma.invitation.findFirst({
+      where: { groomSlug, brideSlug, invitationSlug },
+    });
+    if (!existingPath) break;
+    collisionCounter++;
+    invitationSlug = `${baseInvitationSlug}-${collisionCounter}`;
+  }
+
+  // 2. Subdomain Assignment & Recycling (Lease System)
+  let desiredSubdomain = requestedSubdomain ? slugify(requestedSubdomain) : `${groomSlug}-${brideSlug}`;
+  let finalSubdomain = desiredSubdomain;
+
+  const existingSubdomain = await prisma.invitation.findUnique({
+    where: { subdomain: desiredSubdomain },
   });
 
-  if (existing) {
-    const suffix = Date.now().toString(36).slice(-4);
-    finalSubdomain = `${groomSlug}-${brideSlug}-${suffix}`;
+  if (existingSubdomain) {
+    // Check if the holding invitation's event has passed grace period (> 7 days)
+    let eventDateToTest: string | null = null;
+    try {
+      if (existingSubdomain.eventData) {
+        const parsed = JSON.parse(existingSubdomain.eventData);
+        if (Array.isArray(parsed) && parsed[0]?.date) {
+          eventDateToTest = parsed[0].date;
+        }
+      }
+    } catch {}
+
+    if (isSubdomainExpired(eventDateToTest, 7)) {
+      // Release expired subdomain back to the pool!
+      await prisma.invitation.update({
+        where: { id: existingSubdomain.id },
+        data: { subdomain: null },
+      });
+      finalSubdomain = desiredSubdomain;
+    } else {
+      // Subdomain is actively in use by another couple → disambiguate with short suffix
+      const suffix = Date.now().toString(36).slice(-4);
+      finalSubdomain = `${desiredSubdomain}-${suffix}`;
+    }
   }
 
   const initialEvents = [
@@ -120,8 +153,8 @@ export async function POST(req: Request) {
       brideName: brideName || finalBrideNick,
       groomNickname: finalGroomNick,
       brideNickname: finalBrideNick,
-      groomSlug: finalGroomSlug,
-      brideSlug: finalBrideSlug,
+      groomSlug,
+      brideSlug,
       invitationSlug,
       subdomain: finalSubdomain,
       themeId: themeId || "kalandra",
