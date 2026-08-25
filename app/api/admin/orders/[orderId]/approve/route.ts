@@ -1,11 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
+
+export const dynamic = "force-dynamic";
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ orderId: string }> }
 ) {
   try {
+    const session = await auth();
+    const isAdmin = (session?.user as any)?.isAdmin === true || (session?.user as any)?.role === "SUPER_ADMIN" || (session?.user as any)?.role === "ADMIN";
+    if (!session?.user || !isAdmin) {
+      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
+    }
+
     const { orderId } = await params;
     if (!orderId) {
       return NextResponse.json({ error: "Order ID diperlukan" }, { status: 400 });

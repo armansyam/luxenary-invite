@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import fs from "fs";
 import path from "path";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -21,14 +22,20 @@ interface DiscoveredTheme {
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await auth();
+    const isAdmin = (session?.user as any)?.isAdmin === true || (session?.user as any)?.role === "SUPER_ADMIN" || (session?.user as any)?.role === "ADMIN";
+    if (!session?.user || !isAdmin) {
+      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
+    }
+
     const themesDir = path.join(process.cwd(), "themes");
     const discovered: DiscoveredTheme[] = [];
 
     const folders = [
-      { name: "premium", category: "premium" as const, series: "Premium Series" },
-      { name: "modern", category: "modern" as const, series: "Modern Series" },
-      { name: "traditional", category: "traditional" as const, series: "Traditional Series" },
-      { name: "", category: "modern" as const, series: "Modern Series" },
+      { name: "premium", category: "premium" as const, series: "Premium" },
+      { name: "modern", category: "modern" as const, series: "Modern" },
+      { name: "traditional", category: "traditional" as const, series: "Traditional" },
+      { name: "", category: "modern" as const, series: "Modern" },
     ];
 
     for (const folder of folders) {
@@ -76,6 +83,8 @@ export async function POST(req: NextRequest) {
     let syncedCount = 0;
     for (let i = 0; i < discovered.length; i++) {
       const d = discovered[i];
+      const existing = await prisma.theme.findUnique({ where: { id: d.id } });
+
       await prisma.theme.upsert({
         where: { id: d.id },
         update: {
@@ -83,7 +92,7 @@ export async function POST(req: NextRequest) {
           category: d.category,
           series: d.series,
           sortOrder: i + 1,
-          isActive: true,
+          ...(existing ? {} : { isActive: true }),
         },
         create: {
           id: d.id,

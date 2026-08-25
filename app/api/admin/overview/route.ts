@@ -1,5 +1,17 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
+
+export const dynamic = "force-dynamic";
+
+async function verifyAdminSession() {
+  const session = await auth();
+  const isAdmin = (session?.user as any)?.isAdmin === true || (session?.user as any)?.role === "SUPER_ADMIN" || (session?.user as any)?.role === "ADMIN";
+  if (!session?.user || !isAdmin) {
+    return false;
+  }
+  return true;
+}
 
 const DEFAULT_THEMES = [
   { id: "kalandra", name: "Kalandra", category: "premium", series: "Premium", description: "Modern, Elegan & Minimalis", isPremium: true, sortOrder: 1, isActive: true },
@@ -15,9 +27,14 @@ const DEFAULT_THEMES = [
 
 export async function GET() {
   try {
+    const isAuthorized = await verifyAdminSession();
+    if (!isAuthorized) {
+      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
+    }
+
     // Check if themes need initial seeding
     let themes = await prisma.theme.findMany({ orderBy: { sortOrder: "asc" } });
-    if (themes.length === 0 || themes.some((t) => ["kila", "aruna", "ivanna", "danila", "papercut"].includes(t.id))) {
+    if (themes.length === 0 || themes.some((t) => ["kila", "aruna", "ivanna", "danila"].includes(t.id))) {
       // Re-seed with new clean themes
       for (const t of DEFAULT_THEMES) {
         await prisma.theme.upsert({
@@ -28,7 +45,7 @@ export async function GET() {
       }
       // Clean up old theme IDs from database
       await prisma.theme.deleteMany({
-        where: { id: { in: ["kila", "aruna", "ivanna", "danila", "papercut"] } },
+        where: { id: { in: ["kila", "aruna", "ivanna", "danila"] } },
       });
       themes = await prisma.theme.findMany({ orderBy: { sortOrder: "asc" } });
     }

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { auth } from "@/auth";
 
 export function getInvitationLockStatus(inv: any) {
   // 1. Check if Admin Emergency Unlock is actively running
@@ -70,26 +71,32 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized. Silakan login terlebih dahulu." }, { status: 401 });
+    }
+
     const resolvedParams = await Promise.resolve(params);
     const id = resolvedParams?.id;
 
-    let invitation = null;
-    if (id) {
-      invitation = await prisma.invitation.findUnique({
-        where: { id },
-        include: { media: true },
-      });
+    if (!id) {
+      return NextResponse.json({ error: "ID Undangan wajib disertakan." }, { status: 400 });
     }
 
-    if (!invitation) {
-      invitation = await prisma.invitation.findFirst({
-        orderBy: { createdAt: "desc" },
-        include: { media: true },
-      });
-    }
+    const invitation = await prisma.invitation.findUnique({
+      where: { id },
+      include: { media: true },
+    });
 
     if (!invitation) {
       return NextResponse.json({ error: "Undangan tidak ditemukan" }, { status: 404 });
+    }
+
+    const isOwner = invitation.userId === session.user.id;
+    const isAdmin = (session.user as any).isAdmin === true || (session.user as any).role === "SUPER_ADMIN" || (session.user as any).role === "ADMIN";
+
+    if (!isOwner && !isAdmin) {
+      return NextResponse.json({ error: "Forbidden. Anda tidak memiliki akses ke undangan ini." }, { status: 403 });
     }
 
     const mediaMap: Record<string, string> = {};
@@ -117,6 +124,11 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized. Silakan login terlebih dahulu." }, { status: 401 });
+    }
+
     const resolvedParams = await Promise.resolve(params);
     const id = resolvedParams?.id;
     const body = await req.json();
@@ -126,6 +138,13 @@ export async function PUT(
     const currentInv = await prisma.invitation.findUnique({ where: { id } });
     if (!currentInv) {
       return NextResponse.json({ error: "Undangan tidak ditemukan" }, { status: 404 });
+    }
+
+    const isOwner = currentInv.userId === session.user.id;
+    const isAdmin = (session.user as any).isAdmin === true || (session.user as any).role === "SUPER_ADMIN" || (session.user as any).role === "ADMIN";
+
+    if (!isOwner && !isAdmin) {
+      return NextResponse.json({ error: "Forbidden. Anda tidak memiliki hak mengedit undangan ini." }, { status: 403 });
     }
 
     const lockStatus = getInvitationLockStatus(currentInv);

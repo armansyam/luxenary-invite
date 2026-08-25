@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
+import { useEffect } from "react";
 import { BrandLogo } from "@/components/BrandLogo";
 
 const navItems = [
@@ -58,7 +59,31 @@ export default function ClientDashboardLayout({
   children,
 }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.replace("/login");
+    }
+  }, [status, router]);
+
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen bg-[#faf8f5] flex flex-col items-center justify-center text-amber-900 font-sans text-xs gap-3">
+        <span className="w-6 h-6 border-2 border-amber-800 border-t-transparent rounded-full animate-spin" />
+        <span>Memverifikasi sesi portal klien...</span>
+      </div>
+    );
+  }
+
+  if (status === "unauthenticated" || !session?.user) {
+    return (
+      <div className="min-h-screen bg-[#faf8f5] flex flex-col items-center justify-center text-amber-900 font-sans text-xs gap-3">
+        <span>Sesi tidak valid. Mengalihkan ke halaman login...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#faf8f5] text-stone-900 font-sans flex flex-col selection:bg-amber-100 selection:text-amber-900">

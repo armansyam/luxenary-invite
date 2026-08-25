@@ -3,9 +3,18 @@ import path from "path";
 import fs from "fs";
 import { getBackupDirectory } from "@/lib/databaseBackup";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
+
+export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
+    const session = await auth();
+    const isAdmin = (session?.user as any)?.isAdmin === true || (session?.user as any)?.role === "SUPER_ADMIN" || (session?.user as any)?.role === "ADMIN";
+    if (!session?.user || !isAdmin) {
+      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
     const filename = searchParams.get("filename");
 
@@ -39,6 +48,6 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || "Gagal download snapshot" }, { status: 500 });
+    return NextResponse.json({ error: error.message || "Gagal mengunduh file snapshot" }, { status: 500 });
   }
 }

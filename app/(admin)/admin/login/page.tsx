@@ -136,12 +136,9 @@ export default function AdminLoginPage() {
           </button>
         </form>
 
-        {/* Password hint */}
-        <div className="text-center text-[11px] text-stone-600 border-t border-stone-800/60 pt-4 space-y-2">
-          <p>Password default pertama: lihat variabel <code className="text-amber-600 font-mono">ADMIN_PASSWORD</code> di <code className="text-stone-400 font-mono">.env</code></p>
-          <a href="/login" className="text-stone-400 hover:text-amber-400 transition block">
-            ← Pindah ke Portal Login Klien
-          </a>
+        {/* Footer info */}
+        <div className="text-center text-[11px] text-stone-600 border-t border-stone-800/60 pt-4">
+          <p>Akses ini dilindungi oleh otentikasi terenkripsi.</p>
         </div>
       </div>
     </div>

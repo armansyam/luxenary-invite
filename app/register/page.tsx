@@ -25,9 +25,9 @@ export default function RegisterPage() {
   const [plans, setPlans] = useState<Plan[]>([
     {
       id: "TRADITIONAL",
-      name: "Traditional Series",
+      name: "Traditional",
       price: 50000,
-      desc: "Tema Traditional — Sakral, Megah & Bernuansa Tradisional",
+      desc: "Tema Standart — Elegan, Bernuansa Tradisional",
       themes: ["Prameswari", "Dilla Lucky"],
       features: [
         "Tautan link personal per nama tamu",
@@ -41,9 +41,9 @@ export default function RegisterPage() {
     },
     {
       id: "MODERN",
-      name: "Modern Series",
+      name: "Modern",
       price: 100000,
-      desc: "Tema Modern — Minimalis, Kontemporer & Sinematik",
+      desc: "Tema Premium — Sinematik, Editorial, Kontemporer",
       themes: ["Wave", "Papercut", "Ameera"],
       features: [
         "Tautan link personal per nama tamu",
@@ -57,7 +57,7 @@ export default function RegisterPage() {
     },
     {
       id: "PREMIUM",
-      name: "Premium Series",
+      name: "Premium",
       price: 120000,
       desc: "Tema Premium — Editorial, Full-Text & Luxury Visual Motion",
       themes: ["Kalandra", "Valente", "Aurelia", "Artisan"],
@@ -81,49 +81,11 @@ export default function RegisterPage() {
     const domain = getApexRootDomain();
     setRootDomain(domain);
 
-    fetch("/api/admin/settings", { cache: "no-store" })
+    fetch("/api/public/settings", { cache: "no-store" })
       .then((r) => r.json())
       .then((data) => {
-        if (data.grouped?.pricing) {
-          const p = data.grouped.pricing;
-          const commonFeatures = [
-            "Tautan link personal per nama tamu",
-            "Tamu undangan tanpa batas",
-            "Manajemen RSVP & ucapan doa",
-            "Buku tamu & link WA 1-klik",
-            "Galeri foto & musik latar",
-            "Amplop digital QRIS & transfer bank",
-          ];
-
-          setPlans((prev) =>
-            prev.map((plan) => {
-              if (plan.id === "PREMIUM") {
-                return {
-                  ...plan,
-                  name: p.name_premium || plan.name,
-                  price: Number(p.price_premium ?? plan.price),
-                  desc: p.desc_premium || plan.desc,
-                  features: commonFeatures,
-                };
-              }
-              if (plan.id === "MODERN") {
-                return {
-                  ...plan,
-                  name: p.name_modern || plan.name,
-                  price: Number(p.price_modern ?? plan.price),
-                  desc: p.desc_modern || plan.desc,
-                  features: commonFeatures,
-                };
-              }
-              return {
-                ...plan,
-                name: p.name_traditional || plan.name,
-                price: Number(p.price_traditional ?? plan.price),
-                desc: p.desc_traditional || plan.desc,
-                features: commonFeatures,
-              };
-            })
-          );
+        if (Array.isArray(data.packages) && data.packages.length > 0) {
+          setPlans(data.packages);
         }
       })
       .catch(() => {});

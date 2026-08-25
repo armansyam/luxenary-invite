@@ -11,11 +11,17 @@ const THEME_MAP: Record<string, { file: string; folder: "premium" | "traditional
   // Traditional Series
   "prameswari": { file: "prameswari.html", folder: "traditional" },
   "dillalucky": { file: "dillalucky.html", folder: "traditional" },
+  "badrika": { file: "badrika.html", folder: "traditional" },
+  "mayang": { file: "mayang.html", folder: "traditional" },
+  "candani": { file: "candani.html", folder: "traditional" },
 
   // Modern Series
   "wave": { file: "wave.html", folder: "modern" },
   "papercut": { file: "papercut.html", folder: "modern" },
   "ameera": { file: "ameera.html", folder: "modern" },
+  "chronicle": { file: "chronicle.html", folder: "modern" },
+  "lumina": { file: "lumina.html", folder: "modern" },
+  "solaria": { file: "solaria.html", folder: "modern" },
 
   // Backward compatibility alias mapping
   "kila": { file: "kalandra.html", folder: "premium" },
@@ -84,7 +90,7 @@ const AUTOPLAY_SHOWCASE_SCRIPT = `
   }
 
   function findScrollTarget() {
-    const rp = document.getElementById('rightPanel') || document.querySelector('.right-panel');
+    const rp = document.getElementById('rightPanel') || document.querySelector('.right-panel') || document.querySelector('.main-scroll-panel');
     if (rp && rp.scrollHeight > rp.clientHeight + 40) return rp;
     
     const sc = document.querySelector('.scroll-wrapper') || document.querySelector('.main-content') || document.getElementById('mainContent') || document.getElementById('app');

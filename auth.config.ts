@@ -17,7 +17,7 @@ export const authConfig = {
         return true;
       }
 
-      // Admin portal protection
+      // Admin portal protection — HANYA role Admin / Super Admin
       if (pathname.startsWith("/admin")) {
         if (!isLoggedIn || !isAdmin) {
           return false;
@@ -25,9 +25,10 @@ export const authConfig = {
         return true;
       }
 
-      // Client dashboard protection
+      // Client dashboard protection — HANYA role Client murni (Admin DILARANG masuk dashboard client)
       if (pathname.startsWith("/dashboard")) {
-        if (!isLoggedIn) {
+        const isClient = isLoggedIn && !isAdmin && (auth?.user as any)?.role === "CLIENT";
+        if (!isClient) {
           return false;
         }
         return true;

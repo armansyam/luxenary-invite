@@ -40,24 +40,15 @@ function CheckoutContent() {
       setLoading(true);
       setError(null);
       try {
-        // Ambil harga dari admin settings
-        const settingsRes = await fetch("/api/admin/settings", { cache: "no-store" });
+        // Ambil data paket terpusat dari public settings
+        const settingsRes = await fetch("/api/public/settings", { cache: "no-store" });
         const settings = await settingsRes.json();
-        const pricing = settings.grouped?.pricing || {};
+        const packages: any[] = settings.packages || [];
+        const currentPkg = packages.find((p) => p.id === planParam) || packages[0];
 
-        let name = pricing.name_traditional || "Traditional Series";
-        let price = Number(pricing.price_traditional || 50000);
-        let desc = pricing.desc_traditional || "Tema Traditional — Sakral, Megah & Bernuansa Tradisional";
-
-        if (planParam === "PREMIUM") {
-          name = pricing.name_premium || "Premium Series";
-          price = Number(pricing.price_premium || 699000);
-          desc = pricing.desc_premium || "Tema Premium — Editorial, Full-Text & Luxury Visual Motion";
-        } else if (planParam === "MODERN") {
-          name = pricing.name_modern || "Modern Series";
-          price = Number(pricing.price_modern || 499000);
-          desc = pricing.desc_modern || "Tema Modern — Minimalis, Kontemporer & Sinematik";
-        }
+        const name = currentPkg?.name || (planParam === "PREMIUM" ? "Premium" : planParam === "MODERN" ? "Modern" : "Traditional");
+        const price = Number(currentPkg?.price || (planParam === "PREMIUM" ? 120000 : planParam === "MODERN" ? 100000 : 50000));
+        const desc = currentPkg?.desc || "";
 
         setPlanData({
           name,

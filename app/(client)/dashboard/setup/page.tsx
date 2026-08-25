@@ -6,84 +6,6 @@ import { useSession } from "next-auth/react";
 import { getApexRootDomain, getInvitationPublicUrl } from "@/lib/domainUtils";
 import { BrandLogo } from "@/components/BrandLogo";
 
-const THEMES = [
-  // PREMIUM SERIES
-  {
-    id: "kalandra",
-    name: "Kalandra",
-    series: "Premium Series",
-    category: "PREMIUM",
-    tagline: "Monochrome Editorial & Magazine Aesthetic",
-    accent: "#8c7355",
-  },
-  {
-    id: "valente",
-    name: "Valente",
-    series: "Premium Series",
-    category: "PREMIUM",
-    tagline: "Warm Terracotta & Romantic Cinema",
-    accent: "#a85d42",
-  },
-  {
-    id: "aurelia",
-    name: "Aurelia",
-    series: "Premium Series",
-    category: "PREMIUM",
-    tagline: "Classic Gold Monogram & High-End Luxury",
-    accent: "#bfa15f",
-  },
-  {
-    id: "artisan",
-    name: "Artisan",
-    series: "Premium Series",
-    category: "PREMIUM",
-    tagline: "Minimalist Typographic Layout & Warm Grain",
-    accent: "#736b5e",
-  },
-  // MODERN SERIES
-  {
-    id: "wave",
-    name: "Wave",
-    series: "Modern Series",
-    category: "MODERN",
-    tagline: "Moody & Dramatic Liquid Wave Curves",
-    accent: "#2c3e50",
-  },
-  {
-    id: "papercut",
-    name: "Papercut",
-    series: "Modern Series",
-    category: "MODERN",
-    tagline: "Craft Scrapbook & Polaroid Cutout Aesthetic",
-    accent: "#6e5849",
-  },
-  {
-    id: "ameera",
-    name: "Ameera",
-    series: "Modern Series",
-    category: "MODERN",
-    tagline: "Contemporary Heritage & Modern Contrast",
-    accent: "#3d342d",
-  },
-  // TRADITIONAL SERIES
-  {
-    id: "prameswari",
-    name: "Prameswari",
-    series: "Traditional Series",
-    category: "TRADITIONAL",
-    tagline: "Sakral, Megah & Royal Keraton Nusantara",
-    accent: "#8b6f38",
-  },
-  {
-    id: "dillalucky",
-    name: "Dilla Lucky",
-    series: "Traditional Series",
-    category: "TRADITIONAL",
-    tagline: "Islami Sakral, Batik Ornament & Penuh Doa",
-    accent: "#4a5d4e",
-  },
-];
-
 function SetupWizardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -94,10 +16,11 @@ function SetupWizardContent() {
 
   const [currentPlan, setCurrentPlan] = useState<string>(queryPlan?.toUpperCase() || "PREMIUM");
   const [planNames, setPlanNames] = useState<Record<string, string>>({
-    TRADITIONAL: "Traditional Series",
-    MODERN: "Modern Series",
-    PREMIUM: "Premium Series",
+    TRADITIONAL: "Traditional",
+    MODERN: "Modern",
+    PREMIUM: "Premium",
   });
+  const [themesList, setThemesList] = useState<any[]>([]);
 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -126,21 +49,30 @@ function SetupWizardContent() {
     message: "",
   });
 
-  // Resolve dynamic host and admin settings on mount
+  // Resolve dynamic host, settings, and themes on mount
   useEffect(() => {
     setRootDomain(getApexRootDomain());
 
-    // Fetch custom package names from admin settings
-    fetch("/api/admin/settings")
+    // Fetch dynamic themes list
+    fetch("/api/public/themes", { cache: "no-store" })
       .then((r) => r.json())
       .then((data) => {
-        if (data.grouped?.pricing) {
-          const p = data.grouped.pricing;
-          setPlanNames({
-            TRADITIONAL: p.name_traditional || "Traditional Series",
-            MODERN: p.name_modern || "Modern Series",
-            PREMIUM: p.name_premium || "Premium Series",
+        if (Array.isArray(data) && data.length > 0) {
+          setThemesList(data);
+        }
+      })
+      .catch(() => {});
+
+    // Fetch custom package names from public settings (Single Source of Truth)
+    fetch("/api/public/settings", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data.packages)) {
+          const names: Record<string, string> = {};
+          data.packages.forEach((pkg: any) => {
+            names[pkg.id] = pkg.name;
           });
+          setPlanNames((prev) => ({ ...prev, ...names }));
         }
       })
       .catch(() => {});
@@ -159,9 +91,8 @@ function SetupWizardContent() {
   }, [queryOrder]);
 
   // Filter themes strictly based on the user's purchased package category
-  const filteredThemes = THEMES.filter((t) => t.category === currentPlan);
-  // Fallback to all if somehow none matched
-  const availableThemes = filteredThemes.length > 0 ? filteredThemes : THEMES;
+  const filteredThemes = themesList.filter((t) => (t.category || "").toUpperCase() === currentPlan.toUpperCase());
+  const availableThemes = filteredThemes.length > 0 ? filteredThemes : themesList;
 
   // Set default themeId when plan changes
   useEffect(() => {
@@ -590,7 +521,7 @@ function SetupWizardContent() {
                   </p>
                 </div>
                 <span className="px-3 py-1 bg-white/10 rounded-full text-xs font-mono text-stone-300">
-                  Tema: {THEMES.find((t) => t.id === themeId)?.name || themeId}
+                  Tema: {themesList.find((t: any) => t.id === themeId)?.name || themeId}
                 </span>
               </div>
               <p className="text-xs text-stone-400">

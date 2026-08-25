@@ -1,11 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
+
+export const dynamic = "force-dynamic";
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
+    const session = await auth();
+    const isAdmin = (session?.user as any)?.isAdmin === true || (session?.user as any)?.role === "SUPER_ADMIN" || (session?.user as any)?.role === "ADMIN";
+    if (!session?.user || !isAdmin) {
+      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
+    }
+
     const resolvedParams = await Promise.resolve(params);
     const id = resolvedParams?.id;
 
@@ -78,14 +87,13 @@ export async function POST(
 
       return NextResponse.json({
         success: true,
-        message: `Kunci darurat berhasil dibuka selama ${durationHours} jam.`,
+        message: `Undangan berhasil dibuka kuncinya selama ${durationHours} jam.`,
         isUnlocked: true,
-        adminUnlockedUntil: unlockExpiry,
+        adminUnlockedUntil: unlockExpiry.toISOString(),
         invitation: updatedInvitation,
       });
     }
   } catch (error: any) {
-    console.error("Unlock error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

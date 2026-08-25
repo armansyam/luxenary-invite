@@ -5,20 +5,20 @@ import { useRouter } from "next/navigation";
 import { getApexRootDomain } from "@/lib/domainUtils";
 
 const THEMES = [
-  { id: "kalandra", name: "Kalandra", series: "Premium Series", desc: "Monochrome Editorial & Magazine Aesthetic", premium: true },
-  { id: "valente", name: "Valente", series: "Premium Series", desc: "Warm Terracotta & Romantic Cinema", premium: true },
-  { id: "wave", name: "Wave", series: "Modern Series", desc: "Moody & Dramatic Liquid Wave Curves", premium: true },
-  { id: "papercut", name: "Papercut", series: "Modern Series", desc: "Craft Scrapbook & Polaroid Cutout Aesthetic", premium: false },
-  { id: "prameswari", name: "Prameswari", series: "Traditional Series", desc: "Sakral, Megah & Royal Keraton", premium: false },
+  { id: "kalandra", name: "Kalandra", series: "Premium", desc: "Monochrome Editorial & Magazine Aesthetic", premium: true },
+  { id: "valente", name: "Valente", series: "Premium", desc: "Warm Terracotta & Romantic Cinema", premium: true },
+  { id: "wave", name: "Wave", series: "Modern", desc: "Moody & Dramatic Liquid Wave Curves", premium: true },
+  { id: "papercut", name: "Papercut", series: "Modern", desc: "Craft Scrapbook & Polaroid Cutout Aesthetic", premium: false },
+  { id: "prameswari", name: "Prameswari", series: "Traditional", desc: "Sakral, Megah & Royal Keraton", premium: false },
 ];
 
 export default function NewInvitation() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [plans, setPlans] = useState([
-    { type: "TRADITIONAL", name: "Traditional Series", price: 50000, features: ["Tautan link personal per nama tamu", "Tamu tak terbatas", "Buku Tamu & WA Direct Link", "RSVP & Ucapan Tamu", "Musik Latar", "Amplop Digital QRIS & Bank"] },
-    { type: "MODERN", name: "Modern Series", price: 100000, features: ["Tautan link personal per nama tamu", "Tamu tak terbatas", "Buku Tamu & WA Direct Link", "RSVP & Ucapan Tamu", "Musik Latar", "Amplop Digital QRIS & Bank"] },
-    { type: "PREMIUM", name: "Premium Series", price: 120000, features: ["Tautan link personal per nama tamu", "Tamu tak terbatas", "Buku Tamu & WA Direct Link", "RSVP & Ucapan Tamu", "Musik Latar", "Amplop Digital QRIS & Bank"] },
+    { type: "TRADITIONAL", name: "Traditional", price: 50000, features: ["Tautan link personal per nama tamu", "Tamu tak terbatas", "Buku Tamu & WA Direct Link", "RSVP & Ucapan Tamu", "Musik Latar", "Amplop Digital QRIS & Bank"] },
+    { type: "MODERN", name: "Modern", price: 100000, features: ["Tautan link personal per nama tamu", "Tamu tak terbatas", "Buku Tamu & WA Direct Link", "RSVP & Ucapan Tamu", "Musik Latar", "Amplop Digital QRIS & Bank"] },
+    { type: "PREMIUM", name: "Premium", price: 120000, features: ["Tautan link personal per nama tamu", "Tamu tak terbatas", "Buku Tamu & WA Direct Link", "RSVP & Ucapan Tamu", "Musik Latar", "Amplop Digital QRIS & Bank"] },
   ]);
 
   const [form, setForm] = useState({
@@ -32,24 +32,18 @@ export default function NewInvitation() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/admin/settings", { cache: "no-store" })
+    fetch("/api/public/settings", { cache: "no-store" })
       .then((r) => r.json())
       .then((data) => {
-        if (data.grouped?.pricing) {
-          const p = data.grouped.pricing;
-          const commonFeatures = [
-            "Tautan link personal per nama tamu",
-            "Tamu tak terbatas",
-            "Buku Tamu & WA Direct Link",
-            "RSVP & Ucapan Tamu",
-            "Musik Latar",
-            "Amplop Digital QRIS & Bank",
-          ];
-          setPlans([
-            { type: "TRADITIONAL", name: p.name_traditional || "Traditional Series", price: Number(p.price_traditional || 50000), features: commonFeatures },
-            { type: "MODERN", name: p.name_modern || "Modern Series", price: Number(p.price_modern || 100000), features: commonFeatures },
-            { type: "PREMIUM", name: p.name_premium || "Premium Series", price: Number(p.price_premium || 120000), features: commonFeatures },
-          ]);
+        if (Array.isArray(data.packages)) {
+          setPlans(
+            data.packages.map((pkg: any) => ({
+              type: pkg.id,
+              name: pkg.name,
+              price: pkg.price,
+              features: pkg.features,
+            }))
+          );
         }
       })
       .catch(() => {});

@@ -1,6 +1,25 @@
 import { prisma } from "./prisma";
 
-let isLoaded = false;
+export interface PricingPackageItem {
+  id: "TRADITIONAL" | "MODERN" | "PREMIUM";
+  name: string;
+  price: number;
+  desc: string;
+  features: string[];
+  themes: string[];
+  badge?: string;
+  color: string;
+  isFeatured?: boolean;
+}
+
+export interface PublicPlatformSettings {
+  platformName: string;
+  heroTagline: string;
+  heroSubtitle: string;
+  supportEmail: string;
+  supportWhatsapp: string;
+  packages: PricingPackageItem[];
+}
 
 export async function getAdminSetting(key: string, defaultValue = ""): Promise<string> {
   try {
@@ -11,24 +30,70 @@ export async function getAdminSetting(key: string, defaultValue = ""): Promise<s
   }
 }
 
-export async function syncDatabaseSettingsToEnv() {
+/**
+ * Single Source of Truth for Platform & Pricing Settings
+ * Directly queried from SQLite admin_settings table.
+ */
+export async function getPublicPlatformSettings(): Promise<PublicPlatformSettings> {
+  let map: Record<string, string> = {};
   try {
     const all = await prisma.adminSetting.findMany();
-    for (const s of all) {
-      if (s.key === "google_client_id" && s.value) process.env.GOOGLE_CLIENT_ID = s.value;
-      if (s.key === "google_client_secret" && s.value) process.env.GOOGLE_CLIENT_SECRET = s.value;
-      if (s.key === "ipaymu_va" && s.value) process.env.IPAYMU_VA = s.value;
-      if (s.key === "ipaymu_api_key" && s.value) process.env.IPAYMU_API_KEY = s.value;
-      if (s.key === "ipaymu_mode" && s.value) process.env.IPAYMU_SANDBOX = s.value === "sandbox" ? "true" : "false";
-      if (s.key === "platform_url" && s.value) process.env.APP_URL = s.value;
-    }
-    isLoaded = true;
+    all.forEach((s) => {
+      map[s.key] = s.value;
+    });
   } catch (e) {
-    // Database might be connecting
+    console.error("[getPublicPlatformSettings error]", e);
   }
-}
 
-// Initial eager sync
-if (!isLoaded) {
-  syncDatabaseSettingsToEnv().catch(() => {});
+  const commonFeatures = [
+    "Tautan link personal per nama tamu",
+    "Tamu undangan tanpa batas",
+    "Manajemen RSVP & ucapan doa",
+    "Buku tamu & link WA 1-klik",
+    "Galeri foto & musik latar",
+    "Amplop digital QRIS & transfer bank",
+  ];
+
+  return {
+    platformName: map["platform_name"] || "Luxenary Invite",
+    heroTagline: map["hero_tagline"] || "Undangan Pernikahan Digital Elegan, Hangat & Berkelas",
+    heroSubtitle:
+      map["hero_subtitle"] ||
+      "Didesain khusus dengan sentuhan estetika mewah dan eksklusif. Hadirkan pengalaman berkesan dengan layout split desktop, custom subdomain, buku tamu real-time, dan video booth ucapan.",
+    supportEmail: map["support_email"] || "support@luxenary.id",
+    supportWhatsapp: map["support_whatsapp"] || "6281234567890",
+    packages: [
+      {
+        id: "TRADITIONAL",
+        name: map["name_traditional"] || "Traditional",
+        price: Number(map["price_traditional"] || 50000),
+        desc: map["desc_traditional"] || "Tema Standart — Elegan, Bernuansa Tradisional",
+        themes: ["Prameswari", "Dilla Lucky"],
+        features: commonFeatures,
+        color: "amber",
+        isFeatured: false,
+      },
+      {
+        id: "MODERN",
+        name: map["name_modern"] || "Modern",
+        price: Number(map["price_modern"] || 100000),
+        desc: map["desc_modern"] || "Tema Premium — Sinematik, Editorial, Kontemporer",
+        themes: ["Wave", "Papercut", "Ameera"],
+        features: commonFeatures,
+        color: "slate",
+        isFeatured: false,
+      },
+      {
+        id: "PREMIUM",
+        name: map["name_premium"] || "Premium",
+        price: Number(map["price_premium"] || 120000),
+        desc: map["desc_premium"] || "Tema Premium — Editorial, Full-Text & Luxury Visual Motion",
+        themes: ["Kalandra", "Valente", "Aurelia", "Artisan"],
+        features: commonFeatures,
+        badge: "Terpopuler",
+        color: "purple",
+        isFeatured: true,
+      },
+    ],
+  };
 }

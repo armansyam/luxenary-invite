@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>The Wedding of {{groomName}} &amp; {{brideName}} — Javanese Kraton</title>
+  
+  <!-- THEME TYPOGRAPHY: Javanese Kraton Royal Heritage -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Alex+Brush&family=Cinzel+Decorative:wght@400;700&family=Pinyon+Script&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/fonts/fonts.css">
+  
+  <style>
+    :root {
+      --primary: {{colorPrimary}};
+      --secondary: {{colorSecondary}};
+      --accent: {{colorAccent}};
+      --bg-light: {{colorBgLight}};
+      --bg-dark: {{colorBgDark}};
+      --text-dark: {{colorTextDark}};
+      --jawa-gold: #cfa859;
+      --jawa-gold-light: #f5e2b8;
+      --jawa-dark: #120c06;
+      --jawa-card: rgba(28, 19, 11, 0.94);
+      --jawa-border: rgba(207, 168, 89, 0.35);
+      --jawa-border-bright: rgba(207, 168, 89, 0.7);
+      --border-glow: 0 0 25px rgba(207, 168, 89, 0.25);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Playfair Display', 'Plus Jakarta Sans', serif;
+      background-color: var(--bg-dark, var(--jawa-dark));
+      color: #ffffff;
+      overflow-x: hidden;
+      width: 100%;
+      background-image: radial-gradient(circle at 50% 10%, #291a0c 0%, #120c06 85%);
+      background-attachment: fixed;
+    }
+
+    /* TYPOGRAPHY CLASSES */
+    .font-kraton-title { font-family: 'Cinzel Decorative', 'Playfair Display', serif; }
+    .font-kraton-script { font-family: 'Pinyon Script', 'Alex Brush', cursive; }
+    .font-kraton-sans { font-family: 'Plus Jakarta Sans', sans-serif; }
+
+    /* ANIMATIONS & MICRO-INTERACTIONS */
+    @keyframes wayangFloat {
+      0%, 100% { transform: translateY(0px) scale(1); filter: drop-shadow(0 6px 18px rgba(207,168,89,0.4)); }
+      50% { transform: translateY(-7px) scale(1.03); filter: drop-shadow(0 12px 28px rgba(207,168,89,0.65)); }
+    }
+
+    @keyframes keratonAura {
+      0%, 100% { opacity: 0.6; transform: scale(1); }
+      50% { opacity: 0.9; transform: scale(1.04); }
+    }
+
+    .reveal-on-scroll {
+      opacity: 0;
+      transform: translateY(25px);
+      transition: all 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reveal-on-scroll.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* 1. COVER SCREEN (JAVANESE KRATON FULLSCREEN OVERLAY) */
+    .cover-overlay {
+      position: fixed; inset: 0; z-index: 9999;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; padding: 2.5rem 1.5rem;
+      background: radial-gradient(circle at center, rgba(28,19,11,0.9) 0%, rgba(18,12,6,0.98) 100%), url('{{landingCoverUrl}}') center/cover no-repeat;
+      transition: transform 0.85s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.85s ease;
+    }
+    .cover-overlay.opened {
+      transform: translateY(-100%); pointer-events: none; opacity: 0;
+    }
+
+    .gunungan-hero {
+      width: 100%; max-width: 95px; height: auto; margin-bottom: 1.2rem;
+      animation: wayangFloat 4.5s ease-in-out infinite;
+    }
+
+    .cover-badge {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.72rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--jawa-gold-light); margin-bottom: 0.5rem; font-weight: 600;
+    }
+    .cover-names {
+      font-size: clamp(3.2rem, 12vw, 5.2rem); font-family: 'Pinyon Script', cursive; color: var(--jawa-gold);
+      text-shadow: 0 4px 25px rgba(0,0,0,0.9); margin-bottom: 1.5rem; font-weight: normal; line-height: 1.15;
+    }
+    .cover-guest-card {
+      background: var(--jawa-card); border: 1px solid var(--jawa-border);
+      border-radius: 16px; padding: 1.2rem 2rem; margin-bottom: 1.8rem;
+      backdrop-filter: blur(12px); box-shadow: var(--border-glow); max-width: 340px; width: 100%;
+    }
+    .cover-guest-lbl { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(255,255,255,0.7); }
+    .cover-guest-val { font-family: 'Playfair Display', serif; font-size: 1.4rem; color: #fff; margin-top: 0.3rem; font-weight: 600; font-style: italic; }
+    
+    .btn-buka-undangan {
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem;
+      padding: 0.95rem 2.8rem; background: linear-gradient(90deg, #cfa859 0%, #f5e2b8 50%, #cfa859 100%);
+      background-size: 200% auto;
+      color: #120c06; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase;
+      border: none; border-radius: 50px; cursor: pointer; box-shadow: 0 6px 20px rgba(207,168,89,0.45);
+      transition: all 0.35s ease;
+    }
+    .btn-buka-undangan:hover { background-position: right center; transform: translateY(-2px); box-shadow: 0 10px 25px rgba(207,168,89,0.65); }
+
+    /* RESPONSIVE LAYOUT */
+    .layout-wrapper { display: flex; width: 100%; min-height: 100vh; position: relative; }
+    
+    .sidebar-desktop {
+      display: none; position: fixed; left: 0; top: 0; width: 55%; height: 100vh;
+      background: url('{{sidebarPhotoUrl}}') center/cover no-repeat; z-index: 10;
+    }
+    .sidebar-desktop::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(18,12,6,0.96) 0%, rgba(18,12,6,0.3) 50%, transparent 100%);
+    }
+    .sidebar-desktop-content {
+      position: absolute; bottom: 4rem; left: 3.5rem; right: 3.5rem; z-index: 20; color: #fff;
+    }
+
+    .main-scroll-panel {
+      width: 100%; min-height: 100vh; padding-bottom: 110px; position: relative; z-index: 20;
+    }
+
+    @media (min-width: 900px) {
+      .sidebar-desktop { display: block; }
+      .main-scroll-panel { width: 45%; margin-left: 55%; min-width: 420px; }
+      .cover-overlay { width: 45%; left: 55%; }
+      .bottom-dock { left: calc(55% + 22.5%) !important; }
+    }
+
+    /* ==========================================================================
+       FULL VIEWPORT ISOLATED SLIDES (100VH SETIAP SEKSI)
+       ========================================================================== */
+    .slide-section, .section-block, .sec-flow,
+    #section-quote, #section-couple, #section-events, #story, #moments, #gift,
+    #section-wishes, #access-pass, #dresscode, #live, #turut-mengundang {
+      width: 100%;
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 5.5rem 1.8rem;
+      box-sizing: border-box;
+      position: relative;
+      text-align: center;
+      border-bottom: 1px solid rgba(207, 168, 89, 0.18);
+    }
+
+    .sec-content-box {
+      width: 100%;
+      max-width: 440px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .sec-eyebrow {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.72rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--jawa-gold-light); display: block; margin-bottom: 0.4rem; font-weight: 600;
+    }
+    .sec-main-title, .sec-heading {
+      font-size: clamp(2.4rem, 8vw, 3.4rem); font-family: 'Pinyon Script', cursive; color: var(--jawa-gold); margin-bottom: 0.3rem; font-weight: normal;
+      text-shadow: 0 2px 15px rgba(0,0,0,0.6);
+    }
+    .sec-subheading {
+      font-family: 'Playfair Display', serif;
+      font-size: 0.8rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--jawa-gold-light); margin-bottom: 2.2rem; font-style: italic;
+    }
+
+    /* MEMPELAI CARD */
+    .couple-card {
+      width: 100%; background: var(--jawa-card); border: 1px solid var(--jawa-border); border-radius: 24px;
+      padding: 2.2rem 1.5rem; margin-bottom: 1.8rem; box-shadow: var(--border-glow); position: relative;
+      transition: transform 0.4s ease, border-color 0.4s ease;
+    }
+    .couple-card:hover { transform: translateY(-4px); border-color: var(--jawa-border-bright); }
+    .couple-photo-wrap {
+      width: 155px; height: 200px; margin: 0 auto 1.3rem; border-radius: 100px 100px 20px 20px;
+      padding: 5px; border: 2px solid var(--jawa-gold); overflow: hidden;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+    }
+    .couple-photo-wrap img { width: 100%; height: 100%; object-fit: cover; border-radius: 94px 94px 15px 15px; }
+    .couple-name { font-size: 1.7rem; color: var(--jawa-gold-light); margin-bottom: 0.4rem; font-family: 'Cinzel Decorative', serif; }
+    .couple-parents { font-size: 0.84rem; color: rgba(255,255,255,0.85); line-height: 1.6; font-style: italic; }
+    .couple-ig {
+      display: inline-flex; align-items: center; gap: 0.4rem; margin-top: 0.8rem;
+      font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.78rem; color: var(--jawa-gold); text-decoration: none; font-weight: 600;
+      padding: 0.4rem 1rem; border-radius: 50px; background: rgba(207,168,89,0.1); border: 1px solid var(--jawa-border);
+    }
+
+    /* COUNTDOWN */
+    .countdown-grid { display: flex; justify-content: center; gap: 0.8rem; margin: 1.8rem 0 1.2rem; }
+    .countdown-cell {
+      background: var(--jawa-card); border: 1px solid var(--jawa-border); border-radius: 14px;
+      padding: 0.85rem; min-width: 68px; text-align: center; box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+    }
+    .countdown-val { font-size: 1.7rem; font-weight: 700; font-family: 'Playfair Display', serif; color: var(--jawa-gold); line-height: 1; }
+    .countdown-lbl { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.15em; color: rgba(255,255,255,0.7); margin-top: 0.3rem; font-weight: 500; }
+
+    .btn-cal {
+      display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.8rem 2.2rem;
+      border: 1px solid var(--jawa-gold); border-radius: 50px; color: var(--jawa-gold-light);
+      font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
+      text-decoration: none; transition: all 0.3s; background: rgba(28,19,11,0.6);
+    }
+    .btn-cal:hover { background: var(--jawa-gold); color: #120c06; transform: translateY(-2px); }
+
+    /* EVENTS UNIFIED CONTAINER STYLING */
+    .events-unified-container { display: flex; flex-direction: column; gap: 1.5rem; width: 100%; max-width: 440px; }
+    .events-sessions-stack { display: flex; flex-direction: column; gap: 1.2rem; width: 100%; }
+    .event-block-item {
+      background: var(--jawa-card); border: 1px solid var(--jawa-border); border-radius: 18px;
+      padding: 1.8rem 1.4rem; text-align: center; box-shadow: var(--border-glow);
+    }
+    .ev-cat { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--jawa-gold-light); font-weight: 600; margin-bottom: 0.3rem; display: block; }
+    .ev-name { font-size: 1.5rem; color: var(--jawa-gold); font-family: 'Cinzel Decorative', serif; margin-bottom: 0.4rem; }
+    .ev-time { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.85rem; color: rgba(255,255,255,0.9); font-weight: 500; }
+    
+    .event-unified-venue-card {
+      background: var(--jawa-card); border: 1px solid var(--jawa-border); border-radius: 18px;
+      padding: 1.8rem 1.4rem; text-align: center; box-shadow: var(--border-glow);
+    }
+    .venue-card-lbl { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--jawa-gold-light); font-weight: 600; margin-bottom: 0.4rem; display: block; }
+    .ev-venue-unified { font-size: 1.4rem; color: #ffffff; font-family: 'Cinzel Decorative', serif; margin-bottom: 0.4rem; }
+    .ev-address-unified { font-size: 0.82rem; color: rgba(255,255,255,0.8); line-height: 1.6; margin-bottom: 1.2rem; font-style: italic; }
+    .btn-map-outline {
+      display: inline-flex; align-items: center; justify-content: center; padding: 0.8rem 2.2rem;
+      border: 1px solid var(--jawa-gold); border-radius: 50px; color: var(--jawa-gold-light);
+      font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase;
+      text-decoration: none; transition: all 0.3s;
+    }
+    .btn-map-outline:hover { background: var(--jawa-gold); color: #120c06; }
+
+    /* JOURNEY / STORY STYLING */
+    .journey-card-container {
+      background: var(--jawa-card); border: 1px solid var(--jawa-border); border-radius: 18px;
+      padding: 2rem 1.5rem; text-align: left; box-shadow: var(--border-glow); width: 100%; max-width: 440px;
+    }
+    .journey-chapters { display: flex; flex-direction: column; gap: 1.5rem; }
+    .story-chapter-block { padding-bottom: 0.8rem; border-bottom: 1px dashed rgba(207,168,89,0.25); }
+    .story-chapter-block:last-child { border-bottom: none; }
+    .sc-label { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.65rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--jawa-gold); font-weight: 600; display: block; margin-bottom: 0.2rem; }
+    .sc-title { font-size: 1.25rem; color: var(--jawa-gold-light); font-family: 'Cinzel Decorative', serif; margin-bottom: 0.4rem; }
+    .sc-desc { font-size: 0.84rem; color: rgba(255,255,255,0.85); line-height: 1.7; font-style: italic; }
+    .journey-footer { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem; }
+    .jf-line { flex: 1; height: 1px; background: rgba(207,168,89,0.3); }
+    .jf-signature { font-family: 'Pinyon Script', cursive; font-size: 2rem; color: var(--jawa-gold); }
+
+    /* GALLERY PUZZLE GRID & LIGHTBOX */
+    .moment-quote { font-size: 0.88rem; font-style: italic; color: rgba(255,255,255,0.85); line-height: 1.7; max-width: 420px; margin: 0 auto 1.8rem; }
+    .moments-grid-10 {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 1.8rem; width: 100%; max-width: 440px;
+    }
+    .moment-photo-item {
+      aspect-ratio: 3/4; overflow: hidden; border-radius: 10px; border: 1px solid var(--jawa-border);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5); cursor: pointer; transition: transform 0.35s ease, border-color 0.35s ease;
+    }
+    .moment-photo-item:hover { transform: scale(1.05); border-color: var(--jawa-gold); }
+    .moment-photo-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .btn-show-gallery, .btn-outline-box {
+      display: inline-flex; align-items: center; justify-content: center; padding: 0.8rem 2.2rem;
+      border: 1px solid var(--jawa-gold); border-radius: 50px; color: var(--jawa-gold-light);
+      font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase;
+      cursor: pointer; background: transparent; transition: all 0.3s;
+    }
+    .btn-show-gallery:hover, .btn-outline-box:hover { background: var(--jawa-gold); color: #120c06; }
+
+    .gallery-modal-backdrop, .lux-zoom-backdrop {
+      position: fixed; inset: 0; z-index: 99999; background: rgba(18,12,6,0.97); backdrop-filter: blur(20px);
+      display: flex; flex-direction: column; opacity: 0; visibility: hidden; transition: all 0.3s ease;
+      overflow-y: auto; padding: 2rem 1.2rem;
+    }
+    .gallery-modal-backdrop.open, .lux-zoom-backdrop.open { opacity: 1; visibility: visible; }
+    .gallery-modal-container { max-width: 480px; width: 100%; margin: 0 auto; }
+    .gallery-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 0.8rem; border-bottom: 1px solid var(--jawa-border); }
+    .modal-gallery-title { font-size: 1.4rem; color: var(--jawa-gold); font-family: 'Cinzel Decorative', serif; }
+    .gallery-modal-close, .lux-zoom-close {
+      background: rgba(28,19,11,0.8); border: 1px solid var(--jawa-border); color: #ffffff;
+      width: 36px; height: 36px; border-radius: 50%; font-size: 1.1rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .gallery-modal-grid { columns: 2; column-gap: 8px; }
+    .full-gallery-item {
+      break-inside: avoid; margin-bottom: 8px; overflow: hidden; border-radius: 8px; cursor: pointer;
+      border: 1px solid var(--jawa-border);
+    }
+    .full-gallery-item img { width: 100%; height: auto; display: block; }
+    .lux-zoom-nav {
+      position: fixed; top: 50%; transform: translateY(-50%); background: rgba(28,19,11,0.8);
+      border: 1px solid var(--jawa-border); color: #ffffff; width: 44px; height: 44px; border-radius: 50%;
+      font-size: 1.8rem; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 100000;
+    }
+    .lux-zoom-nav.prev { left: 14px; }
+    .lux-zoom-nav.next { right: 14px; }
+    .lux-zoom-img-box {
+      max-width: 90vw; max-height: 80vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      margin: auto;
+    }
+    .lux-zoom-img-box img { max-width: 100%; max-height: 75vh; object-fit: contain; border-radius: 8px; box-shadow: 0 15px 50px rgba(0,0,0,0.9); }
+    .lux-zoom-counter { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.75rem; color: var(--jawa-gold-light); margin-top: 0.8rem; letter-spacing: 0.2em; }
+
+    /* DIGITAL GIFT & BANK CARDS */
+    .bank-card {
+      background: var(--jawa-card); border: 1px solid var(--jawa-border); border-radius: 18px;
+      padding: 1.5rem; margin-bottom: 1rem; text-align: left; box-shadow: var(--border-glow); width: 100%; max-width: 440px;
+    }
+    .bank-label { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.85rem; font-weight: 700; color: var(--jawa-gold); display: block; margin-bottom: 0.2rem; }
+    .bank-owner { font-size: 0.78rem; color: rgba(255,255,255,0.75); display: block; margin-bottom: 0.6rem; font-style: italic; }
+    .bank-row {
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(18,12,6,0.85); border: 1px solid var(--jawa-border); border-radius: 10px; padding: 0.7rem 1rem;
+    }
+    .bank-number { font-family: monospace; font-size: 1.05rem; color: #ffffff; letter-spacing: 0.08em; }
+    .btn-copy {
+      background: var(--jawa-gold); color: #120c06; border: none; padding: 0.45rem 1rem;
+      border-radius: 6px; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 0.7rem; cursor: pointer; letter-spacing: 0.1em; text-transform: uppercase;
+    }
+
+    /* WISHES & RSVP FORM */
+    .rsvp-form-wrap { text-align: left; margin-top: 1.5rem; width: 100%; max-width: 440px; }
+    .form-row { margin-bottom: 1rem; }
+    .form-lbl { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.15em; color: var(--jawa-gold-light); display: block; margin-bottom: 0.3rem; }
+    .form-in, .form-sel, .form-ta {
+      width: 100%; padding: 0.8rem 1rem; background: rgba(18,12,6,0.85); border: 1px solid var(--jawa-border);
+      border-radius: 10px; color: #ffffff; font-size: 0.85rem; outline: none; font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .btn-rsvp-submit {
+      width: 100%; padding: 1rem; background: linear-gradient(90deg, #cfa859 0%, #f5e2b8 50%, #cfa859 100%);
+      color: #120c06; border: none; border-radius: 50px; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 0.8rem;
+      letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; transition: all 0.3s;
+    }
+    .wishes-list { margin-top: 1.5rem; max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.9rem; width: 100%; max-width: 440px; }
+    .wish-item {
+      padding: 1.1rem; background: var(--jawa-card); border: 1px solid var(--jawa-border);
+      border-radius: 14px; text-align: left;
+    }
+    .wish-name { font-family: 'Cinzel Decorative', serif; font-weight: 600; font-size: 0.9rem; color: var(--jawa-gold); }
+    .wish-msg { font-size: 0.82rem; color: rgba(255,255,255,0.9); line-height: 1.6; margin-top: 0.3rem; font-style: italic; }
+
+    /* QR PASS CARD */
+    .access-pass-card {
+      background: var(--jawa-card); border: 1px solid var(--jawa-border); border-radius: 24px;
+      padding: 2.4rem 1.5rem; text-align: center; box-shadow: var(--border-glow); width: 100%; max-width: 440px;
+    }
+    .pass-tagline { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--jawa-gold-light); display: block; margin-bottom: 0.4rem; }
+    .pass-names { font-size: 2rem; color: var(--jawa-gold); font-family: 'Pinyon Script', cursive; margin-bottom: 0.2rem; }
+    .pass-qr-wrapper { background: #ffffff; padding: 14px; display: inline-block; border-radius: 14px; margin: 1.2rem 0; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
+    .pass-guest-name { font-size: 1.35rem; color: #ffffff; font-family: 'Cinzel Decorative', serif; }
+
+    /* DOCK */
+    .bottom-dock {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 100;
+      background: rgba(28, 19, 11, 0.95); border: 1px solid var(--jawa-border); border-radius: 50px;
+      padding: 0.5rem 1.2rem; display: flex; gap: 1.4rem; backdrop-filter: blur(15px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6); max-width: 440px; width: calc(100% - 30px); justify-content: space-around;
+    }
+    .dock-btn { color: rgba(255,255,255,0.7); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.65rem; text-decoration: none; display: flex; flex-direction: column; align-items: center; gap: 0.2rem; }
+    .dock-btn:hover, .dock-btn.active { color: var(--jawa-gold); }
+    .dock-btn svg { width: 18px; height: 18px; fill: currentColor; }
+  </style>
+</head>
+<body>
+
+  <!-- 1. COVER OVERLAY (FAVOMO A3 SIGNATURE) -->
+  <div id="coverOverlay" class="cover-overlay">
+    <!-- GUNUNGAN WAYANG VECTOR -->
+    <svg class="gunungan-hero" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M32 2C32 2 12 18 10 38C8 58 32 62 32 62C32 62 56 58 54 38C52 18 32 2 32 2Z" stroke="#cfa859" stroke-width="2.5" stroke-linejoin="round"/>
+      <path d="M32 14V50" stroke="#cfa859" stroke-width="2" stroke-linecap="round"/>
+      <path d="M22 28C26 34 38 34 42 28" stroke="#cfa859" stroke-width="1.5"/>
+      <path d="M20 40C26 46 38 46 44 40" stroke="#cfa859" stroke-width="1.5"/>
+    </svg>
+
+    <p class="cover-badge">PAWIKAHAN AGENG &bull; ADAT JAWA</p>
+    <h1 class="cover-names">{{groomName}} &amp; {{brideName}}</h1>
+    
+    <div class="cover-guest-card">
+      <p class="cover-guest-lbl">Katur Dhumateng Panjenenganipun</p>
+      <h3 class="cover-guest-val">Tamu Undangan</h3>
+    </div>
+
+    <button class="btn-buka-undangan" onclick="openInvitation()">
+      <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+      Buka Undangan
+    </button>
+  </div>
+
+  <div class="layout-wrapper">
+    
+    <!-- DESKTOP SIDEBAR HERO -->
+    <div class="sidebar-desktop">
+      <div class="sidebar-desktop-content">
+        <p class="font-kraton-sans" style="letter-spacing: 0.3em; text-transform: uppercase; color: var(--jawa-gold-light); font-size: 0.75rem;">ROYAL JAVANESE HERITAGE</p>
+        <h2 class="font-kraton-script" style="font-size: 4.8rem; color: var(--jawa-gold); margin: 0.5rem 0;">{{groomName}} &amp; {{brideName}}</h2>
+        <p class="font-kraton-sans" style="letter-spacing: 0.15em; font-size: 0.85rem; color: rgba(255,255,255,0.75);">{{weddingDate}}</p>
+      </div>
+    </div>
+
+    <!-- MAIN SCROLLABLE PANEL -->
+    <main class="main-scroll-panel">
+      
+      <!-- SEKSI 1: KUTIPAN PEMBUKA & COUNTDOWN (100VH STANDALONE) -->
+      <section id="section-quote" class="slide-section">
+        <div class="sec-content-box reveal-on-scroll">
+          <span style="font-size: 2rem; color: var(--jawa-gold); display: block; margin-bottom: 0.4rem;">﷽</span>
+          <span class="sec-eyebrow">PAWIKAHAN AGENG</span>
+          <h2 class="sec-heading" style="margin-bottom: 0.8rem;">Panyuwunan Berkah</h2>
+          <p style="font-size: 0.94rem; line-height: 1.9; color: rgba(255,255,255,0.9); max-width: 420px; margin: 0 auto; font-style: italic;">
+            "{{openingQuote}}"
+          </p>
+          <span class="font-kraton-sans" style="display: block; font-size: 0.72rem; color: var(--jawa-gold-light); margin-top: 0.8rem; letter-spacing: 0.25em;">{{openingQuoteRef}}</span>
+
+          <!-- COUNTDOWN -->
+          <div class="countdown-grid">
+            <div class="countdown-cell"><div id="cDays" class="countdown-val">00</div><div class="countdown-lbl">Hari</div></div>
+            <div class="countdown-cell"><div id="cHours" class="countdown-val">00</div><div class="countdown-lbl">Jam</div></div>
+            <div class="countdown-cell"><div id="cMins" class="countdown-val">00</div><div class="countdown-lbl">Menit</div></div>
+            <div class="countdown-cell"><div id="cSecs" class="countdown-val">00</div><div class="countdown-lbl">Detik</div></div>
+          </div>
+
+          <a href="{{googleCalendarUrl}}" target="_blank" class="btn-cal">
+            <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
+            Simpen Wanci wonten Kalender
+          </a>
+        </div>
+      </section>
+
+      <!-- SEKSI 2: MEMPELAI (100VH STANDALONE) -->
+      <section id="section-couple" class="slide-section">
+        <div class="sec-content-box reveal-on-scroll">
+          <h2 class="sec-heading">Temanten Kalih</h2>
+          <p class="sec-subheading">Dua Pribadi Dalam Ikatan Suci</p>
+
+          <!-- GROOM -->
+          <div class="couple-card">
+            <div class="couple-photo-wrap">
+              <img src="{{groomPhotoUrl}}" alt="{{groomDisplayName}}">
+            </div>
+            <h3 class="couple-name">{{groomDisplayName}}</h3>
+            <p class="couple-parents">{{groomParents}}</p>
+            <a href="https://instagram.com/{{groomInstagram}}" target="_blank" class="couple-ig">@{{groomInstagram}}</a>
+          </div>
+
+          <!-- BRIDE -->
+          <div class="couple-card">
+            <div class="couple-photo-wrap">
+              <img src="{{bridePhotoUrl}}" alt="{{brideDisplayName}}">
+            </div>
+            <h3 class="couple-name">{{brideDisplayName}}</h3>
+            <p class="couple-parents">{{brideParents}}</p>
+            <a href="https://instagram.com/{{brideInstagram}}" target="_blank" class="couple-ig">@{{brideInstagram}}</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- SEKSI 3: TATA TITIMANGSA / JADWAL ACARA (100VH STANDALONE) -->
+      <section id="section-events" class="slide-section">
+        <div class="sec-content-box reveal-on-scroll">
+          <h2 class="sec-heading">Tata Titimangsa</h2>
+          <p class="sec-subheading">Wanci Saha Papan Palakrama</p>
+          {{eventDataHtml}}
+        </div>
+      </section>
+
+      <!-- SEKSI 4: BLUEPRINT DYNAMIC MODULES (MASING-MASING 100VH STANDALONE) -->
+      {{storySectionHtml}}
+      {{gallerySectionHtml}}
+      {{giftSectionHtml}}
+      {{dressCodeHtml}}
+      {{liveStreamingHtml}}
+      {{weddingFilterHtml}}
+      {{turutMengundangHtml}}
+      
+      <!-- SEKSI 5: BUKU TAMU & UCAPAN (100VH STANDALONE) -->
+      <section id="section-wishes" class="slide-section">
+        <div class="sec-content-box reveal-on-scroll">
+          <h2 class="sec-heading">Panyuwunan &amp; Donga</h2>
+          <p class="sec-subheading">Kintun Atur Wilujeng Dhumateng Temanten</p>
+          {{wishesHtml}}
+        </div>
+      </section>
+
+      {{qrAccessSectionHtml}}
+
+      <!-- FOOTER -->
+      <footer style="text-align: center; padding: 4rem 1.5rem; border-top: 1px solid var(--jawa-border);">
+        <h3 class="font-kraton-script" style="font-size: 3.2rem; color: var(--jawa-gold);">{{groomName}} &amp; {{brideName}}</h3>
+        <p class="font-kraton-sans" style="font-size: 0.75rem; color: rgba(255,255,255,0.7); letter-spacing: 0.2em; text-transform: uppercase; margin-top: 0.5rem;">
+          MATUR NUWUN INGKANG TANPA PEPINDHAN
+        </p>
+      </footer>
+
+    </main>
+
+  </div>
+
+  <!-- FLOATING NAVIGATION DOCK -->
+  <nav class="bottom-dock">
+    <a href="#section-quote" class="dock-btn">
+      <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      <span>Cover</span>
+    </a>
+    <a href="#section-couple" class="dock-btn">
+      <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+      <span>Temanten</span>
+    </a>
+    <a href="#section-events" class="dock-btn">
+      <svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
+      <span>Acara</span>
+    </a>
+    <a href="#moments" class="dock-btn">
+      <svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+      <span>Galeri</span>
+    </a>
+    <a href="#section-wishes" class="dock-btn">
+      <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+      <span>Ucapan</span>
+    </a>
+  </nav>
+
+  <script>
+    function openInvitation() {
+      const cover = document.getElementById('coverOverlay');
+      if (cover) cover.classList.add('opened');
+      const audio = document.getElementById('weddingAudio');
+      if (audio) audio.play().catch(() => {});
+      startCountdown();
+      initScrollAnimations();
+    }
+
+    function initScrollAnimations() {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+          }
+        });
+      }, { threshold: 0.15 });
+
+      document.querySelectorAll('.reveal-on-scroll').forEach(el => observer.observe(el));
+    }
+
+    function startCountdown() {
+      const targetStr = "{{targetDate}}" || "2026-11-28T09:00:00";
+      const targetTime = new Date(targetStr).getTime() || new Date(Date.now() + 8640000000).getTime();
+
+      setInterval(() => {
+        const now = new Date().getTime();
+        const diff = targetTime - now;
+        if (diff > 0) {
+          const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+          const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          const mins = Math.floor((diff % (1000 * 60)) / (1000 * 60));
+          const secs = Math.floor((diff % (1000 * 60)) / 1000);
+
+          const elD = document.getElementById('cDays');
+          const elH = document.getElementById('cHours');
+          const elM = document.getElementById('cMins');
+          const elS = document.getElementById('cSecs');
+
+          if (elD) elD.textContent = String(days).padStart(2, '0');
+          if (elH) elH.textContent = String(hours).padStart(2, '0');
+          if (elM) elM.textContent = String(mins).padStart(2, '0');
+          if (elS) elS.textContent = String(secs).padStart(2, '0');
+        }
+      }, 1000);
+    }
+  </script>
+
+</body>
+</html>

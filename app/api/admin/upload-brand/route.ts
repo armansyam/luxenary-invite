@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import path from "path";
 import fs from "fs";
 import sharp from "sharp";
+import { auth } from "@/auth";
+
+export const dynamic = "force-dynamic";
 
 const BRAND_DIR = path.join(process.cwd(), "public", "assets", "brand");
 
@@ -14,6 +17,12 @@ function ensureBrandDir() {
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await auth();
+    const isAdmin = (session?.user as any)?.isAdmin === true || (session?.user as any)?.role === "SUPER_ADMIN" || (session?.user as any)?.role === "ADMIN";
+    if (!session?.user || !isAdmin) {
+      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
+    }
+
     ensureBrandDir();
 
     const formData = await req.formData();
@@ -61,26 +70,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: true,
         type: "favicon",
-        url: `/assets/brand/favicon.png?t=${Date.now()}`,
-        message: "Favicon berhasil diupload, dikompres ke 64×64 PNG, dan disalin ke /favicon.ico",
+        url: `/favicon.ico?t=${Date.now()}`,
+        message: "Favicon berhasil diupload dan diperbarui di seluruh platform",
       });
     }
 
-    return NextResponse.json({ error: "Type tidak valid" }, { status: 400 });
+    return NextResponse.json({ error: "Tipe brand tidak valid" }, { status: 400 });
   } catch (error: any) {
-    console.error("[upload-brand] Error:", error);
-    return NextResponse.json({ error: error.message || "Upload gagal" }, { status: 500 });
+    console.error("[Upload Brand Error]", error);
+    return NextResponse.json({ error: error.message || "Gagal mengupload file brand" }, { status: 500 });
   }
-}
-
-export async function GET() {
-  ensureBrandDir();
-
-  const logoPath = path.join(BRAND_DIR, "logo.webp");
-  const faviconPath = path.join(BRAND_DIR, "favicon.png");
-
-  return NextResponse.json({
-    logo: fs.existsSync(logoPath) ? `/assets/brand/logo.webp` : null,
-    favicon: fs.existsSync(faviconPath) ? `/assets/brand/favicon.png` : null,
-  });
 }

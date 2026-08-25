@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { signOut } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { getApexRootDomain, getInvitationPublicUrl } from "@/lib/domainUtils";
 import { BrandLogo } from "@/components/BrandLogo";
 
@@ -228,8 +229,26 @@ function FieldRow({ label, description, children }: { label: string; description
 }
 
 export default function AdminPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
   const [activeTab, setActiveTab] = useState("overview");
   const [loading, setLoading] = useState(true);
+
+  // Strict session enforcement
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.replace("/admin/login");
+    } else if (status === "authenticated") {
+      const isAdmin =
+        (session?.user as any)?.isAdmin === true ||
+        (session?.user as any)?.role === "ADMIN" ||
+        (session?.user as any)?.role === "SUPER_ADMIN";
+      if (!isAdmin) {
+        router.replace("/admin/login");
+      }
+    }
+  }, [status, session, router]);
 
   // Data state
   const [stats, setStats] = useState<any>({ invitationCount: 0, orderCount: 0, guestCount: 0, userCount: 0, publishedInvitationCount: 0, draftInvitationCount: 0, rsvpCount: 0, videoWishCount: 0 });
@@ -788,6 +807,30 @@ export default function AdminPage() {
     })
     .sort((a, b) => b.count - a.count);
 
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen bg-stone-950 flex flex-col items-center justify-center text-amber-400 font-mono text-xs gap-3">
+        <span className="w-6 h-6 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+        <span>MEMVERIFIKASI OTORISASI ADMINISTRATOR...</span>
+      </div>
+    );
+  }
+
+  if (
+    status === "unauthenticated" ||
+    !(
+      (session?.user as any)?.isAdmin === true ||
+      (session?.user as any)?.role === "ADMIN" ||
+      (session?.user as any)?.role === "SUPER_ADMIN"
+    )
+  ) {
+    return (
+      <div className="min-h-screen bg-stone-950 flex flex-col items-center justify-center text-rose-400 font-mono text-xs gap-3">
+        <span>AKSES DITOLAK. MENGALIHKAN KE PORTAL LOGIN...</span>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col text-gray-900">
       {/* Header */}
@@ -828,10 +871,6 @@ export default function AdminPage() {
               <a href="/demo" target="_blank" className="text-xs font-medium text-amber-700 hover:underline hidden sm:inline-block">
                 Lihat Demo
               </a>
-              <a href="/dashboard" className="text-xs font-medium text-gray-500 hover:text-gray-800 hidden sm:inline-block">
-                Dashboard Klien
-              </a>
-              <span className="text-gray-300 hidden sm:inline-block">|</span>
               <button
                 type="button"
                 onClick={() => signOut({ callbackUrl: "/admin/login" })}
@@ -893,11 +932,10 @@ export default function AdminPage() {
               </nav>
             </div>
 
-            {/* Mobile Footer Links & Logout */}
+            {/* Mobile Footer Logout */}
             <div className="p-4 border-t border-gray-100 space-y-3">
               <div className="flex items-center justify-between text-xs font-medium text-gray-600 pb-2 border-b border-gray-100">
                 <a href="/demo" target="_blank" className="hover:text-amber-700">Lihat Demo ↗</a>
-                <a href="/dashboard" className="hover:text-gray-900">Dashboard Klien</a>
               </div>
               <button
                 type="button"
@@ -1130,7 +1168,7 @@ export default function AdminPage() {
                         <div className="p-3.5 bg-stone-50 rounded-2xl border border-stone-200/80 space-y-2">
                           <div className="flex items-center justify-between text-xs">
                             <span className="font-bold text-amber-900 uppercase tracking-wide">
-                              {settingsMap["name_traditional"] || "Traditional Series"}
+                              {settingsMap["name_traditional"] || "Traditional"}
                             </span>
                             <span className="font-bold text-gray-900">
                               Rp {traditionalRev.toLocaleString("id-ID")}
@@ -1152,7 +1190,7 @@ export default function AdminPage() {
                         <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2">
                           <div className="flex items-center justify-between text-xs">
                             <span className="font-bold text-slate-800 uppercase tracking-wide">
-                              {settingsMap["name_modern"] || "Modern Series"}
+                              {settingsMap["name_modern"] || "Modern"}
                             </span>
                             <span className="font-bold text-gray-900">
                               Rp {modernRev.toLocaleString("id-ID")}
@@ -1174,7 +1212,7 @@ export default function AdminPage() {
                         <div className="p-3.5 bg-purple-50/70 rounded-2xl border border-purple-200/80 space-y-2">
                           <div className="flex items-center justify-between text-xs">
                             <span className="font-bold text-purple-900 uppercase tracking-wide">
-                              {settingsMap["name_premium"] || "Premium Series"}
+                              {settingsMap["name_premium"] || "Premium"}
                             </span>
                             <span className="font-bold text-gray-900">
                               Rp {premiumRev.toLocaleString("id-ID")}
@@ -1692,9 +1730,9 @@ export default function AdminPage() {
                   <div className="flex items-center gap-2 border-b border-gray-200 pb-3">
                     {[
                       { id: "all", label: `Semua Tema (${themes.length})` },
-                      { id: "premium", label: `Premium Series (${themes.filter((t) => (t.category || "premium") === "premium").length})` },
-                      { id: "modern", label: `Modern Series (${themes.filter((t) => t.category === "modern").length})` },
-                      { id: "traditional", label: `Traditional Series (${themes.filter((t) => t.category === "traditional").length})` },
+                      { id: "premium", label: `Premium (${themes.filter((t) => (t.category || "premium") === "premium").length})` },
+                      { id: "modern", label: `Modern (${themes.filter((t) => t.category === "modern").length})` },
+                      { id: "traditional", label: `Traditional (${themes.filter((t) => t.category === "traditional").length})` },
                     ].map((cat) => (
                       <button
                         key={cat.id}
@@ -2129,7 +2167,7 @@ export default function AdminPage() {
                         <div className="p-4 bg-stone-50 rounded-xl border border-stone-200">
                           <div className="flex items-center justify-between mb-1.5">
                             <span className="text-xs font-bold text-amber-800 uppercase tracking-wider">
-                              {settingsMap["name_traditional"] || "Traditional Series"}
+                              {settingsMap["name_traditional"] || "Traditional"}
                             </span>
                             <span className="text-sm font-bold text-gray-900 font-mono">
                               Rp {Number(settingsMap["price_traditional"] || 299000).toLocaleString("id-ID")}
@@ -2140,7 +2178,7 @@ export default function AdminPage() {
                         <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
                           <div className="flex items-center justify-between mb-1.5">
                             <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                              {settingsMap["name_modern"] || "Modern Series"}
+                              {settingsMap["name_modern"] || "Modern"}
                             </span>
                             <span className="text-sm font-bold text-gray-900 font-mono">
                               Rp {Number(settingsMap["price_modern"] || 499000).toLocaleString("id-ID")}
@@ -2151,7 +2189,7 @@ export default function AdminPage() {
                         <div className="p-4 bg-purple-50/70 rounded-xl border border-purple-200">
                           <div className="flex items-center justify-between mb-1.5">
                             <span className="text-xs font-bold text-purple-800 uppercase tracking-wider">
-                              {settingsMap["name_premium"] || "Premium Series"}
+                              {settingsMap["name_premium"] || "Premium"}
                             </span>
                             <span className="text-sm font-bold text-gray-900 font-mono">
                               Rp {Number(settingsMap["price_premium"] || 699000).toLocaleString("id-ID")}
@@ -2171,9 +2209,9 @@ export default function AdminPage() {
                         <FieldRow label="Nama Paket">
                           <input
                             type="text"
-                            value={settingsMap["name_traditional"] || "Traditional Series"}
+                            value={settingsMap["name_traditional"] || "Traditional"}
                             onChange={(e) => setSetting("name_traditional", e.target.value)}
-                            placeholder="Contoh: Traditional Series"
+                            placeholder="Contoh: Traditional"
                             className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition"
                           />
                         </FieldRow>
@@ -2203,9 +2241,9 @@ export default function AdminPage() {
                         <FieldRow label="Nama Paket">
                           <input
                             type="text"
-                            value={settingsMap["name_modern"] || "Modern Series"}
+                            value={settingsMap["name_modern"] || "Modern"}
                             onChange={(e) => setSetting("name_modern", e.target.value)}
-                            placeholder="Contoh: Modern Series"
+                            placeholder="Contoh: Modern"
                             className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 transition"
                           />
                         </FieldRow>
@@ -2235,9 +2273,9 @@ export default function AdminPage() {
                         <FieldRow label="Nama Paket">
                           <input
                             type="text"
-                            value={settingsMap["name_premium"] || "Premium Series"}
+                            value={settingsMap["name_premium"] || "Premium"}
                             onChange={(e) => setSetting("name_premium", e.target.value)}
-                            placeholder="Contoh: Premium Series"
+                            placeholder="Contoh: Premium"
                             className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
                           />
                         </FieldRow>

@@ -1,5 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
+
+export const dynamic = "force-dynamic";
+
+async function verifyAdminSession() {
+  const session = await auth();
+  const isAdmin = (session?.user as any)?.isAdmin === true || (session?.user as any)?.role === "SUPER_ADMIN" || (session?.user as any)?.role === "ADMIN";
+  if (!session?.user || !isAdmin) {
+    return false;
+  }
+  return true;
+}
 
 // Default seeds for AdminSetting
 const DEFAULT_SETTINGS: Array<{ key: string; value: string; label: string; group: string }> = [
@@ -15,14 +27,14 @@ const DEFAULT_SETTINGS: Array<{ key: string; value: string; label: string; group
   { key: "google_auth_enabled", value: "true", label: "Aktifkan Login Google", group: "google" },
   { key: "google_client_id", value: "", label: "Google Client ID", group: "google" },
   { key: "google_client_secret", value: "", label: "Google Client Secret", group: "google" },
-  { key: "name_traditional", value: "Traditional Series", label: "Nama Paket Traditional", group: "pricing" },
-  { key: "name_modern", value: "Modern Series", label: "Nama Paket Modern", group: "pricing" },
-  { key: "name_premium", value: "Premium Series", label: "Nama Paket Premium", group: "pricing" },
-  { key: "price_traditional", value: "299000", label: "Harga Paket Traditional (IDR)", group: "pricing" },
-  { key: "price_modern", value: "499000", label: "Harga Paket Modern (IDR)", group: "pricing" },
-  { key: "price_premium", value: "699000", label: "Harga Paket Premium (IDR)", group: "pricing" },
-  { key: "desc_traditional", value: "Tema Traditional — Sakral, Megah & Bernuansa Tradisional", label: "Deskripsi Paket Traditional", group: "pricing" },
-  { key: "desc_modern", value: "Tema Modern — Minimalis, Kontemporer & Sinematik", label: "Deskripsi Paket Modern", group: "pricing" },
+  { key: "name_traditional", value: "Traditional", label: "Nama Paket Traditional", group: "pricing" },
+  { key: "name_modern", value: "Modern", label: "Nama Paket Modern", group: "pricing" },
+  { key: "name_premium", value: "Premium", label: "Nama Paket Premium", group: "pricing" },
+  { key: "price_traditional", value: "50000", label: "Harga Paket Traditional (IDR)", group: "pricing" },
+  { key: "price_modern", value: "100000", label: "Harga Paket Modern (IDR)", group: "pricing" },
+  { key: "price_premium", value: "120000", label: "Harga Paket Premium (IDR)", group: "pricing" },
+  { key: "desc_traditional", value: "Tema Standart — Elegan, Bernuansa Tradisional", label: "Deskripsi Paket Traditional", group: "pricing" },
+  { key: "desc_modern", value: "Tema Premium — Sinematik, Editorial, Kontemporer", label: "Deskripsi Paket Modern", group: "pricing" },
   { key: "desc_premium", value: "Tema Premium — Editorial, Full-Text & Luxury Visual Motion", label: "Deskripsi Paket Premium", group: "pricing" },
   { key: "backup_auto_enabled", value: "true", label: "Auto-Backup Harian Aktif", group: "backup" },
   { key: "backup_auto_time", value: "02:00", label: "Waktu Eksekusi Auto-Backup (HH:mm)", group: "backup" },
@@ -42,6 +54,11 @@ async function seedDefaultSettings() {
 
 export async function GET() {
   try {
+    const isAuthorized = await verifyAdminSession();
+    if (!isAuthorized) {
+      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
+    }
+
     await seedDefaultSettings();
     const settings = await prisma.adminSetting.findMany({
       orderBy: [{ group: "asc" }, { key: "asc" }],
@@ -68,6 +85,11 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
+    const isAuthorized = await verifyAdminSession();
+    if (!isAuthorized) {
+      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
+    }
+
     const body = await req.json();
     const updates = Array.isArray(body) ? body : [body];
     const results = [];
@@ -100,27 +122,6 @@ export async function POST(req: NextRequest) {
         process.env[envVar] = finalVal;
         envUpdates[envVar] = finalVal;
       }
-    }
-
-    // Safely sync to .env file on disk if exists
-    try {
-      const fs = await import("fs");
-      const path = await import("path");
-      const envPath = path.join(process.cwd(), ".env");
-      if (fs.existsSync(envPath) && Object.keys(envUpdates).length > 0) {
-        let envContent = fs.readFileSync(envPath, "utf-8");
-        for (const [envVar, envVal] of Object.entries(envUpdates)) {
-          const regex = new RegExp(`^${envVar}=.*$`, "m");
-          if (regex.test(envContent)) {
-            envContent = envContent.replace(regex, `${envVar}="${envVal}"`);
-          } else {
-            envContent += `\n${envVar}="${envVal}"`;
-          }
-        }
-        fs.writeFileSync(envPath, envContent, "utf-8");
-      }
-    } catch (fsErr) {
-      console.warn("Could not sync .env file:", fsErr);
     }
 
     return NextResponse.json({ success: true, updated: results });

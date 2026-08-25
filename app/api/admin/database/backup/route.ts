@@ -1,8 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createDatabaseSnapshot, listDatabaseSnapshots, deleteDatabaseSnapshot } from "@/lib/databaseBackup";
+import { auth } from "@/auth";
+
+export const dynamic = "force-dynamic";
+
+async function verifyAdminSession() {
+  const session = await auth();
+  const isAdmin = (session?.user as any)?.isAdmin === true || (session?.user as any)?.role === "SUPER_ADMIN" || (session?.user as any)?.role === "ADMIN";
+  if (!session?.user || !isAdmin) {
+    return false;
+  }
+  return true;
+}
 
 export async function GET() {
   try {
+    const isAuthorized = await verifyAdminSession();
+    if (!isAuthorized) {
+      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
+    }
+
     const snapshots = await listDatabaseSnapshots();
     return NextResponse.json({ success: true, snapshots });
   } catch (error: any) {
@@ -12,6 +29,11 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
+    const isAuthorized = await verifyAdminSession();
+    if (!isAuthorized) {
+      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
+    }
+
     const body = await req.json().catch(() => ({}));
     const label = body.label ? String(body.label).replace(/[^a-zA-Z0-9_-]/g, "") : undefined;
     const result = await createDatabaseSnapshot(label);
@@ -27,6 +49,11 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
+    const isAuthorized = await verifyAdminSession();
+    if (!isAuthorized) {
+      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
     const filename = searchParams.get("filename");
     if (!filename) {

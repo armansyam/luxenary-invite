@@ -10,23 +10,24 @@ export interface SnapshotItem {
   isSafetyBackup: boolean;
 }
 
-// Dapatkan direktori backup yang valid
+// Dapatkan direktori backup yang valid terisolasi di dalam folder data/backups
 export function getBackupDirectory(configuredPath?: string): string {
-  if (configuredPath && path.isAbsolute(configuredPath)) {
+  const localDir = path.join(process.cwd(), "data", "backups");
+  if (!fs.existsSync(localDir)) {
+    fs.mkdirSync(localDir, { recursive: true });
+  }
+
+  if (configuredPath && path.isAbsolute(configuredPath) && !configuredPath.includes("..")) {
     try {
       if (!fs.existsSync(configuredPath)) {
         fs.mkdirSync(configuredPath, { recursive: true });
       }
       return configuredPath;
     } catch {
-      // Jika izin folder /data sistem ditolak, fallback ke ./data/backups di project
+      // Fallback ke localDir
     }
   }
 
-  const localDir = path.join(process.cwd(), "data", "backups");
-  if (!fs.existsSync(localDir)) {
-    fs.mkdirSync(localDir, { recursive: true });
-  }
   return localDir;
 }
 
@@ -48,14 +49,8 @@ export function getActiveDbPath(): string {
   return rootDb;
 }
 
-// Buat snapshot database saat ini
-export async function createDatabaseSnapshot(customLabel?: string): Promise<{ success: boolean; filename: string; path: string; sizeBytes: number }> {
-  const dbPath = getActiveDbPath();
-  if (!fs.existsSync(dbPath)) {
-    throw new Error(`File database aktif tidak ditemukan di ${dbPath}`);
-  }
-
-  // Ambil path backup dari setting jika ada
+// Buat snapshot database instan
+export async function createDatabaseSnapshot(customLabel?: string): Promise<{ filename: string; sizeBytes: number; sizeFormatted: string; path: string }> {
   let backupPathSetting: string | undefined;
   try {
     const s = await prisma.adminSetting.findUnique({ where: { key: "backup_path" } });
@@ -63,29 +58,39 @@ export async function createDatabaseSnapshot(customLabel?: string): Promise<{ su
   } catch {}
 
   const backupDir = getBackupDirectory(backupPathSetting);
+  const activeDbPath = getActiveDbPath();
 
-  // Buat nama file unik berformat tanggal dan jam
+  if (!fs.existsSync(activeDbPath)) {
+    throw new Error(`File database aktif tidak ditemukan di path: ${activeDbPath}`);
+  }
+
+  // Format penamaan: snapshot_{YYYY-MM-DD_HH-mm-ss}_{label}.db
   const now = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
-  const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
-  
-  const prefix = customLabel ? `safety_${customLabel}` : `snapshot_luxenary`;
-  const filename = `${prefix}_${timestamp}.db`;
+  const timestamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+  const labelSuffix = customLabel ? `_${customLabel.replace(/[^a-zA-Z0-9_-]/g, "")}` : "";
+  const filename = `snapshot_${timestamp}${labelSuffix}.db`;
   const targetPath = path.join(backupDir, filename);
 
-  // Salin file database secara atomic
-  fs.copyFileSync(dbPath, targetPath);
+  // Salin file database secara atomik
+  fs.copyFileSync(activeDbPath, targetPath);
 
-  const stats = fs.statSync(targetPath);
+  const stat = fs.statSync(targetPath);
 
-  // Jalankan rotasi/pembersihan snapshot lama sesuai batas retensi
-  await cleanupOldSnapshots(backupDir);
+  // Jalankan retensi otomatis (hapus snapshot lama jika melebihi batas)
+  try {
+    let retentionLimit = 10;
+    const rSetting = await prisma.adminSetting.findUnique({ where: { key: "backup_retention_count" } });
+    if (rSetting?.value) retentionLimit = parseInt(rSetting.value, 10) || 10;
+
+    await pruneOldSnapshots(retentionLimit, backupDir);
+  } catch {}
 
   return {
-    success: true,
     filename,
+    sizeBytes: stat.size,
+    sizeFormatted: formatBytes(stat.size),
     path: targetPath,
-    sizeBytes: stats.size,
   };
 }
 
@@ -98,6 +103,8 @@ export async function listDatabaseSnapshots(): Promise<SnapshotItem[]> {
   } catch {}
 
   const backupDir = getBackupDirectory(backupPathSetting);
+  if (!fs.existsSync(backupDir)) return [];
+
   const files = fs.readdirSync(backupDir);
 
   const snapshots: SnapshotItem[] = [];
@@ -112,7 +119,7 @@ export async function listDatabaseSnapshots(): Promise<SnapshotItem[]> {
         sizeBytes: stat.size,
         sizeFormatted: formatBytes(stat.size),
         createdAt: stat.mtime.toISOString(),
-        isSafetyBackup: f.startsWith("safety_"),
+        isSafetyBackup: f.startsWith("safety_") || f.includes("pre_restore"),
       });
     } catch {}
   }
@@ -124,7 +131,8 @@ export async function listDatabaseSnapshots(): Promise<SnapshotItem[]> {
 }
 
 // Restore database dari snapshot
-export async function restoreDatabaseSnapshot(filename: string): Promise<{ success: boolean; safetyBackup: string; restoredFrom: string }> {
+export async function restoreDatabaseSnapshot(filename: string): Promise<{ success: boolean; safetySnapshot: string; restoredFrom: string }> {
+  const safeName = path.basename(filename);
   let backupPathSetting: string | undefined;
   try {
     const s = await prisma.adminSetting.findUnique({ where: { key: "backup_path" } });
@@ -132,10 +140,10 @@ export async function restoreDatabaseSnapshot(filename: string): Promise<{ succe
   } catch {}
 
   const backupDir = getBackupDirectory(backupPathSetting);
-  const snapshotPath = path.join(backupDir, filename);
+  const snapshotPath = path.join(backupDir, safeName);
 
   if (!fs.existsSync(snapshotPath)) {
-    throw new Error(`File snapshot "${filename}" tidak ditemukan di direktori backup.`);
+    throw new Error(`File snapshot "${safeName}" tidak ditemukan di direktori backup.`);
   }
 
   // 1. Buat safety backup dari database aktif saat ini sebelum ditimpa
@@ -153,8 +161,8 @@ export async function restoreDatabaseSnapshot(filename: string): Promise<{ succe
 
   return {
     success: true,
-    safetyBackup: safety.filename,
-    restoredFrom: filename,
+    safetySnapshot: safety.filename,
+    restoredFrom: safeName,
   };
 }
 
@@ -178,34 +186,29 @@ export async function deleteDatabaseSnapshot(filename: string): Promise<{ succes
   return { success: true };
 }
 
-// Bersihkan snapshot lama sesuai batas retensi
-async function cleanupOldSnapshots(backupDir: string) {
-  try {
-    let retentionCount = 10;
-    const s = await prisma.adminSetting.findUnique({ where: { key: "backup_retention_count" } });
-    if (s?.value) {
-      const parsed = parseInt(s.value, 10);
-      if (!isNaN(parsed) && parsed > 0) retentionCount = parsed;
-    }
+// Rotasi snapshot lama
+export async function pruneOldSnapshots(keepCount: number, backupDir: string) {
+  if (!fs.existsSync(backupDir)) return;
+  const files = fs.readdirSync(backupDir);
+  const snapshots: Array<{ name: string; time: number; path: string }> = [];
 
-    const files = fs.readdirSync(backupDir)
-      .filter((f) => f.endsWith(".db") || f.endsWith(".sqlite"))
-      .map((f) => {
-        const full = path.join(backupDir, f);
-        return { name: f, full, mtime: fs.statSync(full).mtime.getTime() };
-      })
-      .sort((a, b) => b.mtime - a.mtime);
+  for (const f of files) {
+    if (!f.endsWith(".db") && !f.endsWith(".sqlite")) continue;
+    const p = path.join(backupDir, f);
+    try {
+      const stat = fs.statSync(p);
+      snapshots.push({ name: f, time: stat.mtime.getTime(), path: p });
+    } catch {}
+  }
 
-    // Hapus snapshot di luar batas retensi
-    if (files.length > retentionCount) {
-      const toDelete = files.slice(retentionCount);
-      for (const item of toDelete) {
-        try {
-          fs.unlinkSync(item.full);
-        } catch {}
-      }
+  snapshots.sort((a, b) => b.time - a.time);
+
+  if (snapshots.length > keepCount) {
+    const toDelete = snapshots.slice(keepCount);
+    for (const item of toDelete) {
+      try {
+        fs.unlinkSync(item.path);
+      } catch {}
     }
-  } catch (err) {
-    console.warn("Gagal rotasi backup:", err);
   }
 }

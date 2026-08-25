@@ -1,6 +1,10 @@
 import { renderTemplateFile } from "@/lib/renderTemplate";
 import { composeDemoTemplateData } from "@/lib/demoRegistry";
 import { NextResponse } from "next/server";
+import fs from "fs";
+import path from "path";
+
+export const dynamic = "force-dynamic";
 
 export async function GET(
   req: Request,
@@ -10,8 +14,21 @@ export async function GET(
   const { searchParams } = new URL(req.url);
   const paletteKey = searchParams.get("palette") || "champagne";
 
-  const validThemes = ["kalandra", "valente", "aurelia", "artisan", "wave", "papercut", "ameera", "prameswari", "dillalucky"];
-  const selectedTheme = validThemes.includes(theme.toLowerCase()) ? theme.toLowerCase() : "kalandra";
+  const cleanTheme = theme.toLowerCase().trim();
+
+  // Dynamic file discovery across all theme subfolders (premium, traditional, modern, root)
+  const premiumPath = path.join(process.cwd(), "themes", "premium", `${cleanTheme}.html`);
+  const traditionalPath = path.join(process.cwd(), "themes", "traditional", `${cleanTheme}.html`);
+  const modernPath = path.join(process.cwd(), "themes", "modern", `${cleanTheme}.html`);
+  const rootPath = path.join(process.cwd(), "themes", `${cleanTheme}.html`);
+
+  const themeExists =
+    fs.existsSync(premiumPath) ||
+    fs.existsSync(traditionalPath) ||
+    fs.existsSync(modernPath) ||
+    fs.existsSync(rootPath);
+
+  const selectedTheme = themeExists ? cleanTheme : "kalandra";
 
   const data = composeDemoTemplateData(selectedTheme, paletteKey);
   const html = renderTemplateFile(selectedTheme, data);

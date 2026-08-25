@@ -1,15 +1,35 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { auth } from "@/auth";
 
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const resolvedParams = await Promise.resolve(params);
     const id = resolvedParams?.id;
 
     if (!id) return NextResponse.json({});
+
+    const inv = await prisma.invitation.findUnique({
+      where: { id },
+      select: { userId: true },
+    });
+
+    if (!inv) return NextResponse.json({});
+
+    const isOwner = inv.userId === session.user.id;
+    const isAdmin = (session.user as any).isAdmin === true || (session.user as any).role === "SUPER_ADMIN" || (session.user as any).role === "ADMIN";
+
+    if (!isOwner && !isAdmin) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     const media = await prisma.invitationMedia.findMany({
       where: { invitationId: id },
@@ -32,9 +52,34 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const resolvedParams = await Promise.resolve(params);
     const id = resolvedParams?.id;
     const body = await req.json();
+
+    if (!id) {
+      return NextResponse.json({ error: "ID Undangan wajib disertakan" }, { status: 400 });
+    }
+
+    const inv = await prisma.invitation.findUnique({
+      where: { id },
+      select: { userId: true },
+    });
+
+    if (!inv) {
+      return NextResponse.json({ error: "Undangan tidak ditemukan" }, { status: 404 });
+    }
+
+    const isOwner = inv.userId === session.user.id;
+    const isAdmin = (session.user as any).isAdmin === true || (session.user as any).role === "SUPER_ADMIN" || (session.user as any).role === "ADMIN";
+
+    if (!isOwner && !isAdmin) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     const VALID_ENUM_SLOTS = ["LANDING_COVER", "DESKTOP_SIDEBAR", "GLOBAL_FIXED_BG", "GROOM_PHOTO", "BRIDE_PHOTO", "GALLERY"];
 

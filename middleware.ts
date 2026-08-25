@@ -19,13 +19,13 @@ export default auth((req) => {
 
   // 2. Client login page
   if (pathname === "/login") {
-    if (isLoggedIn) {
+    if (isLoggedIn && !isAdmin) {
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }
     return NextResponse.next();
   }
 
-  // 3. Admin routes protection -> redirect to /admin/login
+  // 3. Admin routes protection -> HANYA Admin yang diizinkan
   if (pathname.startsWith("/admin")) {
     if (!isLoggedIn || !isAdmin) {
       return NextResponse.redirect(new URL("/admin/login", req.url));
@@ -33,9 +33,9 @@ export default auth((req) => {
     return NextResponse.next();
   }
 
-  // 4. Client dashboard routes protection -> redirect to /login
+  // 4. Client dashboard routes protection -> HANYA Client murni yang diizinkan (Admin diblokir)
   if (pathname.startsWith("/dashboard")) {
-    if (!isLoggedIn) {
+    if (!isLoggedIn || isAdmin) {
       return NextResponse.redirect(new URL("/login", req.url));
     }
     return NextResponse.next();

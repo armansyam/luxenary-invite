@@ -1,77 +1,11 @@
 import Link from "next/link";
 import { BrandLogo } from "@/components/BrandLogo";
-import { prisma } from "@/lib/prisma";
+import { getPublicPlatformSettings } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  // Ambil konfigurasi dinamis dari database
-  let settingsMap: Record<string, string> = {};
-  try {
-    const settings = await prisma.adminSetting.findMany();
-    for (const s of settings) {
-      settingsMap[s.key] = s.value;
-    }
-  } catch (e) {
-    console.error("Gagal load setting homepage:", e);
-  }
-
-  const platformName = settingsMap["platform_name"] || "Luxenary Invite";
-  const heroTagline = settingsMap["hero_tagline"] || "Undangan Pernikahan Digital Elegan, Hangat & Berkelas";
-  const heroSubtitle =
-    settingsMap["hero_subtitle"] ||
-    "Didesain khusus dengan sentuhan estetika mewah dan eksklusif. Hadirkan pengalaman berkesan dengan layout split desktop, custom subdomain, buku tamu real-time, dan video booth ucapan.";
-
-  const pricingPackages = [
-    {
-      id: "TRADITIONAL",
-      name: settingsMap["name_traditional"] || "Traditional Series",
-      price: Number(settingsMap["price_traditional"] || 299000),
-      desc: settingsMap["desc_traditional"] || "Tema Traditional — Sakral, Megah & Bernuansa Tradisional",
-      features: [
-        "Tautan link personal per nama tamu",
-        "Tamu undangan tanpa batas",
-        "Manajemen RSVP & ucapan doa",
-        "Buku tamu & link WA 1-klik",
-        "Galeri foto & musik latar",
-        "Amplop digital QRIS & transfer bank",
-      ],
-      badge: null,
-      isFeatured: false,
-    },
-    {
-      id: "MODERN",
-      name: settingsMap["name_modern"] || "Modern Series",
-      price: Number(settingsMap["price_modern"] || 499000),
-      desc: settingsMap["desc_modern"] || "Tema Modern — Minimalis, Kontemporer & Sinematik",
-      features: [
-        "Semua fitur Traditional termasuk",
-        "Desain modern & minimalis kontemporer",
-        "Video background & HD audio player",
-        "Check-in barcode kehadiran di lokasi",
-        "Custom subdomain eksklusif",
-        "Bebas watermark platform",
-      ],
-      badge: "Paling Populer",
-      isFeatured: true,
-    },
-    {
-      id: "PREMIUM",
-      name: settingsMap["name_premium"] || "Premium Series",
-      price: Number(settingsMap["price_premium"] || 699000),
-      desc: settingsMap["desc_premium"] || "Tema Premium — Editorial, Full-Text & Luxury Visual Motion",
-      features: [
-        "Semua fitur Modern termasuk",
-        "Akses seluruh seri tema premium eksklusif",
-        "Akses Video Wishes Booth on-site",
-        "Prioritas rendering & streaming super cepat",
-        "Custom domain penuh (opsional)",
-        "Dukungan teknis VIP prioritas",
-      ],
-      badge: "Eksklusif VIP",
-      isFeatured: false,
-    },
-  ];
+  const { platformName, heroTagline, heroSubtitle, packages: pricingPackages } = await getPublicPlatformSettings();
 
   return (
     <div className="min-h-screen bg-[#faf8f5] text-[#2d2c2a] flex flex-col selection:bg-amber-200 selection:text-amber-900 font-sans">
@@ -252,7 +186,7 @@ export default async function Home() {
           <div className="flex gap-6 text-[#524d45]">
             <Link href="/demo" className="hover:text-amber-900 transition">Demo Tema</Link>
             <Link href="/login" className="hover:text-amber-900 transition">Portal Klien</Link>
-            <Link href="/admin" className="hover:text-amber-900 transition">Admin</Link>
+            <Link href="/admin/login" className="hover:text-amber-900 transition">Admin</Link>
           </div>
         </div>
       </footer>

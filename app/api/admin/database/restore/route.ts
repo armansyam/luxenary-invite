@@ -3,9 +3,26 @@ import path from "path";
 import fs from "fs";
 import { getBackupDirectory, restoreDatabaseSnapshot, getActiveDbPath, createDatabaseSnapshot } from "@/lib/databaseBackup";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
+
+export const dynamic = "force-dynamic";
+
+async function verifyAdminSession() {
+  const session = await auth();
+  const isAdmin = (session?.user as any)?.isAdmin === true || (session?.user as any)?.role === "SUPER_ADMIN" || (session?.user as any)?.role === "ADMIN";
+  if (!session?.user || !isAdmin) {
+    return false;
+  }
+  return true;
+}
 
 export async function POST(req: NextRequest) {
   try {
+    const isAuthorized = await verifyAdminSession();
+    if (!isAuthorized) {
+      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
+    }
+
     const contentType = req.headers.get("content-type") || "";
 
     // ── Kasus A: Upload file .db baru lalu langsung restore ──
@@ -40,16 +57,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: true,
         message: `Database berhasil direstore dari file upload: ${file.name}`,
-        safetyBackup: result.safetyBackup,
+        safetySnapshot: result.safetySnapshot,
+        restoredFrom: uploadedFilename,
       });
     }
 
-    // ── Kasus B: Restore dari snapshot yang sudah ada di server ──
-    const body = await req.json();
+    // ── Kasus B: Restore dari snapshot lokal yang sudah ada di list ──
+    const body = await req.json().catch(() => ({}));
     const { filename } = body;
 
     if (!filename) {
-      return NextResponse.json({ error: "Nama file snapshot wajib dicantumkan" }, { status: 400 });
+      return NextResponse.json({ error: "Parameter filename snapshot wajib diisi" }, { status: 400 });
     }
 
     const result = await restoreDatabaseSnapshot(filename);
@@ -57,10 +75,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       message: `Database berhasil direstore ke snapshot: ${filename}`,
-      safetyBackup: result.safetyBackup,
+      safetySnapshot: result.safetySnapshot,
+      restoredFrom: filename,
     });
   } catch (error: any) {
-    console.error("[Database Restore Error]:", error);
-    return NextResponse.json({ error: error.message || "Gagal melakukan restore database" }, { status: 500 });
+    console.error("[Database Restore Error]", error);
+    return NextResponse.json(
+      { error: error.message || "Gagal melakukan restore database" },
+      { status: 500 }
+    );
   }
 }

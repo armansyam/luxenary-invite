@@ -3,6 +3,8 @@ import fs from "fs";
 import path from "path";
 import sharp from "sharp";
 import { optimizeWebVideo, optimizeWebAudio } from "@/lib/videoOptimizer";
+import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
 
 const SLOT_FILE_NAMES: Record<string, string> = {
   LANDING_COVER: "landing-cover",
@@ -15,6 +17,11 @@ const SLOT_FILE_NAMES: Record<string, string> = {
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized. Silakan login terlebih dahulu." }, { status: 401 });
+    }
+
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
     const rawInvitationId = (formData.get("invitationId") as string) || "general";
@@ -26,6 +33,21 @@ export async function POST(req: NextRequest) {
 
     // Sanitize folder and slot identifiers to prevent path traversal
     const safeInvitationId = rawInvitationId.replace(/[^a-zA-Z0-9_-]/g, "") || "general";
+
+    if (safeInvitationId !== "general") {
+      const inv = await prisma.invitation.findUnique({
+        where: { id: safeInvitationId },
+        select: { userId: true },
+      });
+      if (inv) {
+        const isOwner = inv.userId === session.user.id;
+        const isAdmin = (session.user as any).isAdmin === true || (session.user as any).role === "SUPER_ADMIN" || (session.user as any).role === "ADMIN";
+        if (!isOwner && !isAdmin) {
+          return NextResponse.json({ error: "Forbidden. Anda tidak memiliki akses ke undangan ini." }, { status: 403 });
+        }
+      }
+    }
+
     const slotKey = rawSlot.toUpperCase();
     const baseSlug = SLOT_FILE_NAMES[slotKey] || rawSlot.toLowerCase().replace(/[^a-z0-9_-]/g, "") || "photo";
 

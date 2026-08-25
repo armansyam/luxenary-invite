@@ -7,7 +7,7 @@ const THEMES = [
   {
     id: "kalandra",
     name: "Kalandra",
-    subtitle: "Premium Series",
+    subtitle: "Premium",
     category: "premium",
     desc: "Modern, Elegan & Minimalis",
     cover: "https://images.unsplash.com/photo-1519741497674-611481863552?w=600&q=80",
@@ -16,7 +16,7 @@ const THEMES = [
   {
     id: "valente",
     name: "Valente",
-    subtitle: "Premium Series",
+    subtitle: "Premium",
     category: "premium",
     desc: "High-Fashion, Editorial & Mewah",
     cover: "https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=600&q=80",
@@ -25,7 +25,7 @@ const THEMES = [
   {
     id: "aurelia",
     name: "Aurelia",
-    subtitle: "Premium Series",
+    subtitle: "Premium",
     category: "premium",
     desc: "Romantis, Sinematik & Anggun",
     cover: "https://images.unsplash.com/photo-1532712938310-34cb3982ef74?w=600&q=80",
@@ -34,7 +34,7 @@ const THEMES = [
   {
     id: "artisan",
     name: "Artisan",
-    subtitle: "Premium Series",
+    subtitle: "Premium",
     category: "premium",
     desc: "Artistik, Hangat & Vintage",
     cover: "https://images.unsplash.com/photo-1513279922550-250c24738d87?w=600&q=80",
@@ -43,7 +43,7 @@ const THEMES = [
   {
     id: "prameswari",
     name: "Prameswari",
-    subtitle: "Traditional Series",
+    subtitle: "Traditional",
     category: "traditional",
     desc: "Sakral, Megah & Royal Keraton",
     cover: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=600&q=80",
@@ -52,7 +52,7 @@ const THEMES = [
   {
     id: "wave",
     name: "Wave",
-    subtitle: "Modern Series",
+    subtitle: "Modern",
     category: "modern",
     desc: "Dark, Moody & Dramatic — Gelombang Elegan",
     cover: "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=600&q=80",
@@ -61,7 +61,7 @@ const THEMES = [
   {
     id: "papercut",
     name: "Papercut",
-    subtitle: "Modern Series",
+    subtitle: "Modern",
     category: "modern",
     desc: "Moody Papercut — Kraft Paper Aesthetic & Artistik",
     cover: "https://images.unsplash.com/photo-1513279922550-250c24738d87?w=600&q=80",
@@ -70,7 +70,7 @@ const THEMES = [
   {
     id: "ameera",
     name: "Ameera",
-    subtitle: "Modern Series",
+    subtitle: "Modern",
     category: "modern",
     desc: "Heritage Modern — Elegan Dark & Nuansa Warisan",
     cover: "https://images.unsplash.com/photo-1469371670807-013ccf25f16a?w=600&q=80",
@@ -79,7 +79,7 @@ const THEMES = [
   {
     id: "dillalucky",
     name: "Dilla Lucky",
-    subtitle: "Traditional Series",
+    subtitle: "Traditional",
     category: "traditional",
     desc: "Islami Sakral — Batik Ornament & Penuh Berkah",
     cover: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=600&q=80",
