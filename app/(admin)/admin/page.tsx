@@ -2287,58 +2287,81 @@ export default function AdminPage() {
                   {/* ══ TAB: GATEWAY QRIS ══ */}
                   {activeSettingsTab === "gateway" && (
                   <>
-                  {/* ═══ ACTIVE GATEWAY SELECTOR & GLOBAL EXPIRY ═══ */}
+                  {/* ═══ PUSAT KONTROL & BASE SETTING GATEWAY GLOBAL ═══ */}
                   <SettingsCard
-                    title="Gateway Pembayaran Aktif & Durasi Tagihan"
-                    description="Pilih payment gateway yang aktif untuk transaksi online dan tentukan masa berlaku tagihan/QRIS secara global untuk semua gateway."
+                    title="Pusat Kontrol & Pengaturan Global Gateway"
+                    description="Konfigurasi terpusat untuk semua payment gateway: pilih gateway aktif, mode lingkungan, masa berlaku QRIS, penanggung biaya admin, dan format nama invoice."
                     isEditing={Boolean(editSection["active_gateway"])}
                     onEdit={() => toggleEditSection("active_gateway")}
-                    onCancel={() => cancelEdit("active_gateway", ["active_payment_gateway", "payment_expiry_minutes"])}
-                    onSave={() => saveSettings(["active_payment_gateway", "payment_expiry_minutes"], setSavingActiveGateway, "active_gateway")}
+                    onCancel={() => cancelEdit("active_gateway", ["active_payment_gateway", "payment_gateway_mode", "payment_expiry_minutes", "payment_fee_payer", "payment_invoice_prefix"])}
+                    onSave={() => saveSettings(["active_payment_gateway", "payment_gateway_mode", "payment_expiry_minutes", "payment_fee_payer", "payment_invoice_prefix"], setSavingActiveGateway, "active_gateway")}
                     saving={savingActiveGateway}
-                    isDirty={isSectionDirty(["active_payment_gateway", "payment_expiry_minutes"])}
+                    isDirty={isSectionDirty(["active_payment_gateway", "payment_gateway_mode", "payment_expiry_minutes", "payment_fee_payer", "payment_invoice_prefix"])}
                     saveSuccess={settingsSaved["active_gateway"]}
-                    saveSuccessMessage="Pengaturan gateway aktif & durasi tagihan berhasil disimpan"
+                    saveSuccessMessage="Pengaturan global payment gateway berhasil disimpan"
                     viewContent={
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                        <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200">
-                          <span className="text-xs text-gray-500 block font-medium">Gateway Aktif Saat Ini</span>
-                          <div className="mt-2 flex items-center gap-1.5 flex-wrap">
-                            {["ipaymu", "midtrans", "xendit", "duitku", "tripay"].map((gw) => (
-                              <span
-                                key={gw}
-                                className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition ${
-                                  (settingsMap["active_payment_gateway"] || "ipaymu") === gw
-                                    ? "bg-emerald-50 text-emerald-700 border-emerald-300 shadow-2xs"
-                                    : "bg-gray-50 text-gray-400 border-gray-200 opacity-60"
-                                }`}
-                              >
-                                {(settingsMap["active_payment_gateway"] || "ipaymu") === gw && (
-                                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 align-middle"></span>
-                                )}
-                                {gw.charAt(0).toUpperCase() + gw.slice(1)}
+                      <div className="space-y-3.5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                          <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200">
+                            <span className="text-xs text-gray-500 block font-medium">Gateway Aktif</span>
+                            <div className="mt-1.5 flex items-center gap-1.5">
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-300">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                {(settingsMap["active_payment_gateway"] || "ipaymu").toUpperCase()}
                               </span>
-                            ))}
+                            </div>
+                          </div>
+
+                          <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200">
+                            <span className="text-xs text-gray-500 block font-medium">Mode Lingkungan</span>
+                            <div className="mt-1.5">
+                              {(settingsMap["payment_gateway_mode"] || "sandbox") === "production" ? (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-300">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                  Produksi (Live)
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-50 text-amber-800 border border-amber-300">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                  Sandbox (Testing)
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="p-3.5 bg-sky-50 rounded-xl border border-sky-200">
+                            <span className="text-xs text-sky-800 block font-bold">Masa Berlaku Tagihan</span>
+                            <div className="mt-1 flex items-baseline gap-1">
+                              <span className="text-xl font-mono font-bold text-sky-950">
+                                {settingsMap["payment_expiry_minutes"] || "60"}
+                              </span>
+                              <span className="text-xs font-semibold text-sky-800">Menit</span>
+                            </div>
+                          </div>
+
+                          <div className="p-3.5 bg-purple-50/70 rounded-xl border border-purple-200">
+                            <span className="text-xs text-purple-900 block font-bold">Biaya Admin Gateway</span>
+                            <div className="mt-1 text-xs font-semibold text-purple-950">
+                              {(settingsMap["payment_fee_payer"] || "MERCHANT") === "BUYER" ? (
+                                <span className="text-amber-800 font-bold">Dibebankan ke Klien (+0.7%)</span>
+                              ) : (
+                                <span className="text-emerald-700 font-bold">Ditanggung Platform (Gratis Klien)</span>
+                              )}
+                            </div>
                           </div>
                         </div>
 
-                        <div className="p-3.5 bg-sky-50 rounded-xl border border-sky-200">
-                          <span className="text-xs text-sky-800 block font-bold">Masa Berlaku Tagihan / QRIS (Global)</span>
-                          <div className="mt-1 flex items-baseline gap-1.5">
-                            <span className="text-2xl font-mono font-bold text-sky-950">
-                              {settingsMap["payment_expiry_minutes"] || "60"}
-                            </span>
-                            <span className="text-xs font-semibold text-sky-800">Menit</span>
-                          </div>
-                          <p className="text-[11px] text-sky-700/80 mt-1">
-                            Otomatis berlaku untuk gateway apapun yang aktif (iPaymu, Midtrans, Xendit, Duitku, Tripay).
-                          </p>
+                        <div className="p-3 bg-gray-50 rounded-xl border border-gray-200 text-xs flex items-center justify-between gap-2 flex-wrap">
+                          <span className="text-gray-600 font-medium">
+                            Format Judul Invoice: <code className="font-mono text-gray-900 font-bold bg-white px-2 py-0.5 rounded border border-gray-200">{settingsMap["payment_invoice_prefix"] || "Luxenary Invite"} — Order #XXXXXX</code>
+                          </span>
+                          <span className="text-[11px] text-gray-400">Berlaku otomatis untuk semua vendor gateway</span>
                         </div>
                       </div>
                     }
                   >
                     <div className="space-y-4">
-                      <FieldRow label="Pilih Gateway Aktif" description="Gateway ini yang akan digunakan saat klien klik tombol bayar via QRIS / Online">
+                      <FieldRow label="Pilih Gateway Aktif" description="Gateway utama yang memproses pembayaran saat klien klik bayar via QRIS / Online">
                         <div className="flex flex-wrap gap-2">
                           {[
                             { id: "ipaymu", label: "iPaymu", desc: "QRIS, VA, GoPay, OVO" },
@@ -2366,16 +2389,84 @@ export default function AdminPage() {
                         </div>
                       </FieldRow>
 
-                      <FieldRow label="Masa Berlaku Tagihan / QRIS (Menit)" description="Durasi tagihan/QRIS sebelum kedaluwarsa otomatis (contoh: 15, 30, 60 menit, atau 1440 untuk 24 jam). Berlaku global tanpa perlu setting ulang per gateway.">
-                        <input
-                          type="number"
-                          min="5"
-                          max="1440"
-                          value={settingsMap["payment_expiry_minutes"] || "60"}
-                          onChange={(e) => setSetting("payment_expiry_minutes", e.target.value)}
-                          className="w-full px-3.5 py-2.5 border border-sky-300 rounded-xl text-sm bg-sky-50 text-sky-900 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition shadow-2xs font-mono font-bold"
-                        />
-                        <p className="text-[11px] text-gray-400 mt-1">Invoice otomatis hangus jika tidak dibayar dalam batas waktu ini.</p>
+                      <FieldRow label="Mode Lingkungan Global" description="Ganti status seluruh gateway ke Sandbox (uji coba) atau Produksi (live) sekaligus dengan 1 klik">
+                        <div className="flex gap-3">
+                          {[
+                            { id: "sandbox", label: "Sandbox (Uji Coba)", desc: "Testing tanpa uang sungguhan" },
+                            { id: "production", label: "Produksi (Live)", desc: "Transaksi uang nyata" },
+                          ].map((mode) => (
+                            <button
+                              key={mode.id}
+                              type="button"
+                              onClick={() => setSetting("payment_gateway_mode", mode.id)}
+                              className={`px-4 py-2.5 rounded-xl text-xs font-semibold border transition cursor-pointer flex items-center gap-2 ${
+                                (settingsMap["payment_gateway_mode"] || "sandbox") === mode.id
+                                  ? mode.id === "production"
+                                    ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                                    : "bg-amber-600 text-white border-amber-600 shadow-sm"
+                                  : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
+                              }`}
+                            >
+                              <span className={`w-2 h-2 rounded-full ${
+                                (settingsMap["payment_gateway_mode"] || "sandbox") === mode.id
+                                  ? "bg-white"
+                                  : mode.id === "production" ? "bg-emerald-500" : "bg-amber-500"
+                              }`}></span>
+                              <div>
+                                <span className="font-bold block">{mode.label}</span>
+                                <span className={`text-[10px] block ${
+                                  (settingsMap["payment_gateway_mode"] || "sandbox") === mode.id ? "text-white/80" : "text-gray-400"
+                                }`}>{mode.desc}</span>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </FieldRow>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                        <FieldRow label="Masa Berlaku Tagihan (Menit)" description="Durasi QRIS/Invoice sebelum kedaluwarsa otomatis (contoh: 15, 30, 60, atau 1440 untuk 24 jam).">
+                          <input
+                            type="number"
+                            min="5"
+                            max="1440"
+                            value={settingsMap["payment_expiry_minutes"] || "60"}
+                            onChange={(e) => setSetting("payment_expiry_minutes", e.target.value)}
+                            className="w-full px-3.5 py-2.5 border border-sky-300 rounded-xl text-sm bg-sky-50 text-sky-900 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition shadow-2xs font-mono font-bold"
+                          />
+                        </FieldRow>
+
+                        <FieldRow label="Prefix Judul Tagihan / Invoice" description="Teks identitas yang muncul di aplikasi e-Wallet pembeli saat scan QRIS.">
+                          <input
+                            type="text"
+                            value={settingsMap["payment_invoice_prefix"] || "Luxenary Invite"}
+                            onChange={(e) => setSetting("payment_invoice_prefix", e.target.value)}
+                            placeholder="Contoh: Luxenary Invite"
+                            className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs font-medium"
+                          />
+                        </FieldRow>
+                      </div>
+
+                      <FieldRow label="Skema Biaya Admin Gateway" description="Tentukan apakah potongan fee gateway (misal QRIS 0.7%) ditanggung oleh platform atau dibebankan ke pembeli">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {[
+                            { id: "MERCHANT", label: "Ditanggung Platform (Gratis Klien)", desc: "Klien bayar pas harga paket (contoh: Rp 299.000), fee dipotong dari saldo Anda." },
+                            { id: "BUYER", label: "Dibebankan ke Klien (+0.7% QRIS)", desc: "Total bayar di checkout otomatis ditambah biaya admin gateway." },
+                          ].map((feeOpt) => (
+                            <button
+                              key={feeOpt.id}
+                              type="button"
+                              onClick={() => setSetting("payment_fee_payer", feeOpt.id)}
+                              className={`p-3 rounded-xl border text-left transition cursor-pointer ${
+                                (settingsMap["payment_fee_payer"] || "MERCHANT") === feeOpt.id
+                                  ? "border-amber-600 bg-amber-50/70 text-amber-950 ring-1 ring-amber-500"
+                                  : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
+                              }`}
+                            >
+                              <span className="text-xs font-bold block">{feeOpt.label}</span>
+                              <span className="text-[11px] text-gray-500 block mt-1 leading-relaxed">{feeOpt.desc}</span>
+                            </button>
+                          ))}
+                        </div>
                       </FieldRow>
                     </div>
                   </SettingsCard>

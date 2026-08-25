@@ -30,6 +30,12 @@ export class IPaymuGateway implements PaymentGateway {
       if (map["ipaymu_api_key"]) apiKey = map["ipaymu_api_key"];
       if (map["ipaymu_mode"]) mode = map["ipaymu_mode"];
 
+      // Utamakan global environment mode jika diatur
+      const globalModeSetting = await prisma.adminSetting.findUnique({
+        where: { key: "payment_gateway_mode" },
+      });
+      if (globalModeSetting?.value) mode = globalModeSetting.value;
+
       const platformSettings = await prisma.adminSetting.findMany({
         where: { group: "platform" },
       });
@@ -67,13 +73,16 @@ export class IPaymuGateway implements PaymentGateway {
       throw new Error("iPaymu belum dikonfigurasi dengan VA & API Key aktif. Silakan isi di Portal Admin (/admin) → tab Pengaturan.");
     }
 
-    // Baca masa kedaluwarsa QRIS dari admin setting (dalam menit, dikirim ke iPaymu)
+    // Baca masa kedaluwarsa QRIS & prefix judul dari admin setting
     let expiryMinutes = 60;
+    let invoicePrefix = "Luxenary Invite";
     try {
       const expirySetting = await prisma.adminSetting.findUnique({ where: { key: "payment_expiry_minutes" } });
       if (expirySetting && !isNaN(Number(expirySetting.value))) {
         expiryMinutes = Math.max(5, Math.min(1440, Number(expirySetting.value)));
       }
+      const prefixSetting = await prisma.adminSetting.findUnique({ where: { key: "payment_invoice_prefix" } });
+      if (prefixSetting?.value) invoicePrefix = prefixSetting.value;
     } catch {}
 
     // Baca data buyer dari order
@@ -91,7 +100,7 @@ export class IPaymuGateway implements PaymentGateway {
     const timestamp = Math.floor(Date.now() / 1000).toString();
 
     const body = {
-      product: [`Luxenary Invite — Paket ${orderId.slice(-6).toUpperCase()}`],
+      product: [`${invoicePrefix} — Paket ${orderId.slice(-6).toUpperCase()}`],
       qty: [1],
       price: [amount],
       amount,

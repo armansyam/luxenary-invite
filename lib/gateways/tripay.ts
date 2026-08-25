@@ -25,6 +25,11 @@ export class TripayGateway implements PaymentGateway {
       if (map["tripay_private_key"]) privateKey = map["tripay_private_key"];
       if (map["tripay_merchant_code"]) merchantCode = map["tripay_merchant_code"];
       if (map["tripay_mode"]) mode = map["tripay_mode"];
+
+      const globalModeSetting = await prisma.adminSetting.findUnique({
+        where: { key: "payment_gateway_mode" },
+      });
+      if (globalModeSetting?.value) mode = globalModeSetting.value;
     } catch {}
 
     const baseUrl =
@@ -61,13 +66,16 @@ export class TripayGateway implements PaymentGateway {
       if (order?.user?.email) customerEmail = order.user.email;
     } catch {}
 
-    // Baca masa kedaluwarsa QRIS dari admin setting (dalam menit)
+    // Baca masa kedaluwarsa QRIS & prefix judul dari admin setting
     let expiryMinutes = 60;
+    let invoicePrefix = "Luxenary Invite";
     try {
       const expirySetting = await prisma.adminSetting.findUnique({ where: { key: "payment_expiry_minutes" } });
       if (expirySetting && !isNaN(Number(expirySetting.value))) {
         expiryMinutes = Math.max(5, Math.min(1440, Number(expirySetting.value)));
       }
+      const prefixSetting = await prisma.adminSetting.findUnique({ where: { key: "payment_invoice_prefix" } });
+      if (prefixSetting?.value) invoicePrefix = prefixSetting.value;
     } catch {}
 
     const expiredTime = Math.floor(Date.now() / 1000) + expiryMinutes * 60;
@@ -87,7 +95,7 @@ export class TripayGateway implements PaymentGateway {
         customer_phone: customerPhone,
         order_items: [
           {
-            name: `Luxenary Invite — ${orderId.slice(-6).toUpperCase()}`,
+            name: `${invoicePrefix} — ${orderId.slice(-6).toUpperCase()}`,
             price: amount,
             quantity: 1,
           },

@@ -69,7 +69,18 @@ export async function POST(req: Request) {
 
     const activeGatewayId = requestedGateway || (await getActiveGatewayId());
 
-    const { checkoutUrl } = await gw.init(orderId, Number(order.amount), appUrl);
+    // Hitung total nominal akhir (termasuk biaya admin jika dibebankan ke pembeli)
+    let finalAmount = Number(order.amount);
+    try {
+      const feePayerSetting = await prisma.adminSetting.findUnique({ where: { key: "payment_fee_payer" } });
+      if (feePayerSetting?.value === "BUYER") {
+        // Biaya QRIS 0.7% ditambahkan ke total transaksi klien
+        const adminFee = Math.ceil(finalAmount * 0.007);
+        finalAmount += adminFee;
+      }
+    } catch {}
+
+    const { checkoutUrl } = await gw.init(orderId, finalAmount, appUrl);
 
     // Catat gateway yang digunakan di order
     await prisma.order.update({

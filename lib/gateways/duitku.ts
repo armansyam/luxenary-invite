@@ -23,6 +23,11 @@ export class DuitkuGateway implements PaymentGateway {
       if (map["duitku_merchant_code"]) merchantCode = map["duitku_merchant_code"];
       if (map["duitku_api_key"]) apiKey = map["duitku_api_key"];
       if (map["duitku_mode"]) mode = map["duitku_mode"];
+
+      const globalModeSetting = await prisma.adminSetting.findUnique({
+        where: { key: "payment_gateway_mode" },
+      });
+      if (globalModeSetting?.value) mode = globalModeSetting.value;
     } catch {}
 
     const baseUrl =
@@ -58,13 +63,16 @@ export class DuitkuGateway implements PaymentGateway {
       if (order?.user?.email) customerEmail = order.user.email;
     } catch {}
 
-    // Baca masa kedaluwarsa QRIS dari admin setting (dalam menit)
+    // Baca masa kedaluwarsa QRIS & prefix judul dari admin setting
     let expiryMinutes = 60;
+    let invoicePrefix = "Luxenary Invite";
     try {
       const expirySetting = await prisma.adminSetting.findUnique({ where: { key: "payment_expiry_minutes" } });
       if (expirySetting && !isNaN(Number(expirySetting.value))) {
         expiryMinutes = Math.max(5, Math.min(1440, Number(expirySetting.value)));
       }
+      const prefixSetting = await prisma.adminSetting.findUnique({ where: { key: "payment_invoice_prefix" } });
+      if (prefixSetting?.value) invoicePrefix = prefixSetting.value;
     } catch {}
 
     const expiryPeriod = expiryMinutes; // dalam menit
@@ -76,7 +84,7 @@ export class DuitkuGateway implements PaymentGateway {
         merchantCode,
         paymentAmount: amount,
         merchantOrderId: orderId,
-        productDetails: `Luxenary Invite — Order ${orderId.slice(-6).toUpperCase()}`,
+        productDetails: `${invoicePrefix} — Order ${orderId.slice(-6).toUpperCase()}`,
         email: customerEmail,
         additionalParam: "",
         merchantUserInfo: customerName,

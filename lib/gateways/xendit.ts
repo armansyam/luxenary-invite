@@ -47,13 +47,16 @@ export class XenditGateway implements PaymentGateway {
       if (order?.user?.email) customerEmail = order.user.email;
     } catch {}
 
-    // Baca masa kedaluwarsa QRIS dari admin setting (dalam menit)
+    // Baca masa kedaluwarsa QRIS & prefix judul dari admin setting
     let expiryMinutes = 60;
+    let invoicePrefix = "Luxenary Invite";
     try {
       const expirySetting = await prisma.adminSetting.findUnique({ where: { key: "payment_expiry_minutes" } });
       if (expirySetting && !isNaN(Number(expirySetting.value))) {
         expiryMinutes = Math.max(5, Math.min(1440, Number(expirySetting.value)));
       }
+      const prefixSetting = await prisma.adminSetting.findUnique({ where: { key: "payment_invoice_prefix" } });
+      if (prefixSetting?.value) invoicePrefix = prefixSetting.value;
     } catch {}
 
     const expiryDate = new Date(Date.now() + expiryMinutes * 60 * 1000).toISOString();
@@ -70,7 +73,7 @@ export class XenditGateway implements PaymentGateway {
       body: JSON.stringify({
         external_id: orderId,
         amount,
-        description: `Luxenary Invite — Order ${orderId.slice(-6).toUpperCase()}`,
+        description: `${invoicePrefix} — Order ${orderId.slice(-6).toUpperCase()}`,
         invoice_duration: invoiceDuration,
         customer: {
           given_names: customerName,

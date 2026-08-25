@@ -23,6 +23,11 @@ export class MidtransGateway implements PaymentGateway {
       if (map["midtrans_server_key"]) serverKey = map["midtrans_server_key"];
       if (map["midtrans_client_key"]) clientKey = map["midtrans_client_key"];
       if (map["midtrans_mode"]) mode = map["midtrans_mode"];
+
+      const globalModeSetting = await prisma.adminSetting.findUnique({
+        where: { key: "payment_gateway_mode" },
+      });
+      if (globalModeSetting?.value) mode = globalModeSetting.value;
     } catch {}
 
     const snapUrl =
