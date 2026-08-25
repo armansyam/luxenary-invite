@@ -47,8 +47,17 @@ export class XenditGateway implements PaymentGateway {
       if (order?.user?.email) customerEmail = order.user.email;
     } catch {}
 
-    // Xendit expiry: 24 jam (86400 detik dari sekarang)
-    const expiryDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    // Baca masa kedaluwarsa QRIS dari admin setting (dalam menit)
+    let expiryMinutes = 60;
+    try {
+      const expirySetting = await prisma.adminSetting.findUnique({ where: { key: "payment_expiry_minutes" } });
+      if (expirySetting && !isNaN(Number(expirySetting.value))) {
+        expiryMinutes = Math.max(5, Math.min(1440, Number(expirySetting.value)));
+      }
+    } catch {}
+
+    const expiryDate = new Date(Date.now() + expiryMinutes * 60 * 1000).toISOString();
+    const invoiceDuration = expiryMinutes * 60; // dalam detik
 
     const basicAuth = Buffer.from(`${apiKey}:`).toString("base64");
 
@@ -62,7 +71,7 @@ export class XenditGateway implements PaymentGateway {
         external_id: orderId,
         amount,
         description: `Luxenary Invite — Order ${orderId.slice(-6).toUpperCase()}`,
-        invoice_duration: 86400,
+        invoice_duration: invoiceDuration,
         customer: {
           given_names: customerName,
           email: customerEmail,

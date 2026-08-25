@@ -57,6 +57,15 @@ export class MidtransGateway implements PaymentGateway {
       if (order?.user?.email) customerEmail = order.user.email;
     } catch {}
 
+    // Baca masa kedaluwarsa QRIS dari admin setting (dalam menit)
+    let expiryMinutes = 60;
+    try {
+      const expirySetting = await prisma.adminSetting.findUnique({ where: { key: "payment_expiry_minutes" } });
+      if (expirySetting && !isNaN(Number(expirySetting.value))) {
+        expiryMinutes = Math.max(5, Math.min(1440, Number(expirySetting.value)));
+      }
+    } catch {}
+
     const basicAuth = Buffer.from(`${serverKey}:`).toString("base64");
 
     const response = await fetch(snapUrl, {
@@ -73,6 +82,10 @@ export class MidtransGateway implements PaymentGateway {
         customer_details: {
           first_name: customerName,
           email: customerEmail,
+        },
+        custom_expiry: {
+          expiry_duration: expiryMinutes,
+          unit: "minute",
         },
         callbacks: {
           finish: appUrl ? `${appUrl}/checkout/success?order=${orderId}` : undefined,

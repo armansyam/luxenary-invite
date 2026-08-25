@@ -2287,65 +2287,97 @@ export default function AdminPage() {
                   {/* ══ TAB: GATEWAY QRIS ══ */}
                   {activeSettingsTab === "gateway" && (
                   <>
-                  {/* ═══ ACTIVE GATEWAY SELECTOR ═══ */}
+                  {/* ═══ ACTIVE GATEWAY SELECTOR & GLOBAL EXPIRY ═══ */}
                   <SettingsCard
-                    title="Gateway Pembayaran Aktif"
-                    description="Pilih payment gateway yang akan digunakan untuk transaksi QRIS/online. Ganti kapan saja tanpa perlu deploy ulang."
+                    title="Gateway Pembayaran Aktif & Durasi Tagihan"
+                    description="Pilih payment gateway yang aktif untuk transaksi online dan tentukan masa berlaku tagihan/QRIS secara global untuk semua gateway."
                     isEditing={Boolean(editSection["active_gateway"])}
                     onEdit={() => toggleEditSection("active_gateway")}
-                    onCancel={() => cancelEdit("active_gateway", ["active_payment_gateway"])}
-                    onSave={() => saveSettings(["active_payment_gateway"], setSavingActiveGateway, "active_gateway")}
+                    onCancel={() => cancelEdit("active_gateway", ["active_payment_gateway", "payment_expiry_minutes"])}
+                    onSave={() => saveSettings(["active_payment_gateway", "payment_expiry_minutes"], setSavingActiveGateway, "active_gateway")}
                     saving={savingActiveGateway}
-                    isDirty={isSectionDirty(["active_payment_gateway"])}
+                    isDirty={isSectionDirty(["active_payment_gateway", "payment_expiry_minutes"])}
                     saveSuccess={settingsSaved["active_gateway"]}
-                    saveSuccessMessage="Gateway aktif berhasil diubah"
+                    saveSuccessMessage="Pengaturan gateway aktif & durasi tagihan berhasil disimpan"
                     viewContent={
-                      <div className="flex items-center gap-3">
-                        {["ipaymu", "midtrans", "xendit", "duitku", "tripay"].map((gw) => (
-                          <span
-                            key={gw}
-                            className={`px-3 py-1.5 rounded-full text-xs font-bold border ${
-                              (settingsMap["active_payment_gateway"] || "ipaymu") === gw
-                                ? "bg-emerald-50 text-emerald-700 border-emerald-300"
-                                : "bg-gray-50 text-gray-400 border-gray-200"
-                            }`}
-                          >
-                            {(settingsMap["active_payment_gateway"] || "ipaymu") === gw && (
-                              <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 align-middle"></span>
-                            )}
-                            {gw.charAt(0).toUpperCase() + gw.slice(1)}
-                          </span>
-                        ))}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                        <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200">
+                          <span className="text-xs text-gray-500 block font-medium">Gateway Aktif Saat Ini</span>
+                          <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+                            {["ipaymu", "midtrans", "xendit", "duitku", "tripay"].map((gw) => (
+                              <span
+                                key={gw}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition ${
+                                  (settingsMap["active_payment_gateway"] || "ipaymu") === gw
+                                    ? "bg-emerald-50 text-emerald-700 border-emerald-300 shadow-2xs"
+                                    : "bg-gray-50 text-gray-400 border-gray-200 opacity-60"
+                                }`}
+                              >
+                                {(settingsMap["active_payment_gateway"] || "ipaymu") === gw && (
+                                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 align-middle"></span>
+                                )}
+                                {gw.charAt(0).toUpperCase() + gw.slice(1)}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="p-3.5 bg-sky-50 rounded-xl border border-sky-200">
+                          <span className="text-xs text-sky-800 block font-bold">Masa Berlaku Tagihan / QRIS (Global)</span>
+                          <div className="mt-1 flex items-baseline gap-1.5">
+                            <span className="text-2xl font-mono font-bold text-sky-950">
+                              {settingsMap["payment_expiry_minutes"] || "60"}
+                            </span>
+                            <span className="text-xs font-semibold text-sky-800">Menit</span>
+                          </div>
+                          <p className="text-[11px] text-sky-700/80 mt-1">
+                            Otomatis berlaku untuk gateway apapun yang aktif (iPaymu, Midtrans, Xendit, Duitku, Tripay).
+                          </p>
+                        </div>
                       </div>
                     }
                   >
-                    <FieldRow label="Pilih Gateway Aktif" description="Gateway ini yang akan digunakan saat klien klik tombol bayar via QRIS">
-                      <div className="flex flex-wrap gap-2">
-                        {[
-                          { id: "ipaymu", label: "iPaymu", desc: "QRIS, VA, GoPay, OVO" },
-                          { id: "midtrans", label: "Midtrans", desc: "Snap UI, VA, GoPay" },
-                          { id: "xendit", label: "Xendit", desc: "Invoice, VA, OVO, DANA" },
-                          { id: "duitku", label: "Duitku", desc: "QRIS, VA, GoPay, ShopeePay" },
-                          { id: "tripay", label: "Tripay", desc: "QRIS, VA, Alfamart, Indomaret" },
-                        ].map((gw) => (
-                          <button
-                            key={gw.id}
-                            type="button"
-                            onClick={() => setSetting("active_payment_gateway", gw.id)}
-                            className={`px-4 py-2.5 rounded-xl text-xs font-semibold border transition cursor-pointer text-left ${
-                              (settingsMap["active_payment_gateway"] || "ipaymu") === gw.id
-                                ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                                : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
-                            }`}
-                          >
-                            <div className="font-bold">{gw.label}</div>
-                            <div className={`text-[10px] mt-0.5 ${
-                              (settingsMap["active_payment_gateway"] || "ipaymu") === gw.id ? "text-emerald-100" : "text-gray-400"
-                            }`}>{gw.desc}</div>
-                          </button>
-                        ))}
-                      </div>
-                    </FieldRow>
+                    <div className="space-y-4">
+                      <FieldRow label="Pilih Gateway Aktif" description="Gateway ini yang akan digunakan saat klien klik tombol bayar via QRIS / Online">
+                        <div className="flex flex-wrap gap-2">
+                          {[
+                            { id: "ipaymu", label: "iPaymu", desc: "QRIS, VA, GoPay, OVO" },
+                            { id: "midtrans", label: "Midtrans", desc: "Snap UI, VA, GoPay" },
+                            { id: "xendit", label: "Xendit", desc: "Invoice, VA, OVO, DANA" },
+                            { id: "duitku", label: "Duitku", desc: "QRIS, VA, GoPay, ShopeePay" },
+                            { id: "tripay", label: "Tripay", desc: "QRIS, VA, Alfamart, Indomaret" },
+                          ].map((gw) => (
+                            <button
+                              key={gw.id}
+                              type="button"
+                              onClick={() => setSetting("active_payment_gateway", gw.id)}
+                              className={`px-4 py-2.5 rounded-xl text-xs font-semibold border transition cursor-pointer text-left ${
+                                (settingsMap["active_payment_gateway"] || "ipaymu") === gw.id
+                                  ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                                  : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
+                              }`}
+                            >
+                              <div className="font-bold">{gw.label}</div>
+                              <div className={`text-[10px] mt-0.5 ${
+                                (settingsMap["active_payment_gateway"] || "ipaymu") === gw.id ? "text-emerald-100" : "text-gray-400"
+                              }`}>{gw.desc}</div>
+                            </button>
+                          ))}
+                        </div>
+                      </FieldRow>
+
+                      <FieldRow label="Masa Berlaku Tagihan / QRIS (Menit)" description="Durasi tagihan/QRIS sebelum kedaluwarsa otomatis (contoh: 15, 30, 60 menit, atau 1440 untuk 24 jam). Berlaku global tanpa perlu setting ulang per gateway.">
+                        <input
+                          type="number"
+                          min="5"
+                          max="1440"
+                          value={settingsMap["payment_expiry_minutes"] || "60"}
+                          onChange={(e) => setSetting("payment_expiry_minutes", e.target.value)}
+                          className="w-full px-3.5 py-2.5 border border-sky-300 rounded-xl text-sm bg-sky-50 text-sky-900 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition shadow-2xs font-mono font-bold"
+                        />
+                        <p className="text-[11px] text-gray-400 mt-1">Invoice otomatis hangus jika tidak dibayar dalam batas waktu ini.</p>
+                      </FieldRow>
+                    </div>
                   </SettingsCard>
 
                   {/* iPaymu Settings */}
@@ -2354,15 +2386,15 @@ export default function AdminPage() {
                     description="Konfigurasi koneksi ke iPaymu. Dapatkan VA dan API Key dari dashboard iPaymu."
                     isEditing={Boolean(editSection["ipaymu"])}
                     onEdit={() => toggleEditSection("ipaymu")}
-                    onCancel={() => cancelEdit("ipaymu", ["ipaymu_mode", "ipaymu_va", "ipaymu_api_key", "payment_expiry_minutes"])}
-                    onSave={() => saveSettings(["ipaymu_mode", "ipaymu_va", "ipaymu_api_key", "payment_expiry_minutes"], setSavingIpaymu, "ipaymu")}
+                    onCancel={() => cancelEdit("ipaymu", ["ipaymu_mode", "ipaymu_va", "ipaymu_api_key"])}
+                    onSave={() => saveSettings(["ipaymu_mode", "ipaymu_va", "ipaymu_api_key"], setSavingIpaymu, "ipaymu")}
                     saving={savingIpaymu}
-                    isDirty={isSectionDirty(["ipaymu_mode", "ipaymu_va", "ipaymu_api_key", "payment_expiry_minutes"])}
+                    isDirty={isSectionDirty(["ipaymu_mode", "ipaymu_va", "ipaymu_api_key"])}
                     saveSuccess={settingsSaved["ipaymu"]}
                     saveSuccessMessage="Pengaturan iPaymu berhasil disimpan"
                     viewContent={
                       <div className="space-y-3">
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                           <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
                             <span className="text-xs text-gray-500 block font-medium">Mode Gateway</span>
                             <div className="mt-1">
@@ -2380,7 +2412,7 @@ export default function AdminPage() {
                             </div>
                           </div>
                           <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
-                            <span className="text-xs text-gray-500 block font-medium">VA</span>
+                            <span className="text-xs text-gray-500 block font-medium">Virtual Account (VA)</span>
                             <span className="text-sm font-mono font-bold text-gray-800 mt-1 inline-block">
                               {settingsMap["ipaymu_va"] ? settingsMap["ipaymu_va"] : <em className="text-gray-400 font-sans font-normal text-xs">Belum diatur</em>}
                             </span>
@@ -2389,12 +2421,6 @@ export default function AdminPage() {
                             <span className="text-xs text-gray-500 block font-medium">API Key</span>
                             <span className="text-sm font-mono font-bold text-gray-800 mt-1 inline-block">
                               {settingsMap["ipaymu_api_key"] ? "••••••••••••••••" : <em className="text-gray-400 font-sans font-normal text-xs">Belum diatur</em>}
-                            </span>
-                          </div>
-                          <div className="p-3 bg-sky-50 rounded-xl border border-sky-200">
-                            <span className="text-xs text-sky-600 block font-medium">Expired QRIS</span>
-                            <span className="text-sm font-mono font-bold text-sky-800 mt-1 inline-block">
-                              {settingsMap["payment_expiry_minutes"] || "60"} menit
                             </span>
                           </div>
                         </div>
@@ -2475,18 +2501,6 @@ export default function AdminPage() {
                           Salin
                         </button>
                       </div>
-                    </FieldRow>
-
-                    <FieldRow label="Expired QRIS (Menit)" description="Durasi QR Code berlaku sebelum kedaluwarsa. Dikirim ke iPaymu saat generate QRIS.">
-                      <input
-                        type="number"
-                        min="5"
-                        max="1440"
-                        value={settingsMap["payment_expiry_minutes"] || "60"}
-                        onChange={(e) => setSetting("payment_expiry_minutes", e.target.value)}
-                        className="w-full px-3.5 py-2.5 border border-sky-300 rounded-xl text-sm bg-sky-50 text-sky-900 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition shadow-2xs"
-                      />
-                      <p className="text-[11px] text-gray-400 mt-1">Contoh: 60 menit. QR kedaluwarsa otomatis jika belum dibayar.</p>
                     </FieldRow>
                   </SettingsCard>
 

@@ -61,7 +61,16 @@ export class TripayGateway implements PaymentGateway {
       if (order?.user?.email) customerEmail = order.user.email;
     } catch {}
 
-    const expiredTime = Math.floor(Date.now() / 1000) + 24 * 60 * 60; // 24 jam dari sekarang
+    // Baca masa kedaluwarsa QRIS dari admin setting (dalam menit)
+    let expiryMinutes = 60;
+    try {
+      const expirySetting = await prisma.adminSetting.findUnique({ where: { key: "payment_expiry_minutes" } });
+      if (expirySetting && !isNaN(Number(expirySetting.value))) {
+        expiryMinutes = Math.max(5, Math.min(1440, Number(expirySetting.value)));
+      }
+    } catch {}
+
+    const expiredTime = Math.floor(Date.now() / 1000) + expiryMinutes * 60;
 
     const response = await fetch(`${baseUrl}/transaction/create`, {
       method: "POST",

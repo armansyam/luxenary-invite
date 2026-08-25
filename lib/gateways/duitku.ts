@@ -58,8 +58,16 @@ export class DuitkuGateway implements PaymentGateway {
       if (order?.user?.email) customerEmail = order.user.email;
     } catch {}
 
-    const expiryDate = new Date(Date.now() + 24 * 60 * 60 * 1000);
-    const expiryPeriod = 1440; // 1440 menit = 24 jam
+    // Baca masa kedaluwarsa QRIS dari admin setting (dalam menit)
+    let expiryMinutes = 60;
+    try {
+      const expirySetting = await prisma.adminSetting.findUnique({ where: { key: "payment_expiry_minutes" } });
+      if (expirySetting && !isNaN(Number(expirySetting.value))) {
+        expiryMinutes = Math.max(5, Math.min(1440, Number(expirySetting.value)));
+      }
+    } catch {}
+
+    const expiryPeriod = expiryMinutes; // dalam menit
 
     const response = await fetch(`${baseUrl}/inquiry`, {
       method: "POST",
