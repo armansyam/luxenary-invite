@@ -1,6 +1,4 @@
-import { PaymentGateway } from "@/lib/payments";
-import { MidtransGateway } from "@/lib/midtrans";
-import { IPaymuGateway } from "@/lib/ipaymu";
+import { getActiveGateway, getActiveGatewayId, getGatewayById } from "@/lib/gatewayRegistry";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
@@ -8,9 +6,13 @@ import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 /**
- * FIX #1: Tambahkan autentikasi — hanya session klien yang memiliki order tersebut
- * yang dapat men-trigger gateway payment.
- * FIX #4: Set paymentMethod = "GATEWAY" pada order saat QRIS di-trigger.
+ * POST /api/payments/checkout
+ * Trigger pembayaran QRIS/Gateway untuk order PENDING.
+ *
+ * Gateway dipilih secara dinamis dari AdminSetting (active_payment_gateway).
+ * Klien dapat override gateway via param `gateway` jika diizinkan.
+ *
+ * Auth: hanya pemilik order atau admin yang bisa trigger.
  */
 export async function POST(req: Request) {
   try {
@@ -26,9 +28,9 @@ export async function POST(req: Request) {
       (session.user as any).role === "ADMIN" ||
       (session.user as any).isAdmin === true;
 
-    const { orderId, gateway } = await req.json();
-    if (!orderId || !gateway) {
-      return NextResponse.json({ error: "orderId dan gateway wajib diisi" }, { status: 400 });
+    const { orderId, gateway: requestedGateway } = await req.json();
+    if (!orderId) {
+      return NextResponse.json({ error: "orderId wajib diisi" }, { status: 400 });
     }
 
     const order = await prisma.order.findUnique({
@@ -49,30 +51,36 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Akses ditolak. Bukan order Anda." }, { status: 403 });
     }
 
-    // Order harus dalam status PENDING untuk diproses
     if (order.status !== "PENDING") {
-      return NextResponse.json({ error: `Order tidak bisa diproses, status saat ini: ${order.status}` }, { status: 400 });
+      return NextResponse.json({
+        error: `Order tidak bisa diproses, status saat ini: ${order.status}`,
+      }, { status: 400 });
     }
 
-    // Auto-detect host from request headers
+    // Auto-detect appUrl dari request headers
     const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "localhost:3000";
     const proto = req.headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
     const appUrl = `${proto}://${host}`;
 
-    let gw: PaymentGateway;
-    if (gateway === "midtrans") gw = new MidtransGateway();
-    else if (gateway === "ipaymu") gw = new IPaymuGateway();
-    else return NextResponse.json({ error: "Gateway tidak didukung" }, { status: 400 });
+    // Gunakan gateway yang diminta klien, atau fallback ke gateway aktif dari AdminSetting
+    const gw = requestedGateway
+      ? await getGatewayById(requestedGateway)
+      : await getActiveGateway();
+
+    const activeGatewayId = requestedGateway || (await getActiveGatewayId());
 
     const { checkoutUrl } = await gw.init(orderId, Number(order.amount), appUrl);
 
-    // FIX #4: Tandai paymentMethod = GATEWAY segera setelah redirect berhasil
+    // Catat gateway yang digunakan di order
     await prisma.order.update({
       where: { id: orderId },
-      data: { paymentMethod: "GATEWAY" },
+      data: {
+        paymentMethod: "GATEWAY",
+        paymentGatewayRef: activeGatewayId,
+      },
     });
 
-    return NextResponse.json({ checkoutUrl });
+    return NextResponse.json({ checkoutUrl, gateway: activeGatewayId });
   } catch (error: any) {
     console.error("[Payments Checkout Error]", error);
     return NextResponse.json({ error: error.message || "Gagal memulai pembayaran" }, { status: 500 });
