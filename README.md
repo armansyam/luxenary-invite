@@ -1,166 +1,275 @@
-# Luxenary Invite (S-Invite)
+# Luxenary Invite — S-Invite Platform
 
-> **Platform Undangan Pernikahan Digital Eksklusif & Self-Service**  
-> Dibangun dengan Next.js 16 (App Router + Turbopack), Tailwind CSS v4, Prisma 7 (SQLite Engine), NextAuth v5 (Auth.js), serta integrasi Payment Gateway otomatis (Midtrans Snap & iPaymu).
-
----
-
-## 1. Fitur Utama
-
-- **Multi-Theme Engine (Sesuai Benchmark Attarivitation & ByAttari)**:
-  - **Heritage Series (Aruna)**: Ornamen kultural hangat, aksen batik terracotta emas yang ramah di mata dengan audio backsound handler.
-  - **Moody Papercut Series**: Minimalis casual bertema tekstur kertas linen/kraft hangat (*earth tone*), hemat kuota data, dan ringan.
-  - **Premium Series (Kila, Ivanna, Danila)**: Split desktop layout, fixed background, video backdrop, dan efek *CSS scroll-snap* mulus 60 FPS bernuansa *champagne silk* dan *coastal stone*.
-- **Unlimited Undangan Per Klien**: Satu akun dapat membuat berbagai variasi undangan (Akad, Resepsi, Undangan Khusus, dll).
-- **Personalisasi Tamu & WhatsApp Link Generator**:
-  - Generator URL instan untuk setiap tamu (`domain.com/[groom]-[bride]/[slug]?to=[Nama+Tamu]`).
-  - Template broadcast pesan WhatsApp otomatis dengan satu klik.
-  - QR Code Check-in untuk validasi kehadiran fisik.
-- **RSVP & Buku Tamu Real-time**:
-  - Formulir konfirmasi kehadiran interaktif (Hadir / Berhalangan, Jumlah Tamu).
-  - Kolom doa restu & ucapan yang langsung muncul di aliran *wishes stream*.
-- **Amplop Digital & Rekening Bank**:
-  - Dukungan multi-rekening bank dengan tombol salin nomor rekening 1-klik (*copy-to-clipboard*).
-  - Alamat pengiriman kado fisik.
-- **Interactive Video Wishes Booth (QR Code Check-In)**:
-  - Modul perekaman video ucapan langsung di lokasi acara melalui scan QR code tamu dengan pengamanan *single-use token*.
-- **Payment Gateway Terintegrasi**:
-  - Integrasi Midtrans Snap & iPaymu (QRIS, Virtual Account, GoPay, OVO).
-  - Webhook listener untuk aktivasi instan status paket (Basic / Premium).
-- **Admin & Client Dashboard**:
-  - **Client Portal**: Manajemen profil pengantin, jadwal acara, galeri foto, kisah cinta, media background, dan daftar tamu.
-  - **Admin Control Center**: Monitoring omset transaksi, metrik undangan, manajemen klien, katalog tema, dan audit log webhook.
+> **Platform Undangan Pernikahan Digital B2C Self-Service**  
+> Dibangun di atas Next.js 16 (App Router + Turbopack) · Prisma 7 (SQLite) · NextAuth v5 · iPaymu Payment Gateway
 
 ---
 
-## 2. Standar Desain: Casual Luxury & Non-AI Tropes
+## Tentang Platform
 
-Sesuai spesifikasi PRD v5.4:
-- **No Generic Emojis**: Dilarang menggunakan emoji standar ponsel/browser di seluruh halaman, tombol, form, maupun badge teks.
-- **Pure SVG Vector Icons**: Semua indikator visual menggunakan ikon SVG vektor yang tajam, minimalis, dan elegan.
-- **Authentic Casual Luxury (Anti-Dark Cyber Tropes)**: Menghindari palet hitam pekat gelap ala tech/crypto. Seluruh antarmuka menggunakan perpaduan warna alami yang hangat (*warm ivory*, *sand beige*, *terracotta*, *champagne gold*, dan *coastal stone*) yang menenangkan, berjiwa muda, dan mencerminkan keanggunan sejati pesta pernikahan.
-- **Tipografi Bernafas**: Mengutamakan kombinasi Google Fonts berkelas (*Cormorant Garamond*, *Cinzel*, *Bodoni Moda*, *Italiana*, *Montserrat*, *Plus Jakarta Sans*).
+Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model **B2C (Business-to-Consumer)** di mana calon pengantin mendaftar mandiri, memilih paket, membayar via gateway atau transfer manual, lalu mengakses studio editor penuh untuk membangun undangan digital mereka sendiri.
 
----
+Undangan yang dibuat dapat diakses publik melalui URL personal:
 
-## 3. Tech Stack
-
-| Komponen | Teknologi / Library |
-| :--- | :--- |
-| **Framework** | Next.js 16.3.2 (App Router & Turbopack) |
-| **Styling** | Tailwind CSS v4 & Vanilla CSS Modular |
-| **Database & ORM** | SQLite & Prisma 7.9.1 (`@prisma/adapter-better-sqlite3`) |
-| **Authentication** | NextAuth.js v5 (Auth.js) dengan Google OAuth |
-| **Payments** | Midtrans Client & Server SDK, iPaymu API |
-| **Media & Assets** | HTML5 MediaRecorder API, Clean SVG Vectors |
-
----
-
-## 4. Struktur Direktori
-
-```text
-Luxenary-Invite/
-├── app/
-│   ├── (admin)/admin/         # Portal Administrator & Monitoring (6 Tabs)
-│   ├── (client)/
-│   │   ├── dashboard/         # Portal Pengantin / Klien
-│   │   │   ├── guests/        # Manajemen Tamu & Smart WhatsApp Dispatcher
-│   │   │   └── invitation/    # Form 4 Slot Media & Fitur Toggles
-│   │   └── booth/             # Video Wishes Booth & QR Scanner
-│   ├── (public)/              # Dynamic Route Undangan /[groom]-[bride]/[invitationSlug]
-│   ├── api/                   # REST API Endpoints
-│   │   ├── admin/overview/    # Metrik & Statistik Admin
-│   │   ├── booth/             # API Scanner & Upload Video Booth
-│   │   ├── client/            # API Undangan, Tamu, & Media
-│   │   ├── public/rsvp/       # Endpoint RSVP & Ucapan Tamu
-│   │   ├── public/version/    # Endpoint Watermark & Release Version
-│   │   └── webhook/           # Listener Midtrans & iPaymu
-│   ├── demo/                  # Halaman Demo Pratinjau Multi-Tema
-│   ├── login/                 # Halaman Login OAuth Google
-│   └── page.tsx               # Landing Page Mewah & Hangat
-├── lib/
-│   ├── auth.ts                # Konfigurasi NextAuth / Auth.js
-│   ├── payments.ts            # Handler Midtrans & iPaymu
-│   ├── prisma.ts              # Inisialisasi Prisma Client + BetterSQLite3
-│   ├── renderTemplate.ts      # Template Placeholder Replacer & Theme Resolver
-│   └── themeEngine.ts         # Composer Data Tema Undangan
-├── prisma/
-│   ├── schema.prisma          # Skema Database Prisma (SQLite)
-│   └── seed.ts                # Seeder Akun Admin & Tema Default
-├── themes/
-│   ├── kila.html              # Template Master Premium Kila (Section Overlap)
-│   ├── aruna.html             # Template Master Heritage Aruna (Warm Ivory & Gold)
-│   ├── ivanna.html            # Template Master Premium Ivanna (Editorial Snap)
-│   ├── danila.html            # Template Master Premium Danila (Champagne Silk)
-│   └── papercut.html          # Template Master Moody Papercut (Craft Paper Texture)
-├── middleware.ts              # Route Guard Role-Based Auth
-└── prisma.config.ts           # Konfigurasi Prisma 7
+```
+https://[domain]/[namagroom]-[namabride]/[slug]
 ```
 
 ---
 
-## 5. Memulai (Getting Started)
+## Alur Kerja B2C (Lengkap)
+
+```
+[Calon Klien]
+     │
+     ▼
+1. LANDING PAGE (/)
+   Katalog paket + demo tema
+     │
+     ▼
+2. REGISTRASI (/register)
+   Login via Google OAuth → Pilih paket
+   (Traditional / Modern / Premium)
+     │
+     ▼
+3. CHECKOUT (/checkout)
+   Invoice otomatis dibuat (PENDING)
+   Pilih metode pembayaran:
+   ┌──────────────────┬──────────────────────────┐
+   │  QRIS / Gateway  │  Transfer Bank Manual     │
+   │  (iPaymu)        │                           │
+   │                  │                           │
+   │  Redirect ke     │  Klien transfer ke        │
+   │  portal iPaymu   │  rekening resmi           │
+   │       ↓          │       ↓                   │
+   │  Bayar QRIS      │  Upload foto struk        │
+   │       ↓          │       ↓                   │
+   │  Webhook otomatis│  Admin verifikasi struk   │
+   │  → PAID / EXPIRED│  → Konfirmasi / Tolak     │
+   └──────────────────┴──────────────────────────┘
+     │
+     ▼
+4. STUDIO UNDANGAN (/dashboard/setup → /dashboard/invitation/[id])
+   Klien setup undangan:
+   - Pilih & ganti tema (Traditional / Modern / Premium)
+   - Isi data pengantin, keluarga, jadwal acara
+   - Upload foto (cover, hero, couple, gallery)
+   - Aktifkan seksi opsional (Love Story, Gift, QR, dll)
+   - Kelola daftar tamu + WhatsApp link generator
+     │
+     ▼
+5. UNDANGAN LIVE (/[groom]-[bride]/[slug])
+   Akses publik oleh tamu undangan
+   - Personalisasi nama tamu via ?to=NamaTamu
+   - RSVP & ucapan real-time
+   - QR check-in di lokasi acara
+   - Video wishes booth
+
+[Admin]
+   │
+   ▼
+ADMIN PORTAL (/admin)
+   - Tab Ringkasan: Metrik transaksi, klien aktif, omset
+   - Tab Transaksi: Kelola order, konfirmasi/tolak struk
+   - Tab Klien: Daftar klien & status akun
+   - Tab Tema: Sinkronisasi & manajemen katalog tema
+   - Tab Pengaturan: Konfigurasi harga, bank, gateway
+   - Tab Cron: Cleanup otomatis order stale
+```
+
+---
+
+## Status Order
+
+| Status | Keterangan |
+|:--|:--|
+| `PENDING` | Invoice dibuat, menunggu pembayaran |
+| `PAID` | Lunas — akses studio terbuka |
+| `EXPIRED` | QRIS habis masa berlaku (via webhook gateway) |
+| `FAILED` | Transfer ditolak admin / dibatalkan |
+
+> ⚠️ **Catatan**: Hanya order QRIS yang bisa EXPIRED (dari gateway). Transfer Manual tidak punya timer — hanya admin yang dapat mengonfirmasi atau menolak.
+
+---
+
+## Paket & Tema
+
+| Paket | Harga Default | Tema Tersedia |
+|:--|:--|:--|
+| **Traditional** | Rp 50.000 | Badrika, Candani, Dillalucky, Mayang, Prameswari |
+| **Modern** | Rp 100.000 | Ameera, Chronicle, Lumina, Papercut, Solaria, Wave |
+| **Premium** | Rp 120.000 | Artisan, Aurelia, Kalandra, Valente |
+
+> Harga dapat diubah di Admin → tab Pengaturan tanpa perlu deploy ulang.
+
+---
+
+## Tech Stack
+
+| Komponen | Teknologi |
+|:--|:--|
+| **Framework** | Next.js 16.3 (App Router + Turbopack) |
+| **Bahasa** | TypeScript 5 |
+| **Styling** | Tailwind CSS v4 + Vanilla CSS |
+| **Database** | SQLite via Prisma 7 (`better-sqlite3`) |
+| **Auth** | NextAuth.js v5 (Auth.js) — Google OAuth + Credential Admin |
+| **Payment Gateway** | iPaymu (QRIS · VA · E-Wallet) + Transfer Bank Manual |
+| **Image Compression** | `sharp` (WebP, 1400px, quality 82%) |
+| **Cron / Cleanup** | `POST /api/cron/cleanup` (trigger manual / scheduler) |
+
+---
+
+## Struktur Direktori
+
+```
+Luxenary-Invite/
+├── app/
+│   ├── (admin)/admin/              # Portal Administrator (6 tab)
+│   ├── (client)/
+│   │   ├── dashboard/              # Studio klien (setup, invitation, guests, rsvp)
+│   │   └── booth/                  # Video Wishes Booth (QR check-in)
+│   ├── (public)/[groom]-[bride]/   # Halaman undangan publik
+│   ├── api/
+│   │   ├── admin/                  # overview, orders, themes, settings, subdomains
+│   │   ├── client/                 # orders, invitations, guests, media, upload-proof
+│   │   ├── orders/create/          # Buat/update invoice (One-Pending-Per-User)
+│   │   ├── payments/checkout/      # Trigger QRIS ke iPaymu (auth-gated)
+│   │   ├── public/                 # settings, themes, rsvp, version
+│   │   ├── cron/cleanup/           # Hapus order PENDING stale > 7 hari
+│   │   └── webhook/ipaymu/         # Listener webhook iPaymu (HMAC verified)
+│   ├── checkout/                   # Halaman checkout (QRIS + Transfer)
+│   ├── register/                   # Pilih paket awal
+│   └── login/                      # Login Google OAuth
+├── lib/
+│   ├── ipaymu.ts                   # iPaymu gateway (HMAC sig, expiry sync, buyer data)
+│   ├── settings.ts                 # Single source of truth pricing & platform config
+│   ├── renderTemplate.ts           # Placeholder replacer untuk theme HTML
+│   ├── demoRegistry.ts             # Data demo per tema (1676 baris)
+│   └── demoPublisher.ts            # Pre-compile tema ke static HTML
+├── themes/
+│   ├── modern/                     # 6 tema modern
+│   ├── premium/                    # 4 tema premium
+│   └── traditional/                # 5 tema traditional
+├── prisma/
+│   ├── schema.prisma               # Model: User, Order, Invitation, Guest, dll
+│   └── seed.ts                     # Seeder admin + tema default
+└── middleware.ts                   # Route guard role-based (ADMIN / client / public)
+```
+
+---
+
+## Database Models
+
+```
+User          → Akun klien (Google OAuth)
+Order         → Invoice pembayaran (PENDING → PAID / EXPIRED / FAILED)
+Invitation    → Undangan digital milik klien
+InvitationMedia → 4 slot media per undangan
+Guest         → Daftar tamu + WhatsApp link
+Rsvp          → Konfirmasi kehadiran tamu
+Wish          → Ucapan & doa dari tamu
+Theme         → Katalog tema (sync dari /themes/)
+AdminSetting  → Konfigurasi platform (harga, bank, gateway, dll)
+WebhookLog    → Audit log semua webhook masuk
+BoothSession  → Sesi video wishes booth
+GuestMemory   → Foto/video dari booth
+```
+
+---
+
+## Keamanan
+
+- **Webhook iPaymu**: Diverifikasi HMAC-SHA256 (timing-safe) sebelum diproses
+- **Checkout QRIS**: Hanya dapat diakses oleh pemilik order (session-authenticated)
+- **Admin Approve**: Hanya order `PENDING` + wajib ada `proofImageUrl` untuk transfer manual
+- **Upload Proof**: Validasi kepemilikan via `userId` atau `email` (toleran OAuth mismatch)
+- **Route Guard**: Middleware Next.js memisahkan akses admin, klien, dan publik
+
+---
+
+## Instalasi & Setup
 
 ### 1. Prasyarat
-- Node.js versi 20+
-- npm / yarn / pnpm
+- Node.js 20+
+- npm / pnpm
 
-### 2. Instalasi Dependensi
+### 2. Install Dependensi
 ```bash
 npm install
 ```
 
 ### 3. Konfigurasi Environment (`.env`)
-Buat file `.env` di direktori root proyek:
 ```env
+# Database
 DATABASE_URL="file:./dev.db"
 
-# NextAuth Configuration
-AUTH_SECRET="your-super-secret-key"
+# NextAuth
+AUTH_SECRET="your-secret-min-32-chars"
 NEXTAUTH_URL="http://localhost:3000"
 
 # Google OAuth
 AUTH_GOOGLE_ID="your-google-client-id"
 AUTH_GOOGLE_SECRET="your-google-client-secret"
 
-# Midtrans Payment Gateway
-MIDTRANS_SERVER_KEY="SB-Mid-server-xxxx"
-MIDTRANS_CLIENT_KEY="SB-Mid-client-xxxx"
-MIDTRANS_IS_PRODUCTION="false"
-
-# iPaymu Payment Gateway (Opsional)
+# iPaymu (Payment Gateway)
+IPAYMU_VA="0000000000000000"
 IPAYMU_API_KEY="your-ipaymu-api-key"
-IPAYMU_VA="your-ipaymu-va"
+IPAYMU_SANDBOX="true"   # false untuk produksi
+
+# App URL (untuk webhook & redirect)
+APP_URL="http://localhost:3000"
 ```
 
-### 4. Setup Database & Seeding
+### 4. Setup Database
 ```bash
-# Sinkronkan skema ke database SQLite dev.db
+# Sinkronkan skema
 npx prisma db push
 
-# Jalankan seeder tema & akun admin default
+# Seed: buat akun admin + tema default
 npx prisma db seed
 ```
 
-### 5. Jalankan Server Pengembangan
+### 5. Jalankan Dev Server
 ```bash
 npm run dev
 ```
-Buka [http://localhost:3000](http://localhost:3000) di browser Anda.
 
----
+Buka [http://localhost:3000](http://localhost:3000)
 
-## 6. Validasi & Build Produksi
-
-Untuk memastikan integritas tipe TypeScript dan performa build:
-```bash
-npm run build
+### 6. Sinkronisasi Tema (Setelah Tambah File HTML)
+```
+Admin Portal → Tab Tema → Klik "Sinkronisasi Tema"
 ```
 
 ---
 
-## 7. Developer & Signature
+## Konfigurasi Admin (Runtime)
 
-- **Author / Lead Developer**: [Arman Syam (AMS Dev)](https://github.com/armansyam)
+Semua pengaturan berikut bisa diubah langsung dari **Admin Portal → Pengaturan** tanpa deploy ulang:
+
+| Setting | Keterangan |
+|:--|:--|
+| Harga Traditional / Modern / Premium | Harga paket per kategori |
+| Nama & nomor rekening bank | Info transfer manual |
+| Mode pembayaran | `BOTH` · `GATEWAY` · `MANUAL` |
+| iPaymu VA & API Key | Kredensial gateway |
+| iPaymu Mode | `sandbox` / `production` |
+| QRIS Expiry (menit) | Dikirim langsung ke iPaymu saat generate QRIS |
+| Platform name, tagline, support WA | Info branding |
+
+---
+
+## Build Produksi
+
+```bash
+npm run build
+npm run start
+```
+
+---
+
+## Developer
+
+- **Author**: [Arman Syam (AMS Dev)](https://github.com/armansyam)
 - **Website**: [ammang.my.id](https://ammang.my.id)
-- **License**: Proprietary & Non-Commercial
+- **License**: Proprietary & Non-Commercial — All Rights Reserved
