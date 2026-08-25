@@ -2006,89 +2006,137 @@ export default function AdminPage() {
                   )}
 
                   {/* Category Filter Tabs */}
-                  <div className="flex items-center gap-2 border-b border-gray-200 pb-3">
-                    {[
-                      { id: "all", label: `Semua Tema (${themes.length})` },
-                      { id: "premium", label: `Premium (${themes.filter((t) => (t.category || "premium") === "premium").length})` },
-                      { id: "modern", label: `Modern (${themes.filter((t) => t.category === "modern").length})` },
-                      { id: "traditional", label: `Traditional (${themes.filter((t) => t.category === "traditional").length})` },
-                    ].map((cat) => (
-                      <button
-                        key={cat.id}
-                        type="button"
-                        onClick={() => setThemeCategoryFilter(cat.id)}
-                        className={`px-4 py-2 rounded-xl text-xs font-semibold transition cursor-pointer ${
-                          themeCategoryFilter === cat.id
-                            ? "bg-amber-800 text-white shadow-xs"
-                            : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
-                        }`}
-                      >
-                        {cat.label}
-                      </button>
-                    ))}
-                  </div>
+                  {(() => {
+                    const validThemes = themes.filter((t) => t.id !== "starter-blueprint");
+                    const countPremium = validThemes.filter((t) => (t.category || "").toLowerCase() === "premium").length;
+                    const countModern = validThemes.filter((t) => (t.category || "").toLowerCase() === "modern").length;
+                    const countTraditional = validThemes.filter((t) => (t.category || "").toLowerCase() === "traditional").length;
+                    const displayedThemes = themeCategoryFilter === "all"
+                      ? validThemes
+                      : validThemes.filter((t) => (t.category || "").toLowerCase() === themeCategoryFilter);
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                    {(themeCategoryFilter === "all" ? themes : themes.filter((t) => (t.category || "premium") === themeCategoryFilter)).map((theme) => (
-                      <div key={theme.id} className={`bg-white rounded-2xl shadow-sm border p-5 space-y-3 transition ${theme.isActive === false ? 'opacity-60 border-dashed border-gray-300' : 'border-gray-100'}`}>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-bold text-gray-900 text-base">{theme.name}</h3>
-                            <span className="font-mono text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
-                              #{theme.id}
-                            </span>
-                          </div>
-                          <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full ${
-                            theme.category === "traditional" ? "bg-amber-100 text-amber-800" :
-                            theme.category === "modern" ? "bg-slate-100 text-slate-700" :
-                            "bg-purple-100 text-purple-800"
-                          }`}>
-                            {theme.category === "traditional" ? "Traditional" : theme.category === "modern" ? "Modern" : "Premium"}
-                          </span>
-                        </div>
-
-                        <p className="text-xs text-gray-600 leading-relaxed font-medium">{theme.description || "Tanpa deskripsi"}</p>
-
-                        <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-xs">
-                          <div className="flex items-center gap-2">
+                    return (
+                      <>
+                        <div className="flex items-center gap-2 border-b border-gray-200 pb-3 flex-wrap">
+                          {[
+                            { id: "all", label: `Semua Tema (${validThemes.length})` },
+                            { id: "premium", label: `Premium (${countPremium})` },
+                            { id: "modern", label: `Modern (${countModern})` },
+                            { id: "traditional", label: `Traditional (${countTraditional})` },
+                          ].map((cat) => (
                             <button
-                              onClick={() => handleToggleThemeStatus(theme)}
-                              className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold cursor-pointer transition ${
-                                theme.isActive !== false ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-gray-100 text-gray-600 border border-gray-200'
+                              key={cat.id}
+                              type="button"
+                              onClick={() => setThemeCategoryFilter(cat.id)}
+                              className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                                themeCategoryFilter === cat.id
+                                  ? "bg-amber-800 text-white shadow-xs"
+                                  : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
                               }`}
                             >
-                              <span className={`w-1.5 h-1.5 rounded-full ${theme.isActive !== false ? 'bg-emerald-500' : 'bg-gray-400'}`}></span>
-                              <span>{theme.isActive !== false ? "Aktif" : "Non-aktif"}</span>
+                              {cat.label}
                             </button>
-                            <span className="text-gray-400 text-[10px]">Urutan: #{theme.sortOrder || 1}</span>
-                          </div>
-                          
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => handleOpenDemoStudio(theme)}
-                              className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200/80 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer shadow-2xs"
-                              title="Kelola foto, musik & data cerita demo tema ini"
-                            >
-                              <span>Demo Studio</span>
-                            </button>
-                            <a href={`/demo/${theme.id}`} target="_blank" className="text-gray-600 hover:text-gray-900 font-semibold text-xs">Preview</a>
-                            <button
-                              onClick={() => handleOpenEditTheme(theme)}
-                              className="text-gray-600 hover:text-gray-900 font-semibold text-xs cursor-pointer"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleDeleteTheme(theme.id, theme.name)}
-                              className="text-rose-600 hover:text-rose-800 font-semibold text-xs cursor-pointer"
-                            >
-                              Hapus
-                            </button>
-                          </div>
+                          ))}
                         </div>
-                      </div>
-                    ))}
-                  </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                          {displayedThemes.map((theme) => {
+                            const cat = (theme.category || "modern").toLowerCase();
+                            return (
+                              <div
+                                key={theme.id}
+                                className={`bg-white rounded-2xl shadow-sm border p-5 space-y-3.5 transition ${
+                                  theme.isActive === false ? "opacity-60 border-dashed border-gray-300" : "border-gray-100 hover:border-gray-200 hover:shadow-md"
+                                }`}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <h3 className="font-bold text-gray-900 text-base">{theme.name}</h3>
+                                    <span className="font-mono text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
+                                      #{theme.id}
+                                    </span>
+                                  </div>
+                                  <span
+                                    className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full border ${
+                                      cat === "traditional"
+                                        ? "bg-amber-50 text-amber-800 border-amber-200"
+                                        : cat === "modern"
+                                        ? "bg-slate-50 text-slate-700 border-slate-200"
+                                        : "bg-purple-50 text-purple-800 border-purple-200"
+                                    }`}
+                                  >
+                                    {cat === "traditional" ? "Traditional" : cat === "modern" ? "Modern" : "Premium"}
+                                  </span>
+                                </div>
+
+                                <p className="text-xs text-gray-600 leading-relaxed font-medium line-clamp-2">
+                                  {theme.description || "Desain eksklusif Luxenary Invite"}
+                                </p>
+
+                                {/* Paket Access Indicator */}
+                                {cat === "traditional" && (
+                                  <div className="text-[11px] text-amber-900 bg-amber-50/70 px-2.5 py-1.5 rounded-xl border border-amber-200/60 font-medium flex items-center gap-1.5">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-600 shrink-0"></span>
+                                    <span>Tersedia di Paket: <strong>Traditional, Modern, Premium</strong></span>
+                                  </div>
+                                )}
+                                {cat === "modern" && (
+                                  <div className="text-[11px] text-slate-800 bg-slate-50 px-2.5 py-1.5 rounded-xl border border-slate-200 font-medium flex items-center gap-1.5">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-slate-600 shrink-0"></span>
+                                    <span>Tersedia di Paket: <strong>Modern & Premium</strong></span>
+                                  </div>
+                                )}
+                                {cat === "premium" && (
+                                  <div className="text-[11px] text-purple-900 bg-purple-50/70 px-2.5 py-1.5 rounded-xl border border-purple-200/80 font-medium flex items-center gap-1.5">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-purple-600 shrink-0"></span>
+                                    <span>Eksklusif untuk Paket: <strong>Premium</strong></span>
+                                  </div>
+                                )}
+
+                                <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-xs">
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      onClick={() => handleToggleThemeStatus(theme)}
+                                      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold cursor-pointer transition ${
+                                        theme.isActive !== false ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-gray-100 text-gray-600 border border-gray-200"
+                                      }`}
+                                    >
+                                      <span className={`w-1.5 h-1.5 rounded-full ${theme.isActive !== false ? "bg-emerald-500" : "bg-gray-400"}`}></span>
+                                      <span>{theme.isActive !== false ? "Aktif" : "Non-aktif"}</span>
+                                    </button>
+                                    <span className="text-gray-400 text-[10px]">Urutan: #{theme.sortOrder || 1}</span>
+                                  </div>
+                                  
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      onClick={() => handleOpenDemoStudio(theme)}
+                                      className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200/80 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer shadow-2xs"
+                                      title="Kelola foto, musik & data cerita demo tema ini"
+                                    >
+                                      <span>Demo Studio</span>
+                                    </button>
+                                    <a href={`/demo/${theme.id}`} target="_blank" className="text-gray-600 hover:text-gray-900 font-semibold text-xs">Preview</a>
+                                    <button
+                                      onClick={() => handleOpenEditTheme(theme)}
+                                      className="text-gray-600 hover:text-gray-900 font-semibold text-xs cursor-pointer"
+                                    >
+                                      Edit
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteTheme(theme.id, theme.name)}
+                                      className="text-rose-600 hover:text-rose-800 font-semibold text-xs cursor-pointer"
+                                    >
+                                      Hapus
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               )}
 

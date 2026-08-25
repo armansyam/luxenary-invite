@@ -22,37 +22,10 @@ export async function GET() {
       return NextResponse.json({ error: "Forbidden. Admin only." }, { status: 403 });
     }
 
-    // Load available themes
-    const themesDir = path.join(process.cwd(), "themes");
-    let themes: any[] = [];
-    if (fs.existsSync(themesDir)) {
-      const walk = (dir: string): string[] => {
-        let results: string[] = [];
-        const list = fs.readdirSync(dir);
-        list.forEach((file) => {
-          const fullPath = path.join(dir, file);
-          const stat = fs.statSync(fullPath);
-          if (stat && stat.isDirectory()) {
-            results = results.concat(walk(fullPath));
-          } else if (file.endsWith(".html")) {
-            results.push(fullPath);
-          }
-        });
-        return results;
-      };
-
-      const files = walk(themesDir);
-      themes = files.map((filePath) => {
-        const id = path.basename(filePath, ".html");
-        const category = path.basename(path.dirname(filePath));
-        return {
-          id,
-          name: id.charAt(0).toUpperCase() + id.slice(1),
-          category: category.toUpperCase(),
-          filePath,
-        };
-      });
-    }
+    // Load available themes from database
+    const themes = await prisma.theme.findMany({
+      orderBy: { sortOrder: "asc" },
+    });
 
     const [
       invitationCount,

@@ -85,26 +85,35 @@ export async function POST() {
 
     // Upsert into Database (Theme Table)
     let syncedCount = 0;
+    const { DEMO_REGISTRY } = await import("@/lib/demoRegistry");
+
     for (let i = 0; i < discovered.length; i++) {
       const d = discovered[i];
       const existing = await prisma.theme.findUnique({ where: { id: d.id } });
+      const demoData = (DEMO_REGISTRY as any)[d.id];
+      const defaultDesc = demoData?.tagline || `${d.series} — ${d.name} Exclusive Design`;
+      const cat = d.category.toLowerCase();
 
       await prisma.theme.upsert({
         where: { id: d.id },
         update: {
           name: d.name,
-          category: d.category,
+          category: cat,
           series: d.series,
           sortOrder: i + 1,
+          description: existing?.description || defaultDesc,
+          thumbnail: existing?.thumbnail || demoData?.sidebarPhotoUrl || demoData?.landingCoverUrl || null,
+          isPremium: cat === "premium",
           ...(existing ? {} : { isActive: true }),
         },
         create: {
           id: d.id,
           name: d.name,
-          category: d.category,
+          category: cat,
           series: d.series,
-          description: `${d.series} — ${d.name} Exclusive Design`,
-          isPremium: d.category === "premium",
+          description: defaultDesc,
+          thumbnail: demoData?.sidebarPhotoUrl || demoData?.landingCoverUrl || null,
+          isPremium: cat === "premium",
           sortOrder: i + 1,
           isActive: true,
         },

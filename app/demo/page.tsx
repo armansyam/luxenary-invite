@@ -161,13 +161,25 @@ export default function CatalogGridShowcase() {
                   <div>
                     <div className="flex items-center justify-between">
                       <h3 className="font-bold text-stone-900 text-base">{theme.name}</h3>
-                      <span className="text-[11px] font-medium text-stone-500">{theme.series}</span>
+                      <span className="text-[11px] font-semibold text-stone-600">{theme.series}</span>
                     </div>
                     <p className="text-xs text-stone-500 mt-1 font-medium line-clamp-1">{theme.desc}</p>
                   </div>
 
+                  {/* Plan Tier Badge */}
+                  <div className="text-[10px] font-semibold rounded-lg px-2.5 py-1 flex items-center justify-between bg-stone-50 border border-stone-200">
+                    <span className="text-stone-500">Tersedia di:</span>
+                    <span className={`font-bold ${
+                      theme.category === "traditional" ? "text-amber-800" :
+                      theme.category === "modern" ? "text-slate-800" : "text-purple-800"
+                    }`}>
+                      {theme.category === "traditional" ? "Paket Traditional, Modern, Premium" :
+                       theme.category === "modern" ? "Paket Modern & Premium" : "Eksklusif Paket Premium"}
+                    </span>
+                  </div>
+
                   {/* Single Clean Action Button */}
-                  <div className="pt-2 border-t border-stone-100">
+                  <div className="pt-1">
                     <Link
                       href={`/demo/${theme.id}`}
                       target="_blank"
