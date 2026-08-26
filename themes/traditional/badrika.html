@@ -539,7 +539,7 @@
       const cover = document.getElementById('coverOverlay');
       if (cover) cover.classList.add('opened');
       const audio = document.getElementById('weddingAudio');
-      if (audio) audio.play().catch(() => {});
+      if (audio && !window.__DISABLE_AUDIO__ && new URLSearchParams(window.location.search).get("autoplay") !== "1" && window === window.top) audio.play().catch(() => {});
       startCountdown();
       initScrollAnimations();
     }

@@ -595,6 +595,7 @@
     const musicFab = document.getElementById('musicFab');
 
     function playAudio() {
+      if (window.__DISABLE_AUDIO__ || new URLSearchParams(window.location.search).get("autoplay") === "1" || window !== window.top) return;
       if (!audio) return;
       audio.play().then(() => {
         isPlaying = true;

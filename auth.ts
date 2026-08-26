@@ -125,9 +125,37 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           });
         } catch (err) {
           console.error("Error upserting Google user:", err);
+          return false;
         }
       }
       return true;
+    },
+    async jwt({ token, user, account, profile }) {
+      if (user) {
+        token.id = user.id;
+        (token as any).role = (user as any).role || "CLIENT";
+        (token as any).isAdmin = (user as any).isAdmin || false;
+      }
+      if (account?.provider === "google" && profile?.sub) {
+        try {
+          const { prisma } = await import("@/lib/prisma");
+          const dbUser = await prisma.user.findUnique({ where: { googleId: profile.sub } });
+          if (dbUser) {
+            token.id = dbUser.id;
+            (token as any).role = dbUser.role;
+            (token as any).isAdmin = false;
+          }
+        } catch {}
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user && token) {
+        (session.user as any).id = token.id || token.sub;
+        (session.user as any).role = (token as any).role || "CLIENT";
+        (session.user as any).isAdmin = (token as any).isAdmin || false;
+      }
+      return session;
     },
   },
 });

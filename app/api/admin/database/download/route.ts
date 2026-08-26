@@ -30,14 +30,16 @@ export async function GET(req: NextRequest) {
       if (s?.value) backupPathSetting = s.value;
     } catch {}
 
-    const backupDir = getBackupDirectory(backupPathSetting);
+    const backupDir = await getBackupDirectory(backupPathSetting);
     const filePath = path.join(backupDir, safeFilename);
 
-    if (!fs.existsSync(filePath)) {
+    try {
+      await fs.promises.access(filePath);
+    } catch {
       return NextResponse.json({ error: "File snapshot tidak ditemukan" }, { status: 404 });
     }
 
-    const fileBuffer = fs.readFileSync(filePath);
+    const fileBuffer = await fs.promises.readFile(filePath);
 
     return new NextResponse(fileBuffer, {
       status: 200,

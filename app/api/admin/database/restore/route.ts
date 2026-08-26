@@ -44,12 +44,12 @@ export async function POST(req: NextRequest) {
         if (s?.value) backupPathSetting = s.value;
       } catch {}
 
-      const backupDir = getBackupDirectory(backupPathSetting);
+      const backupDir = await getBackupDirectory(backupPathSetting);
       const uploadedFilename = `uploaded_${Date.now()}_${path.basename(file.name)}`;
       const uploadedPath = path.join(backupDir, uploadedFilename);
 
       const buffer = Buffer.from(await file.arrayBuffer());
-      fs.writeFileSync(uploadedPath, buffer);
+      await fs.promises.writeFile(uploadedPath, buffer);
 
       // Jalankan restore dari file yang diupload (sudah termasuk automatic safety backup)
       const result = await restoreDatabaseSnapshot(uploadedFilename);

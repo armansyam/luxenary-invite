@@ -35,8 +35,10 @@ function verifyIPaymuSignature(
     const bodyHash = crypto.createHash("sha256").update(rawBody).digest("hex").toLowerCase();
     const toSign = `POST:${va}:${bodyHash}:${apiKey}:${timestamp}`;
     const expected = crypto.createHmac("sha256", apiKey).update(toSign).digest("hex");
-    // Timing-safe compare untuk mencegah timing attack
-    return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(incomingSignature));
+    const bufExpected = Buffer.from(expected);
+    const bufIncoming = Buffer.from(incomingSignature);
+    if (bufExpected.length !== bufIncoming.length) return false;
+    return crypto.timingSafeEqual(bufExpected, bufIncoming);
   } catch {
     return false;
   }
@@ -133,6 +135,9 @@ export async function POST(req: NextRequest) {
 
     } else if (
       paidStatus === 2 ||
+      paidStatus === -2 ||
+      body.status_code === -2 ||
+      body.status_code === 2 ||
       body.status?.toLowerCase() === "expired" ||
       body.status?.toLowerCase() === "batal" ||
       body.status?.toLowerCase() === "cancel"

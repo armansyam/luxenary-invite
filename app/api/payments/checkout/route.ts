@@ -80,7 +80,7 @@ export async function POST(req: Request) {
       }
     } catch {}
 
-    const { checkoutUrl } = await gw.init(orderId, finalAmount, appUrl);
+    const { checkoutUrl, qrString, sessionId, expiryTimestamp } = await gw.init(orderId, finalAmount, appUrl);
 
     // Catat gateway yang digunakan di order
     await prisma.order.update({
@@ -88,10 +88,11 @@ export async function POST(req: Request) {
       data: {
         paymentMethod: "GATEWAY",
         paymentGatewayRef: activeGatewayId,
+        snapToken: qrString ? JSON.stringify({ qrString, sessionId, expiry: expiryTimestamp || (Date.now() + 15 * 60 * 1000) }) : checkoutUrl,
       },
     });
 
-    return NextResponse.json({ checkoutUrl, gateway: activeGatewayId });
+    return NextResponse.json({ checkoutUrl, qrString, sessionId, expiryTimestamp, gateway: activeGatewayId });
   } catch (error: any) {
     console.error("[Payments Checkout Error]", error);
     return NextResponse.json({ error: error.message || "Gagal memulai pembayaran" }, { status: 500 });

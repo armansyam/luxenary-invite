@@ -18,15 +18,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const user = await prisma.user.findUnique({ where: { email: session.user.email } });
-  if (!user) {
+  const userId = (session.user as any).id;
+  if (!userId) {
     return NextResponse.json({ error: "Akun pengguna tidak ditemukan." }, { status: 404 });
   }
 
   // ── Guard: User must have a PAID order to create an invitation ──────────────
   const paidOrder = await prisma.order.findFirst({
     where: {
-      userId: user.id,
+      userId: userId,
       status: "PAID",
       // No invitation linked yet — or linked invitation still DRAFT
       OR: [
@@ -40,7 +40,7 @@ export async function POST(req: Request) {
   if (!paidOrder) {
     // Allow if there's already an existing DRAFT invitation (re-setup scenario)
     const existingDraft = await prisma.invitation.findFirst({
-      where: { userId: user.id, status: "DRAFT" },
+      where: { userId: userId, status: "DRAFT" },
     });
     if (!existingDraft) {
       return NextResponse.json(
@@ -145,9 +145,12 @@ export async function POST(req: Request) {
     },
   ];
 
+  const invitationStatus = paidOrder ? "PUBLISHED" : "DRAFT";
+  const publishedAt = paidOrder ? new Date() : undefined;
+
   const invitation = await prisma.invitation.create({
     data: {
-      userId: user.id,
+      userId: userId,
       orderId: paidOrder?.id ?? undefined,
       groomName: groomName || finalGroomNick,
       brideName: brideName || finalBrideNick,
@@ -171,17 +174,10 @@ export async function POST(req: Request) {
         showDresscode: true,
         showMusic: true,
       }),
-      status: "DRAFT",
+      status: invitationStatus,
+      publishedAt: publishedAt,
     },
   });
-
-  // Immediately publish if PAID order exists
-  if (paidOrder) {
-    await prisma.invitation.update({
-      where: { id: invitation.id },
-      data: { status: "PUBLISHED", publishedAt: new Date() },
-    });
-  }
 
   return NextResponse.json({
     success: true,

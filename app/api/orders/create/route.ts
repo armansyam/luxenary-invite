@@ -8,13 +8,27 @@ export const dynamic = "force-dynamic";
 export async function POST(req: NextRequest) {
   try {
     const session = await auth();
-    const body = await req.json().catch(() => ({}));
-    const { planType, buyerName, buyerEmail } = body;
-    let userId = session?.user?.id || body.userId;
 
-    if (!userId && !buyerEmail) {
-      return NextResponse.json({ error: "Missing userId atau buyerEmail" }, { status: 400 });
+    // 1. Wajib memiliki sesi login aktif
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: "Silakan login dengan akun Google Anda untuk melanjutkan pemesanan." },
+        { status: 401 }
+      );
     }
+
+    // 2. Proteksi Isolasi Admin — Akun Admin dilarang membuat pesanan klien
+    const userRole = (session.user as any)?.role;
+    const isAdmin = (session.user as any)?.isAdmin === true || userRole === "ADMIN" || userRole === "SUPER_ADMIN";
+    if (isAdmin) {
+      return NextResponse.json(
+        { error: "Akun Administrator tidak dapat membuat pesanan paket klien." },
+        { status: 403 }
+      );
+    }
+
+    const body = await req.json().catch(() => ({}));
+    const { planType } = body;
 
     if (!planType) {
       return NextResponse.json({ error: "Missing planType" }, { status: 400 });
@@ -24,25 +38,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "PlanType tidak valid. Gunakan TRADITIONAL, MODERN, atau PREMIUM." }, { status: 400 });
     }
 
-    // Resolve / Ensure valid client User in database
-    let validUserId = userId;
-    let targetUser = await prisma.user.findUnique({ where: { id: userId } });
+    // 3. Verifikasi Single Source of Truth — User WAJIB akun Google OAuth yang terdaftar di database
+    const targetUser = await prisma.user.findFirst({
+      where: {
+        id: session.user.id,
+      },
+    });
 
-    if (!targetUser) {
-      const emailToUse = buyerEmail || "client@luxenary.id";
-      targetUser = await prisma.user.findUnique({ where: { email: emailToUse } });
-
-      if (!targetUser) {
-        targetUser = await prisma.user.create({
-          data: {
-            email: emailToUse,
-            name: buyerName || emailToUse.split("@")[0] || "Mempelai",
-            role: "CLIENT",
-          },
-        });
-      }
-      validUserId = targetUser.id;
+    if (!targetUser || !targetUser.googleId) {
+      return NextResponse.json(
+        { error: "Hanya akun Google resmi yang terverifikasi yang dapat melakukan pemesanan." },
+        { status: 403 }
+      );
     }
+
+    const validUserId = targetUser.id;
 
     // Baca harga paket realtime dari AdminSetting database
     const priceKey = planType === "PREMIUM" ? "price_premium" : planType === "MODERN" ? "price_modern" : "price_traditional";
@@ -97,13 +107,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Hapus order pending lama sebelum membuat order baru jika ada
-    await prisma.order.deleteMany({
-      where: {
-        userId: validUserId,
-        status: "PENDING",
-      },
-    });
+
 
     const invoiceNumber = `INV-LUX-${Date.now()}-${randomUUID().slice(0, 6).toUpperCase()}`;
 

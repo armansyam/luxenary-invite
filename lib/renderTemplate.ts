@@ -29,15 +29,39 @@ const THEME_MAP: Record<string, { file: string; folder: "premium" | "traditional
   "ivanna": { file: "valente.html", folder: "premium" },
   "premium-ivanna": { file: "valente.html", folder: "premium" },
   "danila": { file: "aurelia.html", folder: "premium" },
-  "premium-danila": { file: "aurelia.html", folder: "premium" },
-  "moody-papercut": { file: "papercut.html", folder: "modern" },
-  "aruna": { file: "prameswari.html", folder: "traditional" },
   "heritage-aruna": { file: "prameswari.html", folder: "traditional" },
 };
 
+const HEAD_AUDIO_BLOCKER_SCRIPT = `
+<script>
+(function() {
+  const isAutoplay = new URLSearchParams(window.location.search).get('autoplay') === '1' || (window !== window.top);
+  if (isAutoplay) {
+    window.__DISABLE_AUDIO__ = true;
+    try {
+      if (window.HTMLMediaElement) {
+        window.HTMLMediaElement.prototype.play = function() {
+          this.muted = true;
+          this.pause();
+          return Promise.resolve();
+        };
+      }
+      if (window.Audio) {
+        window.Audio.prototype.play = function() {
+          this.muted = true;
+          this.pause();
+          return Promise.resolve();
+        };
+      }
+    } catch(e) {}
+  }
+})();
+</script>
+`;
+
 const AUTOPLAY_SHOWCASE_SCRIPT = `
 <style id="luxCardCleanStyles">
-  /* Card Preview Mode: Completely hide all floating UI buttons and dock navigation */
+  /* Card Preview Mode: Completely hide all floating UI buttons, dock navigation, and audio player */
   .music-fab, #musicFab, .floating-music, .audio-player,
   .fullscreen-btn, #fullscreenBtn, .btn-fullscreen, .btn-fs, .floating-action,
   .bottom-dock, nav.bottom-dock, .dock-container, nav.bottom-nav, .dock, .bottom-nav,
@@ -58,21 +82,40 @@ const AUTOPLAY_SHOWCASE_SCRIPT = `
     return;
   }
 
-  // 1. Completely destroy audio and floating control nodes in card preview
+  // 1. Completely silence & disable audio playback in card preview mode
+  try {
+    window.playAudio = function() {};
+    window.toggleAudio = function() {};
+    if (window.HTMLMediaElement) {
+      window.HTMLMediaElement.prototype.play = function() { return Promise.resolve(); };
+    }
+  } catch(e) {}
+
   function cleanCardDOM() {
-    const selectors = [
-      'audio', '#bgAudio', '.music-fab', '#musicFab', '.floating-music',
-      '.fullscreen-btn', '#fullscreenBtn', '.btn-fullscreen', '.btn-fs',
-      '.bottom-dock', 'nav.bottom-dock', '.dock-container', 'nav.bottom-nav'
-    ];
-    selectors.forEach(sel => {
-      document.querySelectorAll(sel).forEach(el => {
-        if (el.tagName === 'AUDIO') {
-          try { el.pause(); el.src = ''; el.removeAttribute('src'); } catch(e){}
-        }
+    try {
+      window.playAudio = function() {};
+      window.toggleAudio = function() {};
+      document.querySelectorAll('audio, video, #bgAudio').forEach(el => {
+        try {
+          el.muted = true;
+          el.pause();
+          el.volume = 0;
+          el.src = '';
+          el.removeAttribute('src');
+        } catch(e){}
         try { el.remove(); } catch(e){ el.style.display = 'none'; }
       });
-    });
+      const selectors = [
+        '.music-fab', '#musicFab', '.floating-music',
+        '.fullscreen-btn', '#fullscreenBtn', '.btn-fullscreen', '.btn-fs',
+        '.bottom-dock', 'nav.bottom-dock', '.dock-container', 'nav.bottom-nav'
+      ];
+      selectors.forEach(sel => {
+        document.querySelectorAll(sel).forEach(el => {
+          try { el.remove(); } catch(e){ el.style.display = 'none'; }
+        });
+      });
+    } catch(e){}
   }
 
   cleanCardDOM();
@@ -110,25 +153,18 @@ const AUTOPLAY_SHOWCASE_SCRIPT = `
   }
 
   function triggerOpenCover() {
-    if (typeof openInvitation === 'function') {
-      try { openInvitation(); } catch(e){}
-    }
     const cover = document.getElementById('coverScreen') || document.querySelector('.cover-screen') || document.querySelector('.screen-cover') || document.querySelector('.landing-cover');
     if (cover) {
-      cover.classList.add('opened');
+      cover.classList.add('hidden', 'opened');
       cover.style.transform = 'translateY(-100%)';
       cover.style.transition = 'transform 0.85s cubic-bezier(0.16, 1, 0.3, 1)';
-    }
-    const coverBtn = document.querySelector('.btn-open-invitation') || document.querySelector('.btn-open') || document.querySelector('#btnOpen') || document.querySelector('.open-btn');
-    if (coverBtn) {
-      try { coverBtn.click(); } catch(e){}
     }
   }
 
   function triggerCloseCover() {
     const cover = document.getElementById('coverScreen') || document.querySelector('.cover-screen') || document.querySelector('.screen-cover') || document.querySelector('.landing-cover');
     if (cover) {
-      cover.classList.remove('opened');
+      cover.classList.remove('opened', 'hidden');
       cover.style.transform = 'translateY(0%)';
       cover.style.transition = 'transform 0.65s ease-in-out';
     }
@@ -585,7 +621,13 @@ export function renderTemplateFile(
     }
   }
 
-  // Injections: Unified Runtime, Autoplay Script & Inline Live Editor Script
+  // Injections: Head Audio Blocker, Unified Runtime, Autoplay Script & Inline Live Editor Script
+  if (tpl.includes("<head>")) {
+    tpl = tpl.replace("<head>", `<head>\n${HEAD_AUDIO_BLOCKER_SCRIPT}`);
+  } else if (tpl.includes("<HEAD>")) {
+    tpl = tpl.replace("<HEAD>", `<HEAD>\n${HEAD_AUDIO_BLOCKER_SCRIPT}`);
+  }
+
   const injectedScripts = `${UNIFIED_CLIENT_RUNTIME_SCRIPT}\n${AUTOPLAY_SHOWCASE_SCRIPT}\n${options?.editMode || data.__editMode ? INLINE_LIVE_EDITOR_SCRIPT : ""}`;
 
   if (tpl.includes("</body>")) {

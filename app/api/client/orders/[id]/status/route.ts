@@ -37,6 +37,7 @@ export async function GET(
         paidAt: true,
         expiredAt: true,
         createdAt: true,
+        snapToken: true,
       },
     });
 
@@ -44,12 +45,16 @@ export async function GET(
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
-    // Jika user login tapi bukan pemilik dan bukan admin: Tolak akses (IDOR protection)
-    if (session?.user && !isAdmin && order.userId && currentUserId && order.userId !== currentUserId) {
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized. Silakan login terlebih dahulu." }, { status: 401 });
+    }
+
+    // Jika bukan admin dan bukan pemilik pesanan: Tolak akses (IDOR protection)
+    if (!isAdmin && order.userId !== currentUserId) {
       return NextResponse.json({ error: "Forbidden: Anda tidak memiliki akses ke pesanan ini" }, { status: 403 });
     }
 
-    const isAuthorizedOwner = isAdmin || (currentUserId && order.userId === currentUserId);
+    const isAuthorizedOwner = true;
 
     return NextResponse.json({
       id: order.id,
@@ -64,6 +69,7 @@ export async function GET(
       rejectReason: isAuthorizedOwner ? order.rejectReason : null,
       paidAt: order.paidAt,
       expiredAt: order.expiredAt,
+      snapToken: isAuthorizedOwner ? order.snapToken : null,
     });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

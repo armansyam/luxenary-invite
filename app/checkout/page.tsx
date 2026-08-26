@@ -22,6 +22,12 @@ function CheckoutContent() {
   // Expiry State (Only applicable if gateway QRIS expired)
   const [isGatewayExpired, setIsGatewayExpired] = useState(false);
 
+  // Native QRIS State
+  const [qrData, setQrData] = useState<string | null>(null);
+  const [qrisSessionId, setQrisSessionId] = useState<string | null>(null);
+  const [countdownStr, setCountdownStr] = useState<string>("");
+  const [qrisExpiry, setQrisExpiry] = useState<number | null>(null);
+
   // Payment Mode & Bank Details
   const [paymentMode, setPaymentMode] = useState<"BOTH" | "GATEWAY" | "MANUAL">("BOTH");
   const [selectedMethod, setSelectedMethod] = useState<"GATEWAY" | "MANUAL">("GATEWAY");
@@ -41,19 +47,30 @@ function CheckoutContent() {
   const [copiedBank, setCopiedBank] = useState(false);
   const [copiedAmount, setCopiedAmount] = useState(false);
 
-  // Redirect to login if not authenticated
+  const isAdmin =
+    (session?.user as any)?.isAdmin === true ||
+    (session?.user as any)?.role === "ADMIN" ||
+    (session?.user as any)?.role === "SUPER_ADMIN";
+
+  // Redirect to login if not authenticated or register if no plan
   useEffect(() => {
     if (status === "unauthenticated") {
       const redirectTarget = orderIdParam
         ? `/checkout?order=${orderIdParam}`
         : `/checkout?plan=${planParam || "PREMIUM"}`;
       router.replace(`/login?callbackUrl=${encodeURIComponent(redirectTarget)}`);
+      return;
     }
-  }, [status, planParam, orderIdParam, router]);
+
+    if (status === "authenticated" && !isAdmin && !planParam && !orderIdParam) {
+      router.replace("/register");
+    }
+  }, [status, planParam, orderIdParam, isAdmin, router]);
 
   // Load / Create Order Flow
   const initializeCheckout = useCallback(async () => {
-    if (status !== "authenticated" || !(session as any)?.user?.id) return;
+    if (status !== "authenticated" || !(session as any)?.user?.id || isAdmin) return;
+    if (!planParam && !orderIdParam) return;
 
     setLoading(true);
     setError(null);
@@ -110,6 +127,21 @@ function CheckoutContent() {
             setIsGatewayExpired(true);
           } else {
             setIsGatewayExpired(false);
+            if (orderStatusData.snapToken) {
+              try {
+                const parsed = JSON.parse(orderStatusData.snapToken);
+                // Tambahkan Grace Period 2 Menit (120000 ms)
+                if (parsed.qrString && parsed.expiry > (Date.now() - 120000)) {
+                  setQrData(parsed.qrString);
+                  setQrisSessionId(parsed.sessionId);
+                  setQrisExpiry(parsed.expiry);
+                } else if (parsed.expiry <= (Date.now() - 120000)) {
+                  setIsGatewayExpired(true);
+                }
+              } catch {
+                // Not JSON, ignore
+              }
+            }
           }
 
           setLoading(false);
@@ -154,23 +186,71 @@ function CheckoutContent() {
     initializeCheckout();
   }, [initializeCheckout]);
 
-  // Polling for Approval when Proof is Uploaded
+  // --- NATIVE QRIS POLLING & COUNTDOWN ---
   useEffect(() => {
-    if (!orderId || !uploadedProofUrl) return;
+    if (!qrData || !orderId) return;
 
-    const interval = setInterval(async () => {
+    // Countdown Timer Loop
+    const timerInterval = setInterval(() => {
+      if (!qrisExpiry) return;
+      const now = Date.now();
+      const diff = qrisExpiry - now;
+      
+      // Grace period 2 menit (120000 ms) setelah expired
+      if (diff <= -120000) {
+        setCountdownStr("Kedaluwarsa");
+        setIsGatewayExpired(true);
+        setQrData(null);
+        clearInterval(timerInterval);
+      } else if (diff <= 0) {
+        setCountdownStr("00:00 (Verifikasi Akhir...)");
+      } else {
+        const m = Math.floor(diff / 60000);
+        const s = Math.floor((diff % 60000) / 1000);
+        setCountdownStr(`${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`);
+      }
+    }, 1000);
+
+    // Polling Order Status Loop (setiap 4 detik)
+    const pollInterval = setInterval(async () => {
       try {
         const res = await fetch(`/api/client/orders/${orderId}/status`, { cache: "no-store" });
-        const data = await res.json();
-        if (data.status === "PAID") {
-          clearInterval(interval);
-          router.replace(`/dashboard/setup?order=${orderId}&plan=${data.planType}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.status === "PAID") {
+            clearInterval(pollInterval);
+            clearInterval(timerInterval);
+            router.replace(`/dashboard/setup?order=${orderId}&plan=${data.planType}`);
+          } else if (data.status === "EXPIRED") {
+            setIsGatewayExpired(true);
+            setQrData(null);
+            clearInterval(pollInterval);
+            clearInterval(timerInterval);
+          }
         }
       } catch {}
-    }, 3000);
+    }, 4000);
 
-    return () => clearInterval(interval);
-  }, [orderId, uploadedProofUrl, router]);
+    return () => {
+      clearInterval(timerInterval);
+      clearInterval(pollInterval);
+    };
+  }, [qrData, orderId, qrisExpiry, router]);
+
+  // Polling for Approval when Proof is Uploaded
+  // Manual Check Status Handler
+  const handleCheckStatus = async () => {
+    if (!orderId) return;
+    try {
+      const res = await fetch(`/api/client/orders/${orderId}/status`, { cache: "no-store" });
+      const data = await res.json();
+      if (data.status === "PAID") {
+        router.replace(`/dashboard/setup?order=${orderId}&plan=${data.planType}`);
+      } else {
+        alert("Status pembayaran masih pending. Silakan tunggu admin memverifikasi bukti transfer Anda atau kembali lagi nanti.");
+      }
+    } catch {}
+  };
 
   // Handle Pay via Gateway
   const handlePayGateway = async () => {
@@ -185,9 +265,20 @@ function CheckoutContent() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Gagal memulai pembayaran");
-      window.location.href = data.checkoutUrl;
+      
+      if (data.qrString) {
+        setQrData(data.qrString);
+        setQrisSessionId(data.sessionId || null);
+        // Set expiry sesuai dengan balikan server (dinamis mengikuti pengaturan admin)
+        setQrisExpiry(data.expiryTimestamp || Date.now() + 15 * 60 * 1000);
+      } else if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+      } else {
+        throw new Error("Respons gateway tidak valid: Tidak ada QR String");
+      }
     } catch (err: any) {
       setError(err.message);
+    } finally {
       setPaying(false);
     }
   };
@@ -225,6 +316,9 @@ function CheckoutContent() {
   const handleRegenerateOrder = async () => {
     setLoading(true);
     setIsGatewayExpired(false);
+    setQrData(null);
+    setQrisSessionId(null);
+    setQrisExpiry(null);
     setError(null);
     setProofFile(null);
     setProofPreview(null);
@@ -248,6 +342,34 @@ function CheckoutContent() {
       setTimeout(() => setCopiedAmount(false), 2000);
     }
   };
+
+  if (status === "authenticated" && isAdmin) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-stone-950 via-stone-900 to-amber-950 flex flex-col items-center justify-center p-6 text-center font-sans">
+        <div className="max-w-md w-full bg-white/5 border border-amber-500/30 rounded-3xl p-8 backdrop-blur-md space-y-6">
+          <div className="w-16 h-16 rounded-full bg-amber-500/20 border border-amber-500/40 mx-auto flex items-center justify-center text-amber-400">
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-bold text-white">Mode Administrator Aktif</h2>
+            <p className="text-xs text-stone-400 leading-relaxed">
+              Anda sedang login dengan akun Administrator (<span className="text-amber-300 font-semibold">{session?.user?.email}</span>). Pembelian paket dan pembuatan invoice dinonaktifkan untuk akun admin.
+            </p>
+          </div>
+          <div className="pt-2 space-y-3">
+            <a
+              href="/admin"
+              className="w-full py-3.5 bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold rounded-2xl text-xs transition block shadow-lg cursor-pointer"
+            >
+              Kembali ke Dashboard Admin →
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (status === "loading" || loading) {
     return (
@@ -408,6 +530,28 @@ function CheckoutContent() {
                   </svg>
                   <span>Buat Tagihan / QRIS Baru</span>
                 </button>
+              ) : qrData ? (
+                <div className="bg-white/5 border border-amber-500/20 rounded-3xl p-6 space-y-5 backdrop-blur-xs text-center relative overflow-hidden">
+                  <div className="absolute top-0 inset-x-0 h-1 bg-amber-500/20">
+                    <div className="h-full bg-amber-500 rounded-r-full" style={{ width: `${Math.max(0, Math.min(100, ((qrisExpiry ? qrisExpiry - Date.now() : 0) / (15 * 60 * 1000)) * 100))}%`, transition: 'width 1s linear' }}></div>
+                  </div>
+                  <div className="space-y-1 pt-2">
+                    <h3 className="text-white font-bold text-sm">Scan QRIS untuk Membayar</h3>
+                    <p className="text-stone-400 text-xs">Sisa Waktu: <span className="text-amber-400 font-mono font-bold">{countdownStr}</span></p>
+                  </div>
+                  <div className="p-3 bg-white inline-block rounded-2xl mx-auto shadow-xl border-4 border-amber-500/20">
+                    <img src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}`} alt="QRIS Code" className="w-48 h-48 sm:w-56 sm:h-56 object-contain" />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-center gap-2 text-amber-400 font-bold text-xs">
+                      <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                      <span>Menunggu Pembayaran Otomatis...</span>
+                    </div>
+                    <p className="text-[11px] text-stone-400 max-w-xs mx-auto leading-relaxed">
+                      Buka aplikasi m-Banking atau e-Wallet Anda (BCA, Mandiri, GoPay, OVO, Dana, dll) dan scan QRIS di atas. Layar otomatis berpindah jika sukses.
+                    </p>
+                  </div>
+                </div>
               ) : (
                 <button
                   id="btn-pay-now"
@@ -419,7 +563,7 @@ function CheckoutContent() {
                   {paying ? (
                     <>
                       <span className="w-4 h-4 border-2 border-stone-950 border-t-transparent rounded-full animate-spin"></span>
-                      <span>Membuka Gerbang Pembayaran...</span>
+                      <span>Membuat Kode QRIS...</span>
                     </>
                   ) : (
                     <span>Bayar via QRIS / E-Wallet &rarr;</span>
@@ -478,16 +622,23 @@ function CheckoutContent() {
                 </div>
 
                 {uploadedProofUrl || uploadSuccessMsg ? (
-                  <div className="p-4 bg-emerald-950/50 border border-emerald-500/40 rounded-2xl space-y-2 text-center">
+                  <div className="p-4 bg-emerald-950/50 border border-emerald-500/40 rounded-2xl space-y-3 text-center">
                     <div className="flex items-center justify-center gap-2 text-emerald-300 font-bold text-xs">
                       <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                      <span>Bukti Transfer Telah Dikirim — Menunggu Verifikasi Admin</span>
+                      <span>Menunggu Verifikasi Admin</span>
                     </div>
                     <p className="text-[11px] text-emerald-300/80 leading-relaxed">
-                      Tim admin sedang memverifikasi struk Anda. Halaman ini akan otomatis dialihkan begitu pembayaran dikonfirmasi.
+                      Bukti transfer Anda telah diterima dan sedang menunggu konfirmasi admin. Anda dapat mengecek status persetujuan secara manual.
                     </p>
+                    <button
+                      type="button"
+                      onClick={handleCheckStatus}
+                      className="mt-2 mx-auto px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-stone-950 font-bold rounded-xl text-[11px] transition shadow-lg cursor-pointer"
+                    >
+                      Cek Status Pembayaran ⟳
+                    </button>
                     {uploadedProofUrl && (
-                      <div className="mt-2">
+                      <div className="mt-3">
                         <img src={uploadedProofUrl} alt="Bukti Transfer" className="max-h-36 rounded-xl mx-auto border border-emerald-500/30 object-cover" />
                       </div>
                     )}

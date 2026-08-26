@@ -20,7 +20,9 @@ export async function GET(
     return new NextResponse(staticHtml, {
       headers: {
         "Content-Type": "text/html; charset=utf-8",
-        "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        "Pragma": "no-cache",
+        "Expires": "0",
       },
     });
   }
@@ -45,7 +47,9 @@ export async function GET(
       return new NextResponse(compiledHtml, {
         headers: {
           "Content-Type": "text/html; charset=utf-8",
-          "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
+          "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+          "Pragma": "no-cache",
+          "Expires": "0",
         },
       });
     }

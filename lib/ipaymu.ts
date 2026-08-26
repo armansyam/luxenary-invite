@@ -62,7 +62,7 @@ export class IPaymuGateway implements PaymentGateway {
     return crypto.createHmac("sha256", apiKey).update(toSign).digest("hex");
   }
 
-  async init(orderId: string, amount: number, customAppUrl?: string): Promise<{ checkoutUrl: string }> {
+  async init(orderId: string, amount: number, customAppUrl?: string): Promise<{ checkoutUrl?: string; qrString?: string; sessionId?: string; expiryTimestamp?: number }> {
     const config = await this.getConfig();
     const va = config.va;
     const apiKey = config.apiKey;
@@ -100,25 +100,20 @@ export class IPaymuGateway implements PaymentGateway {
     const timestamp = Math.floor(Date.now() / 1000).toString();
 
     const body = {
-      product: [`${invoicePrefix} — Paket ${orderId.slice(-6).toUpperCase()}`],
-      qty: [1],
-      price: [amount],
+      name: buyerName,
+      phone: "081111111111", // Default if empty
+      email: buyerEmail,
       amount,
-      returnUrl: `${appUrl}/checkout/success?order=${orderId}`,
       notifyUrl: `${appUrl}/api/webhook/ipaymu`,
-      cancelUrl: `${appUrl}/checkout/pending?order=${orderId}`,
       referenceId: orderId,
-      paymentMethod: "redirect",
-      buyerName,
-      buyerEmail,
-      buyerPhone: "",
-      expired: expiryMinutes, // Masa berlaku QRIS dalam menit — sync dengan admin setting
+      paymentMethod: "qris",
+      expired: expiryMinutes, // Masa berlaku QRIS dalam menit
     };
 
     const bodyStr = JSON.stringify(body);
     const signature = this.buildSignature(va, apiKey, bodyStr, timestamp);
 
-    const response = await fetch(`${baseUrl}/payment`, {
+    const response = await fetch(`${baseUrl}/payment/direct`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -132,12 +127,12 @@ export class IPaymuGateway implements PaymentGateway {
 
     const data = await response.json();
 
-    if (!response.ok || !data?.Data?.Url) {
+    if (!response.ok || !data?.Data?.QrString) {
       const errorMsg = data?.Message || data?.message || JSON.stringify(data);
       throw new Error(`iPaymu (${baseUrl.includes("sandbox") ? "Sandbox" : "Produksi"}): ${errorMsg}`);
     }
 
-    return { checkoutUrl: data.Data.Url };
+    return { qrString: data.Data.QrString, sessionId: data.Data.SessionId, expiryTimestamp: Date.now() + expiryMinutes * 60 * 1000 };
   }
 
   async verify(reference: string): Promise<{ status: "PAID" | "FAILED" }> {

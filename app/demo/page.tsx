@@ -149,7 +149,7 @@ export default function CatalogGridShowcase() {
                   className="relative aspect-[9/14] bg-stone-950 overflow-hidden block cursor-pointer"
                 >
                   <iframe
-                    src={`/demo/${theme.id}?autoplay=1`}
+                    src={`/demo/${theme.id}?autoplay=1&muted=1`}
                     loading="lazy"
                     className="w-[200%] h-[200%] transform scale-50 origin-top-left border-none pointer-events-none select-none"
                     title={theme.name}

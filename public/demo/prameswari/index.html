@@ -1,6 +1,32 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+
+<script>
+(function() {
+  const isAutoplay = new URLSearchParams(window.location.search).get('autoplay') === '1' || (window !== window.top);
+  if (isAutoplay) {
+    window.__DISABLE_AUDIO__ = true;
+    try {
+      if (window.HTMLMediaElement) {
+        window.HTMLMediaElement.prototype.play = function() {
+          this.muted = true;
+          this.pause();
+          return Promise.resolve();
+        };
+      }
+      if (window.Audio) {
+        window.Audio.prototype.play = function() {
+          this.muted = true;
+          this.pause();
+          return Promise.resolve();
+        };
+      }
+    } catch(e) {}
+  }
+})();
+</script>
+
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Danang &amp; Prameswari — The Wedding</title>
@@ -779,17 +805,6 @@
           <div class="story-circles-track-wrapper" style="overflow: hidden; width: 100%; position: relative; mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent); -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);">
             <div class="story-circles-track" style="display: flex; gap: 14px; width: max-content; margin: 0 auto; animation: luxStoryLoop 24s linear infinite;">
               
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/prameswari/memory_01.webp', 'Budi Santoso')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/prameswari/memory_01.webp" onerror="this.onerror=null;this.src='/demo/prameswari/gallery_01.webp';" alt="Budi Santoso" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Budi
-      </span>
-    </div>
-  
     <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/prameswari/memory_02.webp', 'Sahabat SMA')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
@@ -801,36 +816,25 @@
       </span>
     </div>
   
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/prameswari/memory_03.webp', 'Rina & Teman')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/prameswari/memory_01.webp', 'Budi Santoso')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/prameswari/memory_03.webp" onerror="this.onerror=null;this.src='/demo/prameswari/gallery_03.webp';" alt="Rina & Teman" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/prameswari/memory_01.webp" onerror="this.onerror=null;this.src='/demo/prameswari/gallery_01.webp';" alt="Budi Santoso" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Rina
+        Budi
       </span>
     </div>
   
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/prameswari/memory_04.webp', 'Tante Maya')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/prameswari/gallery_06.webp', 'Keluarga Solo')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/prameswari/memory_04.webp" onerror="this.onerror=null;this.src='/demo/prameswari/gallery_04.webp';" alt="Tante Maya" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/prameswari/gallery_06.webp" onerror="this.onerror=null;this.src='/demo/prameswari/hero.webp';" alt="Keluarga Solo" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Tante
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/prameswari/gallery_05.webp', 'Dimas Pratama')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/prameswari/gallery_05.webp" onerror="this.onerror=null;this.src='/demo/prameswari/cover.webp';" alt="Dimas Pratama" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Dimas
+        Keluarga
       </span>
     </div>
   
@@ -856,29 +860,40 @@
       </span>
     </div>
   
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/prameswari/gallery_06.webp', 'Keluarga Solo')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/prameswari/memory_04.webp', 'Tante Maya')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/prameswari/gallery_06.webp" onerror="this.onerror=null;this.src='/demo/prameswari/hero.webp';" alt="Keluarga Solo" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/prameswari/memory_04.webp" onerror="this.onerror=null;this.src='/demo/prameswari/gallery_04.webp';" alt="Tante Maya" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Keluarga
+        Tante
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/prameswari/gallery_05.webp', 'Dimas Pratama')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/prameswari/gallery_05.webp" onerror="this.onerror=null;this.src='/demo/prameswari/cover.webp';" alt="Dimas Pratama" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Dimas
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/prameswari/memory_03.webp', 'Rina & Teman')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/prameswari/memory_03.webp" onerror="this.onerror=null;this.src='/demo/prameswari/gallery_03.webp';" alt="Rina & Teman" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Rina
       </span>
     </div>
   
               
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/prameswari/memory_01.webp', 'Budi Santoso')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/prameswari/memory_01.webp" onerror="this.onerror=null;this.src='/demo/prameswari/gallery_01.webp';" alt="Budi Santoso" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Budi
-      </span>
-    </div>
-  
     <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/prameswari/memory_02.webp', 'Sahabat SMA')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
@@ -890,36 +905,25 @@
       </span>
     </div>
   
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/prameswari/memory_03.webp', 'Rina & Teman')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/prameswari/memory_01.webp', 'Budi Santoso')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/prameswari/memory_03.webp" onerror="this.onerror=null;this.src='/demo/prameswari/gallery_03.webp';" alt="Rina & Teman" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/prameswari/memory_01.webp" onerror="this.onerror=null;this.src='/demo/prameswari/gallery_01.webp';" alt="Budi Santoso" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Rina
+        Budi
       </span>
     </div>
   
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/prameswari/memory_04.webp', 'Tante Maya')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/prameswari/gallery_06.webp', 'Keluarga Solo')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/prameswari/memory_04.webp" onerror="this.onerror=null;this.src='/demo/prameswari/gallery_04.webp';" alt="Tante Maya" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/prameswari/gallery_06.webp" onerror="this.onerror=null;this.src='/demo/prameswari/hero.webp';" alt="Keluarga Solo" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Tante
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/prameswari/gallery_05.webp', 'Dimas Pratama')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/prameswari/gallery_05.webp" onerror="this.onerror=null;this.src='/demo/prameswari/cover.webp';" alt="Dimas Pratama" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Dimas
+        Keluarga
       </span>
     </div>
   
@@ -945,14 +949,36 @@
       </span>
     </div>
   
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/prameswari/gallery_06.webp', 'Keluarga Solo')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/prameswari/memory_04.webp', 'Tante Maya')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/prameswari/gallery_06.webp" onerror="this.onerror=null;this.src='/demo/prameswari/hero.webp';" alt="Keluarga Solo" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/prameswari/memory_04.webp" onerror="this.onerror=null;this.src='/demo/prameswari/gallery_04.webp';" alt="Tante Maya" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Keluarga
+        Tante
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/prameswari/gallery_05.webp', 'Dimas Pratama')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/prameswari/gallery_05.webp" onerror="this.onerror=null;this.src='/demo/prameswari/cover.webp';" alt="Dimas Pratama" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Dimas
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/prameswari/memory_03.webp', 'Rina & Teman')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/prameswari/memory_03.webp" onerror="this.onerror=null;this.src='/demo/prameswari/gallery_03.webp';" alt="Rina & Teman" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Rina
       </span>
     </div>
   
@@ -1336,6 +1362,7 @@
     const musicFab = document.getElementById('musicFab');
 
     function playAudio() {
+      if (window.__DISABLE_AUDIO__ || new URLSearchParams(window.location.search).get("autoplay") === "1" || window !== window.top) return;
       if (!audio) return;
       audio.play().then(() => {
         isPlaying = true;
@@ -1494,8 +1521,146 @@
     } catch {}
   </script>
 
+<script id="luxUnifiedClientRuntime">
+
+(function() {
+  // 1. Dynamic Guest Name Resolver via ?to= / ?u=
+  function resolveGuestName() {
+    try {
+      const p = new URLSearchParams(window.location.search);
+      const gn = p.get('to') || p.get('u') || '';
+      if (!gn) return;
+      
+      const selectors = [
+        '#coverGuestName', '#guestName', '#guestNameDisplay', '.cover-guest-val',
+        '#modalGuestName', '#passGuestName', '.guest-recipient-name', '#recipientName'
+      ];
+      selectors.forEach(function(sel) {
+        document.querySelectorAll(sel).forEach(function(el) {
+          el.textContent = gn;
+        });
+      });
+      
+      const rsvpInput = document.getElementById('rsvpName');
+      if (rsvpInput && !rsvpInput.value) {
+        rsvpInput.value = gn;
+      }
+    } catch(e){}
+  }
+
+  // 2. Universal Toast Notification
+  window.showToast = window.showToast || function(msg, type) {
+    var toast = document.getElementById('luxToast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'luxToast';
+      toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(20,20,24,0.95);color:#fff;padding:12px 24px;border-radius:50px;font-size:0.8rem;letter-spacing:0.04em;font-weight:500;z-index:99999;box-shadow:0 10px 35px rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.18);backdrop-filter:blur(16px);display:flex;align-items:center;gap:8px;opacity:0;transition:all 0.35s cubic-bezier(0.16,1,0.3,1);pointer-events:none;';
+      document.body.appendChild(toast);
+    }
+    var icon = (type !== 'error')
+      ? '<svg width="16" height="16" fill="none" stroke="#34d399" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>'
+      : '<svg width="16" height="16" fill="none" stroke="#f87171" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>';
+    toast.innerHTML = icon + '<span>' + msg + '</span>';
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateX(-50%) translateY(0)';
+    clearTimeout(window._luxToastTimer);
+    window._luxToastTimer = setTimeout(function() {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateX(-50%) translateY(20px)';
+    }, 3500);
+  };
+
+  // 3. Universal Copy Clipboard Helper
+  window.copyText = window.copyText || function(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function() {
+        window.showToast('Berhasil disalin ke papan klip!');
+      }).catch(function() {
+        fallbackCopy(text);
+      });
+    } else {
+      fallbackCopy(text);
+    }
+    function fallbackCopy(t) {
+      var el = document.createElement('textarea');
+      el.value = t;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      window.showToast('Berhasil disalin ke papan klip!');
+    }
+  };
+
+  // 4. Universal Modal Open / Close
+  window.openModal = window.openModal || function() {
+    var modal = document.getElementById('modalBg');
+    if (modal) modal.classList.add('open');
+  };
+  window.closeModal = window.closeModal || function(e) {
+    if (!e || e.target === document.getElementById('modalBg') || (e.target && e.target.classList && e.target.classList.contains('modal-close'))) {
+      var modal = document.getElementById('modalBg');
+      if (modal) modal.classList.remove('open');
+    }
+  };
+
+  // 5. Universal AJAX RSVP Submission
+  window.submitRsvp = window.submitRsvp || async function(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    var btn = document.getElementById('btnSubmit') || document.getElementById('submitRsvpBtn');
+    var nameEl = document.getElementById('rsvpName');
+    var statusEl = document.getElementById('rsvpStatus');
+    var countEl = document.getElementById('rsvpCount');
+    var msgEl = document.getElementById('rsvpMessage');
+    var name = nameEl ? nameEl.value.trim() : '';
+    var status = statusEl ? statusEl.value : 'hadir';
+    var count = countEl ? countEl.value : '1';
+    var message = msgEl ? msgEl.value.trim() : '';
+
+    if (!name) { window.showToast('Silakan isi nama Anda', 'error'); return; }
+    if (btn) { btn.disabled = true; btn.textContent = 'Mengirim...'; }
+
+    try {
+      var invId = typeof INVITATION_ID !== 'undefined' ? INVITATION_ID : 'demo-prameswari';
+      var res = await fetch('/api/public/rsvp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ invitationId: invId, guestName: name, status: status, guestCount: count, message: message })
+      });
+      var data = await res.json();
+      if (data.success) {
+        window.showToast('Konfirmasi kehadiran & doa restu berhasil dikirim!');
+        if (message) {
+          var wishesList = document.getElementById('wishesList');
+          if (wishesList) {
+            var newWishItem = document.createElement('div');
+            newWishItem.className = 'wish-item';
+            newWishItem.innerHTML = '<div class="wish-name">' + name + ' <span style="font-size:0.68rem;opacity:0.7;font-weight:normal;">• ' + (status === 'hadir' ? 'Hadir' : 'Berhalangan') + '</span></div><div class="wish-msg">“' + message + '”</div>';
+            wishesList.insertBefore(newWishItem, wishesList.firstChild);
+          }
+        }
+        if (msgEl) msgEl.value = '';
+      } else {
+        window.showToast(data.error || 'Gagal mengirim RSVP', 'error');
+      }
+    } catch (err) {
+      window.showToast('Terjadi kendala koneksi.', 'error');
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = 'Kirim Konfirmasi & Doa'; }
+    }
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', resolveGuestName);
+  } else {
+    resolveGuestName();
+  }
+})();
+</script>
+
+
 <style id="luxCardCleanStyles">
-  /* Card Preview Mode: Completely hide all floating UI buttons and dock navigation */
+  /* Card Preview Mode: Completely hide all floating UI buttons, dock navigation, and audio player */
   .music-fab, #musicFab, .floating-music, .audio-player,
   .fullscreen-btn, #fullscreenBtn, .btn-fullscreen, .btn-fs, .floating-action,
   .bottom-dock, nav.bottom-dock, .dock-container, nav.bottom-nav, .dock, .bottom-nav,
@@ -1516,21 +1681,40 @@
     return;
   }
 
-  // 1. Completely destroy audio and floating control nodes in card preview
+  // 1. Completely silence & disable audio playback in card preview mode
+  try {
+    window.playAudio = function() {};
+    window.toggleAudio = function() {};
+    if (window.HTMLMediaElement) {
+      window.HTMLMediaElement.prototype.play = function() { return Promise.resolve(); };
+    }
+  } catch(e) {}
+
   function cleanCardDOM() {
-    const selectors = [
-      'audio', '#bgAudio', '.music-fab', '#musicFab', '.floating-music',
-      '.fullscreen-btn', '#fullscreenBtn', '.btn-fullscreen', '.btn-fs',
-      '.bottom-dock', 'nav.bottom-dock', '.dock-container', 'nav.bottom-nav'
-    ];
-    selectors.forEach(sel => {
-      document.querySelectorAll(sel).forEach(el => {
-        if (el.tagName === 'AUDIO') {
-          try { el.pause(); el.src = ''; el.removeAttribute('src'); } catch(e){}
-        }
+    try {
+      window.playAudio = function() {};
+      window.toggleAudio = function() {};
+      document.querySelectorAll('audio, video, #bgAudio').forEach(el => {
+        try {
+          el.muted = true;
+          el.pause();
+          el.volume = 0;
+          el.src = '';
+          el.removeAttribute('src');
+        } catch(e){}
         try { el.remove(); } catch(e){ el.style.display = 'none'; }
       });
-    });
+      const selectors = [
+        '.music-fab', '#musicFab', '.floating-music',
+        '.fullscreen-btn', '#fullscreenBtn', '.btn-fullscreen', '.btn-fs',
+        '.bottom-dock', 'nav.bottom-dock', '.dock-container', 'nav.bottom-nav'
+      ];
+      selectors.forEach(sel => {
+        document.querySelectorAll(sel).forEach(el => {
+          try { el.remove(); } catch(e){ el.style.display = 'none'; }
+        });
+      });
+    } catch(e){}
   }
 
   cleanCardDOM();
@@ -1568,25 +1752,18 @@
   }
 
   function triggerOpenCover() {
-    if (typeof openInvitation === 'function') {
-      try { openInvitation(); } catch(e){}
-    }
     const cover = document.getElementById('coverScreen') || document.querySelector('.cover-screen') || document.querySelector('.screen-cover') || document.querySelector('.landing-cover');
     if (cover) {
-      cover.classList.add('opened');
+      cover.classList.add('hidden', 'opened');
       cover.style.transform = 'translateY(-100%)';
       cover.style.transition = 'transform 0.85s cubic-bezier(0.16, 1, 0.3, 1)';
-    }
-    const coverBtn = document.querySelector('.btn-open-invitation') || document.querySelector('.btn-open') || document.querySelector('#btnOpen') || document.querySelector('.open-btn');
-    if (coverBtn) {
-      try { coverBtn.click(); } catch(e){}
     }
   }
 
   function triggerCloseCover() {
     const cover = document.getElementById('coverScreen') || document.querySelector('.cover-screen') || document.querySelector('.screen-cover') || document.querySelector('.landing-cover');
     if (cover) {
-      cover.classList.remove('opened');
+      cover.classList.remove('opened', 'hidden');
       cover.style.transform = 'translateY(0%)';
       cover.style.transition = 'transform 0.65s ease-in-out';
     }

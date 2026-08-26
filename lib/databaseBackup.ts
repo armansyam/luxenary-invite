@@ -11,16 +11,20 @@ export interface SnapshotItem {
 }
 
 // Dapatkan direktori backup yang valid terisolasi di dalam folder data/backups
-export function getBackupDirectory(configuredPath?: string): string {
+export async function getBackupDirectory(configuredPath?: string): Promise<string> {
   const localDir = path.join(process.cwd(), "data", "backups");
-  if (!fs.existsSync(localDir)) {
-    fs.mkdirSync(localDir, { recursive: true });
+  try {
+    await fs.promises.access(localDir);
+  } catch {
+    await fs.promises.mkdir(localDir, { recursive: true });
   }
 
   if (configuredPath && path.isAbsolute(configuredPath) && !configuredPath.includes("..")) {
     try {
-      if (!fs.existsSync(configuredPath)) {
-        fs.mkdirSync(configuredPath, { recursive: true });
+      try {
+        await fs.promises.access(configuredPath);
+      } catch {
+        await fs.promises.mkdir(configuredPath, { recursive: true });
       }
       return configuredPath;
     } catch {
@@ -41,11 +45,19 @@ export function formatBytes(bytes: number): string {
 }
 
 // Dapatkan path database aktif saat ini
-export function getActiveDbPath(): string {
+export async function getActiveDbPath(): Promise<string> {
   const rootDb = path.join(process.cwd(), "dev.db");
-  if (fs.existsSync(rootDb)) return rootDb;
+  try {
+    await fs.promises.access(rootDb);
+    return rootDb;
+  } catch {}
+  
   const prismaDb = path.join(process.cwd(), "prisma", "dev.db");
-  if (fs.existsSync(prismaDb)) return prismaDb;
+  try {
+    await fs.promises.access(prismaDb);
+    return prismaDb;
+  } catch {}
+  
   return rootDb;
 }
 
@@ -57,10 +69,12 @@ export async function createDatabaseSnapshot(customLabel?: string): Promise<{ fi
     if (s?.value) backupPathSetting = s.value;
   } catch {}
 
-  const backupDir = getBackupDirectory(backupPathSetting);
-  const activeDbPath = getActiveDbPath();
+  const backupDir = await getBackupDirectory(backupPathSetting);
+  const activeDbPath = await getActiveDbPath();
 
-  if (!fs.existsSync(activeDbPath)) {
+  try {
+    await fs.promises.access(activeDbPath);
+  } catch {
     throw new Error(`File database aktif tidak ditemukan di path: ${activeDbPath}`);
   }
 
@@ -72,10 +86,10 @@ export async function createDatabaseSnapshot(customLabel?: string): Promise<{ fi
   const filename = `snapshot_${timestamp}${labelSuffix}.db`;
   const targetPath = path.join(backupDir, filename);
 
-  // Salin file database secara atomik
-  fs.copyFileSync(activeDbPath, targetPath);
+  // Salin file database secara asinkron
+  await fs.promises.copyFile(activeDbPath, targetPath);
 
-  const stat = fs.statSync(targetPath);
+  const stat = await fs.promises.stat(targetPath);
 
   // Jalankan retensi otomatis (hapus snapshot lama jika melebihi batas)
   try {
@@ -102,10 +116,14 @@ export async function listDatabaseSnapshots(): Promise<SnapshotItem[]> {
     if (s?.value) backupPathSetting = s.value;
   } catch {}
 
-  const backupDir = getBackupDirectory(backupPathSetting);
-  if (!fs.existsSync(backupDir)) return [];
+  const backupDir = await getBackupDirectory(backupPathSetting);
+  try {
+    await fs.promises.access(backupDir);
+  } catch {
+    return [];
+  }
 
-  const files = fs.readdirSync(backupDir);
+  const files = await fs.promises.readdir(backupDir);
 
   const snapshots: SnapshotItem[] = [];
 
@@ -113,7 +131,7 @@ export async function listDatabaseSnapshots(): Promise<SnapshotItem[]> {
     if (!f.endsWith(".db") && !f.endsWith(".sqlite")) continue;
     const fullPath = path.join(backupDir, f);
     try {
-      const stat = fs.statSync(fullPath);
+      const stat = await fs.promises.stat(fullPath);
       snapshots.push({
         filename: f,
         sizeBytes: stat.size,
@@ -139,10 +157,12 @@ export async function restoreDatabaseSnapshot(filename: string): Promise<{ succe
     if (s?.value) backupPathSetting = s.value;
   } catch {}
 
-  const backupDir = getBackupDirectory(backupPathSetting);
+  const backupDir = await getBackupDirectory(backupPathSetting);
   const snapshotPath = path.join(backupDir, safeName);
 
-  if (!fs.existsSync(snapshotPath)) {
+  try {
+    await fs.promises.access(snapshotPath);
+  } catch {
     throw new Error(`File snapshot "${safeName}" tidak ditemukan di direktori backup.`);
   }
 
@@ -150,14 +170,15 @@ export async function restoreDatabaseSnapshot(filename: string): Promise<{ succe
   const safety = await createDatabaseSnapshot("pre_restore");
 
   // 2. Timpa database aktif dengan file snapshot
-  const activeDbPath = getActiveDbPath();
-  fs.copyFileSync(snapshotPath, activeDbPath);
+  const activeDbPath = await getActiveDbPath();
+  await fs.promises.copyFile(snapshotPath, activeDbPath);
 
   // Jika prisma/dev.db juga ada, sinkronkan
   const secondaryDbPath = path.join(process.cwd(), "prisma", "dev.db");
-  if (fs.existsSync(secondaryDbPath)) {
-    fs.copyFileSync(snapshotPath, secondaryDbPath);
-  }
+  try {
+    await fs.promises.access(secondaryDbPath);
+    await fs.promises.copyFile(snapshotPath, secondaryDbPath);
+  } catch {}
 
   return {
     success: true,
@@ -176,27 +197,33 @@ export async function deleteDatabaseSnapshot(filename: string): Promise<{ succes
     if (s?.value) backupPathSetting = s.value;
   } catch {}
 
-  const backupDir = getBackupDirectory(backupPathSetting);
+  const backupDir = await getBackupDirectory(backupPathSetting);
   const targetPath = path.join(backupDir, safeName);
 
-  if (fs.existsSync(targetPath)) {
-    fs.unlinkSync(targetPath);
-  }
+  try {
+    await fs.promises.access(targetPath);
+    await fs.promises.unlink(targetPath);
+  } catch {}
 
   return { success: true };
 }
 
 // Rotasi snapshot lama
 export async function pruneOldSnapshots(keepCount: number, backupDir: string) {
-  if (!fs.existsSync(backupDir)) return;
-  const files = fs.readdirSync(backupDir);
+  try {
+    await fs.promises.access(backupDir);
+  } catch {
+    return;
+  }
+  
+  const files = await fs.promises.readdir(backupDir);
   const snapshots: Array<{ name: string; time: number; path: string }> = [];
 
   for (const f of files) {
     if (!f.endsWith(".db") && !f.endsWith(".sqlite")) continue;
     const p = path.join(backupDir, f);
     try {
-      const stat = fs.statSync(p);
+      const stat = await fs.promises.stat(p);
       snapshots.push({ name: f, time: stat.mtime.getTime(), path: p });
     } catch {}
   }
@@ -207,7 +234,7 @@ export async function pruneOldSnapshots(keepCount: number, backupDir: string) {
     const toDelete = snapshots.slice(keepCount);
     for (const item of toDelete) {
       try {
-        fs.unlinkSync(item.path);
+        await fs.promises.unlink(item.path);
       } catch {}
     }
   }

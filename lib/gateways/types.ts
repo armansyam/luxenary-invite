@@ -4,8 +4,8 @@
  */
 
 export interface PaymentGateway {
-  /** Inisialisasi transaksi, kembalikan URL redirect pembayaran */
-  init(orderId: string, amount: number, appUrl?: string): Promise<{ checkoutUrl: string }>;
+  /** Inisialisasi transaksi, kembalikan URL redirect pembayaran atau string QRIS */
+  init(orderId: string, amount: number, appUrl?: string): Promise<{ checkoutUrl?: string; qrString?: string; sessionId?: string; expiryTimestamp?: number }>;
 
   /** Verifikasi status pembayaran berdasarkan referenceId/orderId */
   verify(reference: string): Promise<{ status: "PAID" | "FAILED" | "PENDING" }>;

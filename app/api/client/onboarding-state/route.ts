@@ -16,12 +16,7 @@ export async function GET() {
 
     // 1. Cek apakah user sudah memiliki undangan
     const existingInvitation = await prisma.invitation.findFirst({
-      where: {
-        OR: [
-          { userId },
-          userEmail ? { user: { email: userEmail } } : { userId },
-        ],
-      },
+      where: { userId },
       orderBy: { createdAt: "desc" },
       select: {
         id: true,
@@ -43,12 +38,7 @@ export async function GET() {
 
     // 2. Cek transaksi order terakhir user
     const latestOrder = await prisma.order.findFirst({
-      where: {
-        OR: [
-          { userId },
-          userEmail ? { user: { email: userEmail } } : { userId },
-        ],
-      },
+      where: { userId },
       orderBy: { createdAt: "desc" },
     });
 
