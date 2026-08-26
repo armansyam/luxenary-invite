@@ -45,7 +45,7 @@ export async function GET() {
     if (!latestOrder) {
       return NextResponse.json({
         step: "NO_ORDER",
-        redirectUrl: "/dashboard/packages",
+        redirectUrl: "/packages",
       });
     }
 

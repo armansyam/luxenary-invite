@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { signOut } from "next-auth/react";
 import { BrandLogo } from "@/components/BrandLogo";
 
 export default function PackageSelectionPage() {
@@ -36,7 +37,15 @@ export default function PackageSelectionPage() {
       <header className="border-b border-[#eadecf]/70 bg-white sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <BrandLogo size="sm" showName />
-          <div className="text-xs font-semibold text-stone-500">Pilih Paket</div>
+          <div className="flex items-center gap-4">
+            <div className="text-xs font-semibold text-stone-500 hidden sm:block">Pilih Paket</div>
+            <button
+              onClick={() => signOut({ callbackUrl: "/" })}
+              className="px-3 py-1.5 text-[10px] font-semibold text-rose-300 bg-rose-950/30 border border-rose-900/50 rounded-lg hover:bg-rose-900/50 hover:text-rose-200 transition whitespace-nowrap cursor-pointer"
+            >
+              Ganti Akun
+            </button>
+          </div>
         </div>
       </header>
 

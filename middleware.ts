@@ -33,8 +33,8 @@ export default auth((req) => {
     return NextResponse.next();
   }
 
-  // 4. Client dashboard routes protection -> HANYA Client murni yang diizinkan (Admin diblokir)
-  if (pathname.startsWith("/dashboard")) {
+  // 4. Client dashboard, packages, and checkout routes protection -> HANYA Client murni yang diizinkan (Admin diblokir)
+  if (pathname.startsWith("/dashboard") || pathname.startsWith("/packages") || pathname.startsWith("/checkout")) {
     if (!isLoggedIn || isAdmin) {
       return NextResponse.redirect(new URL("/login", req.url));
     }

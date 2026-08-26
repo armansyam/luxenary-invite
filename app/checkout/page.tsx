@@ -388,7 +388,7 @@ function CheckoutContent() {
         <a href="/" className="flex items-center gap-2.5">
           <BrandLogo size="sm" showName />
         </a>
-        <a href="/dashboard/packages" className="text-stone-400 text-xs hover:text-white transition flex items-center gap-1">
+        <a href="/packages" className="text-stone-400 text-xs hover:text-white transition flex items-center gap-1">
           <span>&larr;</span>
           <span>Ubah Paket</span>
         </a>
