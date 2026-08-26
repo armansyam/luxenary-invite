@@ -198,10 +198,10 @@ function CheckoutContent() {
       
       // Grace period 2 menit (120000 ms) setelah expired
       if (diff <= -120000) {
-        setCountdownStr("Kedaluwarsa");
-        setIsGatewayExpired(true);
-        setQrData(null);
+        setCountdownStr("Menunggu Konfirmasi Server...");
         clearInterval(timerInterval);
+        // Kita JANGAN set isGatewayExpired(true) di sini secara sepihak!
+        // Biarkan pollInterval yang mengecek status EXPIRED dari server agar sinkron dengan iPaymu.
       } else if (diff <= 0) {
         setCountdownStr("00:00 (Verifikasi Akhir...)");
       } else {

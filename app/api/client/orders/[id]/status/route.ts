@@ -54,13 +54,37 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden: Anda tidak memiliki akses ke pesanan ini" }, { status: 403 });
     }
 
+    // --- AUTO EXPIRE LOGIC FOR QRIS ---
+    // Jika order masih PENDING, metode GATEWAY, dan ada snapToken (berisi batas waktu expiry)
+    let finalStatus = order.status;
+    
+    if (order.status === "PENDING" && order.paymentMethod === "GATEWAY" && order.snapToken) {
+      try {
+        const tokenData = JSON.parse(order.snapToken);
+        if (tokenData && tokenData.expiry) {
+          const now = Date.now();
+          // Tambahkan grace period 2 menit (120000ms) untuk sinkronisasi webhook iPaymu
+          if (now > tokenData.expiry + 120000) {
+            // Otomatis kedaluwarsakan pesanan ini karena iPaymu tidak kunjung mengirim status sukses/gagal
+            const updatedOrder = await prisma.order.update({
+              where: { id: order.id },
+              data: { status: "EXPIRED" }
+            });
+            finalStatus = "EXPIRED";
+          }
+        }
+      } catch (e) {
+        // Abaikan jika snapToken bukan JSON valid
+      }
+    }
+
     const isAuthorizedOwner = true;
 
     return NextResponse.json({
       id: order.id,
       invoiceNumber: order.invoiceNumber,
-      status: order.status,
-      isExpired: order.status === "EXPIRED",
+      status: finalStatus,
+      isExpired: finalStatus === "EXPIRED",
       amount: Number(order.amount),
       planType: order.planType,
       paymentMethod: order.paymentMethod,
