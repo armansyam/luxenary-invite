@@ -1,0 +1,258 @@
+Created At: 2026-08-27T01:32:11+08:00
+Completed At: 2026-08-27T01:32:11+08:00
+File Path: `file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/%28client%29/dashboard/page.tsx`
+Total Lines: 486
+Total Bytes: 27495
+Showing lines 150 to 250
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+150:                     ? "border-amber-400 shadow-2xl shadow-amber-900/40 scale-[1.02]"
+151:                     : "border-white/10 hover:border-white/20 hover:scale-[1.01]"
+152:                 } ${
+153:                   plan.id === "PREMIUM"
+154:                     ? "bg-gradient-to-br from-purple-950/40 via-stone-900 to-stone-950 border-purple-500/30"
+155:                     : plan.id === "MODERN"
+156:                     ? "bg-gradient-to-br from-slate-900 via-stone-900 to-stone-950"
+157:                     : "bg-gradient-to-br from-amber-950/30 via-stone-900 to-stone-950"
+158:                 }`}
+159:               >
+160:                 {plan.badge && (
+161:                   <div className="absolute top-4 right-4 px-3 py-1 bg-gradient-to-r from-purple-500 to-amber-500 text-white text-xs font-bold rounded-full shadow">
+162:                     {plan.badge}
+163:                   </div>
+164:                 )}
+165: 
+166:                 <div className="p-7 flex-1 flex flex-col justify-between">
+167:                   <div>
+168:                     <div className="mb-5">
+169:                       <h2 className="text-2xl font-bold text-white mb-1">{plan.name}</h2>
+170:                       <p className="text-stone-400 text-xs leading-relaxed">{plan.desc}</p>
+171:                     </div>
+172: 
+173:                     <div className="mb-6">
+174:                       <span className="text-3xl lg:text-4xl font-bold text-white">
+175:                         Rp {plan.price.toLocaleString("id-ID")}
+176:                       </span>
+177:                       <span className="text-stone-400 text-xs ml-1">/ sekali bayar</span>
+178:                     </div>
+179: 
+180:                     <div className="mb-5">
+181:                       <p className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-2">Tema Tersedia:</p>
+182:                       <div className="flex flex-wrap gap-1.5">
+183:                         {plan.themes.map((t: string) => (
+184:                           <span key={t} className="px-2.5 py-1 bg-white/10 text-white text-xs rounded-full font-medium">
+185:                             {t}
+186:                           </span>
+187:                         ))}
+188:                       </div>
+189:                     </div>
+190: 
+191:                     <ul className="space-y-3 mb-7">
+192:                       {plan.features.map((f: string, idx: number) => (
+193:                         <li key={idx} className="flex items-start gap-2.5 text-xs text-stone-300">
+194:                           <svg className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+195:                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+196:                           </svg>
+197:                           <div className="flex-1">
+198:                             <span className="leading-snug">{f}</span>
+199:                             {f.includes("Tautan link personal") && (
+200:                               <div className="mt-1.5 font-mono text-[11px] text-amber-300/95 bg-white/5 border border-white/10 px-2 py-0.5 rounded-md inline-flex items-center">
+201:                                 contoh: adit-dina.{rootDomain}/budi
+202:                               </div>
+203:                             )}
+204:                           </div>
+205:                         </li>
+206:                       ))}
+207:                     </ul>
+208:                   </div>
+209: 
+210:                   <button
+211:                     type="button"
+212:                     onClick={() => handleChoosePlan(plan.id)}
+213:                     disabled={processingPlan && selectedPlan === plan.id}
+214:                     className={`w-full py-3.5 rounded-2xl font-bold text-sm transition cursor-pointer disabled:opacity-60 mt-4 ${
+215:                       plan.id === "PREMIUM"
+216:                         ? "bg-gradient-to-r from-amber-500 via-amber-600 to-purple-600 text-white hover:opacity-95 shadow-lg shadow-amber-900/40"
+217:                         : plan.id === "MODERN"
+218:                         ? "bg-white text-stone-900 hover:bg-stone-100 shadow-md"
+219:                         : "bg-white/10 text-white border border-white/20 hover:bg-white/20"
+220:                     }`}
+221:                   >
+222:                     {processingPlan && selectedPlan === plan.id ? (
+223:                       <span className="flex items-center justify-center gap-2">
+224:                         <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+225:                         Memproses...
+226:                       </span>
+227:                     ) : (
+228:                       `Pilih Paket ${plan.name} →`
+229:                     )}
+230:                   </button>
+231:                 </div>
+232:               </div>
+233:             ))}
+234:           </div>
+235:         </div>
+236:       </div>
+237:     );
+238:   }
+239: 
+240:     const editorUrl = invitation ? `/dashboard/invitation/${invitation.id}` : "/dashboard/invitation";
+241: 
+242:   return (
+243:     <div className="space-y-6 sm:space-y-8 font-sans">
+244:       
+245:       {/* 1. Hero Card (Mobile-First, Elegant Luxury) */}
+246:       <div className="bg-stone-900 text-white rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-xl border border-stone-800 relative overflow-hidden">
+247:         <div className="absolute top-0 right-0 w-72 h-72 bg-amber-600/10 rounded-full blur-3xl pointer-events-none" />
+248:         
+249:         <div className="relative z-10 space-y-5">
+250:           <div className="flex flex-wrap items-center justify-between gap-3">
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+
+
+=========================
+
+Created At: 2026-08-27T01:32:20+08:00
+Completed At: 2026-08-27T01:32:20+08:00
+File Path: `file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/%28client%29/dashboard/page.tsx`
+Total Lines: 486
+Total Bytes: 27495
+Showing lines 350 to 486
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+350:             </svg>
+351:           </div>
+352:           <p className="text-xl sm:text-2xl font-bold text-stone-900">{stats.guestCount}</p>
+353:           <span className="text-[10px] text-stone-400 block">Tamu terdaftar</span>
+354:         </div>
+355: 
+356:         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-stone-200/80 shadow-xs space-y-1">
+357:           <div className="flex items-center justify-between text-stone-500">
+358:             <span className="text-[11px] font-bold uppercase tracking-wider">WA Terkirim</span>
+359:             <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+360:               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+361:             </svg>
+362:           </div>
+363:           <p className="text-xl sm:text-2xl font-bold text-emerald-700">{stats.waSentCount}</p>
+364:           <span className="text-[10px] text-stone-400 block">Pesan terkirim</span>
+365:         </div>
+366: 
+367:         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-stone-200/80 shadow-xs space-y-1">
+368:           <div className="flex items-center justify-between text-stone-500">
+369:             <span className="text-[11px] font-bold uppercase tracking-wider">Konfirmasi Hadir</span>
+370:             <svg className="w-4 h-4 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+371:               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+372:             </svg>
+373:           </div>
+374:           <p className="text-xl sm:text-2xl font-bold text-amber-800">{stats.attendingCount}</p>
+375:           <span className="text-[10px] text-stone-400 block">Pax terkonfirmasi</span>
+376:         </div>
+377: 
+378:         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-stone-200/80 shadow-xs space-y-1">
+379:           <div className="flex items-center justify-between text-stone-500">
+380:             <span className="text-[11px] font-bold uppercase tracking-wider">Status Lisensi</span>
+381:             <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+382:               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+383:             </svg>
+384:           </div>
+385:           <p className="text-sm font-bold text-stone-900">
+386:             {packages.find(p => p.id === activePlan)?.name || activePlan || "Tidak Diketahui"}
+387:           </p>
+388:           <span className="text-[10px] text-stone-400 block line-clamp-1" title={packages.find(p => p.id === activePlan)?.desc}>
+389:             {packages.find(p => p.id === activePlan)?.desc || "Lisensi aktif"}
+390:           </span>
+391:         </div>
+392:       </div>
+393: 
+394:       {/* 3. Core Quick Action Cards */}
+395:       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+396:         
+397:         {/* Card 1: Studio Editor */}
+398:         <div className="bg-white p-5 rounded-2xl border border-stone-200/80 shadow-xs flex flex-col justify-between space-y-4 hover:border-amber-700/40 transition">
+399:           <div className="space-y-2">
+400:             <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200/80 flex items-center justify-center text-amber-800">
+401:               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+402:                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+403:               </svg>
+404:             </div>
+405:             <h3 className="text-sm font-bold text-stone-900">Studio Editor Undangan</h3>
+406:             <p className="text-xs text-stone-500 leading-relaxed">
+407:               Atur susunan multi-acara, foto prewedding, video YouTube, dan rekening bank.
+408:             </p>
+409:           </div>
+410:           <Link
+411:             href={editorUrl}
+412:             className="w-full py-2.5 bg-amber-800 hover:bg-amber-900 text-white font-bold rounded-xl text-xs transition text-center block shadow-xs"
+413:           >
+414:             Buka Studio Editor
+415:           </Link>
+416:         </div>
+417: 
+418:         {/* Card 2: Guest Management */}
+419:         <div className="bg-white p-5 rounded-2xl border border-stone-200/80 shadow-xs flex flex-col justify-between space-y-4 hover:border-emerald-600/40 transition">
+420:           <div className="space-y-2">
+421:             <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200/80 flex items-center justify-center text-emerald-800">
+422:               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+423:                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+424:               </svg>
+425:             </div>
+426:             <h3 className="text-sm font-bold text-stone-900">Buku Tamu &amp; WhatsApp</h3>
+427:             <p className="text-xs text-stone-500 leading-relaxed">
+428:               Daftar nama tamu, atur kuota Pax, dan buat link personal WhatsApp 1-klik.
+429:             </p>
+430:           </div>
+431:           <Link
+432:             href="/dashboard/guests"
+433:             className="w-full py-2.5 bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-xl text-xs transition text-center block shadow-xs"
+434:           >
+435:             Kelola Buku Tamu
+436:           </Link>
+437:         </div>
+438: 
+439:         {/* Card 3: RSVP & Wishes */}
+440:         <div className="bg-white p-5 rounded-2xl border border-stone-200/80 shadow-xs flex flex-col justify-between space-y-4 hover:border-blue-600/40 transition">
+441:           <div className="space-y-2">
+442:             <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200/80 flex items-center justify-center text-blue-800">
+443:               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+444:                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+445:               </svg>
+446:             </div>
+447:             <h3 className="text-sm font-bold text-stone-900">RSVP &amp; Doa Restu</h3>
+448:             <p className="text-xs text-stone-500 leading-relaxed">
+449:               Pantau konfirmasi kehadiran dari para tamu, baca doa, dan ekspor spreadsheet.
+450:             </p>
+451:           </div>
+452:           <Link
+453:             href="/dashboard/rsvp"
+454:             className="w-full py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-800 font-bold rounded-xl text-xs transition text-center block border border-stone-300"
+455:           >
+456:             Lihat Rekap RSVP
+457:           </Link>
+458:         </div>
+459: 
+460:         {/* Card 4: Galeri Kenangan Tamu (Memory Vault) */}
+461:         <div className="bg-white p-5 rounded-2xl border border-amber-200 shadow-xs flex flex-col justify-between space-y-4 hover:border-amber-500 transition bg-gradient-to-b from-amber-50/30 to-white">
+462:           <div className="space-y-2">
+463:             <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-900 font-bold text-sm">
+464:               <svg className="w-5 h-5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+465:                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+466:                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+467:               </svg>
+468:             </div>
+469:             <h3 className="text-sm font-bold text-stone-900">Galeri Kenangan Tamu</h3>
+470:             <p className="text-xs text-stone-500 leading-relaxed">
+471:               Album foto candid &amp; video ucapan dari sahabat yang dibagikan pasca acara.
+472:             </p>
+473:           </div>
+474:           <a
+475:             href={`/${invitation?.groomSlug || "didan"}-${invitation?.brideSlug || "nasha"}/${invitation?.invitationSlug || "okt-2026"}/memories`}
+476:             target="_blank"
+477:             rel="noreferrer"
+478:             className="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs transition text-center inline-flex items-center justify-center gap-1 shadow-xs"
+479:           >
+480:             <span>Buka Galeri Momen</span>
+481:           </a>
+482:         </div>
+483:       </div>
+484:     </div>
+485:   );
+486: }
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

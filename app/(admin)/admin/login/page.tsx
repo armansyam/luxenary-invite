@@ -57,7 +57,7 @@ export default function AdminLoginPage() {
           <span className="inline-block px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] font-mono font-bold uppercase tracking-wider">
             RESTRICTED ENTERPRISE ACCESS
           </span>
-          <h1 className="text-2xl font-bold text-stone-100 tracking-tight">Luxenary Admin Console</h1>
+          <h1 className="text-2xl font-bold text-stone-100 tracking-tight">Admin Console</h1>
           <p className="text-xs text-stone-400">Pusat kendali transaksi, manajemen paket &amp; pengaturan sistem</p>
         </div>
 
@@ -81,7 +81,7 @@ export default function AdminLoginPage() {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="admin@luxenary.id"
+              placeholder="admin@platformanda.com"
               autoComplete="username"
               className="w-full px-4 py-3 bg-stone-950 border border-stone-700 rounded-xl text-xs text-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500/50 font-mono placeholder:text-stone-600"
             />

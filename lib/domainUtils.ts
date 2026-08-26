@@ -30,7 +30,7 @@ export function getApexRootDomain(): string {
   }
 
   // Server-side fallback from environment or default
-  const root = process.env.NEXT_PUBLIC_ROOT_DOMAIN || process.env.NEXT_PUBLIC_APP_URL || "luxenary.id";
+  const root = process.env.NEXT_PUBLIC_ROOT_DOMAIN || process.env.NEXT_PUBLIC_APP_URL || (process.env.NODE_ENV === "production" ? "luxenary.id" : "localhost:3000");
   return root.replace(/^https?:\/\//, "").replace(/\/$/, "");
 }
 
@@ -39,9 +39,14 @@ export function getApexRootDomain(): string {
  * - Localhost:  http://[subdomain].localhost:3000(?to=...)
  * - Production: https://[subdomain].[apexDomain](?to=...)
  */
-export function getInvitationPublicUrl(subdomain: string, guestSlug?: string): string {
+export function getInvitationPublicUrl(subdomain: string, guestSlug?: string, isVip: boolean = true): string {
   const cleanSub = (subdomain || "wedding").toLowerCase().trim();
-  const query = guestSlug ? `?to=${encodeURIComponent(guestSlug)}` : "";
+  
+  let path = "";
+  if (guestSlug) {
+    const encoded = encodeURIComponent(guestSlug);
+    path = isVip ? `/v=${encoded}` : `/${encoded}`;
+  }
 
   if (typeof window !== "undefined") {
     const { protocol, hostname, port } = window.location;
@@ -49,12 +54,12 @@ export function getInvitationPublicUrl(subdomain: string, guestSlug?: string): s
 
     // Localhost Subdomain support (supported natively in modern browsers)
     if (hostname === "localhost" || hostname.endsWith(".localhost")) {
-      return `${protocol}//${cleanSub}.localhost${portSuffix}${query}`;
+      return `${protocol}//${cleanSub}.localhost${portSuffix}${path}`;
     }
 
     // Raw IP fallback
     if (hostname === "127.0.0.1" || hostname.startsWith("192.168.") || hostname.startsWith("10.")) {
-      return `${protocol}//${hostname}${portSuffix}/s/${cleanSub}${query}`;
+      return `${protocol}//${hostname}${portSuffix}/s/${cleanSub}${path}`;
     }
 
     // Live Domain Subdomain
@@ -64,13 +69,13 @@ export function getInvitationPublicUrl(subdomain: string, guestSlug?: string): s
       apex = parts.slice(1).join(".");
     }
 
-    return `${protocol}//${cleanSub}.${apex}${portSuffix}${query}`;
+    return `${protocol}//${cleanSub}.${apex}${portSuffix}${path}`;
   }
 
   // Server-side default
-  const root = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "luxenary.id";
+  const root = process.env.NEXT_PUBLIC_ROOT_DOMAIN || (process.env.NODE_ENV === "production" ? "luxenary.id" : "localhost:3000");
   const cleanRoot = root.replace(/^https?:\/\//, "").replace(/\/$/, "");
-  return `https://${cleanSub}.${cleanRoot}${query}`;
+  return `http${process.env.NODE_ENV === "production" ? "s" : ""}://${cleanSub}.${cleanRoot}${path}`;
 }
 
 /**
@@ -116,7 +121,7 @@ export function getPermanentPathUrl(
     return `${protocol}//${hostname}${portSuffix}/${g}-${b}/${s}${query}`;
   }
 
-  const root = process.env.NEXT_PUBLIC_ROOT_DOMAIN || process.env.NEXT_PUBLIC_APP_URL || "luxenary.id";
+  const root = process.env.NEXT_PUBLIC_ROOT_DOMAIN || process.env.NEXT_PUBLIC_APP_URL || (process.env.NODE_ENV === "production" ? "luxenary.id" : "localhost:3000");
   const cleanRoot = root.replace(/^https?:\/\//, "").replace(/\/$/, "");
   return `https://${cleanRoot}/${g}-${b}/${s}${query}`;
 }

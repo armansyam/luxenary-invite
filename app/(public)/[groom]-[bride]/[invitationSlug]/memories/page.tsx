@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
+import { getGoogleDriveFolderPhotos } from "@/lib/driveHelper";
+
 export const dynamic = "force-dynamic";
 
 interface PageProps {
@@ -52,7 +54,8 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
     notFound();
   }
 
-  const memories = invitation.guestMemories;
+  let memories: any[] = invitation.guestMemories || [];
+
   const coupleName = `${invitation.groomNickname || "Didan"} & ${invitation.brideNickname || "Nasha"}`;
   const invitationUrl = `/${invitation.groomSlug}-${invitation.brideSlug}/${invitation.invitationSlug}`;
 
@@ -384,34 +387,126 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
             });
           }
 
-          // Lightbox click handler
-          document.querySelectorAll('[data-media-url]').forEach(el => {
-            el.addEventListener('click', () => {
-              const url = el.getAttribute('data-media-url');
-              const name = el.getAttribute('data-sender-name');
-              const msg = el.getAttribute('data-message');
-              const type = el.getAttribute('data-type');
-              if (!url) return;
+          // ── SSE Real-Time Updates & Toast Logic ──
+          const invitationId = "${invitation.id}";
+          const sseEventSource = new EventSource('/api/sse/memories?invitationId=' + invitationId);
+          let newMemoriesQueue = [];
+          const toast = document.getElementById('liveToastIndicator');
+          const toastCount = document.getElementById('liveToastCount');
+          const masonryContainer = document.getElementById('memoriesMasonry');
 
-              const modal = document.getElementById('galleryPreviewModal');
-              const content = document.getElementById('previewModalContent');
-              const caption = document.getElementById('previewModalCaption');
-
-              if (type === 'VIDEO') {
-                content.innerHTML = '<video src="' + url + '" controls autoplay playsinline class="max-h-[75vh] max-w-full rounded-2xl shadow-2xl bg-black"></video>';
-              } else {
-                content.innerHTML = '<img src="' + url + '" class="max-h-[75vh] max-w-full rounded-2xl object-contain shadow-2xl" />';
+          sseEventSource.onmessage = function(event) {
+            try {
+              const data = JSON.parse(event.data);
+              // Only add if we don't already have it in DOM to prevent duplicates
+              if (!document.querySelector(\`[data-memory-id="\${data.id}"]\`)) {
+                newMemoriesQueue.push(data);
+                if (toast && toastCount) {
+                  toastCount.textContent = newMemoriesQueue.length;
+                  toast.style.transform = 'translateY(0)';
+                  toast.style.opacity = '1';
+                }
               }
+            } catch (e) {}
+          };
 
-              caption.innerHTML = '<div class="font-bold text-sm text-white">' + (name || '') + '</div>' + (msg ? '<div class="text-xs text-stone-300 mt-1 italic font-serif">“' + msg + '”</div>' : '');
+          if (toast) {
+            toast.addEventListener('click', function() {
+              if (!masonryContainer) return;
+              
+              let newHtml = '';
+              newMemoriesQueue.reverse().forEach(m => {
+                const dateStr = new Date(m.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "short" });
+                const mediaHtml = m.mediaType === 'VIDEO' 
+                  ? \`<div class="relative aspect-video bg-black flex items-center justify-center">
+                      <video src="\${m.mediaUrl}" playsInline preload="metadata" class="w-full h-full object-cover"></video>
+                      <div class="absolute inset-0 bg-black/40 flex items-center justify-center group-hover:bg-black/20 transition">
+                        <div class="w-10 h-10 rounded-full bg-amber-500/90 text-stone-950 flex items-center justify-center font-bold pl-0.5 shadow-lg">▶</div>
+                      </div>
+                    </div>\`
+                  : \`<img src="\${m.mediaUrl}" alt="\${m.senderName}" loading="lazy" class="w-full object-cover group-hover:scale-105 transition-transform duration-300" />\`;
+                  
+                const msgHtml = m.message 
+                  ? \`<p class="text-[11px] text-stone-400 mt-1 line-clamp-2 italic font-serif leading-relaxed">“\${m.message}”</p>\` 
+                  : '';
 
-              modal.style.display = 'flex';
+                newHtml += \`
+                  <div 
+                    data-memory-id="\${m.id}"
+                    data-type="\${m.mediaType}"
+                    class="memory-grid-card break-inside-avoid rounded-2xl overflow-hidden bg-stone-900/80 border border-white/10 hover:border-amber-400/50 transition duration-200 shadow-md group cursor-pointer"
+                    data-media-url="\${m.mediaUrl}"
+                    data-sender-name="\${m.senderName}"
+                    data-message="\${m.message || ''}"
+                  >
+                    <div class="relative overflow-hidden bg-stone-900">\${mediaHtml}</div>
+                    <div class="p-3 bg-stone-900/90">
+                      <div class="flex items-center justify-between gap-2">
+                        <span class="text-xs font-bold text-stone-100 truncate">\${m.senderName}</span>
+                        <span class="text-[10px] text-stone-500 shrink-0 font-mono">\${dateStr}</span>
+                      </div>
+                      \${msgHtml}
+                    </div>
+                  </div>
+                \`;
+              });
+
+              masonryContainer.insertAdjacentHTML('afterbegin', newHtml);
+              newMemoriesQueue = [];
+              toast.style.transform = 'translateY(150%)';
+              toast.style.opacity = '0';
+              
+              // Re-bind lightbox clicks for new items
+              bindLightbox();
             });
-          });
+          }
+
+          function bindLightbox() {
+            document.querySelectorAll('.memory-grid-card').forEach(el => {
+              if (el.dataset.bound) return; // Prevent double binding
+              el.dataset.bound = "true";
+              el.addEventListener('click', () => {
+                const url = el.getAttribute('data-media-url');
+                const name = el.getAttribute('data-sender-name');
+                const msg = el.getAttribute('data-message');
+                const type = el.getAttribute('data-type');
+                if (!url) return;
+
+                const modal = document.getElementById('galleryPreviewModal');
+                const content = document.getElementById('previewModalContent');
+                const caption = document.getElementById('previewModalCaption');
+
+                if (type === 'VIDEO') {
+                  content.innerHTML = '<video src="' + url + '" controls autoplay playsinline class="max-h-[75vh] max-w-full rounded-2xl shadow-2xl bg-black"></video>';
+                } else {
+                  content.innerHTML = '<img src="' + url + '" class="max-h-[75vh] max-w-full rounded-2xl object-contain shadow-2xl" />';
+                }
+
+                caption.innerHTML = '<div class="font-bold text-sm text-white">' + (name || '') + '</div>' + (msg ? '<div class="text-xs text-stone-300 mt-1 italic font-serif">“' + msg + '”</div>' : '');
+
+                modal.style.display = 'flex';
+              });
+            });
+          }
+          
+          // Initial bind
+          bindLightbox();
         });
       `,
         }}
       />
+
+      {/* ── Live Toast Notification (Hidden by default) ── */}
+      <div 
+        id="liveToastIndicator"
+        className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40 bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold px-5 py-3 rounded-full shadow-[0_10px_40px_rgba(245,158,11,0.4)] flex items-center gap-2 cursor-pointer transition-all duration-500 opacity-0 translate-y-[150%]"
+      >
+        <div className="relative flex h-3 w-3">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-stone-950 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-3 w-3 bg-stone-950"></span>
+        </div>
+        <span className="text-xs tracking-wide">Ada <span id="liveToastCount">0</span> Momen Baru! Klik untuk memuat</span>
+      </div>
 
       {/* ── Guest Upload Modal ── */}
       <div

@@ -44,9 +44,13 @@ export async function POST() {
 
     for (const folder of folders) {
       const targetDir = folder.name ? path.join(themesDir, folder.name) : themesDir;
-      if (!fs.existsSync(targetDir)) continue;
+      try {
+        await fs.promises.access(targetDir);
+      } catch {
+        continue;
+      }
 
-      const files = fs.readdirSync(targetDir);
+      const files = await fs.promises.readdir(targetDir);
       for (const file of files) {
         if (!file.endsWith(".html") || file === "starter-blueprint.html") continue;
 
@@ -55,7 +59,7 @@ export async function POST() {
         if (discovered.some((d) => d.id === id)) continue;
 
         const fullPath = path.join(targetDir, file);
-        const htmlContent = fs.readFileSync(fullPath, "utf-8");
+        const htmlContent = await fs.promises.readFile(fullPath, "utf-8");
 
         // Format name e.g. "dillalucky" -> "Dilla Lucky", "kalandra" -> "Kalandra"
         const formattedName = id

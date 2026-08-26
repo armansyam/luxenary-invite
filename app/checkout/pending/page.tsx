@@ -68,7 +68,7 @@ function PendingContent() {
             Cek Dashboard Nanti
           </a>
           <a
-            href="/register"
+            href="/dashboard"
             className="block text-stone-500 text-xs hover:text-stone-400 transition"
           >
             Kembali ke halaman paket

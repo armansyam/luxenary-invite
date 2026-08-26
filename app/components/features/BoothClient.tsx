@@ -4,9 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 
-export default function VideoWishesBooth() {
-  const params = useParams();
-  const invitationId = params.invitationId as string;
+export default function BoothClient({ invitationId }: { invitationId: string }) {
 
   // Booth States: 'SCAN', 'CONFIRM_GUEST', 'RECORDING', 'PREVIEW', 'SUCCESS'
   const [stage, setStage] = useState<"SCAN" | "CONFIRM_GUEST" | "RECORDING" | "PREVIEW" | "SUCCESS">("SCAN");

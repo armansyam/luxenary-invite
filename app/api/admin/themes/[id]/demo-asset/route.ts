@@ -52,7 +52,7 @@ export async function POST(
         where: { key: `theme_demo_${themeId}` },
       });
       const customData = setting?.value ? JSON.parse(setting.value) : undefined;
-      compileAndSaveStaticDemo(themeId, customData);
+      await compileAndSaveStaticDemo(themeId, customData);
     } catch {}
 
     const publicUrl = `/demo/${themeId}/${fileName}?t=${Date.now()}`;

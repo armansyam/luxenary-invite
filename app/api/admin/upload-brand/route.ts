@@ -9,9 +9,11 @@ export const dynamic = "force-dynamic";
 const BRAND_DIR = path.join(process.cwd(), "public", "assets", "brand");
 
 // Pastikan folder brand selalu ada
-function ensureBrandDir() {
-  if (!fs.existsSync(BRAND_DIR)) {
-    fs.mkdirSync(BRAND_DIR, { recursive: true });
+async function ensureBrandDir() {
+  try {
+    await fs.promises.access(BRAND_DIR);
+  } catch {
+    await fs.promises.mkdir(BRAND_DIR, { recursive: true });
   }
 }
 
@@ -23,7 +25,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
     }
 
-    ensureBrandDir();
+    await ensureBrandDir();
 
     const formData = await req.formData();
     const type = formData.get("type") as string; // "logo" | "favicon"
@@ -65,7 +67,7 @@ export async function POST(req: NextRequest) {
 
       // Juga simpan ke public/favicon.ico (sebagai PNG rename — browser modern support)
       const favIconPath = path.join(process.cwd(), "public", "favicon.ico");
-      fs.copyFileSync(outputPng, favIconPath);
+      await fs.promises.copyFile(outputPng, favIconPath);
 
       return NextResponse.json({
         success: true,

@@ -56,7 +56,7 @@ export function PortfolioGallery({ items }: PortfolioGalleryProps) {
         </p>
         <div className="pt-2">
           <Link
-            href="/register"
+            href="/login"
             className="inline-block px-6 py-2.5 bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold rounded-xl transition shadow-xs"
           >
             Mulai Buat Undangan Sekarang &rarr;

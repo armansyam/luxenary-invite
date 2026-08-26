@@ -77,19 +77,26 @@ export async function POST(req: NextRequest) {
     let thumbnailUrl = "";
     let isCloudUploaded = false;
 
+    let driveFileId = null;
+
     // ── OPSI 1: DIRECT STREAM TO GOOGLE DRIVE (ZERO SERVER DISK) ──
     if (masterWebhookUrl && clientFolderId) {
       console.log(`[Guest Memories] Direct streaming to Google Drive folder: ${clientFolderId}`);
+      
+      const subfolderName = senderEmail === "booth@system" ? "Booth Moment" : "Guest Moment";
+      
       const uploadResult = await uploadToGoogleDriveWebhook(masterWebhookUrl, clientFolderId, {
         fileName,
         mimeType: file.type || (mediaType === "VIDEO" ? "video/mp4" : "image/webp"),
         buffer,
         senderName,
+        subfolderName,
       });
 
       if (uploadResult?.viewUrl) {
         mediaUrl = uploadResult.viewUrl;
         thumbnailUrl = uploadResult.thumbnailUrl || uploadResult.viewUrl;
+        driveFileId = uploadResult.fileId;
         isCloudUploaded = true;
         console.log(`[Guest Memories] Google Drive upload success: ${mediaUrl} (Server Disk Usage: 0 Bytes)`);
       }
@@ -118,7 +125,15 @@ export async function POST(req: NextRequest) {
         mediaType: mediaType === "VIDEO" ? "VIDEO" : "PHOTO",
         mediaUrl,
         thumbnailUrl,
+        driveFileId,
       },
+    });
+
+    // Emit Real-Time SSE
+    const { sseEmitter } = require("@/lib/sseEmitter");
+    sseEmitter.emit("new_memory", {
+      ...memory,
+      source: senderEmail === "booth@system" ? "BOOTH" : "GUEST"
     });
 
     // Auto-rebake standalone HTML if invitation is published

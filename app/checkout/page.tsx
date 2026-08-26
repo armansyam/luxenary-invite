@@ -2,7 +2,7 @@
 
 import { BrandLogo } from "@/components/BrandLogo";
 import { useState, useEffect, Suspense, useCallback } from "react";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 function CheckoutContent() {
@@ -63,7 +63,7 @@ function CheckoutContent() {
     }
 
     if (status === "authenticated" && !isAdmin && !planParam && !orderIdParam) {
-      router.replace("/register");
+      router.replace("/dashboard");
     }
   }, [status, planParam, orderIdParam, isAdmin, router]);
 
@@ -388,7 +388,7 @@ function CheckoutContent() {
         <a href="/" className="flex items-center gap-2.5">
           <BrandLogo size="sm" showName />
         </a>
-        <a href="/register" className="text-stone-400 text-xs hover:text-white transition flex items-center gap-1">
+        <a href="/dashboard" className="text-stone-400 text-xs hover:text-white transition flex items-center gap-1">
           <span>&larr;</span>
           <span>Ubah Paket</span>
         </a>
@@ -438,10 +438,17 @@ function CheckoutContent() {
                     {session?.user?.name ? session.user.name.charAt(0).toUpperCase() : "M"}
                   </div>
                 )}
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className="text-white font-semibold text-sm truncate">{session?.user?.name || "Mempelai"}</p>
                   <p className="text-stone-400 text-xs truncate">{session?.user?.email}</p>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => signOut({ callbackUrl: "/login" })}
+                  className="px-3 py-1.5 text-[10px] font-semibold text-rose-300 bg-rose-950/30 border border-rose-900/50 rounded-lg hover:bg-rose-900/50 hover:text-rose-200 transition whitespace-nowrap cursor-pointer"
+                >
+                  Ganti Akun
+                </button>
               </div>
 
               {/* Plan detail */}

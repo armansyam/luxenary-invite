@@ -6,10 +6,20 @@ import { promisify } from "util";
 
 const execFileAsync = promisify(execFile);
 
+// Helper to check file existence asynchronously
+async function fileExists(filePath: string): Promise<boolean> {
+  try {
+    await fs.promises.access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // Resolve ffmpeg binary path (works on macOS Homebrew & Linux)
-function getFfmpegPath(): string {
-  if (fs.existsSync("/opt/homebrew/bin/ffmpeg")) return "/opt/homebrew/bin/ffmpeg";
-  if (fs.existsSync("/usr/local/bin/ffmpeg")) return "/usr/local/bin/ffmpeg";
+async function getFfmpegPath(): Promise<string> {
+  if (await fileExists("/opt/homebrew/bin/ffmpeg")) return "/opt/homebrew/bin/ffmpeg";
+  if (await fileExists("/usr/local/bin/ffmpeg")) return "/usr/local/bin/ffmpeg";
   return "ffmpeg";
 }
 
@@ -26,9 +36,9 @@ export async function optimizeWebVideo(inputBuffer: Buffer, baseName: string): P
   const outputTempPath = path.join(tempDir, `opt_${Date.now()}_${baseName}.mp4`);
 
   try {
-    fs.writeFileSync(inputTempPath, inputBuffer);
+    await fs.promises.writeFile(inputTempPath, inputBuffer);
 
-    const ffmpegPath = getFfmpegPath();
+    const ffmpegPath = await getFfmpegPath();
 
     const args = [
       "-y",
@@ -47,8 +57,8 @@ export async function optimizeWebVideo(inputBuffer: Buffer, baseName: string): P
 
     await execFileAsync(ffmpegPath, args, { timeout: 45000 });
 
-    if (fs.existsSync(outputTempPath)) {
-      const optimizedBuffer = fs.readFileSync(outputTempPath);
+    if (await fileExists(outputTempPath)) {
+      const optimizedBuffer = await fs.promises.readFile(outputTempPath);
       return optimizedBuffer;
     }
 
@@ -59,8 +69,8 @@ export async function optimizeWebVideo(inputBuffer: Buffer, baseName: string): P
   } finally {
     // Cleanup temporary scratch files
     try {
-      if (fs.existsSync(inputTempPath)) fs.unlinkSync(inputTempPath);
-      if (fs.existsSync(outputTempPath)) fs.unlinkSync(outputTempPath);
+      if (await fileExists(inputTempPath)) await fs.promises.unlink(inputTempPath);
+      if (await fileExists(outputTempPath)) await fs.promises.unlink(outputTempPath);
     } catch {}
   }
 }
@@ -78,9 +88,9 @@ export async function optimizeWebAudio(inputBuffer: Buffer, baseName: string): P
   const outputTempPath = path.join(tempDir, `optaudio_${Date.now()}_${baseName}.mp3`);
 
   try {
-    fs.writeFileSync(inputTempPath, inputBuffer);
+    await fs.promises.writeFile(inputTempPath, inputBuffer);
 
-    const ffmpegPath = getFfmpegPath();
+    const ffmpegPath = await getFfmpegPath();
 
     const args = [
       "-y",
@@ -100,8 +110,8 @@ export async function optimizeWebAudio(inputBuffer: Buffer, baseName: string): P
 
     await execFileAsync(ffmpegPath, args, { timeout: 30000 });
 
-    if (fs.existsSync(outputTempPath)) {
-      const compressedBuffer = fs.readFileSync(outputTempPath);
+    if (await fileExists(outputTempPath)) {
+      const compressedBuffer = await fs.promises.readFile(outputTempPath);
       const originalMB = (inputBuffer.length / 1024 / 1024).toFixed(1);
       const compressedMB = (compressedBuffer.length / 1024 / 1024).toFixed(1);
       console.log(`[AudioOptimizer] ${baseName}: ${originalMB}MB → ${compressedMB}MB (MP3 128kbps)`);
@@ -115,8 +125,8 @@ export async function optimizeWebAudio(inputBuffer: Buffer, baseName: string): P
     return inputBuffer;
   } finally {
     try {
-      if (fs.existsSync(inputTempPath)) fs.unlinkSync(inputTempPath);
-      if (fs.existsSync(outputTempPath)) fs.unlinkSync(outputTempPath);
+      if (await fileExists(inputTempPath)) await fs.promises.unlink(inputTempPath);
+      if (await fileExists(outputTempPath)) await fs.promises.unlink(outputTempPath);
     } catch {}
   }
 }

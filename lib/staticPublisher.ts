@@ -43,14 +43,18 @@ export function getThemeCategory(themeId?: string): "premium" | "traditional" | 
 /**
  * Ensures the target published storage directory and its category subfolders exist.
  */
-function ensurePublishedDir(category?: string) {
-  if (!fs.existsSync(PUBLISHED_DIR)) {
-    fs.mkdirSync(PUBLISHED_DIR, { recursive: true });
+async function ensurePublishedDir(category?: string) {
+  try {
+    await fs.promises.access(PUBLISHED_DIR);
+  } catch {
+    await fs.promises.mkdir(PUBLISHED_DIR, { recursive: true });
   }
   if (category) {
     const catDir = path.join(PUBLISHED_DIR, category);
-    if (!fs.existsSync(catDir)) {
-      fs.mkdirSync(catDir, { recursive: true });
+    try {
+      await fs.promises.access(catDir);
+    } catch {
+      await fs.promises.mkdir(catDir, { recursive: true });
     }
   }
 }
@@ -58,65 +62,68 @@ function ensurePublishedDir(category?: string) {
 /**
  * Returns the absolute filepath for an invitation's standalone published HTML.
  */
-export function getPublishedFilePath(invitationId: string, category?: string): string {
+export async function getPublishedFilePath(invitationId: string, category?: string): Promise<string> {
   const cat = category || "premium";
-  ensurePublishedDir(cat);
+  await ensurePublishedDir(cat);
   return path.join(PUBLISHED_DIR, cat, `${invitationId}.html`);
 }
 
 /**
  * Checks if a standalone published HTML file exists for this invitation.
  */
-export function hasPublishedHtml(invitationId: string, category?: string): boolean {
+export async function hasPublishedHtml(invitationId: string, category?: string): Promise<boolean> {
   if (category) {
     const catPath = path.join(PUBLISHED_DIR, category, `${invitationId}.html`);
-    if (fs.existsSync(catPath)) return true;
+    try {
+      await fs.promises.access(catPath);
+      return true;
+    } catch {}
   }
   // Check across all category folders and root legacy folder
   const categories = ["premium", "traditional", "modern"];
   for (const c of categories) {
     const p = path.join(PUBLISHED_DIR, c, `${invitationId}.html`);
-    if (fs.existsSync(p)) return true;
+    try {
+      await fs.promises.access(p);
+      return true;
+    } catch {}
   }
-  return fs.existsSync(path.join(PUBLISHED_DIR, `${invitationId}.html`));
+  try {
+    await fs.promises.access(path.join(PUBLISHED_DIR, `${invitationId}.html`));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**
  * Reads the standalone published HTML file content.
  */
-export function getPublishedHtml(invitationId: string, category?: string): string | null {
+export async function getPublishedHtml(invitationId: string, category?: string): Promise<string | null> {
   if (category) {
     const catPath = path.join(PUBLISHED_DIR, category, `${invitationId}.html`);
-    if (fs.existsSync(catPath)) {
-      try {
-        return fs.readFileSync(catPath, "utf-8");
-      } catch {
-        return null;
-      }
-    }
+    try {
+      await fs.promises.access(catPath);
+      return await fs.promises.readFile(catPath, "utf-8");
+    } catch {}
   }
   // Search across category folders
   const categories = ["premium", "traditional", "modern"];
   for (const c of categories) {
     const p = path.join(PUBLISHED_DIR, c, `${invitationId}.html`);
-    if (fs.existsSync(p)) {
-      try {
-        return fs.readFileSync(p, "utf-8");
-      } catch {
-        return null;
-      }
-    }
+    try {
+      await fs.promises.access(p);
+      return await fs.promises.readFile(p, "utf-8");
+    } catch {}
   }
   // Root legacy fallback
   const rootPath = path.join(PUBLISHED_DIR, `${invitationId}.html`);
-  if (fs.existsSync(rootPath)) {
-    try {
-      return fs.readFileSync(rootPath, "utf-8");
-    } catch {
-      return null;
-    }
+  try {
+    await fs.promises.access(rootPath);
+    return await fs.promises.readFile(rootPath, "utf-8");
+  } catch {
+    return null;
   }
-  return null;
 }
 
 /**
@@ -137,12 +144,12 @@ export async function buildAndSavePublishedHtml(invitationId: string): Promise<s
   const category = getThemeCategory(invitation.themeId || "kalandra");
 
   // Render standalone HTML without edit controls
-  const standaloneHtml = renderTemplateFile(invitation.themeId || "kalandra", data, { editMode: false });
+  const standaloneHtml = await renderTemplateFile(invitation.themeId || "kalandra", data, { editMode: false });
 
-  ensurePublishedDir(category);
-  const filePath = getPublishedFilePath(invitation.id, category);
+  await ensurePublishedDir(category);
+  const filePath = await getPublishedFilePath(invitation.id, category);
 
-  fs.writeFileSync(filePath, standaloneHtml, "utf-8");
+  await fs.promises.writeFile(filePath, standaloneHtml, "utf-8");
 
   console.log(`[Static Publisher] Standalone HTML baked successfully: ${filePath} (${(standaloneHtml.length / 1024).toFixed(1)} KB)`);
 
@@ -152,24 +159,22 @@ export async function buildAndSavePublishedHtml(invitationId: string): Promise<s
 /**
  * Deletes the standalone published HTML file if an invitation is unpublished or deleted.
  */
-export function deletePublishedHtml(invitationId: string, category?: string): boolean {
+export async function deletePublishedHtml(invitationId: string, category?: string): Promise<boolean> {
   let deleted = false;
   const categories = category ? [category] : ["premium", "traditional", "modern"];
   for (const c of categories) {
     const p = path.join(PUBLISHED_DIR, c, `${invitationId}.html`);
-    if (fs.existsSync(p)) {
-      try {
-        fs.unlinkSync(p);
-        deleted = true;
-      } catch {}
-    }
-  }
-  const rootPath = path.join(PUBLISHED_DIR, `${invitationId}.html`);
-  if (fs.existsSync(rootPath)) {
     try {
-      fs.unlinkSync(rootPath);
+      await fs.promises.access(p);
+      await fs.promises.unlink(p);
       deleted = true;
     } catch {}
   }
+  const rootPath = path.join(PUBLISHED_DIR, `${invitationId}.html`);
+  try {
+    await fs.promises.access(rootPath);
+    await fs.promises.unlink(rootPath);
+    deleted = true;
+  } catch {}
   return deleted;
 }

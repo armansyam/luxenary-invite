@@ -23,7 +23,7 @@ export default function ClientLoginPage() {
             <BrandLogo size="lg" lightBg />
           </div>
           <span className="text-[11px] font-bold uppercase tracking-widest text-amber-700 block">Luxenary Wedding Studio</span>
-          <h1 className="text-2xl font-serif font-bold text-stone-900">Masuk ke Studio</h1>
+          <h1 className="text-2xl font-serif font-bold text-stone-900">Masuk / Daftar Akun</h1>
           <p className="text-xs text-stone-400 leading-relaxed">
             Kelola undangan, buku tamu, galeri foto, dan pengiriman via WhatsApp dari satu tempat.
           </p>
@@ -59,10 +59,7 @@ export default function ClientLoginPage() {
         {/* Divider */}
         <div className="border-t border-stone-100 pt-5 space-y-3">
           <p className="text-center text-xs text-stone-500">
-            Belum memiliki paket?{" "}
-            <a href="/register" className="text-amber-800 font-bold hover:underline">
-              Pilih Paket Undangan →
-            </a>
+            Akses aman dan mudah, cukup gunakan akun Google Anda.
           </p>
         </div>
 

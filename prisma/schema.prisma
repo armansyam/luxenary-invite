@@ -111,6 +111,7 @@ model Invitation {
   bankAccounts    String?          // Dynamic JSON Bank Accounts Array
   shippingAddress String?          // Physical Gift Shipping Address
   featureSettings String?          // Dynamic JSON Feature Settings & Color Palette
+  staffPin        String?          @default("123456") // Keamanan untuk Scanner & Layar Proyektor
   openingQuote    String?          // Opening Quote Text
   openingQuoteRef String?          // Opening Quote Reference (e.g. QS. Ar-Rum : 21)
   dresscode       String?

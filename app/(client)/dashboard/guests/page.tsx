@@ -243,7 +243,7 @@ export default function GuestsPage() {
   };
 
   // Helper to render customized text for a guest
-  const renderWaText = (guestName: string, guestLimit: number = 2, sessionInfo: string = "Akad & Resepsi") => {
+  const renderWaText = (guestName: string, guestLimit: number = 2, sessionInfo: string = "Akad & Resepsi", qrToken?: string) => {
     const groom = invitationData?.groomNickname || invitationData?.groomName || "Mempelai Pria";
     const bride = invitationData?.brideNickname || invitationData?.brideName || "Mempelai Wanita";
     
@@ -255,7 +255,7 @@ export default function GuestsPage() {
     const displayOrder = feat.displayOrder || "BRIDE_FIRST";
     const coupleName = displayOrder === "BRIDE_FIRST" ? `${bride} & ${groom}` : `${groom} & ${bride}`;
     const sub = invitationData?.subdomain || (invitationData?.groomSlug && invitationData?.brideSlug ? `${invitationData.groomSlug}-${invitationData.brideSlug}` : "wedding");
-    const fullGuestUrl = getInvitationPublicUrl(sub, guestName);
+    const fullGuestUrl = getInvitationPublicUrl(sub, guestName, true);
 
     const template = waTemplate || DEFAULT_WA_TEMPLATE;
 
@@ -271,7 +271,8 @@ export default function GuestsPage() {
     const renderedText = renderWaText(
       guest.name,
       guest.guestLimit || guest.guestQuota || 2,
-      guest.sessionInfo || "Akad & Resepsi"
+      guest.sessionInfo || "Akad & Resepsi",
+      guest.qrToken
     );
 
     const text = encodeURIComponent(renderedText);
@@ -284,7 +285,7 @@ export default function GuestsPage() {
 
   const handleCopyGuestLink = (guest: Guest) => {
     const sub = invitationData?.subdomain || (invitationData?.groomSlug && invitationData?.brideSlug ? `${invitationData.groomSlug}-${invitationData.brideSlug}` : "wedding");
-    const fullGuestUrl = getInvitationPublicUrl(sub, guest.name);
+    const fullGuestUrl = getInvitationPublicUrl(sub, guest.name, true);
 
     navigator.clipboard.writeText(fullGuestUrl).then(() => {
       setCopiedGuestId(guest.id);
@@ -357,6 +358,19 @@ export default function GuestsPage() {
             </svg>
             <span>Tambah Tamu</span>
           </button>
+        </div>
+      </div>
+
+      {/* Info Alert: QR Code Check-In Notice */}
+      <div className="bg-amber-50 border border-amber-200/60 rounded-2xl p-4 flex gap-3 shadow-xs items-start">
+        <svg className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <div>
+          <h4 className="text-sm font-bold text-amber-900">Tamu Khusus &amp; Tiket QR Code</h4>
+          <p className="text-xs text-amber-800/80 mt-1 leading-relaxed">
+            Daftar tamu di bawah ini adalah tamu resmi yang akan mendapatkan <strong>Tiket QR Code Check-in</strong> otomatis saat mereka membuka link undangan. Jika Anda menyebar undangan secara manual <em>(tanpa menambahkannya di sini)</em>, tamu tersebut tidak akan mendapatkan tiket QR Code.
+          </p>
         </div>
       </div>
 
@@ -784,7 +798,7 @@ export default function GuestsPage() {
 
                   {/* WhatsApp Bubble Preview Box */}
                   <div className="p-3.5 bg-[#d9fdd3] text-stone-900 rounded-2xl rounded-tr-xs border border-emerald-200/80 shadow-xs text-xs whitespace-pre-wrap font-sans leading-relaxed break-words">
-                    {renderWaText("Bpk. Abiyoga", 2, "Akad & Resepsi")}
+                    {renderWaText("Bpk. Abiyoga", 2, "Akad & Resepsi", "dummy-qr-token")}
                     <div className="text-right text-[9px] text-stone-400 mt-1 font-mono">
                       12:00
                     </div>

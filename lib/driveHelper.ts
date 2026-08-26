@@ -20,6 +20,17 @@ export const GOOGLE_APPS_SCRIPT_MASTER_CODE = `/**
 function doPost(e) {
   try {
     var data = JSON.parse(e.postData.contents);
+    
+    // DELETE ACTION
+    if (data.action === "delete") {
+      if (!data.fileId) throw new Error("Missing fileId for delete");
+      var fileToDelete = DriveApp.getFileById(data.fileId);
+      fileToDelete.setTrashed(true);
+      return ContentService.createTextOutput(JSON.stringify({ success: true, deletedId: data.fileId }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // UPLOAD ACTION
     var folderId = data.folderId;
     if (!folderId) {
       return ContentService.createTextOutput(JSON.stringify({ success: false, error: "Missing folderId" }))
@@ -27,6 +38,17 @@ function doPost(e) {
     }
 
     var targetFolder = DriveApp.getFolderById(folderId);
+    
+    // Auto-create subfolder if requested (e.g., "Guest Moment" or "Booth Moment")
+    if (data.subfolderName) {
+      var subfolders = targetFolder.getFoldersByName(data.subfolderName);
+      if (subfolders.hasNext()) {
+        targetFolder = subfolders.next();
+      } else {
+        targetFolder = targetFolder.createFolder(data.subfolderName);
+      }
+    }
+
     var decoded = Utilities.base64Decode(data.base64File);
     var blob = Utilities.newBlob(decoded, data.mimeType || "image/webp", data.fileName || "moment.webp");
     var file = targetFolder.createFile(blob);
@@ -75,13 +97,14 @@ export function extractGoogleDriveFolderId(urlOrId: string): string | null {
 export async function uploadToGoogleDriveWebhook(
   webhookUrl: string,
   folderId: string,
-  fileData: { fileName: string; mimeType: string; buffer: Buffer; senderName: string }
+  fileData: { fileName: string; mimeType: string; buffer: Buffer; senderName: string; subfolderName?: string }
 ): Promise<{ fileId: string; viewUrl: string; thumbnailUrl: string } | null> {
   if (!webhookUrl || !folderId) return null;
 
   try {
     const payload = {
       folderId,
+      subfolderName: fileData.subfolderName,
       fileName: fileData.fileName,
       mimeType: fileData.mimeType,
       base64File: fileData.buffer.toString("base64"),
@@ -113,6 +136,31 @@ export async function uploadToGoogleDriveWebhook(
   } catch (err: any) {
     console.error("[GoogleDriveWebhook] Network error:", err?.message || err);
     return null;
+  }
+}
+
+/**
+ * Deletes a file directly via Google Apps Script Webhook.
+ */
+export async function deleteFromGoogleDriveWebhook(
+  webhookUrl: string,
+  fileId: string
+): Promise<boolean> {
+  if (!webhookUrl || !fileId) return false;
+
+  try {
+    const res = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "delete", fileId }),
+    });
+
+    if (!res.ok) return false;
+    const data = await res.json();
+    return data.success === true;
+  } catch (err) {
+    console.error("[GoogleDriveWebhook] Delete error:", err);
+    return false;
   }
 }
 

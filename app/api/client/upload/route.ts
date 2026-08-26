@@ -56,8 +56,10 @@ export async function POST(req: NextRequest) {
 
     // Isolated per-invitation directory: /public/uploads/invitations/{invitationId}/
     const uploadsDir = path.join(process.cwd(), "public", "uploads", "invitations", safeInvitationId);
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
+    try {
+      await fs.promises.access(uploadsDir);
+    } catch {
+      await fs.promises.mkdir(uploadsDir, { recursive: true });
     }
 
     const isAudio = file.type.startsWith("audio/") || file.name.endsWith(".mp3") || file.name.endsWith(".wav") || file.name.endsWith(".m4a") || slotKey === "MUSIC";
@@ -119,16 +121,18 @@ export async function POST(req: NextRequest) {
 
     // Clean up any old files with different extensions for this slot
     try {
-      const existingFiles = fs.readdirSync(uploadsDir);
+      const existingFiles = await fs.promises.readdir(uploadsDir);
       for (const f of existingFiles) {
         const fileBase = path.parse(f).name;
         if (fileBase === baseSlug && f !== finalFileName) {
-          fs.unlinkSync(path.join(uploadsDir, f));
+          try {
+            await fs.promises.unlink(path.join(uploadsDir, f));
+          } catch {}
         }
       }
     } catch {}
 
-    fs.writeFileSync(filePath, finalBuffer);
+    await fs.promises.writeFile(filePath, finalBuffer);
 
     // Add cache buster timestamp
     const publicUrl = `/uploads/invitations/${safeInvitationId}/${finalFileName}?t=${Date.now()}`;

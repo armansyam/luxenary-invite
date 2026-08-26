@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { getApexRootDomain, getInvitationPublicUrl } from "@/lib/domainUtils";
 import { BrandLogo } from "@/components/BrandLogo";
 import { GOOGLE_APPS_SCRIPT_MASTER_CODE } from "@/lib/driveHelper";
+import { AdminProfileSettings } from "@/components/admin/AdminProfileSettings";
+import { AdminTeamManagement } from "@/components/admin/AdminTeamManagement";
 
 const tabs = [
   {
@@ -78,6 +80,15 @@ const tabs = [
     icon: (
       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+    ),
+  },
+  {
+    id: "team",
+    label: "Tim & Akses",
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
       </svg>
     ),
   },
@@ -229,12 +240,27 @@ function FieldRow({ label, description, children }: { label: string; description
   );
 }
 
+const AVAILABLE_CAPABILITIES = [
+  { id: "guest_memories", label: "Galeri Kenangan Tamu (Live Photo Drop)" },
+  { id: "qr_checkin", label: "QR Code Check-in Tamu" },
+  { id: "livestream", label: "Fitur Live Streaming" }
+];
 export default function AdminPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
   const [activeTab, setActiveTab] = useState("overview");
   const [loading, setLoading] = useState(true);
+
+  const userRole = (session?.user as any)?.role || "CLIENT";
+  const filteredTabs = useMemo(() => {
+    return tabs.filter(tab => {
+      if (userRole === "SUPER_ADMIN") return true;
+      if (userRole === "FINANCE") return ["overview", "orders", "users"].includes(tab.id);
+      if (userRole === "SUPPORT") return ["users", "invitations"].includes(tab.id);
+      return false;
+    });
+  }, [userRole]);
 
   // Strict session enforcement
   useEffect(() => {
@@ -278,7 +304,7 @@ export default function AdminPage() {
   const [savingXendit, setSavingXendit] = useState(false);
   const [savingDuitku, setSavingDuitku] = useState(false);
   const [savingTripay, setSavingTripay] = useState(false);
-  const [activeSettingsTab, setActiveSettingsTab] = useState<"pembayaran" | "gateway" | "paket" | "platform" | "autentikasi">("pembayaran");
+  const [activeSettingsTab, setActiveSettingsTab] = useState<"akun" | "pembayaran" | "gateway" | "paket" | "platform" | "autentikasi">("akun");
   const [copiedGdriveScript, setCopiedGdriveScript] = useState(false);
   const [recyclingSubdomains, setRecyclingSubdomains] = useState(false);
   const [recycleResult, setRecycleResult] = useState<{ success: boolean; message: string } | null>(null);
@@ -584,6 +610,23 @@ export default function AdminPage() {
 
   const setSetting = (key: string, value: string) => {
     setSettingsMap((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const getCaps = (key: string) => {
+    try {
+      return JSON.parse(settingsMap[key] || "[]");
+    } catch {
+      return [];
+    }
+  };
+
+  const toggleCap = (key: string, capId: string) => {
+    const current = getCaps(key);
+    if (current.includes(capId)) {
+      setSetting(key, JSON.stringify(current.filter((c: string) => c !== capId)));
+    } else {
+      setSetting(key, JSON.stringify([...current, capId]));
+    }
   };
 
   const toggleEditSection = (section: string) => {
@@ -1103,7 +1146,7 @@ export default function AdminPage() {
               </div>
 
               <nav className="py-3 px-3 space-y-1">
-                {tabs.map((tab) => (
+                {filteredTabs.map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => {
@@ -1146,8 +1189,8 @@ export default function AdminPage() {
       <div className="flex flex-1 min-w-0 w-full">
         {/* Desktop Sidebar — Hidden di Mobile, Sticky & Fixed di Layar Besar */}
         <aside className="hidden md:flex w-60 bg-white border-r border-gray-200 shadow-2xs shrink-0 sticky top-16 h-[calc(100vh-4rem)] flex-col justify-between overflow-y-auto">
-          <nav className="py-4 space-y-1 px-3">
-            {tabs.map((tab) => (
+          <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1 scrollbar-hide">
+            {filteredTabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
@@ -2401,6 +2444,13 @@ export default function AdminPage() {
                 </div>
               )}
 
+              {/* ── Team & Access ── */}
+              {activeTab === "team" && (
+                <div className="max-w-5xl w-full">
+                  <AdminTeamManagement />
+                </div>
+              )}
+
               {/* ── Settings ── */}
               {activeTab === "settings" && (
                 <div className="space-y-6 max-w-5xl w-full">
@@ -2412,6 +2462,7 @@ export default function AdminPage() {
                   {/* ── Sub-Tab Navigation ── */}
                   <div className="flex gap-1.5 p-1.5 bg-gray-100 rounded-2xl border border-gray-200 overflow-x-auto no-scrollbar">
                     {([
+                      { id: "akun",       label: "Akun & Keamanan" },
                       { id: "pembayaran", label: "Pembayaran" },
                       { id: "gateway",    label: "Gateway QRIS" },
                       { id: "paket",      label: "Paket & Harga" },
@@ -2432,6 +2483,11 @@ export default function AdminPage() {
                       </button>
                     ))}
                   </div>
+
+                  {/* ── Sub-Tab: Akun & Keamanan ── */}
+                  {activeSettingsTab === "akun" && (
+                    <AdminProfileSettings sessionUser={session?.user} />
+                  )}
 
                   {/* ══ TAB: PEMBAYARAN ══ */}
                   {activeSettingsTab === "pembayaran" && (
@@ -3372,10 +3428,10 @@ export default function AdminPage() {
                     description="Atur nama paket, harga, dan deskripsi untuk 3 kategori paket undangan."
                     isEditing={Boolean(editSection["pricing"])}
                     onEdit={() => toggleEditSection("pricing")}
-                    onCancel={() => cancelEdit("pricing", ["name_traditional", "name_modern", "name_premium", "price_traditional", "price_modern", "price_premium", "desc_traditional", "desc_modern", "desc_premium"])}
-                    onSave={() => saveSettings(["name_traditional", "name_modern", "name_premium", "price_traditional", "price_modern", "price_premium", "desc_traditional", "desc_modern", "desc_premium"], setSavingPricing, "pricing")}
+                    onCancel={() => cancelEdit("pricing", ["name_traditional", "name_modern", "name_premium", "price_traditional", "price_modern", "price_premium", "desc_traditional", "desc_modern", "desc_premium", "capabilities_traditional", "capabilities_modern", "capabilities_premium"])}
+                    onSave={() => saveSettings(["name_traditional", "name_modern", "name_premium", "price_traditional", "price_modern", "price_premium", "desc_traditional", "desc_modern", "desc_premium", "capabilities_traditional", "capabilities_modern", "capabilities_premium"], setSavingPricing, "pricing")}
                     saving={savingPricing}
-                    isDirty={isSectionDirty(["name_traditional", "name_modern", "name_premium", "price_traditional", "price_modern", "price_premium", "desc_traditional", "desc_modern", "desc_premium"])}
+                    isDirty={isSectionDirty(["name_traditional", "name_modern", "name_premium", "price_traditional", "price_modern", "price_premium", "desc_traditional", "desc_modern", "desc_premium", "capabilities_traditional", "capabilities_modern", "capabilities_premium"])}
                     saveSuccess={settingsSaved["pricing"]}
                     saveSuccessMessage="Harga dan nama paket berhasil diperbarui"
                     viewContent={
@@ -3447,6 +3503,22 @@ export default function AdminPage() {
                             className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition resize-none"
                           />
                         </FieldRow>
+                        <div className="pt-2">
+                          <label className="block text-xs font-bold text-gray-700 mb-2">Fitur / Kapabilitas Paket</label>
+                          <div className="space-y-1.5 bg-white p-3 border border-gray-200 rounded-xl max-h-48 overflow-y-auto no-scrollbar">
+                            {AVAILABLE_CAPABILITIES.map(cap => (
+                              <label key={cap.id} className="flex items-center gap-2 text-xs text-gray-700 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                                <input
+                                  type="checkbox"
+                                  className="rounded border-gray-300 text-amber-600 focus:ring-amber-600 w-3.5 h-3.5 cursor-pointer"
+                                  checked={getCaps("capabilities_traditional").includes(cap.id)}
+                                  onChange={() => toggleCap("capabilities_traditional", cap.id)}
+                                />
+                                <span>{cap.label}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
                       </div>
 
                       <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
@@ -3479,6 +3551,22 @@ export default function AdminPage() {
                             className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 transition resize-none"
                           />
                         </FieldRow>
+                        <div className="pt-2">
+                          <label className="block text-xs font-bold text-gray-700 mb-2">Fitur / Kapabilitas Paket</label>
+                          <div className="space-y-1.5 bg-white p-3 border border-gray-200 rounded-xl max-h-48 overflow-y-auto no-scrollbar">
+                            {AVAILABLE_CAPABILITIES.map(cap => (
+                              <label key={cap.id} className="flex items-center gap-2 text-xs text-gray-700 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                                <input
+                                  type="checkbox"
+                                  className="rounded border-gray-300 text-slate-600 focus:ring-slate-600 w-3.5 h-3.5 cursor-pointer"
+                                  checked={getCaps("capabilities_modern").includes(cap.id)}
+                                  onChange={() => toggleCap("capabilities_modern", cap.id)}
+                                />
+                                <span>{cap.label}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
                       </div>
 
                       <div className="p-4 bg-purple-50/70 rounded-xl border border-purple-200 space-y-3">
@@ -3511,6 +3599,22 @@ export default function AdminPage() {
                             className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition resize-none"
                           />
                         </FieldRow>
+                        <div className="pt-2">
+                          <label className="block text-xs font-bold text-gray-700 mb-2">Fitur / Kapabilitas Paket</label>
+                          <div className="space-y-1.5 bg-white p-3 border border-purple-200 rounded-xl max-h-48 overflow-y-auto no-scrollbar">
+                            {AVAILABLE_CAPABILITIES.map(cap => (
+                              <label key={cap.id} className="flex items-center gap-2 text-xs text-gray-700 cursor-pointer hover:bg-purple-50 p-1 rounded">
+                                <input
+                                  type="checkbox"
+                                  className="rounded border-purple-300 text-purple-600 focus:ring-purple-600 w-3.5 h-3.5 cursor-pointer"
+                                  checked={getCaps("capabilities_premium").includes(cap.id)}
+                                  onChange={() => toggleCap("capabilities_premium", cap.id)}
+                                />
+                                <span>{cap.label}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </SettingsCard>

@@ -85,7 +85,12 @@ export async function GET(
 
     const invitation = await prisma.invitation.findUnique({
       where: { id },
-      include: { media: true },
+      include: { 
+        media: true,
+        order: {
+          select: { planType: true }
+        }
+      },
     });
 
     if (!invitation) {
@@ -241,6 +246,7 @@ export async function PUT(
         liveStreamUrl: body.liveStreamUrl !== undefined ? body.liveStreamUrl : undefined,
         eventData: body.eventData !== undefined ? toStr(body.eventData) : undefined,
         featureSettings: mergedFeatureSettings,
+        staffPin: body.staffPin !== undefined ? body.staffPin : undefined,
       },
     });
 

@@ -211,6 +211,7 @@ export default function EditInvitation() {
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
   const [uploadingAudio, setUploadingAudio] = useState(false);
   const [adminWhatsapp, setAdminWhatsapp] = useState<string>("6281234567890");
+  const [platformSettings, setPlatformSettings] = useState<any>(null);
 
   // Dual-Native Studio State: Form Mode vs Live Visual Editor
   const [activeStudioTab, setActiveStudioTab] = useState<"form" | "live">("form");
@@ -362,12 +363,15 @@ export default function EditInvitation() {
     fetch("/api/public/settings")
       .then((r) => r.json())
       .then((data) => {
+        setPlatformSettings(data);
         if (data.support_whatsapp) {
           setAdminWhatsapp(data.support_whatsapp);
         }
       })
-      .catch(() => {});
+      .catch((err) => console.error(err));
+  }, []);
 
+  useEffect(() => {
     fetch(`/api/client/invitations/${invitationId}`)
       .then((r) => r.json())
       .then((inv) => {
@@ -829,15 +833,48 @@ export default function EditInvitation() {
   const selectedThemeObj = THEMES.find((t) => t.id === currentThemeId) || THEMES[0];
   const selectedPaletteObj = COLOR_PALETTES.find((p) => p.id === currentPalette) || COLOR_PALETTES[0];
 
+  const planType = invitation.order?.planType || "TRADITIONAL";
+  const packageConfig = platformSettings?.packages?.find((p: any) => p.id === planType);
+  const allowedCaps = packageConfig?.capabilities || [];
+  const hasCap = (cap: string) => allowedCaps.includes(cap);
+
   const showMusic = getFeatureSetting("showMusic", true);
   const showStory = getFeatureSetting("showStory", true);
   const showGallery = getFeatureSetting("showGallery", true);
   const showGift = getFeatureSetting("showGift", true);
   const showDresscode = getFeatureSetting("showDresscode", true);
-  const showQrCheckin = getFeatureSetting("showQrCheckin", true);
-  const showLiveStream = getFeatureSetting("showLiveStream", false);
+  const showQrCheckin = hasCap("qr_checkin") && getFeatureSetting("showQrCheckin", true);
+  const showLiveStream = hasCap("livestream") && getFeatureSetting("showLiveStream", false);
   const showFilter = getFeatureSetting("showFilter", false);
   const showTurutMengundang = getFeatureSetting("showTurutMengundang", true);
+  const showGuestMemoriesGlobal = hasCap("guest_memories") && getFeatureSetting("showGuestMemories", true);
+  if (invitation.isLocked && !invitation.isEmergencyUnlocked) {
+    return (
+      <div className="max-w-5xl mx-auto space-y-6 pb-24 font-sans px-4 sm:px-0">
+        <div className="py-32 text-center space-y-5">
+          <div className="w-20 h-20 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner border border-stone-200">
+            <svg className="w-10 h-10 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-serif font-bold text-stone-900">Studio Terkunci Permanen</h2>
+          <p className="text-stone-500 font-medium max-w-md mx-auto leading-relaxed">
+            Acara telah lewat dan undangan ini kini berstatus Published Forever sebagai portofolio. Akses edit telah ditutup untuk menjaga keaslian arsip.
+          </p>
+          <div className="pt-4">
+            <a
+              href={`https://wa.me/${adminWhatsapp}?text=Halo%20Admin,%20mohon%20bantuan%20buka%20kunci%20darurat%20undangan%20saya`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex px-6 py-3 bg-stone-900 hover:bg-stone-800 text-white text-sm font-bold rounded-xl transition shadow-sm"
+            >
+              Hubungi CS untuk Bantuan
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-24 font-sans">
@@ -1106,11 +1143,17 @@ export default function EditInvitation() {
           <div className="p-5 sm:p-7 space-y-6">
             {/* Theme Mockups for this Category / Store */}
             {(() => {
-              const currentCat = (selectedThemeObj.category || "premium").toLowerCase();
-              const categoryThemes = THEMES.filter((t) => (t.category || "").toLowerCase() === currentCat);
+              const availableThemes = THEMES.filter((t) => {
+                const cat = (t.category || "").toUpperCase();
+                const plan = planType.toUpperCase();
+                if (plan === "PREMIUM") return true; 
+                if (plan === "MODERN") return cat === "MODERN" || cat === "TRADITIONAL";
+                if (plan === "TRADITIONAL") return cat === "TRADITIONAL"; 
+                return true;
+              });
               return (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  {categoryThemes.map((th) => {
+                  {availableThemes.map((th) => {
                     const isSelected = (invitation.themeId || "kalandra") === th.id;
                     return (
                       <div
@@ -1339,6 +1382,7 @@ export default function EditInvitation() {
             )}
 
             {/* Musik Latar Pernikahan */}
+            {hasCap("music") && (
             <div className="p-4 sm:p-5 rounded-2xl border border-amber-200/80 bg-amber-50/30 space-y-4">
               <div className="flex items-center justify-between gap-3 border-b border-amber-200/60 pb-3">
                 <div>
@@ -1491,6 +1535,7 @@ export default function EditInvitation() {
                 </div>
               )}
             </div>
+            )}
 
             <div className="pt-4 border-t border-stone-100 flex justify-end">
               <button
@@ -1981,6 +2026,7 @@ export default function EditInvitation() {
       </section>
 
       {/* 6. SEKSI KARTU AKSES QR & CHECK-IN (SEC6) */}
+      {hasCap("qr_checkin") && (
       <section className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
         <div className="p-5 sm:p-6 border-b border-stone-100 flex items-center justify-between gap-3">
           <div>
@@ -2055,6 +2101,7 @@ export default function EditInvitation() {
           </div>
         )}
       </section>
+      )}
 
       {/* 7. SEKSI KISAH CINTA (SEC7) */}
       <section className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
@@ -2518,6 +2565,7 @@ export default function EditInvitation() {
       </section>
 
       {/* 11. SEKSI LIVE STREAMING (SEC11) */}
+      {hasCap("livestream") && (
       <section className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
         <div className="p-5 sm:p-6 border-b border-stone-100 flex items-center justify-between gap-3">
           <div>
@@ -2602,6 +2650,7 @@ export default function EditInvitation() {
           </div>
         )}
       </section>
+      )}
 
       {/* 12. SEKSI FILTER INSTAGRAM (SEC12) */}
       <section className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
@@ -2761,8 +2810,8 @@ export default function EditInvitation() {
           </div>
         )}
       </section>
-
       {/* 14. SEKSI GALERI KENANGAN TAMU (SEC14) */}
+      {hasCap("guest_memories") && (
       <section className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
         <div className="p-5 sm:p-6 border-b border-stone-100 flex items-center justify-between gap-3">
           <div>
@@ -3000,6 +3049,7 @@ export default function EditInvitation() {
           </div>
         )}
       </section>
+      )}
 
         </div>
       )}

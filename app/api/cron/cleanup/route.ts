@@ -4,6 +4,15 @@ import { auth } from "@/auth";
 import fs from "fs";
 import path from "path";
 
+async function fileExists(filePath: string): Promise<boolean> {
+  try {
+    await fs.promises.access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export const dynamic = "force-dynamic";
 
 async function isAuthorized(req: NextRequest): Promise<boolean> {
@@ -39,7 +48,13 @@ export async function POST(req: NextRequest) {
     const thresholdDate = new Date(now.getTime() - thresholdMs);
 
     // ── 1. Bersihkan Undangan yang Lewat Masa Acara ──
-    const allInvs = await prisma.invitation.findMany();
+    const allInvs = await prisma.invitation.findMany({
+      select: {
+        id: true,
+        status: true,
+        eventData: true,
+      }
+    });
     const targetInvitations: any[] = [];
 
     for (const inv of allInvs) {
@@ -81,14 +96,14 @@ export async function POST(req: NextRequest) {
 
     for (const inv of targetInvitations) {
       const targetDir = path.join(process.cwd(), "public", "uploads", "invitations", inv.id);
-      if (fs.existsSync(targetDir)) {
+      if (await fileExists(targetDir)) {
         try {
-          const files = fs.readdirSync(targetDir);
+          const files = await fs.promises.readdir(targetDir);
           for (const f of files) {
-            const stat = fs.statSync(path.join(targetDir, f));
+            const stat = await fs.promises.stat(path.join(targetDir, f));
             totalFreedBytes += stat.size;
           }
-          fs.rmSync(targetDir, { recursive: true, force: true });
+          await fs.promises.rm(targetDir, { recursive: true, force: true });
           foldersRemoved++;
         } catch (e) {
           console.error(`Failed to remove folder for ${inv.id}:`, e);
@@ -113,9 +128,9 @@ export async function POST(req: NextRequest) {
     for (const ord of staleOrders) {
       if (ord.proofImageUrl) {
         const filePath = path.join(process.cwd(), "public", ord.proofImageUrl.replace(/^\//, ""));
-        if (fs.existsSync(filePath)) {
+        if (await fileExists(filePath)) {
           try {
-            fs.unlinkSync(filePath);
+            await fs.promises.unlink(filePath);
             proofsDeleted++;
           } catch {}
         }

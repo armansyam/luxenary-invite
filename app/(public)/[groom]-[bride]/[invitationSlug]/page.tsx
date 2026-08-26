@@ -46,7 +46,7 @@ export default async function PublicInvitationPage({ params }: PageProps) {
   }
 
   // 1. Direct Static Serving: Load standalone HTML file if already baked
-  let html = getPublishedHtml(invitation.id);
+  let html = await getPublishedHtml(invitation.id);
 
   // 2. If not baked yet, compile standalone HTML and save for future instant requests
   if (!html) {

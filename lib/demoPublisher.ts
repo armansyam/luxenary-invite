@@ -7,18 +7,20 @@ import { prisma } from "./prisma";
 /**
  * Compiles a single theme demo into a standalone static HTML file in public/demo/[themeId]/index.html
  */
-export function compileAndSaveStaticDemo(themeId: string, customDemoData?: any): string {
+export async function compileAndSaveStaticDemo(themeId: string, customDemoData?: any): Promise<string> {
   const cleanId = themeId.toLowerCase().trim();
   const data = composeDemoTemplateData(cleanId, "champagne", customDemoData);
-  const html = renderTemplateFile(cleanId, data);
+  const html = await renderTemplateFile(cleanId, data);
 
   const targetDir = path.join(process.cwd(), "public", "demo", cleanId);
-  if (!fs.existsSync(targetDir)) {
-    fs.mkdirSync(targetDir, { recursive: true });
+  try {
+    await fs.promises.access(targetDir);
+  } catch {
+    await fs.promises.mkdir(targetDir, { recursive: true });
   }
 
   const targetFilePath = path.join(targetDir, "index.html");
-  fs.writeFileSync(targetFilePath, html, "utf-8");
+  await fs.promises.writeFile(targetFilePath, html, "utf-8");
 
   return `/demo/${cleanId}/index.html`;
 }
@@ -48,7 +50,7 @@ export async function compileAllStaticDemos(): Promise<number> {
       }
     } catch {}
 
-    compileAndSaveStaticDemo(themeId, customData);
+    await compileAndSaveStaticDemo(themeId, customData);
     count++;
   }
 

@@ -584,25 +584,35 @@ const UNIFIED_CLIENT_RUNTIME_SCRIPT = `
  * Render a template file by replacing {{key}} placeholders with values from `data`.
  * Automatically resolves from themes/premium/, themes/traditional/, or themes/modern/.
  */
-export function renderTemplateFile(
+export async function renderTemplateFile(
   templateName: string,
   data: Record<string, any>,
   options?: { editMode?: boolean }
-): string {
+): Promise<string> {
   const info = THEME_MAP[templateName] || { file: `${templateName}.html`, folder: "premium" };
 
   let tplPath = path.join(process.cwd(), "themes", info.folder, info.file);
 
+  // Helper to check file existence asynchronously
+  async function fileExists(p: string): Promise<boolean> {
+    try {
+      await fs.promises.access(p);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   // Fallback checks across folders
-  if (!fs.existsSync(tplPath)) {
+  if (!(await fileExists(tplPath))) {
     const premiumCheck = path.join(process.cwd(), "themes", "premium", `${templateName}.html`);
     const traditionalCheck = path.join(process.cwd(), "themes", "traditional", `${templateName}.html`);
     const modernLegacyCheck = path.join(process.cwd(), "themes", "modern", `${templateName}.html`);
-    if (fs.existsSync(premiumCheck)) {
+    if (await fileExists(premiumCheck)) {
       tplPath = premiumCheck;
-    } else if (fs.existsSync(traditionalCheck)) {
+    } else if (await fileExists(traditionalCheck)) {
       tplPath = traditionalCheck;
-    } else if (fs.existsSync(modernLegacyCheck)) {
+    } else if (await fileExists(modernLegacyCheck)) {
       tplPath = modernLegacyCheck;
     } else {
       // Default fallback
@@ -610,7 +620,7 @@ export function renderTemplateFile(
     }
   }
 
-  let tpl = fs.readFileSync(tplPath, "utf-8");
+  let tpl = await fs.promises.readFile(tplPath, "utf-8");
 
   // Fallback placement for Guest Memories if template doesn't explicitly have the placeholder
   if (!tpl.includes("{{memoriesSectionHtml}}") && data.memoriesSectionHtml) {

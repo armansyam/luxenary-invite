@@ -17,7 +17,7 @@ export async function GET(req: Request) {
         const data = await composeTemplateData(invitationId);
         if (data) {
           const themeId = themeParam || inv.themeId || "kalandra";
-          const html = renderTemplateFile(themeId, data);
+          const html = await renderTemplateFile(themeId, data);
           return new NextResponse(html, {
             headers: {
               "Content-Type": "text/html; charset=utf-8",
@@ -34,7 +34,7 @@ export async function GET(req: Request) {
 
   const selectedTheme = (themeParam || "kalandra").toLowerCase();
   const data = composeDemoTemplateData(selectedTheme, paletteKey);
-  const html = renderTemplateFile(selectedTheme, data);
+  const html = await renderTemplateFile(selectedTheme, data);
 
   return new NextResponse(html, {
     headers: {

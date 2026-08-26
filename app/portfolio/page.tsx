@@ -76,7 +76,7 @@ export default async function PortfolioPage() {
               Portofolio
             </Link>
             <Link
-              href="/register"
+              href="/login"
               className="px-4 py-2 bg-stone-950 hover:bg-amber-950 text-white text-xs font-bold rounded-full transition shadow-xs"
             >
               Buat Undangan &rarr;

@@ -62,6 +62,42 @@ export default auth((req) => {
         rewriteUrl.search = req.nextUrl.search;
         return NextResponse.rewrite(rewriteUrl);
       }
+      if (pathname === "/receptionist") {
+        const rewriteUrl = new URL(`/s/${subdomain}/receptionist`, req.url);
+        rewriteUrl.search = req.nextUrl.search;
+        return NextResponse.rewrite(rewriteUrl);
+      }
+      if (pathname === "/booth") {
+        const rewriteUrl = new URL(`/s/${subdomain}/booth`, req.url);
+        rewriteUrl.search = req.nextUrl.search;
+        return NextResponse.rewrite(rewriteUrl);
+      }
+      if (pathname === "/liveshow") {
+        const rewriteUrl = new URL(`/s/${subdomain}/liveshow`, req.url);
+        rewriteUrl.search = req.nextUrl.search;
+        return NextResponse.rewrite(rewriteUrl);
+      }
+      if (pathname === "/remote") {
+        const rewriteUrl = new URL(`/s/${subdomain}/remote`, req.url);
+        rewriteUrl.search = req.nextUrl.search;
+        return NextResponse.rewrite(rewriteUrl);
+      }
+      
+      // Dynamic Path Routing for Guest Invitation (e.g. /v=Budi or /Sutejo)
+      const segments = pathname.split('/').filter(Boolean);
+      if (segments.length === 1) {
+        const guestParam = segments[0]; 
+        const rewriteUrl = new URL(`/s/${subdomain}`, req.url);
+        // Merge existing search params first
+        rewriteUrl.search = req.nextUrl.search;
+        
+        if (guestParam.startsWith('v=')) {
+          rewriteUrl.searchParams.set('v', guestParam.slice(2));
+        } else {
+          rewriteUrl.searchParams.set('to', guestParam);
+        }
+        return NextResponse.rewrite(rewriteUrl);
+      }
     }
   }
 

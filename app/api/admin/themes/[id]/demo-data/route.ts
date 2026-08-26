@@ -80,7 +80,7 @@ export async function POST(
 
     // Re-compile static demo HTML file instantly
     const { compileAndSaveStaticDemo } = await import("@/lib/demoPublisher");
-    compileAndSaveStaticDemo(themeId, body);
+    await compileAndSaveStaticDemo(themeId, body);
 
     return NextResponse.json({
       success: true,

@@ -6,6 +6,7 @@ export interface PricingPackageItem {
   price: number;
   desc: string;
   features: string[];
+  capabilities: string[];
   themes: string[];
   badge?: string;
   color: string;
@@ -54,6 +55,8 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
     "Tautan link personal per nama tamu",
     "Tamu undangan tanpa batas",
     "Manajemen RSVP & ucapan doa",
+    "Fitur Eksklusif: Video Guest Moment",
+    "Fitur Eksklusif: Galeri Kenangan Tamu",
     "Buku tamu & link WA 1-klik",
     "Galeri foto & musik latar",
     "Amplop digital QRIS & transfer bank",
@@ -85,6 +88,7 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
           "Pilihan 5 tema Standart Traditional",
           ...commonFeatures,
         ],
+        capabilities: map["capabilities_traditional"] ? JSON.parse(map["capabilities_traditional"]) : [],
         color: "amber",
         isFeatured: false,
       },
@@ -98,6 +102,7 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
           "Akses 6 tema Modern + Semua tema Traditional (11 Tema)",
           ...commonFeatures,
         ],
+        capabilities: map["capabilities_modern"] ? JSON.parse(map["capabilities_modern"]) : [],
         color: "slate",
         isFeatured: false,
       },
@@ -111,6 +116,7 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
           "All-Access 15 Tema Lengkap (Traditional + Modern + Luxury Premium)",
           ...commonFeatures,
         ],
+        capabilities: map["capabilities_premium"] ? JSON.parse(map["capabilities_premium"]) : [],
         badge: "Terpopuler",
         color: "purple",
         isFeatured: true,

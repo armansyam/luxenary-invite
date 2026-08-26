@@ -28,10 +28,10 @@ export default async function Home() {
               Lihat Demo Tema
             </Link>
             <Link
-              href="#pricing"
+              href="/login"
               className="text-xs sm:text-sm font-semibold text-amber-900 hover:text-amber-700 transition"
             >
-              Pilih Paket
+              Mulai Sekarang
             </Link>
           </div>
         </div>
@@ -170,14 +170,14 @@ export default async function Home() {
                 </div>
 
                 <Link
-                  href={`/register?plan=${pkg.id}`}
+                  href="/login"
                   className={`mt-8 w-full py-3 font-semibold rounded-full text-center transition text-sm shadow-xs ${
                     pkg.isFeatured
                       ? "bg-amber-800 hover:bg-amber-900 text-white"
                       : "bg-gray-100 hover:bg-gray-200 text-gray-800"
                   }`}
                 >
-                  Pilih {pkg.name}
+                  Mulai Sekarang
                 </Link>
               </div>
             ))}

@@ -62,7 +62,7 @@ export default function CatalogGridShowcase() {
               Portofolio
             </Link>
             <Link
-              href="/register"
+              href="/login"
               className="px-4 py-2 bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold rounded-full transition shadow-sm cursor-pointer"
             >
               Pilih Paket Undangan

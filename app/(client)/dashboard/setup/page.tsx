@@ -20,6 +20,7 @@ function SetupWizardContent() {
     MODERN: "Modern",
     PREMIUM: "Premium",
   });
+  const [platformName, setPlatformName] = useState("Luxenary Invite");
   const [themesList, setThemesList] = useState<any[]>([]);
 
   const [step, setStep] = useState(1);
@@ -74,6 +75,9 @@ function SetupWizardContent() {
           });
           setPlanNames((prev) => ({ ...prev, ...names }));
         }
+        if (data.platformName) {
+          setPlatformName(data.platformName);
+        }
       })
       .catch(() => {});
 
@@ -90,13 +94,15 @@ function SetupWizardContent() {
     }
   }, [queryOrder]);
 
-  // Filter themes strictly based on the user's purchased package tier (1:1 Direct Mapping)
+  // Filter themes based on the user's purchased package tier (Waterfall / All-Access Mapping)
   const filteredThemes = themesList.filter((t) => {
     const cat = (t.category || "").toUpperCase();
     const plan = currentPlan.toUpperCase();
-    if (plan === "PREMIUM") return cat === "PREMIUM";
-    if (plan === "MODERN") return cat === "MODERN";
-    if (plan === "TRADITIONAL") return cat === "TRADITIONAL";
+    
+    if (plan === "PREMIUM") return true; // Premium gets everything
+    if (plan === "MODERN") return cat === "MODERN" || cat === "TRADITIONAL"; // Modern gets Modern + Traditional
+    if (plan === "TRADITIONAL") return cat === "TRADITIONAL"; // Traditional gets only Traditional
+    
     return true;
   });
   const availableThemes = filteredThemes.length > 0 ? filteredThemes : themesList;
@@ -574,7 +580,7 @@ function SetupWizardContent() {
 
       {/* Footer */}
       <footer className="py-4 text-center text-xs text-stone-400 border-t border-stone-200">
-        <span>Luxenary Wedding Studio &copy; 2026 — Self-Service Invitation Builder</span>
+        <span>{platformName} &copy; {new Date().getFullYear()} — Self-Service Invitation Builder</span>
       </footer>
     </div>
   );

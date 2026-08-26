@@ -691,8 +691,11 @@ export async function composeTemplateData(invitationId: string) {
         <h3 class="pass-names serif">${firstName} <em>&amp;</em> ${secondName}</h3>
         <p class="pass-date">${weddingDate}</p>
         
-        <div class="pass-qr-wrapper">
-          <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=LUX-${inv.id}" alt="QR Check-In" class="pass-qr-img">
+        <div class="pass-qr-wrapper" id="lux-qr-section-wrapper">
+          <!-- QR Code injected dynamically by lux-qr-script -->
+          <div id="lux-qr-section-img-container" style="width:100%; height:180px; display:flex; align-items:center; justify-content:center; background:#f3f4f6; color:#9ca3af; font-size:12px; border-radius:8px;">
+             Validating Ticket...
+          </div>
         </div>
 
         <div class="pass-guest-box">
@@ -865,7 +868,10 @@ export async function composeTemplateData(invitationId: string) {
       <h3 style="font-size:1.4rem; color:#fff; font-family:'Cormorant Garamond',serif; margin-bottom:0.2rem;" id="modalGuestName">Tamu Undangan</h3>
       <p style="font-size:0.75rem; color:rgba(255,255,255,0.65); margin-bottom:1.2rem;">Tunjukkan kode QR ini kepada penerima tamu di lokasi acara.</p>
       <div style="background:#ffffff; padding:14px; display:inline-block; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.5);">
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=LUX-${inv.id}" alt="QR Check-In" style="width:160px; height:160px; display:block;">
+        <!-- QR Code injected dynamically by lux-qr-script -->
+        <div id="lux-qr-modal-img-container" style="width:160px; height:160px; display:flex; align-items:center; justify-content:center; background:#f3f4f6; color:#9ca3af; font-size:12px; border-radius:8px;">
+           Validating...
+        </div>
       </div>
     </div>
   `;
@@ -1337,6 +1343,71 @@ export async function composeTemplateData(invitationId: string) {
             }
           }
         };
+
+        // QR Code Dynamic Rendering Logic
+        document.addEventListener('DOMContentLoaded', function() {
+          const urlParams = new URLSearchParams(window.location.search);
+          let isVip = false;
+          let guestName = "";
+
+          // First check search params (for legacy or direct query usage)
+          if (urlParams.has('v')) {
+            isVip = true;
+            guestName = urlParams.get('v') || "";
+          } else if (urlParams.has('to')) {
+            guestName = urlParams.get('to') || "";
+          }
+
+          // If empty, parse from pathname (e.g. /v=Budi or /Budi)
+          if (!guestName) {
+            const pathSegments = window.location.pathname.split('/').filter(Boolean);
+            if (pathSegments.length > 0) {
+              const lastSegment = decodeURIComponent(pathSegments[pathSegments.length - 1]);
+              if (lastSegment !== 'memories' && lastSegment !== 's') {
+                if (lastSegment.startsWith('v=')) {
+                  isVip = true;
+                  guestName = lastSegment.substring(2);
+                } else {
+                  guestName = lastSegment;
+                }
+              }
+            }
+          }
+          
+          const sectionContainer = document.getElementById('lux-qr-section-img-container');
+          const modalContainer = document.getElementById('lux-qr-modal-img-container');
+          
+          if (guestName) {
+            // Render QR Code images for EVERYONE (VIP and Manual)
+            // Payload: LUX|{invitationId}|{GuestName}
+            const qrPayload = "LUX|${inv.id}|" + guestName;
+            const qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=" + encodeURIComponent(qrPayload);
+            const imgHtml = '<img src="' + qrUrl + '" alt="QR Check-In" style="width:160px; height:160px; display:block;">';
+            
+            if (sectionContainer) sectionContainer.innerHTML = imgHtml;
+            if (modalContainer) modalContainer.innerHTML = imgHtml;
+          } else {
+            // No Guest Name found. Hide QR sections.
+            if (sectionContainer) {
+               sectionContainer.innerHTML = '<span style="color:#ef4444; font-weight:600;">Tiket Tidak Tersedia</span>';
+            }
+            if (modalContainer) {
+               modalContainer.innerHTML = '<span style="color:#ef4444; font-weight:600;">Tiket Tidak Tersedia</span>';
+            }
+            // Hide trigger buttons
+            document.querySelectorAll('.btn-open-qr-cover, .btn-qr-ghost, .dock-a').forEach(el => {
+               if (el) {
+                 if (el.classList.contains('dock-a')) {
+                   if (el.textContent && el.textContent.includes('Ticket')) {
+                     (el as HTMLElement).style.display = 'none';
+                   }
+                 } else {
+                   (el as HTMLElement).style.display = 'none';
+                 }
+               }
+            });
+          }
+        });
       </script>
     `;
   }

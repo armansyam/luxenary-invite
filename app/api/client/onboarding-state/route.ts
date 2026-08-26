@@ -45,7 +45,7 @@ export async function GET() {
     if (!latestOrder) {
       return NextResponse.json({
         step: "NO_ORDER",
-        redirectUrl: "/register",
+        redirectUrl: "/", // <-- Ubah ke root agar user memilih paket terlebih dahulu
       });
     }
 
