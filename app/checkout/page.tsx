@@ -502,8 +502,8 @@ function CheckoutContent() {
             </div>
           )}
 
-          {/* Payment Method Switcher Tabs */}
-          {paymentMode === "BOTH" && (
+          {/* Payment Method Switcher Tabs (LOCKED if pending manual OR active QRIS) */}
+          {paymentMode === "BOTH" && !uploadedProofUrl && !uploadSuccessMsg && (!qrData || isGatewayExpired) && (
             <div className="flex items-center gap-2 p-1 bg-stone-900/90 rounded-2xl border border-white/10">
               <button
                 type="button"
