@@ -169,16 +169,7 @@ export default async function Home() {
                   </ul>
                 </div>
 
-                <Link
-                  href="/login"
-                  className={`mt-8 w-full py-3 font-semibold rounded-full text-center transition text-sm shadow-xs ${
-                    pkg.isFeatured
-                      ? "bg-amber-800 hover:bg-amber-900 text-white"
-                      : "bg-gray-100 hover:bg-gray-200 text-gray-800"
-                  }`}
-                >
-                  Mulai Sekarang
-                </Link>
+                {/* Tombol dihapus agar user login terlebih dahulu melalui navbar atas */}
               </div>
             ))}
           </div>
