@@ -51,7 +51,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Akses ditolak. Bukan order Anda." }, { status: 403 });
     }
 
-    if (order.status !== "PENDING") {
+    if (order.status !== "PENDING" && order.status !== "FAILED" && order.status !== "REJECTED") {
       return NextResponse.json({
         error: `Order tidak bisa diproses, status saat ini: ${order.status}`,
       }, { status: 400 });
@@ -87,6 +87,8 @@ export async function POST(req: Request) {
       where: { id: orderId },
       data: {
         paymentMethod: "GATEWAY",
+        status: "PENDING", // Reset jika sebelumnya FAILED
+        rejectReason: null,
         paymentGatewayRef: activeGatewayId,
         snapToken: qrString ? JSON.stringify({ qrString, sessionId, expiry: expiryTimestamp || (Date.now() + 15 * 60 * 1000) }) : checkoutUrl,
       },

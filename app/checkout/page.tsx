@@ -119,7 +119,7 @@ function CheckoutContent() {
             desc: currentPkg?.desc || "",
           });
 
-          if (orderStatusData.proofImageUrl) {
+          if (orderStatusData.proofImageUrl && orderStatusData.status !== "FAILED" && orderStatusData.status !== "REJECTED") {
             setUploadedProofUrl(orderStatusData.proofImageUrl);
           }
 
@@ -250,6 +250,13 @@ function CheckoutContent() {
           if (data.status === "PAID") {
             clearInterval(manualPoll);
             router.replace(`/dashboard/setup?order=${orderId}&plan=${data.planType}`);
+          } else if (data.status === "FAILED" || data.status === "REJECTED") {
+            clearInterval(manualPoll);
+            setUploadedProofUrl(null);
+            setUploadSuccessMsg(null);
+            setProofFile(null);
+            setProofPreview(null);
+            alert(`Pemberitahuan: Bukti transfer Anda ditolak oleh Admin. \nAlasan: ${data.rejectReason || "Tidak valid"}. \nSilakan unggah ulang bukti yang benar.`);
           }
         }
       } catch {}
@@ -266,6 +273,12 @@ function CheckoutContent() {
       const data = await res.json();
       if (data.status === "PAID") {
         router.replace(`/dashboard/setup?order=${orderId}&plan=${data.planType}`);
+      } else if (data.status === "FAILED" || data.status === "REJECTED") {
+        setUploadedProofUrl(null);
+        setUploadSuccessMsg(null);
+        setProofFile(null);
+        setProofPreview(null);
+        alert(`Pemberitahuan: Bukti transfer Anda ditolak oleh Admin. \nAlasan: ${data.rejectReason || "Tidak valid"}. \nSilakan unggah ulang bukti yang benar.`);
       } else {
         alert("Status pembayaran masih pending. Silakan tunggu admin memverifikasi bukti transfer Anda atau kembali lagi nanti.");
       }
