@@ -442,13 +442,6 @@ function CheckoutContent() {
                   <p className="text-white font-semibold text-sm truncate">{session?.user?.name || "Mempelai"}</p>
                   <p className="text-stone-400 text-xs truncate">{session?.user?.email}</p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => signOut({ callbackUrl: "/login" })}
-                  className="px-3 py-1.5 text-[10px] font-semibold text-rose-300 bg-rose-950/30 border border-rose-900/50 rounded-lg hover:bg-rose-900/50 hover:text-rose-200 transition whitespace-nowrap cursor-pointer"
-                >
-                  Ganti Akun
-                </button>
               </div>
 
               {/* Plan detail */}
@@ -725,6 +718,15 @@ function CheckoutContent() {
             </div>
             <div className="w-1 h-1 rounded-full bg-stone-700" />
             <span className="text-[11px] text-stone-500">QRIS · Transfer Bank · E-Wallet</span>
+            <div className="mt-8 text-center border-t border-white/5 pt-6">
+              <button
+                type="button"
+                onClick={() => signOut({ callbackUrl: "/login" })}
+                className="text-stone-500 hover:text-stone-300 text-[11px] transition cursor-pointer"
+              >
+                Bukan akun Anda? <span className="underline">Ganti Akun / Keluar</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>

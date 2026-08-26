@@ -8,7 +8,7 @@ import { BrandLogo } from "@/components/BrandLogo";
 function LoginForm() {
   const [loading, setLoading] = useState(false);
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const callbackUrl = searchParams.get("callbackUrl") || "/onboarding";
 
   const handleGoogleLogin = () => {
     setLoading(true);
