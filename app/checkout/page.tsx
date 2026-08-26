@@ -238,6 +238,26 @@ function CheckoutContent() {
   }, [qrData, orderId, qrisExpiry, router]);
 
   // Polling for Approval when Proof is Uploaded
+  // Auto Polling for Manual Approval
+  useEffect(() => {
+    if (!orderId || (!uploadedProofUrl && !uploadSuccessMsg)) return;
+    
+    const manualPoll = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/client/orders/${orderId}/status`, { cache: "no-store" });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.status === "PAID") {
+            clearInterval(manualPoll);
+            router.replace(`/dashboard/setup?order=${orderId}&plan=${data.planType}`);
+          }
+        }
+      } catch {}
+    }, 5000); // Check every 5s
+
+    return () => clearInterval(manualPoll);
+  }, [orderId, uploadedProofUrl, uploadSuccessMsg, router]);
+
   // Manual Check Status Handler
   const handleCheckStatus = async () => {
     if (!orderId) return;
