@@ -409,7 +409,7 @@ export default function AdminPage() {
 
   const loadOverviewData = useCallback(() => {
     setLoading(true);
-    fetch("/api/admin/overview")
+    fetch("/api/admin/overview", { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
