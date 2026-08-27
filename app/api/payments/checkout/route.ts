@@ -51,7 +51,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Akses ditolak. Bukan order Anda." }, { status: 403 });
     }
 
-    if (order.status !== "PENDING" && order.status !== "FAILED" && order.status !== "REJECTED") {
+    if (order.status !== "PENDING" && order.status !== "FAILED" && order.status !== "EXPIRED") {
       return NextResponse.json({
         error: `Order tidak bisa diproses, status saat ini: ${order.status}`,
       }, { status: 400 });

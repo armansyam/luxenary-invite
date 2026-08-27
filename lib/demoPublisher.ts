@@ -10,7 +10,29 @@ import { prisma } from "./prisma";
 export async function compileAndSaveStaticDemo(themeId: string, customDemoData?: any): Promise<string> {
   const cleanId = themeId.toLowerCase().trim();
   const data = composeDemoTemplateData(cleanId, "champagne", customDemoData);
-  const html = await renderTemplateFile(cleanId, data);
+  let html = await renderTemplateFile(cleanId, data);
+
+  // Inject cover-mode script & styles for lightweight catalog preview
+  const coverModeInjection = `
+    <script>
+      if (window.location.search.includes('mode=cover')) {
+        document.documentElement.classList.add('mode-cover');
+      }
+    </script>
+    <style>
+      html.mode-cover body > *:not(#coverScreen):not(.cover-screen):not(#coverOverlay):not(#hero):not(.hero-section):not(.main-content-wrapper) {
+        display: none !important;
+      }
+      /* Fallback for themes that wrap cover in a main wrapper */
+      html.mode-cover .main-scroll-panel > *:not(#coverScreen):not(.cover-screen):not(#coverOverlay):not(#hero):not(.hero-section) {
+        display: none !important;
+      }
+      html.mode-cover body { overflow: hidden !important; background: transparent !important; }
+      html.mode-cover { overflow: hidden !important; }
+    </style>
+  </head>
+  `;
+  html = html.replace('</head>', coverModeInjection);
 
   const targetDir = path.join(process.cwd(), "public", "demo", cleanId);
   try {

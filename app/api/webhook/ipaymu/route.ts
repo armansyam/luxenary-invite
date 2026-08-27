@@ -55,24 +55,25 @@ export async function POST(req: NextRequest) {
     const incomingVa = req.headers.get("va") || "";
     const incomingTimestamp = req.headers.get("timestamp") || "";
 
-    // Jika header signature ada, wajib diverifikasi
-    if (incomingSignature) {
-      const { va, apiKey } = await getIPaymuCredentials();
+    const { va, apiKey } = await getIPaymuCredentials();
+    const isConfigured = va && apiKey && va !== "0000000000000000" && apiKey !== "your_ipaymu_api_key";
 
-      // Hanya verifikasi jika VA dan ApiKey sudah dikonfigurasi
-      if (va && apiKey && va !== "0000000000000000" && apiKey !== "your_ipaymu_api_key") {
-        const isValid = verifyIPaymuSignature(incomingSignature, va, apiKey, rawBody, incomingTimestamp);
-        if (!isValid) {
-          console.warn("[iPaymu Webhook] Signature tidak valid — payload diabaikan");
-          // Return 200 untuk mencegah iPaymu retry tak henti (tapi tidak diproses)
-          return NextResponse.json({ status: "ignored", reason: "invalid_signature" });
-        }
+    if (isConfigured) {
+      if (!incomingSignature) {
+        return NextResponse.json({ status: "ignored", reason: "missing_signature" }, { status: 400 });
+      }
+      const isValid = verifyIPaymuSignature(incomingSignature, va, apiKey, rawBody, incomingTimestamp);
+      if (!isValid) {
+        console.warn("[iPaymu Webhook] Signature tidak valid — payload diabaikan");
+        // Return 200 untuk mencegah iPaymu retry tak henti (tapi tidak diproses)
+        return NextResponse.json({ status: "ignored", reason: "invalid_signature" });
       }
     }
 
     // Log semua webhook yang masuk ke database
+    let webhookLogId = null;
     try {
-      await prisma.webhookLog.create({
+      const log = await prisma.webhookLog.create({
         data: {
           source: "ipaymu",
           event: `status_${body.status_code || body.paid_status || "unknown"}`,
@@ -80,6 +81,7 @@ export async function POST(req: NextRequest) {
           status: "received",
         },
       });
+      webhookLogId = log.id;
     } catch {
       // Log error tidak menghentikan proses webhook
     }
@@ -126,12 +128,14 @@ export async function POST(req: NextRequest) {
       }
 
       // Update webhook log ke processed
-      try {
-        await prisma.webhookLog.updateMany({
-          where: { source: "ipaymu", status: "received" },
-          data: { status: "processed", processedAt: new Date() },
-        });
-      } catch {}
+      if (webhookLogId) {
+        try {
+          await prisma.webhookLog.update({
+            where: { id: webhookLogId },
+            data: { status: "processed", processedAt: new Date() },
+          });
+        } catch {}
+      }
 
     } else if (
       paidStatus === 2 ||

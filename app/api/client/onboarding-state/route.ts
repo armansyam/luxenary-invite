@@ -25,14 +25,20 @@ export async function GET() {
         groomSlug: true,
         brideSlug: true,
         invitationSlug: true,
+        orderId: true,
       },
     });
 
     if (existingInvitation) {
+      const hasPaid = existingInvitation.orderId 
+        ? await prisma.order.findFirst({ where: { id: existingInvitation.orderId, status: "PAID" } })
+        : null;
+      
       return NextResponse.json({
         step: "COMPLETED",
         invitation: existingInvitation,
         redirectUrl: "/dashboard",
+        hasPaidOrder: !!hasPaid,
       });
     }
 
@@ -46,6 +52,7 @@ export async function GET() {
       return NextResponse.json({
         step: "NO_ORDER",
         redirectUrl: "/packages",
+        hasPaidOrder: false,
       });
     }
 
@@ -56,6 +63,7 @@ export async function GET() {
         orderId: latestOrder.id,
         planType: latestOrder.planType,
         redirectUrl: `/dashboard/setup?order=${latestOrder.id}&plan=${latestOrder.planType}`,
+        hasPaidOrder: true,
       });
     }
 
@@ -68,6 +76,7 @@ export async function GET() {
         planType: latestOrder.planType,
         amount: Number(latestOrder.amount),
         redirectUrl: `/checkout?order=${latestOrder.id}`,
+        hasPaidOrder: false,
       });
     }
 

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { getInvitationPublicUrl, getPermanentPathUrl } from "@/lib/domainUtils";
+import { getPublicPlatformSettings } from "@/lib/settings";
 
 /**
  * Generate a WhatsApp link for sending the invitation
@@ -24,9 +25,20 @@ export async function GET(
     ? getInvitationPublicUrl(inv.subdomain, guest.name)
     : getPermanentPathUrl(inv.groomSlug, inv.brideSlug, inv.invitationSlug, guest.name);
 
-  const waMessage = encodeURIComponent(
-    `Assalamu'alaikum ${guest.name.split(" ")[0]},\n\nKami mengundang Bapak/Ibu dalam pernikahan kami.\n\nUndangan: ${invitationUrl}\n\nHormat kami,\n${inv.groomName || inv.groomNickname || "Pengantin Pria"} & ${inv.brideName || inv.brideNickname || "Pengantin Wanita"}`
-  );
+  const settings = await getPublicPlatformSettings();
+  const waTemplate = settings.waTemplateMessage;
+  
+  const guestName = guest.name.split(" ")[0];
+  const groomName = inv.groomName || inv.groomNickname || "Pengantin Pria";
+  const brideName = inv.brideName || inv.brideNickname || "Pengantin Wanita";
+  
+  const formattedMessage = waTemplate
+    .replace(/\{\{GUEST_NAME\}\}/g, guestName)
+    .replace(/\{\{INVITATION_URL\}\}/g, invitationUrl)
+    .replace(/\{\{GROOM_NAME\}\}/g, groomName)
+    .replace(/\{\{BRIDE_NAME\}\}/g, brideName);
+
+  const waMessage = encodeURIComponent(formattedMessage);
 
   const phoneVal = guest.phone || guest.phoneNumber;
   const waLink = phoneVal
@@ -58,9 +70,20 @@ export async function POST(
     ? getInvitationPublicUrl(inv.subdomain, guest.name)
     : getPermanentPathUrl(inv.groomSlug, inv.brideSlug, inv.invitationSlug, guest.name);
 
-  const waMessage = encodeURIComponent(
-    `Assalamu'alaikum ${guest.name.split(" ")[0]},\n\nKami mengundang Bapak/Ibu dalam pernikahan kami.\n\nUndangan: ${invitationUrl}\n\nHormat kami,\n${inv.groomName || inv.groomNickname || "Pengantin Pria"} & ${inv.brideName || inv.brideNickname || "Pengantin Wanita"}`
-  );
+  const settings = await getPublicPlatformSettings();
+  const waTemplate = settings.waTemplateMessage;
+  
+  const guestName = guest.name.split(" ")[0];
+  const groomName = inv.groomName || inv.groomNickname || "Pengantin Pria";
+  const brideName = inv.brideName || inv.brideNickname || "Pengantin Wanita";
+  
+  const formattedMessage = waTemplate
+    .replace(/\{\{GUEST_NAME\}\}/g, guestName)
+    .replace(/\{\{INVITATION_URL\}\}/g, invitationUrl)
+    .replace(/\{\{GROOM_NAME\}\}/g, groomName)
+    .replace(/\{\{BRIDE_NAME\}\}/g, brideName);
+
+  const waMessage = encodeURIComponent(formattedMessage);
 
   const targetPhone = guest.phone || guest.phoneNumber;
   const waLink = targetPhone

@@ -1641,37 +1641,13 @@ export function composeDemoTemplateData(
           Punya foto candid atau video seru selama menghadiri pernikahan kami? Bagikan momen spesial Anda langsung di sini:
         </p>
 
-        <!-- 1. KOTAK UPLOAD IN-PAGE (Langsung di halaman yang sama) -->
-        <div class="memories-inpage-upload-card" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 20px; padding: 1.4rem; margin-bottom: 1.8rem; text-align: left; backdrop-filter: blur(12px); box-shadow: 0 10px 30px rgba(0,0,0,0.35);">
-          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.6rem;">
-            <span style="font-size: 1.1rem;">📸</span>
-            <span class="serif" style="font-weight: 700; font-size: 0.95rem; color: #fff; letter-spacing: 0.03em;">Unggah Momen Kondangan</span>
-          </div>
-
-          <form onsubmit="luxHandleInPageMemorySubmit(event)" style="display: flex; flex-direction: column; gap: 10px;">
-            <div>
-              <label style="display: block; font-size: 0.72rem; font-weight: 600; color: rgba(255,255,255,0.7); margin-bottom: 3px;">NAMA ANDA *</label>
-              <input type="text" id="inpageMemName" required placeholder="Contoh: Budi Santoso & Istri" style="width: 100%; padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.4); color: #fff; font-size: 0.82rem; outline: none;" />
-            </div>
-            <div>
-              <label style="display: block; font-size: 0.72rem; font-weight: 600; color: rgba(255,255,255,0.7); margin-bottom: 3px;">PESAN / UCAPAN SINGKAT</label>
-              <input type="text" id="inpageMemMsg" placeholder="Tuliskan ucapan untuk kedua mempelai..." style="width: 100%; padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.4); color: #fff; font-size: 0.82rem; outline: none;" />
-            </div>
-            <div>
-              <label style="display: block; font-size: 0.72rem; font-weight: 600; color: rgba(255,255,255,0.7); margin-bottom: 3px;">PILIH FOTO DARI HP / KAMERA *</label>
-              <input type="file" id="inpageMemFile" accept="image/*" required style="width: 100%; padding: 7px 10px; border-radius: 10px; border: 1px dashed rgba(255,255,255,0.25); background: rgba(255,255,255,0.03); color: rgba(255,255,255,0.8); font-size: 0.78rem;" />
-            </div>
-            <button type="submit" id="inpageMemSubmitBtn" style="margin-top: 6px; padding: 10px 16px; border-radius: 50px; background: #ffffff; color: #000000; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.05em; border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(255,255,255,0.18); transition: transform 0.15s ease;">
-              📸  KIRIM FOTO MOMEN
-            </button>
-            <div id="inpageMemAlert" style="display: none; color: #4ade80; font-size: 0.78rem; text-align: center; margin-top: 6px; font-weight: 600;">
-              ✓ Foto berhasil diunggah langsung ke album kenangan!
-            </div>
-          </form>
-        </div>
+        <!-- 1. TOMBOL UPLOAD MOMEN (DIRECT LINK) -->
+        <a href="/demo/moment" style="display: block; width: 100%; max-width: 360px; margin: 0 auto 1.8rem auto; padding: 14px 20px; border-radius: 50px; background: #ffffff; color: #000000; font-weight: 700; font-size: 0.9rem; letter-spacing: 0.05em; text-align: center; text-decoration: none; box-shadow: 0 4px 15px rgba(255,255,255,0.18); transition: transform 0.15s ease;">
+          BAGIKAN FOTO MOMEN ANDA
+        </a>
 
         <!-- 2. HIGHLIGHT LINGKARAN (5 LINGKARAN DI LAYAR, LOOPING MARQUEE JIKA > 5) -->
-        <div class="memories-highlights-wrapper" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 14px 10px; margin-bottom: 1.5rem; overflow: hidden;">
+        <div class="memories-highlights-wrapper" style="width: 100%; max-width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 14px 10px; margin-bottom: 1.5rem; overflow: hidden;">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; font-size: 10px; font-weight: 700; opacity: 0.85; padding: 0 6px;">
             <span style="display: flex; align-items: center; gap: 6px;">
               <span style="width: 7px; height: 7px; border-radius: 99px; background: #10b981; display: inline-block;"></span>

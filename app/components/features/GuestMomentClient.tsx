@@ -6,17 +6,61 @@ import Link from "next/link";
 
 interface GuestMomentClientProps {
   invitationId: string;
-  subdomain: string;
   coupleName: string;
   coverUrl?: string;
   memories: any[];
+  galleryUrl: string;
+  backUrl: string;
 }
 
-export default function GuestMomentClient({ invitationId, subdomain, coupleName, coverUrl, memories }: GuestMomentClientProps) {
+export default function GuestMomentClient({ invitationId, coupleName, coverUrl, memories, galleryUrl, backUrl }: GuestMomentClientProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new window.Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          
+          // Max dimensions (e.g. 1080p width max)
+          const MAX_WIDTH = 1080;
+          const MAX_HEIGHT = 1080;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext("2d");
+          ctx?.drawImage(img, 0, 0, width, height);
+
+          // Compress to JPEG with 0.7 quality (targets ~100-200KB usually)
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+          resolve(dataUrl);
+        };
+        img.onerror = (error) => reject(error);
+      };
+      reader.onerror = (error) => reject(error);
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -26,17 +70,40 @@ export default function GuestMomentClient({ invitationId, subdomain, coupleName,
     setSuccessMsg("");
 
     const form = e.currentTarget;
-    const formData = new FormData(form);
+    const fileInput = form.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = fileInput.files?.[0];
+    const senderName = (form.querySelector('input[name="senderName"]') as HTMLInputElement).value;
     
+    if (!file) {
+      setErrorMsg("Pilih foto terlebih dahulu.");
+      setIsUploading(false);
+      return;
+    }
+
     // Simulate progress
     const progressInterval = setInterval(() => {
-      setUploadProgress(p => (p < 90 ? p + 10 : p));
-    }, 500);
+      setUploadProgress(p => (p < 80 ? p + 10 : p));
+    }, 300);
 
     try {
+      // 1. Compress Image via Canvas
+      const base64File = await compressImage(file);
+      setUploadProgress(85);
+
+      // 2. Send JSON payload
+      const payload = {
+        invitationId,
+        senderName,
+        senderEmail: "guest@moment.com",
+        base64File,
+        mimeType: "image/jpeg",
+        fileName: file.name.replace(/\.[^/.]+$/, "") + ".jpg"
+      };
+
       const res = await fetch("/api/public/memories/upload", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
 
       clearInterval(progressInterval);
@@ -44,7 +111,7 @@ export default function GuestMomentClient({ invitationId, subdomain, coupleName,
 
       const data = await res.json();
       if (res.ok) {
-        setSuccessMsg("Momen berhasil dikirim! Silakan lihat layar proyektor.");
+        setSuccessMsg("Momen berhasil dikirim! Silakan lihat layar.");
         form.reset();
         setTimeout(() => setSuccessMsg(""), 5000);
       } else {
@@ -87,7 +154,7 @@ export default function GuestMomentClient({ invitationId, subdomain, coupleName,
           <span className="text-xs tracking-[0.3em] text-amber-500 font-bold uppercase mb-3 block">Guest Moment</span>
           <h1 className="text-4xl sm:text-5xl font-serif text-white tracking-wide mb-2 drop-shadow-xl">{coupleName}</h1>
           <p className="text-sm text-stone-300 italic font-serif opacity-90 max-w-xs mx-auto">
-            "Bagikan foto & video Anda secara langsung ke layar proyektor acara kami."
+            "Bagikan foto momen terbaik Anda secara langsung ke buku tamu digital kami."
           </p>
         </div>
 
@@ -102,9 +169,18 @@ export default function GuestMomentClient({ invitationId, subdomain, coupleName,
               </div>
               <h3 className="font-bold text-white text-lg">Berhasil Dikirim!</h3>
               <p className="text-emerald-400/80 text-sm mt-1">{successMsg}</p>
-              <button onClick={() => setSuccessMsg("")} className="mt-6 text-xs text-amber-500 font-bold uppercase tracking-widest hover:text-amber-400 transition cursor-pointer">
-                Upload Lagi
-              </button>
+              
+              <div className="flex flex-col items-center gap-3 mt-8">
+                <Link 
+                  href={galleryUrl}
+                  className="w-full py-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-sm tracking-wide shadow-lg shadow-amber-900/30 transition-all text-center block"
+                >
+                  Lihat Galeri Foto Tamu
+                </Link>
+                <button onClick={() => setSuccessMsg("")} className="text-xs text-stone-400 font-bold uppercase tracking-widest hover:text-white transition cursor-pointer mt-2">
+                  Atau Upload Foto Lain
+                </button>
+              </div>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
@@ -123,12 +199,12 @@ export default function GuestMomentClient({ invitationId, subdomain, coupleName,
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-stone-400 uppercase tracking-wider mb-2">Pilih Foto / Video</label>
+                <label className="block text-xs font-bold text-stone-400 uppercase tracking-wider mb-2">Pilih Foto</label>
                 <input
                   type="file"
                   name="file"
                   required
-                  accept="image/*,video/*"
+                  accept="image/*"
                   className="w-full text-sm text-stone-300 file:mr-4 file:py-3 file:px-6 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-amber-500 file:text-stone-950 hover:file:bg-amber-400 cursor-pointer transition-colors border border-dashed border-stone-600 rounded-2xl p-2 bg-stone-950/30"
                 />
               </div>
@@ -168,16 +244,18 @@ export default function GuestMomentClient({ invitationId, subdomain, coupleName,
             <div className="flex gap-3 overflow-x-auto snap-x pb-4 scrollbar-none px-2 -mx-2">
               {recentMemories.map((m) => (
                 <div key={m.id} className="w-24 h-24 shrink-0 snap-start rounded-2xl overflow-hidden border border-white/10 relative group">
-                  {m.mediaType === "VIDEO" ? (
-                    <video src={m.url || m.mediaUrl} className="w-full h-full object-cover" />
-                  ) : (
-                    <Image src={m.thumbnailUrl || m.mediaUrl || m.url} alt={m.senderName} fill className="object-cover" />
-                  )}
+                  <Image src={m.thumbnailUrl || m.mediaUrl || m.url} alt={m.senderName} fill className="object-cover" />
                   <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/90 to-transparent">
                     <p className="text-[9px] text-white font-bold truncate text-center">{m.senderName}</p>
                   </div>
                 </div>
               ))}
+            </div>
+            
+            <div className="mt-4 flex justify-center">
+               <Link href={galleryUrl} className="text-xs text-stone-400 hover:text-white font-bold tracking-wider underline underline-offset-4 decoration-stone-600">
+                 Buka Galeri Foto Keseluruhan &rarr;
+               </Link>
             </div>
           </div>
         )}
@@ -185,7 +263,7 @@ export default function GuestMomentClient({ invitationId, subdomain, coupleName,
 
       <div className="absolute top-4 left-4 z-20">
          <Link
-            href={`/s/${subdomain}`}
+            href={backUrl}
             className="w-10 h-10 rounded-full bg-stone-900/80 backdrop-blur border border-white/10 flex items-center justify-center text-white hover:bg-stone-800 transition"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

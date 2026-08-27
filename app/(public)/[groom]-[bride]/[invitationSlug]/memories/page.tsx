@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const coupleName = `${invitation.groomNickname || "Pria"} & ${invitation.brideNickname || "Wanita"}`;
   return {
     title: `Galeri Kenangan Tamu — ${coupleName} | Luxenary Invite`,
-    description: `Kumpulan foto candid dan video ucapan dari sahabat & keluarga di pernikahan ${coupleName}.`,
+    description: `Kumpulan foto candid dan ucapan dari sahabat & keluarga di pernikahan ${coupleName}.`,
   };
 }
 
@@ -83,42 +83,28 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
       {/* ── Hero Title Section ── */}
       <section className="px-4 pt-10 pb-6 text-center max-w-xl mx-auto">
         <span className="text-xs tracking-[0.25em] text-amber-300/80 uppercase font-semibold font-mono block mb-2">
-          GUEST MEMORIES &amp; SHARED MOMENTS
+          GUEST MOMENT GALLERY
         </span>
         <h1 className="text-3xl sm:text-4xl font-serif font-bold text-white tracking-wide mb-3">
           {coupleName}
         </h1>
         <p className="text-xs sm:text-sm text-stone-400 leading-relaxed max-w-md mx-auto font-serif italic">
-          &ldquo;Kumpulan foto candid dan video ucapan penuh kehangatan yang dibagikan oleh sahabat dan keluarga tercinta.&rdquo;
+          &ldquo;Kumpulan foto candid dan ucapan penuh kehangatan yang dibagikan oleh sahabat dan keluarga tercinta.&rdquo;
         </p>
 
-        <div className="mt-6">
-          <button
-            type="button"
-            id="openModalTrigger"
-            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-stone-950 font-bold text-xs tracking-wider shadow-lg shadow-amber-900/30 transition cursor-pointer"
-          >
-            <svg className="w-4 h-4 text-stone-950" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            <span>BAGIKAN MOMEN ANDA</span>
-          </button>
-        </div>
       </section>
 
       {/* ── Instagram Story Highlights Rail ("Kami Sudah Membagikan Momen") ── */}
       {shuffledMemories.length > 0 && (
         <section className="px-4 py-4 max-w-4xl mx-auto">
-          <div className="flex items-center justify-between mb-3 px-1">
-            <span className="text-[11px] font-bold tracking-wider text-stone-400 uppercase font-mono flex items-center gap-1.5">
+          <div className="flex items-center justify-center gap-4 mb-3 px-1 text-center">
+            <span className="text-[11px] font-bold tracking-wider text-stone-400 uppercase font-mono flex items-center justify-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               Kami Sudah Membagikan Momen
             </span>
-            <span className="text-[10px] text-stone-500 font-mono">Geser &rarr;</span>
           </div>
 
-          <div className="flex items-center gap-3.5 overflow-x-auto pb-3 pt-1 scrollbar-none snap-x">
+          <div className="flex items-center justify-center gap-3.5 overflow-x-auto pb-3 pt-1 scrollbar-none snap-x">
             {shuffledMemories.map((item, idx) => (
               <div
                 key={`story-${item.id}-${idx}`}
@@ -158,7 +144,7 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
 
       {/* ── Interactive Tab Switcher & Count ── */}
       <section className="px-4 mt-4 max-w-4xl mx-auto">
-        <div className="flex items-center justify-center gap-2 p-1 bg-stone-900/90 rounded-2xl border border-white/10 max-w-md mx-auto">
+        <div className="flex items-center justify-center gap-2 p-1 bg-stone-900/90 rounded-2xl border border-white/10 max-w-xs mx-auto">
           <button
             type="button"
             id="tabAll"
@@ -172,13 +158,6 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
             className="flex-1 py-2 text-xs font-bold rounded-xl transition text-stone-400 hover:text-white"
           >
             Foto ({photoMemories.length})
-          </button>
-          <button
-            type="button"
-            id="tabVideo"
-            className="flex-1 py-2 text-xs font-bold rounded-xl transition text-stone-400 hover:text-white"
-          >
-            Video ({videoMemories.length})
           </button>
         </div>
       </section>
@@ -201,7 +180,7 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
         ) : (
           <div
             id="memoriesMasonry"
-            className="columns-2 sm:columns-3 gap-3.5 [column-fill:_balance] space-y-3.5"
+            className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-3 space-y-3"
           >
             {memories.map((m) => (
               <div
@@ -259,130 +238,31 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
         document.addEventListener('DOMContentLoaded', function() {
           const tabAll = document.getElementById('tabAll');
           const tabPhoto = document.getElementById('tabPhoto');
-          const tabVideo = document.getElementById('tabVideo');
           const cards = document.querySelectorAll('.memory-grid-card');
 
+          let currentFilter = 'ALL';
+
           function setFilter(type) {
+            currentFilter = type;
+            [tabAll, tabPhoto].forEach(btn => {
+              if (btn) btn.className = "flex-1 py-2 text-xs font-bold rounded-xl transition text-stone-400 hover:text-white";
+            });
+            if (type === 'ALL' && tabAll) tabAll.className = "flex-1 py-2 text-xs font-bold rounded-xl transition bg-amber-500 text-stone-950 shadow-xs";
+            if (type === 'PHOTO' && tabPhoto) tabPhoto.className = "flex-1 py-2 text-xs font-bold rounded-xl transition bg-amber-500 text-stone-950 shadow-xs";
+            
             cards.forEach(card => {
-              if (type === 'ALL' || card.getAttribute('data-type') === type) {
+              if (type === 'ALL') {
+                card.style.display = 'block';
+              } else if (card.getAttribute('data-type') === type) {
                 card.style.display = 'block';
               } else {
                 card.style.display = 'none';
               }
             });
-            [tabAll, tabPhoto, tabVideo].forEach(btn => {
-              btn.className = "flex-1 py-2 text-xs font-bold rounded-xl transition text-stone-400 hover:text-white";
-            });
-            if (type === 'ALL') tabAll.className = "flex-1 py-2 text-xs font-bold rounded-xl transition bg-amber-500 text-stone-950 shadow-xs";
-            if (type === 'PHOTO') tabPhoto.className = "flex-1 py-2 text-xs font-bold rounded-xl transition bg-amber-500 text-stone-950 shadow-xs";
-            if (type === 'VIDEO') tabVideo.className = "flex-1 py-2 text-xs font-bold rounded-xl transition bg-amber-500 text-stone-950 shadow-xs";
           }
 
           if (tabAll) tabAll.addEventListener('click', () => setFilter('ALL'));
-          if (tabPhoto) tabPhoto.addEventListener('click', () => setFilter('PHOTO'));
-          if (tabVideo) tabVideo.addEventListener('click', () => setFilter('VIDEO'));
-
-          // Open Upload Modal Trigger
-          const openBtn = document.getElementById('openModalTrigger');
-          const uploadModal = document.getElementById('memoryUploadModal');
-          const closeUploadBtn = document.getElementById('closeUploadModalBtn');
-
-          if (openBtn && uploadModal) {
-            openBtn.addEventListener('click', () => { uploadModal.style.display = 'flex'; });
-          }
-          if (closeUploadBtn && uploadModal) {
-            closeUploadBtn.addEventListener('click', () => { uploadModal.style.display = 'none'; });
-          }
-
-          // Handle Upload Form Submit with Canvas Compression and Progress Bar
-          const uploadForm = document.getElementById('pageMemoryUploadForm');
-          if (uploadForm) {
-            uploadForm.addEventListener('submit', async function(e) {
-              e.preventDefault();
-              const submitBtn = document.getElementById('pageMemorySubmitBtn');
-              const progressBox = document.getElementById('pageMemoryProgressBox');
-              const progressBar = document.getElementById('pageMemoryProgressBar');
-              const progressText = document.getElementById('pageMemoryProgressText');
-              const successBox = document.getElementById('pageMemorySuccessBox');
-              const fileInput = document.getElementById('pageMemoryFileInput');
-
-              if (!fileInput || !fileInput.files || !fileInput.files[0]) {
-                alert('Silakan pilih foto atau video terlebih dahulu.');
-                return;
-              }
-
-              const rawFile = fileInput.files[0];
-              if (submitBtn) { submitBtn.disabled = true; submitBtn.style.opacity = '0.5'; }
-              if (progressBox) progressBox.style.display = 'block';
-              if (progressBar) progressBar.style.width = '20%';
-              if (progressText) progressText.textContent = 'Menyiapkan & mengompres media...';
-
-              let optimizedFile = rawFile;
-              if (rawFile.type.startsWith('image/')) {
-                try {
-                  optimizedFile = await new Promise((resolve) => {
-                    const reader = new FileReader();
-                    reader.onload = (re) => {
-                      const img = new Image();
-                      img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        let w = img.width;
-                        let h = img.height;
-                        const maxDim = 1920;
-                        if (w > maxDim || h > maxDim) {
-                          if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; }
-                          else { w = Math.round((w * maxDim) / h); h = maxDim; }
-                        }
-                        canvas.width = w;
-                        canvas.height = h;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, w, h);
-                        canvas.toBlob((blob) => {
-                          if (blob) {
-                            resolve(new File([blob], rawFile.name.replace(/\\.[^/.]+$/, '') + '.webp', { type: 'image/webp' }));
-                          } else {
-                            resolve(rawFile);
-                          }
-                        }, 'image/webp', 0.85);
-                      };
-                      img.src = re.target.result;
-                    };
-                    reader.readAsDataURL(rawFile);
-                  });
-                } catch {}
-              }
-
-              if (progressBar) progressBar.style.width = '65%';
-              if (progressText) progressText.textContent = 'Mengunggah ke album pengantin...';
-
-              const fd = new FormData(uploadForm);
-              fd.set('file', optimizedFile);
-              fd.set('mediaType', optimizedFile.type.startsWith('video/') ? 'VIDEO' : 'PHOTO');
-
-              try {
-                const res = await fetch('/api/public/memories/upload', {
-                  method: 'POST',
-                  body: fd,
-                });
-                const data = await res.json();
-                if (data.success) {
-                  if (progressBar) progressBar.style.width = '100%';
-                  if (progressBox) progressBox.style.display = 'none';
-                  if (successBox) {
-                    successBox.style.display = 'block';
-                    successBox.textContent = '✓ ' + data.message;
-                  }
-                  setTimeout(() => {
-                    if (uploadModal) uploadModal.style.display = 'none';
-                    window.location.reload();
-                  }, 1500);
-                } else {
-                  throw new Error(data.error || 'Gagal mengunggah.');
-                }
-              } catch (err) {
-                alert(err.message || 'Terjadi kesalahan saat mengunggah.');
-                if (submitBtn) { submitBtn.disabled = false; submitBtn.style.opacity = '1'; }
-                if (progressBox) progressBox.style.display = 'none';
+          if (tabPhoto) tabPhoto.ad = 'none';
               }
             });
           }
@@ -508,95 +388,7 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
         <span className="text-xs tracking-wide">Ada <span id="liveToastCount">0</span> Momen Baru! Klik untuk memuat</span>
       </div>
 
-      {/* ── Guest Upload Modal ── */}
-      <div
-        id="memoryUploadModal"
-        style={{ display: "none" }}
-        className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm p-4 flex items-center justify-center"
-      >
-        <div className="bg-stone-900 border border-stone-800 rounded-3xl p-6 sm:p-7 max-w-md w-full text-white shadow-2xl relative space-y-4">
-          <div className="flex items-center justify-between border-b border-stone-800 pb-3">
-            <div>
-              <h3 className="font-bold font-serif text-base text-stone-100">Kirim Momen Spesial</h3>
-              <p className="text-[11px] text-stone-400">Bagikan foto/video candid ke album pengantin</p>
-            </div>
-            <button
-              type="button"
-              id="closeUploadModalBtn"
-              className="text-stone-400 hover:text-white text-xl font-bold p-1 cursor-pointer"
-            >
-              ✕
-            </button>
-          </div>
 
-          <form id="pageMemoryUploadForm" className="space-y-3.5">
-            <input type="hidden" name="invitationId" value={invitation.id} />
-
-            <div>
-              <label className="block text-xs font-bold text-stone-300 mb-1">Nama Anda *</label>
-              <input
-                type="text"
-                name="senderName"
-                required
-                placeholder="Contoh: Dimas &amp; Ratih"
-                className="w-full px-3.5 py-2 rounded-xl bg-stone-950 border border-stone-800 text-xs text-stone-100 focus:outline-none focus:border-amber-500 font-sans"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-stone-300 mb-1">Email / Kontak *</label>
-              <input
-                type="email"
-                name="senderEmail"
-                required
-                placeholder="email@anda.com"
-                className="w-full px-3.5 py-2 rounded-xl bg-stone-950 border border-stone-800 text-xs text-stone-100 focus:outline-none focus:border-amber-500 font-sans"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-stone-300 mb-1">Pesan / Cerita di Balik Foto</label>
-              <textarea
-                name="message"
-                rows={2}
-                placeholder="Tulis ucapan singkat..."
-                className="w-full px-3.5 py-2 rounded-xl bg-stone-950 border border-stone-800 text-xs text-stone-100 focus:outline-none focus:border-amber-500 font-sans resize-none"
-              ></textarea>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-stone-300 mb-1">Pilih Foto atau Video *</label>
-              <input
-                type="file"
-                id="pageMemoryFileInput"
-                name="file"
-                required
-                accept="image/*,video/*"
-                className="w-full text-xs text-stone-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-amber-600 file:text-stone-950 hover:file:bg-amber-500 cursor-pointer"
-              />
-            </div>
-
-            {/* Progress Container */}
-            <div id="pageMemoryProgressBox" style={{ display: "none" }} className="space-y-1.5 pt-2">
-              <div className="w-full bg-stone-950 rounded-full h-2 overflow-hidden border border-stone-800">
-                <div id="pageMemoryProgressBar" className="bg-gradient-to-r from-amber-600 to-amber-400 h-full w-0 transition-all duration-300"></div>
-              </div>
-              <p id="pageMemoryProgressText" className="text-[10px] text-amber-400 font-mono text-center">Menyiapkan...</p>
-            </div>
-
-            {/* Success Box */}
-            <div id="pageMemorySuccessBox" style={{ display: "none" }} className="p-3 bg-emerald-950/80 border border-emerald-500/40 rounded-xl text-emerald-300 text-xs font-bold text-center"></div>
-
-            <button
-              type="submit"
-              id="pageMemorySubmitBtn"
-              className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-stone-950 font-bold text-xs shadow-lg transition cursor-pointer"
-            >
-              Kirim ke Album Pengantin
-            </button>
-          </form>
-        </div>
-      </div>
 
       {/* ── Lightbox Preview Modal ── */}
       <div

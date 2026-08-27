@@ -380,7 +380,7 @@ export default function DashboardHome() {
             <span className="text-[11px] font-bold text-rose-800">PIN Akses Panitia: <span className="font-mono text-sm ml-1 tracking-widest">{invitation?.staffPin || "123456"}</span></span>
           </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 sm:gap-5">
           
           {/* Receptionist */}
           <div className="bg-white p-5 rounded-2xl border border-stone-200/80 shadow-xs flex flex-col justify-between space-y-4 hover:border-emerald-500/40 transition">
@@ -391,33 +391,6 @@ export default function DashboardHome() {
             <a href={`/s/${invitation?.subdomain}/receptionist`} target="_blank" className="w-full py-2 bg-stone-100 hover:bg-emerald-50 text-emerald-800 font-bold rounded-xl text-xs transition text-center border border-stone-200">
               Buka Scanner QR
             </a>
-          </div>
-
-          {/* Photobooth */}
-          <div className="bg-white p-5 rounded-2xl border border-stone-200/80 shadow-xs flex flex-col justify-between space-y-4 hover:border-blue-500/40 transition">
-            <div>
-              <h3 className="text-sm font-bold text-stone-900 mb-1">iPad Photobooth</h3>
-              <p className="text-[11px] text-stone-500 leading-relaxed">Buka di iPad Photobooth vendor agar tamu bisa merekam video ucapan.</p>
-            </div>
-            <a href={`/s/${invitation?.subdomain}/booth`} target="_blank" className="w-full py-2 bg-stone-100 hover:bg-blue-50 text-blue-800 font-bold rounded-xl text-xs transition text-center border border-stone-200">
-              Buka Aplikasi Booth
-            </a>
-          </div>
-
-          {/* Live Show Projector */}
-          <div className="bg-white p-5 rounded-2xl border border-stone-200/80 shadow-xs flex flex-col justify-between space-y-4 hover:border-amber-500/40 transition">
-            <div>
-              <h3 className="text-sm font-bold text-stone-900 mb-1">Proyektor Live Show</h3>
-              <p className="text-[11px] text-stone-500 leading-relaxed">Sambungkan laptop ke Proyektor untuk menampilkan momen tamu real-time.</p>
-            </div>
-            <div className="flex gap-2">
-              <a href={`/s/${invitation?.subdomain}/liveshow`} target="_blank" className="flex-1 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs transition text-center shadow-xs">
-                Buka Layar
-              </a>
-              <a href={`/s/${invitation?.subdomain}/remote`} target="_blank" className="flex-1 py-2 bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-xl text-xs transition text-center shadow-xs">
-                Remote TV
-              </a>
-            </div>
           </div>
 
           {/* QR Guest Moment (New) */}

@@ -9,18 +9,39 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const isAdmin = (session?.user as any)?.isAdmin === true || (session?.user as any)?.role === "SUPER_ADMIN" || (session?.user as any)?.role === "ADMIN";
+    
+    if (!session?.user || !isAdmin) {
+      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
     }
 
-    const isAdmin =
-      (session.user as any).role === "SUPER_ADMIN" ||
-      (session.user as any).role === "ADMIN" ||
-      (session.user as any).isAdmin === true;
-
-    if (!isAdmin) {
-      return NextResponse.json({ error: "Forbidden. Admin only." }, { status: 403 });
+    // --- AUTO EXPIRE SWEEP (ADMIN SIDE) ---
+    // Pastikan admin selalu melihat data mutakhir (expired QRIS)
+    const pendingGatewayOrders = await prisma.order.findMany({
+      where: { status: "PENDING", paymentMethod: "GATEWAY", snapToken: { not: null } },
+      select: { id: true, snapToken: true }
+    });
+    
+    const now = Date.now();
+    const expiredIds: string[] = [];
+    for (const ord of pendingGatewayOrders) {
+      try {
+        if (typeof ord.snapToken === "string" && ord.snapToken.startsWith("{")) {
+          const tokenData = JSON.parse(ord.snapToken);
+          if (tokenData && tokenData.expiry && now > tokenData.expiry + 120000) {
+            expiredIds.push(ord.id);
+          }
+        }
+      } catch (e) {}
     }
+
+    if (expiredIds.length > 0) {
+      await prisma.order.updateMany({
+        where: { id: { in: expiredIds } },
+        data: { status: "EXPIRED" }
+      });
+    }
+    // ----------------------------------------
 
     // Load available themes from database
     const themes = await prisma.theme.findMany({

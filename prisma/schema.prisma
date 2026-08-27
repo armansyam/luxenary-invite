@@ -346,6 +346,7 @@ enum InvitationStatus {
   DRAFT
   PUBLISHED
   TAKEN_DOWN
+  ARCHIVED
 }
 
 enum WaStatus {

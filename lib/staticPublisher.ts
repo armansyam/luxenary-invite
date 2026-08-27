@@ -151,7 +151,18 @@ export async function buildAndSavePublishedHtml(invitationId: string): Promise<s
 
   await fs.promises.writeFile(filePath, standaloneHtml, "utf-8");
 
-  console.log(`[Static Publisher] Standalone HTML baked successfully: ${filePath} (${(standaloneHtml.length / 1024).toFixed(1)} KB)`);
+  // Also save a permanent portfolio copy accessible without DB
+  const portfolioDir = path.join(process.cwd(), "public", "portfolio");
+  try {
+    await fs.promises.access(portfolioDir);
+  } catch {
+    await fs.promises.mkdir(portfolioDir, { recursive: true });
+  }
+  const portfolioFileName = `${invitation.groomSlug}-${invitation.brideSlug}-${invitation.invitationSlug}.html`;
+  const portfolioPath = path.join(portfolioDir, portfolioFileName);
+  await fs.promises.writeFile(portfolioPath, standaloneHtml, "utf-8");
+
+  console.log(`[Static Publisher] Standalone HTML baked successfully: ${filePath} & Portfolio: ${portfolioFileName} (${(standaloneHtml.length / 1024).toFixed(1)} KB)`);
 
   return standaloneHtml;
 }

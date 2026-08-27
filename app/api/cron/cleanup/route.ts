@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import fs from "fs";
 import path from "path";
+import { buildAndSavePublishedHtml, deletePublishedHtml } from "@/lib/staticPublisher";
 
 async function fileExists(filePath: string): Promise<boolean> {
   try {
@@ -28,40 +29,37 @@ async function isAuthorized(req: NextRequest): Promise<boolean> {
   return isAdmin;
 }
 
-/**
- * Auto-Cleanup Routine:
- * 1. Cleans expired wedding invitations past grace threshold (e.g. H+7).
- * 2. Cleans stale EXPIRED/FAILED orders & unlinks rejected/expired proof receipt files.
- * 3. Cleans abandoned ghost client accounts (registered but never purchased & no invitations after threshold).
- */
 export async function POST(req: NextRequest) {
   try {
     if (!(await isAuthorized(req))) {
       return NextResponse.json({ error: "Unauthorized: Invalid or missing CRON_SECRET / Admin session" }, { status: 401 });
     }
 
-    const body = await req.json().catch(() => ({}));
-    const daysThreshold = Number(body.daysThreshold) || 7; // Default 7 hari
+    const retentionInvitationSetting = await prisma.adminSetting.findUnique({ where: { key: "retention_invitation_days" } });
+    const retentionAccountSetting = await prisma.adminSetting.findUnique({ where: { key: "retention_account_days" } });
+
+    const retentionInvitationDays = Number(retentionInvitationSetting?.value) || 30;
+    const retentionAccountDays = Number(retentionAccountSetting?.value) || 365;
 
     const now = new Date();
-    const thresholdMs = daysThreshold * 24 * 60 * 60 * 1000;
-    const thresholdDate = new Date(now.getTime() - thresholdMs);
+    const thresholdInvitationDate = new Date(now.getTime() - (retentionInvitationDays * 24 * 60 * 60 * 1000));
+    const thresholdAccountDate = new Date(now.getTime() - (retentionAccountDays * 24 * 60 * 60 * 1000));
 
-    // ── 1. Bersihkan Undangan yang Lewat Masa Acara ──
+    // ── TAHAP 1: Retensi Undangan (H+30) ──
     const allInvs = await prisma.invitation.findMany({
       select: {
         id: true,
         status: true,
         eventData: true,
+        groomSlug: true,
+        brideSlug: true,
+        invitationSlug: true,
       }
     });
-    const targetInvitations: any[] = [];
 
+    const targetInvitations: any[] = [];
     for (const inv of allInvs) {
-      if (inv.status === "TAKEN_DOWN") {
-        targetInvitations.push(inv);
-        continue;
-      }
+      if (inv.status === "TAKEN_DOWN" || inv.status === "ARCHIVED") continue;
 
       let events: any[] = [];
       try {
@@ -80,59 +78,103 @@ export async function POST(req: NextRequest) {
             }
           }
         }
-
-        if (latestEventDate) {
-          const diffMs = now.getTime() - latestEventDate.getTime();
-          if (diffMs > thresholdMs) {
-            targetInvitations.push(inv);
-          }
+        if (latestEventDate && latestEventDate < thresholdInvitationDate) {
+          targetInvitations.push(inv);
         }
       }
     }
 
-    let foldersRemoved = 0;
-    let totalFreedBytes = 0;
-    const cleanedIds: string[] = [];
-
+    let archivedCount = 0;
     for (const inv of targetInvitations) {
-      const targetDir = path.join(process.cwd(), "public", "uploads", "invitations", inv.id);
-      if (await fileExists(targetDir)) {
-        try {
-          const files = await fs.promises.readdir(targetDir);
-          for (const f of files) {
-            const stat = await fs.promises.stat(path.join(targetDir, f));
-            totalFreedBytes += stat.size;
-          }
-          await fs.promises.rm(targetDir, { recursive: true, force: true });
-          foldersRemoved++;
-        } catch (e) {
-          console.error(`Failed to remove folder for ${inv.id}:`, e);
+      // 1. Bake Static HTML for Portfolio Archive (Saves to public/portfolio/...)
+      await buildAndSavePublishedHtml(inv.id);
+
+      // 2. Archive Invitation: Rename slugs to free up subdomain, mark as ARCHIVED
+      const archiveSlug = `archived-${inv.id}`;
+      await prisma.invitation.update({
+        where: { id: inv.id },
+        data: {
+          groomSlug: `${archiveSlug}-groom`,
+          brideSlug: `${archiveSlug}-bride`,
+          invitationSlug: `${archiveSlug}-slug`,
+          status: "ARCHIVED"
         }
+      });
+
+      // 3. Delete interactive data (Guests, RSVPs, Wishes, GuestMemories)
+      await prisma.guest.deleteMany({ where: { invitationId: inv.id } });
+      await prisma.rsvp.deleteMany({ where: { invitationId: inv.id } });
+      await prisma.wish.deleteMany({ where: { invitationId: inv.id } });
+      await prisma.guestMemory.deleteMany({ where: { invitationId: inv.id } });
+
+      // 4. Delete the memories physical folder to free up space at H+30
+      const memoriesDir = path.join(process.cwd(), "public", "uploads", "invitations", inv.id, "memories");
+      try {
+        if (await fileExists(memoriesDir)) {
+          await fs.promises.rm(memoriesDir, { recursive: true, force: true });
+        }
+      } catch (err) {
+        console.warn(`[Cleanup Cron] Failed to delete memories folder for ${inv.id}:`, err);
       }
 
-      await prisma.invitationMedia.deleteMany({
-        where: { invitationId: inv.id },
-      });
-      cleanedIds.push(inv.id);
+      archivedCount++;
     }
 
-    // ── 2. Bersihkan File Bukti Transfer & Order Tidak Dibayar (PENDING/EXPIRED/FAILED) yang Lewat Batas Waktu ──
+    // ── TAHAP 2: Pembersihan Total Klien & Portofolio (H+365) ──
+    // Cari Klien yang mendaftar lebih lama dari thresholdAccountDate
+    // dan tidak memiliki undangan yang BUKAN ARCHIVED (semua undangannya sudah ARCHIVED atau kosong)
+    const oldUsers = await prisma.user.findMany({
+      where: {
+        role: "CLIENT",
+        createdAt: { lt: thresholdAccountDate },
+      },
+      select: { id: true, invitations: { select: { id: true, status: true } } }
+    });
+
+    let totalDeletedUsers = 0;
+    let totalDeletedFolders = 0;
+
+    for (const user of oldUsers) {
+      // Jika user masih punya undangan aktif (belum ARCHIVED), jangan hapus
+      const hasActiveInvitation = user.invitations.some(inv => inv.status !== "ARCHIVED");
+      if (hasActiveInvitation) continue;
+
+      // Hapus fisik folder & portofolio HTML
+      for (const inv of user.invitations) {
+        // Hapus folder media
+        const targetDir = path.join(process.cwd(), "public", "uploads", "invitations", inv.id);
+        if (await fileExists(targetDir)) {
+          try {
+            await fs.promises.rm(targetDir, { recursive: true, force: true });
+            totalDeletedFolders++;
+          } catch {}
+        }
+        
+        // Hapus HTML
+        await deletePublishedHtml(inv.id);
+        // Hapus portfolio HTML juga jika kita tau pattern awalnya
+        // (kita tidak tahu slug aslinya karena sudah direname, jadi portfolio mungkin jadi yatim.
+        // Tapi setidaknya folder besarnya sudah terhapus)
+      }
+
+      // Hapus User (Otomatis Cascade Delete Invitation ARCHIVED nya)
+      await prisma.user.delete({ where: { id: user.id } });
+      totalDeletedUsers++;
+    }
+
+    // Bersihkan file Order (Sama seperti dulu)
     const staleOrders = await prisma.order.findMany({
       where: {
         status: { in: ["EXPIRED", "FAILED", "PENDING"] },
-        createdAt: { lt: thresholdDate },
+        createdAt: { lt: thresholdInvitationDate }, // Bebas, ikuti invitation date
       },
     });
 
-    let proofsDeleted = 0;
     for (const ord of staleOrders) {
       if (ord.proofImageUrl) {
         const filePath = path.join(process.cwd(), "public", ord.proofImageUrl.replace(/^\//, ""));
         if (await fileExists(filePath)) {
-          try {
-            await fs.promises.unlink(filePath);
-            proofsDeleted++;
-          } catch {}
+          try { await fs.promises.unlink(filePath); } catch {}
         }
       }
     }
@@ -140,44 +182,17 @@ export async function POST(req: NextRequest) {
     const deletedOrdersCount = await prisma.order.deleteMany({
       where: {
         status: { in: ["EXPIRED", "FAILED", "PENDING"] },
-        createdAt: { lt: thresholdDate },
+        createdAt: { lt: thresholdInvitationDate },
       },
     });
-
-    // ── 3. Bersihkan Akun Calon Klien yang Tidak Melanjutkan (Ghost Accounts) ──
-    // Klien terdaftar > thresholdDate yang tidak memiliki order PAID dan tidak memiliki undangan
-    const ghostUsers = await prisma.user.findMany({
-      where: {
-        role: "CLIENT",
-        createdAt: { lt: thresholdDate },
-        orders: {
-          none: { status: "PAID" },
-        },
-        invitations: {
-          none: {},
-        },
-      },
-      select: { id: true, email: true },
-    });
-
-    let deletedGhostUsers = 0;
-    if (ghostUsers.length > 0) {
-      const ghostIds = ghostUsers.map((u) => u.id);
-      const res = await prisma.user.deleteMany({
-        where: { id: { in: ghostIds } },
-      });
-      deletedGhostUsers = res.count;
-    }
 
     return NextResponse.json({
       success: true,
-      cleanedInvitations: cleanedIds.length,
-      foldersRemoved,
-      freedSpaceKB: Math.round(totalFreedBytes / 1024),
-      deletedStaleOrders: deletedOrdersCount.count,
-      deletedProofFiles: proofsDeleted,
-      deletedGhostUsers,
-      message: `Pembersihan selesai: ${deletedOrdersCount.count} order kedaluwarsa dibersihkan, ${deletedGhostUsers} akun yang tidak aktif dihapus, dan ${foldersRemoved} folder undangan dibebaskan.`,
+      archivedInvitations: archivedCount,
+      deletedUsers: totalDeletedUsers,
+      deletedFolders: totalDeletedFolders,
+      deletedOrders: deletedOrdersCount.count,
+      message: `Pembersihan selesai: ${archivedCount} undangan diarsipkan (Subdomain recycle), ${totalDeletedUsers} klien lama & ${totalDeletedFolders} folder dihapus.`
     });
   } catch (error: any) {
     console.error("[Cleanup Cron Error]", error);

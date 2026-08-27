@@ -297,6 +297,7 @@ export default function AdminPage() {
   const [showGoogleSecret, setShowGoogleSecret] = useState(false);
   const [savingPricing, setSavingPricing] = useState(false);
   const [savingPlatform, setSavingPlatform] = useState(false);
+  const [savingPlatformCustom, setSavingPlatformCustom] = useState(false);
   const [savingSubdomainSettings, setSavingSubdomainSettings] = useState(false);
   const [savingGdriveSettings, setSavingGdriveSettings] = useState(false);
   const [savingActiveGateway, setSavingActiveGateway] = useState(false);
@@ -3624,16 +3625,124 @@ export default function AdminPage() {
                   {/* ══ TAB: PLATFORM ══ */}
                   {activeSettingsTab === "platform" && (
                   <>
+                  {/* WhatsApp Template Settings */}
+                  <SettingsCard
+                    title="Template Pesan WhatsApp (Pengiriman Undangan)"
+                    description="Kustomisasi pesan default yang akan dikirimkan ke tamu via WhatsApp. Gunakan placeholder {{GUEST_NAME}}, {{INVITATION_URL}}, {{GROOM_NAME}}, {{BRIDE_NAME}}."
+                    isEditing={Boolean(editSection["wa_template"])}
+                    onEdit={() => toggleEditSection("wa_template")}
+                    onCancel={() => cancelEdit("wa_template", ["wa_template_message"])}
+                    onSave={() => saveSettings(["wa_template_message"], setSavingPlatformCustom, "wa_template")}
+                    saving={savingPlatformCustom}
+                    isDirty={isSectionDirty(["wa_template_message"])}
+                    saveSuccess={settingsSaved["wa_template"]}
+                    saveSuccessMessage="Template WhatsApp berhasil disimpan"
+                    viewContent={
+                      <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 whitespace-pre-wrap text-sm text-gray-700">
+                        {settingsMap["wa_template_message"] || "Assalamu'alaikum {{GUEST_NAME}},\n\nKami mengundang Bapak/Ibu dalam pernikahan kami.\n\nUndangan: {{INVITATION_URL}}\n\nHormat kami,\n{{GROOM_NAME}} & {{BRIDE_NAME}}"}
+                      </div>
+                    }
+                  >
+                    <FieldRow label="Isi Pesan WhatsApp" description="Pesan ini akan menjadi default untuk semua klien.">
+                      <textarea
+                        rows={6}
+                        value={settingsMap["wa_template_message"] || "Assalamu'alaikum {{GUEST_NAME}},\n\nKami mengundang Bapak/Ibu dalam pernikahan kami.\n\nUndangan: {{INVITATION_URL}}\n\nHormat kami,\n{{GROOM_NAME}} & {{BRIDE_NAME}}"}
+                        onChange={(e) => setSetting("wa_template_message", e.target.value)}
+                        className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
+                      />
+                    </FieldRow>
+                  </SettingsCard>
+
+                  {/* Landing Page Feature Cards Settings */}
+                  <SettingsCard
+                    title="Fitur Landing Page (3 Kartu)"
+                    description="Sesuaikan judul dan deskripsi untuk 3 kartu fitur utama di halaman depan (Landing Page)."
+                    isEditing={Boolean(editSection["landing_features"])}
+                    onEdit={() => toggleEditSection("landing_features")}
+                    onCancel={() => cancelEdit("landing_features", ["landing_feature_1_title", "landing_feature_1_desc", "landing_feature_2_title", "landing_feature_2_desc", "landing_feature_3_title", "landing_feature_3_desc"])}
+                    onSave={() => saveSettings(["landing_feature_1_title", "landing_feature_1_desc", "landing_feature_2_title", "landing_feature_2_desc", "landing_feature_3_title", "landing_feature_3_desc"], setSavingPlatformCustom, "landing_features")}
+                    saving={savingPlatformCustom}
+                    isDirty={isSectionDirty(["landing_feature_1_title", "landing_feature_1_desc", "landing_feature_2_title", "landing_feature_2_desc", "landing_feature_3_title", "landing_feature_3_desc"])}
+                    saveSuccess={settingsSaved["landing_features"]}
+                    saveSuccessMessage="Fitur Landing Page berhasil disimpan"
+                    viewContent={
+                      <div className="space-y-4">
+                        {[1, 2, 3].map((num) => (
+                          <div key={num} className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                            <span className="text-xs text-amber-600 font-bold block mb-1">Kartu Fitur {num}</span>
+                            <div className="font-bold text-gray-800 text-sm">{settingsMap[`landing_feature_${num}_title`] || (num === 1 ? "Desain Kalandra, Aurelia & Prameswari" : num === 2 ? "Manajemen Tamu & WhatsApp" : "Galeri Foto Dinamis & Video Booth")}</div>
+                            <div className="text-xs text-gray-500 mt-1">{settingsMap[`landing_feature_${num}_desc`] || (num === 1 ? "Estetika natural dengan split view desktop..." : num === 2 ? "Generator link pintar per tamu..." : "Layout Masonry cerdas untuk galeri...")}</div>
+                          </div>
+                        ))}
+                      </div>
+                    }
+                  >
+                    <div className="space-y-4">
+                      {[1, 2, 3].map((num) => (
+                        <div key={num} className="p-4 border border-gray-100 rounded-xl bg-gray-50/50 space-y-3">
+                          <h4 className="text-sm font-bold text-gray-700">Kartu {num}</h4>
+                          <FieldRow label="Judul">
+                            <input
+                              type="text"
+                              value={settingsMap[`landing_feature_${num}_title`] || ""}
+                              onChange={(e) => setSetting(`landing_feature_${num}_title`, e.target.value)}
+                              className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 transition shadow-2xs"
+                            />
+                          </FieldRow>
+                          <FieldRow label="Deskripsi">
+                            <textarea
+                              rows={2}
+                              value={settingsMap[`landing_feature_${num}_desc`] || ""}
+                              onChange={(e) => setSetting(`landing_feature_${num}_desc`, e.target.value)}
+                              className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 transition shadow-2xs"
+                            />
+                          </FieldRow>
+                        </div>
+                      ))}
+                    </div>
+                  </SettingsCard>
+
+                  {/* Limit Upload Memori */}
+                  <SettingsCard
+                    title="Batas Upload Galeri Tamu (Memories)"
+                    description="Tentukan batas ukuran file maksimum untuk foto dan video yang diunggah oleh tamu."
+                    isEditing={Boolean(editSection["upload_limit"])}
+                    onEdit={() => toggleEditSection("upload_limit")}
+                    onCancel={() => cancelEdit("upload_limit", ["max_upload_mb"])}
+                    onSave={() => saveSettings(["max_upload_mb"], setSavingPlatformCustom, "upload_limit")}
+                    saving={savingPlatformCustom}
+                    isDirty={isSectionDirty(["max_upload_mb"])}
+                    saveSuccess={settingsSaved["upload_limit"]}
+                    saveSuccessMessage="Batas upload berhasil disimpan"
+                    viewContent={
+                      <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 flex items-center gap-2">
+                        <span className="text-3xl font-mono font-bold text-gray-900">{settingsMap["max_upload_mb"] || "5"}</span>
+                        <span className="text-sm text-gray-500 font-medium mt-1">Megabyte (MB) per file</span>
+                      </div>
+                    }
+                  >
+                    <FieldRow label="Maksimal Ukuran File (MB)">
+                      <input
+                        type="number"
+                        min="1"
+                        max="50"
+                        value={settingsMap["max_upload_mb"] || "5"}
+                        onChange={(e) => setSetting("max_upload_mb", e.target.value)}
+                        className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 transition shadow-2xs max-w-[200px]"
+                      />
+                    </FieldRow>
+                  </SettingsCard>
+
                   {/* Subdomain Lifecycle & Archiving Settings */}
                   <SettingsCard
                     title="Siklus Hidup & Daur Ulang Subdomain"
                     description="Atur masa tenggang (grace period) keaktifan subdomain setelah acara selesai, dan otomatisasi pelepasan subdomain ke pool agar dapat digunakan kembali oleh pasangan baru."
                     isEditing={Boolean(editSection["subdomain"])}
                     onEdit={() => toggleEditSection("subdomain")}
-                    onCancel={() => cancelEdit("subdomain", ["subdomain_grace_days", "subdomain_auto_recycle"])}
-                    onSave={() => saveSettings(["subdomain_grace_days", "subdomain_auto_recycle"], setSavingSubdomainSettings, "subdomain")}
+                    onCancel={() => cancelEdit("subdomain", ["subdomain_grace_days", "subdomain_auto_recycle", "retention_invitation_days", "retention_account_days"])}
+                    onSave={() => saveSettings(["subdomain_grace_days", "subdomain_auto_recycle", "retention_invitation_days", "retention_account_days"], setSavingSubdomainSettings, "subdomain")}
                     saving={savingSubdomainSettings}
-                    isDirty={isSectionDirty(["subdomain_grace_days", "subdomain_auto_recycle"])}
+                    isDirty={isSectionDirty(["subdomain_grace_days", "subdomain_auto_recycle", "retention_invitation_days", "retention_account_days"])}
                     saveSuccess={settingsSaved["subdomain"]}
                     saveSuccessMessage="Pengaturan siklus hidup subdomain berhasil disimpan"
                     viewContent={
@@ -3669,6 +3778,30 @@ export default function AdminPage() {
                             </div>
                             <p className="text-[11px] text-stone-500 mt-2">
                               Undangan lama tetap dapat diakses seumur hidup via link path: <code>luxenary.id/[pasangan]/[bln-thn]</code>.
+                            </p>
+                          </div>
+                          <div className="p-4 bg-emerald-50/50 rounded-xl border border-emerald-200">
+                            <span className="text-xs text-emerald-950 font-bold block mb-1">Retensi Subdomain Aktif</span>
+                            <div className="flex items-baseline gap-1.5">
+                              <span className="text-2xl font-mono font-bold text-emerald-900">
+                                {settingsMap["retention_invitation_days"] || "30"}
+                              </span>
+                              <span className="text-xs text-emerald-800 font-medium">Hari</span>
+                            </div>
+                            <p className="text-[11px] text-stone-500 mt-2">
+                              Data interaktif tamu & RSVP akan dihapus dan subdomain dibebaskan {settingsMap["retention_invitation_days"] || "30"} hari pasca acara.
+                            </p>
+                          </div>
+                          <div className="p-4 bg-rose-50/50 rounded-xl border border-rose-200">
+                            <span className="text-xs text-rose-950 font-bold block mb-1">Pembersihan Total Portofolio</span>
+                            <div className="flex items-baseline gap-1.5">
+                              <span className="text-2xl font-mono font-bold text-rose-900">
+                                {settingsMap["retention_account_days"] || "365"}
+                              </span>
+                              <span className="text-xs text-rose-800 font-medium">Hari</span>
+                            </div>
+                            <p className="text-[11px] text-stone-500 mt-2">
+                              Akun klien & folder gambar prewedding di server akan dihapus fisik permanen setelah {settingsMap["retention_account_days"] || "365"} hari.
                             </p>
                           </div>
                         </div>
@@ -3727,6 +3860,28 @@ export default function AdminPage() {
                           max="365"
                           value={settingsMap["subdomain_grace_days"] || "7"}
                           onChange={(e) => setSetting("subdomain_grace_days", e.target.value)}
+                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition font-mono"
+                        />
+                      </FieldRow>
+                      
+                      <FieldRow label="Retensi Pembersihan Interaktif (Hari)" description="Jeda hari pasca-acara sebelum sistem menghapus data tamu & RSVP untuk membebaskan storage database (Tahap 1).">
+                        <input
+                          type="number"
+                          min="1"
+                          max="365"
+                          value={settingsMap["retention_invitation_days"] || "30"}
+                          onChange={(e) => setSetting("retention_invitation_days", e.target.value)}
+                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition font-mono"
+                        />
+                      </FieldRow>
+
+                      <FieldRow label="Pembersihan Total Akun & Portofolio (Hari)" description="Jeda waktu (berdasarkan umur akun) sebelum sistem menghapus klien dan seluruh media fisiknya secara permanen (Tahap 2).">
+                        <input
+                          type="number"
+                          min="30"
+                          max="1825"
+                          value={settingsMap["retention_account_days"] || "365"}
+                          onChange={(e) => setSetting("retention_account_days", e.target.value)}
                           className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition font-mono"
                         />
                       </FieldRow>

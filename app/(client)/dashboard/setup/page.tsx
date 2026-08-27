@@ -375,7 +375,7 @@ function SetupWizardContent() {
                 <div className="pt-1 flex flex-col gap-1 text-[11px] text-stone-500">
                   <p>{subdomainStatus.message || "Tautan dibuat otomatis mengikuti nama panggilan, dan dapat Anda sesuaikan bebas."}</p>
                   <p className="text-[10px] text-amber-900/80 bg-amber-100/50 p-2 rounded-lg border border-amber-200/60">
-                    <strong>Link Arsip Abadi (Seumur Hidup):</strong> <code>http://{rootDomain || "localhost:3000"}/{subdomain || "mempelai"}/{weddingDate ? getMonthYearSlug(weddingDate) : "okt-2026"}</code>
+                    <strong>Link Arsip Portofolio (1 Tahun):</strong> <code>http://{rootDomain || "localhost:3000"}/{subdomain || "mempelai"}/{weddingDate ? getMonthYearSlug(weddingDate) : "okt-2026"}</code>
                   </p>
                 </div>
               </div>

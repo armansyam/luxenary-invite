@@ -13,7 +13,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 type BrandLogoSize = "xs" | "sm" | "md" | "lg";
 
@@ -32,10 +32,17 @@ const sizeMap: Record<BrandLogoSize, { container: string; img: string; monogram:
   lg: { container: "w-14 h-14 rounded-2xl",img: "w-14 h-14", monogram: "text-3xl" },
 };
 
-const LOGO_URL = "/assets/brand/logo.webp";
+const BASE_LOGO_URL = "/assets/brand/logo.webp";
 
 export function BrandLogo({ size = "md", lightBg = false, showName = false, brandName, className = "" }: BrandLogoProps) {
   const [imgError, setImgError] = useState(false);
+  // Cache buster — hanya dijalankan sekali setelah komponen mount (React-safe)
+  const [logoUrl, setLogoUrl] = useState(BASE_LOGO_URL);
+
+  useEffect(() => {
+    setLogoUrl(`${BASE_LOGO_URL}?t=${Date.now()}`);
+  }, []);
+
   const s = sizeMap[size];
 
   const hasLogo = !imgError; // akan false setelah img onError
@@ -53,7 +60,7 @@ export function BrandLogo({ size = "md", lightBg = false, showName = false, bran
       >
         {hasLogo ? (
           <img
-            src={LOGO_URL}
+            src={logoUrl}
             alt="Logo"
             className={`${s.img} object-contain`}
             onError={() => setImgError(true)}

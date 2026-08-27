@@ -15,6 +15,7 @@ interface ThemeItem {
 export default function CatalogGridShowcase() {
   const [themes, setThemes] = useState<ThemeItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [viewMode, setViewMode] = useState<"mobile" | "desktop">("mobile");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -104,6 +105,28 @@ export default function CatalogGridShowcase() {
             </button>
           ))}
         </div>
+
+        {/* View Mode Toggle (Desktop / Mobile) */}
+        <div className="flex items-center justify-center mt-6">
+          <div className="bg-stone-100 p-1 rounded-full inline-flex border border-stone-200">
+            <button
+              onClick={() => setViewMode("mobile")}
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${
+                viewMode === "mobile" ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-700"
+              }`}
+            >
+              Mobile View
+            </button>
+            <button
+              onClick={() => setViewMode("desktop")}
+              className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${
+                viewMode === "desktop" ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-700"
+              }`}
+            >
+              Desktop View
+            </button>
+          </div>
+        </div>
       </section>
 
       {/* Grid Showcase */}
@@ -146,12 +169,18 @@ export default function CatalogGridShowcase() {
                 <Link
                   href={`/demo/${theme.id}`}
                   target="_blank"
-                  className="relative aspect-[9/14] bg-stone-950 overflow-hidden block cursor-pointer"
+                  className={`relative bg-stone-950 overflow-hidden block cursor-pointer transition-all duration-500 ${
+                    viewMode === "mobile" ? "aspect-[9/14]" : "aspect-[16/9]"
+                  }`}
                 >
                   <iframe
-                    src={`/demo/${theme.id}?autoplay=1&muted=1`}
+                    src={`/demo/${theme.id}?mode=cover`}
                     loading="lazy"
-                    className="w-[200%] h-[200%] transform scale-50 origin-top-left border-none pointer-events-none select-none"
+                    className={`absolute top-0 left-0 border-none pointer-events-none select-none origin-top-left transition-all duration-500 ${
+                      viewMode === "mobile" 
+                        ? "w-[125%] h-[125%] transform scale-[0.80]" 
+                        : "w-[400%] h-[400%] transform scale-[0.25]"
+                    }`}
                     title={theme.name}
                   />
                 </Link>
@@ -164,18 +193,6 @@ export default function CatalogGridShowcase() {
                       <span className="text-[11px] font-semibold text-stone-600">{theme.series}</span>
                     </div>
                     <p className="text-xs text-stone-500 mt-1 font-medium line-clamp-1">{theme.desc}</p>
-                  </div>
-
-                  {/* Plan Tier Badge */}
-                  <div className="text-[10px] font-semibold rounded-lg px-2.5 py-1 flex items-center justify-between bg-stone-50 border border-stone-200">
-                    <span className="text-stone-500">Tersedia di:</span>
-                    <span className={`font-bold ${
-                      theme.category === "traditional" ? "text-amber-800" :
-                      theme.category === "modern" ? "text-slate-800" : "text-purple-800"
-                    }`}>
-                      {theme.category === "traditional" ? "Paket Traditional, Modern, Premium" :
-                       theme.category === "modern" ? "Paket Modern & Premium" : "Eksklusif Paket Premium"}
-                    </span>
                   </div>
 
                   {/* Single Clean Action Button */}

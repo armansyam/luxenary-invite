@@ -212,6 +212,7 @@ export default function EditInvitation() {
   const [uploadingAudio, setUploadingAudio] = useState(false);
   const [adminWhatsapp, setAdminWhatsapp] = useState<string>("6281234567890");
   const [platformSettings, setPlatformSettings] = useState<any>(null);
+  const [themesList, setThemesList] = useState<any[]>(THEMES);
 
   // Dual-Native Studio State: Form Mode vs Live Visual Editor
   const [activeStudioTab, setActiveStudioTab] = useState<"form" | "live">("form");
@@ -366,6 +367,15 @@ export default function EditInvitation() {
         setPlatformSettings(data);
         if (data.support_whatsapp) {
           setAdminWhatsapp(data.support_whatsapp);
+        }
+      })
+      .catch((err) => console.error(err));
+
+    fetch("/api/public/themes")
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setThemesList(data);
         }
       })
       .catch((err) => console.error(err));
@@ -830,7 +840,7 @@ export default function EditInvitation() {
   const displayOrder = getFeatureSetting("displayOrder", "BRIDE_FIRST");
 
   const currentThemeId = invitation.themeId === "kila" ? "kalandra" : invitation.themeId === "aruna" ? "prameswari" : invitation.themeId === "ivanna" ? "valente" : invitation.themeId === "danila" ? "aurelia" : invitation.themeId === "papercut" ? "artisan" : (invitation.themeId || "kalandra");
-  const selectedThemeObj = THEMES.find((t) => t.id === currentThemeId) || THEMES[0];
+  const selectedThemeObj = themesList.find((t) => t.id === currentThemeId) || themesList[0];
   const selectedPaletteObj = COLOR_PALETTES.find((p) => p.id === currentPalette) || COLOR_PALETTES[0];
 
   const planType = invitation.order?.planType || "TRADITIONAL";
@@ -899,9 +909,9 @@ export default function EditInvitation() {
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
             </div>
             <div>
-              <h3 className="font-bold text-sm text-white">Undangan Terkunci (Arsip Seumur Hidup)</h3>
+              <h3 className="font-bold text-sm text-white">Periode Acara Berakhir - Retensi 30 Hari</h3>
               <p className="text-xs text-stone-300 mt-0.5 leading-relaxed">
-                Tanggal acara pernikahan telah terlewati. Undangan Anda tetap aktif online seumur hidup sebagai kenang-kenangan. Form editor telah dikunci permanen untuk menjaga keaslian arsip.
+                Tanggal acara pernikahan telah terlewati. Form editor dikunci. Data tamu dan foto akan dibersihkan dalam 30 hari pasca-acara. Mohon segera unduh foto Anda.
               </p>
             </div>
           </div>
@@ -1143,7 +1153,7 @@ export default function EditInvitation() {
           <div className="p-5 sm:p-7 space-y-6">
             {/* Theme Mockups for this Category / Store */}
             {(() => {
-              const availableThemes = THEMES.filter((t) => {
+              const availableThemes = themesList.filter((t) => {
                 const cat = (t.category || "").toUpperCase();
                 const plan = planType.toUpperCase();
                 if (plan === "PREMIUM") return true; 
@@ -2898,32 +2908,32 @@ export default function EditInvitation() {
                   />
                 </div>
 
-                {/* Google Drive Folder Link Container */}
-                <div className="p-4 rounded-2xl border border-amber-200 bg-amber-50/50 space-y-3">
+                {/* Local Storage Download ZIP Container */}
+                <div className="p-4 rounded-2xl border border-emerald-200 bg-emerald-50/50 space-y-3">
                   <div className="flex items-center justify-between">
-                    <label className="block text-xs font-bold text-amber-950">
-                      Link Folder Google Drive Penampung (Opsional)
+                    <label className="block text-xs font-bold text-emerald-950">
+                      Backup & Download Foto Tamu
                     </label>
-                    <span className="text-[10px] font-semibold text-amber-800 bg-amber-100/80 px-2 py-0.5 rounded-md">
-                      Stream CDN
+                    <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded-md">
+                      Lokal (H+{platformSettings?.retentionInvitationDays || 30})
                     </span>
                   </div>
-                  <input
-                    type="url"
-                    value={getFeatureSetting("guestMemoriesDriveFolderUrl", "")}
-                    onChange={(e) => updateFeatureSetting("guestMemoriesDriveFolderUrl", e.target.value)}
-                    placeholder="https://drive.google.com/drive/folders/1ABCxyz..."
-                    className="w-full p-2.5 bg-white border border-amber-300 rounded-xl text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700/30 font-mono"
-                  />
-                  <p className="text-[11px] text-amber-900/80 leading-relaxed">
-                    <strong>Panduan Akses:</strong> Buat 1 folder di Google Drive Anda, ubah akses sharing folder menjadi <em>&ldquo;Siapa saja yang memiliki link &rarr; Editor (Pengedit)&rdquo;</em>, lalu tempel link-nya di sini agar sistem dapat menerima upload foto tamu secara instan sekaligus men-stream ke galeri.
+                  <p className="text-[11px] text-emerald-900/80 leading-relaxed mb-3">
+                    <strong>Penting:</strong> Seluruh momen yang diunggah tamu disimpan dengan aman di server kami. Anda <strong>wajib mengunduh arsip ZIP di bawah ini</strong> dalam kurun waktu maksimal {platformSettings?.retentionInvitationDays || 30} hari pasca-acara sebelum sistem menghapusnya secara otomatis.
                   </p>
+                  <a
+                    href={`/api/client/memories/download?invitationId=${invitation.id}`}
+                    className="inline-flex items-center justify-center w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition"
+                  >
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    Unduh Semua Momen (ZIP)
+                  </a>
                 </div>
-                {/* Link Permanen Galeri Kenangan Tamu */}
+                {/* Link Galeri Kenangan Tamu */}
                 <div className="p-4 rounded-2xl border border-stone-200 bg-stone-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
-                    <span className="text-[10px] font-bold text-amber-800 tracking-wider uppercase block font-mono">
-                      LINK PERMANEN ALBUM KENANGAN (SEUMUR HIDUP)
+                    <span className="text-[10px] font-bold text-emerald-800 tracking-wider uppercase block font-mono">
+                      LINK ALBUM KENANGAN TAMU
                     </span>
                     <span className="text-xs font-mono font-bold text-stone-900 break-all">
                       {typeof window !== "undefined" ? window.location.origin : "https://luxenary.id"}

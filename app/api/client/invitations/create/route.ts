@@ -164,6 +164,7 @@ export async function POST(req: Request) {
       openingQuote:
         "Dan di antara tanda-tanda (kebesaran)-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri...",
       openingQuoteRef: "QS. AR-RUM : 21",
+      staffPin: Math.floor(100000 + Math.random() * 900000).toString(),
       eventData: JSON.stringify(initialEvents),
       featureSettings: JSON.stringify({
         weddingTagline: "THE WEDDING OF",

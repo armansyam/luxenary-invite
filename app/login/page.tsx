@@ -1,11 +1,11 @@
 "use client";
 
 import { signIn } from "next-auth/react";
-import { useState, Suspense } from "react";
+import { useState, Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { BrandLogo } from "@/components/BrandLogo";
 
-function LoginForm() {
+function LoginForm({ platformName }: { platformName: string }) {
   const [loading, setLoading] = useState(false);
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/onboarding";
@@ -25,7 +25,7 @@ function LoginForm() {
           <div className="flex justify-center">
             <BrandLogo size="lg" lightBg />
           </div>
-          <span className="text-[11px] font-bold uppercase tracking-widest text-amber-700 block">Luxenary Wedding Studio</span>
+          <span className="text-[11px] font-bold uppercase tracking-widest text-amber-700 block">{platformName}</span>
           <h1 className="text-2xl font-serif font-bold text-stone-900">Masuk / Daftar Akun</h1>
           <p className="text-xs text-stone-400 leading-relaxed">
             Kelola undangan, buku tamu, galeri foto, dan pengiriman via WhatsApp dari satu tempat.
@@ -77,9 +77,18 @@ function LoginForm() {
 }
 
 export default function ClientLoginPage() {
+  const [platformName, setPlatformName] = useState("Luxenary Invite");
+  
+  useEffect(() => {
+    fetch("/api/public/settings")
+      .then(res => res.json())
+      .then(data => setPlatformName(data.platformName || "Luxenary Invite"))
+      .catch(() => {});
+  }, []);
+
   return (
     <Suspense fallback={<div className="min-h-screen bg-[#faf7f2] flex items-center justify-center"><div className="w-8 h-8 border-2 border-amber-800 border-t-transparent rounded-full animate-spin"></div></div>}>
-      <LoginForm />
+      <LoginForm platformName={platformName} />
     </Suspense>
   );
 }

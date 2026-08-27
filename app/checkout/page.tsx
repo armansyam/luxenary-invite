@@ -489,7 +489,7 @@ function CheckoutContent() {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-stone-400">Masa Aktif Undangan</span>
-                  <span className="text-emerald-400 font-semibold">Aktif Seumur Hidup</span>
+                  <span className="text-emerald-400 font-semibold">Retensi 30 Hari & Arsip 1 Tahun</span>
                 </div>
               </div>
 

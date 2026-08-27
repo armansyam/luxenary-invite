@@ -50,13 +50,17 @@ export default async function GuestMemoriesStandalonePage({ params }: PageProps)
   const coverMedia = invitation.media && invitation.media.length > 0 ? invitation.media[0] : null;
   const coverUrl = coverMedia?.driveViewUrl || undefined;
 
+  const backUrl = `/s/${invitation.subdomain!}`;
+  const galleryUrl = `/s/${invitation.subdomain!}/memories`;
+
   return (
     <GuestMomentClient 
       invitationId={invitation.id}
-      subdomain={invitation.subdomain!}
       coupleName={coupleName}
       coverUrl={coverUrl}
       memories={memories}
+      galleryUrl={galleryUrl}
+      backUrl={backUrl}
     />
   );
 }

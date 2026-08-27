@@ -5,7 +5,18 @@ import { getPublicPlatformSettings } from "@/lib/settings";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const { platformName, heroTagline, heroSubtitle, packages: pricingPackages } = await getPublicPlatformSettings();
+  const { 
+    platformName, 
+    heroTagline,
+    heroSubtitle,
+    packages: pricingPackages,
+    landingFeature1Title,
+    landingFeature1Desc,
+    landingFeature2Title,
+    landingFeature2Desc,
+    landingFeature3Title,
+    landingFeature3Desc,
+  } = await getPublicPlatformSettings();
 
   return (
     <div className="min-h-screen bg-[#faf8f5] text-[#2d2c2a] flex flex-col selection:bg-amber-200 selection:text-amber-900 font-sans">
@@ -63,7 +74,7 @@ export default async function Home() {
           {/* Content — posisi atas, foto terlihat penuh di bawah */}
           <div className="flex flex-col items-center justify-start text-center px-4 sm:px-6 pt-10 sm:pt-14 pb-0" style={{ minHeight: "clamp(600px, 85vh, 95vh)" }}>
             <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full border border-amber-800/20 bg-white/60 backdrop-blur-sm text-amber-900 text-[10px] sm:text-xs font-semibold uppercase tracking-widest mb-5 sm:mb-6 shadow-sm max-w-[280px] sm:max-w-none text-center leading-snug">
-              Platform Undangan Pernikahan Digital Mandiri
+              {platformName}
             </div>
 
             <h1 className="text-3xl sm:text-5xl md:text-6xl font-serif text-[#1e1c1a] leading-tight font-normal drop-shadow-sm max-w-4xl">
@@ -85,9 +96,9 @@ export default async function Home() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-serif font-bold text-[#1e1c1a] mb-2">Desain Kalandra, Aurelia &amp; Prameswari</h3>
+              <h3 className="text-lg font-serif font-bold text-[#1e1c1a] mb-2">{landingFeature1Title}</h3>
               <p className="text-[#6e685f] text-sm leading-relaxed">
-                Estetika natural dengan split view desktop, transisi foto section overlap, audio player autoplay, dan CSS scroll snap mulus.
+                {landingFeature1Desc}
               </p>
             </div>
 
@@ -97,9 +108,9 @@ export default async function Home() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-serif font-bold text-[#1e1c1a] mb-2">Manajemen Tamu &amp; WhatsApp</h3>
+              <h3 className="text-lg font-serif font-bold text-[#1e1c1a] mb-2">{landingFeature2Title}</h3>
               <p className="text-[#6e685f] text-sm leading-relaxed">
-                Kirim tautan personal via WhatsApp 1-klik, validasi RSVP interaktif, dan check-in barcode kehadiran fisik di lokasi.
+                {landingFeature2Desc}
               </p>
             </div>
 
@@ -109,9 +120,9 @@ export default async function Home() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-serif font-bold text-[#1e1c1a] mb-2">Video Wishes Booth</h3>
+              <h3 className="text-lg font-serif font-bold text-[#1e1c1a] mb-2">{landingFeature3Title}</h3>
               <p className="text-[#6e685f] text-sm leading-relaxed">
-                Tamu dapat memindai barcode di lokasi pesta untuk langsung merekam video ucapan doa restu yang tersimpan otomatis ke cloud.
+                {landingFeature3Desc}
               </p>
             </div>
           </div>
@@ -121,7 +132,7 @@ export default async function Home() {
         <section id="pricing" className="max-w-6xl mx-auto px-6 py-16 scroll-mt-20">
           <div className="text-center mb-12">
             <h2 className="text-2xl sm:text-3xl font-serif font-normal text-[#1e1c1a]">Pilihan Paket Undangan</h2>
-            <p className="text-[#6e685f] mt-1 text-xs sm:text-sm">Biaya satu kali bayar untuk masa aktif undangan seumur hidup</p>
+            <p className="text-[#6e685f] mt-1 text-xs sm:text-sm">Biaya satu kali bayar untuk masa tayang interaktif 1 bulan pasca-acara, dengan arsip portofolio web 1 tahun</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

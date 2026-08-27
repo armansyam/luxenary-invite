@@ -29,13 +29,11 @@ export async function GET(req: Request) {
 
       sseEmitter.on("new_memory", listener);
       sseEmitter.on("new_guest_checkin", listener); // For receptionists update
-      sseEmitter.on("remote_command", listener); // For LiveShow remote control
 
       req.signal.addEventListener("abort", () => {
         clearInterval(interval);
         sseEmitter.off("new_memory", listener);
         sseEmitter.off("new_guest_checkin", listener);
-        sseEmitter.off("remote_command", listener);
         controller.close();
       });
     },

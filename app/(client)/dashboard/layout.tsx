@@ -68,6 +68,24 @@ export default function ClientDashboardLayout({
     }
   }, [status, router]);
 
+  // --- Strict Protection: ONLY PAID USERS ALLOWED ---
+  useEffect(() => {
+    if (status === "authenticated" && session?.user) {
+      // Periksa secara asinkron status pembayaran pengguna
+      fetch("/api/client/onboarding-state", { cache: "no-store" })
+        .then((res) => res.json())
+        .then((data) => {
+          // Jika tidak ada data atau order belum lunas, tendang ke onboarding
+          if (!data || !data.hasPaidOrder) {
+            router.replace("/onboarding");
+          }
+        })
+        .catch(() => {
+          // Abaikan error jaringan
+        });
+    }
+  }, [status, session, router]);
+
   if (
     status === "unauthenticated" ||
     (status === "authenticated" && !session?.user)

@@ -263,7 +263,7 @@ export async function composeTemplateData(invitationId: string) {
         <span class="ev-cat">${(ev.badge || (idx === 0 ? "SAKRAMEN / AKAD" : "RESEPSI")).toUpperCase()}</span>
         <h3 class="ev-name serif">${(ev.title || (idx === 0 ? "Akad Nikah" : "Resepsi Pernikahan")).toUpperCase()}</h3>
         <p class="ev-time">${ev.time || "08.00 – 10.00 WITA"}</p>
-        ${ev.notes ? `<p class="ev-notes" style="font-size:0.75rem; font-style:italic; margin-top:0.3rem; color:rgba(255,255,255,0.7);">${ev.notes}</p>` : ""}
+        ${ev.notes ? `<p class="ev-notes" style="font-size:0.75rem; font-style:italic; margin-top:0.3rem; color:rgba(255,255,255,0.7);">${escapeHtml(ev.notes)}</p>` : ""}
       </div>
     `).join("");
 
@@ -297,7 +297,7 @@ export async function composeTemplateData(invitationId: string) {
         <p class="ev-time">${ev.time || "08.00 – 10.00 WITA"}</p>
         ${ev.location ? `<h4 class="ev-venue">${ev.location}</h4>` : ""}
         ${ev.address ? `<p class="ev-addr">${ev.address}</p>` : ""}
-        ${ev.notes ? `<p class="ev-notes" style="font-size:0.75rem; font-style:italic; margin-top:0.3rem; color:rgba(255,255,255,0.7);">${ev.notes}</p>` : ""}
+        ${ev.notes ? `<p class="ev-notes" style="font-size:0.75rem; font-style:italic; margin-top:0.3rem; color:rgba(255,255,255,0.7);">${escapeHtml(ev.notes)}</p>` : ""}
         ${ev.mapsUrl ? `
           <a href="${ev.mapsUrl}" target="_blank" rel="noreferrer" class="btn-map-outline">
             BUKA MAPS
@@ -469,6 +469,79 @@ export async function composeTemplateData(invitationId: string) {
         <button type="button" class="btn-outline-box btn-show-gallery" onclick="luxOpenFullGallery()">
           LIHAT SEMUA FOTO (${allPhotos.length} FOTO)
         </button>
+        
+        <style>
+          /* OUR MOMENT UNIVERSAL GRID */
+          .moments-grid-10 {
+            display: grid !important; grid-template-columns: repeat(4, 1fr) !important; grid-auto-flow: dense !important;
+            gap: 5px !important; margin-bottom: 2.2rem !important; width: 100% !important;
+          }
+          .moment-photo-item {
+            position: relative !important; overflow: hidden !important; border-radius: 6px !important; cursor: pointer !important;
+            border: 1px solid rgba(255,255,255,0.12) !important; box-shadow: 0 4px 12px rgba(0,0,0,0.35) !important;
+            transition: transform 0.3s ease !important; aspect-ratio: 3/4 !important;
+          }
+          .moment-photo-item.is-landscape { grid-column: span 2 !important; aspect-ratio: 3/2 !important; }
+          .moment-photo-item:hover { transform: scale(1.03) !important; z-index: 2 !important; box-shadow: 0 8px 20px rgba(0,0,0,0.5) !important; }
+          .moment-photo-item img { width: 100% !important; height: 100% !important; object-fit: cover !important; display: block !important; }
+          .btn-show-gallery { display: inline-block !important; margin-bottom: 0 !important; }
+          @media (max-width: 640px) { .moments-grid-10 { grid-template-columns: repeat(3, 1fr) !important; } }
+
+          /* LIGHTBOX MODALS UNIVERSAL */
+          .gallery-modal-backdrop {
+            position: fixed !important; inset: 0 !important; z-index: 350 !important; background: rgba(7,7,9,0.96) !important; backdrop-filter: blur(20px) !important;
+            display: flex !important; flex-direction: column !important; opacity: 0 !important; visibility: hidden !important; transition: all 0.3s ease !important;
+            overflow-y: auto !important; padding: 2rem 1.5rem !important;
+          }
+          .gallery-modal-backdrop.open { opacity: 1 !important; visibility: visible !important; }
+          .gallery-modal-container { max-width: 600px !important; width: 100% !important; margin: 0 auto !important; }
+          .gallery-modal-header { display: flex !important; justify-content: space-between !important; align-items: center !important; margin-bottom: 1.8rem !important; padding-bottom: 1rem !important; border-bottom: 1px solid rgba(255,255,255,0.15) !important; }
+          .modal-gallery-title { font-size: 1.8rem !important; color: #fff !important; letter-spacing: 0.1em !important; margin: 0 !important; }
+          .gallery-modal-close {
+            background: rgba(255,255,255,0.1) !important; border: 1px solid rgba(255,255,255,0.1) !important; color: #ffffff !important;
+            width: 34px !important; height: 34px !important; border-radius: 50% !important; font-size: 1rem !important; cursor: pointer !important;
+            display: flex !important; align-items: center !important; justify-content: center !important;
+          }
+          .gallery-modal-grid { columns: 4 !important; column-gap: 5px !important; }
+          .full-gallery-item {
+            break-inside: avoid !important; margin-bottom: 5px !important; overflow: hidden !important; border-radius: 6px !important; cursor: pointer !important;
+            border: 1px solid rgba(255,255,255,0.12) !important;
+          }
+          .full-gallery-item img { width: 100% !important; height: auto !important; display: block !important; transition: transform 0.35s !important; }
+          .full-gallery-item:hover img { transform: scale(1.05) !important; }
+
+          /* ZOOM LIGHTBOX UNIVERSAL */
+          .lux-zoom-backdrop {
+            position: fixed !important; inset: 0 !important; z-index: 99999 !important; background: rgba(0,0,0,0.96) !important; backdrop-filter: blur(16px) !important;
+            display: flex !important; align-items: center !important; justify-content: center !important; opacity: 0 !important; visibility: hidden !important; transition: all 0.3s ease !important;
+            padding: 1.5rem 1rem !important; touch-action: none !important; overscroll-behavior: contain !important;
+          }
+          .lux-zoom-backdrop.open { opacity: 1 !important; visibility: visible !important; }
+          .lux-zoom-close {
+            position: fixed !important; top: 18px !important; right: 18px !important; background: rgba(35,35,38,0.85) !important; backdrop-filter: blur(10px) !important;
+            border: 1px solid rgba(255,255,255,0.1) !important; color: #fff !important; width: 42px !important; height: 42px !important; border-radius: 50% !important;
+            font-size: 1.2rem !important; cursor: pointer !important; z-index: 100000 !important; display: flex !important; align-items: center !important; justify-content: center !important;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6) !important; transition: transform 0.2s !important;
+          }
+          .lux-zoom-close:hover { transform: scale(1.08) !important; background: #ffffff !important; color: #070709 !important; }
+          .lux-zoom-nav {
+            position: fixed !important; top: 50% !important; transform: translateY(-50%) !important; background: rgba(35,35,38,0.85) !important; backdrop-filter: blur(10px) !important;
+            border: 1px solid rgba(255,255,255,0.1) !important; color: #fff !important; width: 44px !important; height: 44px !important; border-radius: 50% !important;
+            font-size: 1.8rem !important; display: flex !important; align-items: center !important; justify-content: center !important; cursor: pointer !important; z-index: 100000 !important;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6) !important;
+          }
+          .lux-zoom-nav.prev { left: 14px !important; }
+          .lux-zoom-nav.next { right: 14px !important; }
+          .lux-zoom-img-box {
+            max-width: 90vw !important; max-height: 80vh !important; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important;
+            position: relative !important; z-index: 99999 !important;
+          }
+          .lux-zoom-img-box img { max-width: 100% !important; max-height: 75vh !important; object-fit: contain !important; border-radius: 8px !important; box-shadow: 0 15px 50px rgba(0,0,0,0.9) !important; }
+          .lux-zoom-counter {
+            font-size: 0.75rem !important; letter-spacing: 0.2em !important; color: #fff !important;
+            margin-top: 0.8rem !important; font-weight: 600 !important; text-transform: uppercase !important; background: rgba(0,0,0,0.6) !important; padding: 4px 12px !important; border-radius: 20px !important; border: 1px solid rgba(255,255,255,0.1) !important;
+          }
+        </style>
       </section>
 
       <!-- FULL GALLERY LIGHTBOX MODAL -->
@@ -722,6 +795,83 @@ export async function composeTemplateData(invitationId: string) {
     </section>
   ` : "";
 
+  // 6.5. Section: Universal Audio Player
+  const finalAudioUrl = featureSettings.showMusic !== false ? (inv.musicUrl || featureSettings.musicUrl || "https://assets.mixkit.co/music/preview/mixkit-serene-view-443.mp3") : "";
+  const musicPlayerHtml = finalAudioUrl ? `
+    <!-- UNIVERSAL MUSIC PLAYER INJECTED BY THEME ENGINE -->
+    <audio id="luxAudioPlayer" loop preload="auto">
+      <source src="${finalAudioUrl}" type="audio/mpeg" />
+    </audio>
+    <script>
+      // 1. Universal Audio Player
+      function luxToggleAudio() {
+        const audio = document.getElementById('luxAudioPlayer');
+        if (!audio) return;
+        const fab = document.getElementById('musicFab') || document.getElementById('musicToggle') || document.querySelector('.audio-fab, .music-fab, .btn-music');
+        if (audio.paused) {
+          audio.play().then(() => {
+            if (fab) fab.classList.add('playing');
+          }).catch(e => console.log('Audio play failed:', e));
+        } else {
+          audio.pause();
+          if (fab) fab.classList.remove('playing');
+        }
+      }
+
+      // 2. Universal Countdown Timer
+      (function luxInitCountdown() {
+        const targetStr = "${targetDate}";
+        if (!targetStr) return;
+        const target = new Date(targetStr).getTime();
+        if (isNaN(target)) return;
+        
+        function updateCd() {
+          const now = new Date().getTime();
+          const diff = target - now;
+          if (diff <= 0) return;
+          
+          const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+          const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          const s = Math.floor((diff % (1000 * 60)) / 1000);
+          
+          const cdD = document.getElementById('cdDays');
+          const cdH = document.getElementById('cdHours');
+          const cdM = document.getElementById('cdMins');
+          const cdS = document.getElementById('cdSecs');
+          if (cdD) cdD.textContent = d < 10 ? '0' + d : d.toString();
+          if (cdH) cdH.textContent = h < 10 ? '0' + h : h.toString();
+          if (cdM) cdM.textContent = m < 10 ? '0' + m : m.toString();
+          if (cdS) cdS.textContent = s < 10 ? '0' + s : s.toString();
+        }
+        updateCd();
+        setInterval(updateCd, 1000);
+      })();
+
+      // 3. Universal RSVP Handler
+      function luxSubmitRsvp(e) {
+        e.preventDefault();
+        const btn = e.target.querySelector('button[type="submit"]');
+        if(btn) {
+          btn.disabled = true;
+          btn.innerHTML = 'Memproses...';
+        }
+        
+        // Mock processing for now. Will connect to API.
+        setTimeout(() => {
+          const nameInput = document.getElementById('rsvpName');
+          const name = nameInput ? nameInput.value : "Tamu";
+          alert('Terima kasih, konfirmasi dan doa restu atas nama ' + name + ' telah terkirim!');
+          e.target.reset();
+          if(btn) {
+            btn.disabled = false;
+            btn.innerHTML = 'Kirim Konfirmasi';
+          }
+        }, 800);
+      }
+    </script>
+  ` : "";
+
   // 7. Section: Dress Code
   const dressCodeColors = featureSettings.dressCodeColors || "";
   const dressCodeNote = featureSettings.dressCodeNote || "";
@@ -737,7 +887,7 @@ export async function composeTemplateData(invitationId: string) {
         <h2 class="sec-main-title serif">DRESS CODES</h2>
         <p class="sec-sub">Kami mengundang tamu undangan untuk mengenakan palet warna berikut untuk keseragaman foto:</p>
         <div style="display:flex; justify-content:center; gap:12px; margin: 1.5rem 0;">${colorBadges}</div>
-        ${dressCodeNote ? `<p style="margin:0; font-size:0.8rem; color:rgba(255,255,255,0.75); line-height:1.5;">${dressCodeNote}</p>` : ""}
+        ${dressCodeNote ? `<p style="margin:0; font-size:0.8rem; color:rgba(255,255,255,0.75); line-height:1.5;">${escapeHtml(dressCodeNote)}</p>` : ""}
       </section>
     `;
   }
@@ -788,7 +938,7 @@ export async function composeTemplateData(invitationId: string) {
         <h2 class="sec-main-title serif">TURUT MENGUNDANG</h2>
         <p class="sec-sub">Keluarga Besar &amp; Kerabat yang turut berbahagia:</p>
         <div style="display:flex; flex-direction:column; gap:0.6rem; margin-top:1.5rem; font-size:0.88rem; color:rgba(255,255,255,0.85);">
-          ${lines.map((line: string) => `<p style="margin:0; padding:0.4rem 0; border-bottom:1px dashed rgba(255,255,255,0.12);">${line.trim()}</p>`).join("")}
+          ${lines.map((line: string) => `<p style="margin:0; padding:0.4rem 0; border-bottom:1px dashed rgba(255,255,255,0.12);">${escapeHtml(line.trim())}</p>`).join("")}
         </div>
       </section>
     `;
@@ -839,9 +989,9 @@ export async function composeTemplateData(invitationId: string) {
         <div id="giftTabKado" style="display:none;" class="bank-card">
           <span class="bank-label">Alamat Pengiriman Kado</span>
           <p style="font-size:0.8rem; color:rgba(255,255,255,0.7); line-height:1.5; margin:0.4rem 0 0.8rem;">
-            ${inv.shippingAddress || "Jl. Pengantin No. 12, Makassar"}
+            ${escapeHtml(inv.shippingAddress || "Jl. Pengantin No. 12, Makassar")}
           </p>
-          <button class="btn-copy" onclick="copyText('${inv.shippingAddress || "Jl. Pengantin No. 12, Makassar"}')">Salin Alamat</button>
+          <button class="btn-copy" onclick="copyText('${escapeHtml(inv.shippingAddress || "Jl. Pengantin No. 12, Makassar")}')">Salin Alamat</button>
         </div>
       </section>
     `;
@@ -915,6 +1065,15 @@ export async function composeTemplateData(invitationId: string) {
       </div>
     `).join("");
 
+    let shareMomentUrl = "/sharemoment";
+    if (inv.subdomain && inv.subdomain !== "demo") {
+      shareMomentUrl = `/s/${inv.subdomain}/sharemoment`;
+    } else if (inv.groomSlug && inv.brideSlug) {
+      shareMomentUrl = `/${inv.groomSlug}-${inv.brideSlug}/${inv.invitationSlug}/sharemoment`;
+    } else {
+      shareMomentUrl = `/demo/${inv.themeId || "kalandra"}/sharemoment`;
+    }
+
     memoriesSectionHtml = `
       <section class="sec-flow slide-section" id="guest-memories" style="position: relative; padding: 3rem 1rem;">
         <div class="sec-content-box reveal-on-scroll" style="max-width: 580px; margin: 0 auto; text-align: center;">
@@ -924,43 +1083,14 @@ export async function composeTemplateData(invitationId: string) {
             ${memoriesSectionSubtitle}
           </p>
 
-          <!-- 1. KOTAK UPLOAD IN-PAGE (Langsung di halaman tanpa redirect) -->
-          <div class="memories-inpage-upload-card" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 20px; padding: 1.4rem; margin-bottom: 1.8rem; text-align: left; backdrop-filter: blur(12px); box-shadow: 0 10px 30px rgba(0,0,0,0.35);">
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.6rem;">
-              <span style="font-size: 1.1rem;">📸</span>
-              <span class="serif" style="font-weight: 700; font-size: 0.95rem; color: #fff; letter-spacing: 0.03em;">Unggah Momen Kondangan</span>
-            </div>
-
-            <form id="luxInpageMemoryForm" onsubmit="luxSubmitInpageMemory(event)" style="display: flex; flex-direction: column; gap: 10px;">
-              <input type="hidden" name="invitationId" value="${invitationId}">
-              <div>
-                <label style="display: block; font-size: 0.72rem; font-weight: 600; color: rgba(255,255,255,0.7); margin-bottom: 3px;">NAMA ANDA *</label>
-                <input type="text" id="luxInpageSender" name="senderName" required placeholder="Contoh: Budi Santoso & Istri" style="width: 100%; padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.4); color: #fff; font-size: 0.82rem; outline: none; box-sizing: border-box;" />
-              </div>
-              <div>
-                <label style="display: block; font-size: 0.72rem; font-weight: 600; color: rgba(255,255,255,0.7); margin-bottom: 3px;">EMAIL ANDA *</label>
-                <input type="email" id="luxInpageEmail" name="senderEmail" required placeholder="contoh: budi@gmail.com" style="width: 100%; padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.4); color: #fff; font-size: 0.82rem; outline: none; box-sizing: border-box;" />
-              </div>
-              <div>
-                <label style="display: block; font-size: 0.72rem; font-weight: 600; color: rgba(255,255,255,0.7); margin-bottom: 3px;">PESAN / UCAPAN SINGKAT</label>
-                <input type="text" id="luxInpageMsg" name="message" placeholder="Tuliskan ucapan untuk kedua mempelai..." style="width: 100%; padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.4); color: #fff; font-size: 0.82rem; outline: none; box-sizing: border-box;" />
-              </div>
-              <div>
-                <label style="display: block; font-size: 0.72rem; font-weight: 600; color: rgba(255,255,255,0.7); margin-bottom: 3px;">PILIH FOTO ATAU VIDEO *</label>
-                <input type="file" id="luxInpageFile" accept="image/*,video/mp4,video/quicktime" required style="width: 100%; padding: 7px 10px; border-radius: 10px; border: 1px dashed rgba(255,255,255,0.25); background: rgba(255,255,255,0.03); color: rgba(255,255,255,0.8); font-size: 0.78rem; box-sizing: border-box;" />
-              </div>
-              <button type="submit" id="luxInpageSubmitBtn" style="margin-top: 6px; padding: 10px 16px; border-radius: 50px; background: #ffffff; color: #000000; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.05em; border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(255,255,255,0.18); transition: transform 0.15s ease;">
-                📸  KIRIM FOTO MOMEN
-              </button>
-              <div id="luxInpageAlert" style="display: none; color: #4ade80; font-size: 0.78rem; text-align: center; margin-top: 6px; font-weight: 600;">
-                ✓ Foto berhasil diunggah langsung ke album kenangan!
-              </div>
-            </form>
-          </div>
+          <!-- 1. TOMBOL UPLOAD MOMEN (DIRECT LINK) -->
+          <a href="${shareMomentUrl}" style="display: block; width: 100%; max-width: 360px; margin: 0 auto 1.8rem auto; padding: 14px 20px; border-radius: 50px; background: #ffffff; color: #000000; font-weight: 700; font-size: 0.9rem; letter-spacing: 0.05em; text-align: center; text-decoration: none; box-shadow: 0 4px 15px rgba(255,255,255,0.18); transition: transform 0.15s ease;">
+            BAGIKAN FOTO MOMEN ANDA
+          </a>
 
           <!-- 2. HIGHLIGHT LINGKARAN (5 LINGKARAN DI LAYAR, LOOPING MARQUEE JIKA > 5) -->
           ${shuffledMemories.length > 0 ? `
-            <div class="memories-highlights-wrapper" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 14px 10px; margin-bottom: 1.5rem; overflow: hidden;">
+            <div class="memories-highlights-wrapper" style="width: 100%; max-width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 14px 10px; margin-bottom: 1.5rem; overflow: hidden;">
               <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; font-size: 10px; font-weight: 700; opacity: 0.85; padding: 0 6px;">
                 <span style="display: flex; align-items: center; gap: 6px;">
                   <span style="width: 7px; height: 7px; border-radius: 99px; background: #10b981; display: inline-block;"></span>
@@ -982,8 +1112,8 @@ export async function composeTemplateData(invitationId: string) {
           <!-- 3. TOMBOL DIRECT KE HALAMAN GALERI WEB (galery.js) -->
           <div style="text-align: center;">
             <a href="/${inv.groomSlug}-${inv.brideSlug}/${inv.invitationSlug}/galery" class="btn-outline-box" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; font-size: 12px; font-weight: 700; border-radius: 50px; text-decoration: none; border: 1px solid currentColor; color: inherit; transition: all 0.2s ease;">
-              <span>✨ BUKA GALERI MOMEN LENGKAP</span>
-              <span style="font-size: 14px;">↗</span>
+              <span>BUKA GALERI MOMEN LENGKAP</span>
+              <span style="font-size: 14px; margin-top: -2px;">&rarr;</span>
             </a>
           </div>
         </div>
@@ -999,60 +1129,7 @@ export async function composeTemplateData(invitationId: string) {
         }
       </style>
 
-      <script>
-        window.luxSubmitInpageMemory = async function(e) {
-          e.preventDefault();
-          const btn = document.getElementById('luxInpageSubmitBtn');
-          const alert = document.getElementById('luxInpageAlert');
-          const senderInput = document.getElementById('luxInpageSender');
-          const emailInput = document.getElementById('luxInpageEmail');
-          const msgInput = document.getElementById('luxInpageMsg');
-          const fileInput = document.getElementById('luxInpageFile');
 
-          if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
-            alert("Pilih file foto terlebih dahulu.");
-            return;
-          }
-
-          if (btn) { btn.disabled = true; btn.textContent = 'Mengunggah ke Galeri...'; }
-
-          try {
-            const formData = new FormData();
-            formData.append('invitationId', '${invitationId}');
-            formData.append('senderName', senderInput.value);
-            formData.append('senderEmail', emailInput.value);
-            formData.append('message', msgInput.value || '');
-            formData.append('file', fileInput.files[0]);
-
-            const res = await fetch('/api/public/memories/upload', {
-              method: 'POST',
-              body: formData,
-            });
-
-            if (res.ok) {
-              if (alert) {
-                alert.textContent = '✓ Foto berhasil diunggah langsung ke album kenangan!';
-                alert.style.display = 'block';
-              }
-              senderInput.value = '';
-              emailInput.value = '';
-              msgInput.value = '';
-              fileInput.value = '';
-              setTimeout(() => {
-                if (alert) alert.style.display = 'none';
-              }, 4000);
-            } else {
-              const err = await res.json();
-              alert.textContent = 'Gagal mengunggah: ' + (err.error || 'Terjadi kesalahan');
-              alert.style.display = 'block';
-            }
-          } catch (err) {
-            console.error(err);
-          } finally {
-            if (btn) { btn.disabled = false; btn.textContent = '📸  KIRIM FOTO MOMEN'; }
-          }
-        };
-      </script>
 
       <!-- LIGHTBOX PREVIEW POP-UP FOR MEMORIES -->
       <div id="luxMemoryPreviewModal" onclick="luxCloseMemoryPreview(event)" style="display: none; position: fixed; inset: 0; z-index: 999999; background: rgba(0,0,0,0.92); backdrop-filter: blur(10px); align-items: center; justify-content: center; flex-direction: column; padding: 16px;">
@@ -1308,10 +1385,11 @@ export async function composeTemplateData(invitationId: string) {
           const caption = document.getElementById('luxMemoryPreviewCaption');
           if (!modal || !content) return;
 
+          const safeUrl = url.replace(/"/g, '&quot;');
           if (type === 'VIDEO') {
-            content.innerHTML = '<video src="' + url + '" controls autoplay playsinline style="max-height: 75vh; max-width: 100%; border-radius: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); background: #000;"></video>';
+            content.innerHTML = '<video src="' + safeUrl + '" controls autoplay playsinline style="max-height: 75vh; max-width: 100%; border-radius: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); background: #000;"></video>';
           } else {
-            content.innerHTML = '<img src="' + url + '" style="max-height: 75vh; max-width: 100%; border-radius: 16px; object-fit: contain; box-shadow: 0 20px 50px rgba(0,0,0,0.8);" />';
+            content.innerHTML = '<img src="' + safeUrl + '" style="max-height: 75vh; max-width: 100%; border-radius: 16px; object-fit: contain; box-shadow: 0 20px 50px rgba(0,0,0,0.8);" />';
           }
 
           if (caption) {
@@ -1479,6 +1557,7 @@ export async function composeTemplateData(invitationId: string) {
     giftSectionHtml,
     wishesHtml,
     memoriesSectionHtml,
+    musicPlayerHtml,
     qrAccessCardHtml: showQrCheckin ? qrAccessCardHtml : "",
     qrButtonDisplay: showQrCheckin ? "" : "display:none;",
     qrCoverButtonHtml: showQrCheckin ? `<button class="btn-qr-ghost" onclick="openModal()">QR Check-In →</button>` : "",

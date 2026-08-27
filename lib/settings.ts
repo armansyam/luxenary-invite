@@ -25,6 +25,15 @@ export interface PublicPlatformSettings {
   bankAccountNumber: string;
   bankAccountHolder: string;
   bankInstructions: string;
+  retentionInvitationDays: number;
+  waTemplateMessage: string;
+  maxUploadMb: number;
+  landingFeature1Title: string;
+  landingFeature1Desc: string;
+  landingFeature2Title: string;
+  landingFeature2Desc: string;
+  landingFeature3Title: string;
+  landingFeature3Desc: string;
 }
 
 export async function getAdminSetting(key: string, defaultValue = ""): Promise<string> {
@@ -77,6 +86,15 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
     bankInstructions:
       map["bank_instructions"] ||
       "Silakan transfer tepat sesuai total tagihan invoice. Setelah transfer, unggah foto bukti transfer di bawah ini untuk diverifikasi admin.",
+    retentionInvitationDays: Number(map["retention_invitation_days"] || 30),
+    waTemplateMessage: map["wa_template_message"] || "Assalamu'alaikum {{GUEST_NAME}},\n\nKami mengundang Bapak/Ibu dalam pernikahan kami.\n\nUndangan: {{INVITATION_URL}}\n\nHormat kami,\n{{GROOM_NAME}} & {{BRIDE_NAME}}",
+    maxUploadMb: Number(map["max_upload_mb"] || 5),
+    landingFeature1Title: map["landing_feature_1_title"] || "Desain Kalandra, Aurelia & Prameswari",
+    landingFeature1Desc: map["landing_feature_1_desc"] || "Estetika natural dengan split view desktop, transisi foto section overlap, audio player autoplay, dan CSS scroll snap mulus.",
+    landingFeature2Title: map["landing_feature_2_title"] || "Manajemen Tamu & WhatsApp",
+    landingFeature2Desc: map["landing_feature_2_desc"] || "Generator link pintar per tamu, form RSVP dengan QR Code terintegrasi, dan auto-redirect kirim undangan via WhatsApp.",
+    landingFeature3Title: map["landing_feature_3_title"] || "Buku Tamu Digital (QR Code)",
+    landingFeature3Desc: map["landing_feature_3_desc"] || "Manajemen check-in tamu VIP secara real-time di meja resepsionis menggunakan scanner QR Code pintar.",
     packages: [
       {
         id: "TRADITIONAL",

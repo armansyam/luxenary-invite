@@ -1,3 +1,20 @@
+<!--
+      _    __  __ ____  ____  _______     __
+     / \  |  \/  / ___||  _ \| ____\ \   / /
+    / _ \ | |\/| \___ \| | | |  _|  \ \ / / 
+   / ___ \| |  | |___) | |_| | |___  \ V /  
+  /_/   \_\_|  |_|____/|____/|_____|  \_/   
+
+  ==============================================================
+  STOP! PERHATIAN!
+  --------------------------------------------------------------
+  Sistem dan desain tema ini adalah milik eksklusif AMSDEV.
+  Dilarang keras menyalin, menduplikasi, atau menjual ulang 
+  tanpa izin resmi dari pihak AMSDEV.
+  
+  Hak cipta dilindungi undang-undang.
+  ==============================================================
+-->
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -27,6 +44,7 @@
 })();
 </script>
 
+<link rel="stylesheet" href="/css/modules.css">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Raditya &amp; Alana — The Wedding</title>
@@ -287,77 +305,6 @@
     .pass-meta-lbl { font-size: 0.52rem; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.5); display: block; margin-bottom: 0.2rem; }
     .pass-meta-val { font-size: 0.75rem; color: #ffffff; font-weight: 500; }
     .pass-souvenir-bar { border-top: 1px dashed rgba(255,255,255,0.15); padding-top: 0.9rem; font-size: 0.72rem; color: rgba(255,255,255,0.7); display: flex; justify-content: space-between; align-items: center; }
-    /* OUR MOMENT (SMART PUZZLE GRID) */
-    .moment-quote { font-style: italic; font-size: 1.05rem; line-height: 1.65; color: rgba(255,255,255,0.75); max-width: 420px; margin: 0 auto 2rem; }
-    .moments-grid-10 {
-      display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-flow: dense;
-      gap: 5px; margin-bottom: 2.2rem; width: 100%;
-    }
-    .moment-photo-item {
-      position: relative; overflow: hidden; border-radius: 6px; cursor: pointer;
-      border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 4px 12px rgba(0,0,0,0.35);
-      transition: transform 0.3s ease; aspect-ratio: 3/4;
-    }
-    .moment-photo-item.is-landscape {
-      grid-column: span 2; aspect-ratio: 3/2;
-    }
-    .moment-photo-item:hover { transform: scale(1.03); }
-    .moment-photo-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .btn-show-gallery { margin-bottom: 0 !important; }
-
-    /* LIGHTBOX MODALS */
-    .gallery-modal-backdrop {
-      position: fixed; inset: 0; z-index: 350; background: rgba(7,7,9,0.96); backdrop-filter: blur(20px);
-      display: flex; flex-direction: column; opacity: 0; visibility: hidden; transition: all 0.3s ease;
-      overflow-y: auto; padding: 2rem 1.5rem;
-    }
-    .gallery-modal-backdrop.open { opacity: 1; visibility: visible; }
-    .gallery-modal-container { max-width: 600px; width: 100%; margin: 0 auto; }
-    .gallery-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.8rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.15); }
-    .modal-gallery-title { font-size: 1.8rem; color: #fff; letter-spacing: 0.1em; }
-    .gallery-modal-close {
-      background: rgba(255,255,255,0.1); border: 1px solid var(--border); color: #ffffff;
-      width: 34px; height: 34px; border-radius: 50%; font-size: 1rem; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .gallery-modal-grid { columns: 4; column-gap: 5px; }
-    .full-gallery-item {
-      break-inside: avoid; margin-bottom: 5px; overflow: hidden; border-radius: 6px; cursor: pointer;
-      border: 1px solid rgba(255,255,255,0.12);
-    }
-    .full-gallery-item img { width: 100%; height: auto; display: block; transition: transform 0.35s; }
-    .full-gallery-item:hover img { transform: scale(1.05); }
-
-    .lux-zoom-backdrop {
-      position: fixed !important; inset: 0 !important; z-index: 99999 !important; background: rgba(0,0,0,0.96); backdrop-filter: blur(16px);
-      display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: all 0.3s ease;
-      padding: 1.5rem 1rem; touch-action: none; overscroll-behavior: contain;
-    }
-    .lux-zoom-backdrop.open { opacity: 1; visibility: visible; }
-    .lux-zoom-close {
-      position: fixed; top: 18px; right: 18px; background: rgba(35,35,38,0.85); backdrop-filter: blur(10px);
-      border: 1px solid var(--border); color: #fff; width: 42px; height: 42px; border-radius: 50%;
-      font-size: 1.2rem; cursor: pointer; z-index: 100000; display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.6); transition: transform 0.2s;
-    }
-    .lux-zoom-close:hover { transform: scale(1.08); background: #ffffff; color: #070709; }
-    .lux-zoom-nav {
-      position: fixed; top: 50%; transform: translateY(-50%); background: rgba(35,35,38,0.85); backdrop-filter: blur(10px);
-      border: 1px solid var(--border); color: #fff; width: 44px; height: 44px; border-radius: 50%;
-      font-size: 1.8rem; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 100000;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.6);
-    }
-    .lux-zoom-nav.prev { left: 14px; }
-    .lux-zoom-nav.next { right: 14px; }
-    .lux-zoom-img-box {
-      max-width: 90vw; max-height: 80vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
-      position: relative; z-index: 99999;
-    }
-    .lux-zoom-img-box img { max-width: 100%; max-height: 75vh; object-fit: contain; border-radius: 8px; box-shadow: 0 15px 50px rgba(0,0,0,0.9); }
-    .lux-zoom-counter {
-      font-size: 0.75rem; letter-spacing: 0.2em; color: var(--gold-pale);
-      margin-top: 0.8rem; font-weight: 600; text-transform: uppercase; background: rgba(0,0,0,0.6); padding: 4px 12px; border-radius: 20px; border: 1px solid var(--border);
-    }
 
     /* SECTIONS DIVIDER & GIFT */
     .sec-divider { width: 100%; height: 1px; background: var(--border); margin: 0; }
@@ -439,7 +386,25 @@
       .slide-couple { padding: 4rem 3.5rem 5rem; }
     }
   </style>
-</head>
+
+    <script>
+      if (window.location.search.includes('mode=cover')) {
+        document.documentElement.classList.add('mode-cover');
+      }
+    </script>
+    <style>
+      html.mode-cover body > *:not(#coverScreen):not(.cover-screen):not(#coverOverlay):not(#hero):not(.hero-section):not(.main-content-wrapper) {
+        display: none !important;
+      }
+      /* Fallback for themes that wrap cover in a main wrapper */
+      html.mode-cover .main-scroll-panel > *:not(#coverScreen):not(.cover-screen):not(#coverOverlay):not(#hero):not(.hero-section) {
+        display: none !important;
+      }
+      html.mode-cover body { overflow: hidden !important; background: transparent !important; }
+      html.mode-cover { overflow: hidden !important; }
+    </style>
+  </head>
+  
 <body style="--gold: #a67c52; --gold-dim: #c5a059; --gold-pale: #faf7f2;">
 
   <!-- FIXED LEFT HERO (DESKTOP ONLY) -->
@@ -839,37 +804,13 @@
           Punya foto candid atau video seru selama menghadiri pernikahan kami? Bagikan momen spesial Anda langsung di sini:
         </p>
 
-        <!-- 1. KOTAK UPLOAD IN-PAGE (Langsung di halaman yang sama) -->
-        <div class="memories-inpage-upload-card" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 20px; padding: 1.4rem; margin-bottom: 1.8rem; text-align: left; backdrop-filter: blur(12px); box-shadow: 0 10px 30px rgba(0,0,0,0.35);">
-          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.6rem;">
-            <span style="font-size: 1.1rem;">📸</span>
-            <span class="serif" style="font-weight: 700; font-size: 0.95rem; color: #fff; letter-spacing: 0.03em;">Unggah Momen Kondangan</span>
-          </div>
-
-          <form onsubmit="luxHandleInPageMemorySubmit(event)" style="display: flex; flex-direction: column; gap: 10px;">
-            <div>
-              <label style="display: block; font-size: 0.72rem; font-weight: 600; color: rgba(255,255,255,0.7); margin-bottom: 3px;">NAMA ANDA *</label>
-              <input type="text" id="inpageMemName" required placeholder="Contoh: Budi Santoso & Istri" style="width: 100%; padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.4); color: #fff; font-size: 0.82rem; outline: none;" />
-            </div>
-            <div>
-              <label style="display: block; font-size: 0.72rem; font-weight: 600; color: rgba(255,255,255,0.7); margin-bottom: 3px;">PESAN / UCAPAN SINGKAT</label>
-              <input type="text" id="inpageMemMsg" placeholder="Tuliskan ucapan untuk kedua mempelai..." style="width: 100%; padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.4); color: #fff; font-size: 0.82rem; outline: none;" />
-            </div>
-            <div>
-              <label style="display: block; font-size: 0.72rem; font-weight: 600; color: rgba(255,255,255,0.7); margin-bottom: 3px;">PILIH FOTO DARI HP / KAMERA *</label>
-              <input type="file" id="inpageMemFile" accept="image/*" required style="width: 100%; padding: 7px 10px; border-radius: 10px; border: 1px dashed rgba(255,255,255,0.25); background: rgba(255,255,255,0.03); color: rgba(255,255,255,0.8); font-size: 0.78rem;" />
-            </div>
-            <button type="submit" id="inpageMemSubmitBtn" style="margin-top: 6px; padding: 10px 16px; border-radius: 50px; background: #ffffff; color: #000000; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.05em; border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(255,255,255,0.18); transition: transform 0.15s ease;">
-              📸  KIRIM FOTO MOMEN
-            </button>
-            <div id="inpageMemAlert" style="display: none; color: #4ade80; font-size: 0.78rem; text-align: center; margin-top: 6px; font-weight: 600;">
-              ✓ Foto berhasil diunggah langsung ke album kenangan!
-            </div>
-          </form>
-        </div>
+        <!-- 1. TOMBOL UPLOAD MOMEN (DIRECT LINK) -->
+        <a href="/demo/moment" style="display: block; width: 100%; max-width: 360px; margin: 0 auto 1.8rem auto; padding: 14px 20px; border-radius: 50px; background: #ffffff; color: #000000; font-weight: 700; font-size: 0.9rem; letter-spacing: 0.05em; text-align: center; text-decoration: none; box-shadow: 0 4px 15px rgba(255,255,255,0.18); transition: transform 0.15s ease;">
+          BAGIKAN FOTO MOMEN ANDA
+        </a>
 
         <!-- 2. HIGHLIGHT LINGKARAN (5 LINGKARAN DI LAYAR, LOOPING MARQUEE JIKA > 5) -->
-        <div class="memories-highlights-wrapper" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 14px 10px; margin-bottom: 1.5rem; overflow: hidden;">
+        <div class="memories-highlights-wrapper" style="width: 100%; max-width: 100%; box-sizing: border-box; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 14px 10px; margin-bottom: 1.5rem; overflow: hidden;">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; font-size: 10px; font-weight: 700; opacity: 0.85; padding: 0 6px;">
             <span style="display: flex; align-items: center; gap: 6px;">
               <span style="width: 7px; height: 7px; border-radius: 99px; background: #10b981; display: inline-block;"></span>
@@ -882,14 +823,25 @@
           <div class="story-circles-track-wrapper" style="overflow: hidden; width: 100%; position: relative; mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent); -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);">
             <div class="story-circles-track" style="display: flex; gap: 14px; width: max-content; margin: 0 auto; animation: luxStoryLoop 24s linear infinite;">
               
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/kalandra/gallery_07.webp', 'Alumni Teknik')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/kalandra/gallery_06.webp', 'Keluarga Solo')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/kalandra/gallery_07.webp" onerror="this.onerror=null;this.src='/demo/kalandra/groom.webp';" alt="Alumni Teknik" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/kalandra/gallery_06.webp" onerror="this.onerror=null;this.src='/demo/kalandra/hero.webp';" alt="Keluarga Solo" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Alumni
+        Keluarga
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/kalandra/memory_01.webp', 'Budi Santoso')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/kalandra/memory_01.webp" onerror="this.onerror=null;this.src='/demo/kalandra/gallery_01.webp';" alt="Budi Santoso" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Budi
       </span>
     </div>
   
@@ -904,6 +856,17 @@
       </span>
     </div>
   
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/kalandra/gallery_05.webp', 'Dimas Pratama')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/kalandra/gallery_05.webp" onerror="this.onerror=null;this.src='/demo/kalandra/cover.webp';" alt="Dimas Pratama" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Dimas
+      </span>
+    </div>
+  
     <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/kalandra/memory_02.webp', 'Sahabat SMA')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
@@ -912,17 +875,6 @@
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
         Sahabat
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/kalandra/memory_01.webp', 'Budi Santoso')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/kalandra/memory_01.webp" onerror="this.onerror=null;this.src='/demo/kalandra/gallery_01.webp';" alt="Budi Santoso" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Budi
       </span>
     </div>
   
@@ -948,37 +900,37 @@
       </span>
     </div>
   
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/kalandra/gallery_05.webp', 'Dimas Pratama')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/kalandra/gallery_07.webp', 'Alumni Teknik')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/kalandra/gallery_05.webp" onerror="this.onerror=null;this.src='/demo/kalandra/cover.webp';" alt="Dimas Pratama" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/kalandra/gallery_07.webp" onerror="this.onerror=null;this.src='/demo/kalandra/groom.webp';" alt="Alumni Teknik" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Dimas
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/kalandra/gallery_06.webp', 'Keluarga Solo')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/kalandra/gallery_06.webp" onerror="this.onerror=null;this.src='/demo/kalandra/hero.webp';" alt="Keluarga Solo" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Keluarga
+        Alumni
       </span>
     </div>
   
               
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/kalandra/gallery_07.webp', 'Alumni Teknik')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/kalandra/gallery_06.webp', 'Keluarga Solo')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/kalandra/gallery_07.webp" onerror="this.onerror=null;this.src='/demo/kalandra/groom.webp';" alt="Alumni Teknik" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/kalandra/gallery_06.webp" onerror="this.onerror=null;this.src='/demo/kalandra/hero.webp';" alt="Keluarga Solo" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Alumni
+        Keluarga
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/kalandra/memory_01.webp', 'Budi Santoso')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/kalandra/memory_01.webp" onerror="this.onerror=null;this.src='/demo/kalandra/gallery_01.webp';" alt="Budi Santoso" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Budi
       </span>
     </div>
   
@@ -993,6 +945,17 @@
       </span>
     </div>
   
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/kalandra/gallery_05.webp', 'Dimas Pratama')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/kalandra/gallery_05.webp" onerror="this.onerror=null;this.src='/demo/kalandra/cover.webp';" alt="Dimas Pratama" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Dimas
+      </span>
+    </div>
+  
     <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/kalandra/memory_02.webp', 'Sahabat SMA')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
@@ -1001,17 +964,6 @@
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
         Sahabat
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/kalandra/memory_01.webp', 'Budi Santoso')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/kalandra/memory_01.webp" onerror="this.onerror=null;this.src='/demo/kalandra/gallery_01.webp';" alt="Budi Santoso" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Budi
       </span>
     </div>
   
@@ -1037,25 +989,14 @@
       </span>
     </div>
   
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/kalandra/gallery_05.webp', 'Dimas Pratama')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/kalandra/gallery_07.webp', 'Alumni Teknik')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/kalandra/gallery_05.webp" onerror="this.onerror=null;this.src='/demo/kalandra/cover.webp';" alt="Dimas Pratama" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/kalandra/gallery_07.webp" onerror="this.onerror=null;this.src='/demo/kalandra/groom.webp';" alt="Alumni Teknik" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Dimas
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/kalandra/gallery_06.webp', 'Keluarga Solo')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/kalandra/gallery_06.webp" onerror="this.onerror=null;this.src='/demo/kalandra/hero.webp';" alt="Keluarga Solo" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Keluarga
+        Alumni
       </span>
     </div>
   
@@ -1266,27 +1207,27 @@
       <h2 class="sec-main-title serif">RSVP &amp; Doa Restu</h2>
 
       <div class="rsvp-form-wrap">
-        <form id="rsvpForm" onsubmit="submitRsvp(event)">
+        <form id="rsvpForm" onsubmit="luxSubmitRsvp(event)">
           <div class="form-row">
-            <label class="form-lbl">Nama Lengkap</label>
+            <label class="form-lbl" data-lux-field="customLabels.rsvpNameLabel">Nama Lengkap</label>
             <input type="text" id="rsvpName" required class="form-in" placeholder="Nama Anda">
           </div>
           <div class="form-row">
-            <label class="form-lbl">Konfirmasi Kehadiran</label>
+            <label class="form-lbl" data-lux-field="customLabels.rsvpStatusLabel">Konfirmasi Kehadiran</label>
             <select id="rsvpStatus" class="form-sel">
               <option value="hadir">Konfirmasi Hadir</option>
               <option value="tidak">Berhalangan Hadir</option>
             </select>
           </div>
           <div class="form-row">
-            <label class="form-lbl">Jumlah Tamu</label>
+            <label class="form-lbl" data-lux-field="customLabels.rsvpCountLabel">Jumlah Tamu</label>
             <input type="number" id="rsvpCount" min="1" max="5" value="1" class="form-in">
           </div>
           <div class="form-row">
-            <label class="form-lbl">Ucapan &amp; Doa Restu</label>
+            <label class="form-lbl" data-lux-field="customLabels.rsvpMessageLabel">Ucapan &amp; Doa Restu</label>
             <textarea id="rsvpMessage" rows="4" class="form-ta" placeholder="Tuliskan ucapan dan doa terbaik Anda..."></textarea>
           </div>
-          <button type="submit" id="btnSubmit" class="btn-rsvp-submit">Kirim Konfirmasi &amp; Doa</button>
+          <button type="submit" id="btnSubmit" class="btn-rsvp-submit" data-lux-field="customLabels.rsvpBtnText">Kirim Konfirmasi &amp; Doa</button>
         </form>
 
         <div class="wishes-list" id="wishesList">
@@ -1392,11 +1333,8 @@
   </nav>
 
   <!-- FLOATING MUSIC BUTTON -->
-  <audio id="bgAudio" loop preload="auto">
-    <source src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=romantic-wedding-113528.mp3" type="audio/ogg">
-    <source src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=romantic-wedding-113528.mp3" type="audio/mpeg">
-  </audio>
-  <button class="music-fab" id="musicFab" onclick="toggleAudio()" aria-label="Toggle Music">
+  
+  <button class="music-fab" id="musicFab" onclick="luxToggleAudio()" aria-label="Toggle Music">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
   </button>
 
@@ -1479,36 +1417,7 @@
       }).catch(() => {});
     }
 
-    function toggleAudio() {
-      if (!audio) return;
-      if (isPlaying) {
-        audio.pause();
-        isPlaying = false;
-        if (musicFab) musicFab.classList.remove('playing');
-      } else {
-        audio.play();
-        isPlaying = true;
-        if (musicFab) musicFab.classList.add('playing');
-      }
-    }
-
-    document.addEventListener('visibilitychange', () => {
-      if (!audio) return;
-      if (document.hidden) {
-        if (!audio.paused) {
-          audio.dataset.wasPlaying = 'true';
-          audio.pause();
-          if (musicFab) musicFab.classList.remove('playing');
-        }
-      } else {
-        if (audio.dataset.wasPlaying === 'true') {
-          audio.play().then(() => {
-            if (musicFab) musicFab.classList.add('playing');
-          });
-          audio.dataset.wasPlaying = '';
-        }
-      }
-    });
+    
 
     function switchGiftTab(type, btn) {
       document.querySelectorAll('.gift-tab-btn').forEach(b => b.classList.remove('active'));
@@ -1630,6 +1539,20 @@
     } catch {}
   </script>
 
+<!-- AMSDEV PROTECTION SCRIPT -->
+<script>
+  (function() {
+    try {
+      if (window.console && console.log) {
+        console.log("%cSTOP!", "color: #ef4444; font-size: 50px; font-weight: 900; text-shadow: 2px 2px 0 #000; font-family: sans-serif;");
+        console.log("%cIni adalah properti eksklusif AMSDEV.", "color: #b5833c; font-size: 20px; font-weight: bold;");
+        console.log("%cSegala bentuk pencurian kode, scraping, atau modifikasi ilegal akan direkam. Domain saat ini: " + window.location.hostname, "font-size: 14px; color: #a8a29e;");
+      }
+    } catch(e) {}
+  })();
+</script>
+\n  
+
 <script id="luxUnifiedClientRuntime">
 
 (function() {
@@ -1744,7 +1667,8 @@
           if (wishesList) {
             var newWishItem = document.createElement('div');
             newWishItem.className = 'wish-item';
-            newWishItem.innerHTML = '<div class="wish-name">' + name + ' <span style="font-size:0.68rem;opacity:0.7;font-weight:normal;">• ' + (status === 'hadir' ? 'Hadir' : 'Berhalangan') + '</span></div><div class="wish-msg">“' + message + '”</div>';
+            var esc = function(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; };
+            newWishItem.innerHTML = '<div class="wish-name">' + esc(name) + ' <span style="font-size:0.68rem;opacity:0.7;font-weight:normal;">• ' + (status === 'hadir' ? 'Hadir' : 'Berhalangan') + '</span></div><div class="wish-msg">“' + esc(message) + '”</div>';
             wishesList.insertBefore(newWishItem, wishesList.firstChild);
           }
         }

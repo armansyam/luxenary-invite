@@ -44,6 +44,10 @@ export async function POST(
       return NextResponse.json({ error: "Akses ditolak. Order ini bukan milik akun Anda." }, { status: 403 });
     }
 
+    if (order.status === "PAID") {
+      return NextResponse.json({ error: "Pesanan ini sudah dibayar dan aktif." }, { status: 400 });
+    }
+
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
 

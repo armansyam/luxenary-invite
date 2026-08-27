@@ -556,7 +556,8 @@ const UNIFIED_CLIENT_RUNTIME_SCRIPT = `
           if (wishesList) {
             var newWishItem = document.createElement('div');
             newWishItem.className = 'wish-item';
-            newWishItem.innerHTML = '<div class="wish-name">' + name + ' <span style="font-size:0.68rem;opacity:0.7;font-weight:normal;">• ' + (status === 'hadir' ? 'Hadir' : 'Berhalangan') + '</span></div><div class="wish-msg">“' + message + '”</div>';
+            var esc = function(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; };
+            newWishItem.innerHTML = '<div class="wish-name">' + esc(name) + ' <span style="font-size:0.68rem;opacity:0.7;font-weight:normal;">• ' + (status === 'hadir' ? 'Hadir' : 'Berhalangan') + '</span></div><div class="wish-msg">“' + esc(message) + '”</div>';
             wishesList.insertBefore(newWishItem, wishesList.firstChild);
           }
         }
@@ -631,11 +632,12 @@ export async function renderTemplateFile(
     }
   }
 
-  // Injections: Head Audio Blocker, Unified Runtime, Autoplay Script & Inline Live Editor Script
+  // Injections: Head Audio Blocker, Global Modules CSS, Unified Runtime, Autoplay Script & Inline Live Editor Script
+  const GLOBAL_MODULES_CSS = `<link rel="stylesheet" href="/css/modules.css">`;
   if (tpl.includes("<head>")) {
-    tpl = tpl.replace("<head>", `<head>\n${HEAD_AUDIO_BLOCKER_SCRIPT}`);
+    tpl = tpl.replace("<head>", `<head>\n${HEAD_AUDIO_BLOCKER_SCRIPT}\n${GLOBAL_MODULES_CSS}`);
   } else if (tpl.includes("<HEAD>")) {
-    tpl = tpl.replace("<HEAD>", `<HEAD>\n${HEAD_AUDIO_BLOCKER_SCRIPT}`);
+    tpl = tpl.replace("<HEAD>", `<HEAD>\n${HEAD_AUDIO_BLOCKER_SCRIPT}\n${GLOBAL_MODULES_CSS}`);
   }
 
   const injectedScripts = `${UNIFIED_CLIENT_RUNTIME_SCRIPT}\n${AUTOPLAY_SHOWCASE_SCRIPT}\n${options?.editMode || data.__editMode ? INLINE_LIVE_EDITOR_SCRIPT : ""}`;

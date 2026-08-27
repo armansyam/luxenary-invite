@@ -42,6 +42,8 @@ const DEFAULT_SETTINGS: Array<{ key: string; value: string; label: string; group
   { key: "backup_retention_count", value: "10", label: "Batas Jumlah Snapshot Disimpan", group: "backup" },
   { key: "subdomain_grace_days", value: "7", label: "Masa Tenggang Subdomain (Hari Pasca Acara)", group: "subdomain" },
   { key: "subdomain_auto_recycle", value: "true", label: "Otomatis Lepas Subdomain ke Pool", group: "subdomain" },
+  { key: "retention_invitation_days", value: "30", label: "Retensi Undangan Aktif & Recycle Subdomain (Hari)", group: "subdomain" },
+  { key: "retention_account_days", value: "365", label: "Pembersihan Total Akun & Portofolio (Hari)", group: "subdomain" },
   { key: "gdrive_webhook_url", value: "", label: "Master Google Drive Webhook URL", group: "storage" },
 ];
 

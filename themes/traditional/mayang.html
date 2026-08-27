@@ -1,3 +1,20 @@
+<!--
+      _    __  __ ____  ____  _______     __
+     / \  |  \/  / ___||  _ \| ____\ \   / /
+    / _ \ | |\/| \___ \| | | |  _|  \ \ / / 
+   / ___ \| |  | |___) | |_| | |___  \ V /  
+  /_/   \_\_|  |_|____/|____/|_____|  \_/   
+
+  ==============================================================
+  STOP! PERHATIAN!
+  --------------------------------------------------------------
+  Sistem dan desain tema ini adalah milik eksklusif AMSDEV.
+  Dilarang keras menyalin, menduplikasi, atau menjual ulang 
+  tanpa izin resmi dari pihak AMSDEV.
+  
+  Hak cipta dilindungi undang-undang.
+  ==============================================================
+-->
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -257,16 +274,7 @@
     .jf-signature { font-family: 'Pinyon Script', cursive; font-size: 2rem; color: var(--jawa-gold); }
 
     /* GALLERY PUZZLE GRID & LIGHTBOX */
-    .moment-quote { font-size: 0.88rem; font-style: italic; color: rgba(255,255,255,0.85); line-height: 1.7; max-width: 420px; margin: 0 auto 1.8rem; }
-    .moments-grid-10 {
-      display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 1.8rem; width: 100%; max-width: 440px;
-    }
-    .moment-photo-item {
-      aspect-ratio: 3/4; overflow: hidden; border-radius: 10px; border: 1px solid var(--jawa-border);
-      box-shadow: 0 4px 15px rgba(0,0,0,0.5); cursor: pointer; transition: transform 0.35s ease, border-color 0.35s ease;
-    }
-    .moment-photo-item:hover { transform: scale(1.05); border-color: var(--jawa-gold); }
-    .moment-photo-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
     .btn-show-gallery, .btn-outline-box {
       display: inline-flex; align-items: center; justify-content: center; padding: 0.8rem 2.2rem;
       border: 1px solid var(--jawa-gold); border-radius: 50px; color: var(--jawa-gold-light);
@@ -275,39 +283,10 @@
     }
     .btn-show-gallery:hover, .btn-outline-box:hover { background: var(--jawa-gold); color: #120c06; }
 
-    .gallery-modal-backdrop, .lux-zoom-backdrop {
-      position: fixed; inset: 0; z-index: 99999; background: rgba(18,12,6,0.97); backdrop-filter: blur(20px);
-      display: flex; flex-direction: column; opacity: 0; visibility: hidden; transition: all 0.3s ease;
-      overflow-y: auto; padding: 2rem 1.2rem;
-    }
-    .gallery-modal-backdrop.open, .lux-zoom-backdrop.open { opacity: 1; visibility: visible; }
-    .gallery-modal-container { max-width: 480px; width: 100%; margin: 0 auto; }
-    .gallery-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 0.8rem; border-bottom: 1px solid var(--jawa-border); }
-    .modal-gallery-title { font-size: 1.4rem; color: var(--jawa-gold); font-family: 'Cinzel Decorative', serif; }
-    .gallery-modal-close, .lux-zoom-close {
-      background: rgba(28,19,11,0.8); border: 1px solid var(--jawa-border); color: #ffffff;
-      width: 36px; height: 36px; border-radius: 50%; font-size: 1.1rem; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .gallery-modal-grid { columns: 2; column-gap: 8px; }
-    .full-gallery-item {
-      break-inside: avoid; margin-bottom: 8px; overflow: hidden; border-radius: 8px; cursor: pointer;
-      border: 1px solid var(--jawa-border);
-    }
-    .full-gallery-item img { width: 100%; height: auto; display: block; }
-    .lux-zoom-nav {
-      position: fixed; top: 50%; transform: translateY(-50%); background: rgba(28,19,11,0.8);
-      border: 1px solid var(--jawa-border); color: #ffffff; width: 44px; height: 44px; border-radius: 50%;
-      font-size: 1.8rem; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 100000;
-    }
-    .lux-zoom-nav.prev { left: 14px; }
-    .lux-zoom-nav.next { right: 14px; }
-    .lux-zoom-img-box {
-      max-width: 90vw; max-height: 80vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
-      margin: auto;
-    }
-    .lux-zoom-img-box img { max-width: 100%; max-height: 75vh; object-fit: contain; border-radius: 8px; box-shadow: 0 15px 50px rgba(0,0,0,0.9); }
-    .lux-zoom-counter { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.75rem; color: var(--jawa-gold-light); margin-top: 0.8rem; letter-spacing: 0.2em; }
+    .gallery-modal-backdrop, 
+    .gallery-modal-backdrop.open, 
+
+    .gallery-modal-close, 
 
     /* DIGITAL GIFT & BANK CARDS */
     .bank-card {
@@ -586,5 +565,19 @@
     }
   </script>
 
+
+<!-- AMSDEV PROTECTION SCRIPT -->
+<script>
+  (function() {
+    try {
+      if (window.console && console.log) {
+        console.log("%cSTOP!", "color: #ef4444; font-size: 50px; font-weight: 900; text-shadow: 2px 2px 0 #000; font-family: sans-serif;");
+        console.log("%cIni adalah properti eksklusif AMSDEV.", "color: #b5833c; font-size: 20px; font-weight: bold;");
+        console.log("%cSegala bentuk pencurian kode, scraping, atau modifikasi ilegal akan direkam. Domain saat ini: " + window.location.hostname, "font-size: 14px; color: #a8a29e;");
+      }
+    } catch(e) {}
+  })();
+</script>
+\n  {{musicPlayerHtml}}
 </body>
 </html>
