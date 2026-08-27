@@ -432,12 +432,6 @@ function CheckoutContent() {
         <a href="/" className="flex items-center gap-2.5">
           <BrandLogo size="sm" showName />
         </a>
-        {!uploadedProofUrl && (
-          <a href="/packages" className="text-stone-400 text-xs hover:text-white transition flex items-center gap-1">
-            <span>&larr;</span>
-            <span>Ubah Paket</span>
-          </a>
-        )}
       </header>
 
       <div className="flex-1 flex items-center justify-center px-4 py-8 sm:py-12">
@@ -481,7 +475,12 @@ function CheckoutContent() {
               <div className="space-y-2.5 text-xs">
                 <div className="flex justify-between items-center">
                   <span className="text-stone-400">Paket Terpilih</span>
-                  <span className="text-white font-bold">Luxenary {planData.name}</span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-white font-bold">Luxenary {planData.name}</span>
+                    {!uploadedProofUrl && !qrData && (
+                      <a href="/packages" className="text-[10px] bg-white/10 hover:bg-white/20 text-stone-300 px-2 py-0.5 rounded-full transition">Ubah</a>
+                    )}
+                  </div>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-stone-400">Nomor Invoice</span>
