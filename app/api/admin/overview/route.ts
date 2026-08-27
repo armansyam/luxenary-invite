@@ -16,23 +16,36 @@ export async function GET() {
     }
 
     // --- AUTO EXPIRE SWEEP (ADMIN SIDE) ---
-    // Pastikan admin selalu melihat data mutakhir (expired QRIS)
-    const pendingGatewayOrders = await prisma.order.findMany({
-      where: { status: "PENDING", paymentMethod: "GATEWAY", snapToken: { not: null } },
-      select: { id: true, snapToken: true }
+    // Pastikan admin selalu melihat data mutakhir (expired QRIS & order usang)
+    const pendingOrders = await prisma.order.findMany({
+      where: { status: "PENDING" },
+      select: { id: true, snapToken: true, paymentMethod: true, expiredAt: true }
     });
     
     const now = Date.now();
     const expiredIds: string[] = [];
-    for (const ord of pendingGatewayOrders) {
-      try {
-        if (typeof ord.snapToken === "string" && ord.snapToken.startsWith("{")) {
+    
+    for (const ord of pendingOrders) {
+      let isExpired = false;
+      
+      // 1. Cek expiry dari QRIS snapToken (jika ada)
+      if (ord.paymentMethod === "GATEWAY" && typeof ord.snapToken === "string" && ord.snapToken.startsWith("{")) {
+        try {
           const tokenData = JSON.parse(ord.snapToken);
           if (tokenData && tokenData.expiry && now > tokenData.expiry + 120000) {
-            expiredIds.push(ord.id);
+            isExpired = true;
           }
-        }
-      } catch (e) {}
+        } catch (e) {}
+      }
+      
+      // 2. Cek expiry database (fallback jika snapToken null atau manual transfer ditinggalkan lama > 24h)
+      if (!isExpired && ord.expiredAt && ord.expiredAt.getTime() < now) {
+        isExpired = true;
+      }
+      
+      if (isExpired) {
+        expiredIds.push(ord.id);
+      }
     }
 
     if (expiredIds.length > 0) {

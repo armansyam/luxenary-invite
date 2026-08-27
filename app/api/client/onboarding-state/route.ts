@@ -80,13 +80,14 @@ export async function GET() {
       });
     }
 
-    // Kasus 3: Order EXPIRED atau FAILED (dari gateway webhook)
+    // Kasus 3: Order EXPIRED atau FAILED (dari gateway webhook atau sweep)
+    // Arahkan ke ID order lama agar mereka melihat warning merah "Sesi QRIS Berakhir"
     return NextResponse.json({
       step: "ORDER_EXPIRED",
       orderId: latestOrder.id,
       planType: latestOrder.planType,
       invoiceNumber: latestOrder.invoiceNumber,
-      redirectUrl: `/checkout?plan=${latestOrder.planType}`,
+      redirectUrl: `/checkout?order=${latestOrder.id}`,
     });
   } catch (error: any) {
     console.error("[Onboarding-State-Error]:", error);

@@ -104,6 +104,7 @@ export async function POST(req: NextRequest) {
         planType,
         existing: true,
         planChanged: isPlanChanged,
+        proofImageUrl: updated.proofImageUrl,
       });
     }
 
