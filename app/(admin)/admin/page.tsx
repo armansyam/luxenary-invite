@@ -38,6 +38,15 @@ const tabs = [
     ),
   },
   {
+    id: "leads",
+    label: "Prospek",
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+      </svg>
+    ),
+  },
+  {
     id: "invitations",
     label: "Undangan",
     icon: (
@@ -282,6 +291,7 @@ export default function AdminPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [allOrders, setAllOrders] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
+  const [leads, setLeads] = useState<any[]>([]);
   const [invitations, setInvitations] = useState<any[]>([]);
   const [themes, setThemes] = useState<any[]>([]);
   const [logs, setLogs] = useState<any[]>([]);
@@ -417,6 +427,7 @@ export default function AdminPage() {
           setOrders(data.orders || []);
           setAllOrders(data.allOrders || []);
           setUsers(data.users || []);
+          setLeads(data.leads || []);
           setInvitations(data.invitations || []);
           setThemes(data.themes || []);
           setLogs(data.logs || []);
@@ -2034,6 +2045,83 @@ export default function AdminPage() {
                   </div>
                 </div>
               )}
+
+              {/* ── LEADS / PROSPEK TAB ── */}
+              {activeTab === "leads" && (
+                <div className="space-y-5">
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">Daftar Prospek (Leads)</h2>
+                    <p className="text-sm text-gray-500">{leads.length} calon klien yang belum menyelesaikan pembayaran</p>
+                  </div>
+
+                  {/* Desktop Widescreen Table View */}
+                  <div className="hidden md:block bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div className="overflow-x-auto w-full">
+                      <table className="min-w-full divide-y divide-gray-100">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            {["Nama", "Email", "Status", "Terdaftar"].map((h) => (
+                              <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                          {leads.map((usr) => (
+                            <tr key={usr.id} className="hover:bg-gray-50 transition">
+                              <td className="px-5 py-3 text-sm font-semibold text-gray-900">{usr.name || "Anonim"}</td>
+                              <td className="px-5 py-3 text-sm text-gray-600 font-mono text-xs">{usr.email}</td>
+                              <td className="px-5 py-3">
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+                                  Prospek
+                                </span>
+                              </td>
+                              <td className="px-5 py-3 text-xs text-gray-500">{new Date(usr.createdAt).toLocaleDateString("id-ID")}</td>
+                            </tr>
+                          ))}
+                          {leads.length === 0 && (
+                            <tr>
+                              <td colSpan={4} className="px-5 py-8 text-center text-xs text-gray-400">
+                                Belum ada prospek terdaftar.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Mobile-Native Contact Feed View */}
+                  <div className="block md:hidden space-y-2.5">
+                    {leads.length === 0 ? (
+                      <div className="p-8 text-center bg-white rounded-2xl border border-gray-200 text-gray-400 text-xs italic">
+                        Belum ada prospek terdaftar.
+                      </div>
+                    ) : (
+                      leads.map((usr) => (
+                        <div key={usr.id} className="bg-white rounded-2xl p-3.5 border border-gray-200 shadow-2xs flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-9 h-9 rounded-xl bg-gray-100 text-gray-600 font-bold flex items-center justify-center text-xs shrink-0">
+                              {(usr.name || "P")[0].toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="font-semibold text-xs text-gray-900 truncate">{usr.name || "Prospek"}</div>
+                              <div className="text-gray-500 text-[11px] font-mono truncate">{usr.email}</div>
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600 border border-gray-200 mb-0.5">
+                              Prospek
+                            </span>
+                            <span className="text-[10px] text-gray-400 block">{new Date(usr.createdAt).toLocaleDateString("id-ID")}</span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+
 
               {/* ── Invitations ── */}
               {activeTab === "invitations" && (

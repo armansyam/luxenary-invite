@@ -73,6 +73,7 @@ export async function GET() {
       allOrders,
       recentOrders,
       recentUsers,
+      recentLeads,
       recentInvitations,
       webhookLogs,
     ] = await Promise.all([
@@ -94,9 +95,19 @@ export async function GET() {
         },
       }),
       prisma.order.findMany({
+        where: {
+          status: {
+            notIn: ["EXPIRED", "FAILED"],
+          },
+        },
         select: { id: true, amount: true, status: true, planType: true, createdAt: true },
       }),
       prisma.order.findMany({
+        where: {
+          status: {
+            notIn: ["EXPIRED", "FAILED"],
+          },
+        },
         take: 50,
         orderBy: { createdAt: "desc" },
         include: { user: { select: { name: true, email: true } } },
@@ -126,6 +137,28 @@ export async function GET() {
           invitations: {
             select: { id: true, subdomain: true, status: true },
             take: 1,
+          },
+        },
+      }),
+      // Daftar Leads: User yang TIDAK LUNAS dan TIDAK MEMILIKI UNDANGAN
+      prisma.user.findMany({
+        where: {
+          role: "CLIENT",
+          orders: { none: { status: "PAID" } },
+          invitations: { none: {} },
+        },
+        take: 50,
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          createdAt: true,
+          orders: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            select: { status: true, planType: true, amount: true, createdAt: true },
           },
         },
       }),
@@ -174,6 +207,7 @@ export async function GET() {
       allOrders,
       orders: recentOrders,
       users: recentUsers,
+      leads: recentLeads,
       invitations: recentInvitations,
       themes,
       logs: webhookLogs,
