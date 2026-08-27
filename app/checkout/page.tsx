@@ -11,6 +11,7 @@ function CheckoutContent() {
   const searchParams = useSearchParams();
   const planParam = searchParams.get("plan");
   const orderIdParam = searchParams.get("order");
+  const msgParam = searchParams.get("msg");
 
   const [planData, setPlanData] = useState<{ name: string; price: number; desc: string } | null>(null);
   const [orderId, setOrderId] = useState<string | null>(orderIdParam || null);
@@ -368,7 +369,7 @@ function CheckoutContent() {
     setUploadedProofUrl(null);
     setUploadSuccessMsg(null);
     const targetPlan = planParam || "PREMIUM";
-    router.replace(`/checkout?plan=${targetPlan}`);
+    router.replace(`/checkout?plan=${targetPlan}&msg=qris_expired`);
     setTimeout(() => {
       initializeCheckout();
     }, 100);
@@ -509,6 +510,18 @@ function CheckoutContent() {
                   {copiedAmount && <span className="text-[10px] text-emerald-400">Tersalin!</span>}
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Warning Message from Previous Session (if any) */}
+          {msgParam === "qris_expired" && !qrData && (
+            <div className="text-center px-4">
+              <span className="text-rose-400 text-xs font-medium">QRIS sebelumnya sudah kedaluwarsa. Silakan bayar tagihan baru.</span>
+            </div>
+          )}
+          {msgParam === "transfer_rejected" && !uploadedProofUrl && (
+            <div className="text-center px-4">
+              <span className="text-rose-400 text-xs font-medium">Bukti transfer sebelumnya ditolak. Silakan unggah bukti yang benar.</span>
             </div>
           )}
 
