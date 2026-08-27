@@ -79,7 +79,20 @@ export async function POST(req: NextRequest) {
         },
       });
 
+      // FIX: Jangan izinkan ubah paket jika sudah ada bukti transfer (menunggu verifikasi admin)
+      if (existingPending.proofImageUrl) {
+        return NextResponse.json({
+          message: "Anda memiliki pesanan yang sedang menunggu verifikasi admin. Tidak dapat mengubah paket saat ini.",
+          orderId: existingPending.id,
+          invoiceNumber: existingPending.invoiceNumber,
+          planType: existingPending.planType,
+          status: existingPending.status,
+          proofImageUrl: existingPending.proofImageUrl,
+        });
+      }
+
       // Update planType & amount langsung ke order aktif, reset bukti transfer jika paket berubah
+      // (Sekarang aman karena if di atas memastikan tidak ada proofImageUrl jika isPlanChanged true)
       const isPlanChanged = existingPending.planType !== planType;
 
       const updated = await prisma.order.update({
@@ -87,13 +100,6 @@ export async function POST(req: NextRequest) {
         data: {
           planType: planType as "TRADITIONAL" | "MODERN" | "PREMIUM",
           amount,
-          ...(isPlanChanged
-            ? {
-                proofImageUrl: null,
-                proofUploadedAt: null,
-                rejectReason: null,
-              }
-            : {}),
         },
       });
 

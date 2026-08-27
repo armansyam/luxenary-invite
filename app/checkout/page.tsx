@@ -432,10 +432,12 @@ function CheckoutContent() {
         <a href="/" className="flex items-center gap-2.5">
           <BrandLogo size="sm" showName />
         </a>
-        <a href="/packages" className="text-stone-400 text-xs hover:text-white transition flex items-center gap-1">
-          <span>&larr;</span>
-          <span>Ubah Paket</span>
-        </a>
+        {!uploadedProofUrl && (
+          <a href="/packages" className="text-stone-400 text-xs hover:text-white transition flex items-center gap-1">
+            <span>&larr;</span>
+            <span>Ubah Paket</span>
+          </a>
+        )}
       </header>
 
       <div className="flex-1 flex items-center justify-center px-4 py-8 sm:py-12">
