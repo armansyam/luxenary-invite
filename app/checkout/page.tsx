@@ -128,7 +128,8 @@ function CheckoutContent() {
           }
 
           if (orderStatusData.status === "EXPIRED") {
-            setIsGatewayExpired(true);
+            handleRegenerateOrder();
+            return;
           } else {
             setIsGatewayExpired(false);
             if (orderStatusData.snapToken) {
@@ -140,7 +141,8 @@ function CheckoutContent() {
                   setQrisSessionId(parsed.sessionId);
                   setQrisExpiry(parsed.expiry);
                 } else if (parsed.expiry <= (Date.now() - 120000)) {
-                  setIsGatewayExpired(true);
+                  handleRegenerateOrder();
+                  return;
                 }
               } catch {
                 // Not JSON, ignore
@@ -230,10 +232,10 @@ function CheckoutContent() {
             clearInterval(timerInterval);
             router.replace(`/dashboard/setup?order=${orderId}&plan=${data.planType}`);
           } else if (data.status === "EXPIRED") {
-            setIsGatewayExpired(true);
             setQrData(null);
             clearInterval(pollInterval);
             clearInterval(timerInterval);
+            handleRegenerateOrder();
           }
         }
       } catch {}
@@ -446,20 +448,7 @@ function CheckoutContent() {
             </p>
           </div>
 
-          {/* Gateway QRIS Expired Alert (Only on Gateway Tab if Gateway expired) */}
-          {isGatewayExpired && selectedMethod === "GATEWAY" && (
-            <div className="p-4 bg-rose-950/60 border border-rose-500/40 rounded-2xl text-rose-200 text-xs space-y-2.5 shadow-lg">
-              <div className="flex items-center gap-2 font-bold text-rose-300">
-                <svg className="w-4 h-4 text-rose-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>Sesi QRIS Gateway Telah Berakhir</span>
-              </div>
-              <p className="text-[11px] text-rose-300/80 leading-relaxed">
-                Sesi QRIS di gateway pembayaran telah kedaluwarsa. Silakan klik tombol di bawah untuk membuat kode pembayaran baru.
-              </p>
-            </div>
-          )}
+
 
           {error && (
             <div className="p-4 bg-rose-900/40 border border-rose-500/40 rounded-2xl text-rose-300 text-xs font-medium">
@@ -560,18 +549,7 @@ function CheckoutContent() {
           {/* ── TAB 1: AUTOMATIC GATEWAY (QRIS / E-WALLET) ── */}
           {(paymentMode === "GATEWAY" || (paymentMode === "BOTH" && selectedMethod === "GATEWAY")) && (
             <div className="space-y-3">
-              {isGatewayExpired ? (
-                <button
-                  type="button"
-                  onClick={handleRegenerateOrder}
-                  className="w-full py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-sm transition shadow-lg shadow-amber-900/30 cursor-pointer flex items-center justify-center gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  <span>Buat Tagihan / QRIS Baru</span>
-                </button>
-              ) : qrData ? (
+              {qrData ? (
                 <div className="bg-white/5 border border-amber-500/20 rounded-3xl p-6 space-y-5 backdrop-blur-xs text-center relative overflow-hidden">
                   <div className="absolute top-0 inset-x-0 h-1 bg-amber-500/20">
                     <div className="h-full bg-amber-500 rounded-r-full" style={{ width: `${Math.max(0, Math.min(100, ((qrisExpiry ? qrisExpiry - Date.now() : 0) / (15 * 60 * 1000)) * 100))}%`, transition: 'width 1s linear' }}></div>
