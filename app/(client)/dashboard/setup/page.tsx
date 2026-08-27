@@ -55,7 +55,7 @@ function SetupWizardContent() {
     setRootDomain(getApexRootDomain());
 
     // Fetch dynamic themes list
-    fetch("/api/public/themes", { cache: "no-store" })
+    fetch("/api/public/themes")
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
@@ -65,7 +65,7 @@ function SetupWizardContent() {
       .catch(() => {});
 
     // Fetch custom package names from public settings (Single Source of Truth)
-    fetch("/api/public/settings", { cache: "no-store" })
+    fetch("/api/public/settings")
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data.packages)) {
@@ -218,7 +218,39 @@ function SetupWizardContent() {
         throw new Error(data.error || "Gagal membuat undangan.");
       }
 
-      // Success → Redirect directly to the invitation editor
+      // Success Redirect directly to the invitation editor
+      router.push(`/dashboard/invitation/${data.invitationId}`);
+    } catch (err: any) {
+      setError(err.message || "Terjadi kesalahan. Silakan coba lagi.");
+      setLoading(false);
+    }
+  };
+
+  const handleSkipSetup = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/client/invitations/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          groomNickname: "",
+          brideNickname: "",
+          groomName: "",
+          brideName: "",
+          subdomain: "",
+          weddingDate: "",
+          city: "",
+          themeId: "kalandra",
+          planType: currentPlan,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Gagal melewati penyiapan.");
+      }
+
       router.push(`/dashboard/invitation/${data.invitationId}`);
     } catch (err: any) {
       setError(err.message || "Terjadi kesalahan. Silakan coba lagi.");
@@ -285,7 +317,7 @@ function SetupWizardContent() {
                     type="text"
                     value={groomNickname}
                     onChange={(e) => setGroomNickname(e.target.value)}
-                    placeholder="Contoh: Yus"
+                    placeholder="Masukkan nama panggilan mempelai pria"
                     className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-sm font-semibold text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
                   />
                 </div>
@@ -298,7 +330,7 @@ function SetupWizardContent() {
                     type="text"
                     value={brideNickname}
                     onChange={(e) => setBrideNickname(e.target.value)}
-                    placeholder="Contoh: Ulfa"
+                    placeholder="Masukkan nama panggilan mempelai wanita"
                     className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-sm font-semibold text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
                   />
                 </div>
@@ -313,7 +345,7 @@ function SetupWizardContent() {
                     type="text"
                     value={groomName}
                     onChange={(e) => setGroomName(e.target.value)}
-                    placeholder="Contoh: Muhammad Yusran, S.T."
+                    placeholder="Masukkan nama lengkap mempelai pria"
                     className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-800 focus:bg-white focus:outline-none"
                   />
                 </div>
@@ -326,7 +358,7 @@ function SetupWizardContent() {
                     type="text"
                     value={brideName}
                     onChange={(e) => setBrideName(e.target.value)}
-                    placeholder="Contoh: Ulfah Mawaddah, S.Ked."
+                    placeholder="Masukkan nama lengkap mempelai wanita"
                     className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-800 focus:bg-white focus:outline-none"
                   />
                 </div>
@@ -368,22 +400,32 @@ function SetupWizardContent() {
                     className="flex-1 px-3 py-2.5 text-xs font-mono font-bold text-amber-950 bg-white focus:outline-none"
                   />
                   <span className="px-3.5 py-2.5 text-xs text-stone-500 font-mono select-none bg-stone-50 border-l border-stone-200">
-                    .{rootDomain || "localhost:3000"}
+                    .{rootDomain}
                   </span>
                 </div>
 
                 <div className="pt-1 flex flex-col gap-1 text-[11px] text-stone-500">
                   <p>{subdomainStatus.message || "Tautan dibuat otomatis mengikuti nama panggilan, dan dapat Anda sesuaikan bebas."}</p>
                   <p className="text-[10px] text-amber-900/80 bg-amber-100/50 p-2 rounded-lg border border-amber-200/60">
-                    <strong>Link Arsip Portofolio (1 Tahun):</strong> <code>http://{rootDomain || "localhost:3000"}/{subdomain || "mempelai"}/{weddingDate ? getMonthYearSlug(weddingDate) : "okt-2026"}</code>
+                    <strong>Link Arsip Portofolio (1 Tahun):</strong> <code>http://{rootDomain}/{subdomain || "mempelai"}/{weddingDate ? getMonthYearSlug(weddingDate) : "okt-2026"}</code>
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="flex justify-end pt-2">
+            <div className="flex items-center justify-between pt-2">
               <button
                 type="button"
+                onClick={handleSkipSetup}
+                disabled={loading}
+                className="text-xs font-bold text-stone-500 hover:text-stone-900 transition cursor-pointer disabled:opacity-50"
+              >
+                {loading ? "Memproses..." : "Lewati Setup (Atur Nanti)"}
+              </button>
+
+              <button
+                type="button"
+                disabled={loading}
                 onClick={() => {
                   if (!groomNickname.trim() || !brideNickname.trim()) {
                     setError("Harap isi nama panggilan kedua mempelai.");
@@ -396,10 +438,10 @@ function SetupWizardContent() {
                   setError(null);
                   setStep(2);
                 }}
-                className="px-8 py-3.5 bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold rounded-xl transition shadow-md cursor-pointer flex items-center gap-2"
+                className="px-8 py-3.5 bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold rounded-xl transition shadow-md cursor-pointer flex items-center gap-2 disabled:opacity-50"
               >
                 <span>Lanjut ke Tanggal Acara</span>
-                <span>→</span>
+                
               </button>
             </div>
           </div>
@@ -466,7 +508,7 @@ function SetupWizardContent() {
                 className="px-8 py-3.5 bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold rounded-xl transition shadow-md cursor-pointer flex items-center gap-2"
               >
                 <span>Pilih Desain Tema</span>
-                <span>→</span>
+                
               </button>
             </div>
           </div>
@@ -569,7 +611,7 @@ function SetupWizardContent() {
                 ) : (
                   <>
                     <span>Selesai &amp; Masuk ke Studio Undangan</span>
-                    <span>→</span>
+                    
                   </>
                 )}
               </button>

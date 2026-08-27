@@ -47,7 +47,11 @@ function CheckoutContent() {
   const [uploadSuccessMsg, setUploadSuccessMsg] = useState<string | null>(null);
   const [copiedBank, setCopiedBank] = useState(false);
   const [copiedAmount, setCopiedAmount] = useState(false);
-  const [adminWa, setAdminWa] = useState<string>("6281234567890");
+  const [adminWa, setAdminWa] = useState<string>("");
+  // PlanType state — menyimpan ID paket aktif (ex: "PREMIUM", "TRADITIONAL") untuk regenerasi order yang benar
+  const [currentPlanType, setCurrentPlanType] = useState<string>(planParam || "PREMIUM");
+  // Waktu offset untuk sinkronisasi timer klien dan server
+  const [serverTimeOffset, setServerTimeOffset] = useState<number>(0);
 
   const isAdmin =
     (session?.user as any)?.isAdmin === true ||
@@ -90,7 +94,7 @@ function CheckoutContent() {
         } else if (settings.paymentMode === "GATEWAY") {
           setSelectedMethod("GATEWAY");
         }
-        // "BOTH" → biarkan user memilih, default tetap GATEWAY
+        // "BOTH" biarkan user memilih, default tetap GATEWAY
       }
 
       setBankInfo({
@@ -117,7 +121,14 @@ function CheckoutContent() {
           setOrderId(orderStatusData.id);
           setInvoiceNumber(orderStatusData.invoiceNumber);
 
+          let currentOffset = 0;
+          if (orderStatusData.serverTime) {
+            currentOffset = orderStatusData.serverTime - Date.now();
+            setServerTimeOffset(currentOffset);
+          }
+
           const currentPkg = packages.find((p) => p.id === orderStatusData.planType) || packages[0];
+          setCurrentPlanType(orderStatusData.planType || "PREMIUM");
           setPlanData({
             name: currentPkg?.name || orderStatusData.planType,
             price: Number(orderStatusData.amount),
@@ -136,12 +147,13 @@ function CheckoutContent() {
             if (orderStatusData.snapToken) {
               try {
                 const parsed = JSON.parse(orderStatusData.snapToken);
-                // Tambahkan Grace Period 2 Menit (120000 ms)
-                if (parsed.qrString && parsed.expiry > (Date.now() - 120000)) {
+                const syncedNow = Date.now() + currentOffset;
+                // Tambahkan Grace Period 2 Menit (120000 ms) sebelum benar-benar dihilangkan
+                if (parsed.qrString && parsed.expiry > (syncedNow - 120000)) {
                   setQrData(parsed.qrString);
                   setQrisSessionId(parsed.sessionId);
                   setQrisExpiry(parsed.expiry);
-                } else if (parsed.expiry <= (Date.now() - 120000)) {
+                } else if (parsed.expiry <= (syncedNow - 120000)) {
                   handleRegenerateOrder();
                   return;
                 }
@@ -197,56 +209,56 @@ function CheckoutContent() {
     initializeCheckout();
   }, [initializeCheckout]);
 
-  // --- NATIVE QRIS POLLING & COUNTDOWN ---
+  // --- SSE PAYMENT STATUS (Menggantikan polling — server push via iPaymu webhook) ---
   useEffect(() => {
     if (!qrData || !orderId) return;
 
-    // Countdown Timer Loop
+    // Countdown Timer — Sinkron dengan waktu server untuk mencegah drift
     const timerInterval = setInterval(() => {
       if (!qrisExpiry) return;
-      const now = Date.now();
-      const diff = qrisExpiry - now;
+      const syncedNow = Date.now() + serverTimeOffset;
+      const diff = qrisExpiry - syncedNow;
       
-      // Grace period 2 menit (120000 ms) setelah expired
-      if (diff <= -120000) {
-        setCountdownStr("Menunggu Konfirmasi Server...");
+      // Jika waktu habis, langsung hilangkan QRIS dari UI untuk mencegah pembayaran ke QR kadaluwarsa
+      if (diff <= 0) {
         clearInterval(timerInterval);
-        // Kita JANGAN set isGatewayExpired(true) di sini secara sepihak!
-        // Biarkan pollInterval yang mengecek status EXPIRED dari server agar sinkron dengan iPaymu.
-      } else if (diff <= 0) {
-        setCountdownStr("00:00 (Verifikasi Akhir...)");
+        handleRegenerateOrder();
       } else {
         const m = Math.floor(diff / 60000);
         const s = Math.floor((diff % 60000) / 1000);
-        setCountdownStr(`${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`);
+        setCountdownStr(`${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`);
       }
     }, 1000);
 
-    // Polling Order Status Loop (setiap 4 detik)
-    const pollInterval = setInterval(async () => {
+    // SSE — server push saat iPaymu webhook masuk dan update DB
+    const eventSource = new EventSource(`/api/payments/status-stream/${orderId}`);
+
+    eventSource.onmessage = (event) => {
       try {
-        const res = await fetch(`/api/client/orders/${orderId}/status`, { cache: "no-store" });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.status === "PAID") {
-            clearInterval(pollInterval);
-            clearInterval(timerInterval);
-            router.replace(`/dashboard/setup?order=${orderId}&plan=${data.planType}`);
-          } else if (data.status === "EXPIRED") {
-            setQrData(null);
-            clearInterval(pollInterval);
-            clearInterval(timerInterval);
-            handleRegenerateOrder();
-          }
+        const data = JSON.parse(event.data);
+        if (data.status === "PAID") {
+          eventSource.close();
+          clearInterval(timerInterval);
+          router.replace(`/dashboard/setup?order=${orderId}&plan=${data.planType}`);
+        } else if (data.status === "EXPIRED") {
+          eventSource.close();
+          clearInterval(timerInterval);
+          setQrData(null);
+          handleRegenerateOrder();
         }
       } catch {}
-    }, 4000);
+    };
+
+    eventSource.onerror = () => {
+      // Jika koneksi SSE putus (misalnya restart server), tutup saja — tidak perlu retry
+      eventSource.close();
+    };
 
     return () => {
       clearInterval(timerInterval);
-      clearInterval(pollInterval);
+      eventSource.close();
     };
-  }, [qrData, orderId, qrisExpiry, router]);
+  }, [qrData, orderId, qrisExpiry, router, serverTimeOffset]);
 
   // Polling for Approval when Proof is Uploaded
   // Auto Polling for Manual Approval
@@ -310,6 +322,10 @@ function CheckoutContent() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Gagal memulai pembayaran");
       
+      if (data.serverTime) {
+        setServerTimeOffset(data.serverTime - Date.now());
+      }
+      
       if (data.qrString) {
         setQrData(data.qrString);
         setQrisSessionId(data.sessionId || null);
@@ -368,7 +384,8 @@ function CheckoutContent() {
     setProofPreview(null);
     setUploadedProofUrl(null);
     setUploadSuccessMsg(null);
-    const targetPlan = planParam || "PREMIUM";
+    // Gunakan currentPlanType (dari state) bukan planParam (dari URL) agar paket tidak salah
+    const targetPlan = currentPlanType || planParam || "PREMIUM";
     router.replace(`/checkout?plan=${targetPlan}&msg=qris_expired`);
     setTimeout(() => {
       initializeCheckout();
@@ -407,7 +424,7 @@ function CheckoutContent() {
               href="/admin"
               className="w-full py-3.5 bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold rounded-2xl text-xs transition block shadow-lg cursor-pointer"
             >
-              Kembali ke Dashboard Admin →
+              Kembali ke Dashboard Admin
             </a>
           </div>
         </div>
@@ -599,7 +616,7 @@ function CheckoutContent() {
                       <span>Membuat Kode QRIS...</span>
                     </>
                   ) : (
-                    <span>Bayar via QRIS / E-Wallet &rarr;</span>
+                    <span>Bayar via QRIS / E-Wallet</span>
                   )}
                 </button>
               )}
@@ -744,7 +761,7 @@ function CheckoutContent() {
                           <span>Mengirim Bukti Transfer...</span>
                         </>
                       ) : proofFile ? (
-                        <span>Kirim Bukti Pembayaran &rarr;</span>
+                        <span>Kirim Bukti Pembayaran</span>
                       ) : (
                         <span>Pilih Foto Dahulu</span>
                       )}

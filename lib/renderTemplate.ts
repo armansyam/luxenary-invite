@@ -445,11 +445,11 @@ const UNIFIED_CLIENT_RUNTIME_SCRIPT = `
 <script id="luxUnifiedClientRuntime">
 
 (function() {
-  // 1. Dynamic Guest Name Resolver via ?to= / ?u=
+  // 1. Dynamic Guest Name Resolver via ?to= / ?u= / ?v=
   function resolveGuestName() {
     try {
       const p = new URLSearchParams(window.location.search);
-      const gn = p.get('to') || p.get('u') || '';
+      const gn = p.get('to') || p.get('v') || p.get('u') || '';
       if (!gn) return;
       
       const selectors = [
@@ -648,6 +648,19 @@ export async function renderTemplateFile(
     tpl += injectedScripts;
   }
 
+
+  // Server-Side Injection for Custom Labels (Zero-Hardcode Master Themes)
+  const customLabels = data.featureSettings?.customLabels || data.customLabels || {};
+  tpl = tpl.replace(
+    /(<[^>]+data-lux-field="customLabels\.([^"]+)"[^>]*>)([\s\S]*?)(<\/[a-zA-Z0-9]+>)/g,
+    (match, openTag, labelKey, innerContent, closeTag) => {
+      const val = customLabels[labelKey];
+      if (val !== undefined && val !== null && val !== "") {
+        return `${openTag}${val}${closeTag}`;
+      }
+      return match;
+    }
+  );
 
   return tpl.replace(/\{\{([\w.]+)\}\}/g, (_, key: string) => {
     let val = data[key];

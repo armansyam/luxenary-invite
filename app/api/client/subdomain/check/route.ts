@@ -4,10 +4,10 @@ import { NextResponse } from "next/server";
 const RESERVED_SUBDOMAINS = new Set([
   "admin",
   "api",
+  "receptionist",
   "dashboard",
   "demo",
   "login",
-  "booth",
   "checkout",
   "pay",
   "app",

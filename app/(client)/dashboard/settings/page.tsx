@@ -23,10 +23,15 @@ export default function SettingsPage() {
     staffPin: false,
   });
 
+  // WOW Publish UI State
+  const [publishState, setPublishState] = useState<'idle' | 'baking' | 'success'>('idle');
+  const [publishProgress, setPublishProgress] = useState(0);
+  const [publishMessage, setPublishMessage] = useState("");
+
   const [formData, setFormData] = useState({
     subdomain: "",
     status: "PUBLISHED",
-    staffPin: "123456",
+    staffPin: "",
   });
 
   // Real-time Subdomain Availability Checker
@@ -78,6 +83,19 @@ export default function SettingsPage() {
     setEditMode((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
+  const isGroomValid = !!invitation?.groomName && !invitation.groomName.startsWith("Mempelai Pria");
+  const isBrideValid = !!invitation?.brideName && !invitation.brideName.startsWith("Mempelai Wanita");
+  const isEventValid = (() => {
+    try {
+      const ev = JSON.parse(invitation?.eventData || "[]");
+      return Array.isArray(ev) && ev.length > 0 && !!ev[0].date && !!ev[0].location;
+    } catch { return false; }
+  })();
+  const isPinValid = !!invitation?.staffPin && invitation.staffPin.length >= 4;
+  const isSubdomainValid = !!invitation?.subdomain;
+
+  const isPublishable = isGroomValid && isBrideValid && isEventValid && isPinValid && isSubdomainValid;
+
   useEffect(() => {
     fetch("/api/client/invitations")
       .then((res) => res.json())
@@ -87,9 +105,9 @@ export default function SettingsPage() {
           setInvitation(inv);
 
           setFormData({
-            subdomain: inv.subdomain || `${inv.groomSlug || "didan"}-${inv.brideSlug || "nasha"}`,
-            status: inv.status || "PUBLISHED",
-            staffPin: inv.staffPin || "123456",
+            subdomain: inv.subdomain || "",
+            status: inv.status || "DRAFT",
+            staffPin: inv.staffPin || "",
           });
         }
         setLoading(false);
@@ -103,12 +121,77 @@ export default function SettingsPage() {
   // Independent Section Save Handler
   const handleSaveSection = async (secKey: string) => {
     if (!invitation?.id || savingSec) return;
+
+    // WOW UI Intercept for Publishing
+    if (secKey === "status" && formData.status === "PUBLISHED" && invitation.status !== "PUBLISHED") {
+      setPublishState('baking');
+      setPublishProgress(0);
+      setPublishMessage("Menginisialisasi Mesin Rendering...");
+      
+      // Simulate progress stages
+      const stages = [
+        { p: 25, msg: "Mengunci Modul Desain & Komponen..." },
+        { p: 50, msg: "Meracik Seluruh Data Kustomisasi..." },
+        { p: 75, msg: "Mengoptimalkan Performa & SEO..." },
+        { p: 95, msg: "Memanggang HTML Statis (Zero-Flicker)..." }
+      ];
+      
+      let step = 0;
+      const progressInterval = setInterval(() => {
+        if (step < stages.length) {
+          setPublishProgress(stages[step].p);
+          setPublishMessage(stages[step].msg);
+          step++;
+        }
+      }, 800);
+
+      try {
+        const { media, user, order, guests, rsvps, wishes, ...cleanInvitation } = invitation;
+        const payload = {
+          ...cleanInvitation,
+          subdomain: formData.subdomain ? formData.subdomain.trim().toLowerCase() : null,
+          status: formData.status,
+        };
+
+        const res = await fetch(`/api/client/invitations/${invitation.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        if (res.ok) {
+          const savedData = await res.json();
+          setInvitation((prev: any) => ({ ...prev, ...savedData }));
+          setEditMode((prev) => ({ ...prev, [secKey]: false }));
+          
+          setTimeout(() => {
+            clearInterval(progressInterval);
+            setPublishProgress(100);
+            setPublishMessage("Undangan Anda Telah Mengudara!");
+            setPublishState('success');
+            
+            setTimeout(() => {
+              setPublishState('idle');
+            }, 3000);
+          }, stages.length * 800 + 500);
+          return;
+        } else {
+          throw new Error("Gagal mempublikasikan undangan");
+        }
+      } catch (err: any) {
+        clearInterval(progressInterval);
+        setPublishState('idle');
+        setErrorMsg(err.message || "Terjadi kesalahan saat mempublikasikan");
+        return;
+      }
+    }
+
     setSavingSec(secKey);
     setErrorMsg(null);
 
     try {
       // Construct clean payload (exclude prisma relations)
-      const { media, user, order, guests, rsvps, wishes, boothSessions, ...cleanInvitation } = invitation;
+      const { media, user, order, guests, rsvps, wishes, ...cleanInvitation } = invitation;
 
       const payload = {
         ...cleanInvitation,
@@ -169,8 +252,8 @@ export default function SettingsPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <span className={`px-3 py-1 rounded-full text-xs font-bold ${formData.status === 'PUBLISHED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
-            {formData.status === 'PUBLISHED' ? '● Aktif (Published)' : '● Draft (Penyusunan)'}
+          <span className={`text-[11px] font-bold flex items-center gap-1.5 ${formData.status === 'PUBLISHED' ? 'text-emerald-700' : 'text-stone-500'}`}>
+            {formData.status === 'PUBLISHED' ? <><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Aktif (Published)</> : <><span className="w-1.5 h-1.5 rounded-full bg-stone-400"></span> Draft (Penyusunan)</>}
           </span>
         </div>
       </div>
@@ -192,8 +275,7 @@ export default function SettingsPage() {
           href={invitation?.id ? `/dashboard/invitation/${invitation.id}` : "/dashboard/invitation"}
           className="px-4 py-2.5 bg-amber-800 hover:bg-amber-900 text-white font-bold rounded-xl text-xs transition shadow-xs flex items-center justify-center gap-1.5 shrink-0"
         >
-          <span>Buka Edit Undangan</span>
-          <span>&rarr;</span>
+          <span className="font-bold">Buka Edit Undangan</span>
         </Link>
       </div>
 
@@ -334,8 +416,8 @@ export default function SettingsPage() {
           <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block">Status Saat Ini:</span>
-              <span className={`inline-block mt-1 px-3 py-1 rounded-full text-xs font-bold ${formData.status === 'PUBLISHED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
-                {formData.status === 'PUBLISHED' ? '● Aktif (Dapat Diakses Tamu)' : '● Draft (Hanya Pemilik)'}
+              <span className={`inline-block mt-1 text-[11px] font-bold flex items-center gap-1.5 ${formData.status === 'PUBLISHED' ? 'text-emerald-700' : 'text-stone-500'}`}>
+                {formData.status === 'PUBLISHED' ? <><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Dapat Diakses Tamu</> : <><span className="w-1.5 h-1.5 rounded-full bg-stone-400"></span> Hanya Pemilik (Draft)</>}
               </span>
             </div>
             <button
@@ -347,15 +429,29 @@ export default function SettingsPage() {
             </button>
           </div>
         ) : (
-          /* Form Edit Mode */
           <div className="space-y-4 pt-1">
+            {!isPublishable && (
+              <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl mb-4">
+                <h4 className="text-xs font-bold text-rose-800 mb-2 flex items-center gap-2">
+                  <span>⚠️</span> Syarat Publikasi Belum Terpenuhi
+                </h4>
+                <ul className="text-[11px] text-rose-700 space-y-1 ml-6 list-disc">
+                  {!isSubdomainValid && <li>Tautan (Subdomain) belum diatur.</li>}
+                  {(!isGroomValid || !isBrideValid) && <li>Nama Mempelai masih kosong/default (ubah di Menu Utama).</li>}
+                  {!isEventValid && <li>Data Acara belum lengkap (ubah di menu Jadwal).</li>}
+                  {!isPinValid && <li>PIN Keamanan Panitia belum diatur (lihat di bawah).</li>}
+                </ul>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <label className={`p-4 rounded-xl border cursor-pointer transition flex items-start gap-3 ${formData.status === 'PUBLISHED' ? 'border-amber-700 bg-amber-50/50' : 'border-stone-200 bg-stone-50'}`}>
+              <label className={`p-4 rounded-xl border transition flex items-start gap-3 ${!isPublishable ? 'opacity-50 cursor-not-allowed bg-stone-50 border-stone-200' : formData.status === 'PUBLISHED' ? 'border-amber-700 bg-amber-50/50 cursor-pointer' : 'border-stone-200 bg-stone-50 cursor-pointer'}`}>
                 <input
                   type="radio"
                   name="status"
                   value="PUBLISHED"
-                  checked={formData.status === "PUBLISHED"}
+                  disabled={!isPublishable}
+                  checked={formData.status === "PUBLISHED" && isPublishable}
                   onChange={() => setFormData({ ...formData, status: "PUBLISHED" })}
                   className="mt-0.5 text-amber-800 focus:ring-amber-800"
                 />
@@ -469,6 +565,61 @@ export default function SettingsPage() {
           </div>
         )}
       </div>
+
+      {/* WOW PUBLISH UI OVERLAY */}
+      {publishState !== 'idle' && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-stone-900/40 backdrop-blur-md transition-all duration-500">
+          <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full mx-4 text-center transform transition-all duration-500 scale-100 relative overflow-hidden border border-stone-200">
+            {publishState === 'baking' && (
+              <>
+                <div className="relative w-20 h-20 mx-auto mb-6">
+                  {/* Outer spinning ring */}
+                  <div className="absolute inset-0 border-4 border-amber-100 rounded-full"></div>
+                  <div className="absolute inset-0 border-4 border-amber-600 rounded-full border-t-transparent animate-spin"></div>
+                  {/* Inner static logo / icon */}
+                  <div className="absolute inset-0 flex items-center justify-center text-amber-800">
+                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                    </svg>
+                  </div>
+                </div>
+                
+                <h3 className="text-lg font-serif font-bold text-stone-900 mb-2">Memproses Publikasi</h3>
+                <p className="text-xs text-stone-500 font-medium h-8 flex items-center justify-center">{publishMessage}</p>
+                
+                <div className="w-full bg-stone-100 h-2 rounded-full mt-6 overflow-hidden">
+                  <div 
+                    className="bg-amber-600 h-full rounded-full transition-all duration-700 ease-out"
+                    style={{ width: `${publishProgress}%` }}
+                  ></div>
+                </div>
+                <div className="text-right mt-1">
+                  <span className="text-[10px] font-bold text-amber-800">{publishProgress}%</span>
+                </div>
+              </>
+            )}
+
+            {publishState === 'success' && (
+              <div className="animate-in fade-in zoom-in duration-500">
+                <div className="w-20 h-20 mx-auto mb-6 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center">
+                  <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-serif font-bold text-stone-900 mb-2">Berhasil!</h3>
+                <p className="text-sm text-stone-600 font-medium mb-6">Undangan Anda telah mengudara dan siap disebarkan.</p>
+                <a 
+                  href={getInvitationPublicUrl(formData.subdomain || "")}
+                  target="_blank"
+                  className="inline-block w-full py-3 bg-amber-800 hover:bg-amber-900 text-white font-bold rounded-xl text-sm transition shadow-lg"
+                >
+                  Buka Undangan
+                </a>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
     </div>
   );

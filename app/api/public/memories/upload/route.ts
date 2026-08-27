@@ -1,14 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getPublicPlatformSettings } from "@/lib/settings";
-import fs from "fs";
 import path from "path";
 import crypto from "crypto";
+import { uploadFile } from "@/lib/storage";
+import { rateLimit } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = req.headers.get("x-forwarded-for") || "unknown-ip";
+    // Limit: 15 request per menit (60000ms) untuk mengakomodasi jaringan WiFi yang sama
+    if (!rateLimit(ip, 15, 60000)) {
+      return NextResponse.json({ error: "Terlalu banyak permintaan unggahan. Silakan coba lagi sebentar." }, { status: 429 });
+    }
+
     const data = await req.json();
     const { invitationId, base64File, mimeType, senderName, senderEmail, caption, fileName } = data;
 
@@ -24,33 +31,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Undangan tidak ditemukan." }, { status: 404 });
     }
 
-    // Prepare Directory
-    const memoriesDir = path.join(process.cwd(), "public", "uploads", "invitations", invitationId, "memories");
-    try {
-      await fs.promises.access(memoriesDir);
-    } catch {
-      await fs.promises.mkdir(memoriesDir, { recursive: true });
-    }
-
-    // Decode Base64 and write file
     const safeFileName = fileName ? fileName.replace(/[^a-zA-Z0-9.-]/g, '_') : `momen_${Date.now()}.jpg`;
     const finalFileName = `${crypto.randomBytes(4).toString("hex")}_${safeFileName}`;
-    const filePath = path.join(memoriesDir, finalFileName);
+    const relativePath = `invitations/${invitationId}/memories/${finalFileName}`;
 
     const base64Data = base64File.replace(/^data:image\/\w+;base64,/, "");
     const buffer = Buffer.from(base64Data, "base64");
     
-    // Ambil limit dari settings, default 5MB jika tidak diset
+    // Ambil limit dari settings, default 2MB (Stricter security for direct API hits)
     const settings = await getPublicPlatformSettings();
-    const maxUploadBytes = (settings.maxUploadMb || 5) * 1024 * 1024;
+    const maxUploadBytes = (settings.maxUploadMb || 2) * 1024 * 1024;
 
     if (buffer.byteLength > maxUploadBytes) {
-      return NextResponse.json({ error: `Ukuran file melebihi batas maksimal ${settings.maxUploadMb || 5}MB.` }, { status: 400 });
+      return NextResponse.json({ error: `Ukuran file melebihi batas maksimal ${settings.maxUploadMb || 2}MB.` }, { status: 400 });
     }
 
-    await fs.promises.writeFile(filePath, buffer);
-
-    const mediaUrl = `/uploads/invitations/${invitationId}/memories/${finalFileName}`;
+    const mediaUrl = await uploadFile(buffer, relativePath, mimeType || "image/jpeg");
 
     // Save to Database
     const memory = await prisma.guestMemory.create({

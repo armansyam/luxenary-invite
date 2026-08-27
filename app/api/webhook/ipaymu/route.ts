@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
+import { paymentEmitter } from "@/lib/paymentEvents";
 import { NextRequest, NextResponse } from "next/server";
 
 /**
@@ -111,21 +112,14 @@ export async function POST(req: NextRequest) {
         where: { id: orderId },
         data: {
           status: "PAID",
-          paymentMethod: "GATEWAY", // Pastikan method tercatat
+          paymentMethod: "GATEWAY",
           paymentGatewayRef: body.trx_id || body.sid || null,
           paidAt: new Date(),
         },
       });
 
-      // Publish undangan terkait jika ada
-      try {
-        await prisma.invitation.update({
-          where: { orderId },
-          data: { status: "PUBLISHED", publishedAt: new Date() },
-        });
-      } catch {
-        // Mungkin undangan belum dibuat — oke
-      }
+      // Push notifikasi real-time ke browser klien via SSE
+      paymentEmitter.emit(orderId, { status: "PAID", planType: order.planType });
 
       // Update webhook log ke processed
       if (webhookLogId) {
@@ -151,6 +145,14 @@ export async function POST(req: NextRequest) {
         where: { id: orderId, status: "PENDING" },
         data: { status: "EXPIRED" },
       });
+
+      // Push notifikasi real-time ke browser klien via SSE
+      // Ambil planType dari order yang baru saja di-expire
+      const expiredOrder = await prisma.order.findUnique({
+        where: { id: orderId },
+        select: { planType: true },
+      });
+      paymentEmitter.emit(orderId, { status: "EXPIRED", planType: expiredOrder?.planType ?? "PREMIUM" });
     }
 
     return NextResponse.json({ status: "ok" });

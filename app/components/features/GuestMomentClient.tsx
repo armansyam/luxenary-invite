@@ -227,9 +227,19 @@ export default function GuestMomentClient({ invitationId, coupleName, coverUrl, 
               <button
                 type="submit"
                 disabled={isUploading}
-                className="w-full py-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:bg-stone-800 disabled:text-stone-500 text-stone-950 font-bold text-sm tracking-wide shadow-lg shadow-amber-900/30 transition-all cursor-pointer"
+                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:bg-stone-800 disabled:text-stone-500 text-stone-950 font-bold text-sm tracking-wide shadow-lg shadow-amber-900/30 transition-all cursor-pointer"
               >
-                {isUploading ? "Mengirim Momen..." : "Upload Sekarang"}
+                {isUploading ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4 text-stone-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Mengirim Momen...</span>
+                  </>
+                ) : (
+                  "Upload Sekarang"
+                )}
               </button>
             </form>
           )}
@@ -254,7 +264,7 @@ export default function GuestMomentClient({ invitationId, coupleName, coverUrl, 
             
             <div className="mt-4 flex justify-center">
                <Link href={galleryUrl} className="text-xs text-stone-400 hover:text-white font-bold tracking-wider underline underline-offset-4 decoration-stone-600">
-                 Buka Galeri Foto Keseluruhan &rarr;
+                 Buka Galeri Foto Keseluruhan
                </Link>
             </div>
           </div>

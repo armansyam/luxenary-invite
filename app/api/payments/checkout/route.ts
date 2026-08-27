@@ -58,7 +58,7 @@ export async function POST(req: Request) {
     }
 
     // Auto-detect appUrl dari request headers
-    const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "localhost:3000";
+    const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "";
     const proto = req.headers.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
     const appUrl = `${proto}://${host}`;
 
@@ -83,6 +83,7 @@ export async function POST(req: Request) {
     const { checkoutUrl, qrString, sessionId, expiryTimestamp } = await gw.init(orderId, finalAmount, appUrl);
 
     // Catat gateway yang digunakan di order
+    const expiryMs = expiryTimestamp || (Date.now() + 15 * 60 * 1000);
     await prisma.order.update({
       where: { id: orderId },
       data: {
@@ -90,11 +91,13 @@ export async function POST(req: Request) {
         status: "PENDING", // Reset jika sebelumnya FAILED
         rejectReason: null,
         paymentGatewayRef: activeGatewayId,
-        snapToken: qrString ? JSON.stringify({ qrString, sessionId, expiry: expiryTimestamp || (Date.now() + 15 * 60 * 1000) }) : checkoutUrl,
+        snapToken: qrString ? JSON.stringify({ qrString, sessionId, expiry: expiryMs }) : checkoutUrl,
+        // Simpan batas waktu ke DB agar auto-expire sweep bisa mendeteksi tanpa bergantung hanya pada snapToken
+        expiredAt: new Date(expiryMs),
       },
     });
 
-    return NextResponse.json({ checkoutUrl, qrString, sessionId, expiryTimestamp, gateway: activeGatewayId });
+    return NextResponse.json({ checkoutUrl, qrString, sessionId, expiryTimestamp, gateway: activeGatewayId, serverTime: Date.now() });
   } catch (error: any) {
     console.error("[Payments Checkout Error]", error);
     return NextResponse.json({ error: error.message || "Gagal memulai pembayaran" }, { status: 500 });

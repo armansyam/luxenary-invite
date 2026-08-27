@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import fs from "fs";
 import path from "path";
 import sharp from "sharp";
+import { uploadFile } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
 
@@ -55,12 +55,6 @@ export async function POST(
       return NextResponse.json({ error: "File bukti pembayaran tidak ditemukan" }, { status: 400 });
     }
 
-    // Prepare proofs storage directory in public folder
-    const targetDir = path.join(process.cwd(), "public", "uploads", "proofs");
-    if (!fs.existsSync(targetDir)) {
-      fs.mkdirSync(targetDir, { recursive: true });
-    }
-
     // Generate clean chronological file name: YYYY-MM-DD-HHmmss-username.webp
     const rawEmail = sessionEmail || order.user?.email || "client";
     const cleanEmailUser = rawEmail.split("@")[0].replace(/[^a-zA-Z0-9_-]/g, "_").toLowerCase();
@@ -75,7 +69,6 @@ export async function POST(
     const datePrefix = `${yyyy}-${mm}-${dd}-${hh}${min}${ss}`;
 
     const fileName = `${datePrefix}-${cleanEmailUser}.webp`;
-    const targetFilePath = path.join(targetDir, fileName);
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const mime = file.type.toLowerCase();
@@ -83,9 +76,8 @@ export async function POST(
     if (mime.includes("pdf")) {
       // PDF saved directly
       const pdfFileName = `${datePrefix}-${cleanEmailUser}.pdf`;
-      const pdfFilePath = path.join(targetDir, pdfFileName);
-      fs.writeFileSync(pdfFilePath, buffer);
-      const publicUrl = `/uploads/proofs/${pdfFileName}`;
+      const relativePath = `proofs/${pdfFileName}`;
+      const publicUrl = await uploadFile(buffer, relativePath, mime);
 
       const updatedOrder = await prisma.order.update({
         where: { id: order.id },
@@ -128,9 +120,8 @@ export async function POST(
       })
       .toBuffer();
 
-    fs.writeFileSync(targetFilePath, compressedWebp);
-
-    const publicUrl = `/uploads/proofs/${fileName}`;
+    const relativePath = `proofs/${fileName}`;
+    const publicUrl = await uploadFile(compressedWebp, relativePath, "image/webp");
 
     // Update order with proof data
     const updatedOrder = await prisma.order.update({

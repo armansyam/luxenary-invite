@@ -17,6 +17,31 @@ async function ensureBrandDir() {
   }
 }
 
+export async function GET(req: NextRequest) {
+  try {
+    const session = await auth();
+    const isAdmin = (session?.user as any)?.isAdmin === true || (session?.user as any)?.role === "SUPER_ADMIN" || (session?.user as any)?.role === "ADMIN";
+    if (!session?.user || !isAdmin) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    let logo = null;
+    let favicon = null;
+
+    if (fs.existsSync(path.join(BRAND_DIR, "logo.webp"))) {
+      logo = "/assets/brand/logo.webp";
+    }
+
+    if (fs.existsSync(path.join(process.cwd(), "public", "favicon.ico"))) {
+      favicon = "/favicon.ico";
+    }
+
+    return NextResponse.json({ success: true, logo, favicon });
+  } catch (error: any) {
+    return NextResponse.json({ error: "Gagal memuat status brand" }, { status: 500 });
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const session = await auth();

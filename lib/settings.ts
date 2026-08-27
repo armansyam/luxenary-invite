@@ -77,8 +77,8 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
     heroSubtitle:
       map["hero_subtitle"] ||
       "Didesain khusus dengan sentuhan estetika mewah dan eksklusif. Hadirkan pengalaman berkesan dengan layout split desktop, custom subdomain, buku tamu real-time, dan video booth ucapan.",
-    supportEmail: map["support_email"] || "support@luxenary.id",
-    supportWhatsapp: map["support_whatsapp"] || "6281234567890",
+    supportEmail: map["support_email"] || "",
+    supportWhatsapp: map["support_whatsapp"] || "",
     paymentMode: (map["payment_mode"] as any) || "BOTH",
     bankName: map["bank_name"] || "BCA (Bank Central Asia)",
     bankAccountNumber: map["bank_account_number"] || "8735098123",

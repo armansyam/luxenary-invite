@@ -94,6 +94,7 @@ export async function GET(
       paidAt: order.paidAt,
       expiredAt: order.expiredAt,
       snapToken: isAuthorizedOwner ? order.snapToken : null,
+      serverTime: Date.now(),
     });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

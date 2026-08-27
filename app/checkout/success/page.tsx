@@ -111,7 +111,7 @@ function SuccessContent() {
               href={`/checkout?plan=PREMIUM`}
               className="block w-full py-3.5 rounded-2xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-sm transition shadow-lg text-center"
             >
-              Coba Bayar Ulang →
+              Coba Bayar Ulang
             </a>
             <a href="/dashboard" className="text-stone-500 text-xs hover:text-stone-300 transition text-center">
               Kembali ke Dashboard
@@ -149,7 +149,7 @@ function SuccessContent() {
               onClick={() => { setPollCount(0); setTimedOut(false); }}
               className="text-amber-400 text-xs hover:text-amber-300 transition cursor-pointer"
             >
-              Cek status lagi →
+              Cek status lagi
             </button>
           </div>
         </div>
@@ -192,7 +192,7 @@ function SuccessContent() {
         </div>
 
         <a href="/dashboard" className="text-stone-600 text-xs hover:text-stone-400 transition">
-          Kembali ke Dashboard →
+          Kembali ke Dashboard
         </a>
       </div>
     </div>

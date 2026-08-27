@@ -3,8 +3,7 @@ import { getPublicPlatformSettings } from "@/lib/settings";
 import fs from "fs";
 import path from "path";
 
-export const dynamic = "force-dynamic";
-
+export const revalidate = 3600; // Cache for 1 hour
 export async function GET() {
   try {
     const settings = await getPublicPlatformSettings();
@@ -13,19 +12,12 @@ export async function GET() {
     const logoExists = fs.existsSync(path.join(brandDir, "logo.webp"));
     const faviconExists = fs.existsSync(path.join(brandDir, "favicon.png"));
 
-    return NextResponse.json(
-      {
-        success: true,
-        ...settings,
-        logo: logoExists ? "/assets/brand/logo.webp" : null,
-        favicon: faviconExists ? "/assets/brand/favicon.png" : null,
-      },
-      {
-        headers: {
-          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
-        },
-      }
-    );
+    return NextResponse.json({
+      success: true,
+      ...settings,
+      logo: logoExists ? "/assets/brand/logo.webp" : null,
+      favicon: faviconExists ? "/assets/brand/favicon.png" : null,
+    });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

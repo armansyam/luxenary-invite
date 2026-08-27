@@ -82,7 +82,7 @@ export async function GET() {
 
     // Kasus 3: Order EXPIRED atau FAILED (dari gateway webhook atau sweep)
     // Arahkan ke pembuatan order baru dengan menyertakan pesan kecil
-    const isRejected = latestOrder.status === "FAILED" || latestOrder.status === "REJECTED";
+    const isRejected = latestOrder.status === "FAILED";
     const msg = isRejected ? "transfer_rejected" : "qris_expired";
     return NextResponse.json({
       step: "ORDER_EXPIRED",

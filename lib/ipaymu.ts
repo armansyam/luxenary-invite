@@ -86,8 +86,8 @@ export class IPaymuGateway implements PaymentGateway {
     } catch {}
 
     // Baca data buyer dari order
-    let buyerName = "Klien Luxenary";
-    let buyerEmail = "client@luxenary.id";
+    let buyerName = "Klien Undangan";
+    let buyerEmail = "no-reply@example.com";
     try {
       const order = await prisma.order.findUnique({
         where: { id: orderId },
@@ -101,7 +101,7 @@ export class IPaymuGateway implements PaymentGateway {
 
     const body = {
       name: buyerName,
-      phone: "081111111111", // Default if empty
+      phone: "000000000000", // Default if empty
       email: buyerEmail,
       amount,
       notifyUrl: `${appUrl}/api/webhook/ipaymu`,

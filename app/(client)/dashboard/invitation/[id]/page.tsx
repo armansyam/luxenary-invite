@@ -210,7 +210,7 @@ export default function EditInvitation() {
   const [playingAudioUrl, setPlayingAudioUrl] = useState<string | null>(null);
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
   const [uploadingAudio, setUploadingAudio] = useState(false);
-  const [adminWhatsapp, setAdminWhatsapp] = useState<string>("6281234567890");
+  const [adminWhatsapp, setAdminWhatsapp] = useState<string>("");
   const [platformSettings, setPlatformSettings] = useState<any>(null);
   const [themesList, setThemesList] = useState<any[]>(THEMES);
 
@@ -289,6 +289,7 @@ export default function EditInvitation() {
     sec12: true, // 12. Filter Instagram Story
     sec13: true, // 13. Turut Mengundang & Himbauan
     sec14: true, // 14. Galeri Kenangan Tamu (After-Event)
+    sec15: true, // 15. Pengaturan Teks UI & Bahasa
   };
 
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>(defaultCollapsed);
@@ -720,6 +721,16 @@ export default function EditInvitation() {
     );
 
     // Sec 14: Galeri Kenangan Tamu (After-Event)
+    const dirty15 = (() => {
+      try {
+        const curFs = typeof invitation.featureSettings === "object" ? invitation.featureSettings : JSON.parse(invitation.featureSettings || "{}");
+        const prevFs = typeof savedSnapshot.invitation?.featureSettings === "object" ? savedSnapshot.invitation.featureSettings : JSON.parse(savedSnapshot.invitation?.featureSettings || "{}");
+        return JSON.stringify(curFs.customLabels || {}) !== JSON.stringify(prevFs.customLabels || {});
+      } catch {
+        return false;
+      }
+    })();
+
     const dirty14 = (
       Boolean(getFeatureSetting("showGuestMemories", true)) !== Boolean(getSavedFeatureSetting("showGuestMemories", true)) ||
       getFeatureSetting("guestMemoriesDriveFolderUrl", "") !== getSavedFeatureSetting("guestMemoriesDriveFolderUrl", "") ||
@@ -743,6 +754,7 @@ export default function EditInvitation() {
       sec12: dirty12,
       sec13: dirty13,
       sec14: dirty14,
+      sec15: dirty15,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [invitation, media, events, stories, bankList, savedSnapshot]);
@@ -922,7 +934,7 @@ export default function EditInvitation() {
             className="px-4 py-2.5 bg-amber-700 hover:bg-amber-600 text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5 flex-shrink-0 shadow-sm"
           >
             <span>Hubungi Admin</span>
-            <span>↗</span>
+            
           </a>
         </div>
       )}
@@ -1146,7 +1158,7 @@ export default function EditInvitation() {
               onClick={() => toggleSection("sec1")}
               className="text-xs font-bold text-amber-800 hover:underline self-start sm:self-center"
             >
-              Ubah Tema / Warna &rarr;
+              Ubah Tema / Warna
             </button>
           </div>
         ) : (
@@ -1199,7 +1211,7 @@ export default function EditInvitation() {
                               onClick={(e) => e.stopPropagation()}
                               className="text-[10px] font-bold text-amber-800 hover:underline"
                             >
-                              Lihat Demo &rarr;
+                              Lihat Demo
                             </a>
                             <span className={`text-[10px] font-bold ${isSelected ? "text-amber-900" : "text-stone-400"}`}>
                               {isSelected ? "Terpilih" : "Pilih"}
@@ -1329,7 +1341,7 @@ export default function EditInvitation() {
               onClick={() => toggleSection("sec2")}
               className="text-xs font-bold text-amber-800 hover:underline"
             >
-              Ubah Visual &amp; Musik &rarr;
+              Ubah Visual &amp; Musik
             </button>
           </div>
         ) : (
@@ -1598,7 +1610,7 @@ export default function EditInvitation() {
               onClick={() => toggleSection("sec3")}
               className="text-xs font-bold text-amber-800 hover:underline self-start sm:self-center"
             >
-              Ubah Profil &rarr;
+              Ubah Profil
             </button>
           </div>
         ) : (
@@ -1814,7 +1826,7 @@ export default function EditInvitation() {
               onClick={() => toggleSection("sec4")}
               className="text-xs font-bold text-amber-800 hover:underline self-start sm:self-center"
             >
-              Ubah Doa &rarr;
+              Ubah Doa
             </button>
           </div>
         ) : (
@@ -1957,7 +1969,7 @@ export default function EditInvitation() {
               onClick={() => toggleSection("sec5")}
               className="text-xs font-bold text-amber-800 hover:underline self-start sm:self-center"
             >
-              Kelola Sesi &rarr;
+              Kelola Sesi
             </button>
           </div>
         ) : (
@@ -2001,7 +2013,7 @@ export default function EditInvitation() {
                     )}
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                    <Input label="Nama Sesi Acara" value={ev.title || ""} onChange={(v) => updateEventItem(idx, "title", v)} placeholder="Contoh: Mappacci / Akad Nikah" />
+                    <Input label="Nama Sesi Acara" value={ev.title || ""} onChange={(v) => updateEventItem(idx, "title", v)} placeholder="Masukkan nama sesi acara (Misal: Akad Nikah)" />
                     <Input label="Hari, Tanggal" value={ev.date || ""} onChange={(v) => updateEventItem(idx, "date", v)} placeholder="Sabtu, 15 Juni 2026" />
                     <Input label="Waktu / Jam" value={ev.time || ""} onChange={(v) => updateEventItem(idx, "time", v)} placeholder="19:30 - Selesai WITA" />
                     <Input label="Nama Lokasi / Gedung" value={ev.location || ""} onChange={(v) => updateEventItem(idx, "location", v)} placeholder="Grand Ballroom Phinisi" />
@@ -2009,7 +2021,7 @@ export default function EditInvitation() {
                     <Input label="Link Google Maps" value={ev.mapsUrl || ""} onChange={(v) => updateEventItem(idx, "mapsUrl", v)} placeholder="https://maps.google.com/..." />
                     <Input label="Label Badge" value={ev.badge || ""} onChange={(b) => updateEventItem(idx, "badge", b)} placeholder="Sakral / Adat Bugis / Umum" />
                     <div className="sm:col-span-2">
-                      <Input label="Catatan Tambahan (Opsional)" value={ev.notes || ""} onChange={(v) => updateEventItem(idx, "notes", v)} placeholder="Contoh: Dresscode Adat / Hadir 15 Menit Awal" />
+                      <Input label="Catatan Tambahan (Opsional)" value={ev.notes || ""} onChange={(v) => updateEventItem(idx, "notes", v)} placeholder="Masukkan catatan tambahan untuk tamu (Opsional)" />
                     </div>
                   </div>
                 </div>
@@ -2064,7 +2076,7 @@ export default function EditInvitation() {
               onClick={() => toggleSection("sec6")}
               className="text-xs font-bold text-amber-800 hover:underline"
             >
-              Ubah Pengaturan &rarr;
+              Ubah Pengaturan
             </button>
           </div>
         ) : (
@@ -2141,7 +2153,7 @@ export default function EditInvitation() {
               onClick={() => toggleSection("sec7")}
               className="text-xs font-bold text-amber-800 hover:underline"
             >
-              Ubah Kisah &rarr;
+              Ubah Kisah
             </button>
           </div>
         ) : (
@@ -2181,7 +2193,7 @@ export default function EditInvitation() {
                       <button type="button" onClick={() => removeStory(idx)} className="text-xs text-rose-600 hover:text-rose-800 font-semibold cursor-pointer">Hapus</button>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <Input label="Judul Momen" value={st.title || ""} onChange={(v) => updateStoryItem(idx, "title", v)} placeholder="Contoh: Awal Bertemu" />
+                      <Input label="Judul Momen" value={st.title || ""} onChange={(v) => updateStoryItem(idx, "title", v)} placeholder="Masukkan judul momen kisah cinta Anda" />
                       <Input label="Tahun / Tanggal" value={st.date || ""} onChange={(v) => updateStoryItem(idx, "date", v)} placeholder="2020" />
                     </div>
                     <div>
@@ -2247,7 +2259,7 @@ export default function EditInvitation() {
               onClick={() => toggleSection("sec8")}
               className="text-xs font-bold text-amber-800 hover:underline"
             >
-              Ubah Galeri &rarr;
+              Ubah Galeri
             </button>
           </div>
         ) : (
@@ -2291,7 +2303,7 @@ export default function EditInvitation() {
                     type="url"
                     value={getFeatureSetting("galleryDriveFolderUrl", "")}
                     onChange={(e) => updateFeatureSetting("galleryDriveFolderUrl", e.target.value)}
-                    placeholder="https://drive.google.com/drive/folders/1aBcDeFgHiJkLmNoPqRsTuVwXyZ?usp=sharing"
+                    placeholder="Masukkan URL drive Prewedding galery kamu"
                     className="w-full p-2.5 bg-white border border-stone-300 rounded-xl text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700/30 font-mono"
                   />
                   <div className="p-2.5 bg-blue-50/60 rounded-xl border border-blue-100 text-[11px] text-blue-900">
@@ -2363,7 +2375,7 @@ export default function EditInvitation() {
               onClick={() => toggleSection("sec9")}
               className="text-xs font-bold text-amber-800 hover:underline"
             >
-              Ubah Rekening &rarr;
+              Ubah Rekening
             </button>
           </div>
         ) : (
@@ -2512,7 +2524,7 @@ export default function EditInvitation() {
               onClick={() => toggleSection("sec10")}
               className="text-xs font-bold text-amber-800 hover:underline"
             >
-              Ubah Dress Code &rarr;
+              Ubah Dress Code
             </button>
           </div>
         ) : (
@@ -2533,7 +2545,7 @@ export default function EditInvitation() {
                     label="Nuansa / Aturan Dress Code"
                     value={invitation.dresscode || ""}
                     onChange={(v) => updateField("dresscode", v)}
-                    placeholder="Contoh: Formal / Nuansa Pastel & Earthy"
+                    placeholder="Sebutkan tema warna pakaian tamu (Dresscode)"
                   />
                   <Input
                     label="Palet Warna Hex (Pisahkan dengan koma)"
@@ -2548,7 +2560,7 @@ export default function EditInvitation() {
                     rows={2}
                     value={getFeatureSetting("dressCodeNote", "")}
                     onChange={(e) => updateFeatureSetting("dressCodeNote", e.target.value)}
-                    placeholder="Contoh: Diharapkan mengenakan pakaian bernuansa earthy tone untuk keserasian foto bersama."
+                    placeholder="Masukkan deskripsi atau panduan busana untuk tamu"
                     className="w-full p-2.5 bg-white border border-stone-200 rounded-xl text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700/30"
                   />
                 </div>
@@ -2603,7 +2615,7 @@ export default function EditInvitation() {
               onClick={() => toggleSection("sec11")}
               className="text-xs font-bold text-amber-800 hover:underline"
             >
-              Ubah Link Live &rarr;
+              Ubah Link Live
             </button>
           </div>
         ) : (
@@ -2623,7 +2635,7 @@ export default function EditInvitation() {
                   label="Link YouTube Live"
                   value={getFeatureSetting("liveStreamYoutubeUrl", invitation.liveStreamUrl || "")}
                   onChange={(v) => { updateFeatureSetting("liveStreamYoutubeUrl", v); updateField("liveStreamUrl", v); }}
-                  placeholder="https://youtube.com/live/..."
+                  placeholder="Masukkan link youtube live"
                 />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Input
@@ -2690,7 +2702,7 @@ export default function EditInvitation() {
               onClick={() => toggleSection("sec12")}
               className="text-xs font-bold text-amber-800 hover:underline"
             >
-              Ubah Filter &rarr;
+              Ubah Filter
             </button>
           </div>
         ) : (
@@ -2762,7 +2774,7 @@ export default function EditInvitation() {
               onClick={() => toggleSection("sec13")}
               className="text-xs font-bold text-amber-800 hover:underline"
             >
-              Ubah Daftar &rarr;
+              Ubah Daftar
             </button>
           </div>
         ) : (
@@ -2795,7 +2807,7 @@ export default function EditInvitation() {
                     type="text"
                     value={getFeatureSetting("guestGuidance", "")}
                     onChange={(e) => updateFeatureSetting("guestGuidance", e.target.value)}
-                    placeholder="Contoh: Tamu diharapkan hadir 15 menit sebelum acara. Area parkir VIP tersedia di sisi utara gedung."
+                    placeholder="Ketik pengumuman atau catatan khusus untuk dibaca tamu"
                     className="w-full p-2.5 bg-white border border-stone-200 rounded-xl text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700/30"
                   />
                 </div>
@@ -2856,7 +2868,7 @@ export default function EditInvitation() {
               onClick={() => toggleSection("sec14")}
               className="text-xs font-bold text-amber-800 hover:underline cursor-pointer"
             >
-              Buka Pengaturan &rarr;
+              Buka Pengaturan
             </button>
           </div>
         ) : (
@@ -3029,7 +3041,7 @@ export default function EditInvitation() {
                                 rel="noopener noreferrer"
                                 className="text-[10px] font-bold text-amber-800 hover:underline inline-flex items-center gap-1"
                               >
-                                <span>Lihat Full ↗</span>
+                                <span>Lihat Full</span>
                               </a>
                             </div>
                           </div>

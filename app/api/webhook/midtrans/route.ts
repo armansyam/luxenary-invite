@@ -42,8 +42,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Log webhook yang masuk ke database
+    let webhookLogId = "";
     try {
-      await prisma.webhookLog.create({
+      const log = await prisma.webhookLog.create({
         data: {
           source: "midtrans",
           event: `status_${trxStatus || statusCode || "unknown"}`,
@@ -51,6 +52,7 @@ export async function POST(req: NextRequest) {
           status: "received",
         },
       });
+      webhookLogId = log.id;
     } catch {}
 
     const order = await prisma.order.findUnique({ where: { id: orderId } });
@@ -69,29 +71,24 @@ export async function POST(req: NextRequest) {
       (trxStatus === "capture" && fraudStatus === "accept");
 
     if (isPaid) {
-      await prisma.order.update({
-        where: { id: orderId },
-        data: {
-          status: "PAID",
-          paymentMethod: "GATEWAY",
-          paymentGatewayRef: body.transaction_id || null,
-          paidAt: new Date(),
-        },
+      await prisma.$transaction(async (tx) => {
+        await tx.order.update({
+          where: { id: orderId },
+          data: {
+            status: "PAID",
+            paymentMethod: "GATEWAY",
+            paymentGatewayRef: body.transaction_id || null,
+            paidAt: new Date(),
+          },
+        });
+
+        if (webhookLogId) {
+          await tx.webhookLog.update({
+            where: { id: webhookLogId },
+            data: { status: "processed", processedAt: new Date() },
+          });
+        }
       });
-
-      try {
-        await prisma.invitation.update({
-          where: { orderId },
-          data: { status: "PUBLISHED", publishedAt: new Date() },
-        });
-      } catch {}
-
-      try {
-        await prisma.webhookLog.updateMany({
-          where: { source: "midtrans", status: "received" },
-          data: { status: "processed", processedAt: new Date() },
-        });
-      } catch {}
 
     } else if (trxStatus === "expire" || trxStatus === "cancel" || trxStatus === "deny") {
       await prisma.order.updateMany({

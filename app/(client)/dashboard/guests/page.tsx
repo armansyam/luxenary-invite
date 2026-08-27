@@ -874,7 +874,7 @@ export default function GuestsPage() {
                   required
                   value={newGuest.name}
                   onChange={(e) => setNewGuest({ ...newGuest, name: e.target.value })}
-                  placeholder="Contoh: Bpk. H. Syamsuddin &amp; Keluarga"
+                  placeholder="Masukkan nama lengkap tamu yang diundang"
                   className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
                 />
               </div>
@@ -924,7 +924,7 @@ export default function GuestsPage() {
                   type="text"
                   value={newGuest.sessionInfo}
                   onChange={(e) => setNewGuest({ ...newGuest, sessionInfo: e.target.value })}
-                  placeholder="Contoh: Sesi 1 / Akad &amp; Resepsi"
+                  placeholder="Tentukan sesi kehadiran untuk tamu ini (Opsional)"
                   className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
                 />
               </div>

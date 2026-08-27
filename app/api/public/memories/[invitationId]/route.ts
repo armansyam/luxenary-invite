@@ -31,7 +31,7 @@ export async function GET(
     
     const mappedMemories = memories.map(m => ({
       ...m,
-      source: m.senderEmail === "booth@system" ? "BOOTH" : "GUEST"
+      source: "GUEST"
     }));
 
     return NextResponse.json(mappedMemories);

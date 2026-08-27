@@ -35,7 +35,7 @@ export default function ReceptionistScannerClient({ invitationId }: { invitation
       if (cachedQueue) setOfflineQueue(JSON.parse(cachedQueue));
 
       try {
-        const res = await fetch(`/api/booth/guests?invitationId=${invitationId}`);
+        const res = await fetch(`/api/receptionist/guests?invitationId=${invitationId}`);
         const data = await res.json();
         if (data.success) {
           setGuests(data.guests);
@@ -64,7 +64,7 @@ export default function ReceptionistScannerClient({ invitationId }: { invitation
         if (!guest || !guest.qrToken) continue;
 
         try {
-          const res = await fetch("/api/booth/scan", {
+          const res = await fetch("/api/receptionist/scan", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ qrToken: guest.qrToken, invitationId }),
@@ -111,6 +111,7 @@ export default function ReceptionistScannerClient({ invitationId }: { invitation
   const processScanToken = (token: string) => {
     if (!token) return;
     let targetName = token;
+    let targetCategory = "Umum";
     let isLuxToken = false;
     
     if (token.startsWith('LUX|')) {
@@ -123,6 +124,7 @@ export default function ReceptionistScannerClient({ invitationId }: { invitation
       }
       
       targetName = parts[2] || token;
+      targetCategory = parts[3] || "Umum";
       isLuxToken = true;
     }
 
@@ -134,7 +136,7 @@ export default function ReceptionistScannerClient({ invitationId }: { invitation
       const newGuest: Guest = {
         id: `local-${Date.now()}`,
         name: targetName,
-        category: "Umum",
+        category: targetCategory,
         guestQuota: 1,
         tableNumber: null,
         qrToken: token,
@@ -217,23 +219,15 @@ export default function ReceptionistScannerClient({ invitationId }: { invitation
                     <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl shadow-green-500/30">
                       <span className="text-5xl text-white">✓</span>
                     </div>
-                    <h3 className="text-3xl font-bold text-green-900 mb-2">{scanResult.guest?.name}</h3>
-                    <p className="text-green-700 font-bold mb-6 text-lg">{scanResult.message}</p>
-                    
-                    <div className="grid grid-cols-2 gap-4 mt-6 text-left">
-                      <div className="bg-white p-4 rounded-xl border border-green-100 shadow-sm">
-                        <span className="block text-xs text-green-500 font-bold uppercase tracking-wider mb-1">Kategori</span>
-                        <span className="text-xl font-black text-stone-900">{scanResult.guest?.category || "-"}</span>
+                    <h3 className="text-4xl font-black text-green-900 mb-2">{scanResult.guest?.name}</h3>
+                    {scanResult.guest?.category && scanResult.guest.category.toLowerCase() !== "umum" && (
+                      <div className="mb-6">
+                        <span className="inline-block px-5 py-1.5 bg-green-100 text-green-800 rounded-full text-lg font-bold uppercase tracking-widest border border-green-300 shadow-sm">
+                          {scanResult.guest.category}
+                        </span>
                       </div>
-                      <div className="bg-white p-4 rounded-xl border border-green-100 shadow-sm">
-                        <span className="block text-xs text-green-500 font-bold uppercase tracking-wider mb-1">Meja / Kursi</span>
-                        <span className="text-xl font-black text-stone-900">{scanResult.guest?.tableNumber || "-"}</span>
-                      </div>
-                      <div className="bg-white p-4 rounded-xl border border-green-100 col-span-2 shadow-sm text-center">
-                        <span className="block text-xs text-green-500 font-bold uppercase tracking-wider mb-1">Kuota Tamu</span>
-                        <span className="text-2xl font-black text-stone-900">{scanResult.guest?.guestQuota} Orang</span>
-                      </div>
-                    </div>
+                    )}
+                    <p className="text-green-700 font-bold mb-2 text-lg">{scanResult.message}</p>
                   </>
                 ) : (
                   <>

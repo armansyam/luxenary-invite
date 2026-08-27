@@ -44,8 +44,10 @@ export default auth((req) => {
   // 5. Wildcard Subdomain Routing (e.g. didan-nasha.luxenary.id or didan-nasha.localhost:3000)
   const host = req.headers.get("host") || "";
   const cleanHost = host.split(":")[0]; // remove port
-  const rootDomains = ["luxenary.id", "invited.id", "localhost"];
-  const isCustomDomain = !rootDomains.some((d) => cleanHost === d || cleanHost === `www.${d}`);
+  // Root domain dibaca dari env — tidak hardcode agar bisa ganti domain tanpa ubah kode
+  const envRootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost:3000").split(":")[0];
+  const rootDomains = [envRootDomain, "localhost", "trycloudflare.com"].filter(Boolean);
+  const isCustomDomain = !rootDomains.some((d) => cleanHost === d || cleanHost === `www.${d}` || cleanHost.endsWith(`.${d}`));
 
   if (isCustomDomain && !pathname.startsWith("/api") && !pathname.startsWith("/_next") && !pathname.startsWith("/static")) {
     // Extract subdomain (e.g. 'didan-nasha' from 'didan-nasha.luxenary.id' or 'didan-nasha.localhost')
@@ -67,21 +69,7 @@ export default auth((req) => {
         rewriteUrl.search = req.nextUrl.search;
         return NextResponse.rewrite(rewriteUrl);
       }
-      if (pathname === "/booth") {
-        const rewriteUrl = new URL(`/s/${subdomain}/booth`, req.url);
-        rewriteUrl.search = req.nextUrl.search;
-        return NextResponse.rewrite(rewriteUrl);
-      }
-      if (pathname === "/liveshow") {
-        const rewriteUrl = new URL(`/s/${subdomain}/liveshow`, req.url);
-        rewriteUrl.search = req.nextUrl.search;
-        return NextResponse.rewrite(rewriteUrl);
-      }
-      if (pathname === "/remote") {
-        const rewriteUrl = new URL(`/s/${subdomain}/remote`, req.url);
-        rewriteUrl.search = req.nextUrl.search;
-        return NextResponse.rewrite(rewriteUrl);
-      }
+
       
       // Dynamic Path Routing for Guest Invitation (e.g. /v=Budi or /Sutejo)
       const segments = pathname.split('/').filter(Boolean);

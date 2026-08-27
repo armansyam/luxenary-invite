@@ -54,9 +54,9 @@ export class TripayGateway implements PaymentGateway {
       .digest("hex");
 
     // Ambil data buyer dari order
-    let customerName = "Klien Luxenary";
-    let customerEmail = "client@luxenary.id";
-    let customerPhone = "08000000000";
+    let customerName = "Klien Undangan";
+    let customerEmail = "no-reply@example.com";
+    let customerPhone = "000000000000";
     try {
       const order = await prisma.order.findUnique({
         where: { id: orderId },

@@ -516,7 +516,7 @@
         <p class="cover-subtitle">Tanpa mengurangi rasa hormat, kami mengundang Anda untuk menghadiri acara pernikahan kami.</p>
       </div>
       <div class="cover-btn-group">
-        <button class="btn-buka" onclick="openInvitation()">Buka Undangan</button>
+        <button class="btn-buka" onclick="openInvitation()" data-lux-field="customLabels.openBtn">{{customLabels.openBtn}}</button>
         {{qrCoverButtonHtml}}
       </div>
     </div>
@@ -682,7 +682,7 @@
     <!-- 12. SECTION: RSVP & WISHES -->
     <section class="sec-flow" id="rsvp">
       <span class="eyebrow reveal">Greet &amp; Wish</span>
-      <h2 class="sec-title serif reveal delay-1">RSVP &amp; Doa Restu</h2>
+      <h2 class="sec-title serif reveal delay-1" data-lux-field="customLabels.rsvpTitle">{{customLabels.rsvpTitle}}</h2>
 
       <div class="rsvp-form-wrap reveal delay-2">
         <form id="rsvpForm" onsubmit="luxSubmitRsvp(event)">

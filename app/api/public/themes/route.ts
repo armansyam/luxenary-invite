@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { DEMO_REGISTRY } from "@/lib/demoRegistry";
 
-export const dynamic = "force-dynamic";
-
+export const revalidate = 3600; // Cache for 1 hour
 export async function GET() {
   try {
     const dbThemes = await prisma.theme.findMany({
@@ -18,7 +17,7 @@ export async function GET() {
       select: { key: true, value: true },
     });
 
-    // Build a lookup map: themeId → parsed custom data
+    // Build a lookup map: themeId parsed custom data
     const customDataMap: Record<string, any> = {};
     for (const s of customSettings) {
       const themeId = s.key.replace("theme_demo_", "");
@@ -60,9 +59,7 @@ export async function GET() {
       };
     });
 
-    return NextResponse.json(themes, {
-      headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
-    });
+    return NextResponse.json(themes);
   } catch (error: unknown) {
     const errorMsg = error instanceof Error ? error.message : "Gagal memuat daftar tema";
     return NextResponse.json({ error: errorMsg }, { status: 500 });

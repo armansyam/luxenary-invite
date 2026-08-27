@@ -165,17 +165,26 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
       {/* ── Seamless Masonry Media Grid ── */}
       <section className="px-4 pt-6 max-w-4xl mx-auto">
         {memories.length === 0 ? (
-          <div className="p-12 text-center rounded-3xl bg-white/5 border border-white/10 mt-4">
-            <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-amber-400 mx-auto mb-3">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+          <div className="p-12 sm:p-16 text-center rounded-[2rem] bg-gradient-to-b from-stone-900/90 to-stone-950 border border-white/5 mt-8 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-amber-500/20 to-transparent"></div>
+            <div className="w-20 h-20 rounded-full bg-stone-900 border border-white/5 flex items-center justify-center text-amber-500 mx-auto mb-5 shadow-inner">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
-            <h3 className="text-sm font-bold text-stone-200">Belum Ada Momen yang Dibagikan</h3>
-            <p className="text-xs text-stone-500 mt-1 max-w-xs mx-auto">
-              Jadilah yang pertama mengabadikan dan membagikan momen seru bersama kedua mempelai!
+            <h3 className="text-xl font-serif font-bold text-white tracking-wide mb-2">Kanvas Kenangan Masih Kosong</h3>
+            <p className="text-sm text-stone-400 leading-relaxed max-w-sm mx-auto mb-8 font-serif italic">
+              "Jadilah orang pertama yang mengabadikan tawa, senyum, dan kebahagiaan di hari istimewa ini."
             </p>
+            <Link 
+              href={`${invitationUrl}/sharemoment`}
+              className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-sm tracking-wide shadow-lg shadow-amber-900/30 transition-all cursor-pointer"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+              </svg>
+              <span>Mulai Bagikan Momen</span>
+            </Link>
           </div>
         ) : (
           <div

@@ -91,53 +91,6 @@ export function extractGoogleDriveFolderId(urlOrId: string): string | null {
   return null;
 }
 
-/**
- * Uploads a file stream directly to Google Drive via Google Apps Script Webhook (Zero Disk Usage on Server).
- */
-export async function uploadToGoogleDriveWebhook(
-  webhookUrl: string,
-  folderId: string,
-  fileData: { fileName: string; mimeType: string; buffer: Buffer; senderName: string; subfolderName?: string }
-): Promise<{ fileId: string; viewUrl: string; thumbnailUrl: string } | null> {
-  if (!webhookUrl || !folderId) return null;
-
-  try {
-    const payload = {
-      folderId,
-      subfolderName: fileData.subfolderName,
-      fileName: fileData.fileName,
-      mimeType: fileData.mimeType,
-      base64File: fileData.buffer.toString("base64"),
-      senderName: fileData.senderName,
-    };
-
-    const res = await fetch(webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    if (!res.ok) {
-      console.error(`[GoogleDriveWebhook] Upload failed with HTTP status ${res.status}`);
-      return null;
-    }
-
-    const data = await res.json();
-    if (data.success && data.fileId) {
-      return {
-        fileId: data.fileId,
-        viewUrl: data.viewUrl || `https://lh3.googleusercontent.com/d/${data.fileId}`,
-        thumbnailUrl: data.thumbnailUrl || `/api/cdn/drive?id=${data.fileId}&w=800`,
-      };
-    }
-
-    console.error("[GoogleDriveWebhook] Response error:", data.error);
-    return null;
-  } catch (err: any) {
-    console.error("[GoogleDriveWebhook] Network error:", err?.message || err);
-    return null;
-  }
-}
 
 /**
  * Deletes a file directly via Google Apps Script Webhook.

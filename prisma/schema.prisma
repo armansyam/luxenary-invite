@@ -52,9 +52,6 @@ model User {
   role              UserRole     @default(CLIENT)
   phoneNumber       String?
   avatarUrl         String?
-  driveAccessToken  String?
-  driveRefreshToken String?
-  driveTokenExpiry  DateTime?
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @default(now()) @updatedAt
 
@@ -111,7 +108,7 @@ model Invitation {
   bankAccounts    String?          // Dynamic JSON Bank Accounts Array
   shippingAddress String?          // Physical Gift Shipping Address
   featureSettings String?          // Dynamic JSON Feature Settings & Color Palette
-  staffPin        String?          @default("123456") // Keamanan untuk Scanner & Layar Proyektor
+  staffPin        String?          // Keamanan untuk Scanner & Layar Proyektor (Hashed in DB)
   openingQuote    String?          // Opening Quote Text
   openingQuoteRef String?          // Opening Quote Reference (e.g. QS. Ar-Rum : 21)
   dresscode       String?
@@ -136,7 +133,6 @@ model Invitation {
   guests  Guest[]
   rsvps   Rsvp[]
   wishes  Wish[]
-  boothSessions BoothSession[]
   guestMemories GuestMemory[]
 
   @@unique([groomSlug, brideSlug, invitationSlug])
@@ -186,7 +182,6 @@ model Guest {
 
   invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
   rsvps        Rsvp[]
-  boothSession BoothSession?
 
   @@unique([invitationId, slug])
   @@map("guests")
@@ -246,24 +241,6 @@ model GuestMemory {
   @@map("guest_memories")
 }
 
-// ============================================================
-// 9. BOOTH SESSIONS (Photobooth Check-in & Video Sharing)
-// ============================================================
-model BoothSession {
-  id           String    @id @default(uuid())
-  invitationId String
-  guestId      String?   @unique
-  guestName    String
-  scannedAt    DateTime  @default(now())
-  videoUrl     String?
-  status       String    @default("scanned") // scanned | uploaded | delivered
-  waDeliveredAt DateTime?
-
-  invitation Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
-  guest      Guest?     @relation(fields: [guestId], references: [id], onDelete: SetNull)
-
-  @@map("booth_sessions")
-}
 
 // ============================================================
 // 10. WEBHOOK LOGS

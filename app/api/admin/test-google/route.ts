@@ -42,7 +42,7 @@ export async function POST(req: Request) {
     params.append("code", "probe_test_token_validation");
     const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
     const protocol = req.headers.get("x-forwarded-proto") || (host?.includes("localhost") ? "http" : "https");
-    const appOrigin = host ? `${protocol}://${host}` : (process.env.NEXTAUTH_URL || process.env.APP_URL || "http://localhost:3000");
+    const appOrigin = host ? `${protocol}://${host}` : (process.env.NEXTAUTH_URL || process.env.APP_URL || "");
 
     params.append("redirect_uri", `${appOrigin}/api/auth/callback/google`);
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { rateLimit } from "@/lib/rateLimit";
 
 export async function GET(req: NextRequest) {
   try {
@@ -32,6 +33,12 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = req.headers.get("x-forwarded-for") || "unknown-ip";
+    // Limit: 10 request RSVP per menit (60000ms) untuk mencegah spam buku tamu
+    if (!rateLimit(ip, 10, 60000)) {
+      return NextResponse.json({ error: "Terlalu banyak pengiriman RSVP. Silakan coba lagi sebentar." }, { status: 429 });
+    }
+
     const body = await req.json();
     const { invitationId, guestName, status, guestCount, message, phone } = body;
 

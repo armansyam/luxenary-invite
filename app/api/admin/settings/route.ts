@@ -16,9 +16,9 @@ async function verifyAdminSession() {
 // Default seeds for AdminSetting
 const DEFAULT_SETTINGS: Array<{ key: string; value: string; label: string; group: string }> = [
   { key: "platform_name", value: "Luxenary Invite", label: "Nama Platform", group: "platform" },
-  { key: "platform_url", value: "http://localhost:3000", label: "URL Platform (APP_URL)", group: "platform" },
-  { key: "support_email", value: "support@luxenary.id", label: "Email Support", group: "platform" },
-  { key: "support_whatsapp", value: "6281234567890", label: "Nomor WhatsApp Support / Admin", group: "platform" },
+  { key: "platform_url", value: "", label: "URL Platform (APP_URL)", group: "platform" },
+  { key: "support_email", value: "", label: "Email Support", group: "platform" },
+  { key: "support_whatsapp", value: "", label: "Nomor WhatsApp Support / Admin", group: "platform" },
   { key: "hero_tagline", value: "Undangan Pernikahan Digital Elegan, Hangat & Berkelas", label: "Tagline Hero", group: "platform" },
   { key: "hero_subtitle", value: "Didesain khusus dengan sentuhan estetika mewah dan eksklusif. Hadirkan pengalaman berkesan dengan layout split desktop, custom subdomain, buku tamu real-time, dan video booth ucapan.", label: "Deskripsi Hero", group: "platform" },
   { key: "ipaymu_mode", value: "sandbox", label: "Mode iPaymu (sandbox/production)", group: "ipaymu" },

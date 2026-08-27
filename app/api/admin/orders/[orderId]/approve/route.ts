@@ -53,16 +53,6 @@ export async function POST(
       },
     });
 
-    // Publish undangan terkait jika ada
-    try {
-      await prisma.invitation.update({
-        where: { orderId },
-        data: { status: "PUBLISHED", publishedAt: new Date() },
-      });
-    } catch {
-      // Undangan belum dibuat — oke, klien akan setup setelah konfirmasi
-    }
-
     // Log audit
     try {
       await prisma.webhookLog.create({

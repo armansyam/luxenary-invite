@@ -1456,14 +1456,27 @@ export async function composeTemplateData(invitationId: string) {
           const modalContainer = document.getElementById('lux-qr-modal-img-container');
           
           if (guestName) {
-            // Render QR Code images for EVERYONE (VIP and Manual)
-            // Payload: LUX|{invitationId}|{GuestName}
-            const qrPayload = "LUX|${inv.id}|" + guestName;
-            const qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=" + encodeURIComponent(qrPayload);
-            const imgHtml = '<img src="' + qrUrl + '" alt="QR Check-In" style="width:160px; height:160px; display:block;">';
-            
-            if (sectionContainer) sectionContainer.innerHTML = imgHtml;
-            if (modalContainer) modalContainer.innerHTML = imgHtml;
+            // Fetch Category Invisibly with Cloudflare Cache
+            fetch('/api/public/guest-category?invitationId=${inv.id}&name=' + encodeURIComponent(guestName))
+              .then(function(res) { return res.json(); })
+              .then(function(data) {
+                var cat = (data.success && data.category && data.category.toLowerCase() !== "umum") ? "|" + data.category : "";
+                var qrPayload = "LUX|${inv.id}|" + guestName + cat;
+                var qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=" + encodeURIComponent(qrPayload);
+                var imgHtml = '<img src="' + qrUrl + '" alt="QR Check-In" style="width:160px; height:160px; display:block;">';
+                
+                if (sectionContainer) sectionContainer.innerHTML = imgHtml;
+                if (modalContainer) modalContainer.innerHTML = imgHtml;
+              })
+              .catch(function(err) {
+                // Fallback to basic payload if offline
+                var qrPayload = "LUX|${inv.id}|" + guestName;
+                var qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=" + encodeURIComponent(qrPayload);
+                var imgHtml = '<img src="' + qrUrl + '" alt="QR Check-In" style="width:160px; height:160px; display:block;">';
+                
+                if (sectionContainer) sectionContainer.innerHTML = imgHtml;
+                if (modalContainer) modalContainer.innerHTML = imgHtml;
+              });
           } else {
             // No Guest Name found. Hide QR sections.
             if (sectionContainer) {
@@ -1596,5 +1609,9 @@ export async function composeTemplateData(invitationId: string) {
     colorBgLight: palette.bgLight,
     colorBgDark: palette.bgDark,
     colorTextDark: palette.textDark,
+    
+    // Feature Settings & Custom Labels for Rendering Engine
+    featureSettings,
+    customLabels,
   };
 }

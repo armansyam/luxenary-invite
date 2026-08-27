@@ -30,7 +30,7 @@ export function getApexRootDomain(): string {
   }
 
   // Server-side fallback from environment or default
-  const root = process.env.NEXT_PUBLIC_ROOT_DOMAIN || process.env.NEXT_PUBLIC_APP_URL || (process.env.NODE_ENV === "production" ? "luxenary.id" : "localhost:3000");
+  const root = process.env.NEXT_PUBLIC_ROOT_DOMAIN || process.env.NEXT_PUBLIC_APP_URL || "";
   return root.replace(/^https?:\/\//, "").replace(/\/$/, "");
 }
 
@@ -39,7 +39,7 @@ export function getApexRootDomain(): string {
  * - Localhost:  http://[subdomain].localhost:3000(?to=...)
  * - Production: https://[subdomain].[apexDomain](?to=...)
  */
-export function getInvitationPublicUrl(subdomain: string, guestSlug?: string, isVip: boolean = true): string {
+export function getInvitationPublicUrl(subdomain: string, guestSlug?: string, isVip: boolean = false): string {
   const cleanSub = (subdomain || "wedding").toLowerCase().trim();
   
   let path = "";
@@ -73,7 +73,7 @@ export function getInvitationPublicUrl(subdomain: string, guestSlug?: string, is
   }
 
   // Server-side default
-  const root = process.env.NEXT_PUBLIC_ROOT_DOMAIN || (process.env.NODE_ENV === "production" ? "luxenary.id" : "localhost:3000");
+  const root = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "";
   const cleanRoot = root.replace(/^https?:\/\//, "").replace(/\/$/, "");
   return `http${process.env.NODE_ENV === "production" ? "s" : ""}://${cleanSub}.${cleanRoot}${path}`;
 }
@@ -121,7 +121,7 @@ export function getPermanentPathUrl(
     return `${protocol}//${hostname}${portSuffix}/${g}-${b}/${s}${query}`;
   }
 
-  const root = process.env.NEXT_PUBLIC_ROOT_DOMAIN || process.env.NEXT_PUBLIC_APP_URL || (process.env.NODE_ENV === "production" ? "luxenary.id" : "localhost:3000");
+  const root = process.env.NEXT_PUBLIC_ROOT_DOMAIN || process.env.NEXT_PUBLIC_APP_URL || "";
   const cleanRoot = root.replace(/^https?:\/\//, "").replace(/\/$/, "");
   return `https://${cleanRoot}/${g}-${b}/${s}${query}`;
 }

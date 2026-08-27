@@ -338,8 +338,8 @@
     <div class="cover-bottom">
       <span class="cover-kepada">Kepada</span>
       <h2 class="cover-guest-name serif" id="coverGuestName">Tamu Undangan</h2>
-      <p class="cover-subtitle">Dengan segala hormat, kami mengundang Anda untuk menghadiri acara pernikahan kami.</p>
-      <button class="btn-buka" onclick="openInvitation()">Buka Undangan</button>
+      <p class="cover-subtitle" data-lux-field="customLabels.coverSubtitle">{{customLabels.coverSubtitle}}</p>
+      <button class="btn-buka" onclick="openInvitation()" data-lux-field="customLabels.openBtn">{{customLabels.openBtn}}</button>
       {{qrCoverButtonHtml}}
     </div>
   </div>
@@ -445,7 +445,7 @@
     <!-- 13. SECTION: RSVP & WISHES -->
     <section class="sec-flow" id="rsvp">
       <span class="sec-eyebrow">Greet &amp; Wish</span>
-      <h2 class="sec-main-title serif">RSVP &amp; Doa Restu</h2>
+      <h2 class="sec-main-title serif" data-lux-field="customLabels.rsvpTitle">{{customLabels.rsvpTitle}}</h2>
 
       <div class="rsvp-form-wrap">
         <form id="rsvpForm" onsubmit="luxSubmitRsvp(event)">

@@ -64,15 +64,12 @@ export async function POST(req: Request) {
     subdomain: requestedSubdomain,
   } = body;
 
-  const finalGroomNick = groomNickname || groomName;
-  const finalBrideNick = brideNickname || brideName;
+  const finalGroomNick = groomNickname || groomName || "";
+  const finalBrideNick = brideNickname || brideName || "";
 
-  if (!finalGroomNick || !finalBrideNick) {
-    return NextResponse.json({ error: "Nama kedua mempelai wajib diisi." }, { status: 400 });
-  }
-
-  const groomSlug = slugify(finalGroomNick);
-  const brideSlug = slugify(finalBrideNick);
+  const randomId = Date.now().toString(36).slice(-6);
+  const groomSlug = finalGroomNick ? slugify(finalGroomNick) : `pria-${randomId}`;
+  const brideSlug = finalBrideNick ? slugify(finalBrideNick) : `wanita-${randomId}`;
 
   // 1. Permanent Canonical Path Slug: Month-Year format (e.g. "okt-2026")
   const defaultMonthYearSlug = getMonthYearSlug(weddingDate);
@@ -90,100 +87,122 @@ export async function POST(req: Request) {
     invitationSlug = `${baseInvitationSlug}-${collisionCounter}`;
   }
 
-  // 2. Subdomain Assignment & Recycling (Lease System)
-  let desiredSubdomain = requestedSubdomain ? slugify(requestedSubdomain) : `${groomSlug}-${brideSlug}`;
-  let finalSubdomain = desiredSubdomain;
+  // 2. Subdomain Assignment (Nullable if skipped)
+  let finalSubdomain = null;
 
-  const existingSubdomain = await prisma.invitation.findUnique({
-    where: { subdomain: desiredSubdomain },
-  });
+  if (requestedSubdomain) {
+    let desiredSubdomain = slugify(requestedSubdomain);
+    finalSubdomain = desiredSubdomain;
 
-  if (existingSubdomain) {
-    // Check if the holding invitation's event has passed grace period (> 7 days)
-    let eventDateToTest: string | null = null;
-    try {
-      if (existingSubdomain.eventData) {
-        const parsed = JSON.parse(existingSubdomain.eventData);
-        if (Array.isArray(parsed) && parsed[0]?.date) {
-          eventDateToTest = parsed[0].date;
+    const existingSubdomain = await prisma.invitation.findUnique({
+      where: { subdomain: desiredSubdomain },
+    });
+
+    if (existingSubdomain) {
+      let eventDateToTest: string | null = null;
+      try {
+        if (existingSubdomain.eventData) {
+          const parsed = JSON.parse(existingSubdomain.eventData);
+          if (Array.isArray(parsed) && parsed[0]?.date) {
+            eventDateToTest = parsed[0].date;
+          }
         }
-      }
-    } catch {}
+      } catch {}
 
-    if (isSubdomainExpired(eventDateToTest, 7)) {
-      // Release expired subdomain back to the pool!
-      await prisma.invitation.update({
-        where: { id: existingSubdomain.id },
-        data: { subdomain: null },
-      });
-      finalSubdomain = desiredSubdomain;
-    } else {
-      // Subdomain is actively in use by another couple → disambiguate with short suffix
-      const suffix = Date.now().toString(36).slice(-4);
-      finalSubdomain = `${desiredSubdomain}-${suffix}`;
+      if (isSubdomainExpired(eventDateToTest, 7)) {
+        await prisma.invitation.update({
+          where: { id: existingSubdomain.id },
+          data: { subdomain: null },
+        });
+        finalSubdomain = desiredSubdomain;
+      } else {
+        const suffix = Date.now().toString(36).slice(-4);
+        finalSubdomain = `${desiredSubdomain}-${suffix}`;
+      }
     }
   }
 
-  const initialEvents = [
+  const initialEvents = weddingDate ? [
     {
       title: "Akad Nikah",
-      date: weddingDate || "2026-10-05",
+      date: weddingDate,
       time: "08:00 - 10:00 WITA",
-      location: city ? `Masjid Agung ${city}` : "Masjid Raya Makassar",
-      address: city ? `Jl. Protokol No. 1, ${city}` : "Jl. Masjid Raya No. 1, Makassar",
+      location: city ? `Masjid Agung ${city}` : "Masjid Raya",
+      address: city ? `Jl. Protokol No. 1, ${city}` : "Jl. Masjid Raya No. 1",
       mapsUrl: "https://maps.google.com",
       badge: "Sakral",
     },
     {
       title: "Resepsi Pernikahan",
-      date: weddingDate || "2026-10-05",
+      date: weddingDate,
       time: "11:00 - 14:00 WITA",
-      location: city ? `Grand Ballroom ${city}` : "Grand Ballroom Phinisi Hotel Clarion",
-      address: city ? `Jl. Pettarani No. 1, ${city}` : "Jl. A.P. Pettarani No. 1, Makassar",
+      location: city ? `Grand Ballroom ${city}` : "Grand Ballroom Hotel",
+      address: city ? `Jl. Protokol No. 2, ${city}` : "Jl. Jend. Sudirman",
       mapsUrl: "https://maps.google.com",
       badge: "Umum",
     },
-  ];
+  ] : [];
 
-  const invitationStatus = paidOrder ? "PUBLISHED" : "DRAFT";
+  const invitationStatus = "DRAFT";
   const publishedAt = paidOrder ? new Date() : undefined;
 
-  const invitation = await prisma.invitation.create({
-    data: {
-      userId: userId,
-      orderId: paidOrder?.id ?? undefined,
-      groomName: groomName || finalGroomNick,
-      brideName: brideName || finalBrideNick,
-      groomNickname: finalGroomNick,
-      brideNickname: finalBrideNick,
-      groomSlug,
-      brideSlug,
-      invitationSlug,
-      subdomain: finalSubdomain,
-      themeId: themeId || "kalandra",
-      openingQuote:
-        "Dan di antara tanda-tanda (kebesaran)-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri...",
-      openingQuoteRef: "QS. AR-RUM : 21",
-      staffPin: Math.floor(100000 + Math.random() * 900000).toString(),
-      eventData: JSON.stringify(initialEvents),
-      featureSettings: JSON.stringify({
-        weddingTagline: "THE WEDDING OF",
-        colorPalette: "champagne",
-        showStory: true,
-        showGallery: true,
-        showGift: true,
-        showDresscode: true,
-        showMusic: true,
-      }),
-      status: invitationStatus,
-      publishedAt: publishedAt,
-    },
-  });
+  try {
+    const invitation = await prisma.invitation.create({
+      data: {
+        userId: userId,
+        orderId: paidOrder?.id ?? undefined,
+        groomName: groomName || finalGroomNick,
+        brideName: brideName || finalBrideNick,
+        groomNickname: finalGroomNick,
+        brideNickname: finalBrideNick,
+        groomSlug,
+        brideSlug,
+        invitationSlug,
+        subdomain: finalSubdomain,
+        themeId: themeId || "kalandra",
+        openingQuote:
+          "Dan di antara tanda-tanda (kebesaran)-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri...",
+        openingQuoteRef: "QS. AR-RUM : 21",
+        // staffPin: Diisi secara mandiri oleh Klien sbg syarat Publish
+        eventData: JSON.stringify(initialEvents),
+        featureSettings: JSON.stringify({
+          weddingTagline: "THE WEDDING OF",
+          colorPalette: "champagne",
+          showStory: true,
+          showGallery: true,
+          showGift: true,
+          showDresscode: true,
+          showMusic: true,
+          customLabels: {
+            coverSubtitle: "Dengan segala hormat, kami mengundang Anda untuk menghadiri acara pernikahan kami.",
+            openBtn: "Buka Undangan",
+            rsvpTitle: "RSVP & Doa Restu",
+            rsvpNameLabel: "Nama Lengkap",
+            rsvpStatusLabel: "Konfirmasi Kehadiran",
+            rsvpCountLabel: "Jumlah Tamu",
+            rsvpMessageLabel: "Ucapan & Doa Restu",
+            rsvpBtnText: "Kirim Konfirmasi & Doa"
+          }
+        }),
+        status: invitationStatus,
+        publishedAt: publishedAt,
+      },
+    });
 
-  return NextResponse.json({
-    success: true,
-    invitationId: invitation.id,
-    subdomain: finalSubdomain,
-    status: paidOrder ? "PUBLISHED" : "DRAFT",
-  });
+    return NextResponse.json({
+      success: true,
+      invitationId: invitation.id,
+      subdomain: finalSubdomain,
+      status: "DRAFT",
+    });
+  } catch (error: any) {
+    if (error.code === "P2002") {
+      return NextResponse.json(
+        { error: "Subdomain atau URL undangan sudah diklaim oleh pengguna lain di waktu bersamaan. Silakan coba lagi dengan nama lain." },
+        { status: 409 }
+      );
+    }
+    console.error("Failed to create invitation:", error);
+    return NextResponse.json({ error: "Gagal membuat undangan. Terjadi kesalahan server." }, { status: 500 });
+  }
 }

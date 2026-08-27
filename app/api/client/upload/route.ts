@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import fs from "fs";
 import path from "path";
 import sharp from "sharp";
+import { uploadFile } from "@/lib/storage";
 import { optimizeWebVideo, optimizeWebAudio } from "@/lib/videoOptimizer";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
@@ -34,12 +34,15 @@ export async function POST(req: NextRequest) {
     // Sanitize folder and slot identifiers to prevent path traversal
     const safeInvitationId = rawInvitationId.replace(/[^a-zA-Z0-9_-]/g, "") || "general";
 
+    let invStatus = "DRAFT";
+
     if (safeInvitationId !== "general") {
       const inv = await prisma.invitation.findUnique({
         where: { id: safeInvitationId },
-        select: { userId: true },
+        select: { userId: true, status: true },
       });
       if (inv) {
+        invStatus = inv.status;
         const isOwner = inv.userId === session.user.id;
         const isAdmin = (session.user as any).isAdmin === true || (session.user as any).role === "SUPER_ADMIN" || (session.user as any).role === "ADMIN";
         if (!isOwner && !isAdmin) {
@@ -54,14 +57,8 @@ export async function POST(req: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Isolated per-invitation directory: /public/uploads/invitations/{invitationId}/
-    const uploadsDir = path.join(process.cwd(), "public", "uploads", "invitations", safeInvitationId);
-    try {
-      await fs.promises.access(uploadsDir);
-    } catch {
-      await fs.promises.mkdir(uploadsDir, { recursive: true });
-    }
-
+    // Pathing logic
+    const relativePathBase = `invitations/${safeInvitationId}`;
     const isAudio = file.type.startsWith("audio/") || file.name.endsWith(".mp3") || file.name.endsWith(".wav") || file.name.endsWith(".m4a") || slotKey === "MUSIC";
     const isVideo = !isAudio && (file.type.startsWith("video/") || file.name.endsWith(".mp4") || file.name.endsWith(".webm") || file.name.endsWith(".mov"));
 
@@ -117,25 +114,33 @@ export async function POST(req: NextRequest) {
         .toBuffer();
     }
 
-    const filePath = path.join(uploadsDir, finalFileName);
+    const relativePath = `${relativePathBase}/${finalFileName}`;
+    let contentType = isAudio ? "audio/mpeg" : isVideo ? "video/mp4" : "image/webp";
 
-    // Clean up any old files with different extensions for this slot
-    try {
-      const existingFiles = await fs.promises.readdir(uploadsDir);
-      for (const f of existingFiles) {
-        const fileBase = path.parse(f).name;
-        if (fileBase === baseSlug && f !== finalFileName) {
-          try {
-            await fs.promises.unlink(path.join(uploadsDir, f));
-          } catch {}
+    // Force local storage if invitation is still a DRAFT (even if R2 is active)
+    const forceLocal = invStatus === "DRAFT";
+
+    // Clean up any old files with different extensions for this slot (Local ONLY)
+    if (forceLocal || (process.env.STORAGE_PROVIDER !== "r2" && process.env.STORAGE_PROVIDER !== "s3")) {
+      const uploadsDir = path.join(process.cwd(), "public", "uploads", "invitations", safeInvitationId);
+      try {
+        const fs = await import("fs");
+        const existingFiles = await fs.promises.readdir(uploadsDir);
+        for (const f of existingFiles) {
+          const fileBase = path.parse(f).name;
+          if (fileBase === baseSlug && f !== finalFileName) {
+            try {
+              await fs.promises.unlink(path.join(uploadsDir, f));
+            } catch {}
+          }
         }
-      }
-    } catch {}
+      } catch {}
+    }
 
-    await fs.promises.writeFile(filePath, finalBuffer);
-
+    const uploadedUrl = await uploadFile(finalBuffer, relativePath, contentType, forceLocal);
+    
     // Add cache buster timestamp
-    const publicUrl = `/uploads/invitations/${safeInvitationId}/${finalFileName}?t=${Date.now()}`;
+    const publicUrl = `${uploadedUrl}?t=${Date.now()}`;
 
     return NextResponse.json({
       success: true,

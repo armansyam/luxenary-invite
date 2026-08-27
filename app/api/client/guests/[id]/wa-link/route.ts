@@ -32,9 +32,20 @@ export async function GET(
   const groomName = inv.groomName || inv.groomNickname || "Pengantin Pria";
   const brideName = inv.brideName || inv.brideNickname || "Pengantin Wanita";
   
+  let displayOrder = "BRIDE_FIRST";
+  try {
+    if (inv.featureSettings) {
+      const fs = JSON.parse(inv.featureSettings as string);
+      displayOrder = fs.displayOrder || "BRIDE_FIRST";
+    }
+  } catch (e) {}
+  
+  const coupleNames = displayOrder === "GROOM_FIRST" ? `${groomName} & ${brideName}` : `${brideName} & ${groomName}`;
+  
   const formattedMessage = waTemplate
     .replace(/\{\{GUEST_NAME\}\}/g, guestName)
     .replace(/\{\{INVITATION_URL\}\}/g, invitationUrl)
+    .replace(/\{\{COUPLE_NAMES\}\}/g, coupleNames)
     .replace(/\{\{GROOM_NAME\}\}/g, groomName)
     .replace(/\{\{BRIDE_NAME\}\}/g, brideName);
 
@@ -77,9 +88,20 @@ export async function POST(
   const groomName = inv.groomName || inv.groomNickname || "Pengantin Pria";
   const brideName = inv.brideName || inv.brideNickname || "Pengantin Wanita";
   
+  let displayOrder = "BRIDE_FIRST";
+  try {
+    if (inv.featureSettings) {
+      const fs = JSON.parse(inv.featureSettings as string);
+      displayOrder = fs.displayOrder || "BRIDE_FIRST";
+    }
+  } catch (e) {}
+  
+  const coupleNames = displayOrder === "GROOM_FIRST" ? `${groomName} & ${brideName}` : `${brideName} & ${groomName}`;
+  
   const formattedMessage = waTemplate
     .replace(/\{\{GUEST_NAME\}\}/g, guestName)
     .replace(/\{\{INVITATION_URL\}\}/g, invitationUrl)
+    .replace(/\{\{COUPLE_NAMES\}\}/g, coupleNames)
     .replace(/\{\{GROOM_NAME\}\}/g, groomName)
     .replace(/\{\{BRIDE_NAME\}\}/g, brideName);
 

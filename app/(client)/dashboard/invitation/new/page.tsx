@@ -155,7 +155,7 @@ export default function NewInvitation() {
             disabled={!form.groomName || !form.brideName}
             className="w-full py-3.5 bg-amber-700 hover:bg-amber-800 text-white font-bold rounded-xl text-sm transition disabled:opacity-50 cursor-pointer"
           >
-            Lanjut ke Pilihan Tema →
+            Lanjut ke Pilihan Tema
           </button>
         </div>
       )}
@@ -203,7 +203,7 @@ export default function NewInvitation() {
               onClick={() => setStep(3)}
               className="flex-1 py-3 bg-amber-700 hover:bg-amber-800 text-white font-bold rounded-xl text-sm transition"
             >
-              Lanjut ke Pilihan Paket →
+              Lanjut ke Pilihan Paket
             </button>
           </div>
         </div>
