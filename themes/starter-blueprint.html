@@ -684,7 +684,7 @@
     function openInvitation() {
       const cover = document.getElementById('coverOverlay');
       if (cover) cover.classList.add('opened');
-      const audio = document.getElementById('weddingAudio');
+      const audio = document.getElementById('luxAudioPlayer');
       const fab = document.getElementById('musicToggle');
       if (audio) {
         audio.play().then(function() {
@@ -747,6 +747,6 @@
     } catch(e) {}
   })();
 </script>
-\n  {{musicPlayerHtml}}
+  {{musicPlayerHtml}}
 </body>
 </html>

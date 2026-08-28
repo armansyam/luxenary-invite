@@ -70,4 +70,14 @@ Sebelum aset disimpan, sistem menggunakan FFmpeg internal:
    - Modul `app/api/sse/memories/route.ts` memancarkan (*broadcast*) foto baru secara instan ke seluruh layar ponsel tamu yang sedang membuka undangan Klien.
 
 ---
+
+## 7. SISTEM TEMA & BLUEPRINT MASTERING (THEME ENGINE)
+
+Modul **`lib/themeEngine.ts`** adalah motor utama yang merender logika presentasi HTML ke bentuk dinamis. Sistem ini dirancang agar desainer eksternal bisa membuat tema baru dengan sangat mudah tanpa harus berurusan dengan logika *backend* yang rumit.
+
+- **Injeksi JavaScript Dinamis:** *Engine* ini akan secara otomatis menyuntikkan (meng-*inject*) elemen krusial seperti fitur Pemutar Musik (`luxAudioPlayer`, `luxToggleAudio()`), Pengatur Hitung Mundur Otomatis (`luxInitCountdown()`), serta *Handler* Form RSVP (`luxSubmitRsvp()`) melalui *placeholder* `{{musicPlayerHtml}}`.
+- **Master Blueprint Identik (1:1 Ratio):** File `public/downloads/starter-blueprint.html` bertindak sebagai *Master Template* yang diunduh oleh klien/desainer eksternal. File ini **harus 100% identik** strukturnya dengan `themes/starter-blueprint.html` (Tidak ada elemen `<audio>` atau *script* fungsi *hardcode*). 
+- **Zero-Conflict Upload:** Berkat standarisasi desain *blueprint* ini, setiap tema kustom yang dibuat klien dengan format tersebut akan langsung *plug-and-play* saat diunggah ke sistem kita, memastikan semua logika bawaan (termasuk *script* proteksi anti-scraping AMSDEV) bisa langsung berfungsi tanpa risiko bentrok kode (konflik).
+
+---
 *Dokumen ini merupakan sumber kebenaran (Source of Truth) yang ditulis langsung dengan membaca kode sumber aktual di produksi.*
