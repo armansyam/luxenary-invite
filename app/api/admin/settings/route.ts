@@ -44,7 +44,6 @@ const DEFAULT_SETTINGS: Array<{ key: string; value: string; label: string; group
   { key: "subdomain_auto_recycle", value: "true", label: "Otomatis Lepas Subdomain ke Pool", group: "subdomain" },
   { key: "retention_invitation_days", value: "30", label: "Retensi Undangan Aktif & Recycle Subdomain (Hari)", group: "subdomain" },
   { key: "retention_account_days", value: "365", label: "Pembersihan Total Akun & Portofolio (Hari)", group: "subdomain" },
-  { key: "gdrive_webhook_url", value: "", label: "Master Google Drive Webhook URL", group: "storage" },
 ];
 
 async function seedDefaultSettings() {

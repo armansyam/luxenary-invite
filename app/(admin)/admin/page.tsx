@@ -5,7 +5,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { getApexRootDomain, getInvitationPublicUrl } from "@/lib/domainUtils";
 import { BrandLogo } from "@/components/BrandLogo";
-import { GOOGLE_APPS_SCRIPT_MASTER_CODE } from "@/lib/driveHelper";
+
 import { AdminProfileSettings } from "@/components/admin/AdminProfileSettings";
 import { AdminTeamManagement } from "@/components/admin/AdminTeamManagement";
 
@@ -301,14 +301,14 @@ export default function AdminPage() {
   const [savingPlatform, setSavingPlatform] = useState(false);
   const [savingPlatformCustom, setSavingPlatformCustom] = useState(false);
   const [savingSubdomainSettings, setSavingSubdomainSettings] = useState(false);
-  const [savingGdriveSettings, setSavingGdriveSettings] = useState(false);
+
   const [savingActiveGateway, setSavingActiveGateway] = useState(false);
   const [savingMidtrans, setSavingMidtrans] = useState(false);
   const [savingXendit, setSavingXendit] = useState(false);
   const [savingDuitku, setSavingDuitku] = useState(false);
   const [savingTripay, setSavingTripay] = useState(false);
   const [activeSettingsTab, setActiveSettingsTab] = useState<"akun" | "pembayaran" | "gateway" | "paket" | "platform" | "autentikasi">("akun");
-  const [copiedGdriveScript, setCopiedGdriveScript] = useState(false);
+
   const [recyclingSubdomains, setRecyclingSubdomains] = useState(false);
   const [recycleResult, setRecycleResult] = useState<{ success: boolean; message: string } | null>(null);
   const [settingsSaved, setSettingsSaved] = useState<Record<string, boolean>>({});
@@ -3925,89 +3925,7 @@ export default function AdminPage() {
                     </div>
                   </SettingsCard>
 
-                  {/* Google Drive Master Webhook & Cloud Storage Settings */}
-                  <SettingsCard
-                    title="Penyimpanan Cloud & Master Google Drive Webhook"
-                    description="Kelola integrasi Zero-Disk Storage untuk dokumentasi kenangan tamu. File foto dan video tamu langsung di-stream ke folder Google Drive pengantin tanpa membebani harddisk server."
-                    isEditing={Boolean(editSection["gdrive"])}
-                    onEdit={() => toggleEditSection("gdrive")}
-                    onCancel={() => cancelEdit("gdrive", ["gdrive_webhook_url"])}
-                    onSave={() => saveSettings(["gdrive_webhook_url"], setSavingGdriveSettings, "gdrive")}
-                    saving={savingGdriveSettings}
-                    isDirty={isSectionDirty(["gdrive_webhook_url"])}
-                    saveSuccess={settingsSaved["gdrive"]}
-                    saveSuccessMessage="Master Webhook Google Drive berhasil disimpan"
-                    viewContent={
-                      <div className="space-y-4">
-                        <div className="p-4 bg-emerald-50/50 rounded-xl border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                          <div className="space-y-1">
-                            <span className="text-xs font-bold text-emerald-950 block">Status Zero-Disk Storage</span>
-                            <p className="text-xs text-emerald-800">
-                              {settingsMap["gdrive_webhook_url"]
-                                ? "● Master Webhook Google Drive Aktif & Terhubung (Harddisk Server 0 Byte)"
-                                : "○ Mode Penyimpanan Lokal (Belum Ada Webhook Google Drive)"}
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              navigator.clipboard.writeText(GOOGLE_APPS_SCRIPT_MASTER_CODE);
-                              setCopiedGdriveScript(true);
-                              setTimeout(() => setCopiedGdriveScript(false), 2500);
-                            }}
-                            className="px-3 py-1.5 bg-white hover:bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-lg text-xs font-bold transition flex items-center gap-1.5 self-start sm:self-auto cursor-pointer shadow-2xs"
-                          >
-                            <svg className="w-3.5 h-3.5 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                            </svg>
-                            <span>{copiedGdriveScript ? "✓ Skrip Tersalin!" : "Salin Skrip Google Webhook"}</span>
-                          </button>
-                        </div>
 
-                        {settingsMap["gdrive_webhook_url"] && (
-                          <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
-                            <span className="text-[11px] font-bold text-gray-500 block mb-1">URL Webhook Aktif:</span>
-                            <code className="text-xs font-mono text-gray-800 break-all select-all">
-                              {settingsMap["gdrive_webhook_url"]}
-                            </code>
-                          </div>
-                        )}
-                      </div>
-                    }
-                  >
-                    <div className="space-y-4">
-                      <FieldRow
-                        label="Master Google Drive Webhook URL"
-                        description="URL Web App dari Google Apps Script (script.google.com). Buka script.google.com > Paste Skrip > Deploy as Web App (Execute as: Me, Access: Anyone) > Salin URL-nya ke sini."
-                      >
-                        <div className="space-y-2">
-                          <input
-                            type="url"
-                            placeholder="https://script.google.com/macros/s/AKfycb.../exec"
-                            value={settingsMap["gdrive_webhook_url"] || ""}
-                            onChange={(e) => setSetting("gdrive_webhook_url", e.target.value)}
-                            className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition font-mono"
-                          />
-                          <div className="flex items-center justify-between">
-                            <p className="text-[11px] text-gray-500">
-                              Belum punya skrip? Salin kode skrip siap pakai di samping.
-                            </p>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                navigator.clipboard.writeText(GOOGLE_APPS_SCRIPT_MASTER_CODE);
-                                setCopiedGdriveScript(true);
-                                setTimeout(() => setCopiedGdriveScript(false), 2500);
-                              }}
-                              className="text-xs font-bold text-amber-800 hover:underline flex items-center gap-1 cursor-pointer"
-                            >
-                              <span>{copiedGdriveScript ? "✓ Berhasil Disalin!" : "Salin Skrip Master (.gs)"}</span>
-                            </button>
-                          </div>
-                        </div>
-                      </FieldRow>
-                    </div>
-                  </SettingsCard>
 
                   {/* Branding — Logo & Favicon */}
                   <div

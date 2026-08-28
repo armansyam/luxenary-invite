@@ -10,68 +10,7 @@ interface CacheEntry {
 const driveFolderCache = new Map<string, CacheEntry>();
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes cache
 
-/**
- * Standard Google Apps Script Master Code to paste into script.google.com
- */
-export const GOOGLE_APPS_SCRIPT_MASTER_CODE = `/**
- * Luxenary Invite — Master Google Drive Webhook Handler
- * Deploy as Web App -> Execute as: Me -> Who has access: Anyone
- */
-function doPost(e) {
-  try {
-    var data = JSON.parse(e.postData.contents);
-    
-    // DELETE ACTION
-    if (data.action === "delete") {
-      if (!data.fileId) throw new Error("Missing fileId for delete");
-      var fileToDelete = DriveApp.getFileById(data.fileId);
-      fileToDelete.setTrashed(true);
-      return ContentService.createTextOutput(JSON.stringify({ success: true, deletedId: data.fileId }))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
 
-    // UPLOAD ACTION
-    var folderId = data.folderId;
-    if (!folderId) {
-      return ContentService.createTextOutput(JSON.stringify({ success: false, error: "Missing folderId" }))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
-
-    var targetFolder = DriveApp.getFolderById(folderId);
-    
-    // Auto-create subfolder if requested (e.g., "Guest Moment" or "Booth Moment")
-    if (data.subfolderName) {
-      var subfolders = targetFolder.getFoldersByName(data.subfolderName);
-      if (subfolders.hasNext()) {
-        targetFolder = subfolders.next();
-      } else {
-        targetFolder = targetFolder.createFolder(data.subfolderName);
-      }
-    }
-
-    var decoded = Utilities.base64Decode(data.base64File);
-    var blob = Utilities.newBlob(decoded, data.mimeType || "image/webp", data.fileName || "moment.webp");
-    var file = targetFolder.createFile(blob);
-
-    // Make file readable for public CDN preview
-    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-
-    var fileId = file.getId();
-    var viewUrl = "https://lh3.googleusercontent.com/d/" + fileId;
-
-    return ContentService.createTextOutput(JSON.stringify({
-      success: true,
-      fileId: fileId,
-      viewUrl: viewUrl,
-      thumbnailUrl: viewUrl,
-      fileName: file.getName(),
-      size: file.getSize()
-    })).setMimeType(ContentService.MimeType.JSON);
-  } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({ success: false, error: err.toString() }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}`;
 
 /**
  * Extracts raw Google Drive Folder ID from a URL or bare string.
@@ -92,30 +31,7 @@ export function extractGoogleDriveFolderId(urlOrId: string): string | null {
 }
 
 
-/**
- * Deletes a file directly via Google Apps Script Webhook.
- */
-export async function deleteFromGoogleDriveWebhook(
-  webhookUrl: string,
-  fileId: string
-): Promise<boolean> {
-  if (!webhookUrl || !fileId) return false;
 
-  try {
-    const res = await fetch(webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "delete", fileId }),
-    });
-
-    if (!res.ok) return false;
-    const data = await res.json();
-    return data.success === true;
-  } catch (err) {
-    console.error("[GoogleDriveWebhook] Delete error:", err);
-    return false;
-  }
-}
 
 export async function getGoogleDriveFolderPhotos(folderUrlOrId: string): Promise<string[]> {
   if (!folderUrlOrId || typeof folderUrlOrId !== "string") return [];

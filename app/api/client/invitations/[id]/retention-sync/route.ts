@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
-import { deleteFromGoogleDriveWebhook, getGoogleDriveFolderPhotos } from "@/lib/driveHelper";
+import { getGoogleDriveFolderPhotos } from "@/lib/driveHelper";
 import { getAdminSetting } from "@/lib/settings";
 
 export async function POST(
@@ -57,21 +57,8 @@ export async function POST(
       }, { status: 400 });
     }
 
-    // 2. Klien lulus verifikasi, mulai proses penghapusan file lama milik Admin
-    const masterWebhookUrl = (await getAdminSetting("gdrive_webhook_url")) || process.env.GOOGLE_DRIVE_WEBHOOK_URL || "";
-    if (!masterWebhookUrl) {
-      return NextResponse.json({ error: "Master Webhook URL not configured. Cannot delete old files." }, { status: 500 });
-    }
-
-    let deletedCount = 0;
-    
-    // Tembak Webhook untuk menghapus tiap file
-    for (const memory of invitation.guestMemories) {
-      if (memory.driveFileId) {
-        const success = await deleteFromGoogleDriveWebhook(masterWebhookUrl, memory.driveFileId);
-        if (success) deletedCount++;
-      }
-    }
+    // 2. Tidak lagi menembak webhook (file ditangani auto-delete oleh R2 Object Lifecycle)
+    let deletedCount = invitation.guestMemories.length;
 
     // 3. Hapus isi DB dan ubah Mode menjadi ARCHIVE
     await prisma.guestMemory.deleteMany({
