@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { getGoogleDriveFolderPhotos } from "@/lib/driveHelper";
-import { getAdminSetting } from "@/lib/settings";
 
 export async function POST(
   req: NextRequest,
