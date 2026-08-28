@@ -8,7 +8,26 @@ echo "Pengecekan direktori kerja saat ini..."
 pwd
 
 echo "------------------------------------------"
-echo "[1/5] Mengambil kode terbaru dari GitHub (git pull)..."
+echo "[1/6] Memeriksa dan Menyiapkan Environment Variables (.env)..."
+if [ ! -f .env ]; then
+    echo "⚠️  File .env tidak ditemukan. Menyalin dari .env.example..."
+    cp .env.example .env 2>/dev/null || touch .env
+fi
+
+# Cek apakah NEXTAUTH_SECRET kosong, berisi string kosong, atau tidak ada
+if ! grep -q "^NEXTAUTH_SECRET=" .env || grep -q "^NEXTAUTH_SECRET=$" .env || grep -q "^NEXTAUTH_SECRET=\"\"" .env || grep -q "^NEXTAUTH_SECRET=''" .env; then
+    echo "⚠️  NEXTAUTH_SECRET kosong. Meng-generate secret keamanan baru secara otomatis..."
+    NEW_SECRET=$(openssl rand -base64 32 | tr -dc 'a-zA-Z0-9' | head -c 42)
+    # Hapus baris lama (mendukung MacOS dan Linux sed)
+    sed -i.bak '/^NEXTAUTH_SECRET=/d' .env && rm -f .env.bak
+    echo "NEXTAUTH_SECRET=\"$NEW_SECRET\"" >> .env
+    echo "✅ NEXTAUTH_SECRET berhasil disuntikkan ke dalam .env."
+else
+    echo "✅ File .env dan NEXTAUTH_SECRET sudah aman."
+fi
+
+echo "------------------------------------------"
+echo "[2/6] Mengambil kode terbaru dari GitHub (git pull)..."
 git pull origin main
 
 if [ $? -ne 0 ]; then
@@ -28,7 +47,7 @@ fi
 echo "✅ NPM Install selesai."
 
 echo "------------------------------------------"
-echo "[3/5] Menyiapkan dan Menyinkronkan Database Prisma..."
+echo "[3/6] Menyiapkan dan Menyinkronkan Database Prisma..."
 npx prisma generate
 npx prisma db push --accept-data-loss
 
@@ -39,7 +58,7 @@ fi
 echo "✅ Sinkronisasi Database selesai."
 
 echo "------------------------------------------"
-echo "[4/5] Membangun Ulang Aplikasi (npm run build)..."
+echo "[4/6] Membangun Ulang Aplikasi (npm run build)..."
 npm run build
 
 if [ $? -ne 0 ]; then
@@ -49,7 +68,7 @@ fi
 echo "✅ Build aplikasi selesai."
 
 echo "------------------------------------------"
-echo "[5/5] Merestart Proses Background PM2..."
+echo "[5/6] Merestart Proses Background PM2..."
 # Mengecek apakah aplikasi sudah berjalan di PM2
 if pm2 list | grep -q "luxenary-invite"; then
     echo "Me-restart proses PM2 'luxenary-invite'..."
