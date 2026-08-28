@@ -33,7 +33,8 @@ export async function POST(req: NextRequest) {
 
     const safeFileName = fileName ? fileName.replace(/[^a-zA-Z0-9.-]/g, '_') : `momen_${Date.now()}.jpg`;
     const finalFileName = `${crypto.randomBytes(4).toString("hex")}_${safeFileName}`;
-    const relativePath = `invitations/${invitationId}/memories/${finalFileName}`;
+    // Pemisahan folder agar Cloudflare R2 bisa melakukan Auto-Delete 60 hari khusus untuk folder tamu ini
+    const relativePath = `guest-memories/${invitationId}/${finalFileName}`;
 
     const base64Data = base64File.replace(/^data:image\/\w+;base64,/, "");
     const buffer = Buffer.from(base64Data, "base64");
