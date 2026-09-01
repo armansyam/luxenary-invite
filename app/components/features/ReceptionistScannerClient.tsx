@@ -20,7 +20,7 @@ export default function ReceptionistScannerClient({ invitationId }: { invitation
   const [offlineQueue, setOfflineQueue] = useState<string[]>([]);
   const [status, setStatus] = useState<"LOADING" | "READY" | "OFFLINE" | "SYNCING">("LOADING");
   const [searchInput, setSearchInput] = useState("");
-  const [scanResult, setScanResult] = useState<{ type: "success" | "error"; message: string; guest?: Guest } | null>(null);
+  const [scanResult, setScanResult] = useState<{ type: "success" | "error"; message: string; guest?: Guest; showDuplicatePrompt?: boolean; scannedName?: string; } | null>(null);
   const [scannerMode, setScannerMode] = useState<"PHYSICAL" | "CAMERA">("PHYSICAL");
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -92,7 +92,13 @@ export default function ReceptionistScannerClient({ invitationId }: { invitation
   // 3. Handle Scan / Search
   const handleCheckIn = (guest: Guest) => {
     if (guest.isTokenRedeemed) {
-      setScanResult({ type: "error", message: `Tamu ${guest.name} sudah melakukan Check-in sebelumnya!` });
+      setScanResult({ 
+        type: "error", 
+        message: `Tamu ${guest.name} sudah melakukan Check-in sebelumnya!`, 
+        guest,
+        showDuplicatePrompt: true,
+        scannedName: guest.name
+      });
       return;
     }
 
@@ -107,6 +113,33 @@ export default function ReceptionistScannerClient({ invitationId }: { invitation
     setScanResult({ type: "success", message: `Berhasil Check-in!`, guest });
     setSearchInput("");
     if (inputRef.current) inputRef.current.focus();
+  };
+
+  const handleDuplicateGuestArrival = (originalName: string) => {
+    // Cari angka terakhir untuk nama yang sama
+    const count = guests.filter(g => g.name.toLowerCase().startsWith(originalName.toLowerCase())).length;
+    const newName = `${originalName} (${count + 1})`;
+    
+    const newGuest: Guest = {
+      id: `local-${Date.now()}`,
+      name: newName,
+      category: "UMUM",
+      guestQuota: 1,
+      tableNumber: null,
+      qrToken: null,
+      isTokenRedeemed: true
+    };
+    
+    const updatedGuests = [newGuest, ...guests];
+    setGuests(updatedGuests);
+    localStorage.setItem(`guests_${invitationId}`, JSON.stringify(updatedGuests));
+    
+    const newQueue = [...offlineQueue, newGuest.id];
+    setOfflineQueue(newQueue);
+    localStorage.setItem(`offline_queue_${invitationId}`, JSON.stringify(newQueue));
+    
+    setScanResult({ type: "success", message: `Berhasil Check-in sebagai Tamu Umum Tambahan!`, guest: newGuest });
+    setSearchInput("");
   };
 
   const processScanToken = (token: string) => {
@@ -231,12 +264,23 @@ export default function ReceptionistScannerClient({ invitationId }: { invitation
                     <p className="text-green-700 font-bold mb-2 text-lg">{scanResult.message}</p>
                   </>
                 ) : (
-                  <>
+                   <>
                      <div className="w-24 h-24 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl shadow-red-500/30">
                       <span className="text-5xl text-white">×</span>
                     </div>
                     <h3 className="text-2xl font-bold text-red-900 mb-2">Akses Ditolak</h3>
                     <p className="text-red-700 font-medium text-lg">{scanResult.message}</p>
+                    {scanResult.showDuplicatePrompt && scanResult.scannedName && (
+                      <div className="mt-6 pt-6 border-t border-red-200">
+                        <p className="text-sm text-red-800 mb-3">Apakah ini tamu umum baru yang namanya kebetulan sama?</p>
+                        <button
+                          onClick={() => handleDuplicateGuestArrival(scanResult.scannedName!)}
+                          className="w-full py-3 bg-red-800 hover:bg-red-900 text-white font-bold rounded-xl transition"
+                        >
+                          Tandai sebagai Orang Berbeda
+                        </button>
+                      </div>
+                    )}
                   </>
                 )}
               </div>

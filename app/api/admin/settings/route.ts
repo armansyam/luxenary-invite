@@ -126,6 +126,16 @@ export async function POST(req: NextRequest) {
         process.env[envVar] = finalVal;
         envUpdates[envVar] = finalVal;
       }
+
+      // Sync Cloudflare R2 Object Lifecycle dynamically if retention setting is updated
+      if (key === "retention_account_days") {
+        const retentionDays = Number(strVal);
+        if (!isNaN(retentionDays) && retentionDays > 0) {
+          import("@/lib/storage").then(({ syncR2LifecycleRule }) => {
+            syncR2LifecycleRule(retentionDays).catch(console.error);
+          });
+        }
+      }
     }
 
     return NextResponse.json({ success: true, updated: results });

@@ -2,53 +2,43 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import GuestMomentClient from "@/app/components/features/GuestMomentClient";
+import { getAdminSetting } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
 interface PageProps {
-  params: Promise<{ groom: string; bride: string; invitationSlug: string }>;
+  params: Promise<{ slug: string }>;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { groom, bride, invitationSlug } = await params;
-  const invitation = await prisma.invitation.findUnique({
-    where: {
-      groomSlug_brideSlug_invitationSlug: {
-        groomSlug: groom,
-        brideSlug: bride,
-        invitationSlug: invitationSlug,
-      },
-    },
-  });
+  const { slug } = await params;
+  const [invitation, platformName] = await Promise.all([
+    prisma.invitation.findUnique({ where: { invitationSlug: slug } }),
+    getAdminSetting("platform_name", "Platform Undangan"),
+  ]);
 
   if (!invitation) return {};
 
   const coupleName = `${invitation.groomNickname || "Pria"} & ${invitation.brideNickname || "Wanita"}`;
   return {
-    title: `Upload Momen — ${coupleName} | Luxenary Invite`,
+    title: `Upload Momen — ${coupleName} | ${platformName}`,
     description: `Bagikan foto candid dan ucapan Anda secara real-time di pernikahan ${coupleName}.`,
   };
 }
 
 export default async function FreeGuestMemoriesStandalonePage({ params }: PageProps) {
-  const { groom, bride, invitationSlug } = await params;
+  const { slug } = await params;
 
   const invitation = await prisma.invitation.findUnique({
-    where: {
-      groomSlug_brideSlug_invitationSlug: {
-        groomSlug: groom,
-        brideSlug: bride,
-        invitationSlug: invitationSlug,
-      },
-    },
+    where: { invitationSlug: slug },
     include: {
       guestMemories: {
         orderBy: { createdAt: "desc" },
       },
       media: {
         where: { mediaSlot: "LANDING_COVER" },
-        take: 1
-      }
+        take: 1,
+      },
     },
   });
 
@@ -56,17 +46,17 @@ export default async function FreeGuestMemoriesStandalonePage({ params }: PagePr
     notFound();
   }
 
-  let memories: any[] = invitation.guestMemories || [];
-  const coupleName = `${invitation.groomNickname || "Didan"} & ${invitation.brideNickname || "Nasha"}`;
-  
-  const coverMedia = invitation.media && invitation.media.length > 0 ? invitation.media[0] : null;
-  const coverUrl = coverMedia?.driveViewUrl || undefined;
+  const memories: any[] = invitation.guestMemories || [];
+  const coupleName = `${invitation.groomNickname || "Mempelai Pria"} & ${invitation.brideNickname || "Mempelai Wanita"}`;
 
-  const backUrl = `/${groom}-${bride}/${invitationSlug}`;
-  const galleryUrl = `/${groom}-${bride}/${invitationSlug}/memories`;
+  const coverMedia = invitation.media && invitation.media.length > 0 ? invitation.media[0] : null;
+  const coverUrl = coverMedia?.localPath || undefined;
+
+  const backUrl = `/${slug}`;
+  const galleryUrl = `/${slug}/memories`;
 
   return (
-    <GuestMomentClient 
+    <GuestMomentClient
       invitationId={invitation.id}
       coupleName={coupleName}
       coverUrl={coverUrl}

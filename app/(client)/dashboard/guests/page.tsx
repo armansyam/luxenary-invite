@@ -14,6 +14,7 @@ interface Guest {
   sessionInfo: string | null;
   guestQuota?: number;
   guestLimit?: number | null;
+  tableNumber?: string | null;
   rsvps?: {
     status: string | null;
     guestCount: number;
@@ -90,6 +91,7 @@ export default function GuestsPage() {
     category: "UMUM",
     sessionInfo: "Akad & Resepsi",
     guestLimit: 2,
+    tableNumber: "",
   });
 
   const loadGuests = (invId: string) => {
@@ -155,6 +157,7 @@ export default function GuestsPage() {
           category: "UMUM",
           sessionInfo: "Akad & Resepsi",
           guestLimit: 2,
+          tableNumber: "",
         });
       } else {
         setError("Gagal menambah tamu");
@@ -255,7 +258,7 @@ export default function GuestsPage() {
     const displayOrder = feat.displayOrder || "BRIDE_FIRST";
     const coupleName = displayOrder === "BRIDE_FIRST" ? `${bride} & ${groom}` : `${groom} & ${bride}`;
     const sub = invitationData?.subdomain || (invitationData?.groomSlug && invitationData?.brideSlug ? `${invitationData.groomSlug}-${invitationData.brideSlug}` : "wedding");
-    const fullGuestUrl = getInvitationPublicUrl(sub, guestName, true);
+    const fullGuestUrl = getInvitationPublicUrl(sub, guestName);
 
     const template = waTemplate || DEFAULT_WA_TEMPLATE;
 
@@ -285,7 +288,7 @@ export default function GuestsPage() {
 
   const handleCopyGuestLink = (guest: Guest) => {
     const sub = invitationData?.subdomain || (invitationData?.groomSlug && invitationData?.brideSlug ? `${invitationData.groomSlug}-${invitationData.brideSlug}` : "wedding");
-    const fullGuestUrl = getInvitationPublicUrl(sub, guest.name, true);
+    const fullGuestUrl = getInvitationPublicUrl(sub, guest.name);
 
     navigator.clipboard.writeText(fullGuestUrl).then(() => {
       setCopiedGuestId(guest.id);
@@ -918,15 +921,28 @@ export default function GuestsPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-[11px] font-bold text-stone-700 mb-1">Sesi Acara</label>
-                <input
-                  type="text"
-                  value={newGuest.sessionInfo}
-                  onChange={(e) => setNewGuest({ ...newGuest, sessionInfo: e.target.value })}
-                  placeholder="Tentukan sesi kehadiran untuk tamu ini (Opsional)"
-                  className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-stone-700 mb-1">Nomor Meja (Opsional)</label>
+                  <input
+                    type="text"
+                    value={newGuest.tableNumber}
+                    onChange={(e) => setNewGuest({ ...newGuest, tableNumber: e.target.value })}
+                    placeholder="Contoh: VIP-1, Meja 5"
+                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-stone-700 mb-1">Sesi Acara</label>
+                  <input
+                    type="text"
+                    value={newGuest.sessionInfo}
+                    onChange={(e) => setNewGuest({ ...newGuest, sessionInfo: e.target.value })}
+                    placeholder="Tentukan sesi (Opsional)"
+                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
+                  />
+                </div>
               </div>
 
               <div className="pt-2 flex items-center justify-end gap-2">

@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { S3Client, PutObjectCommand, ListObjectsV2Command, GetObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, ListObjectsV2Command, GetObjectCommand, DeleteObjectCommand, PutBucketLifecycleConfigurationCommand } from "@aws-sdk/client-s3";
 import { prisma } from "./prisma";
 
 // Determine Storage Provider
@@ -62,6 +62,51 @@ export async function uploadFile(buffer: Buffer, relativePath: string, mimeType:
     await fs.promises.writeFile(absolutePath, buffer);
     return `/uploads/${relativePath}`;
   }
+}
+
+/**
+ * Unified Delete Handler (VPS vs R2)
+ * @param publicUrl - The full public URL stored in DB (e.g. https://pub-xxx.r2.dev/folder/file.png)
+ * @returns boolean indicating success
+ */
+export async function deleteFile(publicUrl: string | null): Promise<boolean> {
+  if (!publicUrl) return false;
+
+  try {
+    if (publicUrl.startsWith("http") && (STORAGE_PROVIDER === "r2" || STORAGE_PROVIDER === "s3")) {
+      const bucketName = process.env.S3_BUCKET_NAME;
+      const customDomain = process.env.S3_CUSTOM_DOMAIN || process.env.S3_PUBLIC_URL;
+      
+      if (!bucketName || !s3Client || !customDomain) return false;
+      
+      const domainPrefix = customDomain.replace(/\/$/, "");
+      if (!publicUrl.startsWith(domainPrefix)) return false;
+
+      // Extract relative path key
+      const relativePath = publicUrl.substring(domainPrefix.length + 1);
+      
+      const command = new DeleteObjectCommand({
+        Bucket: bucketName,
+        Key: relativePath,
+      });
+
+      await s3Client.send(command);
+      return true;
+    } 
+    
+    // Local File Deletion
+    if (publicUrl.startsWith("/uploads/")) {
+      const absolutePath = path.join(process.cwd(), "public", publicUrl);
+      if (fs.existsSync(absolutePath)) {
+        await fs.promises.unlink(absolutePath);
+        return true;
+      }
+    }
+  } catch (error) {
+    console.error("[Storage Delete Error]:", error);
+  }
+  
+  return false;
 }
 
 /**
@@ -144,6 +189,8 @@ export async function syncDraftToR2(invitationId: string): Promise<void> {
     const mimeTypes: Record<string, string> = {
       ".webp": "image/webp",
       ".jpg": "image/jpeg",
+      ".jpeg": "image/jpeg",
+      ".png": "image/png",
       ".mp4": "video/mp4",
       ".mp3": "audio/mpeg",
     };
@@ -216,5 +263,41 @@ export async function syncDraftToR2(invitationId: string): Promise<void> {
 
   } catch (err) {
     console.error("[syncDraftToR2 Error]", err);
+  }
+}
+
+/**
+ * Sync Database Retention Settings to Cloudflare R2 Lifecycle Rules
+ * @param days - Number of days to retain objects
+ */
+export async function syncR2LifecycleRule(days: number): Promise<boolean> {
+  if (STORAGE_PROVIDER !== "r2" && STORAGE_PROVIDER !== "s3") return false;
+  if (!s3Client || !process.env.S3_BUCKET_NAME) return false;
+
+  try {
+    const command = new PutBucketLifecycleConfigurationCommand({
+      Bucket: process.env.S3_BUCKET_NAME,
+      LifecycleConfiguration: {
+        Rules: [
+          {
+            ID: "Auto-Cleanup-Rule",
+            Status: "Enabled",
+            Filter: {
+              Prefix: "", // Apply to all objects
+            },
+            Expiration: {
+              Days: days,
+            },
+          },
+        ],
+      },
+    });
+
+    await s3Client.send(command);
+    console.log(`[R2 Sync] Lifecycle rule updated: Auto-delete after ${days} days.`);
+    return true;
+  } catch (err) {
+    console.error("[R2 Sync Error] Failed to update lifecycle:", err);
+    return false;
   }
 }

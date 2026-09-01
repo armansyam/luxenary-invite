@@ -23,7 +23,7 @@ export async function GET(
   const inv = guest.invitation;
   const invitationUrl = inv.subdomain
     ? getInvitationPublicUrl(inv.subdomain, guest.name)
-    : getPermanentPathUrl(inv.groomSlug, inv.brideSlug, inv.invitationSlug, guest.name);
+    : getPermanentPathUrl(inv.invitationSlug, guest.name);
 
   const settings = await getPublicPlatformSettings();
   const waTemplate = settings.waTemplateMessage;
@@ -79,7 +79,7 @@ export async function POST(
   const inv = guest.invitation;
   const invitationUrl = inv.subdomain
     ? getInvitationPublicUrl(inv.subdomain, guest.name)
-    : getPermanentPathUrl(inv.groomSlug, inv.brideSlug, inv.invitationSlug, guest.name);
+    : getPermanentPathUrl(inv.invitationSlug, guest.name);
 
   const settings = await getPublicPlatformSettings();
   const waTemplate = settings.waTemplateMessage;

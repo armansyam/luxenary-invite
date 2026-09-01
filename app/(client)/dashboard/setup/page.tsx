@@ -32,8 +32,8 @@ function SetupWizardContent() {
   const [brideNickname, setBrideNickname] = useState("");
   const [groomName, setGroomName] = useState("");
   const [brideName, setBrideName] = useState("");
-  const [weddingDate, setWeddingDate] = useState("2026-10-05");
-  const [city, setCity] = useState("Makassar");
+  const [weddingDate, setWeddingDate] = useState("");
+  const [city, setCity] = useState("");
   const [themeId, setThemeId] = useState("kalandra");
 
   // Custom Editable Subdomain & Dynamic Host Resolver

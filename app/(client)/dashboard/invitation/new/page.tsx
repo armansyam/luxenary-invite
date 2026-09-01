@@ -118,7 +118,7 @@ export default function NewInvitation() {
                 value={form.groomName}
                 onChange={(e) => updateForm("groomName", e.target.value)}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none text-sm transition"
-                placeholder="Contoh: Didan"
+                placeholder="Masukkan panggilan pria"
               />
             </div>
             <div>
@@ -128,7 +128,7 @@ export default function NewInvitation() {
                 value={form.brideName}
                 onChange={(e) => updateForm("brideName", e.target.value)}
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none text-sm transition"
-                placeholder="Contoh: Nasha"
+                placeholder="Masukkan panggilan wanita"
               />
             </div>
           </div>

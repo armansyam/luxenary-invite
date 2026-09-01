@@ -299,8 +299,6 @@ export default function AdminPage() {
   const [editSection, setEditSection] = useState<Record<string, boolean>>({});
   const [savingIpaymu, setSavingIpaymu] = useState(false);
   const [savingGoogle, setSavingGoogle] = useState(false);
-  const [testingGoogle, setTestingGoogle] = useState(false);
-  const [googleTestResult, setGoogleTestResult] = useState<{ success: boolean; message: string } | null>(null);
   const [showGoogleSecret, setShowGoogleSecret] = useState(false);
   const [savingPricing, setSavingPricing] = useState(false);
   const [savingPlatform, setSavingPlatform] = useState(false);
@@ -677,9 +675,6 @@ export default function AdminPage() {
       return next;
     });
     setEditSection((prev) => ({ ...prev, [section]: false }));
-    if (section === "google") {
-      setGoogleTestResult(null);
-    }
   };
 
   const isSectionDirty = (keys: string[]) => {
@@ -1028,29 +1023,7 @@ export default function AdminPage() {
     }
   };
 
-  const handleTestGoogle = async () => {
-    setTestingGoogle(true);
-    setGoogleTestResult(null);
-    try {
-      const res = await fetch("/api/admin/test-google", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          clientId: settingsMap["google_client_id"] || "",
-          clientSecret: settingsMap["google_client_secret"] || "",
-        }),
-      });
-      const data = await res.json();
-      setGoogleTestResult(data);
-    } catch (err: any) {
-      setGoogleTestResult({
-        success: false,
-        message: "Gagal menguji koneksi: " + err.message,
-      });
-    } finally {
-      setTestingGoogle(false);
-    }
-  };
+  // Google Drive integration telah dihapus — tidak diperlukan lagi
 
   // Overview computed metrics & analytics
   const orderList = allOrders.length > 0 ? allOrders : orders;
@@ -2135,7 +2108,7 @@ export default function AdminPage() {
                         <tbody className="divide-y divide-gray-50">
                           {invitations.map((inv) => {
                             const coupleName = `${inv.groomNickname || inv.groomName || "Mempelai Pria"} & ${inv.brideNickname || inv.brideName || "Mempelai Wanita"}`;
-                            const activeSub = inv.subdomain || `${inv.groomSlug || "didan"}-${inv.brideSlug || "nasha"}`;
+                            const activeSub = inv.subdomain || `${inv.groomSlug || "mempelai"}-${inv.brideSlug || "pria"}`;
                             const publicUrl = getInvitationPublicUrl(activeSub);
                             const isEmergencyUnlocked = inv.adminUnlockedUntil && new Date(inv.adminUnlockedUntil) > new Date();
 
@@ -2226,7 +2199,7 @@ export default function AdminPage() {
                     ) : (
                       invitations.map((inv) => {
                         const coupleName = `${inv.groomNickname || inv.groomName || "Mempelai Pria"} & ${inv.brideNickname || inv.brideName || "Mempelai Wanita"}`;
-                        const activeSub = inv.subdomain || `${inv.groomSlug || "didan"}-${inv.brideSlug || "nasha"}`;
+                        const activeSub = inv.subdomain || `${inv.groomSlug || "mempelai"}-${inv.brideSlug || "pria"}`;
                         const publicUrl = getInvitationPublicUrl(activeSub);
                         const isEmergencyUnlocked = inv.adminUnlockedUntil && new Date(inv.adminUnlockedUntil) > new Date();
 
@@ -3437,53 +3410,16 @@ export default function AdminPage() {
                       </div>
                     </FieldRow>
 
-                    {/* Test Google Credentials Probe */}
-                    <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-3 flex-wrap">
-                      <button
-                        type="button"
-                        onClick={handleTestGoogle}
-                        disabled={testingGoogle || !settingsMap["google_client_id"]}
-                        className="px-4 py-2.5 bg-stone-800 hover:bg-stone-900 text-white rounded-xl text-xs font-semibold transition disabled:opacity-50 flex items-center gap-2 cursor-pointer shadow-sm"
-                      >
-                        {testingGoogle ? (
-                          <>
-                            <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                            <span>Memverifikasi ke Server Google...</span>
-                          </>
-                        ) : (
-                          <span>Uji Kredensial Google</span>
-                        )}
-                      </button>
-                      {!settingsMap["google_client_id"] && (
-                        <span className="text-xs text-gray-500">Masukkan Client ID terlebih dahulu untuk menguji.</span>
-                      )}
-                    </div>
-
-                    {googleTestResult && (
-                      <div
-                        className={`p-3.5 rounded-xl border text-xs font-medium flex items-start gap-2.5 ${
-                          googleTestResult.success
-                            ? "bg-emerald-50 border-emerald-300 text-emerald-900"
-                            : "bg-rose-50 border-rose-300 text-rose-900"
-                        }`}
-                      >
-                        {googleTestResult.success ? (
-                          <svg className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                        ) : (
-                          <svg className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                        )}
-                        <div className="flex-1 leading-relaxed">
-                          <strong className="block font-bold text-sm mb-0.5">
-                            {googleTestResult.success ? "Kredensial Valid & Terhubung" : "Kredensial Ditolak Google"}
-                          </strong>
-                          <span>{googleTestResult.message}</span>
-                        </div>
+                    {/* Google Drive integration telah dihapus dari sistem */}
+                    <div className="pt-3 border-t border-gray-100">
+                      <div className="p-3 rounded-xl bg-stone-50 border border-stone-200">
+                        <p className="text-xs text-stone-500 leading-relaxed">
+                          <strong className="text-stone-700">Catatan:</strong> Integrasi Google Drive telah dihapus dari sistem.
+                          Media undangan kini disimpan di Cloudflare R2 atau penyimpanan lokal server.
+                          Field <em>Google Client ID</em> dan <em>Client Secret</em> di atas tidak lagi digunakan.
+                        </p>
                       </div>
-                    )}
+                    </div>
 
                     <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200 text-xs text-gray-800 space-y-1.5 mt-2">
                       <span className="font-bold block text-gray-900">Panduan Konfigurasi Google Cloud Console:</span>
@@ -4242,10 +4178,10 @@ export default function AdminPage() {
                     description="Nama platform, kontak resmi, dan teks headline hero yang digunakan di seluruh sistem."
                     isEditing={Boolean(editSection["platform"])}
                     onEdit={() => toggleEditSection("platform")}
-                    onCancel={() => cancelEdit("platform", ["platform_name", "support_email", "support_whatsapp", "hero_tagline", "hero_subtitle"])}
-                    onSave={() => saveSettings(["platform_name", "support_email", "support_whatsapp", "hero_tagline", "hero_subtitle"], setSavingPlatform, "platform")}
+                    onCancel={() => cancelEdit("platform", ["platform_name", "support_email", "support_whatsapp", "hero_tagline", "hero_subtitle", "cname_target"])}
+                    onSave={() => saveSettings(["platform_name", "support_email", "support_whatsapp", "hero_tagline", "hero_subtitle", "cname_target"], setSavingPlatform, "platform")}
                     saving={savingPlatform}
-                    isDirty={isSectionDirty(["platform_name", "support_email", "support_whatsapp", "hero_tagline", "hero_subtitle"])}
+                    isDirty={isSectionDirty(["platform_name", "support_email", "support_whatsapp", "hero_tagline", "hero_subtitle", "cname_target"])}
                     saveSuccess={settingsSaved["platform"]}
                     saveSuccessMessage="Konfigurasi platform & tampilan berhasil disimpan"
                     viewContent={
@@ -4311,10 +4247,20 @@ export default function AdminPage() {
                       <FieldRow label="Nomor WhatsApp Admin / CS" description="Gunakan kode negara tanpa +, contoh: 6281234567890">
                         <input
                           type="text"
-                          value={settingsMap["support_whatsapp"] || "6281234567890"}
+                          value={settingsMap["support_whatsapp"] || ""}
                           onChange={(e) => setSetting("support_whatsapp", e.target.value.replace(/[^0-9]/g, ""))}
-                          placeholder="6281234567890"
+                          placeholder="Contoh: 6281234567890"
                           className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
+                        />
+                      </FieldRow>
+
+                      <FieldRow label="CNAME Target (Custom Domain)" description="Nilai CNAME yang diarahkan client saat setup domain sendiri. Contoh: invite.domain-anda.id">
+                        <input
+                          type="text"
+                          value={settingsMap["cname_target"] || ""}
+                          onChange={(e) => setSetting("cname_target", e.target.value.trim())}
+                          placeholder="Contoh: invite.platform-anda.id"
+                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white font-mono text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
                         />
                       </FieldRow>
                     </div>

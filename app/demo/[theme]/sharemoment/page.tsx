@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import GuestMomentClient from "@/app/components/features/GuestMomentClient";
+import { getAdminSetting } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -7,10 +8,10 @@ interface PageProps {
   params: Promise<{ theme: string }>;
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { theme } = await params;
+export async function generateMetadata({ params: _params }: PageProps): Promise<Metadata> {
+  const platformName = await getAdminSetting("platform_name", "Platform Undangan");
   return {
-    title: `Upload Momen (Demo) — Luxenary Invite`,
+    title: `Upload Momen (Demo) — ${platformName}`,
     description: `Demo fitur bagikan foto candid dan ucapan.`,
   };
 }

@@ -4,6 +4,7 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { useState, useEffect, Suspense, useCallback } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 
 function CheckoutContent() {
   const { data: session, status } = useSession();
@@ -33,10 +34,10 @@ function CheckoutContent() {
   const [paymentMode, setPaymentMode] = useState<"BOTH" | "GATEWAY" | "MANUAL">("BOTH");
   const [selectedMethod, setSelectedMethod] = useState<"GATEWAY" | "MANUAL">("GATEWAY");
   const [bankInfo, setBankInfo] = useState({
-    name: "BCA (Bank Central Asia)",
-    accountNumber: "8735098123",
-    accountHolder: "PT Luxenary Karya Digital",
-    instructions: "Silakan transfer tepat sesuai total tagihan invoice. Setelah transfer, unggah foto bukti transfer di bawah ini untuk diverifikasi admin.",
+    name: "",
+    accountNumber: "",
+    accountHolder: "",
+    instructions: "",
   });
 
   // Proof of Transfer Upload State
@@ -48,10 +49,12 @@ function CheckoutContent() {
   const [copiedBank, setCopiedBank] = useState(false);
   const [copiedAmount, setCopiedAmount] = useState(false);
   const [adminWa, setAdminWa] = useState<string>("");
+  const [platformName, setPlatformName] = useState("");
   // PlanType state — menyimpan ID paket aktif (ex: "PREMIUM", "TRADITIONAL") untuk regenerasi order yang benar
   const [currentPlanType, setCurrentPlanType] = useState<string>(planParam || "PREMIUM");
   // Waktu offset untuk sinkronisasi timer klien dan server
   const [serverTimeOffset, setServerTimeOffset] = useState<number>(0);
+  const [reloadKey, setReloadKey] = useState<number>(0);
 
   const isAdmin =
     (session?.user as any)?.isAdmin === true ||
@@ -73,6 +76,25 @@ function CheckoutContent() {
     }
   }, [status, planParam, orderIdParam, isAdmin, router]);
 
+
+  // Handle Regenerate Order — deklarasi di atas initializeCheckout agar bisa dipanggil di dalamnya
+  const handleRegenerateOrder = useCallback(async () => {
+    setLoading(true);
+    setIsGatewayExpired(false);
+    setQrData(null);
+    setQrisSessionId(null);
+    setQrisExpiry(null);
+    setError(null);
+    setProofFile(null);
+    setProofPreview(null);
+    setUploadedProofUrl(null);
+    setUploadSuccessMsg(null);
+    // Gunakan currentPlanType (dari state) bukan planParam (dari URL) agar paket tidak salah
+    const targetPlan = currentPlanType || planParam || "PREMIUM";
+    router.replace(`/checkout?plan=${targetPlan}&msg=qris_expired`);
+    setReloadKey(prev => prev + 1);
+  }, [currentPlanType, planParam, router]);
+
   // Load / Create Order Flow
   const initializeCheckout = useCallback(async () => {
     if (status !== "authenticated" || !(session as any)?.user?.id || isAdmin) return;
@@ -85,6 +107,10 @@ function CheckoutContent() {
       const settingsRes = await fetch("/api/public/settings", { cache: "no-store" });
       const settings = await settingsRes.json();
       const packages: any[] = settings.packages || [];
+
+      if (settings.platformName) {
+        setPlatformName(settings.platformName);
+      }
 
       if (settings.paymentMode) {
         setPaymentMode(settings.paymentMode);
@@ -203,7 +229,7 @@ function CheckoutContent() {
     } finally {
       setLoading(false);
     }
-  }, [status, session, planParam, orderIdParam, router]);
+  }, [status, session, planParam, orderIdParam, router, isAdmin, reloadKey]);
 
   useEffect(() => {
     initializeCheckout();
@@ -258,7 +284,7 @@ function CheckoutContent() {
       clearInterval(timerInterval);
       eventSource.close();
     };
-  }, [qrData, orderId, qrisExpiry, router, serverTimeOffset]);
+  }, [qrData, orderId, qrisExpiry, router, serverTimeOffset, handleRegenerateOrder]);
 
   // Polling for Approval when Proof is Uploaded
   // Auto Polling for Manual Approval
@@ -372,25 +398,7 @@ function CheckoutContent() {
     }
   };
 
-  // Handle Regenerate Order
-  const handleRegenerateOrder = async () => {
-    setLoading(true);
-    setIsGatewayExpired(false);
-    setQrData(null);
-    setQrisSessionId(null);
-    setQrisExpiry(null);
-    setError(null);
-    setProofFile(null);
-    setProofPreview(null);
-    setUploadedProofUrl(null);
-    setUploadSuccessMsg(null);
-    // Gunakan currentPlanType (dari state) bukan planParam (dari URL) agar paket tidak salah
-    const targetPlan = currentPlanType || planParam || "PREMIUM";
-    router.replace(`/checkout?plan=${targetPlan}&msg=qris_expired`);
-    setTimeout(() => {
-      initializeCheckout();
-    }, 100);
-  };
+
 
   // Copy helper
   const handleCopy = (text: string, type: "bank" | "amount") => {
@@ -489,11 +497,11 @@ function CheckoutContent() {
               </div>
 
               {/* Plan detail */}
-              <div className="space-y-2.5 text-xs">
-                <div className="flex justify-between items-center">
-                  <span className="text-stone-400">Paket Terpilih</span>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center bg-stone-900/30 px-4 py-3 rounded-xl border border-white/5">
+                  <span className="text-stone-400 font-medium text-xs">Aktivasi Paket</span>
                   <div className="flex items-center gap-3">
-                    <span className="text-white font-bold">Luxenary {planData.name}</span>
+                    <span className="text-white font-bold">{platformName} {planData.name}</span>
                     {!uploadedProofUrl && !qrData && (
                       <a href="/packages" className="text-[10px] bg-white/10 hover:bg-white/20 text-stone-300 px-2 py-0.5 rounded-full transition">Ubah</a>
                     )}
@@ -782,6 +790,9 @@ function CheckoutContent() {
             <div className="w-1 h-1 rounded-full bg-stone-700" />
             <span className="text-[11px] text-stone-500">QRIS · Transfer Bank · E-Wallet</span>
             <div className="mt-8 text-center border-t border-white/5 pt-6">
+              <p className="text-[10px] text-stone-500 mb-4 px-2 leading-relaxed">
+                Dengan melanjutkan pembayaran, Anda menyetujui <Link href="/terms" className="text-stone-400 hover:text-amber-500 underline">Syarat & Ketentuan</Link> serta <Link href="/privacy" className="text-stone-400 hover:text-amber-500 underline">Kebijakan Privasi</Link> {platformName}, termasuk kebijakan <Link href="/refund" className="text-stone-400 hover:text-amber-500 underline font-medium">No Refund</Link> atas produk digital.
+              </p>
               <button
                 type="button"
                 onClick={() => signOut({ callbackUrl: "/login" })}

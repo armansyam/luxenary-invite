@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 import { paymentEmitter } from "@/lib/paymentEvents";
+import { applyUpgradePlan } from "@/lib/upgradeHelper";
 import { NextRequest, NextResponse } from "next/server";
 
 /**
@@ -117,6 +118,9 @@ export async function POST(req: NextRequest) {
           paidAt: new Date(),
         },
       });
+
+      // If this is an UPGRADE order, update planType on the linked original order
+      await applyUpgradePlan(orderId);
 
       // Push notifikasi real-time ke browser klien via SSE
       paymentEmitter.emit(orderId, { status: "PAID", planType: order.planType });

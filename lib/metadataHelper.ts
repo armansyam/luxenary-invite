@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
+import { getAdminSetting } from "@/lib/settings";
 
 export async function generateInvitationMetadata(invitationId: string, guestName?: string): Promise<Metadata> {
   const inv = await prisma.invitation.findUnique({
@@ -7,9 +8,11 @@ export async function generateInvitationMetadata(invitationId: string, guestName
     include: { media: true },
   });
 
+  const platformName = await getAdminSetting("platform_name", "Platform Undangan");
+
   if (!inv) {
     return {
-      title: "Undangan Pernikahan Online — Luxenary",
+      title: `Undangan Pernikahan Online — ${platformName}`,
       description: "Undangan pernikahan digital eksklusif & modern.",
     };
   }
@@ -33,8 +36,8 @@ export async function generateInvitationMetadata(invitationId: string, guestName
   // Determine OG Image from cover photos
   const mediaMap = new Map<string, string>();
   for (const m of inv.media) {
-    if (m.driveViewUrl) mediaMap.set(String(m.mediaSlot), m.driveViewUrl);
-    else if (m.localPath) mediaMap.set(String(m.mediaSlot), m.localPath);
+    const mediaUrl = m.localPath || "";
+    if (mediaUrl) mediaMap.set(String(m.mediaSlot), mediaUrl);
   }
 
   const coverPhoto =
@@ -42,10 +45,11 @@ export async function generateInvitationMetadata(invitationId: string, guestName
     mediaMap.get("DESKTOP_SIDEBAR") ||
     mediaMap.get("BRIDE_PHOTO") ||
     mediaMap.get("GROOM_PHOTO") ||
-    "https://images.unsplash.com/photo-1519741497674-611481863552?w=1200&q=80";
+    "/uploads/dummy/AMS06353.webp";
 
   // Convert relative /uploads/... to absolute URL for WhatsApp crawler
-  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || process.env.NEXT_PUBLIC_APP_URL || "https://luxenary.id";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_ROOT_DOMAIN || "";
+  const rootDomain = appUrl ? `https://${appUrl.replace(/^https?:\/\//, "").replace(/\/$/, "")}` : "";
   const baseUrl = rootDomain.startsWith("http") ? rootDomain : `https://${rootDomain}`;
   const absoluteImageUrl = coverPhoto.startsWith("http") ? coverPhoto : `${baseUrl}${coverPhoto.startsWith("/") ? "" : "/"}${coverPhoto}`;
 
@@ -58,7 +62,7 @@ export async function generateInvitationMetadata(invitationId: string, guestName
       title,
       description,
       url: canonicalUrl,
-      siteName: "Luxenary Wedding Studio",
+      siteName: `${platformName} Wedding Studio`,
       images: [
         {
           url: absoluteImageUrl,

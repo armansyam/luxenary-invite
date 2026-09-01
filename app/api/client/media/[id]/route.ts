@@ -37,7 +37,7 @@ export async function GET(
 
     const mediaMap: Record<string, string> = {};
     for (const m of media) {
-      const url = m.driveViewUrl || m.localPath || "";
+      const url = m.localPath || "";
       if (url) mediaMap[String(m.mediaSlot)] = url;
     }
 
@@ -81,7 +81,7 @@ export async function POST(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const VALID_ENUM_SLOTS = ["LANDING_COVER", "DESKTOP_SIDEBAR", "GLOBAL_FIXED_BG", "GROOM_PHOTO", "BRIDE_PHOTO", "GALLERY", "CLOSING_COVER"];
+    const VALID_ENUM_SLOTS = ["LANDING_COVER", "HOME_PHOTO", "DESKTOP_SIDEBAR", "GLOBAL_FIXED_BG", "GROOM_PHOTO", "BRIDE_PHOTO", "GALLERY", "CLOSING_COVER"];
 
     for (const [slot, url] of Object.entries(body)) {
       if (!url) continue;

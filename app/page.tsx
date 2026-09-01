@@ -189,12 +189,19 @@ export default async function Home() {
 
       {/* Footer */}
       <footer className="border-t border-[#eadecf] bg-[#f4ede4] py-8 px-6 text-center text-xs text-[#7d756b]">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p>© {new Date().getFullYear()} {platformName} — Platform Undangan Pernikahan Digital.</p>
-          <div className="flex gap-6 text-[#524d45]">
-            <Link href="/demo" className="hover:text-amber-900 transition">Demo Tema</Link>
-            <Link href="/login" className="hover:text-amber-900 transition">Portal Klien</Link>
-            <Link href="/admin/login" className="hover:text-amber-900 transition">Admin</Link>
+        <div className="max-w-7xl mx-auto flex flex-col items-center gap-4">
+          <div className="flex flex-wrap justify-center gap-6">
+            <Link href="/terms" className="hover:text-amber-900 transition">Syarat & Ketentuan</Link>
+            <Link href="/privacy" className="hover:text-amber-900 transition">Kebijakan Privasi</Link>
+            <Link href="/refund" className="hover:text-amber-900 transition">Kebijakan Pengembalian Dana</Link>
+          </div>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 w-full pt-4 border-t border-[#eadecf]/50">
+            <p>© {new Date().getFullYear()} {platformName} — Platform Undangan Pernikahan Digital.</p>
+            <div className="flex gap-6 text-[#524d45]">
+              <Link href="/demo" className="hover:text-amber-900 transition">Demo Tema</Link>
+              <Link href="/login" className="hover:text-amber-900 transition">Portal Klien</Link>
+              <Link href="/admin/login" className="hover:text-amber-900 transition">Admin</Link>
+            </div>
           </div>
         </div>
       </footer>

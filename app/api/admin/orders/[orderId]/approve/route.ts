@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { applyUpgradePlan } from "@/lib/upgradeHelper";
 
 export const dynamic = "force-dynamic";
 
@@ -70,6 +71,9 @@ export async function POST(
         },
       });
     } catch {}
+
+    // If this is an UPGRADE order, update planType on the linked original order
+    await applyUpgradePlan(orderId);
 
     return NextResponse.json({ success: true, message: "Order berhasil dikonfirmasi lunas" });
   } catch (error: any) {

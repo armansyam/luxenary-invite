@@ -214,6 +214,61 @@ export default function EditInvitation() {
   const [platformSettings, setPlatformSettings] = useState<any>(null);
   const [themesList, setThemesList] = useState<any[]>(THEMES);
 
+  // Upgrade Paket State
+  const [upgradeModal, setUpgradeModal] = useState(false);
+  const [upgradeTarget, setUpgradeTarget] = useState<"MODERN" | "PREMIUM" | null>(null);
+  const [upgrading, setUpgrading] = useState(false);
+  const [upgradeError, setUpgradeError] = useState<string | null>(null);
+
+  const PLAN_HIERARCHY: Record<string, number> = { TRADITIONAL: 1, MODERN: 2, PREMIUM: 3 };
+  const PLAN_PRICES: Record<string, number> = {
+    TRADITIONAL: Number(platformSettings?.pricing?.price_traditional ?? 50000),
+    MODERN: Number(platformSettings?.pricing?.price_modern ?? 100000),
+    PREMIUM: Number(platformSettings?.pricing?.price_premium ?? 120000),
+  };
+  const PLAN_COLOR: Record<string, string> = {
+    TRADITIONAL: "bg-amber-50 text-amber-800 border-amber-200",
+    MODERN: "bg-indigo-50 text-indigo-800 border-indigo-200",
+    PREMIUM: "bg-violet-50 text-violet-800 border-violet-200",
+  };
+  const PLAN_FEATURES: Record<string, string[]> = {
+    MODERN: ["Akses semua tema Traditional & Modern", "Semua fitur paket Traditional"],
+    PREMIUM: ["Akses semua tema (Traditional, Modern & Premium)", "Tema eksklusif editorial & luxury", "Semua fitur paket Modern"],
+  };
+
+  const handleUpgrade = async () => {
+    if (!upgradeTarget || !invitationId) return;
+    setUpgrading(true);
+    setUpgradeError(null);
+    try {
+      const res = await fetch("/api/payments/upgrade", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ invitationId, targetPlan: upgradeTarget }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal membuat order upgrade.");
+      // Buka checkout dengan orderId baru
+      const checkoutRes = await fetch("/api/payments/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId: data.orderId }),
+      });
+      const checkoutData = await checkoutRes.json();
+      if (!checkoutRes.ok) throw new Error(checkoutData.error || "Gagal memulai pembayaran.");
+      setUpgradeModal(false);
+      if (checkoutData.checkoutUrl) {
+        window.open(checkoutData.checkoutUrl, "_blank");
+      } else {
+        alert(`Order upgrade berhasil dibuat (Invoice: ${data.invoiceNumber}). Silakan selesaikan pembayaran.`);
+      }
+    } catch (err: any) {
+      setUpgradeError(err.message);
+    } finally {
+      setUpgrading(false);
+    }
+  };
+
   // Dual-Native Studio State: Form Mode vs Live Visual Editor
   const [activeStudioTab, setActiveStudioTab] = useState<"form" | "live">("form");
   const [previewDevice, setPreviewDevice] = useState<"mobile" | "desktop">("mobile");
@@ -429,7 +484,7 @@ export default function EditInvitation() {
 
         const bk = parseJ(inv.bankAccounts, []);
         const loadedBanks = bk.length > 0 ? bk : [
-          { bank: "BCA", number: "7330497518", name: inv.groomName || "Didan Faadhilah" },
+          { bank: "BCA", number: "", name: inv.groomName || "" },
         ];
         setBankList(loadedBanks);
 
@@ -944,7 +999,7 @@ export default function EditInvitation() {
         <div>
           <span className="text-[11px] font-bold tracking-widest text-amber-800 uppercase block">Studio Editor Undangan</span>
           <h1 className="text-xl sm:text-2xl font-serif font-bold text-stone-900 mt-0.5">
-            {displayOrder === "BRIDE_FIRST" ? `${invitation.brideNickname || "Nasha"} & ${invitation.groomNickname || "Didan"}` : `${invitation.groomNickname || "Didan"} & ${invitation.brideNickname || "Nasha"}`}
+            {displayOrder === "BRIDE_FIRST" ? `${invitation.brideNickname || "Mempelai Wanita"} & ${invitation.groomNickname || "Mempelai Pria"}` : `${invitation.groomNickname || "Mempelai Pria"} & ${invitation.brideNickname || "Mempelai Wanita"}`}
           </h1>
           <div className="flex items-center gap-2 mt-1 flex-wrap">
             <span className="text-xs text-stone-500">
@@ -954,6 +1009,20 @@ export default function EditInvitation() {
             <span className="text-xs text-stone-500">
               Nuansa: <strong className="text-stone-800 font-bold">{selectedPaletteObj.name}</strong>
             </span>
+            <span className="text-stone-300">•</span>
+            <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${PLAN_COLOR[planType] || "bg-stone-50 text-stone-700 border-stone-200"}`}>
+              {planType}
+            </span>
+            {planType !== "PREMIUM" && (
+              <button
+                type="button"
+                onClick={() => { setUpgradeTarget(null); setUpgradeError(null); setUpgradeModal(true); }}
+                className="text-[10px] font-bold text-violet-700 hover:text-violet-900 border border-violet-200 hover:border-violet-400 bg-violet-50 hover:bg-violet-100 px-2 py-0.5 rounded-full transition flex items-center gap-1"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                Upgrade
+              </button>
+            )}
           </div>
         </div>
         
@@ -1188,9 +1257,9 @@ export default function EditInvitation() {
                         }`}
                       >
                         <div className="relative aspect-video overflow-hidden bg-stone-100">
-                          <img src={th.cover} alt={th.name} className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" />
+                          <img src={th.coverUrl || th.cover} alt={th.name} className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" />
                           <span className="absolute top-2.5 left-2.5 text-[9px] font-bold tracking-wider uppercase bg-black/70 backdrop-blur-xs text-white px-2 py-0.5 rounded">
-                            {th.tag}
+                            {th.series || th.tag || th.subtitle}
                           </span>
                           {isSelected && (
                             <span className="absolute top-2.5 right-2.5 w-6 h-6 rounded-full bg-amber-800 text-white flex items-center justify-center text-xs font-bold shadow-md">
@@ -1371,6 +1440,17 @@ export default function EditInvitation() {
                   placeholder="https://.../cover-popup.jpg"
                   invitationId={invitationId}
                   slot="LANDING_COVER"
+                  onUploadStart={handleUploadStart}
+                  onUploadEnd={handleUploadEnd}
+                />
+                <PhotoInput
+                  label="Latar Belakang Home (Opsional)"
+                  desc="Foto di halaman utama setelah sampul dibuka. Jika kosong, akan menggunakan warna latar kanvas kosong."
+                  value={media["HOME_PHOTO"] || ""}
+                  onChange={(url) => updateMedia("HOME_PHOTO", url)}
+                  placeholder="https://.../home-bg.jpg"
+                  invitationId={invitationId}
+                  slot="HOME_PHOTO"
                   onUploadStart={handleUploadStart}
                   onUploadEnd={handleUploadEnd}
                 />
@@ -1666,10 +1746,10 @@ export default function EditInvitation() {
                       <span className="text-[10px] font-bold bg-rose-100 text-rose-800 px-2.5 py-0.5 rounded-full">Pihak Mengundang</span>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <Input label="Nama Lengkap Wanita *" value={invitation.brideName || ""} onChange={(v) => updateField("brideName", v)} placeholder="Nasha Selsabilla, S.Ds." />
-                      <Input label="Nama Panggilan Wanita" value={invitation.brideNickname || ""} onChange={(v) => updateField("brideNickname", v)} placeholder="Nasha" />
+                      <Input label="Nama Lengkap Wanita *" value={invitation.brideName || ""} onChange={(v) => updateField("brideName", v)} placeholder="Masukkan nama lengkap mempelai wanita" />
+                      <Input label="Nama Panggilan Wanita" value={invitation.brideNickname || ""} onChange={(v) => updateField("brideNickname", v)} placeholder="Masukkan panggilan wanita" />
                       <Input label="Nama Orang Tua Wanita" value={invitation.brideParents || ""} onChange={(v) => updateField("brideParents", v)} placeholder="Putri dari Bapak Tomm Posma & Ibu Endang Noffiyanti" />
-                      <Input label="Username Instagram Wanita" value={invitation.brideInstagram || ""} onChange={(v) => updateField("brideInstagram", v)} placeholder="nashasl (tanpa @)" />
+                      <Input label="Username Instagram Wanita" value={invitation.brideInstagram || ""} onChange={(v) => updateField("brideInstagram", v)} placeholder="usernameig (tanpa @)" />
                     </div>
                   </div>
 
@@ -1680,10 +1760,10 @@ export default function EditInvitation() {
                       <span className="text-[10px] font-bold bg-stone-200/70 text-stone-800 px-2.5 py-0.5 rounded-full">Pria</span>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <Input label="Nama Lengkap Pria *" value={invitation.groomName || ""} onChange={(v) => updateField("groomName", v)} placeholder="Didan Faadhilah, S.T." />
-                      <Input label="Nama Panggilan Pria" value={invitation.groomNickname || ""} onChange={(v) => updateField("groomNickname", v)} placeholder="Didan" />
+                      <Input label="Nama Lengkap Pria *" value={invitation.groomName || ""} onChange={(v) => updateField("groomName", v)} placeholder="Masukkan nama lengkap mempelai pria" />
+                      <Input label="Nama Panggilan Pria" value={invitation.groomNickname || ""} onChange={(v) => updateField("groomNickname", v)} placeholder="Masukkan panggilan pria" />
                       <Input label="Nama Orang Tua Pria" value={invitation.groomParents || ""} onChange={(v) => updateField("groomParents", v)} placeholder="Putra dari Bapak Arif Yaniadi & Ibu Yuni Widiastuti" />
-                      <Input label="Username Instagram Pria" value={invitation.groomInstagram || ""} onChange={(v) => updateField("groomInstagram", v)} placeholder="didanfaadhilah (tanpa @)" />
+                      <Input label="Username Instagram Pria" value={invitation.groomInstagram || ""} onChange={(v) => updateField("groomInstagram", v)} placeholder="usernameig (tanpa @)" />
                     </div>
                   </div>
 
@@ -1732,10 +1812,10 @@ export default function EditInvitation() {
                       <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full">Pihak Mengundang</span>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <Input label="Nama Lengkap Pria *" value={invitation.groomName || ""} onChange={(v) => updateField("groomName", v)} placeholder="Didan Faadhilah, S.T." />
-                      <Input label="Nama Panggilan Pria" value={invitation.groomNickname || ""} onChange={(v) => updateField("groomNickname", v)} placeholder="Didan" />
+                      <Input label="Nama Lengkap Pria *" value={invitation.groomName || ""} onChange={(v) => updateField("groomName", v)} placeholder="Masukkan nama lengkap mempelai pria" />
+                      <Input label="Nama Panggilan Pria" value={invitation.groomNickname || ""} onChange={(v) => updateField("groomNickname", v)} placeholder="Masukkan panggilan pria" />
                       <Input label="Nama Orang Tua Pria" value={invitation.groomParents || ""} onChange={(v) => updateField("groomParents", v)} placeholder="Putra dari Bapak Arif Yaniadi & Ibu Yuni Widiastuti" />
-                      <Input label="Username Instagram Pria" value={invitation.groomInstagram || ""} onChange={(v) => updateField("groomInstagram", v)} placeholder="didanfaadhilah (tanpa @)" />
+                      <Input label="Username Instagram Pria" value={invitation.groomInstagram || ""} onChange={(v) => updateField("groomInstagram", v)} placeholder="usernameig (tanpa @)" />
                     </div>
                   </div>
 
@@ -1746,10 +1826,10 @@ export default function EditInvitation() {
                       <span className="text-[10px] font-bold bg-stone-200/70 text-stone-800 px-2.5 py-0.5 rounded-full">Wanita</span>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <Input label="Nama Lengkap Wanita *" value={invitation.brideName || ""} onChange={(v) => updateField("brideName", v)} placeholder="Nasha Selsabilla, S.Ds." />
-                      <Input label="Nama Panggilan Wanita" value={invitation.brideNickname || ""} onChange={(v) => updateField("brideNickname", v)} placeholder="Nasha" />
+                      <Input label="Nama Lengkap Wanita *" value={invitation.brideName || ""} onChange={(v) => updateField("brideName", v)} placeholder="Masukkan nama lengkap mempelai wanita" />
+                      <Input label="Nama Panggilan Wanita" value={invitation.brideNickname || ""} onChange={(v) => updateField("brideNickname", v)} placeholder="Masukkan panggilan wanita" />
                       <Input label="Nama Orang Tua Wanita" value={invitation.brideParents || ""} onChange={(v) => updateField("brideParents", v)} placeholder="Putri dari Bapak Tomm Posma & Ibu Endang Noffiyanti" />
-                      <Input label="Username Instagram Wanita" value={invitation.brideInstagram || ""} onChange={(v) => updateField("brideInstagram", v)} placeholder="nashasl (tanpa @)" />
+                      <Input label="Username Instagram Wanita" value={invitation.brideInstagram || ""} onChange={(v) => updateField("brideInstagram", v)} placeholder="usernameig (tanpa @)" />
                     </div>
                   </div>
 
@@ -2447,7 +2527,7 @@ export default function EditInvitation() {
                           type="text"
                           value={b.name || ""}
                           onChange={(e) => updateBankItem(idx, "name", e.target.value)}
-                          placeholder="Didan Faadhilah"
+                          placeholder="Nama Pemilik Rekening"
                           className="w-full p-2 bg-white border border-stone-200 rounded-lg text-xs"
                         />
                       </div>
@@ -3089,6 +3169,94 @@ export default function EditInvitation() {
       </section>
       )}
 
+        </div>
+      )}
+      {/* ── UPGRADE PAKET MODAL ────────────────────────────────────── */}
+      {upgradeModal && (
+        <div
+          className="fixed inset-0 z-[999] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setUpgradeModal(false); }}
+        >
+          <div className="w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-br from-violet-900 to-indigo-900 p-6 text-white">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[11px] font-bold tracking-widest uppercase text-violet-300">Upgrade Paket</span>
+                <button onClick={() => setUpgradeModal(false)} className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+              </div>
+              <h2 className="text-xl font-serif font-bold">Tingkatkan Akses Tema</h2>
+              <p className="text-violet-200 text-xs mt-1">Paket saat ini: <strong className="text-white">{planType}</strong></p>
+            </div>
+
+            {/* Tier Options */}
+            <div className="p-5 space-y-3">
+              {(["MODERN", "PREMIUM"] as const)
+                .filter((t) => PLAN_HIERARCHY[t] > PLAN_HIERARCHY[planType])
+                .map((tier) => {
+                  const diff = (PLAN_PRICES[tier] ?? 0) - (PLAN_PRICES[planType] ?? 0);
+                  const isSelected = upgradeTarget === tier;
+                  return (
+                    <button
+                      key={tier}
+                      type="button"
+                      onClick={() => setUpgradeTarget(tier)}
+                      className={`w-full text-left p-4 rounded-2xl border-2 transition ${
+                        isSelected
+                          ? "border-violet-600 bg-violet-50 shadow-sm"
+                          : "border-stone-200 bg-white hover:border-stone-300"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                            isSelected ? "border-violet-600 bg-violet-600" : "border-stone-300"
+                          }`}>
+                            {isSelected && <div className="w-2 h-2 rounded-full bg-white"/>}
+                          </div>
+                          <span className="font-bold text-sm text-stone-900">{tier}</span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-xs text-stone-500">Tambah bayar</span>
+                          <p className="font-bold text-violet-700 text-sm">Rp {diff.toLocaleString("id-ID")}</p>
+                        </div>
+                      </div>
+                      <ul className="space-y-1 pl-6">
+                        {(PLAN_FEATURES[tier] ?? []).map((f, i) => (
+                          <li key={i} className="text-xs text-stone-600 flex items-start gap-1.5">
+                            <svg className="w-3.5 h-3.5 text-violet-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7"/></svg>
+                            {f}
+                          </li>
+                        ))}
+                      </ul>
+                    </button>
+                  );
+                })}
+
+              {upgradeError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+                  <p className="text-xs text-red-700 font-medium">{upgradeError}</p>
+                </div>
+              )}
+
+              <div className="pt-2 space-y-2">
+                <button
+                  type="button"
+                  onClick={handleUpgrade}
+                  disabled={!upgradeTarget || upgrading}
+                  className="w-full py-3.5 rounded-2xl font-bold text-sm transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-r from-violet-700 to-indigo-700 hover:from-violet-800 hover:to-indigo-800 text-white shadow-lg shadow-violet-200"
+                >
+                  {upgrading ? (
+                    <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/><span>Memproses...</span></>
+                  ) : (
+                    <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg><span>Upgrade Sekarang{upgradeTarget ? ` ke ${upgradeTarget}` : ""}</span></>
+                  )}
+                </button>
+                <p className="text-center text-[10px] text-stone-400">Pembayaran diproses otomatis. Tier aktif segera setelah lunas.</p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

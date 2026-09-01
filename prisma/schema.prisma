@@ -23,7 +23,7 @@ model Admin {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @default(now()) @updatedAt
 
-  auditLogs    AdminAuditLog[]
+  auditLogs AdminAuditLog[]
 
   @@map("admins")
 }
@@ -31,13 +31,14 @@ model Admin {
 model AdminAuditLog {
   id        String   @id @default(uuid())
   adminId   String
-  action    String   // e.g. "APPROVE_ORDER", "UPDATE_SETTINGS", "LOGIN"
+  action    String // e.g. "APPROVE_ORDER", "UPDATE_SETTINGS", "LOGIN"
   details   String?
   ipAddress String?
   createdAt DateTime @default(now())
 
-  admin     Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
 
+  @@index([adminId])
   @@map("admin_audit_logs")
 }
 
@@ -45,18 +46,18 @@ model AdminAuditLog {
 // 2. USERS / CLIENTS (Calon Pengantin / Akun Klien)
 // ============================================================
 model User {
-  id                String       @id @default(uuid())
-  googleId          String?      @unique
-  email             String       @unique
-  name              String
-  role              UserRole     @default(CLIENT)
-  phoneNumber       String?
-  avatarUrl         String?
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @default(now()) @updatedAt
+  id          String   @id @default(uuid())
+  googleId    String?  @unique
+  email       String   @unique
+  name        String
+  role        UserRole @default(CLIENT)
+  phoneNumber String?
+  avatarUrl   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
 
-  orders            Order[]
-  invitations       Invitation[]
+  orders      Order[]
+  invitations Invitation[]
 
   @@map("users")
 }
@@ -71,6 +72,10 @@ model Order {
   planType          PlanType
   amount            Decimal
   status            OrderStatus @default(PENDING)
+  orderType         OrderType   @default(NEW) // NEW | UPGRADE
+  upgradedFromPlan  PlanType? // Tier asal sebelum upgrade (null jika NEW)
+  targetPlanType    PlanType? // Tier tujuan upgrade (null jika NEW)
+  linkedOrderId     String? // ID order lama yang di-upgrade
   paymentMethod     String?     @default("GATEWAY") // GATEWAY | MANUAL_TRANSFER
   paymentGatewayRef String?
   snapToken         String?
@@ -84,6 +89,8 @@ model Order {
   user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   invitation Invitation?
 
+  @@index([userId])
+  @@index([status])
   @@map("orders")
 }
 
@@ -91,51 +98,52 @@ model Order {
 // 4. INVITATIONS (Data Utama Undangan)
 // ============================================================
 model Invitation {
-  id              String           @id @default(uuid())
-  orderId         String?          @unique
-  userId          String
-  themeId         String           @default("kila") // kila | aruna | ivanna | danila | papercut
-  subdomain       String?          @unique
-  customDomain    String?          @unique
-  invitationSlug  String           // /nasha-didan/wedding -> 'wedding'
-  groomSlug       String           // 'didan'
-  brideSlug       String           // 'nasha'
-  status          InvitationStatus @default(DRAFT)
-  publishedAt     DateTime?
-  expiresAt       DateTime?
-  eventData       String?          // Dynamic JSON Multi-Event Array
-  loveStory       String?          // Dynamic JSON Love Story Chapters Array
-  bankAccounts    String?          // Dynamic JSON Bank Accounts Array
-  shippingAddress String?          // Physical Gift Shipping Address
-  featureSettings String?          // Dynamic JSON Feature Settings & Color Palette
-  staffPin        String?          // Keamanan untuk Scanner & Layar Proyektor (Hashed in DB)
-  openingQuote    String?          // Opening Quote Text
-  openingQuoteRef String?          // Opening Quote Reference (e.g. QS. Ar-Rum : 21)
-  dresscode       String?
-  musicUrl        String?
-  groomName       String?
-  groomNickname   String?
-  groomParents    String?
-  groomInstagram  String?
-  brideName       String?
-  brideNickname   String?
-  brideParents    String?
-  brideInstagram  String?
-  liveStreamUrl   String?
+  id                  String           @id @default(uuid())
+  orderId             String?          @unique
+  userId              String
+  themeId             String           @default("kila") // kila | aruna | ivanna | danila | papercut
+  subdomain           String?          @unique
+  customDomain        String?          @unique
+  invitationSlug      String           @unique // Flat canonical slug: arman-siti-030326[-jakarta]
+  groomSlug           String // 'arman'
+  brideSlug           String // 'siti'
+  status              InvitationStatus @default(DRAFT)
+  publishedAt         DateTime?
+  expiresAt           DateTime?
+  eventData           String? // Dynamic JSON Multi-Event Array
+  loveStory           String? // Dynamic JSON Love Story Chapters Array
+  bankAccounts        String? // Dynamic JSON Bank Accounts Array
+  shippingAddress     String? // Physical Gift Shipping Address
+  featureSettings     String? // Dynamic JSON Feature Settings & Color Palette
+  staffPin            String? // Keamanan untuk Scanner & Layar Proyektor (Hashed in DB)
+  openingQuote        String? // Opening Quote Text
+  openingQuoteRef     String? // Opening Quote Reference (e.g. QS. Ar-Rum : 21)
+  dresscode           String?
+  musicUrl            String?
+  groomName           String?
+  groomNickname       String?
+  groomParents        String?
+  groomInstagram      String?
+  brideName           String?
+  brideNickname       String?
+  brideParents        String?
+  brideInstagram      String?
+  liveStreamUrl       String?
   isLockedPermanently Boolean          @default(false)
-  adminUnlockedUntil DateTime?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  adminUnlockedUntil  DateTime?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
 
-  order   Order?       @relation(fields: [orderId], references: [id], onDelete: SetNull)
-  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  media   InvitationMedia[]
-  guests  Guest[]
-  rsvps   Rsvp[]
-  wishes  Wish[]
+  order         Order?            @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  media         InvitationMedia[]
+  guests        Guest[]
+  rsvps         Rsvp[]
+  wishes        Wish[]
   guestMemories GuestMemory[]
 
-  @@unique([groomSlug, brideSlug, invitationSlug])
+  @@index([userId])
+  @@index([status])
   @@map("invitations")
 }
 
@@ -146,15 +154,14 @@ model InvitationMedia {
   id           String    @id @default(uuid())
   invitationId String
   mediaSlot    MediaSlot
-  driveFileId  String?
-  driveViewUrl String?
-  localPath    String?
+  localPath    String?   // URL R2 (produksi) atau path lokal (development)
   mimeType     String?
   displayOrder Int       @default(0)
   createdAt    DateTime  @default(now())
 
   invitation Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
 
+  @@index([invitationId])
   @@map("media")
 }
 
@@ -165,8 +172,8 @@ model Guest {
   id              String    @id @default(uuid())
   invitationId    String
   name            String
-  slug            String    // URL-safe version of name: 'budi-santoso'
-  category        String?   // VVIP | VIP | Keluarga | Teman Kantor | Umum
+  slug            String // URL-safe version of name: 'budi-santoso'
+  category        String? // VVIP | VIP | Keluarga | Teman Kantor | Umum
   phone           String?
   phoneNumber     String?
   guestQuota      Int       @default(1)
@@ -180,10 +187,11 @@ model Guest {
   sessionInfo     String?
   createdAt       DateTime  @default(now())
 
-  invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
-  rsvps        Rsvp[]
+  invitation Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  rsvps      Rsvp[]
 
   @@unique([invitationId, slug])
+  @@index([invitationId])
   @@map("guests")
 }
 
@@ -191,18 +199,19 @@ model Guest {
 // 7. RSVPs (Konfirmasi Kehadiran)
 // ============================================================
 model Rsvp {
-  id           String    @id @default(uuid())
+  id           String   @id @default(uuid())
   invitationId String
   guestId      String?
   guestName    String
-  status       String    // hadir | tidak | ragu
-  guestCount   Int       @default(1)
+  status       String // hadir | tidak | ragu
+  guestCount   Int      @default(1)
   message      String?
-  respondedAt  DateTime  @default(now())
+  respondedAt  DateTime @default(now())
 
   invitation Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
   guest      Guest?     @relation(fields: [guestId], references: [id], onDelete: SetNull)
 
+  @@index([invitationId])
   @@map("rsvps")
 }
 
@@ -218,6 +227,7 @@ model Wish {
 
   invitation Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
 
+  @@index([invitationId])
   @@map("wishes")
 }
 
@@ -225,34 +235,33 @@ model Wish {
 // 8B. GUEST MEMORIES (Foto & Video Kenangan Tamu Pasca-Acara)
 // ============================================================
 model GuestMemory {
-  id           String     @id @default(uuid())
+  id           String   @id @default(uuid())
   invitationId String
   senderName   String
   senderEmail  String
   message      String?
-  mediaType    String     @default("PHOTO") // "PHOTO" | "VIDEO"
-  mediaUrl     String
+  mediaType    String   @default("PHOTO") // "PHOTO" | "VIDEO"
+  mediaUrl     String   // URL R2 (produksi) atau path lokal (development)
   thumbnailUrl String?
-  driveFileId  String?
-  createdAt    DateTime   @default(now())
+  createdAt    DateTime @default(now())
 
-  invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  invitation Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
 
+  @@index([invitationId])
   @@map("guest_memories")
 }
-
 
 // ============================================================
 // 10. WEBHOOK LOGS
 // ============================================================
 model WebhookLog {
-  id          String   @id @default(uuid())
-  source      String   // midtrans | ipaymu | xendit | whatsapp
-  event       String   // payment.success | read.receipt
+  id          String    @id @default(uuid())
+  source      String // midtrans | ipaymu | xendit | whatsapp
+  event       String // payment.success | read.receipt
   payload     Json
-  status      String   @default("received") // received | processed | failed
+  status      String    @default("received") // received | processed | failed
   processedAt DateTime?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
 
   @@map("webhook_logs")
 }
@@ -319,6 +328,11 @@ enum OrderStatus {
   FAILED
 }
 
+enum OrderType {
+  NEW
+  UPGRADE
+}
+
 enum InvitationStatus {
   DRAFT
   PUBLISHED
@@ -334,6 +348,7 @@ enum WaStatus {
 
 enum MediaSlot {
   LANDING_COVER
+  HOME_PHOTO
   DESKTOP_SIDEBAR
   GLOBAL_FIXED_BG
   GROOM_PHOTO

@@ -131,8 +131,38 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "ID Tema wajib disertakan" }, { status: 400 });
     }
 
-    await prisma.theme.delete({ where: { id } });
-    return NextResponse.json({ success: true, message: `Tema ${id} berhasil dihapus` });
+    const existingTheme = await prisma.theme.findUnique({ where: { id } });
+    if (!existingTheme) {
+      return NextResponse.json({ error: "Tema tidak ditemukan" }, { status: 404 });
+    }
+
+    // HARD DELETE: Karena sistem sudah menggunakan Arsitektur Piring (Draft mandiri),
+    // kita bisa menghapus tema ini secara permanen dari database.
+    await prisma.theme.delete({ 
+      where: { id }
+    });
+
+    const { promises: fs } = await import("fs");
+    const path = await import("path");
+
+    // Remove the master HTML file physically from the themes/ folder
+    try {
+      const categoryDir = existingTheme.category.toLowerCase();
+      const masterPath = path.join(process.cwd(), "themes", categoryDir, `${id.toLowerCase()}.html`);
+      await fs.unlink(masterPath);
+    } catch {
+      // Ignore if master file is already gone
+    }
+
+    // Also remove the compiled static demo directory so it no longer appears in catalog
+    try {
+      const demoDir = path.join(process.cwd(), "public", "demo", id.toLowerCase());
+      await fs.rm(demoDir, { recursive: true, force: true });
+    } catch {
+      // Non-fatal: demo dir may not exist yet
+    }
+
+    return NextResponse.json({ success: true, message: `Tema ${id} beserta file masternya berhasil dihapus permanen (Hard Delete)` });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

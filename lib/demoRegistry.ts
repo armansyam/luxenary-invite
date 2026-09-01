@@ -1843,6 +1843,7 @@ export function composeDemoTemplateData(
     
     // Exact Standardized Local Assets
     globalBgUrl: demo.globalBgUrl,
+    homePhotoUrl: demo.globalBgUrl, // Home section uses globalBgUrl as its demo photo
     groomPhotoUrl: demo.groomPhotoUrl,
     bridePhotoUrl: demo.bridePhotoUrl,
     firstPhotoUrl: demo.groomPhotoUrl,
@@ -1879,7 +1880,7 @@ export function composeDemoTemplateData(
     
     googleCalendarUrl,
     waLink: `https://wa.me/6281234567890?text=Halo%20${encodeURIComponent(demo.groomName)}%20dan%20${encodeURIComponent(demo.brideName)}`,
-    audioUrl: "https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=romantic-wedding-113528.mp3",
+    audioUrl: "/music/canon-in-d.ogg",
     
     colorPrimary: palette.primary,
     colorSecondary: palette.secondary,

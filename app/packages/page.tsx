@@ -8,13 +8,19 @@ import { BrandLogo } from "@/components/BrandLogo";
 export default function PackageSelectionPage() {
   const [packages, setPackages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [platformName, setPlatformName] = useState("Luxenary");
 
   useEffect(() => {
     fetch("/api/public/settings", { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
-        if (data && Array.isArray(data.packages)) {
-          setPackages(data.packages);
+        if (data) {
+          if (Array.isArray(data.packages)) {
+            setPackages(data.packages);
+          }
+          if (data.platformName) {
+            setPlatformName(data.platformName);
+          }
         }
         setLoading(false);
       })
@@ -108,7 +114,14 @@ export default function PackageSelectionPage() {
           ))}
         </div>
 
-        <div className="mt-12 text-center">
+        <div className="mt-12 text-center max-w-2xl mx-auto px-4">
+          <p className="text-xs text-stone-500 mb-6 leading-relaxed">
+            Dengan memilih paket dan melanjutkan proses ke gerbang pembayaran, Anda setuju bahwa Anda telah membaca dan menerima seluruh{' '}
+            <Link href="/terms" className="text-amber-700 hover:underline">Syarat & Ketentuan</Link> serta{' '}
+            <Link href="/privacy" className="text-amber-700 hover:underline">Kebijakan Privasi</Link> layanan {platformName}, termasuk kebijakan{' '}
+            <Link href="/refund" className="text-amber-700 hover:underline font-medium">TIDAK ADA PENGEMBALIAN DANA (No Refund)</Link>{' '}
+            untuk produk digital yang telah dibeli.
+          </p>
           <button
             onClick={() => signOut({ callbackUrl: "/" })}
             className="text-stone-400 hover:text-stone-700 text-xs transition cursor-pointer"

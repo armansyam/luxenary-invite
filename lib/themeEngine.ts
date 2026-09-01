@@ -1426,29 +1426,20 @@ export async function composeTemplateData(invitationId: string) {
         // QR Code Dynamic Rendering Logic
         document.addEventListener('DOMContentLoaded', function() {
           const urlParams = new URLSearchParams(window.location.search);
-          let isVip = false;
           let guestName = "";
 
           // First check search params (for legacy or direct query usage)
-          if (urlParams.has('v')) {
-            isVip = true;
-            guestName = urlParams.get('v') || "";
-          } else if (urlParams.has('to')) {
+          if (urlParams.has('to')) {
             guestName = urlParams.get('to') || "";
           }
 
-          // If empty, parse from pathname (e.g. /v=Budi or /Budi)
+          // If empty, parse from pathname (e.g. /Budi)
           if (!guestName) {
             const pathSegments = window.location.pathname.split('/').filter(Boolean);
             if (pathSegments.length > 0) {
               const lastSegment = decodeURIComponent(pathSegments[pathSegments.length - 1]);
               if (lastSegment !== 'memories' && lastSegment !== 's') {
-                if (lastSegment.startsWith('v=')) {
-                  isVip = true;
-                  guestName = lastSegment.substring(2);
-                } else {
-                  guestName = lastSegment;
-                }
+                guestName = lastSegment;
               }
             }
           }
@@ -1457,27 +1448,13 @@ export async function composeTemplateData(invitationId: string) {
           const modalContainer = document.getElementById('lux-qr-modal-img-container');
           
           if (guestName) {
-            // Fetch Category Invisibly with Cloudflare Cache
-            fetch('/api/public/guest-category?invitationId=${inv.id}&name=' + encodeURIComponent(guestName))
-              .then(function(res) { return res.json(); })
-              .then(function(data) {
-                var cat = (data.success && data.category && data.category.toLowerCase() !== "umum") ? "|" + data.category : "";
-                var qrPayload = "LUX|${inv.id}|" + guestName + cat;
-                var qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=" + encodeURIComponent(qrPayload);
-                var imgHtml = '<img src="' + qrUrl + '" alt="QR Check-In" style="width:160px; height:160px; display:block;">';
-                
-                if (sectionContainer) sectionContainer.innerHTML = imgHtml;
-                if (modalContainer) modalContainer.innerHTML = imgHtml;
-              })
-              .catch(function(err) {
-                // Fallback to basic payload if offline
-                var qrPayload = "LUX|${inv.id}|" + guestName;
-                var qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=" + encodeURIComponent(qrPayload);
-                var imgHtml = '<img src="' + qrUrl + '" alt="QR Check-In" style="width:160px; height:160px; display:block;">';
-                
-                if (sectionContainer) sectionContainer.innerHTML = imgHtml;
-                if (modalContainer) modalContainer.innerHTML = imgHtml;
-              });
+            // Offline-First QR Generation (Tidak membebani server)
+            var qrPayload = "LUX|${inv.id}|" + guestName;
+            var qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=" + encodeURIComponent(qrPayload);
+            var imgHtml = '<img src="' + qrUrl + '" alt="QR Check-In" style="width:160px; height:160px; display:block;">';
+            
+            if (sectionContainer) sectionContainer.innerHTML = imgHtml;
+            if (modalContainer) modalContainer.innerHTML = imgHtml;
           } else {
             // No Guest Name found. Hide QR sections.
             if (sectionContainer) {

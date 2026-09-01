@@ -1,9 +1,13 @@
 import { MetadataRoute } from 'next';
+import { getAdminSetting } from '@/lib/settings';
 
-export default function manifest(): MetadataRoute.Manifest {
+export default async function manifest(): Promise<MetadataRoute.Manifest> {
+  const appName = await getAdminSetting("platform_name", "Platform Undangan");
+  const shortName = appName.split(' ')[0];
+  
   return {
-    name: 'Luxenary Invite',
-    short_name: 'Luxenary',
+    name: appName,
+    short_name: shortName,
     description: 'Platform Undangan Pernikahan Digital Elegan',
     start_url: '/dashboard',
     display: 'standalone',

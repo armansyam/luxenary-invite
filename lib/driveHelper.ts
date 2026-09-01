@@ -1,5 +1,17 @@
 /**
- * Google Drive Public Folder Photo Stream Extractor & Webhook Uploader
+ * Google Drive Public Folder Photo Extractor (API v3)
+ *
+ * Cara kerja:
+ * 1. Client paste link folder Google Drive (yang sudah di-set "Anyone with the link - Viewer")
+ * 2. Kita extract Folder ID dari URL
+ * 3. Fetch daftar file menggunakan Google Drive API v3 (menggunakan Server API Key)
+ * 4. Build direct image URL: https://lh3.googleusercontent.com/d/{fileId}=w1200
+ *
+ * Syarat dari sisi client:
+ * - Folder Google Drive harus di-set "Anyone with the link can view" (Viewer)
+ *
+ * Syarat dari sisi Admin:
+ * - Menyediakan GOOGLE_API_KEY di environment variables
  */
 
 interface CacheEntry {
@@ -8,30 +20,25 @@ interface CacheEntry {
 }
 
 const driveFolderCache = new Map<string, CacheEntry>();
-const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes cache
+const CACHE_TTL_MS = 10 * 60 * 1000; // 10 menit cache
 
-
-
-/**
- * Extracts raw Google Drive Folder ID from a URL or bare string.
- */
 export function extractGoogleDriveFolderId(urlOrId: string): string | null {
   if (!urlOrId || typeof urlOrId !== "string") return null;
   const trimmed = urlOrId.trim();
   if (!trimmed) return null;
 
-  const match = trimmed.match(/folders\/([a-zA-Z0-9_-]+)/) || trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-  if (match) {
-    return match[1];
-  }
+  const folderMatch = trimmed.match(/\/folders\/([a-zA-Z0-9_-]+)/);
+  if (folderMatch) return folderMatch[1];
+
+  const idMatch = trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (idMatch) return idMatch[1];
+
   if (trimmed.length >= 25 && !trimmed.includes("/") && !trimmed.includes(".")) {
     return trimmed;
   }
+
   return null;
 }
-
-
-
 
 export async function getGoogleDriveFolderPhotos(folderUrlOrId: string): Promise<string[]> {
   if (!folderUrlOrId || typeof folderUrlOrId !== "string") return [];
@@ -39,75 +46,62 @@ export async function getGoogleDriveFolderPhotos(folderUrlOrId: string): Promise
   const trimmed = folderUrlOrId.trim();
   if (!trimmed) return [];
 
-  // Check if user pasted a single file link instead of a folder link
-  const singleFileMatch = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || trimmed.match(/[?&]id=([a-zA-Z0-9_-]{25,50})/);
-  if (singleFileMatch && !trimmed.includes("folders/")) {
-    const fileId = singleFileMatch[1];
-    return [`/api/cdn/drive?id=${fileId}&w=1200`];
+  const folderId = extractGoogleDriveFolderId(trimmed);
+  if (!folderId) {
+    console.warn("[DriveHelper] Folder ID tidak dapat diekstrak dari:", trimmed);
+    return [];
   }
 
-  const folderId = extractGoogleDriveFolderId(trimmed);
-  if (!folderId || folderId.length < 15) return [];
-
-  // Check in-memory cache
   const cached = driveFolderCache.get(folderId);
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS && cached.photos.length > 0) {
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
     return cached.photos;
   }
 
+  // Gunakan API Key dari env
+  const apiKey = process.env.GOOGLE_API_KEY;
+  if (!apiKey) {
+    console.warn("[DriveHelper] GOOGLE_API_KEY tidak dikonfigurasi. Fitur Drive dinonaktifkan.");
+    return [];
+  }
+
   try {
-    const res = await fetch(`https://drive.google.com/drive/folders/${folderId}`, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      },
-      next: { revalidate: 600 },
+    const q = `'${folderId}' in parents and mimeType contains 'image/' and trashed=false`;
+    const apiUrl = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&key=${apiKey}&fields=files(id)&pageSize=100`;
+
+    const response = await fetch(apiUrl, {
+      method: "GET",
+      headers: { "Accept": "application/json" },
+      signal: AbortSignal.timeout(10000),
     });
 
-    if (!res.ok) {
-      console.warn(`[GoogleDriveHelper] Failed to fetch folder ${folderId}, status: ${res.status}`);
-      return cached?.photos || [];
+    if (!response.ok) {
+      console.warn(`[DriveHelper] Gagal mengambil data via API (${response.status}). Pastikan folder public dan API Key valid.`);
+      return [];
     }
 
-    const html = await res.text();
+    const data = await response.json();
+    const files = data.files || [];
 
-    // Extract all file data-ids from the folder table/grid and scripts
-    const matchedIds: string[] = [];
-    
-    // 1. data-id matches
-    for (const m of html.matchAll(/data-id="([a-zA-Z0-9_-]{25,50})"/g)) {
-      matchedIds.push(m[1]);
-    }
-    // 2. lh3.googleusercontent.com/d/ matches
-    for (const m of html.matchAll(/googleusercontent\.com\/d\/([a-zA-Z0-9_-]{25,50})/g)) {
-      matchedIds.push(m[1]);
-    }
-    // 3. /file/d/ matches
-    for (const m of html.matchAll(/\/file\/d\/([a-zA-Z0-9_-]{25,50})/g)) {
-      matchedIds.push(m[1]);
-    }
-    // 4. Standard 33-char drive IDs in JS arrays
-    for (const m of html.matchAll(/\["([a-zA-Z0-9_-]{33})"/g)) {
-      matchedIds.push(m[1]);
+    if (files.length === 0) {
+      console.warn("[DriveHelper] Tidak ada file gambar ditemukan di folder.");
+      return [];
     }
 
-    const validIds = [...new Set(matchedIds)].filter(
-      (id) => id !== folderId && id.length >= 28 && !id.startsWith("AIza") && !id.startsWith("AA2Yr")
+    // Build direct image URLs via Google's CDN thumbnail service
+    const photoUrls = files.map(
+      (file: any) => `https://lh3.googleusercontent.com/d/${file.id}=w1200`
     );
 
-    if (validIds.length > 0) {
-      // Map to edge-cached CDN proxy endpoints
-      const photoUrls = validIds.map((id) => `/api/cdn/drive?id=${id}&w=1200`);
-      driveFolderCache.set(folderId, {
-        photos: photoUrls,
-        timestamp: Date.now(),
-      });
-      return photoUrls;
-    }
-
-    return cached?.photos || [];
+    driveFolderCache.set(folderId, { photos: photoUrls, timestamp: Date.now() });
+    console.log(`[DriveHelper] ${photoUrls.length} foto ditemukan dari folder ${folderId} via API v3`);
+    
+    return photoUrls;
   } catch (err: any) {
-    console.error(`[GoogleDriveHelper] Error extracting photos from folder ${folderId}:`, err?.message || err);
-    return cached?.photos || [];
+    if (err.name === "TimeoutError" || err.name === "AbortError") {
+      console.warn("[DriveHelper] Timeout saat mengakses Drive API.");
+    } else {
+      console.warn("[DriveHelper] Error:", err?.message || err);
+    }
+    return [];
   }
 }

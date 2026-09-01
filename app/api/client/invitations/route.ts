@@ -24,10 +24,18 @@ export async function GET() {
       brideSlug: true,
       groomName: true,
       brideName: true,
+      groomNickname: true,
+      brideNickname: true,
       themeId: true,
       status: true,
       subdomain: true,
+      eventData: true,
+      staffPin: true,
+      customDomain: true,
       createdAt: true,
+      order: {
+        select: { planType: true },
+      },
     },
     orderBy: { createdAt: "desc" },
   });

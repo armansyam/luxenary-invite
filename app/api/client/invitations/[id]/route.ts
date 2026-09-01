@@ -107,7 +107,7 @@ export async function GET(
     const mediaMap: Record<string, string> = {};
     if (invitation.media && Array.isArray(invitation.media)) {
       for (const m of invitation.media) {
-        const url = m.driveViewUrl || m.localPath || "";
+        const url = m.localPath || "";
         if (url) mediaMap[String(m.mediaSlot)] = url;
       }
     }
@@ -195,7 +195,7 @@ export async function PUT(
       ? (body.subdomain ? String(body.subdomain).trim().toLowerCase() : null)
       : undefined;
 
-    if (newSubdomain === undefined && (!currentInv?.subdomain || currentInv.subdomain === "didan-nasha")) {
+    if (newSubdomain === undefined && (!currentInv?.subdomain || currentInv.subdomain === "mempelai-pria-wanita")) {
       if (newGroomSlug && newBrideSlug) {
         newSubdomain = `${newGroomSlug}-${newBrideSlug}`;
       }
@@ -224,14 +224,92 @@ export async function PUT(
           const incomingObj = typeof body.featureSettings === "object"
             ? body.featureSettings
             : JSON.parse(body.featureSettings || "{}");
-          mergedFeatureSettings = JSON.stringify({ ...existingObj, ...incomingObj });
+          
+          let parsedFeatures = { ...existingObj, ...incomingObj };
+
+          // --- SERVER-SIDE FEATURE GATING ---
+          // Prevent API Bypass for premium features based on planType
+          if (!isAdmin) {
+            const { getPublicPlatformSettings } = await import("@/lib/settings");
+            const platformSettings = await getPublicPlatformSettings();
+            
+            // Get PlanType from order
+            let planType = "TRADITIONAL";
+            if (currentInv.orderId) {
+              const order = await prisma.order.findUnique({ where: { id: currentInv.orderId }, select: { planType: true } });
+              if (order) planType = order.planType;
+            }
+
+            const packageConfig = platformSettings.packages?.find(p => p.id === planType);
+            const allowedCaps = packageConfig?.capabilities || [];
+            const hasCap = (cap: string) => allowedCaps.includes(cap);
+
+            // Force override if they try to enable features they don't have
+            if (parsedFeatures.showLiveStream && !hasCap("livestream")) parsedFeatures.showLiveStream = false;
+            if (parsedFeatures.showQrCheckin && !hasCap("qr_checkin")) parsedFeatures.showQrCheckin = false;
+            if (parsedFeatures.showGuestMemories && !hasCap("guest_memories")) parsedFeatures.showGuestMemories = false;
+          }
+
+          mergedFeatureSettings = JSON.stringify(parsedFeatures);
         } catch {
           mergedFeatureSettings = toStr(body.featureSettings);
         }
       }
     }
 
-    // --- BUG FIX: Cleanup Old Static File if Status or Subdomain Changes ---
+    // --- THEME TIER GATING & PUBLISH LOCK: Server-side validation ---
+    if (body.themeId !== undefined && body.themeId !== currentInv.themeId && !isAdmin) {
+      // 1. Publish Lock Check
+      if (currentInv.status === "PUBLISHED") {
+        return NextResponse.json(
+          { error: "Tema tidak dapat diubah setelah undangan diterbitkan (Published). Hubungi Admin jika ingin mengganti tema." },
+          { status: 403 }
+        );
+      }
+
+      // 2. Fetch the order's planType via the orderId stored on the invitation
+      const order = currentInv.orderId
+        ? await prisma.order.findUnique({
+            where: { id: currentInv.orderId },
+            select: { planType: true },
+          })
+        : null;
+
+      if (order) {
+        // Fetch the requested theme's category from DB
+        const requestedTheme = await prisma.theme.findUnique({
+          where: { id: body.themeId },
+          select: { category: true, isActive: true },
+        });
+
+        if (!requestedTheme || !requestedTheme.isActive) {
+          return NextResponse.json(
+            { error: "Tema yang dipilih tidak tersedia." },
+            { status: 400 }
+          );
+        }
+
+        const themeCat = requestedTheme.category.toUpperCase();
+        const plan = order.planType?.toUpperCase();
+
+        // Tier rules: TRADITIONAL → only TRADITIONAL, MODERN → TRADITIONAL+MODERN, PREMIUM → all
+        const isAllowed =
+          plan === "PREMIUM" ||
+          (plan === "MODERN" && (themeCat === "MODERN" || themeCat === "TRADITIONAL")) ||
+          (plan === "TRADITIONAL" && themeCat === "TRADITIONAL");
+
+        if (!isAllowed) {
+          return NextResponse.json(
+            {
+              error: `Tema "${body.themeId}" tidak tersedia di paket Anda (${plan}). Silakan upgrade paket untuk mengakses tema ini.`,
+            },
+            { status: 403 }
+          );
+        }
+      }
+    }
+    // --- END THEME TIER GATING ---
+
     const newStatus = body.status !== undefined ? body.status : currentInv.status;
     const isStatusChangedToUnpublished = currentInv.status === "PUBLISHED" && newStatus !== "PUBLISHED";
     const isSubdomainChanged = newSubdomain !== undefined && newSubdomain !== currentInv.subdomain && currentInv.status === "PUBLISHED";
@@ -275,9 +353,23 @@ export async function PUT(
       },
     });
 
+    // --- ARSITEKTUR PIRING: Hapus piring draft lama jika tema berubah ---
+    if (body.themeId !== undefined && body.themeId !== currentInv.themeId) {
+      try {
+        const fs = await import("fs");
+        const path = await import("path");
+        const draftPath = path.join(process.cwd(), "data", "drafts", `${id}.html`);
+        if (fs.existsSync(draftPath)) {
+          await fs.promises.unlink(draftPath);
+        }
+      } catch (err) {
+        console.error("Failed to delete old draft plate:", err);
+      }
+    }
+
     // Save media updates
     if (body.media && typeof body.media === "object" && !Array.isArray(body.media)) {
-      const VALID_ENUM_SLOTS = ["LANDING_COVER", "DESKTOP_SIDEBAR", "GLOBAL_FIXED_BG", "GROOM_PHOTO", "BRIDE_PHOTO", "GALLERY", "CLOSING_COVER"];
+      const VALID_ENUM_SLOTS = ["LANDING_COVER", "HOME_PHOTO", "DESKTOP_SIDEBAR", "GLOBAL_FIXED_BG", "GROOM_PHOTO", "BRIDE_PHOTO", "GALLERY", "CLOSING_COVER"];
       for (const [slot, url] of Object.entries(body.media)) {
         if (!VALID_ENUM_SLOTS.includes(slot)) continue;
         const urlStr = typeof url === "string" ? url.trim() : "";
@@ -302,6 +394,12 @@ export async function PUT(
             });
           }
         } else if (existing) {
+          try {
+            const { deleteFile } = await import("@/lib/storage");
+            await deleteFile(existing.localPath);
+          } catch (e) {
+            console.error("Gagal menghapus file media:", e);
+          }
           await prisma.invitationMedia.delete({
             where: { id: existing.id },
           });
@@ -309,14 +407,22 @@ export async function PUT(
       }
     }
 
-    // If invitation is PUBLISHED, auto-rebake standalone HTML file
+    // If invitation is PUBLISHED, auto-rebake standalone HTML file and sync R2
     if (updated.status === "PUBLISHED") {
-      try {
-        const { buildAndSavePublishedHtml } = await import("@/lib/staticPublisher");
-        await buildAndSavePublishedHtml(updated.id);
-      } catch (bakeErr) {
-        console.error("Auto-bake standalone HTML failed:", bakeErr);
-      }
+      // Jalankan secara asinkron (background) agar klien tidak menunggu lama
+      import("@/lib/storage").then(async ({ syncDraftToR2 }) => {
+        try {
+          const provider = process.env.STORAGE_PROVIDER || "local";
+          if (provider === "r2" || provider === "s3") {
+            await syncDraftToR2(updated.id);
+          } else {
+            const { buildAndSavePublishedHtml } = await import("@/lib/staticPublisher");
+            await buildAndSavePublishedHtml(updated.id);
+          }
+        } catch (err) {
+          console.error("Auto-bake / R2 Sync failed (background):", err);
+        }
+      });
     }
 
     return NextResponse.json({ ...updated, ...getInvitationLockStatus(updated) });

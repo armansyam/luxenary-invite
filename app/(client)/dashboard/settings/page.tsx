@@ -34,6 +34,17 @@ export default function SettingsPage() {
     staffPin: "",
   });
 
+  const [isPublishAcknowledged, setIsPublishAcknowledged] = useState(false);
+
+  // Custom Domain State
+  const [customDomain, setCustomDomain] = useState("");
+  const [savingCustomDomain, setSavingCustomDomain] = useState(false);
+  const [customDomainSuccess, setCustomDomainSuccess] = useState(false);
+  const [customDomainError, setCustomDomainError] = useState<string | null>(null);
+  const [showDnsGuide, setShowDnsGuide] = useState(false);
+  const [platformName, setPlatformName] = useState("");
+  const [cnameTarget, setCnameTarget] = useState("invite.platform-anda.id");
+
   // Real-time Subdomain Availability Checker
   useEffect(() => {
     if (!formData.subdomain || !invitation?.id) {
@@ -103,6 +114,7 @@ export default function SettingsPage() {
         if (Array.isArray(invs) && invs.length > 0) {
           const inv = invs[0];
           setInvitation(inv);
+          setCustomDomain(inv.customDomain || "");
 
           setFormData({
             subdomain: inv.subdomain || "",
@@ -116,6 +128,13 @@ export default function SettingsPage() {
         setErrorMsg("Gagal memuat pengaturan undangan");
         setLoading(false);
       });
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/public/settings").then(r => r.json()).then(d => {
+      if (d?.platformName) setPlatformName(d.platformName);
+      if (d?.cnameTarget) setCnameTarget(d.cnameTarget);
+    }).catch(() => {});
   }, []);
 
   // Independent Section Save Handler
@@ -307,12 +326,12 @@ export default function SettingsPage() {
             <div>
               <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block">Tautan Aktif:</span>
               <a
-                href={getInvitationPublicUrl(formData.subdomain || "didan-nasha")}
+                href={getInvitationPublicUrl(formData.subdomain || "mempelai-pria-wanita")}
                 target="_blank"
                 rel="noreferrer"
                 className="text-xs sm:text-sm font-mono font-bold text-amber-900 hover:underline break-all"
               >
-                {getInvitationPublicUrl(formData.subdomain || "didan-nasha")}
+                {getInvitationPublicUrl(formData.subdomain || "mempelai-pria-wanita")}
               </a>
             </div>
             <button
@@ -359,7 +378,7 @@ export default function SettingsPage() {
                     const val = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "");
                     setFormData({ ...formData, subdomain: val });
                   }}
-                  placeholder="nasha-didan"
+                  placeholder="mempelai-wanita-pria"
                   className="flex-1 py-3 px-1 text-xs text-stone-900 font-mono font-bold bg-transparent focus:outline-none"
                 />
                 <span className="pr-3.5 pl-1 text-xs text-stone-400 font-mono select-none">.{getApexRootDomain()}</span>
@@ -445,21 +464,47 @@ export default function SettingsPage() {
             )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <label className={`p-4 rounded-xl border transition flex items-start gap-3 ${!isPublishable ? 'opacity-50 cursor-not-allowed bg-stone-50 border-stone-200' : formData.status === 'PUBLISHED' ? 'border-amber-700 bg-amber-50/50 cursor-pointer' : 'border-stone-200 bg-stone-50 cursor-pointer'}`}>
-                <input
-                  type="radio"
-                  name="status"
-                  value="PUBLISHED"
-                  disabled={!isPublishable}
-                  checked={formData.status === "PUBLISHED" && isPublishable}
-                  onChange={() => setFormData({ ...formData, status: "PUBLISHED" })}
-                  className="mt-0.5 text-amber-800 focus:ring-amber-800"
-                />
-                <div>
-                  <span className="text-xs font-bold text-stone-900 block">Publikasikan (Published)</span>
-                  <span className="text-[11px] text-stone-500">Tautan undangan dapat dibuka dan diakses oleh tamu undangan</span>
-                </div>
-              </label>
+              <div className="flex flex-col gap-2">
+                <label className={`p-4 rounded-xl border transition flex items-start gap-3 ${!isPublishable ? 'opacity-50 cursor-not-allowed bg-stone-50 border-stone-200' : formData.status === 'PUBLISHED' ? 'border-amber-700 bg-amber-50/50 cursor-pointer' : 'border-stone-200 bg-stone-50 cursor-pointer'}`}>
+                  <input
+                    type="radio"
+                    name="status"
+                    value="PUBLISHED"
+                    disabled={!isPublishable}
+                    checked={formData.status === "PUBLISHED" && isPublishable}
+                    onChange={() => setFormData({ ...formData, status: "PUBLISHED" })}
+                    className="mt-0.5 text-amber-800 focus:ring-amber-800"
+                  />
+                  <div>
+                    <span className="text-xs font-bold text-stone-900 block">Publikasikan (Published)</span>
+                    <span className="text-[11px] text-stone-500">Tautan undangan dapat dibuka dan diakses oleh tamu undangan.</span>
+                  </div>
+                </label>
+                
+                {formData.status === "PUBLISHED" && (
+                  <div className="p-3 bg-rose-50/80 border border-rose-200 rounded-lg space-y-3">
+                    <div>
+                      <h5 className="text-[10px] font-bold text-rose-800 uppercase tracking-wider mb-1 flex items-center gap-1">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                        PERHATIAN SEBELUM SIMPAN
+                      </h5>
+                      <ul className="text-[10px] text-rose-700 space-y-1 list-disc ml-4">
+                        <li><strong>Tema Undangan</strong> akan terkunci permanen dan tidak bisa diganti (Hanya Admin yang dapat mengganti tema).</li>
+                        <li><strong>Mengubah Tautan (Subdomain)</strong> setelah ini sangat berisiko membuat QR Code di cetakan/undangan fisik Anda menjadi mati (404 Not Found).</li>
+                      </ul>
+                    </div>
+                    <label className="flex items-start gap-2 cursor-pointer p-2 bg-rose-100/50 rounded-md border border-rose-200/50 hover:bg-rose-100 transition">
+                      <input 
+                        type="checkbox" 
+                        className="mt-0.5 text-rose-600 focus:ring-rose-500 rounded-sm cursor-pointer"
+                        checked={isPublishAcknowledged}
+                        onChange={(e) => setIsPublishAcknowledged(e.target.checked)}
+                      />
+                      <span className="text-[10px] text-rose-800 font-medium leading-relaxed">Saya memahami aturan di atas dan siap mempublikasikan undangan ini.</span>
+                    </label>
+                  </div>
+                )}
+              </div>
 
               <label className={`p-4 rounded-xl border cursor-pointer transition flex items-start gap-3 ${formData.status === 'DRAFT' ? 'border-amber-700 bg-amber-50/50' : 'border-stone-200 bg-stone-50'}`}>
                 <input
@@ -486,8 +531,8 @@ export default function SettingsPage() {
               <button
                 type="button"
                 onClick={() => handleSaveSection("status")}
-                disabled={savingSec === "status"}
-                className="px-5 py-2 bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-xl text-xs transition cursor-pointer disabled:opacity-50"
+                disabled={savingSec === "status" || (formData.status === "PUBLISHED" && !isPublishAcknowledged)}
+                className="px-5 py-2 bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-xl text-xs transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {savingSec === "status" ? "Menyimpan..." : "Simpan Status"}
               </button>
@@ -564,6 +609,151 @@ export default function SettingsPage() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* ──────── CUSTOM DOMAIN ──────── */}
+      <div className="bg-white rounded-2xl shadow-sm border border-stone-200/80 p-5 sm:p-6 space-y-4">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-bold text-stone-900 leading-tight">Domain Sendiri</h2>
+            <p className="text-[11px] text-stone-400 mt-0.5">Gunakan domain pribadi Anda (mis. undangan-kami.com) sebagai pengganti subdomain {platformName || "platform kami"}.</p>
+          </div>
+          <span className="shrink-0 text-[10px] font-bold px-2 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">Premium</span>
+        </div>
+
+        {/* Panduan DNS */}
+        <div className="rounded-xl border border-stone-200 overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setShowDnsGuide((v) => !v)}
+            className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-stone-50 transition cursor-pointer"
+          >
+            <span className="text-xs font-bold text-stone-700">Cara setup — 3 langkah mudah</span>
+            <svg
+              className={`w-4 h-4 text-stone-400 transition-transform ${showDnsGuide ? "rotate-180" : ""}`}
+              fill="none" stroke="currentColor" viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {showDnsGuide && (
+            <div className="px-4 pb-4 space-y-3 border-t border-stone-100 pt-3 bg-stone-50/50">
+              <p className="text-[11px] text-stone-500 leading-relaxed">
+                Setelah membeli domain di registrar (Niagahoster, Namecheap, Domainesia, dll), ikuti langkah berikut:
+              </p>
+
+              {/* Step 1 */}
+              <div className="flex gap-3">
+                <div className="w-6 h-6 rounded-full bg-amber-600 text-white text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5">1</div>
+                <div>
+                  <p className="text-xs font-bold text-stone-800">Login ke panel DNS domain Anda</p>
+                  <p className="text-[11px] text-stone-500 mt-0.5">Buka bagian DNS Management / DNS Zone di registrar tempat Anda membeli domain.</p>
+                </div>
+              </div>
+
+              {/* Step 2 */}
+              <div className="flex gap-3">
+                <div className="w-6 h-6 rounded-full bg-amber-600 text-white text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5">2</div>
+                <div>
+                  <p className="text-xs font-bold text-stone-800">Tambah record CNAME berikut:</p>
+                  <div className="mt-2 rounded-lg overflow-hidden border border-stone-200 text-[11px] font-mono">
+                    <div className="grid grid-cols-3 bg-stone-100 px-3 py-1.5 text-[10px] font-bold text-stone-500 uppercase tracking-wider">
+                      <span>Type</span><span>Host / Name</span><span>Value / Target</span>
+                    </div>
+                    <div className="grid grid-cols-3 px-3 py-2.5 bg-white text-stone-800 gap-1">
+                      <span className="font-bold text-amber-700">CNAME</span>
+                      <span>@ <span className="text-stone-400">(atau www)</span></span>
+                      <span className="break-all">{cnameTarget}</span>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-stone-400 mt-1">Jika tidak bisa pakai @, tambahkan juga record <strong>A</strong> dengan IP server kami. Hubungi Admin untuk mendapatkan IP.</p>
+                </div>
+              </div>
+
+              {/* Step 3 */}
+              <div className="flex gap-3">
+                <div className="w-6 h-6 rounded-full bg-amber-600 text-white text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5">3</div>
+                <div>
+                  <p className="text-xs font-bold text-stone-800">Daftarkan domain di bawah ini & hubungi Admin</p>
+                  <p className="text-[11px] text-stone-500 mt-0.5">Setelah DNS propagasi (biasanya 5–30 menit), isi field domain di bawah dan simpan. Lalu kirim pesan ke Admin agar SSL-nya diaktifkan.</p>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-amber-50 border border-amber-200">
+                <p className="text-[11px] text-amber-800 font-medium leading-relaxed">
+                  <strong>Propagasi DNS</strong> bisa memakan waktu hingga 48 jam tergantung registrar, namun biasanya selesai dalam 5–30 menit.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Input domain */}
+        <div className="space-y-2">
+          <label className="block text-[11px] font-bold text-stone-700">Domain Anda</label>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={customDomain}
+              onChange={(e) => {
+                setCustomDomain(e.target.value.toLowerCase().replace(/\s/g, ""));
+                setCustomDomainError(null);
+                setCustomDomainSuccess(false);
+              }}
+              placeholder="contoh: undangan-kami.com"
+              className="flex-1 py-2.5 px-4 rounded-xl border border-stone-200 bg-stone-50 text-sm font-mono focus:outline-none focus:border-amber-700 focus:ring-2 focus:ring-amber-700/20 transition"
+            />
+            <button
+              type="button"
+              disabled={savingCustomDomain || !customDomain || !invitation?.id}
+              onClick={async () => {
+                if (!customDomain || !invitation?.id) return;
+                const clean = customDomain.replace(/^https?:\/\//, "").replace(/\/$/, "").trim();
+                if (!clean.includes(".")) {
+                  setCustomDomainError("Format domain tidak valid. Contoh: undangan-kami.com");
+                  return;
+                }
+                setSavingCustomDomain(true);
+                setCustomDomainError(null);
+                try {
+                  const res = await fetch(`/api/client/invitations/${invitation.id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ ...invitation, customDomain: clean }),
+                  });
+                  if (res.ok) {
+                    setCustomDomainSuccess(true);
+                    setInvitation((prev: any) => ({ ...prev, customDomain: clean }));
+                    setTimeout(() => setCustomDomainSuccess(false), 3000);
+                  } else {
+                    const err = await res.json();
+                    setCustomDomainError(err.error || "Gagal menyimpan domain.");
+                  }
+                } catch {
+                  setCustomDomainError("Terjadi kesalahan jaringan.");
+                } finally {
+                  setSavingCustomDomain(false);
+                }
+              }}
+              className="px-5 py-2.5 bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-xl text-xs transition cursor-pointer disabled:opacity-50"
+            >
+              {savingCustomDomain ? "Menyimpan..." : "Simpan"}
+            </button>
+          </div>
+
+          {customDomainError && (
+            <p className="text-[11px] text-red-600 font-medium">{customDomainError}</p>
+          )}
+          {customDomainSuccess && (
+            <p className="text-[11px] text-emerald-600 font-semibold">Domain berhasil disimpan. Hubungi Admin untuk aktivasi SSL.</p>
+          )}
+          {invitation?.customDomain && !customDomainSuccess && (
+            <p className="text-[11px] text-stone-400">
+              Domain aktif saat ini: <span className="font-mono font-bold text-stone-700">{invitation.customDomain}</span>
+            </p>
+          )}
+        </div>
       </div>
 
       {/* WOW PUBLISH UI OVERLAY */}

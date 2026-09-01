@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const archiver = require("archiver");
 import { streamMemoriesToZip } from "@/lib/storage";
 

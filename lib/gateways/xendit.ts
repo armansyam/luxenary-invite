@@ -6,6 +6,7 @@
  * Webhook: POST /api/webhook/xendit
  * Signature: x-callback-token header (static secret dari dashboard Xendit)
  */
+import crypto from "crypto";
 import { PaymentGateway } from "@/lib/gateways/types";
 import { prisma } from "@/lib/prisma";
 
@@ -49,7 +50,7 @@ export class XenditGateway implements PaymentGateway {
 
     // Baca masa kedaluwarsa QRIS & prefix judul dari admin setting
     let expiryMinutes = 60;
-    let invoicePrefix = "Luxenary Invite";
+    let invoicePrefix = "Tagihan Pembayaran";
     try {
       const expirySetting = await prisma.adminSetting.findUnique({ where: { key: "payment_expiry_minutes" } });
       if (expirySetting && !isNaN(Number(expirySetting.value))) {
@@ -119,7 +120,7 @@ export class XenditGateway implements PaymentGateway {
   static verifyWebhookToken(incomingToken: string, storedToken: string): boolean {
     if (!incomingToken || !storedToken) return false;
     try {
-      return require("crypto").timingSafeEqual(
+      return crypto.timingSafeEqual(
         Buffer.from(incomingToken),
         Buffer.from(storedToken)
       );

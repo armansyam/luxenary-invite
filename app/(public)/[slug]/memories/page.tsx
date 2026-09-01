@@ -2,47 +2,35 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-
-import { getGoogleDriveFolderPhotos } from "@/lib/driveHelper";
+import { getAdminSetting } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
 interface PageProps {
-  params: Promise<{ groom: string; bride: string; invitationSlug: string }>;
+  params: Promise<{ slug: string }>;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { groom, bride, invitationSlug } = await params;
-  const invitation = await prisma.invitation.findUnique({
-    where: {
-      groomSlug_brideSlug_invitationSlug: {
-        groomSlug: groom,
-        brideSlug: bride,
-        invitationSlug: invitationSlug,
-      },
-    },
-  });
+  const { slug } = await params;
+  const [invitation, platformName] = await Promise.all([
+    prisma.invitation.findUnique({ where: { invitationSlug: slug } }),
+    getAdminSetting("platform_name", "Platform Undangan"),
+  ]);
 
   if (!invitation) return {};
 
   const coupleName = `${invitation.groomNickname || "Pria"} & ${invitation.brideNickname || "Wanita"}`;
   return {
-    title: `Galeri Kenangan Tamu — ${coupleName} | Luxenary Invite`,
+    title: `Galeri Kenangan Tamu — ${coupleName} | ${platformName}`,
     description: `Kumpulan foto candid dan ucapan dari sahabat & keluarga di pernikahan ${coupleName}.`,
   };
 }
 
 export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
-  const { groom, bride, invitationSlug } = await params;
+  const { slug } = await params;
 
   const invitation = await prisma.invitation.findUnique({
-    where: {
-      groomSlug_brideSlug_invitationSlug: {
-        groomSlug: groom,
-        brideSlug: bride,
-        invitationSlug: invitationSlug,
-      },
-    },
+    where: { invitationSlug: slug },
     include: {
       guestMemories: {
         orderBy: { createdAt: "desc" },
@@ -54,15 +42,14 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
     notFound();
   }
 
-  let memories: any[] = invitation.guestMemories || [];
+  const memories: any[] = invitation.guestMemories || [];
 
-  const coupleName = `${invitation.groomNickname || "Didan"} & ${invitation.brideNickname || "Nasha"}`;
-  const invitationUrl = `/${invitation.groomSlug}-${invitation.brideSlug}/${invitation.invitationSlug}`;
+  const coupleName = `${invitation.groomNickname || "Mempelai Pria"} & ${invitation.brideNickname || "Mempelai Wanita"}`;
+  const invitationUrl = `/${slug}`;
 
   // Random 10 highlights for top story circles
   const shuffledMemories = [...memories].sort(() => 0.5 - Math.random()).slice(0, 10);
   const photoMemories = memories.filter((m) => m.mediaType !== "VIDEO");
-  const videoMemories = memories.filter((m) => m.mediaType === "VIDEO");
 
   return (
     <main className="min-h-screen bg-stone-950 text-stone-100 antialiased font-sans pb-24 selection:bg-amber-500/30">
@@ -91,10 +78,9 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
         <p className="text-xs sm:text-sm text-stone-400 leading-relaxed max-w-md mx-auto font-serif italic">
           &ldquo;Kumpulan foto candid dan ucapan penuh kehangatan yang dibagikan oleh sahabat dan keluarga tercinta.&rdquo;
         </p>
-
       </section>
 
-      {/* ── Instagram Story Highlights Rail ("Kami Sudah Membagikan Momen") ── */}
+      {/* ── Instagram Story Highlights Rail ── */}
       {shuffledMemories.length > 0 && (
         <section className="px-4 py-4 max-w-4xl mx-auto">
           <div className="flex items-center justify-center gap-4 mb-3 px-1 text-center">
@@ -142,27 +128,19 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
         </section>
       )}
 
-      {/* ── Interactive Tab Switcher & Count ── */}
+      {/* ── Interactive Tab Switcher ── */}
       <section className="px-4 mt-4 max-w-4xl mx-auto">
         <div className="flex items-center justify-center gap-2 p-1 bg-stone-900/90 rounded-2xl border border-white/10 max-w-xs mx-auto">
-          <button
-            type="button"
-            id="tabAll"
-            className="flex-1 py-2 text-xs font-bold rounded-xl transition bg-amber-500 text-stone-950 shadow-xs"
-          >
+          <button type="button" id="tabAll" className="flex-1 py-2 text-xs font-bold rounded-xl transition bg-amber-500 text-stone-950 shadow-xs">
             Semua ({memories.length})
           </button>
-          <button
-            type="button"
-            id="tabPhoto"
-            className="flex-1 py-2 text-xs font-bold rounded-xl transition text-stone-400 hover:text-white"
-          >
+          <button type="button" id="tabPhoto" className="flex-1 py-2 text-xs font-bold rounded-xl transition text-stone-400 hover:text-white">
             Foto ({photoMemories.length})
           </button>
         </div>
       </section>
 
-      {/* ── Seamless Masonry Media Grid ── */}
+      {/* ── Masonry Media Grid ── */}
       <section className="px-4 pt-6 max-w-4xl mx-auto">
         {memories.length === 0 ? (
           <div className="p-12 sm:p-16 text-center rounded-[2rem] bg-gradient-to-b from-stone-900/90 to-stone-950 border border-white/5 mt-8 shadow-2xl relative overflow-hidden">
@@ -174,9 +152,9 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
             </div>
             <h3 className="text-xl font-serif font-bold text-white tracking-wide mb-2">Kanvas Kenangan Masih Kosong</h3>
             <p className="text-sm text-stone-400 leading-relaxed max-w-sm mx-auto mb-8 font-serif italic">
-              "Jadilah orang pertama yang mengabadikan tawa, senyum, dan kebahagiaan di hari istimewa ini."
+              &quot;Jadilah orang pertama yang mengabadikan tawa, senyum, dan kebahagiaan di hari istimewa ini.&quot;
             </p>
-            <Link 
+            <Link
               href={`${invitationUrl}/sharemoment`}
               className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-sm tracking-wide shadow-lg shadow-amber-900/30 transition-all cursor-pointer"
             >
@@ -187,10 +165,7 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
             </Link>
           </div>
         ) : (
-          <div
-            id="memoriesMasonry"
-            className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-3 space-y-3"
-          >
+          <div id="memoriesMasonry" className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-3 space-y-3">
             {memories.map((m) => (
               <div
                 key={m.id}
@@ -205,9 +180,7 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
                     <div className="relative aspect-video bg-black flex items-center justify-center">
                       <video src={m.mediaUrl} playsInline preload="metadata" className="w-full h-full object-cover" />
                       <div className="absolute inset-0 bg-black/40 flex items-center justify-center group-hover:bg-black/20 transition">
-                        <div className="w-10 h-10 rounded-full bg-amber-500/90 text-stone-950 flex items-center justify-center font-bold pl-0.5 shadow-lg">
-                          ▶
-                        </div>
+                        <div className="w-10 h-10 rounded-full bg-amber-500/90 text-stone-950 flex items-center justify-center font-bold pl-0.5 shadow-lg">▶</div>
                       </div>
                     </div>
                   ) : (
@@ -220,7 +193,6 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
                     />
                   )}
                 </div>
-
                 <div className="p-3 bg-stone-900/90">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-bold text-stone-100 truncate">{m.senderName}</span>
@@ -240,153 +212,8 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
         )}
       </section>
 
-      {/* ── Client Scripts for Tabs, Modal, and Lightbox ── */}
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `
-        document.addEventListener('DOMContentLoaded', function() {
-          const tabAll = document.getElementById('tabAll');
-          const tabPhoto = document.getElementById('tabPhoto');
-          const cards = document.querySelectorAll('.memory-grid-card');
-
-          let currentFilter = 'ALL';
-
-          function setFilter(type) {
-            currentFilter = type;
-            [tabAll, tabPhoto].forEach(btn => {
-              if (btn) btn.className = "flex-1 py-2 text-xs font-bold rounded-xl transition text-stone-400 hover:text-white";
-            });
-            if (type === 'ALL' && tabAll) tabAll.className = "flex-1 py-2 text-xs font-bold rounded-xl transition bg-amber-500 text-stone-950 shadow-xs";
-            if (type === 'PHOTO' && tabPhoto) tabPhoto.className = "flex-1 py-2 text-xs font-bold rounded-xl transition bg-amber-500 text-stone-950 shadow-xs";
-            
-            cards.forEach(card => {
-              if (type === 'ALL') {
-                card.style.display = 'block';
-              } else if (card.getAttribute('data-type') === type) {
-                card.style.display = 'block';
-              } else {
-                card.style.display = 'none';
-              }
-            });
-          }
-
-          if (tabAll) tabAll.addEventListener('click', () => setFilter('ALL'));
-          if (tabPhoto) tabPhoto.ad = 'none';
-              }
-            });
-          }
-
-          // ── SSE Real-Time Updates & Toast Logic ──
-          const invitationId = "${invitation.id}";
-          const sseEventSource = new EventSource('/api/sse/memories?invitationId=' + invitationId);
-          let newMemoriesQueue = [];
-          const toast = document.getElementById('liveToastIndicator');
-          const toastCount = document.getElementById('liveToastCount');
-          const masonryContainer = document.getElementById('memoriesMasonry');
-
-          sseEventSource.onmessage = function(event) {
-            try {
-              const data = JSON.parse(event.data);
-              // Only add if we don't already have it in DOM to prevent duplicates
-              if (!document.querySelector(\`[data-memory-id="\${data.id}"]\`)) {
-                newMemoriesQueue.push(data);
-                if (toast && toastCount) {
-                  toastCount.textContent = newMemoriesQueue.length;
-                  toast.style.transform = 'translateY(0)';
-                  toast.style.opacity = '1';
-                }
-              }
-            } catch (e) {}
-          };
-
-          if (toast) {
-            toast.addEventListener('click', function() {
-              if (!masonryContainer) return;
-              
-              let newHtml = '';
-              newMemoriesQueue.reverse().forEach(m => {
-                const dateStr = new Date(m.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "short" });
-                const mediaHtml = m.mediaType === 'VIDEO' 
-                  ? \`<div class="relative aspect-video bg-black flex items-center justify-center">
-                      <video src="\${m.mediaUrl}" playsInline preload="metadata" class="w-full h-full object-cover"></video>
-                      <div class="absolute inset-0 bg-black/40 flex items-center justify-center group-hover:bg-black/20 transition">
-                        <div class="w-10 h-10 rounded-full bg-amber-500/90 text-stone-950 flex items-center justify-center font-bold pl-0.5 shadow-lg">▶</div>
-                      </div>
-                    </div>\`
-                  : \`<img src="\${m.mediaUrl}" alt="\${m.senderName}" loading="lazy" class="w-full object-cover group-hover:scale-105 transition-transform duration-300" />\`;
-                  
-                const msgHtml = m.message 
-                  ? \`<p class="text-[11px] text-stone-400 mt-1 line-clamp-2 italic font-serif leading-relaxed">“\${m.message}”</p>\` 
-                  : '';
-
-                newHtml += \`
-                  <div 
-                    data-memory-id="\${m.id}"
-                    data-type="\${m.mediaType}"
-                    class="memory-grid-card break-inside-avoid rounded-2xl overflow-hidden bg-stone-900/80 border border-white/10 hover:border-amber-400/50 transition duration-200 shadow-md group cursor-pointer"
-                    data-media-url="\${m.mediaUrl}"
-                    data-sender-name="\${m.senderName}"
-                    data-message="\${m.message || ''}"
-                  >
-                    <div class="relative overflow-hidden bg-stone-900">\${mediaHtml}</div>
-                    <div class="p-3 bg-stone-900/90">
-                      <div class="flex items-center justify-between gap-2">
-                        <span class="text-xs font-bold text-stone-100 truncate">\${m.senderName}</span>
-                        <span class="text-[10px] text-stone-500 shrink-0 font-mono">\${dateStr}</span>
-                      </div>
-                      \${msgHtml}
-                    </div>
-                  </div>
-                \`;
-              });
-
-              masonryContainer.insertAdjacentHTML('afterbegin', newHtml);
-              newMemoriesQueue = [];
-              toast.style.transform = 'translateY(150%)';
-              toast.style.opacity = '0';
-              
-              // Re-bind lightbox clicks for new items
-              bindLightbox();
-            });
-          }
-
-          function bindLightbox() {
-            document.querySelectorAll('.memory-grid-card').forEach(el => {
-              if (el.dataset.bound) return; // Prevent double binding
-              el.dataset.bound = "true";
-              el.addEventListener('click', () => {
-                const url = el.getAttribute('data-media-url');
-                const name = el.getAttribute('data-sender-name');
-                const msg = el.getAttribute('data-message');
-                const type = el.getAttribute('data-type');
-                if (!url) return;
-
-                const modal = document.getElementById('galleryPreviewModal');
-                const content = document.getElementById('previewModalContent');
-                const caption = document.getElementById('previewModalCaption');
-
-                if (type === 'VIDEO') {
-                  content.innerHTML = '<video src="' + url + '" controls autoplay playsinline class="max-h-[75vh] max-w-full rounded-2xl shadow-2xl bg-black"></video>';
-                } else {
-                  content.innerHTML = '<img src="' + url + '" class="max-h-[75vh] max-w-full rounded-2xl object-contain shadow-2xl" />';
-                }
-
-                caption.innerHTML = '<div class="font-bold text-sm text-white">' + (name || '') + '</div>' + (msg ? '<div class="text-xs text-stone-300 mt-1 italic font-serif">“' + msg + '”</div>' : '');
-
-                modal.style.display = 'flex';
-              });
-            });
-          }
-          
-          // Initial bind
-          bindLightbox();
-        });
-      `,
-        }}
-      />
-
-      {/* ── Live Toast Notification (Hidden by default) ── */}
-      <div 
+      {/* ── Live Toast Notification ── */}
+      <div
         id="liveToastIndicator"
         className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40 bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold px-5 py-3 rounded-full shadow-[0_10px_40px_rgba(245,158,11,0.4)] flex items-center gap-2 cursor-pointer transition-all duration-500 opacity-0 translate-y-[150%]"
       >
@@ -397,8 +224,6 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
         <span className="text-xs tracking-wide">Ada <span id="liveToastCount">0</span> Momen Baru! Klik untuk memuat</span>
       </div>
 
-
-
       {/* ── Lightbox Preview Modal ── */}
       <div
         id="galleryPreviewModal"
@@ -406,7 +231,7 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
         className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md p-4 flex flex-col items-center justify-center"
         onClick={(e) => {
           if (e.target === e.currentTarget) {
-            e.currentTarget.style.display = "none";
+            (e.currentTarget as HTMLElement).style.display = "none";
           }
         }}
       >
@@ -423,6 +248,80 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
         <div id="previewModalContent" className="max-w-3xl w-full flex items-center justify-center"></div>
         <div id="previewModalCaption" className="mt-4 text-center max-w-md"></div>
       </div>
+
+      {/* ── Client Scripts ── */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `
+        document.addEventListener('DOMContentLoaded', function() {
+          const tabAll = document.getElementById('tabAll');
+          const tabPhoto = document.getElementById('tabPhoto');
+          const cards = document.querySelectorAll('.memory-grid-card');
+
+          function setFilter(type) {
+            [tabAll, tabPhoto].forEach(btn => {
+              if (btn) btn.className = "flex-1 py-2 text-xs font-bold rounded-xl transition text-stone-400 hover:text-white";
+            });
+            if (type === 'ALL' && tabAll) tabAll.className = "flex-1 py-2 text-xs font-bold rounded-xl transition bg-amber-500 text-stone-950 shadow-xs";
+            if (type === 'PHOTO' && tabPhoto) tabPhoto.className = "flex-1 py-2 text-xs font-bold rounded-xl transition bg-amber-500 text-stone-950 shadow-xs";
+            cards.forEach(card => {
+              card.style.display = (type === 'ALL' || card.getAttribute('data-type') === type) ? 'block' : 'none';
+            });
+          }
+
+          if (tabAll) tabAll.addEventListener('click', () => setFilter('ALL'));
+          if (tabPhoto) tabPhoto.addEventListener('click', () => setFilter('PHOTO'));
+
+          const invitationId = "${invitation.id}";
+          const sseEventSource = new EventSource('/api/sse/memories?invitationId=' + invitationId);
+          let newMemoriesQueue = [];
+          const toast = document.getElementById('liveToastIndicator');
+          const toastCount = document.getElementById('liveToastCount');
+          const masonryContainer = document.getElementById('memoriesMasonry');
+
+          sseEventSource.onmessage = function(event) {
+            try {
+              const data = JSON.parse(event.data);
+              if (!document.querySelector(\`[data-memory-id="\${data.id}"]\`)) {
+                newMemoriesQueue.push(data);
+                if (toast && toastCount) {
+                  toastCount.textContent = newMemoriesQueue.length;
+                  toast.style.transform = 'translateY(0)';
+                  toast.style.opacity = '1';
+                }
+              }
+            } catch (e) {}
+          };
+
+          function bindLightbox() {
+            document.querySelectorAll('.memory-grid-card').forEach(el => {
+              if (el.dataset.bound) return;
+              el.dataset.bound = "true";
+              el.addEventListener('click', () => {
+                const url = el.getAttribute('data-media-url');
+                const name = el.getAttribute('data-sender-name');
+                const msg = el.getAttribute('data-message');
+                const type = el.getAttribute('data-type');
+                if (!url) return;
+                const modal = document.getElementById('galleryPreviewModal');
+                const content = document.getElementById('previewModalContent');
+                const caption = document.getElementById('previewModalCaption');
+                if (type === 'VIDEO') {
+                  content.innerHTML = '<video src="' + url + '" controls autoplay playsinline class="max-h-[75vh] max-w-full rounded-2xl shadow-2xl bg-black"></video>';
+                } else {
+                  content.innerHTML = '<img src="' + url + '" class="max-h-[75vh] max-w-full rounded-2xl object-contain shadow-2xl" />';
+                }
+                caption.innerHTML = '<div class="font-bold text-sm text-white">' + (name || '') + '</div>' + (msg ? '<div class="text-xs text-stone-300 mt-1 italic font-serif">"' + msg + '"</div>' : '');
+                modal.style.display = 'flex';
+              });
+            });
+          }
+
+          bindLightbox();
+        });
+      `,
+        }}
+      />
     </main>
   );
 }

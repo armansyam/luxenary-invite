@@ -146,7 +146,9 @@ export async function buildAndSavePublishedHtml(invitationId: string): Promise<s
   const coverMedia = await prisma.invitationMedia.findFirst({
     where: { invitationId: invitation.id, mediaSlot: "LANDING_COVER" }
   });
-  const imageUrl = coverMedia?.driveViewUrl || coverMedia?.localPath || "https://luxenary.id/default-og.jpg";
+  const appBaseUrl = (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_ROOT_DOMAIN || "").replace(/\/$/, "");
+  const ogFallback = appBaseUrl ? `${appBaseUrl.startsWith("http") ? "" : "https://"}${appBaseUrl}/default-og.jpg` : "/default-og.jpg";
+  const imageUrl = coverMedia?.localPath || ogFallback;
 
   const metaTagsHtml = `
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
@@ -164,23 +166,27 @@ export async function buildAndSavePublishedHtml(invitationId: string): Promise<s
   
   (data as any).metaTagsHtml = metaTagsHtml;
 
-  // Render standalone HTML without edit controls
-  const standaloneHtml = await renderTemplateFile(invitation.themeId || "kalandra", data, { editMode: false });
+  // Render standalone HTML without edit controls (menggunakan Piring draft jika ada)
+  const standaloneHtml = await renderTemplateFile(invitation.themeId || "kalandra", data, { editMode: false, invitationId: invitation.id });
 
   await ensurePublishedDir(category);
-  
-  // Save using subdomain for Edge Middleware static serving
-  let filePath = "None (No Subdomain)";
+
+  // 1. Simpan sebagai {subdomain}.html → untuk subdomain routing (arman-siti.luxenary.id)
+  let subdomainFilePath = "None (No Subdomain)";
   if (invitation.subdomain) {
-    filePath = path.join(PUBLISHED_DIR, `${invitation.subdomain}.html`);
-    await fs.promises.writeFile(filePath, standaloneHtml, "utf-8");
+    subdomainFilePath = path.join(PUBLISHED_DIR, `${invitation.subdomain}.html`);
+    await fs.promises.writeFile(subdomainFilePath, standaloneHtml, "utf-8");
   }
 
-  // Save legacy fallback format just in case
+  // 2. Simpan sebagai {invitationSlug}.html → untuk canonical path routing (luxenary.id/arman-siti-030326)
+  const canonicalFilePath = path.join(PUBLISHED_DIR, `${invitation.invitationSlug}.html`);
+  await fs.promises.writeFile(canonicalFilePath, standaloneHtml, "utf-8");
+
+  // 3. Simpan fallback berdasarkan ID (untuk getPublishedHtml fallback)
   const fallbackPath = await getPublishedFilePath(invitation.id, category);
   await fs.promises.writeFile(fallbackPath, standaloneHtml, "utf-8");
 
-  console.log(`[Static Publisher] Standalone HTML baked successfully: ${filePath} (${(standaloneHtml.length / 1024).toFixed(1)} KB)`);
+  console.log(`[Static Publisher] HTML baked: subdomain=${subdomainFilePath} | canonical=${canonicalFilePath} | size=${(standaloneHtml.length / 1024).toFixed(1)}KB`);
 
   return standaloneHtml;
 }
@@ -190,17 +196,33 @@ export async function buildAndSavePublishedHtml(invitationId: string): Promise<s
  */
 export async function deletePublishedHtml(invitationId: string, category?: string): Promise<boolean> {
   let deleted = false;
-  
-  const inv = await prisma.invitation.findUnique({ where: { id: invitationId }, select: { subdomain: true } });
-  if (inv && inv.subdomain) {
-      const subPath = path.join(PUBLISHED_DIR, `${inv.subdomain}.html`);
-      try {
-          await fs.promises.access(subPath);
-          await fs.promises.unlink(subPath);
-          deleted = true;
-      } catch {}
+
+  const inv = await prisma.invitation.findUnique({
+    where: { id: invitationId },
+    select: { subdomain: true, invitationSlug: true },
+  });
+
+  // Hapus file subdomain
+  if (inv?.subdomain) {
+    const subPath = path.join(PUBLISHED_DIR, `${inv.subdomain}.html`);
+    try {
+      await fs.promises.access(subPath);
+      await fs.promises.unlink(subPath);
+      deleted = true;
+    } catch {}
   }
 
+  // Hapus file canonical slug
+  if (inv?.invitationSlug) {
+    const canonicalPath = path.join(PUBLISHED_DIR, `${inv.invitationSlug}.html`);
+    try {
+      await fs.promises.access(canonicalPath);
+      await fs.promises.unlink(canonicalPath);
+      deleted = true;
+    } catch {}
+  }
+
+  // Hapus file fallback per-kategori
   const categories = category ? [category] : ["premium", "traditional", "modern"];
   for (const c of categories) {
     const p = path.join(PUBLISHED_DIR, c, `${invitationId}.html`);

@@ -86,15 +86,13 @@ export async function DELETE(
       return NextResponse.json({ error: "Data memori tidak ditemukan." }, { status: 404 });
     }
 
-    // Attempt to delete physical file if stored locally
-    if (memory.mediaUrl && memory.mediaUrl.startsWith("/uploads/")) {
+    // Attempt to delete physical file / R2 file
+    if (memory.mediaUrl) {
       try {
-        const physicalPath = path.join(process.cwd(), "public", memory.mediaUrl);
-        if (fs.existsSync(physicalPath)) {
-          fs.unlinkSync(physicalPath);
-        }
+        const { deleteFile } = await import("@/lib/storage");
+        await deleteFile(memory.mediaUrl);
       } catch (fileErr) {
-        console.error("Failed to delete memory physical file:", fileErr);
+        console.error("Failed to delete memory file:", fileErr);
       }
     }
 

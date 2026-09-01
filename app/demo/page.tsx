@@ -17,6 +17,13 @@ export default function CatalogGridShowcase() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [viewMode, setViewMode] = useState<"mobile" | "desktop">("mobile");
   const [loading, setLoading] = useState(true);
+  const [platformName, setPlatformName] = useState("Platform Undangan");
+
+  useEffect(() => {
+    fetch("/api/public/settings").then(r => r.json()).then(d => {
+      if (d?.platformName) setPlatformName(d.platformName);
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetch("/api/public/themes", { cache: "no-store" })
@@ -29,14 +36,14 @@ export default function CatalogGridShowcase() {
               name: t.name,
               series: t.series || (t.category === "PREMIUM" ? "Premium" : t.category === "TRADITIONAL" ? "Traditional" : "Modern"),
               category: (t.category || "modern").toLowerCase(),
-              desc: t.tagline || t.desc || "Desain eksklusif Luxenary Invite",
+              desc: t.tagline || t.desc || `Desain eksklusif ${platformName}`,
             }))
           );
         }
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, []);
+  }, [platformName]);
 
   const filteredThemes = selectedCategory === "all"
     ? themes

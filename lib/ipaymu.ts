@@ -75,7 +75,7 @@ export class IPaymuGateway implements PaymentGateway {
 
     // Baca masa kedaluwarsa QRIS & prefix judul dari admin setting
     let expiryMinutes = 60;
-    let invoicePrefix = "Luxenary Invite";
+    let invoicePrefix = "Tagihan Pembayaran";
     try {
       const expirySetting = await prisma.adminSetting.findUnique({ where: { key: "payment_expiry_minutes" } });
       if (expirySetting && !isNaN(Number(expirySetting.value))) {

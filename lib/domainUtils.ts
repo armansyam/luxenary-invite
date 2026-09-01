@@ -39,13 +39,13 @@ export function getApexRootDomain(): string {
  * - Localhost:  http://[subdomain].localhost:3000(?to=...)
  * - Production: https://[subdomain].[apexDomain](?to=...)
  */
-export function getInvitationPublicUrl(subdomain: string, guestSlug?: string, isVip: boolean = false): string {
+export function getInvitationPublicUrl(subdomain: string, guestSlug?: string): string {
   const cleanSub = (subdomain || "wedding").toLowerCase().trim();
   
   let path = "";
   if (guestSlug) {
     const encoded = encodeURIComponent(guestSlug);
-    path = isVip ? `/v=${encoded}` : `/${encoded}`;
+    path = `/${encoded}`;
   }
 
   if (typeof window !== "undefined") {

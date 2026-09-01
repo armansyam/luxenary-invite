@@ -1,5 +1,6 @@
 import { MidtransGateway } from "@/lib/gateways/midtrans";
 import { prisma } from "@/lib/prisma";
+import { applyUpgradePlan } from "@/lib/upgradeHelper";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
@@ -89,6 +90,9 @@ export async function POST(req: NextRequest) {
           });
         }
       });
+
+      // If this is an UPGRADE order, update planType on the linked original order
+      await applyUpgradePlan(orderId);
 
     } else if (trxStatus === "expire" || trxStatus === "cancel" || trxStatus === "deny") {
       await prisma.order.updateMany({

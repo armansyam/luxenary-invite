@@ -6,7 +6,6 @@ import { EventEmitter } from "events";
  * Bekerja sempurna di single-process Node.js (VPS standar dengan pm2).
  */
 declare global {
-  // eslint-disable-next-line no-var
   var paymentEmitter: EventEmitter | undefined;
 }
 

@@ -34,7 +34,7 @@ export default function OnboardingHub() {
         <button
           onClick={() => {
             fetch("/api/auth/signout", { method: "POST" }).then(() => {
-              window.location.href = "/";
+              router.push("/");
             });
           }}
           className="text-stone-400 hover:text-stone-700 text-[10px] transition cursor-pointer underline"

@@ -71,20 +71,41 @@ export async function POST(req: Request) {
   const groomSlug = finalGroomNick ? slugify(finalGroomNick) : `pria-${randomId}`;
   const brideSlug = finalBrideNick ? slugify(finalBrideNick) : `wanita-${randomId}`;
 
-  // 1. Permanent Canonical Path Slug: Month-Year format (e.g. "okt-2026")
-  const defaultMonthYearSlug = getMonthYearSlug(weddingDate);
-  const baseInvitationSlug = slugify(invitationName || defaultMonthYearSlug);
-  let invitationSlug = baseInvitationSlug;
+  // 1. Permanent Canonical Slug: {groom}-{bride}-{DDMMYY} (flat, single segment)
+  //    Format tanggal: DDMMYY (e.g. 03-03-26 → 030326)
+  let dateSegment = "";
+  if (weddingDate) {
+    const d = new Date(weddingDate);
+    if (!isNaN(d.getTime())) {
+      const dd = String(d.getDate()).padStart(2, "0");
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const yy = String(d.getFullYear()).slice(-2);
+      dateSegment = `${dd}${mm}${yy}`;
+    }
+  }
+  if (!dateSegment) {
+    dateSegment = getMonthYearSlug(weddingDate); // fallback: okt-2026
+  }
 
-  // Collision disambiguation for path: [groom]-[bride]/[invitationSlug]
-  let collisionCounter = 1;
-  while (true) {
-    const existingPath = await prisma.invitation.findFirst({
-      where: { groomSlug, brideSlug, invitationSlug },
-    });
-    if (!existingPath) break;
-    collisionCounter++;
-    invitationSlug = `${baseInvitationSlug}-${collisionCounter}`;
+  const baseSlug = `${groomSlug}-${brideSlug}-${dateSegment}`;
+
+  // Cek collision — jika ada, tambahkan kota
+  let invitationSlug = baseSlug;
+  const existingBase = await prisma.invitation.findUnique({ where: { invitationSlug: baseSlug } });
+
+  if (existingBase) {
+    // Tambah kota untuk disambiguasi (lebih bermakna daripada angka)
+    const citySlug = city ? slugify(city) : "";
+    const withCity = citySlug ? `${baseSlug}-${citySlug}` : baseSlug;
+    const existingWithCity = await prisma.invitation.findUnique({ where: { invitationSlug: withCity } });
+
+    if (!existingWithCity) {
+      invitationSlug = withCity;
+    } else {
+      // Collision dengan kota juga → suffix acak pendek (sangat jarang terjadi)
+      const suffix = Date.now().toString(36).slice(-4);
+      invitationSlug = `${withCity}-${suffix}`;
+    }
   }
 
   // 2. Subdomain Assignment (Nullable if skipped)

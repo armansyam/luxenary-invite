@@ -101,13 +101,21 @@ export async function POST(req: NextRequest) {
         }
       });
 
-      // 3. Delete interactive data (Guests, RSVPs, Wishes, GuestMemories)
+      // 3. Delete interactive data (Guests, RSVPs, Wishes)
       await prisma.guest.deleteMany({ where: { invitationId: inv.id } });
       await prisma.rsvp.deleteMany({ where: { invitationId: inv.id } });
       await prisma.wish.deleteMany({ where: { invitationId: inv.id } });
+
+      // 4. Hapus fisik Guest Memories (Support R2 & Local) sebelum menghapus DB
+      const memories = await prisma.guestMemory.findMany({ where: { invitationId: inv.id } });
+      if (memories.length > 0) {
+        import("@/lib/storage").then(({ deleteFile }) => {
+          Promise.all(memories.map(mem => mem.mediaUrl ? deleteFile(mem.mediaUrl) : Promise.resolve())).catch(() => {});
+        });
+      }
       await prisma.guestMemory.deleteMany({ where: { invitationId: inv.id } });
 
-      // 4. Delete the memories physical folder to free up space at H+30
+      // Hapus folder fisik lokal (untuk jaga-jaga jika mode Local)
       const memoriesDir = path.join(process.cwd(), "public", "uploads", "invitations", inv.id, "memories");
       try {
         if (await fileExists(memoriesDir)) {
@@ -141,7 +149,15 @@ export async function POST(req: NextRequest) {
 
       // Hapus fisik folder & portofolio HTML
       for (const inv of user.invitations) {
-        // Hapus folder media
+        // Hapus file fisik InvitationMedia dari R2 (sebelum user dihapus dan cascade)
+        const medias = await prisma.invitationMedia.findMany({ where: { invitationId: inv.id } });
+        if (medias.length > 0) {
+          import("@/lib/storage").then(({ deleteFile }) => {
+            Promise.all(medias.map(m => m.localPath ? deleteFile(m.localPath) : Promise.resolve())).catch(() => {});
+          });
+        }
+
+        // Hapus folder media (untuk mode Local)
         const targetDir = path.join(process.cwd(), "public", "uploads", "invitations", inv.id);
         if (await fileExists(targetDir)) {
           try {
@@ -152,9 +168,6 @@ export async function POST(req: NextRequest) {
         
         // Hapus HTML
         await deletePublishedHtml(inv.id);
-        // Hapus portfolio HTML juga jika kita tau pattern awalnya
-        // (kita tidak tahu slug aslinya karena sudah direname, jadi portfolio mungkin jadi yatim.
-        // Tapi setidaknya folder besarnya sudah terhapus)
       }
 
       // Hapus User (Otomatis Cascade Delete Invitation ARCHIVED nya)

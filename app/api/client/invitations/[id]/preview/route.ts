@@ -46,7 +46,7 @@ export async function GET(
       return new NextResponse("Gagal memuat data template undangan.", { status: 500 });
     }
 
-    const html = await renderTemplateFile(invitation.themeId || "kalandra", data, { editMode: isEditMode });
+    const html = await renderTemplateFile(invitation.themeId || "kalandra", data, { editMode: isEditMode, invitationId: id });
 
     return new NextResponse(html, {
       headers: {

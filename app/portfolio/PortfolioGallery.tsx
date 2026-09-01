@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
 export interface PortfolioGalleryItem {
@@ -21,6 +21,13 @@ const INITIAL_LIMIT = 18; // 6 columns x 3 rows = 18 items max on desktop
 export function PortfolioGallery({ items }: PortfolioGalleryProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [visibleCount, setVisibleCount] = useState<number>(INITIAL_LIMIT);
+  const [platformName, setPlatformName] = useState("Platform Undangan");
+
+  useEffect(() => {
+    fetch("/api/public/settings").then(r => r.json()).then(d => {
+      if (d?.platformName) setPlatformName(d.platformName);
+    }).catch(() => {});
+  }, []);
 
   // Filter items by category
   const filteredItems = items.filter((item) => {
@@ -52,7 +59,7 @@ export function PortfolioGallery({ items }: PortfolioGalleryProps) {
           Belum Ada Undangan yang Diterbitkan
         </h3>
         <p className="text-xs text-stone-600 leading-relaxed">
-          Jadilah pasangan pertama yang menerbitkan mahakarya undangan pernikahan digital eksklusif bersama Luxenary Invite.
+          Jadilah pasangan pertama yang menerbitkan mahakarya undangan pernikahan digital eksklusif bersama {platformName}.
         </p>
         <div className="pt-2">
           <Link

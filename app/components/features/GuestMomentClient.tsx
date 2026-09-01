@@ -154,7 +154,7 @@ export default function GuestMomentClient({ invitationId, coupleName, coverUrl, 
           <span className="text-xs tracking-[0.3em] text-amber-500 font-bold uppercase mb-3 block">Guest Moment</span>
           <h1 className="text-4xl sm:text-5xl font-serif text-white tracking-wide mb-2 drop-shadow-xl">{coupleName}</h1>
           <p className="text-sm text-stone-300 italic font-serif opacity-90 max-w-xs mx-auto">
-            "Bagikan foto momen terbaik Anda secara langsung ke buku tamu digital kami."
+            &ldquo;Bagikan foto momen terbaik Anda secara langsung ke buku tamu digital kami.&rdquo;
           </p>
         </div>
 

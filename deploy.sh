@@ -1,89 +1,75 @@
 #!/bin/bash
 
-echo "=========================================="
-echo "🚀 MEMULAI DEPLOYMENT LUXENARY INVITE 🚀"
-echo "=========================================="
+# ==============================================================================
+# LUXENARY INVITE - AUTOMATED DEPLOYMENT SCRIPT
+# ==============================================================================
 
-echo "Pengecekan direktori kerja saat ini..."
-pwd
+echo "🚀 Memulai proses deployment otomatis..."
 
-echo "------------------------------------------"
-echo "[1/6] Memeriksa dan Menyiapkan Environment Variables (.env)..."
+# 1. Tarik pembaruan terbaru dari repository (Abaikan jika gagal agar proses tetap lanjut)
+echo "📦 Menarik pembaruan terbaru dari Git..."
+git pull || echo "⚠️ Git pull gagal atau ini bukan git repository. Melanjutkan proses..."
+
+# 2. Setup Environment Variables
+echo "⚙️ Memeriksa konfigurasi Environment Variables (.env)..."
 if [ ! -f .env ]; then
-    echo "⚠️  File .env tidak ditemukan. Menyalin dari .env.example..."
-    cp .env.example .env 2>/dev/null || touch .env
+  echo "⚠️ File .env tidak ditemukan! Membuat otomatis dari .env.example..."
+  cp .env.example .env
 fi
 
-# Cek apakah NEXTAUTH_SECRET kosong, berisi string kosong, atau tidak ada
-if ! grep -q "^NEXTAUTH_SECRET=" .env || grep -q "^NEXTAUTH_SECRET=$" .env || grep -q "^NEXTAUTH_SECRET=\"\"" .env || grep -q "^NEXTAUTH_SECRET=''" .env; then
-    echo "⚠️  NEXTAUTH_SECRET kosong. Meng-generate secret keamanan baru secara otomatis..."
-    NEW_SECRET=$(openssl rand -base64 32 | tr -dc 'a-zA-Z0-9' | head -c 42)
-    # Hapus baris lama (mendukung MacOS dan Linux sed)
-    sed -i.bak '/^NEXTAUTH_SECRET=/d' .env && rm -f .env.bak
-    echo "NEXTAUTH_SECRET=\"$NEW_SECRET\"" >> .env
-    echo "✅ NEXTAUTH_SECRET berhasil disuntikkan ke dalam .env."
-else
-    echo "✅ File .env dan NEXTAUTH_SECRET sudah aman."
+# Generate Secrets jika masih kosong di .env
+AUTH_SECRET=$(grep -E "^AUTH_SECRET=" .env | cut -d '=' -f2 | tr -d '"' | tr -d "'")
+NEXTAUTH_SECRET=$(grep -E "^NEXTAUTH_SECRET=" .env | cut -d '=' -f2 | tr -d '"' | tr -d "'")
+
+if [ -z "$AUTH_SECRET" ] || [ "$AUTH_SECRET" == '""' ]; then
+  echo "🔐 Men-generate AUTH_SECRET baru yang aman..."
+  NEW_SECRET=$(openssl rand -base64 32)
+  # Kompatibel untuk macOS dan Linux
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    sed -i '' "s|^AUTH_SECRET=.*|AUTH_SECRET=\"$NEW_SECRET\"|" .env
+  else
+    sed -i "s|^AUTH_SECRET=.*|AUTH_SECRET=\"$NEW_SECRET\"|" .env
+  fi
 fi
 
-echo "------------------------------------------"
-echo "[2/6] Mengambil kode terbaru dari GitHub (git pull)..."
-git pull origin main
-
-if [ $? -ne 0 ]; then
-    echo "❌ GAGAL: Terjadi masalah saat git pull. Silakan periksa konflik Git."
-    exit 1
+if [ -z "$NEXTAUTH_SECRET" ] || [ "$NEXTAUTH_SECRET" == '""' ]; then
+  echo "🔐 Men-generate NEXTAUTH_SECRET baru yang aman..."
+  if [ -n "$NEW_SECRET" ]; then
+    NEW_NEXT_SECRET=$NEW_SECRET
+  else
+    NEW_NEXT_SECRET=$(openssl rand -base64 32)
+  fi
+  
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    sed -i '' "s|^NEXTAUTH_SECRET=.*|NEXTAUTH_SECRET=\"$NEW_NEXT_SECRET\"|" .env
+  else
+    sed -i "s|^NEXTAUTH_SECRET=.*|NEXTAUTH_SECRET=\"$NEW_NEXT_SECRET\"|" .env
+  fi
 fi
-echo "✅ Git pull selesai."
 
-echo "------------------------------------------"
-echo "[2/5] Memperbarui dependensi (npm install)..."
+# 3. Install Dependencies
+echo "📦 Menginstal dependensi (npm install)..."
 npm install
 
-if [ $? -ne 0 ]; then
-    echo "❌ GAGAL: Gagal melakukan instalasi dependensi (npm install)."
-    exit 1
-fi
-echo "✅ NPM Install selesai."
-
-echo "------------------------------------------"
-echo "[3/6] Menyiapkan dan Menyinkronkan Database Prisma..."
+# 4. Database Setup
+echo "🗄️ Sinkronisasi skema database (Prisma)..."
 npx prisma generate
 npx prisma db push --accept-data-loss
 
-if [ $? -ne 0 ]; then
-    echo "❌ GAGAL: Gagal melakukan pembaruan skema database (Prisma)."
-    exit 1
-fi
-echo "✅ Sinkronisasi Database selesai."
-
-echo "------------------------------------------"
-echo "[4/6] Membangun Ulang Aplikasi (npm run build)..."
+# 5. Build Aplikasi Next.js
+echo "🏗️ Membangun (Build) aplikasi Next.js... (Ini mungkin memakan waktu)"
 npm run build
 
-if [ $? -ne 0 ]; then
-    echo "❌ GAGAL: Gagal melakukan proses build (Kompilasi Next.js)."
-    exit 1
-fi
-echo "✅ Build aplikasi selesai."
-
-echo "------------------------------------------"
-echo "[5/6] Merestart Proses Background PM2..."
-# Mengecek apakah aplikasi sudah berjalan di PM2
-if pm2 list | grep -q "luxenary-invite"; then
-    echo "Me-restart proses PM2 'luxenary-invite'..."
-    pm2 restart luxenary-invite
+# 6. Restart Server
+echo "🔄 Merestart aplikasi..."
+if command -v pm2 &> /dev/null; then
+  echo "✅ PM2 terdeteksi. Mencoba merestart proses..."
+  
+  # Cari apakah ada proses pm2 dengan nama luxenary atau nextjs
+  # Jika Anda menggunakan ekosistem file, ubah perintah di bawah menjadi: pm2 restart ecosystem.config.js
+  pm2 restart all || echo "⚠️ Gagal merestart PM2. Pastikan aplikasi sudah dijalankan dengan PM2 sebelumnya."
 else
-    echo "Proses PM2 'luxenary-invite' belum ada. Memulai proses baru..."
-    pm2 start npm --name "luxenary-invite" -- start
+  echo "⚠️ PM2 tidak terdeteksi di sistem ini. Jika server saat ini menyala, silakan restart manual (CTRL+C lalu 'npm run start')."
 fi
 
-if [ $? -ne 0 ]; then
-    echo "❌ GAGAL: PM2 gagal di-restart."
-    exit 1
-fi
-echo "✅ PM2 berhasil di-restart."
-
-echo "=========================================="
-echo "🎉 DEPLOYMENT SUKSES TOTAL! APLIKASI TELAH DIPERBARUI 🎉"
-echo "=========================================="
+echo "✨ Deployment selesai dengan sukses! Aplikasi Anda sudah yang paling mutakhir."

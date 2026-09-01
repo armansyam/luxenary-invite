@@ -13,6 +13,13 @@ function SuccessContent() {
   const [orderStatus, setOrderStatus] = useState<OrderStatus>(null);
   const [pollCount, setPollCount] = useState(0);
   const [timedOut, setTimedOut] = useState(false);
+  const [platformName, setPlatformName] = useState("Platform Undangan");
+
+  useEffect(() => {
+    fetch("/api/public/settings").then(r => r.json()).then(d => {
+      if (d?.platformName) setPlatformName(d.platformName);
+    }).catch(() => {});
+  }, []);
 
   // Poll order payment status every 3 seconds (max 20 polls = 60s)
   useEffect(() => {
@@ -103,7 +110,7 @@ function SuccessContent() {
             <h1 className="text-2xl font-bold text-white">Pembayaran Tidak Berhasil</h1>
             <p className="text-stone-400 text-sm mt-2">
               Status pembayaran: <span className="text-rose-400 font-bold uppercase">{orderStatus}</span>.
-              Silakan coba lagi atau hubungi tim Luxenary.
+              Silakan coba lagi atau hubungi tim {platformName}.
             </p>
           </div>
           <div className="flex flex-col gap-3">

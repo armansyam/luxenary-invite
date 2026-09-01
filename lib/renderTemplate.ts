@@ -588,7 +588,7 @@ const UNIFIED_CLIENT_RUNTIME_SCRIPT = `
 export async function renderTemplateFile(
   templateName: string,
   data: Record<string, any>,
-  options?: { editMode?: boolean }
+  options?: { editMode?: boolean; invitationId?: string }
 ): Promise<string> {
   const info = THEME_MAP[templateName] || { file: `${templateName}.html`, folder: "premium" };
 
@@ -604,7 +604,7 @@ export async function renderTemplateFile(
     }
   }
 
-  // Fallback checks across folders
+  // Fallback checks across folders for MASTER file
   if (!(await fileExists(tplPath))) {
     const premiumCheck = path.join(process.cwd(), "themes", "premium", `${templateName}.html`);
     const traditionalCheck = path.join(process.cwd(), "themes", "traditional", `${templateName}.html`);
@@ -618,6 +618,29 @@ export async function renderTemplateFile(
     } else {
       // Default fallback
       tplPath = path.join(process.cwd(), "themes", "premium", "kalandra.html");
+    }
+  }
+
+  // --- ARSITEKTUR PIRING (DRAFTS) ---
+  if (options?.invitationId) {
+    const draftsDir = path.join(process.cwd(), "data", "drafts");
+    const draftPath = path.join(draftsDir, `${options.invitationId}.html`);
+
+    if (!(await fileExists(draftsDir))) {
+      await fs.promises.mkdir(draftsDir, { recursive: true });
+    }
+
+    if (await fileExists(draftPath)) {
+      // Piring sudah ada, gunakan piring draft
+      tplPath = draftPath;
+    } else {
+      // Piring belum ada, copy dari master ke draft
+      try {
+        await fs.promises.copyFile(tplPath, draftPath);
+        tplPath = draftPath;
+      } catch (err) {
+        console.error("Failed to copy master theme to draft:", err);
+      }
     }
   }
 

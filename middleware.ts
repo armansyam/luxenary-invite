@@ -4,7 +4,7 @@ import { authConfig } from "@/auth.config";
 
 const { auth } = NextAuth(authConfig);
 
-export default auth((req) => {
+export default auth(async (req) => {
   const isLoggedIn = !!req.auth?.user;
   const isAdmin = (req.auth?.user as any)?.isAdmin === true || (req.auth?.user as any)?.role === "ADMIN" || (req.auth?.user as any)?.role === "SUPER_ADMIN";
   const { pathname } = req.nextUrl;
@@ -47,10 +47,12 @@ export default auth((req) => {
   // Root domain dibaca dari env — tidak hardcode agar bisa ganti domain tanpa ubah kode
   const envRootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost:3000").split(":")[0];
   const rootDomains = [envRootDomain, "localhost", "trycloudflare.com"].filter(Boolean);
-  const isCustomDomain = !rootDomains.some((d) => cleanHost === d || cleanHost === `www.${d}` || cleanHost.endsWith(`.${d}`));
+  const isSubdomainOfOurs = rootDomains.some((d) => cleanHost.endsWith(`.${d}`));
+  const isRootDomain = rootDomains.some((d) => cleanHost === d || cleanHost === `www.${d}`);
+  const isCustomDomain = !isSubdomainOfOurs && !isRootDomain;
 
-  if (isCustomDomain && !pathname.startsWith("/api") && !pathname.startsWith("/_next") && !pathname.startsWith("/static")) {
-    // Extract subdomain (e.g. 'didan-nasha' from 'didan-nasha.luxenary.id' or 'didan-nasha.localhost')
+  // ── A. Subdomain milik kita (e.g. arman-siti.luxenary.id) ──
+  if (isSubdomainOfOurs && !pathname.startsWith("/api") && !pathname.startsWith("/_next") && !pathname.startsWith("/static")) {
     const parts = cleanHost.split(".");
     if (parts.length > 1 && parts[0] !== "www" && parts[0] !== "admin" && parts[0] !== "api") {
       const subdomain = parts[0];
@@ -69,16 +71,17 @@ export default auth((req) => {
         rewriteUrl.search = req.nextUrl.search;
         return NextResponse.rewrite(rewriteUrl);
       }
-
-      
+      if (pathname === "/sharemoment") {
+        const rewriteUrl = new URL(`/s/${subdomain}/sharemoment`, req.url);
+        rewriteUrl.search = req.nextUrl.search;
+        return NextResponse.rewrite(rewriteUrl);
+      }
       // Dynamic Path Routing for Guest Invitation (e.g. /v=Budi or /Sutejo)
       const segments = pathname.split('/').filter(Boolean);
       if (segments.length === 1) {
-        const guestParam = segments[0]; 
+        const guestParam = segments[0];
         const rewriteUrl = new URL(`/published/${subdomain}.html`, req.url);
-        // Merge existing search params first
         rewriteUrl.search = req.nextUrl.search;
-        
         if (guestParam.startsWith('v=')) {
           rewriteUrl.searchParams.set('v', guestParam.slice(2));
         } else {
@@ -88,14 +91,69 @@ export default auth((req) => {
       }
     }
   }
-  // 6. Canonical Portfolio Path Routing (e.g. /didan-nasha/wedding)
-  if (!isCustomDomain && !pathname.startsWith("/api") && !pathname.startsWith("/_next") && !pathname.startsWith("/static") && !pathname.startsWith("/admin") && !pathname.startsWith("/dashboard") && !pathname.startsWith("/login")) {
-    const segments = pathname.split('/').filter(Boolean);
-    // Jika formatnya /namaclient atau /namaclient/slug
-    // Kita ambil namaclient (segments[0]) sebagai acuan nama file statis
-    if (segments.length >= 1 && !["uploads", "css", "js", "fonts", "images", "music", "assets", "downloads", "demo", "portfolio"].includes(segments[0])) {
-      const namaClient = segments[0];
-      const rewriteUrl = new URL(`/published/${namaClient}.html`, req.url);
+
+  // ── B. Custom Domain Klien (e.g. arman-siti.com) ──
+  // Struktur routing disiapkan: resolve domain ke subdomain internal lalu rewrite
+  if (isCustomDomain && !pathname.startsWith("/api") && !pathname.startsWith("/_next") && !pathname.startsWith("/static")) {
+    try {
+      const resolveUrl = new URL(`/api/public/resolve-custom-domain?host=${encodeURIComponent(cleanHost)}`, req.url);
+      const resolveRes = await fetch(resolveUrl.toString());
+
+      if (resolveRes.ok) {
+        const { subdomain } = await resolveRes.json();
+
+        if (subdomain) {
+          if (pathname === "/" || pathname === "") {
+            const rewriteUrl = new URL(`/published/${subdomain}.html`, req.url);
+            rewriteUrl.search = req.nextUrl.search;
+            return NextResponse.rewrite(rewriteUrl);
+          }
+          if (pathname === "/memories") {
+            return NextResponse.rewrite(new URL(`/s/${subdomain}/memories${req.nextUrl.search}`, req.url));
+          }
+          if (pathname === "/receptionist") {
+            return NextResponse.rewrite(new URL(`/s/${subdomain}/receptionist${req.nextUrl.search}`, req.url));
+          }
+          if (pathname === "/sharemoment") {
+            return NextResponse.rewrite(new URL(`/s/${subdomain}/sharemoment${req.nextUrl.search}`, req.url));
+          }
+          // Guest param routing
+          const segments = pathname.split('/').filter(Boolean);
+          if (segments.length === 1) {
+            const rewriteUrl = new URL(`/published/${subdomain}.html`, req.url);
+            rewriteUrl.searchParams.set('to', segments[0]);
+            return NextResponse.rewrite(rewriteUrl);
+          }
+        }
+      }
+    } catch {
+      // Resolusi gagal — biarkan Next.js handle (404)
+    }
+  }
+
+  // 6. Canonical Path Routing — Flat Slug (e.g. /arman-siti-030326 atau /arman-siti-030326/memories)
+  // Hanya untuk root domain, bukan subdomain atau custom domain
+  if (!isCustomDomain && !isSubdomainOfOurs && !pathname.startsWith("/api") && !pathname.startsWith("/_next") && !pathname.startsWith("/static") && !pathname.startsWith("/admin") && !pathname.startsWith("/dashboard") && !pathname.startsWith("/login") && !pathname.startsWith("/onboarding") && !pathname.startsWith("/packages") && !pathname.startsWith("/checkout") && !pathname.startsWith("/demo") && !pathname.startsWith("/portfolio") && !pathname.startsWith("/privacy") && !pathname.startsWith("/terms") && !pathname.startsWith("/refund") && !pathname.startsWith("/s/")) {
+    const segments = pathname.split("/").filter(Boolean);
+
+    // Exclusion list — path-path sistem yang tidak boleh di-intercept
+    const SYSTEM_PATHS = ["uploads", "css", "js", "fonts", "images", "music", "assets", "downloads", "published", "favicon.ico"];
+
+    if (segments.length >= 1 && !SYSTEM_PATHS.includes(segments[0])) {
+      const slug = segments[0]; // e.g. "arman-siti-030326"
+
+      // Sub-routes di bawah slug (memories, sharemoment, galery) — teruskan ke Next.js page
+      if (segments.length >= 2) {
+        const subRoute = segments[1];
+        const allowedSubRoutes = ["memories", "sharemoment", "galery"];
+        if (allowedSubRoutes.includes(subRoute)) {
+          // Biarkan Next.js routing menangani → app/(public)/[slug]/[subRoute]/page.tsx
+          return NextResponse.next();
+        }
+      }
+
+      // Root slug — serve static HTML jika ada, fallback ke Next.js page
+      const rewriteUrl = new URL(`/published/${slug}.html`, req.url);
       rewriteUrl.search = req.nextUrl.search;
       return NextResponse.rewrite(rewriteUrl);
     }

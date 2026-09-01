@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getGoogleDriveFolderPhotos } from "@/lib/driveHelper";
 
 export const dynamic = "force-dynamic";
 

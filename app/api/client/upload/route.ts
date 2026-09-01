@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 
 const SLOT_FILE_NAMES: Record<string, string> = {
   LANDING_COVER: "landing-cover",
+  HOME_PHOTO: "home-photo",
   DESKTOP_SIDEBAR: "sidebar-desktop",
   GLOBAL_FIXED_BG: "fixed-bg",
   BRIDE_PHOTO: "bride-photo",

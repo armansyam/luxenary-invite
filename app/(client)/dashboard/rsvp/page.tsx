@@ -14,6 +14,13 @@ export default function RsvpPage() {
   const [rsvps, setRsvps] = useState<any[]>([]);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [search, setSearch] = useState("");
+  const [platformName, setPlatformName] = useState("Platform");
+
+  useEffect(() => {
+    fetch("/api/public/settings").then(r => r.json()).then(d => {
+      if (d?.platformName) setPlatformName(d.platformName);
+    }).catch(() => {});
+  }, []);
 
   const loadRsvps = () => {
     setLoading(true);
@@ -66,7 +73,7 @@ export default function RsvpPage() {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `Rekap_RSVP_Luxenary_${Date.now()}.csv`);
+    link.setAttribute("download", `Rekap_RSVP_${platformName.replace(/\s+/g, "_")}_${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

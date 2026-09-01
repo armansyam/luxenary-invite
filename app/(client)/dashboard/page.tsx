@@ -72,7 +72,7 @@ export default function DashboardHome() {
       .catch(() => setLoading(false));
   }, [router]);
 
-  const subdomainName = invitation?.subdomain || `${invitation?.groomSlug || "didan"}-${invitation?.brideSlug || "nasha"}`;
+  const subdomainName = invitation?.subdomain || `${invitation?.groomSlug || "mempelai"}-${invitation?.brideSlug || "pria"}`;
   const invUrl = getInvitationPublicUrl(subdomainName);
 
   const handleCopyLink = () => {
@@ -138,10 +138,17 @@ export default function DashboardHome() {
               <span className="px-2.5 py-1 bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] sm:text-[11px] font-bold rounded-full uppercase tracking-wider">
                 UNDANGAN PERNIKAHAN
               </span>
-              <span className="px-2.5 py-1 bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[10px] sm:text-[11px] font-bold rounded-full uppercase tracking-wider flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                AKTIF
-              </span>
+              {invitation?.status === 'PUBLISHED' ? (
+                <span className="px-2.5 py-1 bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[10px] sm:text-[11px] font-bold rounded-full uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  AKTIF
+                </span>
+              ) : (
+                <span className="px-2.5 py-1 bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] sm:text-[11px] font-bold rounded-full uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                  DRAFT
+                </span>
+              )}
             </div>
             
             <span className="text-[11px] text-stone-400 font-medium capitalize">
@@ -151,7 +158,7 @@ export default function DashboardHome() {
 
           <div>
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-stone-100 leading-tight">
-              {invitation?.groomName || "Didan Faadhilah"} &amp; {invitation?.brideName || "Nasha Selsabilla"}
+              {invitation?.groomName || "Mempelai Pria"} &amp; {invitation?.brideName || "Mempelai Wanita"}
             </h1>
             <p className="text-xs sm:text-sm text-stone-400 mt-1 max-w-xl">
               Kelola seluruh konten, galeri, susunan acara, dan tamu undangan Anda dari satu panel kontrol.
@@ -170,55 +177,70 @@ export default function DashboardHome() {
               <span>Edit Undangan (Studio)</span>
             </Link>
 
-            <a
-              href={`/${invitation?.groomSlug || "didan"}-${invitation?.brideSlug || "nasha"}/${invitation?.invitationSlug || "okt-2026"}/memories`}
-              target="_blank"
-              rel="noreferrer"
-              className="w-full sm:w-auto px-4 py-3 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-stone-950 font-bold rounded-xl text-xs transition shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
-            >
-              <svg className="w-4 h-4 text-stone-950" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              <span>Galeri Momen Tamu</span>
-            </a>
+            {invitation?.status === 'PUBLISHED' ? (
+              <>
+                <a
+                  href={`${invUrl}/memories`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-full sm:w-auto px-4 py-3 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-stone-950 font-bold rounded-xl text-xs transition shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <svg className="w-4 h-4 text-stone-950" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <span>Galeri Momen Tamu</span>
+                </a>
 
-            <div className="grid grid-cols-2 sm:flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handleCopyLink}
-                className="px-4 py-3 bg-stone-800 hover:bg-stone-700 text-stone-200 font-semibold rounded-xl text-xs transition border border-stone-700 flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <svg className="w-4 h-4 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                </svg>
-                <span>{copied ? "Tersalin!" : "Salin Link"}</span>
-              </button>
+                <div className="grid grid-cols-2 sm:flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleCopyLink}
+                    className="px-4 py-3 bg-stone-800 hover:bg-stone-700 text-stone-200 font-semibold rounded-xl text-xs transition border border-stone-700 flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <svg className="w-4 h-4 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                    </svg>
+                    <span>{copied ? "Tersalin!" : "Salin Link"}</span>
+                  </button>
 
-              <a
-                href={invUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="px-4 py-3 bg-stone-800 hover:bg-stone-700 text-amber-400 font-semibold rounded-xl text-xs transition border border-stone-700 flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <span>Buka Web</span>
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-              </a>
-            </div>
+                  <a
+                    href={invUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-4 py-3 bg-stone-800 hover:bg-stone-700 text-amber-400 font-semibold rounded-xl text-xs transition border border-stone-700 flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <span>Buka Web</span>
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </a>
+                </div>
+              </>
+            ) : (
+              <div className="w-full mt-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-300 flex items-start gap-2">
+                <svg className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <p><strong>Belum Terbit.</strong> URL Undangan dan Galeri Momen akan tersedia dan bisa disalin setelah Anda menekan Publish di dalam Studio.</p>
+              </div>
+            )}
           </div>
 
           {/* URL Bars (Undangan + Galeri Kenangan) */}
           <div className="pt-3 border-t border-stone-800 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-stone-400 font-mono">
             <div className="bg-stone-950/40 p-2.5 rounded-xl flex items-center justify-between gap-2">
-              <span className="truncate text-amber-200/90">{invUrl}</span>
+              {invitation?.status === 'PUBLISHED' ? (
+                <span className="truncate text-amber-200/90">{invUrl}</span>
+              ) : (
+                <span className="truncate text-stone-600 italic">URL tersedia setelah Publish</span>
+              )}
               <span className="text-[10px] font-sans text-stone-500 shrink-0">Web Undangan</span>
             </div>
             <div className="bg-stone-950/40 p-2.5 rounded-xl flex items-center justify-between gap-2">
-              <span className="truncate text-amber-400">
-                {`/${invitation?.groomSlug || "didan"}-${invitation?.brideSlug || "nasha"}/${invitation?.invitationSlug || "okt-2026"}/memories`}
-              </span>
+              {invitation?.status === 'PUBLISHED' ? (
+                <span className="truncate text-amber-400">{`${invUrl}/memories`}</span>
+              ) : (
+                <span className="truncate text-stone-600 italic">Tersedia setelah Publish</span>
+              )}
               <span className="text-[10px] font-sans text-stone-500 shrink-0">Galeri Momen</span>
             </div>
           </div>
@@ -268,8 +290,20 @@ export default function DashboardHome() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
             </svg>
           </div>
-          <p className="text-sm font-bold text-stone-900">All-Access Premium</p>
-          <span className="text-[10px] text-stone-400 block">Bebas ganti 5 tema</span>
+          <p className="text-sm font-bold text-stone-900">
+            {invitation?.order?.planType
+              ? `Paket ${invitation.order.planType.charAt(0) + invitation.order.planType.slice(1).toLowerCase()}`
+              : "—"}
+          </p>
+          <span className="text-[10px] text-stone-400 block">
+            {invitation?.order?.planType === "PREMIUM"
+              ? "Akses semua tema Premium, Modern & Traditional"
+              : invitation?.order?.planType === "MODERN"
+              ? "Akses tema Modern & Traditional"
+              : invitation?.order?.planType === "TRADITIONAL"
+              ? "Akses tema Traditional"
+              : "Belum ada paket aktif"}
+          </span>
         </div>
       </div>
 
@@ -353,14 +387,20 @@ export default function DashboardHome() {
               Album foto candid &amp; video ucapan dari sahabat yang dibagikan pasca acara.
             </p>
           </div>
-          <a
-            href={`/${invitation?.groomSlug || "didan"}-${invitation?.brideSlug || "nasha"}/${invitation?.invitationSlug || "okt-2026"}/memories`}
-            target="_blank"
-            rel="noreferrer"
-            className="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs transition text-center inline-flex items-center justify-center gap-1 shadow-xs"
-          >
-            <span>Buka Galeri Momen</span>
-          </a>
+          {invitation?.status === 'PUBLISHED' ? (
+            <a
+              href={`${invUrl}/memories`}
+              target="_blank"
+              rel="noreferrer"
+              className="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs transition text-center inline-flex items-center justify-center gap-1 shadow-xs"
+            >
+              <span>Buka Galeri Momen</span>
+            </a>
+          ) : (
+            <div className="w-full py-2.5 bg-stone-200 text-stone-400 font-bold rounded-xl text-xs transition text-center inline-flex items-center justify-center gap-1 cursor-not-allowed">
+              <span>Buka Galeri Momen (Draft)</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -377,7 +417,7 @@ export default function DashboardHome() {
             <svg className="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
-            <span className="text-[11px] font-bold text-rose-800">PIN Akses Panitia: <span className="font-mono text-sm ml-1 tracking-widest">{invitation?.staffPin || "123456"}</span></span>
+            <span className="text-[11px] font-bold text-rose-800">PIN Akses Panitia: <span className="font-mono text-sm ml-1 tracking-widest">{invitation?.staffPin || "-"}</span></span>
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 sm:gap-5">
@@ -388,9 +428,15 @@ export default function DashboardHome() {
               <h3 className="text-sm font-bold text-stone-900 mb-1">Buku Tamu Digital (QR)</h3>
               <p className="text-[11px] text-stone-500 leading-relaxed">Buka di tablet penerima tamu untuk scan QR Code tamu yang datang.</p>
             </div>
-            <a href={`/s/${invitation?.subdomain}/receptionist`} target="_blank" className="w-full py-2 bg-stone-100 hover:bg-emerald-50 text-emerald-800 font-bold rounded-xl text-xs transition text-center border border-stone-200">
-              Buka Scanner QR
-            </a>
+            {invitation?.status === 'PUBLISHED' && invitation?.subdomain ? (
+              <a href={`/s/${invitation.subdomain}/receptionist`} target="_blank" className="w-full py-2 bg-stone-100 hover:bg-emerald-50 text-emerald-800 font-bold rounded-xl text-xs transition text-center border border-stone-200">
+                Buka Scanner QR
+              </a>
+            ) : (
+              <div className="w-full py-2 bg-stone-100 text-stone-400 font-bold rounded-xl text-xs text-center border border-stone-200 cursor-not-allowed">
+                Tersedia setelah Publish
+              </div>
+            )}
           </div>
 
           {/* QR Guest Moment (New) */}
@@ -402,26 +448,43 @@ export default function DashboardHome() {
               </div>
               <p className="text-[11px] text-stone-500 leading-relaxed mb-4">Cetak URL ini sebagai Standing Banner di meja agar tamu bisa kirim foto.</p>
               
-              <div className="flex justify-center mb-2 bg-white p-2 rounded-xl border border-amber-100 shadow-inner max-w-[120px] mx-auto" ref={qrRef}>
-                <QRCode
-                  value={`https://${invitation?.subdomain || "demo"}.luxenary-invite.com/moment`}
-                  size={100}
-                  style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                  viewBox={`0 0 100 100`}
-                  fgColor="#451a03" // amber-950
-                />
-              </div>
+              {invitation?.status === 'PUBLISHED' ? (
+                <div className="flex justify-center mb-2 bg-white p-2 rounded-xl border border-amber-100 shadow-inner max-w-[120px] mx-auto" ref={qrRef}>
+                  <QRCode
+                    value={`${invUrl}/sharemoment`}
+                    size={100}
+                    style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                    viewBox={`0 0 100 100`}
+                    fgColor="#451a03" // amber-950
+                  />
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-[120px] mb-2 bg-stone-50 rounded-xl border border-stone-200 border-dashed text-stone-400 text-[10px] text-center p-2 mx-auto max-w-[120px]">
+                  QR Code tersedia setelah Publish
+                </div>
+              )}
             </div>
             
             <div className="flex gap-2">
-              <button onClick={handleDownloadQR} className="flex-1 py-2 border-2 border-dashed border-amber-500 text-amber-700 font-bold rounded-xl text-[10px] transition text-center hover:bg-amber-50 flex flex-col items-center justify-center gap-1">
+              <button 
+                onClick={invitation?.status === 'PUBLISHED' ? handleDownloadQR : undefined} 
+                className={`flex-1 py-2 border-2 border-dashed font-bold rounded-xl text-[10px] transition text-center flex flex-col items-center justify-center gap-1 ${invitation?.status === 'PUBLISHED' ? 'border-amber-500 text-amber-700 hover:bg-amber-50' : 'border-stone-200 text-stone-300 cursor-not-allowed'}`}
+                disabled={invitation?.status !== 'PUBLISHED'}
+              >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                 Unduh PNG
               </button>
-              <a href={`/s/${invitation?.subdomain}/moment`} target="_blank" className="flex-1 py-2 bg-amber-600 text-white font-bold rounded-xl text-[10px] transition text-center hover:bg-amber-700 flex flex-col items-center justify-center gap-1 shadow-xs">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                Buka Link
-              </a>
+              {invitation?.status === 'PUBLISHED' ? (
+                <a href={`${invUrl}/sharemoment`} target="_blank" rel="noreferrer" className="flex-1 py-2 bg-amber-600 text-white font-bold rounded-xl text-[10px] transition text-center hover:bg-amber-700 flex flex-col items-center justify-center gap-1 shadow-xs">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                  Buka Link
+                </a>
+              ) : (
+                <div className="flex-1 py-2 bg-stone-100 text-stone-300 font-bold rounded-xl text-[10px] transition text-center flex flex-col items-center justify-center gap-1 cursor-not-allowed">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                  Buka Link
+                </div>
+              )}
             </div>
           </div>
 
