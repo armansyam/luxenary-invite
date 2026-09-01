@@ -4,30 +4,45 @@ import { useState, useEffect } from "react";
 
 interface StaffLockScreenProps {
   invitationId: string;
-  correctPin: string;
   children: React.ReactNode;
 }
 
-export default function StaffLockScreen({ invitationId, correctPin, children }: StaffLockScreenProps) {
+export default function StaffLockScreen({ invitationId, children }: StaffLockScreenProps) {
   const [isLocked, setIsLocked] = useState(true);
   const [pinInput, setPinInput] = useState("");
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    // Check if previously authorized
+    // We optimistically unlock if there's a PIN in localStorage. 
+    // The actual API will reject invalid PINs when scanning.
     const savedPin = localStorage.getItem(`staff_auth_${invitationId}`);
-    if (savedPin === correctPin) {
+    if (savedPin) {
       setIsLocked(false);
     }
-  }, [invitationId, correctPin]);
+  }, [invitationId]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (pinInput === correctPin) {
-      localStorage.setItem(`staff_auth_${invitationId}`, correctPin);
-      setIsLocked(false);
-      setError(false);
-    } else {
+    if (!pinInput) return;
+
+    try {
+      const res = await fetch('/api/receptionist/verify-pin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ invitationId, pin: pinInput })
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        localStorage.setItem(`staff_auth_${invitationId}`, pinInput);
+        setIsLocked(false);
+        setError(false);
+      } else {
+        setError(true);
+        setPinInput("");
+      }
+    } catch (err) {
       setError(true);
       setPinInput("");
     }

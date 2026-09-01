@@ -64,10 +64,11 @@ export default function ReceptionistScannerClient({ invitationId }: { invitation
         if (!guest || !guest.qrToken) continue;
 
         try {
+          const staffPin = localStorage.getItem(`staff_auth_${invitationId}`);
           const res = await fetch("/api/receptionist/scan", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ qrToken: guest.qrToken, invitationId }),
+            body: JSON.stringify({ qrToken: guest.qrToken, invitationId, isCheckIn: true, staffPin }),
           });
           const data = await res.json();
           if (data.success) {

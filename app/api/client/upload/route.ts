@@ -13,6 +13,7 @@ const SLOT_FILE_NAMES: Record<string, string> = {
   BRIDE_PHOTO: "bride-photo",
   GROOM_PHOTO: "groom-photo",
   QRIS: "qris",
+  CLOSING_COVER: "closing-cover",
 };
 
 export async function POST(req: NextRequest) {

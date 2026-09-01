@@ -4,10 +4,20 @@ import { sseEmitter } from "@/lib/sseEmitter";
 
 export async function POST(req: NextRequest) {
   try {
-    const { qrToken, invitationId, isCheckIn } = await req.json();
+    const { qrToken, invitationId, isCheckIn, staffPin } = await req.json();
 
-    if (!qrToken) {
-      return NextResponse.json({ error: "QR Token wajib diisi" }, { status: 400 });
+    if (!qrToken || !invitationId || !staffPin) {
+      return NextResponse.json({ error: "Data tidak lengkap" }, { status: 400 });
+    }
+
+    // Server-side authorization check
+    const invitationAuth = await prisma.invitation.findUnique({
+      where: { id: invitationId },
+      select: { staffPin: true }
+    });
+
+    if (!invitationAuth || invitationAuth.staffPin !== staffPin) {
+      return NextResponse.json({ error: "Akses Ditolak. PIN tidak valid." }, { status: 401 });
     }
 
     let guest = null;

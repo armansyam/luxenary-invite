@@ -251,6 +251,11 @@ export default function AdminPage() {
   const router = useRouter();
 
   const [activeTab, setActiveTab] = useState("overview");
+  const [orderTab, setOrderTab] = useState("PENDING"); // PENDING, PAID, FAILED, SEMUA
+  const [clientPage, setClientPage] = useState(1);
+  const [manageClient, setManageClient] = useState<any | null>(null);
+  const [deletingClient, setDeletingClient] = useState(false);
+  const [clientActionMsg, setClientActionMsg] = useState<{ ok: boolean; msg: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
   const userRole = (session?.user as any)?.role || "CLIENT";
@@ -427,6 +432,27 @@ export default function AdminPage() {
       })
       .catch(() => setLoading(false));
   }, []);
+
+  const handleDeleteClient = async (id: string) => {
+    if (!confirm("Hapus klien ini secara permanen? Semua data undangan dan transaksi miliknya akan terhapus juga!")) return;
+    setDeletingClient(true);
+    setClientActionMsg(null);
+    try {
+      const res = await fetch(`/api/admin/users?id=${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setClientActionMsg({ ok: true, msg: data.message });
+        setManageClient(null);
+        loadOverviewData();
+      } else {
+        setClientActionMsg({ ok: false, msg: data.error || "Gagal menghapus klien." });
+      }
+    } catch (e: any) {
+      setClientActionMsg({ ok: false, msg: e.message || "Gagal menghapus klien." });
+    } finally {
+      setDeletingClient(false);
+    }
+  };
 
   const loadSettings = useCallback(() => {
     fetch("/api/admin/settings")
@@ -1702,7 +1728,26 @@ export default function AdminPage() {
                       <h2 className="text-2xl font-bold text-gray-900">Daftar Transaksi</h2>
                       <p className="text-sm text-gray-500">{orders.length} transaksi total</p>
                     </div>
-                    <button onClick={loadOverviewData} className="px-3 py-1.5 text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition cursor-pointer">↻ Refresh</button>
+                    <button onClick={loadOverviewData} className="px-3 py-1.5 text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition cursor-pointer">
+                      ↻ Refresh
+                    </button>
+                  </div>
+
+                  {/* ── Transaction Subtabs ── */}
+                  <div className="flex border-b border-gray-200 overflow-x-auto hide-scrollbar">
+                    {["PENDING", "PAID", "FAILED", "SEMUA"].map(tab => (
+                      <button
+                        key={tab}
+                        onClick={() => setOrderTab(tab)}
+                        className={`px-5 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${
+                          orderTab === tab 
+                            ? "border-amber-500 text-amber-600" 
+                            : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                        }`}
+                      >
+                        {tab === "PENDING" ? "Menunggu Pembayaran" : tab === "PAID" ? "Sukses / Lunas" : tab === "FAILED" ? "Gagal / Dibatalkan" : "Semua Transaksi"}
+                      </button>
+                    ))}
                   </div>
 
                   {/* ── Desktop Widescreen Table View ── */}
@@ -1717,9 +1762,9 @@ export default function AdminPage() {
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-50">
-                          {orders.length === 0 ? (
+                          {orders.filter(ord => orderTab === "SEMUA" || ord.status === orderTab).length === 0 ? (
                             <tr><td colSpan={9} className="px-5 py-8 text-center text-gray-400 italic">Belum ada transaksi</td></tr>
-                          ) : orders.map((ord) => (
+                          ) : orders.filter(ord => orderTab === "SEMUA" || ord.status === orderTab).map((ord) => (
                             <tr key={ord.id} className="hover:bg-gray-50 transition">
                               <td className="px-4 py-3 text-xs font-mono text-gray-700 font-bold">{ord.invoiceNumber}</td>
                               <td className="px-4 py-3 text-xs text-gray-800 font-medium">
@@ -1844,12 +1889,11 @@ export default function AdminPage() {
 
                   {/* ── Mobile-Native Compact Feed View ── */}
                   <div className="block md:hidden space-y-3">
-                    {orders.length === 0 ? (
+                    {orders.filter(ord => orderTab === "SEMUA" || ord.status === orderTab).length === 0 ? (
                       <div className="p-8 text-center bg-white rounded-2xl border border-gray-200 text-gray-400 text-xs italic">
                         Belum ada transaksi
                       </div>
-                    ) : (
-                      orders.map((ord) => (
+                    ) : orders.filter(ord => orderTab === "SEMUA" || ord.status === orderTab).map((ord) => (
                         <div key={ord.id} className="bg-white rounded-2xl p-4 border border-gray-200 shadow-2xs space-y-2.5">
                           {/* Top: Invoice + Status */}
                           <div className="flex items-center justify-between gap-2">
@@ -1958,7 +2002,7 @@ export default function AdminPage() {
                           )}
                         </div>
                       ))
-                    )}
+                    }
                   </div>
                 </div>
               )}
@@ -1966,9 +2010,11 @@ export default function AdminPage() {
               {/* ── Users ── */}
               {activeTab === "users" && (
                 <div className="space-y-5">
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-900">Daftar Klien</h2>
-                    <p className="text-sm text-gray-500">{users.filter((u) => u.role !== "ADMIN").length} klien terdaftar</p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-900">Daftar Klien</h2>
+                      <p className="text-sm text-gray-500">{users.filter((u) => u.role !== "ADMIN").length} klien terdaftar</p>
+                    </div>
                   </div>
 
                   {/* ── Desktop Widescreen Table View ── */}
@@ -1977,7 +2023,7 @@ export default function AdminPage() {
                       <table className="min-w-full divide-y divide-gray-100">
                         <thead className="bg-gray-50">
                           <tr>
-                            {["Nama", "Email", "Role", "Terdaftar"].map((h) => (
+                            {["Nama", "Email", "Terdaftar", "Aksi"].map((h) => (
                               <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{h}</th>
                             ))}
                           </tr>
@@ -1985,17 +2031,17 @@ export default function AdminPage() {
                         <tbody className="divide-y divide-gray-50">
                           {users
                             .filter((usr) => usr.role !== "ADMIN")
+                            .slice((clientPage - 1) * 10, clientPage * 10)
                             .map((usr) => (
                               <tr key={usr.id} className="hover:bg-gray-50 transition">
                                 <td className="px-5 py-3 text-sm font-semibold text-gray-900">{usr.name}</td>
                                 <td className="px-5 py-3 text-sm text-gray-600 font-mono text-xs">{usr.email}</td>
-                                <td className="px-5 py-3">
-                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                                    Klien
-                                  </span>
-                                </td>
                                 <td className="px-5 py-3 text-xs text-gray-500">{new Date(usr.createdAt).toLocaleDateString("id-ID")}</td>
+                                <td className="px-5 py-3">
+                                  <button onClick={() => { setManageClient(usr); setClientActionMsg(null); }} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-semibold transition cursor-pointer">
+                                    Kelola Klien
+                                  </button>
+                                </td>
                               </tr>
                             ))}
                           {users.filter((usr) => usr.role !== "ADMIN").length === 0 && (
@@ -2019,6 +2065,7 @@ export default function AdminPage() {
                     ) : (
                       users
                         .filter((usr) => usr.role !== "ADMIN")
+                        .slice((clientPage - 1) * 10, clientPage * 10)
                         .map((usr) => (
                           <div key={usr.id} className="bg-white rounded-2xl p-3.5 border border-gray-200 shadow-2xs flex items-center justify-between gap-3">
                             <div className="flex items-center gap-3 min-w-0">
@@ -2028,18 +2075,41 @@ export default function AdminPage() {
                               <div className="min-w-0">
                                 <div className="font-semibold text-xs text-gray-900 truncate">{usr.name || "Klien"}</div>
                                 <div className="text-gray-500 text-[11px] font-mono truncate">{usr.email}</div>
+                                <div className="text-[10px] text-gray-400 mt-0.5">{new Date(usr.createdAt).toLocaleDateString("id-ID")}</div>
                               </div>
                             </div>
-                            <div className="text-right shrink-0">
-                              <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 mb-0.5">
-                                Klien
-                              </span>
-                              <span className="text-[10px] text-gray-400 block">{new Date(usr.createdAt).toLocaleDateString("id-ID")}</span>
+                            <div className="shrink-0">
+                              <button onClick={() => {}} className="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-semibold transition cursor-pointer">
+                                Kelola
+                              </button>
                             </div>
                           </div>
                         ))
                     )}
                   </div>
+
+                  {/* ── Pagination Controls ── */}
+                  {users.filter((usr) => usr.role !== "ADMIN").length > 10 && (
+                    <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                      <button
+                        onClick={() => setClientPage(p => Math.max(1, p - 1))}
+                        disabled={clientPage === 1}
+                        className="px-4 py-2 text-xs font-semibold bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition"
+                      >
+                        Sebelumnya
+                      </button>
+                      <span className="text-xs font-medium text-gray-500">
+                        Halaman {clientPage} dari {Math.ceil(users.filter(u => u.role !== "ADMIN").length / 10)}
+                      </span>
+                      <button
+                        onClick={() => setClientPage(p => Math.min(Math.ceil(users.filter(u => u.role !== "ADMIN").length / 10), p + 1))}
+                        disabled={clientPage === Math.ceil(users.filter(u => u.role !== "ADMIN").length / 10)}
+                        className="px-4 py-2 text-xs font-semibold bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition"
+                      >
+                        Selanjutnya
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -5747,6 +5817,72 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+      {/* --- Kelola Klien Modal --- */}
+      {manageClient && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setManageClient(null)}></div>
+          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+              <div>
+                <h3 className="font-bold text-gray-900 text-lg">Kelola Klien</h3>
+                <p className="text-xs text-gray-500">ID: {manageClient.id}</p>
+              </div>
+              <button onClick={() => setManageClient(null)} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition cursor-pointer">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto">
+              {clientActionMsg && (
+                <div className={`mb-5 p-3 rounded-xl text-sm font-medium ${clientActionMsg.ok ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>
+                  {clientActionMsg.msg}
+                </div>
+              )}
+              
+              <div className="space-y-4">
+                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                  <div className="text-xs text-gray-400 font-medium mb-1">Nama Lengkap</div>
+                  <div className="text-sm font-bold text-gray-900">{manageClient.name}</div>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                  <div className="text-xs text-gray-400 font-medium mb-1">Email</div>
+                  <div className="text-sm font-mono text-gray-700">{manageClient.email}</div>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                  <div className="text-xs text-gray-400 font-medium mb-1">Tanggal Terdaftar</div>
+                  <div className="text-sm text-gray-700">{new Date(manageClient.createdAt).toLocaleString("id-ID")}</div>
+                </div>
+              </div>
+
+              <div className="mt-8 pt-6 border-t border-gray-100">
+                <h4 className="text-sm font-bold text-rose-600 mb-2">Zona Berbahaya</h4>
+                <p className="text-xs text-gray-500 mb-4">
+                  Menghapus akun klien akan menghapus semua undangan, pengaturan, aset media, dan histori transaksi klien ini secara permanen. Tindakan ini tidak dapat dibatalkan.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteClient(manageClient.id)}
+                  disabled={deletingClient}
+                  className="w-full px-4 py-3 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {deletingClient ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-rose-600 border-t-transparent rounded-full animate-spin"></span>
+                      Menghapus...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                      Hapus Akun Klien Permanen
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

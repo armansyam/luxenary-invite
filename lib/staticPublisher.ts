@@ -126,11 +126,6 @@ export async function getPublishedHtml(invitationId: string, category?: string):
   }
 }
 
-/**
- * Bakes / Compiles the standalone HTML document for a published invitation.
- * Saves to public/published/[category]/[invitationId].html.
- * Once generated, public guests load purely from this file without ever touching master templates.
- */
 export async function buildAndSavePublishedHtml(invitationId: string): Promise<string | null> {
   const invitation = await prisma.invitation.findUnique({
     where: { id: invitationId },
@@ -143,26 +138,49 @@ export async function buildAndSavePublishedHtml(invitationId: string): Promise<s
 
   const category = getThemeCategory(invitation.themeId || "kalandra");
 
+  // 1. Generate Meta Tags (Generic to Couple, No Guest Name)
+  const coupleName = `${invitation.groomNickname || invitation.groomName || "Groom"} & ${invitation.brideNickname || invitation.brideName || "Bride"}`;
+  const title = `The Wedding of ${coupleName}`;
+  const description = `Kami mengundang Anda untuk hadir di hari bahagia kami.`;
+  
+  const coverMedia = await prisma.invitationMedia.findFirst({
+    where: { invitationId: invitation.id, mediaSlot: "LANDING_COVER" }
+  });
+  const imageUrl = coverMedia?.driveViewUrl || coverMedia?.localPath || "https://luxenary.id/default-og.jpg";
+
+  const metaTagsHtml = `
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>${title}</title>
+    <meta name="description" content="${description}">
+    <meta property="og:title" content="${title}">
+    <meta property="og:description" content="${description}">
+    <meta property="og:image" content="${imageUrl}">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="${title}">
+    <meta name="twitter:description" content="${description}">
+    <meta name="twitter:image" content="${imageUrl}">
+  `;
+  
+  (data as any).metaTagsHtml = metaTagsHtml;
+
   // Render standalone HTML without edit controls
   const standaloneHtml = await renderTemplateFile(invitation.themeId || "kalandra", data, { editMode: false });
 
   await ensurePublishedDir(category);
-  const filePath = await getPublishedFilePath(invitation.id, category);
-
-  await fs.promises.writeFile(filePath, standaloneHtml, "utf-8");
-
-  // Also save a permanent portfolio copy accessible without DB
-  const portfolioDir = path.join(process.cwd(), "public", "portfolio");
-  try {
-    await fs.promises.access(portfolioDir);
-  } catch {
-    await fs.promises.mkdir(portfolioDir, { recursive: true });
+  
+  // Save using subdomain for Edge Middleware static serving
+  let filePath = "None (No Subdomain)";
+  if (invitation.subdomain) {
+    filePath = path.join(PUBLISHED_DIR, `${invitation.subdomain}.html`);
+    await fs.promises.writeFile(filePath, standaloneHtml, "utf-8");
   }
-  const portfolioFileName = `${invitation.groomSlug}-${invitation.brideSlug}-${invitation.invitationSlug}.html`;
-  const portfolioPath = path.join(portfolioDir, portfolioFileName);
-  await fs.promises.writeFile(portfolioPath, standaloneHtml, "utf-8");
 
-  console.log(`[Static Publisher] Standalone HTML baked successfully: ${filePath} & Portfolio: ${portfolioFileName} (${(standaloneHtml.length / 1024).toFixed(1)} KB)`);
+  // Save legacy fallback format just in case
+  const fallbackPath = await getPublishedFilePath(invitation.id, category);
+  await fs.promises.writeFile(fallbackPath, standaloneHtml, "utf-8");
+
+  console.log(`[Static Publisher] Standalone HTML baked successfully: ${filePath} (${(standaloneHtml.length / 1024).toFixed(1)} KB)`);
 
   return standaloneHtml;
 }
@@ -172,6 +190,17 @@ export async function buildAndSavePublishedHtml(invitationId: string): Promise<s
  */
 export async function deletePublishedHtml(invitationId: string, category?: string): Promise<boolean> {
   let deleted = false;
+  
+  const inv = await prisma.invitation.findUnique({ where: { id: invitationId }, select: { subdomain: true } });
+  if (inv && inv.subdomain) {
+      const subPath = path.join(PUBLISHED_DIR, `${inv.subdomain}.html`);
+      try {
+          await fs.promises.access(subPath);
+          await fs.promises.unlink(subPath);
+          deleted = true;
+      } catch {}
+  }
+
   const categories = category ? [category] : ["premium", "traditional", "modern"];
   for (const c of categories) {
     const p = path.join(PUBLISHED_DIR, c, `${invitationId}.html`);

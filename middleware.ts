@@ -55,7 +55,7 @@ export default auth((req) => {
     if (parts.length > 1 && parts[0] !== "www" && parts[0] !== "admin" && parts[0] !== "api") {
       const subdomain = parts[0];
       if (pathname === "/" || pathname === "") {
-        const rewriteUrl = new URL(`/s/${subdomain}`, req.url);
+        const rewriteUrl = new URL(`/published/${subdomain}.html`, req.url);
         rewriteUrl.search = req.nextUrl.search;
         return NextResponse.rewrite(rewriteUrl);
       }
@@ -75,7 +75,7 @@ export default auth((req) => {
       const segments = pathname.split('/').filter(Boolean);
       if (segments.length === 1) {
         const guestParam = segments[0]; 
-        const rewriteUrl = new URL(`/s/${subdomain}`, req.url);
+        const rewriteUrl = new URL(`/published/${subdomain}.html`, req.url);
         // Merge existing search params first
         rewriteUrl.search = req.nextUrl.search;
         
@@ -88,12 +88,24 @@ export default auth((req) => {
       }
     }
   }
+  // 6. Canonical Portfolio Path Routing (e.g. /didan-nasha/wedding)
+  if (!isCustomDomain && !pathname.startsWith("/api") && !pathname.startsWith("/_next") && !pathname.startsWith("/static") && !pathname.startsWith("/admin") && !pathname.startsWith("/dashboard") && !pathname.startsWith("/login")) {
+    const segments = pathname.split('/').filter(Boolean);
+    // Jika formatnya /namaclient atau /namaclient/slug
+    // Kita ambil namaclient (segments[0]) sebagai acuan nama file statis
+    if (segments.length >= 1 && !["uploads", "css", "js", "fonts", "images", "music", "assets", "downloads", "demo", "portfolio"].includes(segments[0])) {
+      const namaClient = segments[0];
+      const rewriteUrl = new URL(`/published/${namaClient}.html`, req.url);
+      rewriteUrl.search = req.nextUrl.search;
+      return NextResponse.rewrite(rewriteUrl);
+    }
+  }
 
   return NextResponse.next();
 });
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|uploads|music).*)",
+    "/((?!_next/static|_next/image|favicon.ico|uploads|music|assets|downloads).*)",
   ],
 };

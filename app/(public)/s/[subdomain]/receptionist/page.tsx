@@ -21,7 +21,7 @@ export default async function ReceptionistPage({ params }: PageProps) {
   const pin = invitation.staffPin || "123456";
 
   return (
-    <StaffLockScreen invitationId={invitation.id} correctPin={pin}>
+    <StaffLockScreen invitationId={invitation.id}>
       <ReceptionistScannerClient invitationId={invitation.id} />
     </StaffLockScreen>
   );

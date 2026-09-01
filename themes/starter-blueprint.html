@@ -20,7 +20,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>The Wedding of {{groomName}} &amp; {{brideName}}</title>
+  <title>The Wedding of {{firstFullName}} &amp; {{secondFullName}}</title>
 
   <!-- =================================================================== -->
   <!-- 1. GOOGLE FONTS (Self-Hosted Local Zero Latency)                   -->
@@ -475,7 +475,7 @@
     </div>
 
     <div class="cover-center">
-      <h1 class="cover-names serif">{{groomName}} &amp; {{brideName}}</h1>
+      <h1 class="cover-names serif">{{firstFullName}} &amp; {{secondFullName}}</h1>
       <p style="font-size:13px; opacity:0.9; margin-top:8px;">{{weddingDate}}</p>
     </div>
 
@@ -522,14 +522,14 @@
         <!-- Mempelai Pria -->
         <div class="couple-card">
           <div class="couple-photo-wrap">
-            <img src="{{groomPhotoUrl}}" alt="{{groomName}}" loading="lazy" />
+            <img src="{{firstPhotoUrl}}" alt="{{firstFullName}}" loading="lazy" />
           </div>
           <span class="couple-role">{{groomRole}}</span>
-          <h3 class="couple-name serif">{{groomDisplayName}}</h3>
-          <p class="couple-parents">{{groomParents}}</p>
-          <a href="https://instagram.com/{{groomInstagram}}" target="_blank" class="couple-ig">
+          <h3 class="couple-name serif">{{firstDisplayName}}</h3>
+          <p class="couple-parents">{{firstParents}}</p>
+          <a href="https://instagram.com/{{firstInstagram}}" target="_blank" class="couple-ig">
             <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-            @{{groomInstagram}}
+            @{{firstInstagram}}
           </a>
         </div>
 
@@ -538,14 +538,14 @@
         <!-- Mempelai Wanita -->
         <div class="couple-card">
           <div class="couple-photo-wrap">
-            <img src="{{bridePhotoUrl}}" alt="{{brideName}}" loading="lazy" />
+            <img src="{{secondPhotoUrl}}" alt="{{secondFullName}}" loading="lazy" />
           </div>
           <span class="couple-role">{{brideRole}}</span>
-          <h3 class="couple-name serif">{{brideDisplayName}}</h3>
-          <p class="couple-parents">{{brideParents}}</p>
-          <a href="https://instagram.com/{{brideInstagram}}" target="_blank" class="couple-ig">
+          <h3 class="couple-name serif">{{secondDisplayName}}</h3>
+          <p class="couple-parents">{{secondParents}}</p>
+          <a href="https://instagram.com/{{secondInstagram}}" target="_blank" class="couple-ig">
             <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-            @{{brideInstagram}}
+            @{{secondInstagram}}
           </a>
         </div>
       </div>
@@ -660,7 +660,7 @@
         Kami Yang Berbahagia,
       </p>
       <h3 class="serif" style="font-size:24px; margin-top:8px; color:#1a1614;">
-        {{groomName}} &amp; {{brideName}}
+        {{firstFullName}} &amp; {{secondFullName}}
       </h3>
       <p style="font-size:12px; color:var(--text-muted, #736b63); margin-top:4px;">Beserta Keluarga Besar Kedua Mempelai</p>
     </footer>

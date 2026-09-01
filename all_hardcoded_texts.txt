@@ -1,0 +1,4 @@
+' + message + '
+' + msg + '
+' + name + '
+• ' + (status === 'hadir' ? 'Hadir (' + count + ' tamu)' : 'Berhalangan') + '

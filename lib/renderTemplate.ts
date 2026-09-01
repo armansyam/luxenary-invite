@@ -632,12 +632,30 @@ export async function renderTemplateFile(
     }
   }
 
-  // Injections: Head Audio Blocker, Global Modules CSS, Unified Runtime, Autoplay Script & Inline Live Editor Script
+  // Injections: Meta Tags, Head Audio Blocker, Global Modules CSS, Unified Runtime, Autoplay Script & Inline Live Editor Script
   const GLOBAL_MODULES_CSS = `<link rel="stylesheet" href="/css/modules.css">`;
+  const metaTags = data.metaTagsHtml ? `${data.metaTagsHtml}\n` : '';
+  let closingStyle = '';
+  if (data.closingPhotoUrl) {
+    closingStyle = `\n<style>
+      .site-footer, footer, footer#footer {
+        background-image: linear-gradient(to top, rgba(0,0,0,0.85), rgba(0,0,0,0.4)), url('${data.closingPhotoUrl}') !important;
+        background-size: cover !important;
+        background-position: center bottom !important;
+        color: #fff !important;
+        border-top: none !important;
+        position: relative;
+      }
+      .site-footer *, footer *, footer#footer * {
+        color: #fff !important;
+      }
+    </style>`;
+  }
+
   if (tpl.includes("<head>")) {
-    tpl = tpl.replace("<head>", `<head>\n${HEAD_AUDIO_BLOCKER_SCRIPT}\n${GLOBAL_MODULES_CSS}`);
+    tpl = tpl.replace("<head>", `<head>\n${metaTags}${HEAD_AUDIO_BLOCKER_SCRIPT}\n${GLOBAL_MODULES_CSS}${closingStyle}`);
   } else if (tpl.includes("<HEAD>")) {
-    tpl = tpl.replace("<HEAD>", `<HEAD>\n${HEAD_AUDIO_BLOCKER_SCRIPT}\n${GLOBAL_MODULES_CSS}`);
+    tpl = tpl.replace("<HEAD>", `<HEAD>\n${metaTags}${HEAD_AUDIO_BLOCKER_SCRIPT}\n${GLOBAL_MODULES_CSS}${closingStyle}`);
   }
 
   const injectedScripts = `${UNIFIED_CLIENT_RUNTIME_SCRIPT}\n${AUTOPLAY_SHOWCASE_SCRIPT}\n${options?.editMode || data.__editMode ? INLINE_LIVE_EDITOR_SCRIPT : ""}`;

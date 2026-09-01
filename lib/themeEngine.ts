@@ -162,6 +162,7 @@ export async function composeTemplateData(invitationId: string) {
   const fixedBgUrl = mediaMap.get("GLOBAL_FIXED_BG") || sidebarUrl || "https://images.unsplash.com/photo-1519741497674-611481863552?w=1920&q=80";
   const groomPhoto = mediaMap.get("GROOM_PHOTO") || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80";
   const bridePhoto = mediaMap.get("BRIDE_PHOTO") || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&q=80";
+  const closingPhotoUrl = mediaMap.get("CLOSING_COVER") || null;
 
   // Dynamic Couple Display Order Resolution
   const isGroomFirst = featureSettings.displayOrder === "GROOM_FIRST" || (!featureSettings.displayOrder && Boolean(inv.groomName));
@@ -1544,6 +1545,7 @@ export async function composeTemplateData(invitationId: string) {
 
     // Media
     landingCoverUrl: coverUrl,
+    closingPhotoUrl: closingPhotoUrl,
     sidebarPhotoUrl: sidebarUrl,
     globalBgUrl: fixedBgUrl,
     audioUrl: featureSettings.showMusic !== false ? (inv.musicUrl || featureSettings.musicUrl || "https://assets.mixkit.co/music/preview/mixkit-serene-view-443.mp3") : "",

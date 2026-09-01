@@ -1332,6 +1332,11 @@ export default function EditInvitation() {
               </span>
               <span>•</span>
               <span className="flex items-center gap-1.5">
+                <span className={`w-2 h-2 rounded-full ${media["CLOSING_COVER"] ? "bg-emerald-500" : "bg-stone-300"}`}></span>
+                <span>Foto Penutup: <strong>{media["CLOSING_COVER"] ? "Terpasang" : "Default"}</strong></span>
+              </span>
+              <span>•</span>
+              <span className="flex items-center gap-1.5">
                 <span className={`w-2 h-2 rounded-full ${showMusic ? "bg-emerald-500" : "bg-stone-300"}`}></span>
                 <span>Musik Latar: <strong>{showMusic ? (invitation.musicUrl ? "Aktif" : "Canon in D") : "Hening"}</strong></span>
               </span>
@@ -1378,6 +1383,17 @@ export default function EditInvitation() {
                   allowVideo={true}
                   invitationId={invitationId}
                   slot="DESKTOP_SIDEBAR"
+                  onUploadStart={handleUploadStart}
+                  onUploadEnd={handleUploadEnd}
+                />
+                <PhotoInput
+                  label="Foto Penutup (Footer)"
+                  desc="Foto background di bagian akhir / footer undangan"
+                  value={media["CLOSING_COVER"] || ""}
+                  onChange={(url) => updateMedia("CLOSING_COVER", url)}
+                  placeholder="https://.../closing.jpg"
+                  invitationId={invitationId}
+                  slot="CLOSING_COVER"
                   onUploadStart={handleUploadStart}
                   onUploadEnd={handleUploadEnd}
                 />

@@ -24,13 +24,13 @@ function getDynamicGoogleCredentials(): { clientId: string; clientSecret: string
     });
 
     return {
-      clientId: map["google_client_id"] || process.env.GOOGLE_CLIENT_ID || "",
-      clientSecret: map["google_client_secret"] || process.env.GOOGLE_CLIENT_SECRET || "",
+      clientId: map["google_client_id"] || process.env.GOOGLE_CLIENT_ID || "dummy_client_id",
+      clientSecret: map["google_client_secret"] || process.env.GOOGLE_CLIENT_SECRET || "dummy_client_secret",
     };
   } catch (err) {
     return {
-      clientId: process.env.GOOGLE_CLIENT_ID || "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+      clientId: process.env.GOOGLE_CLIENT_ID || "dummy_client_id",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "dummy_client_secret",
     };
   }
 }

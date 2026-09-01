@@ -201,6 +201,17 @@ export async function PUT(
       }
     }
 
+    // --- BUG FIX: Check Subdomain Uniqueness ---
+    if (newSubdomain && newSubdomain !== currentInv.subdomain) {
+      const existingSub = await prisma.invitation.findUnique({ where: { subdomain: newSubdomain } });
+      if (existingSub && existingSub.id !== id) {
+        return NextResponse.json(
+          { error: `Tautan/Subdomain "${newSubdomain}" sudah digunakan oleh orang lain. Silakan ubah nama panggilan.` },
+          { status: 400 }
+        );
+      }
+    }
+
     let mergedFeatureSettings = undefined;
     if (body.featureSettings !== undefined) {
       if (body.featureSettings === null) {
@@ -217,6 +228,20 @@ export async function PUT(
         } catch {
           mergedFeatureSettings = toStr(body.featureSettings);
         }
+      }
+    }
+
+    // --- BUG FIX: Cleanup Old Static File if Status or Subdomain Changes ---
+    const newStatus = body.status !== undefined ? body.status : currentInv.status;
+    const isStatusChangedToUnpublished = currentInv.status === "PUBLISHED" && newStatus !== "PUBLISHED";
+    const isSubdomainChanged = newSubdomain !== undefined && newSubdomain !== currentInv.subdomain && currentInv.status === "PUBLISHED";
+    
+    if (isStatusChangedToUnpublished || isSubdomainChanged) {
+      try {
+        const { deletePublishedHtml } = await import("@/lib/staticPublisher");
+        await deletePublishedHtml(currentInv.id); // This cleans up old subdomain and fallback files
+      } catch (e) {
+        console.error("Failed to delete old static HTML during edit", e);
       }
     }
 
@@ -252,7 +277,7 @@ export async function PUT(
 
     // Save media updates
     if (body.media && typeof body.media === "object" && !Array.isArray(body.media)) {
-      const VALID_ENUM_SLOTS = ["LANDING_COVER", "DESKTOP_SIDEBAR", "GLOBAL_FIXED_BG", "GROOM_PHOTO", "BRIDE_PHOTO", "GALLERY"];
+      const VALID_ENUM_SLOTS = ["LANDING_COVER", "DESKTOP_SIDEBAR", "GLOBAL_FIXED_BG", "GROOM_PHOTO", "BRIDE_PHOTO", "GALLERY", "CLOSING_COVER"];
       for (const [slot, url] of Object.entries(body.media)) {
         if (!VALID_ENUM_SLOTS.includes(slot)) continue;
         const urlStr = typeof url === "string" ? url.trim() : "";
