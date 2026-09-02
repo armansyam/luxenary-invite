@@ -51,43 +51,38 @@ export default function ReceptionistScannerClient({ invitationId }: { invitation
     loadData();
   }, [invitationId]);
 
-  // 2. Handle Sync (Background)
-  useEffect(() => {
-    const syncOfflineQueue = async () => {
-      if (offlineQueue.length === 0 || !navigator.onLine) return;
-      
-      setStatus("SYNCING");
-      const newQueue = [...offlineQueue];
-      
-      for (const guestId of offlineQueue) {
-        const guest = guests.find(g => g.id === guestId);
-        if (!guest || !guest.qrToken) continue;
+  // 2. Handle Sync (Manual)
+  const syncOfflineQueue = async () => {
+    if (offlineQueue.length === 0 || !navigator.onLine) return;
+    
+    setStatus("SYNCING");
+    const newQueue = [...offlineQueue];
+    
+    for (const guestId of offlineQueue) {
+      const guest = guests.find(g => g.id === guestId);
+      if (!guest || !guest.qrToken) continue;
 
-        try {
-          const staffAuthToken = localStorage.getItem(`staff_auth_token_${invitationId}`);
-          const res = await fetch("/api/receptionist/scan", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ qrToken: guest.qrToken, invitationId, isCheckIn: true, token: staffAuthToken }),
-          });
-          const data = await res.json();
-          if (data.success) {
-            const index = newQueue.indexOf(guestId);
-            if (index > -1) newQueue.splice(index, 1);
-          }
-        } catch (e) {
-          console.error("Sync failed for", guest?.name);
+      try {
+        const staffAuthToken = localStorage.getItem(`staff_auth_token_${invitationId}`);
+        const res = await fetch("/api/receptionist/scan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ qrToken: guest.qrToken, invitationId, isCheckIn: true, token: staffAuthToken }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          const index = newQueue.indexOf(guestId);
+          if (index > -1) newQueue.splice(index, 1);
         }
+      } catch (e) {
+        console.error("Sync failed for", guest?.name);
       }
+    }
 
-      setOfflineQueue(newQueue);
-      localStorage.setItem(`offline_queue_${invitationId}`, JSON.stringify(newQueue));
-      setStatus("READY");
-    };
-
-    const interval = setInterval(syncOfflineQueue, 5000);
-    return () => clearInterval(interval);
-  }, [offlineQueue, guests, invitationId]);
+    setOfflineQueue(newQueue);
+    localStorage.setItem(`offline_queue_${invitationId}`, JSON.stringify(newQueue));
+    setStatus("READY");
+  };
 
   // 2b. Background Polling (15 menit) untuk refresh data tamu jika ada tamu baru dari dashboard
   useEffect(() => {
@@ -253,10 +248,20 @@ export default function ReceptionistScannerClient({ invitationId }: { invitation
           <h1 className="text-lg font-bold tracking-wide">RECEPTIONIST SYSTEM</h1>
           <p className="text-xs text-stone-400">Offline-First Fast Scanner</p>
         </div>
-        <div className="text-right">
+        <div className="text-right flex items-center justify-end gap-3">
           {status === "LOADING" && <span className="px-3 py-1 bg-amber-500/10 text-amber-500 rounded-full text-[10px] uppercase font-bold tracking-wider animate-pulse flex items-center gap-1.5"><svg className="w-3.5 h-3.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>LOADING DATA</span>}
           {status === "READY" && offlineQueue.length === 0 && <span className="px-3 py-1 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-full text-[10px] uppercase font-bold tracking-wider flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>ONLINE &amp; READY</span>}
-          {status === "READY" && offlineQueue.length > 0 && <span className="px-3 py-1 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-full text-[10px] uppercase font-bold tracking-wider flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>MENUNGGU SYNC ({offlineQueue.length})</span>}
+          {status === "READY" && offlineQueue.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-1 bg-amber-500/10 text-amber-500 border border-amber-500/20 rounded-full text-[10px] uppercase font-bold tracking-wider flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>MENUNGGU SYNC ({offlineQueue.length})
+              </span>
+              <button onClick={syncOfflineQueue} className="px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white rounded-full text-[10px] uppercase font-bold tracking-wider flex items-center gap-1.5 transition">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                Sync Sekarang
+              </button>
+            </div>
+          )}
           {status === "SYNCING" && <span className="px-3 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full text-[10px] uppercase font-bold tracking-wider animate-pulse flex items-center gap-1.5"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" /></svg>SYNCING...</span>}
           {status === "OFFLINE" && <span className="px-3 py-1 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-full text-[10px] uppercase font-bold tracking-wider flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>OFFLINE MODE</span>}
         </div>
