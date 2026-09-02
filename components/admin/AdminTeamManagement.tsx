@@ -12,10 +12,6 @@ export function AdminTeamManagement() {
   const [formData, setFormData] = useState({ name: "", username: "", email: "", role: "SUPPORT", password: "" });
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    fetchAdmins();
-  }, []);
-
   const fetchAdmins = async () => {
     try {
       const res = await fetch("/api/admin/admins");
@@ -28,6 +24,10 @@ export function AdminTeamManagement() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchAdmins();
+  }, []);
 
   const handleCreateAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
