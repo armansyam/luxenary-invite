@@ -98,42 +98,48 @@ export async function POST(req: NextRequest) {
     const paidStatus = Number(body.paid_status ?? body.status_code ?? 0);
 
     if (paidStatus === 1) {
-      // Payment berhasil — update order dan publish undangan
-      const order = await prisma.order.findUnique({ where: { id: orderId } });
-      if (!order) {
-        return NextResponse.json({ error: "Order not found" }, { status: 404 });
-      }
+      // Payment berhasil — update order secara atomic dalam satu $transaction
+      // Idempotency + update dilakukan atomik untuk mencegah double-processing race condition
+      let order: { status: string; planType: string } | null = null;
 
-      // Idempotency: abaikan jika sudah PAID
-      if (order.status === "PAID") {
+      await prisma.$transaction(async (tx) => {
+        order = await tx.order.findUnique({
+          where: { id: orderId },
+          select: { status: true, planType: true },
+        });
+
+        if (!order) throw new Error("Order not found");
+        // Idempotency: abaikan jika sudah PAID (throw agar rollback tapi kita handle di luar)
+        if (order.status === "PAID") return;
+
+        await tx.order.update({
+          where: { id: orderId },
+          data: {
+            status: "PAID",
+            paymentMethod: "GATEWAY",
+            paymentGatewayRef: body.trx_id || body.sid || null,
+            paidAt: new Date(),
+          },
+        });
+
+        if (webhookLogId) {
+          await tx.webhookLog.update({
+            where: { id: webhookLogId },
+            data: { status: "processed", processedAt: new Date() },
+          }).catch(() => {});
+        }
+      });
+
+      // Jika sudah PAID sebelumnya, return tanpa lakukan applyUpgrade / emit SSE
+      if (!order || (order as { status: string }).status === "PAID") {
         return NextResponse.json({ status: "ok", note: "already_paid" });
       }
-
-      await prisma.order.update({
-        where: { id: orderId },
-        data: {
-          status: "PAID",
-          paymentMethod: "GATEWAY",
-          paymentGatewayRef: body.trx_id || body.sid || null,
-          paidAt: new Date(),
-        },
-      });
 
       // If this is an UPGRADE order, update planType on the linked original order
       await applyUpgradePlan(orderId);
 
       // Push notifikasi real-time ke browser klien via SSE
-      paymentEmitter.emit(orderId, { status: "PAID", planType: order.planType });
-
-      // Update webhook log ke processed
-      if (webhookLogId) {
-        try {
-          await prisma.webhookLog.update({
-            where: { id: webhookLogId },
-            data: { status: "processed", processedAt: new Date() },
-          });
-        } catch {}
-      }
+      paymentEmitter.emit(orderId, { status: "PAID", planType: (order as { planType: string }).planType });
 
     } else if (
       paidStatus === 2 ||

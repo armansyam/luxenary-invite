@@ -1,8 +1,6 @@
 import Link from "next/link";
 import { Metadata } from "next";
-import fs from "fs";
-import path from "path";
-import { prisma } from "@/lib/prisma";
+import { listPortfolioSlugs, STORAGE_PROVIDER, getPortfolioMetadata } from "@/lib/storage";
 import { BrandLogo } from "@/components/BrandLogo";
 import { getPublicPlatformSettings } from "@/lib/settings";
 import { PortfolioGallery, PortfolioGalleryItem } from "./PortfolioGallery";
@@ -18,17 +16,8 @@ export const metadata: Metadata = {
 export default async function PortfolioPage() {
   const { platformName } = await getPublicPlatformSettings();
 
-  // Hanya tampilkan undangan yang sudah dikurasi admin ke public/portfolio/
-  const portfolioDir = path.join(process.cwd(), "public", "portfolio");
-  let clonedSlugs: string[] = [];
-  try {
-    const files = await fs.promises.readdir(portfolioDir);
-    clonedSlugs = files
-      .filter((f) => f.endsWith(".html"))
-      .map((f) => f.replace(".html", ""));
-  } catch {
-    clonedSlugs = [];
-  }
+  // Fetch daftar portfolio slug (bisa dari R2 atau Lokal)
+  const clonedSlugs = await listPortfolioSlugs();
 
   if (clonedSlugs.length === 0) {
     return (
@@ -50,44 +39,27 @@ export default async function PortfolioPage() {
     );
   }
 
-  // Fetch data klien dari DB berdasarkan slug yang sudah dikurasi
-  const publishedInvs = await prisma.invitation.findMany({
-    where: { invitationSlug: { in: clonedSlugs } },
-    include: { media: true },
-    orderBy: { updatedAt: "desc" },
-  });
-
+  // Fetch data klien dari metadata statis (tanpa query DB agar kebal pembersihan)
   const portfolioItems: PortfolioGalleryItem[] = [];
 
-  for (const inv of publishedInvs) {
-    const themeId = (inv.themeId || "kalandra").toLowerCase();
-
-    let category = "premium";
-    try {
-      const themeRecord = await prisma.theme.findUnique({ where: { id: themeId } });
-      if (themeRecord?.category) category = themeRecord.category.toLowerCase();
-    } catch {}
-
-    // Gunakan cover dari asset portofolio yang sudah diisolasi
-    const slug = inv.invitationSlug;
-    const portfolioCoverPath = path.join(process.cwd(), "public", "portfolio", "assets", slug, "cover.webp");
-    let coverImage: string;
-    try {
-      await fs.promises.access(portfolioCoverPath);
-      coverImage = `/portfolio/assets/${slug}/cover.webp`;
-    } catch {
-      // Fallback ke localPath jika cover.webp belum ada di portfolio assets
-      const coverMedia = inv.media.find(
-        (m) => m.mediaSlot === "LANDING_COVER" || m.mediaSlot === "DESKTOP_SIDEBAR" || m.mediaSlot === "GROOM_PHOTO"
-      );
-      coverImage = coverMedia?.localPath || `/demo/${themeId}/cover.webp`;
+  for (const slug of clonedSlugs) {
+    const metadata = await getPortfolioMetadata(slug);
+    if (!metadata) continue;
+    
+    // Asumsi cover.webp selalu di-generate oleh admin portfolio POST endpoint
+    let coverImage = `/portfolio/assets/${slug}/cover.webp`;
+    
+    // Jika R2, prefix dengan public CDN URL
+    if (STORAGE_PROVIDER === "r2" || STORAGE_PROVIDER === "s3") {
+      const publicUrl = (process.env.S3_CUSTOM_DOMAIN || process.env.S3_PUBLIC_URL)?.replace(/\/$/, "");
+      coverImage = `${publicUrl}/portfolio/assets/${slug}/cover.webp`;
     }
 
     portfolioItems.push({
-      id: inv.id,
-      coupleName: `${inv.groomNickname || inv.groomName || "Pengantin Pria"} & ${inv.brideNickname || inv.brideName || "Pengantin Wanita"}`,
-      themeId,
-      category,
+      id: slug, // Gunakan slug sebagai ID karena kita tidak punya ID unik database lagi
+      coupleName: metadata.coupleName,
+      themeId: metadata.themeId,
+      category: metadata.category,
       coverImage,
       publicUrl: `/portfolio/${slug}`,
     });

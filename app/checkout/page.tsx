@@ -55,6 +55,8 @@ function CheckoutContent() {
   // Waktu offset untuk sinkronisasi timer klien dan server
   const [serverTimeOffset, setServerTimeOffset] = useState<number>(0);
   const [reloadKey, setReloadKey] = useState<number>(0);
+  // Durasi total QRIS saat pertama kali diterima (ms) — dari server, bukan hardcode
+  const [qrisTotalDuration, setQrisTotalDuration] = useState<number>(0);
 
   const isAdmin =
     (session?.user as any)?.isAdmin === true ||
@@ -124,9 +126,10 @@ function CheckoutContent() {
       }
 
       setBankInfo({
-        name: settings.bankName || "BCA (Bank Central Asia)",
-        accountNumber: settings.bankAccountNumber || "8735098123",
-        accountHolder: settings.bankAccountHolder || "PT Luxenary Karya Digital",
+        name: settings.bankName || "",
+        // Tidak ada fallback nomor rekening — jika kosong, UI akan tampilkan pesan belum dikonfigurasi
+        accountNumber: settings.bankAccountNumber || "",
+        accountHolder: settings.bankAccountHolder || "",
         instructions: settings.bankInstructions || "Silakan transfer tepat sesuai total tagihan invoice. Setelah transfer, unggah foto bukti transfer di bawah ini untuk diverifikasi admin.",
       });
       if (settings.supportWhatsapp) {
@@ -197,8 +200,11 @@ function CheckoutContent() {
       // 3. If planParam is provided, create or resume active pending order
       const targetPlan = planParam || "PREMIUM";
       const currentPkg = packages.find((p) => p.id === targetPlan) || packages[0];
-      const name = currentPkg?.name || (targetPlan === "PREMIUM" ? "Premium" : targetPlan === "MODERN" ? "Modern" : "Traditional");
-      const price = Number(currentPkg?.price || (targetPlan === "PREMIUM" ? 120000 : targetPlan === "MODERN" ? 100000 : 50000));
+      const name = currentPkg?.name || targetPlan;
+      // Harga HANYA dari AdminSetting (via /api/public/settings → packages).
+      // Tidak ada fallback hardcode — jika settings belum dimuat, tampilkan 0
+      // agar UI tidak menampilkan harga yang salah kepada user.
+      const price = Number(currentPkg?.price ?? 0);
       const desc = currentPkg?.desc || "";
 
       setPlanData({ name, price, desc });
@@ -343,7 +349,8 @@ function CheckoutContent() {
       const res = await fetch("/api/payments/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId, gateway: "ipaymu" }),
+        // Tidak kirim `gateway` — biarkan server memilih gateway aktif dari AdminSetting
+        body: JSON.stringify({ orderId }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Gagal memulai pembayaran");
@@ -355,8 +362,13 @@ function CheckoutContent() {
       if (data.qrString) {
         setQrData(data.qrString);
         setQrisSessionId(data.sessionId || null);
-        // Set expiry sesuai dengan balikan server (dinamis mengikuti pengaturan admin)
-        setQrisExpiry(data.expiryTimestamp || Date.now() + 15 * 60 * 1000);
+        // expiryTimestamp selalu tersedia dari server (bersumber dari gateway atau AdminSetting)
+        // JANGAN gunakan Date.now() browser sebagai fallback — bisa tidak sinkron dengan gateway
+        setQrisExpiry(data.expiryTimestamp);
+        // Hitung durasi total dari server time — dipakai progress bar, bukan 15 menit hardcode
+        if (data.expiryTimestamp && data.serverTime) {
+          setQrisTotalDuration(data.expiryTimestamp - data.serverTime);
+        }
       } else if (data.checkoutUrl) {
         window.location.href = data.checkoutUrl;
       } else {
@@ -591,7 +603,7 @@ function CheckoutContent() {
               {qrData ? (
                 <div className="bg-white/5 border border-amber-500/20 rounded-3xl p-6 space-y-5 backdrop-blur-xs text-center relative overflow-hidden">
                   <div className="absolute top-0 inset-x-0 h-1 bg-amber-500/20">
-                    <div className="h-full bg-amber-500 rounded-r-full" style={{ width: `${Math.max(0, Math.min(100, ((qrisExpiry ? qrisExpiry - Date.now() : 0) / (15 * 60 * 1000)) * 100))}%`, transition: 'width 1s linear' }}></div>
+                    <div className="h-full bg-amber-500 rounded-r-full" style={{ width: `${qrisTotalDuration > 0 ? Math.max(0, Math.min(100, ((qrisExpiry ? qrisExpiry - (Date.now() + serverTimeOffset) : 0) / qrisTotalDuration) * 100)) : 0}%`, transition: 'width 1s linear' }}></div>
                   </div>
                   <div className="space-y-1 pt-2">
                     <h3 className="text-white font-bold text-sm">Scan QRIS untuk Membayar</h3>

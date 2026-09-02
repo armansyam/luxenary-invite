@@ -82,6 +82,7 @@ export default function GuestsPage() {
 
   // WhatsApp Template Customization States
   const [waTemplate, setWaTemplate] = useState(DEFAULT_WA_TEMPLATE);
+  const [adminWaTemplate, setAdminWaTemplate] = useState<string | null>(null);
   const [savingTemplate, setSavingTemplate] = useState(false);
   const [templateSaveSuccess, setTemplateSaveSuccess] = useState(false);
 
@@ -108,6 +109,18 @@ export default function GuestsPage() {
       });
   };
 
+  // Load admin WA template dari AdminSetting via /api/public/settings
+  useEffect(() => {
+    fetch("/api/public/settings", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.waTemplateMessage && data.waTemplateMessage.trim()) {
+          setAdminWaTemplate(data.waTemplateMessage.trim());
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     fetch(`/api/client/invitations`)
       .then((res) => res.json())
@@ -124,8 +137,10 @@ export default function GuestsPage() {
           } catch {}
 
           if (feat.waTemplate) {
+            // Prioritas tertinggi: template yang sudah disimpan client
             setWaTemplate(feat.waTemplate);
           }
+          // Jika belum ada, template akan di-set ke adminWaTemplate saat adminWaTemplate tersedia (useEffect berikutnya)
 
           loadGuests(inv.id);
         } else {
@@ -263,11 +278,20 @@ export default function GuestsPage() {
     const template = waTemplate || DEFAULT_WA_TEMPLATE;
 
     return template
+      // Format client: {nama_tamu}, {link_undangan}, dll
       .replace(/{nama_tamu}/g, guestName)
       .replace(/{link_undangan}/g, fullGuestUrl)
       .replace(/{nama_mempelai}/g, coupleName)
       .replace(/{kuota_tamu}/g, `${guestLimit} Pax`)
-      .replace(/{sesi_acara}/g, sessionInfo);
+      .replace(/{sesi_acara}/g, sessionInfo)
+      // Format admin: {{GUEST_NAME}}, {{INVITATION_URL}}, dll — agar template AdminSetting langsung bisa dirender
+      .replace(/\{\{GUEST_NAME\}\}/g, guestName)
+      .replace(/\{\{INVITATION_URL\}\}/g, fullGuestUrl)
+      .replace(/\{\{COUPLE_NAMES\}\}/g, coupleName)
+      .replace(/\{\{GROOM_NAME\}\}/g, groom)
+      .replace(/\{\{BRIDE_NAME\}\}/g, bride)
+      .replace(/\{\{GUEST_QUOTA\}\}/g, `${guestLimit} Pax`)
+      .replace(/\{\{SESSION_INFO\}\}/g, sessionInfo);
   };
 
   const generateWaLink = (guest: Guest) => {
@@ -717,6 +741,25 @@ export default function GuestsPage() {
                 <div>
                   <label className="block text-[11px] font-bold text-stone-700 mb-1.5">Pilihan Cepat Format Pesan:</label>
                   <div className="grid grid-cols-2 gap-2">
+                    {/* Template dari AdminSetting — ditampilkan sebagai opsi pertama jika admin sudah mengisi */}
+                    {adminWaTemplate && (
+                      <button
+                        key="admin-template"
+                        type="button"
+                        onClick={() => setWaTemplate(adminWaTemplate)}
+                        className={`p-2.5 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between col-span-2 ${
+                          waTemplate === adminWaTemplate
+                            ? "border-violet-600 bg-violet-50/70 ring-1 ring-violet-600/30"
+                            : "border-violet-300 bg-violet-50/40 hover:bg-violet-50 hover:border-violet-400"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-1 mb-0.5">
+                          <span className="text-xs font-bold text-violet-900">Template Resmi (Admin)</span>
+                          <span className="text-[9px] px-1.5 py-0.5 bg-violet-600 text-white rounded-md font-semibold">Default Admin</span>
+                        </div>
+                        <span className="text-[10px] text-violet-600 line-clamp-1">{adminWaTemplate.slice(0, 80)}{adminWaTemplate.length > 80 ? "…" : ""}</span>
+                      </button>
+                    )}
                     {WA_PRESETS.map((preset) => (
                       <button
                         key={preset.id}
@@ -779,10 +822,10 @@ export default function GuestsPage() {
                     <span>Gunakan tanda bintang *teks* untuk cetak tebal, _teks_ untuk miring</span>
                     <button
                       type="button"
-                      onClick={() => setWaTemplate(DEFAULT_WA_TEMPLATE)}
+                      onClick={() => setWaTemplate(adminWaTemplate || DEFAULT_WA_TEMPLATE)}
                       className="text-stone-500 hover:text-stone-800 underline cursor-pointer"
                     >
-                      Reset ke Template Standar
+                      {adminWaTemplate ? "Reset ke Template Admin" : "Reset ke Template Standar"}
                     </button>
                   </div>
                 </div>

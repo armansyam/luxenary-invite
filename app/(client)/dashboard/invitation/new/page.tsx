@@ -16,9 +16,9 @@ export default function NewInvitation() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [plans, setPlans] = useState([
-    { type: "TRADITIONAL", name: "Traditional", price: 50000, features: ["Tautan link personal per nama tamu", "Tamu tak terbatas", "Buku Tamu & WA Direct Link", "RSVP & Ucapan Tamu", "Musik Latar", "Amplop Digital QRIS & Bank"] },
-    { type: "MODERN", name: "Modern", price: 100000, features: ["Tautan link personal per nama tamu", "Tamu tak terbatas", "Buku Tamu & WA Direct Link", "RSVP & Ucapan Tamu", "Musik Latar", "Amplop Digital QRIS & Bank"] },
-    { type: "PREMIUM", name: "Premium", price: 120000, features: ["Tautan link personal per nama tamu", "Tamu tak terbatas", "Buku Tamu & WA Direct Link", "RSVP & Ucapan Tamu", "Musik Latar", "Amplop Digital QRIS & Bank"] },
+    { type: "TRADITIONAL", name: "Traditional", price: 0, features: [] as string[] },
+    { type: "MODERN", name: "Modern", price: 0, features: [] as string[] },
+    { type: "PREMIUM", name: "Premium", price: 0, features: [] as string[] },
   ]);
 
   const [form, setForm] = useState({

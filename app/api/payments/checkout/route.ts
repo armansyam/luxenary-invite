@@ -69,35 +69,71 @@ export async function POST(req: Request) {
 
     const activeGatewayId = requestedGateway || (await getActiveGatewayId());
 
-    // Hitung total nominal akhir (termasuk biaya admin jika dibebankan ke pembeli)
+    // Baca konfigurasi pembayaran dari AdminSetting — satu sumber kebenaran
     let finalAmount = Number(order.amount);
+    let expiryMinutes = 60;
     try {
-      const feePayerSetting = await prisma.adminSetting.findUnique({ where: { key: "payment_fee_payer" } });
+      const [feePayerSetting, feeRateSetting, expirySetting] = await Promise.all([
+        prisma.adminSetting.findUnique({ where: { key: "payment_fee_payer" } }),
+        prisma.adminSetting.findUnique({ where: { key: "payment_fee_rate" } }),
+        prisma.adminSetting.findUnique({ where: { key: "payment_expiry_minutes" } }),
+      ]);
+
       if (feePayerSetting?.value === "BUYER") {
-        // Biaya QRIS 0.7% ditambahkan ke total transaksi klien
-        const adminFee = Math.ceil(finalAmount * 0.007);
+        // Tarif fee dibaca dari AdminSetting — bukan hardcode
+        // Default seed: 0.007 (0.7% QRIS), admin bisa ubah kapan saja dari dashboard
+        const feeRate = feeRateSetting && !isNaN(Number(feeRateSetting.value))
+          ? Math.max(0, Math.min(0.1, Number(feeRateSetting.value))) // clamp 0–10%
+          : 0.007;
+        const adminFee = Math.ceil(finalAmount * feeRate);
         finalAmount += adminFee;
+      }
+
+      if (expirySetting && !isNaN(Number(expirySetting.value))) {
+        expiryMinutes = Math.max(5, Math.min(1440, Number(expirySetting.value)));
       }
     } catch {}
 
     const { checkoutUrl, qrString, sessionId, expiryTimestamp } = await gw.init(orderId, finalAmount, appUrl);
 
-    // Catat gateway yang digunakan di order
-    const expiryMs = expiryTimestamp || (Date.now() + 15 * 60 * 1000);
+    /**
+     * Tentukan waktu kedaluwarsa yang valid:
+     * - Utamakan `expiryTimestamp` dari respons gateway (paling akurat, sinkron dengan sistem gateway)
+     * - Fallback: hitung dari setting admin `payment_expiry_minutes` relatif terhadap waktu server
+     *
+     * TIDAK BOLEH menggunakan waktu perangkat klien (browser) karena bisa tidak sinkron dengan
+     * jam server maupun jam gateway, sehingga countdown bisa meleset.
+     */
+    const serverNow = Date.now();
+    const expiryMs = expiryTimestamp ?? (serverNow + expiryMinutes * 60 * 1000);
+
+    // Simpan ke DB — expiredAt adalah referensi waktu otoritatif untuk sweep/cron
     await prisma.order.update({
       where: { id: orderId },
       data: {
         paymentMethod: "GATEWAY",
-        status: "PENDING", // Reset jika sebelumnya FAILED
+        status: "PENDING", // Reset jika sebelumnya FAILED/EXPIRED
         rejectReason: null,
         paymentGatewayRef: activeGatewayId,
         snapToken: qrString ? JSON.stringify({ qrString, sessionId, expiry: expiryMs }) : checkoutUrl,
-        // Simpan batas waktu ke DB agar auto-expire sweep bisa mendeteksi tanpa bergantung hanya pada snapToken
         expiredAt: new Date(expiryMs),
       },
     });
 
-    return NextResponse.json({ checkoutUrl, qrString, sessionId, expiryTimestamp, gateway: activeGatewayId, serverTime: Date.now() });
+    /**
+     * Response ke client:
+     * - `expiryTimestamp`: waktu kedaluwarsa dalam ms (Unix epoch) — dari DB, bukan dari jam klien
+     * - `serverTime`: waktu server saat ini — klien WAJIB gunakan ini sebagai basis countdown,
+     *   bukan Date.now() browser, agar hitungan mundur tetap sinkron dengan gateway
+     */
+    return NextResponse.json({
+      checkoutUrl,
+      qrString,
+      sessionId,
+      expiryTimestamp: expiryMs,
+      gateway: activeGatewayId,
+      serverTime: serverNow,
+    });
   } catch (error: any) {
     console.error("[Payments Checkout Error]", error);
     return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal memulai pembayaran" : (error.message || "Gagal memulai pembayaran") }, { status: 500 });

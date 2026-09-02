@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { PaymentGateway } from "@/lib/payments";
+import { PaymentGateway } from "@/lib/gateways/types";
 import { prisma } from "@/lib/prisma";
 
 /**

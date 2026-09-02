@@ -4,10 +4,10 @@ import { S3Client, PutObjectCommand, ListObjectsV2Command, GetObjectCommand, Del
 import { prisma } from "./prisma";
 
 // Determine Storage Provider
-const STORAGE_PROVIDER = process.env.STORAGE_PROVIDER || "local";
+export const STORAGE_PROVIDER = process.env.STORAGE_PROVIDER || "local";
 
 // Configure S3 Client if needed
-const s3Client = STORAGE_PROVIDER === "r2" || STORAGE_PROVIDER === "s3"
+export const s3Client = STORAGE_PROVIDER === "r2" || STORAGE_PROVIDER === "s3"
   ? new S3Client({
       region: "auto",
       endpoint: process.env.S3_ENDPOINT!,
@@ -299,5 +299,140 @@ export async function syncR2LifecycleRule(days: number): Promise<boolean> {
   } catch (err) {
     console.error("[R2 Sync Error] Failed to update lifecycle:", err);
     return false;
+  }
+}
+
+/**
+ * Upload Portfolio File (HTML or Asset) with Hybrid Storage Support
+ */
+export async function uploadPortfolioFile(buffer: Buffer, relativePath: string, mimeType: string): Promise<string> {
+  if (STORAGE_PROVIDER === "r2" || STORAGE_PROVIDER === "s3") {
+    const bucketName = process.env.S3_BUCKET_NAME;
+    if (!bucketName || !s3Client) throw new Error("S3 Credentials not configured");
+
+    const command = new PutObjectCommand({
+      Bucket: bucketName,
+      Key: `portfolio/${relativePath}`,
+      Body: buffer,
+      ContentType: mimeType,
+      CacheControl: "public, max-age=31536000, immutable"
+    });
+
+    await s3Client.send(command);
+    const publicUrl = (process.env.S3_CUSTOM_DOMAIN || process.env.S3_PUBLIC_URL)?.replace(/\/$/, "");
+    return `${publicUrl}/portfolio/${relativePath}`;
+  } else {
+    // Local
+    const absolutePath = path.join(process.cwd(), "public", "portfolio", relativePath);
+    const directory = path.dirname(absolutePath);
+    try {
+      await fs.promises.access(directory);
+    } catch {
+      await fs.promises.mkdir(directory, { recursive: true });
+    }
+    await fs.promises.writeFile(absolutePath, buffer);
+    return `/portfolio/${relativePath}`;
+  }
+}
+
+/**
+ * List all Portfolio Slugs
+ */
+export async function listPortfolioSlugs(): Promise<string[]> {
+  if (STORAGE_PROVIDER === "r2" || STORAGE_PROVIDER === "s3") {
+    const bucketName = process.env.S3_BUCKET_NAME;
+    if (!bucketName || !s3Client) return [];
+    try {
+      const command = new ListObjectsV2Command({
+        Bucket: bucketName,
+        Prefix: "portfolio/",
+        Delimiter: "/",
+      });
+      const data = await s3Client.send(command);
+      if (!data.Contents) return [];
+      return data.Contents
+        .filter(obj => obj.Key && obj.Key.endsWith(".html"))
+        .map(obj => path.basename(obj.Key!).replace(".html", ""));
+    } catch {
+      return [];
+    }
+  } else {
+    const portfolioDir = path.join(process.cwd(), "public", "portfolio");
+    try {
+      const files = await fs.promises.readdir(portfolioDir);
+      return files.filter(f => f.endsWith(".html")).map(f => f.replace(".html", ""));
+    } catch {
+      return [];
+    }
+  }
+}
+
+/**
+ * Delete Portfolio and its Assets
+ */
+export async function deletePortfolio(slug: string): Promise<void> {
+  if (STORAGE_PROVIDER === "r2" || STORAGE_PROVIDER === "s3") {
+    const bucketName = process.env.S3_BUCKET_NAME;
+    if (!bucketName || !s3Client) return;
+
+    // Delete HTML
+    try {
+      await s3Client.send(new DeleteObjectCommand({
+        Bucket: bucketName,
+        Key: `portfolio/${slug}.html`,
+      }));
+    } catch (e) { console.error(e); }
+
+    // Delete Assets
+    try {
+      const prefix = `portfolio/assets/${slug}/`;
+      const listCmd = new ListObjectsV2Command({ Bucket: bucketName, Prefix: prefix });
+      const listed = await s3Client.send(listCmd);
+      if (listed.Contents && listed.Contents.length > 0) {
+        for (const obj of listed.Contents) {
+          if (obj.Key) {
+            await s3Client.send(new DeleteObjectCommand({ Bucket: bucketName, Key: obj.Key }));
+          }
+        }
+      }
+    } catch (e) { console.error(e); }
+  } else {
+    const htmlPath = path.join(process.cwd(), "public", "portfolio", `${slug}.html`);
+    const assetDir = path.join(process.cwd(), "public", "portfolio", "assets", slug);
+    try {
+      if (fs.existsSync(htmlPath)) await fs.promises.unlink(htmlPath);
+      if (fs.existsSync(assetDir)) await fs.promises.rm(assetDir, { recursive: true, force: true });
+    } catch (e) { console.error(e); }
+  }
+}
+
+/**
+ * Get Portfolio Metadata (Decoupled from DB)
+ */
+export async function getPortfolioMetadata(slug: string): Promise<any | null> {
+  if (STORAGE_PROVIDER === "r2" || STORAGE_PROVIDER === "s3") {
+    const bucketName = process.env.S3_BUCKET_NAME;
+    if (!bucketName || !s3Client) return null;
+
+    try {
+      const command = new GetObjectCommand({
+        Bucket: bucketName,
+        Key: `portfolio/assets/${slug}/metadata.json`,
+      });
+      const data = await s3Client.send(command);
+      if (!data.Body) return null;
+      const bodyString = await data.Body.transformToString();
+      return JSON.parse(bodyString);
+    } catch {
+      return null;
+    }
+  } else {
+    const metadataPath = path.join(process.cwd(), "public", "portfolio", "assets", slug, "metadata.json");
+    try {
+      const content = await fs.promises.readFile(metadataPath, "utf-8");
+      return JSON.parse(content);
+    } catch {
+      return null;
+    }
   }
 }

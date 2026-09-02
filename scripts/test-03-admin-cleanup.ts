@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
 
 async function runTest03() {
   console.log("🚀 [TEST-03] Memulai simulasi: Admin Cleanup...");

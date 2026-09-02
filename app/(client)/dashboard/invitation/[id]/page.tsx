@@ -223,9 +223,11 @@ export default function EditInvitation() {
 
   const PLAN_HIERARCHY: Record<string, number> = { TRADITIONAL: 1, MODERN: 2, PREMIUM: 3 };
   const PLAN_PRICES: Record<string, number> = {
-    TRADITIONAL: Number(platformSettings?.pricing?.price_traditional ?? 50000),
-    MODERN: Number(platformSettings?.pricing?.price_modern ?? 100000),
-    PREMIUM: Number(platformSettings?.pricing?.price_premium ?? 120000),
+    // Harga HANYA dari platformSettings (AdminSetting) — tidak ada fallback hardcode
+    // Jika belum dimuat, 0 agar kalkulasi selisih upgrade tidak salah
+    TRADITIONAL: Number(platformSettings?.pricing?.price_traditional ?? 0),
+    MODERN:      Number(platformSettings?.pricing?.price_modern      ?? 0),
+    PREMIUM:     Number(platformSettings?.pricing?.price_premium     ?? 0),
   };
   const PLAN_COLOR: Record<string, string> = {
     TRADITIONAL: "bg-amber-50 text-amber-800 border-amber-200",

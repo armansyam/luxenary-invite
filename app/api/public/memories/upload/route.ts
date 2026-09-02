@@ -82,12 +82,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Ambil limit dari settings, default 2MB (Stricter security for direct API hits)
+    // Ambil limit dari AdminSetting (max_upload_mb). Fallback 5MB sesuai default seed admin.
+    // Perubahan limit cukup dari Admin Dashboard — tanpa edit kode.
     const settings = await getPublicPlatformSettings();
-    const maxUploadBytes = (settings.maxUploadMb || 2) * 1024 * 1024;
+    const effectiveMaxMb = settings.maxUploadMb > 0 ? settings.maxUploadMb : 5;
+    const maxUploadBytes = effectiveMaxMb * 1024 * 1024;
 
     if (buffer.byteLength > maxUploadBytes) {
-      return NextResponse.json({ error: `Ukuran file melebihi batas maksimal ${settings.maxUploadMb || 2}MB.` }, { status: 400 });
+      return NextResponse.json({ error: `Ukuran file melebihi batas maksimal ${effectiveMaxMb}MB.` }, { status: 400 });
     }
 
     // Gunakan extension dari magic bytes (bukan dari client)

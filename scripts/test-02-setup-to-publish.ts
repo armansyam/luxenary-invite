@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma';
 import * as bcrypt from 'bcryptjs';
-
-const prisma = new PrismaClient();
 
 async function runTest02() {
   console.log("🚀 [TEST-02] Memulai simulasi: Setup Undangan -> Publish...");

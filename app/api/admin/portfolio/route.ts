@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import fs from "fs";
 import path from "path";
+import { uploadPortfolioFile, listPortfolioSlugs, deletePortfolio } from "@/lib/storage";
 
 // Helper for file existence
 async function fileExists(filePath: string): Promise<boolean> {
@@ -23,16 +24,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const portfolioDir = path.join(process.cwd(), "public", "portfolio");
-    if (!(await fileExists(portfolioDir))) {
-      return NextResponse.json({ portfolios: [] });
-    }
-
-    const files = await fs.promises.readdir(portfolioDir);
-    const portfolios = files
-      .filter((f) => f.endsWith(".html"))
-      .map((f) => f.replace(".html", ""));
-
+    const portfolios = await listPortfolioSlugs();
     return NextResponse.json({ portfolios });
   } catch (error) {
     console.error("GET /api/admin/portfolio error:", error);
@@ -67,50 +59,48 @@ export async function POST(req: NextRequest) {
 
     // 1. Baca HTML Canonical yang sudah di-bake
     const canonicalHtmlPath = path.join(process.cwd(), "public", "published", "slugs", `${clientName}.html`);
-    if (!(await fileExists(canonicalHtmlPath))) {
-      return NextResponse.json({ error: "HTML Klien belum di-publish (tidak ditemukan)" }, { status: 404 });
-    }
+    
+    // UI Admin Dashboard menjamin tombol ini hanya muncul jika HTML sudah di-publish.
+    // Jika file tidak ada secara fisik karena anomali sistem file, fs.readFile akan melemparkan error (ter-catch di blok bawah)
     let htmlContent = await fs.promises.readFile(canonicalHtmlPath, "utf-8");
 
-    // 2. Bersihkan & buat direktori aset portfolio
-    const assetDir = path.join(process.cwd(), "public", "portfolio", "assets", clientName);
-    if (await fileExists(assetDir)) {
-      await fs.promises.rm(assetDir, { recursive: true, force: true });
-    }
-    await fs.promises.mkdir(assetDir, { recursive: true });
-
-    // 3. Helper: download/salin media utama (InvitationMedia: R2 atau Lokal)
-    //    Nama file stabil sesuai nama asli — tidak menggunakan Date.now()
+    // 2. Helper: download/salin media utama dan upload via Hybrid Storage
     const processMedia = async (url: string | null | undefined): Promise<string | null> => {
       if (!url) return null;
       try {
         const fileName = path.basename(new URL(url, "http://localhost").pathname);
-        const targetPath = path.join(assetDir, fileName);
-        const newUrl = `/portfolio/assets/${clientName}/${fileName}`;
+        const relativePath = `assets/${clientName}/${fileName}`;
+        let buffer: Buffer | null = null;
+        
+        let mimeType = "application/octet-stream";
+        if (fileName.endsWith(".webp")) mimeType = "image/webp";
+        else if (fileName.endsWith(".png")) mimeType = "image/png";
+        else if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")) mimeType = "image/jpeg";
+        else if (fileName.endsWith(".mp3")) mimeType = "audio/mpeg";
 
         if (url.startsWith("http")) {
           const res = await fetch(url);
           if (!res.ok) throw new Error(`Gagal fetch: ${url}`);
-          const buffer = await res.arrayBuffer();
-          await fs.promises.writeFile(targetPath, Buffer.from(buffer));
+          buffer = Buffer.from(await res.arrayBuffer());
         } else if (url.startsWith("/uploads/")) {
           const localSrc = path.join(process.cwd(), "public", url);
           if (await fileExists(localSrc)) {
-            await fs.promises.copyFile(localSrc, targetPath);
-          } else {
-            return null;
+            buffer = await fs.promises.readFile(localSrc);
           }
-        } else {
-          return null;
         }
-        return newUrl;
+
+        if (buffer) {
+          const newUrl = await uploadPortfolioFile(buffer, relativePath, mimeType);
+          return newUrl; // This will return /portfolio/assets/... or R2 public URL
+        }
+        return null;
       } catch (err) {
         console.error("[Portfolio] Gagal proses media:", url, err);
         return null;
       }
     };
 
-    // 4. Proses InvitationMedia (foto profil, cover, musik, dll)
+    // 3. Proses InvitationMedia (foto profil, cover, musik, dll)
     const mediaUrlsToProcess = [
       inv.musicUrl,
       ...inv.media.map((m) => m.localPath),
@@ -123,8 +113,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 5. Proses GuestMemory thumbnails — kompres ke 120x120 WebP via sharp
-    //    Hanya thumbnailUrl, max 10 (sesuai slice di themeEngine)
+    // 4. Proses GuestMemory thumbnails — kompres ke 120x120 WebP via sharp
     try {
       const sharp = (await import("sharp")).default;
       const guestMemories = await prisma.guestMemory.findMany({
@@ -141,30 +130,27 @@ export async function POST(req: NextRequest) {
         if (!thumbUrl) continue;
 
         const localFileName = `memory_${String(i + 1).padStart(2, "0")}.webp`;
-        const targetPath = path.join(assetDir, localFileName);
-        const newUrl = `/portfolio/assets/${clientName}/${localFileName}`;
+        const relativePath = `assets/${clientName}/${localFileName}`;
 
         try {
-          let rawBuffer: Buffer;
+          let rawBuffer: Buffer | null = null;
           if (thumbUrl.startsWith("http")) {
             const res = await fetch(thumbUrl);
-            if (!res.ok) continue;
-            rawBuffer = Buffer.from(await res.arrayBuffer());
+            if (res.ok) rawBuffer = Buffer.from(await res.arrayBuffer());
           } else if (thumbUrl.startsWith("/uploads/")) {
             const localSrc = path.join(process.cwd(), "public", thumbUrl);
-            if (!(await fileExists(localSrc))) continue;
-            rawBuffer = await fs.promises.readFile(localSrc);
-          } else {
-            continue;
+            if (await fileExists(localSrc)) rawBuffer = await fs.promises.readFile(localSrc);
           }
 
-          // Resize 120x120, crop center, WebP quality 65 → ~3-6 KB per thumbnail
-          await sharp(rawBuffer)
-            .resize(120, 120, { fit: "cover", position: "centre" })
-            .webp({ quality: 65 })
-            .toFile(targetPath);
+          if (rawBuffer) {
+            const processedBuffer = await sharp(rawBuffer)
+              .resize(120, 120, { fit: "cover", position: "centre" })
+              .webp({ quality: 65 })
+              .toBuffer();
 
-          htmlContent = htmlContent.split(thumbUrl).join(newUrl);
+            const newUrl = await uploadPortfolioFile(processedBuffer, relativePath, "image/webp");
+            htmlContent = htmlContent.split(thumbUrl).join(newUrl);
+          }
         } catch (memErr) {
           console.error("[Portfolio] Gagal proses GuestMemory thumbnail:", thumbUrl, memErr);
         }
@@ -173,31 +159,28 @@ export async function POST(req: NextRequest) {
       console.error("[Portfolio] Error saat proses GuestMemory:", sharpErr);
     }
 
-    // 6. Proses Google Drive CDN photos (lh3.googleusercontent.com/d/...)
-    //    Scan dari HTML baked, ambil MAX 15 foto pertama, kompres, simpan sebagai gallery_01.webp dst
+    // 5. Proses Google Drive CDN photos
     try {
       const sharp = (await import("sharp")).default;
       const driveUrlRegex = /https:\/\/lh3\.googleusercontent\.com\/d\/[A-Za-z0-9_\-]+=w\d+/g;
-      // Batasi 15 foto — cukup untuk grid portofolio + modal galeri, tidak perlu semua 100
       const driveUrls = [...new Set(htmlContent.match(driveUrlRegex) || [])].slice(0, 15);
 
       for (let i = 0; i < driveUrls.length; i++) {
         const driveUrl = driveUrls[i];
         const localFileName = `gallery_${String(i + 1).padStart(2, "0")}.webp`;
-        const targetPath = path.join(assetDir, localFileName);
-        const newUrl = `/portfolio/assets/${clientName}/${localFileName}`;
+        const relativePath = `assets/${clientName}/${localFileName}`;
 
         try {
           const res = await fetch(driveUrl);
           if (!res.ok) continue;
           const rawBuffer = Buffer.from(await res.arrayBuffer());
 
-          // Resize max 1200px, WebP quality 75 — cukup jernih untuk grid portofolio, lebih ringan
-          await sharp(rawBuffer)
+          const processedBuffer = await sharp(rawBuffer)
             .resize(1200, undefined, { fit: "inside", withoutEnlargement: true })
             .webp({ quality: 75 })
-            .toFile(targetPath);
+            .toBuffer();
 
+          const newUrl = await uploadPortfolioFile(processedBuffer, relativePath, "image/webp");
           htmlContent = htmlContent.split(driveUrl).join(newUrl);
         } catch (driveErr) {
           console.error("[Portfolio] Gagal download Drive photo:", driveUrl, driveErr);
@@ -207,10 +190,20 @@ export async function POST(req: NextRequest) {
       console.error("[Portfolio] Error saat proses Drive photos:", sharpErr);
     }
 
-    // 7. Simpan HTML yang sudah diisolasi penuh (zero external call)
-    const targetHtmlPath = path.join(process.cwd(), "public", "portfolio", `${clientName}.html`);
-    await fs.promises.mkdir(path.dirname(targetHtmlPath), { recursive: true });
-    await fs.promises.writeFile(targetHtmlPath, htmlContent, "utf-8");
+    // 6. Simpan HTML yang sudah diisolasi penuh via Hybrid Storage
+    const htmlBuffer = Buffer.from(htmlContent, "utf-8");
+    await uploadPortfolioFile(htmlBuffer, `${clientName}.html`, "text/html");
+
+    // 7. Simpan Metadata Portofolio (Decoupling dari DB) via Hybrid Storage
+    // Rekam identitas murni tanpa fallback string statis atau query eksternal
+    const metadata = {
+      slug: clientName,
+      coupleName: `${inv.groomNickname || inv.groomName} & ${inv.brideNickname || inv.brideName}`,
+      themeId: inv.themeId
+    };
+
+    const metadataBuffer = Buffer.from(JSON.stringify(metadata, null, 2), "utf-8");
+    await uploadPortfolioFile(metadataBuffer, `assets/${clientName}/metadata.json`, "application/json");
 
     return NextResponse.json({ success: true, clientName });
 
@@ -236,15 +229,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "clientName required" }, { status: 400 });
     }
 
-    const htmlPath = path.join(process.cwd(), "public", "portfolio", `${clientName}.html`);
-    const assetDir = path.join(process.cwd(), "public", "portfolio", "assets", clientName);
-
-    if (await fileExists(htmlPath)) {
-      await fs.promises.unlink(htmlPath);
-    }
-    if (await fileExists(assetDir)) {
-      await fs.promises.rm(assetDir, { recursive: true, force: true });
-    }
+    await deletePortfolio(clientName);
 
     return NextResponse.json({ success: true });
   } catch (error) {

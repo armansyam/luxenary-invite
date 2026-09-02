@@ -81,9 +81,10 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
     supportEmail: map["support_email"] || "",
     supportWhatsapp: map["support_whatsapp"] || "",
     paymentMode: (map["payment_mode"] as any) || "BOTH",
-    bankName: map["bank_name"] || "BCA (Bank Central Asia)",
-    bankAccountNumber: map["bank_account_number"] || "8735098123",
-    bankAccountHolder: map["bank_account_holder"] || "PT Luxenary Karya Digital",
+    bankName: map["bank_name"] || "",
+    // JANGAN hardcode nomor rekening — jika kosong, UI wajib tampilkan pesan konfigurasi belum lengkap
+    bankAccountNumber: map["bank_account_number"] || "",
+    bankAccountHolder: map["bank_account_holder"] || "",
     bankInstructions:
       map["bank_instructions"] ||
       "Silakan transfer tepat sesuai total tagihan invoice. Setelah transfer, unggah foto bukti transfer di bawah ini untuk diverifikasi admin.",

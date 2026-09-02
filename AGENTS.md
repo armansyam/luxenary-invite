@@ -44,3 +44,5 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 3. **Clean SaaS Design System:**
    - Use subtle indicators (such as 1.5px dot indicators) with muted modern color palettes rather than heavy emoji badges.
 
+# dilarang keras menggunakan hardcode jika itu seharusnya dinamis
+- jangan pernah membuat hardcode jika seharusnya bersifat dinamis, harus cek sebelum melakukan perubahan
