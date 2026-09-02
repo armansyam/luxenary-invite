@@ -161,4 +161,13 @@ export class IPaymuGateway implements PaymentGateway {
     const paid = data?.Data?.Status === 1 || data?.Data?.Status === "PAID";
     return { status: paid ? "PAID" : "FAILED" };
   }
+
+  /**
+   * iPaymu tidak menyediakan API cancel — gateway ini bersifat stateless.
+   * QRIS akan expired sendiri oleh iPaymu sesuai masa berlaku.
+   * Implementasi ini adalah no-op agar interface PaymentGateway terpenuhi.
+   */
+  async cancel(_gatewayTxId: string): Promise<{ success: boolean }> {
+    return { success: true };
+  }
 }

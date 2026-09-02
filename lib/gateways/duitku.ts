@@ -141,10 +141,23 @@ export class DuitkuGateway implements PaymentGateway {
     apiKey: string,
     incomingSignature: string
   ): boolean {
-    const expected = crypto
-      .createHash("md5")
-      .update(`${merchantCode}${amount}${orderId}${apiKey}`)
-      .digest("hex");
-    return expected === incomingSignature;
+    try {
+      const expected = crypto
+        .createHash("md5")
+        .update(`${merchantCode}${amount}${orderId}${apiKey}`)
+        .digest("hex");
+      return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(incomingSignature));
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Duitku tidak menyediakan API cancel publik.
+   * Transaksi akan expired otomatis sesuai masa berlaku.
+   * No-op agar interface PaymentGateway terpenuhi.
+   */
+  async cancel(_gatewayTxId: string): Promise<{ success: boolean }> {
+    return { success: true };
   }
 }

@@ -78,6 +78,9 @@ model Order {
   linkedOrderId     String? // ID order lama yang di-upgrade
   paymentMethod     String?     @default("GATEWAY") // GATEWAY | MANUAL_TRANSFER
   paymentGatewayRef String?
+  // Gateway tracking — fondasi dynamic gateway switching
+  gatewayId         String?     // Gateway yang menangani order: "midtrans"|"ipaymu"|"xendit"|"tripay"|"duitku"
+  gatewayTxId       String?     // ID transaksi di sisi gateway (bukan orderId kita) — untuk cancel/expire API
   snapToken         String?
   proofImageUrl     String?
   proofUploadedAt   DateTime?
@@ -91,6 +94,7 @@ model Order {
 
   @@index([userId])
   @@index([status])
+  @@index([gatewayId])
   @@map("orders")
 }
 

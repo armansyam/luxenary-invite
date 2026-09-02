@@ -106,6 +106,48 @@ export class MidtransGateway implements PaymentGateway {
     return { checkoutUrl: data.redirect_url };
   }
 
+  /**
+   * Batalkan transaksi Midtrans yang masih aktif (pending).
+   * Midtrans Cancel API: POST /v2/{order_id}/cancel
+   * Setelah dibatalkan: QRIS/VA langsung tidak bisa digunakan.
+   * Midtrans akan kirim webhook cancel ke /api/webhook/midtrans sebagai konfirmasi.
+   */
+  async cancel(gatewayTxId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { serverKey, apiUrl } = await this.getConfig();
+      const basicAuth = Buffer.from(`${serverKey}:`).toString("base64");
+
+      const response = await fetch(`${apiUrl}/${gatewayTxId}/cancel`, {
+        method: "POST",
+        headers: {
+          Authorization: `Basic ${basicAuth}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      const data = await response.json();
+      const txStatus = data?.transaction_status;
+
+      // Status "cancel" atau "deny" = berhasil dibatalkan
+      // Status "expire" = sudah expired sendiri = juga aman untuk re-init
+      if (txStatus === "cancel" || txStatus === "deny" || txStatus === "expire") {
+        return { success: true };
+      }
+
+      // Jika transaksi sudah settlement (terbayar), tidak boleh di-cancel
+      if (txStatus === "settlement" || txStatus === "capture") {
+        return { success: false, error: "Transaksi sudah terbayar, tidak bisa dibatalkan." };
+      }
+
+      // Jika response OK tapi status tidak dikenali, anggap berhasil
+      if (response.ok) return { success: true };
+
+      return { success: false, error: data?.error_messages?.join(", ") || JSON.stringify(data) };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  }
+
   async verify(reference: string): Promise<{ status: "PAID" | "FAILED" | "PENDING" }> {
     const { serverKey, apiUrl } = await this.getConfig();
     const basicAuth = Buffer.from(`${serverKey}:`).toString("base64");

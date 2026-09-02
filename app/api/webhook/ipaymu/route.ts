@@ -94,6 +94,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing reference_id" }, { status: 400 });
     }
 
+    // Validasi Gateway Ownership — tolak jika order sudah dipindah ke gateway lain
+    try {
+      const orderCheck = await prisma.order.findUnique({
+        where: { id: orderId },
+        select: { gatewayId: true } as any,
+      });
+      const gwId = (orderCheck as any)?.gatewayId as string | null;
+      if (gwId && gwId !== "ipaymu") {
+        console.warn(`[iPaymu Webhook] Order ${orderId} gatewayId=${gwId}, bukan ipaymu — diabaikan.`);
+        return NextResponse.json({ status: "ignored", reason: "gateway_mismatch" }, { status: 200 });
+      }
+    } catch {}
+
     // paid_status: 1 = PAID, 2 = FAILED/Expired, 6 = PENDING
     const paidStatus = Number(body.paid_status ?? body.status_code ?? 0);
 

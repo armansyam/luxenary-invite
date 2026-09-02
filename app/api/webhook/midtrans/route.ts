@@ -75,6 +75,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
+    // Validasi Gateway Ownership — tolak jika order sudah dipindah ke gateway lain
+    // Contoh: admin switch dari Midtrans ke iPaymu, lalu Midtrans kirim webhook telat
+    const orderGatewayId = (order as any).gatewayId as string | null;
+    if (orderGatewayId && orderGatewayId !== "midtrans") {
+      console.warn(`[Midtrans Webhook] Order ${orderId} gatewayId=${orderGatewayId}, bukan midtrans — diabaikan.`);
+      return NextResponse.json({ status: "ignored", reason: "gateway_mismatch" }, { status: 200 });
+    }
+
     // Cek Idempotency: Jika sudah PAID, return ok
     if (order.status === "PAID") {
       return NextResponse.json({ status: "ok", note: "already_paid" });

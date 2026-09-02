@@ -29,7 +29,7 @@ export class XenditGateway implements PaymentGateway {
     return { apiKey, webhookToken, baseUrl, mode };
   }
 
-  async init(orderId: string, amount: number, appUrl?: string): Promise<{ checkoutUrl: string }> {
+  async init(orderId: string, amount: number, appUrl?: string): Promise<{ checkoutUrl?: string; qrString?: string; sessionId?: string; expiryTimestamp?: number; gatewayTxId?: string }> {
     const { apiKey, baseUrl } = await this.getConfig();
 
     if (!apiKey || apiKey.includes("your_")) {
@@ -97,7 +97,35 @@ export class XenditGateway implements PaymentGateway {
       throw new Error(`Xendit: ${data?.message || JSON.stringify(data)}`);
     }
 
-    return { checkoutUrl: data.invoice_url };
+    return { checkoutUrl: data.invoice_url, gatewayTxId: data.id };
+  }
+
+  /**
+   * Expire invoice Xendit yang masih aktif.
+   * Xendit tidak punya "cancel" — melainkan "expire".
+   * Endpoint: POST /v2/invoices/{invoice_id}/expire
+   * gatewayTxId = invoice_id yang dikembalikan Xendit saat init().
+   */
+  async cancel(gatewayTxId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { apiKey, baseUrl } = await this.getConfig();
+      const basicAuth = Buffer.from(`${apiKey}:`).toString("base64");
+
+      const response = await fetch(`${baseUrl}/v2/invoices/${gatewayTxId}/expire`, {
+        method: "POST",
+        headers: {
+          Authorization: `Basic ${basicAuth}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      const data = await response.json();
+      if (response.ok || data?.status === "EXPIRED") return { success: true };
+
+      return { success: false, error: data?.message || JSON.stringify(data) };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
   }
 
   async verify(reference: string): Promise<{ status: "PAID" | "FAILED" | "PENDING" }> {

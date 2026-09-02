@@ -148,4 +148,13 @@ export class TripayGateway implements PaymentGateway {
       return false;
     }
   }
+
+  /**
+   * Tripay tidak menyediakan API cancel publik.
+   * Transaksi akan expired otomatis sesuai masa berlaku.
+   * No-op agar interface PaymentGateway terpenuhi.
+   */
+  async cancel(_gatewayTxId: string): Promise<{ success: boolean }> {
+    return { success: true };
+  }
 }
