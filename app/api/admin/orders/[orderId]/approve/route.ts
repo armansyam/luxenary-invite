@@ -78,6 +78,6 @@ export async function POST(
     return NextResponse.json({ success: true, message: "Order berhasil dikonfirmasi lunas" });
   } catch (error: any) {
     console.error("[Admin Approve Order Error]", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Terjadi kesalahan server" : error.message }, { status: 500 });
   }
 }

@@ -41,7 +41,7 @@ export async function GET() {
     }
     return NextResponse.json({ success: true, themes });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Terjadi kesalahan server" : error.message }, { status: 500 });
   }
 }
 
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, theme: newTheme });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Terjadi kesalahan server" : error.message }, { status: 500 });
   }
 }
 
@@ -114,7 +114,7 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json({ success: true, theme: updated });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Terjadi kesalahan server" : error.message }, { status: 500 });
   }
 }
 
@@ -164,6 +164,6 @@ export async function DELETE(req: NextRequest) {
 
     return NextResponse.json({ success: true, message: `Tema ${id} beserta file masternya berhasil dihapus permanen (Hard Delete)` });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Terjadi kesalahan server" : error.message }, { status: 500 });
   }
 }

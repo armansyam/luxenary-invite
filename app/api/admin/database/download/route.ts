@@ -33,11 +33,19 @@ export async function GET(req: NextRequest) {
     const backupDir = await getBackupDirectory(backupPathSetting);
     const filePath = path.join(backupDir, safeFilename);
 
+    // Path Traversal Protection: pastikan filePath berada di dalam backupDir
+    const resolvedBackupDir = path.resolve(backupDir);
+    const resolvedFilePath = path.resolve(filePath);
+    if (!resolvedFilePath.startsWith(resolvedBackupDir + path.sep) && resolvedFilePath !== resolvedBackupDir) {
+      return NextResponse.json({ error: "Akses file tidak diizinkan" }, { status: 403 });
+    }
+
     try {
       await fs.promises.access(filePath);
     } catch {
       return NextResponse.json({ error: "File snapshot tidak ditemukan" }, { status: 404 });
     }
+
 
     const fileBuffer = await fs.promises.readFile(filePath);
 
@@ -50,6 +58,6 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || "Gagal mengunduh file snapshot" }, { status: 500 });
+    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal mengunduh file snapshot" : (error.message || "Gagal mengunduh file snapshot") }, { status: 500 });
   }
 }

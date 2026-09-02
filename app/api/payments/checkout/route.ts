@@ -100,6 +100,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ checkoutUrl, qrString, sessionId, expiryTimestamp, gateway: activeGatewayId, serverTime: Date.now() });
   } catch (error: any) {
     console.error("[Payments Checkout Error]", error);
-    return NextResponse.json({ error: error.message || "Gagal memulai pembayaran" }, { status: 500 });
+    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal memulai pembayaran" : (error.message || "Gagal memulai pembayaran") }, { status: 500 });
   }
 }

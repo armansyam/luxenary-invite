@@ -111,8 +111,7 @@ export async function composeTemplateData(invitationId: string) {
 
   const mediaMap = new Map<string, string>();
   for (const m of inv.media) {
-    if (m.driveViewUrl) mediaMap.set(String(m.mediaSlot), m.driveViewUrl);
-    else if (m.localPath) mediaMap.set(String(m.mediaSlot), m.localPath);
+    if (m.localPath) mediaMap.set(String(m.mediaSlot), m.localPath);
   }
 
   let events = [];
@@ -391,7 +390,7 @@ export async function composeTemplateData(invitationId: string) {
 
   const galleryMedia = inv.media.filter((m) => String(m.mediaSlot).startsWith("GALLERY"));
   galleryMedia.forEach((gm) => {
-    const u = gm.driveViewUrl || gm.localPath;
+    const u = gm.localPath;
     if (u && !allPhotos.includes(u)) allPhotos.push(u);
   });
 

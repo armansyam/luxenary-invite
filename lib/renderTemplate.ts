@@ -1,6 +1,26 @@
 import fs from "fs";
 import path from "path";
 
+/** Sanitasi URL agar hanya mengizinkan karakter aman untuk digunakan di CSS url() */
+function sanitizeCssUrl(url: string): string {
+  // Hapus karakter berbahaya yang bisa digunakan untuk CSS injection atau data: URI
+  // Hanya izinkan http/https URL
+  const trimmed = url.trim();
+  if (!/^https?:\/\//i.test(trimmed)) return "";
+  // Tidak izinkan karakter yang bisa break CSS context
+  return trimmed.replace(/[()"'\\]/g, "");
+}
+
+/** Escape HTML entities untuk mencegah XSS di konteks HTML biasa */
+function escapeHtmlAttr(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;");
+}
+
 const THEME_MAP: Record<string, { file: string; folder: "premium" | "traditional" | "modern" }> = {
   // Premium Series
   "kalandra": { file: "kalandra.html", folder: "premium" },
@@ -604,24 +624,8 @@ export async function renderTemplateFile(
     }
   }
 
-  // Fallback checks across folders for MASTER file
-  if (!(await fileExists(tplPath))) {
-    const premiumCheck = path.join(process.cwd(), "themes", "premium", `${templateName}.html`);
-    const traditionalCheck = path.join(process.cwd(), "themes", "traditional", `${templateName}.html`);
-    const modernLegacyCheck = path.join(process.cwd(), "themes", "modern", `${templateName}.html`);
-    if (await fileExists(premiumCheck)) {
-      tplPath = premiumCheck;
-    } else if (await fileExists(traditionalCheck)) {
-      tplPath = traditionalCheck;
-    } else if (await fileExists(modernLegacyCheck)) {
-      tplPath = modernLegacyCheck;
-    } else {
-      // Default fallback
-      tplPath = path.join(process.cwd(), "themes", "premium", "kalandra.html");
-    }
-  }
-
-  // --- ARSITEKTUR PIRING (DRAFTS) ---
+  // --- 1. CEK ARSITEKTUR PIRING (DRAFTS) LEBIH DULU ---
+  let draftFound = false;
   if (options?.invitationId) {
     const draftsDir = path.join(process.cwd(), "data", "drafts");
     const draftPath = path.join(draftsDir, `${options.invitationId}.html`);
@@ -633,8 +637,38 @@ export async function renderTemplateFile(
     if (await fileExists(draftPath)) {
       // Piring sudah ada, gunakan piring draft
       tplPath = draftPath;
-    } else {
-      // Piring belum ada, copy dari master ke draft
+      draftFound = true;
+    }
+  }
+
+  // --- 2. JIKA TIDAK ADA DRAFT, CEK MASTER FILE ---
+  if (!draftFound) {
+    if (!(await fileExists(tplPath))) {
+      const premiumCheck = path.join(process.cwd(), "themes", "premium", `${templateName}.html`);
+      const traditionalCheck = path.join(process.cwd(), "themes", "traditional", `${templateName}.html`);
+      const modernLegacyCheck = path.join(process.cwd(), "themes", "modern", `${templateName}.html`);
+      
+      if (await fileExists(premiumCheck)) {
+        tplPath = premiumCheck;
+      } else if (await fileExists(traditionalCheck)) {
+        tplPath = traditionalCheck;
+      } else if (await fileExists(modernLegacyCheck)) {
+        tplPath = modernLegacyCheck;
+      } else {
+        // Tidak menggunakan fallback (Sesuai instruksi: Wajib memilih tema)
+        return `
+          <div style="padding:40px; text-align:center; font-family:sans-serif; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #fff;">
+            <h2 style="color:#d32f2f;">Tema Tidak Tersedia</h2>
+            <p>Tema yang Anda pilih tidak tersedia atau telah dihapus oleh sistem.</p>
+            <p><b>Silakan kembali ke Dashboard Anda dan pilih tema lain yang aktif untuk melanjutkan pengeditan.</b></p>
+          </div>
+        `;
+      }
+    }
+
+    // Karena draft belum ada dan master file tersedia, copy dari master ke draft
+    if (options?.invitationId) {
+      const draftPath = path.join(process.cwd(), "data", "drafts", `${options.invitationId}.html`);
       try {
         await fs.promises.copyFile(tplPath, draftPath);
         tplPath = draftPath;
@@ -660,9 +694,11 @@ export async function renderTemplateFile(
   const metaTags = data.metaTagsHtml ? `${data.metaTagsHtml}\n` : '';
   let closingStyle = '';
   if (data.closingPhotoUrl) {
-    closingStyle = `\n<style>
+    const safeUrl = sanitizeCssUrl(String(data.closingPhotoUrl));
+    if (safeUrl) {
+      closingStyle = `\n<style>
       .site-footer, footer, footer#footer {
-        background-image: linear-gradient(to top, rgba(0,0,0,0.85), rgba(0,0,0,0.4)), url('${data.closingPhotoUrl}') !important;
+        background-image: linear-gradient(to top, rgba(0,0,0,0.85), rgba(0,0,0,0.4)), url('${safeUrl}') !important;
         background-size: cover !important;
         background-position: center bottom !important;
         color: #fff !important;
@@ -673,6 +709,7 @@ export async function renderTemplateFile(
         color: #fff !important;
       }
     </style>`;
+    }
   }
 
   if (tpl.includes("<head>")) {
@@ -697,7 +734,8 @@ export async function renderTemplateFile(
     (match, openTag, labelKey, innerContent, closeTag) => {
       const val = customLabels[labelKey];
       if (val !== undefined && val !== null && val !== "") {
-        return `${openTag}${val}${closeTag}`;
+        // Escape HTML untuk mencegah XSS jika nilai customLabel mengandung tag berbahaya
+        return `${openTag}${escapeHtmlAttr(String(val))}${closeTag}`;
       }
       return match;
     }

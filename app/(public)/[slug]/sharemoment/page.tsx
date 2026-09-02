@@ -63,6 +63,7 @@ export default async function FreeGuestMemoriesStandalonePage({ params }: PagePr
       memories={memories}
       galleryUrl={galleryUrl}
       backUrl={backUrl}
+      isUploadLocked={invitation.memoriesUploadLocked}
     />
   );
 }

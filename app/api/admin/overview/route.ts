@@ -190,6 +190,6 @@ export async function GET() {
       logs: webhookLogs,
     });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || "Failed to load admin overview" }, { status: 500 });
+    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Failed to load admin overview" : (error.message || "Failed to load admin overview") }, { status: 500 });
   }
 }

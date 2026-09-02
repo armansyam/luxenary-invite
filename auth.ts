@@ -4,38 +4,13 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { authConfig } from "./auth.config";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-// @ts-ignore
-import Database from "better-sqlite3";
-import path from "path";
 
-// Membaca Google OAuth Client ID & Secret langsung dari database (admin_settings)
-function getDynamicGoogleCredentials(): { clientId: string; clientSecret: string } {
-  try {
-    const dbPath = path.join(process.cwd(), "dev.db");
-    const db = new Database(dbPath, { readonly: true });
-    const rows = db
-      .prepare("SELECT key, value FROM admin_settings WHERE key IN ('google_client_id', 'google_client_secret')")
-      .all() as { key: string; value: string }[];
-    db.close();
-
-    const map: Record<string, string> = {};
-    rows.forEach((r) => {
-      map[r.key] = r.value;
-    });
-
-    return {
-      clientId: map["google_client_id"] || process.env.GOOGLE_CLIENT_ID || "dummy_client_id",
-      clientSecret: map["google_client_secret"] || process.env.GOOGLE_CLIENT_SECRET || "dummy_client_secret",
-    };
-  } catch (err) {
-    return {
-      clientId: process.env.GOOGLE_CLIENT_ID || "dummy_client_id",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "dummy_client_secret",
-    };
-  }
-}
-
-const googleCreds = getDynamicGoogleCredentials();
+// Google OAuth credentials dibaca dari .env (bukan dari database)
+// Untuk mengubah credentials, update .env dan restart server.
+const googleCreds = {
+  clientId: process.env.GOOGLE_CLIENT_ID || "",
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+};
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,

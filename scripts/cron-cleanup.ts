@@ -1,17 +1,13 @@
 import { PrismaClient } from "@prisma/client";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
-import Database from "better-sqlite3";
+import { Pool } from 'pg';
+import { PrismaPg } from '@prisma/adapter-pg';
 import fs from "fs";
 import path from "path";
 import { isSubdomainExpired } from "../lib/domainUtils";
 
-// Initialize SQLite adapter securely
-const dbPath = process.env.DATABASE_URL
-  ? path.resolve(process.cwd(), process.env.DATABASE_URL.replace(/^file:/, ""))
-  : path.resolve(process.cwd(), "dev.db");
-
-const dbUrl = `file:${dbPath}`;
-const adapter = new PrismaBetterSqlite3({ url: dbUrl, timeout: 5000 });
+const connectionString = process.env.DATABASE_URL;
+const pool = new Pool({ connectionString });
+const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 const DRY_RUN = process.argv.includes("--dry-run");

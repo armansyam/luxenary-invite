@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import fs from "fs";
 import path from "path";
-import { buildAndSavePublishedHtml, deletePublishedHtml } from "@/lib/staticPublisher";
+import { buildAndSavePublishedHtml, deletePublishedHtml, deleteSubdomainHtmlOnly } from "@/lib/staticPublisher";
 
 async function fileExists(filePath: string): Promise<boolean> {
   try {
@@ -19,15 +19,23 @@ export const dynamic = "force-dynamic";
 async function isAuthorized(req: NextRequest): Promise<boolean> {
   const authHeader = req.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
-  
+
+  // Warning jika CRON_SECRET tidak dikonfigurasi di production
+  if (!cronSecret && process.env.NODE_ENV === "production") {
+    console.error("[SECURITY WARNING] CRON_SECRET tidak diset di production! Endpoint cleanup tidak aman.");
+  }
+
+  // Bearer token check (untuk cron job eksternal seperti cron-job.org atau server cron)
   if (cronSecret && authHeader === `Bearer ${cronSecret}`) {
     return true;
   }
-  
+
+  // Admin session fallback (hanya jika tidak ada CRON_SECRET atau request dari browser admin)
   const session = await auth();
   const isAdmin = (session?.user as any)?.isAdmin === true || (session?.user as any)?.role === "ADMIN" || (session?.user as any)?.role === "SUPER_ADMIN";
   return isAdmin;
 }
+
 
 export async function POST(req: NextRequest) {
   try {
@@ -86,8 +94,11 @@ export async function POST(req: NextRequest) {
 
     let archivedCount = 0;
     for (const inv of targetInvitations) {
-      // 1. Bake Static HTML for Portfolio Archive (Saves to public/portfolio/...)
+      // 1. Bake Static HTML for Portfolio Archive (Saves to public/published/slugs/...)
       await buildAndSavePublishedHtml(inv.id);
+
+      // 1.5 Takedown Subdomain & Custom Domain (Masa Aktif Sewa Habis)
+      await deleteSubdomainHtmlOnly(inv.id);
 
       // 2. Archive Invitation: Rename slugs to free up subdomain, mark as ARCHIVED
       const archiveSlug = `archived-${inv.id}`;
@@ -209,10 +220,15 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: any) {
     console.error("[Cleanup Cron Error]", error);
-    return NextResponse.json({ error: error.message || "Gagal menjalankan auto-cleanup" }, { status: 500 });
+    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal menjalankan auto-cleanup" : (error.message || "Gagal menjalankan auto-cleanup") }, { status: 500 });
   }
 }
 
-export async function GET(req: NextRequest) {
-  return POST(req);
+export async function GET(_req: NextRequest) {
+  // GET endpoint sengaja dinonaktifkan — gunakan POST dengan Authorization: Bearer {CRON_SECRET}
+  return NextResponse.json(
+    { error: "Method tidak diizinkan. Gunakan POST dengan Authorization: Bearer {CRON_SECRET}" },
+    { status: 405 }
+  );
 }
+

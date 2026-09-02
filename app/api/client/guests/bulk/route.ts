@@ -71,6 +71,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: any) {
     console.error("[Guests Bulk POST Error]:", error);
-    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Internal server error" : (error.message || "Internal server error") }, { status: 500 });
   }
 }

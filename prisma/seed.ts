@@ -1,8 +1,16 @@
 import { PrismaClient, Prisma } from '@prisma/client'
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
+import { Pool } from 'pg';
+import { PrismaPg } from '@prisma/adapter-pg';
+import bcrypt from "bcryptjs";
+import path from "path";
+import * as dotenv from "dotenv";
 
-const adapter = new PrismaBetterSqlite3({ url: 'file:./dev.db' })
-const prisma = new PrismaClient({ adapter })
+dotenv.config({ path: path.join(__dirname, "../.env") });
+
+const connectionString = process.env.DATABASE_URL;
+const pool = new Pool({ connectionString });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 const themes: Prisma.ThemeCreateInput[] = [
   {

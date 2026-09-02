@@ -149,6 +149,6 @@ export async function POST(
     });
   } catch (error: any) {
     console.error("[Upload-Proof-Error]:", error);
-    return NextResponse.json({ error: error.message || "Gagal mengunggah bukti transfer" }, { status: 500 });
+    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal mengunggah bukti transfer" : (error.message || "Gagal mengunggah bukti transfer") }, { status: 500 });
   }
 }

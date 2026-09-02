@@ -53,6 +53,6 @@ export async function GET(req: NextRequest) {
       wishes,
     });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || "Gagal memuat data RSVP" }, { status: 500 });
+    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal memuat data RSVP" : (error.message || "Gagal memuat data RSVP") }, { status: 500 });
   }
 }

@@ -154,6 +154,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: any) {
     console.error("Upload processing failed:", error);
-    return NextResponse.json({ error: error.message || "Gagal mengunggah media" }, { status: 500 });
+    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal mengunggah media" : (error.message || "Gagal mengunggah media") }, { status: 500 });
   }
 }

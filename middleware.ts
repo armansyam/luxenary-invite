@@ -4,6 +4,45 @@ import { authConfig } from "@/auth.config";
 
 const { auth } = NextAuth(authConfig);
 
+// Cache resolve custom domain (TTL 5 menit) — mengurangi amplifikasi self-fetch di middleware
+const customDomainCache = new Map<string, { subdomain: string | null; expiry: number }>();
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 menit
+
+async function resolveCustomDomain(host: string, baseUrl: string): Promise<string | null> {
+  const now = Date.now();
+
+  // Cek cache terlebih dahulu
+  const cached = customDomainCache.get(host);
+  if (cached && cached.expiry > now) {
+    return cached.subdomain;
+  }
+
+  // Cleanup cache yang expired (lazy cleanup)
+  if (customDomainCache.size > 500) {
+    for (const [key, val] of customDomainCache.entries()) {
+      if (val.expiry <= now) customDomainCache.delete(key);
+    }
+  }
+
+  // Fetch ke API internal
+  try {
+    const resolveUrl = new URL(`/api/public/resolve-custom-domain?host=${encodeURIComponent(host)}`, baseUrl);
+    const resolveRes = await fetch(resolveUrl.toString());
+    if (resolveRes.ok) {
+      const { subdomain } = await resolveRes.json();
+      // Simpan ke cache (termasuk hasil null agar tidak re-fetch domain yang tidak terdaftar)
+      customDomainCache.set(host, { subdomain: subdomain || null, expiry: now + CACHE_TTL_MS });
+      return subdomain || null;
+    }
+    // Domain tidak terdaftar — cache null agar tidak terus di-fetch
+    customDomainCache.set(host, { subdomain: null, expiry: now + CACHE_TTL_MS });
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+
 export default auth(async (req) => {
   const isLoggedIn = !!req.auth?.user;
   const isAdmin = (req.auth?.user as any)?.isAdmin === true || (req.auth?.user as any)?.role === "ADMIN" || (req.auth?.user as any)?.role === "SUPER_ADMIN";
@@ -57,7 +96,7 @@ export default auth(async (req) => {
     if (parts.length > 1 && parts[0] !== "www" && parts[0] !== "admin" && parts[0] !== "api") {
       const subdomain = parts[0];
       if (pathname === "/" || pathname === "") {
-        const rewriteUrl = new URL(`/published/${subdomain}.html`, req.url);
+        const rewriteUrl = new URL(`/published/subdomains/${subdomain}.html`, req.url);
         rewriteUrl.search = req.nextUrl.search;
         return NextResponse.rewrite(rewriteUrl);
       }
@@ -80,7 +119,7 @@ export default auth(async (req) => {
       const segments = pathname.split('/').filter(Boolean);
       if (segments.length === 1) {
         const guestParam = segments[0];
-        const rewriteUrl = new URL(`/published/${subdomain}.html`, req.url);
+        const rewriteUrl = new URL(`/published/subdomains/${subdomain}.html`, req.url);
         rewriteUrl.search = req.nextUrl.search;
         if (guestParam.startsWith('v=')) {
           rewriteUrl.searchParams.set('v', guestParam.slice(2));
@@ -93,37 +132,32 @@ export default auth(async (req) => {
   }
 
   // ── B. Custom Domain Klien (e.g. arman-siti.com) ──
-  // Struktur routing disiapkan: resolve domain ke subdomain internal lalu rewrite
+  // Gunakan cache in-memory (TTL 5 menit) untuk menghindari amplifikasi self-fetch
   if (isCustomDomain && !pathname.startsWith("/api") && !pathname.startsWith("/_next") && !pathname.startsWith("/static")) {
     try {
-      const resolveUrl = new URL(`/api/public/resolve-custom-domain?host=${encodeURIComponent(cleanHost)}`, req.url);
-      const resolveRes = await fetch(resolveUrl.toString());
+      const subdomain = await resolveCustomDomain(cleanHost, req.url);
 
-      if (resolveRes.ok) {
-        const { subdomain } = await resolveRes.json();
-
-        if (subdomain) {
-          if (pathname === "/" || pathname === "") {
-            const rewriteUrl = new URL(`/published/${subdomain}.html`, req.url);
-            rewriteUrl.search = req.nextUrl.search;
-            return NextResponse.rewrite(rewriteUrl);
-          }
-          if (pathname === "/memories") {
-            return NextResponse.rewrite(new URL(`/s/${subdomain}/memories${req.nextUrl.search}`, req.url));
-          }
-          if (pathname === "/receptionist") {
-            return NextResponse.rewrite(new URL(`/s/${subdomain}/receptionist${req.nextUrl.search}`, req.url));
-          }
-          if (pathname === "/sharemoment") {
-            return NextResponse.rewrite(new URL(`/s/${subdomain}/sharemoment${req.nextUrl.search}`, req.url));
-          }
-          // Guest param routing
-          const segments = pathname.split('/').filter(Boolean);
-          if (segments.length === 1) {
-            const rewriteUrl = new URL(`/published/${subdomain}.html`, req.url);
-            rewriteUrl.searchParams.set('to', segments[0]);
-            return NextResponse.rewrite(rewriteUrl);
-          }
+      if (subdomain) {
+        if (pathname === "/" || pathname === "") {
+          const rewriteUrl = new URL(`/published/subdomains/${subdomain}.html`, req.url);
+          rewriteUrl.search = req.nextUrl.search;
+          return NextResponse.rewrite(rewriteUrl);
+        }
+        if (pathname === "/memories") {
+          return NextResponse.rewrite(new URL(`/s/${subdomain}/memories${req.nextUrl.search}`, req.url));
+        }
+        if (pathname === "/receptionist") {
+          return NextResponse.rewrite(new URL(`/s/${subdomain}/receptionist${req.nextUrl.search}`, req.url));
+        }
+        if (pathname === "/sharemoment") {
+          return NextResponse.rewrite(new URL(`/s/${subdomain}/sharemoment${req.nextUrl.search}`, req.url));
+        }
+        // Guest param routing
+        const segments = pathname.split('/').filter(Boolean);
+        if (segments.length === 1) {
+          const rewriteUrl = new URL(`/published/subdomains/${subdomain}.html`, req.url);
+          rewriteUrl.searchParams.set('to', segments[0]);
+          return NextResponse.rewrite(rewriteUrl);
         }
       }
     } catch {
@@ -140,20 +174,34 @@ export default auth(async (req) => {
     const SYSTEM_PATHS = ["uploads", "css", "js", "fonts", "images", "music", "assets", "downloads", "published", "favicon.ico"];
 
     if (segments.length >= 1 && !SYSTEM_PATHS.includes(segments[0])) {
-      const slug = segments[0]; // e.g. "arman-siti-030326"
+      let slug = segments[0]; // Default slug is the first segment
 
-      // Sub-routes di bawah slug (memories, sharemoment, galery) — teruskan ke Next.js page
+      // Sub-routes di bawah slug (memories, sharemoment, galery) ATAU SEO URL (couple-slug/invitation-slug)
       if (segments.length >= 2) {
         const subRoute = segments[1];
         const allowedSubRoutes = ["memories", "sharemoment", "galery"];
         if (allowedSubRoutes.includes(subRoute)) {
           // Biarkan Next.js routing menangani → app/(public)/[slug]/[subRoute]/page.tsx
           return NextResponse.next();
+        } else {
+          // Jika segment kedua BUKAN subRoute, berarti ini format SEO URL Portofolio: /groom-bride/invitation-slug
+          // Maka slug aslinya adalah segment kedua
+          slug = segments[1];
         }
       }
 
       // Root slug — serve static HTML jika ada, fallback ke Next.js page
-      const rewriteUrl = new URL(`/published/${slug}.html`, req.url);
+      const rewriteUrl = new URL(`/published/slugs/${slug}.html`, req.url);
+      rewriteUrl.search = req.nextUrl.search;
+      return NextResponse.rewrite(rewriteUrl);
+    }
+  }
+
+  // 7. Isolated Portfolio Routing
+  if (pathname.startsWith("/portfolio/") && !pathname.startsWith("/portfolio/assets/")) {
+    const clientName = pathname.replace("/portfolio/", "");
+    if (clientName && !clientName.includes("/")) {
+      const rewriteUrl = new URL(`/portfolio/${clientName}.html`, req.url);
       rewriteUrl.search = req.nextUrl.search;
       return NextResponse.rewrite(rewriteUrl);
     }

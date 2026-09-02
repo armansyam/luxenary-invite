@@ -19,6 +19,6 @@ export async function GET() {
       favicon: faviconExists ? "/assets/brand/favicon.png" : null,
     });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Terjadi kesalahan server" : error.message }, { status: 500 });
   }
 }

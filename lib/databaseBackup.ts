@@ -1,6 +1,10 @@
 import path from "path";
 import fs from "fs";
 import { prisma } from "@/lib/prisma";
+import { exec } from "child_process";
+import { promisify } from "util";
+
+const execAsync = promisify(exec);
 
 export interface SnapshotItem {
   filename: string;
@@ -44,21 +48,13 @@ export function formatBytes(bytes: number): string {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 }
 
-// Dapatkan path database aktif saat ini
-export async function getActiveDbPath(): Promise<string> {
-  const rootDb = path.join(process.cwd(), "dev.db");
-  try {
-    await fs.promises.access(rootDb);
-    return rootDb;
-  } catch {}
-  
-  const prismaDb = path.join(process.cwd(), "prisma", "dev.db");
-  try {
-    await fs.promises.access(prismaDb);
-    return prismaDb;
-  } catch {}
-  
-  return rootDb;
+// Dapatkan URL database aktif saat ini
+export async function getActiveDbUrl(): Promise<string> {
+  const url = process.env.DATABASE_URL;
+  if (!url) {
+    throw new Error("DATABASE_URL tidak ditemukan di environment");
+  }
+  return url;
 }
 
 // Buat snapshot database instan
@@ -70,24 +66,22 @@ export async function createDatabaseSnapshot(customLabel?: string): Promise<{ fi
   } catch {}
 
   const backupDir = await getBackupDirectory(backupPathSetting);
-  const activeDbPath = await getActiveDbPath();
+  const activeDbUrl = await getActiveDbUrl();
 
-  try {
-    await fs.promises.access(activeDbPath);
-  } catch {
-    throw new Error(`File database aktif tidak ditemukan di path: ${activeDbPath}`);
-  }
-
-  // Format penamaan: snapshot_{YYYY-MM-DD_HH-mm-ss}_{label}.db
+  // Format penamaan: snapshot_{YYYY-MM-DD_HH-mm-ss}_{label}.sql
   const now = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
   const timestamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
   const labelSuffix = customLabel ? `_${customLabel.replace(/[^a-zA-Z0-9_-]/g, "")}` : "";
-  const filename = `snapshot_${timestamp}${labelSuffix}.db`;
+  const filename = `snapshot_${timestamp}${labelSuffix}.sql`;
   const targetPath = path.join(backupDir, filename);
 
-  // Salin file database secara asinkron
-  await fs.promises.copyFile(activeDbPath, targetPath);
+  // Jalankan pg_dump untuk membackup database
+  try {
+    await execAsync(`pg_dump "${activeDbUrl}" -F c -f "${targetPath}"`);
+  } catch (error: any) {
+    throw new Error(`Gagal membuat backup PostgreSQL: ${error.message}`);
+  }
 
   const stat = await fs.promises.stat(targetPath);
 
@@ -128,7 +122,7 @@ export async function listDatabaseSnapshots(): Promise<SnapshotItem[]> {
   const snapshots: SnapshotItem[] = [];
 
   for (const f of files) {
-    if (!f.endsWith(".db") && !f.endsWith(".sqlite")) continue;
+    if (!f.endsWith(".sql") && !f.endsWith(".backup")) continue;
     const fullPath = path.join(backupDir, f);
     try {
       const stat = await fs.promises.stat(fullPath);
@@ -169,16 +163,14 @@ export async function restoreDatabaseSnapshot(filename: string): Promise<{ succe
   // 1. Buat safety backup dari database aktif saat ini sebelum ditimpa
   const safety = await createDatabaseSnapshot("pre_restore");
 
-  // 2. Timpa database aktif dengan file snapshot
-  const activeDbPath = await getActiveDbPath();
-  await fs.promises.copyFile(snapshotPath, activeDbPath);
-
-  // Jika prisma/dev.db juga ada, sinkronkan
-  const secondaryDbPath = path.join(process.cwd(), "prisma", "dev.db");
+  // 2. Timpa database aktif dengan file snapshot menggunakan pg_restore
+  const activeDbUrl = await getActiveDbUrl();
   try {
-    await fs.promises.access(secondaryDbPath);
-    await fs.promises.copyFile(snapshotPath, secondaryDbPath);
-  } catch {}
+    // Kita hapus database dulu dan buat ulang (secara clean) atau timpa menggunakan pg_restore -c
+    await execAsync(`pg_restore --clean --if-exists -d "${activeDbUrl}" "${snapshotPath}"`);
+  } catch (error: any) {
+    throw new Error(`Gagal mengembalikan backup PostgreSQL: ${error.message}`);
+  }
 
   return {
     success: true,
@@ -220,7 +212,7 @@ export async function pruneOldSnapshots(keepCount: number, backupDir: string) {
   const snapshots: Array<{ name: string; time: number; path: string }> = [];
 
   for (const f of files) {
-    if (!f.endsWith(".db") && !f.endsWith(".sqlite")) continue;
+    if (!f.endsWith(".sql") && !f.endsWith(".backup")) continue;
     const p = path.join(backupDir, f);
     try {
       const stat = await fs.promises.stat(p);

@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { encryptPin, decryptPin } from "@/lib/pinEncryption";
+
 
 export function getInvitationLockStatus(inv: any) {
   // 1. Check if Admin Emergency Unlock is actively running
@@ -114,15 +116,24 @@ export async function GET(
 
     const lockStatus = getInvitationLockStatus(invitation);
 
+    // Dekripsi staffPin untuk ditampilkan ke pemilik undangan
+    let displayPin: string | null = null;
+    if (invitation.staffPin) {
+      displayPin = decryptPin(invitation.staffPin);
+    }
+
     return NextResponse.json({
       ...invitation,
+      staffPin: displayPin, // Tampilkan PIN plain-text (sudah di-decrypt) ke owner yang login
       mediaMap,
       ...lockStatus,
     });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    const msg = process.env.NODE_ENV === "production" ? "Terjadi kesalahan server" : (err.message || "Terjadi kesalahan server");
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
+
 
 export async function PUT(
   req: Request,
@@ -349,7 +360,11 @@ export async function PUT(
         liveStreamUrl: body.liveStreamUrl !== undefined ? body.liveStreamUrl : undefined,
         eventData: body.eventData !== undefined ? toStr(body.eventData) : undefined,
         featureSettings: mergedFeatureSettings,
-        staffPin: body.staffPin !== undefined ? body.staffPin : undefined,
+        // Enkripsi staffPin dengan AES-256 sebelum simpan ke database
+        staffPin: body.staffPin !== undefined
+          ? (body.staffPin ? encryptPin(String(body.staffPin)) : null)
+          : undefined,
+
       },
     });
 

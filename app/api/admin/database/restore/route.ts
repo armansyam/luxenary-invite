@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import path from "path";
 import fs from "fs";
-import { getBackupDirectory, restoreDatabaseSnapshot, getActiveDbPath, createDatabaseSnapshot } from "@/lib/databaseBackup";
+import { getBackupDirectory, restoreDatabaseSnapshot, createDatabaseSnapshot } from "@/lib/databaseBackup";
+
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 
@@ -31,11 +32,11 @@ export async function POST(req: NextRequest) {
       const file = formData.get("file") as File | null;
 
       if (!file) {
-        return NextResponse.json({ error: "File snapshot database (.db) wajib diunggah" }, { status: 400 });
+        return NextResponse.json({ error: "File backup PostgreSQL (.sql atau .backup) wajib diunggah" }, { status: 400 });
       }
 
-      if (!file.name.endsWith(".db") && !file.name.endsWith(".sqlite")) {
-        return NextResponse.json({ error: "Format file harus .db atau .sqlite" }, { status: 400 });
+      if (!file.name.endsWith(".sql") && !file.name.endsWith(".backup")) {
+        return NextResponse.json({ error: "Format file harus .sql atau .backup" }, { status: 400 });
       }
 
       let backupPathSetting: string | undefined;
@@ -81,7 +82,7 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error("[Database Restore Error]", error);
     return NextResponse.json(
-      { error: error.message || "Gagal melakukan restore database" },
+      { error: process.env.NODE_ENV === "production" ? "Gagal melakukan restore database" : (error.message || "Gagal melakukan restore database") },
       { status: 500 }
     );
   }

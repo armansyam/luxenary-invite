@@ -10,7 +10,7 @@ export async function GET(
   try {
     const resolvedParams = await Promise.resolve(params);
     const invitationId = resolvedParams.invitationId;
-    
+
     if (!invitationId) {
       return NextResponse.json({ error: "Missing invitationId" }, { status: 400 });
     }
@@ -24,17 +24,22 @@ export async function GET(
         mediaType: true,
         mediaUrl: true,
         thumbnailUrl: true,
-        senderEmail: true
-      }
+        senderEmail: true,
+      },
     });
-    
-    const mappedMemories = memories.map(m => ({
+
+    const mappedMemories = memories.map((m) => ({
       ...m,
-      source: "GUEST"
+      source: "GUEST",
     }));
 
-    return NextResponse.json(mappedMemories);
-
+    // Cache di Cloudflare 30 detik — absorb spike tanpa data terlalu stale
+    // Upload baru tamu tetap tampil dalam ≤30 detik
+    return NextResponse.json(mappedMemories, {
+      headers: {
+        "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
+      },
+    });
   } catch (err: any) {
     console.error("Public Memories Fetch Error:", err);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

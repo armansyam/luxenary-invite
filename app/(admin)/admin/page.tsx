@@ -8,6 +8,7 @@ import { BrandLogo } from "@/components/BrandLogo";
 
 import { AdminProfileSettings } from "@/components/admin/AdminProfileSettings";
 import { AdminTeamManagement } from "@/components/admin/AdminTeamManagement";
+import { AdminPortfolioTab } from "@/components/admin/AdminPortfolioTab";
 
 const tabs = [
   {
@@ -44,6 +45,15 @@ const tabs = [
     icon: (
       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+      </svg>
+    ),
+  },
+  {
+    id: "portfolio",
+    label: "Portofolio",
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
       </svg>
     ),
   },
@@ -2496,6 +2506,10 @@ export default function AdminPage() {
                 </div>
               )}
 
+              {activeTab === "portfolio" && (
+                <AdminPortfolioTab invitations={invitations} />
+              )}
+
               {/* ── Team & Access ── */}
               {activeTab === "team" && (
                 <div className="max-w-5xl w-full">
@@ -4296,7 +4310,7 @@ export default function AdminPage() {
                     <div>
                       <h2 className="text-2xl font-bold text-gray-900">Database &amp; Snapshot Manager</h2>
                       <p className="text-sm text-gray-500 mt-0.5">
-                        Kelola backup, snapshot SQLite mandiri, jadwal auto-backup, dan pemulihan data (restore).
+                        Kelola backup, snapshot database PostgreSQL mandiri, jadwal auto-backup, dan pemulihan data (restore).
                       </p>
                     </div>
                     <button
@@ -4342,7 +4356,7 @@ export default function AdminPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-2xs">
                       <span className="text-xs text-gray-500 font-medium block">Database Engine &amp; File Aktif</span>
-                      <span className="text-sm font-bold text-gray-900 mt-1 inline-block">SQLite (`dev.db`)</span>
+                      <span className="text-sm font-bold text-gray-900 mt-1 inline-block">PostgreSQL (pg_dump)</span>
                       <span className="text-[11px] text-emerald-600 font-semibold block mt-0.5">● Connected &amp; Running</span>
                     </div>
                     <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-2xs">
@@ -4389,7 +4403,7 @@ export default function AdminPage() {
                       <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-between text-xs text-gray-600">
                         <div className="flex items-center gap-2">
                           <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                          <span>Format didukung: <strong>.db, .sqlite</strong>. File aktif saat ini: <strong>SQLite (`dev.db`)</strong></span>
+                          <span>Format didukung: <strong>.sql, .backup</strong>. Engine aktif saat ini: <strong>PostgreSQL</strong></span>
                         </div>
                         <button
                           type="button"
@@ -4408,7 +4422,7 @@ export default function AdminPage() {
                               {pendingRestoreFile ? (
                                 <span className="text-amber-800 font-bold">File terpilih: {pendingRestoreFile.name} ({(pendingRestoreFile.size / 1024).toFixed(1)} KB)</span>
                               ) : (
-                                "Belum ada file dipilih (format didukung: .db, .sqlite)"
+                                "Belum ada file dipilih (format didukung: .sql, .backup)"
                               )}
                             </p>
                           </div>
@@ -4417,7 +4431,7 @@ export default function AdminPage() {
                             Pilih File .db
                             <input
                               type="file"
-                              accept=".db,.sqlite"
+                              accept=".sql,.backup"
                               className="hidden"
                               onChange={(e) => {
                                 const f = e.target.files?.[0];

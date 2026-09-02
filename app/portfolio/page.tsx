@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Metadata } from "next";
+import fs from "fs";
+import path from "path";
 import { prisma } from "@/lib/prisma";
 import { BrandLogo } from "@/components/BrandLogo";
 import { getPublicPlatformSettings } from "@/lib/settings";
@@ -16,9 +18,41 @@ export const metadata: Metadata = {
 export default async function PortfolioPage() {
   const { platformName } = await getPublicPlatformSettings();
 
-  // Query ONLY 100% REAL published client invitations from database
+  // Hanya tampilkan undangan yang sudah dikurasi admin ke public/portfolio/
+  const portfolioDir = path.join(process.cwd(), "public", "portfolio");
+  let clonedSlugs: string[] = [];
+  try {
+    const files = await fs.promises.readdir(portfolioDir);
+    clonedSlugs = files
+      .filter((f) => f.endsWith(".html"))
+      .map((f) => f.replace(".html", ""));
+  } catch {
+    clonedSlugs = [];
+  }
+
+  if (clonedSlugs.length === 0) {
+    return (
+      <div className="min-h-screen bg-[#faf8f5] text-stone-900 font-sans flex flex-col">
+        <header className="border-b border-[#eadecf]/70 bg-[#faf8f5]/85 backdrop-blur-md sticky top-0 z-40">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
+            <Link href="/" className="flex items-center gap-3">
+              <BrandLogo size="sm" lightBg showName brandName={platformName} />
+            </Link>
+          </div>
+        </header>
+        <main className="flex-1 flex items-center justify-center">
+          <div className="max-w-md mx-auto my-16 p-8 bg-white border border-[#eadecf] rounded-3xl text-center space-y-4 shadow-xs">
+            <h3 className="text-lg font-serif font-bold text-stone-900">Belum Ada Portofolio</h3>
+            <p className="text-xs text-stone-600 leading-relaxed">Portofolio akan ditampilkan setelah Admin mengkurasi dan menerbitkan undangan pilihan.</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Fetch data klien dari DB berdasarkan slug yang sudah dikurasi
   const publishedInvs = await prisma.invitation.findMany({
-    where: { status: "PUBLISHED" },
+    where: { invitationSlug: { in: clonedSlugs } },
     include: { media: true },
     orderBy: { updatedAt: "desc" },
   });
@@ -28,28 +62,34 @@ export default async function PortfolioPage() {
   for (const inv of publishedInvs) {
     const themeId = (inv.themeId || "kalandra").toLowerCase();
 
-    // Determine category from theme metadata
     let category = "premium";
     try {
       const themeRecord = await prisma.theme.findUnique({ where: { id: themeId } });
-      if (themeRecord?.category) {
-        category = themeRecord.category.toLowerCase();
-      }
+      if (themeRecord?.category) category = themeRecord.category.toLowerCase();
     } catch {}
 
-    // Extract real client cover image
-    const coverMedia = inv.media.find(
-      (m) => m.mediaSlot === "LANDING_COVER" || m.mediaSlot === "DESKTOP_SIDEBAR" || m.mediaSlot === "GROOM_PHOTO"
-    );
-    const coverImage = coverMedia?.localPath || `/demo/${themeId}/cover.webp`;
+    // Gunakan cover dari asset portofolio yang sudah diisolasi
+    const slug = inv.invitationSlug;
+    const portfolioCoverPath = path.join(process.cwd(), "public", "portfolio", "assets", slug, "cover.webp");
+    let coverImage: string;
+    try {
+      await fs.promises.access(portfolioCoverPath);
+      coverImage = `/portfolio/assets/${slug}/cover.webp`;
+    } catch {
+      // Fallback ke localPath jika cover.webp belum ada di portfolio assets
+      const coverMedia = inv.media.find(
+        (m) => m.mediaSlot === "LANDING_COVER" || m.mediaSlot === "DESKTOP_SIDEBAR" || m.mediaSlot === "GROOM_PHOTO"
+      );
+      coverImage = coverMedia?.localPath || `/demo/${themeId}/cover.webp`;
+    }
 
     portfolioItems.push({
       id: inv.id,
       coupleName: `${inv.groomNickname || inv.groomName || "Pengantin Pria"} & ${inv.brideNickname || inv.brideName || "Pengantin Wanita"}`,
-      themeId: themeId,
+      themeId,
       category,
       coverImage,
-      publicUrl: `/${inv.groomSlug}-${inv.brideSlug}/${inv.invitationSlug}`,
+      publicUrl: `/portfolio/${slug}`,
     });
   }
 

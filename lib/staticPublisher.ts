@@ -43,53 +43,37 @@ export function getThemeCategory(themeId?: string): "premium" | "traditional" | 
 /**
  * Ensures the target published storage directory and its category subfolders exist.
  */
-async function ensurePublishedDir(category?: string) {
+async function ensurePublishedDir() {
   try {
     await fs.promises.access(PUBLISHED_DIR);
   } catch {
     await fs.promises.mkdir(PUBLISHED_DIR, { recursive: true });
   }
-  if (category) {
-    const catDir = path.join(PUBLISHED_DIR, category);
-    try {
-      await fs.promises.access(catDir);
-    } catch {
-      await fs.promises.mkdir(catDir, { recursive: true });
-    }
-  }
+  
+  const subdomainsDir = path.join(PUBLISHED_DIR, "subdomains");
+  const slugsDir = path.join(PUBLISHED_DIR, "slugs");
+  const idsDir = path.join(PUBLISHED_DIR, "ids");
+  
+  try { await fs.promises.access(subdomainsDir); } catch { await fs.promises.mkdir(subdomainsDir, { recursive: true }); }
+  try { await fs.promises.access(slugsDir); } catch { await fs.promises.mkdir(slugsDir, { recursive: true }); }
+  try { await fs.promises.access(idsDir); } catch { await fs.promises.mkdir(idsDir, { recursive: true }); }
 }
 
 /**
  * Returns the absolute filepath for an invitation's standalone published HTML.
  */
-export async function getPublishedFilePath(invitationId: string, category?: string): Promise<string> {
-  const cat = category || "premium";
-  await ensurePublishedDir(cat);
-  return path.join(PUBLISHED_DIR, cat, `${invitationId}.html`);
+export async function getPublishedFilePath(invitationId: string, _category?: string): Promise<string> {
+  await ensurePublishedDir();
+  return path.join(PUBLISHED_DIR, "ids", `${invitationId}.html`);
 }
 
 /**
  * Checks if a standalone published HTML file exists for this invitation.
  */
-export async function hasPublishedHtml(invitationId: string, category?: string): Promise<boolean> {
-  if (category) {
-    const catPath = path.join(PUBLISHED_DIR, category, `${invitationId}.html`);
-    try {
-      await fs.promises.access(catPath);
-      return true;
-    } catch {}
-  }
-  // Check across all category folders and root legacy folder
-  const categories = ["premium", "traditional", "modern"];
-  for (const c of categories) {
-    const p = path.join(PUBLISHED_DIR, c, `${invitationId}.html`);
-    try {
-      await fs.promises.access(p);
-      return true;
-    } catch {}
-  }
+export async function hasPublishedHtml(invitationId: string, _category?: string): Promise<boolean> {
+  const p = path.join(PUBLISHED_DIR, "ids", `${invitationId}.html`);
   try {
-    await fs.promises.access(path.join(PUBLISHED_DIR, `${invitationId}.html`));
+    await fs.promises.access(p);
     return true;
   } catch {
     return false;
@@ -99,28 +83,11 @@ export async function hasPublishedHtml(invitationId: string, category?: string):
 /**
  * Reads the standalone published HTML file content.
  */
-export async function getPublishedHtml(invitationId: string, category?: string): Promise<string | null> {
-  if (category) {
-    const catPath = path.join(PUBLISHED_DIR, category, `${invitationId}.html`);
-    try {
-      await fs.promises.access(catPath);
-      return await fs.promises.readFile(catPath, "utf-8");
-    } catch {}
-  }
-  // Search across category folders
-  const categories = ["premium", "traditional", "modern"];
-  for (const c of categories) {
-    const p = path.join(PUBLISHED_DIR, c, `${invitationId}.html`);
-    try {
-      await fs.promises.access(p);
-      return await fs.promises.readFile(p, "utf-8");
-    } catch {}
-  }
-  // Root legacy fallback
-  const rootPath = path.join(PUBLISHED_DIR, `${invitationId}.html`);
+export async function getPublishedHtml(invitationId: string, _category?: string): Promise<string | null> {
+  const p = path.join(PUBLISHED_DIR, "ids", `${invitationId}.html`);
   try {
-    await fs.promises.access(rootPath);
-    return await fs.promises.readFile(rootPath, "utf-8");
+    await fs.promises.access(p);
+    return await fs.promises.readFile(p, "utf-8");
   } catch {
     return null;
   }
@@ -169,21 +136,21 @@ export async function buildAndSavePublishedHtml(invitationId: string): Promise<s
   // Render standalone HTML without edit controls (menggunakan Piring draft jika ada)
   const standaloneHtml = await renderTemplateFile(invitation.themeId || "kalandra", data, { editMode: false, invitationId: invitation.id });
 
-  await ensurePublishedDir(category);
+  await ensurePublishedDir();
 
-  // 1. Simpan sebagai {subdomain}.html → untuk subdomain routing (arman-siti.luxenary.id)
+  // 1. Simpan sebagai subdomains/{subdomain}.html → untuk subdomain routing (arman-siti.luxenary.id)
   let subdomainFilePath = "None (No Subdomain)";
   if (invitation.subdomain) {
-    subdomainFilePath = path.join(PUBLISHED_DIR, `${invitation.subdomain}.html`);
+    subdomainFilePath = path.join(PUBLISHED_DIR, "subdomains", `${invitation.subdomain}.html`);
     await fs.promises.writeFile(subdomainFilePath, standaloneHtml, "utf-8");
   }
 
-  // 2. Simpan sebagai {invitationSlug}.html → untuk canonical path routing (luxenary.id/arman-siti-030326)
-  const canonicalFilePath = path.join(PUBLISHED_DIR, `${invitation.invitationSlug}.html`);
+  // 2. Simpan sebagai slugs/{invitationSlug}.html → untuk canonical path routing (luxenary.id/arman-siti-030326)
+  const canonicalFilePath = path.join(PUBLISHED_DIR, "slugs", `${invitation.invitationSlug}.html`);
   await fs.promises.writeFile(canonicalFilePath, standaloneHtml, "utf-8");
 
   // 3. Simpan fallback berdasarkan ID (untuk getPublishedHtml fallback)
-  const fallbackPath = await getPublishedFilePath(invitation.id, category);
+  const fallbackPath = path.join(PUBLISHED_DIR, "ids", `${invitation.id}.html`);
   await fs.promises.writeFile(fallbackPath, standaloneHtml, "utf-8");
 
   console.log(`[Static Publisher] HTML baked: subdomain=${subdomainFilePath} | canonical=${canonicalFilePath} | size=${(standaloneHtml.length / 1024).toFixed(1)}KB`);
@@ -192,9 +159,10 @@ export async function buildAndSavePublishedHtml(invitationId: string): Promise<s
 }
 
 /**
- * Deletes the standalone published HTML file if an invitation is unpublished or deleted.
+ * Deletes the standalone published HTML files.
+ * Protects the slug HTML (portfolio) from deletion unless isAdminDelete is true.
  */
-export async function deletePublishedHtml(invitationId: string, category?: string): Promise<boolean> {
+export async function deletePublishedHtml(invitationId: string, isAdminDelete: boolean = false, category?: string): Promise<boolean> {
   let deleted = false;
 
   const inv = await prisma.invitation.findUnique({
@@ -204,7 +172,7 @@ export async function deletePublishedHtml(invitationId: string, category?: strin
 
   // Hapus file subdomain
   if (inv?.subdomain) {
-    const subPath = path.join(PUBLISHED_DIR, `${inv.subdomain}.html`);
+    const subPath = path.join(PUBLISHED_DIR, "subdomains", `${inv.subdomain}.html`);
     try {
       await fs.promises.access(subPath);
       await fs.promises.unlink(subPath);
@@ -212,9 +180,9 @@ export async function deletePublishedHtml(invitationId: string, category?: strin
     } catch {}
   }
 
-  // Hapus file canonical slug
-  if (inv?.invitationSlug) {
-    const canonicalPath = path.join(PUBLISHED_DIR, `${inv.invitationSlug}.html`);
+  // Hapus file canonical slug HANYA jika dipaksa Admin (untuk retensi portofolio)
+  if (inv?.invitationSlug && isAdminDelete) {
+    const canonicalPath = path.join(PUBLISHED_DIR, "slugs", `${inv.invitationSlug}.html`);
     try {
       await fs.promises.access(canonicalPath);
       await fs.promises.unlink(canonicalPath);
@@ -222,21 +190,34 @@ export async function deletePublishedHtml(invitationId: string, category?: strin
     } catch {}
   }
 
-  // Hapus file fallback per-kategori
-  const categories = category ? [category] : ["premium", "traditional", "modern"];
-  for (const c of categories) {
-    const p = path.join(PUBLISHED_DIR, c, `${invitationId}.html`);
+  // Hapus file fallback ID
+  const idPath = path.join(PUBLISHED_DIR, "ids", `${invitationId}.html`);
+  try {
+    await fs.promises.access(idPath);
+    await fs.promises.unlink(idPath);
+    deleted = true;
+  } catch {}
+  return deleted;
+}
+
+/**
+ * Specifically deletes ONLY the subdomain HTML. Used by Cron Phase 1 (Expiration)
+ * to take down custom domains and subdomains while leaving the portfolio completely intact.
+ */
+export async function deleteSubdomainHtmlOnly(invitationId: string): Promise<boolean> {
+  let deleted = false;
+  const inv = await prisma.invitation.findUnique({
+    where: { id: invitationId },
+    select: { subdomain: true },
+  });
+
+  if (inv?.subdomain) {
+    const subPath = path.join(PUBLISHED_DIR, "subdomains", `${inv.subdomain}.html`);
     try {
-      await fs.promises.access(p);
-      await fs.promises.unlink(p);
+      await fs.promises.access(subPath);
+      await fs.promises.unlink(subPath);
       deleted = true;
     } catch {}
   }
-  const rootPath = path.join(PUBLISHED_DIR, `${invitationId}.html`);
-  try {
-    await fs.promises.access(rootPath);
-    await fs.promises.unlink(rootPath);
-    deleted = true;
-  } catch {}
   return deleted;
 }

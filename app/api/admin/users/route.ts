@@ -36,6 +36,8 @@ export async function DELETE(req: Request) {
     }
 
     // Clean up published HTMLs before deleting invitations
+    // WE DELIBERATELY DO NOT PASS `true` to deletePublishedHtml so the portfolio is preserved.
+    // WE DELIBERATELY DO NOT CLEAN UP R2 ASSETS so the portfolio can still load them.
     if (targetUser.invitations && targetUser.invitations.length > 0) {
       const { deletePublishedHtml } = await import("@/lib/staticPublisher");
       for (const inv of targetUser.invitations) {

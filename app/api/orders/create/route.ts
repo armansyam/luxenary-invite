@@ -137,6 +137,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: any) {
     console.error("[Orders Create Error]", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Terjadi kesalahan server" : error.message }, { status: 500 });
   }
 }

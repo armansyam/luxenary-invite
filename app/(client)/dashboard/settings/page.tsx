@@ -110,16 +110,30 @@ export default function SettingsPage() {
   useEffect(() => {
     fetch("/api/client/invitations")
       .then((res) => res.json())
-      .then((invs) => {
+      .then(async (invs) => {
         if (Array.isArray(invs) && invs.length > 0) {
-          const inv = invs[0];
-          setInvitation(inv);
-          setCustomDomain(inv.customDomain || "");
+          const invBasic = invs[0];
+          setInvitation(invBasic);
+          setCustomDomain(invBasic.customDomain || "");
+
+          // Ambil staffPin dari endpoint individual yang mendekripsi PIN (ownership check di server)
+          let currentPin = "";
+          if (invBasic.id) {
+            try {
+              const detailRes = await fetch(`/api/client/invitations/${invBasic.id}`);
+              if (detailRes.ok) {
+                const detail = await detailRes.json();
+                currentPin = detail.staffPin || "";
+                // Update invitation state dengan detail lengkap termasuk PIN
+                setInvitation(detail);
+              }
+            } catch {}
+          }
 
           setFormData({
-            subdomain: inv.subdomain || "",
-            status: inv.status || "DRAFT",
-            staffPin: inv.staffPin || "",
+            subdomain: invBasic.subdomain || "",
+            status: invBasic.status || "DRAFT",
+            staffPin: currentPin,
           });
         }
         setLoading(false);

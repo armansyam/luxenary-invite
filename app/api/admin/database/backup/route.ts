@@ -23,7 +23,7 @@ export async function GET() {
     const snapshots = await listDatabaseSnapshots();
     return NextResponse.json({ success: true, snapshots });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || "Gagal mengambil daftar snapshot" }, { status: 500 });
+    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal mengambil daftar snapshot" : (error.message || "Gagal mengambil daftar snapshot") }, { status: 500 });
   }
 }
 
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
       snapshot: result,
     });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || "Gagal membuat snapshot database" }, { status: 500 });
+    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal membuat snapshot database" : (error.message || "Gagal membuat snapshot database") }, { status: 500 });
   }
 }
 
@@ -62,6 +62,6 @@ export async function DELETE(req: NextRequest) {
     await deleteDatabaseSnapshot(filename);
     return NextResponse.json({ success: true, message: `Snapshot ${filename} berhasil dihapus` });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || "Gagal menghapus snapshot" }, { status: 500 });
+    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal menghapus snapshot" : (error.message || "Gagal menghapus snapshot") }, { status: 500 });
   }
 }

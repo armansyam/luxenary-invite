@@ -66,7 +66,17 @@ export async function POST(req: NextRequest) {
 
     const buffer = Buffer.from(await file.arrayBuffer());
 
+    // Batasi ukuran maksimal 5MB SEBELUM memproses dengan sharp (mencegah memory exhaustion)
+    const MAX_BRAND_SIZE = 5 * 1024 * 1024; // 5MB
+    if (buffer.byteLength > MAX_BRAND_SIZE) {
+      return NextResponse.json(
+        { error: "Ukuran file terlalu besar. Maksimal 5MB untuk logo dan favicon." },
+        { status: 400 }
+      );
+    }
+
     if (type === "logo") {
+
       // Logo: konversi ke WebP, kompres kualitas 85, max 800px width
       const outputPath = path.join(BRAND_DIR, "logo.webp");
       await sharp(buffer)
@@ -105,6 +115,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Tipe brand tidak valid" }, { status: 400 });
   } catch (error: any) {
     console.error("[Upload Brand Error]", error);
-    return NextResponse.json({ error: error.message || "Gagal mengupload file brand" }, { status: 500 });
+    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal mengupload file brand" : (error.message || "Gagal mengupload file brand") }, { status: 500 });
   }
 }

@@ -60,7 +60,7 @@ export async function POST(req: Request) {
     const existingGuest = await prisma.guest.findFirst({
       where: {
         invitationId,
-        name: { equals: trimmedName, mode: "insensitive" }
+        name: trimmedName,
       },
     });
 
@@ -90,6 +90,6 @@ export async function POST(req: Request) {
 
     return NextResponse.json(guest);
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || "Gagal membuat data tamu" }, { status: 500 });
+    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal membuat data tamu" : (error.message || "Gagal membuat data tamu") }, { status: 500 });
   }
 }

@@ -30,7 +30,7 @@ export async function GET() {
       status: true,
       subdomain: true,
       eventData: true,
-      staffPin: true,
+      // staffPin: SENGAJA tidak dimasukkan di list API — gunakan GET /api/client/invitations/[id] untuk akses PIN
       customDomain: true,
       createdAt: true,
       order: {
@@ -39,6 +39,7 @@ export async function GET() {
     },
     orderBy: { createdAt: "desc" },
   });
+
 
   return NextResponse.json(invitations);
 }

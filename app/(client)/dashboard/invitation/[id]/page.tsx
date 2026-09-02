@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useParams } from "next/navigation";
+import { MemoriesDownloadSection } from "@/components/client/MemoriesDownloadSection";
 
 const THEMES = [
   // ── Premium Store (themes/premium/) ──
@@ -2405,6 +2406,9 @@ export default function EditInvitation() {
                   <div className="p-2.5 bg-blue-50/60 rounded-xl border border-blue-100 text-[11px] text-blue-900">
                     Pastikan akses link folder di Google Drive disetel ke <strong>&ldquo;Siapa saja yang memiliki link dapat melihat&rdquo;</strong>.
                   </div>
+                  <div className="p-2.5 bg-amber-50/60 rounded-xl border border-amber-100 text-[11px] text-amber-900">
+                    Sistem hanya membaca <strong>100 foto pertama</strong> dalam folder Drive. Jika folder berisi lebih dari 100 foto, hanya 100 foto pertama yang akan ditampilkan di undangan.
+                  </div>
                 </div>
 
                 <div className="p-4 bg-stone-50 border border-stone-200 rounded-2xl space-y-3">
@@ -3016,27 +3020,12 @@ export default function EditInvitation() {
                   />
                 </div>
 
-                {/* Local Storage Download ZIP Container */}
-                <div className="p-4 rounded-2xl border border-emerald-200 bg-emerald-50/50 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="block text-xs font-bold text-emerald-950">
-                      Backup & Download Foto Tamu
-                    </label>
-                    <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded-md">
-                      Lokal (H+{platformSettings?.retentionInvitationDays || 30})
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-emerald-900/80 leading-relaxed mb-3">
-                    <strong>Penting:</strong> Seluruh momen yang diunggah tamu disimpan dengan aman di server kami. Anda <strong>wajib mengunduh arsip ZIP di bawah ini</strong> dalam kurun waktu maksimal {platformSettings?.retentionInvitationDays || 30} hari pasca-acara sebelum sistem menghapusnya secara otomatis.
-                  </p>
-                  <a
-                    href={`/api/client/memories/download?invitationId=${invitation.id}`}
-                    className="inline-flex items-center justify-center w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition"
-                  >
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                    Unduh Semua Momen (ZIP)
-                  </a>
-                </div>
+                {/* Client-Side JSZip Download — VPS tidak kena beban bandwidth foto */}
+                <MemoriesDownloadSection
+                  invitationId={invitation.id}
+                  retentionDays={platformSettings?.retentionInvitationDays || 30}
+                  isUploadLocked={invitation.memoriesUploadLocked ?? false}
+                />
                 {/* Link Galeri Kenangan Tamu */}
                 <div className="p-4 rounded-2xl border border-stone-200 bg-stone-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>

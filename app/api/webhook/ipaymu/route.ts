@@ -162,6 +162,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ status: "ok" });
   } catch (error: any) {
     console.error("[iPaymu Webhook Error]", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Terjadi kesalahan server" : error.message }, { status: 500 });
   }
 }

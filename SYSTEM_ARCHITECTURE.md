@@ -1,9 +1,10 @@
 # PLATFORM UNDANGAN (WHITE-LABEL) — DOKUMENTASI ARSITEKTUR SISTEM
-## Versi: 4.0.0 | Diperbarui: 01 September 2026
+## Versi: 5.0.0 | Diperbarui: 02 September 2026
 
 > **SUMBER KEBENARAN TUNGGAL** untuk semua developer dan AI Agent yang bekerja di repositori ini.  
 > Dokumen ini WAJIB dibaca sebelum melakukan perubahan apapun pada kode.  
-> Ditulis berdasarkan audit empiris langsung terhadap kode sumber aktual, bukan asumsi.
+> Ditulis berdasarkan audit empiris langsung terhadap kode sumber aktual, bukan asumsi.  
+> Quick start: lihat [`README.md`](./README.md) untuk setup lokal dan panduan singkat.
 
 ---
 
@@ -21,6 +22,7 @@
 11. [Skema Database](#11-skema-database)
 12. [File yang Tidak Terpakai / Warisan Google Drive](#12-file-yang-tidak-terpakai--warisan-google-drive)
 13. [Panduan Kerja Agent AI (Mandatory Reading)](#13-panduan-kerja-agent-ai-mandatory-reading)
+14. [Sistem Portofolio Mandiri](#14-sistem-portofolio-mandiri)
 
 ---
 
@@ -28,12 +30,13 @@
 
 | Komponen | Detail |
 |---|---|
-| **Framework** | Next.js 15 (App Router, TypeScript strict) |
+| **Framework** | Next.js 16.3.2 (App Router, TypeScript strict) |
 | **Runtime** | Node.js di VPS (bukan Vercel/Edge Function) |
-| **Database** | SQLite via Prisma ORM + `@prisma/adapter-better-sqlite3` |
+| **Database** | PostgreSQL via Prisma ORM + `@prisma/adapter-pg` |
 | **ORM** | Prisma v7.9.1 |
 | **Autentikasi** | NextAuth v5 (Auth.js) |
 | **Penyimpanan Media** | Cloudflare R2 (produksi) + Local fallback (development) |
+| **Image Processing** | `sharp` v0.35.3 (WebP compression, resize) |
 | **Manajemen Proses** | PM2 |
 | **Middleware** | `middleware.ts` di root (Edge-compatible, async) |
 
@@ -111,7 +114,7 @@
 │   ├── upgradeHelper.ts      # Cek eligibilitas upgrade paket
 │   ├── demoPublisher.ts      # Publish demo tema ke /public/demo/
 │   ├── demoRegistry.ts       # Registry konten demo tema (~78KB)
-│   ├── databaseBackup.ts     # Hot-backup SQLite database
+│   ├── databaseBackup.ts     # Hot-backup PostgreSQL (pg_dump)
 │   ├── auth.ts               # Utility auth session
 │   ├── session.tsx           # Session provider wrapper
 │   │
@@ -119,8 +122,8 @@
 │   └── settings.ts           # Platform settings reader
 │
 ├── prisma/
-│   ├── schema.prisma         # Skema database (SQLite)
-│   └── dev.db                # File database SQLite (development)
+│   ├── schema.prisma         # Skema database (PostgreSQL)
+│   └── seed.ts               # Script seed data awal
 │
 ├── themes/                   # Template HTML tema undangan
 │   ├── premium/              # kalandra, valente, aurelia, artisan, kila, ivanna, danila
@@ -436,7 +439,7 @@ Field Kritis di Invitation:
   invitationSlug  @unique   ← Flat slug canonical: arman-siti-030326
   subdomain       @unique   ← Subdomain: arman-siti (nullable)
   customDomain    @unique   ← Custom domain klien (nullable, infrastruktur siap)
-  staffPin        String?   ← PIN panitia (wajib diisi sebelum publish)
+  staffPin        String?   ← PIN panitia terenkripsi AES-256 (wajib diisi)
   eventData       String?   ← JSON array multi-event
   featureSettings String?   ← JSON settings fitur & color palette
   status          DRAFT|PUBLISHED
@@ -616,17 +619,81 @@ Jika Anda agent baru yang masuk ke proyek ini, baca file-file ini secara berurut
 
 ---
 
-*Dokumen ini diperbarui pada: 01 September 2026*  
+*Dokumen ini diperbarui pada: 02 September 2026*  
 *Oleh: Antigravity AI Assistant (Google DeepMind)*  
 *Audit basis: Empiris — langsung dari kode sumber aktual, bukan asumsi.*
-### 11.2 - Dynamic Manifest & PWA
+
+---
+
+## 14. SISTEM PORTOFOLIO MANDIRI
+
+**Files:** `app/api/admin/portfolio/route.ts`, `app/portfolio/page.tsx`, `app/portfolio/PortfolioGallery.tsx`
+
+Sistem portofolio memungkinkan Admin (SUPER_ADMIN) mengkurasi undangan klien pilihan menjadi **salinan HTML statis yang 100% mandiri** — semua aset media sudah disalin lokal, tidak ada URL eksternal tersisa.
+
+### Alur Kloning
+```
+Admin klik "Jadikan Portofolio" → POST /api/admin/portfolio
+  Step 1: Baca HTML dari public/published/slugs/{slug}.html
+  Step 2: Bersihkan & buat public/portfolio/assets/{slug}/
+  Step 3: InvitationMedia semua slot (R2/Local → salin nama asli)
+  Step 4: GuestMemory thumbnails — max 10, sharp 120x120 WebP 65%
+  Step 5: Drive CDN URLs — max 15, sharp 1200px WebP 75%
+  Step 6: Tulis HTML final ke public/portfolio/{slug}.html
+```
+
+### Routing Portofolio (di middleware.ts)
+```
+/portfolio              → Next.js page handler (galeri indeks)
+/portfolio/{slug}       → rewrite ke /portfolio/{slug}.html (statis)
+/portfolio/assets/*     → serve file statis langsung (bypass rewrite)
+```
+
+### Halaman Indeks `/portfolio`
+- Hanya tampilkan undangan yang ada file `.html`-nya di `public/portfolio/`
+- Cover dari `/portfolio/assets/{slug}/cover.webp` (fallback ke `localPath`)
+- `publicUrl` mengarah ke `/portfolio/{slug}` bukan URL undangan aktif
+
+### Kompresi Aset
+| Kategori | Dimensi | Format | Quality |
+|---|---|---|---|
+| InvitationMedia | original | original | tanpa kompres |
+| GuestMemory thumbnail | 120×120px | WebP | 65% |
+| Drive gallery | max 1200px | WebP | 75% |
+
+### API Endpoints
+| Method | Fungsi |
+|---|---|
+| `GET /api/admin/portfolio` | List slug portofolio aktif (dari filesystem) |
+| `POST /api/admin/portfolio` | Kloning undangan ke portofolio statis |
+| `DELETE /api/admin/portfolio?clientName={slug}` | Hapus portofolio + aset |
+
+### Folder Output
+```
+public/portfolio/
+  {slug}.html              ← HTML terisolasi
+  assets/{slug}/
+    cover.webp             ← LANDING_COVER
+    home_photo.webp        ← HOME_PHOTO
+    groom.webp/bride.webp  ← GROOM/BRIDE_PHOTO
+    background.webp        ← GLOBAL_FIXED_BG
+    sidebar.webp           ← DESKTOP_SIDEBAR
+    closing.webp           ← CLOSING_COVER
+    music.mp3              ← musicUrl
+    memory_01-10.webp      ← GuestMemory thumbnails (max 10)
+    gallery_01-15.webp     ← Drive Our Moments (max 15)
+```
+
+---
+
+## 11.2 - Dynamic Manifest & PWA
 
 Platform menggunakan `app/manifest.ts` dinamis secara server-side yang mengambil nama PWA dari `admin_settings` (`platform_name`). Hal ini menghilangkan ketergantungan pada file `.env` untuk pengaturan _app name_.
 
-### 11.3 - Keamanan Custom Domain (CORS / Cross-Origin POST)
+## 11.3 - Keamanan Custom Domain (CORS / Cross-Origin POST)
 
 Permintaan (POST/GET) yang dilakukan melalui domain kustom yang terhubung via CNAME dijamin keamanannya dan **tidak terkena pemblokiran CORS**. Hal ini karena fitur **Next.js Middleware Rewrite** meneruskan _request_ secara transparan dalam server, sehingga bagi _browser_, _client_, dan _API endpoint_, transaksi tersebut tetap berada pada **Same-Origin**.
 
-### 11.4 - Prefix Invoice Otomatis
+## 11.4 - Prefix Invoice Otomatis
 
 Seluruh modul pembayaran (_Payment Gateways_ seperti Duitku, Xendit, Tripay, IPaymu) secara otomatis membaca _prefix_ tagihan dari _dashboard_ Admin (`payment_invoice_prefix`). Jika kosong, sistem otomatis mundur (*fallback*) menjadi teks generik "Tagihan Pembayaran". Ini menjamin tidak adanya jejak _brand_ awal pada tagihan QRIS / _Virtual Account_ pelanggan.

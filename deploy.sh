@@ -47,6 +47,18 @@ if [ -z "$NEXTAUTH_SECRET" ] || [ "$NEXTAUTH_SECRET" == '""' ]; then
   fi
 fi
 
+# Generate CRON_SECRET jika masih kosong
+CRON_SECRET=$(grep -E "^CRON_SECRET=" .env | cut -d '=' -f2 | tr -d '"' | tr -d "'")
+if [ -z "$CRON_SECRET" ] || [ "$CRON_SECRET" == '""' ]; then
+  echo "🔐 Men-generate CRON_SECRET baru yang aman..."
+  NEW_CRON_SECRET=$(openssl rand -base64 32)
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    sed -i '' "s|^CRON_SECRET=.*|CRON_SECRET=\"$NEW_CRON_SECRET\"|" .env
+  else
+    sed -i "s|^CRON_SECRET=.*|CRON_SECRET=\"$NEW_CRON_SECRET\"|" .env
+  fi
+fi
+
 # 3. Install Dependencies
 echo "📦 Menginstal dependensi (npm install)..."
 npm install
@@ -54,7 +66,7 @@ npm install
 # 4. Database Setup
 echo "🗄️ Sinkronisasi skema database (Prisma)..."
 npx prisma generate
-npx prisma db push --accept-data-loss
+npx prisma migrate deploy
 
 # 5. Build Aplikasi Next.js
 echo "🏗️ Membangun (Build) aplikasi Next.js... (Ini mungkin memakan waktu)"

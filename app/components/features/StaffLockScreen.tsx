@@ -13,10 +13,10 @@ export default function StaffLockScreen({ invitationId, children }: StaffLockScr
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    // We optimistically unlock if there's a PIN in localStorage. 
-    // The actual API will reject invalid PINs when scanning.
-    const savedPin = localStorage.getItem(`staff_auth_${invitationId}`);
-    if (savedPin) {
+    // We optimistically unlock if there's a valid token in localStorage. 
+    // The actual API will reject invalid tokens when scanning.
+    const savedToken = localStorage.getItem(`staff_auth_token_${invitationId}`);
+    if (savedToken) {
       setIsLocked(false);
     }
   }, [invitationId]);
@@ -34,8 +34,10 @@ export default function StaffLockScreen({ invitationId, children }: StaffLockScr
 
       const data = await res.json();
 
-      if (res.ok && data.success) {
-        localStorage.setItem(`staff_auth_${invitationId}`, pinInput);
+      if (res.ok && data.success && data.token) {
+        localStorage.setItem(`staff_auth_token_${invitationId}`, data.token);
+        // Hapus PIN lama jika ada (migrasi)
+        localStorage.removeItem(`staff_auth_${invitationId}`);
         setIsLocked(false);
         setError(false);
       } else {

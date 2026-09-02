@@ -11,13 +11,19 @@ interface GuestMomentClientProps {
   memories: any[];
   galleryUrl: string;
   backUrl: string;
+  isUploadLocked?: boolean;
 }
 
-export default function GuestMomentClient({ invitationId, coupleName, coverUrl, memories, galleryUrl, backUrl }: GuestMomentClientProps) {
+export default function GuestMomentClient({ invitationId, coupleName, coverUrl, memories, galleryUrl, backUrl, isUploadLocked = false }: GuestMomentClientProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  // Bisa berubah ke true saat upload diblock API (locked saat runtime)
+  const [lockedAtRuntime, setLockedAtRuntime] = useState(false);
+  const [lockedGalleryUrl, setLockedGalleryUrl] = useState(galleryUrl);
+
+  const isLocked = isUploadLocked || lockedAtRuntime;
 
   const compressImage = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -110,6 +116,14 @@ export default function GuestMomentClient({ invitationId, coupleName, coverUrl, 
       setUploadProgress(100);
 
       const data = await res.json();
+
+      // Tangani response 423 Locked — bukan error, tampilkan UI khusus
+      if (res.status === 423 || data.locked) {
+        setLockedGalleryUrl(data.galleryUrl || galleryUrl);
+        setLockedAtRuntime(true);
+        return;
+      }
+
       if (res.ok) {
         setSuccessMsg("Momen berhasil dikirim! Silakan lihat layar.");
         form.reset();
@@ -128,6 +142,67 @@ export default function GuestMomentClient({ invitationId, coupleName, coverUrl, 
 
   // 6 latest memories
   const recentMemories = [...memories].slice(0, 6);
+
+  // ── Halaman Upload Terkunci — Tampilan sopan untuk tamu ──
+  if (isLocked) {
+    return (
+      <div className="min-h-screen bg-stone-950 text-stone-100 font-sans relative flex flex-col items-center justify-center overflow-x-hidden selection:bg-amber-500/30 px-6">
+        
+        {/* Background Cover */}
+        {coverUrl && (
+          <div className="fixed inset-0 w-full h-full z-0">
+            <Image 
+              src={coverUrl} 
+              alt="Cover Background" 
+              fill 
+              className="object-cover opacity-20 grayscale brightness-50"
+              priority
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-stone-950/90 via-stone-950/75 to-stone-950"></div>
+          </div>
+        )}
+
+        <div className="relative z-10 max-w-md mx-auto text-center flex flex-col items-center gap-6">
+          {/* Icon */}
+          <div className="w-20 h-20 rounded-full bg-stone-800 border border-stone-700 flex items-center justify-center shadow-xl">
+            <svg className="w-9 h-9 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+
+          {/* Heading */}
+          <div>
+            <span className="text-xs tracking-[0.3em] text-amber-500 font-bold uppercase block mb-3">Guest Moment</span>
+            <h1 className="text-3xl sm:text-4xl font-serif text-white tracking-wide mb-3">{coupleName}</h1>
+          </div>
+
+          {/* Message */}
+          <div className="bg-stone-900/80 backdrop-blur-xl border border-white/10 rounded-2xl p-6 sm:p-8 shadow-xl">
+            <h2 className="text-lg font-bold text-stone-100 mb-3">Pengiriman Momen Telah Ditutup</h2>
+            <p className="text-stone-400 text-sm leading-relaxed">
+              Terima kasih telah hadir dan berbagi momen indah bersama{" "}
+              <span className="text-amber-400 font-semibold">{coupleName}</span>. 
+              Pengiriman foto momen telah ditutup oleh penyelenggara, namun seluruh koleksi foto yang sudah dikirimkan tetap dapat Anda lihat di galeri.
+            </p>
+            <Link
+              href={lockedGalleryUrl}
+              className="mt-6 w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-sm tracking-wide shadow-lg shadow-amber-900/30 transition-all"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              Lihat Galeri Momen
+            </Link>
+          </div>
+
+          {/* Back link */}
+          <Link href={backUrl} className="text-xs text-stone-500 hover:text-stone-300 font-medium tracking-wider transition">
+            Kembali ke Undangan
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-stone-950 text-stone-100 font-sans relative flex flex-col items-center overflow-x-hidden selection:bg-amber-500/30">

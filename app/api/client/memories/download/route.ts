@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     // Verify ownership
     const invitation = await prisma.invitation.findUnique({
       where: { id: invitationId },
-      select: { userId: true, groomSlug: true, brideSlug: true }
+      select: { userId: true, groomSlug: true, brideSlug: true, invitationSlug: true }
     });
 
     if (!invitation) {
@@ -37,8 +37,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden: Not your invitation" }, { status: 403 });
     }
 
-    const archive = archiver('zip', {
-      zlib: { level: 9 }
+    // level: 1 — foto WebP/JPEG sudah terkompresi, level tinggi hanya buang CPU
+    // tanpa mengecilkan file secara signifikan
+    const archive = archiver("zip", {
+      zlib: { level: 1 }
     });
 
     const headers = new Headers();
@@ -47,9 +49,22 @@ export async function GET(req: NextRequest) {
 
     const stream = new ReadableStream({
       async start(controller) {
-        archive.on('data', (chunk: any) => controller.enqueue(chunk));
-        archive.on('end', () => controller.close());
-        archive.on('error', (err: any) => controller.error(err));
+        archive.on("data", (chunk: any) => controller.enqueue(chunk));
+        archive.on("end", async () => {
+          controller.close();
+          // Kunci upload momen setelah ZIP selesai dihasilkan
+          // Ini memastikan tidak ada file baru masuk setelah client download
+          try {
+            await prisma.invitation.update({
+              where: { id: invitationId },
+              data: { memoriesUploadLocked: true },
+            });
+          } catch (lockErr) {
+            // Log saja, jangan gagalkan response (ZIP sudah terkirim)
+            console.error("[Memories Lock Error]", lockErr);
+          }
+        });
+        archive.on("error", (err: any) => controller.error(err));
 
         try {
           await streamMemoriesToZip(archive, invitationId);

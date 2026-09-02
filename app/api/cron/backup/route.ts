@@ -41,6 +41,6 @@ export async function GET(req: NextRequest) {
       snapshot: result,
     });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || "Gagal menjalankan auto-backup" }, { status: 500 });
+    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal menjalankan auto-backup" : (error.message || "Gagal menjalankan auto-backup") }, { status: 500 });
   }
 }

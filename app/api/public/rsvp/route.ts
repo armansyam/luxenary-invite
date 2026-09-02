@@ -4,6 +4,12 @@ import { rateLimit } from "@/lib/rateLimit";
 
 export async function GET(req: NextRequest) {
   try {
+    const ip = req.headers.get("x-forwarded-for") || "unknown-ip";
+    // Rate limit: 30 req/menit untuk mencegah scraping massal data tamu
+    if (!rateLimit(ip, 30, 60000)) {
+      return NextResponse.json({ error: "Terlalu banyak permintaan. Silakan coba lagi sebentar." }, { status: 429 });
+    }
+
     const { searchParams } = new URL(req.url);
     const invitationId = searchParams.get("invitationId");
 
@@ -27,9 +33,11 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ success: true, rsvps });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || "Failed to fetch RSVPs" }, { status: 500 });
+    const msg = process.env.NODE_ENV === "production" ? "Failed to fetch RSVPs" : (error.message || "Failed to fetch RSVPs");
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
+
 
 export async function POST(req: NextRequest) {
   try {
@@ -101,6 +109,6 @@ export async function POST(req: NextRequest) {
       rsvp,
     });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || "Gagal mengirim RSVP" }, { status: 500 });
+    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal mengirim RSVP" : (error.message || "Gagal mengirim RSVP") }, { status: 500 });
   }
 }

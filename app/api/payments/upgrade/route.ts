@@ -139,6 +139,6 @@ export async function POST(req: Request) {
 
   } catch (error: any) {
     console.error("[Upgrade Order Error]", error);
-    return NextResponse.json({ error: error.message || "Gagal membuat order upgrade." }, { status: 500 });
+    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal membuat order upgrade." : (error.message || "Gagal membuat order upgrade.") }, { status: 500 });
   }
 }

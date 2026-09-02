@@ -26,8 +26,20 @@ export async function POST(req: NextRequest) {
       if (setting?.value) serverKey = setting.value;
     } catch {}
 
-    // Verifikasi Signature jika signature_key dikirimkan & serverKey telah dikonfigurasi
-    if (signatureKey && serverKey && !serverKey.includes("your_")) {
+    // Validasi format orderId (harus UUID v4 — mencegah query sia-sia dengan input sembarang)
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!UUID_REGEX.test(orderId)) {
+      return NextResponse.json({ status: "ignored", reason: "invalid_order_id_format" }, { status: 200 });
+    }
+
+    // Verifikasi Signature — WAJIB jika server key terkonfigurasi
+    if (serverKey && !serverKey.includes("your_")) {
+      // Jika server key ada tapi signatureKey tidak dikirim — tolak (kemungkinan payload palsu)
+      if (!signatureKey) {
+        console.warn("[Midtrans Webhook] Payload tanpa signature_key ditolak untuk order:", orderId);
+        return NextResponse.json({ status: "rejected", reason: "missing_signature" }, { status: 400 });
+      }
+
       const isValid = MidtransGateway.verifyWebhookSignature({
         order_id: orderId,
         status_code: statusCode,
@@ -41,6 +53,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ status: "ignored", reason: "invalid_signature" }, { status: 200 });
       }
     }
+
 
     // Log webhook yang masuk ke database
     let webhookLogId = "";
@@ -104,7 +117,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ status: "ok" });
   } catch (error: any) {
     console.error("[Midtrans Webhook Error]", error);
-    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Internal server error" : (error.message || "Internal server error") }, { status: 500 });
   }
 }
 

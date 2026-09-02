@@ -1,24 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sseEmitter } from "@/lib/sseEmitter";
+import { verifyPin } from "@/lib/pinEncryption";
+import { rateLimit } from "@/lib/rateLimit";
+import { verifyReceptionistToken } from "@/lib/receptionistAuth";
 
 export async function POST(req: NextRequest) {
   try {
-    const { qrToken, invitationId, isCheckIn, staffPin } = await req.json();
+    const ip = req.headers.get("x-forwarded-for") || "unknown-ip";
+    // Rate limit: max 30 scan per menit per IP (anti brute-force via scan endpoint)
+    if (!rateLimit(`scan:${ip}`, 30, 60 * 1000)) {
+      return NextResponse.json({ error: "Terlalu banyak permintaan. Silakan tunggu sebentar." }, { status: 429 });
+    }
 
-    if (!qrToken || !invitationId || !staffPin) {
+    const { qrToken, invitationId, isCheckIn, token } = await req.json();
+
+    if (!qrToken || !invitationId || !token) {
       return NextResponse.json({ error: "Data tidak lengkap" }, { status: 400 });
     }
 
-    // Server-side authorization check
-    const invitationAuth = await prisma.invitation.findUnique({
-      where: { id: invitationId },
-      select: { staffPin: true }
-    });
-
-    if (!invitationAuth || invitationAuth.staffPin !== staffPin) {
-      return NextResponse.json({ error: "Akses Ditolak. PIN tidak valid." }, { status: 401 });
+    // Server-side authorization check using session token
+    if (!verifyReceptionistToken(token, invitationId)) {
+      return NextResponse.json({ error: "Akses Ditolak. Sesi tidak valid." }, { status: 401 });
     }
+
 
     let guest = null;
     
@@ -125,6 +130,8 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || "Gagal memproses QR Code" }, { status: 500 });
+    const msg = process.env.NODE_ENV === "production" ? "Gagal memproses QR Code" : (error.message || "Gagal memproses QR Code");
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
+
