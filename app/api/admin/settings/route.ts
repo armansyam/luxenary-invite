@@ -42,6 +42,9 @@ const DEFAULT_SETTINGS: Array<{ key: string; value: string; label: string; group
   { key: "payment_expiry_minutes", value: "60", label: "Masa Berlaku Tagihan (menit)", group: "payment" },
   { key: "payment_mode", value: "BOTH", label: "Mode Pembayaran (BOTH/GATEWAY/MANUAL)", group: "payment" },
   { key: "payment_invoice_prefix", value: "Tagihan Pembayaran", label: "Prefix Invoice Gateway", group: "payment" },
+  // Gateway aktif — admin pilih dari sini tanpa deploy ulang
+  { key: "active_payment_gateway", value: "ipaymu", label: "Gateway Pembayaran Aktif (ipaymu/midtrans/xendit/tripay/duitku)", group: "payment" },
+  { key: "payment_gateway_mode", value: "sandbox", label: "Mode Gateway Global (sandbox/production)", group: "payment" },
   { key: "bank_name", value: "", label: "Nama Bank Transfer Manual", group: "payment" },
   { key: "bank_account_number", value: "", label: "Nomor Rekening Bank", group: "payment" },
   { key: "bank_account_holder", value: "", label: "Nama Pemilik Rekening", group: "payment" },
@@ -54,6 +57,8 @@ const DEFAULT_SETTINGS: Array<{ key: string; value: string; label: string; group
   { key: "subdomain_auto_recycle", value: "true", label: "Otomatis Lepas Subdomain ke Pool", group: "subdomain" },
   { key: "retention_invitation_days", value: "30", label: "Retensi Undangan Aktif & Recycle Subdomain (Hari)", group: "subdomain" },
   { key: "retention_account_days", value: "365", label: "Pembersihan Total Akun & Portofolio (Hari)", group: "subdomain" },
+  // Retensi order — terpisah dari retensi undangan
+  { key: "retention_order_days", value: "90", label: "Pembersihan Order Lama EXPIRED/FAILED/PENDING (Hari)", group: "subdomain" },
 ];
 
 async function seedDefaultSettings() {

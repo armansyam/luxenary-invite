@@ -79,6 +79,19 @@ export async function POST(req: NextRequest) {
     const isPaid = xenditStatus === "PAID" || xenditStatus === "SETTLED";
     const isExpired = xenditStatus === "EXPIRED";
 
+    // Validasi Gateway Ownership — tolak jika order sudah dipindah ke gateway lain
+    try {
+      const orderCheck = await prisma.order.findUnique({
+        where: { id: orderId },
+        select: { gatewayId: true } as any,
+      });
+      const gwId = (orderCheck as any)?.gatewayId as string | null;
+      if (gwId && gwId !== "xendit") {
+        console.warn(`[Xendit Webhook] Order ${orderId} gatewayId=${gwId}, bukan xendit — diabaikan.`);
+        return NextResponse.json({ status: "ignored", reason: "gateway_mismatch" }, { status: 200 });
+      }
+    } catch {}
+
     if (isPaid) {
       // Atomic: cek idempotency + update dalam satu $transaction
       let existingOrder: { status: string; planType: string } | null = null;

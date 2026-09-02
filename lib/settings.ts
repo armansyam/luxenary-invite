@@ -102,7 +102,7 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
       {
         id: "TRADITIONAL",
         name: map["name_traditional"] || "Traditional",
-        price: Number(map["price_traditional"] || 50000),
+        price: Number(map["price_traditional"] || 0),
         desc: map["desc_traditional"] || "Tema Standart — Elegan, Sakral & Bernuansa Tradisional",
         themes: ["Prameswari", "Badrika", "Candani", "Dillalucky", "Mayang"],
         features: [
@@ -116,7 +116,7 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
       {
         id: "MODERN",
         name: map["name_modern"] || "Modern",
-        price: Number(map["price_modern"] || 100000),
+        price: Number(map["price_modern"] || 0),
         desc: map["desc_modern"] || "Tema Premium — Sinematik, Editorial & Kontemporer",
         themes: ["Wave", "Papercut", "Ameera", "Chronicle", "Lumina", "Solaria"],
         features: [
@@ -130,7 +130,7 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
       {
         id: "PREMIUM",
         name: map["name_premium"] || "Premium",
-        price: Number(map["price_premium"] || 120000),
+        price: Number(map["price_premium"] || 0),
         desc: map["desc_premium"] || "Tema Luxury — Editorial, Full-Text & Luxury Visual Motion",
         themes: ["Kalandra", "Valente", "Aurelia", "Artisan"],
         features: [

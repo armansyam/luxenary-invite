@@ -98,6 +98,19 @@ export async function POST(req: NextRequest) {
     const isPaid = resultCode === "00";
     const isFailed = resultCode === "02";
 
+    // Validasi Gateway Ownership — tolak jika order sudah dipindah ke gateway lain
+    try {
+      const orderCheck = await prisma.order.findUnique({
+        where: { id: orderId },
+        select: { gatewayId: true } as any,
+      });
+      const gwId = (orderCheck as any)?.gatewayId as string | null;
+      if (gwId && gwId !== "duitku") {
+        console.warn(`[Duitku Webhook] Order ${orderId} gatewayId=${gwId}, bukan duitku — diabaikan.`);
+        return NextResponse.json({ status: "ignored", reason: "gateway_mismatch" }, { status: 200 });
+      }
+    } catch {}
+
     if (isPaid) {
       let existingOrder: { status: string; planType: string } | null = null;
 

@@ -78,7 +78,7 @@ export async function GET(
       }
     }
 
-    const isAuthorizedOwner = true;
+    const isAuthorizedOwner = isAdmin || order.userId === currentUserId;
 
     return NextResponse.json({
       id: order.id,

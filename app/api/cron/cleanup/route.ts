@@ -45,13 +45,16 @@ export async function POST(req: NextRequest) {
 
     const retentionInvitationSetting = await prisma.adminSetting.findUnique({ where: { key: "retention_invitation_days" } });
     const retentionAccountSetting = await prisma.adminSetting.findUnique({ where: { key: "retention_account_days" } });
+    const retentionOrderSetting = await prisma.adminSetting.findUnique({ where: { key: "retention_order_days" } });
 
     const retentionInvitationDays = Number(retentionInvitationSetting?.value) || 30;
     const retentionAccountDays = Number(retentionAccountSetting?.value) || 365;
+    const retentionOrderDays = Number(retentionOrderSetting?.value) || 90;
 
     const now = new Date();
     const thresholdInvitationDate = new Date(now.getTime() - (retentionInvitationDays * 24 * 60 * 60 * 1000));
     const thresholdAccountDate = new Date(now.getTime() - (retentionAccountDays * 24 * 60 * 60 * 1000));
+    const thresholdOrderDate = new Date(now.getTime() - (retentionOrderDays * 24 * 60 * 60 * 1000));
 
     // ── TAHAP 1: Retensi Undangan (H+30) ──
     const allInvs = await prisma.invitation.findMany({
@@ -190,7 +193,7 @@ export async function POST(req: NextRequest) {
     const staleOrders = await prisma.order.findMany({
       where: {
         status: { in: ["EXPIRED", "FAILED", "PENDING"] },
-        createdAt: { lt: thresholdInvitationDate }, // Bebas, ikuti invitation date
+        createdAt: { lt: thresholdOrderDate }, // Gunakan retensi order terpisah
       },
     });
 
@@ -206,7 +209,7 @@ export async function POST(req: NextRequest) {
     const deletedOrdersCount = await prisma.order.deleteMany({
       where: {
         status: { in: ["EXPIRED", "FAILED", "PENDING"] },
-        createdAt: { lt: thresholdInvitationDate },
+        createdAt: { lt: thresholdOrderDate },
       },
     });
 
