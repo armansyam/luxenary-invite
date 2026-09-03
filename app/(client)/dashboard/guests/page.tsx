@@ -6,7 +6,7 @@ import { getInvitationPublicUrl } from "@/lib/domainUtils";
 interface Guest {
   id: string;
   name: string;
-  phone?: string | null;
+  phone: string | null;
   category: string | null;
   qrToken: string;
   waStatus: string;
