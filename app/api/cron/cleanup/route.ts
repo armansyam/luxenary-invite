@@ -43,103 +43,127 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized: Invalid or missing CRON_SECRET / Admin session" }, { status: 401 });
     }
 
-    const retentionInvitationSetting = await prisma.adminSetting.findUnique({ where: { key: "retention_invitation_days" } });
+    const retentionGraceSetting = await prisma.adminSetting.findUnique({ where: { key: "retention_invitation_grace_days" } });
+    const retentionGallerySetting = await prisma.adminSetting.findUnique({ where: { key: "retention_gallery_default_days" } });
     const retentionAccountSetting = await prisma.adminSetting.findUnique({ where: { key: "retention_account_days" } });
     const retentionOrderSetting = await prisma.adminSetting.findUnique({ where: { key: "retention_order_days" } });
 
-    const retentionInvitationDays = Number(retentionInvitationSetting?.value) || 30;
+    const graceDays = Number(retentionGraceSetting?.value) || 7; // H+7 hari: tutup undangan utama & alihkan ke galeri
+    const galleryDays = Number(retentionGallerySetting?.value) || 30; // H+30 hari: bersihkan foto tamu jika tidak diperpanjang
     const retentionAccountDays = Number(retentionAccountSetting?.value) || 365;
     const retentionOrderDays = Number(retentionOrderSetting?.value) || 90;
 
     const now = new Date();
-    const thresholdInvitationDate = new Date(now.getTime() - (retentionInvitationDays * 24 * 60 * 60 * 1000));
+    const thresholdGraceDate = new Date(now.getTime() - (graceDays * 24 * 60 * 60 * 1000));
     const thresholdAccountDate = new Date(now.getTime() - (retentionAccountDays * 24 * 60 * 60 * 1000));
     const thresholdOrderDate = new Date(now.getTime() - (retentionOrderDays * 24 * 60 * 60 * 1000));
 
-    // ── TAHAP 1: Retensi Undangan (H+30) ──
-    const allInvs = await prisma.invitation.findMany({
+    // Helper untuk mengambil tanggal pernikahan terbaru dari eventData
+    function getLatestEventDate(eventData: any): Date | null {
+      try {
+        const events = typeof eventData === "string" ? JSON.parse(eventData) : eventData || [];
+        if (!Array.isArray(events)) return null;
+        let latest: Date | null = null;
+        for (const ev of events) {
+          if (ev?.date) {
+            const d = new Date(ev.date);
+            if (!isNaN(d.getTime())) {
+              if (!latest || d > latest) latest = d;
+            }
+          }
+        }
+        return latest;
+      } catch {
+        return null;
+      }
+    }
+
+    // ── FASE 1: Transisi Undangan ke Galeri Momen (H + graceDays) ──
+    // Undangan yang sudah lewat H+graceDays ditutup file fisiknya dan beralih peran ke Galeri Momen
+    const activeInvs = await prisma.invitation.findMany({
+      where: { status: "PUBLISHED" },
       select: {
         id: true,
-        status: true,
         eventData: true,
-        groomSlug: true,
-        brideSlug: true,
+        subdomain: true,
+        customDomain: true,
         invitationSlug: true,
       }
     });
 
-    const targetInvitations: any[] = [];
-    for (const inv of allInvs) {
-      if (inv.status === "TAKEN_DOWN" || inv.status === "ARCHIVED") continue;
+    let transitionCount = 0;
+    for (const inv of activeInvs) {
+      const latestDate = getLatestEventDate(inv.eventData);
+      if (latestDate && latestDate < thresholdGraceDate) {
+        // 1. Pastikan canonical HTML sudah tersimpan sebelum subdomain ditakedown
+        await buildAndSavePublishedHtml(inv.id);
 
-      let events: any[] = [];
-      try {
-        events = typeof inv.eventData === "string" ? JSON.parse(inv.eventData) : inv.eventData || [];
-      } catch {
-        events = [];
-      }
+        // 2. Hapus fisik file subdomain HTML (agar URL otomatis fallback / rewrite ke galeri)
+        await deleteSubdomainHtmlOnly(inv.id);
 
-      if (events.length > 0) {
-        let latestEventDate: Date | null = null;
-        for (const ev of events) {
-          if (ev.date) {
-            const d = new Date(ev.date);
-            if (!isNaN(d.getTime())) {
-              if (!latestEventDate || d > latestEventDate) latestEventDate = d;
-            }
-          }
-        }
-        if (latestEventDate && latestEventDate < thresholdInvitationDate) {
-          targetInvitations.push(inv);
-        }
+        // 3. Update status menjadi EVENT_FINISHED
+        await prisma.invitation.update({
+          where: { id: inv.id },
+          data: { status: "EVENT_FINISHED" }
+        });
+
+        // 4. Bersihkan data formulir RSVP yang sudah kedaluwarsa
+        await prisma.rsvp.deleteMany({ where: { invitationId: inv.id } });
+
+        transitionCount++;
       }
     }
 
-    let archivedCount = 0;
-    for (const inv of targetInvitations) {
-      // 1. Bake Static HTML for Portfolio Archive (Saves to public/published/slugs/...)
-      await buildAndSavePublishedHtml(inv.id);
+    // ── FASE 2: Pembersihan Galeri Tamu R2 (H + galleryDays ATAU galleryExpiresAt) ──
+    // Undangan yang berstatus EVENT_FINISHED atau lewat masa aktif galeri
+    const finishedInvs = await prisma.invitation.findMany({
+      where: { status: { in: ["EVENT_FINISHED", "TAKEN_DOWN"] } },
+      select: {
+        id: true,
+        eventData: true,
+        galleryExpiresAt: true,
+        invitationSlug: true,
+        customDomain: true,
+        subdomain: true,
+      }
+    });
 
-      // 1.5 Takedown Subdomain & Custom Domain (Masa Aktif Sewa Habis)
-      await deleteSubdomainHtmlOnly(inv.id);
+    let cleanedGalleryCount = 0;
+    for (const inv of finishedInvs) {
+      const latestDate = getLatestEventDate(inv.eventData);
+      // Batas waktu: jika ada perpanjangan (galleryExpiresAt), gunakan itu. Jika tidak, gunakan default H+galleryDays
+      const effectiveExpiry = inv.galleryExpiresAt || (latestDate ? new Date(latestDate.getTime() + (galleryDays * 24 * 60 * 60 * 1000)) : null);
 
-      // 2. Archive Invitation: Rename slugs to free up subdomain, mark as ARCHIVED
-      const archiveSlug = `archived-${inv.id}`;
-      await prisma.invitation.update({
-        where: { id: inv.id },
-        data: {
-          groomSlug: `${archiveSlug}-groom`,
-          brideSlug: `${archiveSlug}-bride`,
-          invitationSlug: `${archiveSlug}-slug`,
-          status: "ARCHIVED"
+      if (effectiveExpiry && now > effectiveExpiry) {
+        // Klien TIDAK memperpanjang galeri / masa perpanjangan sudah habis
+        // 1. Hapus fisik Guest Memories dari R2 & Local
+        const memories = await prisma.guestMemory.findMany({ where: { invitationId: inv.id } });
+        if (memories.length > 0) {
+          const { deleteFile } = await import("@/lib/storage");
+          await Promise.all(memories.map(mem => mem.mediaUrl ? deleteFile(mem.mediaUrl) : Promise.resolve())).catch(() => {});
         }
-      });
+        await prisma.guestMemory.deleteMany({ where: { invitationId: inv.id } });
 
-      // 3. Delete interactive data (Guests, RSVPs, Wishes)
-      await prisma.guest.deleteMany({ where: { invitationId: inv.id } });
-      await prisma.rsvp.deleteMany({ where: { invitationId: inv.id } });
-      await prisma.wish.deleteMany({ where: { invitationId: inv.id } });
+        // Hapus folder fisik lokal jika ada
+        const memoriesDir = path.join(process.cwd(), "public", "uploads", "invitations", inv.id, "memories");
+        try {
+          if (await fileExists(memoriesDir)) {
+            await fs.promises.rm(memoriesDir, { recursive: true, force: true });
+          }
+        } catch {}
 
-      // 4. Hapus fisik Guest Memories (Support R2 & Local) sebelum menghapus DB
-      const memories = await prisma.guestMemory.findMany({ where: { invitationId: inv.id } });
-      if (memories.length > 0) {
-        import("@/lib/storage").then(({ deleteFile }) => {
-          Promise.all(memories.map(mem => mem.mediaUrl ? deleteFile(mem.mediaUrl) : Promise.resolve())).catch(() => {});
+        // 2. Kunci upload, tandai ARCHIVED, dan lepaskan subdomain ke pool
+        await prisma.invitation.update({
+          where: { id: inv.id },
+          data: {
+            memoriesUploadLocked: true,
+            status: "ARCHIVED",
+            subdomain: null, // Subdomain dilepaskan kembali ke pool untuk pasangan baru
+          }
         });
-      }
-      await prisma.guestMemory.deleteMany({ where: { invitationId: inv.id } });
 
-      // Hapus folder fisik lokal (untuk jaga-jaga jika mode Local)
-      const memoriesDir = path.join(process.cwd(), "public", "uploads", "invitations", inv.id, "memories");
-      try {
-        if (await fileExists(memoriesDir)) {
-          await fs.promises.rm(memoriesDir, { recursive: true, force: true });
-        }
-      } catch (err) {
-        console.warn(`[Cleanup Cron] Failed to delete memories folder for ${inv.id}:`, err);
+        cleanedGalleryCount++;
       }
-
-      archivedCount++;
     }
 
     // ── TAHAP 2: Pembersihan Total Klien & Portofolio (H+365) ──
@@ -215,11 +239,12 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      archivedInvitations: archivedCount,
+      transitionedInvitations: transitionCount,
+      cleanedGalleries: cleanedGalleryCount,
       deletedUsers: totalDeletedUsers,
       deletedFolders: totalDeletedFolders,
       deletedOrders: deletedOrdersCount.count,
-      message: `Pembersihan selesai: ${archivedCount} undangan diarsipkan (Subdomain recycle), ${totalDeletedUsers} klien lama & ${totalDeletedFolders} folder dihapus.`
+      message: `Pembersihan selesai: ${transitionCount} undangan dialihkan ke galeri momen, ${cleanedGalleryCount} galeri tamu kadaluarsa dibersihkan, ${totalDeletedUsers} klien lama dihapus.`
     });
   } catch (error: any) {
     console.error("[Cleanup Cron Error]", error);

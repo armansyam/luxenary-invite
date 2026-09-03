@@ -4,14 +4,14 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 
 /**
- * GET /api/public/resolve-custom-domain?host=arman-siti.com
+ * GET /api/public/resolve-custom-domain?host=namapasangan.com
  *
  * Digunakan oleh middleware untuk memetakan custom domain klien
  * ke subdomain internal sistem.
  *
  * Respons:
- *   { subdomain: "arman-siti" }     → jika domain ditemukan dan aktif
- *   { error: "..." }                → jika domain tidak ditemukan / tidak aktif
+ *   { subdomain: "namapasangan" }     → jika domain ditemukan dan aktif
+ *   { error: "..." }                  → jika domain tidak ditemukan / tidak aktif
  */
 export async function GET(req: NextRequest) {
   const host = req.nextUrl.searchParams.get("host");
@@ -23,10 +23,12 @@ export async function GET(req: NextRequest) {
   const invitation = await prisma.invitation.findFirst({
     where: {
       customDomain: host.toLowerCase().trim(),
-      status: "PUBLISHED",
+      status: { in: ["PUBLISHED", "EVENT_FINISHED"] },
     },
     select: {
       subdomain: true,
+      status: true,
+      invitationSlug: true,
     },
   });
 
@@ -35,7 +37,11 @@ export async function GET(req: NextRequest) {
   }
 
   return NextResponse.json(
-    { subdomain: invitation.subdomain },
+    {
+      subdomain: invitation.subdomain,
+      status: invitation.status,
+      slug: invitation.invitationSlug,
+    },
     {
       headers: {
         "Cache-Control": "public, s-maxage=300, stale-while-revalidate=60",

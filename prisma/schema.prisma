@@ -136,6 +136,7 @@ model Invitation {
   isLockedPermanently   Boolean          @default(false)
   adminUnlockedUntil    DateTime?
   memoriesUploadLocked  Boolean          @default(false) // Dikunci otomatis saat client download ZIP momen
+  galleryExpiresAt      DateTime?        // Batas waktu aktif penyimpanan galeri foto momen tamu (diperpanjang via QRIS)
   createdAt           DateTime         @default(now())
   updatedAt           DateTime         @updatedAt
 
@@ -335,11 +336,13 @@ enum OrderStatus {
 enum OrderType {
   NEW
   UPGRADE
+  GALLERY_EXTENSION
 }
 
 enum InvitationStatus {
   DRAFT
   PUBLISHED
+  EVENT_FINISHED
   TAKEN_DOWN
   ARCHIVED
 }

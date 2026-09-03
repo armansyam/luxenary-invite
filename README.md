@@ -80,17 +80,17 @@ ADMIN PORTAL (/admin)
 
 ```
 Format Subdomain (aktif selama masa acara):
-  https://arman-siti.luxenary.id
+  https://dimas-clarissa.luxenary.id
 
 Format Canonical Flat Slug (permanen):
-  https://luxenary.id/arman-siti-030326
+  https://luxenary.id/dimas-clarissa-030326
 
 Format Portofolio (HTML statis terisolasi):
-  https://luxenary.id/portfolio/arman-siti-030326
+  https://luxenary.id/portfolio/dimas-clarissa-030326
 
 Sub-routes publik:
-  /arman-siti-030326/memories     → Galeri foto tamu
-  /arman-siti-030326/sharemoment  → Upload foto tamu
+  /dimas-clarissa-030326/memories     → Galeri foto tamu
+  /dimas-clarissa-030326/sharemoment  → Upload foto tamu
   /s/[subdomain]/receptionist     → Scanner QR (PIN-protected)
 ```
 

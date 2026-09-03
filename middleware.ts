@@ -4,17 +4,24 @@ import { authConfig } from "@/auth.config";
 
 const { auth } = NextAuth(authConfig);
 
+interface CustomDomainResolution {
+  subdomain: string | null;
+  status?: string;
+  slug?: string;
+  expiry: number;
+}
+
 // Cache resolve custom domain (TTL 5 menit) — mengurangi amplifikasi self-fetch di middleware
-const customDomainCache = new Map<string, { subdomain: string | null; expiry: number }>();
+const customDomainCache = new Map<string, CustomDomainResolution>();
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 menit
 
-async function resolveCustomDomain(host: string, baseUrl: string): Promise<string | null> {
+async function resolveCustomDomain(host: string, baseUrl: string): Promise<CustomDomainResolution | null> {
   const now = Date.now();
 
   // Cek cache terlebih dahulu
   const cached = customDomainCache.get(host);
   if (cached && cached.expiry > now) {
-    return cached.subdomain;
+    return cached;
   }
 
   // Cleanup cache yang expired (lazy cleanup)
@@ -29,13 +36,20 @@ async function resolveCustomDomain(host: string, baseUrl: string): Promise<strin
     const resolveUrl = new URL(`/api/public/resolve-custom-domain?host=${encodeURIComponent(host)}`, baseUrl);
     const resolveRes = await fetch(resolveUrl.toString());
     if (resolveRes.ok) {
-      const { subdomain } = await resolveRes.json();
+      const data = await resolveRes.json();
+      const res: CustomDomainResolution = {
+        subdomain: data.subdomain || null,
+        status: data.status,
+        slug: data.slug,
+        expiry: now + CACHE_TTL_MS,
+      };
       // Simpan ke cache (termasuk hasil null agar tidak re-fetch domain yang tidak terdaftar)
-      customDomainCache.set(host, { subdomain: subdomain || null, expiry: now + CACHE_TTL_MS });
-      return subdomain || null;
+      customDomainCache.set(host, res);
+      return res;
     }
     // Domain tidak terdaftar — cache null agar tidak terus di-fetch
-    customDomainCache.set(host, { subdomain: null, expiry: now + CACHE_TTL_MS });
+    const nullRes: CustomDomainResolution = { subdomain: null, expiry: now + CACHE_TTL_MS };
+    customDomainCache.set(host, nullRes);
     return null;
   } catch {
     return null;
@@ -90,7 +104,7 @@ export default auth(async (req) => {
   const isRootDomain = rootDomains.some((d) => cleanHost === d || cleanHost === `www.${d}`);
   const isCustomDomain = !isSubdomainOfOurs && !isRootDomain;
 
-  // ── A. Subdomain milik kita (e.g. arman-siti.luxenary.id) ──
+  // ── A. Subdomain milik kita (e.g. namapasangan.luxenary.id) ──
   if (isSubdomainOfOurs && !pathname.startsWith("/api") && !pathname.startsWith("/_next") && !pathname.startsWith("/static")) {
     const parts = cleanHost.split(".");
     if (parts.length > 1 && parts[0] !== "www" && parts[0] !== "admin" && parts[0] !== "api") {
@@ -131,14 +145,20 @@ export default auth(async (req) => {
     }
   }
 
-  // ── B. Custom Domain Klien (e.g. arman-siti.com) ──
+  // ── B. Custom Domain Klien (e.g. namapasangan.com) ──
   // Gunakan cache in-memory (TTL 5 menit) untuk menghindari amplifikasi self-fetch
   if (isCustomDomain && !pathname.startsWith("/api") && !pathname.startsWith("/_next") && !pathname.startsWith("/static")) {
     try {
-      const subdomain = await resolveCustomDomain(cleanHost, req.url);
+      const resolution = await resolveCustomDomain(cleanHost, req.url);
+      const subdomain = resolution?.subdomain;
 
       if (subdomain) {
+        const isFinished = resolution.status === "EVENT_FINISHED";
+
         if (pathname === "/" || pathname === "") {
+          if (isFinished) {
+            return NextResponse.rewrite(new URL(`/s/${subdomain}/memories${req.nextUrl.search}`, req.url));
+          }
           const rewriteUrl = new URL(`/published/subdomains/${subdomain}.html`, req.url);
           rewriteUrl.search = req.nextUrl.search;
           return NextResponse.rewrite(rewriteUrl);
@@ -155,6 +175,9 @@ export default auth(async (req) => {
         // Guest param routing
         const segments = pathname.split('/').filter(Boolean);
         if (segments.length === 1) {
+          if (isFinished) {
+            return NextResponse.rewrite(new URL(`/s/${subdomain}/memories${req.nextUrl.search}`, req.url));
+          }
           const rewriteUrl = new URL(`/published/subdomains/${subdomain}.html`, req.url);
           rewriteUrl.searchParams.set('to', segments[0]);
           return NextResponse.rewrite(rewriteUrl);
@@ -165,7 +188,7 @@ export default auth(async (req) => {
     }
   }
 
-  // 6. Canonical Path Routing — Flat Slug (e.g. /arman-siti-030326 atau /arman-siti-030326/memories)
+  // 6. Canonical Path Routing — Flat Slug (e.g. /namapasangan-030326 atau /namapasangan-030326/memories)
   // Hanya untuk root domain, bukan subdomain atau custom domain
   if (!isCustomDomain && !isSubdomainOfOurs && !pathname.startsWith("/api") && !pathname.startsWith("/_next") && !pathname.startsWith("/static") && !pathname.startsWith("/admin") && !pathname.startsWith("/dashboard") && !pathname.startsWith("/login") && !pathname.startsWith("/onboarding") && !pathname.startsWith("/packages") && !pathname.startsWith("/checkout") && !pathname.startsWith("/demo") && !pathname.startsWith("/portfolio") && !pathname.startsWith("/privacy") && !pathname.startsWith("/terms") && !pathname.startsWith("/refund") && !pathname.startsWith("/s/")) {
     const segments = pathname.split("/").filter(Boolean);

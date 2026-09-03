@@ -110,17 +110,21 @@ export async function POST(req: Request) {
     let finalAmount = Number(order.amount);
     let expiryMinutes = 60;
     try {
-      const [feePayerSetting, feeRateSetting, expirySetting] = await Promise.all([
+      const [feePayerSetting1, feePayerSetting2, feePercentSetting, feeRateSetting, expirySetting] = await Promise.all([
         prisma.adminSetting.findUnique({ where: { key: "payment_fee_payer" } }),
+        prisma.adminSetting.findUnique({ where: { key: "payment_gateway_fee_payer" } }),
+        prisma.adminSetting.findUnique({ where: { key: "payment_gateway_fee_percent" } }),
         prisma.adminSetting.findUnique({ where: { key: "payment_fee_rate" } }),
         prisma.adminSetting.findUnique({ where: { key: "payment_expiry_minutes" } }),
       ]);
 
-      if (feePayerSetting?.value === "BUYER") {
-        const feeRate = feeRateSetting && !isNaN(Number(feeRateSetting.value))
-          ? Math.max(0, Math.min(0.1, Number(feeRateSetting.value)))
-          : 0.007;
-        const adminFee = Math.ceil(finalAmount * feeRate);
+      const feePayer = (feePayerSetting1?.value || feePayerSetting2?.value || "MERCHANT") === "BUYER" ? "BUYER" : "MERCHANT";
+      const feePercent = feePercentSetting && !isNaN(Number(feePercentSetting.value))
+        ? Number(feePercentSetting.value)
+        : (feeRateSetting && !isNaN(Number(feeRateSetting.value)) ? Number(feeRateSetting.value) * 100 : 0.7);
+
+      if (feePayer === "BUYER") {
+        const adminFee = Math.round(finalAmount * (feePercent / 100));
         finalAmount += adminFee;
       }
 
@@ -154,6 +158,23 @@ export async function POST(req: Request) {
         expiredAt: new Date(expiryMs),
       },
     });
+
+    // Kirim email instruksi tagihan (UNPAID) secara asynchronous non-blocking
+    if (order.user?.email) {
+      import("@/lib/mailer").then(({ sendInvoiceEmail }) => {
+        sendInvoiceEmail({
+          orderId: order.id,
+          orderType: order.orderType,
+          plan: order.planType,
+          amount: Number(order.amount),
+          paymentMethod: "QRIS / Payment Gateway",
+          recipientEmail: order.user.email,
+          recipientName: (order.user as any)?.name || undefined,
+          type: "UNPAID",
+          appUrl,
+        }).catch(err => console.error("[Checkout] Kirim email UNPAID gagal:", err));
+      });
+    }
 
     return NextResponse.json({
       checkoutUrl,

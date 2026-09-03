@@ -6,17 +6,47 @@ interface Props {
   invitationId: string;
   retentionDays: number;
   isUploadLocked?: boolean;
+  galleryExpiresAt?: string | null;
+  extensionPrice?: number;
 }
 
 type Phase = "idle" | "confirming" | "fetching" | "downloading" | "zipping" | "locking" | "done" | "error";
 
-export function MemoriesDownloadSection({ invitationId, retentionDays, isUploadLocked = false }: Props) {
+export function MemoriesDownloadSection({
+  invitationId,
+  retentionDays,
+  isUploadLocked = false,
+  galleryExpiresAt,
+  extensionPrice = 50000,
+}: Props) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [progress, setProgress] = useState(0);
   const [total, setTotal] = useState(0);
   const [done, setDone] = useState(0);
   const [errorMsg, setErrorMsg] = useState("");
   const [uploadLocked, setUploadLocked] = useState(isUploadLocked);
+  const [extending, setExtending] = useState(false);
+
+  const handleExtendGallery = async () => {
+    try {
+      setExtending(true);
+      const res = await fetch("/api/client/memories/extend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ invitationId }),
+      });
+      const data = await res.json();
+      if (data.success && data.orderId) {
+        window.location.href = `/checkout?order=${data.orderId}`;
+      } else {
+        alert(data.error || "Gagal membuat pesanan perpanjangan");
+      }
+    } catch (e: any) {
+      alert("Terjadi kesalahan: " + e.message);
+    } finally {
+      setExtending(false);
+    }
+  };
 
   const handleDownloadClick = () => {
     if (phase !== "idle" && phase !== "error" && phase !== "done") return;
@@ -194,11 +224,38 @@ export function MemoriesDownloadSection({ invitationId, retentionDays, isUploadL
         <p className="text-[11px] text-rose-600 font-medium">{errorMsg}</p>
       )}
 
+      {/* Status Masa Simpan & Perpanjangan QRIS */}
+      <div className="p-3.5 bg-stone-50 rounded-xl border border-stone-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <span className="text-[11px] font-bold text-stone-700 block">Status Masa Simpan Foto Galeri Tamu:</span>
+          <p className="text-xs text-stone-600 mt-0.5">
+            {galleryExpiresAt ? (
+              <>Aktif hingga: <strong className="text-purple-700 font-semibold">{new Date(galleryExpiresAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</strong></>
+            ) : (
+              <>Standar retensi: <strong>{retentionDays} hari</strong> pasca acara pernikahan</>
+            )}
+          </p>
+        </div>
+        
+        <button
+          type="button"
+          onClick={handleExtendGallery}
+          disabled={extending}
+          className="inline-flex items-center justify-center px-3.5 py-2 bg-purple-700 hover:bg-purple-800 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition shadow-2xs cursor-pointer shrink-0"
+          title="Perpanjang penyimpanan foto momen para tamu di server selama +30 hari via QRIS"
+        >
+          <svg className="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          {extending ? "Menyiapkan QRIS..." : `+30 Hari Galeri (Rp ${Number(extensionPrice).toLocaleString("id-ID")})`}
+        </button>
+      </div>
+
       {!isProcessing && phase !== "confirming" && (
         <button
           type="button"
           onClick={handleDownloadClick}
-          className="inline-flex items-center justify-center w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition"
+          className="inline-flex items-center justify-center w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition cursor-pointer"
         >
           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />

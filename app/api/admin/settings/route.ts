@@ -37,11 +37,19 @@ const DEFAULT_SETTINGS: Array<{ key: string; value: string; label: string; group
   { key: "desc_modern", value: "Tema Premium — Sinematik, Editorial, Kontemporer", label: "Deskripsi Paket Modern", group: "pricing" },
   { key: "desc_premium", value: "Tema Premium — Editorial, Full-Text & Luxury Visual Motion", label: "Deskripsi Paket Premium", group: "pricing" },
   // Biaya gateway — dikonfigurasi dinamis agar tidak perlu edit kode saat tarif berubah
-  { key: "payment_fee_payer", value: "PLATFORM", label: "Penanggung Fee Gateway (PLATFORM/BUYER)", group: "payment" },
+  { key: "payment_fee_payer", value: "MERCHANT", label: "Penanggung Fee Gateway (MERCHANT/BUYER)", group: "payment" },
+  { key: "payment_gateway_fee_percent", value: "0.7", label: "Tarif Fee Gateway (%)", group: "payment" },
   { key: "payment_fee_rate", value: "0.007", label: "Tarif Fee Gateway (desimal, contoh: 0.007 = 0.7%)", group: "payment" },
   { key: "payment_expiry_minutes", value: "60", label: "Masa Berlaku Tagihan (menit)", group: "payment" },
   { key: "payment_mode", value: "BOTH", label: "Mode Pembayaran (BOTH/GATEWAY/MANUAL)", group: "payment" },
   { key: "payment_invoice_prefix", value: "Tagihan Pembayaran", label: "Prefix Invoice Gateway", group: "payment" },
+  // Server email SMTP
+  { key: "smtp_host", value: "", label: "Host SMTP", group: "platform" },
+  { key: "smtp_port", value: "587", label: "Port SMTP", group: "platform" },
+  { key: "smtp_user", value: "", label: "Username / Email SMTP", group: "platform" },
+  { key: "smtp_password", value: "", label: "Password SMTP", group: "platform" },
+  { key: "smtp_from_email", value: "", label: "Email Pengirim", group: "platform" },
+  { key: "smtp_from_name", value: "Billing & Finance", label: "Nama Pengirim", group: "platform" },
   // Gateway aktif — admin pilih dari sini tanpa deploy ulang
   { key: "active_payment_gateway", value: "ipaymu", label: "Gateway Pembayaran Aktif (ipaymu/midtrans/xendit/tripay/duitku)", group: "payment" },
   { key: "payment_gateway_mode", value: "sandbox", label: "Mode Gateway Global (sandbox/production)", group: "payment" },

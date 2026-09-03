@@ -1,5 +1,5 @@
 # PLATFORM UNDANGAN (WHITE-LABEL) — DOKUMENTASI ARSITEKTUR SISTEM
-## Versi: 5.0.0 | Diperbarui: 02 September 2026
+## Versi: 5.1.0 | Diperbarui: 03 September 2026
 
 > **SUMBER KEBENARAN TUNGGAL** untuk semua developer dan AI Agent yang bekerja di repositori ini.  
 > Dokumen ini WAJIB dibaca sebelum melakukan perubahan apapun pada kode.  
@@ -33,10 +33,10 @@
 | **Framework** | Next.js 16.3.2 (App Router, TypeScript strict) |
 | **Runtime** | Node.js di VPS (bukan Vercel/Edge Function) |
 | **Database** | PostgreSQL via Prisma ORM + `@prisma/adapter-pg` |
-| **ORM** | Prisma v7.9.1 |
-| **Autentikasi** | NextAuth v5 (Auth.js) |
-| **Penyimpanan Media** | Cloudflare R2 (produksi) + Local fallback (development) |
-| **Image Processing** | `sharp` v0.35.3 (WebP compression, resize) |
+| **ORM** | Prisma v7.9.1 (Konfigurasi URL via `prisma.config.ts`, bukan schema) |
+| **Autentikasi** | NextAuth v5 (Auth.js Beta 32) |
+| **Penyimpanan Media** | Dual Mode: Cloudflare R2 (produksi) + Local `/uploads/` (development) via `lib/storage.ts` |
+| **Image Processing** | `sharp` v0.35.3 (WebP compression, resize, auto-rotate, sharpening) |
 | **Manajemen Proses** | PM2 |
 | **Middleware** | `middleware.ts` di root (Edge-compatible, async) |
 
@@ -62,7 +62,7 @@
 │   │
 │   ├── (public)/             # Halaman publik (tanpa autentikasi)
 │   │   ├── [slug]/           # ← CANONICAL ROUTE UTAMA (flat slug baru)
-│   │   │   ├── page.tsx      # Serve undangan HTML (arman-siti-030326)
+│   │   │   ├── page.tsx      # Serve undangan HTML (dimas-clarissa-030326)
 │   │   │   ├── memories/     # Galeri momen tamu
 │   │   │   ├── sharemoment/  # Upload foto tamu (real-time)
 │   │   │   └── galery/       # Alias untuk memories
@@ -168,30 +168,30 @@
 
 ```
 FORMAT 1 — Subdomain (Utama, Sementara H+retention_days)
-  URL  : arman-siti.luxenary.id
-  Flow : Middleware deteksi host = subdomain → Rewrite ke /published/arman-siti.html
+  URL  : dimas-clarissa.luxenary.id
+  Flow : Middleware deteksi host = subdomain → Rewrite ke /published/dimas-clarissa.html
   Notes: Setelah acara + retention_days, subdomain dilepas, file dihapus.
 
 FORMAT 2 — Canonical Flat Slug (Permanen)
-  URL  : luxenary.id/arman-siti-030326
-  Flow : Middleware intercept path → Rewrite ke /published/arman-siti-030326.html
+  URL  : luxenary.id/dimas-clarissa-030326
+  Flow : Middleware intercept path → Rewrite ke /published/dimas-clarissa-030326.html
   Notes: Selalu aktif selama file HTML ada. Nama file = invitationSlug.
 
-FORMAT 3 — Custom Domain Klien (Infrastruktur Siap, Fitur Belum Aktif)
-  URL  : arman-siti.com (domain milik klien)
+FORMAT 3 — Custom Domain Klien (Infrastruktur & Fitur Aktif)
+  URL  : dimas-clarissa.com (domain milik klien)
   Flow : Middleware deteksi isCustomDomain → Fetch /api/public/resolve-custom-domain
          → Dapat subdomain internal → Rewrite ke HTML
-  Notes: API endpoint sudah ada. Klien perlu atur CNAME ke server kita.
-         Belum ada UI form untuk daftarkan customDomain.
+  Notes: API endpoint & UI Form sudah aktif di /dashboard/settings (baris 712-767).
+         Klien memasukkan domain, sanitasi regex otomatis, dan atur CNAME ke server kita.
 ```
 
 ### 3.2 — Format invitationSlug (Sistem Baru Sept 2026)
 
 ```
 Format   : {groomSlug}-{brideSlug}-{DDMMYY}
-Contoh   : arman-siti-030326
-Collision: + kota → arman-siti-030326-jakarta
-Extreme  : + random 4char → arman-siti-030326-jakarta-x7k
+Contoh   : dimas-clarissa-030326
+Collision: + kota → dimas-clarissa-030326-jakarta
+Extreme  : + random 4char → dimas-clarissa-030326-jakarta-x7k
 ```
 
 > **PENTING:** `invitationSlug` adalah `@unique` di Prisma schema.  
@@ -218,17 +218,17 @@ Request masuk
     ├─ /admin/**             → Guard: hanya ADMIN/SUPER_ADMIN
     ├─ /dashboard/**         → Guard: hanya Client (non-Admin)
     │
-    ├─ Host = subdomain milik kita (e.g. arman.luxenary.id)
+    ├─ Host = subdomain milik kita (e.g. dimas-clarissa.luxenary.id)
     │   ├─ /                 → Rewrite → /published/{subdomain}.html
     │   ├─ /memories         → Rewrite → /s/{subdomain}/memories
     │   ├─ /receptionist     → Rewrite → /s/{subdomain}/receptionist
     │   ├─ /sharemoment      → Rewrite → /s/{subdomain}/sharemoment
     │   └─ /{guest}          → Rewrite → /published/{subdomain}.html?to={guest}
     │
-    ├─ Host = custom domain klien (e.g. arman.com) — INFRASTRUKTUR SIAP
+    ├─ Host = custom domain klien (e.g. dimas-clarissa.com) — INFRASTRUKTUR SIAP
     │   └─ Fetch resolve-custom-domain API → dapat subdomain → rewrite
     │
-    └─ Root domain path (e.g. luxenary.id/arman-siti-030326)
+    └─ Root domain path (e.g. luxenary.id/dimas-clarissa-030326)
         ├─ /{slug}                    → Rewrite → /published/{slug}.html
         └─ /{slug}/memories|sharemoment → NextResponse.next() (ke Next.js page)
 ```
@@ -264,23 +264,27 @@ Saat client menekan tombol "Publish", sistem memanggil `buildAndSavePublishedHtm
 **File:** `lib/storage.ts`
 
 ```
-Storage mode ditentukan oleh environment variable:
-  STORAGE_MODE=r2    → Upload ke Cloudflare R2
-  STORAGE_MODE=local → Upload ke public/uploads/ (default development)
+Storage provider ditentukan oleh environment variable:
+  STORAGE_PROVIDER=r2    → Upload ke Cloudflare R2 (S3-compatible SDK v3)
+  STORAGE_PROVIDER=local → Upload ke public/uploads/ (default development)
+  (Mendukung juga STORAGE_PROVIDER=s3 untuk AWS S3 standar)
 
-Fungsi utama:
-  uploadFile(buffer, key, mimeType) → URL publik
-  deleteFile(url)                   → Hapus file
+Fungsi utama di lib/storage.ts:
+  uploadFile(buffer, relativePath, mimeType, forceLocal?) → URL publik (R2 URL atau /uploads/...)
+  deleteFile(publicUrl)                                   → Hapus file cerdas (auto-detect R2 Key vs FS unlink)
+  streamMemoriesToZip(archive, invitationId)              → Stream ZIP foto tamu langsung dari R2 (zero disk RAM)
+  syncDraftToR2(invitationId)                             → Migrasi otomatis aset lokal ke R2 saat publish
 
-URL Format:
-  R2    : https://{R2_PUBLIC_URL}/{key}
-  Local : /uploads/{key}  (served via Next.js static)
+Pola Polimorfik Database (InvitationMedia.localPath):
+  - Mode R2    : Menyimpan URL absolut (misal: https://cdn.luxenary.id/invitations/xxx/cover.webp)
+  - Mode Local : Menyimpan path relatif (misal: /uploads/invitations/xxx/cover.webp)
+  Keduanya dirender transparan oleh tag <img> browser dan renderTemplate.ts tanpa penyesuaian kode.
 ```
 
 > ⚠️ **Google Drive TIDAK DIGUNAKAN UNTUK UPLOAD.**  
-> `driveViewUrl` di schema sudah dihapus.  
+> `driveViewUrl` dan `driveFileId` di schema sudah dihapus penuh.  
 > Untuk Galeri Pre-Wedding, klien dapat meletakkan link folder Drive publik,
-> dan sistem akan menggunakan `GOOGLE_API_KEY` untuk fetch URL gambarnya.
+> dan sistem akan menggunakan `GOOGLE_API_KEY` via `lib/driveHelper.ts` untuk fetch URL gambarnya.
 
 ---
 
@@ -294,10 +298,11 @@ URL Format:
                      retention_invitation_days (default: 30 hari)
 ```
 
-**Status undangan:**
+**Status undangan (Enum `InvitationStatus` di DB):**
 - `DRAFT` — Masih dalam pengaturan, URL tidak aktif
 - `PUBLISHED` — URL aktif, HTML sudah di-bake
-- Tidak ada status "EXPIRED" di DB; cleanup by cron
+- `TAKEN_DOWN` — Dinonaktifkan sementara oleh Admin/Klien
+- `ARCHIVED` — Diarsipkan setelah melewati masa retensi (cleanup by cron)
 
 **Syarat Publish (isPublishable check di Settings page):**
 1. `staffPin` sudah diisi ✓
@@ -325,10 +330,17 @@ URL Format:
 **Files:** `lib/themeEngine.ts` (~81KB), `lib/renderTemplate.ts`, `themes/`
 
 ```
-Tema tersedia (17 tema total):
-  Premium    : kalandra, valente, aurelia, artisan, kila, ivanna, danila
-  Modern     : wave, papercut, ameera, chronicle, lumina, solaria, moody-papercut
-  Traditional: prameswari, dillalucky, badrika, mayang, candani, aruna, heritage-aruna
+Katalog Tema Aktual (15 File Template Fisik + 1 Blueprint):
+  Premium (4)    : kalandra.html, valente.html, aurelia.html, artisan.html
+  Modern (6)     : wave.html, papercut.html, ameera.html, chronicle.html, lumina.html, solaria.html
+  Traditional (5): prameswari.html, dillalucky.html, badrika.html, mayang.html, candani.html
+  Blueprint      : starter-blueprint.html
+
+Backward Compatibility Alias Mapping (di lib/renderTemplate.ts):
+  - "kila", "premium-kila"   → mapped ke kalandra.html
+  - "ivanna", "premium-ivanna" → mapped ke valente.html
+  - "danila"                 → mapped ke aurelia.html
+  - "heritage-aruna"         → mapped ke prameswari.html
 ```
 
 **Alur render:**
@@ -382,11 +394,13 @@ CLIENT (auth required, role=USER):
   GET/PATCH /api/client/invitations/{id}    → Detail & update undangan
   GET       /api/client/invitations         → List undangan client
   POST      /api/client/invitations/create  → Buat undangan baru
-  GET/POST  /api/client/guests              → Manajemen tamu
+  GET/POST  /api/client/guests              → Manajemen tamu (kolom `phone`, tanpa `phoneNumber`)
+  POST      /api/client/guests/bulk         → Import tamu massal (CSV/JSON)
   GET       /api/client/subdomain/check     → Cek ketersediaan subdomain
-  POST      /api/client/upload             → Upload media undangan
+  POST      /api/client/upload             → Upload media undangan (WebP Sharp via storage.ts)
   GET       /api/client/rsvps             → Statistik RSVP
   GET       /api/client/orders            → List order client
+  (Catatan WA: Route wa-link dihapus; digantikan client-side wa.me direct linking + auto-format +62)
 
 ADMIN (auth required, role=ADMIN/SUPER_ADMIN):
   GET  /api/admin/overview            → Statistik platform
@@ -396,23 +410,28 @@ ADMIN (auth required, role=ADMIN/SUPER_ADMIN):
   POST /api/admin/settings            → Update platform settings
   POST /api/admin/database/backup     → Backup database
   POST /api/admin/subdomains/recycle  → Daur ulang subdomain kedaluwarsa
+  GET/POST/DELETE /api/admin/portfolio → Manajemen kloning portofolio statis mandiri
 
 RECEPTIONIST (public + PIN-protected di client side):
-  POST /api/receptionist/verify-pin   → Verifikasi PIN panitia
+  POST /api/receptionist/verify-pin   → Verifikasi PIN panitia (AES-256-GCM 32-byte key)
   GET  /api/receptionist/guests       → List tamu untuk scanner
   POST /api/receptionist/scan         → Tandai tamu hadir
 
-PAYMENT:
+PAYMENT & WEBHOOKS (5 Gateway Terintegrasi):
   POST /api/orders/create             → Buat pesanan baru
   POST /api/payments/checkout         → Proses pembayaran
   GET  /api/payments/status-stream/{id} → SSE status pembayaran
+  POST /api/webhook/duitku            → Webhook Duitku (HMAC-SHA256 case-insensitive)
   POST /api/webhook/ipaymu            → Webhook iPaymu
   POST /api/webhook/midtrans          → Webhook Midtrans
+  POST /api/webhook/tripay            → Webhook TriPay
+  POST /api/webhook/xendit            → Webhook Xendit
 
-⚠️ WARISAN (masih ada, perlu evaluasi):
-  GET  /api/cdn/drive                 → Google Drive CDN proxy (warisan)
-  POST /api/admin/test-google         → Test koneksi Google OAuth (warisan)
-  POST /api/client/invitations/{id}/retention-sync → Sinkronisasi Drive warisan
+STATUS WARISAN / DEPRECATED:
+  - /api/cdn/drive                 → 🗑️ Sudah Terhapus
+  - /api/admin/test-google         → 🗑️ Sudah Terhapus
+  - /api/client/.../retention-sync → 🗑️ Sudah Terhapus
+  - /api/client/guests/.../wa-link → 🗑️ Sudah Terhapus
 ```
 
 ---
@@ -436,18 +455,22 @@ Model Utama:
   PlatformVersion → Versi rilis sistem
 
 Field Kritis di Invitation:
-  invitationSlug  @unique   ← Flat slug canonical: arman-siti-030326
-  subdomain       @unique   ← Subdomain: arman-siti (nullable)
-  customDomain    @unique   ← Custom domain klien (nullable, infrastruktur siap)
-  staffPin        String?   ← PIN panitia terenkripsi AES-256 (wajib diisi)
+  invitationSlug  @unique   ← Flat slug canonical: dimas-clarissa-030326
+  subdomain       @unique   ← Subdomain: dimas-clarissa (nullable)
+  customDomain    @unique   ← Custom domain klien (nullable, fitur & UI aktif)
+  staffPin        String?   ← PIN panitia terenkripsi AES-256-GCM (wajib diisi)
   eventData       String?   ← JSON array multi-event
   featureSettings String?   ← JSON settings fitur & color palette
-  status          DRAFT|PUBLISHED
+  status          DRAFT | PUBLISHED | TAKEN_DOWN | ARCHIVED
 
-Field Warisan di InvitationMedia:
-  driveFileId     String?   ← ID file Google Drive (warisan)
-  driveViewUrl    String?   ← URL view Google Drive (warisan)
-  localPath       String?   ← Path lokal / R2 URL (AKTIF digunakan)
+Field Kritis di Guest:
+  phone           String?   ← Nomor kontak tunggal (kolom `phoneNumber` sudah dibersihkan)
+  waStatus        PENDING | SENT (Status `READ` sudah dihapus dari Enum WaStatus)
+  qrToken         String? @unique ← Token QR check-in resepsi hari H
+
+Media di InvitationMedia:
+  localPath       String?   ← URL R2 (produksi) atau path lokal /uploads/ (development)
+  (Catatan: Field warisan driveFileId & driveViewUrl sudah dihapus penuh dari schema)
 ```
 
 ---
@@ -532,6 +555,8 @@ FASE 5: DOKUMENTASI
 ❌ DILARANG: Menggunakan emoji di elemen UI profesional (navbar, card, badge)
 ❌ DILARANG: Modifikasi file di luar scope yang diminta tanpa izin
 ❌ DILARANG: Membuat solusi baru tanpa mengecek apakah pola serupa sudah ada
+❌ DILARANG: Menggunakan secret key selain tepat 32-byte pada AES-256-GCM (memicu fatal crash ERR_CRYPTO_INVALID_KEYLEN)
+❌ DILARANG: Menaruh datasource.url di prisma/schema.prisma (Prisma 7 mewajibkan URL ditaruh di prisma.config.ts)
 ```
 
 ---
@@ -542,7 +567,8 @@ FASE 5: DOKUMENTASI
 [ ] Apakah ini development atau production?
 [ ] Apakah ada data yang akan hilang (--accept-data-loss)?
 [ ] Apakah semua unique constraint konsisten dengan kode?
-[ ] Sudah jalankan `prisma generate` setelah `db push`?
+[ ] Menggunakan Prisma 7: URL database berada di prisma.config.ts, bukan di schema.prisma
+[ ] Sudah jalankan `npx prisma generate` setelah schema diubah?
 [ ] Semua caller Prisma sudah diupdate ke field/relasi baru?
 ```
 
@@ -572,14 +598,14 @@ prisma.invitation.findUnique({
 import { getInvitationPublicUrl, getPermanentPathUrl } from "@/lib/domainUtils";
 
 // Subdomain URL (sementara):
-getInvitationPublicUrl("arman-siti")
-// → http://arman-siti.localhost:3000 (dev)
-// → https://arman-siti.luxenary.id (prod)
+getInvitationPublicUrl("dimas-clarissa")
+// → http://dimas-clarissa.localhost:3000 (dev)
+// → https://dimas-clarissa.luxenary.id (prod)
 
 // Canonical URL (permanen, FLAT SLUG):
-getPermanentPathUrl("arman-siti-030326")
-// → http://localhost:3000/arman-siti-030326 (dev)
-// → https://luxenary.id/arman-siti-030326 (prod)
+getPermanentPathUrl("dimas-clarissa-030326")
+// → http://localhost:3000/dimas-clarissa-030326 (dev)
+// → https://luxenary.id/dimas-clarissa-030326 (prod)
 
 // ❌ SALAH (format lama, 3 argumen, sudah diubah):
 getPermanentPathUrl(groomSlug, brideSlug, invitationSlug) // TIDAK ADA LAGI
@@ -592,13 +618,13 @@ getPermanentPathUrl(groomSlug, brideSlug, invitationSlug) // TIDAK ADA LAGI
 ```typescript
 import { uploadFile, deleteFile } from "@/lib/storage";
 
-// Upload (otomatis pilih R2 atau Local berdasarkan STORAGE_MODE env)
+// Upload (otomatis pilih R2 atau Local berdasarkan STORAGE_PROVIDER env)
 const url = await uploadFile(buffer, "invitations/{id}/cover.webp", "image/webp");
 // Simpan url ke DB sebagai localPath (bukan driveViewUrl)
 
 // Resolusi URL media dari DB:
-const url = media.localPath || media.driveViewUrl || "/default.jpg";
-//          ^^^ prioritas ke localPath (R2/Local), fallback ke Drive (warisan)
+const url = media.localPath || "/default.jpg";
+//          ^^^ localPath menampung URL R2 atau path lokal secara polimorfik
 ```
 
 ---
@@ -619,7 +645,7 @@ Jika Anda agent baru yang masuk ke proyek ini, baca file-file ini secara berurut
 
 ---
 
-*Dokumen ini diperbarui pada: 02 September 2026*  
+*Dokumen ini diperbarui pada: 03 September 2026*  
 *Oleh: Antigravity AI Assistant (Google DeepMind)*  
 *Audit basis: Empiris — langsung dari kode sumber aktual, bukan asumsi.*
 

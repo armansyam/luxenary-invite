@@ -26,6 +26,19 @@ export interface PublicPlatformSettings {
   bankAccountHolder: string;
   bankInstructions: string;
   retentionInvitationDays: number;
+  retentionInvitationGraceDays: number;
+  retentionGalleryDefaultDays: number;
+  galleryExtensionPricePerMonth: number;
+  addonSubdomainGalleryBundlePrice: number;
+  addonCustomDomainPrice: number;
+  paymentGatewayFeePercent: number;
+  paymentGatewayFeePayer: "BUYER" | "MERCHANT";
+  smtpHost: string;
+  smtpPort: number;
+  smtpUser: string;
+  smtpPassword?: string;
+  smtpFromEmail: string;
+  smtpFromName: string;
   waTemplateMessage: string;
   maxUploadMb: number;
   cnameTarget: string;
@@ -89,6 +102,19 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
       map["bank_instructions"] ||
       "Silakan transfer tepat sesuai total tagihan invoice. Setelah transfer, unggah foto bukti transfer di bawah ini untuk diverifikasi admin.",
     retentionInvitationDays: Number(map["retention_invitation_days"] || 30),
+    retentionInvitationGraceDays: Number(map["retention_invitation_grace_days"] || 7),
+    retentionGalleryDefaultDays: Number(map["retention_gallery_default_days"] || 30),
+    galleryExtensionPricePerMonth: Number(map["gallery_extension_price_per_month"] || 50000),
+    addonSubdomainGalleryBundlePrice: Number(map["addon_subdomain_gallery_bundle_price"] || 175000),
+    addonCustomDomainPrice: Number(map["addon_custom_domain_price"] || 99000),
+    paymentGatewayFeePercent: Number(map["payment_gateway_fee_percent"] || (map["payment_fee_rate"] ? Number(map["payment_fee_rate"]) * 100 : 0.7)),
+    paymentGatewayFeePayer: ((map["payment_fee_payer"] || map["payment_gateway_fee_payer"] || "MERCHANT") === "BUYER" ? "BUYER" : "MERCHANT"),
+    smtpHost: map["smtp_host"] || "",
+    smtpPort: Number(map["smtp_port"] || 587),
+    smtpUser: map["smtp_user"] || "",
+    smtpPassword: map["smtp_password"] || "",
+    smtpFromEmail: map["smtp_from_email"] || "",
+    smtpFromName: map["smtp_from_name"] || map["platform_name"] || "Billing",
     waTemplateMessage: map["wa_template_message"] || "Assalamu'alaikum {{GUEST_NAME}},\n\nKami mengundang Bapak/Ibu dalam pernikahan kami.\n\nUndangan: {{INVITATION_URL}}\n\nHormat kami,\n{{GROOM_NAME}} & {{BRIDE_NAME}}",
     maxUploadMb: Number(map["max_upload_mb"] || 5),
     cnameTarget: map["cname_target"] || "",

@@ -52,6 +52,9 @@ function CheckoutContent() {
   const [platformName, setPlatformName] = useState("");
   // PlanType state — menyimpan ID paket aktif (ex: "PREMIUM", "TRADITIONAL") untuk regenerasi order yang benar
   const [currentPlanType, setCurrentPlanType] = useState<string>(planParam || "PREMIUM");
+  const [currentOrderType, setCurrentOrderType] = useState<string>("NEW_INVITATION");
+  const [feePercent, setFeePercent] = useState<number>(0.7);
+  const [feePayer, setFeePayer] = useState<"BUYER" | "MERCHANT">("BUYER");
   // Waktu offset untuk sinkronisasi timer klien dan server
   const [serverTimeOffset, setServerTimeOffset] = useState<number>(0);
   const [reloadKey, setReloadKey] = useState<number>(0);
@@ -132,6 +135,12 @@ function CheckoutContent() {
         accountHolder: settings.bankAccountHolder || "",
         instructions: settings.bankInstructions || "Silakan transfer tepat sesuai total tagihan invoice. Setelah transfer, unggah foto bukti transfer di bawah ini untuk diverifikasi admin.",
       });
+      if (typeof settings.paymentGatewayFeePercent === "number") {
+        setFeePercent(settings.paymentGatewayFeePercent);
+      }
+      if (settings.paymentGatewayFeePayer) {
+        setFeePayer(settings.paymentGatewayFeePayer);
+      }
       if (settings.supportWhatsapp) {
         setAdminWa(settings.supportWhatsapp);
       }
@@ -143,12 +152,17 @@ function CheckoutContent() {
 
         if (orderStatusRes.ok && orderStatusData.id) {
           if (orderStatusData.status === "PAID") {
-            router.replace(`/dashboard/setup?order=${orderStatusData.id}&plan=${orderStatusData.planType}`);
+            if (orderStatusData.orderType === "GALLERY_EXTENSION") {
+              router.replace("/dashboard?msg=gallery_extended");
+            } else {
+              router.replace(`/dashboard/setup?order=${orderStatusData.id}&plan=${orderStatusData.planType}`);
+            }
             return;
           }
 
           setOrderId(orderStatusData.id);
           setInvoiceNumber(orderStatusData.invoiceNumber);
+          setCurrentOrderType(orderStatusData.orderType || "NEW_INVITATION");
 
           let currentOffset = 0;
           if (orderStatusData.serverTime) {
@@ -156,13 +170,22 @@ function CheckoutContent() {
             setServerTimeOffset(currentOffset);
           }
 
-          const currentPkg = packages.find((p) => p.id === orderStatusData.planType) || packages[0];
-          setCurrentPlanType(orderStatusData.planType || "PREMIUM");
-          setPlanData({
-            name: currentPkg?.name || orderStatusData.planType,
-            price: Number(orderStatusData.amount),
-            desc: currentPkg?.desc || "",
-          });
+          if (orderStatusData.orderType === "GALLERY_EXTENSION") {
+            setCurrentPlanType("EXTEND_GALLERY");
+            setPlanData({
+              name: "Perpanjang Galeri Tamu (+30 Hari)",
+              price: Number(orderStatusData.amount),
+              desc: "Perpanjangan penyimpanan foto momen para tamu di server selama +30 hari tambahan.",
+            });
+          } else {
+            const currentPkg = packages.find((p) => p.id === orderStatusData.planType) || packages[0];
+            setCurrentPlanType(orderStatusData.planType || "PREMIUM");
+            setPlanData({
+              name: currentPkg?.name || orderStatusData.planType,
+              price: Number(orderStatusData.amount),
+              desc: currentPkg?.desc || "",
+            });
+          }
 
           if (orderStatusData.proofImageUrl && orderStatusData.status !== "FAILED" && orderStatusData.status !== "REJECTED") {
             setUploadedProofUrl(orderStatusData.proofImageUrl);
@@ -271,7 +294,11 @@ function CheckoutContent() {
         if (data.status === "PAID") {
           eventSource.close();
           clearInterval(timerInterval);
-          router.replace(`/dashboard/setup?order=${orderId}&plan=${data.planType}`);
+          if (currentOrderType === "GALLERY_EXTENSION") {
+            router.replace("/dashboard?msg=gallery_extended");
+          } else {
+            router.replace(`/dashboard/setup?order=${orderId}&plan=${data.planType}`);
+          }
         } else if (data.status === "EXPIRED") {
           eventSource.close();
           clearInterval(timerInterval);
@@ -304,7 +331,11 @@ function CheckoutContent() {
           const data = await res.json();
           if (data.status === "PAID") {
             clearInterval(manualPoll);
-            router.replace(`/dashboard/setup?order=${orderId}&plan=${data.planType}`);
+            if (currentOrderType === "GALLERY_EXTENSION" || data.orderType === "GALLERY_EXTENSION") {
+              router.replace("/dashboard?msg=gallery_extended");
+            } else {
+              router.replace(`/dashboard/setup?order=${orderId}&plan=${data.planType}`);
+            }
           } else if (data.status === "FAILED" || data.status === "REJECTED") {
             clearInterval(manualPoll);
             setUploadedProofUrl(null);
@@ -318,7 +349,7 @@ function CheckoutContent() {
     }, 5000); // Check every 5s
 
     return () => clearInterval(manualPoll);
-  }, [orderId, uploadedProofUrl, uploadSuccessMsg, router]);
+  }, [orderId, uploadedProofUrl, uploadSuccessMsg, router, currentOrderType]);
 
   // Manual Check Status Handler
   const handleCheckStatus = async () => {
@@ -327,7 +358,11 @@ function CheckoutContent() {
       const res = await fetch(`/api/client/orders/${orderId}/status`, { cache: "no-store" });
       const data = await res.json();
       if (data.status === "PAID") {
-        router.replace(`/dashboard/setup?order=${orderId}&plan=${data.planType}`);
+        if (currentOrderType === "GALLERY_EXTENSION" || data.orderType === "GALLERY_EXTENSION") {
+          router.replace("/dashboard?msg=gallery_extended");
+        } else {
+          router.replace(`/dashboard/setup?order=${orderId}&plan=${data.planType}`);
+        }
       } else if (data.status === "FAILED" || data.status === "REJECTED") {
         setUploadedProofUrl(null);
         setUploadSuccessMsg(null);
@@ -463,6 +498,10 @@ function CheckoutContent() {
     );
   }
 
+  const subtotal = planData?.price || 0;
+  const appFee = feePayer === "BUYER" ? Math.round(subtotal * (feePercent / 100)) : 0;
+  const totalAmount = subtotal + appFee;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-stone-950 via-stone-900 to-amber-950 flex flex-col font-sans">
       <header className="px-6 py-5 flex items-center justify-between">
@@ -529,15 +568,31 @@ function CheckoutContent() {
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-white/10 flex justify-between items-center">
-                <span className="text-stone-300 font-semibold text-xs">Total Tagihan</span>
+              {/* Rincian Fee Gateway Dinamis (%) */}
+              <div className="space-y-2 pt-3 border-t border-white/10 text-xs">
+                <div className="flex justify-between items-center text-stone-400">
+                  <span>Subtotal Layanan</span>
+                  <span className="text-stone-200 font-medium font-mono">Rp {subtotal.toLocaleString("id-ID")}</span>
+                </div>
+                <div className="flex justify-between items-center text-stone-400">
+                  <span>Biaya Layanan Aplikasi ({feePercent}%)</span>
+                  <span className={`font-mono font-medium ${feePayer === "BUYER" ? "text-amber-300" : "text-emerald-400"}`}>
+                    {feePayer === "BUYER"
+                      ? `Rp ${appFee.toLocaleString("id-ID")}`
+                      : "Rp 0 (Disubsidi)"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-white/10 flex justify-between items-center">
+                <span className="text-stone-300 font-semibold text-xs">Total Pembayaran</span>
                 <div className="flex items-center gap-2">
                   <span className="text-xl sm:text-2xl font-bold text-amber-400 font-serif">
-                    Rp {planData.price.toLocaleString("id-ID")}
+                    Rp {totalAmount.toLocaleString("id-ID")}
                   </span>
                   <button
                     type="button"
-                    onClick={() => handleCopy(planData.price.toString(), "amount")}
+                    onClick={() => handleCopy(totalAmount.toString(), "amount")}
                     className="p-1 text-stone-400 hover:text-white transition cursor-pointer"
                     title="Salin Nominal"
                   >
@@ -607,6 +662,9 @@ function CheckoutContent() {
                   </div>
                   <div className="space-y-1 pt-2">
                     <h3 className="text-white font-bold text-sm">Scan QRIS untuk Membayar</h3>
+                    <div className="text-amber-400 font-serif font-bold text-xl">
+                      Rp {totalAmount.toLocaleString("id-ID")}
+                    </div>
                     <p className="text-stone-400 text-xs">Sisa Waktu: <span className="text-amber-400 font-mono font-bold">{countdownStr}</span></p>
                   </div>
                   <div className="p-3 bg-white inline-block rounded-2xl mx-auto shadow-xl border-4 border-amber-500/20">

@@ -112,12 +112,14 @@ const Badge = ({ status }: { status: string }) => {
     FAILED: "bg-rose-50 text-rose-700 border border-rose-200",
     EXPIRED: "bg-gray-100 text-gray-600 border border-gray-200",
     PUBLISHED: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+    EVENT_FINISHED: "bg-purple-50 text-purple-700 border border-purple-200",
     DRAFT: "bg-amber-50 text-amber-700 border border-amber-200",
     TAKEN_DOWN: "bg-rose-50 text-rose-700 border border-rose-200",
+    ARCHIVED: "bg-stone-100 text-stone-600 border border-stone-200",
   };
   return (
     <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${map[status] || "bg-gray-100 text-gray-700"}`}>
-      {status}
+      {status === "EVENT_FINISHED" ? "Galeri Momen" : status}
     </span>
   );
 };
@@ -311,6 +313,7 @@ export default function AdminPage() {
   const [savingGoogle, setSavingGoogle] = useState(false);
   const [showGoogleSecret, setShowGoogleSecret] = useState(false);
   const [savingPricing, setSavingPricing] = useState(false);
+  const [savingAddons, setSavingAddons] = useState(false);
   const [savingPlatform, setSavingPlatform] = useState(false);
   const [savingPlatformCustom, setSavingPlatformCustom] = useState(false);
   const [savingSubdomainSettings, setSavingSubdomainSettings] = useState(false);
@@ -320,6 +323,7 @@ export default function AdminPage() {
   const [savingXendit, setSavingXendit] = useState(false);
   const [savingDuitku, setSavingDuitku] = useState(false);
   const [savingTripay, setSavingTripay] = useState(false);
+  const [savingSmtp, setSavingSmtp] = useState(false);
   const [activeSettingsTab, setActiveSettingsTab] = useState<"akun" | "pembayaran" | "gateway" | "paket" | "platform" | "autentikasi">("akun");
 
   const [recyclingSubdomains, setRecyclingSubdomains] = useState(false);
@@ -968,6 +972,50 @@ export default function AdminPage() {
         loadOverviewData();
       } else {
         alert(data.error || "Gagal mengubah status kunci");
+      }
+    } catch (e: any) {
+      alert("Error: " + e.message);
+    }
+  };
+
+  const handleCloseToGallery = async (inv: any) => {
+    const couple = `${inv.groomName || ""} & ${inv.brideName || ""}`;
+    if (!confirm(`Tutup undangan utama ${couple} sekarang dan alihkan URL secara otomatis menjadi Galeri Momen Acara?`)) return;
+
+    try {
+      const res = await fetch(`/api/admin/invitations/${inv.id}/lifecycle`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "CLOSE_TO_GALLERY" }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(data.message);
+        loadOverviewData();
+      } else {
+        alert(data.error || "Gagal menutup undangan");
+      }
+    } catch (e: any) {
+      alert("Error: " + e.message);
+    }
+  };
+
+  const handleExtendGallery = async (inv: any) => {
+    const couple = `${inv.groomName || ""} & ${inv.brideName || ""}`;
+    if (!confirm(`Perpanjang masa simpan galeri foto tamu untuk ${couple} sebanyak +30 hari?`)) return;
+
+    try {
+      const res = await fetch(`/api/admin/invitations/${inv.id}/lifecycle`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "EXTEND_GALLERY", days: 30 }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(data.message);
+        loadOverviewData();
+      } else {
+        alert(data.error || "Gagal memperpanjang galeri");
       }
     } catch (e: any) {
       alert("Error: " + e.message);
@@ -2178,6 +2226,24 @@ export default function AdminPage() {
                                     >
                                       Preview
                                     </a>
+                                    {inv.status === "PUBLISHED" && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleCloseToGallery(inv)}
+                                        className="px-2 py-1 rounded-lg text-xs font-semibold bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-300 transition cursor-pointer"
+                                        title="Tutup undangan utama dan alihkan URL ke Galeri Momen Acara"
+                                      >
+                                        Tutup ke Galeri
+                                      </button>
+                                    )}
+                                    <button
+                                      type="button"
+                                      onClick={() => handleExtendGallery(inv)}
+                                      className="px-2 py-1 rounded-lg text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 transition cursor-pointer"
+                                      title="Perpanjang masa simpan galeri foto tamu (+30 hari)"
+                                    >
+                                      +30H Galeri
+                                    </button>
                                     <button
                                       type="button"
                                       onClick={() => handleToggleEmergencyUnlock(inv)}
@@ -2231,23 +2297,9 @@ export default function AdminPage() {
                               <Badge status={inv.status} />
                             </div>
 
-                            {/* Theme switcher */}
-                            <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-xs">
-                              <span className="text-gray-500 font-medium">Tema:</span>
-                              <select
-                                value={inv.themeId}
-                                onChange={(e) => handleSwitchTheme(inv.id, e.target.value)}
-                                className="text-xs bg-gray-50 border border-gray-200 rounded-lg p-1.5 text-gray-800 font-semibold capitalize cursor-pointer max-w-[170px]"
-                              >
-                                {themes.map((t) => (
-                                  <option key={t.id} value={t.id} className="capitalize">{t.name || t.id}</option>
-                                ))}
-                              </select>
-                            </div>
-
-                            {/* Editor Protection Status */}
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="text-gray-500 font-medium">Editor:</span>
+                            {/* Info Detail Mobile */}
+                            <div className="flex items-center justify-between text-xs text-gray-500 pt-2 border-t border-gray-100">
+                              <span>Tema: <strong className="capitalize text-gray-800">{inv.themeId}</strong></span>
                               {isEmergencyUnlocked ? (
                                 <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-100 text-amber-900 border border-amber-300">
                                   Kunci Darurat Aktif
@@ -2263,26 +2315,42 @@ export default function AdminPage() {
                               )}
                             </div>
 
-                            {/* Actions */}
-                            <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                            {/* Actions Mobile */}
+                            <div className="flex items-center justify-end gap-1.5 pt-2 border-t border-gray-100 flex-wrap">
                               <a
                                 href={publicUrl}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg transition"
+                                className="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg transition"
                               >
                                 Preview
                               </a>
+                              {inv.status === "PUBLISHED" && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleCloseToGallery(inv)}
+                                  className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-300 transition cursor-pointer"
+                                >
+                                  Ke Galeri
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleExtendGallery(inv)}
+                                className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 transition cursor-pointer"
+                              >
+                                +30H Galeri
+                              </button>
                               <button
                                 type="button"
                                 onClick={() => handleToggleEmergencyUnlock(inv)}
-                                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer border ${
+                                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer border ${
                                   isEmergencyUnlocked
                                     ? "bg-red-50 hover:bg-red-100 text-red-700 border-red-300"
                                     : "bg-stone-100 hover:bg-stone-200 text-stone-800 border-stone-300"
                                 }`}
                               >
-                                {isEmergencyUnlocked ? "Kunci" : "Buka Darurat"}
+                                {isEmergencyUnlocked ? "Kunci" : "Darurat"}
                               </button>
                             </div>
                           </div>
@@ -2724,10 +2792,10 @@ export default function AdminPage() {
                     description="Konfigurasi terpusat untuk semua payment gateway: pilih gateway aktif, mode lingkungan, masa berlaku QRIS, penanggung biaya admin, dan format nama invoice."
                     isEditing={Boolean(editSection["active_gateway"])}
                     onEdit={() => toggleEditSection("active_gateway")}
-                    onCancel={() => cancelEdit("active_gateway", ["active_payment_gateway", "payment_gateway_mode", "payment_expiry_minutes", "payment_fee_payer", "payment_invoice_prefix"])}
-                    onSave={() => saveSettings(["active_payment_gateway", "payment_gateway_mode", "payment_expiry_minutes", "payment_fee_payer", "payment_invoice_prefix"], setSavingActiveGateway, "active_gateway")}
+                    onCancel={() => cancelEdit("active_gateway", ["active_payment_gateway", "payment_gateway_mode", "payment_expiry_minutes", "payment_fee_payer", "payment_gateway_fee_percent", "payment_fee_rate", "payment_invoice_prefix"])}
+                    onSave={() => saveSettings(["active_payment_gateway", "payment_gateway_mode", "payment_expiry_minutes", "payment_fee_payer", "payment_gateway_fee_percent", "payment_fee_rate", "payment_invoice_prefix"], setSavingActiveGateway, "active_gateway")}
                     saving={savingActiveGateway}
-                    isDirty={isSectionDirty(["active_payment_gateway", "payment_gateway_mode", "payment_expiry_minutes", "payment_fee_payer", "payment_invoice_prefix"])}
+                    isDirty={isSectionDirty(["active_payment_gateway", "payment_gateway_mode", "payment_expiry_minutes", "payment_fee_payer", "payment_gateway_fee_percent", "payment_fee_rate", "payment_invoice_prefix"])}
                     saveSuccess={settingsSaved["active_gateway"]}
                     saveSuccessMessage="Pengaturan global payment gateway berhasil disimpan"
                     viewContent={
@@ -2771,12 +2839,12 @@ export default function AdminPage() {
                           </div>
 
                           <div className="p-3.5 bg-purple-50/70 rounded-xl border border-purple-200">
-                            <span className="text-xs text-purple-900 block font-bold">Biaya Admin Gateway</span>
+                            <span className="text-xs text-purple-900 block font-bold">Biaya Layanan Aplikasi</span>
                             <div className="mt-1 text-xs font-semibold text-purple-950">
                               {(settingsMap["payment_fee_payer"] || "MERCHANT") === "BUYER" ? (
-                                <span className="text-amber-800 font-bold">Dibebankan ke Klien (+0.7%)</span>
+                                <span className="text-amber-800 font-bold">Dibebankan ke Klien (+{settingsMap["payment_gateway_fee_percent"] || "0.7"}%)</span>
                               ) : (
-                                <span className="text-emerald-700 font-bold">Ditanggung Platform (Gratis Klien)</span>
+                                <span className="text-emerald-700 font-bold">Ditanggung Platform ({settingsMap["payment_gateway_fee_percent"] || "0.7"}% Disubsidi)</span>
                               )}
                             </div>
                           </div>
@@ -2881,7 +2949,7 @@ export default function AdminPage() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           {[
                             { id: "MERCHANT", label: "Ditanggung Platform (Gratis Klien)", desc: "Klien bayar pas harga paket (contoh: Rp 299.000), fee dipotong dari saldo Anda." },
-                            { id: "BUYER", label: "Dibebankan ke Klien (+0.7% QRIS)", desc: "Total bayar di checkout otomatis ditambah biaya admin gateway." },
+                            { id: "BUYER", label: "Dibebankan ke Klien (Ditambah ke Tagihan)", desc: "Total bayar di checkout otomatis ditambah biaya transaksi payment gateway." },
                           ].map((feeOpt) => (
                             <button
                               key={feeOpt.id}
@@ -2897,6 +2965,27 @@ export default function AdminPage() {
                               <span className="text-[11px] text-gray-500 block mt-1 leading-relaxed">{feeOpt.desc}</span>
                             </button>
                           ))}
+                        </div>
+
+                        <div className="mt-3 p-3.5 bg-gray-50 rounded-xl border border-gray-200">
+                          <label className="text-xs font-bold text-gray-800 block mb-1">
+                            Besaran Persentase Fee Gateway (%)
+                          </label>
+                          <div className="flex items-center gap-2 max-w-sm">
+                            <input
+                              type="number"
+                              step="0.1"
+                              min="0"
+                              max="10"
+                              value={settingsMap["payment_gateway_fee_percent"] || "0.7"}
+                              onChange={(e) => {
+                                setSetting("payment_gateway_fee_percent", e.target.value);
+                                setSetting("payment_fee_rate", (Number(e.target.value) / 100).toString());
+                              }}
+                              className="w-28 px-3 py-2 border border-gray-300 rounded-xl text-sm font-mono font-bold bg-white text-gray-900 focus:outline-none focus:border-amber-500"
+                            />
+                            <span className="text-xs text-gray-600 font-medium">% (Standar QRIS BI: 0.7%)</span>
+                          </div>
                         </div>
                       </FieldRow>
                     </div>
@@ -3647,12 +3736,244 @@ export default function AdminPage() {
                       </div>
                     </div>
                   </SettingsCard>
+
+                  {/* Add-ons & Extension Pricing Settings */}
+                  <SettingsCard
+                    title="Layanan Tambahan (Add-Ons) & Perpanjangan"
+                    description="Atur harga dinamis untuk paket add-on custom domain, perpanjangan galeri bulanan via QRIS, dan bundling domain + galeri 1 tahun."
+                    isEditing={Boolean(editSection["addons"])}
+                    onEdit={() => toggleEditSection("addons")}
+                    onCancel={() => cancelEdit("addons", ["addon_subdomain_gallery_bundle_price", "gallery_extension_price_per_month", "addon_custom_domain_price"])}
+                    onSave={() => saveSettings(["addon_subdomain_gallery_bundle_price", "gallery_extension_price_per_month", "addon_custom_domain_price"], setSavingAddons, "addons")}
+                    saving={savingAddons}
+                    isDirty={isSectionDirty(["addon_subdomain_gallery_bundle_price", "gallery_extension_price_per_month", "addon_custom_domain_price"])}
+                    saveSuccess={settingsSaved["addons"]}
+                    saveSuccessMessage="Harga layanan add-on berhasil diperbarui"
+                    viewContent={
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                        <div className="p-4 bg-emerald-50/60 rounded-xl border border-emerald-200">
+                          <span className="text-xs font-bold text-emerald-900 block mb-1">Add-on Bundling (Domain + Galeri 1 Thn)</span>
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-xl font-mono font-bold text-emerald-950">
+                              Rp {Number(settingsMap["addon_subdomain_gallery_bundle_price"] || 175000).toLocaleString("id-ID")}
+                            </span>
+                            <span className="text-xs text-emerald-800 font-medium">/ 1 Tahun</span>
+                          </div>
+                          <p className="text-xs text-stone-600 mt-2 leading-relaxed">
+                            Alamat website eksklusif aktif 1 tahun beserta penyimpanan foto tamu selama 1 tahun penuh.
+                          </p>
+                        </div>
+
+                        <div className="p-4 bg-purple-50/60 rounded-xl border border-purple-200">
+                          <span className="text-xs font-bold text-purple-900 block mb-1">Add-on Perpanjang Galeri (Bulanan)</span>
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-xl font-mono font-bold text-purple-950">
+                              Rp {Number(settingsMap["gallery_extension_price_per_month"] || 50000).toLocaleString("id-ID")}
+                            </span>
+                            <span className="text-xs text-purple-800 font-medium">/ 30 Hari</span>
+                          </div>
+                          <p className="text-xs text-stone-600 mt-2 leading-relaxed">
+                            Biaya perpanjangan simpan foto tamu per 30 hari via QRIS dinamis saat masa aktif galeri habis.
+                          </p>
+                        </div>
+
+                        <div className="p-4 bg-sky-50/60 rounded-xl border border-sky-200">
+                          <span className="text-xs font-bold text-sky-900 block mb-1">Add-on Custom Domain Standar</span>
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-xl font-mono font-bold text-sky-950">
+                              Rp {Number(settingsMap["addon_custom_domain_price"] || 99000).toLocaleString("id-ID")}
+                            </span>
+                            <span className="text-xs text-sky-800 font-medium">/ 1 Tahun</span>
+                          </div>
+                          <p className="text-xs text-stone-600 mt-2 leading-relaxed">
+                            Add-on custom domain mandiri (.com / .id) selama 1 tahun di luar bundling foto.
+                          </p>
+                        </div>
+                      </div>
+                    }
+                  >
+                    <div className="space-y-4">
+                      <FieldRow
+                        label="Tarif Add-on Bundling (Domain + Galeri 1 Tahun)"
+                        description="Harga paket lengkap: domain eksklusif aktif 1 tahun + foto tamu tersimpan aman 1 tahun (Rupiah)."
+                      >
+                        <input
+                          type="number"
+                          min="10000"
+                          step="5000"
+                          value={settingsMap["addon_subdomain_gallery_bundle_price"] || "175000"}
+                          onChange={(e) => setSetting("addon_subdomain_gallery_bundle_price", e.target.value)}
+                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition font-mono"
+                        />
+                      </FieldRow>
+
+                      <FieldRow
+                        label="Tarif Perpanjangan Galeri (Rupiah / 30 Hari)"
+                        description="Nominal tagihan QRIS dinamis per bulan untuk mempertahankan file foto tamu di server R2."
+                      >
+                        <input
+                          type="number"
+                          min="10000"
+                          step="5000"
+                          value={settingsMap["gallery_extension_price_per_month"] || "50000"}
+                          onChange={(e) => setSetting("gallery_extension_price_per_month", e.target.value)}
+                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition font-mono"
+                        />
+                      </FieldRow>
+
+                      <FieldRow
+                        label="Tarif Custom Domain Standar (Rupiah / Tahun)"
+                        description="Harga add-on nama domain sendiri tanpa paket bundling penyimpanan foto ekstra."
+                      >
+                        <input
+                          type="number"
+                          min="10000"
+                          step="5000"
+                          value={settingsMap["addon_custom_domain_price"] || "99000"}
+                          onChange={(e) => setSetting("addon_custom_domain_price", e.target.value)}
+                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition font-mono"
+                        />
+                      </FieldRow>
+                    </div>
+                  </SettingsCard>
                   </>
                   )}
 
                   {/* ══ TAB: PLATFORM ══ */}
                   {activeSettingsTab === "platform" && (
                   <>
+                  {/* Server Email (SMTP) Configuration */}
+                  <SettingsCard
+                    title="Server Email (SMTP) untuk Pengiriman Invoice"
+                    description="Konfigurasikan akun SMTP (Gmail, Mailgun, Brevo, atau Webmail hosting) untuk mengirimkan faktur tagihan (UNPAID) dan kuitansi resmi (PAID) secara otomatis ke email klien."
+                    isEditing={Boolean(editSection["smtp"])}
+                    onEdit={() => toggleEditSection("smtp")}
+                    onCancel={() => cancelEdit("smtp", ["smtp_host", "smtp_port", "smtp_user", "smtp_password", "smtp_from_email", "smtp_from_name"])}
+                    onSave={() => saveSettings(["smtp_host", "smtp_port", "smtp_user", "smtp_password", "smtp_from_email", "smtp_from_name"], setSavingSmtp, "smtp")}
+                    saving={savingSmtp}
+                    isDirty={isSectionDirty(["smtp_host", "smtp_port", "smtp_user", "smtp_password", "smtp_from_email", "smtp_from_name"])}
+                    saveSuccess={settingsSaved["smtp"]}
+                    saveSuccessMessage="Pengaturan server email SMTP berhasil disimpan"
+                    viewContent={
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                          <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200">
+                            <span className="text-xs text-gray-500 block font-medium">Status Pengiriman</span>
+                            <div className="mt-1.5 flex items-center gap-1.5">
+                              {settingsMap["smtp_host"] && settingsMap["smtp_user"] ? (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-300">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                  SMTP Aktif
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-stone-100 text-stone-600 border border-stone-300">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-stone-400"></span>
+                                  Belum Dikonfigurasi
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200">
+                            <span className="text-xs text-gray-500 block font-medium">Host SMTP</span>
+                            <span className="text-xs font-mono font-bold text-gray-900 block mt-1.5 truncate">
+                              {settingsMap["smtp_host"] || "Belum diisi"}
+                            </span>
+                          </div>
+
+                          <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200">
+                            <span className="text-xs text-gray-500 block font-medium">Port</span>
+                            <span className="text-xs font-mono font-bold text-gray-900 block mt-1.5">
+                              {settingsMap["smtp_port"] || "587"}
+                            </span>
+                          </div>
+
+                          <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200">
+                            <span className="text-xs text-gray-500 block font-medium">Akun Pengirim</span>
+                            <span className="text-xs font-mono font-bold text-gray-900 block mt-1.5 truncate">
+                              {settingsMap["smtp_user"] || "Belum diisi"}
+                            </span>
+                          </div>
+                        </div>
+
+                        <p className="text-[11px] text-gray-500">
+                          {settingsMap["smtp_host"] && settingsMap["smtp_user"]
+                            ? "Klien akan menerima faktur invoice HTML otomatis setiap kali checkout dan setelah pembayaran QRIS lunas."
+                            : "Server email belum diatur. Transaksi tetap berjalan normal via QRIS, dan pengiriman email otomatis dilewati secara aman."}
+                        </p>
+                      </div>
+                    }
+                  >
+                    <div className="space-y-3.5">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="sm:col-span-2">
+                          <FieldRow label="SMTP Host" description="Contoh: smtp.gmail.com atau mail.domainanda.com">
+                            <input
+                              type="text"
+                              value={settingsMap["smtp_host"] || ""}
+                              onChange={(e) => setSetting("smtp_host", e.target.value)}
+                              placeholder="smtp.gmail.com"
+                              className="w-full px-3.5 py-2 border border-gray-300 rounded-xl text-xs font-mono bg-white text-gray-900 focus:outline-none focus:border-amber-500"
+                            />
+                          </FieldRow>
+                        </div>
+                        <div>
+                          <FieldRow label="SMTP Port" description="587 (TLS) atau 465 (SSL)">
+                            <input
+                              type="number"
+                              value={settingsMap["smtp_port"] || "587"}
+                              onChange={(e) => setSetting("smtp_port", e.target.value)}
+                              placeholder="587"
+                              className="w-full px-3.5 py-2 border border-gray-300 rounded-xl text-xs font-mono bg-white text-gray-900 focus:outline-none focus:border-amber-500"
+                            />
+                          </FieldRow>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <FieldRow label="Username / Email SMTP" description="Email login akun SMTP Anda">
+                          <input
+                            type="text"
+                            value={settingsMap["smtp_user"] || ""}
+                            onChange={(e) => setSetting("smtp_user", e.target.value)}
+                            placeholder="billing@domainanda.com"
+                            className="w-full px-3.5 py-2 border border-gray-300 rounded-xl text-xs font-mono bg-white text-gray-900 focus:outline-none focus:border-amber-500"
+                          />
+                        </FieldRow>
+                        <FieldRow label="Password / App Password" description="Gunakan App Password untuk akun Gmail">
+                          <input
+                            type="password"
+                            value={settingsMap["smtp_password"] || ""}
+                            onChange={(e) => setSetting("smtp_password", e.target.value)}
+                            placeholder="••••••••••••"
+                            className="w-full px-3.5 py-2 border border-gray-300 rounded-xl text-xs font-mono bg-white text-gray-900 focus:outline-none focus:border-amber-500"
+                          />
+                        </FieldRow>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <FieldRow label="Email Pengirim (From Email)" description="Alamat yang tertera sebagai pengirim invoice">
+                          <input
+                            type="email"
+                            value={settingsMap["smtp_from_email"] || ""}
+                            onChange={(e) => setSetting("smtp_from_email", e.target.value)}
+                            placeholder="no-reply@domainanda.com"
+                            className="w-full px-3.5 py-2 border border-gray-300 rounded-xl text-xs font-mono bg-white text-gray-900 focus:outline-none focus:border-amber-500"
+                          />
+                        </FieldRow>
+                        <FieldRow label="Nama Pengirim (From Name)" description="Nama instansi/brand yang muncul di inbox">
+                          <input
+                            type="text"
+                            value={settingsMap["smtp_from_name"] || ""}
+                            onChange={(e) => setSetting("smtp_from_name", e.target.value)}
+                            placeholder="Billing & Finance"
+                            className="w-full px-3.5 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500"
+                          />
+                        </FieldRow>
+                      </div>
+                    </div>
+                  </SettingsCard>
+
                   {/* WhatsApp Template Settings */}
                   <SettingsCard
                     title="Template Pesan WhatsApp (Pengiriman Undangan)"
@@ -3767,25 +4088,51 @@ export default function AdminPage() {
                     description="Atur masa tenggang (grace period) keaktifan subdomain setelah acara selesai, dan otomatisasi pelepasan subdomain ke pool agar dapat digunakan kembali oleh pasangan baru."
                     isEditing={Boolean(editSection["subdomain"])}
                     onEdit={() => toggleEditSection("subdomain")}
-                    onCancel={() => cancelEdit("subdomain", ["subdomain_grace_days", "subdomain_auto_recycle", "retention_invitation_days", "retention_account_days"])}
-                    onSave={() => saveSettings(["subdomain_grace_days", "subdomain_auto_recycle", "retention_invitation_days", "retention_account_days"], setSavingSubdomainSettings, "subdomain")}
+                    onCancel={() => cancelEdit("subdomain", ["subdomain_grace_days", "subdomain_auto_recycle", "retention_invitation_days", "retention_account_days", "retention_invitation_grace_days", "retention_gallery_default_days", "gallery_extension_price_per_month"])}
+                    onSave={() => saveSettings(["subdomain_grace_days", "subdomain_auto_recycle", "retention_invitation_days", "retention_account_days", "retention_invitation_grace_days", "retention_gallery_default_days", "gallery_extension_price_per_month"], setSavingSubdomainSettings, "subdomain")}
                     saving={savingSubdomainSettings}
-                    isDirty={isSectionDirty(["subdomain_grace_days", "subdomain_auto_recycle", "retention_invitation_days", "retention_account_days"])}
+                    isDirty={isSectionDirty(["subdomain_grace_days", "subdomain_auto_recycle", "retention_invitation_days", "retention_account_days", "retention_invitation_grace_days", "retention_gallery_default_days", "gallery_extension_price_per_month"])}
                     saveSuccess={settingsSaved["subdomain"]}
                     saveSuccessMessage="Pengaturan siklus hidup subdomain berhasil disimpan"
                     viewContent={
                       <div className="space-y-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
                           <div className="p-4 bg-amber-50/50 rounded-xl border border-amber-200">
-                            <span className="text-xs text-amber-950 font-bold block mb-1">Masa Tenggang (Grace Period)</span>
+                            <span className="text-xs text-amber-950 font-bold block mb-1">Transisi Undangan ke Galeri</span>
                             <div className="flex items-baseline gap-1.5">
                               <span className="text-2xl font-mono font-bold text-amber-900">
-                                {settingsMap["subdomain_grace_days"] || "7"}
+                                {settingsMap["retention_invitation_grace_days"] || "7"}
                               </span>
-                              <span className="text-xs text-amber-800 font-medium">Hari pasca acara pernikahan</span>
+                              <span className="text-xs text-amber-800 font-medium">Hari pasca acara</span>
                             </div>
                             <p className="text-[11px] text-stone-500 mt-2">
-                              Subdomain tetap aktif selama {settingsMap["subdomain_grace_days"] || "7"} hari setelah acara sebelum dilepas ke pool.
+                              Undangan utama ditutup dan URL otomatis beralih menjadi Galeri Momen Tamu (Event Summary).
+                            </p>
+                          </div>
+
+                          <div className="p-4 bg-purple-50/50 rounded-xl border border-purple-200">
+                            <span className="text-xs text-purple-950 font-bold block mb-1">Masa Simpan Galeri Default</span>
+                            <div className="flex items-baseline gap-1.5">
+                              <span className="text-2xl font-mono font-bold text-purple-900">
+                                {settingsMap["retention_gallery_default_days"] || "30"}
+                              </span>
+                              <span className="text-xs text-purple-800 font-medium">Hari</span>
+                            </div>
+                            <p className="text-[11px] text-stone-500 mt-2">
+                              Foto tamu disimpan sebelum dibersihkan dari R2 jika klien tidak memperpanjang.
+                            </p>
+                          </div>
+
+                          <div className="p-4 bg-emerald-50/50 rounded-xl border border-emerald-200">
+                            <span className="text-xs text-emerald-950 font-bold block mb-1">Tarif Perpanjangan Galeri</span>
+                            <div className="flex items-baseline gap-1.5">
+                              <span className="text-xl font-mono font-bold text-emerald-900">
+                                Rp {Number(settingsMap["gallery_extension_price_per_month"] || 50000).toLocaleString("id-ID")}
+                              </span>
+                              <span className="text-xs text-emerald-800 font-medium">/ 30 Hari</span>
+                            </div>
+                            <p className="text-[11px] text-stone-500 mt-2">
+                              Biaya yang ditagihkan via QRIS dinamis saat klien memperpanjang masa simpan foto.
                             </p>
                           </div>
 
@@ -3808,20 +4155,9 @@ export default function AdminPage() {
                               Undangan lama tetap dapat diakses seumur hidup via link path: <code>luxenary.id/[pasangan]/[bln-thn]</code>.
                             </p>
                           </div>
-                          <div className="p-4 bg-emerald-50/50 rounded-xl border border-emerald-200">
-                            <span className="text-xs text-emerald-950 font-bold block mb-1">Retensi Subdomain Aktif</span>
-                            <div className="flex items-baseline gap-1.5">
-                              <span className="text-2xl font-mono font-bold text-emerald-900">
-                                {settingsMap["retention_invitation_days"] || "30"}
-                              </span>
-                              <span className="text-xs text-emerald-800 font-medium">Hari</span>
-                            </div>
-                            <p className="text-[11px] text-stone-500 mt-2">
-                              Data interaktif tamu & RSVP akan dihapus dan subdomain dibebaskan {settingsMap["retention_invitation_days"] || "30"} hari pasca acara.
-                            </p>
-                          </div>
+
                           <div className="p-4 bg-rose-50/50 rounded-xl border border-rose-200">
-                            <span className="text-xs text-rose-950 font-bold block mb-1">Pembersihan Total Portofolio</span>
+                            <span className="text-xs text-rose-950 font-bold block mb-1">Pembersihan Total Akun</span>
                             <div className="flex items-baseline gap-1.5">
                               <span className="text-2xl font-mono font-bold text-rose-900">
                                 {settingsMap["retention_account_days"] || "365"}
@@ -3829,7 +4165,7 @@ export default function AdminPage() {
                               <span className="text-xs text-rose-800 font-medium">Hari</span>
                             </div>
                             <p className="text-[11px] text-stone-500 mt-2">
-                              Akun klien & folder gambar prewedding di server akan dihapus fisik permanen setelah {settingsMap["retention_account_days"] || "365"} hari.
+                              Akun klien lama tanpa undangan aktif dibersihkan setelah {settingsMap["retention_account_days"] || "365"} hari.
                             </p>
                           </div>
                         </div>
@@ -3892,6 +4228,39 @@ export default function AdminPage() {
                         />
                       </FieldRow>
                       
+                      <FieldRow label="Jeda Transisi Undangan ke Galeri (Hari)" description="Jumlah hari setelah tanggal acara pernikahan selesai sebelum undangan utama ditutup dan URL otomatis dialihkan menjadi Galeri Momen Acara.">
+                        <input
+                          type="number"
+                          min="1"
+                          max="90"
+                          value={settingsMap["retention_invitation_grace_days"] || "7"}
+                          onChange={(e) => setSetting("retention_invitation_grace_days", e.target.value)}
+                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition font-mono"
+                        />
+                      </FieldRow>
+
+                      <FieldRow label="Masa Simpan Default Galeri Tamu (Hari)" description="Jeda hari pasca-acara sebelum cronjob membersihkan file foto tamu mentah dari Cloudflare R2 / Server (jika klien tidak memperpanjang).">
+                        <input
+                          type="number"
+                          min="1"
+                          max="365"
+                          value={settingsMap["retention_gallery_default_days"] || "30"}
+                          onChange={(e) => setSetting("retention_gallery_default_days", e.target.value)}
+                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition font-mono"
+                        />
+                      </FieldRow>
+
+                      <FieldRow label="Tarif Perpanjangan Galeri (Rupiah / 30 Hari)" description="Nominal yang ditagihkan secara otomatis via QRIS saat klien memperpanjang masa simpan foto tamu di dashboard.">
+                        <input
+                          type="number"
+                          min="10000"
+                          step="5000"
+                          value={settingsMap["gallery_extension_price_per_month"] || "50000"}
+                          onChange={(e) => setSetting("gallery_extension_price_per_month", e.target.value)}
+                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition font-mono"
+                        />
+                      </FieldRow>
+
                       <FieldRow label="Retensi Pembersihan Interaktif (Hari)" description="Jeda hari pasca-acara sebelum sistem menghapus data tamu & RSVP untuk membebaskan storage database (Tahap 1).">
                         <input
                           type="number"

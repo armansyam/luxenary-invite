@@ -20,6 +20,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ subd
     return NextResponse.redirect(new URL("/?notice=subdomain-available", req.url));
   }
 
+  // Jika acara sudah selesai, alihkan otomatis ke Galeri Momen
+  if (invitation.status === "EVENT_FINISHED") {
+    const memoriesUrl = new URL(`/s/${subdomain}/memories`, req.url);
+    memoriesUrl.search = req.nextUrl.search;
+    return NextResponse.redirect(memoriesUrl);
+  }
+
   // Check if subdomain has expired (> 7 days post event)
   let eventDateToTest: string | null = null;
   try {

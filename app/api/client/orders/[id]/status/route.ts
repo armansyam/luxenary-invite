@@ -38,6 +38,7 @@ export async function GET(
         expiredAt: true,
         createdAt: true,
         snapToken: true,
+        orderType: true,
       },
     });
 
@@ -87,6 +88,7 @@ export async function GET(
       isExpired: finalStatus === "EXPIRED",
       amount: Number(order.amount),
       planType: order.planType,
+      orderType: order.orderType,
       paymentMethod: order.paymentMethod,
       proofImageUrl: isAuthorizedOwner ? order.proofImageUrl : null,
       proofUploadedAt: isAuthorizedOwner ? order.proofUploadedAt : null,

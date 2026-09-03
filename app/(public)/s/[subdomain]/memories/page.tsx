@@ -26,5 +26,5 @@ export default async function SubdomainMemoriesRedirect({ params }: SubdomainMem
   }
 
   // Redirect to canonical permanent album link
-  redirect(`/${invitation.groomSlug}-${invitation.brideSlug}/${invitation.invitationSlug}/memories`);
+  redirect(`/${invitation.invitationSlug}/memories`);
 }

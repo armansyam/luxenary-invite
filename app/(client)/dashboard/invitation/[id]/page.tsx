@@ -2096,6 +2096,20 @@ export default function EditInvitation() {
               </button>
             </div>
 
+            {(invitation?.status === "PUBLISHED" || invitation?.status === "EVENT_FINISHED") && (
+              <div className="p-3.5 bg-amber-50/80 border border-amber-200/80 rounded-2xl flex items-start gap-3 text-xs text-amber-950 mt-3 mb-1">
+                <svg className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                <div>
+                  <p className="font-bold text-amber-900">Jadwal Acara Telah Terkunci</p>
+                  <p className="text-[11px] text-amber-800/90 mt-0.5 leading-relaxed">
+                    Tanggal acara terkunci secara otomatis setelah undangan diterbitkan untuk menjamin akurasi jadwal sistem retensi. Jika terdapat perubahan jadwal darurat, silakan hubungi Customer Support / Admin.
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-4 mt-2">
               {events.map((ev, idx) => (
                 <div key={idx} className="p-4 rounded-2xl border border-stone-200 bg-stone-50/50 space-y-3">
@@ -2113,7 +2127,14 @@ export default function EditInvitation() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                     <Input label="Nama Sesi Acara" value={ev.title || ""} onChange={(v) => updateEventItem(idx, "title", v)} placeholder="Masukkan nama sesi acara (Misal: Akad Nikah)" />
-                    <Input label="Hari, Tanggal" value={ev.date || ""} onChange={(v) => updateEventItem(idx, "date", v)} placeholder="Sabtu, 15 Juni 2026" />
+                    <Input
+                      label="Hari, Tanggal"
+                      value={ev.date || ""}
+                      onChange={(v) => updateEventItem(idx, "date", v)}
+                      placeholder="Sabtu, 15 Juni 2026"
+                      disabled={invitation?.status === "PUBLISHED" || invitation?.status === "EVENT_FINISHED"}
+                      subtitle={(invitation?.status === "PUBLISHED" || invitation?.status === "EVENT_FINISHED") ? "Terkunci Pasca Publish" : undefined}
+                    />
                     <Input label="Waktu / Jam" value={ev.time || ""} onChange={(v) => updateEventItem(idx, "time", v)} placeholder="19:30 - Selesai WITA" />
                     <Input label="Nama Lokasi / Gedung" value={ev.location || ""} onChange={(v) => updateEventItem(idx, "location", v)} placeholder="Grand Ballroom Phinisi" />
                     <Input label="Alamat Lengkap" value={ev.address || ""} onChange={(v) => updateEventItem(idx, "address", v)} placeholder="Jl. A.P. Pettarani No. 12" />
@@ -3025,8 +3046,10 @@ export default function EditInvitation() {
                 {/* Client-Side JSZip Download — VPS tidak kena beban bandwidth foto */}
                 <MemoriesDownloadSection
                   invitationId={invitation.id}
-                  retentionDays={platformSettings?.retentionInvitationDays || 30}
+                  retentionDays={platformSettings?.retentionGalleryDefaultDays || 30}
                   isUploadLocked={invitation.memoriesUploadLocked ?? false}
+                  galleryExpiresAt={invitation.galleryExpiresAt ? new Date(invitation.galleryExpiresAt).toISOString() : null}
+                  extensionPrice={platformSettings?.galleryExtensionPricePerMonth || 50000}
                 />
                 {/* Link Galeri Kenangan Tamu */}
                 <div className="p-4 rounded-2xl border border-stone-200 bg-stone-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -3036,14 +3059,14 @@ export default function EditInvitation() {
                     </span>
                     <span className="text-xs font-mono font-bold text-stone-900 break-all">
                       {typeof window !== "undefined" ? window.location.origin : "https://luxenary.id"}
-                      {`/${invitation.groomSlug}-${invitation.brideSlug}/${invitation.invitationSlug}/memories`}
+                      {`/${invitation.invitationSlug}/memories`}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <button
                       type="button"
                       onClick={() => {
-                        const url = `${window.location.origin}/${invitation.groomSlug}-${invitation.brideSlug}/${invitation.invitationSlug}/memories`;
+                        const url = `${window.location.origin}/${invitation.invitationSlug}/memories`;
                         navigator.clipboard.writeText(url);
                         alert("Link galeri kenangan berhasil disalin!");
                       }}
@@ -3052,7 +3075,7 @@ export default function EditInvitation() {
                       Salin Link
                     </button>
                     <a
-                      href={`/${invitation.groomSlug}-${invitation.brideSlug}/${invitation.invitationSlug}/memories`}
+                      href={`/${invitation.invitationSlug}/memories`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="px-3 py-1.5 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs font-bold transition inline-flex items-center gap-1 shadow-2xs"
@@ -3255,16 +3278,38 @@ export default function EditInvitation() {
   );
 }
 
-function Input({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder: string }) {
+function Input({
+  label,
+  value,
+  onChange,
+  placeholder,
+  disabled,
+  subtitle,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  disabled?: boolean;
+  subtitle?: string;
+}) {
   return (
     <div>
-      <label className="block text-xs font-bold text-stone-700 mb-1">{label}</label>
+      <div className="flex items-center justify-between mb-1">
+        <label className="block text-xs font-bold text-stone-700">{label}</label>
+        {subtitle && <span className="text-[10px] text-amber-700 font-semibold">{subtitle}</span>}
+      </div>
       <input
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
+        disabled={disabled}
+        className={`w-full p-2.5 rounded-xl text-xs text-stone-900 border transition ${
+          disabled
+            ? "bg-stone-100/90 border-stone-200 text-stone-500 cursor-not-allowed select-none"
+            : "bg-stone-50 border-stone-200 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
+        }`}
       />
     </div>
   );

@@ -32,6 +32,7 @@ export async function GET() {
       eventData: true,
       // staffPin: SENGAJA tidak dimasukkan di list API — gunakan GET /api/client/invitations/[id] untuk akses PIN
       customDomain: true,
+      galleryExpiresAt: true,
       createdAt: true,
       order: {
         select: { planType: true },

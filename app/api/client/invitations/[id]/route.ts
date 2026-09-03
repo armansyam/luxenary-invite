@@ -334,6 +334,27 @@ export async function PUT(
       }
     }
 
+    // --- EVENT DATE LOCK: Pertahankan tanggal acara pasca publish untuk klien non-admin ---
+    let eventDataToSave = undefined;
+    if (body.eventData !== undefined) {
+      if (!isAdmin && (currentInv?.status === "PUBLISHED" || currentInv?.status === "EVENT_FINISHED")) {
+        try {
+          const incomingEvents = Array.isArray(body.eventData) ? body.eventData : JSON.parse(toStr(body.eventData) || "[]");
+          const currentEvents = currentInv.eventData ? (Array.isArray(currentInv.eventData) ? currentInv.eventData : JSON.parse(toStr(currentInv.eventData) || "[]")) : [];
+          
+          const mergedEvents = incomingEvents.map((ev: any, idx: number) => ({
+            ...ev,
+            date: currentEvents[idx]?.date || ev.date, // Kunci tanggal pernikahan asli
+          }));
+          eventDataToSave = JSON.stringify(mergedEvents);
+        } catch {
+          eventDataToSave = toStr(body.eventData);
+        }
+      } else {
+        eventDataToSave = toStr(body.eventData);
+      }
+    }
+
     const updated = await prisma.invitation.update({
       where: { id },
       data: {
@@ -358,7 +379,7 @@ export async function PUT(
         bankAccounts: body.bankAccounts !== undefined ? toStr(body.bankAccounts) : undefined,
         shippingAddress: body.shippingAddress !== undefined ? body.shippingAddress : undefined,
         liveStreamUrl: body.liveStreamUrl !== undefined ? body.liveStreamUrl : undefined,
-        eventData: body.eventData !== undefined ? toStr(body.eventData) : undefined,
+        eventData: eventDataToSave,
         featureSettings: mergedFeatureSettings,
         // Enkripsi staffPin dengan AES-256 sebelum simpan ke database
         staffPin: body.staffPin !== undefined

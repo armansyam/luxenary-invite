@@ -105,14 +105,14 @@ export async function buildAndSavePublishedHtml(invitationId: string): Promise<s
 
   await ensurePublishedDir();
 
-  // 1. Simpan sebagai subdomains/{subdomain}.html → untuk subdomain routing (arman-siti.luxenary.id)
+  // 1. Simpan sebagai subdomains/{subdomain}.html → untuk subdomain routing (contoh: dimas-clarissa.luxenary.id)
   let subdomainFilePath = "None (No Subdomain)";
   if (invitation.subdomain) {
     subdomainFilePath = path.join(PUBLISHED_DIR, "subdomains", `${invitation.subdomain}.html`);
     await fs.promises.writeFile(subdomainFilePath, standaloneHtml, "utf-8");
   }
 
-  // 2. Simpan sebagai slugs/{invitationSlug}.html → untuk canonical path routing (luxenary.id/arman-siti-030326)
+  // 2. Simpan sebagai slugs/{invitationSlug}.html → untuk canonical path routing (contoh: luxenary.id/dimas-clarissa-030326)
   const canonicalFilePath = path.join(PUBLISHED_DIR, "slugs", `${invitation.invitationSlug}.html`);
   await fs.promises.writeFile(canonicalFilePath, standaloneHtml, "utf-8");
 

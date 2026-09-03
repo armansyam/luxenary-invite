@@ -2,15 +2,17 @@
 
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import QRCode from "react-qr-code";
 
 import { getInvitationPublicUrl } from "@/lib/domainUtils";
 
-export default function DashboardHome() {
+function DashboardHomeContent() {
   const { data: session } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const msgParam = searchParams?.get("msg");
   const [invitation, setInvitation] = useState<any>(null);
   const qrRef = useRef<HTMLDivElement>(null);
   const [stats, setStats] = useState({
@@ -128,6 +130,32 @@ export default function DashboardHome() {
   return (
     <div className="space-y-6 sm:space-y-8 font-sans">
       
+      {/* Success Notification Banner for Gallery Extension */}
+      {msgParam === "gallery_extended" && (
+        <div className="p-4 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-100 flex items-center justify-between gap-3 shadow-lg animate-in fade-in duration-300">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shrink-0">
+              <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <div>
+              <h4 className="font-bold text-sm text-emerald-300">Pembayaran Berhasil!</h4>
+              <p className="text-xs text-emerald-200/90 mt-0.5">
+                Masa simpan foto galeri momen tamu Anda telah diperpanjang <strong>+30 Hari</strong>. Seluruh momen candid tamu tetap tersimpan aman di server.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => router.replace("/dashboard")}
+            className="text-xs font-bold text-emerald-300 hover:text-white px-3 py-1.5 rounded-lg bg-emerald-950/60 border border-emerald-500/30 transition cursor-pointer shrink-0"
+          >
+            Tutup
+          </button>
+        </div>
+      )}
+
       {/* 1. Hero Card (Mobile-First, Elegant Luxury) */}
       <div className="bg-stone-900 text-white rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-xl border border-stone-800 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-72 h-72 bg-amber-600/10 rounded-full blur-3xl pointer-events-none" />
@@ -142,6 +170,11 @@ export default function DashboardHome() {
                 <span className="px-2.5 py-1 bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[10px] sm:text-[11px] font-bold rounded-full uppercase tracking-wider flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                   AKTIF
+                </span>
+              ) : invitation?.status === 'EVENT_FINISHED' ? (
+                <span className="px-2.5 py-1 bg-purple-500/20 border border-purple-500/40 text-purple-300 text-[10px] sm:text-[11px] font-bold rounded-full uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
+                  GALERI MOMEN AKTIF
                 </span>
               ) : (
                 <span className="px-2.5 py-1 bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] sm:text-[11px] font-bold rounded-full uppercase tracking-wider flex items-center gap-1.5">
@@ -177,7 +210,7 @@ export default function DashboardHome() {
               <span>Edit Undangan (Studio)</span>
             </Link>
 
-            {invitation?.status === 'PUBLISHED' ? (
+            {invitation?.status === 'PUBLISHED' || invitation?.status === 'EVENT_FINISHED' ? (
               <>
                 <a
                   href={`${invUrl}/memories`}
@@ -225,10 +258,22 @@ export default function DashboardHome() {
             )}
           </div>
 
+          {invitation?.status === 'EVENT_FINISHED' && (
+            <div className="mt-3 p-3 bg-purple-500/15 border border-purple-500/30 rounded-xl text-xs text-purple-200 flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-purple-400"></span>
+                <span>Acara telah selesai. URL website Anda sekarang otomatis menampilkan <strong>Galeri Momen Tamu</strong>.</span>
+              </div>
+              <Link href={editorUrl} className="text-amber-400 hover:underline font-semibold">
+                Kelola Galeri &amp; Unduh ZIP &rarr;
+              </Link>
+            </div>
+          )}
+
           {/* URL Bars (Undangan + Galeri Kenangan) */}
           <div className="pt-3 border-t border-stone-800 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-stone-400 font-mono">
             <div className="bg-stone-950/40 p-2.5 rounded-xl flex items-center justify-between gap-2">
-              {invitation?.status === 'PUBLISHED' ? (
+              {invitation?.status === 'PUBLISHED' || invitation?.status === 'EVENT_FINISHED' ? (
                 <span className="truncate text-amber-200/90">{invUrl}</span>
               ) : (
                 <span className="truncate text-stone-600 italic">URL tersedia setelah Publish</span>
@@ -236,7 +281,7 @@ export default function DashboardHome() {
               <span className="text-[10px] font-sans text-stone-500 shrink-0">Web Undangan</span>
             </div>
             <div className="bg-stone-950/40 p-2.5 rounded-xl flex items-center justify-between gap-2">
-              {invitation?.status === 'PUBLISHED' ? (
+              {invitation?.status === 'PUBLISHED' || invitation?.status === 'EVENT_FINISHED' ? (
                 <span className="truncate text-amber-400">{`${invUrl}/memories`}</span>
               ) : (
                 <span className="truncate text-stone-600 italic">Tersedia setelah Publish</span>
@@ -474,7 +519,7 @@ export default function DashboardHome() {
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                 Unduh PNG
               </button>
-              {invitation?.status === 'PUBLISHED' ? (
+              {invitation?.status === 'PUBLISHED' || invitation?.status === 'EVENT_FINISHED' ? (
                 <a href={`${invUrl}/sharemoment`} target="_blank" rel="noreferrer" className="flex-1 py-2 bg-amber-600 text-white font-bold rounded-xl text-[10px] transition text-center hover:bg-amber-700 flex flex-col items-center justify-center gap-1 shadow-xs">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                   Buka Link
@@ -491,5 +536,13 @@ export default function DashboardHome() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function DashboardHome() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-stone-400 text-xs">Memuat Dashboard...</div>}>
+      <DashboardHomeContent />
+    </Suspense>
   );
 }
