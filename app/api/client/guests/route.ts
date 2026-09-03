@@ -79,7 +79,6 @@ export async function POST(req: Request) {
         name: trimmedName,
         slug,
         phone: phone || null,
-        phoneNumber: phone || null,
         category: category || null,
         sessionInfo: sessionInfo || null,
         guestQuota: Number(guestLimit) || 1,

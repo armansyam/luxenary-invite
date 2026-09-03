@@ -20,8 +20,8 @@ function getEncryptionKey(): Buffer {
     if (process.env.NODE_ENV === "production") {
       throw new Error("[CRITICAL] PIN_ENCRYPTION_KEY tidak diset di environment production!");
     }
-    // Dev-only fallback — 32 bytes
-    return Buffer.from("luxenary-dev-key-32bytes-fallback", "utf8");
+    // Dev-only fallback — persis 32 bytes
+    return Buffer.from("luxenary-dev-key-32byte-fallback", "utf8");
   }
   const keyBuffer = Buffer.from(key, "hex");
   if (keyBuffer.length !== 32) {

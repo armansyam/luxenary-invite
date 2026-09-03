@@ -6,8 +6,7 @@ import { getInvitationPublicUrl } from "@/lib/domainUtils";
 interface Guest {
   id: string;
   name: string;
-  phone: string | null;
-  phoneNumber?: string | null;
+  phone?: string | null;
   category: string | null;
   qrToken: string;
   waStatus: string;
@@ -303,7 +302,10 @@ export default function GuestsPage() {
     );
 
     const text = encodeURIComponent(renderedText);
-    const targetPhone = (guest.phone || guest.phoneNumber || "").replace(/\D/g, "");
+    let targetPhone = (guest.phone || "").replace(/\D/g, "");
+    if (targetPhone.startsWith("0")) {
+      targetPhone = "62" + targetPhone.slice(1);
+    }
     if (targetPhone) {
       return `https://wa.me/${targetPhone}?text=${text}`;
     }
@@ -626,7 +628,7 @@ export default function GuestsPage() {
                   <div className="md:col-span-4 min-w-0">
                     <h4 className="text-xs sm:text-sm font-bold text-stone-900 truncate">{guest.name}</h4>
                     <span className="text-[11px] text-stone-500 font-mono block truncate">
-                      {guest.phone || guest.phoneNumber || "Tanpa No. WhatsApp"}
+                      {guest.phone || "Tanpa No. WhatsApp"}
                     </span>
                   </div>
 
@@ -930,7 +932,11 @@ export default function GuestsPage() {
                 <input
                   type="text"
                   value={newGuest.phone}
-                  onChange={(e) => setNewGuest({ ...newGuest, phone: e.target.value })}
+                  onChange={(e) => {
+                    let val = e.target.value.replace(/\D/g, "");
+                    if (val.startsWith("0")) val = "62" + val.slice(1);
+                    setNewGuest({ ...newGuest, phone: val });
+                  }}
                   placeholder="08123456789 atau 628123456789"
                   className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
                 />

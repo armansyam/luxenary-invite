@@ -6,39 +6,7 @@ import { renderTemplateFile } from "@/lib/renderTemplate";
 
 const PUBLISHED_DIR = path.join(process.cwd(), "public", "published");
 
-const CATEGORY_MAP: Record<string, "premium" | "traditional" | "modern"> = {
-  kalandra: "premium",
-  valente: "premium",
-  aurelia: "premium",
-  artisan: "premium",
-  kila: "premium",
-  "premium-kila": "premium",
-  ivanna: "premium",
-  "premium-ivanna": "premium",
-  danila: "premium",
-  "premium-danila": "premium",
 
-  prameswari: "traditional",
-  dillalucky: "traditional",
-  badrika: "traditional",
-  mayang: "traditional",
-  candani: "traditional",
-  aruna: "traditional",
-  "heritage-aruna": "traditional",
-
-  wave: "modern",
-  papercut: "modern",
-  ameera: "modern",
-  chronicle: "modern",
-  lumina: "modern",
-  solaria: "modern",
-  "moody-papercut": "modern",
-};
-
-export function getThemeCategory(themeId?: string): "premium" | "traditional" | "modern" {
-  if (!themeId) return "premium";
-  return CATEGORY_MAP[themeId.toLowerCase()] || "premium";
-}
 
 /**
  * Ensures the target published storage directory and its category subfolders exist.
@@ -103,7 +71,6 @@ export async function buildAndSavePublishedHtml(invitationId: string): Promise<s
   const data = await composeTemplateData(invitation.id);
   if (!data) return null;
 
-  const category = getThemeCategory(invitation.themeId || "kalandra");
 
   // 1. Generate Meta Tags (Generic to Couple, No Guest Name)
   const coupleName = `${invitation.groomNickname || invitation.groomName || "Groom"} & ${invitation.brideNickname || invitation.brideName || "Bride"}`;

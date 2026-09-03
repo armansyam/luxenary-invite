@@ -166,16 +166,16 @@ export async function composeTemplateData(invitationId: string) {
   // Dynamic Couple Display Order Resolution
   const isGroomFirst = featureSettings.displayOrder === "GROOM_FIRST" || (!featureSettings.displayOrder && Boolean(inv.groomName));
 
-  const groomName = inv.groomName || inv.groomNickname || "Didan Faadhilah";
-  const brideName = inv.brideName || inv.brideNickname || "Nasha Selsabilla";
-  const groomNickname = inv.groomNickname || inv.groomName || "Didan";
-  const brideNickname = inv.brideNickname || inv.brideName || "Nasha";
-  const groomDisplayName = inv.groomName || inv.groomNickname || "Didan Faadhilah, S.T.";
-  const brideDisplayName = inv.brideName || inv.brideNickname || "Nasha Selsabilla, S.Ds.";
-  const groomParents = inv.groomParents || "Putra dari Bapak Arif Yaniadi & Ibu Yuni Widiastuti";
-  const brideParents = inv.brideParents || "Putri dari Bapak Tomm Posma & Ibu Endang Noffiyanti";
-  const groomInstagram = (inv.groomInstagram || "didanfaadhilah").replace(/^@+/, "");
-  const brideInstagram = (inv.brideInstagram || "nashasl").replace(/^@+/, "");
+  const groomName = inv.groomName ?? inv.groomNickname ?? "Didan Faadhilah";
+  const brideName = inv.brideName ?? inv.brideNickname ?? "Nasha Selsabilla";
+  const groomNickname = inv.groomNickname ?? inv.groomName ?? "Didan";
+  const brideNickname = inv.brideNickname ?? inv.brideName ?? "Nasha";
+  const groomDisplayName = inv.groomName ?? inv.groomNickname ?? "Didan Faadhilah, S.T.";
+  const brideDisplayName = inv.brideName ?? inv.brideNickname ?? "Nasha Selsabilla, S.Ds.";
+  const groomParents = inv.groomParents ?? "Putra dari Bapak Arif Yaniadi & Ibu Yuni Widiastuti";
+  const brideParents = inv.brideParents ?? "Putri dari Bapak Tomm Posma & Ibu Endang Noffiyanti";
+  const groomInstagram = (inv.groomInstagram ?? "didanfaadhilah").replace(/^@+/, "");
+  const brideInstagram = (inv.brideInstagram ?? "nashasl").replace(/^@+/, "");
 
   // 1st Host vs 2nd Host
   const firstName = isGroomFirst ? groomNickname : brideNickname;

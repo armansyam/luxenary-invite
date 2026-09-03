@@ -180,7 +180,6 @@ model Guest {
   slug            String // URL-safe version of name: 'budi-santoso'
   category        String? // VVIP | VIP | Keluarga | Teman Kantor | Umum
   phone           String?
-  phoneNumber     String?
   guestQuota      Int       @default(1)
   tableNumber     String?
   waStatus        WaStatus  @default(PENDING)
@@ -261,7 +260,7 @@ model GuestMemory {
 // ============================================================
 model WebhookLog {
   id          String    @id @default(uuid())
-  source      String // midtrans | ipaymu | xendit | whatsapp
+  source      String // midtrans | ipaymu | xendit
   event       String // payment.success | read.receipt
   payload     Json
   status      String    @default("received") // received | processed | failed
@@ -348,7 +347,6 @@ enum InvitationStatus {
 enum WaStatus {
   PENDING
   SENT
-  READ
 }
 
 enum MediaSlot {

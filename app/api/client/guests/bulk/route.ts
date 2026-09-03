@@ -52,7 +52,6 @@ export async function POST(req: NextRequest) {
         name: cleanName,
         slug,
         phone: g.phone || null,
-        phoneNumber: g.phone || null,
         category: g.category || "UMUM",
         sessionInfo: g.sessionInfo || "Akad & Resepsi",
         guestQuota: Number(g.guestQuota) || 2,

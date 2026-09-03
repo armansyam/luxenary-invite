@@ -113,6 +113,35 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // 3.5 Generate Portfolio Cover (cover.webp)
+    const coverMediaObj = inv.media.find(m => m.mediaSlot === "LANDING_COVER") || inv.media[0];
+    const coverUrl = coverMediaObj?.localPath;
+    
+    if (coverUrl) {
+      try {
+        const sharp = (await import("sharp")).default;
+        const relativePath = `assets/${clientName}/cover.webp`;
+        let rawBuffer: Buffer | null = null;
+        if (coverUrl.startsWith("http")) {
+          const res = await fetch(coverUrl);
+          if (res.ok) rawBuffer = Buffer.from(await res.arrayBuffer());
+        } else if (coverUrl.startsWith("/uploads/")) {
+          const localSrc = path.join(process.cwd(), "public", coverUrl);
+          if (await fileExists(localSrc)) rawBuffer = await fs.promises.readFile(localSrc);
+        }
+
+        if (rawBuffer) {
+          const processedBuffer = await sharp(rawBuffer)
+            .resize(800, 1000, { fit: "cover", position: "centre" })
+            .webp({ quality: 80 })
+            .toBuffer();
+          await uploadPortfolioFile(processedBuffer, relativePath, "image/webp");
+        }
+      } catch (err) {
+        console.error("[Portfolio] Gagal generate cover.webp:", err);
+      }
+    }
+
     // 4. Proses GuestMemory thumbnails — kompres ke 120x120 WebP via sharp
     try {
       const sharp = (await import("sharp")).default;

@@ -146,7 +146,7 @@ export class DuitkuGateway implements PaymentGateway {
         .createHash("md5")
         .update(`${merchantCode}${amount}${orderId}${apiKey}`)
         .digest("hex");
-      return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(incomingSignature));
+      return crypto.timingSafeEqual(Buffer.from(expected.toLowerCase()), Buffer.from(incomingSignature.toLowerCase()));
     } catch {
       return false;
     }
