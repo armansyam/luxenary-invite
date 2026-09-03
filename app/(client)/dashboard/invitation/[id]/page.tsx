@@ -943,7 +943,7 @@ export default function EditInvitation() {
           </p>
           <div className="pt-4">
             <a
-              href={`https://wa.me/${adminWhatsapp}?text=Halo%20Admin,%20mohon%20bantuan%20buka%20kunci%20darurat%20undangan%20saya`}
+              href={`https://wa.me/${adminWhatsapp.replace(/\D/g, '').replace(/^0/, '62')}?text=Halo%20Admin,%20mohon%20bantuan%20buka%20kunci%20darurat%20undangan%20saya`}
               target="_blank"
               rel="noreferrer"
               className="inline-flex px-6 py-3 bg-stone-900 hover:bg-stone-800 text-white text-sm font-bold rounded-xl transition shadow-sm"
@@ -986,7 +986,7 @@ export default function EditInvitation() {
             </div>
           </div>
           <a
-            href={`https://wa.me/${adminWhatsapp}?text=Halo%20Admin,%20mohon%20bantuan%20buka%20kunci%20darurat%20undangan%20saya`}
+            href={`https://wa.me/${adminWhatsapp.replace(/\D/g, '').replace(/^0/, '62')}?text=Halo%20Admin,%20mohon%20bantuan%20buka%20kunci%20darurat%20undangan%20saya`}
             target="_blank"
             rel="noreferrer"
             className="px-4 py-2.5 bg-amber-700 hover:bg-amber-600 text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5 flex-shrink-0 shadow-sm"

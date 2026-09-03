@@ -48,9 +48,21 @@ function verifyIPaymuSignature(
 
 export async function POST(req: NextRequest) {
   try {
-    // Baca raw body terlebih dahulu untuk verifikasi signature
-    const rawBody = await req.text();
-    const body = JSON.parse(rawBody);
+    const contentType = req.headers.get("content-type") || "";
+    let body: any;
+
+    if (contentType.includes("application/x-www-form-urlencoded")) {
+      const formData = await req.formData();
+      body = Object.fromEntries(formData.entries());
+    } else {
+      const rawBody = await req.text();
+      body = JSON.parse(rawBody);
+    }
+    
+    // Convert back to string for signature verification if form-urlencoded (some gateways send signature over raw body, some don't. iPaymu usually doesn't sign form-urlencoded with body hash, but we'll stringify it)
+    const rawBodyForSig = contentType.includes("application/x-www-form-urlencoded") 
+      ? new URLSearchParams(body as Record<string, string>).toString() 
+      : JSON.stringify(body);
 
     // FIX #3: Verifikasi signature iPaymu
     const incomingSignature = req.headers.get("signature") || "";
@@ -64,7 +76,7 @@ export async function POST(req: NextRequest) {
       if (!incomingSignature) {
         return NextResponse.json({ status: "ignored", reason: "missing_signature" }, { status: 400 });
       }
-      const isValid = verifyIPaymuSignature(incomingSignature, va, apiKey, rawBody, incomingTimestamp);
+      const isValid = verifyIPaymuSignature(incomingSignature, va, apiKey, rawBodyForSig, incomingTimestamp);
       if (!isValid) {
         console.warn("[iPaymu Webhook] Signature tidak valid — payload diabaikan");
         // Return 200 untuk mencegah iPaymu retry tak henti (tapi tidak diproses)

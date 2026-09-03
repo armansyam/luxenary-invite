@@ -59,6 +59,18 @@ if [ -z "$CRON_SECRET" ] || [ "$CRON_SECRET" == '""' ]; then
   fi
 fi
 
+# Generate PIN_ENCRYPTION_KEY jika masih kosong
+PIN_KEY=$(grep -E "^PIN_ENCRYPTION_KEY=" .env | cut -d '=' -f2 | tr -d '"' | tr -d "'")
+if [ -z "$PIN_KEY" ] || [ "$PIN_KEY" == '""' ]; then
+  echo "🔐 Men-generate PIN_ENCRYPTION_KEY baru yang aman..."
+  NEW_PIN_KEY=$(openssl rand -hex 32)
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    sed -i '' "s|^PIN_ENCRYPTION_KEY=.*|PIN_ENCRYPTION_KEY=\"$NEW_PIN_KEY\"|" .env
+  else
+    sed -i "s|^PIN_ENCRYPTION_KEY=.*|PIN_ENCRYPTION_KEY=\"$NEW_PIN_KEY\"|" .env
+  fi
+fi
+
 # 3. Install Dependencies
 echo "📦 Menginstal dependensi (npm install)..."
 npm install
@@ -66,7 +78,7 @@ npm install
 # 4. Database Setup
 echo "🗄️ Sinkronisasi skema database (Prisma)..."
 npx prisma generate
-npx prisma migrate deploy
+npx prisma db push
 
 # 5. Build Aplikasi Next.js
 echo "🏗️ Membangun (Build) aplikasi Next.js... (Ini mungkin memakan waktu)"

@@ -110,7 +110,7 @@ export default auth(async (req) => {
     if (parts.length > 1 && parts[0] !== "www" && parts[0] !== "admin" && parts[0] !== "api") {
       const subdomain = parts[0];
       if (pathname === "/" || pathname === "") {
-        const rewriteUrl = new URL(`/published/subdomains/${subdomain}.html`, req.url);
+        const rewriteUrl = new URL(`/s/${subdomain}`, req.url);
         rewriteUrl.search = req.nextUrl.search;
         return NextResponse.rewrite(rewriteUrl);
       }
@@ -133,7 +133,7 @@ export default auth(async (req) => {
       const segments = pathname.split('/').filter(Boolean);
       if (segments.length === 1) {
         const guestParam = segments[0];
-        const rewriteUrl = new URL(`/published/subdomains/${subdomain}.html`, req.url);
+        const rewriteUrl = new URL(`/s/${subdomain}`, req.url);
         rewriteUrl.search = req.nextUrl.search;
         if (guestParam.startsWith('v=')) {
           rewriteUrl.searchParams.set('v', guestParam.slice(2));
@@ -159,7 +159,7 @@ export default auth(async (req) => {
           if (isFinished) {
             return NextResponse.rewrite(new URL(`/s/${subdomain}/memories${req.nextUrl.search}`, req.url));
           }
-          const rewriteUrl = new URL(`/published/subdomains/${subdomain}.html`, req.url);
+          const rewriteUrl = new URL(`/s/${subdomain}`, req.url);
           rewriteUrl.search = req.nextUrl.search;
           return NextResponse.rewrite(rewriteUrl);
         }
@@ -178,7 +178,7 @@ export default auth(async (req) => {
           if (isFinished) {
             return NextResponse.rewrite(new URL(`/s/${subdomain}/memories${req.nextUrl.search}`, req.url));
           }
-          const rewriteUrl = new URL(`/published/subdomains/${subdomain}.html`, req.url);
+          const rewriteUrl = new URL(`/s/${subdomain}`, req.url);
           rewriteUrl.searchParams.set('to', segments[0]);
           return NextResponse.rewrite(rewriteUrl);
         }
@@ -214,7 +214,7 @@ export default auth(async (req) => {
       }
 
       // Root slug — serve static HTML jika ada, fallback ke Next.js page
-      const rewriteUrl = new URL(`/published/slugs/${slug}.html`, req.url);
+      const rewriteUrl = new URL(`/${slug}`, req.url);
       rewriteUrl.search = req.nextUrl.search;
       return NextResponse.rewrite(rewriteUrl);
     }

@@ -66,6 +66,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invitation not found" }, { status: 404 });
     }
 
+    if (invitation.status === "EVENT_FINISHED" || invitation.status === "ARCHIVED" || invitation.status === "TAKEN_DOWN") {
+      return NextResponse.json({ error: "Masa pengisian buku tamu / RSVP untuk acara ini telah ditutup." }, { status: 410 });
+    }
+
     // Find matching guest record if already invited, but DO NOT auto-create new guest
     const matchingGuest = await prisma.guest.findFirst({
       where: {
