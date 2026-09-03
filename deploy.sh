@@ -87,11 +87,13 @@ npm run build
 # 6. Restart Server
 echo "🔄 Merestart aplikasi..."
 if command -v pm2 &> /dev/null; then
-  echo "✅ PM2 terdeteksi. Mencoba merestart proses..."
+  echo "✅ PM2 terdeteksi. Merestart aplikasi via ecosystem..."
   
-  # Cari apakah ada proses pm2 dengan nama luxenary atau nextjs
-  # Jika Anda menggunakan ekosistem file, ubah perintah di bawah menjadi: pm2 restart ecosystem.config.js
-  pm2 restart all || echo "⚠️ Gagal merestart PM2. Pastikan aplikasi sudah dijalankan dengan PM2 sebelumnya."
+  # Pastikan direktori logs untuk PM2 tersedia
+  mkdir -p logs
+  
+  # Jalankan atau restart berdasarkan ecosystem.config.js
+  pm2 start ecosystem.config.js || pm2 restart ecosystem.config.js || echo "⚠️ Gagal merestart PM2."
 else
   echo "⚠️ PM2 tidak terdeteksi di sistem ini. Jika server saat ini menyala, silakan restart manual (CTRL+C lalu 'npm run start')."
 fi
