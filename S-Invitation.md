@@ -170,12 +170,15 @@ Sistem pengiriman email otomatis menggunakan **Nodemailer** yang membaca kredens
 
 ---
 
-## 9. Sistem Portofolio Mandiri & Custom Domain
+## 9. Sistem Portofolio Mandiri & Custom Domain (SaaS Workflow)
 
 1. **Portofolio Kloning Mandiri (`/portfolio`)**:
    - Fitur khusus Super Admin untuk mengkloning undangan pilihan menjadi file statis 100% mandiri di `public/portfolio/[slug].html`.
    - Semua aset gambar dikompresi WebP tajam dan disimpan terisolasi di `public/portfolio/assets/[slug]/`.
 2. **Custom Domain Klien (`dimas-clarissa.com`)**:
-   - Klien menghubungkan domain pribadi menggunakan CNAME ke server.
-   - Middleware melakukan rewrite transparan berbasis `resolve-custom-domain`.
+   - **SaaS Add-on Workflow**: Custom domain merupakan layanan jasa berbayar terpisah dari paket undangan (orderType: `CUSTOM_DOMAIN_ADDON`).
+   - Klien memesan & menginput domain pilihan mereka via Dashboard (Settings) lalu membayar melalui Payment Gateway.
+   - Setelah lunas (PAID), sistem memperpanjang otomatis masa aktif galeri selama 1 Tahun.
+   - Admin memantau order melalui **Tab Custom Domain** di Dashboard Admin dan menghubungkannya (konfigurasi SSL & proxy) di Nginx.
+   - Middleware melakukan rewrite transparan berbasis `resolve-custom-domain` untuk merender undangan.
    - Keamanan terjamin tanpa kendala CORS karena semua request diteruskan secara *Same-Origin*.

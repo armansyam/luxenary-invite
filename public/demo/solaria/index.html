@@ -17,6 +17,7 @@
 -->
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
 
 <script>
@@ -47,22 +48,65 @@
 <link rel="stylesheet" href="/css/modules.css">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>The Wedding of Damian Alexander, M.Arch. &amp; Aurora Valerie, M.Ds. — Solaria Sunset Terracotta</title>
-  
+  <title>The Wedding of Damian &amp; Aurora </title>
+
   <!-- THEME TYPOGRAPHY: Solaria Sunset Terracotta -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Great+Vibes&family=Pinyon+Script&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Great+Vibes&family=Pinyon+Script&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="/fonts/fonts.css">
-  
+
   <style>
     :root {
-      --primary: #a67c52;
-      --secondary: #c5a059;
-      --accent: #e5c158;
-      --bg-light: #faf7f2;
-      --bg-dark: #1a1614;
-      --text-dark: ;
+      --primary: {
+          {
+          colorPrimary
+        }
+      }
+
+      ;
+
+      --secondary: {
+          {
+          colorSecondary
+        }
+      }
+
+      ;
+
+      --accent: {
+          {
+          colorAccent
+        }
+      }
+
+      ;
+
+      --bg-light: {
+          {
+          colorBgLight
+        }
+      }
+
+      ;
+
+      --bg-dark: {
+          {
+          colorBgDark
+        }
+      }
+
+      ;
+
+      --text-dark: {
+          {
+          colorTextDark
+        }
+      }
+
+      ;
       --sunset-terracotta: #c46849;
       --sunset-amber: #e59866;
       --sunset-sand: #fbeee6;
@@ -73,8 +117,16 @@
       --sunset-glow: 0 0 25px rgba(196, 104, 73, 0.3);
     }
 
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
     body {
       font-family: 'DM Serif Display', 'Plus Jakarta Sans', serif;
       background-color: var(--bg-dark, var(--sunset-dark));
@@ -86,14 +138,31 @@
     }
 
     /* TYPOGRAPHY CLASSES */
-    .font-sunset-title { font-family: 'DM Serif Display', 'Playfair Display', serif; }
-    .font-sunset-script { font-family: 'Great Vibes', 'Pinyon Script', cursive; }
-    .font-sunset-sans { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .font-sunset-title {
+      font-family: 'DM Serif Display', 'Playfair Display', serif;
+    }
+
+    .font-sunset-script {
+      font-family: 'Great Vibes', 'Pinyon Script', cursive;
+    }
+
+    .font-sunset-sans {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
 
     /* ANIMATIONS & MICRO-INTERACTIONS */
     @keyframes sunsetArchFloat {
-      0%, 100% { transform: translateY(0px) scale(1); filter: drop-shadow(0 6px 18px rgba(229,152,102,0.4)); }
-      50% { transform: translateY(-7px) scale(1.03); filter: drop-shadow(0 12px 28px rgba(229,152,102,0.65)); }
+
+      0%,
+      100% {
+        transform: translateY(0px) scale(1);
+        filter: drop-shadow(0 6px 18px rgba(229, 152, 102, 0.4));
+      }
+
+      50% {
+        transform: translateY(-7px) scale(1.03);
+        filter: drop-shadow(0 12px 28px rgba(229, 152, 102, 0.65));
+      }
     }
 
     .reveal-on-scroll {
@@ -101,6 +170,7 @@
       transform: translateY(25px);
       transition: all 0.9s cubic-bezier(0.16, 1, 0.3, 1);
     }
+
     .reveal-on-scroll.is-visible {
       opacity: 1;
       transform: translateY(0);
@@ -108,79 +178,190 @@
 
     /* 1. COVER SCREEN */
     .cover-overlay {
-      position: fixed; inset: 0; z-index: 9999;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      text-align: center; padding: 2.5rem 1.5rem;
-      background: radial-gradient(circle at center, rgba(38,22,16,0.9) 0%, rgba(25,14,10,0.98) 100%), url('/demo/solaria/cover.webp') center/cover no-repeat;
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2.5rem 1.5rem;
+      background: radial-gradient(circle at center, rgba(38, 22, 16, 0.9) 0%, rgba(25, 14, 10, 0.98) 100%),
+      url('/demo/solaria/cover.webp') center/cover no-repeat;
       transition: transform 0.85s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.85s ease;
     }
+
     .cover-overlay.opened {
-      transform: translateY(-100%); pointer-events: none; opacity: 0;
+      transform: translateY(-100%);
+      pointer-events: none;
+      opacity: 0;
     }
 
     .sunset-arch-icon {
-      width: 100%; max-width: 95px; height: auto; margin-bottom: 1.2rem;
+      width: 100%;
+      max-width: 95px;
+      height: auto;
+      margin-bottom: 1.2rem;
       animation: sunsetArchFloat 4.5s ease-in-out infinite;
     }
 
     .cover-badge {
       font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 0.72rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--sunset-amber); margin-bottom: 0.5rem; font-weight: 600;
+      font-size: 0.72rem;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--sunset-amber);
+      margin-bottom: 0.5rem;
+      font-weight: 600;
     }
+
     .cover-names {
-      font-size: clamp(3.2rem, 12vw, 5.2rem); font-family: 'Great Vibes', cursive; color: var(--sunset-amber);
-      text-shadow: 0 4px 25px rgba(0,0,0,0.9); margin-bottom: 1.5rem; font-weight: normal; line-height: 1.15;
+      font-size: clamp(3.2rem, 12vw, 5.2rem);
+      font-family: 'Great Vibes', cursive;
+      color: var(--sunset-amber);
+      text-shadow: 0 4px 25px rgba(0, 0, 0, 0.9);
+      margin-bottom: 1.5rem;
+      font-weight: normal;
+      line-height: 1.15;
     }
+
     .cover-guest-card {
-      background: var(--sunset-card); border: 1px solid var(--sunset-border);
-      border-radius: 16px; padding: 1.2rem 2rem; margin-bottom: 1.8rem;
-      backdrop-filter: blur(12px); box-shadow: var(--sunset-glow); max-width: 340px; width: 100%;
+      background: var(--sunset-card);
+      border: 1px solid var(--sunset-border);
+      border-radius: 16px;
+      padding: 1.2rem 2rem;
+      margin-bottom: 1.8rem;
+      backdrop-filter: blur(12px);
+      box-shadow: var(--sunset-glow);
+      max-width: 340px;
+      width: 100%;
     }
-    .cover-guest-lbl { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(251,238,230,0.7); }
-    .cover-guest-val { font-family: 'DM Serif Display', serif; font-size: 1.4rem; color: #fff; margin-top: 0.3rem; font-weight: 600; }
-    
+
+    .cover-guest-lbl {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(251, 238, 230, 0.7);
+    }
+
+    .cover-guest-val {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.4rem;
+      color: #fff;
+      margin-top: 0.3rem;
+      font-weight: 600;
+    }
+
     .btn-buka-undangan {
-      display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem;
-      padding: 0.95rem 2.8rem; background: linear-gradient(90deg, #c46849 0%, #e59866 50%, #c46849 100%);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      padding: 0.95rem 2.8rem;
+      background: linear-gradient(90deg, #c46849 0%, #e59866 50%, #c46849 100%);
       background-size: 200% auto;
-      color: #ffffff; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase;
-      border: none; border-radius: 50px; cursor: pointer; box-shadow: 0 6px 20px rgba(196,104,73,0.45);
+      color: #ffffff;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 700;
+      font-size: 0.8rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(196, 104, 73, 0.45);
       transition: all 0.35s ease;
     }
-    .btn-buka-undangan:hover { background-position: right center; transform: translateY(-2px); box-shadow: 0 10px 25px rgba(196,104,73,0.65); }
+
+    .btn-buka-undangan:hover {
+      background-position: right center;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(196, 104, 73, 0.65);
+    }
 
     /* RESPONSIVE LAYOUT */
-    .layout-wrapper { display: flex; width: 100%; min-height: 100vh; position: relative; }
-    
+    .layout-wrapper {
+      display: flex;
+      width: 100%;
+      min-height: 100vh;
+      position: relative;
+    }
+
     .sidebar-desktop {
-      display: none; position: fixed; left: 0; top: 0; width: 55%; height: 100vh;
-      background: url('/demo/solaria/hero.webp') center/cover no-repeat; z-index: 10;
+      display: none;
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 55%;
+      height: 100vh;
+      background: url('/demo/solaria/hero.webp') center/cover no-repeat;
+      z-index: 10;
     }
+
     .sidebar-desktop::after {
-      content: ''; position: absolute; inset: 0;
-      background: linear-gradient(to top, rgba(25,14,10,0.96) 0%, rgba(25,14,10,0.3) 50%, transparent 100%);
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(25, 14, 10, 0.96) 0%, rgba(25, 14, 10, 0.3) 50%, transparent 100%);
     }
+
     .sidebar-desktop-content {
-      position: absolute; bottom: 4rem; left: 3.5rem; right: 3.5rem; z-index: 20; color: #fff;
+      position: absolute;
+      bottom: 4rem;
+      left: 3.5rem;
+      right: 3.5rem;
+      z-index: 20;
+      color: #fff;
     }
 
     .main-scroll-panel {
-      width: 100%; min-height: 100vh; padding-bottom: 110px; position: relative; z-index: 20;
+      width: 100%;
+      min-height: 100vh;
+      padding-bottom: 110px;
+      position: relative;
+      z-index: 20;
     }
 
     @media (min-width: 900px) {
-      .sidebar-desktop { display: block; }
-      .main-scroll-panel { width: 45%; margin-left: 55%; min-width: 420px; }
-      .cover-overlay { width: 45%; left: 55%; }
-      .bottom-dock { left: calc(55% + 22.5%) !important; }
+      .sidebar-desktop {
+        display: block;
+      }
+
+      .main-scroll-panel {
+        width: 45%;
+        margin-left: 55%;
+        min-width: 420px;
+      }
+
+      .cover-overlay {
+        width: 45%;
+        left: 55%;
+      }
+
+      .bottom-dock {
+        left: calc(55% + 22.5%) !important;
+      }
     }
 
     /* ==========================================================================
        FULL VIEWPORT ISOLATED SLIDES (100VH SETIAP SEKSI)
        ========================================================================== */
-    .slide-section, .section-block, .sec-flow,
-    #section-quote, #section-couple, #section-events, #story, #moments, #gift,
-    #section-wishes, #access-pass, #dresscode, #live, #turut-mengundang {
+    .slide-section,
+    .section-block,
+    .sec-flow,
+    #section-quote,
+    #section-couple,
+    #section-events,
+    #story,
+    #moments,
+    #gift,
+    #section-wishes,
+    #access-pass,
+    #dresscode,
+    #live,
+    #turut-mengundang {
       width: 100%;
       min-height: 100vh;
       min-height: 100dvh;
@@ -206,169 +387,609 @@
 
     .sec-eyebrow {
       font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 0.72rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--sunset-amber); display: block; margin-bottom: 0.4rem; font-weight: 600;
+      font-size: 0.72rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--sunset-amber);
+      display: block;
+      margin-bottom: 0.4rem;
+      font-weight: 600;
     }
-    .sec-main-title, .sec-heading {
-      font-size: clamp(2.4rem, 8vw, 3.4rem); font-family: 'Great Vibes', cursive; color: var(--sunset-amber); margin-bottom: 0.3rem; font-weight: normal;
-      text-shadow: 0 2px 15px rgba(0,0,0,0.6);
+
+    .sec-main-title,
+    .sec-heading {
+      font-size: clamp(2.4rem, 8vw, 3.4rem);
+      font-family: 'Great Vibes', cursive;
+      color: var(--sunset-amber);
+      margin-bottom: 0.3rem;
+      font-weight: normal;
+      text-shadow: 0 2px 15px rgba(0, 0, 0, 0.6);
     }
+
     .sec-subheading {
       font-family: 'DM Serif Display', serif;
-      font-size: 0.82rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--sunset-amber); margin-bottom: 2.2rem;
+      font-size: 0.82rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--sunset-amber);
+      margin-bottom: 2.2rem;
     }
 
     /* MEMPELAI CARD (ORGANIC ARCH FRAME) */
     .couple-card {
-      width: 100%; background: var(--sunset-card); border: 1px solid var(--sunset-border); border-radius: 24px;
-      padding: 2.2rem 1.5rem; margin-bottom: 1.8rem; box-shadow: var(--sunset-glow); position: relative;
+      width: 100%;
+      background: var(--sunset-card);
+      border: 1px solid var(--sunset-border);
+      border-radius: 24px;
+      padding: 2.2rem 1.5rem;
+      margin-bottom: 1.8rem;
+      box-shadow: var(--sunset-glow);
+      position: relative;
       transition: transform 0.4s ease, border-color 0.4s ease;
     }
-    .couple-card:hover { transform: translateY(-4px); border-color: var(--sunset-border-bright); }
-    .couple-photo-wrap {
-      width: 155px; height: 200px; margin: 0 auto 1.3rem; border-radius: 100px 100px 20px 20px;
-      padding: 5px; border: 2px solid var(--sunset-amber); overflow: hidden;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+
+    .couple-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--sunset-border-bright);
     }
-    .couple-photo-wrap img { width: 100%; height: 100%; object-fit: cover; border-radius: 94px 94px 15px 15px; }
-    .couple-name { font-size: 1.7rem; color: var(--sunset-sand); margin-bottom: 0.4rem; font-family: 'DM Serif Display', serif; }
-    .couple-parents { font-family: 'Playfair Display', serif; font-size: 0.84rem; color: rgba(251,238,230,0.85); line-height: 1.6; font-style: italic; }
+
+    .couple-photo-wrap {
+      width: 155px;
+      height: 200px;
+      margin: 0 auto 1.3rem;
+      border-radius: 100px 100px 20px 20px;
+      padding: 5px;
+      border: 2px solid var(--sunset-amber);
+      overflow: hidden;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+    }
+
+    .couple-photo-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 94px 94px 15px 15px;
+    }
+
+    .couple-name {
+      font-size: 1.7rem;
+      color: var(--sunset-sand);
+      margin-bottom: 0.4rem;
+      font-family: 'DM Serif Display', serif;
+    }
+
+    .couple-parents {
+      font-family: 'Playfair Display', serif;
+      font-size: 0.84rem;
+      color: rgba(251, 238, 230, 0.85);
+      line-height: 1.6;
+      font-style: italic;
+    }
+
     .couple-ig {
-      display: inline-flex; align-items: center; gap: 0.4rem; margin-top: 0.8rem;
-      font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.78rem; color: var(--sunset-amber); text-decoration: none; font-weight: 600;
-      padding: 0.4rem 1rem; border-radius: 50px; background: rgba(229,152,102,0.1); border: 1px solid var(--sunset-border);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-top: 0.8rem;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.78rem;
+      color: var(--sunset-amber);
+      text-decoration: none;
+      font-weight: 600;
+      padding: 0.4rem 1rem;
+      border-radius: 50px;
+      background: rgba(229, 152, 102, 0.1);
+      border: 1px solid var(--sunset-border);
     }
 
     /* COUNTDOWN */
-    .countdown-grid { display: flex; justify-content: center; gap: 0.8rem; margin: 1.8rem 0 1.2rem; }
-    .countdown-cell {
-      background: var(--sunset-card); border: 1px solid var(--sunset-border); border-radius: 14px;
-      padding: 0.85rem; min-width: 68px; text-align: center; box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+    .countdown-grid {
+      display: flex;
+      justify-content: center;
+      gap: 0.8rem;
+      margin: 1.8rem 0 1.2rem;
     }
-    .countdown-val { font-size: 1.7rem; font-weight: 700; font-family: 'DM Serif Display', serif; color: var(--sunset-amber); line-height: 1; }
-    .countdown-lbl { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.15em; color: rgba(251,238,230,0.7); margin-top: 0.3rem; font-weight: 500; }
+
+    .countdown-cell {
+      background: var(--sunset-card);
+      border: 1px solid var(--sunset-border);
+      border-radius: 14px;
+      padding: 0.85rem;
+      min-width: 68px;
+      text-align: center;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .countdown-val {
+      font-size: 1.7rem;
+      font-weight: 700;
+      font-family: 'DM Serif Display', serif;
+      color: var(--sunset-amber);
+      line-height: 1;
+    }
+
+    .countdown-lbl {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: rgba(251, 238, 230, 0.7);
+      margin-top: 0.3rem;
+      font-weight: 500;
+    }
 
     .btn-cal {
-      display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.8rem 2.2rem;
-      border: 1px solid var(--sunset-amber); border-radius: 50px; color: var(--sunset-sand);
-      font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
-      text-decoration: none; transition: all 0.3s; background: rgba(38,22,16,0.6);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.8rem 2.2rem;
+      border: 1px solid var(--sunset-amber);
+      border-radius: 50px;
+      color: var(--sunset-sand);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      text-decoration: none;
+      transition: all 0.3s;
+      background: rgba(38, 22, 16, 0.6);
     }
-    .btn-cal:hover { background: var(--sunset-amber); color: #190e0a; transform: translateY(-2px); }
+
+    .btn-cal:hover {
+      background: var(--sunset-amber);
+      color: #190e0a;
+      transform: translateY(-2px);
+    }
 
     /* EVENTS UNIFIED CONTAINER STYLING */
-    .events-unified-container { display: flex; flex-direction: column; gap: 1.5rem; width: 100%; max-width: 440px; }
-    .events-sessions-stack { display: flex; flex-direction: column; gap: 1.2rem; width: 100%; }
+    .events-unified-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      width: 100%;
+      max-width: 440px;
+    }
+
+    .events-sessions-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+      width: 100%;
+    }
+
     .event-block-item {
-      background: var(--sunset-card); border: 1px solid var(--sunset-border); border-radius: 18px;
-      padding: 1.8rem 1.4rem; text-align: center; box-shadow: var(--sunset-glow);
+      background: var(--sunset-card);
+      border: 1px solid var(--sunset-border);
+      border-radius: 18px;
+      padding: 1.8rem 1.4rem;
+      text-align: center;
+      box-shadow: var(--sunset-glow);
     }
-    .ev-cat { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--sunset-amber); font-weight: 600; margin-bottom: 0.3rem; display: block; }
-    .ev-name { font-size: 1.5rem; color: var(--sunset-amber); font-family: 'DM Serif Display', serif; margin-bottom: 0.4rem; }
-    .ev-time { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.85rem; color: rgba(251,238,230,0.9); font-weight: 500; }
-    
+
+    .ev-cat {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.65rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--sunset-amber);
+      font-weight: 600;
+      margin-bottom: 0.3rem;
+      display: block;
+    }
+
+    .ev-name {
+      font-size: 1.5rem;
+      color: var(--sunset-amber);
+      font-family: 'DM Serif Display', serif;
+      margin-bottom: 0.4rem;
+    }
+
+    .ev-time {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.85rem;
+      color: rgba(251, 238, 230, 0.9);
+      font-weight: 500;
+    }
+
     .event-unified-venue-card {
-      background: var(--sunset-card); border: 1px solid var(--sunset-border); border-radius: 18px;
-      padding: 1.8rem 1.4rem; text-align: center; box-shadow: var(--sunset-glow);
+      background: var(--sunset-card);
+      border: 1px solid var(--sunset-border);
+      border-radius: 18px;
+      padding: 1.8rem 1.4rem;
+      text-align: center;
+      box-shadow: var(--sunset-glow);
     }
-    .venue-card-lbl { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--sunset-amber); font-weight: 600; margin-bottom: 0.4rem; display: block; }
-    .ev-venue-unified { font-size: 1.4rem; color: #ffffff; font-family: 'DM Serif Display', serif; margin-bottom: 0.4rem; }
-    .ev-address-unified { font-family: 'Playfair Display', serif; font-size: 0.82rem; color: rgba(251,238,230,0.8); line-height: 1.6; margin-bottom: 1.2rem; font-style: italic; }
+
+    .venue-card-lbl {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.65rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--sunset-amber);
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+      display: block;
+    }
+
+    .ev-venue-unified {
+      font-size: 1.4rem;
+      color: #ffffff;
+      font-family: 'DM Serif Display', serif;
+      margin-bottom: 0.4rem;
+    }
+
+    .ev-address-unified {
+      font-family: 'Playfair Display', serif;
+      font-size: 0.82rem;
+      color: rgba(251, 238, 230, 0.8);
+      line-height: 1.6;
+      margin-bottom: 1.2rem;
+      font-style: italic;
+    }
+
     .btn-map-outline {
-      display: inline-flex; align-items: center; justify-content: center; padding: 0.8rem 2.2rem;
-      border: 1px solid var(--sunset-amber); border-radius: 50px; color: var(--sunset-sand);
-      font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase;
-      text-decoration: none; transition: all 0.3s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.8rem 2.2rem;
+      border: 1px solid var(--sunset-amber);
+      border-radius: 50px;
+      color: var(--sunset-sand);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      text-decoration: none;
+      transition: all 0.3s;
     }
-    .btn-map-outline:hover { background: var(--sunset-amber); color: #190e0a; }
+
+    .btn-map-outline:hover {
+      background: var(--sunset-amber);
+      color: #190e0a;
+    }
 
     /* JOURNEY / STORY STYLING */
     .journey-card-container {
-      background: var(--sunset-card); border: 1px solid var(--sunset-border); border-radius: 18px;
-      padding: 2rem 1.5rem; text-align: left; box-shadow: var(--sunset-glow); width: 100%; max-width: 440px;
+      background: var(--sunset-card);
+      border: 1px solid var(--sunset-border);
+      border-radius: 18px;
+      padding: 2rem 1.5rem;
+      text-align: left;
+      box-shadow: var(--sunset-glow);
+      width: 100%;
+      max-width: 440px;
     }
-    .journey-chapters { display: flex; flex-direction: column; gap: 1.5rem; }
-    .story-chapter-block { padding-bottom: 0.8rem; border-bottom: 1px dashed rgba(229,152,102,0.25); }
-    .story-chapter-block:last-child { border-bottom: none; }
-    .sc-label { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.65rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--sunset-amber); font-weight: 600; display: block; margin-bottom: 0.2rem; }
-    .sc-title { font-size: 1.25rem; color: var(--sunset-sand); font-family: 'DM Serif Display', serif; margin-bottom: 0.4rem; }
-    .sc-desc { font-family: 'Playfair Display', serif; font-size: 0.84rem; color: rgba(251,238,230,0.85); line-height: 1.7; font-style: italic; }
-    .journey-footer { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem; }
-    .jf-line { flex: 1; height: 1px; background: rgba(229,152,102,0.3); }
-    .jf-signature { font-family: 'Great Vibes', cursive; font-size: 2rem; color: var(--sunset-amber); }
+
+    .journey-chapters {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .story-chapter-block {
+      padding-bottom: 0.8rem;
+      border-bottom: 1px dashed rgba(229, 152, 102, 0.25);
+    }
+
+    .story-chapter-block:last-child {
+      border-bottom: none;
+    }
+
+    .sc-label {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.65rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--sunset-amber);
+      font-weight: 600;
+      display: block;
+      margin-bottom: 0.2rem;
+    }
+
+    .sc-title {
+      font-size: 1.25rem;
+      color: var(--sunset-sand);
+      font-family: 'DM Serif Display', serif;
+      margin-bottom: 0.4rem;
+    }
+
+    .sc-desc {
+      font-family: 'Playfair Display', serif;
+      font-size: 0.84rem;
+      color: rgba(251, 238, 230, 0.85);
+      line-height: 1.7;
+      font-style: italic;
+    }
+
+    .journey-footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .jf-line {
+      flex: 1;
+      height: 1px;
+      background: rgba(229, 152, 102, 0.3);
+    }
+
+    .jf-signature {
+      font-family: 'Great Vibes', cursive;
+      font-size: 2rem;
+      color: var(--sunset-amber);
+    }
 
     /* GALLERY PUZZLE GRID & LIGHTBOX */
 
-    .btn-show-gallery, .btn-outline-box {
-      display: inline-flex; align-items: center; justify-content: center; padding: 0.8rem 2.2rem;
-      border: 1px solid var(--sunset-amber); border-radius: 50px; color: var(--sunset-sand);
-      font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase;
-      cursor: pointer; background: transparent; transition: all 0.3s;
+    .btn-show-gallery,
+    .btn-outline-box {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.8rem 2.2rem;
+      border: 1px solid var(--sunset-amber);
+      border-radius: 50px;
+      color: var(--sunset-sand);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      cursor: pointer;
+      background: transparent;
+      transition: all 0.3s;
     }
-    .btn-show-gallery:hover, .btn-outline-box:hover { background: var(--sunset-amber); color: #190e0a; }
 
-    .gallery-modal-backdrop, 
-    .gallery-modal-backdrop.open, 
+    .btn-show-gallery:hover,
+    .btn-outline-box:hover {
+      background: var(--sunset-amber);
+      color: #190e0a;
+    }
 
-    .gallery-modal-close, 
+    .gallery-modal-backdrop,
+    .gallery-modal-backdrop.open,
+
+    .gallery-modal-close,
 
     /* DIGITAL GIFT & BANK CARDS */
     .bank-card {
-      background: var(--sunset-card); border: 1px solid var(--sunset-border); border-radius: 18px;
-      padding: 1.5rem; margin-bottom: 1rem; text-align: left; box-shadow: var(--sunset-glow); width: 100%; max-width: 440px;
+      background: var(--sunset-card);
+      border: 1px solid var(--sunset-border);
+      border-radius: 18px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      text-align: left;
+      box-shadow: var(--sunset-glow);
+      width: 100%;
+      max-width: 440px;
     }
-    .bank-label { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.85rem; font-weight: 700; color: var(--sunset-amber); display: block; margin-bottom: 0.2rem; }
-    .bank-owner { font-family: 'Playfair Display', serif; font-size: 0.78rem; color: rgba(251,238,230,0.75); display: block; margin-bottom: 0.6rem; font-style: italic; }
+
+    .bank-label {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--sunset-amber);
+      display: block;
+      margin-bottom: 0.2rem;
+    }
+
+    .bank-owner {
+      font-family: 'Playfair Display', serif;
+      font-size: 0.78rem;
+      color: rgba(251, 238, 230, 0.75);
+      display: block;
+      margin-bottom: 0.6rem;
+      font-style: italic;
+    }
+
     .bank-row {
-      display: flex; align-items: center; justify-content: space-between;
-      background: rgba(25,14,10,0.85); border: 1px solid var(--sunset-border); border-radius: 10px; padding: 0.7rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(25, 14, 10, 0.85);
+      border: 1px solid var(--sunset-border);
+      border-radius: 10px;
+      padding: 0.7rem 1rem;
     }
-    .bank-number { font-family: monospace; font-size: 1.05rem; color: #ffffff; letter-spacing: 0.08em; }
+
+    .bank-number {
+      font-family: monospace;
+      font-size: 1.05rem;
+      color: #ffffff;
+      letter-spacing: 0.08em;
+    }
+
     .btn-copy {
-      background: var(--sunset-amber); color: #190e0a; border: none; padding: 0.45rem 1rem;
-      border-radius: 6px; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 0.7rem; cursor: pointer; letter-spacing: 0.1em; text-transform: uppercase;
+      background: var(--sunset-amber);
+      color: #190e0a;
+      border: none;
+      padding: 0.45rem 1rem;
+      border-radius: 6px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 700;
+      font-size: 0.7rem;
+      cursor: pointer;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
     }
 
     /* WISHES & RSVP FORM */
-    .rsvp-form-wrap { text-align: left; margin-top: 1.5rem; width: 100%; max-width: 440px; }
-    .form-row { margin-bottom: 1rem; }
-    .form-lbl { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.15em; color: var(--sunset-amber); display: block; margin-bottom: 0.3rem; }
-    .form-in, .form-sel, .form-ta {
-      width: 100%; padding: 0.8rem 1rem; background: rgba(25,14,10,0.85); border: 1px solid var(--sunset-border);
-      border-radius: 10px; color: #ffffff; font-size: 0.85rem; outline: none; font-family: 'Plus Jakarta Sans', sans-serif;
+    .rsvp-form-wrap {
+      text-align: left;
+      margin-top: 1.5rem;
+      width: 100%;
+      max-width: 440px;
     }
+
+    .form-row {
+      margin-bottom: 1rem;
+    }
+
+    .form-lbl {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--sunset-amber);
+      display: block;
+      margin-bottom: 0.3rem;
+    }
+
+    .form-in,
+    .form-sel,
+    .form-ta {
+      width: 100%;
+      padding: 0.8rem 1rem;
+      background: rgba(25, 14, 10, 0.85);
+      border: 1px solid var(--sunset-border);
+      border-radius: 10px;
+      color: #ffffff;
+      font-size: 0.85rem;
+      outline: none;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
     .btn-rsvp-submit {
-      width: 100%; padding: 1rem; background: linear-gradient(90deg, #c46849 0%, #e59866 50%, #c46849 100%);
-      color: #ffffff; border: none; border-radius: 50px; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 0.8rem;
-      letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; transition: all 0.3s;
+      width: 100%;
+      padding: 1rem;
+      background: linear-gradient(90deg, #c46849 0%, #e59866 50%, #c46849 100%);
+      color: #ffffff;
+      border: none;
+      border-radius: 50px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 700;
+      font-size: 0.8rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.3s;
     }
-    .wishes-list { margin-top: 1.5rem; max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.9rem; width: 100%; max-width: 440px; }
+
+    .wishes-list {
+      margin-top: 1.5rem;
+      max-height: 320px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.9rem;
+      width: 100%;
+      max-width: 440px;
+    }
+
     .wish-item {
-      padding: 1.1rem; background: var(--sunset-card); border: 1px solid var(--sunset-border);
-      border-radius: 14px; text-align: left;
+      padding: 1.1rem;
+      background: var(--sunset-card);
+      border: 1px solid var(--sunset-border);
+      border-radius: 14px;
+      text-align: left;
     }
-    .wish-name { font-family: 'DM Serif Display', serif; font-weight: 600; font-size: 0.9rem; color: var(--sunset-amber); }
-    .wish-msg { font-size: 0.82rem; color: rgba(251,238,230,0.9); line-height: 1.6; margin-top: 0.3rem; font-style: italic; font-family: 'Playfair Display', serif; }
+
+    .wish-name {
+      font-family: 'DM Serif Display', serif;
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: var(--sunset-amber);
+    }
+
+    .wish-msg {
+      font-size: 0.82rem;
+      color: rgba(251, 238, 230, 0.9);
+      line-height: 1.6;
+      margin-top: 0.3rem;
+      font-style: italic;
+      font-family: 'Playfair Display', serif;
+    }
 
     /* QR PASS CARD */
     .access-pass-card {
-      background: var(--sunset-card); border: 1px solid var(--sunset-border); border-radius: 24px;
-      padding: 2.4rem 1.5rem; text-align: center; box-shadow: var(--sunset-glow); width: 100%; max-width: 440px;
+      background: var(--sunset-card);
+      border: 1px solid var(--sunset-border);
+      border-radius: 24px;
+      padding: 2.4rem 1.5rem;
+      text-align: center;
+      box-shadow: var(--sunset-glow);
+      width: 100%;
+      max-width: 440px;
     }
-    .pass-tagline { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--sunset-amber); display: block; margin-bottom: 0.4rem; }
-    .pass-names { font-size: 2rem; color: var(--sunset-amber); font-family: 'Great Vibes', cursive; margin-bottom: 0.2rem; }
-    .pass-qr-wrapper { background: #ffffff; padding: 14px; display: inline-block; border-radius: 14px; margin: 1.2rem 0; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
-    .pass-guest-name { font-size: 1.35rem; color: #ffffff; font-family: 'DM Serif Display', serif; }
+
+    .pass-tagline {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.65rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--sunset-amber);
+      display: block;
+      margin-bottom: 0.4rem;
+    }
+
+    .pass-names {
+      font-size: 2rem;
+      color: var(--sunset-amber);
+      font-family: 'Great Vibes', cursive;
+      margin-bottom: 0.2rem;
+    }
+
+    .pass-qr-wrapper {
+      background: #ffffff;
+      padding: 14px;
+      display: inline-block;
+      border-radius: 14px;
+      margin: 1.2rem 0;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    }
+
+    .pass-guest-name {
+      font-size: 1.35rem;
+      color: #ffffff;
+      font-family: 'DM Serif Display', serif;
+    }
 
     /* DOCK */
     .bottom-dock {
-      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 100;
-      background: rgba(38, 22, 16, 0.95); border: 1px solid var(--sunset-border); border-radius: 50px;
-      padding: 0.5rem 1.2rem; display: flex; gap: 1.4rem; backdrop-filter: blur(15px);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.6); max-width: 440px; width: calc(100% - 30px); justify-content: space-around;
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+      background: rgba(38, 22, 16, 0.95);
+      border: 1px solid var(--sunset-border);
+      border-radius: 50px;
+      padding: 0.5rem 1.2rem;
+      display: flex;
+      gap: 1.4rem;
+      backdrop-filter: blur(15px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      max-width: 440px;
+      width: calc(100% - 30px);
+      justify-content: space-around;
     }
-    .dock-btn { color: rgba(251,238,230,0.7); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.65rem; text-decoration: none; display: flex; flex-direction: column; align-items: center; gap: 0.2rem; }
-    .dock-btn:hover, .dock-btn.active { color: var(--sunset-amber); }
-    .dock-btn svg { width: 18px; height: 18px; fill: currentColor; }
+
+    .dock-btn {
+      color: rgba(251, 238, 230, 0.7);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.65rem;
+      text-decoration: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.2rem;
+    }
+
+    .dock-btn:hover,
+    .dock-btn.active {
+      color: var(--sunset-amber);
+    }
+
+    .dock-btn svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+    }
   </style>
 
     <script>
@@ -389,66 +1010,94 @@
     </style>
   </head>
   
+
 <body>
 
   <!-- 1. COVER OVERLAY -->
   <div id="coverOverlay" class="cover-overlay">
     <!-- SUNSET ARCH VECTOR -->
     <svg class="sunset-arch-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12 56V28C12 16.9543 20.9543 8 32 8C43.0457 8 52 16.9543 52 28V56" stroke="#e59866" stroke-width="2.5" stroke-linecap="round"/>
-      <path d="M22 56V32C22 26.4772 26.4772 22 32 22C37.5228 22 42 26.4772 42 32V56" stroke="#c46849" stroke-width="2" stroke-linecap="round"/>
-      <circle cx="32" cy="15" r="3" fill="#e59866"/>
+      <path d="M12 56V28C12 16.9543 20.9543 8 32 8C43.0457 8 52 16.9543 52 28V56" stroke="#e59866" stroke-width="2.5"
+        stroke-linecap="round" />
+      <path d="M22 56V32C22 26.4772 26.4772 22 32 22C37.5228 22 42 26.4772 42 32V56" stroke="#c46849" stroke-width="2"
+        stroke-linecap="round" />
+      <circle cx="32" cy="15" r="3" fill="#e59866" />
     </svg>
 
     <p class="cover-badge">WALIMATUL 'URSY &bull; MODERN SUNSET</p>
-    <h1 class="cover-names">Damian Alexander, M.Arch. &amp; Aurora Valerie, M.Ds.</h1>
-    
+    <h1 class="cover-names">Damian &amp; Aurora</h1>
+
     <div class="cover-guest-card">
       <p class="cover-guest-lbl">Kepada Yth. Bapak/Ibu/Saudara/i</p>
       <h3 class="cover-guest-val">Tamu Undangan</h3>
     </div>
 
     <button class="btn-buka-undangan" onclick="openInvitation()">
-      <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+      <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+        <path
+          d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
+      </svg>
       Buka Undangan
     </button>
   </div>
 
   <div class="layout-wrapper">
-    
+
     <!-- DESKTOP SIDEBAR HERO -->
     <div class="sidebar-desktop">
       <div class="sidebar-desktop-content">
-        <p class="font-sunset-sans" style="letter-spacing: 0.3em; text-transform: uppercase; color: var(--sunset-amber); font-size: 0.75rem;">WARM SUNSET CELEBRATION</p>
-        <h2 class="font-sunset-script" style="font-size: 4.8rem; color: var(--sunset-amber); margin: 0.5rem 0;">Damian Alexander, M.Arch. &amp; Aurora Valerie, M.Ds.</h2>
-        <p class="font-sunset-sans" style="letter-spacing: 0.15em; font-size: 0.85rem; color: rgba(251,238,230,0.75);">Minggu, 18 Oktober 2026</p>
+        <p class="font-sunset-sans"
+          style="letter-spacing: 0.3em; text-transform: uppercase; color: var(--sunset-amber); font-size: 0.75rem;">WARM
+          SUNSET CELEBRATION</p>
+        <h2 class="font-sunset-script" style="font-size: 4.8rem; color: var(--sunset-amber); margin: 0.5rem 0;">
+          Damian &amp; Aurora</h2>
+        <p class="font-sunset-sans" style="letter-spacing: 0.15em; font-size: 0.85rem; color: rgba(251,238,230,0.75);">
+          Minggu, 18 Oktober 2026</p>
       </div>
     </div>
 
     <!-- MAIN SCROLLABLE PANEL -->
     <main class="main-scroll-panel">
-      
+
       <!-- SEKSI 1: KUTIPAN & COUNTDOWN (100VH STANDALONE) -->
       <section id="section-quote" class="slide-section">
         <div class="sec-content-box reveal-on-scroll">
-          <span style="font-size: 2rem; color: var(--sunset-amber); display: block; margin-bottom: 0.4rem;">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</span>
+          <span style="font-size: 2rem; color: var(--sunset-amber); display: block; margin-bottom: 0.4rem;">بِسْمِ
+            اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</span>
           <span class="sec-eyebrow">WALIMATUL 'URSY</span>
           <h2 class="sec-heading" style="margin-bottom: 0.8rem;">Doa &amp; Harapan</h2>
-          <p style="font-size: 0.94rem; line-height: 1.9; color: rgba(251,238,230,0.9); max-width: 420px; margin: 0 auto; font-style: italic; font-family: 'Playfair Display', serif;">
+          <p
+            style="font-size: 0.94rem; line-height: 1.9; color: rgba(251,238,230,0.9); max-width: 420px; margin: 0 auto; font-style: italic; font-family: 'Playfair Display', serif;">
             "Underneath the warm golden sunset, two hearts find their eternal home. We celebrate the start of our forever story."
           </p>
-          <span class="font-sunset-sans" style="display: block; font-size: 0.75rem; color: var(--sunset-amber); margin-top: 0.8rem; letter-spacing: 0.25em;">A SUNSET VOW</span>
+          <span class="font-sunset-sans"
+            style="display: block; font-size: 0.75rem; color: var(--sunset-amber); margin-top: 0.8rem; letter-spacing: 0.25em;">A SUNSET VOW</span>
 
           <!-- COUNTDOWN -->
           <div class="countdown-grid">
-            <div class="countdown-cell"><div id="cDays" class="countdown-val">00</div><div class="countdown-lbl">Hari</div></div>
-            <div class="countdown-cell"><div id="cHours" class="countdown-val">00</div><div class="countdown-lbl">Jam</div></div>
-            <div class="countdown-cell"><div id="cMins" class="countdown-val">00</div><div class="countdown-lbl">Menit</div></div>
-            <div class="countdown-cell"><div id="cSecs" class="countdown-val">00</div><div class="countdown-lbl">Detik</div></div>
+            <div class="countdown-cell">
+              <div id="cDays" class="countdown-val">00</div>
+              <div class="countdown-lbl">Hari</div>
+            </div>
+            <div class="countdown-cell">
+              <div id="cHours" class="countdown-val">00</div>
+              <div class="countdown-lbl">Jam</div>
+            </div>
+            <div class="countdown-cell">
+              <div id="cMins" class="countdown-val">00</div>
+              <div class="countdown-lbl">Menit</div>
+            </div>
+            <div class="countdown-cell">
+              <div id="cSecs" class="countdown-val">00</div>
+              <div class="countdown-lbl">Detik</div>
+            </div>
           </div>
 
           <a href="https://www.google.com/calendar/render?action=TEMPLATE&text=The%20Wedding%20of%20Damian%20%26%20Aurora&dates=20261018T010000Z/20261018T140000Z&location=Tirtha%20Bridal%20Uluwatu" target="_blank" class="btn-cal">
-            <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
+            <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
+              <path
+                d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z" />
+            </svg>
             Simpan ke Google Calendar
           </a>
         </div>
@@ -851,47 +1500,14 @@
           <div class="story-circles-track-wrapper" style="overflow: hidden; width: 100%; position: relative; mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent); -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);">
             <div class="story-circles-track" style="display: flex; gap: 14px; width: max-content; margin: 0 auto; animation: luxStoryLoop 24s linear infinite;">
               
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/solaria/gallery_07.webp', 'Alumni Teknik')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/solaria/memory_02.webp', 'Sahabat SMA')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/solaria/gallery_07.webp" onerror="this.onerror=null;this.src='/demo/solaria/groom.webp';" alt="Alumni Teknik" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/solaria/memory_02.webp" onerror="this.onerror=null;this.src='/demo/solaria/gallery_02.webp';" alt="Sahabat SMA" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Alumni
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/solaria/memory_01.webp', 'Budi Santoso')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/solaria/memory_01.webp" onerror="this.onerror=null;this.src='/demo/solaria/gallery_01.webp';" alt="Budi Santoso" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Budi
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/solaria/gallery_08.webp', 'Eko & Nia')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/solaria/gallery_08.webp" onerror="this.onerror=null;this.src='/demo/solaria/bride.webp';" alt="Eko & Nia" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Eko
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/solaria/gallery_05.webp', 'Dimas Pratama')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/solaria/gallery_05.webp" onerror="this.onerror=null;this.src='/demo/solaria/cover.webp';" alt="Dimas Pratama" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Dimas
+        Sahabat
       </span>
     </div>
   
@@ -906,14 +1522,25 @@
       </span>
     </div>
   
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/solaria/memory_02.webp', 'Sahabat SMA')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/solaria/memory_01.webp', 'Budi Santoso')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/solaria/memory_02.webp" onerror="this.onerror=null;this.src='/demo/solaria/gallery_02.webp';" alt="Sahabat SMA" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/solaria/memory_01.webp" onerror="this.onerror=null;this.src='/demo/solaria/gallery_01.webp';" alt="Budi Santoso" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Sahabat
+        Budi
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/solaria/gallery_05.webp', 'Dimas Pratama')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/solaria/gallery_05.webp" onerror="this.onerror=null;this.src='/demo/solaria/cover.webp';" alt="Dimas Pratama" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Dimas
       </span>
     </div>
   
@@ -936,51 +1563,40 @@
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
         Keluarga
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/solaria/gallery_08.webp', 'Eko & Nia')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/solaria/gallery_08.webp" onerror="this.onerror=null;this.src='/demo/solaria/bride.webp';" alt="Eko & Nia" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Eko
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/solaria/gallery_07.webp', 'Alumni Teknik')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/solaria/gallery_07.webp" onerror="this.onerror=null;this.src='/demo/solaria/groom.webp';" alt="Alumni Teknik" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Alumni
       </span>
     </div>
   
               
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/solaria/gallery_07.webp', 'Alumni Teknik')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/solaria/memory_02.webp', 'Sahabat SMA')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/solaria/gallery_07.webp" onerror="this.onerror=null;this.src='/demo/solaria/groom.webp';" alt="Alumni Teknik" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/solaria/memory_02.webp" onerror="this.onerror=null;this.src='/demo/solaria/gallery_02.webp';" alt="Sahabat SMA" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Alumni
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/solaria/memory_01.webp', 'Budi Santoso')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/solaria/memory_01.webp" onerror="this.onerror=null;this.src='/demo/solaria/gallery_01.webp';" alt="Budi Santoso" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Budi
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/solaria/gallery_08.webp', 'Eko & Nia')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/solaria/gallery_08.webp" onerror="this.onerror=null;this.src='/demo/solaria/bride.webp';" alt="Eko & Nia" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Eko
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/solaria/gallery_05.webp', 'Dimas Pratama')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/solaria/gallery_05.webp" onerror="this.onerror=null;this.src='/demo/solaria/cover.webp';" alt="Dimas Pratama" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Dimas
+        Sahabat
       </span>
     </div>
   
@@ -995,14 +1611,25 @@
       </span>
     </div>
   
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/solaria/memory_02.webp', 'Sahabat SMA')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/solaria/memory_01.webp', 'Budi Santoso')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/solaria/memory_02.webp" onerror="this.onerror=null;this.src='/demo/solaria/gallery_02.webp';" alt="Sahabat SMA" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/solaria/memory_01.webp" onerror="this.onerror=null;this.src='/demo/solaria/gallery_01.webp';" alt="Budi Santoso" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Sahabat
+        Budi
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/solaria/gallery_05.webp', 'Dimas Pratama')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/solaria/gallery_05.webp" onerror="this.onerror=null;this.src='/demo/solaria/cover.webp';" alt="Dimas Pratama" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Dimas
       </span>
     </div>
   
@@ -1025,6 +1652,28 @@
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
         Keluarga
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/solaria/gallery_08.webp', 'Eko & Nia')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/solaria/gallery_08.webp" onerror="this.onerror=null;this.src='/demo/solaria/bride.webp';" alt="Eko & Nia" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Eko
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/solaria/gallery_07.webp', 'Alumni Teknik')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/solaria/gallery_07.webp" onerror="this.onerror=null;this.src='/demo/solaria/groom.webp';" alt="Alumni Teknik" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Alumni
       </span>
     </div>
   
@@ -1167,7 +1816,7 @@
       };
     </script>
   
-      
+
       <!-- SEKSI 5: BUKU TAMU & UCAPAN (100VH STANDALONE) -->
       <section id="section-wishes" class="slide-section">
         <div class="sec-content-box reveal-on-scroll">
@@ -1235,8 +1884,10 @@
 
       <!-- FOOTER -->
       <footer style="text-align: center; padding: 4rem 1.5rem; border-top: 1px solid var(--solaria-border);">
-        <h3 class="font-solaria-title" style="font-size: 2.2rem; color: #ffffff; font-weight: 300;">Damian Alexander, M.Arch. &amp; Aurora Valerie, M.Ds.</h3>
-        <p style="font-size: 0.75rem; color: rgba(255,255,255,0.7); letter-spacing: 0.2em; text-transform: uppercase; margin-top: 0.5rem;">
+        <h3 class="font-solaria-title" style="font-size: 2.2rem; color: #ffffff; font-weight: 300;">Damian &amp;
+          Aurora</h3>
+        <p
+          style="font-size: 0.75rem; color: rgba(255,255,255,0.7); letter-spacing: 0.2em; text-transform: uppercase; margin-top: 0.5rem;">
           THANK YOU FOR CELEBRATING WITH US
         </p>
       </footer>
@@ -1248,27 +1899,44 @@
   <!-- FLOATING NAVIGATION DOCK -->
   <nav class="bottom-dock">
     <a href="#section-quote" class="dock-btn">
-      <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      <svg viewBox="0 0 24 24">
+        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+      </svg>
       <span>Cover</span>
     </a>
     <a href="#section-couple" class="dock-btn">
-      <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+      <svg viewBox="0 0 24 24">
+        <path
+          d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+      </svg>
       <span>Couple</span>
     </a>
     <a href="#section-events" class="dock-btn">
-      <svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
+      <svg viewBox="0 0 24 24">
+        <path
+          d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z" />
+      </svg>
       <span>Events</span>
     </a>
     <a href="#moments" class="dock-btn">
-      <svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+      <svg viewBox="0 0 24 24">
+        <path
+          d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" />
+      </svg>
       <span>Gallery</span>
     </a>
     <a href="#section-memories" class="dock-btn">
-      <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+      <svg viewBox="0 0 24 24">
+        <path
+          d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+      </svg>
       <span>Momen</span>
     </a>
     <a href="#section-wishes" class="dock-btn">
-      <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+      <svg viewBox="0 0 24 24">
+        <path
+          d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z" />
+      </svg>
       <span>Wishes</span>
     </a>
   </nav>
@@ -1278,7 +1946,7 @@
       const cover = document.getElementById('coverOverlay');
       if (cover) cover.classList.add('opened');
       const audio = document.getElementById('weddingAudio');
-      if (audio && !window.__DISABLE_AUDIO__ && new URLSearchParams(window.location.search).get("autoplay") !== "1" && window === window.top) audio.play().catch(() => {});
+      if (audio && !window.__DISABLE_AUDIO__ && new URLSearchParams(window.location.search).get("autoplay") !== "1" && window === window.top) audio.play().catch(() => { });
       startCountdown();
       initScrollAnimations();
     }
@@ -1323,19 +1991,19 @@
   </script>
 
 
-<!-- AMSDEV PROTECTION SCRIPT -->
-<script>
-  (function() {
-    try {
-      if (window.console && console.log) {
-        console.log("%cSTOP!", "color: #ef4444; font-size: 50px; font-weight: 900; text-shadow: 2px 2px 0 #000; font-family: sans-serif;");
-        console.log("%cIni adalah properti eksklusif AMSDEV.", "color: #b5833c; font-size: 20px; font-weight: bold;");
-        console.log("%cSegala bentuk pencurian kode, scraping, atau modifikasi ilegal akan direkam. Domain saat ini: " + window.location.hostname, "font-size: 14px; color: #a8a29e;");
-      }
-    } catch(e) {}
-  })();
-</script>
-\n  
+  <!-- AMSDEV PROTECTION SCRIPT -->
+  <script>
+    (function () {
+      try {
+        if (window.console && console.log) {
+          console.log("%cSTOP!", "color: #ef4444; font-size: 50px; font-weight: 900; text-shadow: 2px 2px 0 #000; font-family: sans-serif;");
+          console.log("%cIni adalah properti eksklusif AMSDEV.", "color: #b5833c; font-size: 20px; font-weight: bold;");
+          console.log("%cSegala bentuk pencurian kode, scraping, atau modifikasi ilegal akan direkam. Domain saat ini: " + window.location.hostname, "font-size: 14px; color: #a8a29e;");
+        }
+      } catch (e) { }
+    })();
+  </script>
+  \n 
 
 <script id="luxUnifiedClientRuntime">
 
@@ -1667,4 +2335,5 @@
 
 
 </body>
+
 </html>

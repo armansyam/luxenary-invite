@@ -4,8 +4,8 @@ import { GetObjectCommand } from "@aws-sdk/client-s3";
 import fs from "fs";
 import path from "path";
 
-export async function GET(req: NextRequest, { params }: { params: { slug: string } }) {
-  const slug = params.slug;
+export async function GET(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
 
   if (STORAGE_PROVIDER === "r2" || STORAGE_PROVIDER === "s3") {
     const bucketName = process.env.S3_BUCKET_NAME;

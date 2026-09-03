@@ -75,6 +75,7 @@ export async function GET() {
       recentUsers,
       recentInvitations,
       webhookLogs,
+      customDomainOrders,
     ] = await Promise.all([
       prisma.invitation.count(),
       prisma.invitation.count({ where: { status: "PUBLISHED" } }),
@@ -168,6 +169,14 @@ export async function GET() {
         take: 10,
         orderBy: { createdAt: "desc" },
       }),
+      prisma.order.findMany({
+        where: { orderType: "CUSTOM_DOMAIN_ADDON" },
+        orderBy: { createdAt: "desc" },
+        include: {
+          user: { select: { name: true, email: true } },
+          invitation: { select: { subdomain: true, customDomain: true } }
+        }
+      }),
     ]);
 
     return NextResponse.json({
@@ -188,6 +197,7 @@ export async function GET() {
       invitations: recentInvitations,
       themes,
       logs: webhookLogs,
+      customDomainOrders,
     });
   } catch (error: any) {
     return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Failed to load admin overview" : (error.message || "Failed to load admin overview") }, { status: 500 });

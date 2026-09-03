@@ -41,6 +41,46 @@ export async function applyGalleryExtension(extensionOrderId: string): Promise<v
 }
 
 /**
+ * applyCustomDomainAddon
+ * Dipanggil setelah order CUSTOM_DOMAIN_ADDON berhasil PAID.
+ * Memasang custom domain dan menambahkan 365 hari (1 tahun) ke galleryExpiresAt.
+ */
+export async function applyCustomDomainAddon(addonOrderId: string): Promise<void> {
+  const order = await prisma.order.findUnique({
+    where: { id: addonOrderId },
+    select: {
+      orderType: true,
+      linkedOrderId: true,
+      requestedDomain: true,
+    },
+  });
+
+  if (!order || order.orderType !== "CUSTOM_DOMAIN_ADDON" || !order.linkedOrderId || !order.requestedDomain) return;
+
+  const invitation = await prisma.invitation.findUnique({
+    where: { id: order.linkedOrderId },
+    select: { id: true, galleryExpiresAt: true },
+  });
+
+  if (!invitation) return;
+
+  const now = new Date();
+  const baseDate = invitation.galleryExpiresAt && invitation.galleryExpiresAt > now
+    ? new Date(invitation.galleryExpiresAt)
+    : now;
+
+  const newExpiry = new Date(baseDate.getTime() + 365 * 24 * 60 * 60 * 1000); // 1 tahun
+
+  await prisma.invitation.update({
+    where: { id: invitation.id },
+    data: {
+      customDomain: order.requestedDomain,
+      galleryExpiresAt: newExpiry,
+    },
+  });
+}
+
+/**
  * applyUpgradePlan
  * Dipanggil setelah order UPGRADE atau GALLERY_EXTENSION berhasil PAID.
  *
@@ -74,6 +114,11 @@ export async function applyUpgradePlan(paidOrderId: string): Promise<void> {
 
   if (order.orderType === "GALLERY_EXTENSION") {
     await applyGalleryExtension(paidOrderId);
+    return;
+  }
+
+  if (order.orderType === "CUSTOM_DOMAIN_ADDON") {
+    await applyCustomDomainAddon(paidOrderId);
     return;
   }
 

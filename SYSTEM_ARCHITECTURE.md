@@ -469,6 +469,7 @@ CLIENT (auth required, role=USER):
   GET       /api/client/rsvps             → Statistik RSVP
   GET       /api/client/orders            → List order client
   POST      /api/client/memories/extend   → Buat order perpanjangan galeri (+30 hari via QRIS)
+  POST      /api/client/custom-domain/buy → Beli add-on Jasa Integrasi Custom Domain
   (Catatan WA: Route wa-link dihapus; digantikan client-side wa.me direct linking + auto-format +62)
 
 ADMIN (auth required, role=ADMIN/SUPER_ADMIN):
@@ -526,10 +527,11 @@ Model Utama:
   AdminAuditLog  → Log audit aktivitas admin
 
 Field Kritis di Order:
-  orderType       NEW | UPGRADE | GALLERY_EXTENSION
+  orderType       NEW | UPGRADE | GALLERY_EXTENSION | CUSTOM_DOMAIN_ADDON
   gatewayId       String?   ← "midtrans" | "ipaymu" | "xendit" | "tripay" | "duitku"
   gatewayTxId     String?   ← ID transaksi di sisi gateway (untuk cancel API saat switch gateway)
-  linkedOrderId   String?   ← Referensi ID order lama (saat UPGRADE) atau ID invitation (saat GALLERY_EXTENSION)
+  linkedOrderId   String?   ← Referensi ID order lama (saat UPGRADE) atau ID invitation (saat GALLERY_EXTENSION / CUSTOM_DOMAIN)
+  requestedDomain String?   ← Nama domain yang direquest oleh klien saat memesan add-on Custom Domain
 
 Field Kritis di Invitation:
   invitationSlug  @unique   ← Flat slug canonical: dimas-clarissa-030326

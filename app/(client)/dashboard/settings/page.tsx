@@ -44,6 +44,9 @@ export default function SettingsPage() {
   const [showDnsGuide, setShowDnsGuide] = useState(false);
   const [platformName, setPlatformName] = useState("");
   const [cnameTarget, setCnameTarget] = useState("invite.platform-anda.id");
+  const [showBuyModal, setShowBuyModal] = useState(false);
+  const [isDomainOwned, setIsDomainOwned] = useState(false);
+  const [customDomainPrice, setCustomDomainPrice] = useState(150000);
 
   // Real-time Subdomain Availability Checker
   useEffect(() => {
@@ -148,6 +151,7 @@ export default function SettingsPage() {
     fetch("/api/public/settings").then(r => r.json()).then(d => {
       if (d?.platformName) setPlatformName(d.platformName);
       if (d?.cnameTarget) setCnameTarget(d.cnameTarget);
+      if (d?.addon_custom_domain_price) setCustomDomainPrice(Number(d.addon_custom_domain_price) || 150000);
     }).catch(() => {});
   }, []);
 
@@ -706,54 +710,98 @@ export default function SettingsPage() {
         {/* Input domain */}
         <div className="space-y-2">
           <label className="block text-[11px] font-bold text-stone-700">Domain Anda</label>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={customDomain}
-              onChange={(e) => {
-                setCustomDomain(e.target.value.toLowerCase().replace(/\s/g, ""));
-                setCustomDomainError(null);
-                setCustomDomainSuccess(false);
-              }}
-              placeholder="contoh: undangan-kami.com"
-              className="flex-1 py-2.5 px-4 rounded-xl border border-stone-200 bg-stone-50 text-sm font-mono focus:outline-none focus:border-amber-700 focus:ring-2 focus:ring-amber-700/20 transition"
-            />
-            <button
-              type="button"
-              disabled={savingCustomDomain || !customDomain || !invitation?.id}
-              onClick={async () => {
-                if (!customDomain || !invitation?.id) return;
-                const clean = customDomain.replace(/^https?:\/\//, "").replace(/\/$/, "").trim();
-                if (!clean.includes(".")) {
-                  setCustomDomainError("Format domain tidak valid. Contoh: undangan-kami.com");
-                  return;
-                }
-                setSavingCustomDomain(true);
-                setCustomDomainError(null);
-                try {
-                  const res = await fetch(`/api/client/invitations/${invitation.id}`, {
-                    method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ ...invitation, customDomain: clean }),
-                  });
-                  if (res.ok) {
-                    setCustomDomainSuccess(true);
-                    setInvitation((prev: any) => ({ ...prev, customDomain: clean }));
-                    setTimeout(() => setCustomDomainSuccess(false), 3000);
-                  } else {
-                    const err = await res.json();
-                    setCustomDomainError(err.error || "Gagal menyimpan domain.");
-                  }
-                } catch {
-                  setCustomDomainError("Terjadi kesalahan jaringan.");
-                } finally {
-                  setSavingCustomDomain(false);
-                }
-              }}
-              className="px-5 py-2.5 bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-xl text-xs transition cursor-pointer disabled:opacity-50"
-            >
-              {savingCustomDomain ? "Menyimpan..." : "Simpan"}
-            </button>
+          <div className="space-y-3">
+            {!showBuyModal ? (
+              <div className="p-4 rounded-xl border border-amber-200 bg-amber-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h4 className="text-xs font-bold text-amber-900">Integrasikan Domain Pribadi Anda</h4>
+                  <p className="text-[11px] text-amber-700/80 mt-1">Punya domain sendiri dari Niagahoster/lainnya? Kami bantu pasangkan ke undangan ini (Gratis SSL & Perpanjangan Aktif 1 Tahun). Biaya Jasa Integrasi: {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(customDomainPrice)}.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowBuyModal(true)}
+                  className="px-4 py-2 bg-amber-800 hover:bg-amber-900 text-white font-bold rounded-xl text-xs transition whitespace-nowrap"
+                >
+                  Pesan Jasa Integrasi
+                </button>
+              </div>
+            ) : (
+              <div className="p-4 rounded-xl border border-stone-200 bg-stone-50 space-y-3">
+                <div className="bg-red-50 p-3 rounded-lg border border-red-200 mb-2">
+                  <h5 className="text-red-800 font-bold text-xs mb-1 flex items-center gap-1">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    PENTING: BUKAN PENDAFTARAN DOMAIN BARU
+                  </h5>
+                  <p className="text-red-700 text-[11px] leading-relaxed">
+                    Sistem <b>TIDAK</b> akan mendaftarkan domain baru untuk Anda. Kami hanya menyambungkan domain yang <b>SUDAH ANDA BELI SENDIRI</b> dari registrar (Niagahoster, Rumahweb, dll) ke server undangan ini. Jangan memesan layanan ini jika Anda belum memiliki domain.
+                  </p>
+                </div>
+                
+                <label className="block text-[11px] font-bold text-stone-700">Masukkan Nama Domain Anda (Contoh: budi-ani.com)</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={customDomain}
+                    onChange={(e) => {
+                      setCustomDomain(e.target.value.toLowerCase().replace(/\s/g, ""));
+                      setCustomDomainError(null);
+                    }}
+                    placeholder="contoh: undangan-kami.com"
+                    className="flex-1 py-2.5 px-4 rounded-xl border border-stone-200 bg-white text-sm font-mono focus:outline-none focus:border-amber-700 focus:ring-2 focus:ring-amber-700/20 transition"
+                  />
+                </div>
+                
+                <div className="flex items-start gap-2 mt-2 pt-2 border-t border-stone-200">
+                  <input 
+                    type="checkbox" 
+                    id="confirm-domain" 
+                    className="mt-0.5 rounded text-amber-700 focus:ring-amber-700 cursor-pointer"
+                    checked={isDomainOwned}
+                    onChange={(e) => setIsDomainOwned(e.target.checked)}
+                  />
+                  <label htmlFor="confirm-domain" className="text-[11px] text-stone-600 leading-snug cursor-pointer select-none">
+                    Saya menyatakan bahwa saya <b>TELAH MEMBELI & MEMILIKI</b> nama domain di atas secara sah. Saya memahami bahwa dana yang telah dibayarkan untuk Jasa Integrasi ini tidak dapat di-refund jika ternyata domain belum dibeli.
+                  </label>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <button
+                    type="button"
+                    disabled={savingCustomDomain || !customDomain || !invitation?.id || !isDomainOwned}
+                    onClick={async () => {
+                      if (!isDomainOwned) {
+                        setCustomDomainError("Anda harus mencentang persetujuan kepemilikan domain.");
+                        return;
+                      }
+                      setSavingCustomDomain(true);
+                      setCustomDomainError(null);
+                      try {
+                        const response = await fetch("/api/client/custom-domain/buy", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            invitationId: invitation.id,
+                            requestedDomain: customDomain
+                          })
+                        });
+                        const resData = await response.json();
+                        if (response.ok && resData.paymentUrl) {
+                          window.location.href = resData.paymentUrl;
+                        } else {
+                          setCustomDomainError(resData.error || "Gagal membuat invoice");
+                        }
+                      } catch (err: any) {
+                        setCustomDomainError(err.message || "Terjadi kesalahan jaringan");
+                      }
+                      setSavingCustomDomain(false);
+                    }}
+                    className={`px-4 py-2 bg-amber-800 text-white font-bold rounded-xl text-xs whitespace-nowrap transition flex items-center justify-center min-w-[120px] ${(!customDomain || !isDomainOwned) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-amber-900'}`}
+                  >
+                    {savingCustomDomain ? <span className="animate-spin mr-2">⏳</span> : "Bayar Jasa"}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {customDomainError && (

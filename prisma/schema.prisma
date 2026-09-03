@@ -76,6 +76,7 @@ model Order {
   upgradedFromPlan  PlanType? // Tier asal sebelum upgrade (null jika NEW)
   targetPlanType    PlanType? // Tier tujuan upgrade (null jika NEW)
   linkedOrderId     String? // ID order lama yang di-upgrade
+  requestedDomain   String? // Custom domain yang ingin dibeli/diintegrasikan
   paymentMethod     String?     @default("GATEWAY") // GATEWAY | MANUAL_TRANSFER
   paymentGatewayRef String?
   // Gateway tracking — fondasi dynamic gateway switching
@@ -337,6 +338,7 @@ enum OrderType {
   NEW
   UPGRADE
   GALLERY_EXTENSION
+  CUSTOM_DOMAIN_ADDON
 }
 
 enum InvitationStatus {

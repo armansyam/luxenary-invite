@@ -68,6 +68,7 @@ Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model 
 7. HARI H & PASCA ACARA
    - Tamu scan QR → Receptionist check-in (PIN-protected)
    - Tamu bagikan foto → /sharemoment (upload ke R2/Local)
+   - Klien beli Add-on Custom Domain via Settings → /api/client/custom-domain/buy
    - Pasca Acara (H+7): Dialihkan ke Galeri Momen (/memories)
    - Download koleksi foto ZIP + Perpanjang Galeri (+30 Hari via QRIS)
 
@@ -99,6 +100,9 @@ Format Canonical Flat Slug (permanen):
 
 Format Portofolio (HTML statis terisolasi):
   https://luxenary.id/portfolio/dimas-clarissa-030326
+
+Format Custom Domain (SaaS Add-on):
+  https://dimas-clarissa.com (Membutuhkan resolve-custom-domain dan konfigurasi Nginx Admin)
 
 Sub-routes publik:
   /dimas-clarissa-030326/memories     → Galeri foto tamu (real-time SSE)

@@ -58,6 +58,15 @@ const tabs = [
     ),
   },
   {
+    id: "custom_domains",
+    label: "Custom Domain",
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+      </svg>
+    ),
+  },
+  {
     id: "themes",
     label: "Tema",
     icon: (
@@ -303,6 +312,7 @@ export default function AdminPage() {
   const [invitations, setInvitations] = useState<any[]>([]);
   const [themes, setThemes] = useState<any[]>([]);
   const [logs, setLogs] = useState<any[]>([]);
+  const [customDomainOrders, setCustomDomainOrders] = useState<any[]>([]);
 
   // Settings state
   const [settingsMap, setSettingsMap] = useState<Record<string, string>>({});
@@ -439,6 +449,7 @@ export default function AdminPage() {
           setInvitations(data.invitations || []);
           setThemes(data.themes || []);
           setLogs(data.logs || []);
+          setCustomDomainOrders(data.customDomainOrders || []);
         }
         setLoading(false);
       })
@@ -2357,6 +2368,101 @@ export default function AdminPage() {
                         );
                       })
                     )}
+                  </div>
+                </div>
+              )}
+
+              {/* ── Custom Domain Management ── */}
+              {activeTab === "custom_domains" && (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between flex-wrap gap-3">
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-900">Custom Domain</h2>
+                      <p className="text-sm text-gray-500 mt-0.5">Pantau pesanan add-on Custom Domain dari klien dan status penyelesaiannya.</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-sm whitespace-nowrap">
+                        <thead>
+                          <tr className="bg-gray-50/50 border-b border-gray-200">
+                            <th className="py-4 px-6 font-semibold text-gray-900">Klien</th>
+                            <th className="py-4 px-6 font-semibold text-gray-900">Undangan (Asli)</th>
+                            <th className="py-4 px-6 font-semibold text-gray-900">Domain Diminta</th>
+                            <th className="py-4 px-6 font-semibold text-gray-900">Pembayaran</th>
+                            <th className="py-4 px-6 font-semibold text-gray-900">Status Terhubung</th>
+                            <th className="py-4 px-6 font-semibold text-gray-900">Aksi (Admin)</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {customDomainOrders.length === 0 ? (
+                            <tr>
+                              <td colSpan={6} className="py-8 text-center text-gray-500">Belum ada pesanan Custom Domain.</td>
+                            </tr>
+                          ) : (
+                            customDomainOrders.map((ord: any) => {
+                              const isPaid = ord.status === "PAID";
+                              const isConnected = ord.invitation?.customDomain === ord.requestedDomain;
+                              return (
+                                <tr key={ord.id} className="hover:bg-gray-50/50 transition">
+                                  <td className="py-4 px-6">
+                                    <div className="font-semibold text-gray-900">{ord.user?.name || "Klien Terhapus"}</div>
+                                    <div className="text-xs text-gray-500">{ord.user?.email}</div>
+                                  </td>
+                                  <td className="py-4 px-6 text-gray-600 font-mono text-xs">
+                                    {ord.invitation?.subdomain ? `https://${ord.invitation.subdomain}.luxenary.id` : "-"}
+                                  </td>
+                                  <td className="py-4 px-6">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-bold text-gray-900">{ord.requestedDomain || "-"}</span>
+                                      {ord.requestedDomain && (
+                                        <button
+                                          type="button"
+                                          title="Copy Domain"
+                                          onClick={() => {
+                                            navigator.clipboard.writeText(ord.requestedDomain);
+                                            alert(`Domain ${ord.requestedDomain} tersalin!`);
+                                          }}
+                                          className="p-1 hover:bg-gray-200 rounded text-gray-500 transition"
+                                        >
+                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                                        </button>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="py-4 px-6">
+                                    <Badge status={ord.status} />
+                                  </td>
+                                  <td className="py-4 px-6">
+                                    {isConnected ? (
+                                      <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-lg">Terhubung</span>
+                                    ) : (
+                                      <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs font-bold rounded-lg">Belum Terhubung</span>
+                                    )}
+                                  </td>
+                                  <td className="py-4 px-6 text-xs font-medium">
+                                    {!isPaid ? (
+                                      <span className="text-amber-600">Menunggu Lunas</span>
+                                    ) : isConnected ? (
+                                      <span className="text-emerald-600 flex items-center gap-1">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/></svg>
+                                        Selesai
+                                      </span>
+                                    ) : (
+                                      <div className="flex flex-col gap-1 text-rose-600 font-bold">
+                                        <span>Menunggu Konfigurasi SSL</span>
+                                        <span className="text-[10px] text-gray-500 font-normal">Buat config Nginx & reload</span>
+                                      </div>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
               )}
