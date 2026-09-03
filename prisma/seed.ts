@@ -83,16 +83,19 @@ async function main() {
     })
   }
 
-  // Create admin user (if not exists)
+  // Create initial Super Admin (if not exists)
   const adminEmail = 'admin@luxenary.com'
-  const existingAdmin = await prisma.user.findUnique({ where: { email: adminEmail } })
+  const existingAdmin = await prisma.admin.findUnique({ where: { email: adminEmail } })
   if (!existingAdmin) {
-    await prisma.user.create({
+    // Generate bcrypt hash for 'admin123'
+    const passwordHash = await bcrypt.hash('admin123', 10);
+    await prisma.admin.create({
       data: {
+        username: 'admin',
         email: adminEmail,
-        name: 'Admin User',
-        role: 'ADMIN',
-        googleId: 'admin-' + Math.random().toString(36).substring(2, 10),
+        name: 'Super Admin',
+        role: 'SUPER_ADMIN',
+        passwordHash,
       },
     })
   }
