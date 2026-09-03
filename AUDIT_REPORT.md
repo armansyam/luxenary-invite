@@ -1,6 +1,6 @@
 # LAPORAN HASIL AUDIT TEKNIS PRA-DEPLOYMENT (PRE-DEPLOYMENT AUDIT REPORT)
 **Proyek:** Luxenary Invite — Platform Undangan Pernikahan Digital Multi-Tenant  
-**Tanggal Audit:** 3 September 2026  
+**Tanggal Audit:** 3 September 2026 (Revisi Analisis Mendalam)
 **Status Evaluasi:** Menunggu Perbaikan Pra-Deploy (*Conditional Pass with Actionable Blockers*)  
 **Pemeriksa:** Antigravity AI Engine (Verifikasi Empiris Tanpa Asumsi / Zero-Assertion Protocol)  
 
@@ -29,7 +29,7 @@
 
 > [!WARNING]
 > **PENTING SEBELUM DEPLOYMENT KE PRODUKSI:**  
-> Aplikasi siap pakai secara fungsionalitas kode, namun **BELUM AMAN** untuk langsung dieksekusi via `deploy.sh` di server produksi baru sebelum **Temuan Kritis #1** (Migrasi DB) dan **Temuan Kritis #2** (Secret Key di deploy.sh) diselesaikan.
+> Aplikasi siap pakai secara fungsionalitas kode, namun **BELUM AMAN** untuk langsung dieksekusi via `deploy.sh` di server produksi baru sebelum **4 Temuan Kritis (P0)** diselesaikan.
 
 ---
 
@@ -56,6 +56,7 @@
 
 ### 2.3. Penyimpanan Data Hibrida & Static HTML Baking
 - **Dual-Storage Engine:** Mendukung `STORAGE_PROVIDER="local"` (disimpan di `public/uploads/`) dan `STORAGE_PROVIDER="r2"` atau `"s3"` (AWS S3 SDK Client).
+- **Deteksi Otomatis Magic Bytes:** Upload file tidak mempercayai `mimeType` dari klien; sistem memvalidasi *header* biner asli menggunakan *magic bytes* (JPEG/PNG/WebP/GIF) di sisi server untuk keamanan ekstra.
 - **Baking Standalone HTML:** Mengompilasi tema menjadi berkas statis di `public/published/` untuk performa instan tanpa beban komputasi runtime SSR pada saat dibuka oleh ribuan tamu undangan.
 
 ---
@@ -103,141 +104,79 @@ Dokumen master ([SYSTEM_ARCHITECTURE.md](./SYSTEM_ARCHITECTURE.md), [README.md](
   - [prisma/migrations/](./prisma/migrations)
   - [deploy.sh:69](./deploy.sh#L69)
 - **Kondisi Faktual:**
-  Model Prisma mendefinisikan:
-  - Enum `OrderType`: `NEW | UPGRADE | GALLERY_EXTENSION`
-  - Enum `InvitationStatus`: `DRAFT | PUBLISHED | EVENT_FINISHED | TAKEN_DOWN | ARCHIVED`
-  - Kolom pada model `Invitation`:
-    - `isLockedPermanently Boolean @default(false)`
-    - `adminUnlockedUntil DateTime?`
-    - `memoriesUploadLocked Boolean @default(false)`
-    - `galleryExpiresAt DateTime?`
-  Namun di dalam folder `prisma/migrations/`, hanya ada 2 file migrasi:
-  1. `20260902090716_init` (belum ada kolom di atas dan enum masih versi lama)
-  2. `20260902215712_add_gateway_tracking_to_order` (hanya menambah `gatewayId` dan `gatewayTxId` pada `orders`)
+  Model Prisma mendefinisikan enum `OrderType`, `InvitationStatus`, dan kolom baru seperti `galleryExpiresAt`. Namun folder `prisma/migrations/` belum memiliki berkas migrasi untuk perubahan ini.
 - **Dampak Fatal di Server Produksi:**
-  Jika VPS baru menjalankan `deploy.sh` (yang menjalankan `npx prisma migrate deploy`), tabel `invitations` di PostgreSQL tidak akan memiliki kolom `galleryExpiresAt` dan `memoriesUploadLocked`. Begitu klien checkout perpanjangan galeri atau cron Fase 1 berjalan, query PostgreSQL akan langsung gagal dengan error:
-  `column "galleryExpiresAt" does not exist` atau `invalid input value for enum OrderType: "GALLERY_EXTENSION"`.
+  Jika dieksekusi dengan `npx prisma migrate deploy` di server, tabel PostgreSQL tidak akan sinkron dengan schema. Saat fitur perpanjangan galeri atau cron digunakan, sistem akan *crash* dengan *Error: column does not exist*.
 - **Solusi yang Harus Diambil:**
-  Buat file migrasi Prisma baru atau ubah baris 69 di `deploy.sh` menjadi `npx prisma db push` sesuai petunjuk di README.
+  Buat file migrasi Prisma baru atau ubah `deploy.sh` menjadi `npx prisma db push`.
 
 ---
 
 ### 🔴 Temuan Kritis #2: `deploy.sh` Tidak Men-generate `PIN_ENCRYPTION_KEY`
-- **File Terdampak:**
-  - [deploy.sh:20-60](./deploy.sh#L20-L60)
-  - [lib/pinEncryption.ts:17-29](./lib/pinEncryption.ts#L17-L29)
-  - [.env.example:43](./.env.example#L43)
+- **File Terdampak:** [deploy.sh:20-60](./deploy.sh#L20-L60), [lib/pinEncryption.ts:17-29](./lib/pinEncryption.ts#L17-L29)
 - **Kondisi Faktual:**
-  Di [lib/pinEncryption.ts:20-22](./lib/pinEncryption.ts#L20-L22):
-  ```typescript
-  if (!key) {
-    if (process.env.NODE_ENV === "production") {
-      throw new Error("[CRITICAL] PIN_ENCRYPTION_KEY tidak diset di environment production!");
-    }
-  }
-  ```
-  Di `deploy.sh`, script otomatis men-generate:
-  - `AUTH_SECRET`
-  - `NEXTAUTH_SECRET`
-  - `CRON_SECRET`
-  Namun penanganan untuk `PIN_ENCRYPTION_KEY` **terlewatkan** dan dibiarkan kosong `""`.
+  Sistem perlindungan enkripsi PIN Resepsionis mewajibkan adanya `PIN_ENCRYPTION_KEY` di *environment production*. Namun, *script* `deploy.sh` lupa meng-generate variabel tersebut (kosong).
 - **Dampak Fatal di Server Produksi:**
-  Saat aplikasi berjalan di server dengan `NODE_ENV="production"`, setiap kali ada request yang membaca atau menyimpan `staffPin` resepsionis, server akan melempar unhandled exception dan mengembalikan HTTP 500.
+  Setiap *request* PIN oleh staf tamu undangan akan menghasilkan HTTP 500 karena sistem menolak berjalan tanpa kunci enkripsi.
 - **Solusi yang Harus Diambil:**
-  Tambahkan blok generator `PIN_ENCRYPTION_KEY` di `deploy.sh` menggunakan `openssl rand -hex 32`.
+  Tambahkan generator `PIN_ENCRYPTION_KEY=$(openssl rand -hex 32)` di `deploy.sh`.
 
 ---
 
 ### 🔴 Temuan Kritis #3: Middleware Rewrite Menghalangi Fallback Route Dinamis
-- **File Terdampak:**
-  - [middleware.ts:113, 217](./middleware.ts#L113)
-  - [app/(public)/[slug]/route.ts](./app/(public)/[slug]/route.ts)
-  - [app/(public)/s/[subdomain]/route.ts](./app/(public)/s/[subdomain]/route.ts)
+- **File Terdampak:** [middleware.ts:113, 217](./middleware.ts#L113)
 - **Kondisi Faktual:**
-  Di `middleware.ts`:
-  ```typescript
-  // Baris 113:
-  const rewriteUrl = new URL(`/published/subdomains/${subdomain}.html`, req.url);
-  return NextResponse.rewrite(rewriteUrl);
-
-  // Baris 217:
-  const rewriteUrl = new URL(`/published/slugs/${slug}.html`, req.url);
-  return NextResponse.rewrite(rewriteUrl);
-  ```
-  Dalam Next.js App Router, pemanggilan `NextResponse.rewrite` ke path berkas statis (`/published/...`) jika berkas fisiknya **tidak ada di disk**, Next.js **tidak** akan melakukan fallback ke handler `app/(public)/s/[subdomain]/route.ts` atau `app/(public)/[slug]/route.ts`. Next.js langsung menyajikan `404 Not Found`.
+  `NextResponse.rewrite` digunakan untuk mengarahkan rute ke berkas statis `published/subdomains/...html`. Namun Next.js App Router tidak memiliki *fallback* dinamis ke route asal jika file statis hilang.
 - **Dampak di Server Produksi:**
-  Ketika Cron Fase 1 (H+7) menghapus file `subdomains/${subdomain}.html` melalui `deleteSubdomainHtmlOnly`, tamu yang membuka URL subdomain akan mendapati halaman 404 mentah, bukannya diarahkan secara otomatis ke `/memories` oleh route handler `s/[subdomain]/route.ts`.
+  Saat cron H+7 menghapus file HTML untuk melepaskan subdomain, tamu akan mendapati layar 404 mentah, bukannya diarahkan ke galeri `/memories` otomatis oleh route statis.
 - **Solusi yang Harus Diambil:**
-  Di `middleware.ts`, lakukan rewrite ke route handler internal Next.js (misalnya `/s/${subdomain}` atau biarkan `NextResponse.next()` menangani kanonikal slug), di mana route handler yang bersangkutan sudah memiliki logika fallback statis dan redirect status `EVENT_FINISHED` / `ARCHIVED`.
+  Tulis ulang *middleware* agar melakukan *rewrite* ke route handler internal (`/s/[subdomain]`), bukan langsung *hardcode* menunjuk ke ekstensi `.html`.
+
+---
+
+### 🔴 Temuan Kritis #4: Next.js Image Component Crash pada Cloudflare R2 / AWS S3
+- **File Terdampak:** [next.config.ts](./next.config.ts), [app/components/features/GuestMomentClient.tsx:154, 213, 332](./app/components/features/GuestMomentClient.tsx#L154)
+- **Kondisi Faktual:**
+  Komponen `next/image` (`<Image src={...} />`) digunakan untuk me-render foto tamu dan *cover*. Namun, file `next.config.ts` tidak mendaftarkan `images.remotePatterns`.
+- **Dampak Fatal di Server Produksi:**
+  Jika admin beralih ke penyimpanan Cloudflare R2 (`STORAGE_PROVIDER=r2`), komponen `<Image>` akan menyebabkan aplikasi *crash* dengan *unhandled runtime error*: `Invalid src prop... Hostname is not configured under images`.
+- **Solusi yang Harus Diambil:**
+  Tambahkan blok `images` di `next.config.ts` untuk mengizinkan domain `https://*`.
 
 ---
 
 ## 5. TEMUAN MENENGAH: LOGIKA, EDGE CASES & ROBUSTNESS (P1 / MEDIUM SEVERITY)
 
-### 🟡 Temuan #4: Webhook iPaymu Rentan SyntaxError pada Form-UrlEncoded
+### 🟡 Temuan #5: Webhook iPaymu Rentan SyntaxError pada Form-UrlEncoded
 - **File Terdampak:** [app/api/webhook/ipaymu/route.ts:52-53](./app/api/webhook/ipaymu/route.ts#L52-L53)
-- **Kondisi Faktual:**
-  ```typescript
-  const rawBody = await req.text();
-  const body = JSON.parse(rawBody);
-  ```
-  Jika IPN/callback iPaymu dikirimkan dalam format `application/x-www-form-urlencoded` (format umum iPaymu pada beberapa integrasi), `JSON.parse` akan gagal melempar exception dan berakhir dengan respons HTTP 500.
-- **Rekomendasi:** Terapkan parsing adaptif berbasis `content-type` seperti pada [app/api/webhook/duitku/route.ts:39-45](./app/api/webhook/duitku/route.ts#L39-L45).
+- **Kondisi Faktual:** Menggunakan `JSON.parse(await req.text())`. Jika iPaymu mengirim data *application/x-www-form-urlencoded*, server akan merespons 500 karena gagal *parsing*.
+- **Rekomendasi:** Gunakan deteksi otomatis tipe konten (*content-type*) seperti di integrasi Duitku.
 
----
-
-### 🟡 Temuan #5: Endpoint Public RSVP Tidak Memvalidasi Status Undangan
+### 🟡 Temuan #6: Endpoint Public RSVP Tidak Memvalidasi Status Undangan
 - **File Terdampak:** [app/api/public/rsvp/route.ts:60-67](./app/api/public/rsvp/route.ts#L60-L67)
-- **Kondisi Faktual:**
-  Endpoint POST `/api/public/rsvp` hanya memverifikasi keberadaan record `invitation` tanpa memeriksa `invitation.status`.
-- **Rekomendasi:** Tambahkan validasi:
-  ```typescript
-  if (invitation.status === "EVENT_FINISHED" || invitation.status === "ARCHIVED" || invitation.status === "TAKEN_DOWN") {
-    return NextResponse.json({ error: "Masa pengisian RSVP untuk acara ini telah ditutup." }, { status: 410 });
-  }
-  ```
+- **Kondisi Faktual:** Endpoint ini belum memblokir pengisian tamu untuk undangan dengan status `EVENT_FINISHED` atau `ARCHIVED`.
+- **Rekomendasi:** Tolak form RSVP dengan kode status 410 (Gone) jika masa pengisian sudah ditutup.
 
----
-
-### 🟡 Temuan #6: Nomor WhatsApp Admin di Halaman Undangan Belum Disanitasi
+### 🟡 Temuan #7: Nomor WhatsApp Admin Belum Disanitasi (Format Invalid)
 - **File Terdampak:** [app/(client)/dashboard/invitation/[id]/page.tsx:946, 989](./app/(client)/dashboard/invitation/[id]/page.tsx#L946)
-- **Kondisi Faktual:**
-  Tombol hubungi admin darurat menggunakan `href={`https://wa.me/${adminWhatsapp}?text=...`}`. Jika admin menyimpan nomor berawalan `08...` atau memuat tanda hubung `-`, tautan WhatsApp menjadi invalid.
-- **Rekomendasi:** Sanitasi nomor dengan `.replace(/\D/g, '').replace(/^0/, '62')` seperti yang sudah diterapkan pada halaman checkout dan guest.
+- **Kondisi Faktual:** URL kontak menggunakan format mentah `wa.me/${adminWhatsapp}`. Jika nomor admin diawali dengan "08..." atau memuat tanda baca "-", URL tidak akan berfungsi.
+- **Rekomendasi:** Lakukan regex sanitasi `.replace(/^0/, '62')`.
 
----
-
-### 🟡 Temuan #7: Stale Closure pada Hook SSE Checkout
-- **File Terdampak:** [app/checkout/page.tsx:297, 320](./app/checkout/page.tsx#L297)
-- **Kondisi Faktual:**
-  `currentOrderType` digunakan di dalam listener `eventSource.onmessage`, tetapi tidak terdaftar di dependency array `useEffect` (peringatan ESLint `react-hooks/exhaustive-deps`).
-- **Rekomendasi:** Tambahkan `currentOrderType` ke dalam array dependensi `useEffect`.
-
----
-
-### 🟡 Temuan #8: Scope Singleton `paymentEmitter` di Lingkungan Produksi
-- **File Terdampak:** [lib/paymentEvents.ts:15-17](./lib/paymentEvents.ts#L15-L17)
-- **Kondisi Faktual:**
-  ```typescript
-  if (process.env.NODE_ENV !== "production") {
-    global.paymentEmitter = paymentEmitter;
-  }
-  ```
-  Di mode produksi Next.js standalone, bundler dapat membagi rute webhook dan status-stream ke dalam chunk berbeda sehingga instance lokal terisolasi.
-- **Rekomendasi:** Ikat `global.paymentEmitter` tanpa memandang nilai `NODE_ENV`.
+### 🟡 Temuan #8: Potensi Exhaustion Koneksi Database (Prisma Pooling)
+- **File Terdampak:** [lib/prisma.ts](./lib/prisma.ts), [.env.example](./.env.example)
+- **Kondisi Faktual:** Jika di-deploy dengan trafik sangat padat, default 10 *connection pool* mungkin tidak cukup tanpa pengelola eksternal (*connection pgbouncer*).
+- **Rekomendasi:** Dokumentasikan instruksi penambahan parameter `?connection_limit=30` atau `&pgbouncer=true` di `DATABASE_URL`.
 
 ---
 
 ## 6. TEMUAN MINOR, LINTING & HYGIENE (P2 / LOW SEVERITY)
 
 1. **Peringatan Navigasi Internal Next.js:**  
-   [components/client/MemoriesDownloadSection.tsx:40](./components/client/MemoriesDownloadSection.tsx#L40) menggunakan `window.location.href = '/checkout?order=...'`. Disarankan menggunakan `useRouter().push()` untuk menjaga Single Page Application state.
+   [components/client/MemoriesDownloadSection.tsx:40](./components/client/MemoriesDownloadSection.tsx#L40) menggunakan `window.location.href = '/checkout?order=...'`. Disarankan menggunakan `useRouter().push()`.
 2. **Missing Dependency Hook:**  
-   [components/admin/AdminPortfolioTab.tsx:44](./components/admin/AdminPortfolioTab.tsx#L44) memanggil `fetchPortfolios` di dalam `useEffect` tanpa array dependensi lengkap.
-3. **Missing Dependency Hook Scanner:**  
-   [app/components/features/ReceptionistScannerClient.tsx:241](./app/components/features/ReceptionistScannerClient.tsx#L241) belum menyertakan `processScanToken`.
-4. **Data Awal Seed Belum Menyesuaikan Model Admin Baru:**  
-   [prisma/seed.ts](./prisma/seed.ts) masih menyertakan 5 tema lama dan seeding admin pada model `User`, padahal sistem admin otentikasi produksi menggunakan model `Admin` pada tabel `admins`.
+   `useEffect` pada [AdminPortfolioTab.tsx](./components/admin/AdminPortfolioTab.tsx#L44) dan [ReceptionistScannerClient.tsx](./app/components/features/ReceptionistScannerClient.tsx#L241) kehilangan array dependensi lengkap yang memicu peringatan ESLint.
+3. **Data Awal Seed Kedaluwarsa:**  
+   [prisma/seed.ts](./prisma/seed.ts) masih mencoba membuat data admin di model `User`, padahal sistem autentikasi sudah dipisah menggunakan model `Admin`. Ini akan gagal jika `npx prisma db seed` dijalankan di VPS.
 
 ---
 
@@ -246,15 +185,16 @@ Dokumen master ([SYSTEM_ARCHITECTURE.md](./SYSTEM_ARCHITECTURE.md), [README.md](
 Sebelum melakukan deployment ke server produksi, jalankan tahapan verifikasi berikut:
 
 ```bash
-# 1. Sinkronisasi Skema Database ke PostgreSQL
-npx prisma migrate dev --name sync_lifecycle_and_gallery_fields
-# ATAU jika menggunakan db push:
+# 1. Update deploy.sh agar meng-generate PIN_ENCRYPTION_KEY otomatis
+# (Tambahkan openssl rand -hex 32)
+
+# 2. Sinkronisasi Skema Database ke PostgreSQL
+# Pastikan Anda telah memperbaiki file migrasi atau cukup gunakan db push
 npx prisma db push
 
-# 2. Update deploy.sh agar meng-generate PIN_ENCRYPTION_KEY otomatis
-# Tambahkan baris generator: openssl rand -hex 32 untuk PIN_ENCRYPTION_KEY
+# 3. Perbaiki next.config.ts untuk mendukung Cloudflare R2 images
 
-# 3. Verifikasi Ulang Typecheck & Build Lokal
+# 4. Verifikasi Ulang Typecheck & Build Lokal
 npx tsc --noEmit
 npm run build
 ```
