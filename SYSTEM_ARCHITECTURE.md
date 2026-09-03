@@ -1,5 +1,5 @@
 # PLATFORM UNDANGAN (WHITE-LABEL) — DOKUMENTASI ARSITEKTUR SISTEM
-## Versi: 5.1.0 | Diperbarui: 03 September 2026
+## Versi: 5.2.0 | Diperbarui: 03 September 2026
 
 > **SUMBER KEBENARAN TUNGGAL** untuk semua developer dan AI Agent yang bekerja di repositori ini.  
 > Dokumen ini WAJIB dibaca sebelum melakukan perubahan apapun pada kode.  
@@ -23,6 +23,8 @@
 12. [File yang Tidak Terpakai / Warisan Google Drive](#12-file-yang-tidak-terpakai--warisan-google-drive)
 13. [Panduan Kerja Agent AI (Mandatory Reading)](#13-panduan-kerja-agent-ai-mandatory-reading)
 14. [Sistem Portofolio Mandiri](#14-sistem-portofolio-mandiri)
+15. [Orkestrasi Multi-Payment Gateway & Dynamic Fee](#15-orkestrasi-multi-payment-gateway--dynamic-fee)
+16. [Sistem Notifikasi Email & Faktur Transaksi](#16-sistem-notifikasi-email--faktur-transaksi)
 
 ---
 
@@ -48,22 +50,23 @@
 / (Root Project)
 ├── app/
 │   ├── (admin)/              # Panel Admin (dilindungi role ADMIN/SUPER_ADMIN)
-│   │   └── admin/page.tsx    # Single-page admin dashboard (~5889 baris)
+│   │   └── admin/page.tsx    # Single-page admin dashboard (10 Tab terintegrasi)
 │   │
 │   ├── (client)/             # Area Client yang sudah login
 │   │   └── dashboard/
 │   │       ├── page.tsx      # Dashboard utama client
 │   │       ├── layout.tsx    # Layout dengan sidebar navigasi
-│   │       ├── guests/       # Manajemen daftar tamu
+│   │       ├── guests/       # Manajemen daftar tamu (+62 auto-format)
 │   │       ├── invitation/   # Setup undangan (new, edit)
 │   │       ├── rsvp/         # Manajemen RSVP & ucapan
-│   │       ├── settings/     # Pengaturan subdomain, PIN, publish
+│   │       ├── settings/     # Pengaturan subdomain, custom domain, PIN, publish
 │   │       └── setup/        # Onboarding flow baru (redirect jika belum ada inv)
 │   │
 │   ├── (public)/             # Halaman publik (tanpa autentikasi)
 │   │   ├── [slug]/           # ← CANONICAL ROUTE UTAMA (flat slug baru)
 │   │   │   ├── page.tsx      # Serve undangan HTML (dimas-clarissa-030326)
-│   │   │   ├── memories/     # Galeri momen tamu
+│   │   │   ├── route.ts      # Redirect pintar (EVENT_FINISHED → memories, ARCHIVED → portfolio/graceful)
+│   │   │   ├── memories/     # Galeri momen tamu (real-time SSE)
 │   │   │   ├── sharemoment/  # Upload foto tamu (real-time)
 │   │   │   └── galery/       # Alias untuk memories
 │   │   └── s/[subdomain]/    # Sub-routes untuk fitur interaktif via subdomain
@@ -73,18 +76,34 @@
 │   │       └── receptionist/ # Scanner QR tamu (dilindungi PIN)
 │   │
 │   ├── api/                  # Semua REST API endpoint
-│   ├── components/           # React components reusable
-│   │   └── features/
-│   │       ├── GuestMomentClient.tsx     # UI upload momen tamu
-│   │       ├── ReceptionistScannerClient.tsx # Scanner QR
-│   │       └── StaffLockScreen.tsx       # Lock screen PIN panitia
+│   │   ├── admin/            # overview, orders, themes, settings, portfolio, invitations/[id]/lifecycle
+│   │   ├── client/           # invitations, guests, media, rsvps, upload, memories/extend
+│   │   ├── public/           # settings, themes, rsvp, memories, resolve-custom-domain, version
+│   │   ├── payments/         # checkout, status-stream
+│   │   ├── orders/           # create invoice
+│   │   ├── webhook/          # ipaymu, duitku, midtrans, tripay, xendit
+│   │   ├── cron/             # cleanup (retensi otomatis H+7 & H+30)
+│   │   └── sse/              # Server-Sent Events (memories real-time)
 │   │
-│   ├── checkout/             # Halaman checkout & pembayaran
+│   ├── components/           # React components reusable
+│   │   ├── BrandLogo.tsx
+│   │   ├── client/
+│   │   │   └── MemoriesDownloadSection.tsx # Download ZIP & perpanjangan galeri (+30 hari)
+│   │   ├── features/
+│   │   │   ├── GuestMomentClient.tsx     # UI upload momen tamu
+│   │   │   ├── ReceptionistScannerClient.tsx # Scanner QR
+│   │   │   └── StaffLockScreen.tsx       # Lock screen PIN panitia
+│   │   └── admin/
+│   │       ├── AdminPortfolioTab.tsx
+│   │       ├── AdminProfileSettings.tsx
+│   │       └── AdminTeamManagement.tsx
+│   │
+│   ├── checkout/             # Halaman checkout & pembayaran (multi-gateway + manual transfer)
 │   ├── demo/                 # Demo tema publik
 │   ├── login/                # Login client
 │   ├── onboarding/           # Flow onboarding baru setelah bayar
 │   ├── packages/             # Halaman paket harga
-│   ├── portfolio/            # Portofolio undangan selesai
+│   ├── portfolio/            # Portofolio undangan selesai terisolasi
 │   ├── 403/                  # Halaman forbidden
 │   ├── privacy/terms/refund/ # Legal pages
 │   ├── layout.tsx            # Root layout
@@ -94,9 +113,10 @@
 ├── lib/                      # Business logic & service layer
 │   ├── themeEngine.ts        # ⭐ Mesin render tema HTML (~81KB, CORE)
 │   ├── staticPublisher.ts    # ⭐ Bake HTML statis saat publish (CORE)
-│   ├── renderTemplate.ts     # Render file .html tema + injeksi data
-│   ├── storage.ts            # Upload/delete file (R2 atau Local, switch env)
-│   ├── settings.ts           # Baca admin_settings dari DB
+│   ├── renderTemplate.ts     # Injeksi data ke template .html & mapping alias tema
+│   ├── storage.ts            # Upload/delete file (R2, S3, atau Local switch env)
+│   ├── mailer.ts             # ⭐ Nodemailer invoice & transactional email generator
+│   ├── settings.ts           # Single source of truth admin_settings dari DB
 │   ├── domainUtils.ts        # URL builder (subdomain, canonical, dll)
 │   ├── prisma.ts             # Prisma client singleton
 │   ├── metadataHelper.ts     # Generate Open Graph metadata
@@ -106,12 +126,12 @@
 │   ├── escapeHtml.ts         # HTML escape utility
 │   ├── rateLimit.ts          # Rate limiter untuk API publik
 │   ├── sseEmitter.ts         # Server-Sent Events emitter (momen real-time)
-│   ├── gatewayRegistry.ts    # Registry payment gateway
-│   ├── gateways/             # Implementasi gateway: iPaymu, Midtrans, dll
+│   ├── gatewayRegistry.ts    # Registry 5 payment gateway
+│   ├── gateways/             # Implementasi gateway: iPaymu, Duitku, Midtrans, TriPay, Xendit
 │   ├── ipaymu.ts             # iPaymu payment client
 │   ├── paymentEvents.ts      # Event bus pembayaran
 │   ├── payments.ts           # Abstraksi pembayaran
-│   ├── upgradeHelper.ts      # Cek eligibilitas upgrade paket
+│   ├── upgradeHelper.ts      # Eksekutor upgrade paket & perpanjangan galeri (+30 hari)
 │   ├── demoPublisher.ts      # Publish demo tema ke /public/demo/
 │   ├── demoRegistry.ts       # Registry konten demo tema (~78KB)
 │   ├── databaseBackup.ts     # Hot-backup PostgreSQL (pg_dump)
@@ -125,10 +145,13 @@
 │   ├── schema.prisma         # Skema database (PostgreSQL)
 │   └── seed.ts               # Script seed data awal
 │
-├── themes/                   # Template HTML tema undangan
-│   ├── premium/              # kalandra, valente, aurelia, artisan, kila, ivanna, danila
-│   ├── modern/               # wave, papercut, ameera, chronicle, lumina, solaria, moody-papercut
-│   └── traditional/          # prameswari, dillalucky, badrika, mayang, candani, aruna
+├── prisma.config.ts           # Konfigurasi Prisma 7 DB URL
+│
+├── themes/                   # Template HTML tema undangan (15 Tema + 1 Blueprint)
+│   ├── premium/              # kalandra, valente, aurelia, artisan
+│   ├── modern/               # wave, papercut, ameera, chronicle, lumina, solaria
+│   ├── traditional/          # prameswari, dillalucky, badrika, mayang, candani
+│   └── starter-blueprint.html# Standard acuan template baru
 │
 ├── public/
 │   ├── published/            # ⭐ Output HTML statis (subdomain.html + invitationSlug.html)
@@ -291,21 +314,66 @@ Pola Polimorfik Database (InvitationMedia.localPath):
 ## 6. SIKLUS HIDUP UNDANGAN
 
 ```
-[DRAFT] ──→ [PUBLISHED] ──→ [Expired setelah acara + retention_days]
-                │
-                └──→ Cron cleanup: hapus file HTML, kosongkan subdomain
-                     File canonical (invitationSlug) tetap ada sampai
-                     retention_invitation_days (default: 30 hari)
+[DRAFT] ──→ [PUBLISHED] ──→ [EVENT_FINISHED] (H + retention_invitation_grace_days / default: 7 hari)
+                                 │
+                                 ├── Subdomain HTML dihapus, URL dialihkan ke /memories
+                                 ├── Formulir RSVP dibersihkan otomatis
+                                 ├── Tamu unduh koleksi foto via ZIP stream
+                                 └── Klien perpanjang galeri (+30 Hari via QRIS)
+                                 │
+                                 ▼ (Masa galeri habis / H + retention_gallery_default_days atau galleryExpiresAt)
+                            [ARCHIVED]
+                                 ├── Foto momen tamu di R2 & lokal dihapus permanen
+                                 ├── Upload foto dikunci (memoriesUploadLocked = true)
+                                 ├── Subdomain dilepaskan kembali ke pool (subdomain = null)
+                                 └── URL dialihkan ke Portofolio (jika ada) atau Graceful Expired Page
 ```
 
-**Status undangan (Enum `InvitationStatus` di DB):**
-- `DRAFT` — Masih dalam pengaturan, URL tidak aktif
-- `PUBLISHED` — URL aktif, HTML sudah di-bake
-- `TAKEN_DOWN` — Dinonaktifkan sementara oleh Admin/Klien
-- `ARCHIVED` — Diarsipkan setelah melewati masa retensi (cleanup by cron)
+### 6.1 — Status Undangan (Enum `InvitationStatus` di DB)
+- `DRAFT` — Masih dalam pengaturan, URL publik tidak aktif.
+- `PUBLISHED` — URL publik aktif, file HTML statis sudah di-bake ke disk (`/published/`).
+- `EVENT_FINISHED` — Acara utama selesai; undangan fisik ditutup dan beralih fungsi menjadi **Galeri Kenangan Tamu (`/memories`)**.
+- `TAKEN_DOWN` — Dinonaktifkan sementara oleh Admin atau Klien.
+- `ARCHIVED` — Diarsipkan setelah masa galeri berakhir; foto dihapus dari cloud storage R2, subdomain didaur ulang kembali ke pool.
 
-**Syarat Publish (isPublishable check di Settings page):**
-1. `staffPin` sudah diisi ✓
+### 6.2 — Dua Fase Otomatisasi Cron Cleanup (`POST /api/cron/cleanup`)
+Cron job dilindungi oleh header `Authorization: Bearer <CRON_SECRET>` atau sesi Admin:
+1. **Fase 1 (Transisi Pasca Acara — H+7 Hari):**
+   - Memastikan file canonical slug sudah ter-bake (`buildAndSavePublishedHtml`).
+   - Menghapus fisik file subdomain HTML saja (`deleteSubdomainHtmlOnly`) sehingga akses subdomain otomatis fallback rewrite ke `/s/[subdomain]/memories`.
+   - Mengubah status ke `EVENT_FINISHED`.
+   - Menghapus record `rsvp` kedaluwarsa demi privasi data tamu.
+2. **Fase 2 (Pembersihan Galeri & Daur Ulang Subdomain — H+30 Hari / `galleryExpiresAt`):**
+   - Jika `now > effectiveExpiry` (tidak diperpanjang klien):
+     - Menghapus seluruh file fisik foto kenangan tamu (`GuestMemory`) dari Cloudflare R2 (`deleteFile`) dan disk lokal.
+     - Menghapus record `guest_memories` dari database.
+     - Mengunci upload foto (`memoriesUploadLocked = true`).
+     - Mengubah status menjadi `ARCHIVED`.
+     - **Melepaskan Subdomain kembali ke pool umum (`subdomain = null`)** agar dapat didaftarkan kembali oleh pasangan baru.
+3. **Fase 3 (Pembersihan Total Akun Klien Lama — H+365 Hari):**
+   - Menghapus akun klien yang semua undangannya sudah `ARCHIVED` lebih dari `retention_account_days`.
+
+### 6.3 — API Kontrol Siklus Hidup Manual Admin (`POST /api/admin/invitations/[id]/lifecycle`)
+Khusus SUPER_ADMIN / ADMIN untuk intervensi operasional langsung dari dashboard:
+- `action = "CLOSE_TO_GALLERY"`: Menutup undangan seketika, menghapus subdomain HTML, dan mengubah status ke `EVENT_FINISHED`.
+- `action = "EXTEND_GALLERY"`: Menambah durasi `galleryExpiresAt` sebesar `days` (default +30 hari) dan membuka kembali kunci upload.
+- `action = "UPDATE_EVENT_DATE"`: Mengedit tanggal acara utama darurat jika jadwal pernikahan dimajukan/diundur.
+
+### 6.4 — Alur Perpanjangan Galeri Mandiri Klien (`POST /api/client/memories/extend`)
+- Klien menekan tombol "Perpanjang Galeri (+30 Hari)" di dashboard galeri momen.
+- Sistem membaca tarif perpanjangan dinamis dari `AdminSetting` (`gallery_extension_price_per_month`, default Rp50.000).
+- Membuat order baru berjenis `GALLERY_EXTENSION` dengan nomor invoice berawalan `EXT-`.
+- Klien menyelesaikan pembayaran via QRIS / Payment Gateway.
+- Webhook memanggil `applyUpgradePlan` ➔ `applyGalleryExtension` untuk menambahkan +30 hari ke `galleryExpiresAt` dan mengirimkan email kuitansi resmi berpalet mewah via `lib/mailer.ts`.
+
+### 6.5 — Graceful Expired Page (`app/(public)/[slug]/route.ts`)
+Jika undangan telah berstatus `ARCHIVED`:
+1. Sistem memeriksa apakah file salinan portofolio ada di `/portfolio/[slug]`.
+2. Jika ada, otomatis dialihkan (*HTTP 307*) ke `/portfolio/[slug]`.
+3. Jika tidak ada portofolio, disajikan **Halaman Penutupan Elegan** bernuansa gelap mewah yang menampilkan pesan hangat bahwa momen bahagia telah usai, nama brand platform dinamis `{platformName}`, dan tombol navigasi kembali ke beranda utama (`/`).
+
+### 6.6 — Syarat Publish (`isPublishable` check di Settings page)
+1. `staffPin` sudah diisi (panitia scanner) ✓
 2. `subdomain` sudah dipilih ✓
 3. `groomName` + `brideName` sudah diisi ✓
 4. Minimal 1 event di `eventData` ✓
@@ -400,6 +468,7 @@ CLIENT (auth required, role=USER):
   POST      /api/client/upload             → Upload media undangan (WebP Sharp via storage.ts)
   GET       /api/client/rsvps             → Statistik RSVP
   GET       /api/client/orders            → List order client
+  POST      /api/client/memories/extend   → Buat order perpanjangan galeri (+30 hari via QRIS)
   (Catatan WA: Route wa-link dihapus; digantikan client-side wa.me direct linking + auto-format +62)
 
 ADMIN (auth required, role=ADMIN/SUPER_ADMIN):
@@ -411,6 +480,7 @@ ADMIN (auth required, role=ADMIN/SUPER_ADMIN):
   POST /api/admin/database/backup     → Backup database
   POST /api/admin/subdomains/recycle  → Daur ulang subdomain kedaluwarsa
   GET/POST/DELETE /api/admin/portfolio → Manajemen kloning portofolio statis mandiri
+  POST /api/admin/invitations/{id}/lifecycle → Kontrol siklus hidup (CLOSE_TO_GALLERY, EXTEND_GALLERY, UPDATE_EVENT_DATE)
 
 RECEPTIONIST (public + PIN-protected di client side):
   POST /api/receptionist/verify-pin   → Verifikasi PIN panitia (AES-256-GCM 32-byte key)
@@ -442,26 +512,35 @@ STATUS WARISAN / DEPRECATED:
 
 ```
 Model Utama:
-  User           → Akun user (client)
-  Admin          → Akun admin terpisah dari User
-  Order          → Pesanan paket undangan
-  Invitation     → Inti undangan (DRAFT/PUBLISHED)
-  Guest          → Daftar tamu per undangan
+  User           → Akun user (client, role: CLIENT | ADMIN)
+  Admin          → Akun admin terpisah dari User (role: SUPER_ADMIN | FINANCE | SUPPORT)
+  Order          → Pesanan paket undangan & perpanjangan galeri
+  Invitation     → Inti undangan (DRAFT | PUBLISHED | EVENT_FINISHED | TAKEN_DOWN | ARCHIVED)
+  Guest          → Daftar tamu per undangan (phone, waStatus: PENDING | SENT, qrToken)
   Rsvp           → Konfirmasi kehadiran tamu
   Wish           → Ucapan tamu
-  GuestMemory    → Foto/video tamu (hari H)
-  InvitationMedia → File media undangan (foto prewedding, dll)
-  AdminSettings  → Konfigurasi platform global
-  PlatformVersion → Versi rilis sistem
+  GuestMemory    → Foto/video tamu (hari H & pasca-acara)
+  InvitationMedia → File media undangan (8 slot media)
+  AdminSetting   → Konfigurasi platform global (key-value dinamis)
+  WebhookLog     → Log audit webhook payment (iPaymu, Duitku, Midtrans, TriPay, Xendit)
+  AdminAuditLog  → Log audit aktivitas admin
+
+Field Kritis di Order:
+  orderType       NEW | UPGRADE | GALLERY_EXTENSION
+  gatewayId       String?   ← "midtrans" | "ipaymu" | "xendit" | "tripay" | "duitku"
+  gatewayTxId     String?   ← ID transaksi di sisi gateway (untuk cancel API saat switch gateway)
+  linkedOrderId   String?   ← Referensi ID order lama (saat UPGRADE) atau ID invitation (saat GALLERY_EXTENSION)
 
 Field Kritis di Invitation:
   invitationSlug  @unique   ← Flat slug canonical: dimas-clarissa-030326
-  subdomain       @unique   ← Subdomain: dimas-clarissa (nullable)
+  subdomain       @unique   ← Subdomain: dimas-clarissa (nullable saat di-recycle)
   customDomain    @unique   ← Custom domain klien (nullable, fitur & UI aktif)
   staffPin        String?   ← PIN panitia terenkripsi AES-256-GCM (wajib diisi)
   eventData       String?   ← JSON array multi-event
   featureSettings String?   ← JSON settings fitur & color palette
-  status          DRAFT | PUBLISHED | TAKEN_DOWN | ARCHIVED
+  status          DRAFT | PUBLISHED | EVENT_FINISHED | TAKEN_DOWN | ARCHIVED
+  galleryExpiresAt DateTime? ← Batas masa aktif galeri foto tamu (diperpanjang via QRIS)
+  memoriesUploadLocked Boolean ← Dikunci otomatis saat masa galeri habis / ZIP diunduh
 
 Field Kritis di Guest:
   phone           String?   ← Nomor kontak tunggal (kolom `phoneNumber` sudah dibersihkan)
@@ -720,6 +799,64 @@ Platform menggunakan `app/manifest.ts` dinamis secara server-side yang mengambil
 
 Permintaan (POST/GET) yang dilakukan melalui domain kustom yang terhubung via CNAME dijamin keamanannya dan **tidak terkena pemblokiran CORS**. Hal ini karena fitur **Next.js Middleware Rewrite** meneruskan _request_ secara transparan dalam server, sehingga bagi _browser_, _client_, dan _API endpoint_, transaksi tersebut tetap berada pada **Same-Origin**.
 
-## 11.4 - Prefix Invoice Otomatis
-
 Seluruh modul pembayaran (_Payment Gateways_ seperti Duitku, Xendit, Tripay, IPaymu) secara otomatis membaca _prefix_ tagihan dari _dashboard_ Admin (`payment_invoice_prefix`). Jika kosong, sistem otomatis mundur (*fallback*) menjadi teks generik "Tagihan Pembayaran". Ini menjamin tidak adanya jejak _brand_ awal pada tagihan QRIS / _Virtual Account_ pelanggan.
+
+---
+
+## 15. ORKESTRASI MULTI-PAYMENT GATEWAY & DYNAMIC FEE
+
+**Files:** `lib/gateways/`, `lib/gatewayRegistry.ts`, `app/api/payments/checkout/route.ts`, `app/checkout/page.tsx`
+
+Sistem pembayaran platform mendukung multi-gateway terintegrasi dengan pergantian instan 1-klik dari dashboard Admin tanpa memerlukan restart aplikasi atau edit kode.
+
+### 15.1 — Arsitektur Registry Gateway
+```
+Admin Setting: active_payment_gateway
+           │
+           ├── "ipaymu"   → lib/gateways/ipaymu.ts
+           ├── "duitku"   → lib/gateways/duitku.ts
+           ├── "midtrans" → lib/gateways/midtrans.ts
+           ├── "tripay"   → lib/gateways/tripay.ts
+           └── "xendit"   → lib/gateways/xendit.ts
+```
+
+### 15.2 — Pergantian Gateway Bersih (*Cancel Before Re-Initialize*)
+- Saat order dibuat, sistem menyimpan `gatewayId` dan `gatewayTxId` pada record `Order`.
+- Jika klien mengganti metode/gateway atau terjadi regenerasi transaksi, API checkout memanggil handler `cancelTransaction` pada gateway lama sebelum menginisialisasi transaksi baru pada gateway yang dipilih.
+- Hal ini mencegah tagihan ganda atau race condition webhook antara dua gateway berbeda.
+
+### 15.3 — Perhitungan Biaya Layanan Dinamis (Zero Hardcode)
+- **Penanggung Biaya (`payment_fee_payer` / `payment_gateway_fee_payer`):**
+  - `"BUYER"`: Biaya layanan ditambahkan ke total yang harus dibayar klien.
+  - `"MERCHANT"`: Biaya layanan ditanggung oleh platform (klien hanya membayar harga paket).
+- **Tarif Persentase (`payment_gateway_fee_percent`):**
+  - Nilai desimal persentase (misal `0.7%`).
+  - `appFee = feePayer === "BUYER" ? Math.round(subtotal * (feePercent / 100)) : 0`.
+  - `totalAmount = subtotal + appFee`.
+  - Perhitungan dilakukan pada tingkat checkout dengan idempotensi penuh agar reload halaman tidak melipatgandakan biaya.
+
+### 15.4 — Batas Waktu Pembayaran Dinamis
+- Durasi aktif sesi QRIS dibaca langsung dari `payment_expiry_minutes` (default: 60 menit) dan dikirimkan ke payload gateway.
+
+---
+
+## 16. SISTEM NOTIFIKASI EMAIL & FAKTUR TRANSAKSI
+
+**File:** `lib/mailer.ts`
+
+Sistem menggunakan library **Nodemailer** yang dikonfigurasi secara dinamis melalui nilai di tabel `admin_settings`.
+
+### 16.1 — Kredensial SMTP Dinamis
+Sistem membaca konfigurasi server email secara real-time:
+- `smtp_host`, `smtp_port` (default 587 / SSL 465), `smtp_user`, `smtp_password`
+- `smtp_from_email`, `smtp_from_name`
+- **Graceful Non-Blocking Fallback:** Jika SMTP belum diisi oleh Admin, sistem mencatat pesan log aman dan proses aktivasi order/webhook tetap berjalan sukses 100% tanpa error fatal.
+
+### 16.2 — Generator Faktur Mewah (Dark-Luxury Responsive)
+- Desain template email HTML berpalet gelap eksklusif (*rich dark mode* `#0c0a09` dan `#1c1917`) dengan aksen emas tembaga (`#d97706`).
+- Bebas dari emoji default OS untuk menjaga citra SaaS profesional.
+- **Kategori Dinamis:**
+  - **Aktivasi Paket (`NEW` / `UPGRADE`):** Tombol CTA mengarah ke Studio Undangan Klien.
+  - **Perpanjangan Galeri (`GALLERY_EXTENSION`):** Rincian penambahan +30 hari masa aktif penyimpanan foto dengan tombol CTA ke Galeri Momen.
+- Pengiriman email dijalankan secara asynchronous non-blocking di dalam `applyUpgradePlan` setelah status order berubah menjadi `PAID`.
+

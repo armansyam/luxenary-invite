@@ -46,3 +46,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # dilarang keras menggunakan hardcode jika itu seharusnya dinamis
 - jangan pernah membuat hardcode jika seharusnya bersifat dinamis, harus cek sebelum melakukan perubahan
+
+# Protokol Wajib: Sinkronisasi & Pembaruan Dokumentasi Otomatis (Auto-Update on Edit/Push)
+- **WAJIB SINKRONISASI 3 DOKUMEN MASTER:** Setiap kali selesai melakukan pengeditan kode (fitur baru, bugfix, refactor, skema database, atau endpoint baru), dan **SEBELUM/SAAT melakukan push ke Git remote (GitHub)**, Agent **WAJIB SECARA OTOMATIS** memeriksa seluruh kode faktual dan memperbarui ketiga dokumen master:
+  1. `SYSTEM_ARCHITECTURE.md` (arsitektur, routing, database schema, diagram)
+  2. `README.md` (panduan alur, katalog tema, deployment, environment)
+  3. `S-Invitation.md` (spesifikasi fungsional modul, tema fisik, dan gateway)
+- **DILARANG PUSH JIKA DOCS BELUM TERBARU:** Push ke git remote hanya boleh dilakukan setelah ketiga dokumen diverifikasi sinkron dengan kode faktual terbaru dan `npx tsc --noEmit` menghasilkan Exit Code 0.
