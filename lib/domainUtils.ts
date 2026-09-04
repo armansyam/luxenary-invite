@@ -40,13 +40,10 @@ export function getApexRootDomain(): string {
  * - Production: https://[subdomain].[apexDomain](?to=...)
  */
 export function getInvitationPublicUrl(subdomain: string, guestSlug?: string): string {
-  const cleanSub = (subdomain || "wedding").toLowerCase().trim();
+  const cleanSub = (subdomain || "").toLowerCase().trim();
+  if (!cleanSub) return "";
   
-  let path = "";
-  if (guestSlug) {
-    const encoded = encodeURIComponent(guestSlug);
-    path = `/${encoded}`;
-  }
+  const queryParam = guestSlug ? `?to=${encodeURIComponent(guestSlug)}` : "";
 
   if (typeof window !== "undefined") {
     const { protocol, hostname, port } = window.location;
@@ -54,12 +51,12 @@ export function getInvitationPublicUrl(subdomain: string, guestSlug?: string): s
 
     // Localhost Subdomain support (supported natively in modern browsers)
     if (hostname === "localhost" || hostname.endsWith(".localhost")) {
-      return `${protocol}//${cleanSub}.localhost${portSuffix}${path}`;
+      return `${protocol}//${cleanSub}.localhost${portSuffix}/${queryParam}`;
     }
 
     // Raw IP fallback
     if (hostname === "127.0.0.1" || hostname.startsWith("192.168.") || hostname.startsWith("10.")) {
-      return `${protocol}//${hostname}${portSuffix}/s/${cleanSub}${path}`;
+      return `${protocol}//${hostname}${portSuffix}/s/${cleanSub}${queryParam ? `/${queryParam}` : ""}`;
     }
 
     // Live Domain Subdomain
@@ -69,13 +66,13 @@ export function getInvitationPublicUrl(subdomain: string, guestSlug?: string): s
       apex = parts.slice(1).join(".");
     }
 
-    return `${protocol}//${cleanSub}.${apex}${portSuffix}${path}`;
+    return `${protocol}//${cleanSub}.${apex}${portSuffix}/${queryParam}`;
   }
 
   // Server-side default
   const root = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "";
   const cleanRoot = root.replace(/^https?:\/\//, "").replace(/\/$/, "");
-  return `http${process.env.NODE_ENV === "production" ? "s" : ""}://${cleanSub}.${cleanRoot}${path}`;
+  return `http${process.env.NODE_ENV === "production" ? "s" : ""}://${cleanSub}.${cleanRoot}/${queryParam}`;
 }
 
 export interface ResolveInvitationUrlOptions {
@@ -96,17 +93,13 @@ export interface ResolvedInvitationUrl {
 
 /**
  * Resolves the primary public URL for an invitation with strict precedence:
- * 1. Active Custom Domain (e.g., https://yoga-nisa.com/Budi)
- * 2. Active Subdomain (e.g., https://yoga-nisa.luxenary.id/Budi atau http://yoga-nisa.localhost:3000/Budi)
- * 3. Fallback / Draft simulation: groom-bride slug or invitationSlug
+ * 1. Active Custom Domain (e.g., https://yoga-nisa.com/?to=Budi)
+ * 2. Active Subdomain (e.g., https://yoga-nisa.luxenary.id/?to=Budi atau http://yoga-nisa.localhost:3000/?to=Budi)
+ * 3. Unconfigured / Empty state (No fake simulation fallbacks)
  */
 export function resolveEffectiveInvitationUrl(options: ResolveInvitationUrlOptions): ResolvedInvitationUrl {
-  const { customDomain, subdomain, groomSlug, brideSlug, invitationSlug, guestSlug } = options;
-
-  let path = "";
-  if (guestSlug) {
-    path = `/${encodeURIComponent(guestSlug)}`;
-  }
+  const { customDomain, subdomain, guestSlug } = options;
+  const queryParam = guestSlug ? `?to=${encodeURIComponent(guestSlug)}` : "";
 
   // 1. Custom Domain Priority
   if (customDomain && customDomain.trim()) {
@@ -118,7 +111,7 @@ export function resolveEffectiveInvitationUrl(options: ResolveInvitationUrlOptio
       protocol = process.env.NODE_ENV === "production" ? "https:" : "http:";
     }
     return {
-      url: `${protocol}//${cleanCustom}${path}`,
+      url: `${protocol}//${cleanCustom}/${queryParam}`,
       domainType: "CUSTOM_DOMAIN",
       domainIdentifier: cleanCustom,
       isConfigured: true,
@@ -136,18 +129,11 @@ export function resolveEffectiveInvitationUrl(options: ResolveInvitationUrlOptio
     };
   }
 
-  // 3. Fallback Simulation (Draft / Not yet configured)
-  let fallbackSub = "wedding";
-  if (groomSlug && brideSlug) {
-    fallbackSub = `${groomSlug}-${brideSlug}`.toLowerCase();
-  } else if (invitationSlug) {
-    fallbackSub = invitationSlug.toLowerCase();
-  }
-
+  // 3. Unconfigured state: No fake fallback URLs
   return {
-    url: getInvitationPublicUrl(fallbackSub, guestSlug || undefined),
+    url: "",
     domainType: "FALLBACK",
-    domainIdentifier: fallbackSub,
+    domainIdentifier: "",
     isConfigured: false,
   };
 }

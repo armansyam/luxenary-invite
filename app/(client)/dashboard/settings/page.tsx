@@ -352,15 +352,21 @@ export default function SettingsPage() {
           /* Summary Mode */
           <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block">Tautan Aktif:</span>
-              <a
-                href={getInvitationPublicUrl(formData.subdomain || "mempelai-pria-wanita")}
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs sm:text-sm font-mono font-bold text-amber-900 hover:underline break-all"
-              >
-                {getInvitationPublicUrl(formData.subdomain || "mempelai-pria-wanita")}
-              </a>
+              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block">Tautan Subdomain:</span>
+              {formData.subdomain ? (
+                <a
+                  href={getInvitationPublicUrl(formData.subdomain)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs sm:text-sm font-mono font-bold text-amber-900 hover:underline break-all"
+                >
+                  {getInvitationPublicUrl(formData.subdomain)}
+                </a>
+              ) : (
+                <span className="text-xs sm:text-sm font-mono text-stone-400 italic">
+                  Belum dikonfigurasi
+                </span>
+              )}
             </div>
             <button
               type="button"

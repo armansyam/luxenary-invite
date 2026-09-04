@@ -46,6 +46,68 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
     return NextResponse.redirect(memoriesUrl);
   }
 
+  // Jika undangan masih berstatus DRAFT (belum dipublikasikan)
+  if (invitation.status === "DRAFT") {
+    const unreleasedHtml = `<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Undangan Belum Dipublikasikan</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: radial-gradient(circle at top, #1c1917 0%, #0c0a09 100%);
+      color: #fafaf9;
+      font-family: system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+    .card {
+      max-width: 440px;
+      width: 100%;
+      background: rgba(28, 25, 23, 0.85);
+      border: 1px solid rgba(217, 119, 6, 0.25);
+      border-radius: 1.5rem;
+      padding: 2.5rem 2rem;
+      text-align: center;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.35rem 0.85rem;
+      background: rgba(217, 119, 6, 0.15);
+      border: 1px solid rgba(217, 119, 6, 0.3);
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #f59e0b;
+      margin-bottom: 1.25rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    h1 { font-size: 1.25rem; font-weight: 700; margin-bottom: 0.75rem; color: #fff; }
+    p { font-size: 0.875rem; color: #a8a29e; line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <span class="badge">Belum Dipublikasikan</span>
+    <h1>Undangan Sedang Disiapkan</h1>
+    <p>Halaman undangan pernikahan ini masih dalam tahap penyusunan dan belum dipublikasikan secara resmi oleh penyelenggara.</p>
+  </div>
+</body>
+</html>`;
+
+    return new NextResponse(unreleasedHtml, {
+      status: 403,
+      headers: { "Content-Type": "text/html; charset=utf-8" },
+    });
+  }
+
   // Jika undangan sudah berstatus ARCHIVED (masa galeri telah berakhir)
   if (invitation.status === "ARCHIVED") {
     const portfolioExists = await hasPortfolio(slug);

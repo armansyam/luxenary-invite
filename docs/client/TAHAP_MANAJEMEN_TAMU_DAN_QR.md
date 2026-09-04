@@ -87,8 +87,13 @@ Ketika pesan disusun, sistem secara otomatis mengganti token berikut dengan data
 - `{kuota_tamu}` — Alokasi jumlah pax tamu.
 - `{sesi_acara}` — Informasi sesi atau jam kehadiran yang dialokasikan.
 
+### Proteksi Anti-Prematur & Kebijakan Status DRAFT:
+Untuk melindungi pengantin dari risiko pengiriman tautan keliru atau tautan mati sebelum undangan resmi siap:
+- **Saat Status DRAFT:** Tombol *Kirim WA* dan *Salin* dikunci (*disabled*) dengan penanda gembok. Tautan `{link_undangan}` tidak merender URL simulasi palsu melainkan berstatus aman hingga undangan dipublikasikan.
+- **Saat Status PUBLISHED:** Tombol *Kirim WA* dan *Salin* otomatis aktif dan menyala hijau, siap digunakan untuk distribusi massal ke seluruh tamu.
+
 ### Tombol Aksi 1-Klik Kirim:
-Ketika tombol WhatsApp ditekan pada baris tamu, browser langsung membuka protokol WhatsApp resmi:
+Ketika tombol WhatsApp ditekan pada baris tamu (saat berstatus PUBLISHED), browser langsung membuka protokol WhatsApp resmi:
 ```
 https://wa.me/6281234567890?text=Kepada%20Yth...
 ```

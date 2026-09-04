@@ -271,15 +271,20 @@ export default function GuestsPage() {
 
     const displayOrder = feat.displayOrder || "BRIDE_FIRST";
     const coupleName = displayOrder === "BRIDE_FIRST" ? `${bride} & ${groom}` : `${groom} & ${bride}`;
-    const resolved = resolveEffectiveInvitationUrl({
-      customDomain: invitationData?.customDomain,
-      subdomain: invitationData?.subdomain,
-      groomSlug: invitationData?.groomSlug,
-      brideSlug: invitationData?.brideSlug,
-      invitationSlug: invitationData?.invitationSlug,
-      guestSlug: guestName,
-    });
-    const fullGuestUrl = resolved.url;
+
+    const isPublished = invitationData?.status === "PUBLISHED" || invitationData?.status === "EVENT_FINISHED";
+    const resolved = isPublished
+      ? resolveEffectiveInvitationUrl({
+          customDomain: invitationData?.customDomain,
+          subdomain: invitationData?.subdomain,
+          guestSlug: guestName,
+        })
+      : { url: "" };
+
+    // Jika belum dipublikasikan, jangan gunakan URL simulasi palsu
+    const fullGuestUrl = isPublished && resolved.url
+      ? resolved.url
+      : "[Tautan resmi aktif otomatis setelah undangan dipublikasikan]";
 
     const template = waTemplate || DEFAULT_WA_TEMPLATE;
 
@@ -301,6 +306,9 @@ export default function GuestsPage() {
   };
 
   const generateWaLink = (guest: Guest) => {
+    const isPublished = invitationData?.status === "PUBLISHED" || invitationData?.status === "EVENT_FINISHED";
+    if (!isPublished) return "";
+
     const renderedText = renderWaText(
       guest.name,
       guest.guestLimit || guest.guestQuota || 2,
@@ -320,14 +328,22 @@ export default function GuestsPage() {
   };
 
   const handleCopyGuestLink = (guest: Guest) => {
+    const isPublished = invitationData?.status === "PUBLISHED" || invitationData?.status === "EVENT_FINISHED";
+    if (!isPublished) {
+      alert("Undangan Anda masih berstatus DRAFT. Silakan publikasikan undangan terlebih dahulu di menu Pengaturan / Beranda untuk mengaktifkan tautan personal tamu.");
+      return;
+    }
+
     const resolved = resolveEffectiveInvitationUrl({
       customDomain: invitationData?.customDomain,
       subdomain: invitationData?.subdomain,
-      groomSlug: invitationData?.groomSlug,
-      brideSlug: invitationData?.brideSlug,
-      invitationSlug: invitationData?.invitationSlug,
       guestSlug: guest.name,
     });
+
+    if (!resolved.url) {
+      alert("Alamat domain undangan belum terkonfigurasi.");
+      return;
+    }
 
     navigator.clipboard.writeText(resolved.url).then(() => {
       setCopiedGuestId(guest.id);
@@ -413,7 +429,7 @@ export default function GuestsPage() {
           <div className="flex-1 min-w-0 text-xs">
             <h4 className="text-xs sm:text-sm font-bold text-amber-950">Undangan Masih Berstatus Draft (Belum Dipublikasikan)</h4>
             <p className="text-[11px] text-amber-900/80 mt-1 leading-relaxed">
-              Tautan undangan pada template WhatsApp saat ini berstatus <strong>simulasi preview</strong>. Tamu baru dapat mengakses web setelah Anda mempublikasikan undangan di <a href="/dashboard" className="font-bold underline hover:text-amber-950">Dashboard Utama</a>.
+              Fitur pengiriman WhatsApp dan salin tautan personal tamu dinonaktifkan sementara untuk mencegah terkirimnya tautan prematur. Seluruh aksi pengiriman akan aktif otomatis setelah Anda mempublikasikan undangan resmi Anda di <a href="/dashboard/settings" className="font-bold underline hover:text-amber-950">Menu Pengaturan / Publikasi</a>.
             </p>
           </div>
         </div>
@@ -611,7 +627,8 @@ export default function GuestsPage() {
           {/* Table Body (High Density List Rows) */}
           <div className="divide-y divide-stone-100">
             {filteredGuests.map((guest, idx) => {
-              const waUrl = generateWaLink(guest);
+              const isPublished = invitationData?.status === "PUBLISHED" || invitationData?.status === "EVENT_FINISHED";
+              const waUrl = isPublished ? generateWaLink(guest) : "";
               const isSent = guest.waStatus === "SENT";
 
               return (
@@ -677,40 +694,50 @@ export default function GuestsPage() {
                     <button
                       type="button"
                       onClick={() => handleCopyGuestLink(guest)}
-                      className="px-2.5 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg text-xs font-semibold transition flex items-center gap-1 cursor-pointer"
-                      title="Salin Link Undangan Tamu Ini"
+                      disabled={!isPublished}
+                      className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1 ${
+                        isPublished
+                          ? "bg-stone-100 hover:bg-stone-200 text-stone-700 cursor-pointer"
+                          : "bg-stone-100/60 text-stone-400 cursor-not-allowed border border-stone-200/50"
+                      }`}
+                      title={isPublished ? "Salin Link Undangan Tamu Ini" : "Publikasikan undangan terlebih dahulu untuk menyalin tautan"}
                     >
-                      <svg className="w-3.5 h-3.5 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3.5 h-3.5 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
                       </svg>
                       <span>{copiedGuestId === guest.id ? "Tersalin!" : "Salin"}</span>
                     </button>
 
                     {/* Send WhatsApp Button */}
-                    <a
-                      href={waUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      onClick={(e) => {
-                        if (invitationData?.status === "DRAFT") {
-                          const proceed = window.confirm(
-                            "Perhatian: Undangan Anda masih berstatus DRAFT dan belum dipublikasikan. Tamu belum dapat melihat isi undangan jika membuka tautan ini sekarang.\n\nTetap lanjutkan membuka WhatsApp?"
-                          );
-                          if (!proceed) {
-                            e.preventDefault();
-                            return;
-                          }
-                        }
-                        if (!isSent) toggleWaStatus(guest.id, guest.waStatus);
-                      }}
-                      className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
-                      title="Buka WhatsApp untuk Mengirim Undangan"
-                    >
-                      <svg className="w-3.5 h-3.5 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                      </svg>
-                      <span>Kirim WA</span>
-                    </a>
+                    {isPublished ? (
+                      <a
+                        href={waUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={() => {
+                          if (!isSent) toggleWaStatus(guest.id, guest.waStatus);
+                        }}
+                        className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                        title="Buka WhatsApp untuk Mengirim Undangan"
+                      >
+                        <svg className="w-3.5 h-3.5 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                        <span>Kirim WA</span>
+                      </a>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => alert("Undangan Anda masih berstatus DRAFT. Silakan publikasikan undangan Anda terlebih dahulu di menu Pengaturan / Beranda sebelum dapat mengirim tautan ke tamu.")}
+                        className="px-3 py-1.5 bg-stone-100 text-stone-400 border border-stone-200/60 rounded-lg text-xs font-medium flex items-center gap-1.5 cursor-not-allowed"
+                        title="Undangan masih DRAFT. Publikasikan undangan terlebih dahulu di menu Pengaturan untuk mengaktifkan pengiriman."
+                      >
+                        <svg className="w-3.5 h-3.5 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                        <span>Kirim WA</span>
+                      </button>
+                    )}
 
                     {/* Delete Button */}
                     <button
@@ -892,8 +919,8 @@ export default function GuestsPage() {
                             Subdomain ({domainInfo.domainIdentifier})
                           </span>
                         ) : (
-                          <span className="font-mono font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
-                            Simulasi Draft ({domainInfo.domainIdentifier})
+                          <span className="font-mono font-bold text-stone-600 bg-stone-100 px-2 py-0.5 rounded-md border border-stone-200">
+                            Belum Dikonfigurasi
                           </span>
                         )}
                       </div>
@@ -913,12 +940,10 @@ export default function GuestsPage() {
                             <svg className="w-3.5 h-3.5 text-amber-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                             </svg>
-                            <span>Undangan Belum Dipublikasikan</span>
+                            <span>Undangan Masih DRAFT (Tautan Terkunci)</span>
                           </div>
                           <p className="text-stone-600 text-[10px] leading-relaxed">
-                            {!domainInfo.isConfigured
-                              ? "Subdomain belum diatur dan undangan masih draft. Tautan di atas merupakan simulasi preview dan belum bisa dibuka oleh tamu."
-                              : "Undangan masih berstatus draft. Tautan akan aktif bagi tamu setelah Anda menekan tombol Publish di Dashboard."}
+                            Tautan undangan belum diaktifkan. Tautan resmi akan otomatis terpasang dan siap dikirimkan kepada tamu setelah Anda mempublikasikan undangan di menu Pengaturan / Beranda.
                           </p>
                         </div>
                       )}
