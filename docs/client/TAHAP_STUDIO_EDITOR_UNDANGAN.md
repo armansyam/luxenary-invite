@@ -67,12 +67,15 @@ Studio Editor membagi form input menjadi 14 seksi terorganisir untuk kenyamanan 
 - **Penentuan Urutan Nama Tampil:**
   - Saklar penentu siapa yang namanya tampil di awal (Pria dahulu atau Wanita dahulu), sesuai adat istiadat keluarga.
 
-### Seksi 4: Kutipan Doa & Teks Suci (`SEC4`)
-- **Preset Kutipan Berdasarkan Religi:**
-  - Islam: Q.S. Ar-Rum ayat 21, An-Nur, dll.
-  - Kristen / Katolik: 1 Korintus 13:4-8, Matius 19:6, dll.
-  - Hindu / Budha / Universal.
-- **Custom Quote & Attribution:** Field kustomisasi teks doa bebas beserta nama sumber kutipan.
+### Seksi 4: Kutipan Pembuka (`SEC4`)
+- **Preset Kutipan Lengkap (Lintas Agama & Sastra Populer):**
+  - Islam: Q.S. Ar-Rum ayat 21.
+  - Kristen / Katolik: 1 Korintus 13:4-7, Kejadian 2:24.
+  - Hindu: Rgveda X.85.42.
+  - Buddha: Mangala Sutta.
+  - Sastra / Puisi Romantis: Sapardi Djoko Damono ("Aku ingin mencintaimu dengan sederhana..."), Kahlil Gibran ("Sang Nabi").
+  - Universal: Janji Suci & Harapan.
+- **Custom Quote & Attribution:** Field kustomisasi teks kutipan bebas, judul seksi (Kutipan Cinta / Kata Mutiara / Pappaseng / Ayat Suci), beserta sumber/referensi kutipan.
 
 ### Seksi 5: Rangkaian Acara (`SEC5`)
 - **Daftar Event Dinamis (Multi-Event Support):**
@@ -98,6 +101,40 @@ Studio Editor membagi form input menjadi 14 seksi terorganisir untuk kenyamanan 
   - Foto kenangan momen tersebut.
 
 ### Seksi 8: Galeri Foto & Video Prewedding (`SEC8`)
+- Galeri foto grid interaktif dengan lightbox full-screen.
+- Integrasi video prewedding dari YouTube / Vimeo atau video storage R2.
+
+### Seksi 9: Rekening Bank & Hadiah Digital (`SEC9`)
+- Nomor rekening bank dan e-wallet mempelai untuk amplop digital.
+- Fitur salin nomor rekening instan 1-klik.
+
+### Seksi 10: Panduan Busana / Dress Code (`SEC10`)
+- Rekomendasi warna busana dan dress code tamu undangan.
+- Poin-poin himbauan kenyamanan acara.
+
+### Seksi 11: Live Streaming Pernikahan (`SEC11`)
+- Penayangan siaran langsung bagi tamu yang berhalangan hadir.
+- URL streaming (YouTube Live, Instagram Live, Zoom Meeting).
+
+### Seksi 12: Filter Instagram Pengantin (`SEC12`)
+- Tautan filter AR Instagram kustom milik pengantin agar tamu dapat merekam momen dengan filter bertuliskan nama mempelai.
+
+### Seksi 13: Turut Mengundang (`SEC13`)
+- Daftar nama keluarga besar, tokoh adat, kerabat, atau kolega terhormat yang turut mengundang.
+
+### Seksi 14: Galeri Kenangan Tamu / Live Moments (`SEC14`)
+- Konfigurasi portal upload foto bagi tamu undangan di venue acara.
+- Pengaturan hak moderasi (apakah foto tamu langsung tampil atau butuh persetujuan pengantin).
+
+### Seksi 15: Pengaturan Teks UI & Label (`SEC15`)
+- **Kustomisasi Formulir RSVP:**
+  - Teks tombol kirim RSVP (`customLabels.rsvpBtnText`) — Contoh: *"Kirim Konfirmasi & Doa"*, *"Kirim RSVP"*.
+  - Judul seksi RSVP (`rsvpTitle`), label nama tamu (`rsvpNameLabel`), status kehadiran (`rsvpStatusLabel`), kuota pax (`rsvpCountLabel`), dan pesan ucapan (`rsvpMessageLabel`).
+- **Kustomisasi Sampul & Tombol Buka:**
+  - Teks tombol buka undangan (`openBtn`) — Contoh: *"Buka Undangan"*, *"Open Invitation"*.
+  - Subtitle sampul pembuka (`coverSubtitle`) — Contoh: *"UNDANGAN PERNIKAHAN"*.
+- **Kustomisasi Label Hitung Mundur (Countdown Timer):**
+  - Penamaan unit waktu: Hari (`cdDays`), Jam (`cdHours`), Menit (`cdMins`), Detik (`cdSecs`).
 - **Galeri Foto:**
   - Multi-upload gambar (maksimum sesuai kuota paket) langsung ke Cloudflare R2 Storage.
   - Pengurutan foto (drag & drop urutan tampilan).
