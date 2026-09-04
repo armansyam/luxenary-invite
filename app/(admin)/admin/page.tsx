@@ -2314,7 +2314,7 @@ export default function AdminPage() {
                       <table className="min-w-full divide-y divide-gray-100">
                         <thead className="bg-gray-50">
                           <tr>
-                            {["Pemilik", "Pasangan", "Subdomain / URL", "Tema", "Status", "Proteksi Editor", "Aksi"].map((h) => (
+                            {["Klien & Pasangan", "Undangan", "Status & Proteksi", "Aksi"].map((h) => (
                               <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{h}</th>
                             ))}
                           </tr>
@@ -2329,78 +2329,84 @@ export default function AdminPage() {
                             return (
                               <tr key={inv.id} className="hover:bg-gray-50 transition">
                                 <td className="px-5 py-3">
-                                  <div className="text-sm font-semibold text-gray-900">{inv.user?.name || "Tanpa Nama"}</div>
-                                  <div className="text-xs text-gray-500 font-mono">{inv.user?.email}</div>
+                                  <div className="text-sm font-semibold text-gray-900">{coupleName}</div>
+                                  <div className="text-xs text-gray-500">{inv.user?.name || "Tanpa Nama"} &bull; <span className="font-mono">{inv.user?.email}</span></div>
                                 </td>
-                                <td className="px-5 py-3 text-sm font-semibold text-gray-900">
-                                  {coupleName}
+                                <td className="px-5 py-3">
+                                  <div className="mb-1">
+                                    {activeSub ? (
+                                      <a
+                                        href={publicUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="text-xs font-semibold text-indigo-700 hover:underline flex items-center gap-1 w-max"
+                                      >
+                                        <span>{activeSub}.{getApexRootDomain()}</span>
+                                        <span className="text-[10px] text-stone-400">↗</span>
+                                      </a>
+                                    ) : (
+                                      <span className="text-gray-400 font-sans italic text-[11px]">[URL Belum Setup]</span>
+                                    )}
+                                  </div>
+                                  <div className="text-xs text-gray-500">Tema: <span className="font-bold text-gray-900 capitalize">{inv.themeId}</span></div>
                                 </td>
-                                <td className="px-5 py-3 text-xs font-mono text-amber-700">
-                                  {activeSub ? (
-                                    <a
-                                      href={publicUrl}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      className="hover:underline flex items-center gap-1 font-semibold"
+                                <td className="px-5 py-3 space-y-1.5">
+                                  <div><Badge status={inv.status} /></div>
+                                  <div>
+                                    {isEmergencyUnlocked ? (
+                                      <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-100 text-amber-900 border border-amber-300 inline-block">
+                                        Kunci Darurat Aktif
+                                      </span>
+                                    ) : inv.isLockedPermanently ? (
+                                      <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-red-100 text-red-800 border border-red-200 inline-block">
+                                        Terkunci Permanen
+                                      </span>
+                                    ) : (
+                                      <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 inline-block">
+                                        Bisa Diedit
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="px-5 py-3">
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleImpersonateClient(inv.userId)}
+                                      disabled={impersonatingClient}
+                                      className="p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50 border border-transparent hover:border-indigo-100 transition disabled:opacity-50 cursor-pointer"
+                                      title="Remote Dashboard (Impersonate)"
                                     >
-                                      <span>{activeSub}.{getApexRootDomain()}</span>
-                                      <span className="text-[10px] text-stone-400">↗</span>
-                                    </a>
-                                  ) : (
-                                    <span className="text-gray-400 font-sans italic text-[11px]">[Belum Setup]</span>
-                                  )}
-                                </td>
-                                <td className="px-5 py-3">
-                                  <span className="font-bold text-gray-900 text-sm capitalize">{inv.themeId}</span>
-                                </td>
-                                <td className="px-5 py-3"><Badge status={inv.status} /></td>
-                                <td className="px-5 py-3">
-                                  {isEmergencyUnlocked ? (
-                                    <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-100 text-amber-900 border border-amber-300 inline-block">
-                                      Kunci Darurat Aktif
-                                    </span>
-                                  ) : inv.isLockedPermanently ? (
-                                    <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-red-100 text-red-800 border border-red-200 inline-block">
-                                      Terkunci Permanen
-                                    </span>
-                                  ) : (
-                                    <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 inline-block">
-                                      Bisa Diedit
-                                    </span>
-                                  )}
-                                </td>
-                                <td className="px-5 py-3">
-                                  <div className="flex items-center gap-2 flex-wrap">
-                                    <a
-                                      href={publicUrl}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      className="text-amber-700 hover:text-amber-900 font-semibold text-xs underline"
-                                    >
-                                      Preview
-                                    </a>
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                                    </button>
+
                                     {inv.status === "PUBLISHED" && (
                                       <button
                                         type="button"
                                         onClick={() => handleCloseToGallery(inv)}
-                                        className="px-2 py-1 rounded-lg text-xs font-semibold bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-300 transition cursor-pointer"
-                                        title="Tutup undangan utama dan alihkan URL ke Galeri Momen Acara"
+                                        className="p-1.5 rounded-lg text-purple-600 hover:bg-purple-50 border border-transparent hover:border-purple-100 transition cursor-pointer"
+                                        title="Tutup ke Galeri Momen"
                                       >
-                                        Tutup ke Galeri
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                                       </button>
                                     )}
+
                                     {(isEmergencyUnlocked || inv.isLockedPermanently) && (
                                       <button
                                         type="button"
                                         onClick={() => handleToggleEmergencyUnlock(inv)}
-                                        className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer border ${
+                                        className={`p-1.5 rounded-lg border border-transparent transition cursor-pointer ${
                                           isEmergencyUnlocked
-                                            ? "bg-red-50 hover:bg-red-100 text-red-700 border-red-300"
-                                            : "bg-stone-100 hover:bg-stone-200 text-stone-800 border-stone-300"
+                                            ? "text-red-600 hover:bg-red-50 hover:border-red-100"
+                                            : "text-stone-600 hover:bg-stone-50 hover:border-stone-100"
                                         }`}
-                                        title={isEmergencyUnlocked ? "Kunci kembali sekarang" : "Buka kunci darurat edit untuk klien selama 24 jam"}
+                                        title={isEmergencyUnlocked ? "Kunci kembali sekarang" : "Buka kunci darurat (24 Jam)"}
                                       >
-                                        {isEmergencyUnlocked ? "Kunci Kembali" : "Buka Kunci Darurat"}
+                                        {isEmergencyUnlocked ? (
+                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8V7z" /></svg>
+                                        ) : (
+                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" /></svg>
+                                        )}
                                       </button>
                                     )}
                                   </div>
@@ -2463,41 +2469,51 @@ export default function AdminPage() {
                             </div>
 
                             {/* Actions Mobile */}
-                            <div className="flex items-center justify-end gap-1.5 pt-2 border-t border-gray-100 flex-wrap">
-                              <a
-                                href={publicUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg transition"
+                            {/* Actions Mobile */}
+                            <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100 flex-wrap">
+                              <button
+                                type="button"
+                                onClick={() => handleImpersonateClient(inv.userId)}
+                                disabled={impersonatingClient}
+                                className="p-2 rounded-lg text-indigo-600 hover:bg-indigo-50 border border-transparent hover:border-indigo-100 transition disabled:opacity-50 cursor-pointer"
+                                title="Remote Dashboard (Impersonate)"
                               >
-                                Preview
-                              </a>
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                              </button>
+
                               {inv.status === "PUBLISHED" && (
                                 <button
                                   type="button"
                                   onClick={() => handleCloseToGallery(inv)}
-                                  className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-300 transition cursor-pointer"
+                                  className="p-2 rounded-lg text-purple-600 hover:bg-purple-50 border border-transparent hover:border-purple-100 transition cursor-pointer"
+                                  title="Tutup ke Galeri"
                                 >
-                                  Ke Galeri
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                                 </button>
                               )}
                               <button
                                 type="button"
                                 onClick={() => handleExtendGallery(inv)}
-                                className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 transition cursor-pointer"
+                                className="px-2 py-1.5 rounded-lg text-xs font-bold text-emerald-600 hover:bg-emerald-50 border border-transparent hover:border-emerald-100 transition cursor-pointer"
+                                title="Tambah Masa Aktif 30 Hari"
                               >
-                                +30H Galeri
+                                +30H
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleToggleEmergencyUnlock(inv)}
-                                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer border ${
+                                className={`p-2 rounded-lg border border-transparent transition cursor-pointer ${
                                   isEmergencyUnlocked
-                                    ? "bg-red-50 hover:bg-red-100 text-red-700 border-red-300"
-                                    : "bg-stone-100 hover:bg-stone-200 text-stone-800 border-stone-300"
+                                    ? "text-red-600 hover:bg-red-50 hover:border-red-100"
+                                    : "text-stone-600 hover:bg-stone-50 hover:border-stone-100"
                                 }`}
+                                title={isEmergencyUnlocked ? "Kunci kembali sekarang" : "Buka kunci darurat (24 Jam)"}
                               >
-                                {isEmergencyUnlocked ? "Kunci" : "Darurat"}
+                                {isEmergencyUnlocked ? (
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8V7z" /></svg>
+                                ) : (
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" /></svg>
+                                )}
                               </button>
                             </div>
                           </div>
@@ -6528,31 +6544,6 @@ export default function AdminPage() {
                 );
               })()}
 
-              {/* Tindakan Administratif */}
-              <div className="mt-8 pt-6 border-t border-gray-100">
-                <h4 className="text-sm font-bold text-indigo-700 mb-2">Tindakan Administratif</h4>
-                <p className="text-xs text-gray-500 mb-4">
-                  Anda dapat merasuk ke dalam dashboard klien ini (Impersonate) untuk membantu pengaturan atau mengatasi kendala (Troubleshooting).
-                </p>
-                <button
-                  type="button"
-                  onClick={() => handleImpersonateClient(manageClient.id)}
-                  disabled={impersonatingClient}
-                  className="w-full px-4 py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed mb-4"
-                >
-                  {impersonatingClient ? (
-                    <>
-                      <span className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></span>
-                      Menghubungkan sesi...
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg>
-                      Login Sebagai Klien (Impersonate)
-                    </>
-                  )}
-                </button>
-              </div>
 
               <div className="mt-8 pt-6 border-t border-gray-100">
                 <h4 className="text-sm font-bold text-rose-600 mb-2">Zona Berbahaya</h4>
