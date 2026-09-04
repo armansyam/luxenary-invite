@@ -6466,15 +6466,26 @@ export default function AdminPage() {
               {(() => {
                 const activeInv = manageClient.invitations?.[0];
                 let eventDateStr = "-";
+                let eventDate = null;
+                
                 if (activeInv?.eventData) {
                   try {
                     const parsed = JSON.parse(activeInv.eventData);
                     if (parsed[0]?.date) {
-                      eventDateStr = new Date(parsed[0].date).toLocaleDateString("id-ID", { day: 'numeric', month: 'long', year: 'numeric' });
+                      eventDate = new Date(parsed[0].date);
+                      eventDateStr = eventDate.toLocaleDateString("id-ID", { day: 'numeric', month: 'long', year: 'numeric' });
                     }
                   } catch(e) {}
                 }
-                const expiredStr = activeInv?.expiresAt ? new Date(activeInv.expiresAt).toLocaleDateString("id-ID", { day: 'numeric', month: 'long', year: 'numeric' }) : "-";
+                
+                let expiredStr = "-";
+                if (activeInv?.expiresAt) {
+                  expiredStr = new Date(activeInv.expiresAt).toLocaleDateString("id-ID", { day: 'numeric', month: 'long', year: 'numeric' });
+                } else if (eventDate) {
+                  const retentionDays = parseInt(settingsMap["retention_invitation_days"] || "30", 10);
+                  const calculatedExpiry = new Date(eventDate.getTime() + (retentionDays * 24 * 60 * 60 * 1000));
+                  expiredStr = `${calculatedExpiry.toLocaleDateString("id-ID", { day: 'numeric', month: 'long', year: 'numeric' })} (Dinamis)`;
+                }
                 
                 return (
                   <div className="space-y-4">
