@@ -46,10 +46,10 @@ export default function InvitationIndexPage() {
         Belum ada undangan yang dibuat. Klik tombol di bawah untuk membuat undangan pertama Anda dengan tema eksklusif.
       </p>
       <Link
-        href="/dashboard/invitation/new"
+        href="/packages"
         className="inline-block px-6 py-3 bg-amber-700 hover:bg-amber-800 text-white font-bold rounded-xl text-sm transition shadow-sm"
       >
-        + Buat Undangan Baru
+        Pilih Paket Undangan
       </Link>
     </div>
   );

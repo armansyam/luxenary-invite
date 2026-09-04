@@ -4,15 +4,6 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { authConfig } from "./auth.config";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import crypto from "crypto";
-import { CredentialsSignin } from "next-auth";
-
-class ImpersonateError extends CredentialsSignin {
-  constructor(msg: string) {
-    super();
-    this.code = msg;
-  }
-}
 
 // Google OAuth credentials dibaca dari .env (bukan dari database)
 // Untuk mengubah credentials, update .env dan restart server.

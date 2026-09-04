@@ -119,10 +119,8 @@
 │   ├── settings.ts           # Single source of truth admin_settings dari DB
 │   ├── domainUtils.ts        # URL builder (subdomain, canonical, dll)
 │   ├── prisma.ts             # Prisma client singleton
-│   ├── metadataHelper.ts     # Generate Open Graph metadata
 │   ├── colorPalettes.ts      # Palet warna tema undangan
 │   ├── videoOptimizer.ts     # FFmpeg video compression (R2 upload)
-│   ├── fontEmbedder.ts       # Embed font ke dalam HTML tema
 │   ├── escapeHtml.ts         # HTML escape utility
 │   ├── rateLimit.ts          # Rate limiter untuk API publik
 │   ├── sseEmitter.ts         # Server-Sent Events emitter (momen real-time)
@@ -130,7 +128,6 @@
 │   ├── gateways/             # Implementasi gateway: iPaymu, Duitku, Midtrans, TriPay, Xendit
 │   ├── ipaymu.ts             # iPaymu payment client
 │   ├── paymentEvents.ts      # Event bus pembayaran
-│   ├── payments.ts           # Abstraksi pembayaran
 │   ├── upgradeHelper.ts      # Eksekutor upgrade paket & perpanjangan galeri (+30 hari)
 │   ├── demoPublisher.ts      # Publish demo tema ke /public/demo/
 │   ├── demoRegistry.ts       # Registry konten demo tema (~78KB)
