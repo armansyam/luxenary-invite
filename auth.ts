@@ -5,6 +5,14 @@ import { authConfig } from "./auth.config";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
+import { CredentialsSignin } from "next-auth";
+
+class ImpersonateError extends CredentialsSignin {
+  constructor(msg: string) {
+    super();
+    this.code = msg;
+  }
+}
 
 // Google OAuth credentials dibaca dari .env (bukan dari database)
 // Untuk mengubah credentials, update .env dan restart server.
@@ -27,52 +35,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const portal = (credentials?.portal as string)?.toUpperCase() || "CLIENT";
         const emailOrUser = (credentials?.email as string)?.trim().toLowerCase() || "";
         const password = (credentials?.password as string) || "";
-
-        // MODE IMPERSONASI UNTUK ADMIN KE KLIEN
-        if (portal === "IMPERSONATE") {
-          // Token dikirim melalui field password
-          const token = password;
-          if (!token) return null;
-          
-          const parts = token.split(":");
-          if (parts.length !== 3) return null;
-          
-          const [clientId, expiresAtStr, signature] = parts;
-          const expiresAt = parseInt(expiresAtStr, 10);
-          
-          if (Date.now() > expiresAt) {
-            console.error("[NextAuth] Impersonation token expired");
-            return null; // Token kedaluwarsa
-          }
-          
-          const secret = process.env.AUTH_SECRET;
-          if (!secret) return null;
-          
-          const payload = `${clientId}:${expiresAt}`;
-          const hmac = crypto.createHmac("sha256", secret);
-          hmac.update(payload);
-          const expectedSignature = hmac.digest("hex");
-          
-          if (signature !== expectedSignature) {
-            console.error("[NextAuth] Impersonation signature invalid");
-            return null;
-          }
-          
-          // Token valid, ambil data user
-          const clientUser = await prisma.user.findUnique({
-            where: { id: clientId }
-          });
-          
-          if (!clientUser) return null;
-          
-          return {
-            id: clientUser.id,
-            name: clientUser.name,
-            email: clientUser.email,
-            role: clientUser.role || "CLIENT",
-            isAdmin: false,
-          };
-        }
 
         // CredentialsProvider HANYA untuk Admin Portal (Verifikasi username/email & bcrypt hash)
         if (portal !== "ADMIN") {
@@ -177,6 +139,33 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         (session.user as any).role = (token as any).role || "CLIENT";
         (session.user as any).isAdmin = (token as any).isAdmin || false;
       }
+
+      // Mode Remote Admin: Override workspace ke target klien jika cookie lux_remote_client_id aktif
+      if ((session?.user as any)?.isAdmin) {
+        try {
+          const { cookies } = await import("next/headers");
+          const cookieStore = await cookies();
+          const remoteClientId = cookieStore.get("lux_remote_client_id")?.value;
+          if (remoteClientId) {
+            const clientUser = await prisma.user.findUnique({
+              where: { id: remoteClientId },
+              select: { id: true, name: true, email: true, role: true },
+            });
+            if (clientUser && session.user) {
+              (session.user as any).originalAdminId = token.id || token.sub;
+              (session.user as any).isRemote = true;
+              (session.user as any).id = clientUser.id;
+              (session.user as any).email = clientUser.email;
+              (session.user as any).name = clientUser.name;
+              (session.user as any).role = clientUser.role || "CLIENT";
+              (session.user as any).isAdmin = true;
+            }
+          }
+        } catch {
+          // Abaikan jika dipanggil di luar HTTP request context
+        }
+      }
+
       return session;
     },
   },

@@ -23,6 +23,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   - NEVER return fake `success: true` or mock objects when a database query or API call fails.
   - NEVER bypass authentication, roles, or security guards to make a page appear to work.
   - Fix the root cause in the database schema, query logic, or API handler.
+- **NO GUESSING / WAJIB TRACE FAKTA (ROOT CAUSE ANALYSIS):**
+  - SEBELUM melakukan perubahan kode (terutama pada perbaikan *bug*), Agen **WAJIB** melacak aliran data dari hulu ke hilir (misalnya memastikan `select` Prisma benar-benar mereturn kolom yang diakses di UI, atau memeriksa *console.log*).
+  - JANGAN PERNAH menebak-nebak akar masalah. Cari tahu faktanya (baca *log*, jalankan skrip *test*, atau periksa respons API) lalu beritahukan fakta tersebut kepada user **sebelum** merubah apapun.
 
 ## 3. Mandatory Empirical Verification Loop
 - Before declaring any code task complete, the agent MUST run:

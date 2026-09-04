@@ -7,7 +7,8 @@ export const authConfig = {
     signIn: "/login",
   },
   callbacks: {
-    authorized({ auth, request: { nextUrl } }) {
+    authorized({ auth, request }) {
+      const { nextUrl } = request;
       const isLoggedIn = !!auth?.user;
       const isAdmin = (auth?.user as any)?.isAdmin === true || (auth?.user as any)?.role === "ADMIN" || (auth?.user as any)?.role === "SUPER_ADMIN";
       const pathname = nextUrl.pathname;
@@ -25,8 +26,15 @@ export const authConfig = {
         return true;
       }
 
-      // Client dashboard protection — HANYA role Client murni (Admin DILARANG masuk dashboard client)
+      // Client dashboard protection — HANYA role Client murni (Admin DILARANG masuk)
+      // PENGECUALIAN: Admin yang sedang memegang cookie remote diizinkan
       if (pathname.startsWith("/dashboard")) {
+        if (isAdmin) {
+          // Cek apakah ada cookie remote yang valid
+          const remoteClientId = request.cookies.get("lux_remote_client_id")?.value;
+          if (remoteClientId) return true;
+          return false;
+        }
         const isClient = isLoggedIn && !isAdmin && (auth?.user as any)?.role === "CLIENT";
         if (!isClient) {
           return false;

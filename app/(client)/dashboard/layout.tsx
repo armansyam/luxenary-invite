@@ -5,7 +5,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { BrandLogo } from "@/components/BrandLogo";
-
 const navItems = [
   {
     href: "/dashboard",
@@ -63,6 +62,30 @@ export default function ClientDashboardLayout({
   const router = useRouter();
   const [waContact, setWaContact] = useState("");
   const [platformName, setPlatformName] = useState("");
+  const [isRestoring, setIsRestoring] = useState(false);
+  const [remoteInfo, setRemoteInfo] = useState<{ isRemote: boolean; clientName: string } | null>(null);
+
+  // Cek apakah Admin sedang dalam mode Remote
+  useEffect(() => {
+    if (status === "authenticated") {
+      fetch("/api/admin/remote-session")
+        .then((res) => res.json())
+        .then((data) => setRemoteInfo(data))
+        .catch(() => setRemoteInfo({ isRemote: false, clientName: "" }));
+    }
+  }, [status]);
+
+  const handleRestoreAdmin = async () => {
+    try {
+      setIsRestoring(true);
+      // Hapus cookie remote via API DELETE lalu pulangkan Admin
+      await fetch("/api/admin/remote-session", { method: "DELETE" });
+      window.location.href = "/admin";
+    } catch (error) {
+      console.error("Gagal restore ke admin", error);
+      setIsRestoring(false);
+    }
+  };
 
   useEffect(() => {
     fetch("/api/public/settings")
@@ -83,6 +106,11 @@ export default function ClientDashboardLayout({
   // --- Strict Protection: ONLY PAID USERS ALLOWED ---
   useEffect(() => {
     if (status === "authenticated" && session?.user) {
+      // Mode Remote atau Admin: Jangan pernah tendang ke onboarding agar admin dapat menginspeksi dasbor
+      if ((session.user as any).isAdmin || (session.user as any).isRemote || remoteInfo?.isRemote) {
+        return;
+      }
+
       // Periksa secara asinkron status pembayaran pengguna
       fetch("/api/client/onboarding-state", { cache: "no-store" })
         .then((res) => res.json())
@@ -96,7 +124,7 @@ export default function ClientDashboardLayout({
           // Abaikan error jaringan
         });
     }
-  }, [status, session, router]);
+  }, [status, session, router, remoteInfo]);
 
   if (
     status === "unauthenticated" ||
@@ -114,7 +142,7 @@ export default function ClientDashboardLayout({
           
           {/* Brand */}
           <Link href="/dashboard" className="flex items-center gap-2.5 group">
-            <BrandLogo size="sm" lightBg showName />
+            <BrandLogo size="sm" lightBg showName brandName="Dasbor Klien" />
           </Link>
 
           {/* Desktop Navigation */}
@@ -164,6 +192,28 @@ export default function ClientDashboardLayout({
           </div>
         </div>
       </header>
+
+      {/* 🚨 Banner Peringatan Remote Admin (Mode Remote Aktif) */}
+      {remoteInfo?.isRemote && (
+        <div className="bg-red-600 text-white px-4 py-2 text-center text-sm font-semibold shadow-inner border-b border-red-700 flex flex-col sm:flex-row items-center justify-center gap-3 z-30 relative">
+          <div className="flex items-center gap-2">
+            <svg className="w-4 h-4 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+            <span>MODE REMOTE AKTIF: Anda sedang mengendalikan dashboard milik <span className="underline decoration-red-300 underline-offset-2">{remoteInfo.clientName}</span></span>
+          </div>
+          <button
+            onClick={handleRestoreAdmin}
+            disabled={isRestoring}
+            className="px-3 py-1 bg-white text-red-700 hover:bg-red-50 text-xs rounded shadow-sm border border-red-200 transition disabled:opacity-50 flex items-center gap-1"
+          >
+            {isRestoring ? "Memulihkan..." : (
+              <>
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg>
+                Kembali ke Admin
+              </>
+            )}
+          </button>
+        </div>
+      )}
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-5 sm:py-8 pb-24 md:pb-12">

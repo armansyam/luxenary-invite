@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useSession, signOut, signIn } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { getApexRootDomain, getInvitationPublicUrl } from "@/lib/domainUtils";
 import { BrandLogo } from "@/components/BrandLogo";
@@ -9,7 +9,7 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { AdminProfileSettings } from "@/components/admin/AdminProfileSettings";
 import { AdminTeamManagement } from "@/components/admin/AdminTeamManagement";
 import { AdminPortfolioTab } from "@/components/admin/AdminPortfolioTab";
-import { getImpersonationToken } from "./actions/impersonate";
+import { startRemoteSession } from "./actions/remote";
 
 const tabs = [
   {
@@ -280,22 +280,16 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [impersonatingClient, setImpersonatingClient] = useState(false);
 
-  const handleImpersonateClient = async (clientId: string) => {
+  const handleImpersonateClient = async (clientId: string, clientEmail: string, clientName: string) => {
     try {
       setImpersonatingClient(true);
       setClientActionMsg(null);
-      const token = await getImpersonationToken(clientId);
-      if (token) {
-        // Pindah sesi menggunakan NextAuth signIn
-        await signIn("credentials", {
-          portal: "IMPERSONATE",
-          token,
-          callbackUrl: "/dashboard",
-        });
-      }
+      // Server Action: menetapkan cookie httpOnly lalu redirect ke /dashboard
+      // Ini berjalan di server → cookie ditulis sebelum redirect → middleware pasti membacanya
+      await startRemoteSession(clientId);
     } catch (err: any) {
       console.error(err);
-      setClientActionMsg({ ok: false, msg: err.message || "Gagal melakukan impersonasi klien" });
+      setClientActionMsg({ ok: false, msg: err.message || "Gagal memulai sesi remote klien" });
       setImpersonatingClient(false);
     }
   };
@@ -2225,9 +2219,20 @@ export default function AdminPage() {
                                 <td className="px-5 py-3 text-sm text-gray-600 font-mono text-xs">{usr.email}</td>
                                 <td className="px-5 py-3 text-xs text-gray-500">{new Date(usr.createdAt).toLocaleDateString("id-ID")}</td>
                                 <td className="px-5 py-3">
-                                  <button onClick={() => { setManageClient(usr); setClientActionMsg(null); }} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-semibold transition cursor-pointer">
-                                    Kelola Klien
-                                  </button>
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleImpersonateClient(usr.id, usr.email, usr.name)}
+                                      disabled={impersonatingClient}
+                                      className="p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50 border border-transparent hover:border-indigo-100 transition disabled:opacity-50 cursor-pointer"
+                                      title="Remote Dasbor Klien"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                                    </button>
+                                    <button onClick={() => { setManageClient(usr); setClientActionMsg(null); }} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-semibold transition cursor-pointer">
+                                      Kelola Klien
+                                    </button>
+                                  </div>
                                 </td>
                               </tr>
                             ))}
@@ -2265,8 +2270,17 @@ export default function AdminPage() {
                                 <div className="text-[10px] text-gray-400 mt-0.5">{new Date(usr.createdAt).toLocaleDateString("id-ID")}</div>
                               </div>
                             </div>
-                            <div className="shrink-0">
-                              <button onClick={() => {}} className="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-semibold transition cursor-pointer">
+                            <div className="shrink-0 flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => handleImpersonateClient(usr.id, usr.email, usr.name)}
+                                disabled={impersonatingClient}
+                                className="p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50 border border-transparent hover:border-indigo-100 transition disabled:opacity-50 cursor-pointer"
+                                title="Remote Dasbor Klien"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                              </button>
+                              <button onClick={() => { setManageClient(usr); setClientActionMsg(null); }} className="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-semibold transition cursor-pointer">
                                 Kelola
                               </button>
                             </div>
@@ -2372,7 +2386,7 @@ export default function AdminPage() {
                                   <div className="flex items-center gap-2">
                                     <button
                                       type="button"
-                                      onClick={() => handleImpersonateClient(inv.userId)}
+                                      onClick={() => handleImpersonateClient(inv.userId, inv.user?.email || "", inv.user?.name || "")}
                                       disabled={impersonatingClient}
                                       className="p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50 border border-transparent hover:border-indigo-100 transition disabled:opacity-50 cursor-pointer"
                                       title="Remote Dashboard (Impersonate)"
@@ -2473,7 +2487,7 @@ export default function AdminPage() {
                             <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100 flex-wrap">
                               <button
                                 type="button"
-                                onClick={() => handleImpersonateClient(inv.userId)}
+                                onClick={() => handleImpersonateClient(inv.userId, inv.user?.email || "", inv.user?.name || "")}
                                 disabled={impersonatingClient}
                                 className="p-2 rounded-lg text-indigo-600 hover:bg-indigo-50 border border-transparent hover:border-indigo-100 transition disabled:opacity-50 cursor-pointer"
                                 title="Remote Dashboard (Impersonate)"
@@ -6545,7 +6559,19 @@ export default function AdminPage() {
               })()}
 
 
-              <div className="mt-8 pt-6 border-t border-gray-100">
+              <div className="mt-6 pt-4 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => handleImpersonateClient(manageClient.id, manageClient.email, manageClient.name)}
+                  disabled={impersonatingClient}
+                  className="w-full px-4 py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                  {impersonatingClient ? "Menghubungkan ke Dasbor..." : "Remote Dasbor Klien Ini"}
+                </button>
+              </div>
+
+              <div className="mt-6 pt-6 border-t border-gray-100">
                 <h4 className="text-sm font-bold text-rose-600 mb-2">Zona Berbahaya</h4>
                 <p className="text-xs text-gray-500 mb-4">
                   Menghapus akun klien akan menghapus semua undangan, pengaturan, aset media, dan histori transaksi klien ini secara permanen. Tindakan ini tidak dapat dibatalkan.

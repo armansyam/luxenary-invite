@@ -174,6 +174,12 @@
 │   └── cron-cleanup.ts       # Garbage collector undangan kedaluwarsa
 │
 ├── docs/
+│   ├── README.md                              # Pusat indeks dokumentasi platform
+│   ├── ALUR_REGISTRASI_KE_DASHBOARD.md        # Alur lengkap registrasi Google hingga masuk studio
+│   ├── admin/
+│   │   ├── REMOTE_DAN_MANAJEMEN_KLIEN.md      # Panduan arsitektur remote klien & siklus hidup undangan
+│   │   ├── MANAJEMEN_TEMA_ADMIN.md            # Panduan manajemen tema, upload master & auto-compile demo
+│   │   └── DEPLOYMENT_VPS_CADDY.md            # Panduan deployment VPS Ubuntu & reverse proxy Caddy
 │   └── client/
 │       ├── TAHAP_REGISTRASI_DAN_PEMBAYARAN.md  # Panduan alur registrasi, kasir & pasca-bayar
 │       └── TAHAP_DASHBOARD_SETUP_AWAL.md       # Panduan setup wizard undangan 3 langkah
@@ -470,6 +476,19 @@ Guard di middleware:
   /api/client/** → Server-side check via auth() + userId match
 ```
 
+### 9.1 Mekanisme Remote Klien (Cookie-Based Workspace Override)
+Fitur *Remote* memungkinkan Admin untuk masuk ke dasbor Klien dan mengendalikannya secara penuh tanpa mengetahui *password* klien. Sistem ini dirancang menggunakan arsitektur **httpOnly Cookie (`lux_remote_client_id`)** dan resolusi sesi dinamis tanpa perlu memanipulasi atau merusak JWT Admin:
+
+1. **Inisiasi (Admin Dashboard):** Admin mengklik tombol Remote (ikon monitor) pada baris undangan atau detail klien. Server Action `startRemoteSession(clientId)` di `app/(admin)/admin/actions/remote.ts` memverifikasi hak akses Admin via `auth()`, memastikan klien ada di database, menetapkan cookie `lux_remote_client_id` (httpOnly, Secure, SameSite: Lax, path: "/", maxAge: 1 jam), dan memanggil `redirect("/dashboard")` dari server.
+2. **Perizinan Gerbang (Middleware & AuthConfig):**
+   - Di `auth.config.ts`, callback `authorized()` memeriksa apakah user adalah Admin yang memiliki cookie `lux_remote_client_id`. Jika ya, gerbang `/dashboard` dibuka.
+   - Di `middleware.ts`, proteksi rute `/dashboard` memberikan bypass bagi Admin yang memiliki cookie `lux_remote_client_id`.
+3. **Resolusi Workspace Dinamis (`auth.ts`):** Pada setiap pemanggilan `auth()` di sisi server (Route Handlers & Server Components), callback `session` mendeteksi cookie `lux_remote_client_id`. Sistem memuat data klien target dari Prisma (`id`, `name`, `email`, `role`) dan menyematkannya ke `session.user` dengan atribut `isRemote: true` dan `originalAdminId`. Hal ini membuat seluruh ratusan API klien (`/api/client/**`) otomatis membaca dan mengelola data klien yang di-remote secara transparan tanpa mengubah JWT session token.
+4. **Indikator UI & Proteksi Dasbor (`layout.tsx`):**
+   - Komponen `app/(client)/dashboard/layout.tsx` mengambil status sesi via `GET /api/admin/remote-session` dan menampilkan banner merah bertuliskan *"MODE REMOTE AKTIF: Anda sedang mengendalikan dashboard milik [Nama Klien]"*.
+   - Pengecekan status pembayaran onboarding di-bypass saat mode remote aktif agar Admin dapat leluasa menginspeksi atau membantu setup undangan klien.
+5. **Pemulihan Bersih (Restore 1-Klik):** Saat Admin mengklik tombol *"Kembali ke Admin"*, sistem mengirim request `DELETE /api/admin/remote-session` yang menghapus cookie `lux_remote_client_id` dan mengarahkan Admin kembali ke `/admin`. Karena token JWT Admin asli tidak pernah dimodifikasi, hak akses Admin langsung pulih seketika tanpa perlu login ulang.
+
 ---
 
 ## 10. API ROUTE MAP
@@ -509,6 +528,7 @@ ADMIN (auth required, role=ADMIN/SUPER_ADMIN):
   POST /api/admin/subdomains/recycle  → Daur ulang subdomain kedaluwarsa
   GET/POST/DELETE /api/admin/portfolio → Manajemen kloning portofolio statis mandiri
   POST /api/admin/invitations/{id}/lifecycle → Kontrol siklus hidup (CLOSE_TO_GALLERY, EXTEND_GALLERY, UPDATE_EVENT_DATE)
+  GET/DELETE /api/admin/remote-session → Manajemen sesi Remote Klien (Baca status & hapus cookie remote)
 
 RECEPTIONIST (public + PIN-protected di client side):
   POST /api/receptionist/verify-pin   → Verifikasi PIN panitia (AES-256-GCM 32-byte key)

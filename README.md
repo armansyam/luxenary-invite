@@ -81,8 +81,8 @@ Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model 
 ADMIN PORTAL (/admin)
    - Ringkasan (Overview): Metrik transaksi, klien aktif, omset
    - Pesanan (Orders): Kelola order, konfirmasi/tolak struk manual, cancel gateway
-   - Klien (Users): Daftar akun klien & status undangan
-   - Undangan (Invitations): Manajemen siklus hidup (Close to Gallery, Extend)
+   - Klien (Users): Daftar akun klien, detail profil, dan aksi **Remote Dasbor Klien**
+   - Undangan (Invitations): Manajemen siklus hidup (Close to Gallery, Extend), dan fitur **Remote Klien** untuk mengendalikan Dasbor Klien secara utuh tanpa password (berbasis *httpOnly Cookie Session Override* dengan mekanisme *Restore 1-Klik*).
    - Tema (Themes): Manajemen katalog & sinkronisasi tema
    - Portofolio (Portfolio): Kurasi & kloning undangan pilihan → /portfolio
    - Tim (Team): Manajemen akun staff admin (SUPER_ADMIN, FINANCE, SUPPORT)
@@ -232,8 +232,12 @@ Luxenary-Invite/
 │   └── seed.ts
 ├── prisma.config.ts           # Prisma 7 DB URL configuration
 ├── docs/
+│   ├── README.md                              # Pusat indeks dokumentasi platform
+│   ├── ALUR_REGISTRASI_KE_DASHBOARD.md        # Alur lengkap registrasi Google hingga masuk studio
 │   ├── admin/
-│   │   └── MANAJEMEN_TEMA_ADMIN.md            # Panduan manajemen tema, upload master & auto-compile demo
+│   │   ├── REMOTE_DAN_MANAJEMEN_KLIEN.md      # Panduan arsitektur remote klien & siklus hidup undangan
+│   │   ├── MANAJEMEN_TEMA_ADMIN.md            # Panduan manajemen tema, upload master & auto-compile demo
+│   │   └── DEPLOYMENT_VPS_CADDY.md            # Panduan deployment VPS Ubuntu & reverse proxy Caddy
 │   └── client/
 │       ├── TAHAP_REGISTRASI_DAN_PEMBAYARAN.md  # Panduan alur registrasi, kasir & pasca-bayar
 │       └── TAHAP_DASHBOARD_SETUP_AWAL.md       # Panduan setup wizard undangan 3 langkah

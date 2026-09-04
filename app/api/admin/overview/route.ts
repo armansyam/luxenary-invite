@@ -141,6 +141,7 @@ export async function GET() {
         orderBy: { createdAt: "desc" },
         select: {
           id: true,
+          userId: true,
           groomSlug: true,
           brideSlug: true,
           invitationSlug: true,

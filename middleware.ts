@@ -88,6 +88,12 @@ export default auth(async (req) => {
 
   // 4. Client dashboard, packages, and checkout routes protection -> HANYA Client murni yang diizinkan (Admin diblokir)
   if (pathname.startsWith("/dashboard") || pathname.startsWith("/packages") || pathname.startsWith("/checkout")) {
+    // PENGECUALIAN: Admin dengan cookie remote yang valid diizinkan masuk ke /dashboard
+    const remoteClientId = req.cookies.get("lux_remote_client_id")?.value;
+    if (isAdmin && remoteClientId) {
+      return NextResponse.next();
+    }
+
     if (!isLoggedIn || isAdmin) {
       return NextResponse.redirect(new URL("/login", req.url));
     }
