@@ -4,6 +4,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { authConfig } from "./auth.config";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 
 // Google OAuth credentials dibaca dari .env (bukan dari database)
 // Untuk mengubah credentials, update .env dan restart server.
@@ -26,6 +27,52 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const portal = (credentials?.portal as string)?.toUpperCase() || "CLIENT";
         const emailOrUser = (credentials?.email as string)?.trim().toLowerCase() || "";
         const password = (credentials?.password as string) || "";
+
+        // MODE IMPERSONASI UNTUK ADMIN KE KLIEN
+        if (portal === "IMPERSONATE") {
+          // Token dikirim melalui field password
+          const token = password;
+          if (!token) return null;
+          
+          const parts = token.split(":");
+          if (parts.length !== 3) return null;
+          
+          const [clientId, expiresAtStr, signature] = parts;
+          const expiresAt = parseInt(expiresAtStr, 10);
+          
+          if (Date.now() > expiresAt) {
+            console.error("[NextAuth] Impersonation token expired");
+            return null; // Token kedaluwarsa
+          }
+          
+          const secret = process.env.AUTH_SECRET;
+          if (!secret) return null;
+          
+          const payload = `${clientId}:${expiresAt}`;
+          const hmac = crypto.createHmac("sha256", secret);
+          hmac.update(payload);
+          const expectedSignature = hmac.digest("hex");
+          
+          if (signature !== expectedSignature) {
+            console.error("[NextAuth] Impersonation signature invalid");
+            return null;
+          }
+          
+          // Token valid, ambil data user
+          const clientUser = await prisma.user.findUnique({
+            where: { id: clientId }
+          });
+          
+          if (!clientUser) return null;
+          
+          return {
+            id: clientUser.id,
+            name: clientUser.name,
+            email: clientUser.email,
+            role: clientUser.role || "CLIENT",
+            isAdmin: false,
+          };
+        }
 
         // CredentialsProvider HANYA untuk Admin Portal (Verifikasi username/email & bcrypt hash)
         if (portal !== "ADMIN") {

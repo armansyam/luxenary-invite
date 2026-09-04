@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useSession, signOut } from "next-auth/react";
+import { useSession, signOut, signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { getApexRootDomain, getInvitationPublicUrl } from "@/lib/domainUtils";
 import { BrandLogo } from "@/components/BrandLogo";
@@ -9,6 +9,7 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { AdminProfileSettings } from "@/components/admin/AdminProfileSettings";
 import { AdminTeamManagement } from "@/components/admin/AdminTeamManagement";
 import { AdminPortfolioTab } from "@/components/admin/AdminPortfolioTab";
+import { getImpersonationToken } from "./actions/impersonate";
 
 const tabs = [
   {
@@ -277,6 +278,27 @@ export default function AdminPage() {
   const [deletingClient, setDeletingClient] = useState(false);
   const [clientActionMsg, setClientActionMsg] = useState<{ ok: boolean; msg: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [impersonatingClient, setImpersonatingClient] = useState(false);
+
+  const handleImpersonateClient = async (clientId: string) => {
+    try {
+      setImpersonatingClient(true);
+      setClientActionMsg(null);
+      const token = await getImpersonationToken(clientId);
+      if (token) {
+        // Pindah sesi menggunakan NextAuth signIn
+        await signIn("credentials", {
+          portal: "IMPERSONATE",
+          token,
+          callbackUrl: "/dashboard",
+        });
+      }
+    } catch (err: any) {
+      console.error(err);
+      setClientActionMsg({ ok: false, msg: err.message || "Gagal melakukan impersonasi klien" });
+      setImpersonatingClient(false);
+    }
+  };
 
   const userRole = (session?.user as any)?.role || "CLIENT";
   const filteredTabs = useMemo(() => {
@@ -6505,6 +6527,32 @@ export default function AdminPage() {
                   </div>
                 );
               })()}
+
+              {/* Tindakan Administratif */}
+              <div className="mt-8 pt-6 border-t border-gray-100">
+                <h4 className="text-sm font-bold text-indigo-700 mb-2">Tindakan Administratif</h4>
+                <p className="text-xs text-gray-500 mb-4">
+                  Anda dapat merasuk ke dalam dashboard klien ini (Impersonate) untuk membantu pengaturan atau mengatasi kendala (Troubleshooting).
+                </p>
+                <button
+                  type="button"
+                  onClick={() => handleImpersonateClient(manageClient.id)}
+                  disabled={impersonatingClient}
+                  className="w-full px-4 py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-sm font-bold transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed mb-4"
+                >
+                  {impersonatingClient ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></span>
+                      Menghubungkan sesi...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg>
+                      Login Sebagai Klien (Impersonate)
+                    </>
+                  )}
+                </button>
+              </div>
 
               <div className="mt-8 pt-6 border-t border-gray-100">
                 <h4 className="text-sm font-bold text-rose-600 mb-2">Zona Berbahaya</h4>
