@@ -329,10 +329,7 @@ export default function GuestsPage() {
 
   const handleCopyGuestLink = (guest: Guest) => {
     const isPublished = invitationData?.status === "PUBLISHED" || invitationData?.status === "EVENT_FINISHED";
-    if (!isPublished) {
-      alert("Undangan Anda masih berstatus DRAFT. Silakan publikasikan undangan terlebih dahulu di menu Pengaturan / Beranda untuk mengaktifkan tautan personal tamu.");
-      return;
-    }
+    if (!isPublished) return;
 
     const resolved = resolveEffectiveInvitationUrl({
       customDomain: invitationData?.customDomain,
@@ -340,10 +337,7 @@ export default function GuestsPage() {
       guestSlug: guest.name,
     });
 
-    if (!resolved.url) {
-      alert("Alamat domain undangan belum terkonfigurasi.");
-      return;
-    }
+    if (!resolved.url) return;
 
     navigator.clipboard.writeText(resolved.url).then(() => {
       setCopiedGuestId(guest.id);
@@ -691,22 +685,34 @@ export default function GuestsPage() {
                   <div className="md:col-span-3 flex items-center justify-end gap-1.5 pt-2 md:pt-0 border-t md:border-0 border-stone-100">
                     
                     {/* Copy Link Button */}
-                    <button
-                      type="button"
-                      onClick={() => handleCopyGuestLink(guest)}
-                      disabled={!isPublished}
-                      className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1 ${
-                        isPublished
-                          ? "bg-stone-100 hover:bg-stone-200 text-stone-700 cursor-pointer"
-                          : "bg-stone-100/60 text-stone-400 cursor-not-allowed border border-stone-200/50"
-                      }`}
-                      title={isPublished ? "Salin Link Undangan Tamu Ini" : "Publikasikan undangan terlebih dahulu untuk menyalin tautan"}
-                    >
-                      <svg className="w-3.5 h-3.5 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                      </svg>
-                      <span>{copiedGuestId === guest.id ? "Tersalin!" : "Salin"}</span>
-                    </button>
+                    <div className={`relative group flex items-center ${!isPublished ? "cursor-not-allowed" : ""}`}>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyGuestLink(guest)}
+                        disabled={!isPublished}
+                        className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1 ${
+                          isPublished
+                            ? "bg-stone-100 hover:bg-stone-200 text-stone-700 cursor-pointer"
+                            : "bg-stone-100/60 text-stone-400 border border-stone-200/50 select-none pointer-events-none"
+                        }`}
+                      >
+                        <svg className="w-3.5 h-3.5 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                        </svg>
+                        <span>{copiedGuestId === guest.id ? "Tersalin!" : "Salin"}</span>
+                      </button>
+
+                      {/* Tooltip Melayang saat Draft (Opsi 2) */}
+                      {!isPublished && (
+                        <div className="pointer-events-none absolute bottom-full right-0 mb-2 hidden group-hover:flex flex-col items-end z-30 transition-all duration-150">
+                          <div className="bg-stone-900/95 text-stone-200 text-[10px] font-medium px-2.5 py-1.5 rounded-xl shadow-xl whitespace-nowrap border border-stone-700/60 flex items-center gap-1.5 backdrop-blur-xs">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span>
+                            <span>Tautan aktif setelah undangan dipublikasikan</span>
+                          </div>
+                          <div className="w-2 h-2 bg-stone-900/95 rotate-45 mr-4 -mt-1 border-r border-b border-stone-700/60"></div>
+                        </div>
+                      )}
+                    </div>
 
                     {/* Send WhatsApp Button */}
                     {isPublished ? (
@@ -726,17 +732,27 @@ export default function GuestsPage() {
                         <span>Kirim WA</span>
                       </a>
                     ) : (
-                      <button
-                        type="button"
-                        onClick={() => alert("Undangan Anda masih berstatus DRAFT. Silakan publikasikan undangan Anda terlebih dahulu di menu Pengaturan / Beranda sebelum dapat mengirim tautan ke tamu.")}
-                        className="px-3 py-1.5 bg-stone-100 text-stone-400 border border-stone-200/60 rounded-lg text-xs font-medium flex items-center gap-1.5 cursor-not-allowed"
-                        title="Undangan masih DRAFT. Publikasikan undangan terlebih dahulu di menu Pengaturan untuk mengaktifkan pengiriman."
-                      >
-                        <svg className="w-3.5 h-3.5 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                        </svg>
-                        <span>Kirim WA</span>
-                      </button>
+                      <div className="relative group flex items-center cursor-not-allowed">
+                        <button
+                          type="button"
+                          disabled
+                          className="px-3 py-1.5 bg-stone-100 text-stone-400 border border-stone-200/60 rounded-lg text-xs font-medium flex items-center gap-1.5 pointer-events-none select-none"
+                        >
+                          <svg className="w-3.5 h-3.5 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                          </svg>
+                          <span>Kirim WA</span>
+                        </button>
+
+                        {/* Tooltip Melayang saat Draft (Opsi 2) */}
+                        <div className="pointer-events-none absolute bottom-full right-0 mb-2 hidden group-hover:flex flex-col items-end z-30 transition-all duration-150">
+                          <div className="bg-stone-900/95 text-stone-200 text-[10px] font-medium px-2.5 py-1.5 rounded-xl shadow-xl whitespace-nowrap border border-stone-700/60 flex items-center gap-1.5 backdrop-blur-xs">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span>
+                            <span>Publikasikan undangan di Pengaturan untuk mengaktifkan pengiriman</span>
+                          </div>
+                          <div className="w-2 h-2 bg-stone-900/95 rotate-45 mr-5 -mt-1 border-r border-b border-stone-700/60"></div>
+                        </div>
+                      </div>
                     )}
 
                     {/* Delete Button */}
