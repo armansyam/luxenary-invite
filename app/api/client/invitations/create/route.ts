@@ -61,18 +61,18 @@ export async function POST(req: Request) {
     planType,
     weddingDate,
     city,
+    timeZone,
+    akadTime,
+    resepsiTime,
     subdomain: requestedSubdomain,
   } = body;
 
-  const finalGroomNick = groomNickname || groomName || "";
-  const finalBrideNick = brideNickname || brideName || "";
+  const finalGroomNick = (groomNickname || groomName || "").trim();
+  const finalBrideNick = (brideNickname || brideName || "").trim();
 
   const randomId = Date.now().toString(36).slice(-6);
-  const groomSlug = finalGroomNick ? slugify(finalGroomNick) : `pria-${randomId}`;
-  const brideSlug = finalBrideNick ? slugify(finalBrideNick) : `wanita-${randomId}`;
 
   // 1. Permanent Canonical Slug: {groom}-{bride}-{DDMMYY} (flat, single segment)
-  //    Format tanggal: DDMMYY (e.g. 03-03-26 → 030326)
   let dateSegment = "";
   if (weddingDate) {
     const d = new Date(weddingDate);
@@ -83,29 +83,32 @@ export async function POST(req: Request) {
       dateSegment = `${dd}${mm}${yy}`;
     }
   }
-  if (!dateSegment) {
-    dateSegment = getMonthYearSlug(weddingDate); // fallback: okt-2026
+  if (!dateSegment && weddingDate) {
+    dateSegment = getMonthYearSlug(weddingDate);
   }
 
-  const baseSlug = `${groomSlug}-${brideSlug}-${dateSegment}`;
+  let groomSlug = "";
+  let brideSlug = "";
+  let invitationSlug = "";
 
-  // Cek collision — jika ada, tambahkan kota
-  let invitationSlug = baseSlug;
-  const existingBase = await prisma.invitation.findUnique({ where: { invitationSlug: baseSlug } });
+  if (finalGroomNick || finalBrideNick) {
+    groomSlug = finalGroomNick ? slugify(finalGroomNick) : "mempelai";
+    brideSlug = finalBrideNick ? slugify(finalBrideNick) : "mempelai";
+    const baseSlug = `${groomSlug}-${brideSlug}${dateSegment ? `-${dateSegment}` : ""}`;
+    invitationSlug = baseSlug;
 
-  if (existingBase) {
-    // Tambah kota untuk disambiguasi (lebih bermakna daripada angka)
-    const citySlug = city ? slugify(city) : "";
-    const withCity = citySlug ? `${baseSlug}-${citySlug}` : baseSlug;
-    const existingWithCity = await prisma.invitation.findUnique({ where: { invitationSlug: withCity } });
-
-    if (!existingWithCity) {
-      invitationSlug = withCity;
-    } else {
-      // Collision dengan kota juga → suffix acak pendek (sangat jarang terjadi)
-      const suffix = Date.now().toString(36).slice(-4);
-      invitationSlug = `${withCity}-${suffix}`;
+    const existingBase = await prisma.invitation.findUnique({ where: { invitationSlug: baseSlug } });
+    if (existingBase) {
+      const citySlug = city ? slugify(city) : "";
+      const withCity = citySlug ? `${baseSlug}-${citySlug}` : baseSlug;
+      const existingWithCity = await prisma.invitation.findUnique({ where: { invitationSlug: withCity } });
+      invitationSlug = !existingWithCity ? withCity : `${withCity}-${Date.now().toString(36).slice(-4)}`;
     }
+  } else {
+    // Skenario Lewati Setup: Gunakan slug netral berbasis ID acak tanpa data tiruan
+    invitationSlug = `undangan-${randomId}`;
+    groomSlug = "undangan";
+    brideSlug = randomId;
   }
 
   // 2. Subdomain Assignment (Nullable if skipped)
@@ -143,23 +146,37 @@ export async function POST(req: Request) {
     }
   }
 
+  // Initial Events: Dinamis murni dari input klien tanpa hardcode jam palsu
+  const tzSuffix = (timeZone && typeof timeZone === "string" && timeZone.trim()) ? ` ${timeZone.trim().toUpperCase()}` : "";
+  const formatTimeWithTz = (t?: string) => {
+    if (!t || !t.trim()) return "";
+    const clean = t.trim();
+    if (clean.toUpperCase().includes("WIB") || clean.toUpperCase().includes("WITA") || clean.toUpperCase().includes("WIT")) {
+      return clean;
+    }
+    return `${clean}${tzSuffix}`;
+  };
+
+  const finalAkadTime = formatTimeWithTz(akadTime);
+  const finalResepsiTime = formatTimeWithTz(resepsiTime);
+
   const initialEvents = weddingDate ? [
     {
       title: "Akad Nikah",
       date: weddingDate,
-      time: "08:00 - 10:00 WITA",
-      location: city ? `Masjid Agung ${city}` : "Masjid Raya",
-      address: city ? `Jl. Protokol No. 1, ${city}` : "Jl. Masjid Raya No. 1",
-      mapsUrl: "https://maps.google.com",
+      time: finalAkadTime,
+      location: city ? `Lokasi Acara di ${city}` : "",
+      address: city ? `Alamat Acara di ${city}` : "",
+      mapsUrl: "",
       badge: "Sakral",
     },
     {
       title: "Resepsi Pernikahan",
       date: weddingDate,
-      time: "11:00 - 14:00 WITA",
-      location: city ? `Grand Ballroom ${city}` : "Grand Ballroom Hotel",
-      address: city ? `Jl. Protokol No. 2, ${city}` : "Jl. Jend. Sudirman",
-      mapsUrl: "https://maps.google.com",
+      time: finalResepsiTime,
+      location: city ? `Lokasi Acara di ${city}` : "",
+      address: city ? `Alamat Acara di ${city}` : "",
+      mapsUrl: "",
       badge: "Umum",
     },
   ] : [];
@@ -172,15 +189,15 @@ export async function POST(req: Request) {
       data: {
         userId: userId,
         orderId: paidOrder?.id ?? undefined,
-        groomName: groomName || finalGroomNick,
-        brideName: brideName || finalBrideNick,
-        groomNickname: finalGroomNick,
-        brideNickname: finalBrideNick,
+        groomName: groomName?.trim() || finalGroomNick || "",
+        brideName: brideName?.trim() || finalBrideNick || "",
+        groomNickname: finalGroomNick || "",
+        brideNickname: finalBrideNick || "",
         groomSlug,
         brideSlug,
         invitationSlug,
         subdomain: finalSubdomain,
-        themeId: themeId || "kalandra",
+        themeId: themeId?.trim() || "", // Murni kosong tanpa default tema paksaan
         openingQuote:
           "Dan di antara tanda-tanda (kebesaran)-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri...",
         openingQuoteRef: "QS. AR-RUM : 21",

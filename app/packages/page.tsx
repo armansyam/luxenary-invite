@@ -8,7 +8,7 @@ import { BrandLogo } from "@/components/BrandLogo";
 export default function PackageSelectionPage() {
   const [packages, setPackages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [platformName, setPlatformName] = useState("Luxenary");
+  const [platformName, setPlatformName] = useState("");
 
   useEffect(() => {
     fetch("/api/public/settings", { cache: "no-store" })
@@ -72,11 +72,7 @@ export default function PackageSelectionPage() {
               )}
 
               <div>
-                <span className={`px-3 py-1 text-xs font-semibold rounded-full uppercase tracking-wider ${
-                  pkg.isFeatured ? "bg-amber-100 text-amber-900" : "bg-gray-100 text-gray-700"
-                }`}>
-                  {pkg.name}
-                </span>
+
 
                 <h3 className="text-xl font-serif font-bold text-[#1e1c1a] mt-4">{pkg.name}</h3>
                 <p className="text-xs text-[#6e685f] mt-1 line-clamp-2">{pkg.desc}</p>

@@ -264,8 +264,7 @@ function FieldRow({ label, description, children }: { label: string; description
 
 const AVAILABLE_CAPABILITIES = [
   { id: "guest_memories", label: "Galeri Kenangan Tamu (Live Photo Drop)" },
-  { id: "qr_checkin", label: "QR Code Check-in Tamu" },
-  { id: "livestream", label: "Fitur Live Streaming" }
+  { id: "qr_checkin", label: "QR Code Check-in Tamu" }
 ];
 export default function AdminPage() {
   const { data: session, status } = useSession();
@@ -393,6 +392,17 @@ export default function AdminPage() {
   const [rejectModalOrder, setRejectModalOrder] = useState<any | null>(null);
   const [rejectReasonInput, setRejectReasonInput] = useState<string>("");
   const [processingOrderAction, setProcessingOrderAction] = useState(false);
+  const [confirmApproveOrderId, setConfirmApproveOrderId] = useState<string | null>(null);
+  const [orderActionFeedback, setOrderActionFeedback] = useState<{ id: string; type: "success" | "error"; msg: string } | null>(null);
+
+  // Auto-revert inline confirmation jika tidak diklik dalam 5 detik
+  useEffect(() => {
+    if (!confirmApproveOrderId) return;
+    const t = setTimeout(() => {
+      setConfirmApproveOrderId(null);
+    }, 5000);
+    return () => clearTimeout(t);
+  }, [confirmApproveOrderId]);
 
   // Mobile menu open state
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -415,6 +425,7 @@ export default function AdminPage() {
   const [themeSyncResult, setThemeSyncResult] = useState<any>(null);
   const [themeError, setThemeError] = useState<string | null>(null);
   const [themeCategoryFilter, setThemeCategoryFilter] = useState<string>("all");
+  const [themeFile, setThemeFile] = useState<File | null>(null);
 
   // Theme Demo Studio State
   const [showDemoStudioModal, setShowDemoStudioModal] = useState(false);
@@ -436,8 +447,8 @@ export default function AdminPage() {
     return hasStagedFiles || hasDataChanges;
   }, [stagedDemoFiles, demoStudioData, initialDemoStudioData]);
 
-  const loadOverviewData = useCallback(() => {
-    setLoading(true);
+  const loadOverviewData = useCallback((isBackground = false) => {
+    if (!isBackground) setLoading(true);
     fetch("/api/admin/overview", { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
@@ -451,9 +462,9 @@ export default function AdminPage() {
           setLogs(data.logs || []);
           setCustomDomainOrders(data.customDomainOrders || []);
         }
-        setLoading(false);
+        if (!isBackground) setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => { if (!isBackground) setLoading(false); });
   }, []);
 
   const handleDeleteClient = async (id: string) => {
@@ -664,6 +675,26 @@ export default function AdminPage() {
     loadSettings();
     loadBrandAssets();
     loadSnapshots();
+
+    // Auto-refresh data overview setiap 15 detik (pause jika tab tidak aktif)
+    const pollInterval = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        loadOverviewData(true);
+      }
+    }, 15000);
+
+    // Otomatis refresh data (background) langsung saat Bapak kembali ke tab ini
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        loadOverviewData(true);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      clearInterval(pollInterval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [loadOverviewData, loadSettings, loadBrandAssets, loadSnapshots]);
 
   const setSetting = (key: string, value: string) => {
@@ -733,6 +764,7 @@ export default function AdminPage() {
   // Theme actions
   const handleOpenNewTheme = () => {
     setEditingTheme(null);
+    setThemeFile(null);
     setThemeForm({
       id: "",
       name: "",
@@ -749,6 +781,7 @@ export default function AdminPage() {
 
   const handleOpenEditTheme = (th: any) => {
     setEditingTheme(th);
+    setThemeFile(null);
     setThemeForm({
       id: th.id,
       name: th.name,
@@ -769,21 +802,43 @@ export default function AdminPage() {
       setThemeError("ID Tema dan Nama Tema wajib diisi");
       return;
     }
+    if (!editingTheme && !themeFile) {
+      setThemeError("File master template (.html) wajib diunggah untuk tema baru.");
+      return;
+    }
+    if (themeFile && !themeFile.name.toLowerCase().endsWith(".html")) {
+      setThemeError("File master wajib berformat .html");
+      return;
+    }
+
     setThemeSaving(true);
     setThemeError(null);
     try {
       const url = "/api/admin/themes";
       const method = editingTheme ? "PUT" : "POST";
+      const formData = new FormData();
+      formData.append("id", themeForm.id);
+      formData.append("name", themeForm.name);
+      formData.append("category", themeForm.category);
+      formData.append("series", themeForm.series);
+      formData.append("description", themeForm.description);
+      formData.append("sortOrder", String(themeForm.sortOrder));
+      formData.append("isActive", String(themeForm.isActive));
+      formData.append("isPremium", String(themeForm.isPremium));
+      if (themeFile) {
+        formData.append("file", themeFile);
+      }
+
       const res = await fetch(url, {
         method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(themeForm),
+        body: formData,
       });
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.error || "Gagal menyimpan tema");
       }
       setShowThemeModal(false);
+      setThemeFile(null);
       loadOverviewData();
     } catch (err: any) {
       setThemeError(err.message);
@@ -1047,20 +1102,26 @@ export default function AdminPage() {
   };
 
   const handleApproveOrder = async (orderId: string) => {
-    if (!confirm("Konfirmasi pembayaran ini? Akses studio undangan klien akan segera diaktifkan.")) return;
     setProcessingOrderAction(true);
+    setOrderActionFeedback(null);
     try {
       const res = await fetch(`/api/admin/orders/${orderId}/approve`, { method: "POST" });
       if (res.ok) {
-        alert("Order berhasil dikonfirmasi! Akun klien telah aktif.");
-        setPreviewProofOrder(null);
-        loadOverviewData();
+        setOrderActionFeedback({ id: orderId, type: "success", msg: "Lunas & Aktif!" });
+        setConfirmApproveOrderId(null);
+        setTimeout(() => {
+          setPreviewProofOrder(null);
+          setOrderActionFeedback(null);
+          loadOverviewData(true);
+        }, 700);
       } else {
         const d = await res.json();
-        alert("Error: " + d.error);
+        setOrderActionFeedback({ id: orderId, type: "error", msg: d.error || "Gagal konfirmasi" });
+        setTimeout(() => setOrderActionFeedback(null), 3500);
       }
     } catch (err: any) {
-      alert("Gagal: " + err.message);
+      setOrderActionFeedback({ id: orderId, type: "error", msg: err.message || "Gagal konfirmasi" });
+      setTimeout(() => setOrderActionFeedback(null), 3500);
     } finally {
       setProcessingOrderAction(false);
     }
@@ -1076,11 +1137,11 @@ export default function AdminPage() {
         body: JSON.stringify({ reason: rejectReasonInput || "Bukti transfer tidak valid atau dana belum masuk." }),
       });
       if (res.ok) {
-        alert("Order telah ditolak.");
         setRejectModalOrder(null);
         setPreviewProofOrder(null);
         setRejectReasonInput("");
-        loadOverviewData();
+        setConfirmApproveOrderId(null);
+        loadOverviewData(true);
       } else {
         const d = await res.json();
         alert("Error: " + d.error);
@@ -1171,7 +1232,7 @@ export default function AdminPage() {
               <BrandLogo size="sm" lightBg brandName={settingsMap["platform_name"]} />
               <div>
                 <h1 className="text-base sm:text-lg font-bold text-gray-900 leading-none truncate max-w-[160px] sm:max-w-none">
-                  {settingsMap["platform_name"] || "Luxenary"} Admin
+                  {settingsMap["platform_name"] || "Platform"} Admin
                 </h1>
                 <p className="text-[11px] text-gray-400 mt-0.5">Control Panel</p>
               </div>
@@ -1317,7 +1378,7 @@ export default function AdminPage() {
                         <span>Pusat Kendali Administrator</span>
                       </div>
                       <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-                        {settingsMap["platform_name"] || "Luxenary"} Executive Dashboard
+                        {settingsMap["platform_name"] || "Platform"} Executive Dashboard
                       </h2>
                       <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
                         Ringkasan performa finansial, analitik paket, aktivitas mempelai &amp; status operasional sistem.
@@ -1770,7 +1831,7 @@ export default function AdminPage() {
                       <h2 className="text-2xl font-bold text-gray-900">Daftar Transaksi</h2>
                       <p className="text-sm text-gray-500">{orders.length} transaksi total</p>
                     </div>
-                    <button onClick={loadOverviewData} className="px-3 py-1.5 text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition cursor-pointer">
+                    <button onClick={() => loadOverviewData()} className="px-3 py-1.5 text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition cursor-pointer">
                       ↻ Refresh
                     </button>
                   </div>
@@ -1804,9 +1865,9 @@ export default function AdminPage() {
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-50">
-                          {orders.filter(ord => orderTab === "SEMUA" || ord.status === orderTab).length === 0 ? (
+                          {orders.filter(ord => orderTab === "SEMUA" || (orderTab === "FAILED" ? (ord.status === "FAILED" || ord.status === "EXPIRED") : ord.status === orderTab)).length === 0 ? (
                             <tr><td colSpan={9} className="px-5 py-8 text-center text-gray-400 italic">Belum ada transaksi</td></tr>
-                          ) : orders.filter(ord => orderTab === "SEMUA" || ord.status === orderTab).map((ord) => (
+                          ) : orders.filter(ord => orderTab === "SEMUA" || (orderTab === "FAILED" ? (ord.status === "FAILED" || ord.status === "EXPIRED") : ord.status === orderTab)).map((ord) => (
                             <tr key={ord.id} className="hover:bg-gray-50 transition">
                               <td className="px-4 py-3 text-xs font-mono text-gray-700 font-bold">{ord.invoiceNumber}</td>
                               <td className="px-4 py-3 text-xs text-gray-800 font-medium">
@@ -1818,6 +1879,10 @@ export default function AdminPage() {
                                 {ord.paymentMethod === "MANUAL_TRANSFER" ? (
                                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
                                     Transfer Bank
+                                  </span>
+                                ) : (ord.status === "PENDING" && !ord.proofImageUrl && !ord.snapToken) ? (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-500 border border-gray-200">
+                                    Belum Dipilih
                                   </span>
                                 ) : (
                                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-sky-50 text-sky-800 border border-sky-200">
@@ -1889,13 +1954,42 @@ export default function AdminPage() {
                                 {/* Tombol Konfirmasi/Tolak HANYA untuk Transfer Manual yang sudah upload struk */}
                                 {ord.status === "PENDING" && ord.paymentMethod === "MANUAL_TRANSFER" && ord.proofImageUrl && (
                                   <div className="flex items-center gap-1.5">
-                                    <button
-                                      onClick={() => handleApproveOrder(ord.id)}
-                                      disabled={processingOrderAction}
-                                      className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-semibold transition cursor-pointer disabled:opacity-50"
-                                    >
-                                      Konfirmasi
-                                    </button>
+                                    {orderActionFeedback && orderActionFeedback.id === ord.id && orderActionFeedback.type === "success" ? (
+                                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-600 text-white animate-in zoom-in-95 duration-150">
+                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        Lunas!
+                                      </span>
+                                    ) : confirmApproveOrderId === ord.id ? (
+                                      <div className="flex items-center gap-1 p-0.5 bg-emerald-50 border border-emerald-300 rounded-lg animate-in zoom-in-95 duration-150">
+                                        <button
+                                          onClick={() => handleApproveOrder(ord.id)}
+                                          disabled={processingOrderAction}
+                                          className="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-md text-[11px] font-bold transition cursor-pointer disabled:opacity-50 flex items-center gap-1 active:scale-95"
+                                        >
+                                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                          </svg>
+                                          {processingOrderAction ? "..." : "Ya"}
+                                        </button>
+                                        <button
+                                          onClick={() => setConfirmApproveOrderId(null)}
+                                          disabled={processingOrderAction}
+                                          className="px-1.5 py-0.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-md text-[11px] font-semibold transition cursor-pointer"
+                                        >
+                                          Batal
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <button
+                                        onClick={() => setConfirmApproveOrderId(ord.id)}
+                                        disabled={processingOrderAction}
+                                        className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-semibold transition cursor-pointer disabled:opacity-50 active:scale-95"
+                                      >
+                                        Konfirmasi
+                                      </button>
+                                    )}
                                     <button
                                       onClick={() => {
                                        setRejectModalOrder(ord);
@@ -1931,11 +2025,11 @@ export default function AdminPage() {
 
                   {/* ── Mobile-Native Compact Feed View ── */}
                   <div className="block md:hidden space-y-3">
-                    {orders.filter(ord => orderTab === "SEMUA" || ord.status === orderTab).length === 0 ? (
+                    {orders.filter(ord => orderTab === "SEMUA" || (orderTab === "FAILED" ? (ord.status === "FAILED" || ord.status === "EXPIRED") : ord.status === orderTab)).length === 0 ? (
                       <div className="p-8 text-center bg-white rounded-2xl border border-gray-200 text-gray-400 text-xs italic">
                         Belum ada transaksi
                       </div>
-                    ) : orders.filter(ord => orderTab === "SEMUA" || ord.status === orderTab).map((ord) => (
+                    ) : orders.filter(ord => orderTab === "SEMUA" || (orderTab === "FAILED" ? (ord.status === "FAILED" || ord.status === "EXPIRED") : ord.status === orderTab)).map((ord) => (
                         <div key={ord.id} className="bg-white rounded-2xl p-4 border border-gray-200 shadow-2xs space-y-2.5">
                           {/* Top: Invoice + Status */}
                           <div className="flex items-center justify-between gap-2">
@@ -2021,20 +2115,49 @@ export default function AdminPage() {
 
                               {ord.status === "PENDING" && ord.proofImageUrl && (
                                 <div className="flex items-center gap-1.5 ml-auto">
-                                  <button
-                                    onClick={() => handleApproveOrder(ord.id)}
-                                    disabled={processingOrderAction}
-                                    className="px-3 py-1 bg-emerald-600 text-white rounded-lg text-xs font-semibold transition cursor-pointer disabled:opacity-50"
-                                  >
-                                    Konfirmasi
-                                  </button>
+                                  {orderActionFeedback && orderActionFeedback.id === ord.id && orderActionFeedback.type === "success" ? (
+                                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-bold bg-emerald-600 text-white animate-in zoom-in-95 duration-150">
+                                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                      </svg>
+                                      Lunas!
+                                    </span>
+                                  ) : confirmApproveOrderId === ord.id ? (
+                                    <div className="flex items-center gap-1 p-0.5 bg-emerald-50 border border-emerald-300 rounded-lg animate-in zoom-in-95 duration-150">
+                                      <button
+                                        onClick={() => handleApproveOrder(ord.id)}
+                                        disabled={processingOrderAction}
+                                        className="px-2.5 py-0.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-md text-xs font-bold transition cursor-pointer disabled:opacity-50 flex items-center gap-1 active:scale-95"
+                                      >
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        Ya
+                                      </button>
+                                      <button
+                                        onClick={() => setConfirmApproveOrderId(null)}
+                                        disabled={processingOrderAction}
+                                        className="px-2 py-0.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-md text-xs font-semibold transition cursor-pointer"
+                                      >
+                                        Batal
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <button
+                                      onClick={() => setConfirmApproveOrderId(ord.id)}
+                                      disabled={processingOrderAction}
+                                      className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold transition cursor-pointer disabled:opacity-50 active:scale-95"
+                                    >
+                                      Konfirmasi
+                                    </button>
+                                  )}
                                   <button
                                     onClick={() => {
                                       setRejectModalOrder(ord);
                                       setRejectReasonInput("Bukti transfer tidak valid atau dana belum masuk.");
                                     }}
                                     disabled={processingOrderAction}
-                                    className="px-3 py-1 bg-rose-50 text-rose-800 border border-rose-200 rounded-lg text-xs font-semibold transition cursor-pointer disabled:opacity-50"
+                                    className="px-3 py-1 bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 rounded-lg text-xs font-semibold transition cursor-pointer disabled:opacity-50"
                                   >
                                     Tolak
                                   </button>
@@ -2411,7 +2534,7 @@ export default function AdminPage() {
                                     <div className="text-xs text-gray-500">{ord.user?.email}</div>
                                   </td>
                                   <td className="py-4 px-6 text-gray-600 font-mono text-xs">
-                                    {ord.invitation?.subdomain ? `https://${ord.invitation.subdomain}.luxenary.id` : "-"}
+                                    {ord.invitation?.subdomain ? `https://${ord.invitation.subdomain}.${process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost:3000'}` : "-"}
                                   </td>
                                   <td className="py-4 px-6">
                                     <div className="flex items-center gap-2">
@@ -2619,7 +2742,7 @@ export default function AdminPage() {
 
                                   {/* Description / Tagline */}
                                   <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">
-                                    {theme.description || "Desain eksklusif Luxenary Invite"}
+                                    {theme.description || `Desain eksklusif ${settingsMap["platform_name"] || "Platform"}`}
                                   </p>
                                 </div>
 
@@ -2776,12 +2899,7 @@ export default function AdminPage() {
                           <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
                             <span className="text-xs text-gray-500 block font-medium">Mode Pembayaran Aktif</span>
                             <div className="mt-1">
-                              {(settingsMap["payment_mode"] || "BOTH") === "BOTH" ? (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                  QRIS + Transfer Manual
-                                </span>
-                              ) : settingsMap["payment_mode"] === "GATEWAY" ? (
+                              {(settingsMap["payment_mode"] || "GATEWAY") === "GATEWAY" || settingsMap["payment_mode"] === "BOTH" ? (
                                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-200">
                                   <span className="w-1.5 h-1.5 rounded-full bg-sky-500"></span>
                                   Hanya QRIS / Otomatis
@@ -2789,7 +2907,7 @@ export default function AdminPage() {
                               ) : (
                                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
                                   <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                                  Hanya Transfer Bank
+                                  Transfer Manual (Mode Darurat)
                                 </span>
                               )}
                             </div>
@@ -2797,12 +2915,20 @@ export default function AdminPage() {
 
                           <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
                             <span className="text-xs text-gray-500 block font-medium">Rekening Tujuan</span>
-                            <span className="text-xs font-bold text-gray-800 mt-1 inline-block">
-                              {settingsMap["bank_name"] || "BCA"} - {settingsMap["bank_account_number"] || "8735098123"}
-                            </span>
-                            <span className="text-[11px] text-gray-500 block font-medium">
-                              a.n {settingsMap["bank_account_holder"] || "PT Luxenary Karya Digital"}
-                            </span>
+                            {settingsMap["bank_name"] && settingsMap["bank_account_number"] ? (
+                              <>
+                                <span className="text-xs font-bold text-gray-800 mt-1 inline-block">
+                                  {settingsMap["bank_name"]} - {settingsMap["bank_account_number"]}
+                                </span>
+                                <span className="text-[11px] text-gray-500 block font-medium">
+                                  a.n {settingsMap["bank_account_holder"] || "-"}
+                                </span>
+                              </>
+                            ) : (
+                              <span className="text-xs text-amber-700 bg-amber-50 px-2.5 py-1 rounded-md font-medium inline-block mt-1 border border-amber-200">
+                                Rekening Belum Dikonfigurasi
+                              </span>
+                            )}
                           </div>
                         </div>
 
@@ -2818,18 +2944,17 @@ export default function AdminPage() {
                   >
                     <div className="space-y-4">
                       <FieldRow label="Mode Pembayaran yang Dibuka">
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           {[
-                            { id: "BOTH", label: "QRIS + Transfer Manual", desc: "Klien bebas memilih metode" },
-                            { id: "GATEWAY", label: "Hanya QRIS / Otomatis", desc: "Auto verifikasi via iPaymu" },
-                            { id: "MANUAL", label: "Hanya Transfer Manual", desc: "Verifikasi via upload struk" },
+                            { id: "GATEWAY", label: "Hanya QRIS / Otomatis", desc: "Auto verifikasi via Payment Gateway" },
+                            { id: "MANUAL", label: "Transfer Manual (Darurat)", desc: "Verifikasi via upload struk" },
                           ].map((opt) => (
                             <button
                               key={opt.id}
                               type="button"
                               onClick={() => setSetting("payment_mode", opt.id)}
                               className={`p-3 rounded-xl border text-left transition cursor-pointer ${
-                                (settingsMap["payment_mode"] || "BOTH") === opt.id
+                                ((settingsMap["payment_mode"] || "GATEWAY") === opt.id || (settingsMap["payment_mode"] === "BOTH" && opt.id === "GATEWAY"))
                                   ? "border-amber-600 bg-amber-50 text-amber-950 ring-1 ring-amber-500"
                                   : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
                               }`}
@@ -2845,9 +2970,9 @@ export default function AdminPage() {
                         <FieldRow label="Nama Bank">
                           <input
                             type="text"
-                            value={settingsMap["bank_name"] || "BCA (Bank Central Asia)"}
+                            value={settingsMap["bank_name"] || ""}
                             onChange={(e) => setSetting("bank_name", e.target.value)}
-                            placeholder="Contoh: BCA / Mandiri / BRI"
+                            placeholder="Contoh: BCA / Mandiri / BRI / BSI"
                             className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition"
                           />
                         </FieldRow>
@@ -2855,21 +2980,21 @@ export default function AdminPage() {
                         <FieldRow label="Nomor Rekening">
                           <input
                             type="text"
-                            value={settingsMap["bank_account_number"] || "8735098123"}
+                            value={settingsMap["bank_account_number"] || ""}
                             onChange={(e) => setSetting("bank_account_number", e.target.value)}
-                            placeholder="Contoh: 8735098123"
+                            placeholder="Contoh: 1234567890"
                             className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition"
                           />
                         </FieldRow>
 
-                        <FieldRow label="Atas Nama (Pemilik)">
-                          <input
-                            type="text"
-                            value={settingsMap["bank_account_holder"] || "PT Luxenary Karya Digital"}
-                            onChange={(e) => setSetting("bank_account_holder", e.target.value)}
-                            placeholder="Contoh: PT Luxenary Karya Digital"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition"
-                          />
+                        <FieldRow label="Nama Pemilik Rekening" description="Atas nama dari rekening penerima pembayaran di atas.">
+                            <input
+                              type="text"
+                              value={settingsMap["bank_account_holder"] || ""}
+                              onChange={(e) => setSetting("bank_account_holder", e.target.value)}
+                              placeholder="Contoh: PT Luxenary Indonesia / Nama Pemilik"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition"
+                            />
                         </FieldRow>
                       </div>
 
@@ -2958,7 +3083,7 @@ export default function AdminPage() {
 
                         <div className="p-3 bg-gray-50 rounded-xl border border-gray-200 text-xs flex items-center justify-between gap-2 flex-wrap">
                           <span className="text-gray-600 font-medium">
-                            Format Judul Invoice: <code className="font-mono text-gray-900 font-bold bg-white px-2 py-0.5 rounded border border-gray-200">{settingsMap["payment_invoice_prefix"] || "Luxenary Invite"} — Order #XXXXXX</code>
+                            Format Judul Invoice: <code className="font-mono text-gray-900 font-bold bg-white px-2 py-0.5 rounded border border-gray-200">{settingsMap["payment_invoice_prefix"] || "Sistem Undangan"} — Order #XXXXXX</code>
                           </span>
                           <span className="text-[11px] text-gray-400">Berlaku otomatis untuk semua vendor gateway</span>
                         </div>
@@ -3040,12 +3165,12 @@ export default function AdminPage() {
                           />
                         </FieldRow>
 
-                        <FieldRow label="Prefix Judul Tagihan / Invoice" description="Teks identitas yang muncul di aplikasi e-Wallet pembeli saat scan QRIS.">
+                        <FieldRow label="Awalan Judul Invoice (Prefix)" description="Digunakan pada judul invoice Xendit. (e.g. Nama Platform Anda).">
                           <input
                             type="text"
-                            value={settingsMap["payment_invoice_prefix"] || "Luxenary Invite"}
+                            value={settingsMap["payment_invoice_prefix"] || "Sistem Undangan"}
                             onChange={(e) => setSetting("payment_invoice_prefix", e.target.value)}
-                            placeholder="Contoh: Luxenary Invite"
+                            placeholder="Contoh: Sistem Undangan"
                             className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs font-medium"
                           />
                         </FieldRow>
@@ -3619,7 +3744,6 @@ export default function AdminPage() {
                       </div>
                     </FieldRow>
 
-                    {/* Google Drive integration telah dihapus dari sistem */}
                     <div className="pt-3 border-t border-gray-100">
                       <div className="p-3 rounded-xl bg-stone-50 border border-stone-200">
                         <p className="text-xs text-stone-500 leading-relaxed">
@@ -3652,10 +3776,10 @@ export default function AdminPage() {
                     description="Atur nama paket, harga, dan deskripsi untuk 3 kategori paket undangan."
                     isEditing={Boolean(editSection["pricing"])}
                     onEdit={() => toggleEditSection("pricing")}
-                    onCancel={() => cancelEdit("pricing", ["name_traditional", "name_modern", "name_premium", "price_traditional", "price_modern", "price_premium", "desc_traditional", "desc_modern", "desc_premium", "capabilities_traditional", "capabilities_modern", "capabilities_premium"])}
-                    onSave={() => saveSettings(["name_traditional", "name_modern", "name_premium", "price_traditional", "price_modern", "price_premium", "desc_traditional", "desc_modern", "desc_premium", "capabilities_traditional", "capabilities_modern", "capabilities_premium"], setSavingPricing, "pricing")}
+                    onCancel={() => cancelEdit("pricing", ["name_traditional", "name_modern", "name_premium", "price_traditional", "price_modern", "price_premium", "desc_traditional", "desc_modern", "desc_premium", "features_traditional", "features_modern", "features_premium", "capabilities_traditional", "capabilities_modern", "capabilities_premium"])}
+                    onSave={() => saveSettings(["name_traditional", "name_modern", "name_premium", "price_traditional", "price_modern", "price_premium", "desc_traditional", "desc_modern", "desc_premium", "features_traditional", "features_modern", "features_premium", "capabilities_traditional", "capabilities_modern", "capabilities_premium"], setSavingPricing, "pricing")}
                     saving={savingPricing}
-                    isDirty={isSectionDirty(["name_traditional", "name_modern", "name_premium", "price_traditional", "price_modern", "price_premium", "desc_traditional", "desc_modern", "desc_premium", "capabilities_traditional", "capabilities_modern", "capabilities_premium"])}
+                    isDirty={isSectionDirty(["name_traditional", "name_modern", "name_premium", "price_traditional", "price_modern", "price_premium", "desc_traditional", "desc_modern", "desc_premium", "features_traditional", "features_modern", "features_premium", "capabilities_traditional", "capabilities_modern", "capabilities_premium"])}
                     saveSuccess={settingsSaved["pricing"]}
                     saveSuccessMessage="Harga dan nama paket berhasil diperbarui"
                     viewContent={
@@ -3727,6 +3851,15 @@ export default function AdminPage() {
                             className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition resize-none"
                           />
                         </FieldRow>
+                        <FieldRow label="Daftar Fitur (Satu per baris)">
+                          <textarea
+                            rows={4}
+                            value={settingsMap["features_traditional"] || ""}
+                            onChange={(e) => setSetting("features_traditional", e.target.value)}
+                            placeholder="Pisahkan dengan baris baru (Enter)"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition resize-none"
+                          />
+                        </FieldRow>
                         <div className="pt-2">
                           <label className="block text-xs font-bold text-gray-700 mb-2">Fitur / Kapabilitas Paket</label>
                           <div className="space-y-1.5 bg-white p-3 border border-gray-200 rounded-xl max-h-48 overflow-y-auto no-scrollbar">
@@ -3772,6 +3905,15 @@ export default function AdminPage() {
                             rows={3}
                             value={settingsMap["desc_modern"] || "Tema Modern — Minimalis, Kontemporer & Sinematik"}
                             onChange={(e) => setSetting("desc_modern", e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 transition resize-none"
+                          />
+                        </FieldRow>
+                        <FieldRow label="Daftar Fitur (Satu per baris)">
+                          <textarea
+                            rows={4}
+                            value={settingsMap["features_modern"] || ""}
+                            onChange={(e) => setSetting("features_modern", e.target.value)}
+                            placeholder="Pisahkan dengan baris baru (Enter)"
                             className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 transition resize-none"
                           />
                         </FieldRow>
@@ -3823,6 +3965,15 @@ export default function AdminPage() {
                             className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition resize-none"
                           />
                         </FieldRow>
+                        <FieldRow label="Daftar Fitur (Satu per baris)">
+                          <textarea
+                            rows={4}
+                            value={settingsMap["features_premium"] || ""}
+                            onChange={(e) => setSetting("features_premium", e.target.value)}
+                            placeholder="Pisahkan dengan baris baru (Enter)"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition resize-none"
+                          />
+                        </FieldRow>
                         <div className="pt-2">
                           <label className="block text-xs font-bold text-gray-700 mb-2">Fitur / Kapabilitas Paket</label>
                           <div className="space-y-1.5 bg-white p-3 border border-purple-200 rounded-xl max-h-48 overflow-y-auto no-scrollbar">
@@ -3856,7 +4007,7 @@ export default function AdminPage() {
                     saveSuccess={settingsSaved["addons"]}
                     saveSuccessMessage="Harga layanan add-on berhasil diperbarui"
                     viewContent={
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                         <div className="p-4 bg-emerald-50/60 rounded-xl border border-emerald-200">
                           <span className="text-xs font-bold text-emerald-900 block mb-1">Add-on Bundling (Domain + Galeri 1 Thn)</span>
                           <div className="flex items-baseline gap-1.5">
@@ -3880,19 +4031,6 @@ export default function AdminPage() {
                           </div>
                           <p className="text-xs text-stone-600 mt-2 leading-relaxed">
                             Biaya perpanjangan simpan foto tamu per 30 hari via QRIS dinamis saat masa aktif galeri habis.
-                          </p>
-                        </div>
-
-                        <div className="p-4 bg-sky-50/60 rounded-xl border border-sky-200">
-                          <span className="text-xs font-bold text-sky-900 block mb-1">Add-on Custom Domain Standar</span>
-                          <div className="flex items-baseline gap-1.5">
-                            <span className="text-xl font-mono font-bold text-sky-950">
-                              Rp {Number(settingsMap["addon_custom_domain_price"] || 99000).toLocaleString("id-ID")}
-                            </span>
-                            <span className="text-xs text-sky-800 font-medium">/ 1 Tahun</span>
-                          </div>
-                          <p className="text-xs text-stone-600 mt-2 leading-relaxed">
-                            Add-on custom domain mandiri (.com / .id) selama 1 tahun di luar bundling foto.
                           </p>
                         </div>
                       </div>
@@ -3927,19 +4065,7 @@ export default function AdminPage() {
                         />
                       </FieldRow>
 
-                      <FieldRow
-                        label="Tarif Custom Domain Standar (Rupiah / Tahun)"
-                        description="Harga add-on nama domain sendiri tanpa paket bundling penyimpanan foto ekstra."
-                      >
-                        <input
-                          type="number"
-                          min="10000"
-                          step="5000"
-                          value={settingsMap["addon_custom_domain_price"] || "99000"}
-                          onChange={(e) => setSetting("addon_custom_domain_price", e.target.value)}
-                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition font-mono"
-                        />
-                      </FieldRow>
+
                     </div>
                   </SettingsCard>
                   </>
@@ -4125,8 +4251,8 @@ export default function AdminPage() {
                         {[1, 2, 3].map((num) => (
                           <div key={num} className="p-3 bg-gray-50 rounded-xl border border-gray-200">
                             <span className="text-xs text-amber-600 font-bold block mb-1">Kartu Fitur {num}</span>
-                            <div className="font-bold text-gray-800 text-sm">{settingsMap[`landing_feature_${num}_title`] || (num === 1 ? "Desain Kalandra, Aurelia & Prameswari" : num === 2 ? "Manajemen Tamu & WhatsApp" : "Galeri Foto Dinamis")}</div>
-                            <div className="text-xs text-gray-500 mt-1">{settingsMap[`landing_feature_${num}_desc`] || (num === 1 ? "Estetika natural dengan split view desktop..." : num === 2 ? "Generator link pintar per tamu..." : "Layout Masonry cerdas untuk galeri...")}</div>
+                            <div className="font-bold text-gray-800 text-sm">{settingsMap[`landing_feature_${num}_title`] || (num === 1 ? "Desain Elegan & Responsif" : num === 2 ? "Manajemen Tamu & WhatsApp" : "Galeri Foto Dinamis")}</div>
+                            <div className="text-xs text-gray-500 mt-1">{settingsMap[`landing_feature_${num}_desc`] || (num === 1 ? "Desain visual modern yang memukau di perangkat apa pun." : num === 2 ? "Generator link pintar per tamu dengan automasi pesan." : "Layout Masonry cerdas untuk galeri foto pernikahan.")}</div>
                           </div>
                         ))}
                       </div>
@@ -4194,10 +4320,10 @@ export default function AdminPage() {
                     description="Atur masa tenggang (grace period) keaktifan subdomain setelah acara selesai, dan otomatisasi pelepasan subdomain ke pool agar dapat digunakan kembali oleh pasangan baru."
                     isEditing={Boolean(editSection["subdomain"])}
                     onEdit={() => toggleEditSection("subdomain")}
-                    onCancel={() => cancelEdit("subdomain", ["subdomain_grace_days", "subdomain_auto_recycle", "retention_invitation_days", "retention_account_days", "retention_invitation_grace_days", "retention_gallery_default_days", "gallery_extension_price_per_month"])}
-                    onSave={() => saveSettings(["subdomain_grace_days", "subdomain_auto_recycle", "retention_invitation_days", "retention_account_days", "retention_invitation_grace_days", "retention_gallery_default_days", "gallery_extension_price_per_month"], setSavingSubdomainSettings, "subdomain")}
+                    onCancel={() => cancelEdit("subdomain", ["subdomain_grace_days", "subdomain_auto_recycle", "retention_invitation_days", "retention_account_days", "retention_invitation_grace_days", "retention_gallery_default_days"])}
+                    onSave={() => saveSettings(["subdomain_grace_days", "subdomain_auto_recycle", "retention_invitation_days", "retention_account_days", "retention_invitation_grace_days", "retention_gallery_default_days"], setSavingSubdomainSettings, "subdomain")}
                     saving={savingSubdomainSettings}
-                    isDirty={isSectionDirty(["subdomain_grace_days", "subdomain_auto_recycle", "retention_invitation_days", "retention_account_days", "retention_invitation_grace_days", "retention_gallery_default_days", "gallery_extension_price_per_month"])}
+                    isDirty={isSectionDirty(["subdomain_grace_days", "subdomain_auto_recycle", "retention_invitation_days", "retention_account_days", "retention_invitation_grace_days", "retention_gallery_default_days"])}
                     saveSuccess={settingsSaved["subdomain"]}
                     saveSuccessMessage="Pengaturan siklus hidup subdomain berhasil disimpan"
                     viewContent={
@@ -4229,19 +4355,6 @@ export default function AdminPage() {
                             </p>
                           </div>
 
-                          <div className="p-4 bg-emerald-50/50 rounded-xl border border-emerald-200">
-                            <span className="text-xs text-emerald-950 font-bold block mb-1">Tarif Perpanjangan Galeri</span>
-                            <div className="flex items-baseline gap-1.5">
-                              <span className="text-xl font-mono font-bold text-emerald-900">
-                                Rp {Number(settingsMap["gallery_extension_price_per_month"] || 50000).toLocaleString("id-ID")}
-                              </span>
-                              <span className="text-xs text-emerald-800 font-medium">/ 30 Hari</span>
-                            </div>
-                            <p className="text-[11px] text-stone-500 mt-2">
-                              Biaya yang ditagihkan via QRIS dinamis saat klien memperpanjang masa simpan foto.
-                            </p>
-                          </div>
-
                           <div className="p-4 bg-stone-50 rounded-xl border border-stone-200">
                             <span className="text-xs text-stone-900 font-bold block mb-1">Status Auto-Recycle ke Pool</span>
                             <div className="mt-1">
@@ -4258,7 +4371,7 @@ export default function AdminPage() {
                               )}
                             </div>
                             <p className="text-[11px] text-stone-500 mt-2">
-                              Undangan lama tetap dapat diakses seumur hidup via link path: <code>luxenary.id/[pasangan]/[bln-thn]</code>.
+                              Undangan lama tetap dapat diakses seumur hidup via link path.
                             </p>
                           </div>
 
@@ -4352,17 +4465,6 @@ export default function AdminPage() {
                           max="365"
                           value={settingsMap["retention_gallery_default_days"] || "30"}
                           onChange={(e) => setSetting("retention_gallery_default_days", e.target.value)}
-                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition font-mono"
-                        />
-                      </FieldRow>
-
-                      <FieldRow label="Tarif Perpanjangan Galeri (Rupiah / 30 Hari)" description="Nominal yang ditagihkan secara otomatis via QRIS saat klien memperpanjang masa simpan foto tamu di dashboard.">
-                        <input
-                          type="number"
-                          min="10000"
-                          step="5000"
-                          value={settingsMap["gallery_extension_price_per_month"] || "50000"}
-                          onChange={(e) => setSetting("gallery_extension_price_per_month", e.target.value)}
                           className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition font-mono"
                         />
                       </FieldRow>
@@ -4678,7 +4780,7 @@ export default function AdminPage() {
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                           <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
                             <span className="text-xs text-gray-500 block font-medium">Nama Platform</span>
-                            <span className="text-sm font-bold text-gray-800 mt-0.5 inline-block">{settingsMap["platform_name"] || "Luxenary Invite"}</span>
+                            <span className="text-sm font-bold text-gray-800 mt-0.5 inline-block">{settingsMap["platform_name"] || "Sistem Undangan Digital"}</span>
                           </div>
                           <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
                             <span className="text-xs text-gray-500 block font-medium">Domain Host</span>
@@ -4711,7 +4813,7 @@ export default function AdminPage() {
                       <FieldRow label="Nama Platform">
                         <input
                           type="text"
-                          value={settingsMap["platform_name"] || "Luxenary Invite"}
+                          value={settingsMap["platform_name"] || "Sistem Undangan Digital"}
                           onChange={(e) => setSetting("platform_name", e.target.value)}
                           className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
                         />
@@ -4737,7 +4839,11 @@ export default function AdminPage() {
                         <input
                           type="text"
                           value={settingsMap["support_whatsapp"] || ""}
-                          onChange={(e) => setSetting("support_whatsapp", e.target.value.replace(/[^0-9]/g, ""))}
+                          onChange={(e) => {
+                            let val = e.target.value.replace(/[^0-9]/g, "");
+                            if (val.startsWith("0")) val = "62" + val.slice(1);
+                            setSetting("support_whatsapp", val);
+                          }}
                           placeholder="Contoh: 6281234567890"
                           className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
                         />
@@ -5236,7 +5342,7 @@ export default function AdminPage() {
                       <h2 className="text-2xl font-bold text-gray-900">Monitoring Webhook &amp; Log</h2>
                       <p className="text-sm text-gray-500">{logs.length} log terekam</p>
                     </div>
-                    <button onClick={loadOverviewData} className="px-3 py-1.5 text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition cursor-pointer">↻ Refresh</button>
+                    <button onClick={() => loadOverviewData()} className="px-3 py-1.5 text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition cursor-pointer">↻ Refresh</button>
                   </div>
 
                   {logs.length === 0 ? (
@@ -5356,6 +5462,51 @@ export default function AdminPage() {
                   placeholder="contoh: Modern, Elegan & Minimalis"
                   className="w-full px-3.5 py-2 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500"
                 />
+              </div>
+
+              {/* Master HTML File Uploader */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-gray-800">
+                    File Master Template (.html) {!editingTheme && <span className="text-red-500">*</span>}
+                  </label>
+                  {editingTheme && (
+                    <span className="text-[10px] text-gray-400 font-normal">Opsional (Unggah jika ingin mengganti file master)</span>
+                  )}
+                </div>
+                <div className="border-2 border-dashed border-gray-200 hover:border-amber-400 rounded-2xl p-3 bg-stone-50/50 transition">
+                  <input
+                    type="file"
+                    id="themeMasterFileInput"
+                    accept=".html"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0] || null;
+                      setThemeFile(f);
+                    }}
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor="themeMasterFileInput"
+                    className="flex flex-col items-center justify-center cursor-pointer text-center py-2"
+                  >
+                    <svg className="w-6 h-6 text-amber-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    {themeFile ? (
+                      <div className="space-y-0.5">
+                        <p className="text-xs font-bold text-emerald-700 break-all">{themeFile.name}</p>
+                        <p className="text-[10px] text-gray-500">{(themeFile.size / 1024).toFixed(1)} KB — Siap disimpan</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-0.5">
+                        <p className="text-xs font-semibold text-gray-700">
+                          {editingTheme ? "Klik untuk mengganti file master .html" : "Pilih atau Seret file .html ke sini"}
+                        </p>
+                        <p className="text-[10px] text-gray-400">File akan otomatis disimpan ke folder themes/ dan dikompilasi ke demo statis</p>
+                      </div>
+                    )}
+                  </label>
+                </div>
               </div>
 
               <div className="flex items-center gap-4 pt-1">
@@ -5513,6 +5664,8 @@ export default function AdminPage() {
                             { slot: "cover", label: "Landing Cover", file: "cover.webp", desc: "Tampilan layar pembuka & sampul awal" },
                             { slot: "hero", label: "Hero / Sidebar", file: "hero.webp", desc: "Foto portrait sidebar desktop & hero" },
                             { slot: "background", label: "Background Global", file: "background.webp", desc: "Latar belakang fixed blur tema" },
+                            { slot: "home", label: "Latar Home", file: "home.webp", desc: "Background khusus seksi Home (Opsional)" },
+                            { slot: "footer", label: "Foto Footer", file: "footer.webp", desc: "Foto penutup di bagian akhir undangan (Opsional)" },
                             { slot: "groom", label: "Mempelai Pria", file: "groom.webp", desc: "Foto profil pria" },
                             { slot: "bride", label: "Mempelai Wanita", file: "bride.webp", desc: "Foto profil wanita" },
                           ].map((item) => {
@@ -6193,14 +6346,46 @@ export default function AdminPage() {
                   >
                     Tolak Transaksi
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => handleApproveOrder(previewProofOrder.id)}
-                    disabled={processingOrderAction}
-                    className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
-                  >
-                    {processingOrderAction ? "Memproses..." : "Konfirmasi LUNAS"}
-                  </button>
+
+                  {orderActionFeedback && orderActionFeedback.id === previewProofOrder.id && orderActionFeedback.type === "success" ? (
+                    <div className="px-5 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 animate-in zoom-in-95 duration-150">
+                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                      </svg>
+                      {orderActionFeedback.msg}
+                    </div>
+                  ) : confirmApproveOrderId === previewProofOrder.id ? (
+                    <div className="flex items-center gap-1.5 p-1 bg-emerald-950/10 border border-emerald-500/40 rounded-xl animate-in zoom-in-95 duration-150">
+                      <button
+                        type="button"
+                        onClick={() => handleApproveOrder(previewProofOrder.id)}
+                        disabled={processingOrderAction}
+                        className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition shadow-sm cursor-pointer disabled:opacity-50 flex items-center gap-1.5 active:scale-95"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                        </svg>
+                        {processingOrderAction ? "Memproses..." : "Ya, Lunas"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmApproveOrderId(null)}
+                        disabled={processingOrderAction}
+                        className="px-3 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-xs font-semibold transition cursor-pointer"
+                      >
+                        Batal
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmApproveOrderId(previewProofOrder.id)}
+                      disabled={processingOrderAction}
+                      className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer disabled:opacity-50 flex items-center gap-1.5 active:scale-95"
+                    >
+                      Konfirmasi LUNAS
+                    </button>
+                  )}
                 </div>
               )}
             </div>

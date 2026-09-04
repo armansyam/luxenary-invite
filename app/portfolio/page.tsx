@@ -8,9 +8,9 @@ import { PortfolioGallery, PortfolioGalleryItem } from "./PortfolioGallery";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Portofolio Undangan Pernikahan Digital — Luxenary Invite",
+  title: "Portofolio Undangan Pernikahan Digital",
   description:
-    "Galeri mahakarya undangan pernikahan digital karya klien Luxenary Invite. Desain estetis, tata letak editorial mewah, dan pengalaman interaktif berkelas.",
+    "Galeri mahakarya undangan pernikahan digital. Desain estetis, tata letak editorial mewah, dan pengalaman interaktif berkelas.",
 };
 
 export default async function PortfolioPage() {

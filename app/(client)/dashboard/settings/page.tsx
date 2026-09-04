@@ -97,6 +97,7 @@ export default function SettingsPage() {
     setEditMode((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
+  const isThemeValid = !!invitation?.themeId;
   const isGroomValid = !!invitation?.groomName && !invitation.groomName.startsWith("Mempelai Pria");
   const isBrideValid = !!invitation?.brideName && !invitation.brideName.startsWith("Mempelai Wanita");
   const isEventValid = (() => {
@@ -108,7 +109,7 @@ export default function SettingsPage() {
   const isPinValid = !!invitation?.staffPin && invitation.staffPin.length >= 4;
   const isSubdomainValid = !!invitation?.subdomain;
 
-  const isPublishable = isGroomValid && isBrideValid && isEventValid && isPinValid && isSubdomainValid;
+  const isPublishable = isThemeValid && isGroomValid && isBrideValid && isEventValid && isPinValid && isSubdomainValid;
 
   useEffect(() => {
     fetch("/api/client/invitations")
@@ -120,13 +121,13 @@ export default function SettingsPage() {
           setCustomDomain(invBasic.customDomain || "");
 
           // Ambil staffPin dari endpoint individual yang mendekripsi PIN (ownership check di server)
-          let currentPin = "";
+          let currentPin = invBasic.staffPin || "";
           if (invBasic.id) {
             try {
               const detailRes = await fetch(`/api/client/invitations/${invBasic.id}`);
               if (detailRes.ok) {
                 const detail = await detailRes.json();
-                currentPin = detail.staffPin || "";
+                currentPin = detail.staffPin || currentPin;
                 // Update invitation state dengan detail lengkap termasuk PIN
                 setInvitation(detail);
               }
@@ -227,15 +228,15 @@ export default function SettingsPage() {
     setErrorMsg(null);
 
     try {
-      // Construct clean payload (exclude prisma relations)
-      const { media, user, order, guests, rsvps, wishes, ...cleanInvitation } = invitation;
-
-      const payload = {
-        ...cleanInvitation,
-        subdomain: formData.subdomain ? formData.subdomain.trim().toLowerCase() : null,
-        status: formData.status,
-        ...(secKey === "staffPin" ? { staffPin: formData.staffPin } : {})
-      };
+      // Payload modular: hanya kirim field yang diubah agar tidak terjadi tumpang-tindih data
+      let payload: any = {};
+      if (secKey === "subdomain") {
+        payload = { subdomain: formData.subdomain ? formData.subdomain.trim().toLowerCase() : null };
+      } else if (secKey === "status") {
+        payload = { status: formData.status };
+      } else if (secKey === "staffPin") {
+        payload = { staffPin: formData.staffPin ? formData.staffPin.trim() : null };
+      }
 
       const res = await fetch(`/api/client/invitations/${invitation.id}`, {
         method: "PUT",
@@ -246,6 +247,15 @@ export default function SettingsPage() {
       if (res.ok) {
         const savedData = await res.json();
         setInvitation((prev: any) => ({ ...prev, ...savedData }));
+        if (savedData.staffPin !== undefined) {
+          setFormData((prev) => ({ ...prev, staffPin: savedData.staffPin || "" }));
+        }
+        if (savedData.subdomain !== undefined) {
+          setFormData((prev) => ({ ...prev, subdomain: savedData.subdomain || "" }));
+        }
+        if (savedData.status !== undefined) {
+          setFormData((prev) => ({ ...prev, status: savedData.status || "DRAFT" }));
+        }
         setEditMode((prev) => ({ ...prev, [secKey]: false }));
         setSaveSuccess((prev) => ({ ...prev, [secKey]: true }));
         setTimeout(() => {
@@ -473,6 +483,7 @@ export default function SettingsPage() {
                   <span>⚠️</span> Syarat Publikasi Belum Terpenuhi
                 </h4>
                 <ul className="text-[11px] text-rose-700 space-y-1 ml-6 list-disc">
+                  {!isThemeValid && <li>Tema Undangan belum dipilih (silakan pilih desain tema di Studio Editor).</li>}
                   {!isSubdomainValid && <li>Tautan (Subdomain) belum diatur.</li>}
                   {(!isGroomValid || !isBrideValid) && <li>Nama Mempelai masih kosong/default (ubah di Menu Utama).</li>}
                   {!isEventValid && <li>Data Acara belum lengkap (ubah di menu Jadwal).</li>}

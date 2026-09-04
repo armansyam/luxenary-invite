@@ -65,14 +65,25 @@ export async function getAdminSetting(key: string, defaultValue = ""): Promise<s
  */
 export async function getPublicPlatformSettings(): Promise<PublicPlatformSettings> {
   let map: Record<string, string> = {};
+  let themes: any[] = [];
   try {
     const all = await prisma.adminSetting.findMany();
     all.forEach((s) => {
       map[s.key] = s.value;
     });
+    
+    themes = await prisma.theme.findMany({
+      where: { isActive: true },
+      select: { name: true, isPremium: true, series: true }
+    });
   } catch (e) {
     console.error("[getPublicPlatformSettings error]", e);
   }
+
+  const traditionalThemes = themes.filter(t => !t.isPremium && ["traditional", "heritage", "moody"].includes(t.series.toLowerCase())).map(t => t.name);
+  const modernThemes = themes.filter(t => !t.isPremium && t.series.toLowerCase() === "modern").map(t => t.name);
+  const premiumThemes = themes.filter(t => t.isPremium).map(t => t.name);
+  const totalThemesCount = traditionalThemes.length + modernThemes.length + premiumThemes.length;
 
   const commonFeatures = [
     "Tautan link personal per nama tamu",
@@ -85,8 +96,15 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
     "Amplop digital QRIS & transfer bank",
   ];
 
+  const parseFeatures = (key: string, defaultFirstLine: string) => {
+    if (map[key]) {
+      return map[key].split("\n").map(s => s.trim()).filter(s => s.length > 0);
+    }
+    return [defaultFirstLine, ...commonFeatures];
+  };
+
   return {
-    platformName: map["platform_name"] || "Luxenary Invite",
+    platformName: map["platform_name"] || "Sistem Undangan Digital",
     heroTagline: map["hero_tagline"] || "Undangan Pernikahan Digital Elegan, Hangat & Berkelas",
     heroSubtitle:
       map["hero_subtitle"] ||
@@ -130,12 +148,9 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
         name: map["name_traditional"] || "Traditional",
         price: Number(map["price_traditional"] || 0),
         desc: map["desc_traditional"] || "Tema Standart — Elegan, Sakral & Bernuansa Tradisional",
-        themes: ["Prameswari", "Badrika", "Candani", "Dillalucky", "Mayang"],
-        features: [
-          "Pilihan 5 tema Standart Traditional",
-          ...commonFeatures,
-        ],
-        capabilities: map["capabilities_traditional"] ? JSON.parse(map["capabilities_traditional"]) : [],
+        themes: traditionalThemes.length > 0 ? traditionalThemes : ["Prameswari", "Badrika", "Candani", "Dillalucky", "Mayang"],
+        features: parseFeatures("features_traditional", `Pilihan ${traditionalThemes.length || 5} tema Standart Traditional`),
+        capabilities: map["capabilities_traditional"] ? JSON.parse(map["capabilities_traditional"]) : ["music", "gallery"],
         color: "amber",
         isFeatured: false,
       },
@@ -144,12 +159,9 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
         name: map["name_modern"] || "Modern",
         price: Number(map["price_modern"] || 0),
         desc: map["desc_modern"] || "Tema Premium — Sinematik, Editorial & Kontemporer",
-        themes: ["Wave", "Papercut", "Ameera", "Chronicle", "Lumina", "Solaria"],
-        features: [
-          "Akses 6 tema Modern + Semua tema Traditional (11 Tema)",
-          ...commonFeatures,
-        ],
-        capabilities: map["capabilities_modern"] ? JSON.parse(map["capabilities_modern"]) : [],
+        themes: modernThemes.length > 0 ? modernThemes : ["Wave", "Papercut", "Ameera", "Chronicle", "Lumina", "Solaria"],
+        features: parseFeatures("features_modern", `Akses ${modernThemes.length || 6} tema Modern + Semua tema Traditional (${traditionalThemes.length + modernThemes.length || 11} Tema)`),
+        capabilities: map["capabilities_modern"] ? JSON.parse(map["capabilities_modern"]) : ["music", "gallery"],
         color: "slate",
         isFeatured: false,
       },
@@ -158,12 +170,9 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
         name: map["name_premium"] || "Premium",
         price: Number(map["price_premium"] || 0),
         desc: map["desc_premium"] || "Tema Luxury — Editorial, Full-Text & Luxury Visual Motion",
-        themes: ["Kalandra", "Valente", "Aurelia", "Artisan"],
-        features: [
-          "All-Access 15 Tema Lengkap (Traditional + Modern + Luxury Premium)",
-          ...commonFeatures,
-        ],
-        capabilities: map["capabilities_premium"] ? JSON.parse(map["capabilities_premium"]) : [],
+        themes: premiumThemes.length > 0 ? premiumThemes : ["Kalandra", "Valente", "Aurelia", "Artisan"],
+        features: parseFeatures("features_premium", `All-Access ${totalThemesCount || 15} Tema Lengkap (Traditional + Modern + Luxury Premium)`),
+        capabilities: map["capabilities_premium"] ? JSON.parse(map["capabilities_premium"]) : ["music", "gallery", "qr_checkin", "guest_memories", "custom_domain"],
         badge: "Terpopuler",
         color: "purple",
         isFeatured: true,

@@ -2,11 +2,12 @@
 
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { useState, useEffect, useRef, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import QRCode from "react-qr-code";
 
-import { getInvitationPublicUrl } from "@/lib/domainUtils";
+import { getInvitationPublicUrl, resolveEffectiveInvitationUrl } from "@/lib/domainUtils";
+import { MemoriesDownloadSection } from "@/components/client/MemoriesDownloadSection";
 
 function DashboardHomeContent() {
   const { data: session } = useSession();
@@ -14,6 +15,11 @@ function DashboardHomeContent() {
   const searchParams = useSearchParams();
   const msgParam = searchParams?.get("msg");
   const [invitation, setInvitation] = useState<any>(null);
+  const [platformSettings, setPlatformSettings] = useState<any>(null);
+  const [guestMemoriesList, setGuestMemoriesList] = useState<any[]>([]);
+  const [loadingMemories, setLoadingMemories] = useState(false);
+  const [deletingMemoryId, setDeletingMemoryId] = useState<string | null>(null);
+  const [copiedGallery, setCopiedGallery] = useState(false);
   const qrRef = useRef<HTMLDivElement>(null);
   const [stats, setStats] = useState({
     guestCount: 0,
@@ -24,6 +30,23 @@ function DashboardHomeContent() {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
 
+  const fetchGuestMemories = useCallback(async (invId?: string) => {
+    const targetId = invId || invitation?.id;
+    if (!targetId) return;
+    setLoadingMemories(true);
+    try {
+      const res = await fetch(`/api/client/invitations/${targetId}/memories`);
+      const data = await res.json();
+      if (data.success) {
+        setGuestMemoriesList(data.memories || []);
+      }
+    } catch (e) {
+      console.error("Failed to fetch guest memories:", e);
+    } finally {
+      setLoadingMemories(false);
+    }
+  }, [invitation?.id]);
+
   useEffect(() => {
     fetch("/api/client/invitations")
       .then((res) => res.json())
@@ -31,6 +54,14 @@ function DashboardHomeContent() {
         if (Array.isArray(invitations) && invitations.length > 0) {
           const inv = invitations[0];
           setInvitation(inv);
+
+          // Fetch platform settings & memories
+          fetch("/api/public/settings")
+            .then((r) => r.json())
+            .then((data) => setPlatformSettings(data))
+            .catch(() => null);
+
+          fetchGuestMemories(inv.id);
 
           // Fetch guests & rsvp stats
           try {
@@ -72,17 +103,52 @@ function DashboardHomeContent() {
         }
       })
       .catch(() => setLoading(false));
-  }, [router]);
+  }, [router, fetchGuestMemories]);
 
-  const subdomainName = invitation?.subdomain || `${invitation?.groomSlug || "mempelai"}-${invitation?.brideSlug || "pria"}`;
-  const invUrl = getInvitationPublicUrl(subdomainName);
+  const resolvedDomain = resolveEffectiveInvitationUrl({
+    customDomain: invitation?.customDomain,
+    subdomain: invitation?.subdomain,
+    groomSlug: invitation?.groomSlug,
+    brideSlug: invitation?.brideSlug,
+    invitationSlug: invitation?.invitationSlug,
+  });
+  const invUrl = resolvedDomain.url;
 
   const handleCopyLink = () => {
     if (invitation) {
-      const url = getInvitationPublicUrl(subdomainName);
-      navigator.clipboard.writeText(url);
+      navigator.clipboard.writeText(invUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleCopyGalleryLink = () => {
+    if (invitation) {
+      const url = `${invUrl}/memories`;
+      navigator.clipboard.writeText(url);
+      setCopiedGallery(true);
+      setTimeout(() => setCopiedGallery(false), 2000);
+    }
+  };
+
+  const handleDeleteMemory = async (memoryId: string) => {
+    if (!confirm("Apakah Anda yakin ingin menghapus foto kenangan ini?")) return;
+    if (!invitation?.id) return;
+    setDeletingMemoryId(memoryId);
+    try {
+      const res = await fetch(`/api/client/invitations/${invitation.id}/memories?memoryId=${memoryId}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (data.success) {
+        setGuestMemoriesList((prev) => prev.filter((m) => m.id !== memoryId));
+      } else {
+        alert(data.error || "Gagal menghapus.");
+      }
+    } catch (err: any) {
+      alert(err.message || "Gagal menghapus.");
+    } finally {
+      setDeletingMemoryId(null);
     }
   };
 
@@ -184,8 +250,14 @@ function DashboardHomeContent() {
               )}
             </div>
             
-            <span className="text-[11px] text-stone-400 font-medium capitalize">
-              Tema: <strong className="text-amber-400 font-semibold">{invitation?.themeId || "Kila"}</strong>
+            <span className="text-[11px] text-stone-400 font-medium">
+              Tema: {invitation?.themeId ? (
+                <strong className="text-amber-400 font-semibold capitalize">{invitation.themeId}</strong>
+              ) : (
+                <span className="px-2 py-0.5 bg-amber-500/15 border border-amber-500/30 text-amber-300 rounded text-[10px] font-bold">
+                  Belum Memilih Tema
+                </span>
+              )}
             </span>
           </div>
 
@@ -197,6 +269,19 @@ function DashboardHomeContent() {
               Kelola seluruh konten, galeri, susunan acara, dan tamu undangan Anda dari satu panel kontrol.
             </p>
           </div>
+
+          {/* Catatan Belum Memilih Tema */}
+          {!invitation?.themeId && (
+            <div className="p-3.5 bg-amber-500/10 border border-amber-500/25 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-amber-200">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0"></span>
+                <span>Anda belum memilih desain tema undangan. Silakan buka Studio Editor untuk memilih tema perdana Anda.</span>
+              </div>
+              <Link href={editorUrl} className="px-3.5 py-1.5 bg-amber-700 hover:bg-amber-600 text-white font-bold rounded-xl text-[11px] shrink-0 transition text-center">
+                Pilih Tema Sekarang
+              </Link>
+            </div>
+          )}
 
           {/* Action Buttons */}
           <div className="pt-2 flex flex-col sm:flex-row gap-2.5 sm:items-center flex-wrap">
@@ -264,9 +349,9 @@ function DashboardHomeContent() {
                 <span className="w-2 h-2 rounded-full bg-purple-400"></span>
                 <span>Acara telah selesai. URL website Anda sekarang otomatis menampilkan <strong>Galeri Momen Tamu</strong>.</span>
               </div>
-              <Link href={editorUrl} className="text-amber-400 hover:underline font-semibold">
+              <a href="#section-galeri-kenangan" className="text-amber-400 hover:underline font-semibold">
                 Kelola Galeri &amp; Unduh ZIP &rarr;
-              </Link>
+              </a>
             </div>
           )}
 
@@ -421,31 +506,43 @@ function DashboardHomeContent() {
         {/* Card 4: Galeri Kenangan Tamu (Memory Vault) */}
         <div className="bg-white p-5 rounded-2xl border border-amber-200 shadow-xs flex flex-col justify-between space-y-4 hover:border-amber-500 transition bg-gradient-to-b from-amber-50/30 to-white">
           <div className="space-y-2">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-900 font-bold text-sm">
-              <svg className="w-5 h-5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
+            <div className="flex items-center justify-between">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-900 font-bold text-sm">
+                <svg className="w-5 h-5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+              <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-amber-100/80 text-amber-900 font-bold border border-amber-200/60">
+                {guestMemoriesList.length} Foto
+              </span>
             </div>
             <h3 className="text-sm font-bold text-stone-900">Galeri Kenangan Tamu</h3>
             <p className="text-xs text-stone-500 leading-relaxed">
-              Album foto candid &amp; video ucapan dari sahabat yang dibagikan pasca acara.
+              Album foto candid dari para tamu undangan yang dibagikan pasca acara.
             </p>
           </div>
-          {invitation?.status === 'PUBLISHED' ? (
+          <div className="flex gap-2">
             <a
-              href={`${invUrl}/memories`}
-              target="_blank"
-              rel="noreferrer"
-              className="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs transition text-center inline-flex items-center justify-center gap-1 shadow-xs"
+              href="#section-galeri-kenangan"
+              className="flex-1 py-2.5 bg-amber-800 hover:bg-amber-900 text-white font-bold rounded-xl text-xs transition text-center shadow-xs cursor-pointer block"
             >
-              <span>Buka Galeri Momen</span>
+              Kelola &amp; Unduh ZIP
             </a>
-          ) : (
-            <div className="w-full py-2.5 bg-stone-200 text-stone-400 font-bold rounded-xl text-xs transition text-center inline-flex items-center justify-center gap-1 cursor-not-allowed">
-              <span>Buka Galeri Momen (Draft)</span>
-            </div>
-          )}
+            {invitation?.status === 'PUBLISHED' || invitation?.status === 'EVENT_FINISHED' ? (
+              <a
+                href={`${invUrl}/memories`}
+                target="_blank"
+                rel="noreferrer"
+                className="px-3 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-800 font-bold rounded-xl text-xs transition text-center inline-flex items-center justify-center border border-stone-200"
+                title="Buka Album Publik"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </a>
+            ) : null}
+          </div>
         </div>
       </div>
 
@@ -533,6 +630,154 @@ function DashboardHomeContent() {
             </div>
           </div>
 
+        </div>
+      </div>
+
+      {/* 5. Galeri Kenangan Tamu (Monitoring & Unduh Foto) */}
+      <div id="section-galeri-kenangan" className="pt-6 border-t border-stone-200/60 space-y-5 scroll-mt-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-bold text-stone-900 flex items-center gap-2">
+              <svg className="w-5 h-5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span>Galeri Kenangan Tamu (Memory Vault)</span>
+            </h2>
+            <p className="text-xs text-stone-500 mt-0.5">
+              Pantau foto candid yang diunggah tamu, bagikan tautan album publik, dan unduh arsip foto (ZIP).
+            </p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-xs font-mono font-bold text-stone-700 bg-stone-100 border border-stone-200 px-3 py-1.5 rounded-xl">
+              {guestMemoriesList.length} Foto Masuk
+            </span>
+            <button
+              type="button"
+              onClick={() => fetchGuestMemories()}
+              disabled={loadingMemories}
+              className="px-3 py-1.5 bg-white hover:bg-stone-100 text-stone-700 border border-stone-300 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+            >
+              <svg className={`w-3.5 h-3.5 ${loadingMemories ? "animate-spin text-amber-700" : "text-stone-500"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <span>{loadingMemories ? "Memuat..." : "Refresh"}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Link Album Kenangan Tamu */}
+        <div className="p-4 sm:p-5 rounded-2xl border border-stone-200 bg-stone-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="min-w-0">
+            <span className="text-[10px] font-bold text-emerald-800 tracking-wider uppercase block font-mono">
+              LINK ALBUM KENANGAN TAMU (PUBLIK)
+            </span>
+            <span className="text-xs sm:text-sm font-mono font-bold text-stone-900 break-all">
+              {invitation?.status === 'PUBLISHED' || invitation?.status === 'EVENT_FINISHED'
+                ? `${invUrl}/memories`
+                : "Tersedia setelah undangan dipublish"}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={handleCopyGalleryLink}
+              disabled={invitation?.status !== 'PUBLISHED' && invitation?.status !== 'EVENT_FINISHED'}
+              className="px-3.5 py-2 bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 rounded-xl text-xs font-bold transition cursor-pointer shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {copiedGallery ? "Tersalin" : "Salin Link"}
+            </button>
+            {invitation?.status === 'PUBLISHED' || invitation?.status === 'EVENT_FINISHED' ? (
+              <a
+                href={`${invUrl}/memories`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3.5 py-2 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs font-bold transition inline-flex items-center gap-1.5 shadow-2xs"
+              >
+                <span>Buka Galeri</span>
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </a>
+            ) : null}
+          </div>
+        </div>
+
+        {/* Client-Side JSZip Download — VPS tidak kena beban bandwidth foto */}
+        {invitation && (
+          <MemoriesDownloadSection
+            invitationId={invitation.id}
+            retentionDays={platformSettings?.retentionGalleryDefaultDays || 30}
+            isUploadLocked={invitation.memoriesUploadLocked ?? false}
+            galleryExpiresAt={invitation.galleryExpiresAt ? new Date(invitation.galleryExpiresAt).toISOString() : null}
+            extensionPrice={platformSettings?.galleryExtensionPricePerMonth || 50000}
+          />
+        )}
+
+        {/* Real-time Submissions Monitoring List */}
+        <div className="bg-white p-5 sm:p-6 rounded-2xl border border-stone-200/80 shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+            <h3 className="text-xs sm:text-sm font-bold text-stone-900 flex items-center gap-2">
+              <span>Daftar Foto Masuk dari Tamu</span>
+              <span className="px-2 py-0.5 bg-stone-100 text-stone-800 rounded-full text-[10px] font-mono font-bold">
+                {guestMemoriesList.length}
+              </span>
+            </h3>
+            <span className="text-[11px] text-stone-400">Diurutkan dari yang terbaru</span>
+          </div>
+
+          {guestMemoriesList.length === 0 ? (
+            <div className="p-8 rounded-2xl bg-stone-50 border border-stone-200 text-center space-y-2">
+              <svg className="w-8 h-8 text-stone-300 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <p className="text-xs text-stone-500 font-medium max-w-sm mx-auto">
+                Belum ada kiriman foto dari tamu. Saat acara berlangsung, foto yang dikirim tamu akan muncul di sini secara otomatis.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 max-h-[500px] overflow-y-auto pr-1">
+              {guestMemoriesList.map((item) => (
+                <div key={item.id} className="p-3.5 bg-stone-50/70 hover:bg-stone-50 border border-stone-200 rounded-2xl flex gap-3 items-start relative group transition">
+                  <div className="w-16 h-16 rounded-xl overflow-hidden bg-stone-200 shrink-0 border border-stone-300 flex items-center justify-center">
+                    <img src={item.mediaUrl} alt={item.senderName} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-1">
+                      <h4 className="text-xs font-bold text-stone-900 truncate">{item.senderName}</h4>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteMemory(item.id)}
+                        disabled={deletingMemoryId === item.id}
+                        className="text-[11px] text-rose-600 hover:text-rose-800 font-bold transition cursor-pointer p-1"
+                        title="Hapus kiriman ini"
+                      >
+                        {deletingMemoryId === item.id ? "..." : "✕"}
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-stone-500 font-mono truncate">{item.senderEmail}</p>
+                    {item.message && (
+                      <p className="text-[11px] text-stone-700 mt-1 line-clamp-2 italic">
+                        &ldquo;{item.message}&rdquo;
+                      </p>
+                    )}
+                    <div className="flex items-center justify-between gap-2 mt-2 pt-1 border-t border-stone-200/60">
+                      <span className="text-[10px] text-stone-400">
+                        {new Date(item.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                      <a
+                        href={item.mediaUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[10px] font-bold text-amber-800 hover:underline inline-flex items-center gap-1"
+                      >
+                        <span>Lihat Full</span>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

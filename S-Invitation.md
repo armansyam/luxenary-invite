@@ -10,15 +10,15 @@
 Sistem template undangan menggunakan arsitektur HTML multi-layer mandiri dengan placeholder `{{variabel}}` yang diinjeksi oleh `lib/themeEngine.ts` dan dipetakan oleh `lib/renderTemplate.ts`:
 
 ### A. Premium Series (`themes/premium/`)
-1. **Kalandra (`themes/premium/kalandra.html`)** *(Alias: `kila`, `premium-kila`)*
+1. **Kalandra (`themes/premium/kalandra.html`)** *(Legacy Alias: `kila`)*
    - Desktop 50% split-screen hero photo dengan subtle bottom scrim (25%).
    - Full-bleed vertical photo slides 100vh untuk Pengantin Pria & Wanita.
    - Live Countdown, Google Calendar sync, dan floating glass dock.
-2. **Valente (`themes/premium/valente.html`)** *(Alias: `ivanna`, `premium-ivanna`)*
+2. **Valente (`themes/premium/valente.html`)**
    - Strict 100vh CSS Scroll Snap per seksi halaman penuh (`scroll-snap-type: y mandatory`).
    - Watermark monogram inisial tipografi *Bodoni Moda* raksasa.
    - Tata letak editorial majalah mode kelas atas (*haute couture*).
-3. **Aurelia (`themes/premium/aurelia.html`)** *(Alias: `danila`)*
+3. **Aurelia (`themes/premium/aurelia.html`)**
    - Kanvas video sutra bergerak (*Video Canvas Backdrop*) dengan fallback poster.
    - Partikel kelopak bunga melayang lembut (*ambient petals*).
    - Kartu kapsul kaca frosted glass asimetris (32px radius).
@@ -27,7 +27,7 @@ Sistem template undangan menggunakan arsitektur HTML multi-layer mandiri dengan 
    - Transisi foto asimetris dan galeri grid editorial dinamis.
 
 ### B. Traditional Series (`themes/traditional/`)
-1. **Prameswari (`themes/traditional/prameswari.html`)** *(Alias: `heritage-aruna`, `aruna`)*
+1. **Prameswari (`themes/traditional/prameswari.html`)**
    - 3D Wax Seal Envelope opening modal dengan stempel lilin emas (`BUKA ✦`).
    - Portal kubah lengkung keraton (*Traditional Arch Portals*) berbingkai emas.
    - Tekstur kertas perkamen antik & ornamen klasik Nusantara.
@@ -128,6 +128,12 @@ Siklus hidup undangan diatur secara otomatis oleh cron job (`POST /api/cron/clea
    - Jika slug diakses saat undangan berstatus `ARCHIVED`, sistem memeriksa apakah salinan portofolio ada di `/portfolio/[slug]`.
    - Jika ada portofolio, otomatis dialihkan ke halaman portofolio.
    - Jika tidak ada, disajikan halaman penutupan elegan bernuansa gelap dengan branding `{platformName}` dinamis dan tombol kembali ke beranda utama (`/`).
+4. **Pemisahan Desain & Operasional Galeri Kenangan Tamu**:
+   - **Formulir Studio Editor (`/dashboard/invitation/[id]` Seksi 14):** Khusus styling & konfigurasi teks seksi (Toggle aktif, judul seksi, eyebrow, subjudul/deskripsi ajakan berbagi momen).
+   - **Dashboard Klien (`/dashboard` Seksi 5 & Card 4):** Pusat operasional & monitoring momen tamu yang menyajikan tautan publik album kenangan, widget unduh arsip ZIP client-side, info retensi/perpanjangan masa simpan +30 hari via QRIS, dan monitoring/moderasi foto masuk secara real-time.
+5. **Manajemen Domain Undangan & Proteksi Status Draft (Buku Tamu / WhatsApp Broadcast)**:
+   - **Resolusi Hierarkis Domain (`resolveEffectiveInvitationUrl`):** Sistem otomatis mendeteksi dan memprioritaskan domain tautan undangan dengan urutan: (1) Custom Domain Klien (`customDomain`), (2) Subdomain Platform (`subdomain`), (3) Fallback simulasi draft (`groomSlug-brideSlug`).
+   - **Proteksi Pengiriman Draft:** Jika undangan masih berstatus `DRAFT`, tautan pada template pesan WhatsApp ditampilkan sebagai simulasi preview dengan indikator jelas dan banner peringatan. Tombol kirim WA memunculkan dialog konfirmasi pencegahan agar klien tidak membagikan tautan yang belum bisa diakses oleh tamu sebelum undangan dirilis.
 
 ---
 
@@ -151,6 +157,22 @@ Platform mendukung 5 payment gateway terintegrasi dengan pergantian instan 1-kli
    - Biaya layanan aplikasi dihitung dari harga dasar paket (`subtotal * feePercent / 100`) dan tidak pernah terduplikasi saat checkout dimuat ulang.
 4. **Masa Berlaku Tagihan Dinamis**:
    - Durasi QRIS dibaca dari `payment_expiry_minutes` (default 60 menit).
+5. **Kebijakan Tagihan Tunggal & Proteksi Tagihan Usang (*Superseded Guard*)**:
+   - Pola *Single Active Order*: Klien yang mengganti paket atau mengulang transaksi sebelum lunas otomatis me-reuse/meng-update order yang ada (`PENDING` atau `FAILED`) sehingga zero order duplikat di database.
+   - *Superseded Redirection*: Akses ke link order lama (`?order=OLD_ID`) otomatis di-redirect oleh kasir ke order aktif terbaru (`?order=NEW_ID`). Upload ke order usang diblokir keras oleh API backend.
+6. **Transfer Bank Manual & Cloudflare R2 Edge CDN Delivery**:
+   - Struk bukti transfer manual diunggah ke storage Cloudflare R2 dan disajikan instan via Custom Domain Edge CDN (`https://cdn.luxvite.id`) dengan HTTP/2 (<200ms latency).
+   - *Persistent Rejection Warning Card*: Jika admin menolak transfer di `/admin`, kasir klien menampilkan kartu peringatan permanen dengan alasan penolakan spesifik dari admin yang tidak hilang saat di-refresh.
+7. **Visibilitas Riwayat Transaksi Ditolak di Portal Admin**:
+   - Subtab **"Gagal / Dibatalkan"** di portal `/admin` menampilkan seluruh order berstatus `FAILED` dan `EXPIRED` lengkap dengan badge merah *"Ditolak"* dan rincian alasan penolakan pada kolom Aksi.
+   - Endpoint overview admin (`/api/admin/overview`) mengembalikan daftar transaksi mutakhir tanpa mengecualikan order yang gagal.
+8. **Pembersihan Otomatis Bukti & Order Usang (*Auto-Purge Storage & Obsolete Orders*)**:
+   - Sistem menerapkan arsitektur *Single State* di mana order non-PAID usang otomatis dibersihkan saat klien mengunggah bukti baru, mengganti paket, atau saat transaksi dinyatakan lunas (`PAID`).
+   - File foto bukti transfer lama dimusnahkan permanen dari Cloudflare R2 bucket (`deleteFile`) untuk menghemat storage, dan record order lama dihapus dari database PostgreSQL.
+   - Klien yang sudah berstatus `PAID` dicegat dari halaman checkout dan dialihkan langsung ke dashboard undangan.
+9. **Inline Action Confirmation (Zero Mouse Travel)**:
+   - Tombol verifikasi konfirmasi lunas di portal `/admin` menerapkan *in-place micro-interaction* bebas dari popup browser `confirm()` dan `alert()`.
+   - Tombol bertransisi halus di tempat menjadi `[Ya, Lunas]` dan `[Batal]` dengan auto-revert 5 detik.
 
 ---
 
@@ -182,3 +204,15 @@ Sistem pengiriman email otomatis menggunakan **Nodemailer** yang membaca kredens
    - Admin memantau order melalui **Tab Custom Domain** di Dashboard Admin dan menghubungkannya (konfigurasi SSL & proxy) di Nginx.
    - Middleware melakukan rewrite transparan berbasis `resolve-custom-domain` untuk merender undangan.
    - Keamanan terjamin tanpa kendala CORS karena semua request diteruskan secara *Same-Origin*.
+
+---
+
+## 10. Modul Manajemen Tema Admin & Auto-Compile Demo (`docs/admin/MANAJEMEN_TEMA_ADMIN.md`)
+
+1. **Tambah Tema Baru via UI Admin**:
+   - Admin mengisi metadata dan mengunggah master file `.html` template langsung melalui modal.
+   - Backend meletakkan file ke `themes/{kategori}/{id}.html`, mendaftarkannya ke database, dan langsung mengeksekusi `compileAndSaveStaticDemo(id)`.
+   - File HTML demo statis langsung tercipta di `public/demo/{id}/index.html` dan siap diuji di katalog `/demo`.
+2. **Sinkronisasi Otomatis & Anti-Zombie**:
+   - Tombol *Sinkronisasi Tema & Cache* (`POST /api/admin/themes/sync`) memindai direktori fisik `themes/` dan otomatis menghapus record tema usang (*auto-purge*) yang tidak lagi memiliki file fisik master.
+   - Menjamin prinsip *Single Source of Truth* terjaga 100%.

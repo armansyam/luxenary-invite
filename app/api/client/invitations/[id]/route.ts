@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { encryptPin, decryptPin } from "@/lib/pinEncryption";
+import { encryptPin, decryptPin, isPinEncrypted } from "@/lib/pinEncryption";
 
 
 export function getInvitationLockStatus(inv: any) {
@@ -256,7 +256,6 @@ export async function PUT(
             const hasCap = (cap: string) => allowedCaps.includes(cap);
 
             // Force override if they try to enable features they don't have
-            if (parsedFeatures.showLiveStream && !hasCap("livestream")) parsedFeatures.showLiveStream = false;
             if (parsedFeatures.showQrCheckin && !hasCap("qr_checkin")) parsedFeatures.showQrCheckin = false;
             if (parsedFeatures.showGuestMemories && !hasCap("guest_memories")) parsedFeatures.showGuestMemories = false;
           }
@@ -381,9 +380,11 @@ export async function PUT(
         liveStreamUrl: body.liveStreamUrl !== undefined ? body.liveStreamUrl : undefined,
         eventData: eventDataToSave,
         featureSettings: mergedFeatureSettings,
-        // Enkripsi staffPin dengan AES-256 sebelum simpan ke database
+        // Enkripsi staffPin dengan AES-256 sebelum simpan ke database (cegah re-encrypt jika sudah terenkripsi)
         staffPin: body.staffPin !== undefined
-          ? (body.staffPin ? encryptPin(String(body.staffPin)) : null)
+          ? (body.staffPin
+              ? (isPinEncrypted(String(body.staffPin)) ? String(body.staffPin) : encryptPin(String(body.staffPin)))
+              : null)
           : undefined,
 
       },
@@ -461,7 +462,14 @@ export async function PUT(
       });
     }
 
-    return NextResponse.json({ ...updated, ...getInvitationLockStatus(updated) });
+    // Dekripsi staffPin agar frontend selalu menerima PIN plain-text asli
+    const displayPin = updated.staffPin ? decryptPin(updated.staffPin) : null;
+
+    return NextResponse.json({
+      ...updated,
+      staffPin: displayPin,
+      ...getInvitationLockStatus(updated),
+    });
   } catch (err: any) {
     console.error("Error updating invitation:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });

@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
  * ke subdomain internal sistem.
  *
  * Respons:
- *   { subdomain: "namapasangan" }     → jika domain ditemukan dan aktif
+ *   { slug: "namapasangan-1234" }     → jika domain ditemukan dan aktif
  *   { error: "..." }                  → jika domain tidak ditemukan / tidak aktif
  */
 export async function GET(req: NextRequest) {
@@ -32,13 +32,13 @@ export async function GET(req: NextRequest) {
     },
   });
 
-  if (!invitation || !invitation.subdomain) {
+  if (!invitation || !invitation.invitationSlug) {
     return NextResponse.json({ error: "Domain tidak terdaftar atau undangan belum aktif." }, { status: 404 });
   }
 
   return NextResponse.json(
     {
-      subdomain: invitation.subdomain,
+      subdomain: invitation.subdomain, // Masih dikirim untuk backward compatibility jika diperlukan
       status: invitation.status,
       slug: invitation.invitationSlug,
     },

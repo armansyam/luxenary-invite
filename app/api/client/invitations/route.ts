@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { decryptPin } from "@/lib/pinEncryption";
 
 export const dynamic = "force-dynamic";
 
@@ -30,9 +31,10 @@ export async function GET() {
       status: true,
       subdomain: true,
       eventData: true,
-      // staffPin: SENGAJA tidak dimasukkan di list API — gunakan GET /api/client/invitations/[id] untuk akses PIN
+      staffPin: true,
       customDomain: true,
       galleryExpiresAt: true,
+      memoriesUploadLocked: true,
       createdAt: true,
       order: {
         select: { planType: true },
@@ -41,6 +43,10 @@ export async function GET() {
     orderBy: { createdAt: "desc" },
   });
 
+  const mapped = invitations.map((inv) => ({
+    ...inv,
+    staffPin: inv.staffPin ? decryptPin(inv.staffPin) : null,
+  }));
 
-  return NextResponse.json(invitations);
+  return NextResponse.json(mapped);
 }

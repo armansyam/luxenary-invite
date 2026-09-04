@@ -2,6 +2,11 @@ import { prisma } from "@/lib/prisma";
 import { getGoogleDriveFolderPhotos } from "@/lib/driveHelper";
 import { escapeHtml } from "@/lib/escapeHtml";
 
+function nl2br(str: string): string {
+  if (!str) return "";
+  return escapeHtml(str).replace(/\r\n|\r|\n/g, "<br />");
+}
+
 export interface ColorPalette {
   id: string;
   name: string;
@@ -155,12 +160,13 @@ export async function composeTemplateData(invitationId: string) {
   const showFilter = featureSettings.showFilter !== undefined ? Boolean(featureSettings.showFilter) : true;
   const showTurutMengundang = featureSettings.showTurutMengundang !== undefined ? Boolean(featureSettings.showTurutMengundang) : true;
 
-  // Resolve Photos
-  const coverUrl = mediaMap.get("LANDING_COVER") || "https://images.unsplash.com/photo-1519741497674-611481863552?w=1200&q=85";
+  // Resolve Photos (Theme-Aware Fallbacks)
+  const themeFolder = inv.themeId || "kalandra";
+  const coverUrl = mediaMap.get("LANDING_COVER") || `/demo/${themeFolder}/cover.webp`;
   const sidebarUrl = mediaMap.get("DESKTOP_SIDEBAR") || coverUrl;
-  const fixedBgUrl = mediaMap.get("GLOBAL_FIXED_BG") || sidebarUrl || "https://images.unsplash.com/photo-1519741497674-611481863552?w=1920&q=80";
-  const groomPhoto = mediaMap.get("GROOM_PHOTO") || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80";
-  const bridePhoto = mediaMap.get("BRIDE_PHOTO") || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&q=80";
+  const fixedBgUrl = mediaMap.get("GLOBAL_FIXED_BG") || sidebarUrl || `/demo/${themeFolder}/background.webp`;
+  const groomPhoto = mediaMap.get("GROOM_PHOTO") || `/demo/${themeFolder}/groom.webp`;
+  const bridePhoto = mediaMap.get("BRIDE_PHOTO") || `/demo/${themeFolder}/bride.webp`;
   const closingPhotoUrl = mediaMap.get("CLOSING_COVER") || null;
 
   // Dynamic Couple Display Order Resolution
@@ -216,26 +222,7 @@ export async function composeTemplateData(invitationId: string) {
   } catch {}
 
   // 1. Dynamic Events HTML with Smart Location & Maps Deduplication
-  const rawEventsList = Array.isArray(events) && events.length > 0
-    ? events
-    : [
-        {
-          badge: "SAKRAL",
-          title: "Akad Nikah",
-          time: "08.00 – 10.00 WITA",
-          location: "Grand Ballroom Phinisi Hotel Clarion",
-          address: "Jl. A.P. Pettarani, Makassar",
-          mapsUrl: "https://maps.google.com",
-        },
-        {
-          badge: "RESEPSI",
-          title: "Resepsi Pernikahan",
-          time: "11.00 – 14.00 WITA",
-          location: "Grand Ballroom Phinisi Hotel Clarion",
-          address: "Jl. A.P. Pettarani, Makassar",
-          mapsUrl: "https://maps.google.com",
-        },
-      ];
+  const rawEventsList = Array.isArray(events) ? events : [];
 
   // Detect whether all events share the exact same location and mapsUrl
   const normalizeLoc = (s: string) => (s || "").trim().toLowerCase();
@@ -256,55 +243,59 @@ export async function composeTemplateData(invitationId: string) {
   });
 
   let eventsHtml = "";
-  if (isSameLocationForAll) {
-    // Skenario 1: Lokasi & Maps Sama (Satu Tempat, Beda Jam) -> Tampilkan 1 Blok Maps Bersama di Bawah
-    const sessionsListHtml = rawEventsList.map((ev: any, idx: number) => `
-      <div class="event-block-item unified-session">
-        <span class="ev-cat">${(ev.badge || (idx === 0 ? "SAKRAMEN / AKAD" : "RESEPSI")).toUpperCase()}</span>
-        <h3 class="ev-name serif">${(ev.title || (idx === 0 ? "Akad Nikah" : "Resepsi Pernikahan")).toUpperCase()}</h3>
-        <p class="ev-time">${ev.time || "08.00 – 10.00 WITA"}</p>
-        ${ev.notes ? `<p class="ev-notes" style="font-size:0.75rem; font-style:italic; margin-top:0.3rem; color:rgba(255,255,255,0.7);">${escapeHtml(ev.notes)}</p>` : ""}
-      </div>
-    `).join("");
-
-    const unifiedVenue = rawEventsList[0]?.location || "Grand Ballroom";
-    const unifiedAddress = rawEventsList[0]?.address || "";
-    const unifiedMapUrl = rawEventsList[0]?.mapsUrl || "";
-
-    eventsHtml = `
-      <div class="events-unified-container">
-        <div class="events-sessions-stack">
-          ${sessionsListHtml}
+  if (rawEventsList.length > 0) {
+    if (isSameLocationForAll) {
+      // Skenario 1: Lokasi & Maps Sama (Satu Tempat, Beda Jam) -> Tampilkan 1 Blok Maps Bersama di Bawah
+      const sessionsListHtml = rawEventsList.map((ev: any, idx: number) => `
+        <div class="event-block-item unified-session">
+          <span class="ev-cat">${(ev.badge || (idx === 0 ? "SAKRAMEN / AKAD" : "RESEPSI")).toUpperCase()}</span>
+          <h3 class="ev-name serif">${(ev.title || (idx === 0 ? "Akad Nikah" : "Resepsi Pernikahan")).toUpperCase()}</h3>
+          ${ev.time ? `<p class="ev-time">${ev.time}</p>` : ""}
+          ${ev.notes ? `<p class="ev-notes" style="font-size:0.75rem; font-style:italic; margin-top:0.3rem; color:rgba(255,255,255,0.7);">${nl2br(ev.notes)}</p>` : ""}
         </div>
-        <div class="event-unified-venue-card">
-          <span class="venue-card-lbl">LOKASI ACARA</span>
-          <h4 class="ev-venue-unified serif">${unifiedVenue}</h4>
-          ${unifiedAddress ? `<p class="ev-addr-unified">${unifiedAddress}</p>` : ""}
-          ${unifiedMapUrl ? `
-            <a href="${unifiedMapUrl}" target="_blank" rel="noreferrer" class="btn-map-outline">
-              BUKA PETUNJUK ARAH (MAPS)
+      `).join("");
+
+      const unifiedVenue = rawEventsList[0]?.location || "";
+      const unifiedAddress = rawEventsList[0]?.address || "";
+      const unifiedMapUrl = rawEventsList[0]?.mapsUrl || "";
+
+      eventsHtml = `
+        <div class="events-unified-container">
+          <div class="events-sessions-stack">
+            ${sessionsListHtml}
+          </div>
+          ${(unifiedVenue || unifiedAddress || unifiedMapUrl) ? `
+          <div class="event-unified-venue-card">
+            <span class="venue-card-lbl">LOKASI ACARA</span>
+            ${unifiedVenue ? `<h4 class="ev-venue-unified serif">${unifiedVenue}</h4>` : ""}
+            ${unifiedAddress ? `<p class="ev-addr-unified">${unifiedAddress}</p>` : ""}
+            ${unifiedMapUrl ? `
+              <a href="${unifiedMapUrl}" target="_blank" rel="noreferrer" class="btn-map-outline">
+                BUKA PETUNJUK ARAH (MAPS)
+              </a>
+            ` : ""}
+          </div>
+          ` : ""}
+        </div>
+      `;
+    } else {
+      // Skenario 2: Lokasi Berbeda (Misal: Akad di Masjid, Resepsi di Hotel) -> Tampilkan Maps per Acara
+      eventsHtml = rawEventsList.map((ev: any, idx: number) => `
+        <div class="event-block-item">
+          <span class="ev-cat">${(ev.badge || (idx === 0 ? "SAKRAMEN / AKAD" : "RESEPSI")).toUpperCase()}</span>
+          <h3 class="ev-name serif">${(ev.title || (idx === 0 ? "Akad Nikah" : "Resepsi Pernikahan")).toUpperCase()}</h3>
+          ${ev.time ? `<p class="ev-time">${ev.time}</p>` : ""}
+          ${ev.location ? `<h4 class="ev-venue">${ev.location}</h4>` : ""}
+          ${ev.address ? `<p class="ev-addr">${ev.address}</p>` : ""}
+          ${ev.notes ? `<p class="ev-notes" style="font-size:0.75rem; font-style:italic; margin-top:0.3rem; color:rgba(255,255,255,0.7);">${nl2br(ev.notes)}</p>` : ""}
+          ${ev.mapsUrl ? `
+            <a href="${ev.mapsUrl}" target="_blank" rel="noreferrer" class="btn-map-outline">
+              BUKA MAPS
             </a>
           ` : ""}
         </div>
-      </div>
-    `;
-  } else {
-    // Skenario 2: Lokasi Berbeda (Misal: Akad di Masjid, Resepsi di Hotel) -> Tampilkan Maps per Acara
-    eventsHtml = rawEventsList.map((ev: any, idx: number) => `
-      <div class="event-block-item">
-        <span class="ev-cat">${(ev.badge || (idx === 0 ? "SAKRAMEN / AKAD" : "RESEPSI")).toUpperCase()}</span>
-        <h3 class="ev-name serif">${(ev.title || (idx === 0 ? "Akad Nikah" : "Resepsi Pernikahan")).toUpperCase()}</h3>
-        <p class="ev-time">${ev.time || "08.00 – 10.00 WITA"}</p>
-        ${ev.location ? `<h4 class="ev-venue">${ev.location}</h4>` : ""}
-        ${ev.address ? `<p class="ev-addr">${ev.address}</p>` : ""}
-        ${ev.notes ? `<p class="ev-notes" style="font-size:0.75rem; font-style:italic; margin-top:0.3rem; color:rgba(255,255,255,0.7);">${escapeHtml(ev.notes)}</p>` : ""}
-        ${ev.mapsUrl ? `
-          <a href="${ev.mapsUrl}" target="_blank" rel="noreferrer" class="btn-map-outline">
-            BUKA MAPS
-          </a>
-        ` : ""}
-      </div>
-    `).join("");
+      `).join("");
+    }
   }
 
   // Custom Labels & Section Titles Override
@@ -344,7 +335,7 @@ export async function composeTemplateData(invitationId: string) {
       return `
         <div class="journey-chapter-item">
           <h4 class="chapter-heading">${heading}</h4>
-          <p class="chapter-desc">${st.content || st.description || ""}</p>
+          <p class="chapter-desc">${nl2br(st.content || st.description || "")}</p>
         </div>
       `;
     }).join("");
@@ -396,14 +387,14 @@ export async function composeTemplateData(invitationId: string) {
 
   if (allPhotos.length === 0) {
     allPhotos = [
-      "https://images.unsplash.com/photo-1519741497674-611481863552?w=1000&q=85",
-      "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=1000&q=85",
-      "https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=1000&q=85",
-      "https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=1000&q=85",
-      "https://images.unsplash.com/photo-1532712938310-34cb3982ef74?w=1000&q=85",
-      "https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=1000&q=85",
-      "https://images.unsplash.com/photo-1520854221256-17451cc331bf?w=1000&q=85",
-      "https://images.unsplash.com/photo-1544078751-58fee2d8a03b?w=1000&q=85",
+      `/demo/${themeFolder}/gallery_01.webp`,
+      `/demo/${themeFolder}/gallery_02.webp`,
+      `/demo/${themeFolder}/gallery_03.webp`,
+      `/demo/${themeFolder}/gallery_04.webp`,
+      `/demo/${themeFolder}/gallery_05.webp`,
+      `/demo/${themeFolder}/gallery_06.webp`,
+      `/demo/${themeFolder}/gallery_07.webp`,
+      `/demo/${themeFolder}/gallery_08.webp`,
     ];
   }
 
@@ -764,11 +755,8 @@ export async function composeTemplateData(invitationId: string) {
         <h3 class="pass-names serif">${firstName} <em>&amp;</em> ${secondName}</h3>
         <p class="pass-date">${weddingDate}</p>
         
-        <div class="pass-qr-wrapper" id="lux-qr-section-wrapper">
-          <!-- QR Code injected dynamically by lux-qr-script -->
-          <div id="lux-qr-section-img-container" style="width:100%; height:180px; display:flex; align-items:center; justify-content:center; background:#f3f4f6; color:#9ca3af; font-size:12px; border-radius:8px;">
-             Validating Ticket...
-          </div>
+        <div class="pass-qr-wrapper">
+          <img class="pass-qr-img" id="passQrImg" src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=Tamu%20Undangan" alt="QR Check-In" style="width:160px; height:160px; display:block; margin:0 auto;">
         </div>
 
         <div class="pass-guest-box">
@@ -898,11 +886,12 @@ export async function composeTemplateData(invitationId: string) {
   const liveStreamZoomUrl = featureSettings.liveStreamZoomUrl || "";
   let liveStreamingHtml = "";
   if (showLiveStream && (liveStreamYoutubeUrl || liveStreamInstagramUrl || liveStreamZoomUrl)) {
+    const liveTimeStr = rawEventsList[0]?.time ? ` • ${rawEventsList[0].time}` : "";
     liveStreamingHtml = `
       <section class="sec-flow" id="live">
         <span class="sec-eyebrow">VIRTUAL CEREMONY</span>
         <h2 class="sec-main-title serif">LIVE WEDDING</h2>
-        <p class="sec-sub">${weddingDate} • 08.00 – Selesai WITA</p>
+        <p class="sec-sub">${weddingDate}${liveTimeStr}</p>
         <p class="sec-sub" style="margin-top:0.4rem;">Bagi keluarga &amp; sahabat yang berhalangan hadir langsung, prosesi pernikahan dapat disaksikan melalui siaran virtual:</p>
         <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:0.8rem; margin-top:1.5rem;">
           ${liveStreamYoutubeUrl ? `<a href="${liveStreamYoutubeUrl}" target="_blank" class="btn-map-outline">YOUTUBE LIVE ↗</a>` : ""}
@@ -989,7 +978,7 @@ export async function composeTemplateData(invitationId: string) {
         <div id="giftTabKado" style="display:none;" class="bank-card">
           <span class="bank-label">Alamat Pengiriman Kado</span>
           <p style="font-size:0.8rem; color:rgba(255,255,255,0.7); line-height:1.5; margin:0.4rem 0 0.8rem;">
-            ${escapeHtml(inv.shippingAddress || "Jl. Pengantin No. 12, Makassar")}
+            ${nl2br(inv.shippingAddress || "Jl. Pengantin No. 12, Makassar")}
           </p>
           <button class="btn-copy" onclick="copyText('${escapeHtml(inv.shippingAddress || "Jl. Pengantin No. 12, Makassar")}')">Salin Alamat</button>
         </div>
@@ -1018,10 +1007,7 @@ export async function composeTemplateData(invitationId: string) {
       <h3 style="font-size:1.4rem; color:#fff; font-family:'Cormorant Garamond',serif; margin-bottom:0.2rem;" id="modalGuestName">Tamu Undangan</h3>
       <p style="font-size:0.75rem; color:rgba(255,255,255,0.65); margin-bottom:1.2rem;">Tunjukkan kode QR ini kepada penerima tamu di lokasi acara.</p>
       <div style="background:#ffffff; padding:14px; display:inline-block; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.5);">
-        <!-- QR Code injected dynamically by lux-qr-script -->
-        <div id="lux-qr-modal-img-container" style="width:160px; height:160px; display:flex; align-items:center; justify-content:center; background:#f3f4f6; color:#9ca3af; font-size:12px; border-radius:8px;">
-           Validating...
-        </div>
+        <img class="pass-qr-img" id="modalQrImg" src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=Tamu%20Undangan" alt="QR Check-In" style="width:160px; height:160px; display:block; margin:0 auto;">
       </div>
     </div>
   `;
@@ -1033,7 +1019,7 @@ export async function composeTemplateData(invitationId: string) {
   const showGuestMemories = featureSettings.showGuestMemories !== false;
   const memoriesSectionEyebrow = customLabels.memoriesEyebrow || "AFTER-EVENT MEMORIES";
   const memoriesSectionTitle = customLabels.memoriesTitle || "Abadikan Momen Indah";
-  const memoriesSectionSubtitle = customLabels.memoriesSubtitle || "Punya foto candid atau video seru selama menghadiri pernikahan kami? Bagikan momen spesial Anda langsung ke album pribadi kami.";
+  const memoriesSectionSubtitle = customLabels.memoriesSubtitle || "Punya foto candid seru selama menghadiri pernikahan kami? Bagikan momen spesial Anda langsung ke album pribadi kami.";
 
   const guestMemories = await prisma.guestMemory.findMany({
     where: { invitationId },
@@ -1052,11 +1038,7 @@ export async function composeTemplateData(invitationId: string) {
       <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; flex-shrink: 0; width: 68px; cursor: pointer;" onclick="luxOpenMemoryPreview('${sm.mediaUrl}', '${sm.senderName}', '${(sm.message || "").replace(/'/g, "\\'")}', '${sm.mediaType}')">
         <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
           <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-            ${sm.mediaType === "VIDEO" ? `
-              <span style="font-size: 16px;">🎥</span>
-            ` : `
-              <img src="${sm.thumbnailUrl || sm.mediaUrl}" alt="${sm.senderName}" loading="lazy" style="width: 100%; height: 100%; object-fit: cover;" />
-            `}
+            <img src="${sm.thumbnailUrl || sm.mediaUrl}" alt="${sm.senderName}" loading="lazy" style="width: 100%; height: 100%; object-fit: cover;" />
           </div>
         </div>
         <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; color: inherit; text-align: center;">
@@ -1068,11 +1050,15 @@ export async function composeTemplateData(invitationId: string) {
     let shareMomentUrl = "/sharemoment";
     if (inv.subdomain && inv.subdomain !== "demo") {
       shareMomentUrl = `/s/${inv.subdomain}/sharemoment`;
-    } else if (inv.groomSlug && inv.brideSlug) {
-      shareMomentUrl = `/${inv.groomSlug}-${inv.brideSlug}/${inv.invitationSlug}/sharemoment`;
+    } else if (inv.invitationSlug) {
+      shareMomentUrl = `/${inv.invitationSlug}/sharemoment`;
     } else {
-      shareMomentUrl = `/demo/${inv.themeId || "kalandra"}/sharemoment`;
+      shareMomentUrl = `/demo/${themeFolder}/sharemoment`;
     }
+
+    const fullGalleryUrl = inv.subdomain && inv.subdomain !== "demo"
+      ? `/s/${inv.subdomain}/memories`
+      : `/${inv.invitationSlug}/memories`;
 
     memoriesSectionHtml = `
       <section class="sec-flow slide-section" id="guest-memories" style="position: relative; padding: 3rem 1rem;">
@@ -1109,9 +1095,9 @@ export async function composeTemplateData(invitationId: string) {
             </div>
           ` : ""}
 
-          <!-- 3. TOMBOL DIRECT KE HALAMAN GALERI WEB (galery.js) -->
+          <!-- 3. TOMBOL DIRECT KE HALAMAN GALERI WEB -->
           <div style="text-align: center;">
-            <a href="/${inv.groomSlug}-${inv.brideSlug}/${inv.invitationSlug}/galery" class="btn-outline-box" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; font-size: 12px; font-weight: 700; border-radius: 50px; text-decoration: none; border: 1px solid currentColor; color: inherit; transition: all 0.2s ease;">
+            <a href="${fullGalleryUrl}" class="btn-outline-box" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; font-size: 12px; font-weight: 700; border-radius: 50px; text-decoration: none; border: 1px solid currentColor; color: inherit; transition: all 0.2s ease;">
               <span>BUKA GALERI MOMEN LENGKAP</span>
               <span style="font-size: 14px; margin-top: -2px;">&rarr;</span>
             </a>
@@ -1421,61 +1407,6 @@ export async function composeTemplateData(invitationId: string) {
             }
           }
         };
-
-        // QR Code Dynamic Rendering Logic
-        document.addEventListener('DOMContentLoaded', function() {
-          const urlParams = new URLSearchParams(window.location.search);
-          let guestName = "";
-
-          // First check search params (for legacy or direct query usage)
-          if (urlParams.has('to')) {
-            guestName = urlParams.get('to') || "";
-          }
-
-          // If empty, parse from pathname (e.g. /Budi)
-          if (!guestName) {
-            const pathSegments = window.location.pathname.split('/').filter(Boolean);
-            if (pathSegments.length > 0) {
-              const lastSegment = decodeURIComponent(pathSegments[pathSegments.length - 1]);
-              if (lastSegment !== 'memories' && lastSegment !== 's') {
-                guestName = lastSegment;
-              }
-            }
-          }
-          
-          const sectionContainer = document.getElementById('lux-qr-section-img-container');
-          const modalContainer = document.getElementById('lux-qr-modal-img-container');
-          
-          if (guestName) {
-            // Offline-First QR Generation (Tidak membebani server)
-            var qrPayload = "LUX|${inv.id}|" + guestName;
-            var qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=" + encodeURIComponent(qrPayload);
-            var imgHtml = '<img src="' + qrUrl + '" alt="QR Check-In" style="width:160px; height:160px; display:block;">';
-            
-            if (sectionContainer) sectionContainer.innerHTML = imgHtml;
-            if (modalContainer) modalContainer.innerHTML = imgHtml;
-          } else {
-            // No Guest Name found. Hide QR sections.
-            if (sectionContainer) {
-               sectionContainer.innerHTML = '<span style="color:#ef4444; font-weight:600;">Tiket Tidak Tersedia</span>';
-            }
-            if (modalContainer) {
-               modalContainer.innerHTML = '<span style="color:#ef4444; font-weight:600;">Tiket Tidak Tersedia</span>';
-            }
-            // Hide trigger buttons
-            document.querySelectorAll('.btn-open-qr-cover, .btn-qr-ghost, .dock-a').forEach(el => {
-               if (el) {
-                 if (el.classList.contains('dock-a')) {
-                   if (el.textContent && el.textContent.includes('Ticket')) {
-                     (el as HTMLElement).style.display = 'none';
-                   }
-                 } else {
-                   (el as HTMLElement).style.display = 'none';
-                 }
-               }
-            });
-          }
-        });
       </script>
     `;
   }
@@ -1527,7 +1458,7 @@ export async function composeTemplateData(invitationId: string) {
     audioUrl: featureSettings.showMusic !== false ? (inv.musicUrl || featureSettings.musicUrl || "https://assets.mixkit.co/music/preview/mixkit-serene-view-443.mp3") : "",
 
     // Quotes & Dates
-    openingQuote: inv.openingQuote || "Dan di antara tanda-tanda (kebesaran)-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri, agar kamu cenderung dan merasa tenteram kepadanya, dan Dia menjadikan diantaramu rasa kasih dan sayang.",
+    openingQuote: inv.openingQuote ? nl2br(inv.openingQuote) : "Dan di antara tanda-tanda (kebesaran)-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri, agar kamu cenderung dan merasa tenteram kepadanya, dan Dia menjadikan diantaramu rasa kasih dan sayang.",
     openingQuoteRef: inv.openingQuoteRef || "QS. AR-RUM : 21",
     targetDate,
     weddingDate,

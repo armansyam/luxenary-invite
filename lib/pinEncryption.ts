@@ -21,7 +21,7 @@ function getEncryptionKey(): Buffer {
       throw new Error("[CRITICAL] PIN_ENCRYPTION_KEY tidak diset di environment production!");
     }
     // Dev-only fallback — persis 32 bytes
-    return Buffer.from("luxenary-dev-key-32byte-fallback", "utf8");
+    return Buffer.from("platform-dev-key-32byte-fallback", "utf8");
   }
   const keyBuffer = Buffer.from(key, "hex");
   if (keyBuffer.length !== 32) {
@@ -67,7 +67,14 @@ export function decryptPin(encryptedPin: string): string | null {
     decipher.setAuthTag(authTag);
     
     const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
-    return decrypted.toString("utf8");
+    const result = decrypted.toString("utf8");
+
+    // Self-healing: jika sebelumnya terkena double-encryption, dekripsi layer berikutnya
+    if (isPinEncrypted(result)) {
+      return decryptPin(result);
+    }
+
+    return result;
   } catch {
     return null;
   }
@@ -77,8 +84,14 @@ export function decryptPin(encryptedPin: string): string | null {
  * Cek apakah PIN sudah dalam format terenkripsi (bukan plain-text lama)
  */
 export function isPinEncrypted(pin: string): boolean {
+  if (!pin || typeof pin !== "string") return false;
   const parts = pin.split(":");
-  return parts.length === 3 && parts.every(p => /^[0-9a-f]+$/i.test(p));
+  return (
+    parts.length === 3 &&
+    parts[0].length === 32 &&
+    parts[1].length === 32 &&
+    parts.every((p) => /^[0-9a-f]+$/i.test(p))
+  );
 }
 
 /**

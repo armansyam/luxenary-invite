@@ -23,6 +23,7 @@
 # misc
 .DS_Store
 *.pem
+.vscode_history_backup/
 
 # debug
 npm-debug.log*

@@ -53,3 +53,19 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   2. `README.md` (panduan alur, katalog tema, deployment, environment)
   3. `S-Invitation.md` (spesifikasi fungsional modul, tema fisik, dan gateway)
 - **DILARANG PUSH JIKA DOCS BELUM TERBARU:** Push ke git remote hanya boleh dilakukan setelah ketiga dokumen diverifikasi sinkron dengan kode faktual terbaru dan `npx tsc --noEmit` menghasilkan Exit Code 0.
+# 🚨 STRICT ANTI-DESTRUCTION PROTOCOL (KHUSUS GEMINI / ALL AI AGENTS) 🚨
+Aturan ini **HARGA MATI** dan tidak boleh dilanggar dalam kondisi apapun untuk mencegah hilangnya pekerjaan lokal user (Uncommitted Work) dan kerusakan massal:
+
+## 1. DILARANG KERAS MENGGUNAKAN `git checkout` ATAU `git restore`
+- **JANGAN PERNAH** menjalankan perintah `git checkout <file>` atau `git restore <file>` untuk membatalkan kesalahanmu sendiri.
+- User sering kali memiliki kode yang **belum di-commit** (Uncommitted Work). Menjalankan perintah tersebut akan menghapus seluruh kerja keras user harian.
+- Jika kamu membuat kesalahan, **PERBAIKI KESALAHAN TERSEBUT SECARA MANUAL/SURGICAL** dengan membalikkan kodemu sendiri (Undo manual).
+
+## 2. DILARANG KERAS MENGGUNAKAN `sed` ATAU GLOBAL MASS REPLACE
+- **JANGAN PERNAH** menggunakan terminal command seperti `sed` atau utilitas regex massal lainnya untuk mengubah isi file codebase.
+- Command ini sering kali terlalu serakah (*greedy*) dan akan menghancurkan data/kode di baris lain yang tidak bersalah.
+- Gunakan hanya *AST tools* atau fungsi *surgical replace_file_content* (penggantian per baris spesifik).
+
+## 3. ASUMSI UNCOMMITTED WORK
+- Selalu asumsikan bahwa codebase lokal user saat ini memiliki modifikasi kritis yang belum tersimpan di Git.
+- Hormati status *file* tersebut. Jangan menimpa ulang seluruh fungsi, hanya ubah bagian spesifik (1-5 baris) yang benar-benar bermasalah.

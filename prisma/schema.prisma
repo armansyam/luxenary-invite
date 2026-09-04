@@ -1,6 +1,3 @@
-// S-Invite — Prisma Schema (SQLite)
-// Self-service invitation platform
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,21 +6,17 @@ datasource db {
   provider = "postgresql"
 }
 
-// ============================================================
-// 1. ADMINS (Khusus Tim Manajemen & Staff Luxenary)
-// ============================================================
 model Admin {
-  id           String    @id @default(uuid())
-  username     String    @unique
-  email        String    @unique
+  id           String          @id @default(uuid())
+  username     String          @unique
+  email        String          @unique
   passwordHash String?
   name         String
-  role         AdminRole @default(SUPER_ADMIN) // SUPER_ADMIN | FINANCE | SUPPORT
+  role         AdminRole       @default(SUPER_ADMIN)
   lastLoginAt  DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @default(now()) @updatedAt
-
-  auditLogs AdminAuditLog[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @default(now()) @updatedAt
+  auditLogs    AdminAuditLog[]
 
   @@map("admins")
 }
@@ -31,40 +24,32 @@ model Admin {
 model AdminAuditLog {
   id        String   @id @default(uuid())
   adminId   String
-  action    String // e.g. "APPROVE_ORDER", "UPDATE_SETTINGS", "LOGIN"
+  action    String
   details   String?
   ipAddress String?
   createdAt DateTime @default(now())
-
-  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  admin     Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
 
   @@index([adminId])
   @@map("admin_audit_logs")
 }
 
-// ============================================================
-// 2. USERS / CLIENTS (Calon Pengantin / Akun Klien)
-// ============================================================
 model User {
-  id          String   @id @default(uuid())
-  googleId    String?  @unique
-  email       String   @unique
+  id          String       @id @default(uuid())
+  googleId    String?      @unique
+  email       String       @unique
   name        String
-  role        UserRole @default(CLIENT)
+  role        UserRole     @default(CLIENT)
   phoneNumber String?
   avatarUrl   String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @default(now()) @updatedAt
-
-  orders      Order[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @default(now()) @updatedAt
   invitations Invitation[]
+  orders      Order[]
 
   @@map("users")
 }
 
-// ============================================================
-// 3. ORDERS (Transaksi Pembelian Paket)
-// ============================================================
 model Order {
   id                String      @id @default(uuid())
   userId            String
@@ -72,16 +57,12 @@ model Order {
   planType          PlanType
   amount            Decimal
   status            OrderStatus @default(PENDING)
-  orderType         OrderType   @default(NEW) // NEW | UPGRADE
-  upgradedFromPlan  PlanType? // Tier asal sebelum upgrade (null jika NEW)
-  targetPlanType    PlanType? // Tier tujuan upgrade (null jika NEW)
-  linkedOrderId     String? // ID order lama yang di-upgrade
-  requestedDomain   String? // Custom domain yang ingin dibeli/diintegrasikan
-  paymentMethod     String?     @default("GATEWAY") // GATEWAY | MANUAL_TRANSFER
+  orderType         OrderType   @default(NEW)
+  upgradedFromPlan  PlanType?
+  targetPlanType    PlanType?
+  linkedOrderId     String?
+  paymentMethod     String?     @default("GATEWAY")
   paymentGatewayRef String?
-  // Gateway tracking — fondasi dynamic gateway switching
-  gatewayId         String?     // Gateway yang menangani order: "midtrans"|"ipaymu"|"xendit"|"tripay"|"duitku"
-  gatewayTxId       String?     // ID transaksi di sisi gateway (bukan orderId kita) — untuk cancel/expire API
   snapToken         String?
   proofImageUrl     String?
   proofUploadedAt   DateTime?
@@ -89,9 +70,11 @@ model Order {
   paidAt            DateTime?
   expiredAt         DateTime?
   createdAt         DateTime    @default(now())
-
-  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  invitation Invitation?
+  gatewayId         String?
+  gatewayTxId       String?
+  requestedDomain   String?
+  invitation        Invitation?
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([status])
@@ -99,182 +82,152 @@ model Order {
   @@map("orders")
 }
 
-// ============================================================
-// 4. INVITATIONS (Data Utama Undangan)
-// ============================================================
 model Invitation {
-  id                  String           @id @default(uuid())
-  orderId             String?          @unique
-  userId              String
-  themeId             String           @default("kila") // kila | aruna | ivanna | danila | papercut
-  subdomain           String?          @unique
-  customDomain        String?          @unique
-  invitationSlug      String           @unique // Flat canonical slug: arman-siti-030326[-jakarta]
-  groomSlug           String // 'arman'
-  brideSlug           String // 'siti'
-  status              InvitationStatus @default(DRAFT)
-  publishedAt         DateTime?
-  expiresAt           DateTime?
-  eventData           String? // Dynamic JSON Multi-Event Array
-  loveStory           String? // Dynamic JSON Love Story Chapters Array
-  bankAccounts        String? // Dynamic JSON Bank Accounts Array
-  shippingAddress     String? // Physical Gift Shipping Address
-  featureSettings     String? // Dynamic JSON Feature Settings & Color Palette
-  staffPin            String? // Keamanan untuk Scanner & Layar Proyektor (Hashed in DB)
-  openingQuote        String? // Opening Quote Text
-  openingQuoteRef     String? // Opening Quote Reference (e.g. QS. Ar-Rum : 21)
-  dresscode           String?
-  musicUrl            String?
-  groomName           String?
-  groomNickname       String?
-  groomParents        String?
-  groomInstagram      String?
-  brideName           String?
-  brideNickname       String?
-  brideParents        String?
-  brideInstagram      String?
-  liveStreamUrl       String?
-  isLockedPermanently   Boolean          @default(false)
-  adminUnlockedUntil    DateTime?
-  memoriesUploadLocked  Boolean          @default(false) // Dikunci otomatis saat client download ZIP momen
-  galleryExpiresAt      DateTime?        // Batas waktu aktif penyimpanan galeri foto momen tamu (diperpanjang via QRIS)
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
-
-  order         Order?            @relation(fields: [orderId], references: [id], onDelete: SetNull)
-  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  media         InvitationMedia[]
-  guests        Guest[]
-  rsvps         Rsvp[]
-  wishes        Wish[]
-  guestMemories GuestMemory[]
+  id                   String            @id @default(uuid())
+  orderId              String?           @unique
+  userId               String
+  themeId              String            @default("kila")
+  subdomain            String?           @unique
+  customDomain         String?           @unique
+  invitationSlug       String            @unique
+  groomSlug            String
+  brideSlug            String
+  status               InvitationStatus  @default(DRAFT)
+  publishedAt          DateTime?
+  expiresAt            DateTime?
+  eventData            String?
+  loveStory            String?
+  bankAccounts         String?
+  shippingAddress      String?
+  featureSettings      String?
+  staffPin             String?
+  openingQuote         String?
+  openingQuoteRef      String?
+  dresscode            String?
+  musicUrl             String?
+  groomName            String?
+  groomNickname        String?
+  groomParents         String?
+  groomInstagram       String?
+  brideName            String?
+  brideNickname        String?
+  brideParents         String?
+  brideInstagram       String?
+  liveStreamUrl        String?
+  isLockedPermanently  Boolean           @default(false)
+  adminUnlockedUntil   DateTime?
+  memoriesUploadLocked Boolean           @default(false)
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  galleryExpiresAt     DateTime?
+  guestMemories        GuestMemory[]
+  guests               Guest[]
+  order                Order?            @relation(fields: [orderId], references: [id])
+  user                 User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  media                InvitationMedia[]
+  rsvps                Rsvp[]
+  wishes               Wish[]
 
   @@index([userId])
   @@index([status])
   @@map("invitations")
 }
 
-// ============================================================
-// 5. INVITATION MEDIA (Foto, Video, Audio)
-// ============================================================
 model InvitationMedia {
-  id           String    @id @default(uuid())
+  id           String     @id @default(uuid())
   invitationId String
   mediaSlot    MediaSlot
-  localPath    String?   // URL R2 (produksi) atau path lokal (development)
+  localPath    String?
   mimeType     String?
-  displayOrder Int       @default(0)
-  createdAt    DateTime  @default(now())
-
-  invitation Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  displayOrder Int        @default(0)
+  createdAt    DateTime   @default(now())
+  invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
 
   @@index([invitationId])
   @@map("media")
 }
 
-// ============================================================
-// 6. GUESTS (Daftar Tamu & Kuota)
-// ============================================================
 model Guest {
-  id              String    @id @default(uuid())
+  id              String     @id @default(uuid())
   invitationId    String
   name            String
-  slug            String // URL-safe version of name: 'budi-santoso'
-  category        String? // VVIP | VIP | Keluarga | Teman Kantor | Umum
+  slug            String
+  category        String?
   phone           String?
-  guestQuota      Int       @default(1)
+  guestQuota      Int        @default(1)
   tableNumber     String?
-  waStatus        WaStatus  @default(PENDING)
+  waStatus        WaStatus   @default(PENDING)
   waSentAt        DateTime?
-  qrToken         String?   @unique
-  isTokenRedeemed Boolean   @default(false)
+  qrToken         String?    @unique
+  isTokenRedeemed Boolean    @default(false)
   videoWishUrl    String?
   videoRecordedAt DateTime?
   sessionInfo     String?
-  createdAt       DateTime  @default(now())
-
-  invitation Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
-  rsvps      Rsvp[]
+  createdAt       DateTime   @default(now())
+  invitation      Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  rsvps           Rsvp[]
 
   @@unique([invitationId, slug])
   @@index([invitationId])
   @@map("guests")
 }
 
-// ============================================================
-// 7. RSVPs (Konfirmasi Kehadiran)
-// ============================================================
 model Rsvp {
-  id           String   @id @default(uuid())
+  id           String     @id @default(uuid())
   invitationId String
   guestId      String?
   guestName    String
-  status       String // hadir | tidak | ragu
-  guestCount   Int      @default(1)
+  status       String
+  guestCount   Int        @default(1)
   message      String?
-  respondedAt  DateTime @default(now())
-
-  invitation Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
-  guest      Guest?     @relation(fields: [guestId], references: [id], onDelete: SetNull)
+  respondedAt  DateTime   @default(now())
+  guest        Guest?     @relation(fields: [guestId], references: [id])
+  invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
 
   @@index([invitationId])
   @@map("rsvps")
 }
 
-// ============================================================
-// 8. WISHES (Ucapan & Doa Tamu)
-// ============================================================
 model Wish {
-  id           String   @id @default(uuid())
+  id           String     @id @default(uuid())
   invitationId String
   senderName   String
   message      String
-  createdAt    DateTime @default(now())
-
-  invitation Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+  invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
 
   @@index([invitationId])
   @@map("wishes")
 }
 
-// ============================================================
-// 8B. GUEST MEMORIES (Foto & Video Kenangan Tamu Pasca-Acara)
-// ============================================================
 model GuestMemory {
-  id           String   @id @default(uuid())
+  id           String     @id @default(uuid())
   invitationId String
   senderName   String
   senderEmail  String
   message      String?
-  mediaType    String   @default("PHOTO") // "PHOTO" | "VIDEO"
-  mediaUrl     String   // URL R2 (produksi) atau path lokal (development)
+  mediaType    String     @default("PHOTO")
+  mediaUrl     String
   thumbnailUrl String?
-  createdAt    DateTime @default(now())
-
-  invitation Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+  invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
 
   @@index([invitationId])
   @@map("guest_memories")
 }
 
-// ============================================================
-// 10. WEBHOOK LOGS
-// ============================================================
 model WebhookLog {
   id          String    @id @default(uuid())
-  source      String // midtrans | ipaymu | xendit
-  event       String // payment.success | read.receipt
+  source      String
+  event       String
   payload     Json
-  status      String    @default("received") // received | processed | failed
+  status      String    @default("received")
   processedAt DateTime?
   createdAt   DateTime  @default(now())
 
   @@map("webhook_logs")
 }
 
-// ============================================================
-// 11. ADMIN SETTINGS
-// ============================================================
 model AdminSetting {
   id        String   @id @default(uuid())
   key       String   @unique
@@ -286,11 +239,8 @@ model AdminSetting {
   @@map("admin_settings")
 }
 
-// ============================================================
-// 12. THEMES
-// ============================================================
 model Theme {
-  id          String   @id // 'kila', 'aruna', 'ivanna', 'danila', 'papercut'
+  id          String   @id
   name        String
   description String?
   thumbnail   String?
@@ -307,9 +257,6 @@ model Theme {
   @@map("themes")
 }
 
-// ============================================================
-// ENUMS
-// ============================================================
 enum AdminRole {
   SUPER_ADMIN
   FINANCE
@@ -344,9 +291,9 @@ enum OrderType {
 enum InvitationStatus {
   DRAFT
   PUBLISHED
-  EVENT_FINISHED
   TAKEN_DOWN
   ARCHIVED
+  EVENT_FINISHED
 }
 
 enum WaStatus {

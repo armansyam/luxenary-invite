@@ -46,7 +46,7 @@ export function BrandLogo({ size = "md", lightBg = false, showName = false, bran
   const s = sizeMap[size];
 
   const hasLogo = !imgError; // akan false setelah img onError
-  const displayName = brandName || "Luxenary Invite";
+  const displayName = brandName || "Platform Admin";
 
   return (
     <div className={`flex items-center gap-2.5 ${className}`}>

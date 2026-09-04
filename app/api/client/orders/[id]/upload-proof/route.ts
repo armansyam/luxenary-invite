@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import path from "path";
 import sharp from "sharp";
-import { uploadFile } from "@/lib/storage";
+import { uploadFile, deleteFile } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
 
@@ -48,6 +48,23 @@ export async function POST(
       return NextResponse.json({ error: "Pesanan ini sudah dibayar dan aktif." }, { status: 400 });
     }
 
+    // Tolak jika order ini sudah digantikan oleh invoice baru yang aktif (superseded)
+    const newerActiveOrder = await prisma.order.findFirst({
+      where: {
+        userId: order.userId,
+        id: { not: order.id },
+        createdAt: { gt: order.createdAt },
+        status: { in: ["PENDING", "PAID"] },
+      },
+    });
+
+    if (newerActiveOrder) {
+      return NextResponse.json(
+        { error: "Tagihan ini sudah tidak berlaku karena Anda memiliki tagihan baru yang sedang aktif." },
+        { status: 400 }
+      );
+    }
+
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
 
@@ -72,6 +89,48 @@ export async function POST(
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const mime = file.type.toLowerCase();
+
+    // 1. Hapus file bukti lama pada order aktif ini (jika ada) sebelum mengunggah yang baru
+    if (order.proofImageUrl) {
+      try {
+        await deleteFile(order.proofImageUrl);
+      } catch (err) {
+        console.error("Gagal menghapus bukti pembayaran lama:", err);
+      }
+    }
+
+    // 2. Bersihkan order usang lainnya milik user ini (status PENDING / FAILED non-PAID) beserta file struknya di storage
+    try {
+      const obsoleteOrders = await prisma.order.findMany({
+        where: {
+          userId: order.userId,
+          id: { not: order.id },
+          status: { in: ["PENDING", "FAILED"] },
+          linkedOrderId: null,
+        },
+        select: { id: true, proofImageUrl: true },
+      });
+
+      for (const obs of obsoleteOrders) {
+        if (obs.proofImageUrl) {
+          try {
+            await deleteFile(obs.proofImageUrl);
+          } catch (e) {
+            console.error("Gagal menghapus file bukti order usang:", e);
+          }
+        }
+      }
+
+      if (obsoleteOrders.length > 0) {
+        await prisma.order.deleteMany({
+          where: {
+            id: { in: obsoleteOrders.map((o) => o.id) },
+          },
+        });
+      }
+    } catch (cleanupErr) {
+      console.error("Gagal membersihkan order usang user:", cleanupErr);
+    }
 
     if (mime.includes("pdf")) {
       // PDF saved directly

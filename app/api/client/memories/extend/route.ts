@@ -51,13 +51,17 @@ export async function POST(req: NextRequest) {
     // 3. Buat Invoice Number unik untuk order perpanjangan
     const invoiceNumber = `EXT-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
+    if (!invitation.order?.planType) {
+      return NextResponse.json({ error: "Paket undangan tidak valid atau belum terdaftar pada pesanan." }, { status: 400 });
+    }
+
     // 4. Buat Order baru dengan orderType = GALLERY_EXTENSION
     const newOrder = await prisma.order.create({
       data: {
         id: randomUUID(),
         userId: session.user.id,
         invoiceNumber,
-        planType: invitation.order?.planType || "TRADITIONAL",
+        planType: invitation.order.planType,
         orderType: "GALLERY_EXTENSION",
         amount: extensionPrice,
         status: "PENDING",

@@ -173,6 +173,11 @@
 ├── scripts/
 │   └── cron-cleanup.ts       # Garbage collector undangan kedaluwarsa
 │
+├── docs/
+│   └── client/
+│       ├── TAHAP_REGISTRASI_DAN_PEMBAYARAN.md  # Panduan alur registrasi, kasir & pasca-bayar
+│       └── TAHAP_DASHBOARD_SETUP_AWAL.md       # Panduan setup wizard undangan 3 langkah
+│
 ├── middleware.ts             # ⭐ Edge routing utama (CRITICAL FILE)
 ├── auth.ts                   # NextAuth config entry
 ├── auth.config.ts            # NextAuth strategy config
@@ -378,6 +383,21 @@ Jika undangan telah berstatus `ARCHIVED`:
 3. `groomName` + `brideName` sudah diisi ✓
 4. Minimal 1 event di `eventData` ✓
 
+### 6.7 — Pemisahan UX Galeri Kenangan Tamu & Standarisasi Musik Latar
+1. **Pemisahan Pengaturan vs Operasional Galeri Kenangan Tamu:**
+   - **Formulir Studio Editor (`/dashboard/invitation/[id]` Seksi 14):** Khusus menangani pengaturan tampilan dan teks seksi di web undangan (Toggle Aktif/Nonaktif `showGuestMemories`, Judul Seksi `memoriesTitle`, Eyebrow Subjudul `memoriesEyebrow`, dan Deskripsi Ajakan `memoriesSubtitle`).
+   - **Dashboard Utama (`/dashboard` Seksi 5 & Card 4):** Menjadi pusat operasional & monitoring penuh:
+     - Tautan publik album kenangan tamu (`/{slug}/memories` atau `/{subdomain}/memories`) dengan fitur Salin Link & Buka Galeri.
+     - Komponen unduh ZIP client-side (`MemoriesDownloadSection`) dan info retensi/perpanjangan masa simpan +30 hari via QRIS.
+     - Monitoring stream foto candid tamu secara langsung lengkap dengan tombol moderasi/hapus dan counter real-time.
+2. **Standarisasi Fitur Musik Latar Pernikahan (Audio Background):**
+   - Musik latar merupakan fitur esensial dari setiap paket undangan (Bebas dari pembungkus capability semu).
+   - Klien dapat mengatur lagu otomatis berputar saat tamu klik "Buka Undangan", memilih dari preset kurasi klasik sakral, mengunggah berkas MP3/M4A sendiri (hingga 15 MB), atau memasukkan URL audio kustom/YouTube.
+3. **Keamanan Enkripsi Dua Arah & Dekripsi Otomatis `staffPin`:**
+   - PIN panitia dienkripsi dengan AES-256-GCM (`lib/pinEncryption.ts`).
+   - Endpoint backend (`GET/PUT /api/client/invitations/{id}` dan `GET /api/client/invitations`) secara konsisten mendekripsi `staffPin` sebelum dikirimkan ke frontend klien, sehingga browser selalu menerima teks PIN asli yang bersih.
+   - Proteksi *Anti Double-Encryption* (`isPinEncrypted`) dan mekanisme *Self-Healing* pada `decryptPin` mencegah PIN terenkripsi berulang kali saat form disimpan secara terpisah.
+
 ---
 
 ## 7. SISTEM SUBDOMAIN
@@ -405,10 +425,8 @@ Katalog Tema Aktual (15 File Template Fisik + 1 Blueprint):
   Blueprint      : starter-blueprint.html
 
 Backward Compatibility Alias Mapping (di lib/renderTemplate.ts):
-  - "kila", "premium-kila"   → mapped ke kalandra.html
-  - "ivanna", "premium-ivanna" → mapped ke valente.html
-  - "danila"                 → mapped ke aurelia.html
-  - "heritage-aruna"         → mapped ke prameswari.html
+  - "kila"                   → mapped ke kalandra.html (fallback backward compatibility)
+  - Seluruh tema zombie / artefak pengujian lama telah dibersihkan secara tuntas (sistem beroperasi murni 1:1 dengan 15 file master).
 ```
 
 **Alur render:**
@@ -423,6 +441,15 @@ Injeksi: nama pasangan, foto, acara, RSVP form, countdown, musik
         ↓
 HTML standalone lengkap (self-contained, inline CSS/JS)
 ```
+
+**Arsitektur Piring Mandiri & Mekanisme Penghapusan Tema:**
+* **Forking ke Piring Mandiri:** Saat klien membuka studio undangan, sistem menyalin template master ke piring draft lokal di `data/drafts/{invitationId}.html`.
+* **Prioritas Piring:** `renderTemplateFile` selalu memprioritaskan piring draft fisik klien sebelum mencari file master.
+* **Resiliensi Penghapusan Tema oleh Admin:**
+  1. Penghapusan tema di Admin menghapus row database, master `themes/`, dan folder `public/demo/` (*Hard Delete Steril*).
+  2. Undangan klien yang sudah memiliki piring draft (`data/drafts/`) tetap **100% aman dan utuh** tanpa terpengaruh penghapusan master.
+  3. Klien yang belum memiliki piring draft akan melihat layar panduan transparan *"Tema Tidak Tersedia"* (bebas dari fallback siluman/hardcode) untuk memilih tema aktif lain.
+  4. Penggantian tema oleh klien di Dashboard otomatis me-unlink piring draft lama dan menyalin template master baru.
 
 ---
 
@@ -459,8 +486,8 @@ PUBLIC (tanpa auth):
   GET  /api/sse/memories              → SSE stream momen real-time
 
 CLIENT (auth required, role=USER):
-  GET/PATCH /api/client/invitations/{id}    → Detail & update undangan
-  GET       /api/client/invitations         → List undangan client
+  GET/PUT   /api/client/invitations/{id}    → Detail & update undangan (staffPin terdekripsi otomatis di respons)
+  GET       /api/client/invitations         → List undangan client (termasuk status retensi, lock memori & staffPin terdekripsi)
   POST      /api/client/invitations/create  → Buat undangan baru
   GET/POST  /api/client/guests              → Manajemen tamu (kolom `phone`, tanpa `phoneNumber`)
   POST      /api/client/guests/bulk         → Import tamu massal (CSV/JSON)
@@ -475,8 +502,8 @@ CLIENT (auth required, role=USER):
 ADMIN (auth required, role=ADMIN/SUPER_ADMIN):
   GET  /api/admin/overview            → Statistik platform
   GET  /api/admin/users               → List semua user
-  GET  /api/admin/orders/{id}/approve → Approve pesanan manual
-  GET  /api/admin/themes              → Manajemen tema
+  GET/POST/PUT/DELETE /api/admin/themes → Manajemen tema (Upload master .html, update metadata, auto-compile demo, hard-delete steril)
+  POST /api/admin/themes/sync         → Sinkronisasi tema disk-to-DB, auto-discovery & auto-purge tema zombie
   POST /api/admin/settings            → Update platform settings
   POST /api/admin/database/backup     → Backup database
   POST /api/admin/subdomains/recycle  → Daur ulang subdomain kedaluwarsa
@@ -520,7 +547,7 @@ Model Utama:
   Guest          → Daftar tamu per undangan (phone, waStatus: PENDING | SENT, qrToken)
   Rsvp           → Konfirmasi kehadiran tamu
   Wish           → Ucapan tamu
-  GuestMemory    → Foto/video tamu (hari H & pasca-acara)
+  GuestMemory    → Foto candid tamu (hari H & pasca-acara)
   InvitationMedia → File media undangan (8 slot media)
   AdminSetting   → Konfigurasi platform global (key-value dinamis)
   WebhookLog     → Log audit webhook payment (iPaymu, Duitku, Midtrans, TriPay, Xendit)
@@ -676,7 +703,20 @@ prisma.invitation.findUnique({
 ### 13.5 — URL BUILDER YANG BENAR
 
 ```typescript
-import { getInvitationPublicUrl, getPermanentPathUrl } from "@/lib/domainUtils";
+import { getInvitationPublicUrl, getPermanentPathUrl, resolveEffectiveInvitationUrl } from "@/lib/domainUtils";
+
+// Resolusi URL Undangan Terpadu (Prioritas: Custom Domain > Subdomain > Fallback Draft):
+const { url, domainType, domainIdentifier, isConfigured } = resolveEffectiveInvitationUrl({
+  customDomain: inv.customDomain,
+  subdomain: inv.subdomain,
+  groomSlug: inv.groomSlug,
+  brideSlug: inv.brideSlug,
+  invitationSlug: inv.invitationSlug,
+  guestSlug: "Bpk. Abiyoga",
+});
+// 1. Jika ada customDomain: https://yoga-nisa.com/Bpk.%20Abiyoga
+// 2. Jika ada subdomain: https://abiyoga-nisa.luxenary.id/Bpk.%20Abiyoga
+// 3. Jika belum diatur (Draft): http://abiyoga-nisa.localhost:3000/Bpk.%20Abiyoga (simulasi)
 
 // Subdomain URL (sementara):
 getInvitationPublicUrl("dimas-clarissa")
@@ -687,9 +727,6 @@ getInvitationPublicUrl("dimas-clarissa")
 getPermanentPathUrl("dimas-clarissa-030326")
 // → http://localhost:3000/dimas-clarissa-030326 (dev)
 // → https://luxenary.id/dimas-clarissa-030326 (prod)
-
-// ❌ SALAH (format lama, 3 argumen, sudah diubah):
-getPermanentPathUrl(groomSlug, brideSlug, invitationSlug) // TIDAK ADA LAGI
 ```
 
 ---
@@ -839,6 +876,37 @@ Admin Setting: active_payment_gateway
 
 ### 15.4 — Batas Waktu Pembayaran Dinamis
 - Durasi aktif sesi QRIS dibaca langsung dari `payment_expiry_minutes` (default: 60 menit) dan dikirimkan ke payload gateway.
+
+### 15.5 — Kebijakan Tagihan Tunggal & Proteksi Tagihan Usang (Single Active Order & Superseded Guard)
+- **Satu Klien = Satu Tagihan Aktif (Single Active Order):**
+  - Klien yang bolak-balik mengubah paket (`/packages`) atau mengubah pilihan sebelum pembayaran lunas tidak akan melipatgandakan baris transaksi di database.
+  - Endpoint `POST /api/orders/create` secara otomatis mencari order dengan status `PENDING` atau `FAILED` (yang ditolak), lalu melakukan *reuse/update* pada baris yang sama.
+  - Mencegah akumulasi tagihan terbengkalai (*zero orphaned invoices*).
+- **Proteksi Tagihan Usang (*Superseded Order Guard*):**
+  - Jika klien membuka tautan riwayat/bookmark invoice lama (`?order=OLD_ID`) padahal sudah memiliki tagihan baru yang berstatus `PENDING` atau `PAID`:
+    - API `GET /api/client/orders/[id]/status` mendeteksi `isSuperseded: true` dan menyertakan `activeOrderId`.
+    - Kasir [`app/checkout/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/checkout/page.tsx) otomatis melakukan *instant redirection* ke tagihan aktif terbaru (`/checkout?order=NEW_ID`).
+  - Endpoint `POST /api/client/orders/[id]/upload-proof` memblokir keras upaya pengunggahan bukti bayar pada order usang yang telah digantikan oleh order baru.
+
+### 15.6 — Alur Transfer Bank Manual & Pengiriman Cloudflare R2
+- **Zero Hardcoded Fallback:** Data rekening bank (`bank_name`, `bank_account_number`, `bank_account_holder`) 100% dinamis dari tabel `admin_settings`. Tidak ada nilai dummy/fallback palsu di input formulir.
+- **Penyimpanan Gambar Berkecepatan Tinggi (Cloudflare R2 + Edge CDN):**
+  - Struk bukti transfer dikompresi menjadi WebP tajam (1400px, 82%) dan diunggah ke Cloudflare R2 bucket.
+  - Gambar disajikan melalui **Custom Domain Edge CDN** (`https://cdn.luxvite.id`) menggunakan HTTP/2 dan Anycast PoP terdekat (Jakarta/Singapura), memangkas waktu muat gambar dari ~24 detik menjadi <200 milidetik.
+- **Kartu Notifikasi Penolakan Menetap (*Persistent Rejection Card*):**
+  - Jika admin menolak bukti pembayaran di portal `/admin`, order diperbarui menjadi `status: "FAILED"` dengan catatan `rejectReason`.
+  - Kasir klien menampilkan kartu peringatan merah permanen tepat di atas formulir unggah ulang yang menampilkan alasan penolakan dari admin secara dinamis dan tidak hilang saat halaman di-refresh.
+- **Visibilitas Status FAILED & Dibatalkan di Portal Admin:**
+  - Transaksi berstatus `FAILED` (ditolak oleh admin) dan `EXPIRED` (kedaluwarsa gateway) tampil secara transparan pada subtab **"Gagal / Dibatalkan"** dan **"Semua Transaksi"** di `/admin`.
+  - Endpoint `GET /api/admin/overview` mengembalikan seluruh transaksi mutakhir (`recentOrders`) tanpa mengecualikan order `FAILED`, sehingga admin dapat melacak riwayat penolakan, nominal, bukti lama, dan alasan penolakan kapan saja.
+- **Auto-Purge Obsolete Records & Storage Assets (Single State Architecture):**
+  - Saat klien mengunggah bukti pembayaran baru (`upload-proof`), mengganti paket (`orders/create`), atau saat transaksi disetujui lunas (`PAID` via webhook gateway / approval admin), sistem otomatis memindai dan membersihkan seluruh order non-PAID usang milik klien tersebut (`PENDING`, `FAILED`, `EXPIRED`).
+  - Seluruh file foto struk lama langsung dihapus permanen dari Cloudflare R2 bucket (`deleteFile`), menghemat biaya storage dan mencegah penumpukan file sampah.
+  - Record order usang dimusnahkan dari database PostgreSQL sehingga portal admin selalu rapi dan setiap klien hanya memiliki tepat 1 transaksi tunggal.
+  - **Single State Checkout Guard (`isUserPaid`):** Klien yang sudah lunas dicegat dari membuka kasir checkout dan seketika dialihkan ke Dashboard/Setup Undangan. Order lama yang telah dihapus akan menghasilkan respon 404 tanpa memicu pembuatan order baru secara diam-diam.
+- **Inline Action Confirmation (Zero Mouse Travel & Anti-Native Alert):**
+  - Tombol verifikasi persetujuan di portal `/admin` (baik di modal bukti transfer maupun tabel transaksi) menerapkan pola *In-Place Confirmation*.
+  - Mengeliminasi popup kaku browser `window.confirm()` dan `alert()`. Tombol bertransisi halus di tempat menjadi `[Ya, Lunas]` dan `[Batal]` dengan proteksi auto-revert 5 detik jika tidak diklik, memangkas jarak gerak mouse dari ~800px menjadi 0px.
 
 ---
 

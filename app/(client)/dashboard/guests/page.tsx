@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getInvitationPublicUrl } from "@/lib/domainUtils";
+import { getInvitationPublicUrl, resolveEffectiveInvitationUrl } from "@/lib/domainUtils";
 
 interface Guest {
   id: string;
@@ -271,8 +271,15 @@ export default function GuestsPage() {
 
     const displayOrder = feat.displayOrder || "BRIDE_FIRST";
     const coupleName = displayOrder === "BRIDE_FIRST" ? `${bride} & ${groom}` : `${groom} & ${bride}`;
-    const sub = invitationData?.subdomain || (invitationData?.groomSlug && invitationData?.brideSlug ? `${invitationData.groomSlug}-${invitationData.brideSlug}` : "wedding");
-    const fullGuestUrl = getInvitationPublicUrl(sub, guestName);
+    const resolved = resolveEffectiveInvitationUrl({
+      customDomain: invitationData?.customDomain,
+      subdomain: invitationData?.subdomain,
+      groomSlug: invitationData?.groomSlug,
+      brideSlug: invitationData?.brideSlug,
+      invitationSlug: invitationData?.invitationSlug,
+      guestSlug: guestName,
+    });
+    const fullGuestUrl = resolved.url;
 
     const template = waTemplate || DEFAULT_WA_TEMPLATE;
 
@@ -313,10 +320,16 @@ export default function GuestsPage() {
   };
 
   const handleCopyGuestLink = (guest: Guest) => {
-    const sub = invitationData?.subdomain || (invitationData?.groomSlug && invitationData?.brideSlug ? `${invitationData.groomSlug}-${invitationData.brideSlug}` : "wedding");
-    const fullGuestUrl = getInvitationPublicUrl(sub, guest.name);
+    const resolved = resolveEffectiveInvitationUrl({
+      customDomain: invitationData?.customDomain,
+      subdomain: invitationData?.subdomain,
+      groomSlug: invitationData?.groomSlug,
+      brideSlug: invitationData?.brideSlug,
+      invitationSlug: invitationData?.invitationSlug,
+      guestSlug: guest.name,
+    });
 
-    navigator.clipboard.writeText(fullGuestUrl).then(() => {
+    navigator.clipboard.writeText(resolved.url).then(() => {
       setCopiedGuestId(guest.id);
       setTimeout(() => setCopiedGuestId(null), 2000);
     });
@@ -390,18 +403,21 @@ export default function GuestsPage() {
         </div>
       </div>
 
-      {/* Info Alert: QR Code Check-In Notice */}
-      <div className="bg-amber-50 border border-amber-200/60 rounded-2xl p-4 flex gap-3 shadow-xs items-start">
-        <svg className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <div>
-          <h4 className="text-sm font-bold text-amber-900">Tamu Khusus &amp; Tiket QR Code</h4>
-          <p className="text-xs text-amber-800/80 mt-1 leading-relaxed">
-            Daftar tamu di bawah ini adalah tamu resmi yang akan mendapatkan <strong>Tiket QR Code Check-in</strong> otomatis saat mereka membuka link undangan. Jika Anda menyebar undangan secara manual <em>(tanpa menambahkannya di sini)</em>, tamu tersebut tidak akan mendapatkan tiket QR Code.
-          </p>
+
+      {/* Draft Status Notification */}
+      {invitationData && invitationData.status === "DRAFT" && (
+        <div className="bg-amber-500/10 border border-amber-500/25 rounded-2xl p-4 flex gap-3 shadow-xs items-start">
+          <svg className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <div className="flex-1 min-w-0 text-xs">
+            <h4 className="text-xs sm:text-sm font-bold text-amber-950">Undangan Masih Berstatus Draft (Belum Dipublikasikan)</h4>
+            <p className="text-[11px] text-amber-900/80 mt-1 leading-relaxed">
+              Tautan undangan pada template WhatsApp saat ini berstatus <strong>simulasi preview</strong>. Tamu baru dapat mengakses web setelah Anda mempublikasikan undangan di <a href="/dashboard" className="font-bold underline hover:text-amber-950">Dashboard Utama</a>.
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Quick Summary Counter Bar (Clickable Filter Cards) */}
       <div className="grid grid-cols-3 gap-3">
@@ -675,7 +691,16 @@ export default function GuestsPage() {
                       href={waUrl}
                       target="_blank"
                       rel="noreferrer"
-                      onClick={() => {
+                      onClick={(e) => {
+                        if (invitationData?.status === "DRAFT") {
+                          const proceed = window.confirm(
+                            "Perhatian: Undangan Anda masih berstatus DRAFT dan belum dipublikasikan. Tamu belum dapat melihat isi undangan jika membuka tautan ini sekarang.\n\nTetap lanjutkan membuka WhatsApp?"
+                          );
+                          if (!proceed) {
+                            e.preventDefault();
+                            return;
+                          }
+                        }
                         if (!isSent) toggleWaStatus(guest.id, guest.waStatus);
                       }}
                       className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
@@ -792,7 +817,7 @@ export default function GuestsPage() {
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {[
                       { tag: "{nama_tamu}", label: "Nama Tamu", desc: "Contoh: Bpk. Abiyoga" },
-                      { tag: "{link_undangan}", label: "Link Undangan", desc: "URL Subdomain Khusus Tamu" },
+                      { tag: "{link_undangan}", label: "Link Undangan", desc: "URL Khusus Tamu (Domain / Subdomain)" },
                       { tag: "{nama_mempelai}", label: "Nama Mempelai", desc: "Nama Kedua Mempelai" },
                       { tag: "{kuota_tamu}", label: "Kuota Tamu", desc: "2 Pax" },
                       { tag: "{sesi_acara}", label: "Sesi Acara", desc: "Akad & Resepsi" },
@@ -834,32 +859,80 @@ export default function GuestsPage() {
               </div>
 
               {/* Right Column: Live Chat Simulation Preview */}
-              <div className="lg:col-span-5 flex flex-col justify-between space-y-3 bg-stone-100 p-4 rounded-2xl border border-stone-200">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between border-b border-stone-200 pb-2">
-                    <span className="text-[11px] font-bold text-stone-700 uppercase tracking-wider flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                      <span>Live Preview WhatsApp</span>
-                    </span>
-                    <span className="text-[10px] text-stone-500">Simulasi untuk: <strong>Bpk. Abiyoga</strong></span>
-                  </div>
+              {(() => {
+                const isDraft = invitationData?.status !== "PUBLISHED" && invitationData?.status !== "EVENT_FINISHED";
+                const domainInfo = resolveEffectiveInvitationUrl({
+                  customDomain: invitationData?.customDomain,
+                  subdomain: invitationData?.subdomain,
+                  groomSlug: invitationData?.groomSlug,
+                  brideSlug: invitationData?.brideSlug,
+                  invitationSlug: invitationData?.invitationSlug,
+                });
 
-                  {/* WhatsApp Bubble Preview Box */}
-                  <div className="p-3.5 bg-[#d9fdd3] text-stone-900 rounded-2xl rounded-tr-xs border border-emerald-200/80 shadow-xs text-xs whitespace-pre-wrap font-sans leading-relaxed break-words">
-                    {renderWaText("Bpk. Abiyoga", 2, "Akad & Resepsi", "dummy-qr-token")}
-                    <div className="text-right text-[9px] text-stone-400 mt-1 font-mono">
-                      12:00
+                return (
+                  <div className="lg:col-span-5 flex flex-col justify-between space-y-3 bg-stone-100 p-4 rounded-2xl border border-stone-200">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between border-b border-stone-200 pb-2">
+                        <span className="text-[11px] font-bold text-stone-700 uppercase tracking-wider flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                          <span>Live Preview WhatsApp</span>
+                        </span>
+                        <span className="text-[10px] text-stone-500">Simulasi untuk: <strong>Bpk. Abiyoga</strong></span>
+                      </div>
+
+                      {/* Domain Mode Indicator */}
+                      <div className="flex items-center justify-between gap-2 px-2.5 py-1.5 bg-white rounded-xl border border-stone-200 text-[10px]">
+                        <span className="text-stone-500 font-medium">Domain Aktif:</span>
+                        {domainInfo.domainType === "CUSTOM_DOMAIN" ? (
+                          <span className="font-mono font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200">
+                            Custom Domain ({domainInfo.domainIdentifier})
+                          </span>
+                        ) : domainInfo.domainType === "SUBDOMAIN" ? (
+                          <span className="font-mono font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
+                            Subdomain ({domainInfo.domainIdentifier})
+                          </span>
+                        ) : (
+                          <span className="font-mono font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                            Simulasi Draft ({domainInfo.domainIdentifier})
+                          </span>
+                        )}
+                      </div>
+
+                      {/* WhatsApp Bubble Preview Box */}
+                      <div className="p-3.5 bg-[#d9fdd3] text-stone-900 rounded-2xl rounded-tr-xs border border-emerald-200/80 shadow-xs text-xs whitespace-pre-wrap font-sans leading-relaxed break-words">
+                        {renderWaText("Bpk. Abiyoga", 2, "Akad & Resepsi", "dummy-qr-token")}
+                        <div className="text-right text-[9px] text-stone-400 mt-1 font-mono">
+                          12:00
+                        </div>
+                      </div>
+
+                      {/* Notice jika status masih DRAFT */}
+                      {isDraft && (
+                        <div className="p-2.5 bg-amber-50 rounded-xl border border-amber-200/80 text-[11px] text-amber-900 space-y-0.5">
+                          <div className="flex items-center gap-1 font-bold text-amber-950">
+                            <svg className="w-3.5 h-3.5 text-amber-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                            <span>Undangan Belum Dipublikasikan</span>
+                          </div>
+                          <p className="text-stone-600 text-[10px] leading-relaxed">
+                            {!domainInfo.isConfigured
+                              ? "Subdomain belum diatur dan undangan masih draft. Tautan di atas merupakan simulasi preview dan belum bisa dibuka oleh tamu."
+                              : "Undangan masih berstatus draft. Tautan akan aktif bagi tamu setelah Anda menekan tombol Publish di Dashboard."}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="p-3 bg-white/80 rounded-xl border border-stone-200 text-[11px] text-stone-600 space-y-1">
+                      <span className="font-bold text-stone-800 block">Panduan Pengiriman:</span>
+                      <p>
+                        Tautan <code className="text-amber-800 font-bold font-mono text-[10px]">{"{link_undangan}"}</code> otomatis menggunakan domain kustom atau subdomain aktif Anda dan menyertakan nama tamu sehingga ucapan nama tamu personal otomatis muncul saat mereka membuka web.
+                      </p>
                     </div>
                   </div>
-                </div>
-
-                <div className="p-3 bg-white/80 rounded-xl border border-stone-200 text-[11px] text-stone-600 space-y-1">
-                  <span className="font-bold text-stone-800 block">Panduan Pengiriman:</span>
-                  <p>
-                    Tautan <code className="text-amber-800 font-bold font-mono text-[10px]">{"{link_undangan}"}</code> otomatis mengarah ke subdomain undangan Anda dan menyertakan nama tamu sehingga ucapan nama tamu personal otomatis muncul saat mereka membuka web.
-                  </p>
-                </div>
-              </div>
+                );
+              })()}
 
             </div>
 

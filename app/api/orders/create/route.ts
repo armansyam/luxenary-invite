@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
+import { deleteFile } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
 
@@ -66,27 +67,50 @@ export async function POST(req: NextRequest) {
     }
     const amount = Number(priceSetting.value);
 
-    // Cek apakah user punya order PENDING yang belum dibayar
+    // Cek apakah user punya order PENDING atau FAILED yang belum lunas
     const existingPending = await prisma.order.findFirst({
       where: {
         userId: validUserId,
-        status: "PENDING",
+        status: { in: ["PENDING", "FAILED"] },
+        linkedOrderId: null,
       },
       orderBy: { createdAt: "desc" },
     });
 
     if (existingPending) {
-      // Hapus jika ada duplikat draf order pending lama lainnya untuk user ini
-      await prisma.order.deleteMany({
-        where: {
-          userId: validUserId,
-          status: "PENDING",
-          id: { not: existingPending.id },
-        },
-      });
+      // Cari dan bersihkan file bukti transfer pada duplikat draf order pending/failed lama lainnya
+      try {
+        const duplicateOrders = await prisma.order.findMany({
+          where: {
+            userId: validUserId,
+            status: { in: ["PENDING", "FAILED"] },
+            id: { not: existingPending.id },
+            linkedOrderId: null,
+          },
+          select: { id: true, proofImageUrl: true },
+        });
 
-      // FIX: Jangan izinkan ubah paket jika sudah ada bukti transfer (menunggu verifikasi admin)
-      if (existingPending.proofImageUrl) {
+        for (const dup of duplicateOrders) {
+          if (dup.proofImageUrl) {
+            try {
+              await deleteFile(dup.proofImageUrl);
+            } catch (e) {
+              console.error("Gagal menghapus file bukti order duplikat:", e);
+            }
+          }
+        }
+
+        if (duplicateOrders.length > 0) {
+          await prisma.order.deleteMany({
+            where: { id: { in: duplicateOrders.map((o) => o.id) } },
+          });
+        }
+      } catch (dupErr) {
+        console.error("Gagal membersihkan duplikat order:", dupErr);
+      }
+
+      // FIX: Jangan izinkan ubah paket jika status masih PENDING dan sudah ada bukti transfer (menunggu verifikasi admin)
+      if (existingPending.status === "PENDING" && existingPending.proofImageUrl) {
         return NextResponse.json({
           message: "Anda memiliki pesanan yang sedang menunggu verifikasi admin. Tidak dapat mengubah paket saat ini.",
           orderId: existingPending.id,
@@ -97,15 +121,30 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      // Update planType & amount langsung ke order aktif, reset bukti transfer jika paket berubah
-      // (Sekarang aman karena if di atas memastikan tidak ada proofImageUrl jika isPlanChanged true)
+      // Update planType & amount langsung ke order aktif, reset bukti transfer jika paket berubah atau sebelumnya FAILED
       const isPlanChanged = existingPending.planType !== planType;
+      const isResetProof = isPlanChanged || existingPending.status === "FAILED";
+
+      // Hapus file bukti lama dari storage jika paket berubah atau sebelumnya berstatus FAILED
+      if (isResetProof && existingPending.proofImageUrl) {
+        try {
+          await deleteFile(existingPending.proofImageUrl);
+        } catch (e) {
+          console.error("Gagal menghapus file bukti lama saat reset order:", e);
+        }
+      }
 
       const updated = await prisma.order.update({
         where: { id: existingPending.id },
         data: {
           planType: planType as "TRADITIONAL" | "MODERN" | "PREMIUM",
           amount,
+          status: "PENDING",
+          proofImageUrl: isResetProof ? null : existingPending.proofImageUrl,
+          proofUploadedAt: isResetProof ? null : existingPending.proofUploadedAt,
+          rejectReason: isResetProof ? null : existingPending.rejectReason,
+          snapToken: null,
+          expiredAt: null,
         },
       });
 
@@ -121,7 +160,7 @@ export async function POST(req: NextRequest) {
     }
 
     /**
-     * Tidak ada order PENDING — cek apakah ada order EXPIRED dengan planType yang sama.
+     * Tidak ada order PENDING / FAILED — cek apakah ada order EXPIRED dengan planType yang sama.
      * Jika ada, reset ke PENDING dan reuse daripada membuat order baru.
      * Ini mencegah akumulasi order EXPIRED orphaned di DB setiap kali QRIS kedaluwarsa
      * dan user mencoba bayar ulang (flow: iPaymu kirim webhook expired → handleRegenerateOrder
@@ -164,6 +203,15 @@ export async function POST(req: NextRequest) {
         reusedFromExpired: true,
       });
     }
+
+    // Pastikan tidak ada order draf PENDING/FAILED lama yang tertinggal
+    await prisma.order.deleteMany({
+      where: {
+        userId: validUserId,
+        status: { in: ["PENDING", "FAILED"] },
+        linkedOrderId: null,
+      },
+    });
 
     const invoiceNumber = `INV-LUX-${Date.now()}-${randomUUID().slice(0, 6).toUpperCase()}`;
 

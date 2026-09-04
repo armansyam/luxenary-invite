@@ -103,11 +103,6 @@ export async function GET() {
         select: { id: true, amount: true, status: true, planType: true, createdAt: true },
       }),
       prisma.order.findMany({
-        where: {
-          status: {
-            notIn: ["EXPIRED", "FAILED"],
-          },
-        },
         take: 50,
         orderBy: { createdAt: "desc" },
         include: { user: { select: { name: true, email: true } } },

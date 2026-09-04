@@ -1519,6 +1519,18 @@ export function composeDemoTemplateData(
     </section>
   `;
 
+  // 5b. QR Code Check-In Ticket for Modal
+  const qrAccessCardHtml = `
+    <div style="text-align:center; padding:1rem 0;">
+      <span style="font-size:0.65rem; letter-spacing:0.3em; text-transform:uppercase; color:rgba(255,255,255,0.6); display:block; margin-bottom:0.4rem; font-weight:600;">Check-In Ticket</span>
+      <h3 style="font-size:1.4rem; color:#fff; font-family:'Cormorant Garamond',serif; margin-bottom:0.2rem;" id="modalGuestName">Tamu Undangan</h3>
+      <p style="font-size:0.75rem; color:rgba(255,255,255,0.65); margin-bottom:1.2rem;">Tunjukkan kode QR ini kepada penerima tamu di lokasi acara.</p>
+      <div style="background:#ffffff; padding:14px; display:inline-block; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.5);">
+        <img class="pass-qr-img" id="modalQrImg" src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=Tamu%20Undangan" alt="QR Check-In" style="width:160px; height:160px; display:block; margin:0 auto;">
+      </div>
+    </div>
+  `;
+
   // 6. Dresscode Section
   const colorBadges = demo.dressCodeColors.split(",").map((c) => `
     <span style="width:28px; height:28px; border-radius:50%; background:${c.trim()}; display:inline-block; border:2px solid rgba(255,255,255,0.7); box-shadow:0 4px 10px rgba(0,0,0,0.35);"></span>
@@ -1561,7 +1573,7 @@ export function composeDemoTemplateData(
   `;
 
   // 9. QR Buttons for Cover & Dock
-  const qrCoverButtonHtml = `<button type="button" class="btn-open-qr-cover" onclick="luxOpenAccessModal()">Kartu Akses QR</button>`;
+  const qrCoverButtonHtml = `<button type="button" class="btn-open-qr-cover" onclick="luxOpenAccessModal()" style="display:inline-block; margin-top:20px; padding:10px 24px; background:#111; color:#fff; border:none; border-radius:30px; font-size:12px; font-weight:600; letter-spacing:1px; cursor:pointer; box-shadow:0 4px 15px rgba(0,0,0,0.2); transition:transform 0.2s ease;">Kartu Akses QR</button>`;
   const qrDockButtonHtml = `
     <button class="nav-item qr-btn" onclick="luxOpenAccessModal()" title="Buka QR Pass">
       <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 3h6v6H3zM15 3h6v6h-6zM3 15h6v6H3zM15 15h2v2h-2zM19 15h2v2h-2zM15 19h2v2h-2zM19 19h2v2h-2z"/></svg>
@@ -1843,7 +1855,8 @@ export function composeDemoTemplateData(
     
     // Exact Standardized Local Assets
     globalBgUrl: demo.globalBgUrl,
-    homePhotoUrl: demo.globalBgUrl, // Home section uses globalBgUrl as its demo photo
+    homePhotoUrl: `/demo/${demo.themeId}/home.webp`,
+    footerPhotoUrl: `/demo/${demo.themeId}/footer.webp`,
     groomPhotoUrl: demo.groomPhotoUrl,
     bridePhotoUrl: demo.bridePhotoUrl,
     firstPhotoUrl: demo.groomPhotoUrl,
@@ -1867,6 +1880,7 @@ export function composeDemoTemplateData(
     gallerySectionHtml,
     giftSectionHtml,
     qrAccessSectionHtml,
+    qrAccessCardHtml,
     dressCodeHtml,
     liveStreamingHtml,
     weddingFilterHtml,

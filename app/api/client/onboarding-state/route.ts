@@ -80,7 +80,22 @@ export async function GET() {
       });
     }
 
-    // Kasus 3: Order EXPIRED atau FAILED (dari gateway webhook atau sweep)
+    // Kasus 3: Order FAILED karena penolakan bukti transfer oleh admin (memiliki rejectReason)
+    // Tetap arahkan ke order ID yang sama agar klien melihat alasan penolakan dan dapat upload ulang
+    if (latestOrder.status === "FAILED" && latestOrder.rejectReason) {
+      return NextResponse.json({
+        step: "ORDER_REJECTED",
+        orderId: latestOrder.id,
+        invoiceNumber: latestOrder.invoiceNumber,
+        planType: latestOrder.planType,
+        amount: Number(latestOrder.amount),
+        redirectUrl: `/checkout?order=${latestOrder.id}`,
+        hasPaidOrder: false,
+        rejectReason: latestOrder.rejectReason,
+      });
+    }
+
+    // Kasus 4: Order EXPIRED atau FAILED lainnya (gateway timeout/cancel)
     // Arahkan ke pembuatan order baru dengan menyertakan pesan kecil
     const isRejected = latestOrder.status === "FAILED";
     const msg = isRejected ? "transfer_rejected" : "qris_expired";

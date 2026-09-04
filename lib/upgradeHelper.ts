@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/prisma";
+import { deleteFile } from "@/lib/storage";
+import { sendInvoiceEmail } from "@/lib/mailer";
 
 /**
  * applyGalleryExtension
@@ -81,6 +83,49 @@ export async function applyCustomDomainAddon(addonOrderId: string): Promise<void
 }
 
 /**
+ * purgeObsoleteUserOrders
+ * Memastikan prinsip Single State (Opsi B):
+ * Saat order PAID, bersihkan semua draft/failed orders lama milik user beserta file struknya di Cloudflare R2
+ */
+export async function purgeObsoleteUserOrders(userId: string, currentOrderId: string): Promise<void> {
+  try {
+    const obsolete = await prisma.order.findMany({
+      where: {
+        userId,
+        id: { not: currentOrderId },
+        status: { in: ["PENDING", "FAILED", "EXPIRED"] },
+        linkedOrderId: null,
+      },
+      select: { id: true, proofImageUrl: true },
+    });
+
+    for (const ord of obsolete) {
+      if (ord.proofImageUrl) {
+        try {
+          await deleteFile(ord.proofImageUrl);
+        } catch (e) {
+          console.error("Gagal menghapus file bukti order usang:", e);
+        }
+      }
+    }
+
+    if (obsolete.length > 0) {
+      const obsoleteIds = obsolete.map((o) => o.id);
+      // Lepas relasi ke invitation agar tidak melanggar foreign key constraint PostgreSQL
+      await prisma.invitation.updateMany({
+        where: { orderId: { in: obsoleteIds } },
+        data: { orderId: null },
+      });
+      await prisma.order.deleteMany({
+        where: { id: { in: obsoleteIds } },
+      });
+    }
+  } catch (err) {
+    console.error("[Purge Obsolete User Orders Error]:", err);
+  }
+}
+
+/**
  * applyUpgradePlan
  * Dipanggil setelah order UPGRADE atau GALLERY_EXTENSION berhasil PAID.
  *
@@ -98,18 +143,23 @@ export async function applyUpgradePlan(paidOrderId: string): Promise<void> {
 
   // Kirim email bukti pembayaran lunas (PAID) secara asynchronous non-blocking
   if (order.user?.email) {
-    import("@/lib/mailer").then(({ sendInvoiceEmail }) => {
-      sendInvoiceEmail({
-        orderId: order.id,
-        orderType: order.orderType,
-        plan: order.planType,
-        amount: Number(order.amount),
-        paymentMethod: order.paymentMethod || "QRIS / Payment Gateway",
-        recipientEmail: order.user.email,
-        recipientName: order.user.name || undefined,
-        type: "PAID",
-      }).catch(err => console.error("[Payment Webhook] Gagal kirim email PAID:", err));
-    });
+    const recipientEmail = order.user.email;
+    const recipientName = order.user.name || undefined;
+    sendInvoiceEmail({
+      orderId: order.id,
+      orderType: order.orderType,
+      plan: order.planType,
+      amount: Number(order.amount),
+      paymentMethod: order.paymentMethod || "QRIS / Payment Gateway",
+      recipientEmail,
+      recipientName,
+      type: "PAID",
+    }).catch(err => console.error("[Payment Webhook] Gagal kirim email PAID:", err));
+  }
+
+  // Single State Enforcement: Bersihkan order usang non-PAID milik user ini
+  if (order.userId) {
+    await purgeObsoleteUserOrders(order.userId, paidOrderId);
   }
 
   if (order.orderType === "GALLERY_EXTENSION") {

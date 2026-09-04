@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     const graceDays = Number(retentionGraceSetting?.value) || 7; // H+7 hari: tutup undangan utama & alihkan ke galeri
     const galleryDays = Number(retentionGallerySetting?.value) || 30; // H+30 hari: bersihkan foto tamu jika tidak diperpanjang
     const retentionAccountDays = Number(retentionAccountSetting?.value) || 365;
-    const retentionOrderDays = Number(retentionOrderSetting?.value) || 90;
+    const retentionOrderDays = Number(retentionOrderSetting?.value) || 30;
 
     const now = new Date();
     const thresholdGraceDate = new Date(now.getTime() - (graceDays * 24 * 60 * 60 * 1000));
@@ -208,7 +208,15 @@ export async function POST(req: NextRequest) {
         await deletePublishedHtml(inv.id);
       }
 
-      // Hapus User (Otomatis Cascade Delete Invitation ARCHIVED nya)
+      // Hapus file fisik Order proofImageUrl dari R2 (sebelum user dihapus dan cascade)
+      const userOrders = await prisma.order.findMany({ where: { userId: user.id } });
+      if (userOrders.length > 0) {
+        import("@/lib/storage").then(({ deleteFile }) => {
+          Promise.all(userOrders.map(ord => ord.proofImageUrl ? deleteFile(ord.proofImageUrl) : Promise.resolve())).catch(() => {});
+        });
+      }
+
+      // Hapus User (Otomatis Cascade Delete Invitation ARCHIVED nya beserta Order nya)
       await prisma.user.delete({ where: { id: user.id } });
       totalDeletedUsers++;
     }
@@ -223,9 +231,11 @@ export async function POST(req: NextRequest) {
 
     for (const ord of staleOrders) {
       if (ord.proofImageUrl) {
-        const filePath = path.join(process.cwd(), "public", ord.proofImageUrl.replace(/^\//, ""));
-        if (await fileExists(filePath)) {
-          try { await fs.promises.unlink(filePath); } catch {}
+        try {
+          const { deleteFile } = await import("@/lib/storage");
+          await deleteFile(ord.proofImageUrl);
+        } catch (e) {
+          console.error("Gagal menghapus file proof lama dari cron:", e);
         }
       }
     }

@@ -100,19 +100,23 @@ export async function buildAndSavePublishedHtml(invitationId: string): Promise<s
   
   (data as any).metaTagsHtml = metaTagsHtml;
 
+  if (!invitation.themeId) {
+    throw new Error("Gagal mempublikasikan undangan: Desain tema belum dipilih. Silakan pilih tema di Studio Editor terlebih dahulu.");
+  }
+
   // Render standalone HTML without edit controls (menggunakan Piring draft jika ada)
-  const standaloneHtml = await renderTemplateFile(invitation.themeId || "kalandra", data, { editMode: false, invitationId: invitation.id });
+  const standaloneHtml = await renderTemplateFile(invitation.themeId, data, { editMode: false, invitationId: invitation.id });
 
   await ensurePublishedDir();
 
-  // 1. Simpan sebagai subdomains/{subdomain}.html → untuk subdomain routing (contoh: dimas-clarissa.luxenary.id)
+  // 1. Simpan sebagai subdomains/{subdomain}.html → untuk subdomain routing (contoh: dimas-clarissa.[root_domain])
   let subdomainFilePath = "None (No Subdomain)";
   if (invitation.subdomain) {
     subdomainFilePath = path.join(PUBLISHED_DIR, "subdomains", `${invitation.subdomain}.html`);
     await fs.promises.writeFile(subdomainFilePath, standaloneHtml, "utf-8");
   }
 
-  // 2. Simpan sebagai slugs/{invitationSlug}.html → untuk canonical path routing (contoh: luxenary.id/dimas-clarissa-030326)
+  // 2. Simpan sebagai slugs/{invitationSlug}.html → untuk canonical path routing (contoh: [root_domain]/dimas-clarissa-030326)
   const canonicalFilePath = path.join(PUBLISHED_DIR, "slugs", `${invitation.invitationSlug}.html`);
   await fs.promises.writeFile(canonicalFilePath, standaloneHtml, "utf-8");
 

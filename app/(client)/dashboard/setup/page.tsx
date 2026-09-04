@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect, Suspense, useCallback } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { getApexRootDomain, getInvitationPublicUrl, getMonthYearSlug } from "@/lib/domainUtils";
 import { BrandLogo } from "@/components/BrandLogo";
 
 function SetupWizardContent() {
@@ -14,45 +13,75 @@ function SetupWizardContent() {
   const queryPlan = searchParams.get("plan");
   const queryOrder = searchParams.get("order");
 
-  const [currentPlan, setCurrentPlan] = useState<string>(queryPlan?.toUpperCase() || "PREMIUM");
+  const [currentPlan, setCurrentPlan] = useState<string>(queryPlan?.toUpperCase() || "");
   const [planNames, setPlanNames] = useState<Record<string, string>>({
     TRADITIONAL: "Traditional",
     MODERN: "Modern",
     PREMIUM: "Premium",
   });
-  const [platformName, setPlatformName] = useState("Luxenary Invite");
+  const [platformName, setPlatformName] = useState("");
   const [themesList, setThemesList] = useState<any[]>([]);
 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Form State
+  // Form State: Murni kosong tanpa default palsu
   const [groomNickname, setGroomNickname] = useState("");
   const [brideNickname, setBrideNickname] = useState("");
   const [groomName, setGroomName] = useState("");
   const [brideName, setBrideName] = useState("");
   const [weddingDate, setWeddingDate] = useState("");
   const [city, setCity] = useState("");
-  const [themeId, setThemeId] = useState("kalandra");
+  const [timeZone, setTimeZone] = useState("WIB");
+  const [akadTime, setAkadTime] = useState("");
+  const [resepsiTime, setResepsiTime] = useState("");
+  const [themeId, setThemeId] = useState("");
 
-  // Custom Editable Subdomain & Dynamic Host Resolver
-  const [subdomain, setSubdomain] = useState("");
-  const [isSubdomainCustomized, setIsSubdomainCustomized] = useState(false);
-  const [rootDomain, setRootDomain] = useState("");
-  const [subdomainStatus, setSubdomainStatus] = useState<{
-    checking: boolean;
-    available: boolean | null;
-    message: string;
-  }>({
-    checking: false,
-    available: null,
-    message: "",
-  });
+  const [isDraftLoaded, setIsDraftLoaded] = useState(false);
+
+  // Load Draft from localStorage on mount
+  useEffect(() => {
+    try {
+      // Auto detect user browser timezone
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (tz.includes("Makassar") || tz.includes("Bali") || tz.includes("Pontianak") || tz.includes("Manado") || tz.includes("Ujung_Pandang")) {
+        setTimeZone("WITA");
+      } else if (tz.includes("Jayapura") || tz.includes("Ambon")) {
+        setTimeZone("WIT");
+      } else {
+        setTimeZone("WIB");
+      }
+
+      const saved = localStorage.getItem("luxenary_setup_draft");
+      if (saved) {
+        const draft = JSON.parse(saved);
+        if (draft.groomNickname) setGroomNickname(draft.groomNickname);
+        if (draft.brideNickname) setBrideNickname(draft.brideNickname);
+        if (draft.groomName) setGroomName(draft.groomName);
+        if (draft.brideName) setBrideName(draft.brideName);
+        if (draft.weddingDate) setWeddingDate(draft.weddingDate);
+        if (draft.city) setCity(draft.city);
+        if (draft.timeZone) setTimeZone(draft.timeZone);
+        if (draft.akadTime) setAkadTime(draft.akadTime);
+        if (draft.resepsiTime) setResepsiTime(draft.resepsiTime);
+        if (draft.themeId) setThemeId(draft.themeId);
+        if (draft.step) setStep(draft.step);
+      }
+    } catch {}
+    setIsDraftLoaded(true);
+  }, []);
+
+  // Save Draft to localStorage on change
+  useEffect(() => {
+    if (!isDraftLoaded) return;
+    const draft = { groomNickname, brideNickname, groomName, brideName, weddingDate, city, timeZone, akadTime, resepsiTime, themeId, step };
+    localStorage.setItem("luxenary_setup_draft", JSON.stringify(draft));
+  }, [groomNickname, brideNickname, groomName, brideName, weddingDate, city, timeZone, akadTime, resepsiTime, themeId, step, isDraftLoaded]);
 
   // Resolve dynamic host, settings, and themes on mount
   useEffect(() => {
-    setRootDomain(getApexRootDomain());
+    
 
     // Fetch dynamic themes list
     fetch("/api/public/themes")
@@ -91,8 +120,24 @@ function SetupWizardContent() {
           }
         })
         .catch(() => {});
+    } else if (!queryPlan) {
+      // Jika tidak ada query param, ambil paket aktif dari onboarding-state klien
+      fetch("/api/client/onboarding-state")
+        .then((r) => r.json())
+        .then((state) => {
+          if (state.planType) {
+            setCurrentPlan(state.planType.toUpperCase());
+          } else if (state.redirectUrl) {
+            try {
+              const parsedUrl = new URL(state.redirectUrl, window.location.origin);
+              const p = parsedUrl.searchParams.get("plan");
+              if (p) setCurrentPlan(p.toUpperCase());
+            } catch {}
+          }
+        })
+        .catch(() => {});
     }
-  }, [queryOrder]);
+  }, [queryOrder, queryPlan]);
 
   // Filter themes based on the user's purchased package tier (Waterfall / All-Access Mapping)
   const filteredThemes = themesList.filter((t) => {
@@ -107,78 +152,17 @@ function SetupWizardContent() {
   });
   const availableThemes = filteredThemes.length > 0 ? filteredThemes : themesList;
 
-  // Set default themeId when plan changes
+  // Reset themeId jika tema yang sebelumnya dipilih tidak tersedia pada tier ini
   useEffect(() => {
-    if (availableThemes.length > 0) {
+    if (themeId && availableThemes.length > 0) {
       const currentSelectedExists = availableThemes.some((t) => t.id === themeId);
       if (!currentSelectedExists) {
-        setThemeId(availableThemes[0].id);
+        setThemeId("");
       }
     }
   }, [currentPlan, availableThemes, themeId]);
 
-  // Update subdomain based on nicknames if not manually customized
-  useEffect(() => {
-    if (!isSubdomainCustomized) {
-      const gSlug = groomNickname.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-      const bSlug = brideNickname.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-      if (gSlug && bSlug) {
-        setSubdomain(`${gSlug}-${bSlug}`);
-      } else if (gSlug) {
-        setSubdomain(gSlug);
-      } else if (bSlug) {
-        setSubdomain(bSlug);
-      }
-    }
-  }, [groomNickname, brideNickname, isSubdomainCustomized]);
 
-  // Check Subdomain Availability (Debounced)
-  const checkSubdomainAvailability = useCallback(async (slugToCheck: string) => {
-    const clean = slugToCheck.toLowerCase().trim().replace(/[^a-z0-9-]/g, "");
-    if (!clean || clean.length < 3) {
-      setSubdomainStatus({
-        checking: false,
-        available: null,
-        message: "Minimal 3 karakter",
-      });
-      return;
-    }
-
-    setSubdomainStatus((prev) => ({ ...prev, checking: true }));
-
-    try {
-      const res = await fetch(`/api/client/subdomain/check?subdomain=${encodeURIComponent(clean)}`);
-      const data = await res.json();
-      setSubdomainStatus({
-        checking: false,
-        available: data.available,
-        message: data.message || (data.available ? "Tautan tersedia dan dapat digunakan" : "Tautan sudah digunakan"),
-      });
-    } catch {
-      setSubdomainStatus({
-        checking: false,
-        available: null,
-        message: "Gagal memeriksa ketersediaan",
-      });
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!subdomain) {
-      setSubdomainStatus({ checking: false, available: null, message: "" });
-      return;
-    }
-    const timer = setTimeout(() => {
-      checkSubdomainAvailability(subdomain);
-    }, 450);
-    return () => clearTimeout(timer);
-  }, [subdomain, checkSubdomainAvailability]);
-
-  const handleSubdomainChange = (val: string) => {
-    setIsSubdomainCustomized(true);
-    const cleaned = val.toLowerCase().replace(/[^a-z0-9-]/g, "");
-    setSubdomain(cleaned);
-  };
 
   const handleCompleteSetup = async () => {
     if (!groomNickname.trim() || !brideNickname.trim()) {
@@ -187,9 +171,9 @@ function SetupWizardContent() {
       return;
     }
 
-    if (subdomainStatus.available === false) {
-      setError("Tautan undangan yang Anda pilih tidak tersedia. Silakan ubah tautan undangan Anda.");
-      setStep(1);
+    if (!themeId) {
+      setError("Silakan pilih salah satu desain tema terlebih dahulu.");
+      setStep(3);
       return;
     }
 
@@ -205,9 +189,11 @@ function SetupWizardContent() {
           brideNickname: brideNickname.trim(),
           groomName: groomName.trim() || groomNickname.trim(),
           brideName: brideName.trim() || brideNickname.trim(),
-          subdomain: subdomain.trim(),
           weddingDate,
           city: city.trim(),
+          timeZone,
+          akadTime: akadTime.trim(),
+          resepsiTime: resepsiTime.trim(),
           themeId,
           planType: currentPlan,
         }),
@@ -219,6 +205,7 @@ function SetupWizardContent() {
       }
 
       // Success Redirect directly to the invitation editor
+      localStorage.removeItem("luxenary_setup_draft");
       router.push(`/dashboard/invitation/${data.invitationId}`);
     } catch (err: any) {
       setError(err.message || "Terjadi kesalahan. Silakan coba lagi.");
@@ -241,7 +228,7 @@ function SetupWizardContent() {
           subdomain: "",
           weddingDate: "",
           city: "",
-          themeId: "kalandra",
+          themeId: "", // Murni kosong tanpa tema default
           planType: currentPlan,
         }),
       });
@@ -251,6 +238,7 @@ function SetupWizardContent() {
         throw new Error(data.error || "Gagal melewati penyiapan.");
       }
 
+      localStorage.removeItem("luxenary_setup_draft");
       router.push(`/dashboard/invitation/${data.invitationId}`);
     } catch (err: any) {
       setError(err.message || "Terjadi kesalahan. Silakan coba lagi.");
@@ -364,53 +352,7 @@ function SetupWizardContent() {
                 </div>
               </div>
 
-              {/* Editable Dynamic Subdomain / URL Card with Real-time Check */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-amber-50/50 border border-amber-200/80 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-amber-950 uppercase tracking-wider block">
-                    Tautan Link Undangan (Dapat Diedit):
-                  </label>
-                  {subdomainStatus.checking ? (
-                    <span className="text-[11px] text-stone-500 font-medium flex items-center gap-1.5">
-                      <span className="w-2.5 h-2.5 border-2 border-stone-400 border-t-transparent rounded-full animate-spin"></span>
-                      Memeriksa ketersediaan...
-                    </span>
-                  ) : subdomainStatus.available === true ? (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                      Tersedia
-                    </span>
-                  ) : subdomainStatus.available === false ? (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2.5 py-0.5 rounded-full">
-                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-                      Tidak Tersedia
-                    </span>
-                  ) : null}
-                </div>
 
-                <div className="flex items-center bg-white border border-amber-900/20 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-amber-700/30">
-                  <span className="px-3.5 py-2.5 text-xs text-stone-400 font-mono select-none bg-stone-50 border-r border-stone-200">
-                    http://
-                  </span>
-                  <input
-                    type="text"
-                    value={subdomain}
-                    onChange={(e) => handleSubdomainChange(e.target.value)}
-                    placeholder="yus-ulfa"
-                    className="flex-1 px-3 py-2.5 text-xs font-mono font-bold text-amber-950 bg-white focus:outline-none"
-                  />
-                  <span className="px-3.5 py-2.5 text-xs text-stone-500 font-mono select-none bg-stone-50 border-l border-stone-200">
-                    .{rootDomain}
-                  </span>
-                </div>
-
-                <div className="pt-1 flex flex-col gap-1 text-[11px] text-stone-500">
-                  <p>{subdomainStatus.message || "Tautan dibuat otomatis mengikuti nama panggilan, dan dapat Anda sesuaikan bebas."}</p>
-                  <p className="text-[10px] text-amber-900/80 bg-amber-100/50 p-2 rounded-lg border border-amber-200/60">
-                    <strong>Link Arsip Portofolio (1 Tahun):</strong> <code>http://{rootDomain}/{subdomain || "mempelai"}/{weddingDate ? getMonthYearSlug(weddingDate) : "okt-2026"}</code>
-                  </p>
-                </div>
-              </div>
             </div>
 
             <div className="flex items-center justify-between pt-2">
@@ -431,10 +373,7 @@ function SetupWizardContent() {
                     setError("Harap isi nama panggilan kedua mempelai.");
                     return;
                   }
-                  if (subdomainStatus.available === false) {
-                    setError("Tautan yang dipilih sudah digunakan. Harap ubah tautan undangan.");
-                    return;
-                  }
+
                   setError(null);
                   setStep(2);
                 }}
@@ -480,13 +419,73 @@ function SetupWizardContent() {
                   type="text"
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
-                  placeholder="Contoh: Makassar, Jakarta, Surabaya, dll."
+                  placeholder="Contoh: Jakarta, Surabaya, Makassar, Medan, Bandung, dll."
                   className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-sm font-semibold text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
                 />
               </div>
 
+              {/* Zona Waktu Acara Dinamis */}
+              <div>
+                <label className="block text-xs font-bold text-stone-700 mb-1.5">
+                  Zona Waktu Acara
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: "WIB", label: "WIB (Barat)" },
+                    { id: "WITA", label: "WITA (Tengah)" },
+                    { id: "WIT", label: "WIT (Timur)" },
+                  ].map((tz) => (
+                    <button
+                      key={tz.id}
+                      type="button"
+                      onClick={() => setTimeZone(tz.id)}
+                      className={`py-2.5 px-3 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                        timeZone === tz.id
+                          ? "border-amber-800 bg-amber-50 text-amber-950 ring-2 ring-amber-800/20 shadow-xs"
+                          : "border-stone-200 bg-stone-50 text-stone-600 hover:bg-white"
+                      }`}
+                    >
+                      <span>{tz.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Input Waktu Opsional */}
+              <div className="pt-2 border-t border-stone-100">
+                <span className="text-[11px] font-bold text-stone-500 uppercase tracking-wider block mb-2">
+                  Perkiraan Jam Acara <span className="text-stone-400 font-normal lowercase">(opsional — dapat disesuaikan nanti di editor)</span>
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-stone-600 mb-1">
+                      Waktu Akad / Pemberkatan
+                    </label>
+                    <input
+                      type="text"
+                      value={akadTime}
+                      onChange={(e) => setAkadTime(e.target.value)}
+                      placeholder={`Contoh: 08:00 - 10:00 ${timeZone}`}
+                      className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-800 focus:bg-white focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-stone-600 mb-1">
+                      Waktu Resepsi
+                    </label>
+                    <input
+                      type="text"
+                      value={resepsiTime}
+                      onChange={(e) => setResepsiTime(e.target.value)}
+                      placeholder={`Contoh: 11:00 - 14:00 ${timeZone}`}
+                      className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-800 focus:bg-white focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="p-4 bg-stone-50 rounded-2xl border border-stone-200 text-xs text-stone-600 leading-relaxed">
-                Detail lengkap seperti gedung, alamat lengkap, jam acara, dan multi-sesi adat (Mappacci, Mapparola, dll.) dapat Anda atur dengan mudah di dalam Studio Editor setelah wizard ini.
+                Detail lengkap seperti nama gedung, alamat lengkap, peta lokasi, dan multi-sesi adat (Mappacci, Siraman, Pengajian, dll.) dapat Anda tambahkan dengan leluasa di Studio Editor.
               </div>
             </div>
 
@@ -502,13 +501,20 @@ function SetupWizardContent() {
               <button
                 type="button"
                 onClick={() => {
+                  if (!weddingDate) {
+                    setError("Harap tentukan tanggal pernikahan utama.");
+                    return;
+                  }
+                  if (!city.trim()) {
+                    setError("Harap isi kota atau wilayah pelaksanaan acara.");
+                    return;
+                  }
                   setError(null);
                   setStep(3);
                 }}
                 className="px-8 py-3.5 bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold rounded-xl transition shadow-md cursor-pointer flex items-center gap-2"
               >
                 <span>Pilih Desain Tema</span>
-                
               </button>
             </div>
           </div>
@@ -574,12 +580,10 @@ function SetupWizardContent() {
                   <h4 className="text-lg font-serif font-bold text-white">
                     {groomNickname} &amp; {brideNickname}
                   </h4>
-                  <p className="text-xs font-mono text-stone-300 mt-0.5">
-                    {getInvitationPublicUrl(subdomain)}
-                  </p>
+
                 </div>
-                <span className="px-3 py-1 bg-white/10 rounded-full text-xs font-mono text-stone-300">
-                  Tema: {themesList.find((t: any) => t.id === themeId)?.name || themeId}
+                <span className={`px-3 py-1 rounded-full text-xs font-mono ${themeId ? "bg-white/10 text-stone-300" : "bg-amber-500/20 text-amber-300 border border-amber-500/30"}`}>
+                  Tema: {themesList.find((t: any) => t.id === themeId)?.name || (themeId ? themeId : "Belum Memilih Tema")}
                 </span>
               </div>
               <p className="text-xs text-stone-400">

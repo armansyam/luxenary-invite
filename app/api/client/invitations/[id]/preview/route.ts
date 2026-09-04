@@ -46,7 +46,40 @@ export async function GET(
       return new NextResponse("Gagal memuat data template undangan.", { status: 500 });
     }
 
-    const html = await renderTemplateFile(invitation.themeId || "kalandra", data, { editMode: isEditMode, invitationId: id });
+    if (!invitation.themeId) {
+      return new NextResponse(
+        `<!DOCTYPE html>
+        <html lang="id">
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Tema Belum Dipilih - Luxenary</title>
+          <script src="https://cdn.tailwindcss.com"></script>
+        </head>
+        <body class="bg-stone-50 flex items-center justify-center min-h-screen p-4 font-sans text-stone-800">
+          <div class="max-w-md w-full bg-white rounded-2xl p-8 border border-stone-200 shadow-sm text-center space-y-4">
+            <div class="w-14 h-14 bg-amber-100 rounded-full flex items-center justify-center mx-auto text-amber-800">
+              <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <h2 class="text-xl font-bold text-stone-900 font-serif">Tema Belum Dipilih</h2>
+            <p class="text-sm text-stone-600 leading-relaxed">
+              Undangan ini belum memiliki desain tema. Silakan kembali ke Studio Editor dan pilih salah satu tema yang tersedia di <strong>Seksi 1 (Tema Desain &amp; Palet Warna)</strong> untuk melihat pratinjau.
+            </p>
+          </div>
+        </body>
+        </html>`,
+        {
+          headers: {
+            "Content-Type": "text/html; charset=utf-8",
+            "Cache-Control": "no-store, max-age=0, must-revalidate",
+          },
+        }
+      );
+    }
+
+    const html = await renderTemplateFile(invitation.themeId, data, { editMode: isEditMode, invitationId: id });
 
     return new NextResponse(html, {
       headers: {

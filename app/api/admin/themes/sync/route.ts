@@ -125,6 +125,14 @@ export async function POST() {
       syncedCount++;
     }
 
+    // Purge any themes in Database that no longer exist in themes/ directory
+    const discoveredIds = discovered.map((d) => d.id);
+    await prisma.theme.deleteMany({
+      where: {
+        id: { notIn: discoveredIds },
+      },
+    });
+
     // Pre-compile all demo themes into static index.html files
     const { compileAllStaticDemos } = await import("@/lib/demoPublisher");
     const precompiledCount = await compileAllStaticDemos();

@@ -54,7 +54,7 @@ export async function sendInvoiceEmail(opts: InvoiceEmailOptions): Promise<{ suc
     });
 
     const isPaid = opts.type === "PAID";
-    const baseUrl = opts.appUrl || process.env.NEXTAUTH_URL || "https://luxenary.id";
+    const baseUrl = opts.appUrl || process.env.NEXTAUTH_URL || `https://${process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost:3000'}`;
 
     // Kategori dinamis (Paket vs Galeri Extend)
     const isGallery = opts.orderType === "GALLERY_EXTENSION";

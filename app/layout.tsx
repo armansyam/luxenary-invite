@@ -19,7 +19,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const settings = await getPublicPlatformSettings();
   
   return {
-    title: settings.platformName || "Luxenary Invite",
+    title: settings.platformName || "Sistem Undangan Digital",
     description: settings.heroTagline || "Platform undangan pernikahan digital self-service",
     icons: {
       icon: [

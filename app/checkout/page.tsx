@@ -1,18 +1,20 @@
 "use client";
 
 import { BrandLogo } from "@/components/BrandLogo";
-import { useState, useEffect, Suspense, useCallback } from "react";
+import { useState, useEffect, Suspense, useCallback, useRef } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 function CheckoutContent() {
   const { data: session, status } = useSession();
+  const sessionUserId = (session?.user as any)?.id;
   const router = useRouter();
   const searchParams = useSearchParams();
   const planParam = searchParams.get("plan");
   const orderIdParam = searchParams.get("order");
   const msgParam = searchParams.get("msg");
+  const initializedRef = useRef<string | null>(null);
 
   const [planData, setPlanData] = useState<{ name: string; price: number; desc: string } | null>(null);
   const [orderId, setOrderId] = useState<string | null>(orderIdParam || null);
@@ -46,12 +48,13 @@ function CheckoutContent() {
   const [uploadedProofUrl, setUploadedProofUrl] = useState<string | null>(null);
   const [uploadingProof, setUploadingProof] = useState(false);
   const [uploadSuccessMsg, setUploadSuccessMsg] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState<string | null>(null);
   const [copiedBank, setCopiedBank] = useState(false);
   const [copiedAmount, setCopiedAmount] = useState(false);
   const [adminWa, setAdminWa] = useState<string>("");
   const [platformName, setPlatformName] = useState("");
   // PlanType state — menyimpan ID paket aktif (ex: "PREMIUM", "TRADITIONAL") untuk regenerasi order yang benar
-  const [currentPlanType, setCurrentPlanType] = useState<string>(planParam || "PREMIUM");
+  const [currentPlanType, setCurrentPlanType] = useState<string>(planParam || "");
   const [currentOrderType, setCurrentOrderType] = useState<string>("NEW_INVITATION");
   const [feePercent, setFeePercent] = useState<number>(0.7);
   const [feePayer, setFeePayer] = useState<"BUYER" | "MERCHANT">("BUYER");
@@ -60,6 +63,19 @@ function CheckoutContent() {
   const [reloadKey, setReloadKey] = useState<number>(0);
   // Durasi total QRIS saat pertama kali diterima (ms) — dari server, bukan hardcode
   const [qrisTotalDuration, setQrisTotalDuration] = useState<number>(0);
+  const [isCheckingStatus, setIsCheckingStatus] = useState(false);
+  const [retentionDays, setRetentionDays] = useState<number>(30);
+  const [statusModal, setStatusModal] = useState<{ show: boolean; title?: string; message: string; isError?: boolean }>({ show: false, message: "" });
+
+  // Auto close status modal after 5 seconds
+  useEffect(() => {
+    if (statusModal.show) {
+      const timer = setTimeout(() => {
+        setStatusModal({ show: false, message: "" });
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [statusModal.show]);
 
   const isAdmin =
     (session?.user as any)?.isAdmin === true ||
@@ -71,7 +87,9 @@ function CheckoutContent() {
     if (status === "unauthenticated") {
       const redirectTarget = orderIdParam
         ? `/checkout?order=${orderIdParam}`
-        : `/checkout?plan=${planParam || "PREMIUM"}`;
+        : planParam
+        ? `/checkout?plan=${planParam}`
+        : `/packages`;
       router.replace(`/login?callbackUrl=${encodeURIComponent(redirectTarget)}`);
       return;
     }
@@ -95,14 +113,18 @@ function CheckoutContent() {
     setUploadedProofUrl(null);
     setUploadSuccessMsg(null);
     // Gunakan currentPlanType (dari state) bukan planParam (dari URL) agar paket tidak salah
-    const targetPlan = currentPlanType || planParam || "PREMIUM";
+    const targetPlan = currentPlanType || planParam || "";
+    if (!targetPlan) {
+      router.replace("/packages");
+      return;
+    }
     router.replace(`/checkout?plan=${targetPlan}&msg=qris_expired`);
     setReloadKey(prev => prev + 1);
   }, [currentPlanType, planParam, router]);
 
   // Load / Create Order Flow
   const initializeCheckout = useCallback(async () => {
-    if (status !== "authenticated" || !(session as any)?.user?.id || isAdmin) return;
+    if (status !== "authenticated" || !sessionUserId || isAdmin) return;
     if (!planParam && !orderIdParam) return;
 
     setLoading(true);
@@ -118,14 +140,9 @@ function CheckoutContent() {
       }
 
       if (settings.paymentMode) {
-        setPaymentMode(settings.paymentMode);
-        // FIX #6: Auto-pilih metode sesuai konfigurasi admin — tidak boleh ada pilihan lain
-        if (settings.paymentMode === "MANUAL") {
-          setSelectedMethod("MANUAL");
-        } else if (settings.paymentMode === "GATEWAY") {
-          setSelectedMethod("GATEWAY");
-        }
-        // "BOTH" biarkan user memilih, default tetap GATEWAY
+        const mode = settings.paymentMode === "BOTH" ? "GATEWAY" : settings.paymentMode;
+        setPaymentMode(mode);
+        setSelectedMethod(mode);
       }
 
       setBankInfo({
@@ -144,6 +161,9 @@ function CheckoutContent() {
       if (settings.supportWhatsapp) {
         setAdminWa(settings.supportWhatsapp);
       }
+      if (settings.retentionInvitationDays) {
+        setRetentionDays(settings.retentionInvitationDays);
+      }
 
       // 2. If orderId is provided, fetch existing order status directly
       if (orderIdParam) {
@@ -151,6 +171,19 @@ function CheckoutContent() {
         const orderStatusData = await orderStatusRes.json();
 
         if (orderStatusRes.ok && orderStatusData.id) {
+          // SINGLE STATE GUARD: Jika klien sudah memiliki order PAID (klien aktif), jangan izinkan ke kasir
+          if (orderStatusData.isUserPaid && orderStatusData.paidOrderId) {
+            const planQuery = orderStatusData.paidPlanType ? `&plan=${orderStatusData.paidPlanType}` : "";
+            router.replace(`/dashboard/setup?order=${orderStatusData.paidOrderId}${planQuery}`);
+            return;
+          }
+
+          // Jika order ini sudah usang dan digantikan oleh invoice baru yang aktif, redirect otomatis
+          if (orderStatusData.isSuperseded && orderStatusData.activeOrderId) {
+            router.replace(`/checkout?order=${orderStatusData.activeOrderId}`);
+            return;
+          }
+
           if (orderStatusData.status === "PAID") {
             if (orderStatusData.orderType === "GALLERY_EXTENSION") {
               router.replace("/dashboard?msg=gallery_extended");
@@ -178,10 +211,10 @@ function CheckoutContent() {
               desc: "Perpanjangan penyimpanan foto momen para tamu di server selama +30 hari tambahan.",
             });
           } else {
-            const currentPkg = packages.find((p) => p.id === orderStatusData.planType) || packages[0];
-            setCurrentPlanType(orderStatusData.planType || "PREMIUM");
+            const currentPkg = packages.find((p) => p.id === orderStatusData.planType);
+            setCurrentPlanType(orderStatusData.planType || "");
             setPlanData({
-              name: currentPkg?.name || orderStatusData.planType,
+              name: currentPkg?.name || orderStatusData.planType || "Paket Undangan",
               price: Number(orderStatusData.amount),
               desc: currentPkg?.desc || "",
             });
@@ -189,6 +222,11 @@ function CheckoutContent() {
 
           if (orderStatusData.proofImageUrl && orderStatusData.status !== "FAILED" && orderStatusData.status !== "REJECTED") {
             setUploadedProofUrl(orderStatusData.proofImageUrl);
+          } else if (orderStatusData.status === "FAILED" || orderStatusData.status === "REJECTED") {
+            setUploadedProofUrl(null);
+            if (orderStatusData.rejectReason) {
+              setRejectReason(orderStatusData.rejectReason);
+            }
           }
 
           if (orderStatusData.status === "EXPIRED") {
@@ -217,12 +255,20 @@ function CheckoutContent() {
 
           setLoading(false);
           return;
+        } else {
+          setError(orderStatusData?.error || "Tagihan tidak ditemukan atau sudah tidak berlaku.");
+          setLoading(false);
+          return;
         }
       }
 
       // 3. If planParam is provided, create or resume active pending order
-      const targetPlan = planParam || "PREMIUM";
-      const currentPkg = packages.find((p) => p.id === targetPlan) || packages[0];
+      const targetPlan = planParam || currentPlanType || "";
+      if (!targetPlan) {
+        router.replace("/packages");
+        return;
+      }
+      const currentPkg = packages.find((p) => p.id === targetPlan);
       const name = currentPkg?.name || targetPlan;
       // Harga HANYA dari AdminSetting (via /api/public/settings → packages).
       // Tidak ada fallback hardcode — jika settings belum dimuat, tampilkan 0
@@ -250,19 +296,27 @@ function CheckoutContent() {
       setInvoiceNumber(orderData.invoiceNumber);
       setIsGatewayExpired(false);
       
-      if (orderData.proofImageUrl) {
+      if (orderData.proofImageUrl && orderData.status !== "FAILED" && orderData.status !== "REJECTED") {
         setUploadedProofUrl(orderData.proofImageUrl);
+      } else if (orderData.rejectReason) {
+        setRejectReason(orderData.rejectReason);
       }
     } catch (err: any) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  }, [status, session, planParam, orderIdParam, router, isAdmin, reloadKey]);
+  }, [status, sessionUserId, planParam, orderIdParam, router, isAdmin, reloadKey]);
 
   useEffect(() => {
-    initializeCheckout();
-  }, [initializeCheckout]);
+    if (status === "authenticated" && sessionUserId && !isAdmin) {
+      const initKey = `${sessionUserId}_${planParam || ""}_${orderIdParam || ""}_${reloadKey}`;
+      if (initializedRef.current !== initKey) {
+        initializedRef.current = initKey;
+        initializeCheckout();
+      }
+    }
+  }, [status, sessionUserId, isAdmin, planParam, orderIdParam, reloadKey, initializeCheckout]);
 
   // --- SSE PAYMENT STATUS (Menggantikan polling — server push via iPaymu webhook) ---
   useEffect(() => {
@@ -329,6 +383,12 @@ function CheckoutContent() {
         const res = await fetch(`/api/client/orders/${orderId}/status`, { cache: "no-store" });
         if (res.ok) {
           const data = await res.json();
+          if (data.isSuperseded && data.activeOrderId) {
+            clearInterval(manualPoll);
+            router.replace(`/checkout?order=${data.activeOrderId}`);
+            return;
+          }
+
           if (data.status === "PAID") {
             clearInterval(manualPoll);
             if (currentOrderType === "GALLERY_EXTENSION" || data.orderType === "GALLERY_EXTENSION") {
@@ -342,7 +402,13 @@ function CheckoutContent() {
             setUploadSuccessMsg(null);
             setProofFile(null);
             setProofPreview(null);
-            alert(`Pemberitahuan: Bukti transfer Anda ditolak oleh Admin. \nAlasan: ${data.rejectReason || "Tidak valid"}. \nSilakan unggah ulang bukti yang benar.`);
+            setRejectReason(data.rejectReason || "Bukti transfer tidak valid atau dana belum masuk.");
+            setStatusModal({
+              show: true,
+              title: "Bukti Transfer Perlu Diperbaiki",
+              message: `Alasan Admin: ${data.rejectReason || "Tidak valid"}.\nSilakan periksa dan unggah ulang bukti yang benar pada formulir yang tersedia.`,
+              isError: true,
+            });
           }
         }
       } catch {}
@@ -354,11 +420,14 @@ function CheckoutContent() {
   // Manual Check Status Handler
   const handleCheckStatus = async () => {
     if (!orderId) return;
+    setIsCheckingStatus(true);
     try {
       const res = await fetch(`/api/client/orders/${orderId}/status`, { cache: "no-store" });
       const data = await res.json();
+      setIsCheckingStatus(false);
+      
       if (data.status === "PAID") {
-        if (currentOrderType === "GALLERY_EXTENSION" || data.orderType === "GALLERY_EXTENSION") {
+        if (currentOrderType === "GALLERY_EXTENSION") {
           router.replace("/dashboard?msg=gallery_extended");
         } else {
           router.replace(`/dashboard/setup?order=${orderId}&plan=${data.planType}`);
@@ -368,11 +437,30 @@ function CheckoutContent() {
         setUploadSuccessMsg(null);
         setProofFile(null);
         setProofPreview(null);
-        alert(`Pemberitahuan: Bukti transfer Anda ditolak oleh Admin. \nAlasan: ${data.rejectReason || "Tidak valid"}. \nSilakan unggah ulang bukti yang benar.`);
+        setRejectReason(data.rejectReason || "Bukti transfer tidak valid atau dana belum masuk.");
+        setStatusModal({
+          show: true,
+          title: "Bukti Transfer Perlu Diperbaiki",
+          message: `Alasan Admin: ${data.rejectReason || "Tidak valid"}.\nSilakan periksa dan unggah ulang bukti yang benar pada formulir yang tersedia.`,
+          isError: true
+        });
       } else {
-        alert("Status pembayaran masih pending. Silakan tunggu admin memverifikasi bukti transfer Anda atau kembali lagi nanti.");
+        setStatusModal({
+          show: true,
+          title: "Pembayaran Pending",
+          message: "Status pembayaran masih pending. Silakan tunggu admin memverifikasi bukti transfer Anda atau kembali lagi nanti.",
+          isError: false
+        });
       }
-    } catch {}
+    } catch {
+      setIsCheckingStatus(false);
+      setStatusModal({
+        show: true,
+        title: "Kesalahan Jaringan",
+        message: "Gagal mengecek status pembayaran. Silakan coba lagi nanti.",
+        isError: true
+      });
+    }
   };
 
   // Handle Pay via Gateway
@@ -438,6 +526,7 @@ function CheckoutContent() {
 
       setUploadedProofUrl(data.proofImageUrl);
       setUploadSuccessMsg("Bukti transfer berhasil dikirim! Tim Admin sedang memverifikasi pembayaran Anda.");
+      setRejectReason(null);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -499,14 +588,15 @@ function CheckoutContent() {
   }
 
   const subtotal = planData?.price || 0;
-  const appFee = feePayer === "BUYER" ? Math.round(subtotal * (feePercent / 100)) : 0;
+  // Biaya layanan HANYA diterapkan jika menggunakan Gateway (QRIS)
+  const appFee = (feePayer === "BUYER" && paymentMode === "GATEWAY") ? Math.round(subtotal * (feePercent / 100)) : 0;
   const totalAmount = subtotal + appFee;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-stone-950 via-stone-900 to-amber-950 flex flex-col font-sans">
       <header className="px-6 py-5 flex items-center justify-between">
         <a href="/" className="flex items-center gap-2.5">
-          <BrandLogo size="sm" showName />
+          <BrandLogo size="sm" showName brandName={platformName || "Luxenary Invite"} />
         </a>
       </header>
 
@@ -552,7 +642,7 @@ function CheckoutContent() {
                 <div className="flex justify-between items-center bg-stone-900/30 px-4 py-3 rounded-xl border border-white/5">
                   <span className="text-stone-400 font-medium text-xs">Aktivasi Paket</span>
                   <div className="flex items-center gap-3">
-                    <span className="text-white font-bold">{platformName} {planData.name}</span>
+                    <span className="text-white font-bold">{planData.name}</span>
                     {!uploadedProofUrl && !qrData && (
                       <a href="/packages" className="text-[10px] bg-white/10 hover:bg-white/20 text-stone-300 px-2 py-0.5 rounded-full transition">Ubah</a>
                     )}
@@ -564,7 +654,7 @@ function CheckoutContent() {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-stone-400">Masa Aktif Undangan</span>
-                  <span className="text-emerald-400 font-semibold">Retensi 30 Hari & Arsip 1 Tahun</span>
+                  <span className="text-emerald-400 font-semibold">Aktif hingga {retentionDays} Hari Setelah Acara</span>
                 </div>
               </div>
 
@@ -575,11 +665,13 @@ function CheckoutContent() {
                   <span className="text-stone-200 font-medium font-mono">Rp {subtotal.toLocaleString("id-ID")}</span>
                 </div>
                 <div className="flex justify-between items-center text-stone-400">
-                  <span>Biaya Layanan Aplikasi ({feePercent}%)</span>
-                  <span className={`font-mono font-medium ${feePayer === "BUYER" ? "text-amber-300" : "text-emerald-400"}`}>
-                    {feePayer === "BUYER"
-                      ? `Rp ${appFee.toLocaleString("id-ID")}`
-                      : "Rp 0 (Disubsidi)"}
+                  <span>Biaya Layanan Aplikasi ({paymentMode === "GATEWAY" ? feePercent + "%" : "Manual"})</span>
+                  <span className={`font-mono font-medium ${feePayer === "BUYER" && paymentMode === "GATEWAY" ? "text-amber-300" : "text-emerald-400"}`}>
+                    {paymentMode === "MANUAL" 
+                      ? "Rp 0 (Bebas Biaya)" 
+                      : feePayer === "BUYER"
+                        ? `Rp ${appFee.toLocaleString("id-ID")}`
+                        : "Rp 0 (Disubsidi)"}
                   </span>
                 </div>
               </div>
@@ -618,42 +710,10 @@ function CheckoutContent() {
             </div>
           )}
 
-          {/* Payment Method Switcher Tabs (LOCKED if pending manual OR active QRIS) */}
-          {paymentMode === "BOTH" && !uploadedProofUrl && !uploadSuccessMsg && (!qrData || isGatewayExpired) && (
-            <div className="flex items-center gap-2 p-1 bg-stone-900/90 rounded-2xl border border-white/10">
-              <button
-                type="button"
-                onClick={() => setSelectedMethod("GATEWAY")}
-                className={`flex-1 py-2.5 text-xs font-bold rounded-xl transition flex items-center justify-center gap-2 cursor-pointer ${
-                  selectedMethod === "GATEWAY"
-                    ? "bg-amber-500 text-stone-950 shadow-xs"
-                    : "text-stone-400 hover:text-white"
-                }`}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                <span>QRIS / Otomatis</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedMethod("MANUAL")}
-                className={`flex-1 py-2.5 text-xs font-bold rounded-xl transition flex items-center justify-center gap-2 cursor-pointer ${
-                  selectedMethod === "MANUAL"
-                    ? "bg-amber-500 text-stone-950 shadow-xs"
-                    : "text-stone-400 hover:text-white"
-                }`}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                </svg>
-                <span>Transfer Bank Manual</span>
-              </button>
-            </div>
-          )}
+          
 
           {/* ── TAB 1: AUTOMATIC GATEWAY (QRIS / E-WALLET) ── */}
-          {(paymentMode === "GATEWAY" || (paymentMode === "BOTH" && selectedMethod === "GATEWAY")) && (
+          {paymentMode === "GATEWAY" && (
             <div className="space-y-3">
               {qrData ? (
                 <div className="bg-white/5 border border-amber-500/20 rounded-3xl p-6 space-y-5 backdrop-blur-xs text-center relative overflow-hidden">
@@ -702,7 +762,7 @@ function CheckoutContent() {
           )}
 
           {/* ── TAB 2: MANUAL BANK TRANSFER (NO EXPIRY, TRANSFER KAPAN SAJA) ── */}
-          {(paymentMode === "MANUAL" || (paymentMode === "BOTH" && selectedMethod === "MANUAL")) && (
+          {paymentMode === "MANUAL" && (
             <div className="bg-white/5 border border-white/10 rounded-3xl p-6 space-y-5 backdrop-blur-xs">
               {/* Bank Account Details */}
               <div className="space-y-3">
@@ -711,31 +771,50 @@ function CheckoutContent() {
                   <span className="text-[10px] font-mono uppercase tracking-widest text-amber-400 font-bold">Transfer ke Rekening Berikut</span>
                 </div>
 
-                <div className="p-4 bg-white/5 border border-amber-500/20 rounded-2xl space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-stone-400">Nama Bank:</span>
-                    <span className="text-xs font-bold text-white">{bankInfo.name}</span>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-1 border-t border-white/5">
-                    <span className="text-xs text-stone-400">Nomor Rekening:</span>
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-sm font-bold text-amber-300">{bankInfo.accountNumber}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleCopy(bankInfo.accountNumber, "bank")}
-                        className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white rounded-lg text-[10px] font-bold transition flex items-center gap-1 cursor-pointer"
+                {!bankInfo.name || !bankInfo.accountNumber ? (
+                  <div className="p-4 bg-amber-950/40 border border-amber-500/30 rounded-2xl text-center space-y-2">
+                    <p className="text-amber-300 font-bold text-xs">Informasi Rekening Belum Dikonfigurasi</p>
+                    <p className="text-stone-400 text-[11px] leading-relaxed">
+                      Administrator belum melengkapi nama bank dan nomor rekening untuk transfer manual. Silakan hubungi admin melalui WhatsApp untuk konfirmasi pembayaran.
+                    </p>
+                    {adminWa && (
+                      <a
+                        href={`https://wa.me/${adminWa.replace(/^0/, "62")}?text=${encodeURIComponent(`Halo Admin, saya ingin membayar pesanan invoice ${invoiceNumber} via transfer manual, mohon info rekening pembayaran. Terima kasih.`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition mt-1"
                       >
-                        <span>{copiedBank ? "Tersalin!" : "Salin"}</span>
-                      </button>
+                        Hubungi Admin via WhatsApp
+                      </a>
+                    )}
+                  </div>
+                ) : (
+                  <div className="p-4 bg-white/5 border border-amber-500/20 rounded-2xl space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-stone-400">Nama Bank:</span>
+                      <span className="text-xs font-bold text-white">{bankInfo.name}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1 border-t border-white/5">
+                      <span className="text-xs text-stone-400">Nomor Rekening:</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-sm font-bold text-amber-300">{bankInfo.accountNumber}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(bankInfo.accountNumber, "bank")}
+                          className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white rounded-lg text-[10px] font-bold transition flex items-center gap-1 cursor-pointer"
+                        >
+                          <span>{copiedBank ? "Tersalin!" : "Salin"}</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1 border-t border-white/5">
+                      <span className="text-xs text-stone-400">Atas Nama:</span>
+                      <span className="text-xs font-bold text-white">{bankInfo.accountHolder || "-"}</span>
                     </div>
                   </div>
-
-                  <div className="flex items-center justify-between pt-1 border-t border-white/5">
-                    <span className="text-xs text-stone-400">Atas Nama:</span>
-                    <span className="text-xs font-bold text-white">{bankInfo.accountHolder}</span>
-                  </div>
-                </div>
+                )}
 
                 <p className="text-[11px] text-stone-400 leading-relaxed">
                   {bankInfo.instructions}
@@ -762,9 +841,20 @@ function CheckoutContent() {
                       <button
                         type="button"
                         onClick={handleCheckStatus}
-                        className="w-full sm:w-auto px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-stone-950 font-bold rounded-xl text-[11px] transition shadow-lg cursor-pointer"
+                        disabled={isCheckingStatus}
+                        className="w-full sm:w-auto px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-stone-950 font-bold rounded-xl text-[11px] transition shadow-lg cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                       >
-                        Cek Status Pembayaran ⟳
+                        {isCheckingStatus ? (
+                          <>
+                            <svg className="animate-spin h-3.5 w-3.5 text-stone-950" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span>Mengecek...</span>
+                          </>
+                        ) : (
+                          <span>Cek Status Pembayaran ⟳</span>
+                        )}
                       </button>
                       <a
                         href={`https://wa.me/${adminWa.replace(/^0/, "62")}?text=${encodeURIComponent(`Halo Admin, saya sudah melakukan pembayaran manual untuk Invoice: *${invoiceNumber}*. Mohon dicek dan dikonfirmasi ya. Terima kasih.`)}`}
@@ -786,6 +876,27 @@ function CheckoutContent() {
                   </div>
                 ) : (
                   <>
+                    {/* Persistent Warning Card: Bukti Pembayaran Ditolak Admin */}
+                    {(rejectReason || (msgParam === "transfer_rejected" && !uploadedProofUrl)) && (
+                      <div className="p-4 bg-rose-950/40 border border-rose-500/30 rounded-2xl space-y-2 text-left animate-in fade-in duration-300">
+                        <div className="flex items-center gap-2 text-rose-400 font-semibold text-xs">
+                          <svg className="w-4 h-4 text-rose-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                          </svg>
+                          <span>Bukti Pembayaran Perlu Diperbaiki</span>
+                        </div>
+                        <div className="bg-black/30 rounded-xl p-3 border border-rose-500/20">
+                          <span className="text-[10px] text-stone-400 block mb-0.5 font-medium">Catatan / Alasan Admin:</span>
+                          <p className="text-xs text-rose-200 font-medium italic">
+                            &ldquo;{rejectReason || "Bukti transfer tidak valid atau dana belum masuk ke rekening."}&rdquo;
+                          </p>
+                        </div>
+                        <p className="text-[11px] text-stone-400 leading-relaxed">
+                          Silakan periksa kembali nominal dan rekening tujuan Anda, lalu unggah ulang struk/bukti transfer yang benar di bawah ini.
+                        </p>
+                      </div>
+                    )}
+
                     <div className="relative border-2 border-dashed border-white/20 hover:border-amber-500/50 rounded-2xl p-4 text-center cursor-pointer transition bg-white/5">
                       <input
                         type="file"
@@ -858,26 +969,53 @@ function CheckoutContent() {
               <span>Enkripsi 256-bit SSL</span>
             </div>
             <div className="w-1 h-1 rounded-full bg-stone-700" />
-            <span className="text-[11px] text-stone-500">QRIS · Transfer Bank · E-Wallet</span>
-            <div className="mt-8 text-center border-t border-white/5 pt-6">
-              <p className="text-[10px] text-stone-500 mb-4 px-2 leading-relaxed">
-                Dengan melanjutkan pembayaran, Anda menyetujui <Link href="/terms" className="text-stone-400 hover:text-amber-500 underline">Syarat & Ketentuan</Link> serta <Link href="/privacy" className="text-stone-400 hover:text-amber-500 underline">Kebijakan Privasi</Link> {platformName}, termasuk kebijakan <Link href="/refund" className="text-stone-400 hover:text-amber-500 underline font-medium">No Refund</Link> atas produk digital.
-              </p>
-              <button
-                type="button"
-                onClick={() => signOut({ callbackUrl: "/login" })}
-                className="text-stone-500 hover:text-stone-300 text-[11px] transition cursor-pointer"
-              >
-                Bukan akun Anda? <span className="underline">Ganti Akun / Keluar</span>
-              </button>
-            </div>
+            <span className="text-[11px] text-stone-500">{paymentMode === "GATEWAY" ? "Pembayaran Resmi QRIS" : "Transfer Bank Resmi"}</span>
+          </div>
+
+          <div className="text-center border-t border-white/5 pt-6">
+            <p className="text-[10px] text-stone-500 mb-3 px-2 leading-relaxed max-w-md mx-auto">
+              Dengan melanjutkan pembayaran, Anda menyetujui <Link href="/terms" className="text-stone-400 hover:text-amber-500 underline">Syarat & Ketentuan</Link> serta <Link href="/privacy" className="text-stone-400 hover:text-amber-500 underline">Kebijakan Privasi</Link> {platformName || "Luxenary Invite"}, termasuk kebijakan <Link href="/refund" className="text-stone-400 hover:text-amber-500 underline font-medium">No Refund</Link> atas produk digital.
+            </p>
+            <button
+              type="button"
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              className="text-stone-500 hover:text-stone-300 text-[11px] transition cursor-pointer"
+            >
+              Bukan akun Anda? <span className="underline">Ganti Akun / Keluar</span>
+            </button>
           </div>
         </div>
       </div>
+    
+      {/* Custom Status Modal */}
+      {statusModal.show && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-stone-900 border border-white/10 rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl transform scale-100 animate-in fade-in zoom-in-95 duration-200">
+            <div className={`mx-auto flex items-center justify-center h-12 w-12 rounded-full mb-4 ${statusModal.isError ? 'bg-rose-500/20 text-rose-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+              {statusModal.isError ? (
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              )}
+            </div>
+            <h3 className="text-lg font-bold text-white mb-2">{statusModal.title}</h3>
+            <p className="text-stone-300 text-sm whitespace-pre-line mb-6">{statusModal.message}</p>
+            <button
+              onClick={() => setStatusModal({ show: false, message: "" })}
+              className="w-full py-2.5 bg-white hover:bg-stone-200 text-stone-900 font-bold rounded-xl text-sm transition"
+            >
+              Tutup
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
 export default function CheckoutPage() {
   return (
     <Suspense

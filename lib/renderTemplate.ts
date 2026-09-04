@@ -45,11 +45,6 @@ const THEME_MAP: Record<string, { file: string; folder: "premium" | "traditional
 
   // Backward compatibility alias mapping
   "kila": { file: "kalandra.html", folder: "premium" },
-  "premium-kila": { file: "kalandra.html", folder: "premium" },
-  "ivanna": { file: "valente.html", folder: "premium" },
-  "premium-ivanna": { file: "valente.html", folder: "premium" },
-  "danila": { file: "aurelia.html", folder: "premium" },
-  "heritage-aruna": { file: "prameswari.html", folder: "traditional" },
 };
 
 const HEAD_AUDIO_BLOCKER_SCRIPT = `
@@ -362,8 +357,23 @@ const INLINE_LIVE_EDITOR_SCRIPT = `
       <span style="opacity: 0.35;">|</span>
       <span id="luxChangeCounter" style="font-size: 11px; opacity: 0.85;">Klik teks mana saja untuk mengedit</span>
       <button id="luxSaveBtn" class="lux-dock-btn lux-dock-btn-save" style="display:none;" onclick="window.luxSaveInlineChanges()">Simpan</button>
+      <span style="opacity: 0.35; margin: 0 8px;">|</span>
+      <button onclick="if(window.__luxOriginalOpenInvitation) window.__luxOriginalOpenInvitation();" style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fff; padding:4px 10px; border-radius:20px; font-size:10px; cursor:pointer;">Buka Amplop</button>
     \`;
     document.body.appendChild(dock);
+
+    // Override openInvitation to prevent accidental opening when clicking text to edit
+    if (typeof window.openInvitation === 'function' && !window.__luxOriginalOpenInvitation) {
+      window.__luxOriginalOpenInvitation = window.openInvitation;
+      window.openInvitation = function() {
+        const e = window.event;
+        if (e && e.target && (e.target.hasAttribute('contenteditable') || e.target.closest('[contenteditable="true"]'))) {
+          console.log("Click intercepted for editing.");
+          return;
+        }
+        window.__luxOriginalOpenInvitation();
+      };
+    }
   }
 
   function initEditableFields() {
@@ -379,7 +389,8 @@ const INLINE_LIVE_EDITOR_SCRIPT = `
       { sel: '#moments .sec-main-title', field: 'customLabels.galleryTitle' },
       { sel: '#story .journey-title', field: 'customLabels.storyTitle' },
       { sel: '#gift .sec-main-title', field: 'customLabels.giftTitle' },
-      { sel: '#section-wishes .sec-heading', field: 'customLabels.wishesTitle' }
+      { sel: '#section-wishes .sec-heading', field: 'customLabels.wishesTitle' },
+      { sel: '.btn-buka-undangan, .cover-btn-open', field: 'customLabels.openBtn' }
     ];
 
     fallbackMappings.forEach(m => {
@@ -486,6 +497,11 @@ const UNIFIED_CLIENT_RUNTIME_SCRIPT = `
       if (rsvpInput && !rsvpInput.value) {
         rsvpInput.value = gn;
       }
+
+      // Update QR Code image to guest name
+      document.querySelectorAll('#passQrImg, #modalQrImg, .pass-qr-img').forEach(function(img) {
+        img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=' + encodeURIComponent(gn);
+      });
     } catch(e){}
   }
 

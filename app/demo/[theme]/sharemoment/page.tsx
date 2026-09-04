@@ -23,8 +23,8 @@ export default async function DemoGuestMemoriesStandalonePage({ params }: PagePr
   const invitationId = "demo";
   const coupleName = "Raditya & Alana";
   
-  // Use a nice generic cover or prewedding photo for demo background
-  const coverUrl = "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&q=80";
+  // Use theme cover photo for demo background
+  const coverUrl = `/demo/${theme}/cover.webp`;
 
   const backUrl = `/demo/${theme}`;
   const galleryUrl = `/demo/${theme}/memories`;

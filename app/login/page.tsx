@@ -77,12 +77,12 @@ function LoginForm({ platformName }: { platformName: string }) {
 }
 
 export default function ClientLoginPage() {
-  const [platformName, setPlatformName] = useState("Luxenary Invite");
+  const [platformName, setPlatformName] = useState("");
   
   useEffect(() => {
     fetch("/api/public/settings")
       .then(res => res.json())
-      .then(data => setPlatformName(data.platformName || "Luxenary Invite"))
+      .then(data => setPlatformName(data.platformName || ""))
       .catch(() => {});
   }, []);
 

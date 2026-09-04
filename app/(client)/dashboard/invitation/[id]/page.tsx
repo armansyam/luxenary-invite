@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useParams } from "next/navigation";
-import { MemoriesDownloadSection } from "@/components/client/MemoriesDownloadSection";
+import Link from "next/link";
 
 const THEMES = [
   // ── Premium Store (themes/premium/) ──
@@ -12,7 +12,7 @@ const THEMES = [
     subtitle: "Premium",
     category: "premium",
     desc: "Modern, Elegan & Minimalis",
-    cover: "https://images.unsplash.com/photo-1519741497674-611481863552?w=600&q=80",
+    cover: "/demo/kalandra/cover.webp",
     tag: "Editorial",
   },
   {
@@ -21,7 +21,7 @@ const THEMES = [
     subtitle: "Premium",
     category: "premium",
     desc: "High-Fashion, Editorial & Mewah",
-    cover: "https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=600&q=80",
+    cover: "/demo/valente/cover.webp",
     tag: "Editorial",
   },
   {
@@ -30,7 +30,7 @@ const THEMES = [
     subtitle: "Premium",
     category: "premium",
     desc: "Romantis, Sinematik & Anggun",
-    cover: "https://images.unsplash.com/photo-1532712938310-34cb3982ef74?w=600&q=80",
+    cover: "/demo/aurelia/cover.webp",
     tag: "Cinematic",
   },
   {
@@ -39,7 +39,7 @@ const THEMES = [
     subtitle: "Premium",
     category: "premium",
     desc: "Artistik, Hangat & Vintage",
-    cover: "https://images.unsplash.com/photo-1513279922550-250c24738d87?w=600&q=80",
+    cover: "/demo/artisan/cover.webp",
     tag: "Vintage",
   },
 
@@ -50,7 +50,7 @@ const THEMES = [
     subtitle: "Traditional",
     category: "traditional",
     desc: "Walimatul 'Urs & Saoraja Royal",
-    cover: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=600&q=80",
+    cover: "/demo/badrika/cover.webp",
     tag: "Saoraja",
   },
   {
@@ -59,7 +59,7 @@ const THEMES = [
     subtitle: "Traditional",
     category: "traditional",
     desc: "Pesona Nusantara Floral",
-    cover: "https://images.unsplash.com/photo-1519741497674-611481863552?w=600&q=80",
+    cover: "/demo/candani/cover.webp",
     tag: "Nusantara",
   },
   {
@@ -68,7 +68,7 @@ const THEMES = [
     subtitle: "Traditional",
     category: "traditional",
     desc: "Islami Sakral — Batik Ornament & Penuh Berkah",
-    cover: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=600&q=80",
+    cover: "/demo/dillalucky/cover.webp",
     tag: "Islami",
   },
   {
@@ -77,7 +77,7 @@ const THEMES = [
     subtitle: "Traditional",
     category: "traditional",
     desc: "Nuansa Adat & Anggun",
-    cover: "https://images.unsplash.com/photo-1532712938310-34cb3982ef74?w=600&q=80",
+    cover: "/demo/mayang/cover.webp",
     tag: "Traditional",
   },
   {
@@ -86,7 +86,7 @@ const THEMES = [
     subtitle: "Traditional",
     category: "traditional",
     desc: "Sakral, Megah & Royal Keraton",
-    cover: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=600&q=80",
+    cover: "/demo/prameswari/cover.webp",
     tag: "Keraton",
   },
 
@@ -97,7 +97,7 @@ const THEMES = [
     subtitle: "Modern",
     category: "modern",
     desc: "Heritage Modern — Elegan Dark & Nuansa Warisan",
-    cover: "https://images.unsplash.com/photo-1469371670807-013ccf25f16a?w=600&q=80",
+    cover: "/demo/ameera/cover.webp",
     tag: "Heritage",
   },
   {
@@ -106,7 +106,7 @@ const THEMES = [
     subtitle: "Modern",
     category: "modern",
     desc: "High-Fashion Vogue Editorial",
-    cover: "https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=600&q=80",
+    cover: "/demo/chronicle/cover.webp",
     tag: "Editorial",
   },
   {
@@ -115,7 +115,7 @@ const THEMES = [
     subtitle: "Modern",
     category: "modern",
     desc: "Minimalist Glass & Cinema",
-    cover: "https://images.unsplash.com/photo-1519741497674-611481863552?w=600&q=80",
+    cover: "/demo/lumina/cover.webp",
     tag: "Glass",
   },
   {
@@ -124,7 +124,7 @@ const THEMES = [
     subtitle: "Modern",
     category: "modern",
     desc: "Moody Papercut — Kraft Paper Aesthetic & Artistik",
-    cover: "https://images.unsplash.com/photo-1513279922550-250c24738d87?w=600&q=80",
+    cover: "/demo/papercut/cover.webp",
     tag: "Papercut",
   },
   {
@@ -133,7 +133,7 @@ const THEMES = [
     subtitle: "Modern",
     category: "modern",
     desc: "Romantic Sunset Glow",
-    cover: "https://images.unsplash.com/photo-1532712938310-34cb3982ef74?w=600&q=80",
+    cover: "/demo/solaria/cover.webp",
     tag: "Sunset",
   },
   {
@@ -142,7 +142,7 @@ const THEMES = [
     subtitle: "Modern",
     category: "modern",
     desc: "Dark, Moody & Dramatic — Gelombang Elegan",
-    cover: "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=600&q=80",
+    cover: "/demo/wave/cover.webp",
     tag: "Moody",
   },
 ];
@@ -351,49 +351,6 @@ export default function EditInvitation() {
   };
 
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>(defaultCollapsed);
-  const [guestMemoriesList, setGuestMemoriesList] = useState<any[]>([]);
-  const [loadingMemories, setLoadingMemories] = useState(false);
-  const [deletingMemoryId, setDeletingMemoryId] = useState<string | null>(null);
-
-  const fetchGuestMemories = useCallback(async () => {
-    if (!invitationId) return;
-    setLoadingMemories(true);
-    try {
-      const res = await fetch(`/api/client/invitations/${invitationId}/memories`);
-      const data = await res.json();
-      if (data.success) {
-        setGuestMemoriesList(data.memories || []);
-      }
-    } catch (e) {
-      console.error("Failed to fetch guest memories:", e);
-    } finally {
-      setLoadingMemories(false);
-    }
-  }, [invitationId]);
-
-  useEffect(() => {
-    fetchGuestMemories();
-  }, [fetchGuestMemories]);
-
-  const handleDeleteMemory = async (memoryId: string) => {
-    if (!confirm("Apakah Anda yakin ingin menghapus foto/video kenangan ini?")) return;
-    setDeletingMemoryId(memoryId);
-    try {
-      const res = await fetch(`/api/client/invitations/${invitationId}/memories?memoryId=${memoryId}`, {
-        method: "DELETE",
-      });
-      const data = await res.json();
-      if (data.success) {
-        setGuestMemoriesList((prev) => prev.filter((m) => m.id !== memoryId));
-      } else {
-        alert(data.error || "Gagal menghapus.");
-      }
-    } catch (err: any) {
-      alert(err.message || "Gagal menghapus.");
-    } finally {
-      setDeletingMemoryId(null);
-    }
-  };
 
   // Restore persisted collapsed state from localStorage on load
   useEffect(() => {
@@ -472,24 +429,21 @@ export default function EditInvitation() {
         };
 
         const ev = parseJ(inv.eventData, []);
-        const loadedEvents = ev.length > 0 ? ev : [
-          { title: "Akad Nikah", date: "2026-10-05", time: "08:00 - 10:00 WITA", location: "Masjid Raya Makassar", address: "Jl. Masjid Raya, Makassar", mapsUrl: "https://maps.google.com", badge: "Sakral", notes: "" },
-          { title: "Resepsi Pernikahan", date: "2026-10-05", time: "11:00 - 14:00 WITA", location: "Grand Ballroom Phinisi Hotel Clarion", address: "Jl. A.P. Pettarani, Makassar", mapsUrl: "https://maps.google.com", badge: "Umum", notes: "" },
-        ];
+        const loadedEvents = Array.isArray(ev) ? ev : [];
         setEvents(loadedEvents);
 
         const st = parseJ(inv.loveStory, []);
-        const loadedStories = st.length > 0 ? st : [
-          { title: "Awal Bertemu", date: "2020", content: "Pertama kali dipertemukan dalam sebuah kegiatan akademis di kampus." },
-          { title: "Lamaran Resmi", date: "2025", content: "Momen sakral saat kedua keluarga besar saling bersilaturahmi dan bersepakat." },
-        ];
+        const loadedStories = Array.isArray(st) ? st : [];
         setStories(loadedStories);
 
         const bk = parseJ(inv.bankAccounts, []);
-        const loadedBanks = bk.length > 0 ? bk : [
-          { bank: "BCA", number: "", name: inv.groomName || "" },
-        ];
+        const loadedBanks = Array.isArray(bk) ? bk : [];
         setBankList(loadedBanks);
+
+        // Jika tema belum dipilih, pastikan Seksi 1 terbuka otomatis untuk mengarahkan user memilih tema
+        if (!inv.themeId) {
+          setCollapsed((prev) => ({ ...prev, sec1: false }));
+        }
 
         // Snapshot initial clean state for change detection (Dirty State tracking)
         setSavedSnapshot({
@@ -825,12 +779,12 @@ export default function EditInvitation() {
       ...prev,
       {
         title: presetTitle,
-        date: "2026-10-05",
-        time: "19:00 - Selesai WITA",
-        location: "Grand Ballroom",
-        address: "Makassar",
-        mapsUrl: "https://maps.google.com",
-        badge: "Acara",
+        date: prev[0]?.date || "",
+        time: "",
+        location: "",
+        address: "",
+        mapsUrl: "",
+        badge: presetTitle.toLowerCase().includes("akad") || presetTitle.toLowerCase().includes("pemberkatan") ? "Sakral" : "Umum",
         notes: "",
       },
     ]);
@@ -909,11 +863,11 @@ export default function EditInvitation() {
   const currentPalette = getFeatureSetting("colorPalette", "champagne");
   const displayOrder = getFeatureSetting("displayOrder", "BRIDE_FIRST");
 
-  const currentThemeId = invitation.themeId === "kila" ? "kalandra" : invitation.themeId === "aruna" ? "prameswari" : invitation.themeId === "ivanna" ? "valente" : invitation.themeId === "danila" ? "aurelia" : invitation.themeId === "papercut" ? "artisan" : (invitation.themeId || "kalandra");
-  const selectedThemeObj = themesList.find((t) => t.id === currentThemeId) || themesList[0];
+  const currentThemeId = invitation.themeId === "kila" ? "kalandra" : invitation.themeId === "aruna" ? "prameswari" : invitation.themeId === "ivanna" ? "valente" : invitation.themeId === "danila" ? "aurelia" : invitation.themeId === "papercut" ? "artisan" : (invitation.themeId || "");
+  const selectedThemeObj = currentThemeId ? (themesList.find((t) => t.id === currentThemeId) || null) : null;
   const selectedPaletteObj = COLOR_PALETTES.find((p) => p.id === currentPalette) || COLOR_PALETTES[0];
 
-  const planType = invitation.order?.planType || "TRADITIONAL";
+  const planType = invitation.order?.planType || "";
   const packageConfig = platformSettings?.packages?.find((p: any) => p.id === planType);
   const allowedCaps = packageConfig?.capabilities || [];
   const hasCap = (cap: string) => allowedCaps.includes(cap);
@@ -924,7 +878,7 @@ export default function EditInvitation() {
   const showGift = getFeatureSetting("showGift", true);
   const showDresscode = getFeatureSetting("showDresscode", true);
   const showQrCheckin = hasCap("qr_checkin") && getFeatureSetting("showQrCheckin", true);
-  const showLiveStream = hasCap("livestream") && getFeatureSetting("showLiveStream", false);
+  const showLiveStream = getFeatureSetting("showLiveStream", false);
   const showFilter = getFeatureSetting("showFilter", false);
   const showTurutMengundang = getFeatureSetting("showTurutMengundang", true);
   const showGuestMemoriesGlobal = hasCap("guest_memories") && getFeatureSetting("showGuestMemories", true);
@@ -1006,25 +960,33 @@ export default function EditInvitation() {
           </h1>
           <div className="flex items-center gap-2 mt-1 flex-wrap">
             <span className="text-xs text-stone-500">
-              Tema: <strong className="text-amber-900 font-bold capitalize">{selectedThemeObj.name}</strong>
+              Tema: {selectedThemeObj ? (
+                <strong className="text-amber-900 font-bold capitalize">{selectedThemeObj.name}</strong>
+              ) : (
+                <strong className="text-rose-700 font-bold bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">Belum Memilih Tema</strong>
+              )}
             </span>
             <span className="text-stone-300">•</span>
             <span className="text-xs text-stone-500">
               Nuansa: <strong className="text-stone-800 font-bold">{selectedPaletteObj.name}</strong>
             </span>
-            <span className="text-stone-300">•</span>
-            <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${PLAN_COLOR[planType] || "bg-stone-50 text-stone-700 border-stone-200"}`}>
-              {planType}
-            </span>
-            {planType !== "PREMIUM" && (
-              <button
-                type="button"
-                onClick={() => { setUpgradeTarget(null); setUpgradeError(null); setUpgradeModal(true); }}
-                className="text-[10px] font-bold text-violet-700 hover:text-violet-900 border border-violet-200 hover:border-violet-400 bg-violet-50 hover:bg-violet-100 px-2 py-0.5 rounded-full transition flex items-center gap-1"
-              >
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
-                Upgrade
-              </button>
+            {planType && (
+              <>
+                <span className="text-stone-300">•</span>
+                <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${PLAN_COLOR[planType] || "bg-stone-50 text-stone-700 border-stone-200"}`}>
+                  {planType}
+                </span>
+                {planType !== "PREMIUM" && (
+                  <button
+                    type="button"
+                    onClick={() => { setUpgradeTarget(null); setUpgradeError(null); setUpgradeModal(true); }}
+                    className="text-[10px] font-bold text-violet-700 hover:text-violet-900 border border-violet-200 hover:border-violet-400 bg-violet-50 hover:bg-violet-100 px-2 py-0.5 rounded-full transition flex items-center gap-1 cursor-pointer"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                    Upgrade
+                  </button>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -1065,6 +1027,37 @@ export default function EditInvitation() {
           </a>
         </div>
       </div>
+
+      {/* Banner Wajib Pilih Tema Jika Belum Memilih */}
+      {!invitation.themeId && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-800 flex-shrink-0 mt-0.5 sm:mt-0">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-amber-950">Tahap Wajib: Pilih Desain Tema Undangan</h2>
+              <p className="text-xs text-amber-800 mt-0.5">
+                Undangan Anda saat ini belum memiliki tema terpilih. Silakan buka <strong>Seksi 1 (Tema Desain &amp; Palet Warna)</strong> untuk memilih desain yang diinginkan sebelum mempublikasikan undangan.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveStudioTab("form");
+              setCollapsed((prev) => ({ ...prev, sec1: false }));
+              const sec1El = document.getElementById("section-sec1");
+              if (sec1El) sec1El.scrollIntoView({ behavior: "smooth" });
+            }}
+            className="px-4 py-2 bg-amber-900 hover:bg-amber-950 text-white font-bold rounded-xl text-xs transition shadow-xs flex-shrink-0 cursor-pointer"
+          >
+            Pilih Tema Sekarang
+          </button>
+        </div>
+      )}
 
       {/* Dual Native Studio Mode Switcher */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between p-2 bg-white rounded-2xl border border-stone-200 shadow-xs gap-3">
@@ -1189,7 +1182,7 @@ export default function EditInvitation() {
         <div className="space-y-6">
 
       {/* 1. SEKSI TEMA & PALET WARNA (SEC1) */}
-      <section className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
+      <section id="section-sec1" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
         <div className="p-5 sm:p-6 border-b border-stone-100 flex items-center justify-between gap-3">
           <div>
             <h2 className="text-base font-bold text-stone-900">1. Pilihan Seri Desain &amp; Palet Warna</h2>
@@ -1202,37 +1195,63 @@ export default function EditInvitation() {
               collapsed.sec1 ? "bg-amber-50 text-amber-900 hover:bg-amber-100" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
             }`}
           >
-            {collapsed.sec1 ? "Edit Tema & Warna" : "Tutup"}
+            {collapsed.sec1 ? (selectedThemeObj ? "Edit Tema & Warna" : "Pilih Tema") : "Tutup"}
           </button>
         </div>
 
         {collapsed.sec1 ? (
-          <div className="p-5 bg-stone-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3.5">
-              <img
-                src={selectedThemeObj.cover}
-                alt={selectedThemeObj.name}
-                className="w-14 h-14 rounded-xl object-cover border border-stone-200 shadow-xs flex-shrink-0"
-              />
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider bg-stone-200 text-stone-700 px-2 py-0.5 rounded">
-                  {selectedThemeObj.tag}
-                </span>
-                <h3 className="text-sm font-bold text-stone-900 mt-1">{selectedThemeObj.name}</h3>
-                <div className="flex items-center gap-2 text-xs text-stone-500 mt-0.5">
-                  <span className="w-3 h-3 rounded-full border border-black/10 inline-block shadow-2xs" style={{ backgroundColor: selectedPaletteObj.hex }}></span>
-                  <span>Nuansa: <strong>{selectedPaletteObj.name}</strong></span>
+          selectedThemeObj ? (
+            <div className="p-5 bg-stone-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3.5">
+                <img
+                  src={selectedThemeObj.coverUrl || selectedThemeObj.cover}
+                  alt={selectedThemeObj.name}
+                  className="w-14 h-14 rounded-xl object-cover border border-stone-200 shadow-xs flex-shrink-0"
+                />
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider bg-stone-200 text-stone-700 px-2 py-0.5 rounded">
+                    {selectedThemeObj.series || selectedThemeObj.tag}
+                  </span>
+                  <h3 className="text-sm font-bold text-stone-900 mt-1">{selectedThemeObj.name}</h3>
+                  <div className="flex items-center gap-2 text-xs text-stone-500 mt-0.5">
+                    <span className="w-3 h-3 rounded-full border border-black/10 inline-block shadow-2xs" style={{ backgroundColor: selectedPaletteObj.hex }}></span>
+                    <span>Nuansa: <strong>{selectedPaletteObj.name}</strong></span>
+                  </div>
                 </div>
               </div>
+              <button
+                type="button"
+                onClick={() => toggleSection("sec1")}
+                className="text-xs font-bold text-amber-800 hover:underline self-start sm:self-center"
+              >
+                Ubah Tema / Warna
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => toggleSection("sec1")}
-              className="text-xs font-bold text-amber-800 hover:underline self-start sm:self-center"
-            >
-              Ubah Tema / Warna
-            </button>
-          </div>
+          ) : (
+            <div className="p-5 bg-rose-50/70 border-t border-rose-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-xl bg-rose-100 border border-rose-200 flex items-center justify-center text-rose-700 flex-shrink-0">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider bg-rose-200 text-rose-800 px-2 py-0.5 rounded">
+                    Wajib Dipilih
+                  </span>
+                  <h3 className="text-sm font-bold text-stone-900 mt-1">Belum Memilih Tema Undangan</h3>
+                  <p className="text-xs text-rose-700 mt-0.5">Silakan pilih salah satu desain tema di bawah ini untuk menampilkan undangan Anda.</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => toggleSection("sec1")}
+                className="px-4 py-2 bg-rose-700 hover:bg-rose-800 text-white font-bold rounded-xl text-xs transition shadow-xs self-start sm:self-center cursor-pointer"
+              >
+                Pilih Tema Sekarang
+              </button>
+            </div>
+          )
         ) : (
           <div className="p-5 sm:p-7 space-y-6">
             {/* Theme Mockups for this Category / Store */}
@@ -1248,7 +1267,7 @@ export default function EditInvitation() {
               return (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   {availableThemes.map((th) => {
-                    const isSelected = (invitation.themeId || "kalandra") === th.id;
+                    const isSelected = Boolean(invitation.themeId) && invitation.themeId === th.id;
                     return (
                       <div
                         key={th.id}
@@ -1503,7 +1522,6 @@ export default function EditInvitation() {
             )}
 
             {/* Musik Latar Pernikahan */}
-            {hasCap("music") && (
             <div className="p-4 sm:p-5 rounded-2xl border border-amber-200/80 bg-amber-50/30 space-y-4">
               <div className="flex items-center justify-between gap-3 border-b border-amber-200/60 pb-3">
                 <div>
@@ -1656,7 +1674,6 @@ export default function EditInvitation() {
                 </div>
               )}
             </div>
-            )}
 
             <div className="pt-4 border-t border-stone-100 flex justify-end">
               <button
@@ -2135,10 +2152,10 @@ export default function EditInvitation() {
                       disabled={invitation?.status === "PUBLISHED" || invitation?.status === "EVENT_FINISHED"}
                       subtitle={(invitation?.status === "PUBLISHED" || invitation?.status === "EVENT_FINISHED") ? "Terkunci Pasca Publish" : undefined}
                     />
-                    <Input label="Waktu / Jam" value={ev.time || ""} onChange={(v) => updateEventItem(idx, "time", v)} placeholder="19:30 - Selesai WITA" />
-                    <Input label="Nama Lokasi / Gedung" value={ev.location || ""} onChange={(v) => updateEventItem(idx, "location", v)} placeholder="Grand Ballroom Phinisi" />
-                    <Input label="Alamat Lengkap" value={ev.address || ""} onChange={(v) => updateEventItem(idx, "address", v)} placeholder="Jl. A.P. Pettarani No. 12" />
-                    <Input label="Link Google Maps" value={ev.mapsUrl || ""} onChange={(v) => updateEventItem(idx, "mapsUrl", v)} placeholder="https://maps.google.com/..." />
+                    <Input label="Waktu / Jam" value={ev.time || ""} onChange={(v) => updateEventItem(idx, "time", v)} placeholder="Contoh: 09:00 - 12:00 WIB / WITA / WIT" />
+                    <Input label="Nama Lokasi / Gedung" value={ev.location || ""} onChange={(v) => updateEventItem(idx, "location", v)} placeholder="Contoh: Gedung Pertemuan / Rumah Mempelai" />
+                    <Input label="Alamat Lengkap" value={ev.address || ""} onChange={(v) => updateEventItem(idx, "address", v)} placeholder="Contoh: Jl. Melati No. 10" />
+                    <Input label="Link Google Maps" value={ev.mapsUrl || ""} onChange={(v) => updateEventItem(idx, "mapsUrl", v)} placeholder="https://maps.app.goo.gl/..." />
                     <Input label="Label Badge" value={ev.badge || ""} onChange={(b) => updateEventItem(idx, "badge", b)} placeholder="Sakral / Adat Bugis / Umum" />
                     <div className="sm:col-span-2">
                       <Input label="Catatan Tambahan (Opsional)" value={ev.notes || ""} onChange={(v) => updateEventItem(idx, "notes", v)} placeholder="Masukkan catatan tambahan untuk tamu (Opsional)" />
@@ -2710,7 +2727,6 @@ export default function EditInvitation() {
       </section>
 
       {/* 11. SEKSI LIVE STREAMING (SEC11) */}
-      {hasCap("livestream") && (
       <section className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
         <div className="p-5 sm:p-6 border-b border-stone-100 flex items-center justify-between gap-3">
           <div>
@@ -2795,7 +2811,6 @@ export default function EditInvitation() {
           </div>
         )}
       </section>
-      )}
 
       {/* 12. SEKSI FILTER INSTAGRAM (SEC12) */}
       <section className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
@@ -2966,7 +2981,7 @@ export default function EditInvitation() {
                 Live Photo Drop
               </span>
             </div>
-            <p className="text-xs text-stone-500">Tampung foto candid &amp; video ucapan yang dibagikan tamu ke album Google Drive pengantin</p>
+            <p className="text-xs text-stone-500">Tampung foto candid yang dibagikan para tamu undangan pasca acara</p>
           </div>
           <button
             type="button"
@@ -2982,9 +2997,8 @@ export default function EditInvitation() {
         {collapsed.sec14 ? (
           <div className="p-5 bg-stone-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="text-xs text-stone-600 flex items-center gap-3">
-              <span>Status: <strong>{getFeatureSetting("showGuestMemories", true) ? "Aktif" : "Dinonaktifkan"}</strong></span>
-              <span className="text-stone-300">•</span>
-              <span><strong>{guestMemoriesList.length}</strong> Foto/Video Masuk</span>
+              <span className={`w-2 h-2 rounded-full ${getFeatureSetting("showGuestMemories", true) ? "bg-emerald-500" : "bg-stone-300"}`}></span>
+              <span>Status: <strong>{getFeatureSetting("showGuestMemories", true) ? "Aktif di Undangan" : "Dinonaktifkan"}</strong></span>
             </div>
             <button
               type="button"
@@ -3037,128 +3051,30 @@ export default function EditInvitation() {
                   <label className="block text-xs font-bold text-stone-700 mb-1">Deskripsi / Ajakan Berbagi Momen:</label>
                   <textarea
                     rows={2}
-                    value={getCustomLabel("memoriesSubtitle", "Punya foto candid atau video seru selama menghadiri pernikahan kami? Bagikan momen spesial Anda langsung ke album pribadi kami.")}
+                    value={getCustomLabel("memoriesSubtitle", "Punya foto candid seru selama menghadiri pernikahan kami? Bagikan momen spesial Anda langsung ke album pribadi kami.")}
                     onChange={(e) => updateCustomLabel("memoriesSubtitle", e.target.value)}
                     className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30 resize-none"
                   />
                 </div>
 
-                {/* Client-Side JSZip Download — VPS tidak kena beban bandwidth foto */}
-                <MemoriesDownloadSection
-                  invitationId={invitation.id}
-                  retentionDays={platformSettings?.retentionGalleryDefaultDays || 30}
-                  isUploadLocked={invitation.memoriesUploadLocked ?? false}
-                  galleryExpiresAt={invitation.galleryExpiresAt ? new Date(invitation.galleryExpiresAt).toISOString() : null}
-                  extensionPrice={platformSettings?.galleryExtensionPricePerMonth || 50000}
-                />
-                {/* Link Galeri Kenangan Tamu */}
-                <div className="p-4 rounded-2xl border border-stone-200 bg-stone-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <span className="text-[10px] font-bold text-emerald-800 tracking-wider uppercase block font-mono">
-                      LINK ALBUM KENANGAN TAMU
-                    </span>
-                    <span className="text-xs font-mono font-bold text-stone-900 break-all">
-                      {typeof window !== "undefined" ? window.location.origin : "https://luxenary.id"}
-                      {`/${invitation.invitationSlug}/memories`}
-                    </span>
+                <div className="p-4 bg-amber-50/60 rounded-2xl border border-amber-200/70 flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-amber-100/80 border border-amber-300/60 flex items-center justify-center text-amber-800 shrink-0 mt-0.5">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const url = `${window.location.origin}/${invitation.invitationSlug}/memories`;
-                        navigator.clipboard.writeText(url);
-                        alert("Link galeri kenangan berhasil disalin!");
-                      }}
-                      className="px-3 py-1.5 bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 rounded-xl text-xs font-bold transition cursor-pointer shadow-2xs"
+                  <div className="text-xs text-stone-600 space-y-1">
+                    <span className="font-bold text-stone-900 block">Monitoring &amp; Unduh Arsip Foto Tamu</span>
+                    <p className="leading-relaxed text-[11px]">
+                      Daftar kiriman foto tamu, unduhan arsip ZIP, dan tautan publik album kenangan dapat Anda kelola langsung di halaman <strong>Dashboard Utama</strong>.
+                    </p>
+                    <Link
+                      href="/dashboard#section-galeri-kenangan"
+                      className="inline-flex items-center gap-1 font-bold text-amber-800 hover:underline text-[11px] pt-0.5"
                     >
-                      Salin Link
-                    </button>
-                    <a
-                      href={`/${invitation.invitationSlug}/memories`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-3 py-1.5 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs font-bold transition inline-flex items-center gap-1 shadow-2xs"
-                    >
-                      <span>Buka Galeri</span>
-                    </a>
+                      <span>Buka Galeri Kenangan di Dashboard &rarr;</span>
+                    </Link>
                   </div>
-                </div>
-
-                {/* Real-time Submissions Monitoring List */}
-                <div className="pt-4 border-t border-stone-200 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-bold text-stone-900 flex items-center gap-2">
-                      <span>Daftar Foto &amp; Video Masuk dari Tamu</span>
-                      <span className="px-2 py-0.5 bg-stone-200 text-stone-800 rounded-full text-[10px] font-mono">
-                        {guestMemoriesList.length}
-                      </span>
-                    </h3>
-                    <button
-                      type="button"
-                      onClick={fetchGuestMemories}
-                      disabled={loadingMemories}
-                      className="text-xs text-amber-800 font-bold hover:underline cursor-pointer flex items-center gap-1.5"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                      <span>Refresh</span>
-                    </button>
-                  </div>
-
-                  {guestMemoriesList.length === 0 ? (
-                    <div className="p-6 rounded-2xl bg-stone-50 border border-stone-200 text-center text-xs text-stone-500 font-medium">
-                      Belum ada kiriman foto atau video dari tamu. Saat acara berlangsung, foto yang dikirim tamu akan muncul di sini secara otomatis.
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-96 overflow-y-auto pr-1">
-                      {guestMemoriesList.map((item) => (
-                        <div key={item.id} className="p-3 bg-stone-50 border border-stone-200 rounded-2xl flex gap-3 items-start relative group">
-                          <div className="w-16 h-16 rounded-xl overflow-hidden bg-stone-200 shrink-0 border border-stone-300 flex items-center justify-center">
-                            {item.mediaType === "VIDEO" ? (
-                              <div className="text-xs font-bold text-stone-600 text-center">Video</div>
-                            ) : (
-                              <img src={item.mediaUrl} alt={item.senderName} className="w-full h-full object-cover" />
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between gap-1">
-                              <h4 className="text-xs font-bold text-stone-900 truncate">{item.senderName}</h4>
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteMemory(item.id)}
-                                disabled={deletingMemoryId === item.id}
-                                className="text-[11px] text-rose-600 hover:text-rose-800 font-bold transition cursor-pointer p-1"
-                                title="Hapus kiriman ini"
-                              >
-                                {deletingMemoryId === item.id ? "..." : "✕"}
-                              </button>
-                            </div>
-                            <p className="text-[10px] text-stone-500 font-mono truncate">{item.senderEmail}</p>
-                            {item.message && (
-                              <p className="text-[11px] text-stone-700 mt-1 line-clamp-2 italic">
-                                &ldquo;{item.message}&rdquo;
-                              </p>
-                            )}
-                            <div className="flex items-center justify-between gap-2 mt-2 pt-1 border-t border-stone-200/60">
-                              <span className="text-[10px] text-stone-400">
-                                {new Date(item.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
-                              </span>
-                              <a
-                                href={item.mediaUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-[10px] font-bold text-amber-800 hover:underline inline-flex items-center gap-1"
-                              >
-                                <span>Lihat Full</span>
-                              </a>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
               </div>
             )}

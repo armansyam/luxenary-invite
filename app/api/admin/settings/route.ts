@@ -15,7 +15,7 @@ async function verifyAdminSession() {
 
 // Default seeds for AdminSetting
 const DEFAULT_SETTINGS: Array<{ key: string; value: string; label: string; group: string }> = [
-  { key: "platform_name", value: "Luxenary Invite", label: "Nama Platform", group: "platform" },
+  { key: "platform_name", value: "Sistem Undangan", label: "Nama Platform", group: "platform" },
   { key: "platform_url", value: "", label: "URL Platform (APP_URL)", group: "platform" },
   { key: "support_email", value: "", label: "Email Support", group: "platform" },
   { key: "support_whatsapp", value: "", label: "Nomor WhatsApp Support / Admin", group: "platform" },

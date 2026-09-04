@@ -75,16 +75,23 @@ export async function deleteFile(publicUrl: string | null): Promise<boolean> {
   try {
     if (publicUrl.startsWith("http") && (STORAGE_PROVIDER === "r2" || STORAGE_PROVIDER === "s3")) {
       const bucketName = process.env.S3_BUCKET_NAME;
-      const customDomain = process.env.S3_CUSTOM_DOMAIN || process.env.S3_PUBLIC_URL;
-      
-      if (!bucketName || !s3Client || !customDomain) return false;
-      
-      const domainPrefix = customDomain.replace(/\/$/, "");
-      if (!publicUrl.startsWith(domainPrefix)) return false;
+      if (!bucketName || !s3Client) return false;
 
-      // Extract relative path key
-      const relativePath = publicUrl.substring(domainPrefix.length + 1);
-      
+      // Safely extract S3 object key from URL pathname (e.g. "proofs/xxx.webp")
+      let relativePath = "";
+      try {
+        const parsed = new URL(publicUrl);
+        relativePath = decodeURIComponent(parsed.pathname.replace(/^\//, ""));
+      } catch {
+        const customDomain = process.env.S3_CUSTOM_DOMAIN || process.env.S3_PUBLIC_URL || "";
+        const domainPrefix = customDomain.replace(/\/$/, "");
+        if (publicUrl.startsWith(domainPrefix)) {
+          relativePath = publicUrl.substring(domainPrefix.length + 1);
+        }
+      }
+
+      if (!relativePath) return false;
+
       const command = new DeleteObjectCommand({
         Bucket: bucketName,
         Key: relativePath,

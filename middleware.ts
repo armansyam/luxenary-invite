@@ -5,9 +5,9 @@ import { authConfig } from "@/auth.config";
 const { auth } = NextAuth(authConfig);
 
 interface CustomDomainResolution {
-  subdomain: string | null;
+  subdomain: string | null; // Masih ada jika belum direcycle
+  slug: string | null;      // Endpoint url asli (wajib)
   status?: string;
-  slug?: string;
   expiry: number;
 }
 
@@ -40,7 +40,7 @@ async function resolveCustomDomain(host: string, baseUrl: string): Promise<Custo
       const res: CustomDomainResolution = {
         subdomain: data.subdomain || null,
         status: data.status,
-        slug: data.slug,
+        slug: data.slug || null,
         expiry: now + CACHE_TTL_MS,
       };
       // Simpan ke cache (termasuk hasil null agar tidak re-fetch domain yang tidak terdaftar)
@@ -48,7 +48,7 @@ async function resolveCustomDomain(host: string, baseUrl: string): Promise<Custo
       return res;
     }
     // Domain tidak terdaftar — cache null agar tidak terus di-fetch
-    const nullRes: CustomDomainResolution = { subdomain: null, expiry: now + CACHE_TTL_MS };
+    const nullRes: CustomDomainResolution = { subdomain: null, slug: null, expiry: now + CACHE_TTL_MS };
     customDomainCache.set(host, nullRes);
     return null;
   } catch {
@@ -150,35 +150,35 @@ export default auth(async (req) => {
   if (isCustomDomain && !pathname.startsWith("/api") && !pathname.startsWith("/_next") && !pathname.startsWith("/static")) {
     try {
       const resolution = await resolveCustomDomain(cleanHost, req.url);
-      const subdomain = resolution?.subdomain;
+      const slug = resolution?.slug;
 
-      if (subdomain) {
+      if (slug) {
         const isFinished = resolution.status === "EVENT_FINISHED";
 
         if (pathname === "/" || pathname === "") {
           if (isFinished) {
-            return NextResponse.rewrite(new URL(`/s/${subdomain}/memories${req.nextUrl.search}`, req.url));
+            return NextResponse.rewrite(new URL(`/${slug}/memories${req.nextUrl.search}`, req.url));
           }
-          const rewriteUrl = new URL(`/s/${subdomain}`, req.url);
+          const rewriteUrl = new URL(`/${slug}`, req.url);
           rewriteUrl.search = req.nextUrl.search;
           return NextResponse.rewrite(rewriteUrl);
         }
         if (pathname === "/memories") {
-          return NextResponse.rewrite(new URL(`/s/${subdomain}/memories${req.nextUrl.search}`, req.url));
+          return NextResponse.rewrite(new URL(`/${slug}/memories${req.nextUrl.search}`, req.url));
         }
         if (pathname === "/receptionist") {
-          return NextResponse.rewrite(new URL(`/s/${subdomain}/receptionist${req.nextUrl.search}`, req.url));
+          return NextResponse.rewrite(new URL(`/${slug}/receptionist${req.nextUrl.search}`, req.url));
         }
         if (pathname === "/sharemoment") {
-          return NextResponse.rewrite(new URL(`/s/${subdomain}/sharemoment${req.nextUrl.search}`, req.url));
+          return NextResponse.rewrite(new URL(`/${slug}/sharemoment${req.nextUrl.search}`, req.url));
         }
         // Guest param routing
         const segments = pathname.split('/').filter(Boolean);
         if (segments.length === 1) {
           if (isFinished) {
-            return NextResponse.rewrite(new URL(`/s/${subdomain}/memories${req.nextUrl.search}`, req.url));
+            return NextResponse.rewrite(new URL(`/${slug}/memories${req.nextUrl.search}`, req.url));
           }
-          const rewriteUrl = new URL(`/s/${subdomain}`, req.url);
+          const rewriteUrl = new URL(`/${slug}`, req.url);
           rewriteUrl.searchParams.set('to', segments[0]);
           return NextResponse.rewrite(rewriteUrl);
         }

@@ -81,11 +81,60 @@ export async function GET(
 
     const isAuthorizedOwner = isAdmin || order.userId === currentUserId;
 
+    // Cek apakah pemilik order ini sudah memiliki order PAID (klien aktif yang sudah lunas)
+    let isUserPaid = false;
+    let paidOrderId: string | null = null;
+    let paidPlanType: string | null = null;
+
+    if (!isAdmin && order.userId) {
+      const activePaidOrder = await prisma.order.findFirst({
+        where: {
+          userId: order.userId,
+          status: "PAID",
+        },
+        orderBy: { paidAt: "desc" },
+        select: { id: true, planType: true, orderType: true },
+      });
+
+      if (activePaidOrder) {
+        isUserPaid = true;
+        paidOrderId = activePaidOrder.id;
+        paidPlanType = activePaidOrder.planType;
+      }
+    }
+
+    // Cek apakah order ini sudah digantikan oleh order yang lebih baru (superseded)
+    let isSuperseded = false;
+    let activeOrderId: string | null = null;
+
+    if (finalStatus !== "PAID" && !isAdmin) {
+      const newerActiveOrder = await prisma.order.findFirst({
+        where: {
+          userId: order.userId,
+          id: { not: order.id },
+          createdAt: { gt: order.createdAt },
+          status: { in: ["PENDING", "PAID"] },
+        },
+        orderBy: { createdAt: "desc" },
+        select: { id: true },
+      });
+
+      if (newerActiveOrder) {
+        isSuperseded = true;
+        activeOrderId = newerActiveOrder.id;
+      }
+    }
+
     return NextResponse.json({
       id: order.id,
       invoiceNumber: order.invoiceNumber,
       status: finalStatus,
       isExpired: finalStatus === "EXPIRED",
+      isSuperseded,
+      activeOrderId,
+      isUserPaid,
+      paidOrderId,
+      paidPlanType,
       amount: Number(order.amount),
       planType: order.planType,
       orderType: order.orderType,

@@ -2,7 +2,7 @@
 
 > **Platform Undangan Pernikahan Digital B2C Self-Service**  
 > Next.js 16.3.2 · Prisma 7.9 (PostgreSQL) · NextAuth v5 · Multi-Gateway (5 Gateway) · Nodemailer SMTP · Cloudflare R2  
-> **Versi Dokumen: 5.2.0 | Diperbarui: 03 September 2026**
+> **Versi Dokumen: 5.3.0 | Diperbarui: 04 September 2026**
 
 > [!IMPORTANT]
 > **PROTOKOL SINKRONISASI DOKUMENTASI OTOMATIS (MANDATORY POST-EDIT & PRE-PUSH PROTOCOL):**  
@@ -38,12 +38,14 @@ Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model 
      │
      ▼
 3. CHECKOUT (/checkout)
-   Invoice dibuat (PENDING)
+   Pola Single State (1 Klien = 1 Transaksi) + Auto-Purge Obsolete Storage
    ┌─────────────────────────────────────┬──────────────────────────┐
    │  Multi-Gateway (5 Gateway Aktif)    │  Transfer Bank Manual    │
-   │  iPaymu / Duitku / Midtrans /       │                          │
-   │  TriPay / Xendit (QRIS/VA/E-Wallet) │  Upload struk → Admin    │
-   │  → Webhook Auto-PAID + Invoice Email│  verifikasi manual       │
+   │  iPaymu / Duitku / Midtrans /       │  (Bebas Hardcode)        │
+   │  TriPay / Xendit (QRIS/VA/E-Wallet) │  Upload WebP ke R2 via   │
+   │  → Webhook Auto-PAID + Invoice Email│  Custom Domain Edge CDN  │
+   │                                     │  → Admin Approve/Reject  │
+   │                                     │    (Inline Action Switch)│
    └─────────────────────────────────────┴──────────────────────────┘
      │
      ▼
@@ -54,9 +56,10 @@ Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model 
 5. STUDIO UNDANGAN (/dashboard/invitation/[id])
    - Pilih & ganti tema (15 tema fisik aktif)
    - Isi data pengantin, keluarga, jadwal acara multi-event
+   - Pengaturan Musik Latar Pernikahan (Audio background, preset sakral, unggah MP3/M4A)
    - Upload foto (cover, groom, bride, gallery, dll)
-   - Aktifkan seksi opsional (Love Story, Gift, QR Check-in, dll)
-   - Kelola tamu + generate WhatsApp link personal (+62 auto-format)
+   - Kustomisasi seksi (Love Story, Gift, QR Check-in, Teks Galeri Kenangan Tamu)
+   - Kelola tamu + generate WhatsApp link personal (Deteksi cerdas Custom Domain / Subdomain & proteksi draft)
    - RSVP & ucapan real-time
      │
      ▼
@@ -65,12 +68,13 @@ Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model 
    Subdomain aktif, undangan bisa diakses publik
      │
      ▼
-7. HARI H & PASCA ACARA
+7. HARI H & PASCA ACARA (DASHBOARD OPERASIONAL)
    - Tamu scan QR → Receptionist check-in (PIN-protected)
    - Tamu bagikan foto → /sharemoment (upload ke R2/Local)
+   - Monitoring & moderasi kiriman foto tamu langsung di Dashboard Utama (/dashboard)
    - Klien beli Add-on Custom Domain via Settings → /api/client/custom-domain/buy
    - Pasca Acara (H+7): Dialihkan ke Galeri Momen (/memories)
-   - Download koleksi foto ZIP + Perpanjang Galeri (+30 Hari via QRIS)
+   - Download koleksi foto ZIP (Client-side JSZip) + Perpanjang Galeri (+30 Hari via QRIS)
 
 [Admin]
    ▼
@@ -116,9 +120,9 @@ Sub-routes publik:
 
 | Paket | Tema Tersedia |
 |:--|:--|
-| **Traditional** | Prameswari, Badrika, Candani, Dillalucky, Mayang *(Legacy Alias: Aruna, Heritage-Aruna)* |
+| **Traditional** | Prameswari, Badrika, Candani, Dillalucky, Mayang |
 | **Modern** | Wave, Papercut, Ameera, Chronicle, Lumina, Solaria |
-| **Premium** | Kalandra, Valente, Aurelia, Artisan *(Legacy Alias: Kila, Ivanna, Danila)* |
+| **Premium** | Kalandra, Valente, Aurelia, Artisan *(Legacy Alias: Kila)* |
 
 > Harga dapat diubah di Admin → tab Pengaturan tanpa deploy ulang.
 
@@ -154,7 +158,7 @@ Sub-routes publik:
 | `Guest` | Daftar tamu + nomor kontak `phone` + QR token |
 | `Rsvp` | Konfirmasi kehadiran tamu |
 | `Wish` | Ucapan & doa tamu |
-| `GuestMemory` | Foto/video kenangan tamu pasca-acara |
+| `GuestMemory` | Foto candid kenangan tamu pasca-acara |
 | `Theme` | Katalog tema undangan |
 | `AdminSetting` | Konfigurasi platform dinamis (key-value) |
 | `WebhookLog` | Log audit webhook payment (iPaymu, Duitku, Midtrans, TriPay, Xendit) |
@@ -227,6 +231,12 @@ Luxenary-Invite/
 │   ├── schema.prisma
 │   └── seed.ts
 ├── prisma.config.ts           # Prisma 7 DB URL configuration
+├── docs/
+│   ├── admin/
+│   │   └── MANAJEMEN_TEMA_ADMIN.md            # Panduan manajemen tema, upload master & auto-compile demo
+│   └── client/
+│       ├── TAHAP_REGISTRASI_DAN_PEMBAYARAN.md  # Panduan alur registrasi, kasir & pasca-bayar
+│       └── TAHAP_DASHBOARD_SETUP_AWAL.md       # Panduan setup wizard undangan 3 langkah
 ├── middleware.ts               # ⭐ Edge routing utama (CRITICAL)
 ├── SYSTEM_ARCHITECTURE.md      # ⭐ Dokumentasi arsitektur lengkap (WAJIB BACA)
 ├── AGENTS.md                   # Aturan perilaku AI Agent

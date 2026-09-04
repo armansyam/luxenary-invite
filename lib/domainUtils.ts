@@ -2,7 +2,7 @@
  * Centralized dynamic domain and invitation URL resolver:
  * Formats URLs in pure subdomain structure:
  * - Localhost:  http://[subdomain].localhost:3000
- * - Production: https://[subdomain].luxenary.id
+ * - Production: https://[subdomain].[root_domain]
  */
 
 export function getApexRootDomain(): string {
@@ -76,6 +76,80 @@ export function getInvitationPublicUrl(subdomain: string, guestSlug?: string): s
   const root = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "";
   const cleanRoot = root.replace(/^https?:\/\//, "").replace(/\/$/, "");
   return `http${process.env.NODE_ENV === "production" ? "s" : ""}://${cleanSub}.${cleanRoot}${path}`;
+}
+
+export interface ResolveInvitationUrlOptions {
+  customDomain?: string | null;
+  subdomain?: string | null;
+  groomSlug?: string | null;
+  brideSlug?: string | null;
+  invitationSlug?: string | null;
+  guestSlug?: string | null;
+}
+
+export interface ResolvedInvitationUrl {
+  url: string;
+  domainType: "CUSTOM_DOMAIN" | "SUBDOMAIN" | "FALLBACK";
+  domainIdentifier: string;
+  isConfigured: boolean;
+}
+
+/**
+ * Resolves the primary public URL for an invitation with strict precedence:
+ * 1. Active Custom Domain (e.g., https://yoga-nisa.com/Budi)
+ * 2. Active Subdomain (e.g., https://yoga-nisa.luxenary.id/Budi atau http://yoga-nisa.localhost:3000/Budi)
+ * 3. Fallback / Draft simulation: groom-bride slug or invitationSlug
+ */
+export function resolveEffectiveInvitationUrl(options: ResolveInvitationUrlOptions): ResolvedInvitationUrl {
+  const { customDomain, subdomain, groomSlug, brideSlug, invitationSlug, guestSlug } = options;
+
+  let path = "";
+  if (guestSlug) {
+    path = `/${encodeURIComponent(guestSlug)}`;
+  }
+
+  // 1. Custom Domain Priority
+  if (customDomain && customDomain.trim()) {
+    const cleanCustom = customDomain.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/+$/, "");
+    let protocol = "https:";
+    if (typeof window !== "undefined") {
+      protocol = window.location.protocol;
+    } else {
+      protocol = process.env.NODE_ENV === "production" ? "https:" : "http:";
+    }
+    return {
+      url: `${protocol}//${cleanCustom}${path}`,
+      domainType: "CUSTOM_DOMAIN",
+      domainIdentifier: cleanCustom,
+      isConfigured: true,
+    };
+  }
+
+  // 2. Subdomain Priority
+  if (subdomain && subdomain.trim()) {
+    const cleanSub = subdomain.trim().toLowerCase();
+    return {
+      url: getInvitationPublicUrl(cleanSub, guestSlug || undefined),
+      domainType: "SUBDOMAIN",
+      domainIdentifier: cleanSub,
+      isConfigured: true,
+    };
+  }
+
+  // 3. Fallback Simulation (Draft / Not yet configured)
+  let fallbackSub = "wedding";
+  if (groomSlug && brideSlug) {
+    fallbackSub = `${groomSlug}-${brideSlug}`.toLowerCase();
+  } else if (invitationSlug) {
+    fallbackSub = invitationSlug.toLowerCase();
+  }
+
+  return {
+    url: getInvitationPublicUrl(fallbackSub, guestSlug || undefined),
+    domainType: "FALLBACK",
+    domainIdentifier: fallbackSub,
+    isConfigured: false,
+  };
 }
 
 /**

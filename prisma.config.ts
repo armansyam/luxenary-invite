@@ -6,6 +6,6 @@ export default defineConfig({
     url: process.env.DATABASE_URL,
   },
   migrations: {
-    seed: 'ts-node prisma/seed.ts',
+    seed: 'npx tsx prisma/seed.ts',
   },
 })
