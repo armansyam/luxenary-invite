@@ -20,9 +20,17 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Parameter host wajib disertakan." }, { status: 400 });
   }
 
+  const cleanHost = host.toLowerCase().trim();
+  const hostWithoutWww = cleanHost.replace(/^www\./, "");
+  const hostWithWww = cleanHost.startsWith("www.") ? cleanHost : `www.${cleanHost}`;
+
   const invitation = await prisma.invitation.findFirst({
     where: {
-      customDomain: host.toLowerCase().trim(),
+      OR: [
+        { customDomain: cleanHost },
+        { customDomain: hostWithoutWww },
+        { customDomain: hostWithWww },
+      ],
       status: { in: ["PUBLISHED", "EVENT_FINISHED"] },
     },
     select: {

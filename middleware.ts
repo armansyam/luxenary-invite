@@ -107,8 +107,17 @@ export default auth(async (req) => {
   // ── A. Subdomain milik kita (e.g. namapasangan.luxenary.id) ──
   if (isSubdomainOfOurs && !pathname.startsWith("/api") && !pathname.startsWith("/_next") && !pathname.startsWith("/static")) {
     const parts = cleanHost.split(".");
-    if (parts.length > 1 && parts[0] !== "www" && parts[0] !== "admin" && parts[0] !== "api") {
+    if (parts.length > 1) {
       const subdomain = parts[0];
+
+      // Mencegah akses langsung ke CNAME Target (Anti Kloning)
+      if (["cname", "host", "alias", "invite"].includes(subdomain)) {
+        const protocol = req.nextUrl.protocol;
+        const mainDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost:3000";
+        return NextResponse.redirect(`${protocol}//${mainDomain}/`, 301);
+      }
+
+      if (subdomain !== "www" && subdomain !== "admin" && subdomain !== "api") {
       if (pathname === "/" || pathname === "") {
         const rewriteUrl = new URL(`/s/${subdomain}`, req.url);
         rewriteUrl.search = req.nextUrl.search;
@@ -141,6 +150,7 @@ export default auth(async (req) => {
           rewriteUrl.searchParams.set('to', guestParam);
         }
         return NextResponse.rewrite(rewriteUrl);
+      }
       }
     }
   }
