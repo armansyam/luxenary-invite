@@ -268,6 +268,18 @@ function CheckoutContent() {
         router.replace("/packages");
         return;
       }
+
+      // KONSISTENSI GUARD: Cek apakah user sudah punya paket aktif / undangan
+      // Mencegah pembuatan order double saat refresh tab usang (?plan=MODERN)
+      const onboardingRes = await fetch("/api/client/onboarding-state", { cache: "no-store" });
+      if (onboardingRes.ok) {
+        const onboardingData = await onboardingRes.json();
+        if (onboardingData.step === "COMPLETED" || onboardingData.step === "PAID_NEED_SETUP") {
+          router.replace(onboardingData.redirectUrl || "/dashboard");
+          return;
+        }
+      }
+
       const currentPkg = packages.find((p) => p.id === targetPlan);
       const name = currentPkg?.name || targetPlan;
       // Harga HANYA dari AdminSetting (via /api/public/settings → packages).

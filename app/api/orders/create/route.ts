@@ -55,6 +55,30 @@ export async function POST(req: NextRequest) {
 
     const validUserId = targetUser.id;
 
+    // KONSISTENSI GUARD: Cegah klien yang sudah memiliki undangan / order PAID membuat order baru 
+    // dari tab usang. (Tipe order NEW_INVITATION implicitly)
+    const existingInvitation = await prisma.invitation.findFirst({
+      where: { userId: validUserId },
+    });
+    
+    if (existingInvitation) {
+      return NextResponse.json(
+        { error: "Anda sudah memiliki undangan aktif. Tidak dapat membuat pesanan baru.", redirectUrl: "/dashboard" },
+        { status: 400 }
+      );
+    }
+
+    const existingPaid = await prisma.order.findFirst({
+      where: { userId: validUserId, status: "PAID", linkedOrderId: null },
+    });
+
+    if (existingPaid) {
+      return NextResponse.json(
+        { error: "Anda sudah memiliki paket aktif. Tidak dapat membuat pesanan baru.", redirectUrl: `/dashboard/setup?order=${existingPaid.id}` },
+        { status: 400 }
+      );
+    }
+
     // Baca harga paket dari AdminSetting — WAJIB ada. Jika belum dikonfigurasi, tolak order.
     // Tidak boleh ada fallback hardcode: harga bisa berubah sewaktu-waktu dari Admin.
     const priceKey = planType === "PREMIUM" ? "price_premium" : planType === "MODERN" ? "price_modern" : "price_traditional";
