@@ -152,7 +152,9 @@ export default function SettingsPage() {
     fetch("/api/public/settings").then(r => r.json()).then(d => {
       if (d?.platformName) setPlatformName(d.platformName);
       if (d?.cnameTarget) setCnameTarget(d.cnameTarget);
-      if (d?.addon_custom_domain_price) setCustomDomainPrice(Number(d.addon_custom_domain_price) || 150000);
+      if (d?.addon_custom_domain_price !== undefined || d?.addonCustomDomainPrice !== undefined) {
+        setCustomDomainPrice(Number(d.addon_custom_domain_price ?? d.addonCustomDomainPrice) || 150000);
+      }
     }).catch(() => {});
   }, []);
 

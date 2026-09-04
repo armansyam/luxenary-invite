@@ -124,7 +124,7 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
     retentionGalleryDefaultDays: Number(map["retention_gallery_default_days"] || 30),
     galleryExtensionPricePerMonth: Number(map["gallery_extension_price_per_month"] || 50000),
     addonSubdomainGalleryBundlePrice: Number(map["addon_subdomain_gallery_bundle_price"] || 175000),
-    addonCustomDomainPrice: Number(map["addon_custom_domain_price"] || 99000),
+    addonCustomDomainPrice: Number(map["addon_custom_domain_price"] || 150000),
     paymentGatewayFeePercent: Number(map["payment_gateway_fee_percent"] || (map["payment_fee_rate"] ? Number(map["payment_fee_rate"]) * 100 : 0.7)),
     paymentGatewayFeePayer: ((map["payment_fee_payer"] || map["payment_gateway_fee_payer"] || "MERCHANT") === "BUYER" ? "BUYER" : "MERCHANT"),
     smtpHost: map["smtp_host"] || "",

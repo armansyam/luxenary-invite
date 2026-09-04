@@ -15,6 +15,9 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       ...settings,
+      addon_custom_domain_price: settings.addonCustomDomainPrice,
+      addon_subdomain_gallery_bundle_price: settings.addonSubdomainGalleryBundlePrice,
+      gallery_extension_price_per_month: settings.galleryExtensionPricePerMonth,
       logo: logoExists ? "/assets/brand/logo.webp" : null,
       favicon: faviconExists ? "/assets/brand/favicon.png" : null,
     });

@@ -4050,17 +4050,17 @@ export default function AdminPage() {
                     saveSuccess={settingsSaved["addons"]}
                     saveSuccessMessage="Harga layanan add-on berhasil diperbarui"
                     viewContent={
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                        <div className="p-4 bg-emerald-50/60 rounded-xl border border-emerald-200">
-                          <span className="text-xs font-bold text-emerald-900 block mb-1">Add-on Bundling (Domain + Galeri 1 Thn)</span>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                        <div className="p-4 bg-amber-50/60 rounded-xl border border-amber-200">
+                          <span className="text-xs font-bold text-amber-900 block mb-1">Jasa Custom Domain &amp; Perpanjang URL (1 Thn)</span>
                           <div className="flex items-baseline gap-1.5">
-                            <span className="text-xl font-mono font-bold text-emerald-950">
-                              Rp {Number(settingsMap["addon_subdomain_gallery_bundle_price"] || 175000).toLocaleString("id-ID")}
+                            <span className="text-xl font-mono font-bold text-amber-950">
+                              Rp {Number(settingsMap["addon_custom_domain_price"] || 150000).toLocaleString("id-ID")}
                             </span>
-                            <span className="text-xs text-emerald-800 font-medium">/ 1 Tahun</span>
+                            <span className="text-xs text-amber-800 font-medium">/ 1 Tahun</span>
                           </div>
                           <p className="text-xs text-stone-600 mt-2 leading-relaxed">
-                            Alamat website eksklusif aktif 1 tahun beserta penyimpanan foto tamu selama 1 tahun penuh.
+                            Jasa integrasi domain pribadi milik klien (DNS &amp; Auto-SSL) dan perpanjangan masa tayang URL undangan selama 1 tahun penuh.
                           </p>
                         </div>
 
@@ -4076,20 +4076,33 @@ export default function AdminPage() {
                             Biaya perpanjangan simpan foto tamu per 30 hari via QRIS dinamis saat masa aktif galeri habis.
                           </p>
                         </div>
+
+                        <div className="p-4 bg-emerald-50/60 rounded-xl border border-emerald-200">
+                          <span className="text-xs font-bold text-emerald-900 block mb-1">Add-on Bundling (Domain + Galeri 1 Thn)</span>
+                          <div className="flex items-baseline gap-1.5">
+                            <span className="text-xl font-mono font-bold text-emerald-950">
+                              Rp {Number(settingsMap["addon_subdomain_gallery_bundle_price"] || 230000).toLocaleString("id-ID")}
+                            </span>
+                            <span className="text-xs text-emerald-800 font-medium">/ 1 Tahun</span>
+                          </div>
+                          <p className="text-xs text-stone-600 mt-2 leading-relaxed">
+                            Paket lengkap: integrasi custom domain aktif 1 tahun beserta penyimpanan foto tamu selama 1 tahun penuh.
+                          </p>
+                        </div>
                       </div>
                     }
                   >
                     <div className="space-y-4">
                       <FieldRow
-                        label="Tarif Add-on Bundling (Domain + Galeri 1 Tahun)"
-                        description="Harga paket lengkap: domain eksklusif aktif 1 tahun + foto tamu tersimpan aman 1 tahun (Rupiah)."
+                        label="Tarif Jasa Custom Domain &amp; Perpanjangan URL (1 Tahun)"
+                        description="Biaya jasa integrasi domain pribadi milik klien (DNS &amp; SSL) serta perpanjangan masa aktif penayangan URL undangan selama 1 tahun penuh (Rupiah)."
                       >
                         <input
                           type="number"
                           min="10000"
                           step="5000"
-                          value={settingsMap["addon_subdomain_gallery_bundle_price"] || "175000"}
-                          onChange={(e) => setSetting("addon_subdomain_gallery_bundle_price", e.target.value)}
+                          value={settingsMap["addon_custom_domain_price"] || "150000"}
+                          onChange={(e) => setSetting("addon_custom_domain_price", e.target.value)}
                           className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition font-mono"
                         />
                       </FieldRow>
@@ -4108,7 +4121,19 @@ export default function AdminPage() {
                         />
                       </FieldRow>
 
-
+                      <FieldRow
+                        label="Tarif Add-on Bundling (Custom Domain + Galeri 1 Tahun)"
+                        description="Harga paket bundling lengkap: integrasi domain pribadi 1 tahun + penyimpanan galeri foto tamu aman 1 tahun (Rupiah)."
+                      >
+                        <input
+                          type="number"
+                          min="10000"
+                          step="5000"
+                          value={settingsMap["addon_subdomain_gallery_bundle_price"] || "230000"}
+                          onChange={(e) => setSetting("addon_subdomain_gallery_bundle_price", e.target.value)}
+                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition font-mono"
+                        />
+                      </FieldRow>
                     </div>
                   </SettingsCard>
                   </>
