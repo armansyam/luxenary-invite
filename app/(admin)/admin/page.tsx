@@ -6484,7 +6484,7 @@ export default function AdminPage() {
                 } else if (eventDate) {
                   const retentionDays = parseInt(settingsMap["retention_invitation_days"] || "30", 10);
                   const calculatedExpiry = new Date(eventDate.getTime() + (retentionDays * 24 * 60 * 60 * 1000));
-                  expiredStr = `${calculatedExpiry.toLocaleDateString("id-ID", { day: 'numeric', month: 'long', year: 'numeric' })} (Dinamis)`;
+                  expiredStr = calculatedExpiry.toLocaleDateString("id-ID", { day: 'numeric', month: 'long', year: 'numeric' });
                 }
                 
                 return (
