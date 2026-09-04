@@ -631,7 +631,11 @@ export default function EditInvitation() {
   // Precise Per-Section Dirty State Tracking
   const isDirty = useMemo(() => {
     if (!savedSnapshot || !invitation) {
-      return { sec1: false, sec2: false, sec3: false, sec4: false, sec5: false, sec6: false, sec7: false, sec8: false, sec9: false };
+      return {
+        sec1: false, sec2: false, sec3: false, sec4: false, sec5: false,
+        sec6: false, sec7: false, sec8: false, sec9: false, sec10: false,
+        sec11: false, sec12: false, sec13: false, sec14: false, sec15: false,
+      };
     }
 
     // Sec 1: Tema, Warna & Tagline
@@ -3110,6 +3114,165 @@ export default function EditInvitation() {
         )}
       </section>
       )}
+
+      {/* 15. SEKSI PENGATURAN TEKS UI & LABEL (SEC15) */}
+      <section className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
+        <div className="p-5 sm:p-6 border-b border-stone-100 flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-base font-bold text-stone-900">15. Pengaturan Teks UI &amp; Label</h2>
+            <p className="text-xs text-stone-500">Kustomisasi teks tombol RSVP, formulir, sampul, dan hitung mundur</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => toggleSection("sec15")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+              collapsed.sec15 ? "bg-amber-50 text-amber-900 hover:bg-amber-100" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+            }`}
+          >
+            {collapsed.sec15 ? "Edit Label" : "Tutup"}
+          </button>
+        </div>
+
+        {collapsed.sec15 ? (
+          <div className="p-5 bg-stone-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="space-y-0.5 text-xs text-stone-600 max-w-2xl">
+              <p className="font-semibold text-stone-900">
+                Tombol RSVP: &ldquo;{getCustomLabel("rsvpBtnText", "Kirim Konfirmasi & Doa")}&rdquo;
+              </p>
+              <p className="text-stone-500 text-[11px]">
+                Tombol Buka: &ldquo;{getCustomLabel("openBtn", "Buka Undangan")}&rdquo; · Judul RSVP: &ldquo;{getCustomLabel("rsvpTitle", "RSVP & Doa Restu")}&rdquo;
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => toggleSection("sec15")}
+              className="text-xs font-bold text-amber-800 hover:underline self-start sm:self-center"
+            >
+              Ubah Label
+            </button>
+          </div>
+        ) : (
+          <div className="p-5 sm:p-7 space-y-5">
+            {/* Group 1: Formulir & Tombol RSVP */}
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold text-stone-900 uppercase tracking-wider text-amber-950 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+                Formulir RSVP &amp; Doa
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <Input
+                  label="Teks Tombol Kirim RSVP (Aksi Utama)"
+                  value={getCustomLabel("rsvpBtnText", "Kirim Konfirmasi & Doa")}
+                  onChange={(v) => updateCustomLabel("rsvpBtnText", v)}
+                  placeholder="Kirim Konfirmasi & Doa / Kirim RSVP"
+                />
+                <Input
+                  label="Judul Seksi RSVP"
+                  value={getCustomLabel("rsvpTitle", "RSVP & Doa Restu")}
+                  onChange={(v) => updateCustomLabel("rsvpTitle", v)}
+                  placeholder="RSVP & Doa Restu / Konfirmasi Kehadiran"
+                />
+                <Input
+                  label="Label Kolom Nama Tamu"
+                  value={getCustomLabel("rsvpNameLabel", "Nama Lengkap")}
+                  onChange={(v) => updateCustomLabel("rsvpNameLabel", v)}
+                  placeholder="Nama Lengkap"
+                />
+                <Input
+                  label="Label Pilihan Kehadiran"
+                  value={getCustomLabel("rsvpStatusLabel", "Konfirmasi Kehadiran")}
+                  onChange={(v) => updateCustomLabel("rsvpStatusLabel", v)}
+                  placeholder="Konfirmasi Kehadiran"
+                />
+                <Input
+                  label="Label Kolom Jumlah Tamu"
+                  value={getCustomLabel("rsvpCountLabel", "Jumlah Tamu")}
+                  onChange={(v) => updateCustomLabel("rsvpCountLabel", v)}
+                  placeholder="Jumlah Tamu"
+                />
+                <Input
+                  label="Label Kolom Pesan / Ucapan"
+                  value={getCustomLabel("rsvpMessageLabel", "Ucapan & Doa Restu")}
+                  onChange={(v) => updateCustomLabel("rsvpMessageLabel", v)}
+                  placeholder="Ucapan & Doa Restu"
+                />
+              </div>
+            </div>
+
+            {/* Group 2: Sampul & Tombol Buka Undangan */}
+            <div className="space-y-3 pt-3 border-t border-stone-100">
+              <h4 className="text-xs font-bold text-stone-900 uppercase tracking-wider text-amber-950 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+                Sampul &amp; Tombol Pembuka
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <Input
+                  label="Teks Tombol Buka Undangan"
+                  value={getCustomLabel("openBtn", "Buka Undangan")}
+                  onChange={(v) => updateCustomLabel("openBtn", v)}
+                  placeholder="Buka Undangan / Open Invitation"
+                />
+                <Input
+                  label="Subjudul Sampul (Cover Subtitle)"
+                  value={getCustomLabel("coverSubtitle", "UNDANGAN PERNIKAHAN")}
+                  onChange={(v) => updateCustomLabel("coverSubtitle", v)}
+                  placeholder="UNDANGAN PERNIKAHAN / WEDDING INVITATION"
+                />
+              </div>
+            </div>
+
+            {/* Group 3: Hitung Mundur (Countdown Timer) */}
+            <div className="space-y-3 pt-3 border-t border-stone-100">
+              <h4 className="text-xs font-bold text-stone-900 uppercase tracking-wider text-amber-950 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+                Label Hitung Mundur (Countdown)
+              </h4>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <Input
+                  label="Hari"
+                  value={getCustomLabel("cdDays", "Hari")}
+                  onChange={(v) => updateCustomLabel("cdDays", v)}
+                  placeholder="Hari / Days"
+                />
+                <Input
+                  label="Jam"
+                  value={getCustomLabel("cdHours", "Jam")}
+                  onChange={(v) => updateCustomLabel("cdHours", v)}
+                  placeholder="Jam / Hours"
+                />
+                <Input
+                  label="Menit"
+                  value={getCustomLabel("cdMins", "Menit")}
+                  onChange={(v) => updateCustomLabel("cdMins", v)}
+                  placeholder="Menit / Minutes"
+                />
+                <Input
+                  label="Detik"
+                  value={getCustomLabel("cdSecs", "Detik")}
+                  onChange={(v) => updateCustomLabel("cdSecs", v)}
+                  placeholder="Detik / Seconds"
+                />
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-stone-100 flex justify-end">
+              <button
+                type="button"
+                onClick={() => saveSection("sec15")}
+                disabled={saving || !isDirty.sec15}
+                className={`px-5 py-2.5 font-bold rounded-xl text-xs transition flex items-center gap-2 shadow-xs ${
+                  !isDirty.sec15
+                    ? "bg-stone-100 text-stone-400 border border-stone-200 cursor-not-allowed"
+                    : "bg-amber-800 hover:bg-amber-900 text-white cursor-pointer"
+                }`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                <span>{!isDirty.sec15 ? "Tersimpan" : "Simpan Pengaturan Label"}</span>
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
 
         </div>
       )}

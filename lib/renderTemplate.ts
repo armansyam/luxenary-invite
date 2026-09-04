@@ -390,7 +390,9 @@ const INLINE_LIVE_EDITOR_SCRIPT = `
       { sel: '#story .journey-title', field: 'customLabels.storyTitle' },
       { sel: '#gift .sec-main-title', field: 'customLabels.giftTitle' },
       { sel: '#section-wishes .sec-heading', field: 'customLabels.wishesTitle' },
-      { sel: '.btn-buka-undangan, .cover-btn-open', field: 'customLabels.openBtn' }
+      { sel: '.btn-buka-undangan, .cover-btn-open', field: 'customLabels.openBtn' },
+      { sel: '#btnSubmit, .btn-rsvp-submit, .btn-submit-rsvp', field: 'customLabels.rsvpBtnText' },
+      { sel: '#section-wishes .sec-main-title, #section-rsvp .sec-main-title', field: 'customLabels.rsvpTitle' }
     ];
 
     fallbackMappings.forEach(m => {
@@ -401,9 +403,55 @@ const INLINE_LIVE_EDITOR_SCRIPT = `
       });
     });
 
+    // Disable native form submission and validation popups in edit mode
+    document.querySelectorAll('form').forEach(form => {
+      form.noValidate = true;
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      });
+    });
+
     document.querySelectorAll('[data-lux-field]').forEach(el => {
       el.setAttribute('contenteditable', 'true');
       el.setAttribute('spellcheck', 'false');
+
+      // Neutralize button and link behaviors so clicks and keypresses are treated as text editing
+      const btn = el.tagName === 'BUTTON' ? el : el.closest('button');
+      if (btn) {
+        btn.setAttribute('type', 'button');
+      }
+
+      if (el.tagName === 'BUTTON' || el.tagName === 'A' || btn) {
+        el.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          el.focus();
+        });
+
+        el.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            el.blur();
+          } else if (e.key === ' ') {
+            e.stopPropagation();
+            const sel = window.getSelection();
+            if (sel && sel.rangeCount > 0) {
+              const range = sel.getRangeAt(0);
+              range.deleteContents();
+              const textNode = document.createTextNode(' ');
+              range.insertNode(textNode);
+              range.setStartAfter(textNode);
+              range.setEndAfter(textNode);
+              sel.removeAllRanges();
+              sel.addRange(range);
+              e.preventDefault();
+              el.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+          }
+        });
+      }
 
       el.addEventListener('input', function() {
         const fieldKey = el.getAttribute('data-lux-field');
