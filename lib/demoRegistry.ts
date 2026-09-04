@@ -1855,7 +1855,7 @@ export function composeDemoTemplateData(
     
     // Exact Standardized Local Assets
     globalBgUrl: demo.globalBgUrl,
-    homePhotoUrl: `/demo/${demo.themeId}/home.webp`,
+    homePhotoUrl: demo.globalBgUrl,
     footerPhotoUrl: `/demo/${demo.themeId}/footer.webp`,
     groomPhotoUrl: demo.groomPhotoUrl,
     bridePhotoUrl: demo.bridePhotoUrl,

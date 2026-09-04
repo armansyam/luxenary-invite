@@ -136,7 +136,8 @@ Sub-routes publik:
 ### Standar Arsitektur Template Undangan
 - **Cover Gate:** Tombol buka undangan (`data-lux-field="customLabels.openBtn"`) wajib memiliki teks fisik default `"Buka Undangan"` dan didukung fallback engine agar tidak pernah kosong/transparan.
 - **Dukungan Video Loop Sinematik:** Mendukung video background loop pada `LANDING_COVER` (Cover pembuka), `DESKTOP_SIDEBAR` (Hero layar lebar), dan `GLOBAL_FIXED_BG` (Latar kartu). Sistem otomatis memotong klip menjadi maksimal 20 detik, membuang audio track (`-an`), mengunci frame rate ke 30 fps, serta menyuntikkan tag HTML `<video>` dengan overlay gradasi kontras.
-- **Adaptive Full-Height Closing Section (`100vh`):** Seksi outro (`.site-footer` / `.closing-sec`) berukuran layar penuh `100vh` yang adaptif terhadap unggahan foto penutup (`CLOSING_COVER`):
+- **Latar Belakang Seksi Home Mandiri (`HOME_PHOTO`):** Slot foto halaman utama terinjeksi mandiri ke Seksi 1 (`.slide-opening#home`) dengan scrim gradient pelindung teks. Jika kosong, seksi Home tetap transparan memperlihatkan kanvas atau video loop global.
+- **Adaptive Full-Height Closing Section (`100vh`) & Flush Alignment:** Seksi outro (`.site-footer` / `.closing-sec`) berukuran layar penuh `100vh` dengan penataan *flush* ke dasar layar (bebas celah/gap 90px–110px) dan adaptif terhadap unggahan foto penutup (`CLOSING_COVER`):
   - *Mode Kanvas Kosong (Default):* Latar bersih sesuai palet tema tanpa dummy image palsu; teks ucapan terima kasih dan nama mempelai berposisi vertikal & horizontal tepat di tengah layar (`justify-content: center;`).
   - *Mode Foto Penutup:* Foto latar layar penuh dengan overlay gradasi; teks ucapan bergeser elegan ke bagian bawah layar (`justify-content: flex-end;`).
 

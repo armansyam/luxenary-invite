@@ -892,11 +892,26 @@ export async function renderTemplateFile(
       .right-panel, .page-wrap, .main-scroll-panel {
         position: relative;
         z-index: 2;
+        padding-bottom: 0 !important;
       }
       .fixed-bg-layer, .theme-fixed-bg {
         background-image: none !important;
       }
     `;
+  }
+
+  if (data.hasCustomHomePhoto && data.homePhotoUrl) {
+    const safeHomePhoto = sanitizeCssUrl(String(data.homePhotoUrl));
+    if (safeHomePhoto) {
+      videoStyles += `
+      .slide-opening#home, section#home.slide-opening, section#home, .sec-hero-slideshow#home {
+        background-image: linear-gradient(to bottom, rgba(7,7,9,0.55) 0%, rgba(7,7,9,0.35) 40%, rgba(7,7,9,0.80) 100%), url('${safeHomePhoto}') !important;
+        background-size: cover !important;
+        background-position: center center !important;
+        background-repeat: no-repeat !important;
+      }
+      `;
+    }
   }
 
   const combinedVideoStyle = videoStyles ? `\n<style>\n${videoStyles}\n</style>` : "";

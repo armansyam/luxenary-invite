@@ -163,9 +163,10 @@ export async function composeTemplateData(invitationId: string) {
   // Resolve Photos (Theme-Aware Fallbacks)
   const themeFolder = inv.themeId || "kalandra";
   const coverUrl = mediaMap.get("LANDING_COVER") || `/demo/${themeFolder}/cover.webp`;
-  const homePhotoUrl = mediaMap.get("HOME_PHOTO") || `/demo/${themeFolder}/home.webp`;
+  const customHomePhoto = mediaMap.get("HOME_PHOTO") || null;
   const sidebarUrl = mediaMap.get("DESKTOP_SIDEBAR") || coverUrl;
   const fixedBgUrl = mediaMap.get("GLOBAL_FIXED_BG") || sidebarUrl || `/demo/${themeFolder}/background.webp`;
+  const homePhotoUrl = customHomePhoto || fixedBgUrl || `/demo/${themeFolder}/background.webp`;
   const groomPhoto = mediaMap.get("GROOM_PHOTO") || `/demo/${themeFolder}/groom.webp`;
   const bridePhoto = mediaMap.get("BRIDE_PHOTO") || `/demo/${themeFolder}/bride.webp`;
   const closingPhotoUrl = mediaMap.get("CLOSING_COVER") || null;
@@ -1459,6 +1460,8 @@ export async function composeTemplateData(invitationId: string) {
     // Media
     landingCoverUrl: coverUrl,
     homePhotoUrl: homePhotoUrl,
+    hasCustomHomePhoto: Boolean(customHomePhoto),
+    customHomePhoto: customHomePhoto,
     closingPhotoUrl: closingPhotoUrl,
     hasClosingPhoto: Boolean(closingPhotoUrl),
     closingPhotoClass: closingPhotoUrl ? "has-closing-photo" : "no-closing-photo",

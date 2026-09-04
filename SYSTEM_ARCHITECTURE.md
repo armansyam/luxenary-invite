@@ -917,6 +917,18 @@ Sistem mendukung video loop bergerak (*ambient video*) pada 3 slot visual utama:
 - Jika berformat video (`.mp4`, `.webm`, `.mov`), template tema otomatis menyuntikkan elemen HTML5 `<video class="..." autoplay loop muted playsinline webkit-playsinline>` dengan `object-fit: cover` dan `object-position: center center`.
 - Jika berformat gambar, tetap mempertahankan CSS `background-image` standar tanpa regresi.
 
+## 11.5 - Arsitektur Seksi Home Mandiri & Eliminasi Gap Bawah Footer (Container Flush Alignment)
+
+### 1. Isolasi Latar Belakang Seksi Home (`HOME_PHOTO`)
+- **Independensi Seksi:** Slot `HOME_PHOTO` ("Latar Belakang Home (Opsional)") diinjeksi secara langsung dan adaptif ke elemen `.slide-opening#home, section#home, .sec-hero-slideshow#home` lengkap dengan *scrim gradient* pelindung tipografi.
+- **Fallback Cerdas:** Jika klien tidak mengunggah foto home, seksi Home tetap transparan memperlihatkan latar belakang fixed global (`GLOBAL_FIXED_BG` baik video loop maupun foto) sesuai spesifikasi tema.
+- **Pemisahan Layer:** `.fixed-bg-layer` dikembalikan secara murni ke `globalBgUrl` untuk latar belakang kartu undangan, terpisah dari latar pembuka seksi Home.
+
+### 2. Eliminasi Celah Bawah Footer (*Flush to Bottom*)
+- **Pemberantasan Gap 90px / 110px:** Redundant `padding-bottom` pada `.right-panel` dan `.main-scroll-panel` dinetralkan secara global via `public/css/modules.css` dan `lib/renderTemplate.ts` (`padding-bottom: 0 !important;`).
+- **Footer 100vh Sempurna:** Footer penutup (`.site-footer`) kini duduk pas (*flush*) menyentuh dasar layar tanpa celah bocor yang memperlihatkan layer video di baliknya.
+- **Perlindungan Dock Navigasi:** Teks dan konten penutup tetap aman terlindungi dari tumpang-tindih dock navigasi bawah berkat padding bawah internal bawaan footer sebesar `6.5rem` (104px).
+
 ---
 
 ## 15. ORKESTRASI MULTI-PAYMENT GATEWAY & DYNAMIC FEE

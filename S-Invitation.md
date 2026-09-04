@@ -121,6 +121,10 @@ Sistem Studio Editor Klien (`/dashboard/invitation/[id]`) menyediakan kendali kr
    - Subdomain otomatis `*.luxenary.id` (contoh: `dimas-clarissa.luxenary.id`).
    - Cache statis dengan `Cache-Control: public, max-age=31536000, immutable`.
    - Beban server 0% dan loading instan di HP tamu.
+5. **Isolasi Seksi Home (`HOME_PHOTO`) & Container Flush Alignment:**
+   - Slot `HOME_PHOTO` ("Latar Belakang Home (Opsional)") terinjeksi mandiri pada Seksi 1 (`.slide-opening#home`) dengan gradient overlay pelindung teks judul dan kutipan.
+   - Jika slot kosong, seksi Home tetap transparan memperlihatkan latar belakang fixed global (video loop atau foto kanvas).
+   - Eliminasi total celah bawah (*gap*) 90px/110px di bawah footer `.site-footer` melalui `public/css/modules.css` dan `renderTemplate.ts`, sehingga footer 100vh menutup rapat ke dasar layar (*flush to bottom*).
 
 ---
 

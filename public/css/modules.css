@@ -183,3 +183,8 @@
 .reveal-zoom.active { opacity: 1; transform: scale(1); }
 .delay-1 { transition-delay: 0.1s; }
 .delay-2 { transition-delay: 0.2s; }
+
+/* 9. CONTAINER FLUSH ALIGNMENT (Eliminate footer bottom gap) */
+.right-panel, .main-scroll-panel {
+  padding-bottom: 0 !important;
+}
