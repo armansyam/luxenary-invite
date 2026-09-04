@@ -710,6 +710,8 @@ function DashboardHomeContent() {
             isUploadLocked={invitation.memoriesUploadLocked ?? false}
             galleryExpiresAt={invitation.galleryExpiresAt ? new Date(invitation.galleryExpiresAt).toISOString() : null}
             extensionPrice={platformSettings?.galleryExtensionPricePerMonth || 50000}
+            invitationStatus={invitation.status}
+            guestMemoriesCount={guestMemoriesList.length}
           />
         )}
 

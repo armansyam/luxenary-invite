@@ -1090,10 +1090,42 @@
 
     /* FOOTER & CONTROLS */
     .site-footer {
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      box-sizing: border-box;
       text-align: center;
-      padding: 4rem 1.5rem;
+      padding: 4rem 1.5rem 6.5rem;
       background: #050507;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
       border-top: 1px solid var(--border);
+    }
+    .site-footer.no-closing-photo {
+      justify-content: center;
+      align-items: center;
+    }
+    .site-footer.has-closing-photo {
+      justify-content: flex-end;
+      align-items: center;
+    }
+    .site-footer.has-closing-photo::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.55) 50%, rgba(0,0,0,0.92) 100%);
+      pointer-events: none;
+      z-index: 1;
+    }
+    .site-footer .closing-content {
+      position: relative;
+      z-index: 2;
+      max-width: 520px;
+      margin: 0 auto;
     }
 
     .footer-name {
@@ -1287,9 +1319,9 @@
     <div class="cover-bottom">
       <span class="cover-kepada">Kepada</span>
       <h2 class="cover-guest-name serif" id="coverGuestName">Tamu Undangan</h2>
-      <p class="cover-subtitle" data-lux-field="customLabels.coverSubtitle">{{customLabels.coverSubtitle}}</p>
+      <p class="cover-subtitle" data-lux-field="customLabels.coverSubtitle">Tanpa mengurangi rasa hormat, kami mengundang Anda untuk menghadiri acara pernikahan kami.</p>
       <button class="btn-buka" onclick="openInvitation()"
-        data-lux-field="customLabels.openBtn">{{customLabels.openBtn}}</button>
+        data-lux-field="customLabels.openBtn">Buka Undangan</button>
       {{qrCoverButtonHtml}}
     </div>
   </div>
@@ -1404,7 +1436,7 @@
     <!-- 13. SECTION: RSVP & WISHES -->
     <section class="sec-flow" id="rsvp">
       <span class="sec-eyebrow">Greet &amp; Wish</span>
-      <h2 class="sec-main-title serif" data-lux-field="customLabels.rsvpTitle">{{customLabels.rsvpTitle}}</h2>
+      <h2 class="sec-main-title serif" data-lux-field="customLabels.rsvpTitle">Konfirmasi Kehadiran &amp; Doa</h2>
 
       <div class="rsvp-form-wrap">
         <form id="rsvpForm" onsubmit="luxSubmitRsvp(event)">
@@ -1441,10 +1473,16 @@
     <!-- 14. SECTION: KARTU AKSES MASUK / QR CHECK-IN -->
     {{qrAccessSectionHtml}}
 
-    <!-- 15. FOOTER / THANK YOU -->
-    <footer class="site-footer" id="footer">
-      <h2 class="footer-name serif">{{firstName}} &amp; {{secondName}}</h2>
-      <p class="footer-sub">{{weddingDate}}</p>
+    <!-- 15. FOOTER / THANK YOU (Adaptive Full-Height 100vh) -->
+    <footer class="site-footer {{closingPhotoClass}}" id="footer" style="{{closingBgStyle}}">
+      <div class="closing-content">
+        <p style="font-size:0.85rem; color:rgba(255,255,255,0.75); line-height:1.7; margin-bottom:1.5rem;">
+          Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu.
+        </p>
+        <p style="font-size:0.75rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--accent); font-weight:600; margin-bottom:0.5rem;">Kami Yang Berbahagia,</p>
+        <h2 class="footer-name serif" style="font-size:2.4rem; margin-bottom:0.4rem;">{{firstName}} <em>&amp;</em> {{secondName}}</h2>
+        <p class="footer-sub" style="font-size:0.85rem; opacity:0.8;">{{weddingDate}}</p>
+      </div>
     </footer>
   </div>
 

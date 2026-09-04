@@ -59,6 +59,15 @@ Sistem template undangan menggunakan arsitektur HTML multi-layer mandiri dengan 
 - **Starter Blueprint (`themes/starter-blueprint.html`)**
   - Standar acuan struktur tag dan placeholder untuk desainer tema baru.
 
+### E. Standar Kontrak Placeholder Nama Mempelai (Cover vs Profil)
+1. **Cover Buka Undangan, Hero Title, Sidebar Desktop, & Closing Footer**:
+   - **MUTLAK** menggunakan Nama Panggilan (`{{firstName}} & {{secondName}}`).
+   - Menghadirkan kesan visual yang intim, elegan, bersih, dan proporsional tanpa kepadatan gelar akademik atau nama panjang.
+2. **Seksi Profil Mempelai (*The Couple Section*)**:
+   - Menggunakan Nama Lengkap beserta Gelar Akademik/Adat (`{{firstDisplayName}} & {{secondDisplayName}}` atau `{{firstFullName}} & {{secondFullName}}`).
+   - Dilengkapi silsilah orang tua (`{{firstParents}}` & `{{secondParents}}`) serta tautan Instagram (`@{{firstInstagram}}` & `@{{secondInstagram}}`).
+
+
 ---
 
 ## 3. Studio Editor & Dynamic Multi-Event Architecture
@@ -100,7 +109,15 @@ Sistem Studio Editor Klien (`/dashboard/invitation/[id]`) menyediakan kendali kr
    - Mode Local menyimpan file di `public/uploads/` untuk kemudahan development lokal.
 2. **Optimasi Gambar Otomatis (`sharp`):**
    - Konversi otomatis ke WebP, kompresi cerdas, auto-rotate EXIF, dan sharpening mikro.
-3. **Cloudflare Edge Caching & Wildcard Subdomain:**
+3. **Pipeline Video Loop Sinematik (`FFmpeg`):**
+   - Dukungan video background loop untuk `LANDING_COVER` (Cover pembuka), `DESKTOP_SIDEBAR` (Hero desktop), dan `GLOBAL_FIXED_BG` (Latar kartu).
+   - Format input: MP4, MOV (kamera iPhone), WebM.
+   - Pemotongan otomatis maksimal 20 detik pertama (`-t 20`).
+   - Mode senyap (*Silent Loop*): Menghapus track audio (`-an`) untuk menghemat file ~20% dan menjamin pemutaran otomatis (*autoplay*) tanpa hambatan di iOS Safari dan Android Chrome.
+   - Pembatasan frame rate ke 30 fps (`-r 30`) untuk efisiensi GPU dan memberikan efek gerak sinematik filmis.
+   - Proteksi ukuran file berlapis: maks. 30MB untuk video dan 15MB untuk foto.
+   - Rendering engine otomatis menyuntikkan tag HTML5 `<video>` dengan overlay gradasi kontras tinggi.
+4. **Cloudflare Edge Caching & Wildcard Subdomain:**
    - Subdomain otomatis `*.luxenary.id` (contoh: `dimas-clarissa.luxenary.id`).
    - Cache statis dengan `Cache-Control: public, max-age=31536000, immutable`.
    - Beban server 0% dan loading instan di HP tamu.
@@ -114,6 +131,7 @@ Siklus hidup undangan diatur secara otomatis oleh cron job (`POST /api/cron/clea
 1. **Fase 1: Transisi Pasca Acara (H + `retention_invitation_grace_days`, default 7 hari)**:
    - Undangan utama ditutup, file HTML subdomain dihapus via `deleteSubdomainHtmlOnly`.
    - Status undangan diperbarui menjadi `EVENT_FINISHED`.
+   - Upload momen tamu dikunci secara otomatis (`memoriesUploadLocked = true`) agar aman dari race condition upload detik-detik terakhir.
    - Data formulir RSVP dibersihkan otomatis untuk melindungi privasi.
    - Kunjungan ke URL subdomain/slug otomatis dialihkan (*redirect 307*) langsung ke **Galeri Momen Tamu (`/memories`)**.
 2. **Fase 2: Retensi Galeri Momen (H + `retention_gallery_default_days` atau `galleryExpiresAt`)**:
@@ -121,7 +139,6 @@ Siklus hidup undangan diatur secara otomatis oleh cron job (`POST /api/cron/clea
    - Klien dapat memperpanjang masa aktif galeri sebesar **+30 Hari** via pembayaran QRIS mandiri (`POST /api/client/memories/extend`).
    - Jika masa aktif habis dan tidak diperpanjang:
      - Seluruh foto kenangan tamu (`GuestMemory`) di R2 dan disk lokal dihapus permanen.
-     - Upload foto dikunci permanen (`memoriesUploadLocked = true`).
      - Subdomain dilepaskan kembali ke pool umum (`subdomain = null`) agar dapat digunakan kembali oleh pasangan lain.
      - Status undangan menjadi `ARCHIVED`.
 3. **Graceful Expired Page**:
@@ -137,6 +154,16 @@ Siklus hidup undangan diatur secara otomatis oleh cron job (`POST /api/cron/clea
 6. **Studio Editor — Seksi 15 (Pengaturan Teks UI & Label) & Netralisasi Live Editor:**
    - **Seksi 15 (`SEC15`):** Menyediakan kontrol formulir untuk kustomisasi teks tombol RSVP (`customLabels.rsvpBtnText`), form RSVP, tombol buka undangan, dan label hitung mundur.
    - **Live Editor Engine:** Saat mode edit aktif (`isEditMode`), seluruh form submission dinonaktifkan (`form.noValidate = true`, `preventDefault`) dan tombol submit dinetralkan ke `type="button"` sehingga pengguna dapat mengklik dan mengetik langsung teks tombol RSVP tanpa memicu balon validasi *"Please fill out this field"*.
+7. **Proteksi Siklus Download Galeri Tamu (ZIP) & Panduan DNS Dinamis Klien:**
+   - **Proteksi Unduh ZIP & Status Draft:** Tombol unduh ZIP di dashboard klien otomatis dinonaktifkan saat status masih `DRAFT` atau jika belum ada foto tamu (`guestMemoriesCount === 0`).
+   - **Pencegahan Data Tercecer (Early Lock Warning):** Jika klien mengunduh ZIP saat acara masih berjalan (`PUBLISHED` & `!memoriesUploadLocked`), sistem memunculkan modal dialog peringatan bahwa pengunduhan akan langsung mengunci upload tamu secara permanen.
+   - **Kondisi Aman Pasca Acara (`EVENT_FINISHED`):** Saat acara selesai, upload dikunci otomatis sehingga tombol download berada pada status aman (*safe state*) siap unduh tanpa peringatan menakutkan.
+   - **Integrasi Domain & DNS Dinamis (RFC 1912):** Menghapus seluruh string konfigurasi DNS *hardcoded*. IP Publik VPS (`server_public_ip`) dan target CNAME (`cname_target`) dikonfigurasi melalui tab terdedikasi `Setup & Integrasi` di admin dengan auto-detect IP publik VPS (`/api/admin/server-ip`). Panduan di dashboard klien menyajikan tabel 2 baris (Record A untuk Root Apex `@` dan CNAME untuk Subdomain `www`) dilengkapi tombol 1-klik salin.
+8. **Standar Arsitektur Seksi Penutup Adaptif 100vh & Fallback Tombol Buka Undangan**:
+   - **Tombol Buka Undangan Selalu Berteks:** Tag `<button data-lux-field="customLabels.openBtn">` di seluruh 15 master template dan starter blueprint wajib memiliki teks fisik default `"Buka Undangan"`. Engine komposer (`lib/themeEngine.ts` dan `lib/demoRegistry.ts`) menjamin penyediaan fallback default `customLabels.openBtn = "Buka Undangan"`, sehingga tombol cover gate tidak pernah kosong/transparan dalam kondisi apapun.
+   - **Seksi Penutup Adaptif Layar Penuh (`min-height: 100vh`):** Seksi outro/penutup (`.site-footer` / `.closing-sec`) dijamin selalu berukuran layar penuh `100vh` untuk kenyamanan navigasi scroll snap, menghilangkan masalah footer "nyempil" atau terpotong.
+   - **Mode Kanvas Kosong (Default / Tanpa Foto Penutup):** Jika klien tidak mengunggah foto penutup (`CLOSING_COVER`), seksi otomatis menerima class `.no-closing-photo`. Background murni menggunakan palet warna tema (HARAM menggunakan fallback gambar dummy/Unsplash palsu). Konten teks ucapan terima kasih dan nama mempelai (`{{firstName}} & {{secondName}}`) terposisikan tepat di tengah-tengah layar secara vertikal dan horizontal (`justify-content: center; align-items: center;`).
+   - **Mode Foto Penutup Terunggah:** Jika foto penutup diunggah (`.has-closing-photo`), foto mengisi latar belakang layar penuh (`background-size: cover; background-position: center;`) dengan overlay scrim gelap/gradasi elegan, dan blok teks penutup otomatis bergeser ke area bawah layar (*bottom-aligned*, `justify-content: flex-end;`).
 
 ---
 
@@ -200,12 +227,12 @@ Sistem pengiriman email otomatis menggunakan **Nodemailer** yang membaca kredens
 1. **Portofolio Kloning Mandiri (`/portfolio`)**:
    - Fitur khusus Super Admin untuk mengkloning undangan pilihan menjadi file statis 100% mandiri di `public/portfolio/[slug].html`.
    - Semua aset gambar dikompresi WebP tajam dan disimpan terisolasi di `public/portfolio/assets/[slug]/`.
-2. **Custom Domain Klien (`dimas-clarissa.com`)**:
-   - **SaaS Add-on Workflow**: Custom domain merupakan layanan jasa berbayar terpisah dari paket undangan (orderType: `CUSTOM_DOMAIN_ADDON`).
-   - Klien memesan & menginput domain pilihan mereka via Dashboard (Settings) lalu membayar melalui Payment Gateway.
-   - Setelah lunas (PAID), sistem memperpanjang otomatis masa aktif galeri selama 1 Tahun.
-   - Admin memantau order melalui **Tab Custom Domain** di Dashboard Admin dan menghubungkannya (konfigurasi SSL & proxy) di Nginx.
-   - Middleware melakukan rewrite transparan berbasis `resolve-custom-domain` untuk merender undangan.
+2. **Custom Domain Klien (`dimas-clarissa.com`) & 2 Layanan Tambahan Resmi**:
+   - **SaaS Add-on Workflow**: Custom domain merupakan layanan jasa teknis integrasi berbayar terpisah dari paket undangan (orderType: `CUSTOM_DOMAIN_ADDON`, dibaca dari `addon_custom_domain_price`).
+   - Klien memesan & menginput domain pribadi mereka via Dashboard (Settings) lalu membayar melalui Payment Gateway.
+   - Setelah lunas (PAID), fungsi `applyCustomDomainAddon` otomatis memasang custom domain dan menggaransi masa aktif URL Asli serta galeri kenangan selama **1 Tahun Penuh (+365 hari)**.
+   - Integrasi berjalan mulus melalui **Caddy Server on-demand TLS** dengan Record A ke IP server VPS dan CNAME target dinamis, di mana middleware Next.js secara internal me-rewrite request domain ke endpoint **URL Asli** (`/[slug]` atau `/[slug]/memories`).
+   - **Add-on Perpanjangan Masa Aktif URL Asli / Galeri (`orderType: GALLERY_EXTENSION`)**: Layanan bulanan via QRIS dinamis (`gallery_extension_price_per_month`, default Rp50.000 / 30 Hari) untuk mempertahankan eksistensi URL Asli undangan (yang pasca acara beralih fungsi menjadi galeri kenangan tamu) dan penyimpanan foto di Cloudflare R2 setelah masa retensi default pasca acara habis.
    - Keamanan terjamin tanpa kendala CORS karena semua request diteruskan secara *Same-Origin*.
 
 ---

@@ -163,6 +163,7 @@ export async function composeTemplateData(invitationId: string) {
   // Resolve Photos (Theme-Aware Fallbacks)
   const themeFolder = inv.themeId || "kalandra";
   const coverUrl = mediaMap.get("LANDING_COVER") || `/demo/${themeFolder}/cover.webp`;
+  const homePhotoUrl = mediaMap.get("HOME_PHOTO") || `/demo/${themeFolder}/home.webp`;
   const sidebarUrl = mediaMap.get("DESKTOP_SIDEBAR") || coverUrl;
   const fixedBgUrl = mediaMap.get("GLOBAL_FIXED_BG") || sidebarUrl || `/demo/${themeFolder}/background.webp`;
   const groomPhoto = mediaMap.get("GROOM_PHOTO") || `/demo/${themeFolder}/groom.webp`;
@@ -298,8 +299,13 @@ export async function composeTemplateData(invitationId: string) {
     }
   }
 
-  // Custom Labels & Section Titles Override
-  const customLabels = featureSettings.customLabels || {};
+  // Custom Labels & Section Titles Override (with Zero-Hardcode Fallbacks)
+  const customLabels = {
+    openBtn: "Buka Undangan",
+    coverSubtitle: "Tanpa mengurangi rasa hormat, kami mengundang Anda untuk menghadiri acara pernikahan kami.",
+    rsvpTitle: "Konfirmasi Kehadiran & Doa",
+    ...(featureSettings.customLabels || {}),
+  };
   const quoteSectionTitle = customLabels.quoteTitle || featureSettings.quoteTitle || "Pappaseng & Doa";
   const quoteSectionEyebrow = customLabels.quoteEyebrow || "WALIMATUL 'URSY";
   const coupleSectionTitle = customLabels.coupleTitle || "Mempelai";
@@ -1452,7 +1458,11 @@ export async function composeTemplateData(invitationId: string) {
 
     // Media
     landingCoverUrl: coverUrl,
+    homePhotoUrl: homePhotoUrl,
     closingPhotoUrl: closingPhotoUrl,
+    hasClosingPhoto: Boolean(closingPhotoUrl),
+    closingPhotoClass: closingPhotoUrl ? "has-closing-photo" : "no-closing-photo",
+    closingBgStyle: closingPhotoUrl ? `background-image: url('${closingPhotoUrl}');` : "",
     sidebarPhotoUrl: sidebarUrl,
     globalBgUrl: fixedBgUrl,
     audioUrl: featureSettings.showMusic !== false ? (inv.musicUrl || featureSettings.musicUrl || "https://assets.mixkit.co/music/preview/mixkit-serene-view-443.mp3") : "",

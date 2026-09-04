@@ -18,6 +18,8 @@ export async function GET() {
       addon_custom_domain_price: settings.addonCustomDomainPrice,
       addon_subdomain_gallery_bundle_price: settings.addonSubdomainGalleryBundlePrice,
       gallery_extension_price_per_month: settings.galleryExtensionPricePerMonth,
+      server_public_ip: settings.serverPublicIp,
+      cname_target: settings.cnameTarget,
       logo: logoExists ? "/assets/brand/logo.webp" : null,
       favicon: faviconExists ? "/assets/brand/favicon.png" : null,
     });

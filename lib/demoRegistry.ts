@@ -1901,5 +1901,19 @@ export function composeDemoTemplateData(
     colorAccent: palette.accent,
     colorBgLight: palette.bgLight,
     colorBgDark: palette.bgDark,
+
+    // Custom Labels (Zero-Hardcode Fallback for Demo)
+    customLabels: {
+      openBtn: "Buka Undangan",
+      coverSubtitle: "Tanpa mengurangi rasa hormat, kami mengundang Anda untuk menghadiri acara pernikahan kami.",
+      rsvpTitle: "Konfirmasi Kehadiran & Doa",
+      ...((customData as any)?.customLabels || {}),
+    },
+
+    // Adaptive Full-Height Closing Section (Kanvas Kosong by default in demo, no dummy fallback)
+    closingPhotoUrl: (customData as any)?.closingPhotoUrl || null,
+    hasClosingPhoto: Boolean((customData as any)?.closingPhotoUrl),
+    closingPhotoClass: (customData as any)?.closingPhotoUrl ? "has-closing-photo" : "no-closing-photo",
+    closingBgStyle: (customData as any)?.closingPhotoUrl ? `background-image: url('${(customData as any).closingPhotoUrl}');` : "",
   };
 }

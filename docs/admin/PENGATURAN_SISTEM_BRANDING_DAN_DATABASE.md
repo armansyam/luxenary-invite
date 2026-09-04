@@ -89,13 +89,40 @@ Menyediakan visibilitas operasional terhadap database PostgreSQL:
 
 ## 6. Manajemen Harga Paket & Layanan Tambahan (Add-Ons) (`Tab: Paket & Harga`)
 
-Mengatur struktur biaya dinamis platform yang langsung tersinkronisasi dua arah ke dashboard klien:
+Mengatur struktur biaya dinamis platform yang langsung tersinkronisasi dua arah ke dashboard klien tanpa hardcode:
 - **Paket Undangan Utama:** Traditional, Modern, Premium.
-- **Layanan Tambahan (Add-Ons) & Perpanjangan:**
-  1. **Jasa Custom Domain & Perpanjangan URL Undangan (1 Tahun) (`addon_custom_domain_price`):**
-     - Mengatur tarif jasa integrasi domain pribadi milik klien (DNS & auto SSL Caddy) serta perpanjangan masa aktif penayangan hosting/URL undangan selama 1 tahun penuh.
-     - Terhubung langsung secara real-time ke halaman Pengaturan Klien tanpa ada selisih angka.
-  2. **Perpanjangan Galeri Kenangan Tamu (Bulanan) (`gallery_extension_price_per_month`):**
-     - Nominal tagihan QRIS dinamis per 30 hari untuk mempertahankan file foto tamu di server Cloudflare R2 setelah masa aktif standar habis.
-  3. **Add-on Bundling (Custom Domain + Galeri 1 Tahun) (`addon_subdomain_gallery_bundle_price`):**
-     - Paket bundling lengkap: integrasi domain kustom + galeri kenangan tamu selama 1 tahun penuh.
+- **Layanan Tambahan (Add-Ons) & Perpanjangan (2 Layanan Resmi):**
+  1. **Jasa Integrasi Custom Domain (1 Tahun Penuh) (`addon_custom_domain_price`):**
+     - Mengatur tarif jasa integrasi domain pribadi milik klien (DNS CNAME / Record A & Auto-SSL Caddy).
+     - Otomatis menjamin masa aktif URL asli undangan serta galeri kenangan tamu selama 1 tahun penuh (+365 hari).
+     - Terhubung langsung secara real-time ke halaman Pengaturan Klien (`/dashboard/settings` -> `/api/client/custom-domain/buy`).
+  2. **Perpanjangan Masa Aktif URL Asli / Galeri (Bulanan / 30 Hari) (`gallery_extension_price_per_month`):**
+     - Nominal tagihan QRIS dinamis per 30 hari untuk mempertahankan eksistensi URL Asli undangan (yang pasca acara beralih fungsi menjadi galeri kenangan tamu) dan penyimpanan file foto tamu di server Cloudflare R2 agar tidak dibersihkan oleh cron cleanup.
+     - Diperuntukkan bagi klien pengguna subdomain platform bawaan yang ingin memperpanjang masa simpan foto kenangan tamu setelah masa retensi default habis.
+
+---
+
+## 7. Aturan Retensi, Siklus Hidup URL Asli vs Subdomain, & Transisi ke Galeri (`Tab: Setup & Integrasi`)
+
+Sistem mengadopsi arsitektur hierarki URL yang bersih dan hemat sumber daya namespace:
+
+1. **URL Subdomain (`subdomain.platform.id`):**
+   - Fasilitas sementara untuk kenyamanan branding pengantin saat menyebarkan undangan menjelang dan pada hari H acara.
+   - Masa aktif diatur secara dinamis oleh `subdomain_grace_days` (default: 7 hari pasca acara).
+   - Jika `subdomain_auto_recycle = "true"`, cron cleanup akan secara otomatis melepaskan nama subdomain ke *pool* (`subdomain: null`) dan menghapus file fisik HTML subdomain. Nama subdomain kembali bebas untuk digunakan pasangan pengantin baru berikutnya.
+   - Admin juga dapat mengeksekusi pelepasan subdomain kedaluwarsa secara manual melalui tombol **"Jalankan Pembersihan Sekarang"** (`/api/admin/subdomains/recycle`).
+
+2. **URL Asli / Kanonikal (`platform.id/[invitationSlug]`):**
+   - Merupakan **satu-satunya pintu utama (*single source of truth*)** dan endpoint permanen dari setiap undangan.
+   - Terikat ke `invitationSlug` yang berstatus `@unique` dengan identitas tanggal pernikahan (`{pria}-{wanita}-{DDMMYY}`).
+   - Subdomain dan Custom Domain sejatinya hanyalah jembatan *rewrite* internal yang bermuara pada URL Asli ini.
+
+3. **Transisi Otomatis Undangan ke Galeri Kenangan (`EVENT_FINISHED`):**
+   - Ketika tanggal acara telah berlalu melampaui `retention_invitation_grace_days` (default: 7 hari), cron cleanup mengubah status undangan menjadi `EVENT_FINISHED`.
+   - Undangan fisik (formulir RSVP dan countdown) ditutup secara permanen, dan upload foto tamu dikunci (`memoriesUploadLocked = true`) untuk keamanan unduhan arsip ZIP.
+   - **URL Asli secara otomatis beralih fungsi menyajikan Galeri Kenangan Tamu (`/[invitationSlug]/memories`)**. Siapa pun yang membuka link lama di WhatsApp atau media sosial akan langsung disuguhi dokumentasi momen bahagia.
+
+4. **Pembersihan Galeri & Arsip Total (`ARCHIVED`):**
+   - Foto kenangan tamu dipertahankan selama `retention_gallery_default_days` (default: 30 hari) atau sesuai perpanjangan `galleryExpiresAt`.
+   - Jika klien tidak memperpanjang via add-on bulanan, cron cleanup membersihkan foto-foto dari Cloudflare R2 / lokal dan menandai undangan sebagai `ARCHIVED`.
+   - Akun klien lama yang tidak memiliki undangan aktif akan dibersihkan secara menyeluruh setelah `retention_account_days` (default: 365 hari).

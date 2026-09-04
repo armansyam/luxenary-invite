@@ -210,25 +210,26 @@
 
 ## 3. ARSITEKTUR URL & ROUTING
 
-### 3.1 — Tiga Format URL Aktif
+### 3.1 — Tiga Format URL & Relasi ke URL Asli
 
 ```
-FORMAT 1 — Subdomain (Utama, Sementara H+retention_days)
+FORMAT 1 — Subdomain (Sementara Menjelang & Saat Acara, H + subdomain_grace_days)
   URL  : dimas-clarissa.luxenary.id
-  Flow : Middleware deteksi host = subdomain → Rewrite ke /published/dimas-clarissa.html
-  Notes: Setelah acara + retention_days, subdomain dilepas, file dihapus.
+  Flow : Middleware deteksi host = subdomain → Menunjuk ke Endpoint URL Asli
+  Notes: Setelah acara + subdomain_grace_days, file HTML dihapus dan subdomain dilepas ke pool (subdomain = null).
 
-FORMAT 2 — Canonical Flat Slug (Permanen)
+FORMAT 2 — URL Asli / Canonical Flat Slug (SATU-SATUNYA PINTU UTAMA / Single Source of Truth)
   URL  : luxenary.id/dimas-clarissa-030326
-  Flow : Middleware intercept path → Rewrite ke /published/dimas-clarissa-030326.html
-  Notes: Selalu aktif selama file HTML ada. Nama file = invitationSlug.
+  Flow : Endpoint inti Next.js (/[slug] dan /[slug]/memories).
+  Notes: Selalu aktif selama masa retensi. Setelah acara selesai (EVENT_FINISHED), URL asli inilah
+         yang otomatis beralih peran menyajikan Galeri Kenangan Tamu (/memories).
 
-FORMAT 3 — Custom Domain Klien (Infrastruktur & Fitur Aktif)
-  URL  : dimas-clarissa.com (domain milik klien)
+FORMAT 3 — Custom Domain Klien (Jasa Integrasi 1 Tahun Penuh)
+  URL  : dimas-clarissa.com (domain pribadi milik klien)
   Flow : Middleware deteksi isCustomDomain → Fetch /api/public/resolve-custom-domain
-         → Dapat subdomain internal → Rewrite ke HTML
-  Notes: API endpoint & UI Form sudah aktif di /dashboard/settings (baris 712-767).
-         Klien memasukkan domain, sanitasi regex otomatis, dan atur CNAME ke server kita.
+         → Internal rewrite ke Endpoint URL Asli (/[slug] atau /[slug]/memories)
+  Notes: Klien membeli domain sendiri di registrar luar, platform mengenakan tarif jasa
+         integrasi DNS + Auto-SSL Caddy yang otomatis menjamin URL Asli & Galeri aktif 1 tahun.
 ```
 
 ### 3.2 — Format invitationSlug (Sistem Baru Sept 2026)
@@ -340,40 +341,44 @@ Pola Polimorfik Database (InvitationMedia.localPath):
 [DRAFT] ──→ [PUBLISHED] ──→ [EVENT_FINISHED] (H + retention_invitation_grace_days / default: 7 hari)
                                  │
                                  ├── Subdomain HTML dihapus, URL dialihkan ke /memories
+                                 ├── Upload foto tamu dikunci permanen (memoriesUploadLocked = true)
                                  ├── Formulir RSVP dibersihkan otomatis
-                                 ├── Tamu unduh koleksi foto via ZIP stream
+                                 ├── Tamu & Klien unduh koleksi foto via ZIP (aman dari data susulan)
                                  └── Klien perpanjang galeri (+30 Hari via QRIS)
                                  │
                                  ▼ (Masa galeri habis / H + retention_gallery_default_days atau galleryExpiresAt)
                             [ARCHIVED]
                                  ├── Foto momen tamu di R2 & lokal dihapus permanen
-                                 ├── Upload foto dikunci (memoriesUploadLocked = true)
                                  ├── Subdomain dilepaskan kembali ke pool (subdomain = null)
                                  └── URL dialihkan ke Portofolio (jika ada) atau Graceful Expired Page
 ```
 
 ### 6.1 — Status Undangan (Enum `InvitationStatus` di DB)
-- `DRAFT` — Masih dalam pengaturan, URL publik tidak aktif.
-- `PUBLISHED` — URL publik aktif, file HTML statis sudah di-bake ke disk (`/published/`).
-- `EVENT_FINISHED` — Acara utama selesai; undangan fisik ditutup dan beralih fungsi menjadi **Galeri Kenangan Tamu (`/memories`)**.
+- `DRAFT` — Masih dalam pengaturan, URL publik tidak aktif, download ZIP foto tamu dinonaktifkan.
+- `PUBLISHED` — URL publik aktif, file HTML statis sudah di-bake ke disk (`/published/`). Tamu dapat upload foto; jika klien unduh ZIP dini, sistem memicu peringatan dan mengunci upload tamu.
+- `EVENT_FINISHED` — Acara utama selesai; undangan fisik ditutup dan beralih fungsi menjadi **Galeri Kenangan Tamu (`/memories`)**. Upload foto tamu otomatis dikunci (`memoriesUploadLocked = true`) agar arsip ZIP aman diunduh tanpa risiko foto tercecer.
 - `TAKEN_DOWN` — Dinonaktifkan sementara oleh Admin atau Klien.
 - `ARCHIVED` — Diarsipkan setelah masa galeri berakhir; foto dihapus dari cloud storage R2, subdomain didaur ulang kembali ke pool.
 
-### 6.2 — Dua Fase Otomatisasi Cron Cleanup (`POST /api/cron/cleanup`)
+### 6.2 — Fase Otomatisasi Cron Cleanup (`POST /api/cron/cleanup`)
 Cron job dilindungi oleh header `Authorization: Bearer <CRON_SECRET>` atau sesi Admin:
-1. **Fase 1 (Transisi Pasca Acara — H+7 Hari):**
+1. **Fase 1 (Transisi Pasca Acara — H + `retention_invitation_grace_days`, default 7 Hari):**
    - Memastikan file canonical slug sudah ter-bake (`buildAndSavePublishedHtml`).
    - Menghapus fisik file subdomain HTML saja (`deleteSubdomainHtmlOnly`) sehingga akses subdomain otomatis fallback rewrite ke `/s/[subdomain]/memories`.
-   - Mengubah status ke `EVENT_FINISHED`.
+   - Mengubah status ke `EVENT_FINISHED` (URL Asli otomatis beralih fungsi menyajikan Galeri Momen Tamu).
+   - Mengunci upload foto tamu (`memoriesUploadLocked = true`) agar arsip ZIP aman diunduh tanpa risiko foto tercecer.
    - Menghapus record `rsvp` kedaluwarsa demi privasi data tamu.
-2. **Fase 2 (Pembersihan Galeri & Daur Ulang Subdomain — H+30 Hari / `galleryExpiresAt`):**
-   - Jika `now > effectiveExpiry` (tidak diperpanjang klien):
+2. **Fase 1.5 (Daur Ulang Subdomain Otomatis — H + `subdomain_grace_days`, default 7 Hari):**
+   - Jika `subdomain_auto_recycle = "true"`, sistem secara otomatis memeriksa undangan yang telah lewat masa tenggang subdomain dan melepaskan nama subdomain ke *pool* (`subdomain: null`).
+   - Nama subdomain kembali bebas digunakan pasangan baru, sementara URL Asli tetap hidup dan menyajikan galeri kenangan.
+3. **Fase 2 (Pembersihan Galeri & Arsip Total — H + `retention_gallery_default_days` ATAU `galleryExpiresAt`):**
+   - Jika `now > effectiveExpiry` (tidak diperpanjang klien via QRIS):
      - Menghapus seluruh file fisik foto kenangan tamu (`GuestMemory`) dari Cloudflare R2 (`deleteFile`) dan disk lokal.
      - Menghapus record `guest_memories` dari database.
      - Mengunci upload foto (`memoriesUploadLocked = true`).
      - Mengubah status menjadi `ARCHIVED`.
-     - **Melepaskan Subdomain kembali ke pool umum (`subdomain = null`)** agar dapat didaftarkan kembali oleh pasangan baru.
-3. **Fase 3 (Pembersihan Total Akun Klien Lama — H+365 Hari):**
+     - Melepaskan Subdomain kembali ke pool umum (`subdomain = null`) jika belum dilepas.
+4. **Fase 3 (Pembersihan Total Akun Klien Lama — H + `retention_account_days`, default 365 Hari):**
    - Menghapus akun klien yang semua undangannya sudah `ARCHIVED` lebih dari `retention_account_days`.
 
 ### 6.3 — API Kontrol Siklus Hidup Manual Admin (`POST /api/admin/invitations/[id]/lifecycle`)
@@ -382,12 +387,15 @@ Khusus SUPER_ADMIN / ADMIN untuk intervensi operasional langsung dari dashboard:
 - `action = "EXTEND_GALLERY"`: Menambah durasi `galleryExpiresAt` sebesar `days` (default +30 hari) dan membuka kembali kunci upload.
 - `action = "UPDATE_EVENT_DATE"`: Mengedit tanggal acara utama darurat jika jadwal pernikahan dimajukan/diundur.
 
-### 6.4 — Alur Perpanjangan Galeri Mandiri Klien (`POST /api/client/memories/extend`)
-- Klien menekan tombol "Perpanjang Galeri (+30 Hari)" di dashboard galeri momen.
-- Sistem membaca tarif perpanjangan dinamis dari `AdminSetting` (`gallery_extension_price_per_month`, default Rp50.000).
-- Membuat order baru berjenis `GALLERY_EXTENSION` dengan nomor invoice berawalan `EXT-`.
-- Klien menyelesaikan pembayaran via QRIS / Payment Gateway.
-- Webhook memanggil `applyUpgradePlan` ➔ `applyGalleryExtension` untuk menambahkan +30 hari ke `galleryExpiresAt` dan mengirimkan email kuitansi resmi berpalet mewah via `lib/mailer.ts`.
+### 6.4 — Dua Layanan Tambahan (Add-Ons) & Perpanjangan
+1. **Jasa Integrasi Custom Domain (1 Tahun Penuh) (`orderType: CUSTOM_DOMAIN_ADDON`):**
+   - Mengatur tarif jasa integrasi domain milik klien (DNS CNAME / Record A & Auto-SSL Caddy).
+   - Dibaca dari `AdminSetting` (`addon_custom_domain_price`, default Rp150.000).
+   - Di eksekusi pembayaran (`applyCustomDomainAddon`), sistem memasang domain kustom DAN otomatis memperpanjang masa aktif URL Asli serta galeri kenangan selama **+365 hari (1 tahun penuh)**.
+2. **Perpanjangan Masa Aktif URL Asli / Galeri (Bulanan) (`orderType: GALLERY_EXTENSION`):**
+   - Memperpanjang masa hidup URL Asli undangan (yang pasca acara menyajikan Galeri Kenangan) beserta arsip foto tamu di Cloudflare R2 per 30 hari via QRIS dinamis.
+   - Dibaca dari `AdminSetting` (`gallery_extension_price_per_month`, default Rp50.000).
+   - Di eksekusi pembayaran (`applyGalleryExtension`), sistem menambahkan **+30 hari** ke `galleryExpiresAt` dan membuka kembali izin unggah foto jika dibutuhkan.
 
 ### 6.5 — Graceful Expired Page (`app/(public)/[slug]/route.ts`)
 Jika undangan telah berstatus `ARCHIVED`:
@@ -468,6 +476,21 @@ HTML standalone lengkap (self-contained, inline CSS/JS)
   2. Undangan klien yang sudah memiliki piring draft (`data/drafts/`) tetap **100% aman dan utuh** tanpa terpengaruh penghapusan master.
   3. Klien yang belum memiliki piring draft akan melihat layar panduan transparan *"Tema Tidak Tersedia"* (bebas dari fallback siluman/hardcode) untuk memilih tema aktif lain.
   4. Penggantian tema oleh klien di Dashboard otomatis me-unlink piring draft lama dan menyalin template master baru.
+* **Standar Kontrak Placeholder Nama Mempelai (Cover vs Profil):**
+  - **Cover Buka Undangan, Hero Title, Sidebar Desktop, & Closing Footer:** Wajib menggunakan Nama Panggilan (`{{firstName}} & {{secondName}}`). Menghasilkan impresi visual yang elegan, intim, dan bersih.
+  - **Seksi Profil Pasangan (*The Couple*):** Menggunakan Nama Lengkap beserta Gelar Akademik/Adat (`{{firstDisplayName}} & {{secondDisplayName}}` atau `{{firstFullName}} & {{secondFullName}}`), dilengkapi info orang tua (`{{firstParents}}` & `{{secondParents}}`) dan akun Instagram.
+* **Arsitektur Seksi Penutup Adaptif 100vh (`.site-footer` / `.closing-sec`) & Fallback Label:**
+  - **Variabel Dinamis Template Engine:**
+    - `closingPhotoUrl`: URL foto dari slot media `CLOSING_COVER` (atau `null` jika kosong).
+    - `hasClosingPhoto`: Boolean ketersediaan foto.
+    - `closingPhotoClass`: `"has-closing-photo"` bila ada foto, atau `"no-closing-photo"` bila kosong.
+    - `closingBgStyle`: CSS inline `background-image: url(...)` dinamis saat foto ada, atau string kosong `""` saat mode kanvas.
+  - **Dua Mode Tampilan Outro 100vh:**
+    1. *Mode Kanvas Kosong (`no-closing-photo`):* Layar penuh 100vh bersih dengan warna dasar tema (dilarang ada gambar dummy/Unsplash fallback). Blok ucapan terima kasih dan nama mempelai terpusat sempurna di tengah layar (`justify-content: center; align-items: center; text-align: center;`).
+    2. *Mode Foto Penutup (`has-closing-photo`):* Foto penutup mengisi background layar penuh dengan overlay gradasi/scrim, dan blok teks berpindah secara elegan ke bagian bawah layar (`justify-content: flex-end;`).
+  - **Fallback Teks Tombol Buka Undangan:**
+    - Seluruh tag `<button data-lux-field="customLabels.openBtn">` diisi teks default fisik `"Buka Undangan"`.
+    - `lib/themeEngine.ts` dan `lib/demoRegistry.ts` menyuplai default objek `customLabels` (`openBtn: "Buka Undangan"`, `coverSubtitle`, `rsvpTitle`) untuk mencegah tag button kosong ketika custom label belum disimpan di database.
 
 ---
 
@@ -523,7 +546,7 @@ CLIENT (auth required, role=USER):
   GET/POST  /api/client/guests              → Manajemen tamu (kolom `phone`, tanpa `phoneNumber`)
   POST      /api/client/guests/bulk         → Import tamu massal (CSV/JSON)
   GET       /api/client/subdomain/check     → Cek ketersediaan subdomain
-  POST      /api/client/upload             → Upload media undangan (WebP Sharp via storage.ts)
+  POST      /api/client/upload             → Upload media undangan (WebP Sharp, MP4 H.264 FFmpeg Loop maks 20s & 30MB, MP3 Audio maks 20MB via storage.ts)
   GET       /api/client/rsvps             → Statistik RSVP
   GET       /api/client/orders            → List order client
   POST      /api/client/memories/extend   → Buat order perpanjangan galeri (+30 hari via QRIS)
@@ -872,6 +895,26 @@ Permintaan (POST/GET) yang dilakukan melalui domain kustom yang terhubung via CN
 
 Seluruh modul pembayaran (_Payment Gateways_ seperti Duitku, Xendit, Tripay, IPaymu) secara otomatis membaca _prefix_ tagihan dari _dashboard_ Admin (`payment_invoice_prefix`). Jika kosong, sistem otomatis mundur (*fallback*) menjadi teks generik "Tagihan Pembayaran". Ini menjamin tidak adanya jejak _brand_ awal pada tagihan QRIS / _Virtual Account_ pelanggan.
 
+## 11.4 - Arsitektur Pemrosesan Video Loop & Media Engine
+
+Sistem mendukung video loop bergerak (*ambient video*) pada 3 slot visual utama: **`LANDING_COVER`** (Opening Pop-up), **`DESKTOP_SIDEBAR`** (Hero Desktop 70% kiri), dan **`GLOBAL_FIXED_BG`** (Latar Belakang Kartu Undangan).
+
+### 1. Pipeline Konversi & Optimalisasi Server (`videoOptimizer.ts`)
+- **Engine:** FFmpeg (`libx264`, preset `fast`, CRF 26, YUV420p).
+- **Auto-Trim Durasi:** Maksimal 20 detik pertama (`-t 20`). Video di atas 20 detik otomatis dipotong di server.
+- **Silent Loop Optimization:** Menghapus seluruh track audio (`-an`) untuk menghemat kapasitas ~20% dan memastikan kepatuhan mutlak terhadap kebijakan *mobile browser autoplay* (iOS Safari & Android Chrome).
+- **FPS Capping:** Dibatasi maksimal 30 fps (`-r 30`) untuk menjaga efisiensi rendering GPU/CPU perangkat tamu.
+- **Streaming Instan:** Flag `+faststart` menempatkan moov atom di awal file MP4 sehingga video langsung berputar sebelum unduhan tuntas.
+
+### 2. Validasi & Proteksi Ukuran File (2 Lapis)
+- **Frontend:** Validasi instan sebelum pengiriman file (Maks. 30MB untuk video, Maks. 15MB untuk foto, format `.mp4`, `.mov`, `.webm`).
+- **Backend API (`/api/client/upload`):** Proteksi HTTP 400 Bad Request jika ukuran file melebihi 30MB (video) atau 15MB (foto).
+
+### 3. Rendering Engine Dinamis (`renderTemplate.ts`)
+- `renderTemplateFile` secara cerdas mendeteksi tipe media melalui ekstensi URL (kebal query timestamp).
+- Jika berformat video (`.mp4`, `.webm`, `.mov`), template tema otomatis menyuntikkan elemen HTML5 `<video class="..." autoplay loop muted playsinline webkit-playsinline>` dengan lapisan gradient overlay semi-transparan, mempertahankan kontras teks dan tombol undangan.
+- Jika berformat gambar, tetap mempertahankan CSS `background-image` standar tanpa regresi.
+
 ---
 
 ## 15. ORKESTRASI MULTI-PAYMENT GATEWAY & DYNAMIC FEE
@@ -1004,3 +1047,18 @@ Untuk menangani arsitektur Multi-Tenant Custom Domain, sistem NGINX tradisional 
   }
   ```
 - **Kelebihan Caddy vs NGINX dalam SaaS:** Meringankan beban operasional Admin (Zero-Touch Provisioning), kode *proxy* jauh lebih pendek (5 baris vs 100 baris NGINX), serta menghapuskan risiko sertifikat SSL kadaluarsa.
+
+### 17.3 — Konfigurasi DNS Multi-Tenant Dinamis & Tab Admin "Setup & Integrasi"
+Untuk mengeliminasi seluruh string konfigurasi *hardcoded* dan mematuhi spesifikasi DNS registrar global (RFC 1912):
+
+1. **Tab Terdedikasi `Setup & Integrasi` di Admin:**
+   - Memisahkan urusan infrastruktur teknis dari tab `Platform` (branding & marketing).
+   - Mengelola **Integrasi Domain & DNS Server**, **Server Email (SMTP)**, **Batas Upload Galeri Tamu (MB)**, dan **Siklus Hidup Subdomain & Retensi**.
+2. **IP Publik VPS & CNAME Target Dinamis:**
+   - `server_public_ip`: Disimpan di database `AdminSetting` dan dapat dideteksi secara otomatis real-time melalui endpoint `GET /api/admin/server-ip` (fallback multi-upstream ipify, icanhazip) dengan validasi IPv4 ketat.
+   - `cname_target`: Hostname CNAME target perantara (misal: `cname.domain-anda.id`), dengan tombol *preset auto-fill* cepat dari hostname browser aktif.
+3. **Standar Setup DNS Klien (2 Baris Bebas Ambiguitas):**
+   - **Record A (Wajib untuk Root Apex `@`):** Mengarah ke `server_public_ip` (IP Publik VPS). Karena standar RFC 1912 dan registrar domain melarang CNAME pada apex root `@`.
+   - **Record CNAME (Untuk Subdomain `www`):** Mengarah ke `cname_target`.
+   - Dilengkapi tombol 1-klik salin (`handleCopyDns`) dan live preview simulasi di dashboard admin agar admin dapat memverifikasi persis apa yang dilihat oleh klien.
+

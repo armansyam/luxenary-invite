@@ -64,6 +64,26 @@ export async function POST(req: NextRequest) {
     const isAudio = file.type.startsWith("audio/") || file.name.endsWith(".mp3") || file.name.endsWith(".wav") || file.name.endsWith(".m4a") || slotKey === "MUSIC";
     const isVideo = !isAudio && (file.type.startsWith("video/") || file.name.endsWith(".mp4") || file.name.endsWith(".webm") || file.name.endsWith(".mov"));
 
+    // File size safety guards (Client & Server protection)
+    if (isVideo && file.size > 30 * 1024 * 1024) {
+      return NextResponse.json(
+        { error: "Ukuran video melebihi batas maksimal 30 MB. Silakan potong durasi (maks 20 detik) atau kompres video Anda." },
+        { status: 400 }
+      );
+    }
+    if (!isVideo && !isAudio && file.size > 15 * 1024 * 1024) {
+      return NextResponse.json(
+        { error: "Ukuran foto melebihi batas maksimal 15 MB." },
+        { status: 400 }
+      );
+    }
+    if (isAudio && file.size > 20 * 1024 * 1024) {
+      return NextResponse.json(
+        { error: "Ukuran audio musik melebihi batas maksimal 20 MB." },
+        { status: 400 }
+      );
+    }
+
     let finalFileName = "";
     let finalBuffer: Buffer;
 

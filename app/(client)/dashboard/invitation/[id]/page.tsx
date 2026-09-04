@@ -1460,10 +1460,11 @@ export default function EditInvitation() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <PhotoInput
                   label="Landing Cover (Pop-Up)"
-                  desc="Foto pembuka saat tamu klik 'Buka Undangan'"
+                  desc="Foto atau Video vertikal pembuka saat tamu klik 'Buka Undangan'"
                   value={media["LANDING_COVER"] || ""}
                   onChange={(url) => updateMedia("LANDING_COVER", url)}
-                  placeholder="https://.../cover-popup.jpg"
+                  placeholder="https://.../cover-popup.jpg atau .mp4"
+                  allowVideo={true}
                   invitationId={invitationId}
                   slot="LANDING_COVER"
                   onUploadStart={handleUploadStart}
@@ -1515,6 +1516,30 @@ export default function EditInvitation() {
                   onUploadStart={handleUploadStart}
                   onUploadEnd={handleUploadEnd}
                 />
+
+                {/* Panduan Media Visual & Rekomendasi Video Loop */}
+                <div className="md:col-span-3 p-4 rounded-xl border border-stone-200/90 bg-stone-50/80 text-stone-700 text-xs space-y-2">
+                  <div className="flex items-center gap-2 text-stone-900 font-semibold">
+                    <svg className="w-4 h-4 text-amber-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Panduan & Rekomendasi Media Visual Undangan</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-[11px] text-stone-600 pt-1">
+                    <div className="p-2.5 bg-white rounded-lg border border-stone-200/70">
+                      <span className="font-bold text-stone-800 block mb-0.5">Format & Kompatibilitas</span>
+                      Foto: JPG, PNG, WebP (maks 15 MB). Video: MP4, MOV (iPhone), WebM (maks 30 MB).
+                    </div>
+                    <div className="p-2.5 bg-white rounded-lg border border-stone-200/70">
+                      <span className="font-bold text-stone-800 block mb-0.5">Rekomendasi Durasi Video</span>
+                      Ideal 10–20 detik (mode loop sinematik tanpa audio). Durasi di atas 20 detik dipotong otomatis oleh sistem.
+                    </div>
+                    <div className="p-2.5 bg-white rounded-lg border border-stone-200/70">
+                      <span className="font-bold text-stone-800 block mb-0.5">Orientasi Tampilan</span>
+                      Gunakan video portrait (9:16) untuk Landing Cover, dan landscape (16:9) untuk Desktop Sidebar.
+                    </div>
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="p-5 bg-stone-50 border border-stone-200 rounded-2xl text-center space-y-1">
@@ -3433,12 +3458,31 @@ function PhotoInput({
   const [showUrlInput, setShowUrlInput] = useState(false);
 
   const isVideo = Boolean(
-    value && (value.endsWith(".mp4") || value.endsWith(".webm") || value.includes("video"))
+    value && /\.(mp4|webm|mov)(\?.*)?$/i.test(value)
   );
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Client-side file size guards
+    const isVideoFile = file.type.startsWith("video/") || /\.(mp4|webm|mov)$/i.test(file.name);
+    const maxVideoSize = 30 * 1024 * 1024; // 30 MB
+    const maxPhotoSize = 15 * 1024 * 1024; // 15 MB
+
+    if (isVideoFile && file.size > maxVideoSize) {
+      const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+      alert(`Ukuran video terlalu besar (${sizeMB} MB). Maksimal ukuran file video adalah 30 MB. Silakan potong durasi (maks 20 detik) atau kompres video Anda terlebih dahulu.`);
+      e.target.value = "";
+      return;
+    }
+
+    if (!isVideoFile && file.size > maxPhotoSize) {
+      const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+      alert(`Ukuran foto terlalu besar (${sizeMB} MB). Maksimal ukuran foto adalah 15 MB.`);
+      e.target.value = "";
+      return;
+    }
 
     setUploading(true);
     onUploadStart?.();
@@ -3524,7 +3568,7 @@ function PhotoInput({
                   <span>Ganti</span>
                   <input
                     type="file"
-                    accept={allowVideo ? "image/*,video/mp4,video/webm" : "image/*"}
+                    accept={allowVideo ? "image/*,video/mp4,video/webm,video/quicktime,.mov" : "image/*"}
                     className="sr-only"
                     onChange={handleFileUpload}
                     disabled={uploading}
@@ -3568,13 +3612,13 @@ function PhotoInput({
                   Pilih File dari Galeri HP / Komputer
                 </span>
                 <span className="text-[10px] text-stone-400">
-                  {allowVideo ? "Format Foto (JPG, PNG) atau Video (.mp4)" : "Format Foto (JPG, PNG)"}
+                  {allowVideo ? "Foto (JPG, PNG, WebP) atau Video (MP4, MOV, WebM)" : "Format Foto (JPG, PNG)"}
                 </span>
               </>
             )}
             <input
               type="file"
-              accept={allowVideo ? "image/*,video/mp4,video/webm" : "image/*"}
+              accept={allowVideo ? "image/*,video/mp4,video/webm,video/quicktime,.mov" : "image/*"}
               className="sr-only"
               onChange={handleFileUpload}
               disabled={uploading}

@@ -43,14 +43,15 @@ export async function optimizeWebVideo(inputBuffer: Buffer, baseName: string): P
     const args = [
       "-y",
       "-i", inputTempPath,
+      "-t", "20",
       "-c:v", "libx264",
       "-preset", "fast",
-      "-crf", "25",
+      "-crf", "26",
+      "-r", "30",
       "-pix_fmt", "yuv420p",
       "-vf", "scale='min(1080,iw)':-2",
       "-movflags", "+faststart",
-      "-c:a", "aac",
-      "-b:a", "128k",
+      "-an",
       "-max_muxing_queue_size", "1024",
       outputTempPath,
     ];

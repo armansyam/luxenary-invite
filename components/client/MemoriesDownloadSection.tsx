@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface Props {
   invitationId: string;
@@ -8,6 +8,8 @@ interface Props {
   isUploadLocked?: boolean;
   galleryExpiresAt?: string | null;
   extensionPrice?: number;
+  invitationStatus?: string;
+  guestMemoriesCount?: number;
 }
 
 type Phase = "idle" | "confirming" | "fetching" | "downloading" | "zipping" | "locking" | "done" | "error";
@@ -18,6 +20,8 @@ export function MemoriesDownloadSection({
   isUploadLocked = false,
   galleryExpiresAt,
   extensionPrice = 50000,
+  invitationStatus = "PUBLISHED",
+  guestMemoriesCount = 0,
 }: Props) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [progress, setProgress] = useState(0);
@@ -26,6 +30,13 @@ export function MemoriesDownloadSection({
   const [errorMsg, setErrorMsg] = useState("");
   const [uploadLocked, setUploadLocked] = useState(isUploadLocked);
   const [extending, setExtending] = useState(false);
+
+  // Sinkronisasi state internal jika prop isUploadLocked dari server berubah
+  useEffect(() => {
+    setUploadLocked(isUploadLocked);
+  }, [isUploadLocked]);
+
+  const normalizedStatus = (invitationStatus || "").toUpperCase();
 
   const handleExtendGallery = async () => {
     try {
@@ -50,8 +61,15 @@ export function MemoriesDownloadSection({
 
   const handleDownloadClick = () => {
     if (phase !== "idle" && phase !== "error" && phase !== "done") return;
-    // Tampilkan dialog konfirmasi sebelum download
-    setPhase("confirming");
+    if (normalizedStatus === "DRAFT" || guestMemoriesCount === 0) return;
+
+    // Jika upload belum terkunci dan acara masih berlangsung, wajib konfirmasi peringatan dini
+    if (!uploadLocked && normalizedStatus !== "EVENT_FINISHED") {
+      setPhase("confirming");
+    } else {
+      // Jika upload sudah terkunci atau acara telah selesai, langsung unduh secara aman
+      handleConfirmDownload();
+    }
   };
 
   const handleConfirmDownload = async () => {
@@ -145,48 +163,61 @@ export function MemoriesDownloadSection({
         <strong>Unduh arsip ZIP</strong> dalam kurun waktu maksimal {retentionDays} hari pasca-acara sebelum sistem menghapusnya otomatis.
       </p>
 
-      {/* Status Upload Terkunci */}
-      {uploadLocked && (
-        <div className="flex items-center gap-2 text-[11px] text-stone-600 font-medium bg-stone-100 border border-stone-200 rounded-xl px-3 py-2">
-          <svg className="w-3.5 h-3.5 text-stone-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+      {/* Kondisi Status Undangan & Upload */}
+      {normalizedStatus === "DRAFT" ? (
+        <div className="flex items-center gap-2 text-[11px] text-amber-900 font-medium bg-amber-100/70 border border-amber-200 rounded-xl px-3.5 py-2.5">
+          <svg className="w-4 h-4 text-amber-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
-          Upload momen tamu telah ditutup. Tamu hanya bisa melihat galeri.
+          <span>Undangan masih berstatus <strong>Draft</strong>. Formulir upload tamu dan unduh ZIP akan aktif otomatis setelah undangan dipublikasikan.</span>
+        </div>
+      ) : uploadLocked || normalizedStatus === "EVENT_FINISHED" ? (
+        <div className="flex items-center gap-2 text-[11px] text-emerald-800 font-medium bg-emerald-100/70 border border-emerald-200 rounded-xl px-3.5 py-2.5">
+          <svg className="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+          <span>Upload momen tamu telah ditutup (Aman diunduh). Tamu hanya dapat melihat galeri foto kenangan.</span>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 text-[11px] text-stone-700 font-medium bg-stone-100 border border-stone-200 rounded-xl px-3.5 py-2.5">
+          <svg className="w-4 h-4 text-stone-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>Acara sedang berlangsung. Tamu masih dapat mengirim foto. Mengunduh arsip ZIP sekarang akan <strong>menutup formulir upload secara permanen</strong>.</span>
         </div>
       )}
 
-      {/* Dialog Konfirmasi Sebelum Download */}
+      {/* Dialog Konfirmasi Sebelum Download (Peringatan Khusus Jika Acara Masih Berlangsung) */}
       {phase === "confirming" && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-3">
-          <div className="flex items-start gap-2">
-            <svg className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="rounded-xl border border-amber-300 bg-amber-50/90 p-4 space-y-3 shadow-xs">
+          <div className="flex items-start gap-2.5">
+            <svg className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
             <div>
-              <p className="text-xs font-bold text-amber-800 mb-1">Konfirmasi Download</p>
-              <p className="text-[11px] text-amber-700 leading-relaxed">
-                Setelah Anda mengunduh ZIP ini, <strong>upload momen tamu akan ditutup secara permanen</strong>. 
-                Tamu tidak bisa lagi mengirimkan foto baru ke halaman Bagikan Momen.
+              <p className="text-xs font-bold text-amber-900 mb-1">Peringatan: Unduh Lebih Awal &amp; Kunci Upload Tamu</p>
+              <p className="text-[11px] text-amber-800 leading-relaxed">
+                Undangan Anda saat ini masih aktif (`Published`). Jika Anda mengunduh file ZIP sekarang, <strong>formulir upload momen tamu akan langsung ditutup secara permanen</strong> agar tidak ada foto baru yang tercecer saat atau setelah proses pengunduhan.
               </p>
-              <p className="text-[10px] text-amber-600 mt-1.5">
-                Tamu masih dapat melihat galeri foto yang sudah ada.
+              <p className="text-[11px] text-amber-700 mt-1.5 leading-relaxed">
+                Jika ingin tamu tetap bisa mengirimkan foto hingga akhir acara, silakan unduh nanti saat acara telah selesai (sistem otomatis menutup upload pada masa transisi galeri).
               </p>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2 pt-1">
             <button
               type="button"
               onClick={handleConfirmDownload}
-              className="flex-1 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition"
+              className="px-4 py-2 bg-amber-700 hover:bg-amber-800 text-white text-xs font-bold rounded-xl transition shadow-xs cursor-pointer"
             >
-              Ya, Download &amp; Kunci Upload
+              Ya, Kunci Upload &amp; Download ZIP Sekarang
             </button>
             <button
               type="button"
               onClick={handleCancelConfirm}
-              className="px-3 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold rounded-xl transition"
+              className="px-4 py-2 bg-stone-200 hover:bg-stone-300 text-stone-700 text-xs font-bold rounded-xl transition cursor-pointer"
             >
-              Batal
+              Batal (Biarkan Tamu Masih Mengunggah)
             </button>
           </div>
         </div>
@@ -252,16 +283,38 @@ export function MemoriesDownloadSection({
       </div>
 
       {!isProcessing && phase !== "confirming" && (
-        <button
-          type="button"
-          onClick={handleDownloadClick}
-          className="inline-flex items-center justify-center w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition cursor-pointer"
-        >
-          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-          </svg>
-          {phase === "done" ? "Unduh Lagi" : phase === "error" ? "Coba Lagi" : "Unduh Semua Momen (ZIP)"}
-        </button>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <button
+            type="button"
+            onClick={handleDownloadClick}
+            disabled={normalizedStatus === "DRAFT" || guestMemoriesCount === 0}
+            className={`inline-flex items-center justify-center px-4 py-2 text-xs font-bold rounded-xl transition ${
+              normalizedStatus === "DRAFT" || guestMemoriesCount === 0
+                ? "bg-stone-200 text-stone-400 cursor-not-allowed border border-stone-300"
+                : uploadLocked || normalizedStatus === "EVENT_FINISHED"
+                ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs cursor-pointer"
+                : "bg-amber-700 hover:bg-amber-800 text-white shadow-xs cursor-pointer"
+            }`}
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            {normalizedStatus === "DRAFT"
+              ? "Undangan Masih Draft"
+              : guestMemoriesCount === 0
+              ? "Belum Ada Foto untuk Diunduh"
+              : phase === "done"
+              ? "Unduh Lagi (ZIP)"
+              : phase === "error"
+              ? "Coba Lagi"
+              : uploadLocked || normalizedStatus === "EVENT_FINISHED"
+              ? `Unduh Semua Momen Tamu (ZIP) — ${guestMemoriesCount} Foto`
+              : `Unduh ZIP & Kunci Upload Lebih Awal (${guestMemoriesCount} Foto)`}
+          </button>
+          {guestMemoriesCount === 0 && normalizedStatus !== "DRAFT" && (
+            <span className="text-[11px] text-stone-500">Tamu belum mengunggah foto ke halaman Bagikan Momen.</span>
+          )}
+        </div>
       )}
     </div>
   );

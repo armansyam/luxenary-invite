@@ -43,10 +43,32 @@ export default function SettingsPage() {
   const [customDomainError, setCustomDomainError] = useState<string | null>(null);
   const [showDnsGuide, setShowDnsGuide] = useState(false);
   const [platformName, setPlatformName] = useState("");
-  const [cnameTarget, setCnameTarget] = useState("invite.platform-anda.id");
+  const [cnameTarget, setCnameTarget] = useState("");
+  const [serverPublicIp, setServerPublicIp] = useState("");
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [showBuyModal, setShowBuyModal] = useState(false);
   const [isDomainOwned, setIsDomainOwned] = useState(false);
   const [customDomainPrice, setCustomDomainPrice] = useState(150000);
+
+  const handleCopyDns = async (val: string, key: string) => {
+    if (!val) return;
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(val);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = val;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+      setCopiedKey(key);
+      setTimeout(() => setCopiedKey(null), 2000);
+    } catch {
+      // Graceful fallback
+    }
+  };
 
   // Real-time Subdomain Availability Checker
   useEffect(() => {
@@ -151,7 +173,8 @@ export default function SettingsPage() {
   useEffect(() => {
     fetch("/api/public/settings").then(r => r.json()).then(d => {
       if (d?.platformName) setPlatformName(d.platformName);
-      if (d?.cnameTarget) setCnameTarget(d.cnameTarget);
+      if (d?.cnameTarget || d?.cname_target) setCnameTarget(d.cnameTarget || d.cname_target);
+      if (d?.serverPublicIp || d?.server_public_ip) setServerPublicIp(d.serverPublicIp || d.server_public_ip);
       if (d?.addon_custom_domain_price !== undefined || d?.addonCustomDomainPrice !== undefined) {
         setCustomDomainPrice(Number(d.addon_custom_domain_price ?? d.addonCustomDomainPrice) || 150000);
       }
@@ -692,19 +715,78 @@ export default function SettingsPage() {
               {/* Step 2 */}
               <div className="flex gap-3">
                 <div className="w-6 h-6 rounded-full bg-amber-600 text-white text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5">2</div>
-                <div>
-                  <p className="text-xs font-bold text-stone-800">Tambah record CNAME berikut:</p>
-                  <div className="mt-2 rounded-lg overflow-hidden border border-stone-200 text-[11px] font-mono">
-                    <div className="grid grid-cols-3 bg-stone-100 px-3 py-1.5 text-[10px] font-bold text-stone-500 uppercase tracking-wider">
-                      <span>Type</span><span>Host / Name</span><span>Value / Target</span>
+                <div className="space-y-2 flex-1">
+                  <div>
+                    <p className="text-xs font-bold text-stone-800">Tambahkan 2 DNS Record berikut di registrar domain Anda:</p>
+                    <p className="text-[11px] text-stone-500 mt-0.5 leading-relaxed">
+                      Sesuai standar registrar, pasang <strong>Record A</strong> untuk domain utama (apex) dan <strong>Record CNAME</strong> untuk awalan www.
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl overflow-hidden border border-stone-200 text-[11px] shadow-xs">
+                    <div className="grid grid-cols-12 bg-stone-100 px-3 py-2 text-[10px] font-bold text-stone-600 uppercase tracking-wider border-b border-stone-200">
+                      <span className="col-span-2">Tipe</span>
+                      <span className="col-span-3">Host / Name</span>
+                      <span className="col-span-5">Value / Target</span>
+                      <span className="col-span-2 text-right">Aksi</span>
                     </div>
-                    <div className="grid grid-cols-3 px-3 py-2.5 bg-white text-stone-800 gap-1">
-                      <span className="font-bold text-amber-700">CNAME</span>
-                      <span>@ <span className="text-stone-400">(atau www)</span></span>
-                      <span className="break-all">{cnameTarget}</span>
+
+                    {/* Baris 1: Record A untuk Root Domain Apex */}
+                    <div className="grid grid-cols-12 px-3 py-2.5 bg-white items-center border-b border-stone-100 text-stone-800 font-mono">
+                      <span className="col-span-2 font-bold text-emerald-700 font-sans text-xs">A</span>
+                      <div className="col-span-3">
+                        <span className="font-bold">@</span>
+                        <span className="text-[10px] text-stone-400 block font-sans font-normal">(Root Apex)</span>
+                      </div>
+                      <div className="col-span-5">
+                        <span className="font-bold text-stone-900 break-all">{serverPublicIp || "IP Server Belum Diatur"}</span>
+                        <span className="text-[10px] text-stone-400 block font-sans font-normal">IP Publik Server VPS</span>
+                      </div>
+                      <div className="col-span-2 text-right font-sans">
+                        {serverPublicIp ? (
+                          <button
+                            type="button"
+                            onClick={() => handleCopyDns(serverPublicIp, "ip")}
+                            className="px-2 py-1 text-[10px] font-bold rounded-lg border border-stone-200 hover:bg-stone-50 text-stone-700 transition cursor-pointer"
+                          >
+                            {copiedKey === "ip" ? "Disalin!" : "Salin"}
+                          </button>
+                        ) : (
+                          <span className="text-[10px] text-stone-400 italic">N/A</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Baris 2: Record CNAME untuk www */}
+                    <div className="grid grid-cols-12 px-3 py-2.5 bg-stone-50/50 items-center text-stone-800 font-mono">
+                      <span className="col-span-2 font-bold text-amber-700 font-sans text-xs">CNAME</span>
+                      <div className="col-span-3">
+                        <span className="font-bold">www</span>
+                        <span className="text-[10px] text-stone-400 block font-sans font-normal">(Subdomain)</span>
+                      </div>
+                      <div className="col-span-5">
+                        <span className="font-bold text-stone-900 break-all">{cnameTarget || "Target CNAME Belum Diatur"}</span>
+                        <span className="text-[10px] text-stone-400 block font-sans font-normal">Host Target CNAME</span>
+                      </div>
+                      <div className="col-span-2 text-right font-sans">
+                        {cnameTarget ? (
+                          <button
+                            type="button"
+                            onClick={() => handleCopyDns(cnameTarget, "cname")}
+                            className="px-2 py-1 text-[10px] font-bold rounded-lg border border-stone-200 hover:bg-stone-50 text-stone-700 transition cursor-pointer"
+                          >
+                            {copiedKey === "cname" ? "Disalin!" : "Salin"}
+                          </button>
+                        ) : (
+                          <span className="text-[10px] text-stone-400 italic">N/A</span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <p className="text-[10px] text-stone-400 mt-1">Jika tidak bisa pakai @, tambahkan juga record <strong>A</strong> dengan IP server kami. Hubungi Admin untuk mendapatkan IP.</p>
+
+                  <div className="p-2.5 rounded-lg bg-stone-100/70 border border-stone-200 text-[10px] text-stone-600 leading-relaxed">
+                    <strong>Catatan Subdomain Khusus:</strong> Jika Anda ingin menggunakan subdomain tertentu (contoh: <code>wedding.namakamu.com</code>), cukup tambahkan 1 record <strong>CNAME</strong> dengan Host <code>wedding</code> mengarah ke <code>{cnameTarget || "target CNAME"}</code>.
+                  </div>
                 </div>
               </div>
 

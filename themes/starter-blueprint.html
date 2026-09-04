@@ -20,7 +20,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>The Wedding of {{firstFullName}} &amp; {{secondFullName}}</title>
+  <title>The Wedding of {{firstName}} &amp; {{secondName}}</title>
 
   <!-- =================================================================== -->
   <!-- 1. GOOGLE FONTS (Self-Hosted Local Zero Latency)                   -->
@@ -453,13 +453,54 @@
     }
 
     /* =================================================================== */
-    /* 9. FOOTER & CLOSING                                                 */
+    /* 9. FOOTER & CLOSING (Adaptive Full-Height 100vh)                    */
     /* =================================================================== */
     .closing-sec {
-      padding: 60px 24px 90px;
-      background: #fbf9f5;
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      box-sizing: border-box;
       text-align: center;
+      padding: 40px 24px 100px;
+      background: #fbf9f5;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
       border-top: 1px solid #eee5d8;
+    }
+    .closing-sec.no-closing-photo {
+      justify-content: center;
+      align-items: center;
+    }
+    .closing-sec.has-closing-photo {
+      justify-content: flex-end;
+      align-items: center;
+    }
+    .closing-sec.has-closing-photo::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.55) 50%, rgba(0,0,0,0.92) 100%);
+      pointer-events: none;
+      z-index: 1;
+    }
+    .closing-sec.has-closing-photo .closing-content {
+      color: #ffffff;
+    }
+    .closing-sec.has-closing-photo .closing-content p {
+      color: rgba(255,255,255,0.85) !important;
+    }
+    .closing-sec.has-closing-photo .closing-content h3 {
+      color: #ffffff !important;
+    }
+    .closing-content {
+      position: relative;
+      z-index: 2;
+      max-width: 520px;
+      margin: 0 auto;
     }
   </style>
 </head>
@@ -475,7 +516,7 @@
     </div>
 
     <div class="cover-center">
-      <h1 class="cover-names serif">{{firstFullName}} &amp; {{secondFullName}}</h1>
+      <h1 class="cover-names serif">{{firstName}} &amp; {{secondName}}</h1>
       <p style="font-size:13px; opacity:0.9; margin-top:8px;">{{weddingDate}}</p>
     </div>
 
@@ -651,18 +692,20 @@
       </div>
     </section>
 
-    <!-- SEKSI 15: SALAM PENUTUP -->
-    <footer class="closing-sec">
-      <p style="font-size:13px; color:var(--text-muted, #736b63); max-width:480px; margin:0 auto 16px; line-height:1.7;">
-        Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Sahabat berkenan hadir dan memberikan doa restu bagi kami.
-      </p>
-      <p style="font-size:11px; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; color:var(--primary, #b5833c);">
-        Kami Yang Berbahagia,
-      </p>
-      <h3 class="serif" style="font-size:24px; margin-top:8px; color:#1a1614;">
-        {{firstFullName}} &amp; {{secondFullName}}
-      </h3>
-      <p style="font-size:12px; color:var(--text-muted, #736b63); margin-top:4px;">Beserta Keluarga Besar Kedua Mempelai</p>
+    <!-- SEKSI 15: SALAM PENUTUP (Adaptive Full-Height 100vh) -->
+    <footer class="closing-sec {{closingPhotoClass}}" style="{{closingBgStyle}}">
+      <div class="closing-content">
+        <p style="font-size:13px; color:var(--text-muted, #736b63); max-width:480px; margin:0 auto 16px; line-height:1.7;">
+          Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Sahabat berkenan hadir dan memberikan doa restu bagi kami.
+        </p>
+        <p style="font-size:11px; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; color:var(--primary, #b5833c);">
+          Kami Yang Berbahagia,
+        </p>
+        <h3 class="serif" style="font-size:24px; margin-top:8px; color:#1a1614;">
+          {{firstName}} &amp; {{secondName}}
+        </h3>
+        <p style="font-size:12px; color:var(--text-muted, #736b63); margin-top:4px;">Beserta Keluarga Besar Kedua Mempelai</p>
+      </div>
     </footer>
 
   </div>

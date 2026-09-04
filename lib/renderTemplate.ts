@@ -4,11 +4,17 @@ import path from "path";
 /** Sanitasi URL agar hanya mengizinkan karakter aman untuk digunakan di CSS url() */
 function sanitizeCssUrl(url: string): string {
   // Hapus karakter berbahaya yang bisa digunakan untuk CSS injection atau data: URI
-  // Hanya izinkan http/https URL
+  // Izinkan http/https URL atau path lokal yang diawali '/'
   const trimmed = url.trim();
-  if (!/^https?:\/\//i.test(trimmed)) return "";
+  if (!/^https?:\/\//i.test(trimmed) && !trimmed.startsWith("/")) return "";
   // Tidak izinkan karakter yang bisa break CSS context
   return trimmed.replace(/[()"'\\]/g, "");
+}
+
+/** Deteksi apakah URL merujuk ke file media video */
+function isVideoMedia(url?: string | null): boolean {
+  if (!url) return false;
+  return /\.(mp4|webm|mov)(\?.*)?$/i.test(url.trim());
 }
 
 /** Escape HTML entities untuk mencegah XSS di konteks HTML biasa */
@@ -776,10 +782,105 @@ export async function renderTemplateFile(
     }
   }
 
+  // Video Background Support (Landing Cover, Desktop Sidebar, Global Fixed BG)
+  let videoStyles = "";
+  let coverVideoHtml = "";
+  let sidebarVideoHtml = "";
+  let fixedBgVideoHtml = "";
+
+  if (isVideoMedia(data.landingCoverUrl)) {
+    const safeCoverVideo = escapeHtmlAttr(String(data.landingCoverUrl));
+    coverVideoHtml = `<video class="lux-cover-video" autoplay loop muted playsinline webkit-playsinline preload="auto"><source src="${safeCoverVideo}" type="video/mp4"></video>`;
+    videoStyles += `
+      .lux-cover-video {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        z-index: 0;
+        pointer-events: none;
+      }
+      .cover-screen, #coverScreen {
+        background-image: none !important;
+        overflow: hidden !important;
+      }
+      .cover-screen::before, #coverScreen::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to bottom, rgba(7,7,9,0.35) 0%, rgba(7,7,9,0.1) 25%, rgba(7,7,9,0.65) 60%, rgba(7,7,9,0.94) 100%);
+        z-index: 1;
+        pointer-events: none;
+      }
+      .cover-screen > *:not(.lux-cover-video), #coverScreen > *:not(.lux-cover-video) {
+        position: relative;
+        z-index: 2;
+      }
+    `;
+  }
+
+  if (isVideoMedia(data.sidebarPhotoUrl)) {
+    const safeSidebarVideo = escapeHtmlAttr(String(data.sidebarPhotoUrl));
+    sidebarVideoHtml = `<video class="lux-sidebar-video" autoplay loop muted playsinline webkit-playsinline preload="auto"><source src="${safeSidebarVideo}" type="video/mp4"></video>`;
+    videoStyles += `
+      .lux-sidebar-video {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        z-index: 1;
+        pointer-events: none;
+      }
+      .left-hero {
+        background-image: none !important;
+        overflow: hidden !important;
+      }
+      .left-hero::after {
+        z-index: 2 !important;
+      }
+      .left-hero-content {
+        z-index: 3 !important;
+      }
+    `;
+  }
+
+  if (isVideoMedia(data.globalBgUrl)) {
+    const safeFixedBgVideo = escapeHtmlAttr(String(data.globalBgUrl));
+    fixedBgVideoHtml = `<video class="lux-fixed-bg-video" autoplay loop muted playsinline webkit-playsinline preload="auto"><source src="${safeFixedBgVideo}" type="video/mp4"></video>`;
+    videoStyles += `
+      .lux-fixed-bg-video {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        object-fit: cover;
+        z-index: -1;
+        pointer-events: none;
+      }
+      .fixed-bg-layer, .theme-fixed-bg {
+        background-image: none !important;
+      }
+    `;
+  }
+
+  const combinedVideoStyle = videoStyles ? `\n<style>\n${videoStyles}\n</style>` : "";
+
+  if (coverVideoHtml) {
+    tpl = tpl.replace(/(<div[^>]*class="[^"]*\bcover-screen\b[^"]*"[^>]*>)/i, `$1\n    ${coverVideoHtml}`);
+  }
+  if (sidebarVideoHtml) {
+    tpl = tpl.replace(/(<div[^>]*class="[^"]*\bleft-hero\b[^"]*"[^>]*>)/i, `$1\n    ${sidebarVideoHtml}`);
+  }
+  if (fixedBgVideoHtml) {
+    tpl = tpl.replace(/(<body[^>]*>)/i, `$1\n  ${fixedBgVideoHtml}`);
+  }
+
   if (tpl.includes("<head>")) {
-    tpl = tpl.replace("<head>", `<head>\n${metaTags}${HEAD_AUDIO_BLOCKER_SCRIPT}\n${GLOBAL_MODULES_CSS}${closingStyle}`);
+    tpl = tpl.replace("<head>", `<head>\n${metaTags}${HEAD_AUDIO_BLOCKER_SCRIPT}\n${GLOBAL_MODULES_CSS}${closingStyle}${combinedVideoStyle}`);
   } else if (tpl.includes("<HEAD>")) {
-    tpl = tpl.replace("<HEAD>", `<HEAD>\n${metaTags}${HEAD_AUDIO_BLOCKER_SCRIPT}\n${GLOBAL_MODULES_CSS}${closingStyle}`);
+    tpl = tpl.replace("<HEAD>", `<HEAD>\n${metaTags}${HEAD_AUDIO_BLOCKER_SCRIPT}\n${GLOBAL_MODULES_CSS}${closingStyle}${combinedVideoStyle}`);
   }
 
   const injectedScripts = `${UNIFIED_CLIENT_RUNTIME_SCRIPT}\n${AUTOPLAY_SHOWCASE_SCRIPT}\n${options?.editMode || data.__editMode ? INLINE_LIVE_EDITOR_SCRIPT : ""}`;

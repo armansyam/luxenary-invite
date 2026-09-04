@@ -349,7 +349,29 @@ export default function AdminPage() {
   const [savingDuitku, setSavingDuitku] = useState(false);
   const [savingTripay, setSavingTripay] = useState(false);
   const [savingSmtp, setSavingSmtp] = useState(false);
-  const [activeSettingsTab, setActiveSettingsTab] = useState<"akun" | "pembayaran" | "gateway" | "paket" | "platform" | "autentikasi">("akun");
+  const [savingDomainDns, setSavingDomainDns] = useState(false);
+  const [detectingServerIp, setDetectingServerIp] = useState(false);
+  const [detectIpResult, setDetectIpResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [activeSettingsTab, setActiveSettingsTab] = useState<"akun" | "pembayaran" | "gateway" | "paket" | "setup" | "platform" | "autentikasi">("akun");
+
+  const handleDetectServerIp = async () => {
+    setDetectingServerIp(true);
+    setDetectIpResult(null);
+    try {
+      const res = await fetch("/api/admin/server-ip");
+      const data = await res.json();
+      if (data.success && data.ip) {
+        setSetting("server_public_ip", data.ip);
+        setDetectIpResult({ success: true, message: `IP Publik berhasil dideteksi: ${data.ip}` });
+      } else {
+        setDetectIpResult({ success: false, message: data.message || "Gagal mendeteksi IP server publik." });
+      }
+    } catch (err: any) {
+      setDetectIpResult({ success: false, message: err?.message || "Koneksi ke detektor IP gagal." });
+    } finally {
+      setDetectingServerIp(false);
+    }
+  };
 
   const [recyclingSubdomains, setRecyclingSubdomains] = useState(false);
   const [recycleResult, setRecycleResult] = useState<{ success: boolean; message: string } | null>(null);
@@ -2546,6 +2568,20 @@ export default function AdminPage() {
                       <h2 className="text-2xl font-bold text-gray-900">Custom Domain</h2>
                       <p className="text-sm text-gray-500 mt-0.5">Pantau pesanan add-on Custom Domain dari klien dan status penyelesaiannya.</p>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveTab("settings");
+                        setActiveSettingsTab("setup");
+                      }}
+                      className="px-3.5 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold rounded-xl transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                    >
+                      <svg className="w-3.5 h-3.5 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      <span>Pengaturan DNS &amp; IP Server</span>
+                    </button>
                   </div>
 
                   <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
@@ -2859,30 +2895,31 @@ export default function AdminPage() {
 
               {/* ── Settings ── */}
               {activeTab === "settings" && (
-                <div className="space-y-6 max-w-5xl w-full">
+                <div className="space-y-6 max-w-7xl w-full">
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900">Pengaturan Platform</h2>
                     <p className="text-sm text-gray-500 mt-0.5">Konfigurasi payment gateway, Google OAuth API, harga paket, dan platform</p>
                   </div>
 
-                  {/* ── Sub-Tab Navigation ── */}
-                  <div className="flex gap-1.5 p-1.5 bg-gray-100 rounded-2xl border border-gray-200 overflow-x-auto no-scrollbar">
+                  {/* ── Sub-Tab Navigation (Widescreen Responsive Grid) ── */}
+                  <div className="w-full grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-1.5 p-1.5 bg-gray-100 rounded-2xl border border-gray-200">
                     {([
-                      { id: "akun",       label: "Akun & Keamanan" },
-                      { id: "pembayaran", label: "Pembayaran" },
-                      { id: "gateway",    label: "Gateway QRIS" },
-                      { id: "paket",      label: "Paket & Harga" },
-                      { id: "platform",   label: "Platform" },
-                      { id: "autentikasi",label: "Autentikasi" },
+                      { id: "akun",        label: "Akun & Keamanan" },
+                      { id: "pembayaran",  label: "Pembayaran" },
+                      { id: "gateway",     label: "Gateway QRIS" },
+                      { id: "paket",       label: "Paket & Harga" },
+                      { id: "setup",       label: "Setup & Integrasi" },
+                      { id: "platform",    label: "Platform & Tampilan" },
+                      { id: "autentikasi", label: "Autentikasi" },
                     ] as const).map((t) => (
                       <button
                         key={t.id}
                         type="button"
                         onClick={() => setActiveSettingsTab(t.id)}
-                        className={`flex-1 min-w-[100px] py-2 px-3.5 rounded-xl text-xs font-semibold transition cursor-pointer shrink-0 text-center ${
+                        className={`w-full py-2.5 px-3 rounded-xl text-xs transition cursor-pointer text-center flex items-center justify-center truncate ${
                           activeSettingsTab === t.id
                             ? "bg-white text-gray-900 shadow-sm border border-gray-200 font-bold"
-                            : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                            : "text-gray-500 hover:text-gray-700 hover:bg-gray-50 font-semibold"
                         }`}
                       >
                         {t.label}
@@ -4040,19 +4077,19 @@ export default function AdminPage() {
                   {/* Add-ons & Extension Pricing Settings */}
                   <SettingsCard
                     title="Layanan Tambahan (Add-Ons) & Perpanjangan"
-                    description="Atur harga dinamis untuk paket add-on custom domain, perpanjangan galeri bulanan via QRIS, dan bundling domain + galeri 1 tahun."
+                    description="Atur tarif dinamis untuk layanan integrasi custom domain (1 tahun) dan perpanjangan masa aktif URL asli pasca acara (bulanan via QRIS)."
                     isEditing={Boolean(editSection["addons"])}
                     onEdit={() => toggleEditSection("addons")}
-                    onCancel={() => cancelEdit("addons", ["addon_subdomain_gallery_bundle_price", "gallery_extension_price_per_month", "addon_custom_domain_price"])}
-                    onSave={() => saveSettings(["addon_subdomain_gallery_bundle_price", "gallery_extension_price_per_month", "addon_custom_domain_price"], setSavingAddons, "addons")}
+                    onCancel={() => cancelEdit("addons", ["gallery_extension_price_per_month", "addon_custom_domain_price"])}
+                    onSave={() => saveSettings(["gallery_extension_price_per_month", "addon_custom_domain_price"], setSavingAddons, "addons")}
                     saving={savingAddons}
-                    isDirty={isSectionDirty(["addon_subdomain_gallery_bundle_price", "gallery_extension_price_per_month", "addon_custom_domain_price"])}
+                    isDirty={isSectionDirty(["gallery_extension_price_per_month", "addon_custom_domain_price"])}
                     saveSuccess={settingsSaved["addons"]}
                     saveSuccessMessage="Harga layanan add-on berhasil diperbarui"
                     viewContent={
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="p-4 bg-amber-50/60 rounded-xl border border-amber-200">
-                          <span className="text-xs font-bold text-amber-900 block mb-1">Jasa Custom Domain &amp; Perpanjang URL (1 Thn)</span>
+                          <span className="text-xs font-bold text-amber-900 block mb-1">Jasa Integrasi Custom Domain (1 Thn)</span>
                           <div className="flex items-baseline gap-1.5">
                             <span className="text-xl font-mono font-bold text-amber-950">
                               Rp {Number(settingsMap["addon_custom_domain_price"] || 150000).toLocaleString("id-ID")}
@@ -4060,12 +4097,12 @@ export default function AdminPage() {
                             <span className="text-xs text-amber-800 font-medium">/ 1 Tahun</span>
                           </div>
                           <p className="text-xs text-stone-600 mt-2 leading-relaxed">
-                            Jasa integrasi domain pribadi milik klien (DNS &amp; Auto-SSL) dan perpanjangan masa tayang URL undangan selama 1 tahun penuh.
+                            Jasa integrasi domain pribadi milik klien (DNS &amp; Auto-SSL) dan otomatis mengaktifkan masa tayang URL asli serta galeri kenangan undangan selama 1 tahun penuh.
                           </p>
                         </div>
 
                         <div className="p-4 bg-purple-50/60 rounded-xl border border-purple-200">
-                          <span className="text-xs font-bold text-purple-900 block mb-1">Add-on Perpanjang Galeri (Bulanan)</span>
+                          <span className="text-xs font-bold text-purple-900 block mb-1">Perpanjang Masa Aktif URL Asli / Galeri (Bulanan)</span>
                           <div className="flex items-baseline gap-1.5">
                             <span className="text-xl font-mono font-bold text-purple-950">
                               Rp {Number(settingsMap["gallery_extension_price_per_month"] || 50000).toLocaleString("id-ID")}
@@ -4073,20 +4110,7 @@ export default function AdminPage() {
                             <span className="text-xs text-purple-800 font-medium">/ 30 Hari</span>
                           </div>
                           <p className="text-xs text-stone-600 mt-2 leading-relaxed">
-                            Biaya perpanjangan simpan foto tamu per 30 hari via QRIS dinamis saat masa aktif galeri habis.
-                          </p>
-                        </div>
-
-                        <div className="p-4 bg-emerald-50/60 rounded-xl border border-emerald-200">
-                          <span className="text-xs font-bold text-emerald-900 block mb-1">Add-on Bundling (Domain + Galeri 1 Thn)</span>
-                          <div className="flex items-baseline gap-1.5">
-                            <span className="text-xl font-mono font-bold text-emerald-950">
-                              Rp {Number(settingsMap["addon_subdomain_gallery_bundle_price"] || 230000).toLocaleString("id-ID")}
-                            </span>
-                            <span className="text-xs text-emerald-800 font-medium">/ 1 Tahun</span>
-                          </div>
-                          <p className="text-xs text-stone-600 mt-2 leading-relaxed">
-                            Paket lengkap: integrasi custom domain aktif 1 tahun beserta penyimpanan foto tamu selama 1 tahun penuh.
+                            Biaya perpanjangan masa aktif URL asli undangan (yang pasca acara beralih ke galeri momen) dan penyimpanan foto tamu di cloud per 30 hari via QRIS dinamis.
                           </p>
                         </div>
                       </div>
@@ -4094,8 +4118,8 @@ export default function AdminPage() {
                   >
                     <div className="space-y-4">
                       <FieldRow
-                        label="Tarif Jasa Custom Domain &amp; Perpanjangan URL (1 Tahun)"
-                        description="Biaya jasa integrasi domain pribadi milik klien (DNS &amp; SSL) serta perpanjangan masa aktif penayangan URL undangan selama 1 tahun penuh (Rupiah)."
+                        label="Tarif Jasa Custom Domain &amp; Perpanjangan URL Asli (1 Tahun)"
+                        description="Biaya jasa integrasi domain pribadi milik klien (DNS &amp; SSL) serta garansi masa aktif URL asli &amp; galeri kenangan selama 1 tahun penuh (Rupiah)."
                       >
                         <input
                           type="number"
@@ -4108,8 +4132,8 @@ export default function AdminPage() {
                       </FieldRow>
 
                       <FieldRow
-                        label="Tarif Perpanjangan Galeri (Rupiah / 30 Hari)"
-                        description="Nominal tagihan QRIS dinamis per bulan untuk mempertahankan file foto tamu di server R2."
+                        label="Tarif Perpanjangan Masa Aktif URL Asli / Galeri (Rupiah / 30 Hari)"
+                        description="Nominal tagihan QRIS dinamis per bulan untuk mempertahankan eksistensi URL asli undangan (galeri momen) dan file foto tamu di server R2."
                       >
                         <input
                           type="number"
@@ -4120,28 +4144,170 @@ export default function AdminPage() {
                           className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition font-mono"
                         />
                       </FieldRow>
-
-                      <FieldRow
-                        label="Tarif Add-on Bundling (Custom Domain + Galeri 1 Tahun)"
-                        description="Harga paket bundling lengkap: integrasi domain pribadi 1 tahun + penyimpanan galeri foto tamu aman 1 tahun (Rupiah)."
-                      >
-                        <input
-                          type="number"
-                          min="10000"
-                          step="5000"
-                          value={settingsMap["addon_subdomain_gallery_bundle_price"] || "230000"}
-                          onChange={(e) => setSetting("addon_subdomain_gallery_bundle_price", e.target.value)}
-                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition font-mono"
-                        />
-                      </FieldRow>
                     </div>
                   </SettingsCard>
                   </>
                   )}
 
-                  {/* ══ TAB: PLATFORM ══ */}
-                  {activeSettingsTab === "platform" && (
+                  {/* ══ TAB: SETUP & INTEGRASI ══ */}
+                  {activeSettingsTab === "setup" && (
                   <>
+                  {/* Integrasi Domain & DNS Server */}
+                  <SettingsCard
+                    title="Integrasi Domain Pribadi & DNS Server"
+                    description="Konfigurasikan IP Publik VPS dan host CNAME target platform. Nilai ini menjadi sumber data dinamis bagi panduan setup DNS di dashboard klien."
+                    isEditing={Boolean(editSection["domain_dns"])}
+                    onEdit={() => toggleEditSection("domain_dns")}
+                    onCancel={() => cancelEdit("domain_dns", ["server_public_ip", "cname_target"])}
+                    onSave={() => saveSettings(["server_public_ip", "cname_target"], setSavingDomainDns, "domain_dns")}
+                    saving={savingDomainDns}
+                    isDirty={isSectionDirty(["server_public_ip", "cname_target"])}
+                    saveSuccess={settingsSaved["domain_dns"]}
+                    saveSuccessMessage="Pengaturan Integrasi Domain & DNS berhasil disimpan"
+                    viewContent={
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                          <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">Record A (IP Public Server)</span>
+                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">Wajib untuk @</span>
+                            </div>
+                            <span className="text-sm font-mono font-bold text-gray-900 block mt-1">
+                              {settingsMap["server_public_ip"] || "Belum diatur (Klik Edit untuk mengisi atau deteksi otomatis)"}
+                            </span>
+                            <p className="text-[11px] text-gray-500 mt-1.5">
+                              Digunakan klien untuk mengarahkan root apex domain (@) ke VPS Anda.
+                            </p>
+                          </div>
+
+                          <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">Record CNAME (Host Target)</span>
+                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-100 text-sky-800">Untuk www</span>
+                            </div>
+                            <span className="text-sm font-mono font-bold text-gray-900 block mt-1">
+                              {settingsMap["cname_target"] || "Belum diatur"}
+                            </span>
+                            <p className="text-[11px] text-gray-500 mt-1.5">
+                              Target hostname yang diarahkan klien untuk subdomain kustom atau awalan www.
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Live Pratinjau Panduan DNS Klien */}
+                        <div className="p-4 rounded-xl border border-amber-200/80 bg-amber-50/50 space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-xs font-bold text-amber-950 flex items-center gap-1.5">
+                              <svg className="w-4 h-4 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
+                              <span>Live Preview: Tampilan Langkah DNS di Dashboard Klien</span>
+                            </h4>
+                            <span className="text-[10px] font-medium text-amber-800 bg-amber-200/60 px-2 py-0.5 rounded-full">Pratinjau Klien</span>
+                          </div>
+                          <p className="text-[11px] text-amber-900/80 leading-relaxed">
+                            Berikut adalah tabel DNS yang akan dilihat langsung oleh klien di menu <em>Dashboard &gt; Domain Sendiri</em>:
+                          </p>
+                          <div className="rounded-lg overflow-hidden border border-amber-200 text-[11px] font-mono bg-white shadow-2xs">
+                            <div className="grid grid-cols-3 bg-amber-100/60 px-3 py-1.5 text-[10px] font-bold text-amber-900 uppercase tracking-wider">
+                              <span>Type</span>
+                              <span>Host / Name</span>
+                              <span>Value / Target</span>
+                            </div>
+                            <div className="grid grid-cols-3 px-3 py-2 border-b border-amber-100 text-stone-800 items-center">
+                              <span className="font-bold text-amber-700">A</span>
+                              <span>@</span>
+                              <span className="font-bold text-stone-900 break-all">{settingsMap["server_public_ip"] || "IP Belum Diatur"}</span>
+                            </div>
+                            <div className="grid grid-cols-3 px-3 py-2 text-stone-800 items-center">
+                              <span className="font-bold text-sky-700">CNAME</span>
+                              <span>www</span>
+                              <span className="font-bold text-stone-900 break-all">{settingsMap["cname_target"] || "Host Belum Diatur"}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  >
+                    <div className="space-y-4">
+                      <div className="p-3.5 bg-sky-50/70 border border-sky-200 rounded-xl text-xs text-sky-900 leading-relaxed">
+                        <strong>Mengapa perlu IP Server &amp; CNAME?</strong> Sebagian besar registrar domain lokal (Niagahoster, Domainesia, IDWebhost, Namecheap) melarang CNAME pada root domain (<strong>@</strong>). Oleh karena itu, root domain diarahkan via <strong>Record A</strong> ke IP server, sedangkan <strong>www</strong> diarahkan via <strong>Record CNAME</strong>.
+                      </div>
+
+                      <FieldRow
+                        label="IP Public Server (Record A)"
+                        description="Alamat IP publik VPS Anda. Klien akan memasukkan nilai ini untuk record A (@)."
+                      >
+                        <div className="space-y-2">
+                          <div className="flex flex-col sm:flex-row gap-2">
+                            <input
+                              type="text"
+                              value={settingsMap["server_public_ip"] || ""}
+                              onChange={(e) => setSetting("server_public_ip", e.target.value.trim())}
+                              placeholder="Contoh: 103.186.xxx.xxx"
+                              className="flex-1 px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 shadow-2xs"
+                            />
+                            <button
+                              type="button"
+                              onClick={handleDetectServerIp}
+                              disabled={detectingServerIp}
+                              className="px-4 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 shrink-0 disabled:opacity-50 cursor-pointer"
+                            >
+                              {detectingServerIp ? (
+                                <><span className="w-3.5 h-3.5 border-2 border-stone-600 border-t-transparent rounded-full animate-spin" /> Mendeteksi...</>
+                              ) : (
+                                <>
+                                  <svg className="w-3.5 h-3.5 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                  </svg>
+                                  Deteksi IP Otomatis
+                                </>
+                              )}
+                            </button>
+                          </div>
+                          {detectIpResult && (
+                            <p className={`text-xs font-medium ${detectIpResult.success ? "text-emerald-700" : "text-rose-600"}`}>
+                              {detectIpResult.message}
+                            </p>
+                          )}
+                        </div>
+                      </FieldRow>
+
+                      <FieldRow
+                        label="Host Target CNAME (Custom Domain)"
+                        description="Target hostname yang dituju record CNAME klien (misal: cname.domainanda.id atau invite.domainanda.id)."
+                      >
+                        <div className="space-y-2">
+                          <input
+                            type="text"
+                            value={settingsMap["cname_target"] || ""}
+                            onChange={(e) => setSetting("cname_target", e.target.value.trim())}
+                            placeholder="Contoh: cname.domainanda.id"
+                            className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 shadow-2xs"
+                          />
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[11px] text-gray-500">Preset cepat dari host aktif:</span>
+                            {["cname", "invite"].map((prefix) => {
+                              const hostClean = currentOrigin.replace(/^https?:\/\//, "").split(":")[0];
+                              const presetVal = `${prefix}.${hostClean}`;
+                              return (
+                                <button
+                                  key={prefix}
+                                  type="button"
+                                  onClick={() => setSetting("cname_target", presetVal)}
+                                  className="text-[10px] font-mono font-semibold bg-stone-100 hover:bg-amber-100 hover:text-amber-800 text-stone-700 px-2.5 py-1 rounded-lg border border-stone-200 transition cursor-pointer"
+                                >
+                                  + {presetVal}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </FieldRow>
+                    </div>
+                  </SettingsCard>
+
                   {/* Server Email (SMTP) Configuration */}
                   <SettingsCard
                     title="Server Email (SMTP) untuk Pengiriman Invoice"
@@ -4271,83 +4437,6 @@ export default function AdminPage() {
                           />
                         </FieldRow>
                       </div>
-                    </div>
-                  </SettingsCard>
-
-                  {/* WhatsApp Template Settings */}
-                  <SettingsCard
-                    title="Template Pesan WhatsApp (Pengiriman Undangan)"
-                    description="Kustomisasi pesan default yang akan dikirimkan ke tamu via WhatsApp. Gunakan placeholder {{GUEST_NAME}}, {{INVITATION_URL}}, {{COUPLE_NAMES}}."
-                    isEditing={Boolean(editSection["wa_template"])}
-                    onEdit={() => toggleEditSection("wa_template")}
-                    onCancel={() => cancelEdit("wa_template", ["wa_template_message"])}
-                    onSave={() => saveSettings(["wa_template_message"], setSavingPlatformCustom, "wa_template")}
-                    saving={savingPlatformCustom}
-                    isDirty={isSectionDirty(["wa_template_message"])}
-                    saveSuccess={settingsSaved["wa_template"]}
-                    saveSuccessMessage="Template WhatsApp berhasil disimpan"
-                    viewContent={
-                      <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 whitespace-pre-wrap text-sm text-gray-700">
-                        {settingsMap["wa_template_message"] || "Assalamu'alaikum {{GUEST_NAME}},\n\nKami mengundang Bapak/Ibu dalam pernikahan kami.\n\nUndangan: {{INVITATION_URL}}\n\nHormat kami,\n{{COUPLE_NAMES}}"}
-                      </div>
-                    }
-                  >
-                    <FieldRow label="Isi Pesan WhatsApp" description="Pesan ini akan menjadi default untuk semua klien.">
-                      <textarea
-                        rows={6}
-                        value={settingsMap["wa_template_message"] || "Assalamu'alaikum {{GUEST_NAME}},\n\nKami mengundang Bapak/Ibu dalam pernikahan kami.\n\nUndangan: {{INVITATION_URL}}\n\nHormat kami,\n{{COUPLE_NAMES}}"}
-                        onChange={(e) => setSetting("wa_template_message", e.target.value)}
-                        className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
-                      />
-                    </FieldRow>
-                  </SettingsCard>
-
-                  {/* Landing Page Feature Cards Settings */}
-                  <SettingsCard
-                    title="Fitur Landing Page (3 Kartu)"
-                    description="Sesuaikan judul dan deskripsi untuk 3 kartu fitur utama di halaman depan (Landing Page)."
-                    isEditing={Boolean(editSection["landing_features"])}
-                    onEdit={() => toggleEditSection("landing_features")}
-                    onCancel={() => cancelEdit("landing_features", ["landing_feature_1_title", "landing_feature_1_desc", "landing_feature_2_title", "landing_feature_2_desc", "landing_feature_3_title", "landing_feature_3_desc"])}
-                    onSave={() => saveSettings(["landing_feature_1_title", "landing_feature_1_desc", "landing_feature_2_title", "landing_feature_2_desc", "landing_feature_3_title", "landing_feature_3_desc"], setSavingPlatformCustom, "landing_features")}
-                    saving={savingPlatformCustom}
-                    isDirty={isSectionDirty(["landing_feature_1_title", "landing_feature_1_desc", "landing_feature_2_title", "landing_feature_2_desc", "landing_feature_3_title", "landing_feature_3_desc"])}
-                    saveSuccess={settingsSaved["landing_features"]}
-                    saveSuccessMessage="Fitur Landing Page berhasil disimpan"
-                    viewContent={
-                      <div className="space-y-4">
-                        {[1, 2, 3].map((num) => (
-                          <div key={num} className="p-3 bg-gray-50 rounded-xl border border-gray-200">
-                            <span className="text-xs text-amber-600 font-bold block mb-1">Kartu Fitur {num}</span>
-                            <div className="font-bold text-gray-800 text-sm">{settingsMap[`landing_feature_${num}_title`] || (num === 1 ? "Desain Elegan & Responsif" : num === 2 ? "Manajemen Tamu & WhatsApp" : "Galeri Foto Dinamis")}</div>
-                            <div className="text-xs text-gray-500 mt-1">{settingsMap[`landing_feature_${num}_desc`] || (num === 1 ? "Desain visual modern yang memukau di perangkat apa pun." : num === 2 ? "Generator link pintar per tamu dengan automasi pesan." : "Layout Masonry cerdas untuk galeri foto pernikahan.")}</div>
-                          </div>
-                        ))}
-                      </div>
-                    }
-                  >
-                    <div className="space-y-4">
-                      {[1, 2, 3].map((num) => (
-                        <div key={num} className="p-4 border border-gray-100 rounded-xl bg-gray-50/50 space-y-3">
-                          <h4 className="text-sm font-bold text-gray-700">Kartu {num}</h4>
-                          <FieldRow label="Judul">
-                            <input
-                              type="text"
-                              value={settingsMap[`landing_feature_${num}_title`] || ""}
-                              onChange={(e) => setSetting(`landing_feature_${num}_title`, e.target.value)}
-                              className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 transition shadow-2xs"
-                            />
-                          </FieldRow>
-                          <FieldRow label="Deskripsi">
-                            <textarea
-                              rows={2}
-                              value={settingsMap[`landing_feature_${num}_desc`] || ""}
-                              onChange={(e) => setSetting(`landing_feature_${num}_desc`, e.target.value)}
-                              className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 transition shadow-2xs"
-                            />
-                          </FieldRow>
-                        </div>
-                      ))}
                     </div>
                   </SettingsCard>
 
@@ -4508,7 +4597,7 @@ export default function AdminPage() {
                         <input
                           type="number"
                           min="1"
-                          max="365"
+                          max="90"
                           value={settingsMap["subdomain_grace_days"] || "7"}
                           onChange={(e) => setSetting("subdomain_grace_days", e.target.value)}
                           className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition font-mono"
@@ -4589,6 +4678,92 @@ export default function AdminPage() {
                       </FieldRow>
                     </div>
                   </SettingsCard>
+
+                  </>
+                  )}
+
+                  {/* ══ TAB: PLATFORM & TAMPILAN ══ */}
+                  {activeSettingsTab === "platform" && (
+                  <>
+
+                  {/* WhatsApp Template Settings */}
+                  <SettingsCard
+                    title="Template Pesan WhatsApp (Pengiriman Undangan)"
+                    description="Kustomisasi pesan default yang akan dikirimkan ke tamu via WhatsApp. Gunakan placeholder {{GUEST_NAME}}, {{INVITATION_URL}}, {{COUPLE_NAMES}}."
+                    isEditing={Boolean(editSection["wa_template"])}
+                    onEdit={() => toggleEditSection("wa_template")}
+                    onCancel={() => cancelEdit("wa_template", ["wa_template_message"])}
+                    onSave={() => saveSettings(["wa_template_message"], setSavingPlatformCustom, "wa_template")}
+                    saving={savingPlatformCustom}
+                    isDirty={isSectionDirty(["wa_template_message"])}
+                    saveSuccess={settingsSaved["wa_template"]}
+                    saveSuccessMessage="Template WhatsApp berhasil disimpan"
+                    viewContent={
+                      <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 whitespace-pre-wrap text-sm text-gray-700">
+                        {settingsMap["wa_template_message"] || "Assalamu'alaikum {{GUEST_NAME}},\n\nKami mengundang Bapak/Ibu dalam pernikahan kami.\n\nUndangan: {{INVITATION_URL}}\n\nHormat kami,\n{{COUPLE_NAMES}}"}
+                      </div>
+                    }
+                  >
+                    <FieldRow label="Isi Pesan WhatsApp" description="Pesan ini akan menjadi default untuk semua klien.">
+                      <textarea
+                        rows={6}
+                        value={settingsMap["wa_template_message"] || "Assalamu'alaikum {{GUEST_NAME}},\n\nKami mengundang Bapak/Ibu dalam pernikahan kami.\n\nUndangan: {{INVITATION_URL}}\n\nHormat kami,\n{{COUPLE_NAMES}}"}
+                        onChange={(e) => setSetting("wa_template_message", e.target.value)}
+                        className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
+                      />
+                    </FieldRow>
+                  </SettingsCard>
+
+                  {/* Landing Page Feature Cards Settings */}
+                  <SettingsCard
+                    title="Fitur Landing Page (3 Kartu)"
+                    description="Sesuaikan judul dan deskripsi untuk 3 kartu fitur utama di halaman depan (Landing Page)."
+                    isEditing={Boolean(editSection["landing_features"])}
+                    onEdit={() => toggleEditSection("landing_features")}
+                    onCancel={() => cancelEdit("landing_features", ["landing_feature_1_title", "landing_feature_1_desc", "landing_feature_2_title", "landing_feature_2_desc", "landing_feature_3_title", "landing_feature_3_desc"])}
+                    onSave={() => saveSettings(["landing_feature_1_title", "landing_feature_1_desc", "landing_feature_2_title", "landing_feature_2_desc", "landing_feature_3_title", "landing_feature_3_desc"], setSavingPlatformCustom, "landing_features")}
+                    saving={savingPlatformCustom}
+                    isDirty={isSectionDirty(["landing_feature_1_title", "landing_feature_1_desc", "landing_feature_2_title", "landing_feature_2_desc", "landing_feature_3_title", "landing_feature_3_desc"])}
+                    saveSuccess={settingsSaved["landing_features"]}
+                    saveSuccessMessage="Fitur Landing Page berhasil disimpan"
+                    viewContent={
+                      <div className="space-y-4">
+                        {[1, 2, 3].map((num) => (
+                          <div key={num} className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                            <span className="text-xs text-amber-600 font-bold block mb-1">Kartu Fitur {num}</span>
+                            <div className="font-bold text-gray-800 text-sm">{settingsMap[`landing_feature_${num}_title`] || (num === 1 ? "Desain Elegan & Responsif" : num === 2 ? "Manajemen Tamu & WhatsApp" : "Galeri Foto Dinamis")}</div>
+                            <div className="text-xs text-gray-500 mt-1">{settingsMap[`landing_feature_${num}_desc`] || (num === 1 ? "Desain visual modern yang memukau di perangkat apa pun." : num === 2 ? "Generator link pintar per tamu dengan automasi pesan." : "Layout Masonry cerdas untuk galeri foto pernikahan.")}</div>
+                          </div>
+                        ))}
+                      </div>
+                    }
+                  >
+                    <div className="space-y-4">
+                      {[1, 2, 3].map((num) => (
+                        <div key={num} className="p-4 border border-gray-100 rounded-xl bg-gray-50/50 space-y-3">
+                          <h4 className="text-sm font-bold text-gray-700">Kartu {num}</h4>
+                          <FieldRow label="Judul">
+                            <input
+                              type="text"
+                              value={settingsMap[`landing_feature_${num}_title`] || ""}
+                              onChange={(e) => setSetting(`landing_feature_${num}_title`, e.target.value)}
+                              className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 transition shadow-2xs"
+                            />
+                          </FieldRow>
+                          <FieldRow label="Deskripsi">
+                            <textarea
+                              rows={2}
+                              value={settingsMap[`landing_feature_${num}_desc`] || ""}
+                              onChange={(e) => setSetting(`landing_feature_${num}_desc`, e.target.value)}
+                              className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 transition shadow-2xs"
+                            />
+                          </FieldRow>
+                        </div>
+                      ))}
+                    </div>
+                  </SettingsCard>
+
+
 
 
 
@@ -4837,10 +5012,10 @@ export default function AdminPage() {
                     description="Nama platform, kontak resmi, dan teks headline hero yang digunakan di seluruh sistem."
                     isEditing={Boolean(editSection["platform"])}
                     onEdit={() => toggleEditSection("platform")}
-                    onCancel={() => cancelEdit("platform", ["platform_name", "support_email", "support_whatsapp", "hero_tagline", "hero_subtitle", "cname_target"])}
-                    onSave={() => saveSettings(["platform_name", "support_email", "support_whatsapp", "hero_tagline", "hero_subtitle", "cname_target"], setSavingPlatform, "platform")}
+                    onCancel={() => cancelEdit("platform", ["platform_name", "support_email", "support_whatsapp", "hero_tagline", "hero_subtitle"])}
+                    onSave={() => saveSettings(["platform_name", "support_email", "support_whatsapp", "hero_tagline", "hero_subtitle"], setSavingPlatform, "platform")}
                     saving={savingPlatform}
-                    isDirty={isSectionDirty(["platform_name", "support_email", "support_whatsapp", "hero_tagline", "hero_subtitle", "cname_target"])}
+                    isDirty={isSectionDirty(["platform_name", "support_email", "support_whatsapp", "hero_tagline", "hero_subtitle"])}
                     saveSuccess={settingsSaved["platform"]}
                     saveSuccessMessage="Konfigurasi platform & tampilan berhasil disimpan"
                     viewContent={
@@ -4917,16 +5092,7 @@ export default function AdminPage() {
                         />
                       </FieldRow>
 
-                      <FieldRow label="CNAME Target (Custom Domain)" description="Nilai CNAME yang diarahkan client saat setup domain sendiri. Contoh: invite.domain-anda.id">
-                        <input
-                          type="text"
-                          value={settingsMap["cname_target"] || ""}
-                          onChange={(e) => setSetting("cname_target", e.target.value.trim())}
-                          placeholder="Contoh: invite.platform-anda.id"
-                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white font-mono text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
-                        />
-                      </FieldRow>
-                    </div>
+                      </div>
 
                     <FieldRow label="Tagline Hero (Headline Besar Halaman Utama)">
                       <input

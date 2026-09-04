@@ -42,6 +42,7 @@ export interface PublicPlatformSettings {
   waTemplateMessage: string;
   maxUploadMb: number;
   cnameTarget: string;
+  serverPublicIp: string;
   landingFeature1Title: string;
   landingFeature1Desc: string;
   landingFeature2Title: string;
@@ -136,6 +137,7 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
     waTemplateMessage: map["wa_template_message"] || "Assalamu'alaikum {{GUEST_NAME}},\n\nKami mengundang Bapak/Ibu dalam pernikahan kami.\n\nUndangan: {{INVITATION_URL}}\n\nHormat kami,\n{{GROOM_NAME}} & {{BRIDE_NAME}}",
     maxUploadMb: Number(map["max_upload_mb"] || 5),
     cnameTarget: map["cname_target"] || "",
+    serverPublicIp: map["server_public_ip"] || "",
     landingFeature1Title: map["landing_feature_1_title"] || "Desain Kalandra, Aurelia & Prameswari",
     landingFeature1Desc: map["landing_feature_1_desc"] || "Estetika natural dengan split view desktop, transisi foto section overlap, audio player autoplay, dan CSS scroll snap mulus.",
     landingFeature2Title: map["landing_feature_2_title"] || "Manajemen Tamu & WhatsApp",

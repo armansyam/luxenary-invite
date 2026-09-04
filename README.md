@@ -72,9 +72,10 @@ Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model 
    - Tamu scan QR → Receptionist check-in (PIN-protected)
    - Tamu bagikan foto → /sharemoment (upload ke R2/Local)
    - Monitoring & moderasi kiriman foto tamu langsung di Dashboard Utama (/dashboard)
-   - Klien beli Add-on Custom Domain via Settings → /api/client/custom-domain/buy
-   - Pasca Acara (H+7): Dialihkan ke Galeri Momen (/memories)
-   - Download koleksi foto ZIP (Client-side JSZip) + Perpanjang Galeri (+30 Hari via QRIS)
+   - Klien beli Add-on Jasa Custom Domain via Settings → /api/client/custom-domain/buy (Otomatis include masa aktif URL Asli & Galeri 1 tahun)
+   - Pasca Acara (H+7 / `retention_invitation_grace_days`): Undangan fisik ditutup, URL Asli otomatis beralih menyajikan Galeri Momen (/memories) dengan penguncian upload otomatis (`memoriesUploadLocked = true`)
+   - Subdomain otomatis didaur ulang ke pool namespace pasca `subdomain_grace_days` jika `subdomain_auto_recycle = "true"`
+   - Download koleksi foto ZIP (Client-side JSZip dengan proteksi status DRAFT & peringatan unduh dini) + Perpanjang Masa Aktif URL Asli / Galeri (+30 Hari via QRIS)
 
 [Admin]
    ▼
@@ -83,30 +84,36 @@ ADMIN PORTAL (/admin)
    - Pesanan (Orders): Kelola order, konfirmasi/tolak struk manual, cancel gateway
    - Klien (Users): Daftar akun klien, detail profil, dan aksi **Remote Dasbor Klien**
    - Undangan (Invitations): Manajemen siklus hidup (Close to Gallery, Extend), dan fitur **Remote Klien** untuk mengendalikan Dasbor Klien secara utuh tanpa password (berbasis *httpOnly Cookie Session Override* dengan mekanisme *Restore 1-Klik*).
+   - Domain Kustom (Custom Domains): Monitoring domain klien, panduan konfigurasi Caddy, dan shortcut ke tab Setup DNS.
    - Tema (Themes): Manajemen katalog & sinkronisasi tema
    - Portofolio (Portfolio): Kurasi & kloning undangan pilihan → /portfolio
    - Tim (Team): Manajemen akun staff admin (SUPER_ADMIN, FINANCE, SUPPORT)
-   - Pengaturan (Settings): Konfigurasi harga, bank, 5 gateway, SMTP, retensi
+   - Pengaturan (Settings): 
+     - **Tab Setup & Integrasi:** Konfigurasi DNS & IP Server (auto-detect IP publik VPS, CNAME target dinamis), SMTP Email Server, Batas Upload Galeri Tamu (MB), dan Siklus Hidup Subdomain & Retensi.
+     - **Tab Platform:** Branding & Identitas Platform, CS Support, Hero Tagline, Fitur Landing Page, Template WhatsApp.
+     - **Tab Paket & Harga:** Konfigurasi harga paket undangan (Traditional, Modern, Premium) serta 2 Layanan Tambahan (Add-Ons) resmi: Jasa Custom Domain (1 Thn) dan Perpanjang Masa Aktif URL Asli / Galeri (Bulanan).
+     - **Tab Keuangan:** Rekening bank transfer manual dan 5 Payment Gateway.
    - Database (Database): Snapshot backup & restore PostgreSQL
    - Log (Logs): Audit aktivitas admin & webhook gateway logs
 ```
 
 ---
 
-## URL Format Undangan
+## URL Format Undangan & Relasi Arsitektur
 
 ```
-Format Subdomain (aktif selama masa acara):
+Format Subdomain (Sementara menjelang & saat acara, H+subdomain_grace_days):
   https://dimas-clarissa.luxenary.id
 
-Format Canonical Flat Slug (permanen):
+Format URL Asli / Kanonikal (SATU-SATUNYA PINTU UTAMA / Single Source of Truth):
   https://luxenary.id/dimas-clarissa-030326
+  (Pasca acara otomatis bertransformasi menjadi Galeri Kenangan Tamu)
 
 Format Portofolio (HTML statis terisolasi):
   https://luxenary.id/portfolio/dimas-clarissa-030326
 
-Format Custom Domain (SaaS Add-on):
-  https://dimas-clarissa.com (Membutuhkan resolve-custom-domain dan konfigurasi Nginx Admin)
+Format Custom Domain (SaaS Add-on 1 Tahun):
+  https://dimas-clarissa.com (Auto-SSL Caddy & internal rewrite ke endpoint URL Asli)
 
 Sub-routes publik:
   /dimas-clarissa-030326/memories     → Galeri foto tamu (real-time SSE)
@@ -126,6 +133,13 @@ Sub-routes publik:
 
 > Harga dapat diubah di Admin → tab Pengaturan tanpa deploy ulang.
 
+### Standar Arsitektur Template Undangan
+- **Cover Gate:** Tombol buka undangan (`data-lux-field="customLabels.openBtn"`) wajib memiliki teks fisik default `"Buka Undangan"` dan didukung fallback engine agar tidak pernah kosong/transparan.
+- **Dukungan Video Loop Sinematik:** Mendukung video background loop pada `LANDING_COVER` (Cover pembuka), `DESKTOP_SIDEBAR` (Hero layar lebar), dan `GLOBAL_FIXED_BG` (Latar kartu). Sistem otomatis memotong klip menjadi maksimal 20 detik, membuang audio track (`-an`), mengunci frame rate ke 30 fps, serta menyuntikkan tag HTML `<video>` dengan overlay gradasi kontras.
+- **Adaptive Full-Height Closing Section (`100vh`):** Seksi outro (`.site-footer` / `.closing-sec`) berukuran layar penuh `100vh` yang adaptif terhadap unggahan foto penutup (`CLOSING_COVER`):
+  - *Mode Kanvas Kosong (Default):* Latar bersih sesuai palet tema tanpa dummy image palsu; teks ucapan terima kasih dan nama mempelai berposisi vertikal & horizontal tepat di tengah layar (`justify-content: center;`).
+  - *Mode Foto Penutup:* Foto latar layar penuh dengan overlay gradasi; teks ucapan bergeser elegan ke bagian bawah layar (`justify-content: flex-end;`).
+
 ---
 
 ## Tech Stack
@@ -139,6 +153,7 @@ Sub-routes publik:
 | **Auth** | NextAuth.js v5 — Google OAuth + Credential Admin |
 | **Media Storage** | Cloudflare R2 (prod) + Local `public/uploads/` (dev) via `lib/storage.ts` |
 | **Image Processing** | `sharp` — WebP, resize, compress |
+| **Video Processing** | `FFmpeg` — H.264, auto-trim 20s, no audio loop, 30fps cap, +faststart streaming |
 | **Payment** | 5 Gateway (iPaymu, Duitku, Midtrans, TriPay, Xendit) + Transfer Bank Manual |
 | **Mailer** | Nodemailer dengan kredensial SMTP dinamis via `admin_settings` |
 | **Cron** | `POST /api/cron/cleanup` — retensi & cleanup otomatis |
@@ -371,6 +386,7 @@ Setiap developer atau AI Agent yang melakukan modifikasi pada codebase **WAJIB**
 1. **Dilarang keras push tanpa menyelaraskan docs:** Jika ada penambahan endpoint, migrasi kolom database, gateway baru, atau perubahan alur UI, ketiga file dokumen (`README.md`, `SYSTEM_ARCHITECTURE.md`, `S-Invitation.md`) wajib langsung disinkronkan di commit yang sama.
 2. **Katalog Tema Fisik:** Pastikan jumlah tema fisik yang aktif di database dan template selalu sinkron (15 tema fisik aktif).
 3. **No Phantom Docs:** Dokumentasi harus mencantumkan path dan nama variabel lingkungan aktual (misal format AWS SDK `S3_*` untuk R2, bukan format lama).
+4. **Standar Kontrak Placeholder Nama Mempelai:** Cover buka undangan, hero title, sidebar desktop, dan closing footer **MUTLAK** menggunakan Nama Panggilan (`{{firstName}} & {{secondName}}`). Nama lengkap beserta gelar (`{{firstDisplayName}} & {{secondDisplayName}}`) hanya digunakan pada Seksi Profil Pasangan (*The Couple*).
 
 ---
 

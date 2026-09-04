@@ -47,14 +47,19 @@ export async function POST(req: NextRequest) {
     const retentionGallerySetting = await prisma.adminSetting.findUnique({ where: { key: "retention_gallery_default_days" } });
     const retentionAccountSetting = await prisma.adminSetting.findUnique({ where: { key: "retention_account_days" } });
     const retentionOrderSetting = await prisma.adminSetting.findUnique({ where: { key: "retention_order_days" } });
+    const subdomainGraceSetting = await prisma.adminSetting.findUnique({ where: { key: "subdomain_grace_days" } });
+    const subdomainAutoRecycleSetting = await prisma.adminSetting.findUnique({ where: { key: "subdomain_auto_recycle" } });
 
     const graceDays = Number(retentionGraceSetting?.value) || 7; // H+7 hari: tutup undangan utama & alihkan ke galeri
     const galleryDays = Number(retentionGallerySetting?.value) || 30; // H+30 hari: bersihkan foto tamu jika tidak diperpanjang
     const retentionAccountDays = Number(retentionAccountSetting?.value) || 365;
     const retentionOrderDays = Number(retentionOrderSetting?.value) || 30;
+    const subdomainGraceDays = Number(subdomainGraceSetting?.value) || 7;
+    const isAutoRecycleSubdomain = (subdomainAutoRecycleSetting?.value || "true") === "true";
 
     const now = new Date();
     const thresholdGraceDate = new Date(now.getTime() - (graceDays * 24 * 60 * 60 * 1000));
+    const thresholdSubdomainDate = new Date(now.getTime() - (subdomainGraceDays * 24 * 60 * 60 * 1000));
     const thresholdAccountDate = new Date(now.getTime() - (retentionAccountDays * 24 * 60 * 60 * 1000));
     const thresholdOrderDate = new Date(now.getTime() - (retentionOrderDays * 24 * 60 * 60 * 1000));
 
@@ -101,16 +106,43 @@ export async function POST(req: NextRequest) {
         // 2. Hapus fisik file subdomain HTML (agar URL otomatis fallback / rewrite ke galeri)
         await deleteSubdomainHtmlOnly(inv.id);
 
-        // 3. Update status menjadi EVENT_FINISHED
+        // 3. Update status menjadi EVENT_FINISHED & kunci upload tamu (masuk masa galeri)
         await prisma.invitation.update({
           where: { id: inv.id },
-          data: { status: "EVENT_FINISHED" }
+          data: { 
+            status: "EVENT_FINISHED",
+            memoriesUploadLocked: true,
+          }
         });
 
         // 4. Bersihkan data formulir RSVP yang sudah kedaluwarsa
         await prisma.rsvp.deleteMany({ where: { invitationId: inv.id } });
 
         transitionCount++;
+      }
+    }
+
+    // ── FASE 1.5: Daur Ulang Subdomain Otomatis (H + subdomainGraceDays) ──
+    // Jika opsi daur ulang aktif, lepaskan subdomain kedaluwarsa kembali ke pool namespace
+    let recycledSubdomainCount = 0;
+    if (isAutoRecycleSubdomain) {
+      const expiredSubdomainInvs = await prisma.invitation.findMany({
+        where: {
+          subdomain: { not: null },
+          status: { in: ["EVENT_FINISHED", "TAKEN_DOWN"] },
+        },
+        select: { id: true, eventData: true, subdomain: true },
+      });
+
+      for (const inv of expiredSubdomainInvs) {
+        const latestDate = getLatestEventDate(inv.eventData);
+        if (latestDate && latestDate < thresholdSubdomainDate) {
+          await prisma.invitation.update({
+            where: { id: inv.id },
+            data: { subdomain: null },
+          });
+          recycledSubdomainCount++;
+        }
       }
     }
 
@@ -250,11 +282,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       transitionedInvitations: transitionCount,
+      recycledSubdomains: recycledSubdomainCount,
       cleanedGalleries: cleanedGalleryCount,
       deletedUsers: totalDeletedUsers,
       deletedFolders: totalDeletedFolders,
       deletedOrders: deletedOrdersCount.count,
-      message: `Pembersihan selesai: ${transitionCount} undangan dialihkan ke galeri momen, ${cleanedGalleryCount} galeri tamu kadaluarsa dibersihkan, ${totalDeletedUsers} klien lama dihapus.`
+      message: `Pembersihan selesai: ${transitionCount} undangan dialihkan ke galeri momen, ${recycledSubdomainCount} subdomain didaur ulang, ${cleanedGalleryCount} galeri tamu kadaluarsa dibersihkan, ${totalDeletedUsers} klien lama dihapus.`
     });
   } catch (error: any) {
     console.error("[Cleanup Cron Error]", error);
