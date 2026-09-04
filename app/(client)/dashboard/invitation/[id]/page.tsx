@@ -336,7 +336,7 @@ export default function EditInvitation() {
     sec1: true,  // 1. Tema & Warna
     sec2: true,  // 2. Sampul & Musik
     sec3: true,  // 3. Profil Mempelai
-    sec4: true,  // 4. Doa Pembuka & Pappaseng
+    sec4: true,  // 4. Kutipan Pembuka
     sec5: true,  // 5. Rangkaian Acara
     sec6: true,  // 6. Pengaturan QR Code & Check-in
     sec7: true,  // 7. Kisah Cinta (Love Story)
@@ -1913,12 +1913,12 @@ export default function EditInvitation() {
         )}
       </section>
 
-      {/* 4. SEKSI KUTIPAN DOA & AYAT (SEC4) */}
+      {/* 4. SEKSI KUTIPAN PEMBUKA (SEC4) */}
       <section className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
         <div className="p-5 sm:p-6 border-b border-stone-100 flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-base font-bold text-stone-900">4. Kutipan Ayat / Doa Pembuka</h2>
-            <p className="text-xs text-stone-500">Kalimat doa atau kutipan suci pembuka surat undangan</p>
+            <h2 className="text-base font-bold text-stone-900">4. Kutipan Pembuka</h2>
+            <p className="text-xs text-stone-500">Kutipan indah, puisi cinta, kata mutiara, ayat suci, atau doa pembuka undangan</p>
           </div>
           <button
             type="button"
@@ -1927,7 +1927,7 @@ export default function EditInvitation() {
               collapsed.sec4 ? "bg-amber-50 text-amber-900 hover:bg-amber-100" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
             }`}
           >
-            {collapsed.sec4 ? "Edit Doa" : "Tutup"}
+            {collapsed.sec4 ? "Edit Kutipan" : "Tutup"}
           </button>
         </div>
 
@@ -1942,14 +1942,14 @@ export default function EditInvitation() {
               onClick={() => toggleSection("sec4")}
               className="text-xs font-bold text-amber-800 hover:underline self-start sm:self-center"
             >
-              Ubah Doa
+              Ubah Kutipan
             </button>
           </div>
         ) : (
           <div className="p-5 sm:p-7 space-y-4">
-            {/* Quick Presets for Multi-Religious / Universal Quotes */}
+            {/* Quick Presets for Multi-Religious / Universal / Literary Quotes */}
             <div>
-              <label className="block text-xs font-bold text-stone-700 mb-2">Pilih Preset Cepat Doa / Ayat:</label>
+              <label className="block text-xs font-bold text-stone-700 mb-2">Pilih Preset Cepat (Ayat Suci, Puisi, atau Kata Mutiara):</label>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                 {[
                   {
@@ -1983,10 +1983,22 @@ export default function EditInvitation() {
                     title: "Berkah & Doa",
                   },
                   {
+                    label: "Sastra — Sapardi Djoko Damono",
+                    quote: "Aku ingin mencintaimu dengan sederhana: dengan kata yang tak sempat diucapkan kayu kepada api yang menjadikannya abu. Aku ingin mencintaimu dengan sederhana: dengan isyarat yang tak sempat disampaikan awan kepada hujan yang menjadikannya tiada.",
+                    ref: "SAPARDI DJOKO DAMONO",
+                    title: "Kutipan Puisi",
+                  },
+                  {
+                    label: "Sastra — Kahlil Gibran",
+                    quote: "Kalian diciptakan bersama, dan kalian akan selamanya bersama. Berdirilah bersama, namun jangan terlampau rapat; sebab pilar-pilar kuil tegak terpisah, dan pohon tarbantin maupun pohon fir tidak tumbuh dalam naungan satu sama lain.",
+                    ref: "KAHLIL GIBRAN — SANG NABI",
+                    title: "Kutipan Cinta",
+                  },
+                  {
                     label: "Universal — Janji Suci",
                     quote: "Dan jika aku harus memilih kembali dalam seratus kehidupan, dalam seratus dunia, dalam versi realitas apa pun, aku akan tetap mencari dan memilih dirimu.",
                     ref: "OUR SACRED PROMISE",
-                    title: "Doa & Harapan",
+                    title: "Janji Suci & Harapan",
                   },
                 ].map((p, idx) => (
                   <button
@@ -2007,27 +2019,27 @@ export default function EditInvitation() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-stone-100">
               <Input
-                label="Judul Seksi Doa (Bebas Kustom)"
-                value={getCustomLabel("quoteTitle", "Pappaseng & Doa")}
+                label="Judul Seksi (Bebas Kustom)"
+                value={getCustomLabel("quoteTitle", "Kutipan & Doa")}
                 onChange={(v) => updateCustomLabel("quoteTitle", v)}
-                placeholder="Pappaseng & Doa / Doa & Harapan / Ayat Suci"
+                placeholder="Kutipan Cinta / Kata Mutiara / Pappaseng / Ayat Suci"
               />
               <Input
                 label="Referensi Sumber Kutipan"
                 value={invitation.openingQuoteRef || ""}
                 onChange={(v) => updateField("openingQuoteRef", v)}
-                placeholder="QS. AR-RUM : 21 / 1 KORINTUS 13:4-7"
+                placeholder="QS. AR-RUM : 21 / SAPARDI DJOKO DAMONO / OUR SACRED PROMISE"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-stone-700 mb-1">Teks Kutipan Doa / Ayat / Puisi</label>
+              <label className="block text-xs font-bold text-stone-700 mb-1">Teks Kutipan / Puisi / Doa</label>
               <textarea
                 rows={3}
                 value={invitation.openingQuote || ""}
                 onChange={(e) => updateField("openingQuote", e.target.value)}
                 className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30 leading-relaxed"
-                placeholder="Tuliskan teks doa, ayat, atau kutipan indah di sini..."
+                placeholder="Tuliskan teks kutipan indah, puisi cinta, ayat, atau doa pembuka di sini..."
               />
             </div>
 
@@ -2043,7 +2055,7 @@ export default function EditInvitation() {
                 }`}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                <span>{!isDirty.sec4 ? "Tersimpan" : "Simpan Doa Pembuka"}</span>
+                <span>{!isDirty.sec4 ? "Tersimpan" : "Simpan Kutipan"}</span>
               </button>
             </div>
           </div>
