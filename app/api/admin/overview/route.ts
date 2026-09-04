@@ -130,7 +130,7 @@ export async function GET() {
             take: 1,
           },
           invitations: {
-            select: { id: true, subdomain: true, status: true },
+            select: { id: true, subdomain: true, status: true, expiresAt: true, eventData: true },
             take: 1,
           },
         },

@@ -2292,7 +2292,7 @@ export default function AdminPage() {
                       <table className="min-w-full divide-y divide-gray-100">
                         <thead className="bg-gray-50">
                           <tr>
-                            {["Pasangan", "Subdomain / URL", "Tema", "Status", "Proteksi Editor", "Aksi"].map((h) => (
+                            {["Pemilik", "Pasangan", "Subdomain / URL", "Tema", "Status", "Proteksi Editor", "Aksi"].map((h) => (
                               <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{h}</th>
                             ))}
                           </tr>
@@ -2306,6 +2306,10 @@ export default function AdminPage() {
 
                             return (
                               <tr key={inv.id} className="hover:bg-gray-50 transition">
+                                <td className="px-5 py-3">
+                                  <div className="text-sm font-semibold text-gray-900">{inv.user?.name || "Tanpa Nama"}</div>
+                                  <div className="text-xs text-gray-500 font-mono">{inv.user?.email}</div>
+                                </td>
                                 <td className="px-5 py-3 text-sm font-semibold text-gray-900">
                                   {coupleName}
                                 </td>
@@ -6459,20 +6463,50 @@ export default function AdminPage() {
                 </div>
               )}
               
-              <div className="space-y-4">
-                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                  <div className="text-xs text-gray-400 font-medium mb-1">Nama Lengkap</div>
-                  <div className="text-sm font-bold text-gray-900">{manageClient.name}</div>
-                </div>
-                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                  <div className="text-xs text-gray-400 font-medium mb-1">Email</div>
-                  <div className="text-sm font-mono text-gray-700">{manageClient.email}</div>
-                </div>
-                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                  <div className="text-xs text-gray-400 font-medium mb-1">Tanggal Terdaftar</div>
-                  <div className="text-sm text-gray-700">{new Date(manageClient.createdAt).toLocaleString("id-ID")}</div>
-                </div>
-              </div>
+              {(() => {
+                const activeInv = manageClient.invitations?.[0];
+                let eventDateStr = "-";
+                if (activeInv?.eventData) {
+                  try {
+                    const parsed = JSON.parse(activeInv.eventData);
+                    if (parsed[0]?.date) {
+                      eventDateStr = new Date(parsed[0].date).toLocaleDateString("id-ID", { day: 'numeric', month: 'long', year: 'numeric' });
+                    }
+                  } catch(e) {}
+                }
+                const expiredStr = activeInv?.expiresAt ? new Date(activeInv.expiresAt).toLocaleDateString("id-ID", { day: 'numeric', month: 'long', year: 'numeric' }) : "-";
+                
+                return (
+                  <div className="space-y-4">
+                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                      <div className="text-xs text-gray-400 font-medium mb-1">Nama Lengkap</div>
+                      <div className="text-sm font-bold text-gray-900">{manageClient.name}</div>
+                    </div>
+                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                      <div className="text-xs text-gray-400 font-medium mb-1">Email</div>
+                      <div className="text-sm font-mono text-gray-700">{manageClient.email}</div>
+                    </div>
+                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                      <div className="text-xs text-gray-400 font-medium mb-1">Tanggal Terdaftar</div>
+                      <div className="text-sm text-gray-700">{new Date(manageClient.createdAt).toLocaleString("id-ID")}</div>
+                    </div>
+                    
+                    {/* Data Undangan Tambahan */}
+                    {activeInv && (
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                          <div className="text-xs text-gray-400 font-medium mb-1">Tanggal Acara Utama</div>
+                          <div className="text-sm font-bold text-indigo-700">{eventDateStr}</div>
+                        </div>
+                        <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                          <div className="text-xs text-gray-400 font-medium mb-1">Masa Aktif Berakhir</div>
+                          <div className="text-sm font-bold text-rose-600">{expiredStr}</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               <div className="mt-8 pt-6 border-t border-gray-100">
                 <h4 className="text-sm font-bold text-rose-600 mb-2">Zona Berbahaya</h4>
