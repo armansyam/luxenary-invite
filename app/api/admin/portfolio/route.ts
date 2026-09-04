@@ -57,8 +57,8 @@ export async function POST(req: NextRequest) {
 
     const clientName = inv.invitationSlug;
 
-    // 1. Baca HTML Canonical yang sudah di-bake
-    const canonicalHtmlPath = path.join(process.cwd(), "public", "published", "slugs", `${clientName}.html`);
+    // 1. Baca HTML Canonical yang sudah di-bake dari folder ids (Single Source of Truth)
+    const canonicalHtmlPath = path.join(process.cwd(), "public", "published", "ids", `${invitationId}.html`);
     
     // UI Admin Dashboard menjamin tombol ini hanya muncul jika HTML sudah di-publish.
     // Jika file tidak ada secara fisik karena anomali sistem file, fs.readFile akan melemparkan error (ter-catch di blok bawah)

@@ -18,12 +18,7 @@ async function ensurePublishedDir() {
     await fs.promises.mkdir(PUBLISHED_DIR, { recursive: true });
   }
   
-  const subdomainsDir = path.join(PUBLISHED_DIR, "subdomains");
-  const slugsDir = path.join(PUBLISHED_DIR, "slugs");
   const idsDir = path.join(PUBLISHED_DIR, "ids");
-  
-  try { await fs.promises.access(subdomainsDir); } catch { await fs.promises.mkdir(subdomainsDir, { recursive: true }); }
-  try { await fs.promises.access(slugsDir); } catch { await fs.promises.mkdir(slugsDir, { recursive: true }); }
   try { await fs.promises.access(idsDir); } catch { await fs.promises.mkdir(idsDir, { recursive: true }); }
 }
 
@@ -109,86 +104,35 @@ export async function buildAndSavePublishedHtml(invitationId: string): Promise<s
 
   await ensurePublishedDir();
 
-  // 1. Simpan sebagai subdomains/{subdomain}.html → untuk subdomain routing (contoh: dimas-clarissa.[root_domain])
-  let subdomainFilePath = "None (No Subdomain)";
-  if (invitation.subdomain) {
-    subdomainFilePath = path.join(PUBLISHED_DIR, "subdomains", `${invitation.subdomain}.html`);
-    await fs.promises.writeFile(subdomainFilePath, standaloneHtml, "utf-8");
-  }
+  // Hanya simpan 1 file sumber kebenaran (Single Source of Truth) berdasarkan ID
+  const masterPath = path.join(PUBLISHED_DIR, "ids", `${invitation.id}.html`);
+  await fs.promises.writeFile(masterPath, standaloneHtml, "utf-8");
 
-  // 2. Simpan sebagai slugs/{invitationSlug}.html → untuk canonical path routing (contoh: [root_domain]/dimas-clarissa-030326)
-  const canonicalFilePath = path.join(PUBLISHED_DIR, "slugs", `${invitation.invitationSlug}.html`);
-  await fs.promises.writeFile(canonicalFilePath, standaloneHtml, "utf-8");
-
-  // 3. Simpan fallback berdasarkan ID (untuk getPublishedHtml fallback)
-  const fallbackPath = path.join(PUBLISHED_DIR, "ids", `${invitation.id}.html`);
-  await fs.promises.writeFile(fallbackPath, standaloneHtml, "utf-8");
-
-  console.log(`[Static Publisher] HTML baked: subdomain=${subdomainFilePath} | canonical=${canonicalFilePath} | size=${(standaloneHtml.length / 1024).toFixed(1)}KB`);
+  console.log(`[Static Publisher] HTML baked (Single Source of Truth): ${masterPath} | size=${(standaloneHtml.length / 1024).toFixed(1)}KB`);
 
   return standaloneHtml;
 }
 
 /**
- * Deletes the standalone published HTML files.
- * Protects the slug HTML (portfolio) from deletion unless isAdminDelete is true.
+ * Deletes the standalone published HTML file.
  */
-export async function deletePublishedHtml(invitationId: string, isAdminDelete: boolean = false, category?: string): Promise<boolean> {
+export async function deletePublishedHtml(invitationId: string): Promise<boolean> {
   let deleted = false;
 
-  const inv = await prisma.invitation.findUnique({
-    where: { id: invitationId },
-    select: { subdomain: true, invitationSlug: true },
-  });
-
-  // Hapus file subdomain
-  if (inv?.subdomain) {
-    const subPath = path.join(PUBLISHED_DIR, "subdomains", `${inv.subdomain}.html`);
-    try {
-      await fs.promises.access(subPath);
-      await fs.promises.unlink(subPath);
-      deleted = true;
-    } catch {}
-  }
-
-  // Hapus file canonical slug HANYA jika dipaksa Admin (untuk retensi portofolio)
-  if (inv?.invitationSlug && isAdminDelete) {
-    const canonicalPath = path.join(PUBLISHED_DIR, "slugs", `${inv.invitationSlug}.html`);
-    try {
-      await fs.promises.access(canonicalPath);
-      await fs.promises.unlink(canonicalPath);
-      deleted = true;
-    } catch {}
-  }
-
-  // Hapus file fallback ID
+  // Hapus file ID master (Single Source of Truth)
   const idPath = path.join(PUBLISHED_DIR, "ids", `${invitationId}.html`);
   try {
     await fs.promises.access(idPath);
     await fs.promises.unlink(idPath);
     deleted = true;
   } catch {}
+  
   return deleted;
 }
 
 /**
- * Specifically deletes ONLY the subdomain HTML. Used by Cron Phase 1 (Expiration)
- * to take down custom domains and subdomains while leaving the portfolio completely intact.
+ * Deprecated: Fungsi ini dihapus karena sistem tidak lagi menggunakan file HTML subdomain terpisah.
  */
 export async function deleteSubdomainHtmlOnly(invitationId: string): Promise<boolean> {
-  let deleted = false;
-  const inv = await prisma.invitation.findUnique({
-    where: { id: invitationId },
-    select: { subdomain: true },
-  });
-
-  if (inv?.subdomain) {
-    const subPath = path.join(PUBLISHED_DIR, "subdomains", `${inv.subdomain}.html`);
-    try {
-      await fs.promises.access(subPath);
-      await fs.promises.unlink(subPath);
-      deleted = true;
-    } catch {}
-  }
-  return deleted;
+  return true; // No-op
 }
