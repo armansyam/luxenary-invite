@@ -912,7 +912,9 @@ Sistem mendukung video loop bergerak (*ambient video*) pada 3 slot visual utama:
 
 ### 3. Rendering Engine Dinamis (`renderTemplate.ts`)
 - `renderTemplateFile` secara cerdas mendeteksi tipe media melalui ekstensi URL (kebal query timestamp).
-- Jika berformat video (`.mp4`, `.webm`, `.mov`), template tema otomatis menyuntikkan elemen HTML5 `<video class="..." autoplay loop muted playsinline webkit-playsinline>` dengan lapisan gradient overlay semi-transparan, mempertahankan kontras teks dan tombol undangan.
+- **Isolasi Split Screen Desktop:** Pada layar desktop (>= 900px), video background global (`GLOBAL_FIXED_BG`) dikunci secara ketat pada kolom panel undangan kanan (`left: 55%; width: 45%;`), sehingga tidak bocor ke bawah hero kiri (`.left-hero`). Hero kiri tetap murni menampilkan medianya sendiri (`DESKTOP_SIDEBAR`).
+- **Pencahayaan Soft Scrim:** Menggunakan rasio gradien transparan lembut (puncak 0.22, tengah 0.06, dasar 0.38) sehingga video prewedding tampak terang, jernih, dan hidup tanpa terbenam oleh lapisan gelap pekat. Kontras teks dijaga dengan `text-shadow`.
+- Jika berformat video (`.mp4`, `.webm`, `.mov`), template tema otomatis menyuntikkan elemen HTML5 `<video class="..." autoplay loop muted playsinline webkit-playsinline>` dengan `object-fit: cover` dan `object-position: center center`.
 - Jika berformat gambar, tetap mempertahankan CSS `background-image` standar tanpa regresi.
 
 ---

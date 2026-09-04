@@ -798,6 +798,7 @@ export async function renderTemplateFile(
         width: 100%;
         height: 100%;
         object-fit: cover;
+        object-position: center center;
         z-index: 0;
         pointer-events: none;
       }
@@ -809,13 +810,16 @@ export async function renderTemplateFile(
         content: '';
         position: absolute;
         inset: 0;
-        background: linear-gradient(to bottom, rgba(7,7,9,0.35) 0%, rgba(7,7,9,0.1) 25%, rgba(7,7,9,0.65) 60%, rgba(7,7,9,0.94) 100%);
+        background: linear-gradient(to bottom, rgba(7,7,9,0.22) 0%, rgba(7,7,9,0.04) 30%, rgba(7,7,9,0.20) 65%, rgba(7,7,9,0.60) 100%);
         z-index: 1;
         pointer-events: none;
       }
       .cover-screen > *:not(.lux-cover-video), #coverScreen > *:not(.lux-cover-video) {
         position: relative;
         z-index: 2;
+      }
+      .cover-names, .cover-title {
+        text-shadow: 0 4px 20px rgba(0,0,0,0.85) !important;
       }
     `;
   }
@@ -830,6 +834,7 @@ export async function renderTemplateFile(
         width: 100%;
         height: 100%;
         object-fit: cover;
+        object-position: center center;
         z-index: 1;
         pointer-events: none;
       }
@@ -839,6 +844,7 @@ export async function renderTemplateFile(
       }
       .left-hero::after {
         z-index: 2 !important;
+        background: linear-gradient(to top, rgba(7,7,9,0.65) 0%, rgba(7,7,9,0.10) 45%, transparent 100%) !important;
       }
       .left-hero-content {
         z-index: 3 !important;
@@ -848,19 +854,48 @@ export async function renderTemplateFile(
 
   if (isVideoMedia(data.globalBgUrl)) {
     const safeFixedBgVideo = escapeHtmlAttr(String(data.globalBgUrl));
-    fixedBgVideoHtml = `<video class="lux-fixed-bg-video" autoplay loop muted playsinline webkit-playsinline preload="auto"><source src="${safeFixedBgVideo}" type="video/mp4"></video>`;
+    fixedBgVideoHtml = `<video class="lux-fixed-bg-video" autoplay loop muted playsinline webkit-playsinline preload="auto"><source src="${safeFixedBgVideo}" type="video/mp4"></video><div class="lux-fixed-bg-scrim"></div>`;
     videoStyles += `
       .lux-fixed-bg-video {
         position: fixed;
-        inset: 0;
+        top: 0;
+        left: 0;
         width: 100vw;
         height: 100vh;
         object-fit: cover;
-        z-index: -1;
+        object-position: center center;
+        z-index: 0;
         pointer-events: none;
       }
-      .fixed-bg-layer, .theme-fixed-bg {
-        background-image: none !important;
+      .lux-fixed-bg-scrim {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: linear-gradient(to bottom, rgba(7,7,9,0.22) 0%, rgba(7,7,9,0.06) 35%, rgba(7,7,9,0.38) 100%);
+        z-index: 1;
+        pointer-events: none;
+      }
+      @media (min-width: 900px) {
+        .lux-fixed-bg-video {
+          left: 55% !important;
+          width: 45% !important;
+          right: 0 !important;
+        }
+        .lux-fixed-bg-scrim {
+          left: 55% !important;
+          width: 45% !important;
+          right: 0 !important;
+        }
+      }
+      .right-panel, .page-wrap, .main-scroll-panel {
+        position: relative;
+        z-index: 2;
+        background: transparent !important;
+      }
+      .fixed-bg-layer, .theme-fixed-bg, .slideshow-bg-container, .slideshow-scrim {
+        display: none !important;
       }
     `;
   }
