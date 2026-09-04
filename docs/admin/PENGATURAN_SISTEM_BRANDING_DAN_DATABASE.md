@@ -84,3 +84,18 @@ Menyediakan visibilitas operasional terhadap database PostgreSQL:
   ```bash
   pg_restore -U postgres -d luxenary_db -v /backup/luxenary_20260904.dump
   ```
+
+---
+
+## 6. Manajemen Harga Paket & Layanan Tambahan (Add-Ons) (`Tab: Paket & Harga`)
+
+Mengatur struktur biaya dinamis platform yang langsung tersinkronisasi dua arah ke dashboard klien:
+- **Paket Undangan Utama:** Traditional, Modern, Premium.
+- **Layanan Tambahan (Add-Ons) & Perpanjangan:**
+  1. **Jasa Custom Domain & Perpanjangan URL Undangan (1 Tahun) (`addon_custom_domain_price`):**
+     - Mengatur tarif jasa integrasi domain pribadi milik klien (DNS & auto SSL Caddy) serta perpanjangan masa aktif penayangan hosting/URL undangan selama 1 tahun penuh.
+     - Terhubung langsung secara real-time ke halaman Pengaturan Klien tanpa ada selisih angka.
+  2. **Perpanjangan Galeri Kenangan Tamu (Bulanan) (`gallery_extension_price_per_month`):**
+     - Nominal tagihan QRIS dinamis per 30 hari untuk mempertahankan file foto tamu di server Cloudflare R2 setelah masa aktif standar habis.
+  3. **Add-on Bundling (Custom Domain + Galeri 1 Tahun) (`addon_subdomain_gallery_bundle_price`):**
+     - Paket bundling lengkap: integrasi domain kustom + galeri kenangan tamu selama 1 tahun penuh.
