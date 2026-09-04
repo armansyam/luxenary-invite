@@ -892,10 +892,9 @@ export async function renderTemplateFile(
       .right-panel, .page-wrap, .main-scroll-panel {
         position: relative;
         z-index: 2;
-        background: transparent !important;
       }
-      .fixed-bg-layer, .theme-fixed-bg, .slideshow-bg-container, .slideshow-scrim {
-        display: none !important;
+      .fixed-bg-layer, .theme-fixed-bg {
+        background-image: none !important;
       }
     `;
   }
