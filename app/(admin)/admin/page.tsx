@@ -2300,8 +2300,8 @@ export default function AdminPage() {
                         <tbody className="divide-y divide-gray-50">
                           {invitations.map((inv) => {
                             const coupleName = `${inv.groomNickname || inv.groomName || "Mempelai Pria"} & ${inv.brideNickname || inv.brideName || "Mempelai Wanita"}`;
-                            const activeSub = inv.subdomain || `${inv.groomSlug || "mempelai"}-${inv.brideSlug || "pria"}`;
-                            const publicUrl = getInvitationPublicUrl(activeSub);
+                            const activeSub = inv.subdomain;
+                            const publicUrl = activeSub ? getInvitationPublicUrl(activeSub) : "#";
                             const isEmergencyUnlocked = inv.adminUnlockedUntil && new Date(inv.adminUnlockedUntil) > new Date();
 
                             return (
@@ -2314,29 +2314,22 @@ export default function AdminPage() {
                                   {coupleName}
                                 </td>
                                 <td className="px-5 py-3 text-xs font-mono text-amber-700">
-                                  <a
-                                    href={publicUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="hover:underline flex items-center gap-1 font-semibold"
-                                  >
-                                    <span>{activeSub}.{getApexRootDomain()}</span>
-                                    <span className="text-[10px] text-stone-400">↗</span>
-                                  </a>
+                                  {activeSub ? (
+                                    <a
+                                      href={publicUrl}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="hover:underline flex items-center gap-1 font-semibold"
+                                    >
+                                      <span>{activeSub}.{getApexRootDomain()}</span>
+                                      <span className="text-[10px] text-stone-400">↗</span>
+                                    </a>
+                                  ) : (
+                                    <span className="text-gray-400 font-sans italic text-[11px]">[Belum Setup]</span>
+                                  )}
                                 </td>
                                 <td className="px-5 py-3">
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-bold text-gray-900 text-sm capitalize">{inv.themeId}</span>
-                                    <select
-                                      value={inv.themeId}
-                                      onChange={(e) => handleSwitchTheme(inv.id, e.target.value)}
-                                      className="text-xs bg-gray-50 border border-gray-200 rounded-lg p-1 text-gray-700 font-medium capitalize cursor-pointer"
-                                    >
-                                      {themes.map((t) => (
-                                        <option key={t.id} value={t.id} className="capitalize">{t.name || t.id}</option>
-                                      ))}
-                                    </select>
-                                  </div>
+                                  <span className="font-bold text-gray-900 text-sm capitalize">{inv.themeId}</span>
                                 </td>
                                 <td className="px-5 py-3"><Badge status={inv.status} /></td>
                                 <td className="px-5 py-3">
@@ -2374,26 +2367,20 @@ export default function AdminPage() {
                                         Tutup ke Galeri
                                       </button>
                                     )}
-                                    <button
-                                      type="button"
-                                      onClick={() => handleExtendGallery(inv)}
-                                      className="px-2 py-1 rounded-lg text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 transition cursor-pointer"
-                                      title="Perpanjang masa simpan galeri foto tamu (+30 hari)"
-                                    >
-                                      +30H Galeri
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleToggleEmergencyUnlock(inv)}
-                                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer border ${
-                                        isEmergencyUnlocked
-                                          ? "bg-red-50 hover:bg-red-100 text-red-700 border-red-300"
-                                          : "bg-stone-100 hover:bg-stone-200 text-stone-800 border-stone-300"
-                                      }`}
-                                      title={isEmergencyUnlocked ? "Kunci kembali sekarang" : "Buka kunci darurat edit untuk klien selama 24 jam"}
-                                    >
-                                      {isEmergencyUnlocked ? "Kunci Kembali" : "Buka Kunci Darurat"}
-                                    </button>
+                                    {(isEmergencyUnlocked || inv.isLockedPermanently) && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleToggleEmergencyUnlock(inv)}
+                                        className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer border ${
+                                          isEmergencyUnlocked
+                                            ? "bg-red-50 hover:bg-red-100 text-red-700 border-red-300"
+                                            : "bg-stone-100 hover:bg-stone-200 text-stone-800 border-stone-300"
+                                        }`}
+                                        title={isEmergencyUnlocked ? "Kunci kembali sekarang" : "Buka kunci darurat edit untuk klien selama 24 jam"}
+                                      >
+                                        {isEmergencyUnlocked ? "Kunci Kembali" : "Buka Kunci Darurat"}
+                                      </button>
+                                    )}
                                   </div>
                                 </td>
                               </tr>
