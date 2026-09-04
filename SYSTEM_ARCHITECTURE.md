@@ -930,3 +930,45 @@ Sistem membaca konfigurasi server email secara real-time:
   - **Perpanjangan Galeri (`GALLERY_EXTENSION`):** Rincian penambahan +30 hari masa aktif penyimpanan foto dengan tombol CTA ke Galeri Momen.
 - Pengiriman email dijalankan secara asynchronous non-blocking di dalam `applyUpgradePlan` setelah status order berubah menjadi `PAID`.
 
+---
+
+## 17. ARSITEKTUR INFRASTRUKTUR & DEPLOYMENT (VPS)
+
+**File:** `deploy.sh`, `ecosystem.config.js`
+
+Sistem Luxenary Invite dirancang sebagai aplikasi *self-hosted* yang berjalan pada mesin Virtual Private Server (VPS) Ubuntu/Linux mandiri.
+
+### 17.1 — PM2 Daemon & Deployment Engine
+- **Skrip Deployment Otomatis:** `deploy.sh` menangani pembaruan repositori, instalasi dependensi, inisialisasi kunci rahasia (*secret generator*), sinkronisasi Prisma, *build* Next.js, hingga proses *restart* peladen tanpa *downtime*.
+- **Manajemen Proses:** Node.js (Next.js) dijalankan menggunakan PM2 di belakang layar pada port internal (biasanya `localhost:3000`).
+
+### 17.2 — Caddy Server & Otomatisasi SSL SaaS (On-Demand TLS)
+Untuk menangani arsitektur Multi-Tenant Custom Domain, sistem NGINX tradisional digantikan secara total oleh **Caddy Server**.
+
+- **Keamanan Cloudflare Strict:** Caddy bertindak sebagai pintu gerbang (*reverse proxy*) yang mewajibkan lalu lintas melalui port 443 (HTTPS). Cloudflare utama aplikasi menggunakan mode **Full (Strict)**.
+- **On-Demand TLS (Autopilot SSL):** Caddy menghilangkan kebutuhan menerbitkan sertifikat Let's Encrypt secara manual untuk domain klien.
+  Saat pengunjung mengakses domain baru (misal `arman.com`), Caddy akan memvalidasinya dengan menembak API internal `GET /api/public/resolve-custom-domain`. Jika API merespon bahwa domain tersebut sah, Caddy dalam hitungan detik akan meng- *generate* SSL Let's Encrypt secara mandiri.
+- **Konfigurasi Fundamental (Caddyfile):**
+  ```caddyfile
+  # 1. Mencegah akses langsung ke CNAME Target (Anti-Kloning Web)
+  cname.domain-utama.id {
+      redir https://domain-utama.id 301
+  }
+  
+  # 2. Otomatisasi SSL untuk Ribuan Custom Domain
+  {
+      on_demand_tls {
+          ask http://localhost:3000/api/public/resolve-custom-domain
+          interval 2m
+          burst 5
+      }
+  }
+  
+  https:// {
+      tls {
+          on_demand
+      }
+      reverse_proxy localhost:3000
+  }
+  ```
+- **Kelebihan Caddy vs NGINX dalam SaaS:** Meringankan beban operasional Admin (Zero-Touch Provisioning), kode *proxy* jauh lebih pendek (5 baris vs 100 baris NGINX), serta menghapuskan risiko sertifikat SSL kadaluarsa.
