@@ -157,7 +157,9 @@ export default async function ContactPage() {
               </div>
               <div>
                 <p className="font-semibold text-stone-800 mb-0.5">Apakah saya bisa mengubah detail acara setelah undangan terbit?</p>
-                <p>Ya, seluruh data teks, foto, cerita cinta, dan musik latar dapat diedit kapan saja melalui Dashboard Klien.</p>
+                <p>
+                  Setelah undangan diterbitkan (Publish), Studio Editor dan tema terkunci secara otomatis demi menjaga integritas data publik dan tiket QR tamu. Namun jika Anda perlu melakukan ralat penting (seperti koreksi jam acara, alamat, atau salah ketik nama), Anda dapat <strong>mengajukan izin Buka Kunci Darurat kepada Administrator</strong> melalui Dasbor Klien. Akses edit akan dibuka sementara oleh Admin untuk perbaikan data tersebut.
+                </p>
               </div>
             </div>
           </div>

@@ -116,9 +116,9 @@ export default async function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-stone-800 mb-2">5. Penggunaan Tema (Themes)</h2>
+            <h2 className="text-lg font-semibold text-stone-800 mb-2">5. Penggunaan Tema (Themes) & Proteksi Studio Editor</h2>
             <p>
-              Setelah Klien menekan tombol &quot;Terbitkan&quot; (Publish), tata letak (Tema/Desain) undangan akan dikunci. Klien tidak diperkenankan untuk merubah tema undangan setelah diterbitkan. Klien wajib memeriksa ulang kesesuaian data dan desain pada mode &quot;Preview&quot; sebelum menekan tombol Publish.
+              Setelah Klien menekan tombol &quot;Terbitkan&quot; (Publish), tata letak (Tema/Desain) dan Studio Editor undangan akan <strong>dikunci secara otomatis</strong> demi melindungi integritas tiket QR dan data publik. Klien tidak diperkenankan untuk merubah tema undangan setelah diterbitkan. Klien wajib memeriksa ulang kesesuaian data dan desain pada mode &quot;Preview&quot; sebelum menekan tombol Publish. Jika terdapat kebutuhan ralat informasi darurat pasca-terbit (seperti koreksi jam acara, alamat, atau pembetulan salah ketik nama), Klien wajib <strong>mengajukan izin Buka Kunci Darurat kepada Administrator</strong> melalui Dasbor Klien.
             </p>
           </section>
 
