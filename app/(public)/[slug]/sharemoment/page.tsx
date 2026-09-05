@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import GuestMomentClient from "@/app/components/features/GuestMomentClient";
 import { getAdminSetting } from "@/lib/settings";
@@ -32,6 +32,7 @@ export default async function FreeGuestMemoriesStandalonePage({ params }: PagePr
   const invitation = await prisma.invitation.findUnique({
     where: { invitationSlug: slug },
     include: {
+      order: { select: { planType: true } },
       guestMemories: {
         orderBy: { createdAt: "desc" },
       },
@@ -44,6 +45,11 @@ export default async function FreeGuestMemoriesStandalonePage({ params }: PagePr
 
   if (!invitation) {
     notFound();
+  }
+
+  // Jika paket bukan PREMIUM, fitur sharemoment / foto meja tamu tidak tersedia
+  if (invitation.order?.planType !== "PREMIUM") {
+    redirect(`/${slug}`);
   }
 
   const memories: any[] = invitation.guestMemories || [];

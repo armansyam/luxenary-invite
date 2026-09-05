@@ -341,12 +341,14 @@ Sistem pengiriman email otomatis menggunakan **Nodemailer** yang membaca kredens
    - Fitur khusus Super Admin untuk mengkloning undangan pilihan menjadi file statis 100% mandiri di `public/portfolio/[slug].html`.
    - Semua aset gambar dikompresi WebP tajam dan disimpan terisolasi di `public/portfolio/assets/[slug]/`.
 2. **Custom Domain Klien (`dimas-clarissa.com`) & 2 Layanan Tambahan Resmi**:
-   - **SaaS Add-on Workflow**: Custom domain merupakan layanan jasa teknis integrasi berbayar terpisah dari paket undangan (orderType: `CUSTOM_DOMAIN_ADDON`, dibaca dari `addon_custom_domain_price`).
+   - **SaaS Add-on Workflow**: Custom domain merupakan layanan jasa teknis integrasi berbayar terpisah dari paket undangan (orderType: `CUSTOM_DOMAIN_ADDON`, dibaca dari `addon_custom_domain_price`), dan dikunci **eksklusif untuk Paket PREMIUM**.
    - **Fitur Toggle Admin & State Coming Soon**:
      - Super Admin dapat menyalakan/mematikan layanan penawaran custom domain via toggle `addon_custom_domain_enabled` di Pengaturan Admin (Paket & Harga).
      - Jika dinonaktifkan (`false`), Dasbor Klien (`/dashboard/settings`) yang belum memiliki domain pribadi akan menampilkan kartu status *Segera Hadir / Belum Tersedia* (non-aktif) tanpa opsi pemesanan.
+     - Klien paket Traditional dan Modern ditampilkan kartu terkunci (*Locked Card*) dengan ajakan upgrade ke Paket Premium.
      - Klien yang sudah memiliki domain aktif (`invitation.customDomain`) terlindungi secara penuh (Zero-Regression) dan tetap dapat melihat konfigurasi DNS mereka tanpa gangguan.
-     - Endpoint checkout `POST /api/client/custom-domain/buy` dijaga ketat di tingkat backend dengan HTTP 403 jika admin menonaktifkan fitur ini.
+     - Endpoint checkout `POST /api/client/custom-domain/buy` dijaga ketat di tingkat backend dengan HTTP 403 jika pemesan bukan paket Premium atau fitur dinonaktifkan.
+   - **Bundling Add-on Saat Upgrade Paket**: Klien Traditional & Modern yang upgrade ke Paket Premium dapat mencentang add-on custom domain secara opsional dalam satu invoice tagihan, yang otomatis mengaktifkan domain dan retensi 365 hari saat pelunasan.
    - Klien memesan & menginput domain pribadi mereka via Dashboard (Settings) lalu membayar melalui Payment Gateway.
    - Setelah lunas (PAID), fungsi `applyCustomDomainAddon` otomatis memasang custom domain dan menggaransi masa aktif URL Asli serta galeri kenangan selama **1 Tahun Penuh (+365 hari)**.
    - Integrasi berjalan mulus melalui **Caddy Server on-demand TLS** dengan Record A ke IP server VPS dan CNAME target dinamis, di mana middleware Next.js secara internal me-rewrite request domain ke endpoint **URL Asli** (`/[slug]` atau `/[slug]/memories`).

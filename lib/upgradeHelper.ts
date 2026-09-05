@@ -180,4 +180,33 @@ export async function applyUpgradePlan(paidOrderId: string): Promise<void> {
     where: { id: order.linkedOrderId },
     data: { planType: order.targetPlanType },
   });
+
+  // Jika paket upgrade ke PREMIUM dan menyertakan custom domain (order.requestedDomain)
+  if (order.targetPlanType === "PREMIUM" && order.requestedDomain) {
+    const invitation = await prisma.invitation.findFirst({
+      where: {
+        OR: [
+          { orderId: order.linkedOrderId },
+          { id: order.linkedOrderId },
+        ],
+      },
+      select: { id: true, galleryExpiresAt: true },
+    });
+
+    if (invitation) {
+      const now = new Date();
+      const baseDate = invitation.galleryExpiresAt && invitation.galleryExpiresAt > now
+        ? new Date(invitation.galleryExpiresAt)
+        : now;
+      const newExpiry = new Date(baseDate.getTime() + 365 * 24 * 60 * 60 * 1000); // 1 tahun
+
+      await prisma.invitation.update({
+        where: { id: invitation.id },
+        data: {
+          customDomain: order.requestedDomain,
+          galleryExpiresAt: newExpiry,
+        },
+      });
+    }
+  }
 }

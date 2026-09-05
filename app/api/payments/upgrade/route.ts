@@ -25,7 +25,7 @@ export async function POST(req: Request) {
     }
 
     const userId = (session.user as any).id;
-    const { invitationId, targetPlan } = await req.json();
+    const { invitationId, targetPlan, includeCustomDomain, requestedDomain } = await req.json();
 
     if (!invitationId || !targetPlan) {
       return NextResponse.json({ error: "invitationId dan targetPlan wajib diisi." }, { status: 400 });
@@ -90,7 +90,31 @@ export async function POST(req: Request) {
       }, { status: 400 });
     }
 
-    const upgradeAmount = priceTo - priceFrom;
+    let upgradeAmount = priceTo - priceFrom;
+    let cleanDomain: string | null = null;
+
+    // Tambahan Add-on Custom Domain opsional jika memilih tier PREMIUM
+    if (includeCustomDomain && targetPlanUpper === "PREMIUM") {
+      const enabledSetting = await prisma.adminSetting.findUnique({
+        where: { key: "addon_custom_domain_enabled" },
+      });
+      const isCustomDomainEnabled = enabledSetting ? enabledSetting.value !== "false" : true;
+
+      if (isCustomDomainEnabled) {
+        const priceSetting = await prisma.adminSetting.findUnique({
+          where: { key: "addon_custom_domain_price" },
+        });
+        const domainPrice = Number(priceSetting?.value) || 150000;
+        upgradeAmount += domainPrice;
+
+        if (requestedDomain && typeof requestedDomain === "string") {
+          const sanitized = requestedDomain.toLowerCase().replace(/^https?:\/\//, "").replace(/\/$/, "").replace(/\s/g, "").trim();
+          if (sanitized.includes(".")) {
+            cleanDomain = sanitized;
+          }
+        }
+      }
+    }
 
     // 4. Cek tidak ada upgrade order yang masih PENDING untuk invitation ini
     const pendingUpgrade = await prisma.order.findFirst({
@@ -124,6 +148,7 @@ export async function POST(req: Request) {
         amount: upgradeAmount,
         status: "PENDING",
         paymentMethod: "GATEWAY",
+        requestedDomain: cleanDomain || undefined,
       },
     });
 
@@ -134,7 +159,8 @@ export async function POST(req: Request) {
       fromPlan: currentPlan,
       targetPlan: targetPlanUpper,
       amount: upgradeAmount,
-      message: `Upgrade dari ${currentPlan} ke ${targetPlanUpper}. Nominal: Rp ${upgradeAmount.toLocaleString("id-ID")}`,
+      requestedDomain: cleanDomain,
+      message: `Upgrade dari ${currentPlan} ke ${targetPlanUpper}${cleanDomain ? ` + Custom Domain (${cleanDomain})` : ""}. Nominal: Rp ${upgradeAmount.toLocaleString("id-ID")}`,
     });
 
   } catch (error: any) {

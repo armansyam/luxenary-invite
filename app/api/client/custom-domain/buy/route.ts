@@ -77,6 +77,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Paket undangan tidak valid atau belum terdaftar pada pesanan." }, { status: 400 });
     }
 
+    if (invitation.order.planType !== "PREMIUM") {
+      return NextResponse.json(
+        { error: "Layanan integrasi Custom Domain eksklusif untuk Paket Premium. Silakan upgrade paket Anda terlebih dahulu." },
+        { status: 403 }
+      );
+    }
+
     // 4. Buat Order baru dengan orderType = CUSTOM_DOMAIN_ADDON
     const newOrder = await prisma.order.create({
       data: {

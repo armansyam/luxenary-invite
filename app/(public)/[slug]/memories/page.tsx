@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getAdminSetting } from "@/lib/settings";
@@ -32,6 +32,7 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
   const invitation = await prisma.invitation.findUnique({
     where: { invitationSlug: slug },
     include: {
+      order: { select: { planType: true } },
       guestMemories: {
         orderBy: { createdAt: "desc" },
       },
@@ -40,6 +41,11 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
 
   if (!invitation) {
     notFound();
+  }
+
+  // Jika paket bukan PREMIUM, galeri kenangan tamu tidak tersedia
+  if (invitation.order?.planType !== "PREMIUM") {
+    redirect(`/${slug}`);
   }
 
   const memories: any[] = invitation.guestMemories || [];

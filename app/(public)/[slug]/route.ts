@@ -35,17 +35,88 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
 
   const invitation = await prisma.invitation.findUnique({
     where: { invitationSlug: slug },
+    include: {
+      order: { select: { planType: true } },
+    },
   });
 
   if (!invitation) {
     return new NextResponse("Not Found", { status: 404 });
   }
 
-  // Jika acara sudah selesai (dalam masa galeri), alihkan otomatis ke Galeri Momen
+  // Jika acara sudah selesai
   if (invitation.status === "EVENT_FINISHED") {
-    const memoriesUrl = new URL(`/${slug}/memories`, req.url);
-    memoriesUrl.search = req.nextUrl.search;
-    return NextResponse.redirect(memoriesUrl);
+    // Jika paket PREMIUM (memiliki hak akses galeri kenangan tamu), alihkan ke /memories
+    if (invitation.order?.planType === "PREMIUM") {
+      const memoriesUrl = new URL(`/${slug}/memories`, req.url);
+      memoriesUrl.search = req.nextUrl.search;
+      return NextResponse.redirect(memoriesUrl);
+    }
+
+    // Untuk Traditional & Modern (tanpa galeri kenangan tamu): Tampilkan layar penutup resmi yang anggun
+    const coupleName = `${invitation.groomNickname || "Mempelai"} & ${invitation.brideNickname || "Mempelai"}`;
+    const finishedHtml = `<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Acara Telah Selesai — ${coupleName}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: radial-gradient(circle at top, #1c1917 0%, #0c0a09 100%);
+      color: #fafaf9;
+      font-family: system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+    .card {
+      max-width: 500px;
+      width: 100%;
+      background: rgba(28, 25, 23, 0.9);
+      border: 1px solid rgba(217, 119, 6, 0.25);
+      border-radius: 1.5rem;
+      padding: 2.75rem 2rem;
+      text-align: center;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.35rem 0.85rem;
+      background: rgba(217, 119, 6, 0.15);
+      border: 1px solid rgba(217, 119, 6, 0.3);
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #f59e0b;
+      margin-bottom: 1.25rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; color: #fff; font-family: serif; }
+    .couple { font-size: 1.1rem; color: #f59e0b; font-weight: 600; margin-bottom: 1.25rem; }
+    p { font-size: 0.875rem; color: #d6d3d1; line-height: 1.7; margin-bottom: 1.5rem; }
+    .footer { font-size: 0.75rem; color: #78716c; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1.25rem; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <span class="badge">Rangkaian Acara Selesai</span>
+    <h1>Terima Kasih</h1>
+    <div class="couple">${coupleName}</div>
+    <p>Rangkaian acara pernikahan kami telah selesai dilaksanakan dengan khidmat, lancar, dan penuh kebahagiaan. Dari lubuk hati terdalam, kami mengucapkan terima kasih yang tulus kepada seluruh keluarga, kerabat, dan sahabat atas kehadiran, doa restu, serta berkah yang telah dicurahkan.</p>
+    <div class="footer">Semoga kebaikan dan tali silaturahmi senantiasa tercurah untuk kita semua.</div>
+  </div>
+</body>
+</html>`;
+
+    return new NextResponse(finishedHtml, {
+      status: 200,
+      headers: { "Content-Type": "text/html; charset=utf-8" },
+    });
   }
 
   // Jika undangan masih berstatus DRAFT (belum dipublikasikan)

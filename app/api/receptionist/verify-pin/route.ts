@@ -24,11 +24,21 @@ export async function POST(req: NextRequest) {
 
     const invitation = await prisma.invitation.findUnique({
       where: { id: invitationId },
-      select: { staffPin: true },
+      select: {
+        staffPin: true,
+        order: { select: { planType: true } },
+      },
     });
 
     if (!invitation) {
       return NextResponse.json({ error: "Undangan tidak ditemukan" }, { status: 404 });
+    }
+
+    if (invitation.order?.planType === "TRADITIONAL") {
+      return NextResponse.json(
+        { error: "Fitur Meja Resepsionis & QR Check-in tidak tersedia pada Paket Traditional." },
+        { status: 403 }
+      );
     }
 
     if (!invitation.staffPin || !verifyPin(pin, invitation.staffPin)) {

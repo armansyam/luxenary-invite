@@ -588,8 +588,11 @@ export default function SettingsPage() {
   const receptionistUrl = subdomainUrl ? `${subdomainUrl.replace(/\/$/, "")}/receptionist` : "";
   const memoriesUrl = subdomainUrl ? `${subdomainUrl.replace(/\/$/, "")}/memories` : "";
   const shareMomentUrl = subdomainUrl ? `${subdomainUrl.replace(/\/$/, "")}/sharemoment` : "";
+  const planType = (invitation?.order?.planType || invitation?.planType || "TRADITIONAL").toUpperCase();
+  const hasQrCheckin = planType === "MODERN" || planType === "PREMIUM";
+  const hasGuestMemories = planType === "PREMIUM";
 
-  const reviewItems = [
+  const reviewItems: any[] = [
     {
       id: "canonical",
       badge: "Pintu Utama / URL Asli",
@@ -614,31 +617,39 @@ export default function SettingsPage() {
       url: guestSampleUrl,
       checkLabel: "Saya telah menguji bahwa nama tamu tampil dengan rapi di sampul tema undangan.",
     },
-    {
+  ];
+
+  if (hasQrCheckin) {
+    reviewItems.push({
       id: "receptionist",
       badge: "Meja Resepsionis & QR",
       title: "Portal Scanner Petugas Resepsi",
       desc: `Portal check-in kehadiran tamu hari-H dengan autentikasi PIN Panitia (${formData.staffPin || invitation?.staffPin ? "PIN Telah Diatur" : "Memerlukan PIN"}).`,
       url: receptionistUrl,
       checkLabel: "Saya mengonfirmasi portal resepsionis ini siap diserahkan ke panitia hari-H beserta PIN Keamanan.",
-    },
-    {
-      id: "memories",
-      badge: "Galeri Kenangan Tamu",
-      title: "Album & Live Streaming Momen Tamu",
-      desc: "Portal galeri live untuk menampilkan seluruh foto candid dan ucapan hangat para tamu (dapat diproyeksikan di layar proyektor venue acara).",
-      url: memoriesUrl,
-      checkLabel: "Saya telah memverifikasi portal album kenangan dan galeri momen tamu dapat dibuka.",
-    },
-    {
-      id: "sharemoment",
-      badge: "Form Kamera Tamu",
-      title: "Portal Kamera & Unggah Momen Tamu",
-      desc: "Portal interaktif bagi para tamu di venue untuk mengambil foto selfie dan mengunggah ucapan secara langsung.",
-      url: shareMomentUrl,
-      checkLabel: "Saya telah memastikan formulir kamera dan unggah momen tamu siap digunakan.",
-    },
-  ];
+    });
+  }
+
+  if (hasGuestMemories) {
+    reviewItems.push(
+      {
+        id: "memories",
+        badge: "Galeri Kenangan Tamu",
+        title: "Album & Live Streaming Momen Tamu",
+        desc: "Portal galeri live untuk menampilkan seluruh foto candid dan ucapan hangat para tamu (dapat diproyeksikan di layar proyektor venue acara).",
+        url: memoriesUrl,
+        checkLabel: "Saya telah memverifikasi portal album kenangan dan galeri momen tamu dapat dibuka.",
+      },
+      {
+        id: "sharemoment",
+        badge: "Form Kamera Tamu",
+        title: "Portal Kamera & Unggah Momen Tamu",
+        desc: "Portal interaktif bagi para tamu di venue untuk mengambil foto selfie dan mengunggah ucapan secara langsung.",
+        url: shareMomentUrl,
+        checkLabel: "Saya telah memastikan formulir kamera dan unggah momen tamu siap digunakan.",
+      }
+    );
+  }
 
   if (hasCustomDomain) {
     reviewItems.push({
@@ -1748,7 +1759,33 @@ export default function SettingsPage() {
           </span>
         </div>
 
-        {!invitation?.customDomain && !isCustomDomainEnabled ? (
+        {planType !== "PREMIUM" && !invitation?.customDomain ? (
+          /* Mode Terkunci: Eksklusif Paket Premium */
+          <div className="p-5 rounded-2xl border border-violet-200 bg-violet-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-violet-100 text-violet-800 flex items-center justify-center shrink-0">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-stone-900">Eksklusif untuk Paket Premium</h4>
+                <p className="text-[11px] text-stone-600 mt-1 leading-relaxed max-w-xl">
+                  Layanan integrasi nama domain pribadi (.com / .id) dan retensi galeri kenangan tamu 1 tahun penuh tersedia eksklusif pada Paket Premium. Tingkatkan paket Anda untuk menikmati fitur ini.
+                </p>
+              </div>
+            </div>
+            <div className="shrink-0">
+              <a
+                href={invitation?.id ? `/dashboard/invitation/${invitation.id}` : "#"}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-violet-700 to-indigo-700 hover:from-violet-800 hover:to-indigo-800 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                <span>Upgrade ke Premium</span>
+              </a>
+            </div>
+          </div>
+        ) : !invitation?.customDomain && !isCustomDomainEnabled ? (
           /* Mode Segera Hadir / Belum Tersedia */
           <div className="p-5 rounded-2xl border border-stone-200 bg-stone-50/80 text-center sm:text-left flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-start gap-3.5">

@@ -81,11 +81,22 @@ export async function POST(req: NextRequest) {
 
     const invitation = await prisma.invitation.findUnique({
       where: { id: invitationId },
-      select: { memoriesUploadLocked: true, invitationSlug: true },
+      select: {
+        memoriesUploadLocked: true,
+        invitationSlug: true,
+        order: { select: { planType: true } },
+      },
     });
 
     if (!invitation) {
       return NextResponse.json({ error: "Undangan tidak ditemukan." }, { status: 404 });
+    }
+
+    if (invitation.order?.planType !== "PREMIUM") {
+      return NextResponse.json(
+        { error: "Fitur unggah momen kenangan tamu eksklusif untuk Paket Premium." },
+        { status: 403 }
+      );
     }
 
     // Cek apakah upload sudah dikunci oleh klien (setelah download ZIP)

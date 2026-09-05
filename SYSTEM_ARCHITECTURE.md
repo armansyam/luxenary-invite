@@ -450,6 +450,8 @@ Khusus SUPER_ADMIN / ADMIN untuk intervensi operasional langsung dari dashboard:
      - Admin dapat mengaktifkan atau menonaktifkan penawaran custom domain via toggle switch di Pengaturan Admin (Tab Paket & Harga → Add-ons).
      - **UX Klien:** Jika toggle dinonaktifkan (`false`), klien yang belum memiliki custom domain akan melihat kartu status *Segera Hadir / Belum Tersedia* (disabled state) tanpa formulir pemesanan. Klien yang sudah memiliki custom domain aktif (`invitation.customDomain`) tetap dapat melihat dan mengelola domain aktifnya secara normal (Zero-Regression).
      - **Backend Guard:** Endpoint `POST /api/client/custom-domain/buy` memverifikasi status toggle dari database `AdminSetting` dan mengembalikan HTTP 403 Forbidden jika fitur sedang dinonaktifkan.
+     - **Tier Protection (PREMIUM Only):** Pembelian add-on custom domain secara langsung maupun lewat form dashboard dikunci eksklusif untuk tier `PREMIUM`. Paket Traditional dan Modern disajikan kartu terkunci dengan ajakan upgrade.
+     - **Seamless Upgrade Bundling:** Klien yang melakukan upgrade ke `PREMIUM` (`POST /api/payments/upgrade`) dapat memilih add-on integrasi custom domain secara opsional dalam satu invoice sekaligus, yang otomatis memasang domain dan retensi 365 hari saat pembayaran lunas.
      - **Real-time Synchronized:** Endpoint `GET /api/public/settings` menggunakan `export const dynamic = "force-dynamic"` agar perubahan toggle admin langsung terrefleksi instan di browser klien.
    - Di eksekusi pembayaran (`applyCustomDomainAddon`), sistem memasang domain kustom DAN otomatis memperpanjang masa aktif URL Asli serta galeri kenangan selama **+365 hari (1 tahun penuh)**.
 2. **Perpanjangan Masa Aktif URL Asli / Galeri (Bulanan) (`orderType: GALLERY_EXTENSION`):**
@@ -458,10 +460,13 @@ Khusus SUPER_ADMIN / ADMIN untuk intervensi operasional langsung dari dashboard:
    - Di eksekusi pembayaran (`applyGalleryExtension`), sistem menambahkan **+30 hari** ke `galleryExpiresAt` dan membuka kembali izin unggah foto jika dibutuhkan.
 
 ### 6.5 — Smart Fallback Lifecycle Routing (`app/(public)/[slug]/route.ts`)
-Jika undangan telah berstatus `ARCHIVED` (masa galeri 30 hari berakhir):
-1. Sistem memeriksa keberadaan file salinan portofolio mandiri secara otomatis melalui `hasPortfolio(slug)`.
-2. **Kondisi A (Ada Portofolio):** Pengunjung yang mengakses URL Asli otomatis dialihkan (*HTTP 307*) ke `/portfolio/[slug]` sebagai arsip kenangan abadi.
-3. **Kondisi B (Tanpa Portofolio):** Pengunjung langsung dialihkan (*HTTP 302/307*) kembali ke Halaman Utama (`/`) secara elegan tanpa error 404.
+1. **Fase Acara Selesai (`EVENT_FINISHED` / H+7 Pasca-Acara):**
+   - **Paket PREMIUM (memiliki `guest_memories`):** Pengunjung yang mengakses `/[slug]` otomatis dialihkan ke Galeri Kenangan Tamu (`/[slug]/memories`).
+   - **Paket TRADITIONAL & MODERN (tanpa `guest_memories`):** Pengunjung disajikan layar penutup resmi yang anggun (*Graceful Event Closed Page*) bertema dark luxury yang berisi ucapan terima kasih tulus dari kedua mempelai, tanpa diarahkan ke galeri kosong.
+2. **Fase Arsip Total (`ARCHIVED` / Masa Galeri Selesai):**
+   - Sistem memeriksa keberadaan file salinan portofolio mandiri secara otomatis melalui `hasPortfolio(slug)`.
+   - **Kondisi A (Ada Portofolio):** Pengunjung yang mengakses URL Asli otomatis dialihkan (*HTTP 307*) ke `/portfolio/[slug]` sebagai arsip kenangan abadi.
+   - **Kondisi B (Tanpa Portofolio):** Pengunjung langsung dialihkan (*HTTP 302/307*) kembali ke Halaman Utama (`/`) secara elegan tanpa error 404.
 
 ### 6.5.1 — Manajemen Projek Undangan di Admin Dashboard (`app/(admin)/admin/page.tsx`)
 1. **Nama Tab & Elevasi Konseptual:** Tab navigasi diubah dari sekadar "Undangan" menjadi **"Projek Undangan" (Invitation Projects)** untuk mencerminkan satu siklus hidup utuh (persiapan, tayang, pasca-acara, hingga pengarsipan).

@@ -119,6 +119,8 @@ export default function EditInvitation() {
   // Upgrade Paket State
   const [upgradeModal, setUpgradeModal] = useState(false);
   const [upgradeTarget, setUpgradeTarget] = useState<"MODERN" | "PREMIUM" | null>(null);
+  const [includeCustomDomain, setIncludeCustomDomain] = useState(false);
+  const [upgradeDomainInput, setUpgradeDomainInput] = useState("");
   const [upgrading, setUpgrading] = useState(false);
   const [upgradeError, setUpgradeError] = useState<string | null>(null);
   const [isDeploying, setIsDeploying] = useState(false);
@@ -149,7 +151,12 @@ export default function EditInvitation() {
       const res = await fetch("/api/payments/upgrade", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ invitationId, targetPlan: upgradeTarget }),
+        body: JSON.stringify({
+          invitationId,
+          targetPlan: upgradeTarget,
+          includeCustomDomain: upgradeTarget === "PREMIUM" && includeCustomDomain,
+          requestedDomain: upgradeTarget === "PREMIUM" && includeCustomDomain ? upgradeDomainInput : undefined,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Gagal membuat order upgrade.");
@@ -1011,7 +1018,13 @@ export default function EditInvitation() {
                 {planType !== "PREMIUM" && (
                   <button
                     type="button"
-                    onClick={() => { setUpgradeTarget(null); setUpgradeError(null); setUpgradeModal(true); }}
+                    onClick={() => {
+                      setUpgradeTarget(null);
+                      setUpgradeError(null);
+                      setIncludeCustomDomain(false);
+                      setUpgradeDomainInput("");
+                      setUpgradeModal(true);
+                    }}
                     className="text-[10px] font-bold text-violet-700 hover:text-violet-900 border border-violet-200 hover:border-violet-400 bg-violet-50 hover:bg-violet-100 px-2 py-0.5 rounded-full transition flex items-center gap-1 cursor-pointer"
                   >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
@@ -3846,6 +3859,48 @@ export default function EditInvitation() {
                   );
                 })}
 
+              {/* Add-on Custom Domain Opsional (Hanya muncul jika memilih PREMIUM & fitur diaktifkan admin) */}
+              {upgradeTarget === "PREMIUM" && (platformSettings?.addon_custom_domain_enabled ?? platformSettings?.addonCustomDomainEnabled ?? true) && (
+                <div className="p-4 rounded-2xl border border-violet-200 bg-violet-50/70 space-y-2.5 transition">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={includeCustomDomain}
+                      onChange={(e) => setIncludeCustomDomain(e.target.checked)}
+                      className="mt-0.5 w-4 h-4 rounded text-violet-600 border-stone-300 focus:ring-violet-500 cursor-pointer"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-stone-900">
+                          Tambah Custom Domain Pribadi (.com / .id)
+                        </span>
+                        <span className="text-xs font-bold text-violet-700">
+                          +Rp {Number(platformSettings?.addon_custom_domain_price ?? platformSettings?.addonCustomDomainPrice ?? 150000).toLocaleString("id-ID")}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-stone-500 mt-0.5 leading-relaxed">
+                        Masa aktif 1 tahun penuh & simpan galeri foto kenangan hingga 365 hari pasca-acara (tidak wajib).
+                      </p>
+                    </div>
+                  </label>
+
+                  {includeCustomDomain && (
+                    <div className="pt-2 border-t border-violet-200/60 space-y-1">
+                      <label className="block text-[10px] font-bold uppercase tracking-wider text-violet-800">
+                        Nama Domain yang Diinginkan
+                      </label>
+                      <input
+                        type="text"
+                        value={upgradeDomainInput}
+                        onChange={(e) => setUpgradeDomainInput(e.target.value)}
+                        placeholder="contoh: namakamu.com"
+                        className="w-full px-3 py-2 text-xs border border-violet-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 bg-white"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
               {upgradeError && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
                   <p className="text-xs text-red-700 font-medium">{upgradeError}</p>
@@ -3862,7 +3917,19 @@ export default function EditInvitation() {
                   {upgrading ? (
                     <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/><span>Memproses...</span></>
                   ) : (
-                    <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg><span>Upgrade Sekarang{upgradeTarget ? ` ke ${upgradeTarget}` : ""}</span></>
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                      <span>
+                        Upgrade Sekarang{upgradeTarget ? ` ke ${upgradeTarget}` : ""}
+                        {(() => {
+                          if (!upgradeTarget) return "";
+                          const diff = (PLAN_PRICES[upgradeTarget] ?? 0) - (PLAN_PRICES[planType] ?? 0);
+                          const domainPrice = Number(platformSettings?.addon_custom_domain_price ?? platformSettings?.addonCustomDomainPrice ?? 150000);
+                          const total = diff + (upgradeTarget === "PREMIUM" && includeCustomDomain ? domainPrice : 0);
+                          return ` (Rp ${total.toLocaleString("id-ID")})`;
+                        })()}
+                      </span>
+                    </>
                   )}
                 </button>
                 <p className="text-center text-[10px] text-stone-400">Pembayaran diproses otomatis. Tier aktif segera setelah lunas.</p>
