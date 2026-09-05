@@ -1306,6 +1306,7 @@ Untuk memastikan showroom demo tema publik (`/demo/[themeId]`) tampil memukau da
    - Label teks tombol dan cover tetap menggunakan standar baku bawaan sistem (`customLabels.openBtn = "Buka Undangan"`).
 4. **Full Caching Strategy (Browser & Cloudflare Edge CDN):**
    - Konfigurasi `next.config.ts` menetapkan `Cache-Control` eksplisit:
+     - `/`: `public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400` (Cache 24 jam via ISR `revalidate = 86400`, dengan on-demand auto-revalidation via `revalidatePath('/')` saat Admin memperbarui pengaturan harga/platform).
      - `/music/:path*`: `public, max-age=31536000, immutable` (Cache permanen 1 tahun di browser dan CDN karena aset musik bawaan tidak pernah berubah).
      - `/demo/:path*`: `public, max-age=86400, s-maxage=604800, stale-while-revalidate=604800` (1 hari di browser, 7 hari di Edge Cloudflare CDN dengan background revalidation).
      - `/css/:path*`: `public, max-age=604800, stale-while-revalidate=86400` (Cache 7 hari untuk modul CSS sistem dengan background revalidasi).

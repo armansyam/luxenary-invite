@@ -163,6 +163,14 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // On-demand revalidation: perbarui cache landing page jika setting harga/platform berubah
+    try {
+      const { revalidatePath } = await import("next/cache");
+      revalidatePath("/");
+    } catch (e) {
+      console.warn("[settings revalidatePath error]", e);
+    }
+
     return NextResponse.json({ success: true, updated: results });
   } catch (error: any) {
     return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Terjadi kesalahan server" : error.message }, { status: 500 });

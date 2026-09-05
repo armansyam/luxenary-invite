@@ -2,7 +2,7 @@ import Link from "next/link";
 import { BrandLogo } from "@/components/BrandLogo";
 import { getPublicPlatformSettings } from "@/lib/settings";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 86400; // Full cache 24 jam (ISR)
 
 export default async function Home() {
   const { 
