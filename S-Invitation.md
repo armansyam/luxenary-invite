@@ -211,6 +211,7 @@ Siklus hidup undangan diatur secara otomatis oleh cron job (`POST /api/cron/clea
    - Data formulir RSVP dibersihkan otomatis untuk melindungi privasi.
    - Kunjungan ke URL subdomain/slug otomatis dialihkan (*redirect 307*) langsung ke **Galeri Momen Tamu (`/memories`)**.
 2. **Fase 2: Retensi Galeri Momen (H + `retention_gallery_default_days` atau `galleryExpiresAt`)**:
+   - Paket yang mencakup fitur `guest_memories` (`/memories`) mengadopsi durasi retensi dinamis dari pengaturan admin (`retention_gallery_default_days`, default 30 hari / 1 bulan) pada seluruh paket publik dan dashboard klien.
    - Tamu dan pengantin dapat mengunduh seluruh koleksi foto kenangan dalam format ZIP via `streamMemoriesToZip`.
    - Klien dapat memperpanjang masa aktif galeri sebesar **+30 Hari** via pembayaran QRIS mandiri (`POST /api/client/memories/extend`).
    - Jika masa aktif habis dan tidak diperpanjang:

@@ -155,12 +155,12 @@ export function MemoriesDownloadSection({
       <div className="flex items-center justify-between">
         <label className="block text-xs font-bold text-emerald-950">Backup &amp; Download Foto Tamu</label>
         <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded-md">
-          H+{retentionDays} hari
+          {retentionDays >= 30 && retentionDays % 30 === 0 ? `H+${retentionDays} hari (${retentionDays / 30} bulan)` : `H+${retentionDays} hari`}
         </span>
       </div>
       <p className="text-[11px] text-emerald-900/80 leading-relaxed">
         <strong>Penting:</strong> Seluruh momen tamu disimpan di server kami.{" "}
-        <strong>Unduh arsip ZIP</strong> dalam kurun waktu maksimal {retentionDays} hari pasca-acara sebelum sistem menghapusnya otomatis.
+        <strong>Unduh arsip ZIP</strong> dalam kurun waktu maksimal {retentionDays >= 30 && retentionDays % 30 === 0 ? `${retentionDays / 30} bulan (${retentionDays} hari)` : `${retentionDays} hari`} pasca-acara sebelum sistem menghapusnya otomatis.
       </p>
 
       {/* Kondisi Status Undangan & Upload */}

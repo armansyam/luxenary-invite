@@ -57,7 +57,7 @@ export default async function TermsPage() {
             <ul className="list-disc pl-5 mt-2 space-y-1">
               <li>Masa aktif subdomain undangan berlaku hingga {graceDays} hari setelah tanggal acara pernikahan selesai sesuai pengaturan sistem platform (dan dapat diperpanjang via add-on). Khusus undangan yang dikurasi dan dikloning ke portofolio resmi platform akan tetap tersedia permanen.</li>
               <li>Hak akses <strong>Dashboard Editor</strong> dan <strong>seluruh interaksi tamu</strong> (seperti pengisian buku tamu, RSVP, dan fitur Guest Memories) akan <strong>dikunci (Locked)</strong> secara otomatis 24 jam setelah tanggal acara pernikahan terlewati.</li>
-              <li>Untuk alasan performa dan efisiensi penyimpanan, seluruh data terkait memori interaktif tamu akan disimpan selama {galleryDays} hari pasca acara sebelum dibersihkan otomatis dari server. Klien diimbau untuk mengunduh seluruh memori tamu sebelum batas waktu tersebut.</li>
+              <li>Untuk paket dengan fitur Galeri Kenangan Tamu (/memories), seluruh berkas foto candid dan ucapan tamu disimpan serta dapat diakses aktif selama {galleryDays % 30 === 0 ? `${galleryDays / 30} bulan (${galleryDays} hari)` : `${galleryDays} hari`} pasca-acara sebelum dibersihkan otomatis dari server. Klien diimbau untuk mengunduh seluruh arsip kenangan tamu via unduh ZIP sebelum batas waktu tersebut atau memperpanjang masa aktif via add-on.</li>
             </ul>
           </section>
 

@@ -19,6 +19,10 @@ export default async function ContactPage() {
   const supportWhatsapp = settings.supportWhatsapp || "";
   const cleanWaNumber = supportWhatsapp.replace(/\D/g, "").replace(/^0/, "62");
   const graceDays = settings.retentionInvitationGraceDays || 7;
+  const galleryDays = settings.retentionGalleryDefaultDays || 30;
+  const galleryDurationLabel = galleryDays >= 30 && galleryDays % 30 === 0
+    ? `${galleryDays / 30} bulan (${galleryDays} hari)`
+    : `${galleryDays} hari`;
 
   return (
     <div className="min-h-screen bg-[#faf8f5] font-sans flex flex-col text-stone-800" style={{ colorScheme: "only light", backgroundColor: "#faf8f5", color: "#292524" }}>
@@ -148,7 +152,7 @@ export default async function ContactPage() {
               <div>
                 <p className="font-semibold text-stone-800 mb-0.5">Berapa lama masa aktif undangan digital saya?</p>
                 <p>
-                  Masa aktif tautan (subdomain) undangan digital berlaku hingga {graceDays} hari setelah tanggal acara pernikahan selesai sesuai pengaturan sistem platform (dan dapat diperpanjang via paket add-on). Khusus undangan yang telah dikurasi dan dikloning ke galeri portofolio resmi platform, halaman undangan statis akan terus tersedia secara permanen sebagai arsip kenangan.
+                  Masa aktif tautan (subdomain) undangan digital berlaku hingga {graceDays} hari setelah tanggal acara pernikahan selesai sesuai pengaturan sistem platform (dan dapat diperpanjang via paket add-on). Khusus paket yang memiliki fitur Galeri Kenangan Tamu (/memories), halaman galeri foto momen candid tamu dapat diakses aktif selama {galleryDurationLabel} pasca-acara sebelum diarsipkan atau dibersihkan otomatis oleh sistem. Undangan yang telah dikurasi dan dikloning ke galeri portofolio resmi platform akan terus tersedia secara permanen sebagai arsip kenangan.
                 </p>
               </div>
               <div>

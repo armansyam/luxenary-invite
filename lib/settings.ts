@@ -87,23 +87,50 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
   const premiumThemes = themes.filter(t => t.isPremium).map(t => t.name);
   const totalThemesCount = traditionalThemes.length + modernThemes.length + premiumThemes.length;
 
-  const commonFeatures = [
-    "Tautan link personal per nama tamu",
-    "Tamu undangan tanpa batas",
-    "Manajemen RSVP & ucapan doa",
-    "Fitur Eksklusif: Video Guest Moment",
-    "Fitur Eksklusif: Galeri Kenangan Tamu",
-    "Buku tamu & link WA 1-klik",
-    "Galeri foto & musik latar",
-    "Amplop digital QRIS & transfer bank",
-  ];
+  const galleryRetentionDays = Number(map["retention_gallery_default_days"] || 30);
+  const galleryDurationLabel = galleryRetentionDays >= 30 && galleryRetentionDays % 30 === 0
+    ? `${galleryRetentionDays / 30} bulan`
+    : `${galleryRetentionDays} hari`;
 
-  const parseFeatures = (key: string, defaultFirstLine: string) => {
+  const parseFeatures = (key: string, defaultFirstLine: string, caps: string[]) => {
+    let rawList: string[];
     if (map[key]) {
-      return map[key].split("\n").map(s => s.trim()).filter(s => s.length > 0);
+      rawList = map[key].split("\n").map(s => s.trim()).filter(s => s.length > 0);
+    } else {
+      rawList = [
+        defaultFirstLine,
+        "Tamu undangan tanpa batas",
+        "Manajemen RSVP & ucapan doa",
+        "Galeri foto & musik latar",
+        "url : namakamu.luxvite.id",
+      ];
+      if (caps.includes("qr_checkin")) {
+        rawList.push("QR Code Check-in Tamu");
+        rawList.push("Resepsionis");
+      }
+      if (caps.includes("guest_memories")) {
+        rawList.push(`Galeri Kenangan Tamu (/memories — Aktif ${galleryDurationLabel} pasca-acara)`);
+      }
     }
-    return [defaultFirstLine, ...commonFeatures];
+
+    const hasGalleryItem = rawList.some(item => /galeri\s+kenangan|guest\s+memories|guest\s*gal/i.test(item));
+    if (caps.includes("guest_memories") && !hasGalleryItem) {
+      rawList.push(`Galeri Kenangan Tamu (/memories — Aktif ${galleryDurationLabel} pasca-acara)`);
+    }
+
+    return rawList.map(item => {
+      if (/galeri\s+kenangan|guest\s+memories|guest\s*gal/i.test(item)) {
+        if (!/aktif|\d+\s*(hari|bulan)/i.test(item)) {
+          return `${item} (/memories — Aktif ${galleryDurationLabel} pasca-acara)`;
+        }
+      }
+      return item;
+    });
   };
+
+  const capsTraditional: string[] = map["capabilities_traditional"] ? JSON.parse(map["capabilities_traditional"]) : ["music", "gallery"];
+  const capsModern: string[] = map["capabilities_modern"] ? JSON.parse(map["capabilities_modern"]) : ["music", "gallery"];
+  const capsPremium: string[] = map["capabilities_premium"] ? JSON.parse(map["capabilities_premium"]) : ["music", "gallery", "qr_checkin", "guest_memories", "custom_domain"];
 
   return {
     platformName: map["platform_name"] || "Luxenary",
@@ -123,7 +150,7 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
       "Silakan transfer tepat sesuai total tagihan invoice. Setelah transfer, unggah foto bukti transfer di bawah ini untuk diverifikasi admin.",
     retentionInvitationDays: Number(map["retention_invitation_days"] || 30),
     retentionInvitationGraceDays: Number(map["retention_invitation_grace_days"] || 7),
-    retentionGalleryDefaultDays: Number(map["retention_gallery_default_days"] || 30),
+    retentionGalleryDefaultDays: galleryRetentionDays,
     galleryExtensionPricePerMonth: Number(map["gallery_extension_price_per_month"] || 50000),
     addonSubdomainGalleryBundlePrice: Number(map["addon_subdomain_gallery_bundle_price"] || 175000),
     addonCustomDomainPrice: Number(map["addon_custom_domain_price"] || 150000),
@@ -153,8 +180,8 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
         price: Number(map["price_traditional"] || 0),
         desc: map["desc_traditional"] || "Tema Standart — Elegan, Sakral & Bernuansa Tradisional",
         themes: traditionalThemes,
-        features: parseFeatures("features_traditional", `Pilihan ${traditionalThemes.length} tema Standart Traditional`),
-        capabilities: map["capabilities_traditional"] ? JSON.parse(map["capabilities_traditional"]) : ["music", "gallery"],
+        features: parseFeatures("features_traditional", `Pilihan ${traditionalThemes.length} tema Standart Traditional`, capsTraditional),
+        capabilities: capsTraditional,
         color: "amber",
         isFeatured: false,
       },
@@ -164,8 +191,8 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
         price: Number(map["price_modern"] || 0),
         desc: map["desc_modern"] || "Tema Premium — Sinematik, Editorial & Kontemporer",
         themes: modernThemes,
-        features: parseFeatures("features_modern", `Akses ${modernThemes.length} tema Modern + Semua tema Traditional (${traditionalThemes.length + modernThemes.length} Tema)`),
-        capabilities: map["capabilities_modern"] ? JSON.parse(map["capabilities_modern"]) : ["music", "gallery"],
+        features: parseFeatures("features_modern", `Akses ${modernThemes.length} tema Modern + Semua tema Traditional (${traditionalThemes.length + modernThemes.length} Tema)`, capsModern),
+        capabilities: capsModern,
         color: "slate",
         isFeatured: false,
       },
@@ -175,8 +202,8 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
         price: Number(map["price_premium"] || 0),
         desc: map["desc_premium"] || "Tema Luxury — Editorial, Full-Text & Luxury Visual Motion",
         themes: premiumThemes,
-        features: parseFeatures("features_premium", `All-Access ${totalThemesCount} Tema Lengkap (Traditional + Modern + Luxury Premium)`),
-        capabilities: map["capabilities_premium"] ? JSON.parse(map["capabilities_premium"]) : ["music", "gallery", "qr_checkin", "guest_memories", "custom_domain"],
+        features: parseFeatures("features_premium", `All-Access ${totalThemesCount} Tema Lengkap (Traditional + Modern + Luxury Premium)`, capsPremium),
+        capabilities: capsPremium,
         badge: "Terpopuler",
         color: "purple",
         isFeatured: true,

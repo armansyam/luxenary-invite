@@ -82,7 +82,7 @@ Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model 
    - Tamu bagikan foto → /sharemoment (upload ke R2/Local)
    - Monitoring & moderasi kiriman foto tamu langsung di Dashboard Utama (/dashboard)
    - Klien beli Add-on Jasa Custom Domain via Settings → /api/client/custom-domain/buy (Otomatis include masa aktif URL Asli & Galeri 1 tahun)
-   - Pasca Acara (H+7 / `retention_invitation_grace_days`): Undangan fisik ditutup, URL Asli otomatis beralih menyajikan Galeri Momen (/memories) dengan penguncian upload otomatis (`memoriesUploadLocked = true`)
+   - Pasca Acara (H+7 / `retention_invitation_grace_days`): Undangan fisik ditutup, URL Asli otomatis beralih menyajikan Galeri Momen (/memories) dengan penguncian upload otomatis (`memoriesUploadLocked = true`), dan masa simpan galeri kenangan default `retention_gallery_default_days` (1 bulan / dinamis setting admin).
    - Subdomain otomatis didaur ulang ke pool namespace pasca `subdomain_grace_days` jika `subdomain_auto_recycle = "true"`
    - Download koleksi foto ZIP (Client-side JSZip dengan proteksi status DRAFT & peringatan unduh dini) + Perpanjang Masa Aktif URL Asli / Galeri (+30 Hari via QRIS)
 

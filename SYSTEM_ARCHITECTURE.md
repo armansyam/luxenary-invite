@@ -432,6 +432,7 @@ Cron job dilindungi oleh header `Authorization: Bearer <CRON_SECRET>` atau sesi 
      - Mengunci upload foto (`memoriesUploadLocked = true`).
      - Mengubah status menjadi `ARCHIVED`.
      - Melepaskan Subdomain kembali ke pool umum (`subdomain = null`) jika belum dilepas.
+    - **Dinamisasi Publik & Paket:** Paket berfitur `guest_memories` (`/memories`) secara dinamis menampilkan masa aktif `retention_gallery_default_days` (default 30 hari / 1 bulan pasca-acara) pada landing page, paket, terms, privacy, dan kontak.
 4. **Fase 3 (Pembersihan Total Akun Klien Lama — H + `retention_account_days`, default 365 Hari):**
    - Menghapus akun klien yang semua undangannya sudah `ARCHIVED` lebih dari `retention_account_days`.
 

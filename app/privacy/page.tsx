@@ -64,7 +64,7 @@ export default async function PrivacyPage() {
               Kami menggunakan enkripsi dan langkah keamanan standar industri untuk melindungi data Anda. Namun, demi menjaga efisiensi ruang server kami, terdapat kebijakan retensi data otomatis:
             </p>
             <ul className="list-disc pl-5 mt-2 space-y-1">
-              <li>Masa aktif subdomain undangan berlaku hingga {graceDays} hari setelah tanggal acara pernikahan selesai, sedangkan penyimpanan data interaktif (ucapan tamu, foto memori) tersimpan selama {galleryDays} hari pasca acara (atau sesuai perpanjangan aktif) sebelum dibersihkan demi performa server. Undangan yang telah dikurasi ke portofolio resmi platform akan tetap tersedia permanen.</li>
+              <li>Masa aktif subdomain undangan berlaku hingga {graceDays} hari setelah tanggal acara pernikahan selesai, sedangkan penyimpanan data Galeri Kenangan Tamu (/memories) tersimpan aktif selama {galleryDays % 30 === 0 ? `${galleryDays / 30} bulan (${galleryDays} hari)` : `${galleryDays} hari`} pasca-acara (atau sesuai perpanjangan aktif) sebelum dibersihkan demi performa server. Khusus undangan yang telah dikurasi ke portofolio resmi platform akan tetap tersedia permanen.</li>
               <li>Klien diimbau untuk mengunduh seluruh memori tamu sebelum batas waktu tersebut.</li>
             </ul>
           </section>

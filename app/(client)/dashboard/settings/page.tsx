@@ -56,6 +56,7 @@ export default function SettingsPage() {
   const [customDomainPrice, setCustomDomainPrice] = useState(150000);
   const [isCustomDomainEnabled, setIsCustomDomainEnabled] = useState(true);
   const [retentionGraceDays, setRetentionGraceDays] = useState(7);
+  const [retentionGalleryDays, setRetentionGalleryDays] = useState(30);
 
   const handleCopyDns = async (val: string, key: string) => {
     if (!val) return;
@@ -398,6 +399,9 @@ export default function SettingsPage() {
         }
         if (d?.retentionInvitationGraceDays !== undefined || d?.retention_invitation_grace_days !== undefined) {
           setRetentionGraceDays(Number(d.retentionInvitationGraceDays ?? d.retention_invitation_grace_days) || 7);
+        }
+        if (d?.retentionGalleryDefaultDays !== undefined || d?.retention_gallery_default_days !== undefined) {
+          setRetentionGalleryDays(Number(d.retentionGalleryDefaultDays ?? d.retention_gallery_default_days) || 30);
         }
       })
       .catch(() => {});
@@ -838,6 +842,11 @@ export default function SettingsPage() {
                     ? "Dihitung otomatis 1 tahun pasca tanggal acara (Layanan Custom Domain Aktif)."
                     : `Dihitung otomatis ${retentionGraceDays} hari pasca tanggal acara pernikahan Anda (Masa Aktif Subdomain).`}
                 </p>
+                {invitation?.planType === "PREMIUM" && (
+                  <p className="text-[10px] text-purple-300/90 pt-1 border-t border-stone-700/60 leading-normal">
+                    Galeri Kenangan Tamu (/memories) aktif {retentionGalleryDays >= 30 && retentionGalleryDays % 30 === 0 ? `${retentionGalleryDays / 30} bulan (${retentionGalleryDays} hari)` : `${retentionGalleryDays} hari`} pasca-acara.
+                  </p>
+                )}
               </div>
 
               <div className="p-3.5 rounded-xl bg-stone-800/50 border border-stone-800 text-xs space-y-1">
