@@ -49,7 +49,7 @@ Agar URL gambar terlihat profesional dan menggunakan domain Anda sendiri (contoh
 
 ## 3. Konfigurasi Variabel di `.env` Server VPS
 
-Buka file `/var/www/luxenary-invite/.env` di VPS Anda:
+Buka file `~/luxenary-invite/.env` di VPS Anda:
 ```env
 # Aktifkan Provider R2
 STORAGE_PROVIDER="r2"

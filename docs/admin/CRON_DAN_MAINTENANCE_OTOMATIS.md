@@ -109,7 +109,7 @@ Pada server VPS Ubuntu, pasang penjadwalan crontab berikut melalui perintah `cro
 ```
 
 > **Catatan Pengaturan:**
-> Ganti `CRON_SECRET_ANDA` dengan nilai string rahasia yang tertera pada baris `CRON_SECRET` di dalam file `/var/www/luxenary-invite/.env`.
+> Ganti `CRON_SECRET_ANDA` dengan nilai string rahasia yang tertera pada baris `CRON_SECRET` di dalam file `~/luxenary-invite/.env`.
 
 ---
 

@@ -145,8 +145,6 @@ Hapus seluruh isi default, lalu isi dengan konfigurasi berikut *(ganti `domainan
 {
     on_demand_tls {
         ask http://localhost:3001/api/public/resolve-custom-domain
-        interval 2m
-        burst 5
     }
 }
 
@@ -182,11 +180,9 @@ sudo systemctl enable caddy
 
 ### 5.1 Clone Repository ke Server
 ```bash
-sudo mkdir -p /var/www
-sudo chown -R $USER:$USER /var/www
-cd /var/www
+cd ~
 git clone URL_REPOSITORY_ANDA luxenary-invite
-cd /var/www/luxenary-invite
+cd ~/luxenary-invite
 ```
 
 ### 5.2 Siapkan Konfigurasi `.env`
@@ -309,7 +305,7 @@ Buka peramban (browser) Anda dan uji beberapa hal berikut:
 Jika di kemudian hari Anda melakukan update kode dari komputer lokal dan melakukan `git push` ke GitHub, cara memperbarui server produksi sangat sederhana:
 
 ```bash
-cd /var/www/luxenary-invite
+cd ~/luxenary-invite
 git pull origin main
 ./deploy.sh
 ```
