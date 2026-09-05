@@ -517,6 +517,13 @@ Khusus SUPER_ADMIN / ADMIN untuk intervensi operasional langsung dari dashboard:
      - Tautan publik album kenangan tamu (`/{slug}/memories` atau `/{subdomain}/memories`) dengan fitur Salin Link & Buka Galeri.
      - Komponen unduh ZIP client-side (`MemoriesDownloadSection`) dan info retensi/perpanjangan masa simpan +30 hari via QRIS.
      - Monitoring stream foto candid tamu secara langsung lengkap dengan tombol moderasi/hapus dan counter real-time.
+    - **Proteksi Anti-Download & Privasi Tamu Galeri Kenangan (`/memories` & `/sharemoment`):**
+      - Halaman galeri bersifat murni *View-Only* untuk publik.
+      - Perlindungan browser berlapis dipasang pada seluruh media foto (kartu masonry, lingkaran sorotan story, lightbox popup, dan sorotan uploader):
+        - `onContextMenu={(e) => e.preventDefault()}`: Mencegah menu klik kanan bawaan browser (*"Save image as..."*).
+        - `-webkit-touch-callout: none` & `user-select: none`: Mencegah menu pop-up tahan layar (*long-press* *"Simpan Gambar"*) pada perangkat iOS Safari dan Android Chrome.
+        - `draggable={false}` dan `pointer-events-none` pada tag `img`: Mencegah penarikan gambar (*drag-and-drop*) ke luar browser.
+        - Lightbox modal memblokir event contextmenu pada level modal pembungkus.
 2. **Standarisasi Fitur Musik Latar Pernikahan (Audio Background):**
    - Musik latar merupakan fitur esensial dari setiap paket undangan (Bebas dari pembungkus capability semu).
    - Klien dapat mengatur lagu otomatis berputar saat tamu klik "Buka Undangan", memilih dari preset kurasi klasik sakral, mengunggah berkas MP3/M4A sendiri (hingga 15 MB), atau memasukkan URL audio kustom/YouTube.
@@ -579,7 +586,7 @@ HTML standalone lengkap (self-contained, inline CSS/JS)
   4. Penggantian tema oleh klien di Dashboard otomatis me-unlink piring draft lama dan menyalin template master baru.
 * **Standar Kontrak Placeholder Nama Mempelai (Cover vs Profil):**
   - **Cover Buka Undangan, Hero Title, Sidebar Desktop, & Closing Footer:** Wajib menggunakan Nama Panggilan (`{{firstName}} & {{secondName}}`). Menghasilkan impresi visual yang elegan, intim, dan bersih.
-  - **Seksi Profil Pasangan (*The Couple*):** Menggunakan Nama Lengkap beserta Gelar Akademik/Adat (`{{firstDisplayName}} & {{secondDisplayName}}` atau `{{firstFullName}} & {{secondFullName}}`), dilengkapi info orang tua (`{{firstParents}}` & `{{secondParents}}`) dan akun Instagram.
+  - **Seksi Profil Pasangan (*The Couple*):** Menggunakan Nama Lengkap beserta Gelar Akademik/Adat (`{{firstFullName}} & {{secondFullName}}`), dilengkapi info orang tua (`{{firstParents}}` & `{{secondParents}}`) dan akun Instagram.
   - **Monogram & Inisial Logo Dinamis (`firstInitial`, `secondInitial`, `coupleMonogram`):** Mengambil huruf awal nama panggilan mempelai secara otomatis sesuai `displayOrder` untuk *brand watermark* atau *crest logo* di desktop hero.
   - **Label Seksi & Pengantar Profil Universal (`coupleSectionEyebrow`, `coupleSectionSub`):** Menjamin pengantar profil bersifat universal dan elegan tanpa benturan terminologi keagamaan yang kaku.
 * **Arsitektur Seksi Penutup Adaptif 100vh (`.site-footer` / `.closing-sec`) & Fallback Label:**
@@ -1325,5 +1332,7 @@ Untuk memastikan showroom demo tema publik (`/demo/[themeId]`) tampil memukau da
    - **Mode Desktop:** Wadah kartu dikunci pada rasio **16 : 9** (`aspect-[16/9]`), menampilkan file `thumbnail_desktop.webp` (resolusi standar DevTools 1280 × 720 px).
    - **Auto-Fallback Cerdas:** Jika file thumbnail khusus belum diunggah, sistem otomatis melakukan fallback berjenjang ke `cover.webp` lalu `hero.webp`.
    - **Slot Demo Studio & Petunjuk Ukuran:** Di panel admin Demo Studio disediakan slot mandiri `thumbnail_mobile` dan `thumbnail_desktop` lengkap dengan catatan panduan ukuran pixel (iPad Mini 768×1024 px dan Desktop 1280×720 px) serta langkah 1-klik capture di Chrome DevTools.
-
-
+8. **Dynamic Asset Route Handler untuk Showroom Runtime Assets (`/demo/[theme]/[file]`):**
+   - Mengatasi limitasi bawaan Next.js Standalone / Production yang hanya melayani file statis di `public/` saat proses build-time.
+   - Route handler `app/demo/[theme]/[file]/route.ts` membaca langsung file runtime (`thumbnail_mobile.webp`, `thumbnail_desktop.webp`, lagu, dan aset visual lainnya) dari disk `public/demo/[theme]/[file]`.
+   - Dilengkapi validasi keamanan path traversal (`path.basename`), filter ekstensi media valid (webp, jpg, jpeg, png, svg, gif, mp4, webm, mov, mp3, ogg, wav, html), dan Smart HTTP Cache (`ETag` berbasis `stat.mtimeMs` + `stat.size`, serta respon `304 Not Modified` saat file tidak mengalami perubahan).

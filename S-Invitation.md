@@ -461,3 +461,8 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - Panel admin Demo Studio menyediakan 2 slot baru (`thumbnail_mobile` dan `thumbnail_desktop`) dengan catatan panduan ukuran pixel (iPad Mini 768×1024 px dan Desktop 1280×720 px) serta instruksi langkah 1-klik capture di Chrome DevTools.
 4. **Purifikasi Tipografi Minimalis & Eliminasi Total Simbol Panah AI / Emoji:**
    - Seluruh tombol aksi pada engine undangan (`lib/themeEngine.ts`, `lib/demoRegistry.ts`), template undangan, katalog showroom `/demo`, serta tabel portal admin telah dibersihkan secara menyeluruh dari simbol panah diagonal AI (`↗`) dan emoji default OS. Seluruh tombol (`BUKA GOOGLE MAPS`, `INSTAGRAM LIVE`, `YOUTUBE LIVE`, `ZOOM MEETING`, `BUKA FILTER INSTAGRAM`, `BUKA GALERI MOMEN LENGKAP`) kini mengadopsi estetika tipografi clean dan elegan.
+5. **Dynamic Showroom Asset Delivery (`/demo/[theme]/[file]`):**
+   - Route handler `app/demo/[theme]/[file]/route.ts` menyediakan delivery dinamis langsung dari disk VPS untuk file baru yang diunggah melalui Demo Studio (seperti `thumbnail_mobile.webp`, `thumbnail_desktop.webp`, dan lagu/video baru).
+   - Memastikan seluruh aset baru langsung aktif di browser tanpa menunggu proses build ulang Next.js, dilengkapi Smart ETag Cache (`304 Not Modified`).
+6. **Proteksi Anti-Download & Privasi Tamu Galeri Kenangan (`/memories`):**
+   - Galeri kenangan tamu diproteksi secara menyeluruh dari unduhan tidak sah melalui pelarangan menu klik kanan (`onContextMenu` preventDefault), pencegahan touch-callout pada mobile (`-webkit-touch-callout: none`), larangan dragging gambar (`draggable={false}`), serta pointer containment pada preview lightbox modal.

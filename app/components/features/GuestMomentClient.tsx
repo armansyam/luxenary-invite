@@ -340,9 +340,21 @@ export default function GuestMomentClient({ invitationId, coupleName, coverUrl, 
             </h3>
             <div className="flex gap-3 overflow-x-auto snap-x pb-4 scrollbar-none px-2 -mx-2">
               {recentMemories.map((m) => (
-                <div key={m.id} className="w-24 h-24 shrink-0 snap-start rounded-2xl overflow-hidden border border-white/10 relative group">
-                  <Image src={m.thumbnailUrl || m.mediaUrl || m.url} alt={m.senderName} fill className="object-cover" unoptimized />
-                  <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/90 to-transparent">
+                <div
+                  key={m.id}
+                  className="w-24 h-24 shrink-0 snap-start rounded-2xl overflow-hidden border border-white/10 relative group select-none"
+                  onContextMenu={(e) => e.preventDefault()}
+                >
+                  <Image
+                    src={m.thumbnailUrl || m.mediaUrl || m.url}
+                    alt={m.senderName}
+                    fill
+                    className="object-cover pointer-events-none select-none"
+                    unoptimized
+                    draggable={false}
+                    style={{ WebkitTouchCallout: "none" }}
+                  />
+                  <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/90 to-transparent pointer-events-none select-none">
                     <p className="text-[9px] text-white font-bold truncate text-center">{m.senderName}</p>
                   </div>
                 </div>

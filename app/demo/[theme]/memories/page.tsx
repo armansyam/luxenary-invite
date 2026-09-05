@@ -118,12 +118,17 @@ export default async function DemoGuestMemoriesGalleryPage({ params }: PageProps
               data-sender={m.senderName}
               data-msg={m.message}
             >
-              <div className="w-16 h-16 rounded-full p-[2.5px] bg-gradient-to-tr from-amber-500 via-amber-300 to-yellow-500 group-hover:scale-105 transition-transform shadow-md shadow-amber-500/20">
-                <div className="w-full h-full rounded-full overflow-hidden bg-stone-900 border-2 border-stone-950 flex items-center justify-center">
+              <div
+                className="w-16 h-16 rounded-full p-[2.5px] bg-gradient-to-tr from-amber-500 via-amber-300 to-yellow-500 group-hover:scale-105 transition-transform shadow-md shadow-amber-500/20 select-none"
+                onContextMenu={(e) => e.preventDefault()}
+              >
+                <div className="w-full h-full rounded-full overflow-hidden bg-stone-900 border-2 border-stone-950 flex items-center justify-center pointer-events-none select-none">
                   <img
                     src={m.mediaUrl}
                     alt={m.senderName}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover pointer-events-none select-none"
+                    draggable={false}
+                    style={{ WebkitTouchCallout: "none" }}
                   />
                 </div>
               </div>
@@ -147,11 +152,16 @@ export default async function DemoGuestMemoriesGalleryPage({ params }: PageProps
               data-sender={m.senderName}
               data-msg={m.message}
             >
-              <div className="relative overflow-hidden bg-stone-950">
+              <div
+                className="relative overflow-hidden bg-stone-950 select-none"
+                onContextMenu={(e) => e.preventDefault()}
+              >
                 <img
                   src={m.mediaUrl}
                   alt={m.senderName}
-                  className="w-full h-auto object-cover group-hover:scale-105 transition duration-500"
+                  className="w-full h-auto object-cover group-hover:scale-105 transition duration-500 pointer-events-none select-none"
+                  draggable={false}
+                  style={{ WebkitTouchCallout: "none" }}
                 />
               </div>
               <div className="p-4 space-y-1.5">

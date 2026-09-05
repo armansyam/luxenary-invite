@@ -111,14 +111,19 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
                 data-message={item.message || ""}
                 data-type={item.mediaType}
               >
-                <div className="w-16 h-16 rounded-full p-0.5 bg-gradient-to-tr from-amber-600 via-amber-400 to-amber-200 group-hover:scale-105 transition-transform duration-200">
-                  <div className="w-full h-full rounded-full overflow-hidden bg-stone-900 border-2 border-stone-950">
+                <div
+                  className="w-16 h-16 rounded-full p-0.5 bg-gradient-to-tr from-amber-600 via-amber-400 to-amber-200 group-hover:scale-105 transition-transform duration-200 select-none"
+                  onContextMenu={(e) => e.preventDefault()}
+                >
+                  <div className="w-full h-full rounded-full overflow-hidden bg-stone-900 border-2 border-stone-950 pointer-events-none select-none">
                     <img
                       src={item.thumbnailUrl || item.mediaUrl}
                       alt={item.senderName}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover pointer-events-none select-none"
                       loading="lazy"
                       decoding="async"
+                      draggable={false}
+                      style={{ WebkitTouchCallout: "none" }}
                     />
                   </div>
                 </div>
@@ -166,13 +171,18 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
                 data-sender-name={m.senderName}
                 data-message={m.message || ""}
               >
-                <div className="relative overflow-hidden bg-stone-900">
+                <div
+                  className="relative overflow-hidden bg-stone-900 select-none"
+                  onContextMenu={(e) => e.preventDefault()}
+                >
                   <img
                     src={m.mediaUrl}
                     alt={`Momen dari ${m.senderName}`}
                     loading="lazy"
                     decoding="async"
-                    className="w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    draggable={false}
+                    style={{ WebkitTouchCallout: "none" }}
+                    className="w-full object-cover group-hover:scale-105 transition-transform duration-300 pointer-events-none select-none"
                   />
                 </div>
                 <div className="p-3 bg-stone-900/90">
@@ -276,8 +286,8 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
                 const modal = document.getElementById('galleryPreviewModal');
                 const content = document.getElementById('previewModalContent');
                 const caption = document.getElementById('previewModalCaption');
-                content.innerHTML = '<img src="' + url + '" class="max-h-[75vh] max-w-full rounded-2xl object-contain shadow-2xl" />';
-                caption.innerHTML = '<div class="font-bold text-sm text-white">' + (name || '') + '</div>' + (msg ? '<div class="text-xs text-stone-300 mt-1 italic font-serif">"' + msg + '"</div>' : '');
+                content.innerHTML = '<div class="relative select-none pointer-events-none" style="-webkit-touch-callout:none;"><img src="' + url + '" class="max-h-[75vh] max-w-full rounded-2xl object-contain shadow-2xl select-none pointer-events-none" draggable="false" style="-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;" /></div>';
+                caption.innerHTML = '<div class="font-bold text-sm text-white select-none">' + (name || '') + '</div>' + (msg ? '<div class="text-xs text-stone-300 mt-1 italic font-serif select-none">"' + msg + '"</div>' : '');
                 modal.style.display = 'flex';
               });
             });
@@ -288,6 +298,7 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
           const modalEl = document.getElementById('galleryPreviewModal');
           const closeBtnEl = document.getElementById('closeModalBtn');
           if (modalEl) {
+            modalEl.addEventListener('contextmenu', (e) => e.preventDefault());
             modalEl.addEventListener('click', (e) => {
               if (e.target === modalEl) modalEl.style.display = 'none';
             });
