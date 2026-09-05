@@ -10,6 +10,8 @@ interface ThemeItem {
   series: string;
   category: "premium" | "traditional" | "modern" | string;
   desc: string;
+  thumbnailMobile?: string;
+  thumbnailDesktop?: string;
 }
 
 export default function CatalogGridShowcase() {
@@ -37,6 +39,8 @@ export default function CatalogGridShowcase() {
               series: t.series || (t.category === "PREMIUM" ? "Premium" : t.category === "TRADITIONAL" ? "Traditional" : "Modern"),
               category: (t.category || "modern").toLowerCase(),
               desc: t.tagline || t.desc || `Desain eksklusif ${platformName}`,
+              thumbnailMobile: t.thumbnailMobile || `/demo/${t.id}/thumbnail_mobile.webp`,
+              thumbnailDesktop: t.thumbnailDesktop || `/demo/${t.id}/thumbnail_desktop.webp`,
             }))
           );
         }
@@ -188,8 +192,8 @@ export default function CatalogGridShowcase() {
                     key={`${theme.id}-${viewMode}`}
                     src={
                       viewMode === "mobile"
-                        ? `/demo/${theme.id}/thumbnail_mobile.webp`
-                        : `/demo/${theme.id}/thumbnail_desktop.webp`
+                        ? (theme.thumbnailMobile || `/demo/${theme.id}/thumbnail_mobile.webp`)
+                        : (theme.thumbnailDesktop || `/demo/${theme.id}/thumbnail_desktop.webp`)
                     }
                     alt={`${theme.name} Preview`}
                     loading="lazy"

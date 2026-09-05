@@ -15,21 +15,28 @@ export async function GET() {
     const themeIds = dbThemes.map((t) => `theme_demo_${t.id.toLowerCase()}`);
     const customSettings = await prisma.adminSetting.findMany({
       where: { key: { in: themeIds } },
-      select: { key: true, value: true },
+      select: { key: true, value: true, updatedAt: true },
     });
 
-    // Build a lookup map: themeId parsed custom data
-    const customDataMap: Record<string, any> = {};
+    // Build a lookup map: themeId parsed custom data + timestamp
+    const customDataMap: Record<string, { data: any; updatedAt: number }> = {};
     for (const s of customSettings) {
       const themeId = s.key.replace("theme_demo_", "");
-      try { customDataMap[themeId] = JSON.parse(s.value); } catch {}
+      try {
+        customDataMap[themeId] = {
+          data: JSON.parse(s.value),
+          updatedAt: s.updatedAt ? new Date(s.updatedAt).getTime() : 1,
+        };
+      } catch {}
     }
 
     const themes = dbThemes.map((t) => {
       const themeKey = t.id.toLowerCase();
 
       // Priority: 1) Admin DB custom data, 2) DEMO_REGISTRY, 3) safe defaults
-      const customData = customDataMap[themeKey];
+      const customEntry = customDataMap[themeKey];
+      const customData = customEntry?.data;
+      const v = customEntry?.updatedAt || 1;
       const registryData = DEMO_REGISTRY[themeKey];
       const source = customData || registryData;
 
@@ -49,6 +56,12 @@ export async function GET() {
         category: t.category.toUpperCase(),
         tagline,
         desc: tagline,
+        thumbnailMobile: customData?.thumbnailMobileUrl
+          ? (customData.thumbnailMobileUrl.includes("?") ? `${customData.thumbnailMobileUrl}&v=${v}` : `${customData.thumbnailMobileUrl}?v=${v}`)
+          : `/demo/${themeKey}/thumbnail_mobile.webp?v=${v}`,
+        thumbnailDesktop: customData?.thumbnailDesktopUrl
+          ? (customData.thumbnailDesktopUrl.includes("?") ? `${customData.thumbnailDesktopUrl}&v=${v}` : `${customData.thumbnailDesktopUrl}?v=${v}`)
+          : `/demo/${themeKey}/thumbnail_desktop.webp?v=${v}`,
         // Cover card data — DB-first, then registry, then fallback
         groomName: source?.groomDisplayName || source?.groomName || "Pengantin Pria",
         brideName: source?.brideDisplayName || source?.brideName || "Pengantin Wanita",
