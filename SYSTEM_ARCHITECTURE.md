@@ -636,7 +636,7 @@ Fitur *Remote* memungkinkan Admin untuk masuk ke dasbor Klien dan mengendalikann
 ```
 PUBLIC (tanpa auth):
   GET  /api/public/settings           → Platform settings global
-  GET  /api/public/themes             → List tema aktif
+  GET  /api/public/themes             → List tema aktif (force-dynamic, no-cache, instan tersinkron dengan toggle admin)
   POST /api/public/rsvp               → Submit RSVP tamu
   GET  /api/public/memories/{id}      → List foto momen
   POST /api/public/memories/upload    → Upload foto tamu (rate-limited)

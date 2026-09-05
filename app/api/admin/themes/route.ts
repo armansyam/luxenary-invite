@@ -274,6 +274,7 @@ export async function PUT(req: NextRequest) {
     const { revalidatePath } = await import("next/cache");
     revalidatePath("/demo");
     revalidatePath("/demo/[theme]", "page");
+    revalidatePath("/api/public/themes");
     revalidatePath("/admin");
     revalidatePath("/");
 

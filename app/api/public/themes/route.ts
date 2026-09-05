@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { DEMO_REGISTRY } from "@/lib/demoRegistry";
 
-export const revalidate = 3600; // Cache for 1 hour
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 export async function GET() {
   try {
     const dbThemes = await prisma.theme.findMany({
@@ -59,7 +60,11 @@ export async function GET() {
       };
     });
 
-    return NextResponse.json(themes);
+    return NextResponse.json(themes, {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+      },
+    });
   } catch (error: unknown) {
     const errorMsg = error instanceof Error ? error.message : "Gagal memuat daftar tema";
     return NextResponse.json({ error: errorMsg }, { status: 500 });
