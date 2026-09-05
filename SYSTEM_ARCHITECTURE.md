@@ -1188,9 +1188,10 @@ Admin Setting: active_payment_gateway
 - **Dynamic Metadata & Zero Caching SSR:**
   - Root layout (`app/layout.tsx`) dan Admin layout (`app/(admin)/layout.tsx`) menerapkan `export const dynamic = "force-dynamic"` dan `export const revalidate = 0`.
   - Fungsi `generateMetadata()` membaca nama platform real-time dari tabel database via `getPublicPlatformSettings()`. Mencegah build-time static HTML caching yang dapat membekukan judul tab ke nilai default saat aplikasi di-build.
-- **Client-Side Document Title Reactivity:**
+- **Client-Side Document Title Reactivity & Eliminasi Flash Fallback Teks:**
   - Halaman interaktif (`app/(admin)/admin/page.tsx`, `app/(admin)/admin/login/page.tsx`, `app/(client)/dashboard/layout.tsx`, dan `app/login/page.tsx`) memiliki hook `useEffect` reaktif yang menyinkronkan `document.title` dengan nilai `platform_name` dari state/API settings secara langsung.
   - Saat nama platform diperbarui oleh administrator di menu Pengaturan, nama tab browser langsung terbarukan secara instan tanpa perlu memuat ulang seluruh halaman (*zero reload*).
+  - **Zero Fallback Flash (`settingsLoaded` Guard):** Komponen `BrandLogo` dan header dashboard admin dibersihkan dari fallback teks seperti `"Platform Admin"`. Selama proses loading data awal (`!settingsLoaded || status === "loading"`), sistem menampilkan layar tunggu elegan (*loading state*), sehingga saat UI tampil, nama platform yang valid langsung tampil seketika tanpa ada kedipan pergantian nama sementara.
 
 ---
 

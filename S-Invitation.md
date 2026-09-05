@@ -320,6 +320,7 @@ Sistem pengiriman email otomatis menggunakan **Nodemailer** yang membaca kredens
 3. **Sinkronisasi Tab Browser & Identitas Visual Real-Time**:
    - Dynamic metadata SSR (`force-dynamic` dan `revalidate = 0`) pada root layout (`app/layout.tsx`) dan admin layout (`app/(admin)/layout.tsx`) menjamin judul tab browser selalu membaca nama platform teranyar dari database `admin_settings`.
    - Reaktivitas hook `useEffect` pada antarmuka admin (`/admin`), login admin (`/admin/login`), dasbor klien (`/dashboard`), dan login klien (`/login`) memperbarui `document.title` seketika saat pengaturan platform disimpan tanpa perlu me-reload halaman.
+   - *Zero Fallback Flash*: Teks fallback placeholder seperti `"Platform Admin"` dimusnahkan. Selama data belum siap (`!settingsLoaded`), portal menampilkan state loading elegan sehingga antarmuka tidak pernah menampilkan nama palsu sementara.
 
 ---
 

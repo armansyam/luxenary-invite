@@ -366,6 +366,7 @@ export default function AdminPage() {
 
   // Settings state
   const [settingsMap, setSettingsMap] = useState<Record<string, string>>({});
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [currentOrigin, setCurrentOrigin] = useState<string>("");
   const [initialSettingsMap, setInitialSettingsMap] = useState<Record<string, string>>({});
   const [editSection, setEditSection] = useState<Record<string, boolean>>({});
@@ -588,7 +589,10 @@ export default function AdminPage() {
           setInitialSettingsMap(map);
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => {
+        setSettingsLoaded(true);
+      });
   }, []);
 
   const loadBrandAssets = useCallback(() => {
@@ -1488,6 +1492,15 @@ export default function AdminPage() {
     return null;
   }
 
+  if (status === "loading" || !settingsLoaded) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-3">
+        <div className="w-8 h-8 border-2 border-amber-600 border-t-transparent rounded-full animate-spin" />
+        <span className="text-xs font-medium text-gray-500">Memuat Panel Administrasi...</span>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col text-gray-900">
       {/* Header */}
@@ -1517,7 +1530,7 @@ export default function AdminPage() {
               <BrandLogo size="sm" lightBg brandName={settingsMap["platform_name"]} />
               <div>
                 <h1 className="text-base sm:text-lg font-bold text-gray-900 leading-none truncate max-w-[160px] sm:max-w-none">
-                  {settingsMap["platform_name"] || "Platform"} Admin
+                  {settingsMap["platform_name"] ? `${settingsMap["platform_name"]} Admin` : "Admin"}
                 </h1>
                 <p className="text-[11px] text-gray-400 mt-0.5">Control Panel</p>
               </div>
@@ -1663,7 +1676,7 @@ export default function AdminPage() {
                         <span>Pusat Kendali Administrator</span>
                       </div>
                       <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-                        {settingsMap["platform_name"] || "Platform"} Executive Dashboard
+                        {settingsMap["platform_name"] ? `${settingsMap["platform_name"]} Executive Dashboard` : "Executive Dashboard"}
                       </h2>
                       <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
                         Ringkasan performa finansial, analitik paket, aktivitas mempelai &amp; status operasional sistem.
@@ -3282,7 +3295,7 @@ export default function AdminPage() {
 
                                   {/* Description / Tagline */}
                                   <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">
-                                    {theme.description || `Desain eksklusif ${settingsMap["platform_name"] || "Platform"}`}
+                                    {theme.description || (settingsMap["platform_name"] ? `Desain eksklusif ${settingsMap["platform_name"]}` : "Desain eksklusif")}
                                   </p>
                                 </div>
 

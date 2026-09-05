@@ -46,7 +46,7 @@ export function BrandLogo({ size = "md", lightBg = false, showName = false, bran
   const s = sizeMap[size];
 
   const hasLogo = !imgError; // akan false setelah img onError
-  const displayName = brandName || "Platform Admin";
+  const displayName = brandName || "";
 
   return (
     <div className={`flex items-center gap-2.5 ${className}`}>
@@ -67,13 +67,13 @@ export function BrandLogo({ size = "md", lightBg = false, showName = false, bran
           />
         ) : (
           <span className={`font-bold font-serif text-white ${s.monogram}`}>
-            {displayName.charAt(0).toUpperCase() || "L"}
+            {displayName ? displayName.charAt(0).toUpperCase() : ""}
           </span>
         )}
       </div>
 
       {/* Nama platform opsional */}
-      {showName && (
+      {showName && displayName && (
         <span
           className={`font-bold tracking-wider font-serif ${
             size === "xs" || size === "sm" ? "text-sm" : "text-xl"
