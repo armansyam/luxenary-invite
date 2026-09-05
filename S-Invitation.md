@@ -1,4 +1,5 @@
 # S-Invitation: Luxenary Invite System Architecture & Master Specification
+> **Versi: 5.5.1 | Diperbarui: 06 September 2026**
 
 ## 1. Executive Summary & Core Philosophy
 **Luxenary Invite** adalah platform ekosistem undangan pernikahan digital modern berbasis Next.js 16 (App Router + Turbopack) yang menghadirkan pengalaman visual mewah (*haute couture*), kecepatan muat instan (<0.8 detik), self-service dashboard mandiri bagi klien, dan integrasi cloud edge caching.
