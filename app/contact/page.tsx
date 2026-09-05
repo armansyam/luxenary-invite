@@ -18,6 +18,7 @@ export default async function ContactPage() {
   const supportEmail = settings.supportEmail || "support@example.com";
   const supportWhatsapp = settings.supportWhatsapp || "";
   const cleanWaNumber = supportWhatsapp.replace(/\D/g, "").replace(/^0/, "62");
+  const graceDays = settings.retentionInvitationGraceDays || 7;
 
   return (
     <div className="min-h-screen bg-[#faf8f5] font-sans flex flex-col text-stone-800" style={{ colorScheme: "only light", backgroundColor: "#faf8f5", color: "#292524" }}>
@@ -146,7 +147,9 @@ export default async function ContactPage() {
             <div className="space-y-3 text-xs text-stone-600">
               <div>
                 <p className="font-semibold text-stone-800 mb-0.5">Berapa lama masa aktif undangan digital saya?</p>
-                <p>Undangan digital aktif selama minimal 1 tahun penuh (365 hari) setelah diterbitkan.</p>
+                <p>
+                  Masa aktif tautan (subdomain) undangan digital berlaku hingga {graceDays} hari setelah tanggal acara pernikahan selesai sesuai pengaturan sistem platform (dan dapat diperpanjang via paket add-on). Khusus undangan yang telah dikurasi dan dikloning ke galeri portofolio resmi platform, halaman undangan statis akan terus tersedia secara permanen sebagai arsip kenangan.
+                </p>
               </div>
               <div>
                 <p className="font-semibold text-stone-800 mb-0.5">Apakah saya bisa mengubah detail acara setelah undangan terbit?</p>

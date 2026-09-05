@@ -16,6 +16,8 @@ export default async function TermsPage() {
   const platformName = settings.platformName || "Platform Undangan";
   const supportEmail = settings.supportEmail || "";
   const supportWhatsapp = settings.supportWhatsapp || "";
+  const graceDays = settings.retentionInvitationGraceDays || 7;
+  const galleryDays = settings.retentionGalleryDefaultDays || 30;
 
   return (
     <div className="min-h-screen bg-[#faf8f5] font-sans flex flex-col text-stone-800" style={{ colorScheme: "only light", backgroundColor: "#faf8f5", color: "#292524" }}>
@@ -53,9 +55,9 @@ export default async function TermsPage() {
               Masa aktif undangan dan retensi data berlaku sesuai dengan ketentuan berikut:
             </p>
             <ul className="list-disc pl-5 mt-2 space-y-1">
-              <li>Masa aktif undangan statis dapat diakses tamu tanpa batas waktu selama server kami beroperasi secara normal.</li>
-              <li>Namun, hak akses **Dashboard Editor** dan **seluruh interaksi tamu** (seperti pengisian buku tamu, RSVP, dan fitur Guest Memories) akan **dikunci (Locked)** secara otomatis 24 jam setelah tanggal acara pernikahan terlewati.</li>
-              <li>Untuk alasan performa dan efisiensi penyimpanan, seluruh data terkait tamu, buku tamu, komentar, dan unggahan foto/video akan **dihapus bersih dari server kami (Sapu Bersih) selambat-lambatnya 1 tahun (365 hari)** setelah undangan diterbitkan.</li>
+              <li>Masa aktif subdomain undangan berlaku hingga {graceDays} hari setelah tanggal acara pernikahan selesai sesuai pengaturan sistem platform (dan dapat diperpanjang via add-on). Khusus undangan yang dikurasi dan dikloning ke portofolio resmi platform akan tetap tersedia permanen.</li>
+              <li>Hak akses <strong>Dashboard Editor</strong> dan <strong>seluruh interaksi tamu</strong> (seperti pengisian buku tamu, RSVP, dan fitur Guest Memories) akan <strong>dikunci (Locked)</strong> secara otomatis 24 jam setelah tanggal acara pernikahan terlewati.</li>
+              <li>Untuk alasan performa dan efisiensi penyimpanan, seluruh data terkait memori interaktif tamu akan disimpan selama {galleryDays} hari pasca acara sebelum dibersihkan otomatis dari server. Klien diimbau untuk mengunduh seluruh memori tamu sebelum batas waktu tersebut.</li>
             </ul>
           </section>
 

@@ -16,6 +16,8 @@ export default async function PrivacyPage() {
   const platformName = settings.platformName || "Platform Undangan";
   const supportEmail = settings.supportEmail || "";
   const supportWhatsapp = settings.supportWhatsapp || "";
+  const graceDays = settings.retentionInvitationGraceDays || 7;
+  const galleryDays = settings.retentionGalleryDefaultDays || 30;
 
   return (
     <div className="min-h-screen bg-[#faf8f5] font-sans flex flex-col text-stone-800" style={{ colorScheme: "only light", backgroundColor: "#faf8f5", color: "#292524" }}>
@@ -62,7 +64,7 @@ export default async function PrivacyPage() {
               Kami menggunakan enkripsi dan langkah keamanan standar industri untuk melindungi data Anda. Namun, demi menjaga efisiensi ruang server kami, terdapat kebijakan retensi data otomatis:
             </p>
             <ul className="list-disc pl-5 mt-2 space-y-1">
-              <li>Penyimpanan interaktif (ucapan tamu, foto memori) akan dihapus secara permanen dari server kami maksimal <strong>1 Tahun (365 hari)</strong> setelah undangan Anda dipublikasikan.</li>
+              <li>Masa aktif subdomain undangan berlaku hingga {graceDays} hari setelah tanggal acara pernikahan selesai, sedangkan penyimpanan data interaktif (ucapan tamu, foto memori) tersimpan selama {galleryDays} hari pasca acara (atau sesuai perpanjangan aktif) sebelum dibersihkan demi performa server. Undangan yang telah dikurasi ke portofolio resmi platform akan tetap tersedia permanen.</li>
               <li>Klien diimbau untuk mengunduh seluruh memori tamu sebelum batas waktu tersebut.</li>
             </ul>
           </section>

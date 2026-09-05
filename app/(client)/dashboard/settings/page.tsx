@@ -55,6 +55,7 @@ export default function SettingsPage() {
   const [isDomainOwned, setIsDomainOwned] = useState(false);
   const [customDomainPrice, setCustomDomainPrice] = useState(150000);
   const [isCustomDomainEnabled, setIsCustomDomainEnabled] = useState(true);
+  const [retentionGraceDays, setRetentionGraceDays] = useState(7);
 
   const handleCopyDns = async (val: string, key: string) => {
     if (!val) return;
@@ -395,6 +396,9 @@ export default function SettingsPage() {
         if (d?.addon_custom_domain_enabled !== undefined) {
           setIsCustomDomainEnabled(d.addon_custom_domain_enabled !== false);
         }
+        if (d?.retentionInvitationGraceDays !== undefined || d?.retention_invitation_grace_days !== undefined) {
+          setRetentionGraceDays(Number(d.retentionInvitationGraceDays ?? d.retention_invitation_grace_days) || 7);
+        }
       })
       .catch(() => {});
   }, []);
@@ -688,12 +692,14 @@ export default function SettingsPage() {
   };
 
   const getValidityDate = () => {
+    const hasCustomDomain = Boolean(invitation?.customDomain && String(invitation.customDomain).trim());
+    const daysToAdd = hasCustomDomain ? 365 : retentionGraceDays;
     try {
       const ev = typeof invitation?.eventData === "string" ? JSON.parse(invitation.eventData) : invitation?.eventData;
       if (Array.isArray(ev) && ev[0]?.date) {
         const evDate = new Date(ev[0].date);
         if (!isNaN(evDate.getTime())) {
-          const expiry = new Date(evDate.getTime() + 365 * 24 * 60 * 60 * 1000);
+          const expiry = new Date(evDate.getTime() + daysToAdd * 24 * 60 * 60 * 1000);
           return expiry.toLocaleDateString("id-ID", {
             day: "numeric",
             month: "long",
@@ -702,7 +708,7 @@ export default function SettingsPage() {
         }
       }
     } catch {}
-    return "1 Tahun Pasca Hari H";
+    return hasCustomDomain ? "1 Tahun Pasca Hari H" : `${retentionGraceDays} Hari Pasca Hari H`;
   };
 
   if (loading) {
@@ -828,7 +834,9 @@ export default function SettingsPage() {
                   Aktif hingga <strong className="text-amber-300">{getValidityDate()}</strong>
                 </p>
                 <p className="text-[10px] text-stone-400 leading-normal">
-                  Dihitung otomatis 1 tahun pasca tanggal acara pernikahan Anda.
+                  {invitation?.customDomain
+                    ? "Dihitung otomatis 1 tahun pasca tanggal acara (Layanan Custom Domain Aktif)."
+                    : `Dihitung otomatis ${retentionGraceDays} hari pasca tanggal acara pernikahan Anda (Masa Aktif Subdomain).`}
                 </p>
               </div>
 

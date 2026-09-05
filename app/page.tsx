@@ -10,6 +10,7 @@ export default async function Home() {
     heroTagline,
     heroSubtitle,
     packages: pricingPackages,
+    retentionInvitationGraceDays,
     landingFeature1Title,
     landingFeature1Desc,
     landingFeature2Title,
@@ -132,7 +133,7 @@ export default async function Home() {
         <section id="pricing" className="max-w-6xl mx-auto px-6 py-16 scroll-mt-20">
           <div className="text-center mb-12">
             <h2 className="text-2xl sm:text-3xl font-serif font-normal text-[#1e1c1a]">Pilihan Paket Undangan</h2>
-            <p className="text-[#6e685f] mt-1 text-xs sm:text-sm">Biaya satu kali bayar untuk masa tayang interaktif 1 bulan pasca-acara, dengan arsip portofolio web 1 tahun</p>
+            <p className="text-[#6e685f] mt-1 text-xs sm:text-sm">Biaya satu kali bayar dengan masa aktif subdomain hingga {retentionInvitationGraceDays || 7} hari pasca-acara, dan undangan portofolio terpilih tersedia permanen</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
