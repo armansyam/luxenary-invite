@@ -159,7 +159,7 @@ Pre-Flight Checklist & Smart Audit (/dashboard/settings):
   - *Mode Kanvas Kosong (Default):* Latar bersih sesuai palet tema tanpa dummy image palsu; teks ucapan terima kasih dan nama mempelai berposisi vertikal & horizontal tepat di tengah layar (`justify-content: center;`).
   - *Mode Foto Penutup:* Foto latar layar penuh dengan overlay gradasi; teks ucapan bergeser elegan ke bagian bawah layar (`justify-content: flex-end;`).
 - **Palet Warna Showroom Demo Dinamis:** Admin Demo Studio menyediakan selektor 6 palet warna resmi (`champagne`, `emerald`, `burgundy`, `sage`, `terracotta`, `monochrome`) yang dikompilasi secara on-the-fly ke `/demo/[theme]`, memungkinkan tema tradisional seperti Badrika tampil dalam palet khas Bugis Royal Emerald tanpa hardcoding di CSS.
-- **Showroom Katalog Demo Ringan (`/demo`) & Snapshot Thumbnail:** Kartu katalog `/demo` menggunakan snapshot visual presisi (Mobile `390 × 844 px` rasio 9:19.5 dan Desktop `1280 × 720 px` rasio 16:9) yang mengeliminasi seluruh 10 tag `<iframe>` berat. Dilengkapi form upload mandiri di Demo Studio lengkap dengan catatan panduan ukuran pixel dan langkah 1-klik capture di Chrome DevTools serta auto-fallback ke `cover.webp`.
+- **Showroom Katalog Demo Ringan (`/demo`) & Snapshot Thumbnail:** Kartu katalog `/demo` menggunakan snapshot visual presisi (Mobile/Tablet `768 × 1024 px` rasio 3:4 dengan susunan simetris 5 kartu sebaris, dan Desktop `1280 × 720 px` rasio 16:9) yang mengeliminasi seluruh 10 tag `<iframe>` berat. Dilengkapi form upload mandiri di Demo Studio lengkap dengan catatan panduan ukuran pixel dan langkah 1-klik capture di Chrome DevTools serta auto-fallback ke `cover.webp`.
 
 ---
 

@@ -454,8 +454,8 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
 1. **Eliminasi 10 Iframe Berat (Zero Lag):**
    - Katalog showroom `/demo` mengalihkan tampilan kartu dari rendering 10 tag `<iframe>` menjadi snapshot visual statis yang sangat ringan, menghilangkan beban memori browser hingga 95%.
 2. **Standarisasi Rasio Layar:**
-   - **Mode Mobile:** `aspect-[390/844]` (rasio 9:19.5 standar smartphone modern), memuat `/demo/[themeId]/thumbnail_mobile.webp`.
+   - **Mode Mobile / Portrait:** `aspect-[3/4]` (rasio 3:4 standar iPad Mini 768 × 1024 px) dengan tata letak simetris 5 kartu sebaris (2 baris x 5 tema), memuat `/demo/[themeId]/thumbnail_mobile.webp`.
    - **Mode Desktop:** `aspect-[16/9]` (rasio 16:9 standar widescreen desktop), memuat `/demo/[themeId]/thumbnail_desktop.webp`.
    - Auto-fallback cerdas ke `cover.webp` jika file thumbnail khusus belum tersedia.
 3. **Form Upload Mandiri di Demo Studio:**
-   - Panel admin Demo Studio menyediakan 2 slot baru (`thumbnail_mobile` dan `thumbnail_desktop`) dengan catatan panduan ukuran pixel (390×844 px dan 1280×720 px) serta instruksi langkah 1-klik capture di Chrome DevTools.
+   - Panel admin Demo Studio menyediakan 2 slot baru (`thumbnail_mobile` dan `thumbnail_desktop`) dengan catatan panduan ukuran pixel (iPad Mini 768×1024 px dan Desktop 1280×720 px) serta instruksi langkah 1-klik capture di Chrome DevTools.

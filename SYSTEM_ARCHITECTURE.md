@@ -1321,9 +1321,9 @@ Untuk memastikan showroom demo tema publik (`/demo/[themeId]`) tampil memukau da
    - Menggantikan penempatan background langsung di elemen `body` (100vw) yang rawan tersembunyi di balik sidebar kiri desktop, serta menerapkan scrim overlay bertingkat semi-transparan (`color-mix` transparan 60%–80%) sehingga tekstur foto/kain adat terlihat hidup dengan kontras teks yang tetap maksimal.
 7. **Snapshot Visual Katalog `/demo` (Eliminasi Iframe & Zero Lag Architecture):**
    - Halaman katalog showroom publik (`/demo`) menggunakan gambar snapshot murni yang presisi menggantikan seluruh elemen `<iframe>` yang sebelumnya membebani CPU/RAM browser dengan 10 browser instance paralel.
-   - **Mode Mobile:** Wadah kartu dikunci pada rasio **9 : 19.5** (`aspect-[390/844]`), menampilkan file `thumbnail_mobile.webp` (resolusi standar DevTools 390 × 844 px).
+   - **Mode Mobile / Portrait:** Wadah kartu dikunci pada rasio **3 : 4** (`aspect-[3/4]`), menampilkan file `thumbnail_mobile.webp` (resolusi standar DevTools iPad Mini 768 × 1024 px) dengan tata letak simetris 5 kartu per baris (2 baris x 5 tema).
    - **Mode Desktop:** Wadah kartu dikunci pada rasio **16 : 9** (`aspect-[16/9]`), menampilkan file `thumbnail_desktop.webp` (resolusi standar DevTools 1280 × 720 px).
    - **Auto-Fallback Cerdas:** Jika file thumbnail khusus belum diunggah, sistem otomatis melakukan fallback berjenjang ke `cover.webp` lalu `hero.webp`.
-   - **Slot Demo Studio & Petunjuk Ukuran:** Di panel admin Demo Studio disediakan slot mandiri `thumbnail_mobile` dan `thumbnail_desktop` lengkap dengan catatan panduan ukuran pixel dan langkah 1-klik capture di Chrome DevTools.
+   - **Slot Demo Studio & Petunjuk Ukuran:** Di panel admin Demo Studio disediakan slot mandiri `thumbnail_mobile` dan `thumbnail_desktop` lengkap dengan catatan panduan ukuran pixel (iPad Mini 768×1024 px dan Desktop 1280×720 px) serta langkah 1-klik capture di Chrome DevTools.
 
 

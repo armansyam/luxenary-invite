@@ -137,7 +137,7 @@ export default function CatalogGridShowcase() {
       </section>
 
       {/* Grid Showcase */}
-      <section className="max-w-[1740px] mx-auto px-4 sm:px-6 mt-6">
+      <section className="max-w-[1400px] mx-auto px-4 sm:px-6 mt-6">
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <div className="w-8 h-8 border-2 border-amber-800 border-t-transparent rounded-full animate-spin"></div>
@@ -147,14 +147,14 @@ export default function CatalogGridShowcase() {
             Tidak ada tema yang ditemukan pada kategori ini.
           </div>
         ) : (
-          <div className="flex flex-wrap justify-center gap-3.5 sm:gap-4 transition-all duration-300">
+          <div className="flex flex-wrap justify-center gap-4 sm:gap-5 transition-all duration-300">
             {filteredThemes.map((theme) => (
               <div
                 key={theme.id}
                 className={`bg-white rounded-xl border border-stone-200 shadow-xs overflow-hidden flex flex-col justify-between hover:shadow-lg transition-all duration-300 group flex-grow-0 shrink-0 ${
                   viewMode === "mobile"
-                    ? "w-[calc(50%-0.5rem)] sm:w-[185px]"
-                    : "w-full sm:w-[calc(50%-1rem)] lg:w-[360px]"
+                    ? "w-[calc(50%-0.5rem)] sm:w-[210px] md:w-[230px] lg:w-[240px] xl:w-[245px]"
+                    : "w-full sm:w-[calc(50%-1rem)] lg:w-[320px] xl:w-[330px]"
                 }`}
               >
                 {/* Fake Browser Top Bar (Mac Style - Compact) */}
@@ -176,12 +176,12 @@ export default function CatalogGridShowcase() {
                   </span>
                 </div>
 
-                {/* Snapshot Theme View Frame (Rasio Presisi: Mobile 390/844 & Desktop 16/9) */}
+                {/* Snapshot Theme View Frame (Rasio Presisi: Mobile/Tablet 3:4 & Desktop 16:9) */}
                 <Link
                   href={`/demo/${theme.id}`}
                   target="_blank"
                   className={`relative bg-stone-950 overflow-hidden block cursor-pointer transition-all duration-500 group ${
-                    viewMode === "mobile" ? "aspect-[390/844]" : "aspect-[16/9]"
+                    viewMode === "mobile" ? "aspect-[3/4]" : "aspect-[16/9]"
                   }`}
                 >
                   <img

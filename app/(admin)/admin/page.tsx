@@ -6781,10 +6781,10 @@ export default function AdminPage() {
                             { slot: "bride", label: "Mempelai Wanita", file: "bride.webp", allowVideo: false, desc: "Foto profil wanita" },
                             { 
                               slot: "thumbnail_mobile", 
-                              label: "Thumbnail Katalog (Mobile)", 
+                              label: "Thumbnail Katalog (iPad Mini / Mobile)", 
                               file: "thumbnail_mobile.webp", 
                               allowVideo: false, 
-                              desc: "Snapshot layar mobile untuk kartu /demo. Ukuran: 390 × 844 px (Rasio 9:19.5). Cara: Inspect -> Device iPhone 14 -> Titik 3 (⋮) -> Capture screenshot." 
+                              desc: "Snapshot sampul untuk kartu katalog /demo. Ukuran: 768 × 1024 px (Rasio 3:4). Cara: Inspect -> Device 'iPad Mini' -> Titik 3 (⋮) -> Capture screenshot." 
                             },
                             { 
                               slot: "thumbnail_desktop", 
