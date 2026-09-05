@@ -151,11 +151,11 @@ export default function CatalogGridShowcase() {
             Tidak ada tema yang ditemukan pada kategori ini.
           </div>
         ) : (
-          <div className="flex flex-wrap justify-center gap-4 sm:gap-5 transition-all duration-300">
+          <div className="flex flex-wrap justify-center gap-4 sm:gap-5">
             {filteredThemes.map((theme) => (
               <div
                 key={theme.id}
-                className={`bg-white rounded-xl border border-stone-200 shadow-xs overflow-hidden flex flex-col justify-between hover:shadow-lg transition-all duration-300 group flex-grow-0 shrink-0 ${
+                className={`bg-white rounded-xl border border-stone-200 shadow-xs overflow-hidden flex flex-col justify-between hover:shadow-lg transition-shadow duration-300 group flex-grow-0 shrink-0 ${
                   viewMode === "mobile"
                     ? "w-[calc(50%-0.5rem)] sm:w-[210px] md:w-[230px] lg:w-[240px] xl:w-[245px]"
                     : "w-full sm:w-[calc(50%-1rem)] lg:w-[320px] xl:w-[330px]"
@@ -184,23 +184,38 @@ export default function CatalogGridShowcase() {
                 <Link
                   href={`/demo/${theme.id}`}
                   target="_blank"
-                  className={`relative bg-stone-950 overflow-hidden block cursor-pointer transition-all duration-500 group ${
+                  className={`relative bg-stone-950 overflow-hidden block cursor-pointer group ${
                     viewMode === "mobile" ? "aspect-[3/4]" : "aspect-[16/9]"
                   }`}
                 >
+                  {/* Mobile Thumbnail Layer (Smooth Cross-Fade) */}
                   <img
-                    key={`${theme.id}-${viewMode}`}
-                    src={
-                      viewMode === "mobile"
-                        ? (theme.thumbnailMobile || `/demo/${theme.id}/thumbnail_mobile.webp`)
-                        : (theme.thumbnailDesktop || `/demo/${theme.id}/thumbnail_desktop.webp`)
-                    }
-                    alt={`${theme.name} Preview`}
+                    src={theme.thumbnailMobile || `/demo/${theme.id}/thumbnail_mobile.webp`}
+                    alt={`${theme.name} Mobile Preview`}
                     loading="lazy"
-                    className="w-full h-full object-cover object-top transition-transform duration-500 ease-out group-hover:scale-105"
+                    className={`absolute inset-0 w-full h-full object-cover object-top transition duration-300 ease-in-out group-hover:scale-105 ${
+                      viewMode === "mobile" ? "opacity-100 z-[1] pointer-events-auto" : "opacity-0 z-0 pointer-events-none"
+                    }`}
                     onError={(e) => {
                       const target = e.currentTarget;
-                      // Auto-fallback berjenjang: thumbnail -> cover.webp -> hero.webp
+                      if (!target.src.includes("cover.webp") && !target.src.includes("hero.webp")) {
+                        target.src = `/demo/${theme.id}/cover.webp`;
+                      } else if (target.src.includes("cover.webp")) {
+                        target.src = `/demo/${theme.id}/hero.webp`;
+                      }
+                    }}
+                  />
+
+                  {/* Desktop Thumbnail Layer (Smooth Cross-Fade) */}
+                  <img
+                    src={theme.thumbnailDesktop || `/demo/${theme.id}/thumbnail_desktop.webp`}
+                    alt={`${theme.name} Desktop Preview`}
+                    loading="lazy"
+                    className={`absolute inset-0 w-full h-full object-cover object-top transition duration-300 ease-in-out group-hover:scale-105 ${
+                      viewMode === "desktop" ? "opacity-100 z-[1] pointer-events-auto" : "opacity-0 z-0 pointer-events-none"
+                    }`}
+                    onError={(e) => {
+                      const target = e.currentTarget;
                       if (!target.src.includes("cover.webp") && !target.src.includes("hero.webp")) {
                         target.src = `/demo/${theme.id}/cover.webp`;
                       } else if (target.src.includes("cover.webp")) {
