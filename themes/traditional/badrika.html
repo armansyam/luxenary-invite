@@ -40,9 +40,10 @@
       --gold-light: #f3e5ab;
       --gold-dark: #8c6d1f;
       --gold-glow: rgba(212, 175, 55, 0.35);
-      --emerald-dark: #071712;
-      --emerald-deep: #0b221a;
-      --emerald-card: rgba(11, 34, 26, 0.94);
+      --emerald-dark: var(--bg-dark, #071712);
+      --emerald-deep: var(--primary, #0b221a);
+      --emerald-card: color-mix(in srgb, var(--primary, #0b221a) 22%, var(--bg-dark, #071712) 88%);
+      --theme-card: var(--emerald-card);
       --border-gold: rgba(212, 175, 55, 0.32);
       --border-gold-bright: rgba(212, 175, 55, 0.75);
     }
@@ -51,20 +52,36 @@
     html { scroll-behavior: smooth; }
     body {
       font-family: 'Plus Jakarta Sans', sans-serif;
-      background-color: var(--bg-dark, var(--emerald-dark));
+      background-color: var(--bg-dark, #071712);
       color: #ffffff;
       overflow-x: hidden;
       width: 100%;
-      background-image: radial-gradient(circle at 50% 15%, rgba(19,57,44,0.85) 0%, rgba(7,23,18,0.98) 90%), url('{{homePhotoUrl}}');
+    }
+
+    /* FIXED BACKGROUND LAYER (FOKUS DI PANEL UNDANGAN) */
+    .fixed-bg-layer {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100vh;
+      background-image: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--bg-dark, #071712) 78%, transparent) 0%,
+        color-mix(in srgb, var(--primary, #0b221a) 60%, transparent) 35%,
+        color-mix(in srgb, var(--bg-dark, #071712) 80%, transparent) 75%,
+        color-mix(in srgb, var(--bg-dark, #071712) 95%, transparent) 100%
+      ), url('{{homePhotoUrl}}');
       background-size: cover;
       background-position: center;
-      background-attachment: fixed;
+      background-repeat: no-repeat;
+      z-index: 1;
+      pointer-events: none;
     }
 
     /* TYPOGRAPHY CLASSES */
     .font-royal-serif { font-family: 'Cinzel', 'Cinzel Decorative', serif; }
     .font-royal-script { font-family: 'Alex Brush', cursive; }
-    .font-royal-quote { font-family: 'Cormorant Garamond', serif; }
+    .font-royal-quote { font-family: 'Cormorant Garamond', serif; text-shadow: 0 2px 10px rgba(0,0,0,0.85); }
     .font-royal-sans { font-family: 'Plus Jakarta Sans', sans-serif; }
 
     /* ANIMATIONS & MICRO-INTERACTIONS */
@@ -86,43 +103,59 @@
     /* 1. COVER SCREEN */
     .cover-overlay {
       position: fixed; inset: 0; z-index: 9999;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      text-align: center; padding: 2.5rem 1.5rem;
-      background: radial-gradient(circle at center, rgba(11,34,26,0.9) 0%, rgba(7,23,18,0.98) 100%), url('{{landingCoverUrl}}') center/cover no-repeat;
+      display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+      text-align: center; padding: 3rem 1.5rem 2.8rem;
+      background: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0.32) 0%,
+        color-mix(in srgb, var(--primary, #1b4332) 30%, transparent) 35%,
+        color-mix(in srgb, var(--bg-dark, #071712) 80%, transparent) 70%,
+        var(--bg-dark, #071712) 100%
+      ), url('{{landingCoverUrl}}') center/cover no-repeat;
       transition: transform 0.85s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.85s ease;
     }
     .cover-overlay.opened {
       transform: translateY(-100%); pointer-events: none; opacity: 0;
     }
 
+    .cover-top {
+      display: flex; flex-direction: column; align-items: center; width: 100%;
+    }
     .rumah-bugis-hero {
-      width: 100%; max-width: 210px; height: auto; margin-bottom: 1.2rem;
+      width: 100%; max-width: 82px; height: auto; margin-bottom: 0.6rem;
       animation: bugisFloat 4.5s ease-in-out infinite;
+      filter: drop-shadow(0 4px 15px rgba(0,0,0,0.6));
+    }
+    .cover-badge {
+      font-size: 0.68rem; letter-spacing: 0.32em; text-transform: uppercase; color: var(--gold-light);
+      font-weight: 600; text-shadow: 0 2px 10px rgba(0,0,0,0.8);
     }
 
-    .cover-badge {
-      font-size: 0.72rem; letter-spacing: 0.35em; text-transform: uppercase; color: var(--gold-light); margin-bottom: 0.5rem; font-weight: 600;
+    .cover-bottom {
+      display: flex; flex-direction: column; align-items: center; width: 100%;
     }
     .cover-names {
-      font-size: clamp(2.8rem, 10vw, 4.4rem); font-family: 'Alex Brush', cursive; color: var(--gold-primary);
-      text-shadow: 0 4px 25px rgba(0,0,0,0.9); margin-bottom: 1.5rem; font-weight: normal; line-height: 1.2;
+      font-size: clamp(2.6rem, 8.5vw, 3.8rem); font-family: 'Alex Brush', cursive; color: var(--gold-primary);
+      text-shadow: 0 4px 25px rgba(0,0,0,0.9); margin-bottom: 1.2rem; font-weight: normal; line-height: 1.15;
     }
     .cover-guest-card {
-      background: var(--emerald-card); border: 1px solid var(--border-gold);
-      border-radius: 16px; padding: 1.2rem 2rem; margin-bottom: 1.8rem;
-      backdrop-filter: blur(12px); box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 20px var(--gold-glow);
+      background: color-mix(in srgb, var(--primary, #0b221a) 30%, var(--bg-dark, #071712) 80%);
+      border: 1px solid var(--border-gold);
+      border-radius: 16px; padding: 1.1rem 1.8rem; margin-bottom: 1.4rem;
+      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 20px var(--gold-glow);
       max-width: 340px; width: 100%;
     }
-    .cover-guest-lbl { font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(243,229,171,0.7); }
-    .cover-guest-val { font-family: 'Cinzel', serif; font-size: 1.25rem; color: #fff; margin-top: 0.3rem; font-weight: 600; letter-spacing: 0.05em; }
+    .cover-guest-lbl { font-size: 0.68rem; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(243,229,171,0.8); }
+    .cover-guest-val { font-family: 'Cinzel', serif; font-size: 1.2rem; color: #fff; margin-top: 0.25rem; font-weight: 600; letter-spacing: 0.05em; }
     
     .btn-buka-undangan {
       display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem;
-      padding: 0.95rem 2.8rem;
+      padding: 0.9rem 2.6rem;
       background: linear-gradient(90deg, #d4af37 0%, #f3e5ab 50%, #d4af37 100%);
       background-size: 200% auto;
-      color: #071712; font-weight: 700;
-      font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--bg-dark, #071712); font-weight: 700;
+      font-size: 0.78rem; letter-spacing: 0.2em; text-transform: uppercase;
       border: none; border-radius: 50px; cursor: pointer; box-shadow: 0 6px 25px rgba(212,175,55,0.45);
       transition: all 0.35s ease;
     }
@@ -139,7 +172,7 @@
     }
     .sidebar-desktop::after {
       content: ''; position: absolute; inset: 0;
-      background: linear-gradient(to top, rgba(7,23,18,0.96) 0%, rgba(7,23,18,0.3) 50%, transparent 100%);
+      background: linear-gradient(to top, color-mix(in srgb, var(--bg-dark, #071712) 96%, transparent) 0%, color-mix(in srgb, var(--bg-dark, #071712) 30%, transparent) 50%, transparent 100%);
     }
     .sidebar-desktop-content {
       position: absolute; bottom: 4rem; left: 3.5rem; right: 3.5rem; z-index: 20; color: #fff;
@@ -151,6 +184,7 @@
 
     @media (min-width: 900px) {
       .sidebar-desktop { display: block; width: calc(100% - 460px); }
+      .fixed-bg-layer { left: calc(100% - 460px); width: 460px; }
       .main-scroll-panel { width: 460px; margin-left: calc(100% - 460px); min-width: 0; }
       .cover-overlay { width: 460px; left: calc(100% - 460px); }
       .bottom-dock { left: calc(100% - 230px) !important; }
@@ -188,14 +222,14 @@
     }
 
     .sec-eyebrow {
-      font-size: 0.72rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold-light); display: block; margin-bottom: 0.5rem; font-weight: 600;
+      font-size: 0.72rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--gold-light); display: block; margin-bottom: 0.5rem; font-weight: 600; text-shadow: 0 2px 8px rgba(0,0,0,0.8);
     }
     .sec-main-title, .sec-heading {
       font-size: clamp(1.8rem, 6vw, 2.5rem); font-family: 'Cinzel', serif; color: var(--gold-primary); margin-bottom: 0.5rem; font-weight: 600;
       letter-spacing: 0.08em; text-transform: uppercase; text-shadow: 0 2px 15px rgba(0,0,0,0.6);
     }
     .sec-subheading {
-      font-size: 0.75rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold-light); margin-bottom: 2.2rem; font-weight: 400; opacity: 0.85;
+      font-size: 0.75rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold-light); margin-bottom: 2.2rem; font-weight: 400; opacity: 0.85; text-shadow: 0 2px 8px rgba(0,0,0,0.8);
     }
 
     /* MEMPELAI CARD (BUGIS ARCH FRAME) */
@@ -234,9 +268,9 @@
       display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.8rem 2.2rem;
       border: 1px solid var(--gold-primary); border-radius: 50px; color: var(--gold-light);
       font-size: 0.75rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
-      text-decoration: none; transition: all 0.3s; background: rgba(11,34,26,0.6);
+      text-decoration: none; transition: all 0.3s; background: color-mix(in srgb, var(--primary, #0b221a) 30%, transparent);
     }
-    .btn-cal:hover { background: var(--gold-primary); color: #071712; transform: translateY(-2px); }
+    .btn-cal:hover { background: var(--gold-primary); color: var(--bg-dark, #071712); transform: translateY(-2px); }
 
     /* EVENTS UNIFIED CONTAINER STYLING */
     .events-unified-container { display: flex; flex-direction: column; gap: 1.5rem; width: 100%; max-width: 440px; }
@@ -298,11 +332,11 @@
     .bank-owner { font-size: 0.78rem; color: rgba(255,255,255,0.75); display: block; margin-bottom: 0.6rem; }
     .bank-row {
       display: flex; align-items: center; justify-content: space-between;
-      background: rgba(7,23,18,0.85); border: 1px solid var(--border-gold); border-radius: 8px; padding: 0.7rem 1rem;
+      background: color-mix(in srgb, var(--bg-dark, #071712) 85%, transparent); border: 1px solid var(--border-gold); border-radius: 8px; padding: 0.7rem 1rem;
     }
     .bank-number { font-family: monospace; font-size: 1.05rem; color: #ffffff; letter-spacing: 0.08em; }
     .btn-copy {
-      background: var(--gold-primary); color: #071712; border: none; padding: 0.45rem 1rem;
+      background: var(--gold-primary); color: var(--bg-dark, #071712); border: none; padding: 0.45rem 1rem;
       border-radius: 6px; font-weight: 700; font-size: 0.7rem; cursor: pointer; letter-spacing: 0.1em; text-transform: uppercase;
     }
 
@@ -311,12 +345,12 @@
     .form-row { margin-bottom: 1rem; }
     .form-lbl { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.15em; color: var(--gold-light); display: block; margin-bottom: 0.3rem; }
     .form-in, .form-sel, .form-ta {
-      width: 100%; padding: 0.8rem 1rem; background: rgba(7,23,18,0.85); border: 1px solid var(--border-gold);
+      width: 100%; padding: 0.8rem 1rem; background: color-mix(in srgb, var(--bg-dark, #071712) 85%, transparent); border: 1px solid var(--border-gold);
       border-radius: 8px; color: #ffffff; font-size: 0.85rem; outline: none; font-family: 'Plus Jakarta Sans', sans-serif;
     }
     .btn-rsvp-submit {
       width: 100%; padding: 1rem; background: linear-gradient(90deg, #d4af37 0%, #f3e5ab 50%, #d4af37 100%);
-      color: #071712; border: none; border-radius: 50px; font-weight: 700; font-size: 0.8rem;
+      color: var(--bg-dark, #071712); border: none; border-radius: 50px; font-weight: 700; font-size: 0.8rem;
       letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; transition: all 0.3s;
     }
     .wishes-list { margin-top: 1.5rem; max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.9rem; width: 100%; max-width: 440px; }
@@ -341,7 +375,7 @@
     /* DOCK */
     .bottom-dock {
       position: fixed; bottom: 20px; left: 50%; transform: translate3d(-50%, 0, 0); z-index: 100;
-      background: rgba(11, 34, 26, 0.95); border: 1px solid var(--border-gold); border-radius: 50px;
+      background: color-mix(in srgb, var(--primary, #0b221a) 25%, var(--bg-dark, #071712) 90%); border: 1px solid var(--border-gold); border-radius: 50px;
       padding: 0.5rem 1.2rem; display: flex; gap: 1.4rem; backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
       box-shadow: 0 10px 30px rgba(0,0,0,0.6); max-width: 440px; width: calc(100% - 30px); justify-content: space-around;
       transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.42s cubic-bezier(0.16, 1, 0.3, 1);
@@ -385,7 +419,7 @@
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(4,18,14,0.6) 50%, rgba(4,18,14,0.95) 100%);
+      background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, color-mix(in srgb, var(--bg-dark, #04120e) 60%, transparent) 50%, color-mix(in srgb, var(--bg-dark, #04120e) 95%, transparent) 100%);
       pointer-events: none;
       z-index: 1;
     }
@@ -401,20 +435,28 @@
 
   <!-- 1. COVER OVERLAY -->
   <div id="coverOverlay" class="cover-overlay">
-    <img src="https://favomoinvitation.com/wp-content/uploads/2025/08/rumah-bugis-1024x965.png" alt="Rumah Adat Bugis" class="rumah-bugis-hero">
-    <p class="cover-badge">WALIMATUL 'URSY &bull; ADAT BUGIS</p>
-    <h1 class="cover-names">{{firstName}} &amp; {{secondName}}</h1>
-    
-    <div class="cover-guest-card">
-      <p class="cover-guest-lbl">Kepada Yth. Bapak/Ibu/Saudara/i</p>
-      <h3 class="cover-guest-val">Tamu Undangan</h3>
+    <div class="cover-top">
+      <img src="https://favomoinvitation.com/wp-content/uploads/2025/08/rumah-bugis-1024x965.png" alt="Rumah Adat Bugis" class="rumah-bugis-hero">
+      <p class="cover-badge">WALIMATUL 'URSY &bull; ADAT BUGIS</p>
     </div>
 
-    <button class="btn-buka-undangan" onclick="openInvitation()">
-      <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
-      Buka Undangan
-    </button>
+    <div class="cover-bottom">
+      <h1 class="cover-names">{{firstName}} &amp; {{secondName}}</h1>
+      
+      <div class="cover-guest-card">
+        <p class="cover-guest-lbl">Kepada Yth. Bapak/Ibu/Saudara/i</p>
+        <h3 class="cover-guest-val" id="coverGuestName">Tamu Undangan</h3>
+      </div>
+
+      <button class="btn-buka-undangan" onclick="openInvitation()" data-lux-field="customLabels.openBtn">
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+        {{openBtnText}}
+      </button>
+    </div>
   </div>
+
+  <!-- FIXED BACKGROUND LAYER (FOKUS DI PANEL UNDANGAN) -->
+  <div class="fixed-bg-layer"></div>
 
   <div class="layout-wrapper">
     

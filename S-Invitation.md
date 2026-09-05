@@ -33,7 +33,7 @@ Sistem template undangan menggunakan arsitektur HTML multi-layer mandiri dengan 
    - Portal kubah lengkung keraton (*Traditional Arch Portals*) berbingkai emas.
    - Tekstur kertas perkamen antik & ornamen klasik Nusantara.
 2. **Badrika (`themes/traditional/badrika.html`)**
-   - Nuansa wayang & ukiran kayu etnik dengan gradien emas tembaga.
+   - Nuansa adat Bugis-Makassar royal celebration dengan aksen emas tembaga, rumah adat Bugis, dan arsitektur split-desktop (`.fixed-bg-layer` 460px semi-transparan berpadu kain sutra Lontara).
 3. **Candani (`themes/traditional/candani.html`)**
    - Ornamen batik klasik dan palet warna bumi (terracotta & sand).
 4. **Dillalucky (`themes/traditional/dillalucky.html`)**
@@ -253,6 +253,7 @@ Siklus hidup undangan diatur secara otomatis oleh cron job (`POST /api/cron/clea
    - **Audio BGM Demo Showroom:** Tab Aset Visual & Audio menyediakan slot pemutar dan pengunggah audio (`music.mp3`/`music.ogg`) yang otomatis dipicu saat tombol "Buka Undangan" ditekan.
    - **Prinsip Content-Driven Rendering:** Meniadakan saklar on/off manual dan kerumitan kustomisasi label. Seksi otomatis tampil bila data diisi (cerita, rekening hadiah, dll.) dan padam bila dikosongkan.
    - **Full Caching Strategy:** Seluruh aset showroom demo (`/demo/**`) dan pustaka musik bawaan (`/music/**`) dikonfigurasi dengan header HTTP `Cache-Control` optimal di `next.config.ts` (`s-maxage=604800` untuk Edge CDN Cloudflare, dan `immutable` untuk audio), disertai query cache buster `?t=...` saat admin memperbarui aset.
+   - **Showroom Color Palette Selector:** Demo Studio Admin menyertakan pemilih 6 palet warna resmi (`champagne`, `emerald`, `burgundy`, `sage`, `terracotta`, `monochrome`), menjamin demo publik seperti Badrika tampil anggun dalam balutan warna khasnya (Emerald Green & Gold) tanpa mengunci kode CSS tema secara hardcoded.
 10. **Standarisasi Formulir RSVP & Buku Tamu Interaktif (15 Master Tema Fisik):**
     - Seluruh 15 tema fisik kini secara konsisten menyematkan blok `<form id="rsvpForm" onsubmit="luxSubmitRsvp(event)">` lengkap dengan input Nama Lengkap (`#rsvpName`), pilihan Kehadiran (`#rsvpStatus`), jumlah tamu (`#rsvpCount`), dan textarea Ucapan & Doa (`#rsvpMessage`), yang membungkus feed ucapan `{{wishesHtml}}` di dalam container `.wishes-list#wishesList`.
     - Menghilangkan anomali seksi kosong tanpa formulir pada tema-tema seperti `candani`, `mayang`, `badrika`, `lumina`, `solaria`, dan `chronicle`.

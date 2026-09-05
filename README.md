@@ -153,6 +153,7 @@ Pre-Flight Checklist & Smart Audit (/dashboard/settings):
 - **Adaptive Full-Height Closing Section (`100vh`) & Flush Alignment:** Seksi outro (`.site-footer` / `.closing-sec`) berukuran layar penuh `100vh` dengan penataan *flush* ke dasar layar (bebas celah/gap 90px–110px) dan adaptif terhadap unggahan foto penutup (`CLOSING_COVER`):
   - *Mode Kanvas Kosong (Default):* Latar bersih sesuai palet tema tanpa dummy image palsu; teks ucapan terima kasih dan nama mempelai berposisi vertikal & horizontal tepat di tengah layar (`justify-content: center;`).
   - *Mode Foto Penutup:* Foto latar layar penuh dengan overlay gradasi; teks ucapan bergeser elegan ke bagian bawah layar (`justify-content: flex-end;`).
+- **Palet Warna Showroom Demo Dinamis:** Admin Demo Studio menyediakan selektor 6 palet warna resmi (`champagne`, `emerald`, `burgundy`, `sage`, `terracotta`, `monochrome`) yang dikompilasi secara on-the-fly ke `/demo/[theme]`, memungkinkan tema tradisional seperti Badrika tampil dalam palet khas Bugis Royal Emerald tanpa hardcoding di CSS.
 
 ---
 

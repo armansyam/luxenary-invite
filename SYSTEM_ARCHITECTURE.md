@@ -1273,5 +1273,12 @@ Untuk memastikan showroom demo tema publik (`/demo/[themeId]`) tampil memukau da
      - `/css/:path*`: `public, max-age=604800, stale-while-revalidate=86400` (Cache 7 hari untuk modul CSS sistem dengan background revalidasi).
      - `/uploads/:path*`: `public, max-age=86400, stale-while-revalidate=86400` (Cache 1 hari untuk media draft dengan background revalidasi dan clean overwrite).
      - File baru yang diunggah dari Demo Studio maupun Client Dashboard disematkan query buster timestamp (`?t=...`) sehingga pembaruan aset tetap tampil seketika.
+5. **Showroom Color Palette Selector & Per-Theme Default Palette:**
+   - Tab Aset Visual & Audio di Demo Studio dilengkapi pemilih 6 palet warna resmi (`champagne`, `emerald`, `burgundy`, `sage`, `terracotta`, `monochrome`).
+   - Admin dapat menetapkan palet resmi showroom per tema (misal Badrika $\rightarrow$ `emerald`, Candani $\rightarrow$ `terracotta`, Ameera $\rightarrow$ `burgundy`, Chronicle $\rightarrow$ `monochrome`).
+   - Mesin kompilasi (`lib/demoPublisher.ts` & `lib/demoRegistry.ts`) mengevaluasi `defaultPalette` dinamis dan mengompilasi halaman statis `/demo/[theme]` dengan token warna yang presisi.
+6. **Desktop Split Invitation Background Isolation (`.fixed-bg-layer`):**
+   - Tema berformat split-desktop (seperti Badrika, Chronicle, Kalandra, Aurelia, Artisan) menggunakan elemen latar belakang terisolasi `.fixed-bg-layer` yang di-lock pada `width: 460px; left: calc(100% - 460px);`.
+   - Menggantikan penempatan background langsung di elemen `body` (100vw) yang rawan tersembunyi di balik sidebar kiri desktop, serta menerapkan scrim overlay bertingkat semi-transparan (`color-mix` transparan 60%–80%) sehingga tekstur foto/kain adat terlihat hidup dengan kontras teks yang tetap maksimal.
 
 

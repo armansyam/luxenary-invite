@@ -77,6 +77,7 @@ export interface DemoThemeData {
   dressCodeColors: string;
   dressCodeNote: string;
   turutMengundang: string[];
+  defaultPalette?: string;
 }
 
 export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
@@ -796,6 +797,7 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     themeName: "Badrika",
     series: "Traditional",
     category: "traditional",
+    defaultPalette: "emerald",
     tagline: "WALIMATUL 'URS & SAORAJA ROYAL",
     groomName: "Syahril",
     brideName: "Elyana",
@@ -1271,7 +1273,8 @@ export function composeDemoTemplateData(
 ) {
   const baseDemo = getDemoThemeData(themeId);
   const demo: DemoThemeData = customData ? { ...baseDemo, ...customData } : baseDemo;
-  const palette = COLOR_PALETTES[paletteKey] || COLOR_PALETTES.champagne;
+  const resolvedPalette = customData?.defaultPalette || demo.defaultPalette || paletteKey || "champagne";
+  const palette = COLOR_PALETTES[resolvedPalette] || COLOR_PALETTES.champagne;
 
   // 1. Events HTML (Deduplicated Unified Card)
   const sessionsListHtml = demo.events.map((ev) => `
@@ -1973,6 +1976,7 @@ export function composeDemoTemplateData(
     colorAccent: palette.accent,
     colorBgLight: palette.bgLight,
     colorBgDark: palette.bgDark,
+    colorTextDark: palette.textDark || "#1a1a1a",
 
     // Custom Labels (Zero-Hardcode Fallback for Demo)
     customLabels: {

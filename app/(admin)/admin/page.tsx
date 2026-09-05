@@ -6687,6 +6687,64 @@ export default function AdminPage() {
                         </div>
                       </div>
 
+                      {/* Showroom Color Palette Selector */}
+                      <div className="p-4 bg-white border border-stone-200 rounded-2xl space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="font-bold text-stone-900 text-xs uppercase tracking-wider">
+                              Palet Warna Showroom Demo
+                            </h4>
+                            <p className="text-[11px] text-stone-500 mt-0.5">
+                              Pilih nuansa warna resmi yang dikompilasi ke halaman pratinjau showroom publik (/demo/{demoStudioTheme.id}).
+                            </p>
+                          </div>
+                          {(demoStudioData.defaultPalette || demoStudioData.colorPalette) && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-stone-100 text-stone-700 capitalize">
+                              {demoStudioData.defaultPalette || demoStudioData.colorPalette}
+                            </span>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5 pt-1">
+                          {[
+                            { id: "champagne", name: "Champagne Gold", hex: "#a67c52" },
+                            { id: "emerald", name: "Royal Emerald", hex: "#1b4332" },
+                            { id: "burgundy", name: "Burgundy Wine", hex: "#54192b" },
+                            { id: "sage", name: "Botanical Sage", hex: "#4a5d4e" },
+                            { id: "terracotta", name: "Warm Terracotta", hex: "#8c583a" },
+                            { id: "monochrome", name: "Monochrome Dark", hex: "#262626" },
+                          ].map((pal) => {
+                            const currentPal = demoStudioData.defaultPalette || demoStudioData.colorPalette || (demoStudioTheme.id === "badrika" ? "emerald" : demoStudioTheme.id === "candani" ? "terracotta" : demoStudioTheme.id === "ameera" ? "burgundy" : demoStudioTheme.id === "chronicle" ? "monochrome" : "champagne");
+                            const isSelected = currentPal === pal.id;
+                            return (
+                              <button
+                                key={pal.id}
+                                type="button"
+                                onClick={() => {
+                                  setDemoStudioData((prev: any) => ({
+                                    ...prev,
+                                    defaultPalette: pal.id,
+                                    colorPalette: pal.id,
+                                  }));
+                                }}
+                                className={`p-2 rounded-xl border text-left flex items-center gap-2.5 transition cursor-pointer ${
+                                  isSelected
+                                    ? "border-amber-800 bg-amber-50/70 ring-2 ring-amber-800/30 shadow-xs"
+                                    : "border-stone-200 hover:border-stone-300 bg-white"
+                                }`}
+                              >
+                                <span
+                                  className="w-5 h-5 rounded-full shadow-inner border border-black/10 shrink-0"
+                                  style={{ backgroundColor: pal.hex }}
+                                />
+                                <div className="min-w-0">
+                                  <p className="text-[11px] font-bold text-stone-900 truncate">{pal.name}</p>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
                       {/* Main Cover & Hero Slots Grid */}
                       <div>
                         <h4 className="font-bold text-gray-900 text-xs uppercase tracking-wider mb-3">

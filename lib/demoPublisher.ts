@@ -20,7 +20,9 @@ export async function compileAndSaveStaticDemo(themeId: string, customDemoData?:
       }
     } catch {}
   }
-  const data = composeDemoTemplateData(cleanId, "champagne", resolvedData);
+
+  const chosenPalette = resolvedData?.defaultPalette || resolvedData?.colorPalette;
+  const data = composeDemoTemplateData(cleanId, chosenPalette, resolvedData);
   let html = await renderTemplateFile(cleanId, data);
 
   // Inject cover-mode script & styles for lightweight catalog preview
