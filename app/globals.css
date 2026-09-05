@@ -3,7 +3,7 @@
 :root,
 html,
 body {
-  color-scheme: light !important;
+  color-scheme: only light !important;
   supported-color-schemes: light !important;
   --background: #faf8f5;
   --foreground: #2d2c2a;

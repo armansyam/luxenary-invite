@@ -50,9 +50,9 @@ export default function CatalogGridShowcase() {
     : themes.filter((t) => t.category.toLowerCase() === selectedCategory.toLowerCase());
 
   return (
-    <div className="min-h-screen bg-[#faf8f5] text-stone-900 font-sans pb-24">
+    <div className="min-h-screen bg-[#faf8f5] text-stone-900 font-sans pb-24" style={{ colorScheme: "only light", backgroundColor: "#faf8f5", color: "#1c1917" }}>
       {/* Top Navigation & Brand Header */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-stone-200 sticky top-0 z-40">
+      <header className="bg-white/95 backdrop-blur-md border-b border-stone-200 sticky top-0 z-40" style={{ colorScheme: "only light", backgroundColor: "#ffffff" }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3 group cursor-pointer">
             <BrandLogo size="sm" lightBg />

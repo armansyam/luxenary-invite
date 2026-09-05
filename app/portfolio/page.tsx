@@ -21,7 +21,7 @@ export default async function PortfolioPage() {
 
   if (clonedSlugs.length === 0) {
     return (
-      <div className="min-h-screen bg-[#faf8f5] text-stone-900 font-sans flex flex-col">
+      <div className="min-h-screen bg-[#faf8f5] text-stone-900 font-sans flex flex-col" style={{ colorScheme: "only light", backgroundColor: "#faf8f5", color: "#1c1917" }}>
         <header className="border-b border-[#eadecf]/70 bg-[#faf8f5]/85 backdrop-blur-md sticky top-0 z-40">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
             <Link href="/" className="flex items-center gap-3">
@@ -66,7 +66,7 @@ export default async function PortfolioPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#faf8f5] text-stone-900 font-sans flex flex-col selection:bg-amber-200 selection:text-amber-900">
+    <div className="min-h-screen bg-[#faf8f5] text-stone-900 font-sans flex flex-col selection:bg-amber-200 selection:text-amber-900" style={{ colorScheme: "only light", backgroundColor: "#faf8f5", color: "#1c1917" }}>
       {/* Top Header Navbar */}
       <header className="border-b border-[#eadecf]/70 bg-[#faf8f5]/85 backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between">

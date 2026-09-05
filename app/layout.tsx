@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 
 export const viewport: Viewport = {
   themeColor: "#faf8f5",
-  colorScheme: "light",
+  colorScheme: "only light" as any,
 };
 import { Geist, Geist_Mono } from "next/font/google";
 import { Providers } from "@/lib/session";
@@ -106,15 +106,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="id"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-      style={{ colorScheme: "light" }}
+      style={{ colorScheme: "only light" as any }}
     >
       <head>
-        <meta name="color-scheme" content="light" />
-        <meta name="supported-color-schemes" content="light" />
+        <meta name="color-scheme" content="only light" />
+        <meta name="supported-color-schemes" content="only light" />
       </head>
       <body
         className="min-h-full flex flex-col bg-[#faf8f5] text-[#2d2c2a]"
-        style={{ colorScheme: "light", backgroundColor: "#faf8f5", color: "#2d2c2a" }}
+        style={{ colorScheme: "only light" as any, backgroundColor: "#faf8f5", color: "#2d2c2a" }}
       >
         <div dangerouslySetInnerHTML={{ __html: LUXENARY_WATERMARK }} />
         <Providers>{children}</Providers>

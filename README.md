@@ -19,7 +19,7 @@
 
 ## Tentang Platform
 
-Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model **B2C (Business-to-Consumer)** di mana calon pengantin mendaftar mandiri, memilih paket, membayar, lalu mengakses studio editor untuk membangun undangan digital mereka. Setelah publish, undangan tampil sebagai **file HTML statis mandiri** yang disajikan langsung dari disk — tanpa SSR, tanpa DB query per request. Seluruh estetika platform dan tema dikunci ketat ke **Light Luxury Palette** (`color-scheme: light !important`) untuk mencegah browser ponsel (Safari, Chrome, Brave) melakukan auto-inversi mode gelap yang merusak kontras visual.
+Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model **B2C (Business-to-Consumer)** di mana calon pengantin mendaftar mandiri, memilih paket, membayar, lalu mengakses studio editor untuk membangun undangan digital mereka. Setelah publish, undangan tampil sebagai **file HTML statis mandiri** yang disajikan langsung dari disk — tanpa SSR, tanpa DB query per request. Seluruh estetika platform dan tema dikunci ketat ke **Light Luxury Palette** (`color-scheme: only light !important`) dengan proteksi W3C `only` untuk mencegah browser ponsel (Safari, Chrome, Brave) melakukan auto-inversi mode gelap yang merusak kontras visual.
 
 ---
 

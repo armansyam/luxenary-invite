@@ -150,7 +150,7 @@ Sistem Studio Editor Klien (`/dashboard/invitation/[id]`) menyediakan kendali kr
       - Viewfinder interaktif dengan animasi laser scanner dan umpan balik suara *beep chime* (Web Audio API) saat QR terdeteksi.
       - Mekanisme *Anti-Double Scan Lock* (jeda 3 detik dengan overlay sukses) untuk mencegah pembacaan ganda yang tidak disengaja.
     - **Unified Card Switcher Control:** Antarmuka pemindai mengadopsi satu tombol switch dinamis (*"Buka Kamera"* / *"Mode Scan"*) terintegrasi di header kartu, menggantikan sistem tab ganda konvensional untuk estetika SaaS yang bersih dan hemat ruang.
-    - **Fullscreen Kiosk Mode & Color Scheme Isolation:** Mendukung mode layar penuh (HTML5 Fullscreen API) di perangkat tablet atau laptop untuk operasional kiosk meja registrasi, serta penguncian isolasi tema (*color-scheme: light*) agar palet warna, tipografi, dan kontras visual tidak terdistorsi oleh pengaturan Dark/Light mode bawaan sistem operasi pengguna.
+    - **Fullscreen Kiosk Mode & Color Scheme Isolation:** Mendukung mode layar penuh (HTML5 Fullscreen API) di perangkat tablet atau laptop untuk operasional kiosk meja registrasi, serta penguncian isolasi tema (*color-scheme: only light*) agar palet warna, tipografi, dan kontras visual tidak terdistorsi oleh pengaturan Dark/Light mode bawaan sistem operasi pengguna atau peramban.
     - **Offline-First Resilience:** Daftar tamu dan antrean scan offline disimpan di `localStorage`. Jika panitia mengunci layar saat masih terdapat antrean scan offline, sistem memberikan dialog konfirmasi keamanan tanpa menghilangkan antrean data yang tersimpan di perangkat.
 
 ---
