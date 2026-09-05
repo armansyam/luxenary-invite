@@ -137,7 +137,7 @@ export default function CatalogGridShowcase() {
       </section>
 
       {/* Grid Showcase */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 mt-6">
+      <section className="max-w-[1740px] mx-auto px-4 sm:px-6 mt-6">
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <div className="w-8 h-8 border-2 border-amber-800 border-t-transparent rounded-full animate-spin"></div>
@@ -147,23 +147,27 @@ export default function CatalogGridShowcase() {
             Tidak ada tema yang ditemukan pada kategori ini.
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="flex flex-wrap justify-center gap-3.5 sm:gap-4 transition-all duration-300">
             {filteredThemes.map((theme) => (
               <div
                 key={theme.id}
-                className="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-xl transition-all duration-300 group"
+                className={`bg-white rounded-xl border border-stone-200 shadow-xs overflow-hidden flex flex-col justify-between hover:shadow-lg transition-all duration-300 group flex-grow-0 shrink-0 ${
+                  viewMode === "mobile"
+                    ? "w-[calc(50%-0.5rem)] sm:w-[185px]"
+                    : "w-full sm:w-[calc(50%-1rem)] lg:w-[360px]"
+                }`}
               >
-                {/* Fake Browser Top Bar (Mac Style) */}
-                <div className="bg-[#181615] px-3 py-2.5 border-b border-stone-800 flex items-center justify-between select-none">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#ff5f56] inline-block"></span>
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e] inline-block"></span>
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#27c93f] inline-block"></span>
+                {/* Fake Browser Top Bar (Mac Style - Compact) */}
+                <div className="bg-[#181615] px-2.5 py-1.5 border-b border-stone-800 flex items-center justify-between select-none">
+                  <div className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-[#ff5f56] inline-block"></span>
+                    <span className="w-2 h-2 rounded-full bg-[#ffbd2e] inline-block"></span>
+                    <span className="w-2 h-2 rounded-full bg-[#27c93f] inline-block"></span>
                   </div>
-                  <span className="text-[10px] font-mono text-stone-400 truncate max-w-[130px]">
-                    {theme.id}.invitation
+                  <span className="text-[9px] font-mono text-stone-400 truncate max-w-[85px]">
+                    {theme.id}
                   </span>
-                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${
+                  <span className={`text-[8px] font-bold px-1 py-0.2 rounded uppercase tracking-wider ${
                     theme.category === "traditional" ? "bg-amber-900/60 text-amber-300 border border-amber-700/50" :
                     theme.category === "modern" ? "bg-cyan-950/70 text-cyan-300 border border-cyan-800/50" :
                     "bg-amber-500/20 text-amber-300 border border-amber-500/40"
@@ -172,44 +176,61 @@ export default function CatalogGridShowcase() {
                   </span>
                 </div>
 
-                {/* Live Scaled HTML Theme View Frame with Auto-scroll Animation */}
+                {/* Snapshot Theme View Frame (Rasio Presisi: Mobile 390/844 & Desktop 16/9) */}
                 <Link
                   href={`/demo/${theme.id}`}
                   target="_blank"
-                  className={`relative bg-stone-950 overflow-hidden block cursor-pointer transition-all duration-500 ${
-                    viewMode === "mobile" ? "aspect-[9/14]" : "aspect-[16/9]"
+                  className={`relative bg-stone-950 overflow-hidden block cursor-pointer transition-all duration-500 group ${
+                    viewMode === "mobile" ? "aspect-[390/844]" : "aspect-[16/9]"
                   }`}
                 >
-                  <iframe
-                    src={`/demo/${theme.id}?mode=cover`}
+                  <img
+                    key={`${theme.id}-${viewMode}`}
+                    src={
+                      viewMode === "mobile"
+                        ? `/demo/${theme.id}/thumbnail_mobile.webp`
+                        : `/demo/${theme.id}/thumbnail_desktop.webp`
+                    }
+                    alt={`${theme.name} Preview`}
                     loading="lazy"
-                    className={`absolute top-0 left-0 border-none pointer-events-none select-none origin-top-left transition-all duration-500 ${
-                      viewMode === "mobile" 
-                        ? "w-[125%] h-[125%] transform scale-[0.80]" 
-                        : "w-[400%] h-[400%] transform scale-[0.25]"
-                    }`}
-                    title={theme.name}
+                    className="w-full h-full object-cover object-top transition-transform duration-500 ease-out group-hover:scale-105"
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      // Auto-fallback berjenjang: thumbnail -> cover.webp -> hero.webp
+                      if (!target.src.includes("cover.webp") && !target.src.includes("hero.webp")) {
+                        target.src = `/demo/${theme.id}/cover.webp`;
+                      } else if (target.src.includes("cover.webp")) {
+                        target.src = `/demo/${theme.id}/hero.webp`;
+                      }
+                    }}
                   />
+
+                  {/* Subtle Hover Action Overlay */}
+                  <div className="absolute inset-0 bg-stone-950/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center p-2 z-10">
+                    <span className="px-3 py-1.5 bg-white text-stone-900 font-bold text-[11px] rounded-full shadow-lg transform translate-y-1 group-hover:translate-y-0 transition-transform">
+                      Buka ↗
+                    </span>
+                  </div>
                 </Link>
 
-                {/* Card Info & Action Button */}
-                <div className="p-4 space-y-3 bg-white">
+                {/* Card Info & Action Button (Compact) */}
+                <div className="p-2.5 space-y-2 bg-white">
                   <div>
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-bold text-stone-900 text-base">{theme.name}</h3>
-                      <span className="text-[11px] font-semibold text-stone-600">{theme.series}</span>
+                    <div className="flex items-center justify-between gap-1">
+                      <h3 className="font-bold text-stone-900 text-xs sm:text-sm truncate">{theme.name}</h3>
+                      <span className="text-[10px] font-semibold text-stone-500 shrink-0">{theme.series}</span>
                     </div>
-                    <p className="text-xs text-stone-500 mt-1 font-medium line-clamp-1">{theme.desc}</p>
+                    <p className="text-[10px] text-stone-400 font-medium line-clamp-1 mt-0.5">{theme.desc}</p>
                   </div>
 
                   {/* Single Clean Action Button */}
-                  <div className="pt-1">
+                  <div className="pt-0.5">
                     <Link
                       href={`/demo/${theme.id}`}
                       target="_blank"
-                      className="w-full py-2.5 bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-xl text-xs text-center transition block shadow-sm tracking-wider cursor-pointer"
+                      className="w-full py-1.5 bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-lg text-[10px] text-center transition block shadow-2xs tracking-wider cursor-pointer"
                     >
-                      PREVIEW TEMA
+                      PREVIEW
                     </Link>
                   </div>
                 </div>

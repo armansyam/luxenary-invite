@@ -101,6 +101,10 @@ export async function POST(
         customData.groomPhotoUrl = rawUrl;
       } else if (slot === "bride") {
         customData.bridePhotoUrl = rawUrl;
+      } else if (slot === "thumbnail_mobile") {
+        customData.thumbnailMobileUrl = rawUrl;
+      } else if (slot === "thumbnail_desktop") {
+        customData.thumbnailDesktopUrl = rawUrl;
       } else if (slot === "music") {
         customData.audioUrl = rawUrl;
       } else if (slot.startsWith("gallery_")) {

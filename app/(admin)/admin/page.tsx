@@ -1251,6 +1251,8 @@ export default function AdminPage() {
           else if (slot === "footer") nextDemoData.footerPhotoUrl = targetUrl;
           else if (slot === "groom") nextDemoData.groomPhotoUrl = targetUrl;
           else if (slot === "bride") nextDemoData.bridePhotoUrl = targetUrl;
+          else if (slot === "thumbnail_mobile") nextDemoData.thumbnailMobileUrl = targetUrl;
+          else if (slot === "thumbnail_desktop") nextDemoData.thumbnailDesktopUrl = targetUrl;
           else if (slot === "music") nextDemoData.audioUrl = targetUrl;
           else if (slot.startsWith("gallery_")) {
             const idx = parseInt(slot.replace("gallery_", ""), 10) - 1;
@@ -6777,6 +6779,20 @@ export default function AdminPage() {
                             { slot: "footer", label: "Foto Footer", file: "footer.webp", allowVideo: false, desc: "Foto penutup di bagian akhir undangan (Opsional)" },
                             { slot: "groom", label: "Mempelai Pria", file: "groom.webp", allowVideo: false, desc: "Foto profil pria" },
                             { slot: "bride", label: "Mempelai Wanita", file: "bride.webp", allowVideo: false, desc: "Foto profil wanita" },
+                            { 
+                              slot: "thumbnail_mobile", 
+                              label: "Thumbnail Katalog (Mobile)", 
+                              file: "thumbnail_mobile.webp", 
+                              allowVideo: false, 
+                              desc: "Snapshot layar mobile untuk kartu /demo. Ukuran: 390 × 844 px (Rasio 9:19.5). Cara: Inspect -> Device iPhone 14 -> Titik 3 (⋮) -> Capture screenshot." 
+                            },
+                            { 
+                              slot: "thumbnail_desktop", 
+                              label: "Thumbnail Katalog (Desktop)", 
+                              file: "thumbnail_desktop.webp", 
+                              allowVideo: false, 
+                              desc: "Snapshot layar desktop untuk kartu /demo. Ukuran: 1280 × 720 px (Rasio 16:9). Cara: Inspect -> Device Responsive (1280×720) -> Titik 3 (⋮) -> Capture screenshot." 
+                            },
                           ].map((item) => {
                             const isStaged = Boolean(stagedDemoFiles[item.slot]);
                             const isSaved = Boolean(updatedDemoSlots[item.slot]) && !isStaged;
@@ -6790,7 +6806,9 @@ export default function AdminPage() {
                               item.slot === "home" ? demoStudioData.homePhotoUrl :
                               item.slot === "footer" ? demoStudioData.footerPhotoUrl :
                               item.slot === "groom" ? demoStudioData.groomPhotoUrl :
-                              item.slot === "bride" ? demoStudioData.bridePhotoUrl : null
+                              item.slot === "bride" ? demoStudioData.bridePhotoUrl :
+                              item.slot === "thumbnail_mobile" ? demoStudioData.thumbnailMobileUrl :
+                              item.slot === "thumbnail_desktop" ? demoStudioData.thumbnailDesktopUrl : null
                             ) || `/demo/${demoStudioTheme.id}/${item.file}?v=${updatedDemoSlots[item.slot] || 1}`;
 
                             const effectiveSrc = localPreview || savedUrl;
