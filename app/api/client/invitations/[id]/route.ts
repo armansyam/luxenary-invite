@@ -57,7 +57,18 @@ export function getInvitationLockStatus(inv: any) {
     };
   }
 
-  // 4. Before Hari H: General fields editable, but core couple names & date are protected
+  // 4. Check if PUBLISHED or EVENT_FINISHED: Studio editor locked pasca publikasi
+  if (inv.status === "PUBLISHED" || inv.status === "EVENT_FINISHED") {
+    return {
+      isLocked: true,
+      isCoreLocked: true,
+      isEmergencyUnlocked: false,
+      unlockExpiresAt: null,
+      lockReason: "PUBLISHED",
+    };
+  }
+
+  // 5. Before Hari H & Draft: General fields editable, but core couple names & date are protected
   const hasExistingNames = Boolean(inv.groomName && inv.brideName);
   return {
     isLocked: false,
@@ -165,13 +176,57 @@ export async function PUT(
 
     const lockStatus = getInvitationLockStatus(currentInv);
 
+    // ACTION: DEPLOY_AND_LOCK (Atomic Single Bake & Auto-Lock on Complete)
+    if (body.action === "DEPLOY_AND_LOCK") {
+      if (lockStatus.isLocked && !lockStatus.isEmergencyUnlocked && !isAdmin) {
+        return NextResponse.json(
+          { error: "Akses darurat tidak aktif. Hubungi Administrator untuk membuka kunci terlebih dahulu." },
+          { status: 403 }
+        );
+      }
+
+      try {
+        const provider = process.env.STORAGE_PROVIDER || "local";
+        if (provider === "r2" || provider === "s3") {
+          const { syncDraftToR2 } = await import("@/lib/storage");
+          await syncDraftToR2(currentInv.id);
+        } else {
+          const { buildAndSavePublishedHtml } = await import("@/lib/staticPublisher");
+          await buildAndSavePublishedHtml(currentInv.id);
+        }
+
+        // Kunci kembali studio secara otomatis (hapus adminUnlockedUntil)
+        const updated = await prisma.invitation.update({
+          where: { id: currentInv.id },
+          data: {
+            adminUnlockedUntil: null,
+          },
+        });
+
+        const newLockStatus = getInvitationLockStatus(updated);
+
+        return NextResponse.json({
+          success: true,
+          message: "Undangan online berhasil diperbarui dan studio telah terkunci kembali.",
+          ...updated,
+          ...newLockStatus,
+        });
+      } catch (deployErr: any) {
+        console.error("[DEPLOY_AND_LOCK Error]", deployErr);
+        return NextResponse.json(
+          { error: deployErr.message || "Gagal memperbarui undangan online." },
+          { status: 500 }
+        );
+      }
+    }
+
     // If completely locked, reject edit
     if (lockStatus.isLocked) {
+      const errMsg = lockStatus.lockReason === "PUBLISHED"
+        ? "Undangan ini telah diterbitkan dan studio terkunci. Silakan ajukan Buka Kunci Darurat kepada Administrator."
+        : "Undangan ini telah terkunci permanen karena tanggal acara telah terlewati. Hubungi Administrator untuk membuka kunci darurat.";
       return NextResponse.json(
-        {
-          error:
-            "Undangan ini telah terkunci permanen karena tanggal acara telah terlewati. Hubungi Administrator untuk membuka kunci darurat.",
-        },
+        { error: errMsg },
         { status: 403 }
       );
     }
@@ -202,8 +257,10 @@ export async function PUT(
       }
     }
 
-    let newSubdomain = canEditCore && body.subdomain !== undefined
-      ? (body.subdomain ? String(body.subdomain).trim().toLowerCase() : null)
+    let newSubdomain = body.subdomain !== undefined
+      ? (body.subdomain && String(body.subdomain).trim()
+          ? String(body.subdomain).trim().toLowerCase().replace(/[^a-z0-9-]/g, "")
+          : null)
       : undefined;
 
     if (newSubdomain === undefined && (!currentInv?.subdomain || currentInv.subdomain === "mempelai-pria-wanita")) {
@@ -444,9 +501,10 @@ export async function PUT(
       }
     }
 
-    // If invitation is PUBLISHED, auto-rebake standalone HTML file and sync R2
-    if (updated.status === "PUBLISHED") {
-      // Jalankan secara asinkron (background) agar klien tidak menunggu lama
+    // Hanya picu auto-rebake background jika ini adalah publikasi perdana (DRAFT -> PUBLISHED).
+    // Untuk editan bertahap saat Kunci Darurat, kompilasi bake ditunda hingga klien menekan "Perbarui Undangan Online" (DEPLOY_AND_LOCK)
+    const isInitialPublish = currentInv.status !== "PUBLISHED" && updated.status === "PUBLISHED";
+    if (isInitialPublish) {
       import("@/lib/storage").then(async ({ syncDraftToR2 }) => {
         try {
           const provider = process.env.STORAGE_PROVIDER || "local";
@@ -457,7 +515,7 @@ export async function PUT(
             await buildAndSavePublishedHtml(updated.id);
           }
         } catch (err) {
-          console.error("Auto-bake / R2 Sync failed (background):", err);
+          console.error("Initial publish auto-bake / R2 Sync failed (background):", err);
         }
       });
     }

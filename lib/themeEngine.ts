@@ -100,6 +100,35 @@ function parseVideoEmbed(url: string): string | null {
   return trimmed;
 }
 
+/**
+ * Menghasilkan avatar monogram inisial artistik berbasis SVG data-URI.
+ * Digunakan sebagai representasi elegan dan mewah jika klien belum/tidak mengunggah foto personal,
+ * sehingga TIDAK PERNAH menampilkan foto model demo orang asing di undangan klien nyata.
+ */
+function generateInitialAvatarSvg(nameOrInitial: string, roleName: string): string {
+  const cleanInit = (nameOrInitial || "?").trim().charAt(0).toUpperCase();
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="100%" height="100%">
+    <defs>
+      <linearGradient id="avatarGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#141416" />
+        <stop offset="50%" stop-color="#1f1d1d" />
+        <stop offset="100%" stop-color="#0a0a0c" />
+      </linearGradient>
+      <radialGradient id="goldGlow" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="rgba(217, 180, 126, 0.28)" />
+        <stop offset="100%" stop-color="rgba(0,0,0,0)" />
+      </radialGradient>
+    </defs>
+    <rect width="600" height="600" fill="url(#avatarGrad)" />
+    <circle cx="300" cy="300" r="280" fill="url(#goldGlow)" />
+    <circle cx="300" cy="300" r="215" fill="none" stroke="rgba(217, 180, 126, 0.4)" stroke-width="2" stroke-dasharray="6,6" />
+    <circle cx="300" cy="300" r="195" fill="none" stroke="rgba(217, 180, 126, 0.85)" stroke-width="1.5" />
+    <text x="50%" y="53%" dominant-baseline="middle" text-anchor="middle" font-family="'Cinzel', 'Playfair Display', Georgia, serif" font-size="160" font-weight="300" fill="#e7c896" letter-spacing="2">${cleanInit}</text>
+    <text x="50%" y="78%" dominant-baseline="middle" text-anchor="middle" font-family="'Plus Jakarta Sans', sans-serif" font-size="20" font-weight="600" fill="rgba(255,255,255,0.7)" letter-spacing="6">${roleName.toUpperCase()}</text>
+  </svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
 export async function composeTemplateData(invitationId: string) {
   const inv = await prisma.invitation.findUnique({
     where: { id: invitationId },
@@ -150,7 +179,6 @@ export async function composeTemplateData(invitationId: string) {
   const activePaletteId = featureSettings.colorPalette || "champagne";
   const palette = COLOR_PALETTES[activePaletteId] || COLOR_PALETTES.champagne;
 
-  const isNoPhoto = Boolean(featureSettings.isNoPhoto);
   const showStory = featureSettings.showStory !== undefined ? Boolean(featureSettings.showStory) : true;
   const showGallery = featureSettings.showGallery !== undefined ? Boolean(featureSettings.showGallery) : true;
   const showGift = featureSettings.showGift !== undefined ? Boolean(featureSettings.showGift) : true;
@@ -160,34 +188,48 @@ export async function composeTemplateData(invitationId: string) {
   const showFilter = featureSettings.showFilter !== undefined ? Boolean(featureSettings.showFilter) : true;
   const showTurutMengundang = featureSettings.showTurutMengundang !== undefined ? Boolean(featureSettings.showTurutMengundang) : true;
 
-  // Resolve Photos (Theme-Aware Fallbacks)
-  const themeFolder = inv.themeId || "kalandra";
-  const coverUrl = mediaMap.get("LANDING_COVER") || `/demo/${themeFolder}/cover.webp`;
-  const customHomePhoto = mediaMap.get("HOME_PHOTO") || null;
-  const sidebarUrl = mediaMap.get("DESKTOP_SIDEBAR") || coverUrl;
-  const fixedBgUrl = mediaMap.get("GLOBAL_FIXED_BG") || sidebarUrl || `/demo/${themeFolder}/background.webp`;
-  const homePhotoUrl = customHomePhoto || fixedBgUrl || `/demo/${themeFolder}/background.webp`;
-  const groomPhoto = mediaMap.get("GROOM_PHOTO") || `/demo/${themeFolder}/groom.webp`;
-  const bridePhoto = mediaMap.get("BRIDE_PHOTO") || `/demo/${themeFolder}/bride.webp`;
-  const closingPhotoUrl = mediaMap.get("CLOSING_COVER") || null;
-
   // Dynamic Couple Display Order Resolution
   const isGroomFirst = featureSettings.displayOrder === "GROOM_FIRST" || (!featureSettings.displayOrder && Boolean(inv.groomName));
 
-  const groomName = inv.groomName ?? inv.groomNickname ?? "Didan Faadhilah";
-  const brideName = inv.brideName ?? inv.brideNickname ?? "Nasha Selsabilla";
-  const groomNickname = inv.groomNickname ?? inv.groomName ?? "Didan";
-  const brideNickname = inv.brideNickname ?? inv.brideName ?? "Nasha";
-  const groomDisplayName = inv.groomName ?? inv.groomNickname ?? "Didan Faadhilah, S.T.";
-  const brideDisplayName = inv.brideName ?? inv.brideNickname ?? "Nasha Selsabilla, S.Ds.";
-  const groomParents = inv.groomParents ?? "Putra dari Bapak Arif Yaniadi & Ibu Yuni Widiastuti";
-  const brideParents = inv.brideParents ?? "Putri dari Bapak Tomm Posma & Ibu Endang Noffiyanti";
-  const groomInstagram = (inv.groomInstagram ?? "didanfaadhilah").replace(/^@+/, "");
-  const brideInstagram = (inv.brideInstagram ?? "nashasl").replace(/^@+/, "");
+  const groomName = (inv.groomName && inv.groomName.trim()) || (inv.groomNickname && inv.groomNickname.trim()) || "Didan Faadhilah";
+  const brideName = (inv.brideName && inv.brideName.trim()) || (inv.brideNickname && inv.brideNickname.trim()) || "Nasha Selsabilla";
+  const groomNickname = (inv.groomNickname && inv.groomNickname.trim()) || (inv.groomName && inv.groomName.trim()) || "Didan";
+  const brideNickname = (inv.brideNickname && inv.brideNickname.trim()) || (inv.brideName && inv.brideName.trim()) || "Nasha";
+  const groomDisplayName = (inv.groomName && inv.groomName.trim()) || (inv.groomNickname && inv.groomNickname.trim()) || "Didan Faadhilah, S.T.";
+  const brideDisplayName = (inv.brideName && inv.brideName.trim()) || (inv.brideNickname && inv.brideNickname.trim()) || "Nasha Selsabilla, S.Ds.";
+  const groomParents = (inv.groomParents && inv.groomParents.trim()) || "Putra dari Bapak Arif Yaniadi & Ibu Yuni Widiastuti";
+  const brideParents = (inv.brideParents && inv.brideParents.trim()) || "Putri dari Bapak Tomm Posma & Ibu Endang Noffiyanti";
+  const groomInstagram = (inv.groomInstagram || "didanfaadhilah").trim().replace(/^@+/, "");
+  const brideInstagram = (inv.brideInstagram || "nashasl").trim().replace(/^@+/, "");
+
+  // Resolve Photos (Theme-Aware Fallbacks without Stranger Model Fallbacks on Personal Slots)
+  const themeFolder = inv.themeId || "kalandra";
+  const customCover = mediaMap.get("LANDING_COVER");
+  const customSidebar = mediaMap.get("DESKTOP_SIDEBAR");
+  const customGroom = mediaMap.get("GROOM_PHOTO");
+  const customBride = mediaMap.get("BRIDE_PHOTO");
+  const customHomePhoto = mediaMap.get("HOME_PHOTO") || null;
+  const customFixedBg = mediaMap.get("GLOBAL_FIXED_BG");
+  const closingPhotoUrl = mediaMap.get("CLOSING_COVER") || null;
+
+  // Background Canvas: Tekstur / kanvas bawaan tema yang aman dan tanpa foto wajah orang asing
+  const fixedBgUrl = customFixedBg || `/demo/${themeFolder}/background.webp`;
+  const coverUrl = customCover || fixedBgUrl;
+  const sidebarUrl = customSidebar || coverUrl;
+  const homePhotoUrl = customHomePhoto || fixedBgUrl;
+
+  // Foto Personal Mempelai: Jika tidak diunggah, gunakan Monogram Inisial Artistik (Anti-Foto Model Orang Asing)
+  const groomPhoto = customGroom || generateInitialAvatarSvg(groomNickname || groomName, "The Groom");
+  const bridePhoto = customBride || generateInitialAvatarSvg(brideNickname || brideName, "The Bride");
 
   // 1st Host vs 2nd Host
-  const firstName = isGroomFirst ? groomNickname : brideNickname;
-  const secondName = isGroomFirst ? brideNickname : groomNickname;
+  const firstNickname = isGroomFirst ? groomNickname : brideNickname;
+  const secondNickname = isGroomFirst ? brideNickname : groomNickname;
+  const firstName = firstNickname;
+  const secondName = secondNickname;
+  const firstInitial = (firstName || firstNickname || (isGroomFirst ? "G" : "B")).trim().charAt(0).toUpperCase();
+  const secondInitial = (secondName || secondNickname || (isGroomFirst ? "B" : "G")).trim().charAt(0).toUpperCase();
+  const coupleMonogram = `${firstInitial} & ${secondInitial}`;
   const firstFullName = isGroomFirst ? groomName : brideName;
   const secondFullName = isGroomFirst ? brideName : groomName;
   const firstDisplayName = isGroomFirst ? groomDisplayName : brideDisplayName;
@@ -309,6 +351,7 @@ export async function composeTemplateData(invitationId: string) {
   };
   const quoteSectionTitle = customLabels.quoteTitle || featureSettings.quoteTitle || "Pappaseng & Doa";
   const quoteSectionEyebrow = customLabels.quoteEyebrow || "WALIMATUL 'URSY";
+  const coupleSectionEyebrow = customLabels.coupleEyebrow || "THE COUPLE";
   const coupleSectionTitle = customLabels.coupleTitle || "Mempelai";
   const coupleSectionSub = customLabels.coupleSub || "Dua Hati Bersatu Dalam Janji Suci";
   const eventsSectionTitle = customLabels.eventsTitle || "Rangkaian Acara";
@@ -487,9 +530,13 @@ export async function composeTemplateData(invitationId: string) {
 
           /* LIGHTBOX MODALS UNIVERSAL */
           .gallery-modal-backdrop {
-            position: fixed !important; inset: 0 !important; z-index: 350 !important; background: rgba(7,7,9,0.96) !important; backdrop-filter: blur(20px) !important;
-            display: flex !important; flex-direction: column !important; opacity: 0 !important; visibility: hidden !important; transition: all 0.3s ease !important;
-            overflow-y: auto !important; padding: 2rem 1.5rem !important;
+            position: fixed !important; inset: 0 !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
+            width: 100vw !important; max-width: 100vw !important; height: 100vh !important; min-height: 100% !important; margin: 0 !important;
+            border: none !important; border-radius: 0 !important; box-shadow: none !important; z-index: 99990 !important;
+            background: rgba(7,7,9,0.96) !important; backdrop-filter: blur(20px) !important;
+            display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: flex-start !important;
+            opacity: 0 !important; visibility: hidden !important; transition: all 0.3s ease !important;
+            overflow-y: auto !important; padding: 2.5rem 1.5rem !important; box-sizing: border-box !important;
           }
           .gallery-modal-backdrop.open { opacity: 1 !important; visibility: visible !important; }
           .gallery-modal-container { max-width: 600px !important; width: 100% !important; margin: 0 auto !important; }
@@ -791,18 +838,43 @@ export async function composeTemplateData(invitationId: string) {
   ` : "";
 
   // 6.5. Section: Universal Audio Player
-  const finalAudioUrl = featureSettings.showMusic !== false ? (inv.musicUrl || featureSettings.musicUrl || "https://assets.mixkit.co/music/preview/mixkit-serene-view-443.mp3") : "";
+  let fallbackMusicUrl = "";
+  if (!inv.musicUrl && !featureSettings.musicUrl && featureSettings.showMusic !== false) {
+    try {
+      const activePreset = await prisma.musicPreset.findFirst({
+        where: { isActive: true },
+        orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+      });
+      if (activePreset?.url) fallbackMusicUrl = activePreset.url;
+    } catch (e) {
+      console.warn("[themeEngine] Gagal memuat fallback musik preset dari database:", e);
+    }
+  }
+
+  const finalAudioUrl = featureSettings.showMusic !== false ? (inv.musicUrl || featureSettings.musicUrl || fallbackMusicUrl) : "";
+  const isOgg = finalAudioUrl.toLowerCase().endsWith(".ogg");
   const musicPlayerHtml = finalAudioUrl ? `
     <!-- UNIVERSAL MUSIC PLAYER INJECTED BY THEME ENGINE -->
     <audio id="luxAudioPlayer" loop preload="auto">
-      <source src="${finalAudioUrl}" type="audio/mpeg" />
+      <source src="${finalAudioUrl}" type="${isOgg ? "audio/ogg" : "audio/mpeg"}" />
     </audio>
     <script>
-      // 1. Universal Audio Player
+      // 1. Universal Audio Player & Backward-Compatible Aliases
+      (function() {
+        var a = document.getElementById('luxAudioPlayer');
+        if (a) {
+          window.bgAudio = a;
+          window.weddingAudio = a;
+        }
+      })();
+
       function luxToggleAudio() {
-        const audio = document.getElementById('luxAudioPlayer');
+        if (typeof window.luxToggleAudio === 'function' && window.luxToggleAudio !== luxToggleAudio) {
+          return window.luxToggleAudio();
+        }
+        const audio = document.getElementById('luxAudioPlayer') || document.getElementById('bgAudio') || document.getElementById('weddingAudio') || document.querySelector('audio');
         if (!audio) return;
-        const fab = document.getElementById('musicFab') || document.getElementById('musicToggle') || document.querySelector('.audio-fab, .music-fab, .btn-music');
+        const fab = document.getElementById('musicFab') || document.getElementById('musicToggle') || document.querySelector('.audio-fab, .music-fab, .btn-music, .btn-audio-fab, #music-control');
         if (audio.paused) {
           audio.play().then(() => {
             if (fab) fab.classList.add('playing');
@@ -1068,7 +1140,8 @@ export async function composeTemplateData(invitationId: string) {
       : `/${inv.invitationSlug}/memories`;
 
     memoriesSectionHtml = `
-      <section class="sec-flow slide-section" id="guest-memories" style="position: relative; padding: 3rem 1rem;">
+      <section class="sec-flow slide-section" id="section-memories" data-section-alias="guest-memories" style="position: relative; padding: 3rem 1rem;">
+        <a id="guest-memories" style="display:none;"></a>
         <div class="sec-content-box reveal-on-scroll" style="max-width: 580px; margin: 0 auto; text-align: center;">
           <span class="sec-eyebrow" data-lux-field="customLabels.memoriesEyebrow">${memoriesSectionEyebrow}</span>
           <h2 class="sec-main-title serif" data-lux-field="customLabels.memoriesTitle">${memoriesSectionTitle}</h2>
@@ -1104,7 +1177,7 @@ export async function composeTemplateData(invitationId: string) {
 
           <!-- 3. TOMBOL DIRECT KE HALAMAN GALERI WEB -->
           <div style="text-align: center;">
-            <a href="${fullGalleryUrl}" class="btn-outline-box" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; font-size: 12px; font-weight: 700; border-radius: 50px; text-decoration: none; border: 1px solid currentColor; color: inherit; transition: all 0.2s ease;">
+            <a href="${fullGalleryUrl}" class="btn-outline-box btn-memories-gallery" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 28px; font-size: 12px; font-weight: 700; border-radius: 50px; text-decoration: none; border: 1px solid currentColor; letter-spacing: 0.08em; transition: all 0.25s ease;">
               <span>BUKA GALERI MOMEN LENGKAP</span>
               <span style="font-size: 14px; margin-top: -2px;">&rarr;</span>
             </a>
@@ -1119,6 +1192,16 @@ export async function composeTemplateData(invitationId: string) {
         }
         .story-circles-track:hover {
           animation-play-state: paused !important;
+        }
+        .btn-memories-gallery {
+          color: inherit;
+        }
+        .btn-memories-gallery:hover {
+          background: #ffffff !important;
+          color: #070709 !important;
+          border-color: #ffffff !important;
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(255, 255, 255, 0.25);
         }
       </style>
 
@@ -1424,6 +1507,12 @@ export async function composeTemplateData(invitationId: string) {
     weddingTagline: featureSettings.weddingTagline || "THE WEDDING OF",
     
     // Dynamic Host Ordering
+    firstInitial,
+    secondInitial,
+    coupleMonogram,
+    monogramInitial: coupleMonogram,
+    firstNickname,
+    secondNickname,
     firstName,
     secondName,
     firstFullName,
@@ -1456,6 +1545,9 @@ export async function composeTemplateData(invitationId: string) {
     brideInstagram,
     groomPhotoUrl: groomPhoto,
     bridePhotoUrl: bridePhoto,
+    hasCustomGroomPhoto: Boolean(customGroom),
+    hasCustomBridePhoto: Boolean(customBride),
+    hasCustomCover: Boolean(customCover),
 
     // Media
     landingCoverUrl: coverUrl,
@@ -1468,7 +1560,7 @@ export async function composeTemplateData(invitationId: string) {
     closingBgStyle: closingPhotoUrl ? `background-image: url('${closingPhotoUrl}');` : "",
     sidebarPhotoUrl: sidebarUrl,
     globalBgUrl: fixedBgUrl,
-    audioUrl: featureSettings.showMusic !== false ? (inv.musicUrl || featureSettings.musicUrl || "https://assets.mixkit.co/music/preview/mixkit-serene-view-443.mp3") : "",
+    audioUrl: finalAudioUrl,
 
     // Quotes & Dates
     openingQuote: inv.openingQuote ? nl2br(inv.openingQuote) : "Dan di antara tanda-tanda (kebesaran)-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri, agar kamu cenderung dan merasa tenteram kepadanya, dan Dia menjadikan diantaramu rasa kasih dan sayang.",
@@ -1503,6 +1595,7 @@ export async function composeTemplateData(invitationId: string) {
     // Custom Section Titles & Labels
     quoteSectionTitle,
     quoteSectionEyebrow,
+    coupleSectionEyebrow,
     coupleSectionTitle,
     coupleSectionSub,
     eventsSectionTitle,
@@ -1517,6 +1610,7 @@ export async function composeTemplateData(invitationId: string) {
     wishesSectionTitle,
     wishesSectionSub,
     quoteTitle: quoteSectionTitle,
+    coupleEyebrow: coupleSectionEyebrow,
     coupleTitle: coupleSectionTitle,
     eventsTitle: eventsSectionTitle,
     storyTitle: storySectionTitle,

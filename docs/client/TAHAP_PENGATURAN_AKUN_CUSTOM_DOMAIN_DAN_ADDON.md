@@ -70,18 +70,27 @@ Platform menggunakan server web **Caddy** dengan fitur *On-Demand TLS*. Begitu k
 
 ---
 
-## 5. Mesin Publikasi Undangan ("WOW Publish UI")
+## 5. Mesin Rilis Undangan ("Smart Audit & Pre-Flight Review")
 
-Untuk memberikan kepastian kepada pengantin, platform menerapkan pipeline publikasi dengan animasi progres visual:
+Untuk memberikan kepastian kepada pengantin tanpa ada data bolong (*Zero-Hole Policy*), platform menerapkan pipeline rilis resmi dua lapis:
 
-1. **Pengecekan Pra-Publikasi (*Pre-Flight Guard*):**
-   - Sistem memvalidasi apakah tema telah dipilih (`themeId !== ""`).
-   - Jika tema masih kosong, tombol publikasi dinonaktifkan dan muncul banner peringatan mengarahkan klien ke Seksi 1 Studio Editor.
-2. **Baking Pipeline (Kompilasi & Pre-render):**
-   - Saat tombol *"Publikasikan Undangan"* ditekan, antarmuka menampilkan status progres interaktif (*Baking assets, optimizing fonts, injecting dynamic meta*).
-   - Server memperbarui status `status = 'PUBLISHED'` dan mengompilasi snapshot statis jika diperlukan.
-3. **Konfirmasi & Pratinjau Tautan:**
-   - Setelah sukses, muncul kartu konfirmasi dengan tombol *Salin Tautan* dan *Buka Halaman Langsung*.
+1. **Pemindai Kelayakan Cerdas (*Smart Audit Protocol*):**
+   - Pemindaian sekuensial 10 komponen data pada panel pengaturan.
+   - **Seksi Bersakelar (`showGallery`, `showStory`, `showGift`, `showMusic`):**
+     - Jika sakelar hidup (*toggle ON*): Wajib terisi lengkap. Jika kosong, pemindai langsung terhenti (*HALT*) dan meminta klien melengkapi data atau mematikan sakelar seksi tersebut.
+     - Jika sakelar mati (*toggle OFF*): Ditampilkan secara transparan pada radar pemindai dengan status `Nonaktif (Dilewati)` dan otomatis lolos audit.
+   - **Peran Data Awal & `placeholder`:** Database awal murni kosong (`null` atau `[]`) tanpa teks dummy buatan. Input form memanfaatkan atribut `placeholder="..."` sebagai pemandu visual tanpa mengotori data asli.
+2. **Tinjauan Akhir Instrumen URL (*Pre-Flight Gatekeeper Checklist*):**
+   - Setelah audit lolos, sistem menyajikan daftar 5 instrumen URL ekosistem:
+     1. Pintu Utama / URL Asli: `https://luxenary.id/{invitationSlug}`
+     2. Subdomain Eksklusif: `https://{subdomain}.luxenary.id`
+     3. Simulasi Tautan Tamu: `https://{subdomain}.luxenary.id/?to=Nama+Tamu`
+     4. Portal Resepsionis & QR: `https://{subdomain}.luxenary.id/receptionist` (PIN Panitia)
+     5. Portal Live Momen: `https://{subdomain}.luxenary.id/sharemoment`
+   - Tombol **"Rilis Undangan Resmi"** berstatus terkunci (*disabled*) hingga ke-5 instrumen URL terkonfirmasi 100% oleh klien.
+3. **Baking Pipeline (Kompilasi & Pre-render):**
+   - Saat tombol *"Rilis Undangan Resmi"* ditekan, antarmuka memproses pemanggangan file mandiri dan sinkronisasi CDN global.
+   - Server memperbarui status `status = 'PUBLISHED'`, mengunci subdomain serta tema, dan menampilkan Hero Box Tautan Resmi.
 
 ---
 

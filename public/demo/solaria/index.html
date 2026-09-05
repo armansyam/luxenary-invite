@@ -22,7 +22,7 @@
 
 <script>
 (function() {
-  const isAutoplay = new URLSearchParams(window.location.search).get('autoplay') === '1' || (window !== window.top);
+  const isAutoplay = new URLSearchParams(window.location.search).get('autoplay') === '1' || (window !== window.top && new URLSearchParams(window.location.search).get('mode') !== 'edit');
   if (isAutoplay) {
     window.__DISABLE_AUDIO__ = true;
     try {
@@ -48,7 +48,7 @@
 <link rel="stylesheet" href="/css/modules.css">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>The Wedding of Damian &amp; Aurora — Solaria Warm Sunset</title>
+  <title>The Wedding of Damian &amp; Aurora </title>
 
   <!-- THEME TYPOGRAPHY: Solaria Sunset Terracotta -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -60,53 +60,12 @@
 
   <style>
     :root {
-      --primary: {
-          {
-          colorPrimary
-        }
-      }
-
-      ;
-
-      --secondary: {
-          {
-          colorSecondary
-        }
-      }
-
-      ;
-
-      --accent: {
-          {
-          colorAccent
-        }
-      }
-
-      ;
-
-      --bg-light: {
-          {
-          colorBgLight
-        }
-      }
-
-      ;
-
-      --bg-dark: {
-          {
-          colorBgDark
-        }
-      }
-
-      ;
-
-      --text-dark: {
-          {
-          colorTextDark
-        }
-      }
-
-      ;
+      --primary: #a67c52;
+      --secondary: #c5a059;
+      --accent: #e5c158;
+      --bg-light: #faf7f2;
+      --bg-dark: #1a1614;
+      --text-dark: ;
       --sunset-terracotta: #c46849;
       --sunset-amber: #e59866;
       --sunset-sand: #fbeee6;
@@ -327,21 +286,33 @@
     @media (min-width: 900px) {
       .sidebar-desktop {
         display: block;
+        width: calc(100% - 460px);
       }
 
       .main-scroll-panel {
-        width: 45%;
-        margin-left: 55%;
-        min-width: 420px;
+        width: 460px;
+        margin-left: calc(100% - 460px);
+        min-width: 0;
       }
 
       .cover-overlay {
-        width: 45%;
-        left: 55%;
+        width: 460px;
+        left: calc(100% - 460px);
       }
 
       .bottom-dock {
-        left: calc(55% + 22.5%) !important;
+        left: calc(100% - 230px) !important;
+      }
+
+      .sec-main-title,
+      .sec-heading {
+        font-size: 2.1rem !important;
+        overflow-wrap: break-word;
+        word-break: break-word;
+      }
+
+      .cover-names {
+        font-size: 2.8rem !important;
       }
     }
 
@@ -750,11 +721,6 @@
       color: #190e0a;
     }
 
-    .gallery-modal-backdrop,
-    .gallery-modal-backdrop.open,
-
-    .gallery-modal-close,
-
     /* DIGITAL GIFT & BANK CARDS */
     .bank-card {
       background: var(--sunset-card);
@@ -954,7 +920,7 @@
       position: fixed;
       bottom: 20px;
       left: 50%;
-      transform: translateX(-50%);
+      transform: translate3d(-50%, 0, 0);
       z-index: 100;
       background: rgba(38, 22, 16, 0.95);
       border: 1px solid var(--sunset-border);
@@ -963,10 +929,19 @@
       display: flex;
       gap: 1.4rem;
       backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
       max-width: 440px;
       width: calc(100% - 30px);
       justify-content: space-around;
+      transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: transform, opacity;
+    }
+
+    .bottom-dock.dock-hidden {
+      transform: translate3d(-50%, calc(100% + 32px), 0);
+      opacity: 0;
+      pointer-events: none;
     }
 
     .dock-btn {
@@ -1008,22 +983,26 @@
       background-repeat: no-repeat;
       border-top: 1px solid var(--solaria-border);
     }
+
     .site-footer.no-closing-photo {
       justify-content: center;
       align-items: center;
     }
+
     .site-footer.has-closing-photo {
       justify-content: flex-end;
       align-items: center;
     }
+
     .site-footer.has-closing-photo::before {
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(25,15,10,0.6) 50%, rgba(25,15,10,0.95) 100%);
+      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.2) 0%, rgba(25, 15, 10, 0.6) 50%, rgba(25, 15, 10, 0.95) 100%);
       pointer-events: none;
       z-index: 1;
     }
+
     .site-footer .closing-content {
       position: relative;
       z-index: 2;
@@ -1522,7 +1501,7 @@
         </p>
 
         <!-- 1. TOMBOL UPLOAD MOMEN (DIRECT LINK) -->
-        <a href="/demo/moment" style="display: block; width: 100%; max-width: 360px; margin: 0 auto 1.8rem auto; padding: 14px 20px; border-radius: 50px; background: #ffffff; color: #000000; font-weight: 700; font-size: 0.9rem; letter-spacing: 0.05em; text-align: center; text-decoration: none; box-shadow: 0 4px 15px rgba(255,255,255,0.18); transition: transform 0.15s ease;">
+        <a href="/demo/solaria/sharemoment" style="display: block; width: 100%; max-width: 360px; margin: 0 auto 1.8rem auto; padding: 14px 20px; border-radius: 50px; background: #ffffff; color: #000000; font-weight: 700; font-size: 0.9rem; letter-spacing: 0.05em; text-align: center; text-decoration: none; box-shadow: 0 4px 15px rgba(255,255,255,0.18); transition: transform 0.15s ease;">
           BAGIKAN FOTO MOMEN ANDA
         </a>
 
@@ -1540,25 +1519,14 @@
           <div class="story-circles-track-wrapper" style="overflow: hidden; width: 100%; position: relative; mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent); -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);">
             <div class="story-circles-track" style="display: flex; gap: 14px; width: max-content; margin: 0 auto; animation: luxStoryLoop 24s linear infinite;">
               
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/solaria/gallery_07.webp', 'Alumni Teknik')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/solaria/memory_01.webp', 'Budi Santoso')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/solaria/gallery_07.webp" onerror="this.onerror=null;this.src='/demo/solaria/groom.webp';" alt="Alumni Teknik" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/solaria/memory_01.webp" onerror="this.onerror=null;this.src='/demo/solaria/gallery_01.webp';" alt="Budi Santoso" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Alumni
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/solaria/gallery_06.webp', 'Keluarga Solo')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/solaria/gallery_06.webp" onerror="this.onerror=null;this.src='/demo/solaria/hero.webp';" alt="Keluarga Solo" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Keluarga
+        Budi
       </span>
     </div>
   
@@ -1573,14 +1541,25 @@
       </span>
     </div>
   
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/solaria/memory_03.webp', 'Rina & Teman')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/solaria/gallery_06.webp', 'Keluarga Solo')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/solaria/memory_03.webp" onerror="this.onerror=null;this.src='/demo/solaria/gallery_03.webp';" alt="Rina & Teman" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/solaria/gallery_06.webp" onerror="this.onerror=null;this.src='/demo/solaria/hero.webp';" alt="Keluarga Solo" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Rina
+        Keluarga
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/solaria/gallery_05.webp', 'Dimas Pratama')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/solaria/gallery_05.webp" onerror="this.onerror=null;this.src='/demo/solaria/cover.webp';" alt="Dimas Pratama" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Dimas
       </span>
     </div>
   
@@ -1595,14 +1574,25 @@
       </span>
     </div>
   
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/solaria/memory_01.webp', 'Budi Santoso')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/solaria/memory_03.webp', 'Rina & Teman')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/solaria/memory_01.webp" onerror="this.onerror=null;this.src='/demo/solaria/gallery_01.webp';" alt="Budi Santoso" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/solaria/memory_03.webp" onerror="this.onerror=null;this.src='/demo/solaria/gallery_03.webp';" alt="Rina & Teman" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Budi
+        Rina
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/solaria/gallery_07.webp', 'Alumni Teknik')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/solaria/gallery_07.webp" onerror="this.onerror=null;this.src='/demo/solaria/groom.webp';" alt="Alumni Teknik" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Alumni
       </span>
     </div>
   
@@ -1614,40 +1604,18 @@
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
         Eko
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/solaria/gallery_05.webp', 'Dimas Pratama')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/solaria/gallery_05.webp" onerror="this.onerror=null;this.src='/demo/solaria/cover.webp';" alt="Dimas Pratama" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Dimas
       </span>
     </div>
   
               
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/solaria/gallery_07.webp', 'Alumni Teknik')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/solaria/memory_01.webp', 'Budi Santoso')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/solaria/gallery_07.webp" onerror="this.onerror=null;this.src='/demo/solaria/groom.webp';" alt="Alumni Teknik" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/solaria/memory_01.webp" onerror="this.onerror=null;this.src='/demo/solaria/gallery_01.webp';" alt="Budi Santoso" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Alumni
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/solaria/gallery_06.webp', 'Keluarga Solo')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/solaria/gallery_06.webp" onerror="this.onerror=null;this.src='/demo/solaria/hero.webp';" alt="Keluarga Solo" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Keluarga
+        Budi
       </span>
     </div>
   
@@ -1662,14 +1630,25 @@
       </span>
     </div>
   
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/solaria/memory_03.webp', 'Rina & Teman')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/solaria/gallery_06.webp', 'Keluarga Solo')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/solaria/memory_03.webp" onerror="this.onerror=null;this.src='/demo/solaria/gallery_03.webp';" alt="Rina & Teman" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/solaria/gallery_06.webp" onerror="this.onerror=null;this.src='/demo/solaria/hero.webp';" alt="Keluarga Solo" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Rina
+        Keluarga
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/solaria/gallery_05.webp', 'Dimas Pratama')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/solaria/gallery_05.webp" onerror="this.onerror=null;this.src='/demo/solaria/cover.webp';" alt="Dimas Pratama" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Dimas
       </span>
     </div>
   
@@ -1684,14 +1663,25 @@
       </span>
     </div>
   
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/solaria/memory_01.webp', 'Budi Santoso')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/solaria/memory_03.webp', 'Rina & Teman')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/solaria/memory_01.webp" onerror="this.onerror=null;this.src='/demo/solaria/gallery_01.webp';" alt="Budi Santoso" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/solaria/memory_03.webp" onerror="this.onerror=null;this.src='/demo/solaria/gallery_03.webp';" alt="Rina & Teman" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Budi
+        Rina
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/solaria/gallery_07.webp', 'Alumni Teknik')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/solaria/gallery_07.webp" onerror="this.onerror=null;this.src='/demo/solaria/groom.webp';" alt="Alumni Teknik" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Alumni
       </span>
     </div>
   
@@ -1703,17 +1693,6 @@
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
         Eko
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/solaria/gallery_05.webp', 'Dimas Pratama')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/solaria/gallery_05.webp" onerror="this.onerror=null;this.src='/demo/solaria/cover.webp';" alt="Dimas Pratama" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Dimas
       </span>
     </div>
   
@@ -1721,9 +1700,9 @@
           </div>
         </div>
 
-        <!-- 3. TOMBOL DIRECT KE HALAMAN GALERI WEB (galery.js) -->
+        <!-- 3. TOMBOL DIRECT KE HALAMAN GALERI WEB (memories) -->
         <div style="text-align: center;">
-          <a href="/demo/solaria/galery" class="btn-outline-box" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; font-size: 12px; font-weight: 700; border-radius: 50px; text-decoration: none; border: 1px solid currentColor; color: inherit; transition: all 0.2s ease;">
+          <a href="/demo/solaria/memories" class="btn-outline-box btn-memories-gallery" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 28px; font-size: 12px; font-weight: 700; border-radius: 50px; text-decoration: none; border: 1px solid currentColor; letter-spacing: 0.08em; transition: all 0.25s ease;">
             <span>✨ BUKA GALERI MOMEN LENGKAP</span>
             <span style="font-size: 14px;">↗</span>
           </a>
@@ -1745,6 +1724,16 @@
       }
       .story-circles-track:hover {
         animation-play-state: paused !important;
+      }
+      .btn-memories-gallery {
+        color: inherit;
+      }
+      .btn-memories-gallery:hover {
+        background: #ffffff !important;
+        color: #070709 !important;
+        border-color: #ffffff !important;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(255, 255, 255, 0.25);
       }
     </style>
 
@@ -1862,7 +1851,32 @@
         <div class="sec-content-box reveal-on-scroll">
           <h2 class="sec-heading">Ucapan &amp; Doa Restu</h2>
           <p class="sec-subheading">Kirimkan Pesan Manis Untuk Mempelai</p>
-          
+        <div class="rsvp-form-wrap">
+          <form id="rsvpForm" onsubmit="luxSubmitRsvp(event)">
+            <div class="form-row">
+              <label class="form-lbl" data-lux-field="customLabels.rsvpNameLabel">Nama Lengkap</label>
+              <input type="text" id="rsvpName" required class="form-in" placeholder="Nama Anda">
+            </div>
+            <div class="form-row">
+              <label class="form-lbl" data-lux-field="customLabels.rsvpStatusLabel">Konfirmasi Kehadiran</label>
+              <select id="rsvpStatus" class="form-sel">
+                <option value="hadir">Konfirmasi Hadir</option>
+                <option value="tidak">Berhalangan Hadir</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label class="form-lbl" data-lux-field="customLabels.rsvpCountLabel">Jumlah Tamu</label>
+              <input type="number" id="rsvpCount" min="1" max="5" value="1" class="form-in">
+            </div>
+            <div class="form-row">
+              <label class="form-lbl" data-lux-field="customLabels.rsvpMessageLabel">Ucapan &amp; Doa Restu</label>
+              <textarea id="rsvpMessage" rows="3" class="form-ta" placeholder="Tuliskan ucapan dan doa terbaik Anda..."></textarea>
+            </div>
+            <button type="submit" id="btnSubmit" class="btn-rsvp-submit" data-lux-field="customLabels.rsvpBtnText">Kirim Konfirmasi &amp; Doa</button>
+          </form>
+
+          <div class="wishes-list" id="wishesList">
+            
     <div class="wish-item">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
         <span class="wish-name">Budi Santoso &amp; Rekan Kerja</span>
@@ -1878,6 +1892,8 @@
       <p class="wish-msg">“Lancar sampai hari H yaa! Cantik dan gagah banget, can't wait to celebrate your special day!”</p>
     </div>
   
+          </div>
+        </div>
         </div>
       </section>
 
@@ -1925,12 +1941,19 @@
       <!-- FOOTER (Adaptive Full-Height 100vh) -->
       <footer class="site-footer no-closing-photo" style="">
         <div class="closing-content">
-          <p style="font-size: 0.85rem; color: rgba(255,255,255,0.8); line-height: 1.7; margin-bottom: 1.5rem; max-width: 480px; margin-left: auto; margin-right: auto;">
-            Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu bagi kami.
+          <p
+            style="font-size: 0.85rem; color: rgba(255,255,255,0.8); line-height: 1.7; margin-bottom: 1.5rem; max-width: 480px; margin-left: auto; margin-right: auto;">
+            Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir dan
+            memberikan doa restu bagi kami.
           </p>
-          <p style="font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--sunset-amber); font-weight: 600; margin-bottom: 0.5rem;">Kami Yang Berbahagia,</p>
-          <h3 class="font-solaria-title" style="font-size: 2.4rem; color: #ffffff; font-weight: 300; margin-bottom: 0.4rem;">Damian &amp; Aurora</h3>
-          <p style="font-size: 0.75rem; color: rgba(255,255,255,0.7); letter-spacing: 0.2em; text-transform: uppercase; margin-top: 0.5rem;">
+          <p
+            style="font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--sunset-amber); font-weight: 600; margin-bottom: 0.5rem;">
+            Kami Yang Berbahagia,</p>
+          <h3 class="font-solaria-title"
+            style="font-size: 2.4rem; color: #ffffff; font-weight: 300; margin-bottom: 0.4rem;">Damian &amp;
+            Aurora</h3>
+          <p
+            style="font-size: 0.75rem; color: rgba(255,255,255,0.7); letter-spacing: 0.2em; text-transform: uppercase; margin-top: 0.5rem;">
             THANK YOU FOR CELEBRATING WITH US
           </p>
         </div>
@@ -1989,11 +2012,69 @@
     function openInvitation() {
       const cover = document.getElementById('coverOverlay');
       if (cover) cover.classList.add('opened');
+      const dock = document.querySelector('.bottom-dock');
+      if (dock) dock.classList.remove('dock-hidden');
       const audio = document.getElementById('weddingAudio');
       if (audio && !window.__DISABLE_AUDIO__ && new URLSearchParams(window.location.search).get("autoplay") !== "1" && window === window.top) audio.play().catch(() => { });
       startCountdown();
       initScrollAnimations();
     }
+
+    // SMART AUTO-HIDE DOCK ON SCROLL DOWN, REVEAL ON SCROLL UP
+    (function initSmartDock() {
+      const dock = document.querySelector('.bottom-dock');
+      if (!dock) return;
+
+      let lastScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+      let ticking = false;
+      const SCROLL_THRESHOLD = 12;
+      const TOP_REVEAL_ZONE = 70;
+
+      function updateDock() {
+        const currentScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+        const windowHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+        const docHeight = Math.max(
+          document.body.scrollHeight,
+          document.documentElement.scrollHeight,
+          document.body.offsetHeight,
+          document.documentElement.offsetHeight
+        );
+        const isNearBottom = (currentScrollY + windowHeight) >= (docHeight - 60);
+
+        if (currentScrollY <= TOP_REVEAL_ZONE || isNearBottom) {
+          dock.classList.remove('dock-hidden');
+          lastScrollY = currentScrollY;
+          ticking = false;
+          return;
+        }
+
+        const delta = currentScrollY - lastScrollY;
+
+        if (Math.abs(delta) >= SCROLL_THRESHOLD) {
+          if (delta > 0) {
+            dock.classList.add('dock-hidden');
+          } else {
+            dock.classList.remove('dock-hidden');
+          }
+          lastScrollY = currentScrollY;
+        }
+
+        ticking = false;
+      }
+
+      window.addEventListener('scroll', () => {
+        if (!ticking) {
+          window.requestAnimationFrame(updateDock);
+          ticking = true;
+        }
+      }, { passive: true });
+
+      dock.querySelectorAll('.dock-btn, a').forEach(link => {
+        link.addEventListener('click', () => {
+          dock.classList.remove('dock-hidden');
+        });
+      });
+    })();
 
     function initScrollAnimations() {
       const observer = new IntersectionObserver((entries) => {
@@ -2048,6 +2129,21 @@
     })();
   </script>
   \n 
+    <!-- UNIVERSAL MUSIC PLAYER INJECTED BY DEMO ENGINE -->
+    <audio id="luxAudioPlayer" loop preload="auto">
+      <source src="/music/canon-in-d.ogg" type="audio/ogg" />
+      <source src="/music/canon-in-d.ogg" type="audio/mpeg" />
+    </audio>
+    <script>
+      (function() {
+        var a = document.getElementById('luxAudioPlayer');
+        if (a) {
+          window.bgAudio = a;
+          window.weddingAudio = a;
+        }
+      })();
+    </script>
+    
 
 <script id="luxUnifiedClientRuntime">
 
@@ -2184,11 +2280,159 @@
     }
   };
 
+  // 6. Universal Audio Engine & Status Controller
+  window.playAudio = function() {
+    if (window.__DISABLE_AUDIO__) return;
+    try {
+      var p = new URLSearchParams(window.location.search);
+      if (p.get('autoplay') === '1') return;
+      if (window !== window.top && p.get('mode') === 'cover') return;
+
+      var audio = document.getElementById('luxAudioPlayer') ||
+                  document.getElementById('bgAudio') ||
+                  document.getElementById('weddingAudio') ||
+                  document.querySelector('audio');
+      if (!audio) return;
+
+      var playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.then(function() {
+          var fab = document.getElementById('musicFab') ||
+                    document.getElementById('musicToggle') ||
+                    document.querySelector('.audio-fab, .music-fab, .btn-music, .btn-audio-fab, #music-control');
+          if (fab) fab.classList.add('playing');
+        }).catch(function(err) {
+          console.log('Audio autoplay prevented by browser policy until user gesture:', err);
+        });
+      }
+    } catch(e) {}
+  };
+
+  window.luxToggleAudio = window.toggleAudio = function() {
+    try {
+      var audio = document.getElementById('luxAudioPlayer') ||
+                  document.getElementById('bgAudio') ||
+                  document.getElementById('weddingAudio') ||
+                  document.querySelector('audio');
+      if (!audio) return;
+      var fab = document.getElementById('musicFab') ||
+                document.getElementById('musicToggle') ||
+                document.querySelector('.audio-fab, .music-fab, .btn-music, .btn-audio-fab, #music-control');
+      if (audio.paused) {
+        audio.play().then(function() {
+          if (fab) fab.classList.add('playing');
+        }).catch(function(err) {
+          console.log('Audio toggle play failed:', err);
+        });
+      } else {
+        audio.pause();
+        if (fab) fab.classList.remove('playing');
+      }
+    } catch(e) {}
+  };
+
+  // 7. Auto-Sync Open Invitation Cover with Audio Playback
+  var origOpenInvitation = window.openInvitation;
+  window.openInvitation = function() {
+    if (typeof origOpenInvitation === 'function' && origOpenInvitation !== window.openInvitation) {
+      try { origOpenInvitation(); } catch(err) { console.warn(err); }
+    } else {
+      var cover = document.getElementById('coverScreen') || document.querySelector('.screen-cover, .landing-cover, .cover-screen');
+      if (cover) cover.classList.add('slide-up-hidden', 'opened', 'hidden');
+    }
+    window.playAudio();
+  };
+
+  // Delegated Capture Listener for Any Open-Invitation Button
+  document.addEventListener('click', function(e) {
+    var target = e.target;
+    if (!target) return;
+    var openBtn = target.closest(
+      '.btn-buka, .btn-buka-undangan, .cover-btn-open, .btn-open-issue, .cover-btn, [onclick*="openInvitation"], [data-lux-field="customLabels.openBtn"], #btnOpenInvitation'
+    );
+    if (openBtn) {
+      window.playAudio();
+    }
+  }, { capture: true, passive: true });
+
+  // 8. Interaction Fallback for Autoplay (First tap/click after cover opened)
+  function initAudioInteractionFallback() {
+    var unlockAudio = function() {
+      try {
+        var audio = document.getElementById('luxAudioPlayer') ||
+                    document.getElementById('bgAudio') ||
+                    document.getElementById('weddingAudio') ||
+                    document.querySelector('audio');
+        if (audio && audio.paused && !window.__DISABLE_AUDIO__) {
+          var cover = document.getElementById('coverScreen') || document.querySelector('.screen-cover, .landing-cover, .cover-screen');
+          var isCoverClosed = cover && !cover.classList.contains('slide-up-hidden') && !cover.classList.contains('opened') && !cover.classList.contains('hidden') && cover.style.display !== 'none';
+          if (!isCoverClosed) {
+            window.playAudio();
+          }
+        }
+      } catch(e) {}
+      document.removeEventListener('touchstart', unlockAudio);
+      document.removeEventListener('click', unlockAudio);
+    };
+    document.addEventListener('touchstart', unlockAudio, { passive: true });
+    document.addEventListener('click', unlockAudio, { passive: true });
+  }
+
+  // 9. Auto-Sync Navigation Dock & Audio FAB Based on Active Toggled Sections
+  function syncActiveTogglesUI() {
+    try {
+      // A. Synchronize navigation links (bottom dock, side nav, etc.)
+      var navLinks = document.querySelectorAll(
+        '.bottom-dock a, nav.bottom-dock a, .side-nav a, .dock-btn, .dock-a, .side-nav-link'
+      );
+      navLinks.forEach(function(link) {
+        var href = link.getAttribute('href');
+        if (href && href.startsWith('#') && href.length > 1) {
+          var targetId = href.substring(1);
+          var targetEl = document.getElementById(targetId);
+          if (!targetEl) {
+            link.style.display = 'none';
+          } else {
+            link.style.display = '';
+          }
+        }
+      });
+
+      // B. Synchronize Audio Player FAB (hide button if audio is disabled / has no valid source)
+      var audio = document.getElementById('luxAudioPlayer') ||
+                  document.getElementById('bgAudio') ||
+                  document.getElementById('weddingAudio') ||
+                  document.querySelector('audio');
+      var hasAudioSource = Boolean(
+        audio && (audio.getAttribute('src') || (audio.querySelector('source') && audio.querySelector('source').getAttribute('src')))
+      );
+      var fabs = document.querySelectorAll(
+        '#musicFab, #musicToggle, .audio-fab, .music-fab, .btn-music, .btn-audio-fab, #music-control'
+      );
+      fabs.forEach(function(fab) {
+        if (!hasAudioSource) {
+          fab.style.display = 'none';
+        } else {
+          fab.style.display = '';
+        }
+      });
+    } catch(err) {
+      console.warn('syncActiveTogglesUI error:', err);
+    }
+  }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', resolveGuestName);
+    document.addEventListener('DOMContentLoaded', function() {
+      resolveGuestName();
+      initAudioInteractionFallback();
+      syncActiveTogglesUI();
+    });
   } else {
     resolveGuestName();
+    initAudioInteractionFallback();
+    syncActiveTogglesUI();
   }
+  window.addEventListener('load', syncActiveTogglesUI);
 })();
 </script>
 

@@ -96,7 +96,17 @@ export default function GuestMomentClient({ invitationId, coupleName, coverUrl, 
       const base64File = await compressImage(file);
       setUploadProgress(85);
 
-      // 2. Send JSON payload
+      // 2. Demo Simulation Mode (Instant success without database write)
+      if (invitationId.startsWith("demo") || invitationId === "demo") {
+        clearInterval(progressInterval);
+        setUploadProgress(100);
+        setSuccessMsg("Simulasi Berhasil! Foto Anda terkirim (pada undangan resmi, foto langsung tampil di proyektor venue dan galeri).");
+        form.reset();
+        setTimeout(() => setSuccessMsg(""), 6000);
+        return;
+      }
+
+      // 3. Send JSON payload to real API
       const payload = {
         invitationId,
         senderName,
@@ -157,6 +167,7 @@ export default function GuestMomentClient({ invitationId, coupleName, coverUrl, 
               fill 
               className="object-cover opacity-20 grayscale brightness-50"
               priority
+              unoptimized
             />
             <div className="absolute inset-0 bg-gradient-to-b from-stone-950/90 via-stone-950/75 to-stone-950"></div>
           </div>
@@ -216,6 +227,7 @@ export default function GuestMomentClient({ invitationId, coupleName, coverUrl, 
             fill 
             className="object-cover opacity-30 grayscale-[30%] brightness-75"
             priority
+            unoptimized
           />
           <div className="absolute inset-0 bg-gradient-to-b from-stone-950/80 via-stone-950/60 to-stone-950/95"></div>
         </div>
@@ -329,7 +341,7 @@ export default function GuestMomentClient({ invitationId, coupleName, coverUrl, 
             <div className="flex gap-3 overflow-x-auto snap-x pb-4 scrollbar-none px-2 -mx-2">
               {recentMemories.map((m) => (
                 <div key={m.id} className="w-24 h-24 shrink-0 snap-start rounded-2xl overflow-hidden border border-white/10 relative group">
-                  <Image src={m.thumbnailUrl || m.mediaUrl || m.url} alt={m.senderName} fill className="object-cover" />
+                  <Image src={m.thumbnailUrl || m.mediaUrl || m.url} alt={m.senderName} fill className="object-cover" unoptimized />
                   <div className="absolute inset-x-0 bottom-0 p-2 bg-gradient-to-t from-black/90 to-transparent">
                     <p className="text-[9px] text-white font-bold truncate text-center">{m.senderName}</p>
                   </div>

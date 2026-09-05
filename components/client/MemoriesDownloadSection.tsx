@@ -261,9 +261,9 @@ export function MemoriesDownloadSection({
           <span className="text-[11px] font-bold text-stone-700 block">Status Masa Simpan Foto Galeri Tamu:</span>
           <p className="text-xs text-stone-600 mt-0.5">
             {galleryExpiresAt ? (
-              <>Aktif hingga: <strong className="text-purple-700 font-semibold">{new Date(galleryExpiresAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</strong></>
+              <>Foto tamu aman disimpan hingga: <strong className="text-purple-700 font-semibold">{new Date(galleryExpiresAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</strong> <span className="text-[10px] text-purple-600 font-medium">(Extended)</span></>
             ) : (
-              <>Standar retensi: <strong>{retentionDays} hari</strong> pasca acara pernikahan</>
+              <>Standar simpan: <strong>{retentionDays} hari</strong> pasca acara (URL website undangan Anda tetap aktif 1 tahun).</>
             )}
           </p>
         </div>

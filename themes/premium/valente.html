@@ -141,27 +141,22 @@
     .cover-date-sub { font-family: 'Cormorant Infant', serif; font-size: 0.82rem; letter-spacing: 0.2em; text-transform: uppercase; color: #d9d9d9; margin-top: 0.6rem; }
     .cover-bottom { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 0.8rem; }
     .cover-guest-box {
-      background: rgba(38, 38, 39, 0.85); backdrop-filter: blur(12px);
-      border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
-      padding: 1.2rem 1.6rem; width: 100%; max-width: 320px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      background: rgba(18, 18, 20, 0.40); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 16px;
+      padding: 1.4rem 1.8rem; width: 100%; max-width: 360px; box-shadow: 0 16px 36px rgba(0,0,0,0.35);
     }
-    .cover-kepada { font-family: 'Lora', serif; font-size: 0.72rem; letter-spacing: 0.1em; color: #a7a7a7; display: block; margin-bottom: 0.3rem; }
-    .cover-guest-name { font-size: clamp(1.25rem, 5vw, 1.65rem); font-family: 'Cormorant', serif; font-style: italic; color: #ffffff; line-height: 1.2; }
-    .cover-subtitle { font-size: 0.72rem; color: #d9d9d9; line-height: 1.5; margin-top: 0.4rem; font-family: 'Lora', serif; }
-    .cover-btn-group { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; width: 100%; max-width: 320px; margin-top: 0.4rem; }
+    .cover-kepada { font-family: 'Cormorant Infant', serif; font-size: 0.78rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--accent); display: block; margin-bottom: 0.35rem; font-weight: 600; }
+    .cover-guest-name { font-size: clamp(1.35rem, 5vw, 1.8rem); font-family: 'Cormorant', serif; font-style: italic; color: #ffffff; line-height: 1.25; }
+    .cover-subtitle { font-size: 0.75rem; color: rgba(220, 220, 220, 0.85); line-height: 1.6; margin-top: 0.45rem; font-family: 'Lora', serif; }
+    .cover-btn-group { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; width: 100%; max-width: 360px; margin-top: 0.6rem; }
     .btn-buka {
-      display: inline-block; padding: 0.85rem 2.2rem; border: none; border-radius: var(--radius-sm);
-      background: var(--bg-card); color: #d9d9d9; font-size: 0.75rem; border: 1px solid var(--border-subtle);
-      letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; font-family: 'Lora', serif;
-      font-weight: 500; transition: all 0.3s ease; width: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      display: inline-block; padding: 0.9rem 2.4rem; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 12px;
+      background: rgba(38, 38, 42, 0.65); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      color: #ffffff; font-size: 0.75rem;
+      letter-spacing: 0.22em; text-transform: uppercase; cursor: pointer; font-family: 'Lora', serif;
+      font-weight: 500; transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1); width: 100%; box-shadow: 0 8px 24px rgba(0,0,0,0.35);
     }
-    .btn-buka:hover { background: #d9d9d9; color: #262627; }
-    .btn-qr-ghost {
-      background: transparent; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
-      color: #a7a7a7; font-size: 0.7rem; letter-spacing: 0.18em; cursor: pointer; font-family: 'Lora', serif;
-      text-transform: uppercase; padding: 0.6rem 1.6rem; transition: all 0.3s; width: 100%;
-    }
-    .btn-qr-ghost:hover { background: rgba(255, 255, 255, 0.08); color: #ffffff; }
+    .btn-buka:hover { background: #ffffff; color: #121214; border-color: #ffffff; transform: translateY(-2px); box-shadow: 0 10px 28px rgba(255, 255, 255, 0.18); }
 
     /* =========================================
        2. HERO SLIDESHOW (100vh FULL PHOTO CROSSFADE)
@@ -441,12 +436,19 @@
     /* Top Right Menu Hamburger Button */
     .btn-top-menu {
       position: fixed; top: 18px; right: 18px; width: 44px; height: 44px;
-      border-radius: 12px; background: rgba(30, 30, 32, 0.85); backdrop-filter: blur(12px);
+      border-radius: 12px; background: rgba(30, 30, 32, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
       border: 1px solid var(--border-subtle); color: #ffffff; display: flex;
       align-items: center; justify-content: center; z-index: 120; cursor: pointer;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.5); transition: transform 0.2s;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+      transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: transform, opacity;
     }
     .btn-top-menu:hover { transform: scale(1.05); }
+    .btn-top-menu.btn-hidden {
+      transform: translateY(-80px);
+      opacity: 0;
+      pointer-events: none;
+    }
 
     /* Side Navigation Drawer */
     .side-nav-drawer {
@@ -474,6 +476,13 @@
     .floating-actions-bottom {
       position: fixed; bottom: 20px; right: 20px; z-index: 100;
       display: flex; flex-direction: column; align-items: center; gap: 10px;
+      transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: transform, opacity;
+    }
+    .floating-actions-bottom.actions-hidden {
+      transform: translateY(100px);
+      opacity: 0;
+      pointer-events: none;
     }
     .btn-fullscreen, .btn-audio-fab {
       width: 42px; height: 42px; border-radius: 50%;
@@ -503,14 +512,62 @@
     .left-hero-names { font-size: clamp(2.6rem, 4.2vw, 4.2rem); line-height: 1.1; color: #ffffff; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
     .left-hero-names em { font-style: italic; font-size: 0.8em; margin: 0 0.15em; color: var(--accent); display: inline; }
     .left-hero-date { font-family: 'Cormorant Infant', serif; font-size: 0.85rem; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(255,255,255,0.75); margin-top: 0.8rem; font-weight: 500; }
+    .left-hero-crest {
+      position: absolute; top: 3.5rem; left: 3.5rem; z-index: 3;
+      display: flex; flex-direction: column; align-items: flex-start; gap: 0.35rem;
+      pointer-events: none; user-select: none;
+    }
+    .crest-monogram-row {
+      display: inline-flex; align-items: center; gap: 0.85rem;
+    }
+    .crest-bar {
+      width: 28px; height: 1px; background: var(--accent); opacity: 0.65;
+    }
+    .crest-monogram {
+      font-family: 'Cormorant', serif; font-size: clamp(3.4rem, 5.5vw, 4.8rem);
+      font-weight: 500; color: rgba(255, 255, 255, 0.88); line-height: 0.92;
+      letter-spacing: 0.05em; display: inline-flex; align-items: baseline;
+      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.55);
+    }
+    .crest-monogram .crest-amp {
+      font-family: 'Great Vibes', cursive; font-size: 0.72em; margin: 0 0.22em;
+      color: var(--accent); font-weight: 400; font-style: italic;
+    }
+    .crest-tag {
+      font-family: 'Cormorant Infant', serif; font-size: 0.68rem; letter-spacing: 0.32em;
+      text-transform: uppercase; color: var(--accent); font-weight: 600;
+      display: block; margin-top: 0.15rem; opacity: 0.85; padding-left: 2px;
+    }
 
     @media (min-width: 900px) {
-      .left-hero { display: block; }
-      .page-wrap { margin-left: 55%; width: 45%; max-width: none; min-width: 420px; }
+      .left-hero { display: block; width: calc(100% - 460px); }
+      .page-wrap { margin-left: calc(100% - 460px); width: 460px; max-width: none; min-width: 0; }
+      .cover-screen {
+        width: 100%;
+        left: 0;
+        right: 0;
+        padding: 4.5rem 2.5rem;
+      }
+      .cover-top {
+        max-width: 1100px;
+        margin: 0 auto;
+      }
+      .cover-center {
+        max-width: 900px;
+        margin: auto;
+      }
+      .cover-bottom {
+        max-width: 480px;
+        margin: 0 auto;
+      }
       .btn-top-menu { right: 2rem; }
       .floating-actions-bottom { right: 2rem; }
-      .sec-flow, .sec-couple, .sec-events, .sec-journey { padding: 5.5rem 3rem; }
-      .sec-hero-slideshow { padding: 4.5rem 3rem 4rem; }
+      .sec-flow, .sec-couple, .sec-events, .sec-journey { padding: 5.5rem 1.8rem; }
+      .sec-hero-slideshow { padding: 4.5rem 1.8rem 4rem; }
+      .cover-names { font-size: clamp(3.2rem, 6.2vw, 5.5rem) !important; overflow-wrap: break-word !important; }
+      .hero-title { font-size: clamp(2.0rem, 2.4rem, 2.8rem) !important; overflow-wrap: break-word !important; }
+      .sec-main-title, .sec-heading { font-size: clamp(1.75rem, 2.1rem, 2.3rem) !important; overflow-wrap: break-word !important; word-break: break-word !important; }
+      .couple-name { font-size: clamp(1.8rem, 2.2rem, 2.4rem) !important; overflow-wrap: break-word !important; }
     }
 
     .modal-bg {
@@ -526,6 +583,20 @@
 
   <!-- FIXED LEFT HERO (DESKTOP ONLY) -->
   <div class="left-hero" style="background-image: url('{{sidebarPhotoUrl}}');">
+    <!-- CREST MONOGRAM WATERMARK LOGO (TOP LEFT) -->
+    <div class="left-hero-crest">
+      <div class="crest-monogram-row">
+        <span class="crest-bar"></span>
+        <div class="crest-monogram serif">
+          <span>{{firstInitial}}</span>
+          <span class="crest-amp script-font">&amp;</span>
+          <span>{{secondInitial}}</span>
+        </div>
+        <span class="crest-bar"></span>
+      </div>
+      <span class="crest-tag">{{weddingTagline}}</span>
+    </div>
+
     <div class="left-hero-content">
       <span class="left-hero-eyebrow">{{weddingTagline}}</span>
       <h1 class="serif left-hero-names">{{firstName}} <em>&amp;</em> {{secondName}}</h1>
@@ -554,7 +625,6 @@
       </div>
       <div class="cover-btn-group">
         <button class="btn-buka" onclick="openInvitation()" data-lux-field="customLabels.openBtn">Buka Undangan</button>
-        {{qrCoverButtonHtml}}
       </div>
     </div>
   </div>
@@ -618,19 +688,19 @@
 
     <!-- 2. SECTION: BRIDE & GROOM (DEDICATED PROFILE CARDS) -->
     <section class="sec-couple" id="couple">
-      <span class="eyebrow reveal">BRIDE &amp; GROOM</span>
-      <h2 class="sec-title serif reveal delay-1">Bride &amp; Groom</h2>
-      <p class="sec-sub reveal delay-1">Dengan segala puji bagi Allah yang telah menciptakan mahluk-Nya berpasang-pasangan, Ya Allah izinkanlah kami merangkai cinta dalam ikatan pernikahan.</p>
+      <span class="eyebrow reveal">{{coupleSectionEyebrow}}</span>
+      <h2 class="sec-title serif reveal delay-1" data-lux-field="customLabels.coupleTitle">{{coupleSectionTitle}}</h2>
+      <p class="sec-sub reveal delay-1" data-lux-field="customLabels.coupleSub">{{coupleSectionSub}}</p>
 
       <div class="couple-cards-stack">
-        <!-- Groom Card -->
+        <!-- Host 1 Card -->
         <div class="couple-card reveal-zoom">
           <div class="couple-photo-wrap">
             <img src="{{firstPhotoUrl}}" alt="{{firstDisplayName}}">
           </div>
-          <span class="couple-role-lbl">THE GROOM</span>
+          <span class="couple-role-lbl">{{firstRole}}</span>
           <h3 class="couple-name serif">{{firstDisplayName}}</h3>
-          <span class="couple-parents-lbl">Putra Tercinta dari</span>
+          <span class="couple-parents-lbl">{{firstParentLabel}}</span>
           <p class="couple-parents">{{firstParents}}</p>
           <a href="https://instagram.com/{{firstInstagram}}" target="_blank" rel="noreferrer" class="btn-ig">
             <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
@@ -638,14 +708,14 @@
           </a>
         </div>
 
-        <!-- Bride Card -->
+        <!-- Host 2 Card -->
         <div class="couple-card reveal-zoom delay-1">
           <div class="couple-photo-wrap">
             <img src="{{secondPhotoUrl}}" alt="{{secondDisplayName}}">
           </div>
-          <span class="couple-role-lbl">THE BRIDE</span>
+          <span class="couple-role-lbl">{{secondRole}}</span>
           <h3 class="couple-name serif">{{secondDisplayName}}</h3>
-          <span class="couple-parents-lbl">Putri Tercinta dari</span>
+          <span class="couple-parents-lbl">{{secondParentLabel}}</span>
           <p class="couple-parents">{{secondParents}}</p>
           <a href="https://instagram.com/{{secondInstagram}}" target="_blank" rel="noreferrer" class="btn-ig">
             <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
@@ -844,6 +914,10 @@
       const cover = document.getElementById('coverScreen');
       if (cover) cover.classList.add('slide-up-hidden');
       playAudio();
+      const topMenu = document.querySelector('.btn-top-menu');
+      if (topMenu) topMenu.classList.remove('btn-hidden');
+      const bottomActions = document.querySelector('.floating-actions-bottom');
+      if (bottomActions) bottomActions.classList.remove('actions-hidden');
       setTimeout(() => {
         const home = document.getElementById('home');
         if (home) {
@@ -988,6 +1062,73 @@
         btn.textContent = 'Kirim Konfirmasi & Doa';
       }
     }
+
+    // SMART AUTO-HIDE FLOATING CONTROLS ON SCROLL DOWN, REVEAL ON SCROLL UP
+    (function initSmartControls() {
+      const topMenu = document.querySelector('.btn-top-menu');
+      const bottomActions = document.querySelector('.floating-actions-bottom');
+      if (!topMenu && !bottomActions) return;
+
+      let lastScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+      let ticking = false;
+      const SCROLL_THRESHOLD = 12;
+      const TOP_REVEAL_ZONE = 70;
+
+      function setVisible(visible) {
+        if (visible) {
+          if (topMenu) topMenu.classList.remove('btn-hidden');
+          if (bottomActions) bottomActions.classList.remove('actions-hidden');
+        } else {
+          if (topMenu) topMenu.classList.add('btn-hidden');
+          if (bottomActions) bottomActions.classList.add('actions-hidden');
+        }
+      }
+
+      function updateControls() {
+        const currentScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+        const windowHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+        const docHeight = Math.max(
+          document.body.scrollHeight,
+          document.documentElement.scrollHeight,
+          document.body.offsetHeight,
+          document.documentElement.offsetHeight
+        );
+        const isNearBottom = (currentScrollY + windowHeight) >= (docHeight - 60);
+
+        if (currentScrollY <= TOP_REVEAL_ZONE || isNearBottom) {
+          setVisible(true);
+          lastScrollY = currentScrollY;
+          ticking = false;
+          return;
+        }
+
+        const delta = currentScrollY - lastScrollY;
+
+        if (Math.abs(delta) >= SCROLL_THRESHOLD) {
+          if (delta > 0) {
+            setVisible(false);
+          } else {
+            setVisible(true);
+          }
+          lastScrollY = currentScrollY;
+        }
+
+        ticking = false;
+      }
+
+      window.addEventListener('scroll', () => {
+        if (!ticking) {
+          window.requestAnimationFrame(updateControls);
+          ticking = true;
+        }
+      }, { passive: true });
+
+      document.querySelectorAll('.side-nav-link').forEach(link => {
+        link.addEventListener('click', () => {
+          setVisible(true);
+        });
+      });
+    })();
 
     try {
       const bc = new BroadcastChannel("lux_preview_sync");

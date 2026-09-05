@@ -33,35 +33,111 @@ export async function POST(
     }
 
     // Determine extension
+    const isAudio = slot === "music" || file.type.startsWith("audio/") || /\.(mp3|ogg|wav|m4a)$/i.test(file.name);
+    const isVideo = file.type.startsWith("video/") || /\.(mp4|webm|mov)$/i.test(file.name);
+
     let extension = "webp";
-    if (slot === "music" || file.type.startsWith("audio/")) {
-      extension = "mp3";
+    if (isAudio) {
+      extension = file.name.toLowerCase().endsWith(".ogg") ? "ogg" : "mp3";
+    } else if (isVideo) {
+      extension = "mp4";
     }
 
     const fileName = `${slot}.${extension}`;
     const targetFilePath = path.join(targetDir, fileName);
 
-    const buffer = Buffer.from(await file.arrayBuffer());
+    // Clean up conflicting formats for this slot to avoid obsolete files
+    if (isVideo) {
+      ["webp", "png", "jpg", "webm"].forEach((ext) => {
+        const conflictPath = path.join(targetDir, `${slot}.${ext}`);
+        if (fs.existsSync(conflictPath)) {
+          try { fs.unlinkSync(conflictPath); } catch {}
+        }
+      });
+    } else if (!isAudio) {
+      ["mp4", "webm"].forEach((ext) => {
+        const conflictPath = path.join(targetDir, `${slot}.${ext}`);
+        if (fs.existsSync(conflictPath)) {
+          try { fs.unlinkSync(conflictPath); } catch {}
+        }
+      });
+    }
+
+    let buffer: Buffer = Buffer.from(await file.arrayBuffer());
+
+    if (isVideo) {
+      const { optimizeWebVideo } = await import("@/lib/videoOptimizer");
+      buffer = await optimizeWebVideo(buffer, `${themeId}_${slot}`);
+    } else if (isAudio) {
+      const { optimizeWebAudio } = await import("@/lib/videoOptimizer");
+      buffer = await optimizeWebAudio(buffer, `${themeId}_${slot}`);
+    }
+
     fs.writeFileSync(targetFilePath, buffer);
 
-    // Re-compile static demo HTML file with new visual asset
-    try {
-      const { compileAndSaveStaticDemo } = await import("@/lib/demoPublisher");
-      const { prisma } = await import("@/lib/prisma");
-      const setting = await prisma.adminSetting.findUnique({
-        where: { key: `theme_demo_${themeId}` },
-      });
-      const customData = setting?.value ? JSON.parse(setting.value) : undefined;
-      await compileAndSaveStaticDemo(themeId, customData);
-    } catch {}
+    const rawUrl = `/demo/${themeId}/${fileName}`;
+    const publicUrl = `${rawUrl}?t=${Date.now()}`;
 
-    const publicUrl = `/demo/${themeId}/${fileName}?t=${Date.now()}`;
+    // Update database adminSetting theme_demo_${themeId} and recompile static demo
+    try {
+      const { prisma } = await import("@/lib/prisma");
+      const settingKey = `theme_demo_${themeId}`;
+      const setting = await prisma.adminSetting.findUnique({
+        where: { key: settingKey },
+      });
+      const customData = setting?.value ? JSON.parse(setting.value) : {};
+
+      if (slot === "cover") {
+        customData.landingCoverUrl = rawUrl;
+      } else if (slot === "hero") {
+        customData.sidebarPhotoUrl = rawUrl;
+      } else if (slot === "background") {
+        customData.globalBgUrl = rawUrl;
+      } else if (slot === "home") {
+        customData.homePhotoUrl = rawUrl;
+      } else if (slot === "footer") {
+        customData.footerPhotoUrl = rawUrl;
+      } else if (slot === "groom") {
+        customData.groomPhotoUrl = rawUrl;
+      } else if (slot === "bride") {
+        customData.bridePhotoUrl = rawUrl;
+      } else if (slot === "music") {
+        customData.audioUrl = rawUrl;
+      } else if (slot.startsWith("gallery_")) {
+        const idx = parseInt(slot.replace("gallery_", ""), 10) - 1;
+        if (!Array.isArray(customData.galleryPhotos)) {
+          customData.galleryPhotos = [];
+        }
+        customData.galleryPhotos[idx] = rawUrl;
+      }
+
+      await prisma.adminSetting.upsert({
+        where: { key: settingKey },
+        create: {
+          key: settingKey,
+          value: JSON.stringify(customData),
+          label: `Demo Data Konfigurasi - ${themeId.toUpperCase()}`,
+          group: "themes",
+        },
+        update: {
+          value: JSON.stringify(customData),
+        },
+      });
+
+      const { compileAndSaveStaticDemo } = await import("@/lib/demoPublisher");
+      await compileAndSaveStaticDemo(themeId, customData);
+    } catch (publishErr) {
+      console.error("[DemoAsset-Publish-Error]:", publishErr);
+    }
 
     return NextResponse.json({
       success: true,
-      message: `Aset ${slot} berhasil diperbarui & file preview statis telah dikompilasi ulang`,
+      message: `Aset ${slot} (${isVideo ? "Video MP4" : isAudio ? "Audio" : "Gambar WebP"}) berhasil diperbarui & file preview statis telah dikompilasi ulang`,
       url: publicUrl,
+      rawUrl,
       fileName,
+      isVideo,
+      isAudio,
       themeId,
     });
   } catch (err: any) {

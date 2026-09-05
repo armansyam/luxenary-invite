@@ -52,7 +52,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Anda tidak memiliki akses ke undangan ini." }, { status: 403 });
     }
 
-    // 2. Harga Add-on Custom Domain (Default 150.000)
+    // 2. Cek status aktivasi fitur Custom Domain
+    const enabledSetting = await prisma.adminSetting.findUnique({
+      where: { key: "addon_custom_domain_enabled" },
+    });
+    const isCustomDomainEnabled = enabledSetting ? enabledSetting.value !== "false" : true;
+    if (!isCustomDomainEnabled) {
+      return NextResponse.json(
+        { error: "Layanan integrasi custom domain saat ini sedang dinonaktifkan atau belum tersedia (Coming Soon)." },
+        { status: 403 }
+      );
+    }
+
+    // 3. Harga Add-on Custom Domain (Default 150.000)
     const priceSetting = await prisma.adminSetting.findUnique({
       where: { key: "addon_custom_domain_price" },
     });

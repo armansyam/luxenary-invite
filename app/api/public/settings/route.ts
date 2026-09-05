@@ -3,7 +3,7 @@ import { getPublicPlatformSettings } from "@/lib/settings";
 import fs from "fs";
 import path from "path";
 
-export const revalidate = 3600; // Cache for 1 hour
+export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const settings = await getPublicPlatformSettings();
@@ -16,6 +16,7 @@ export async function GET() {
       success: true,
       ...settings,
       addon_custom_domain_price: settings.addonCustomDomainPrice,
+      addon_custom_domain_enabled: settings.addonCustomDomainEnabled,
       addon_subdomain_gallery_bundle_price: settings.addonSubdomainGalleryBundlePrice,
       gallery_extension_price_per_month: settings.galleryExtensionPricePerMonth,
       server_public_ip: settings.serverPublicIp,

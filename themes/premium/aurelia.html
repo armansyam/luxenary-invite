@@ -159,11 +159,15 @@
     }
 
     .btn-buka {
-      display: inline-block;
-      padding: 0.9rem 2.8rem;
-      border: 1.5px solid rgba(255, 255, 255, 0.85);
-      background: rgba(0, 0, 0, 0.25);
-      backdrop-filter: blur(8px);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.85rem 2.6rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       color: #ffffff;
       font-size: 0.72rem;
       letter-spacing: 0.25em;
@@ -171,15 +175,27 @@
       cursor: pointer;
       font-family: 'Plus Jakarta Sans', sans-serif;
       font-weight: 500;
-      transition: all 0.35s ease;
-      width: 100%;
-      max-width: 290px;
-      margin-top: 0.5rem;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      width: auto;
+      min-width: 220px;
+      max-width: 280px;
+      margin-top: 0.8rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+      outline: none;
+      text-decoration: none;
     }
 
     .btn-buka:hover {
-      background: #ffffff;
-      color: #070709;
+      background: rgba(255, 255, 255, 0.16);
+      border-color: rgba(255, 255, 255, 0.65);
+      color: #ffffff;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), 0 0 16px rgba(255, 255, 255, 0.12);
+      transform: translateY(-2px);
+    }
+
+    .btn-buka:active {
+      transform: translateY(0);
+      background: rgba(255, 255, 255, 0.12);
     }
 
     .btn-qr-ghost {
@@ -263,6 +279,20 @@
       font-weight: 400;
     }
 
+    /* FIXED PARALLAX BACKGROUND LAYER (GLOBAL BG) */
+    .fixed-bg-layer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      z-index: 5;
+      background-position: center;
+      background-size: cover;
+      background-repeat: no-repeat;
+      pointer-events: none;
+    }
+
     /* RIGHT SCROLLABLE PANEL */
     .right-panel {
       position: relative;
@@ -302,8 +332,9 @@
     }
 
     .opening-center {
-      margin: auto 0;
-      padding: 2rem 0;
+      margin-top: auto;
+      margin-bottom: 1.5rem;
+      padding: 0.5rem 0;
     }
 
     .opening-tagline {
@@ -376,72 +407,254 @@
       }
     }
 
-    /* SLIDE 2 & 3: COUPLE PROFILES */
-    .slide-couple {
+    /* LUXENARY EDITORIAL MOTION SYSTEM (QUIET LUXURY) */
+    .lux-reveal {
+      opacity: 0;
+      transform: translate3d(0, 26px, 0);
+      transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1), transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: opacity, transform;
+    }
+
+    .lux-reveal.revealed {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+
+    .lux-reveal-top {
+      opacity: 0;
+      transform: translate3d(0, -20px, 0);
+      transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1), transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: opacity, transform;
+    }
+
+    .lux-reveal-top.revealed {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+
+    .lux-reveal-left {
+      opacity: 0;
+      transform: translate3d(-24px, 0, 0);
+      transition: opacity 0.95s cubic-bezier(0.16, 1, 0.3, 1), transform 0.95s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: opacity, transform;
+    }
+
+    .lux-reveal-left.revealed {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+
+    .lux-reveal-right {
+      opacity: 0;
+      transform: translate3d(24px, 0, 0);
+      transition: opacity 0.95s cubic-bezier(0.16, 1, 0.3, 1), transform 0.95s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: opacity, transform;
+    }
+
+    .lux-reveal-right.revealed {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+
+    .delay-1 { transition-delay: 0.12s; }
+    .delay-2 { transition-delay: 0.24s; }
+    .delay-3 { transition-delay: 0.38s; }
+    .delay-4 { transition-delay: 0.52s; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .lux-reveal,
+      .lux-reveal-top,
+      .lux-reveal-left,
+      .lux-reveal-right {
+        opacity: 1 !important;
+        transform: none !important;
+        transition: none !important;
+      }
+    }
+
+    /* SLIDE 2: COUPLE PROFILE DUO (100vh SINGLE SCREEN DIAGONAL) */
+    .slide-couple-duo {
       position: relative;
       width: 100%;
       min-height: 100vh;
       min-height: 100dvh;
-      background-size: cover;
-      background-position: center;
       display: flex;
       flex-direction: column;
-      justify-content: flex-end;
+      justify-content: space-between;
       overflow: hidden;
-      padding: 3rem 2.2rem 4.5rem;
+      padding: 3.5rem 1.8rem 3rem;
+      background: linear-gradient(180deg, rgba(7, 7, 9, 0.88) 0%, rgba(12, 12, 16, 0.80) 50%, rgba(7, 7, 9, 0.94) 100%);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
     }
 
-    .slide-couple::before {
-      content: '';
+    .couple-anchor {
       position: absolute;
-      inset: 0;
-      background: linear-gradient(to top, rgba(7, 7, 9, 0.92) 0%, rgba(7, 7, 9, 0.25) 45%, transparent 100%);
-      z-index: 1;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      visibility: hidden;
     }
 
-    .couple-content {
-      position: relative;
-      z-index: 2;
-      max-width: 380px;
+    .couple-duo-header {
+      text-align: center;
+      width: 100%;
+      margin-bottom: 0.5rem;
     }
 
-    .couple-content.right {
-      margin-left: auto;
-      text-align: right;
-    }
-
-    .couple-role {
+    .couple-duo-eyebrow {
       font-size: 0.62rem;
       letter-spacing: 0.32em;
-      text-transform: uppercase;
-      color: rgba(255, 255, 255, 0.7);
-      display: block;
-      margin-bottom: 0.35rem;
-    }
-
-    .couple-name {
-      font-size: clamp(2.4rem, 8vw, 3.6rem);
-      color: #fff;
-      line-height: 1.05;
-      margin-bottom: 0.5rem;
-      font-weight: 300;
-    }
-
-    .couple-label {
-      font-size: 0.58rem;
-      letter-spacing: 0.22em;
       text-transform: uppercase;
       color: rgba(255, 255, 255, 0.6);
       display: block;
       margin-bottom: 0.25rem;
+    }
+
+    .couple-duo-title {
+      font-size: clamp(1.4rem, 4.5vw, 1.8rem);
+      color: #ffffff;
+      font-weight: 300;
+      letter-spacing: 0.06em;
+      margin: 0;
+    }
+
+    .couple-duo-card {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      gap: 1.1rem;
+      position: relative;
+      z-index: 2;
+    }
+
+    .couple-duo-card.first-host {
+      margin-right: auto;
+      justify-content: flex-start;
+    }
+
+    .couple-duo-card.second-host {
+      margin-left: auto;
+      justify-content: flex-end;
+    }
+
+    .couple-duo-avatar-wrap {
+      width: 96px;
+      height: 128px;
+      flex-shrink: 0;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55);
+      background: rgba(255, 255, 255, 0.05);
+      position: relative;
+    }
+
+    .couple-duo-avatar {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .couple-duo-card:hover .couple-duo-avatar {
+      transform: scale(1.05);
+    }
+
+    .couple-duo-info {
+      flex: 1;
+      min-width: 0;
+      text-align: left;
+    }
+
+    .couple-duo-info.right {
+      text-align: right;
+    }
+
+    .couple-duo-name {
+      font-size: clamp(1.25rem, 3.8vw, 1.6rem);
+      color: #ffffff;
+      line-height: 1.15;
+      margin-bottom: 0.35rem;
+      font-weight: 300;
+      word-break: break-word;
+    }
+
+    .couple-role {
+      font-size: 0.6rem;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.65);
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+
+    .couple-label {
+      font-size: 0.55rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.55);
+      display: block;
+      margin-bottom: 0.15rem;
       font-weight: 600;
     }
 
     .couple-parents {
+      font-size: 0.74rem;
+      color: rgba(255, 255, 255, 0.78);
+      line-height: 1.45;
+      margin-bottom: 0.65rem;
+      word-break: break-word;
+    }
+
+    /* FLOATING MONOGRAM / AMPERSAND CONNECTOR */
+    .couple-duo-connector {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      margin: 0.6rem 0;
+      position: relative;
+      z-index: 2;
+    }
+
+    .couple-duo-connector::before,
+    .couple-duo-connector::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18), transparent);
+    }
+
+    .monogram-badge {
+      padding: 6px 14px;
+      border-radius: 50px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      font-size: 0.85rem;
+      color: #ffffff;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+      margin: 0 0.8rem;
+    }
+
+    .mono-initial {
+      font-family: 'Playfair Display', serif;
+      font-weight: 400;
+      letter-spacing: 0.08em;
+    }
+
+    .mono-amp {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      color: rgba(255, 255, 255, 0.65);
       font-size: 0.78rem;
-      color: rgba(255, 255, 255, 0.8);
-      line-height: 1.55;
-      margin-bottom: 1.1rem;
     }
 
     .btn-ig-pill {
@@ -1099,7 +1312,7 @@
       box-sizing: border-box;
       text-align: center;
       padding: 4rem 1.5rem 6.5rem;
-      background: #050507;
+      background-color: #050507;
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
@@ -1112,14 +1325,6 @@
     .site-footer.has-closing-photo {
       justify-content: flex-end;
       align-items: center;
-    }
-    .site-footer.has-closing-photo::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.55) 50%, rgba(0,0,0,0.92) 100%);
-      pointer-events: none;
-      z-index: 1;
     }
     .site-footer .closing-content {
       position: relative;
@@ -1145,9 +1350,10 @@
       position: fixed;
       bottom: 18px;
       left: 50%;
-      transform: translateX(-50%);
+      transform: translate3d(-50%, 0, 0);
       background: rgba(15, 15, 18, 0.92);
       backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       border: 1px solid rgba(255, 255, 255, 0.15);
       border-radius: 50px;
       padding: 6px 14px;
@@ -1157,6 +1363,14 @@
       box-shadow: 0 10px 35px rgba(0, 0, 0, 0.5);
       z-index: 80;
       max-width: 92vw;
+      transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: transform, opacity;
+    }
+
+    .bottom-dock.dock-hidden {
+      transform: translate3d(-50%, calc(100% + 32px), 0);
+      opacity: 0;
+      pointer-events: none;
     }
 
     .dock-a {
@@ -1199,6 +1413,15 @@
       z-index: 100;
       cursor: pointer;
       backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: transform, opacity;
+    }
+
+    .music-fab.fab-hidden {
+      transform: translateY(-80px);
+      opacity: 0;
+      pointer-events: none;
     }
 
     .music-fab.playing svg {
@@ -1259,16 +1482,48 @@
     @media (min-width: 900px) {
       .left-hero {
         display: block;
+        width: calc(100% - 460px);
+      }
+
+      .cover-screen {
+        width: 100%;
+        left: 0;
+        right: 0;
+        padding: 4rem 2.5rem;
+      }
+
+      .cover-top {
+        max-width: 1100px;
+        margin: 0 auto;
+      }
+
+      .cover-center {
+        max-width: 850px;
+        margin: auto;
+      }
+
+      .cover-bottom {
+        max-width: 520px;
+        margin: 0 auto;
+      }
+
+      .cover-subtitle {
+        max-width: 460px;
+      }
+
+      .fixed-bg-layer {
+        left: calc(100% - 460px);
+        width: 460px;
       }
 
       .right-panel {
-        margin-left: 55%;
-        width: 45%;
-        min-width: 420px;
+        margin-left: calc(100% - 460px);
+        width: 460px;
+        min-width: 0;
       }
 
       .bottom-dock {
-        left: calc(55% + 22.5%);
+        left: calc(100% - 230px);
       }
 
       .music-fab {
@@ -1278,15 +1533,42 @@
       .sec-flow,
       .sec-journey {
         max-width: 100%;
-        padding: 6rem 3.5rem;
+        padding: 5.5rem 1.8rem;
       }
 
       .slide-opening {
-        padding: 4.5rem 3.5rem 4rem;
+        padding: 4.5rem 1.8rem 4rem;
       }
 
-      .slide-couple {
-        padding: 4rem 3.5rem 5rem;
+      .slide-couple,
+      .slide-couple-duo {
+        padding: 4rem 1.8rem 3.5rem;
+      }
+
+      .cover-names {
+        font-size: clamp(3.2rem, 5vw, 5.5rem) !important;
+        overflow-wrap: break-word !important;
+      }
+
+      .opening-title {
+        font-size: clamp(2.0rem, 2.4rem, 2.8rem) !important;
+        overflow-wrap: break-word !important;
+      }
+
+      .couple-name {
+        font-size: clamp(1.8rem, 2.2rem, 2.4rem) !important;
+        overflow-wrap: break-word !important;
+      }
+
+      .sec-main-title,
+      .sec-heading {
+        font-size: clamp(1.75rem, 2.1rem, 2.3rem) !important;
+        overflow-wrap: break-word !important;
+        word-break: break-word !important;
+      }
+
+      .cd-val {
+        font-size: clamp(1.8rem, 2.2rem, 2.6rem) !important;
       }
     }
   </style>
@@ -1322,27 +1604,29 @@
       <p class="cover-subtitle" data-lux-field="customLabels.coverSubtitle">Tanpa mengurangi rasa hormat, kami mengundang Anda untuk menghadiri acara pernikahan kami.</p>
       <button class="btn-buka" onclick="openInvitation()"
         data-lux-field="customLabels.openBtn">Buka Undangan</button>
-      {{qrCoverButtonHtml}}
     </div>
   </div>
+
+  <!-- FIXED PARALLAX BACKGROUND LAYER (GLOBAL BG) -->
+  <div class="fixed-bg-layer" style="background-image: linear-gradient(to bottom, rgba(7,7,9,0.55) 0%, rgba(7,7,9,0.40) 35%, rgba(7,7,9,0.82) 70%, rgba(7,7,9,0.94) 100%), url('{{globalBgUrl}}');"></div>
 
   <!-- RIGHT SCROLLABLE PANEL -->
   <div class="right-panel" id="rightPanel">
 
     <!-- 1. SLIDE 1: OPENING VIEW (100vh FULLSCREEN) -->
     <section class="slide-opening" id="home"
-      style="background-image: linear-gradient(to bottom, rgba(7,7,9,0.60) 0%, rgba(7,7,9,0.45) 40%, rgba(7,7,9,0.88) 100%), url('{{globalBgUrl}}');">
-      <div class="opening-top-date">
+      style="background-image: linear-gradient(to bottom, rgba(7,7,9,0.60) 0%, rgba(7,7,9,0.45) 40%, rgba(7,7,9,0.88) 100%), url('{{homePhotoUrl}}');">
+      <div class="opening-top-date lux-reveal-top">
         <span>{{weddingDateDay}}/{{weddingDateMonth}}</span>
         <span>{{weddingDateYear}}</span>
       </div>
 
       <div class="opening-center">
-        <span class="opening-tagline">{{weddingTagline}}</span>
-        <h1 class="opening-title serif">{{firstName}} <em>&amp;</em> {{secondName}}</h1>
+        <span class="opening-tagline lux-reveal delay-1">{{weddingTagline}}</span>
+        <h1 class="opening-title serif lux-reveal delay-2">{{firstName}} <em>&amp;</em> {{secondName}}</h1>
       </div>
 
-      <div class="opening-bottom">
+      <div class="opening-bottom lux-reveal delay-3">
         <p class="opening-quote-text">"{{openingQuote}}"</p>
         <cite class="opening-quote-ref">{{openingQuoteRef}}</cite>
         <div class="scroll-indicator">
@@ -1353,52 +1637,78 @@
       </div>
     </section>
 
-    <!-- 2. SLIDE 2: HOST 1 (100vh FULL PHOTO) -->
-    <section class="slide-couple" id="host1" style="background-image: url('{{firstPhotoUrl}}');">
-      <div class="couple-content right">
-        <span class="couple-role">{{firstRole}}</span>
-        <h2 class="couple-name serif">{{firstDisplayName}}</h2>
-        <span class="couple-label">{{firstParentLabel}}</span>
-        <p class="couple-parents">{{firstParents}}</p>
-        <a href="https://instagram.com/{{firstInstagram}}" target="_blank" class="btn-ig-pill">
-          <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
-            <path
-              d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
-          </svg>
-          @{{firstInstagram}}
-        </a>
-      </div>
-    </section>
+    <!-- 2. SLIDE 2: COUPLE PROFILE DUO (100vh SINGLE SCREEN DIAGONAL) -->
+    <section class="slide-couple-duo" id="couple">
+      <span id="host1" class="couple-anchor"></span>
+      <span id="host2" class="couple-anchor"></span>
 
-    <!-- 3. SLIDE 3: HOST 2 (100vh FULL PHOTO) -->
-    <section class="slide-couple" id="host2" style="background-image: url('{{secondPhotoUrl}}');">
-      <div class="couple-content">
-        <span class="couple-role">{{secondRole}}</span>
-        <h2 class="couple-name serif">{{secondDisplayName}}</h2>
-        <span class="couple-label">{{secondParentLabel}}</span>
-        <p class="couple-parents">{{secondParents}}</p>
-        <a href="https://instagram.com/{{secondInstagram}}" target="_blank" class="btn-ig-pill">
-          <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
-            <path
-              d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
-          </svg>
-          @{{secondInstagram}}
-        </a>
+      <div class="couple-duo-header lux-reveal">
+        <span class="couple-duo-eyebrow" data-lux-field="customLabels.coupleSub">THE HAPPY COUPLE</span>
+        <h2 class="couple-duo-title serif" data-lux-field="customLabels.coupleTitle">Groom &amp; Bride</h2>
+      </div>
+
+      <!-- FIRST HOST: TOP LEFT -->
+      <div class="couple-duo-card first-host lux-reveal-left delay-1">
+        <div class="couple-duo-avatar-wrap">
+          <img src="{{firstPhotoUrl}}" alt="{{firstDisplayName}}" class="couple-duo-avatar" loading="lazy" />
+        </div>
+        <div class="couple-duo-info">
+          <span class="couple-role">{{firstRole}}</span>
+          <h3 class="couple-duo-name serif">{{firstDisplayName}}</h3>
+          <span class="couple-label">{{firstParentLabel}}</span>
+          <p class="couple-parents">{{firstParents}}</p>
+          <a href="https://instagram.com/{{firstInstagram}}" target="_blank" class="btn-ig-pill">
+            <svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24">
+              <path
+                d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+            </svg>
+            @{{firstInstagram}}
+          </a>
+        </div>
+      </div>
+
+      <!-- FLOATING MONOGRAM / AMPERSAND CONNECTOR (CENTER) -->
+      <div class="couple-duo-connector lux-reveal delay-2">
+        <div class="monogram-badge">
+          <span class="mono-initial" id="duoInit1">{{firstName}}</span>
+          <em class="mono-amp serif">&amp;</em>
+          <span class="mono-initial" id="duoInit2">{{secondName}}</span>
+        </div>
+      </div>
+
+      <!-- SECOND HOST: BOTTOM RIGHT -->
+      <div class="couple-duo-card second-host lux-reveal-right delay-3">
+        <div class="couple-duo-info right">
+          <span class="couple-role">{{secondRole}}</span>
+          <h3 class="couple-duo-name serif">{{secondDisplayName}}</h3>
+          <span class="couple-label">{{secondParentLabel}}</span>
+          <p class="couple-parents">{{secondParents}}</p>
+          <a href="https://instagram.com/{{secondInstagram}}" target="_blank" class="btn-ig-pill">
+            <svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24">
+              <path
+                d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+            </svg>
+            @{{secondInstagram}}
+          </a>
+        </div>
+        <div class="couple-duo-avatar-wrap">
+          <img src="{{secondPhotoUrl}}" alt="{{secondDisplayName}}" class="couple-duo-avatar" loading="lazy" />
+        </div>
       </div>
     </section>
 
     <!-- 4. SECTION: SAVE THE DATE & EVENTS -->
     <section class="sec-flow" id="event">
-      <h2 class="sec-main-title serif">SAVE THE DATE</h2>
-      <p class="event-full-date">{{weddingDate}}</p>
+      <h2 class="sec-main-title serif lux-reveal">SAVE THE DATE</h2>
+      <p class="event-full-date lux-reveal delay-1">{{weddingDate}}</p>
 
-      <div class="countdown-clean">
+      <div class="countdown-clean lux-reveal delay-2">
         <div class="cd-item"><span class="cd-val" id="cdDays">00</span><span class="cd-txt">HARI</span></div>
         <div class="cd-item"><span class="cd-val" id="cdHours">00</span><span class="cd-txt">JAM</span></div>
         <div class="cd-item"><span class="cd-val" id="cdMins">00</span><span class="cd-txt">MENIT</span></div>
         <div class="cd-item"><span class="cd-val" id="cdSecs">00</span><span class="cd-txt">DETIK</span></div>
       </div>
-      <a href="{{googleCalendarUrl}}" target="_blank" class="btn-outline-box">SIMPAN TANGGAL</a>
+      <a href="{{googleCalendarUrl}}" target="_blank" class="btn-outline-box lux-reveal delay-3">SIMPAN TANGGAL</a>
 
       <div class="events-stack">
         {{eventDataHtml}}
@@ -1495,7 +1805,7 @@
       </svg>
       <span>Home</span>
     </a>
-    <a href="#host1" class="dock-a">
+    <a href="#couple" class="dock-a">
       <svg class="dock-ico" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round"
           d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
@@ -1574,6 +1884,17 @@
       const cover = document.getElementById('coverScreen');
       if (cover) cover.classList.add('hidden');
       playAudio();
+      const dock = document.querySelector('.bottom-dock');
+      if (dock) dock.classList.remove('dock-hidden');
+      const musicFab = document.querySelector('.music-fab');
+      if (musicFab) musicFab.classList.remove('fab-hidden');
+
+      // Trigger entrance reveal for home section elements
+      setTimeout(() => {
+        document.querySelectorAll('#home .lux-reveal, #home .lux-reveal-top').forEach(el => {
+          el.classList.add('revealed');
+        });
+      }, 180);
     }
 
     function openModal() {
@@ -1712,6 +2033,123 @@
         btn.textContent = 'Kirim Konfirmasi & Doa';
       }
     }
+
+    // SMART AUTO-HIDE DOCK & MUSIC PLAYER ON SCROLL DOWN, REVEAL ON SCROLL UP
+    (function initSmartDock() {
+      const dock = document.querySelector('.bottom-dock');
+      const musicFab = document.querySelector('.music-fab');
+      if (!dock && !musicFab) return;
+
+      let lastScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+      let ticking = false;
+      const SCROLL_THRESHOLD = 12; // Minimum scroll delta before state changes
+      const TOP_REVEAL_ZONE = 70;  // Always visible at the top
+
+      function setVisible(visible) {
+        if (visible) {
+          if (dock) dock.classList.remove('dock-hidden');
+          if (musicFab) musicFab.classList.remove('fab-hidden');
+        } else {
+          if (dock) dock.classList.add('dock-hidden');
+          if (musicFab) musicFab.classList.add('fab-hidden');
+        }
+      }
+
+      function updateDock() {
+        const currentScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+        const windowHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+        const docHeight = Math.max(
+          document.body.scrollHeight,
+          document.documentElement.scrollHeight,
+          document.body.offsetHeight,
+          document.documentElement.offsetHeight
+        );
+        const isNearBottom = (currentScrollY + windowHeight) >= (docHeight - 60);
+
+        // Always show near top or at the very bottom
+        if (currentScrollY <= TOP_REVEAL_ZONE || isNearBottom) {
+          setVisible(true);
+          lastScrollY = currentScrollY;
+          ticking = false;
+          return;
+        }
+
+        const delta = currentScrollY - lastScrollY;
+
+        if (Math.abs(delta) >= SCROLL_THRESHOLD) {
+          if (delta > 0) {
+            // Scrolling down -> hide smoothly
+            setVisible(false);
+          } else {
+            // Scrolling up -> reveal smoothly
+            setVisible(true);
+          }
+          lastScrollY = currentScrollY;
+        }
+
+        ticking = false;
+      }
+
+      window.addEventListener('scroll', () => {
+        if (!ticking) {
+          window.requestAnimationFrame(updateDock);
+          ticking = true;
+        }
+      }, { passive: true });
+
+      // Keep revealed when clicking navigation links
+      if (dock) {
+        dock.querySelectorAll('.dock-a').forEach(link => {
+          link.addEventListener('click', () => {
+            setVisible(true);
+          });
+        });
+      }
+    })();
+
+    // AUTO-DETECT INITIALS FOR FLOATING MONOGRAM BADGE
+    (function initMonogram() {
+      const el1 = document.getElementById('duoInit1');
+      const el2 = document.getElementById('duoInit2');
+      if (el1 && el1.textContent) {
+        el1.textContent = el1.textContent.trim().charAt(0).toUpperCase();
+      }
+      if (el2 && el2.textContent) {
+        el2.textContent = el2.textContent.trim().charAt(0).toUpperCase();
+      }
+    })();
+
+    // EDITORIAL SCROLL REVEAL OBSERVER
+    (function initScrollReveal() {
+      const revealElements = document.querySelectorAll('.lux-reveal, .lux-reveal-top, .lux-reveal-left, .lux-reveal-right');
+      if (!revealElements.length) return;
+
+      if (!('IntersectionObserver' in window)) {
+        revealElements.forEach(el => el.classList.add('revealed'));
+        return;
+      }
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('revealed');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, {
+        threshold: 0.12,
+        rootMargin: '0px 0px -30px 0px'
+      });
+
+      revealElements.forEach(el => {
+        const cover = document.getElementById('coverScreen');
+        if (el.closest('#home') && (!cover || cover.classList.contains('hidden'))) {
+          el.classList.add('revealed');
+        } else if (!el.closest('#home')) {
+          observer.observe(el);
+        }
+      });
+    })();
 
     try {
       const bc = new BroadcastChannel("lux_preview_sync");

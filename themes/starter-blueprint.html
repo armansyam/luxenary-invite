@@ -68,14 +68,118 @@
       letter-spacing: 0.02em;
     }
 
-    /* Container Wrapper */
-    .app-container {
+    /* =================================================================== */
+    /* 2. ARSITEKTUR DESKTOP SPLIT & EMULASI MOBILE (GOLDEN STANDARD)      */
+    /*    - Layar Mobile (< 900px) : 100% Full Width Mobile First          */
+    /*    - Layar Desktop (>= 900px): Kiri Sidebar Foto + Kanan Panel 460px */
+    /* =================================================================== */
+    .layout-wrapper {
+      display: flex;
+      width: 100%;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    /* Fixed Left Hero / Sidebar untuk Layar Lebar */
+    .sidebar-desktop {
+      display: none;
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: calc(100% - 460px);
+      height: 100vh;
+      background: url('{{sidebarPhotoUrl}}') center/cover no-repeat;
+      z-index: 10;
+    }
+    .sidebar-desktop::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 50%, transparent 100%);
+    }
+    .sidebar-desktop-content {
+      position: absolute;
+      bottom: 4rem;
+      left: 3.5rem;
+      right: 3.5rem;
+      z-index: 20;
+      color: #fff;
+    }
+
+    /* Main Scroll Panel (Konten Undangan Utama) */
+    .app-container,
+    .main-scroll-panel {
+      width: 100%;
       max-width: 640px;
       margin: 0 auto;
       min-height: 100vh;
       background: #ffffff;
       position: relative;
+      z-index: 20;
       box-shadow: 0 0 50px rgba(0, 0, 0, 0.25);
+    }
+
+    /* FIXED PARALLAX BACKGROUND LAYER (FOTO 2 / OPTIONAL) */
+    .fixed-bg-layer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      z-index: 5;
+      background-position: center;
+      background-size: cover;
+      background-repeat: no-repeat;
+      pointer-events: none;
+    }
+
+    /* DESKTOP SPLIT RULES (>= 900px) */
+    @media (min-width: 900px) {
+      .sidebar-desktop {
+        display: block;
+        width: calc(100% - 460px);
+      }
+      .app-container,
+      .main-scroll-panel {
+        width: 460px;
+        max-width: 460px;
+        margin-left: calc(100% - 460px);
+        margin-right: 0;
+        min-width: 0;
+        box-shadow: -10px 0 35px rgba(0, 0, 0, 0.25);
+      }
+      .cover-overlay {
+        width: 460px;
+        left: calc(100% - 460px);
+      }
+      .bottom-dock {
+        left: calc(100% - 230px) !important;
+      }
+      .fixed-bg-layer {
+        left: calc(100% - 460px);
+        width: 460px;
+      }
+
+      /* =================================================================== */
+      /* STANDAR TIPOGRAFI DESKTOP SPLIT (ANTI-OVERFLOW / MOBILE SCALE)       */
+      /* CATATAN PENTING THEME BUILDER:                                      */
+      /* Unit 'vw' mengevaluasi seluruh viewport monitor (1440-1920px),      */
+      /* BUKAN lebar panel 460px. Selalu batasi judul h1/h2 di desktop split  */
+      /* maksimal 2.1rem - 2.3rem agar teks tidak meluap keluar panel kanan.  */
+      /* =================================================================== */
+      .cover-names {
+        font-size: clamp(2.2rem, 2.8rem, 3.2rem) !important;
+        overflow-wrap: break-word !important;
+      }
+      .sec-main-title,
+      .sec-heading {
+        font-size: clamp(1.75rem, 2.1rem, 2.3rem) !important;
+        overflow-wrap: break-word !important;
+        word-break: break-word !important;
+      }
+      .sec-flow {
+        padding: 4.5rem 1.8rem;
+      }
     }
 
     /* Section Flow Standard */
@@ -226,7 +330,31 @@
       justify-content: center;
       cursor: pointer;
       backdrop-filter: blur(12px);
-      transition: transform 0.2s;
+      -webkit-backdrop-filter: blur(12px);
+      transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: transform, opacity;
+    }
+
+    .audio-fab.fab-hidden {
+      transform: translateY(100px);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .bottom-dock {
+      position: fixed;
+      bottom: 18px;
+      left: 50%;
+      transform: translate3d(-50%, 0, 0);
+      z-index: 900;
+      transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: transform, opacity;
+    }
+
+    .bottom-dock.dock-hidden {
+      transform: translate3d(-50%, calc(100% + 32px), 0);
+      opacity: 0;
+      pointer-events: none;
     }
 
     .audio-fab.playing {
@@ -537,9 +665,21 @@
   </div>
 
   <!-- =================================================================== -->
-  <!-- 2. KONTEN UTAMA UNDANGAN                                            -->
+  <!-- 2. KONTEN UTAMA UNDANGAN & DESKTOP SPLIT LAYOUT                     -->
   <!-- =================================================================== -->
-  <div class="app-container">
+  <div class="layout-wrapper">
+
+    <!-- DESKTOP FIXED SIDEBAR (Hanya tampil di layar desktop >= 900px) -->
+    <aside class="sidebar-desktop">
+      <div class="sidebar-desktop-content">
+        <span class="sidebar-eyebrow" style="font-size: 11px; letter-spacing: 0.25em; text-transform: uppercase; opacity: 0.8; display: block; margin-bottom: 8px;">{{weddingTagline}}</span>
+        <h1 class="sidebar-names serif" style="font-size: 2.8rem; line-height: 1.1; margin-bottom: 8px;">{{firstName}} &amp; {{secondName}}</h1>
+        <p class="sidebar-date" style="font-size: 13px; opacity: 0.85;">{{weddingDate}}</p>
+      </div>
+    </aside>
+
+    <!-- PANEL KONTEN UTAMA (EMULASI MOBILE 460PX PADA DESKTOP SPLIT) -->
+    <main class="main-scroll-panel app-container">
 
     <!-- SEKSI 1: KUTIPAN PEMBUKA & AYAT -->
     <section class="sec-flow" id="quote">
@@ -708,6 +848,7 @@
       </div>
     </footer>
 
+    </main>
   </div>
 
   <!-- =================================================================== -->
@@ -727,8 +868,11 @@
     function openInvitation() {
       const cover = document.getElementById('coverOverlay');
       if (cover) cover.classList.add('opened');
-      const audio = document.getElementById('luxAudioPlayer');
       const fab = document.getElementById('musicToggle');
+      if (fab) fab.classList.remove('fab-hidden');
+      const dock = document.querySelector('.bottom-dock');
+      if (dock) dock.classList.remove('dock-hidden');
+      const audio = document.getElementById('luxAudioPlayer');
       if (audio) {
         audio.play().then(function() {
           if (fab) fab.classList.add('playing');
@@ -774,8 +918,74 @@
     // E. Hitung Mundur Otomatis
     
 
-    // F. Handler Kirim Form RSVP
-    
+    // SMART AUTO-HIDE DOCK & MUSIC PLAYER ON SCROLL DOWN, REVEAL ON SCROLL UP
+    (function initSmartControls() {
+      const dock = document.querySelector('.bottom-dock');
+      const fab = document.getElementById('musicToggle');
+      if (!dock && !fab) return;
+
+      let lastScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+      let ticking = false;
+      const SCROLL_THRESHOLD = 12;
+      const TOP_REVEAL_ZONE = 70;
+
+      function setVisible(visible) {
+        if (visible) {
+          if (dock) dock.classList.remove('dock-hidden');
+          if (fab) fab.classList.remove('fab-hidden');
+        } else {
+          if (dock) dock.classList.add('dock-hidden');
+          if (fab) fab.classList.add('fab-hidden');
+        }
+      }
+
+      function updateControls() {
+        const currentScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+        const windowHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+        const docHeight = Math.max(
+          document.body.scrollHeight,
+          document.documentElement.scrollHeight,
+          document.body.offsetHeight,
+          document.documentElement.offsetHeight
+        );
+        const isNearBottom = (currentScrollY + windowHeight) >= (docHeight - 60);
+
+        if (currentScrollY <= TOP_REVEAL_ZONE || isNearBottom) {
+          setVisible(true);
+          lastScrollY = currentScrollY;
+          ticking = false;
+          return;
+        }
+
+        const delta = currentScrollY - lastScrollY;
+
+        if (Math.abs(delta) >= SCROLL_THRESHOLD) {
+          if (delta > 0) {
+            setVisible(false);
+          } else {
+            setVisible(true);
+          }
+          lastScrollY = currentScrollY;
+        }
+
+        ticking = false;
+      }
+
+      window.addEventListener('scroll', () => {
+        if (!ticking) {
+          window.requestAnimationFrame(updateControls);
+          ticking = true;
+        }
+      }, { passive: true });
+
+      if (dock) {
+        dock.querySelectorAll('a, .dock-btn').forEach(link => {
+          link.addEventListener('click', () => {
+            setVisible(true);
+          });
+        });
+      }
+    })();
   </script>
 
 <!-- AMSDEV PROTECTION SCRIPT -->

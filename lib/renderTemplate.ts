@@ -56,7 +56,7 @@ const THEME_MAP: Record<string, { file: string; folder: "premium" | "traditional
 const HEAD_AUDIO_BLOCKER_SCRIPT = `
 <script>
 (function() {
-  const isAutoplay = new URLSearchParams(window.location.search).get('autoplay') === '1' || (window !== window.top);
+  const isAutoplay = new URLSearchParams(window.location.search).get('autoplay') === '1' || (window !== window.top && new URLSearchParams(window.location.search).get('mode') !== 'edit');
   if (isAutoplay) {
     window.__DISABLE_AUDIO__ = true;
     try {
@@ -662,11 +662,159 @@ const UNIFIED_CLIENT_RUNTIME_SCRIPT = `
     }
   };
 
+  // 6. Universal Audio Engine & Status Controller
+  window.playAudio = function() {
+    if (window.__DISABLE_AUDIO__) return;
+    try {
+      var p = new URLSearchParams(window.location.search);
+      if (p.get('autoplay') === '1') return;
+      if (window !== window.top && p.get('mode') === 'cover') return;
+
+      var audio = document.getElementById('luxAudioPlayer') ||
+                  document.getElementById('bgAudio') ||
+                  document.getElementById('weddingAudio') ||
+                  document.querySelector('audio');
+      if (!audio) return;
+
+      var playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.then(function() {
+          var fab = document.getElementById('musicFab') ||
+                    document.getElementById('musicToggle') ||
+                    document.querySelector('.audio-fab, .music-fab, .btn-music, .btn-audio-fab, #music-control');
+          if (fab) fab.classList.add('playing');
+        }).catch(function(err) {
+          console.log('Audio autoplay prevented by browser policy until user gesture:', err);
+        });
+      }
+    } catch(e) {}
+  };
+
+  window.luxToggleAudio = window.toggleAudio = function() {
+    try {
+      var audio = document.getElementById('luxAudioPlayer') ||
+                  document.getElementById('bgAudio') ||
+                  document.getElementById('weddingAudio') ||
+                  document.querySelector('audio');
+      if (!audio) return;
+      var fab = document.getElementById('musicFab') ||
+                document.getElementById('musicToggle') ||
+                document.querySelector('.audio-fab, .music-fab, .btn-music, .btn-audio-fab, #music-control');
+      if (audio.paused) {
+        audio.play().then(function() {
+          if (fab) fab.classList.add('playing');
+        }).catch(function(err) {
+          console.log('Audio toggle play failed:', err);
+        });
+      } else {
+        audio.pause();
+        if (fab) fab.classList.remove('playing');
+      }
+    } catch(e) {}
+  };
+
+  // 7. Auto-Sync Open Invitation Cover with Audio Playback
+  var origOpenInvitation = window.openInvitation;
+  window.openInvitation = function() {
+    if (typeof origOpenInvitation === 'function' && origOpenInvitation !== window.openInvitation) {
+      try { origOpenInvitation(); } catch(err) { console.warn(err); }
+    } else {
+      var cover = document.getElementById('coverScreen') || document.querySelector('.screen-cover, .landing-cover, .cover-screen');
+      if (cover) cover.classList.add('slide-up-hidden', 'opened', 'hidden');
+    }
+    window.playAudio();
+  };
+
+  // Delegated Capture Listener for Any Open-Invitation Button
+  document.addEventListener('click', function(e) {
+    var target = e.target;
+    if (!target) return;
+    var openBtn = target.closest(
+      '.btn-buka, .btn-buka-undangan, .cover-btn-open, .btn-open-issue, .cover-btn, [onclick*="openInvitation"], [data-lux-field="customLabels.openBtn"], #btnOpenInvitation'
+    );
+    if (openBtn) {
+      window.playAudio();
+    }
+  }, { capture: true, passive: true });
+
+  // 8. Interaction Fallback for Autoplay (First tap/click after cover opened)
+  function initAudioInteractionFallback() {
+    var unlockAudio = function() {
+      try {
+        var audio = document.getElementById('luxAudioPlayer') ||
+                    document.getElementById('bgAudio') ||
+                    document.getElementById('weddingAudio') ||
+                    document.querySelector('audio');
+        if (audio && audio.paused && !window.__DISABLE_AUDIO__) {
+          var cover = document.getElementById('coverScreen') || document.querySelector('.screen-cover, .landing-cover, .cover-screen');
+          var isCoverClosed = cover && !cover.classList.contains('slide-up-hidden') && !cover.classList.contains('opened') && !cover.classList.contains('hidden') && cover.style.display !== 'none';
+          if (!isCoverClosed) {
+            window.playAudio();
+          }
+        }
+      } catch(e) {}
+      document.removeEventListener('touchstart', unlockAudio);
+      document.removeEventListener('click', unlockAudio);
+    };
+    document.addEventListener('touchstart', unlockAudio, { passive: true });
+    document.addEventListener('click', unlockAudio, { passive: true });
+  }
+
+  // 9. Auto-Sync Navigation Dock & Audio FAB Based on Active Toggled Sections
+  function syncActiveTogglesUI() {
+    try {
+      // A. Synchronize navigation links (bottom dock, side nav, etc.)
+      var navLinks = document.querySelectorAll(
+        '.bottom-dock a, nav.bottom-dock a, .side-nav a, .dock-btn, .dock-a, .side-nav-link'
+      );
+      navLinks.forEach(function(link) {
+        var href = link.getAttribute('href');
+        if (href && href.startsWith('#') && href.length > 1) {
+          var targetId = href.substring(1);
+          var targetEl = document.getElementById(targetId);
+          if (!targetEl) {
+            link.style.display = 'none';
+          } else {
+            link.style.display = '';
+          }
+        }
+      });
+
+      // B. Synchronize Audio Player FAB (hide button if audio is disabled / has no valid source)
+      var audio = document.getElementById('luxAudioPlayer') ||
+                  document.getElementById('bgAudio') ||
+                  document.getElementById('weddingAudio') ||
+                  document.querySelector('audio');
+      var hasAudioSource = Boolean(
+        audio && (audio.getAttribute('src') || (audio.querySelector('source') && audio.querySelector('source').getAttribute('src')))
+      );
+      var fabs = document.querySelectorAll(
+        '#musicFab, #musicToggle, .audio-fab, .music-fab, .btn-music, .btn-audio-fab, #music-control'
+      );
+      fabs.forEach(function(fab) {
+        if (!hasAudioSource) {
+          fab.style.display = 'none';
+        } else {
+          fab.style.display = '';
+        }
+      });
+    } catch(err) {
+      console.warn('syncActiveTogglesUI error:', err);
+    }
+  }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', resolveGuestName);
+    document.addEventListener('DOMContentLoaded', function() {
+      resolveGuestName();
+      initAudioInteractionFallback();
+      syncActiveTogglesUI();
+    });
   } else {
     resolveGuestName();
+    initAudioInteractionFallback();
+    syncActiveTogglesUI();
   }
+  window.addEventListener('load', syncActiveTogglesUI);
 })();
 </script>
 `;
@@ -768,12 +916,15 @@ export async function renderTemplateFile(
     if (safeUrl) {
       closingStyle = `\n<style>
       .site-footer, footer, footer#footer {
-        background-image: linear-gradient(to top, rgba(0,0,0,0.85), rgba(0,0,0,0.4)), url('${safeUrl}') !important;
+        background-image: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 38%, rgba(0,0,0,0.55) 65%, rgba(0,0,0,0.92) 100%), url('${safeUrl}') !important;
         background-size: cover !important;
         background-position: center bottom !important;
         color: #fff !important;
         border-top: none !important;
         position: relative;
+      }
+      .site-footer::before, footer::before, footer#footer::before {
+        display: none !important;
       }
       .site-footer *, footer *, footer#footer * {
         color: #fff !important;
@@ -879,13 +1030,13 @@ export async function renderTemplateFile(
       }
       @media (min-width: 900px) {
         .lux-fixed-bg-video {
-          left: 55% !important;
-          width: 45% !important;
+          left: calc(100% - 460px) !important;
+          width: 460px !important;
           right: 0 !important;
         }
         .lux-fixed-bg-scrim {
-          left: 55% !important;
-          width: 45% !important;
+          left: calc(100% - 460px) !important;
+          width: 460px !important;
           right: 0 !important;
         }
       }
@@ -944,18 +1095,19 @@ export async function renderTemplateFile(
   // Server-Side Injection for Custom Labels (Zero-Hardcode Master Themes)
   const customLabels = data.featureSettings?.customLabels || data.customLabels || {};
   tpl = tpl.replace(
-    /(<[^>]+data-lux-field="customLabels\.([^"]+)"[^>]*>)([\s\S]*?)(<\/[a-zA-Z0-9]+>)/g,
-    (match, openTag, labelKey, innerContent, closeTag) => {
+    /<([a-zA-Z0-9]+)\b([^>]*data-lux-field="customLabels\.([^"]+)"[^>]*)>([\s\S]*?)<\/\1>/gi,
+    (match, tagName, attrs, labelKey, innerContent) => {
       const val = customLabels[labelKey];
       if (val !== undefined && val !== null && val !== "") {
-        // Escape HTML untuk mencegah XSS jika nilai customLabel mengandung tag berbahaya
-        return `${openTag}${escapeHtmlAttr(String(val))}${closeTag}`;
+        const svgMatch = innerContent.match(/<svg[\s\S]*?<\/svg>/i);
+        const svgPrefix = svgMatch ? `${svgMatch[0]} ` : "";
+        return `<${tagName}${attrs}>${svgPrefix}${escapeHtmlAttr(String(val))}</${tagName}>`;
       }
       return match;
     }
   );
 
-  return tpl.replace(/\{\{([\w.]+)\}\}/g, (_, key: string) => {
+  return tpl.replace(/\{[\s\n]*\{[\s\n]*([\w.]+)[\s\n]*\}[\s\n]*\}/g, (_, key: string) => {
     let val = data[key];
     if (val === undefined && key.includes(".")) {
       const parts = key.split(".");

@@ -1,6 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+
+interface StaffAuthContextType {
+  isLocked: boolean;
+  lock: () => void;
+}
+
+const StaffAuthContext = createContext<StaffAuthContextType | null>(null);
+
+export function useStaffAuth() {
+  return useContext(StaffAuthContext);
+}
 
 interface StaffLockScreenProps {
   invitationId: string;
@@ -11,6 +22,13 @@ export default function StaffLockScreen({ invitationId, children }: StaffLockScr
   const [isLocked, setIsLocked] = useState(true);
   const [pinInput, setPinInput] = useState("");
   const [error, setError] = useState(false);
+
+  const handleLock = useCallback(() => {
+    localStorage.removeItem(`staff_auth_token_${invitationId}`);
+    setIsLocked(true);
+    setPinInput("");
+    setError(false);
+  }, [invitationId]);
 
   useEffect(() => {
     // We optimistically unlock if there's a valid token in localStorage. 
@@ -51,11 +69,20 @@ export default function StaffLockScreen({ invitationId, children }: StaffLockScr
   };
 
   if (!isLocked) {
-    return <>{children}</>;
+    return (
+      <StaffAuthContext.Provider value={{ isLocked, lock: handleLock }}>
+        {React.isValidElement(children)
+          ? React.cloneElement(children as React.ReactElement<{ onLock?: () => void }>, { onLock: handleLock })
+          : children}
+      </StaffAuthContext.Provider>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-stone-950 flex flex-col items-center justify-center p-4">
+    <div 
+      className="min-h-screen bg-stone-950 text-white flex flex-col items-center justify-center p-4 selection:bg-amber-500 selection:text-black"
+      style={{ colorScheme: 'dark' }}
+    >
       <div className="w-full max-w-sm bg-stone-900 border border-stone-800 rounded-3xl p-8 shadow-2xl relative overflow-hidden">
         
         {/* Decorative elements */}

@@ -21,7 +21,7 @@
 
 <script>
 (function() {
-  const isAutoplay = new URLSearchParams(window.location.search).get('autoplay') === '1' || (window !== window.top);
+  const isAutoplay = new URLSearchParams(window.location.search).get('autoplay') === '1' || (window !== window.top && new URLSearchParams(window.location.search).get('mode') !== 'edit');
   if (isAutoplay) {
     window.__DISABLE_AUDIO__ = true;
     try {
@@ -82,7 +82,7 @@
       color: #ffffff;
       overflow-x: hidden;
       width: 100%;
-      background-image: radial-gradient(circle at 50% 15%, rgba(19,57,44,0.85) 0%, rgba(7,23,18,0.98) 90%), url('/demo/badrika/home.webp');
+      background-image: radial-gradient(circle at 50% 15%, rgba(19,57,44,0.85) 0%, rgba(7,23,18,0.98) 90%), url('/demo/badrika/background.webp');
       background-size: cover;
       background-position: center;
       background-attachment: fixed;
@@ -177,10 +177,12 @@
     }
 
     @media (min-width: 900px) {
-      .sidebar-desktop { display: block; }
-      .main-scroll-panel { width: 45%; margin-left: 55%; min-width: 420px; }
-      .cover-overlay { width: 45%; left: 55%; }
-      .bottom-dock { left: calc(55% + 22.5%) !important; }
+      .sidebar-desktop { display: block; width: calc(100% - 460px); }
+      .main-scroll-panel { width: 460px; margin-left: calc(100% - 460px); min-width: 0; }
+      .cover-overlay { width: 460px; left: calc(100% - 460px); }
+      .bottom-dock { left: calc(100% - 230px) !important; }
+      .cover-names { font-size: clamp(2.2rem, 2.8rem, 3.0rem) !important; overflow-wrap: break-word !important; }
+      .sec-main-title, .sec-heading { font-size: clamp(1.75rem, 2.0rem, 2.2rem) !important; overflow-wrap: break-word !important; word-break: break-word !important; }
     }
 
     /* ==========================================================================
@@ -314,11 +316,6 @@
     }
     .btn-show-gallery:hover, .btn-outline-box:hover { background: var(--gold-primary); color: #071712; }
 
-    .gallery-modal-backdrop, 
-    .gallery-modal-backdrop.open, 
-
-    .gallery-modal-close, 
-
     /* DIGITAL GIFT & BANK CARDS */
     .bank-card {
       background: var(--emerald-card); border: 1px solid var(--border-gold); border-radius: 16px;
@@ -370,10 +367,17 @@
 
     /* DOCK */
     .bottom-dock {
-      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 100;
+      position: fixed; bottom: 20px; left: 50%; transform: translate3d(-50%, 0, 0); z-index: 100;
       background: rgba(11, 34, 26, 0.95); border: 1px solid var(--border-gold); border-radius: 50px;
-      padding: 0.5rem 1.2rem; display: flex; gap: 1.4rem; backdrop-filter: blur(15px);
+      padding: 0.5rem 1.2rem; display: flex; gap: 1.4rem; backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
       box-shadow: 0 10px 30px rgba(0,0,0,0.6); max-width: 440px; width: calc(100% - 30px); justify-content: space-around;
+      transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: transform, opacity;
+    }
+    .bottom-dock.dock-hidden {
+      transform: translate3d(-50%, calc(100% + 32px), 0);
+      opacity: 0;
+      pointer-events: none;
     }
     .dock-btn { color: rgba(243,229,171,0.7); font-size: 0.65rem; text-decoration: none; display: flex; flex-direction: column; align-items: center; gap: 0.2rem; }
     .dock-btn:hover, .dock-btn.active { color: var(--gold-primary); }
@@ -827,7 +831,7 @@
         </p>
 
         <!-- 1. TOMBOL UPLOAD MOMEN (DIRECT LINK) -->
-        <a href="/demo/moment" style="display: block; width: 100%; max-width: 360px; margin: 0 auto 1.8rem auto; padding: 14px 20px; border-radius: 50px; background: #ffffff; color: #000000; font-weight: 700; font-size: 0.9rem; letter-spacing: 0.05em; text-align: center; text-decoration: none; box-shadow: 0 4px 15px rgba(255,255,255,0.18); transition: transform 0.15s ease;">
+        <a href="/demo/badrika/sharemoment" style="display: block; width: 100%; max-width: 360px; margin: 0 auto 1.8rem auto; padding: 14px 20px; border-radius: 50px; background: #ffffff; color: #000000; font-weight: 700; font-size: 0.9rem; letter-spacing: 0.05em; text-align: center; text-decoration: none; box-shadow: 0 4px 15px rgba(255,255,255,0.18); transition: transform 0.15s ease;">
           BAGIKAN FOTO MOMEN ANDA
         </a>
 
@@ -845,6 +849,28 @@
           <div class="story-circles-track-wrapper" style="overflow: hidden; width: 100%; position: relative; mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent); -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);">
             <div class="story-circles-track" style="display: flex; gap: 14px; width: max-content; margin: 0 auto; animation: luxStoryLoop 24s linear infinite;">
               
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/gallery_05.webp', 'Dimas Pratama')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/badrika/gallery_05.webp" onerror="this.onerror=null;this.src='/demo/badrika/cover.webp';" alt="Dimas Pratama" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Dimas
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/memory_03.webp', 'Rina & Teman')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/badrika/memory_03.webp" onerror="this.onerror=null;this.src='/demo/badrika/gallery_03.webp';" alt="Rina & Teman" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Rina
+      </span>
+    </div>
+  
     <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/gallery_08.webp', 'Eko & Nia')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
@@ -856,14 +882,14 @@
       </span>
     </div>
   
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/gallery_07.webp', 'Alumni Teknik')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/gallery_06.webp', 'Keluarga Solo')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/badrika/gallery_07.webp" onerror="this.onerror=null;this.src='/demo/badrika/groom.webp';" alt="Alumni Teknik" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/badrika/gallery_06.webp" onerror="this.onerror=null;this.src='/demo/badrika/hero.webp';" alt="Keluarga Solo" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Alumni
+        Keluarga
       </span>
     </div>
   
@@ -889,36 +915,14 @@
       </span>
     </div>
   
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/gallery_06.webp', 'Keluarga Solo')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/gallery_07.webp', 'Alumni Teknik')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/badrika/gallery_06.webp" onerror="this.onerror=null;this.src='/demo/badrika/hero.webp';" alt="Keluarga Solo" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/badrika/gallery_07.webp" onerror="this.onerror=null;this.src='/demo/badrika/groom.webp';" alt="Alumni Teknik" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Keluarga
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/gallery_05.webp', 'Dimas Pratama')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/badrika/gallery_05.webp" onerror="this.onerror=null;this.src='/demo/badrika/cover.webp';" alt="Dimas Pratama" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Dimas
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/memory_03.webp', 'Rina & Teman')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/badrika/memory_03.webp" onerror="this.onerror=null;this.src='/demo/badrika/gallery_03.webp';" alt="Rina & Teman" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Rina
+        Alumni
       </span>
     </div>
   
@@ -934,6 +938,28 @@
     </div>
   
               
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/gallery_05.webp', 'Dimas Pratama')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/badrika/gallery_05.webp" onerror="this.onerror=null;this.src='/demo/badrika/cover.webp';" alt="Dimas Pratama" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Dimas
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/memory_03.webp', 'Rina & Teman')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/badrika/memory_03.webp" onerror="this.onerror=null;this.src='/demo/badrika/gallery_03.webp';" alt="Rina & Teman" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Rina
+      </span>
+    </div>
+  
     <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/gallery_08.webp', 'Eko & Nia')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
@@ -945,14 +971,14 @@
       </span>
     </div>
   
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/gallery_07.webp', 'Alumni Teknik')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/gallery_06.webp', 'Keluarga Solo')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/badrika/gallery_07.webp" onerror="this.onerror=null;this.src='/demo/badrika/groom.webp';" alt="Alumni Teknik" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/badrika/gallery_06.webp" onerror="this.onerror=null;this.src='/demo/badrika/hero.webp';" alt="Keluarga Solo" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Alumni
+        Keluarga
       </span>
     </div>
   
@@ -978,36 +1004,14 @@
       </span>
     </div>
   
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/gallery_06.webp', 'Keluarga Solo')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/gallery_07.webp', 'Alumni Teknik')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/badrika/gallery_06.webp" onerror="this.onerror=null;this.src='/demo/badrika/hero.webp';" alt="Keluarga Solo" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/badrika/gallery_07.webp" onerror="this.onerror=null;this.src='/demo/badrika/groom.webp';" alt="Alumni Teknik" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Keluarga
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/gallery_05.webp', 'Dimas Pratama')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/badrika/gallery_05.webp" onerror="this.onerror=null;this.src='/demo/badrika/cover.webp';" alt="Dimas Pratama" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Dimas
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/memory_03.webp', 'Rina & Teman')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/badrika/memory_03.webp" onerror="this.onerror=null;this.src='/demo/badrika/gallery_03.webp';" alt="Rina & Teman" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Rina
+        Alumni
       </span>
     </div>
   
@@ -1026,9 +1030,9 @@
           </div>
         </div>
 
-        <!-- 3. TOMBOL DIRECT KE HALAMAN GALERI WEB (galery.js) -->
+        <!-- 3. TOMBOL DIRECT KE HALAMAN GALERI WEB (memories) -->
         <div style="text-align: center;">
-          <a href="/demo/badrika/galery" class="btn-outline-box" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; font-size: 12px; font-weight: 700; border-radius: 50px; text-decoration: none; border: 1px solid currentColor; color: inherit; transition: all 0.2s ease;">
+          <a href="/demo/badrika/memories" class="btn-outline-box btn-memories-gallery" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 28px; font-size: 12px; font-weight: 700; border-radius: 50px; text-decoration: none; border: 1px solid currentColor; letter-spacing: 0.08em; transition: all 0.25s ease;">
             <span>✨ BUKA GALERI MOMEN LENGKAP</span>
             <span style="font-size: 14px;">↗</span>
           </a>
@@ -1050,6 +1054,16 @@
       }
       .story-circles-track:hover {
         animation-play-state: paused !important;
+      }
+      .btn-memories-gallery {
+        color: inherit;
+      }
+      .btn-memories-gallery:hover {
+        background: #ffffff !important;
+        color: #070709 !important;
+        border-color: #ffffff !important;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(255, 255, 255, 0.25);
       }
     </style>
 
@@ -1221,7 +1235,32 @@
         <div class="sec-content-box reveal-on-scroll">
           <h2 class="sec-heading">Ucapan &amp; Doa Restu</h2>
           <p class="sec-subheading">Kirimkan Pesan Manis Untuk Mempelai</p>
-          
+        <div class="rsvp-form-wrap">
+          <form id="rsvpForm" onsubmit="luxSubmitRsvp(event)">
+            <div class="form-row">
+              <label class="form-lbl" data-lux-field="customLabels.rsvpNameLabel">Nama Lengkap</label>
+              <input type="text" id="rsvpName" required class="form-in" placeholder="Nama Anda">
+            </div>
+            <div class="form-row">
+              <label class="form-lbl" data-lux-field="customLabels.rsvpStatusLabel">Konfirmasi Kehadiran</label>
+              <select id="rsvpStatus" class="form-sel">
+                <option value="hadir">Konfirmasi Hadir</option>
+                <option value="tidak">Berhalangan Hadir</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label class="form-lbl" data-lux-field="customLabels.rsvpCountLabel">Jumlah Tamu</label>
+              <input type="number" id="rsvpCount" min="1" max="5" value="1" class="form-in">
+            </div>
+            <div class="form-row">
+              <label class="form-lbl" data-lux-field="customLabels.rsvpMessageLabel">Ucapan &amp; Doa Restu</label>
+              <textarea id="rsvpMessage" rows="3" class="form-ta" placeholder="Tuliskan ucapan dan doa terbaik Anda..."></textarea>
+            </div>
+            <button type="submit" id="btnSubmit" class="btn-rsvp-submit" data-lux-field="customLabels.rsvpBtnText">Kirim Konfirmasi &amp; Doa</button>
+          </form>
+
+          <div class="wishes-list" id="wishesList">
+            
     <div class="wish-item">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
         <span class="wish-name">Budi Santoso &amp; Rekan Kerja</span>
@@ -1237,6 +1276,8 @@
       <p class="wish-msg">“Lancar sampai hari H yaa! Cantik dan gagah banget, can't wait to celebrate your special day!”</p>
     </div>
   
+          </div>
+        </div>
         </div>
       </section>
 
@@ -1331,11 +1372,69 @@
     function openInvitation() {
       const cover = document.getElementById('coverOverlay');
       if (cover) cover.classList.add('opened');
+      const dock = document.querySelector('.bottom-dock');
+      if (dock) dock.classList.remove('dock-hidden');
       const audio = document.getElementById('weddingAudio');
       if (audio && !window.__DISABLE_AUDIO__ && new URLSearchParams(window.location.search).get("autoplay") !== "1" && window === window.top) audio.play().catch(() => {});
       startCountdown();
       initScrollAnimations();
     }
+
+    // SMART AUTO-HIDE DOCK ON SCROLL DOWN, REVEAL ON SCROLL UP
+    (function initSmartDock() {
+      const dock = document.querySelector('.bottom-dock');
+      if (!dock) return;
+
+      let lastScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+      let ticking = false;
+      const SCROLL_THRESHOLD = 12;
+      const TOP_REVEAL_ZONE = 70;
+
+      function updateDock() {
+        const currentScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+        const windowHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+        const docHeight = Math.max(
+          document.body.scrollHeight,
+          document.documentElement.scrollHeight,
+          document.body.offsetHeight,
+          document.documentElement.offsetHeight
+        );
+        const isNearBottom = (currentScrollY + windowHeight) >= (docHeight - 60);
+
+        if (currentScrollY <= TOP_REVEAL_ZONE || isNearBottom) {
+          dock.classList.remove('dock-hidden');
+          lastScrollY = currentScrollY;
+          ticking = false;
+          return;
+        }
+
+        const delta = currentScrollY - lastScrollY;
+
+        if (Math.abs(delta) >= SCROLL_THRESHOLD) {
+          if (delta > 0) {
+            dock.classList.add('dock-hidden');
+          } else {
+            dock.classList.remove('dock-hidden');
+          }
+          lastScrollY = currentScrollY;
+        }
+
+        ticking = false;
+      }
+
+      window.addEventListener('scroll', () => {
+        if (!ticking) {
+          window.requestAnimationFrame(updateDock);
+          ticking = true;
+        }
+      }, { passive: true });
+
+      dock.querySelectorAll('.dock-btn, a').forEach(link => {
+        link.addEventListener('click', () => {
+          dock.classList.remove('dock-hidden');
+        });
+      });
+    })();
 
     function initScrollAnimations() {
       const observer = new IntersectionObserver((entries) => {
@@ -1390,6 +1489,21 @@
   })();
 </script>
 \n  
+    <!-- UNIVERSAL MUSIC PLAYER INJECTED BY DEMO ENGINE -->
+    <audio id="luxAudioPlayer" loop preload="auto">
+      <source src="/music/canon-in-d.ogg" type="audio/ogg" />
+      <source src="/music/canon-in-d.ogg" type="audio/mpeg" />
+    </audio>
+    <script>
+      (function() {
+        var a = document.getElementById('luxAudioPlayer');
+        if (a) {
+          window.bgAudio = a;
+          window.weddingAudio = a;
+        }
+      })();
+    </script>
+    
 
 <script id="luxUnifiedClientRuntime">
 
@@ -1526,11 +1640,159 @@
     }
   };
 
+  // 6. Universal Audio Engine & Status Controller
+  window.playAudio = function() {
+    if (window.__DISABLE_AUDIO__) return;
+    try {
+      var p = new URLSearchParams(window.location.search);
+      if (p.get('autoplay') === '1') return;
+      if (window !== window.top && p.get('mode') === 'cover') return;
+
+      var audio = document.getElementById('luxAudioPlayer') ||
+                  document.getElementById('bgAudio') ||
+                  document.getElementById('weddingAudio') ||
+                  document.querySelector('audio');
+      if (!audio) return;
+
+      var playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.then(function() {
+          var fab = document.getElementById('musicFab') ||
+                    document.getElementById('musicToggle') ||
+                    document.querySelector('.audio-fab, .music-fab, .btn-music, .btn-audio-fab, #music-control');
+          if (fab) fab.classList.add('playing');
+        }).catch(function(err) {
+          console.log('Audio autoplay prevented by browser policy until user gesture:', err);
+        });
+      }
+    } catch(e) {}
+  };
+
+  window.luxToggleAudio = window.toggleAudio = function() {
+    try {
+      var audio = document.getElementById('luxAudioPlayer') ||
+                  document.getElementById('bgAudio') ||
+                  document.getElementById('weddingAudio') ||
+                  document.querySelector('audio');
+      if (!audio) return;
+      var fab = document.getElementById('musicFab') ||
+                document.getElementById('musicToggle') ||
+                document.querySelector('.audio-fab, .music-fab, .btn-music, .btn-audio-fab, #music-control');
+      if (audio.paused) {
+        audio.play().then(function() {
+          if (fab) fab.classList.add('playing');
+        }).catch(function(err) {
+          console.log('Audio toggle play failed:', err);
+        });
+      } else {
+        audio.pause();
+        if (fab) fab.classList.remove('playing');
+      }
+    } catch(e) {}
+  };
+
+  // 7. Auto-Sync Open Invitation Cover with Audio Playback
+  var origOpenInvitation = window.openInvitation;
+  window.openInvitation = function() {
+    if (typeof origOpenInvitation === 'function' && origOpenInvitation !== window.openInvitation) {
+      try { origOpenInvitation(); } catch(err) { console.warn(err); }
+    } else {
+      var cover = document.getElementById('coverScreen') || document.querySelector('.screen-cover, .landing-cover, .cover-screen');
+      if (cover) cover.classList.add('slide-up-hidden', 'opened', 'hidden');
+    }
+    window.playAudio();
+  };
+
+  // Delegated Capture Listener for Any Open-Invitation Button
+  document.addEventListener('click', function(e) {
+    var target = e.target;
+    if (!target) return;
+    var openBtn = target.closest(
+      '.btn-buka, .btn-buka-undangan, .cover-btn-open, .btn-open-issue, .cover-btn, [onclick*="openInvitation"], [data-lux-field="customLabels.openBtn"], #btnOpenInvitation'
+    );
+    if (openBtn) {
+      window.playAudio();
+    }
+  }, { capture: true, passive: true });
+
+  // 8. Interaction Fallback for Autoplay (First tap/click after cover opened)
+  function initAudioInteractionFallback() {
+    var unlockAudio = function() {
+      try {
+        var audio = document.getElementById('luxAudioPlayer') ||
+                    document.getElementById('bgAudio') ||
+                    document.getElementById('weddingAudio') ||
+                    document.querySelector('audio');
+        if (audio && audio.paused && !window.__DISABLE_AUDIO__) {
+          var cover = document.getElementById('coverScreen') || document.querySelector('.screen-cover, .landing-cover, .cover-screen');
+          var isCoverClosed = cover && !cover.classList.contains('slide-up-hidden') && !cover.classList.contains('opened') && !cover.classList.contains('hidden') && cover.style.display !== 'none';
+          if (!isCoverClosed) {
+            window.playAudio();
+          }
+        }
+      } catch(e) {}
+      document.removeEventListener('touchstart', unlockAudio);
+      document.removeEventListener('click', unlockAudio);
+    };
+    document.addEventListener('touchstart', unlockAudio, { passive: true });
+    document.addEventListener('click', unlockAudio, { passive: true });
+  }
+
+  // 9. Auto-Sync Navigation Dock & Audio FAB Based on Active Toggled Sections
+  function syncActiveTogglesUI() {
+    try {
+      // A. Synchronize navigation links (bottom dock, side nav, etc.)
+      var navLinks = document.querySelectorAll(
+        '.bottom-dock a, nav.bottom-dock a, .side-nav a, .dock-btn, .dock-a, .side-nav-link'
+      );
+      navLinks.forEach(function(link) {
+        var href = link.getAttribute('href');
+        if (href && href.startsWith('#') && href.length > 1) {
+          var targetId = href.substring(1);
+          var targetEl = document.getElementById(targetId);
+          if (!targetEl) {
+            link.style.display = 'none';
+          } else {
+            link.style.display = '';
+          }
+        }
+      });
+
+      // B. Synchronize Audio Player FAB (hide button if audio is disabled / has no valid source)
+      var audio = document.getElementById('luxAudioPlayer') ||
+                  document.getElementById('bgAudio') ||
+                  document.getElementById('weddingAudio') ||
+                  document.querySelector('audio');
+      var hasAudioSource = Boolean(
+        audio && (audio.getAttribute('src') || (audio.querySelector('source') && audio.querySelector('source').getAttribute('src')))
+      );
+      var fabs = document.querySelectorAll(
+        '#musicFab, #musicToggle, .audio-fab, .music-fab, .btn-music, .btn-audio-fab, #music-control'
+      );
+      fabs.forEach(function(fab) {
+        if (!hasAudioSource) {
+          fab.style.display = 'none';
+        } else {
+          fab.style.display = '';
+        }
+      });
+    } catch(err) {
+      console.warn('syncActiveTogglesUI error:', err);
+    }
+  }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', resolveGuestName);
+    document.addEventListener('DOMContentLoaded', function() {
+      resolveGuestName();
+      initAudioInteractionFallback();
+      syncActiveTogglesUI();
+    });
   } else {
     resolveGuestName();
+    initAudioInteractionFallback();
+    syncActiveTogglesUI();
   }
+  window.addEventListener('load', syncActiveTogglesUI);
 })();
 </script>
 

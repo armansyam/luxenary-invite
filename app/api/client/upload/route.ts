@@ -15,6 +15,7 @@ const SLOT_FILE_NAMES: Record<string, string> = {
   GROOM_PHOTO: "groom-photo",
   QRIS: "qris",
   CLOSING_COVER: "closing-cover",
+  MUSIC: "wedding-song",
 };
 
 export async function POST(req: NextRequest) {
@@ -90,8 +91,8 @@ export async function POST(req: NextRequest) {
     if (isAudio) {
       // Audio: auto-compress to MP3 128kbps via FFmpeg
       // Mendukung input: MP3, WAV, M4A, OGG, FLAC, AAC
-      finalFileName = `wedding-song-${Date.now()}.mp3`;
-      finalBuffer = await optimizeWebAudio(buffer, `wedding-song-${Date.now()}`);
+      finalFileName = `${baseSlug}.mp3`;
+      finalBuffer = await optimizeWebAudio(buffer, baseSlug);
     } else if (isVideo) {
       // Automatic Video Web Optimization:
       // - Standardize to .mp4 (H.264 / AAC)
@@ -150,7 +151,8 @@ export async function POST(req: NextRequest) {
         const existingFiles = await fs.promises.readdir(uploadsDir);
         for (const f of existingFiles) {
           const fileBase = path.parse(f).name;
-          if (fileBase === baseSlug && f !== finalFileName) {
+          const isMatchingSlot = fileBase === baseSlug || (baseSlug === "wedding-song" && f.startsWith("wedding-song"));
+          if (isMatchingSlot && f !== finalFileName) {
             try {
               await fs.promises.unlink(path.join(uploadsDir, f));
             } catch {}

@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import fs from "fs";
+import path from "path";
 import { getDemoThemeData } from "@/lib/demoRegistry";
 
 export const dynamic = "force-dynamic";
@@ -20,12 +22,21 @@ export default async function DemoGuestMemoriesGalleryPage({ params }: PageProps
   const coupleName = `${demo.groomName} & ${demo.brideName}`;
   const invitationUrl = `/demo/${demo.themeId}`;
 
+  // Local theme highlight resolution (use memory_0X if exists, otherwise fallback to gallery_0X)
+  const demoDir = path.join(process.cwd(), "public", "demo", demo.themeId);
+  const getMediaUrl = (num: string) => {
+    if (fs.existsSync(path.join(demoDir, `memory_${num}.webp`))) {
+      return `/demo/${demo.themeId}/memory_${num}.webp`;
+    }
+    return `/demo/${demo.themeId}/gallery_${num}.webp`;
+  };
+
   const sampleMemories = [
     {
       id: "mem-1",
       senderName: "Budi Santoso",
-      message: "Selamat berbahagia untuk Raditya & Alana! Sukses dan berkah selalu pernikahannya 🎉",
-      mediaUrl: `/demo/${demo.themeId}/memory_01.webp`,
+      message: `Selamat berbahagia untuk ${coupleName}! Sukses dan berkah selalu pernikahannya 🎉`,
+      mediaUrl: getMediaUrl("01"),
       fallbackUrl: `/demo/${demo.themeId}/gallery_01.webp`,
       mediaType: "IMAGE",
       createdAt: "2026-11-14T10:30:00Z",
@@ -34,7 +45,7 @@ export default async function DemoGuestMemoriesGalleryPage({ params }: PageProps
       id: "mem-2",
       senderName: "Sahabat SMA (Dimas)",
       message: "Happy wedding bro! Akhirnya berlabuh di pelabuhan terakhir 🥂",
-      mediaUrl: `/demo/${demo.themeId}/memory_02.webp`,
+      mediaUrl: getMediaUrl("02"),
       fallbackUrl: `/demo/${demo.themeId}/gallery_02.webp`,
       mediaType: "IMAGE",
       createdAt: "2026-11-14T11:15:00Z",
@@ -42,8 +53,8 @@ export default async function DemoGuestMemoriesGalleryPage({ params }: PageProps
     {
       id: "mem-3",
       senderName: "Rina & Teman Kuliah",
-      message: "Cantik banget Alana hari ini! Sakinah mawaddah warahmah yaa ✨",
-      mediaUrl: `/demo/${demo.themeId}/memory_03.webp`,
+      message: `Cantik banget ${demo.brideName} hari ini! Sakinah mawaddah warahmah yaa ✨`,
+      mediaUrl: getMediaUrl("03"),
       fallbackUrl: `/demo/${demo.themeId}/gallery_03.webp`,
       mediaType: "IMAGE",
       createdAt: "2026-11-14T12:00:00Z",
@@ -52,7 +63,7 @@ export default async function DemoGuestMemoriesGalleryPage({ params }: PageProps
       id: "mem-4",
       senderName: "Keluarga Besar Tante Maya",
       message: "Selamat menempuh hidup baru! Semoga rukun dan bahagia selalu.",
-      mediaUrl: `/demo/${demo.themeId}/memory_04.webp`,
+      mediaUrl: getMediaUrl("04"),
       fallbackUrl: `/demo/${demo.themeId}/gallery_04.webp`,
       mediaType: "IMAGE",
       createdAt: "2026-11-14T13:45:00Z",

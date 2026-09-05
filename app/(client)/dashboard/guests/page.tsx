@@ -121,7 +121,7 @@ export default function GuestsPage() {
   }, []);
 
   useEffect(() => {
-    fetch(`/api/client/invitations`)
+    fetch(`/api/client/invitations`, { cache: "no-store" })
       .then((res) => res.json())
       .then((invs: any[]) => {
         if (Array.isArray(invs) && invs.length > 0) {

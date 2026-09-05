@@ -22,7 +22,7 @@
 
 <script>
 (function() {
-  const isAutoplay = new URLSearchParams(window.location.search).get('autoplay') === '1' || (window !== window.top);
+  const isAutoplay = new URLSearchParams(window.location.search).get('autoplay') === '1' || (window !== window.top && new URLSearchParams(window.location.search).get('mode') !== 'edit');
   if (isAutoplay) {
     window.__DISABLE_AUDIO__ = true;
     try {
@@ -46,9 +46,35 @@
 </script>
 
 <link rel="stylesheet" href="/css/modules.css">
+<style>
+      .site-footer, footer, footer#footer {
+        background-image: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 38%, rgba(0,0,0,0.55) 65%, rgba(0,0,0,0.92) 100%), url('/demo/aurelia/footer.webp') !important;
+        background-size: cover !important;
+        background-position: center bottom !important;
+        color: #fff !important;
+        border-top: none !important;
+        position: relative;
+      }
+      .site-footer::before, footer::before, footer#footer::before {
+        display: none !important;
+      }
+      .site-footer *, footer *, footer#footer * {
+        color: #fff !important;
+      }
+    </style>
+<style>
+
+      .slide-opening#home, section#home.slide-opening, section#home, .sec-hero-slideshow#home {
+        background-image: linear-gradient(to bottom, rgba(7,7,9,0.55) 0%, rgba(7,7,9,0.35) 40%, rgba(7,7,9,0.80) 100%), url('/demo/aurelia/home.webp') !important;
+        background-size: cover !important;
+        background-position: center center !important;
+        background-repeat: no-repeat !important;
+      }
+      
+</style>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>The Wedding of Arjuna &amp; Aurelia </title>
+  <title>The Wedding of Yus &amp; Uppa </title>
   <!-- 100% Self-Hosted Local Google Fonts (Zero External Latency) -->
   <link rel="stylesheet" href="/fonts/fonts.css">
   <style>
@@ -186,11 +212,15 @@
     }
 
     .btn-buka {
-      display: inline-block;
-      padding: 0.9rem 2.8rem;
-      border: 1.5px solid rgba(255, 255, 255, 0.85);
-      background: rgba(0, 0, 0, 0.25);
-      backdrop-filter: blur(8px);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.85rem 2.6rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       color: #ffffff;
       font-size: 0.72rem;
       letter-spacing: 0.25em;
@@ -198,15 +228,27 @@
       cursor: pointer;
       font-family: 'Plus Jakarta Sans', sans-serif;
       font-weight: 500;
-      transition: all 0.35s ease;
-      width: 100%;
-      max-width: 290px;
-      margin-top: 0.5rem;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      width: auto;
+      min-width: 220px;
+      max-width: 280px;
+      margin-top: 0.8rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+      outline: none;
+      text-decoration: none;
     }
 
     .btn-buka:hover {
-      background: #ffffff;
-      color: #070709;
+      background: rgba(255, 255, 255, 0.16);
+      border-color: rgba(255, 255, 255, 0.65);
+      color: #ffffff;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), 0 0 16px rgba(255, 255, 255, 0.12);
+      transform: translateY(-2px);
+    }
+
+    .btn-buka:active {
+      transform: translateY(0);
+      background: rgba(255, 255, 255, 0.12);
     }
 
     .btn-qr-ghost {
@@ -290,6 +332,20 @@
       font-weight: 400;
     }
 
+    /* FIXED PARALLAX BACKGROUND LAYER (GLOBAL BG) */
+    .fixed-bg-layer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      z-index: 5;
+      background-position: center;
+      background-size: cover;
+      background-repeat: no-repeat;
+      pointer-events: none;
+    }
+
     /* RIGHT SCROLLABLE PANEL */
     .right-panel {
       position: relative;
@@ -329,8 +385,9 @@
     }
 
     .opening-center {
-      margin: auto 0;
-      padding: 2rem 0;
+      margin-top: auto;
+      margin-bottom: 1.5rem;
+      padding: 0.5rem 0;
     }
 
     .opening-tagline {
@@ -403,72 +460,254 @@
       }
     }
 
-    /* SLIDE 2 & 3: COUPLE PROFILES */
-    .slide-couple {
+    /* LUXENARY EDITORIAL MOTION SYSTEM (QUIET LUXURY) */
+    .lux-reveal {
+      opacity: 0;
+      transform: translate3d(0, 26px, 0);
+      transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1), transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: opacity, transform;
+    }
+
+    .lux-reveal.revealed {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+
+    .lux-reveal-top {
+      opacity: 0;
+      transform: translate3d(0, -20px, 0);
+      transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1), transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: opacity, transform;
+    }
+
+    .lux-reveal-top.revealed {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+
+    .lux-reveal-left {
+      opacity: 0;
+      transform: translate3d(-24px, 0, 0);
+      transition: opacity 0.95s cubic-bezier(0.16, 1, 0.3, 1), transform 0.95s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: opacity, transform;
+    }
+
+    .lux-reveal-left.revealed {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+
+    .lux-reveal-right {
+      opacity: 0;
+      transform: translate3d(24px, 0, 0);
+      transition: opacity 0.95s cubic-bezier(0.16, 1, 0.3, 1), transform 0.95s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: opacity, transform;
+    }
+
+    .lux-reveal-right.revealed {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+
+    .delay-1 { transition-delay: 0.12s; }
+    .delay-2 { transition-delay: 0.24s; }
+    .delay-3 { transition-delay: 0.38s; }
+    .delay-4 { transition-delay: 0.52s; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .lux-reveal,
+      .lux-reveal-top,
+      .lux-reveal-left,
+      .lux-reveal-right {
+        opacity: 1 !important;
+        transform: none !important;
+        transition: none !important;
+      }
+    }
+
+    /* SLIDE 2: COUPLE PROFILE DUO (100vh SINGLE SCREEN DIAGONAL) */
+    .slide-couple-duo {
       position: relative;
       width: 100%;
       min-height: 100vh;
       min-height: 100dvh;
-      background-size: cover;
-      background-position: center;
       display: flex;
       flex-direction: column;
-      justify-content: flex-end;
+      justify-content: space-between;
       overflow: hidden;
-      padding: 3rem 2.2rem 4.5rem;
+      padding: 3.5rem 1.8rem 3rem;
+      background: linear-gradient(180deg, rgba(7, 7, 9, 0.88) 0%, rgba(12, 12, 16, 0.80) 50%, rgba(7, 7, 9, 0.94) 100%);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
     }
 
-    .slide-couple::before {
-      content: '';
+    .couple-anchor {
       position: absolute;
-      inset: 0;
-      background: linear-gradient(to top, rgba(7, 7, 9, 0.92) 0%, rgba(7, 7, 9, 0.25) 45%, transparent 100%);
-      z-index: 1;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      visibility: hidden;
     }
 
-    .couple-content {
-      position: relative;
-      z-index: 2;
-      max-width: 380px;
+    .couple-duo-header {
+      text-align: center;
+      width: 100%;
+      margin-bottom: 0.5rem;
     }
 
-    .couple-content.right {
-      margin-left: auto;
-      text-align: right;
-    }
-
-    .couple-role {
+    .couple-duo-eyebrow {
       font-size: 0.62rem;
       letter-spacing: 0.32em;
-      text-transform: uppercase;
-      color: rgba(255, 255, 255, 0.7);
-      display: block;
-      margin-bottom: 0.35rem;
-    }
-
-    .couple-name {
-      font-size: clamp(2.4rem, 8vw, 3.6rem);
-      color: #fff;
-      line-height: 1.05;
-      margin-bottom: 0.5rem;
-      font-weight: 300;
-    }
-
-    .couple-label {
-      font-size: 0.58rem;
-      letter-spacing: 0.22em;
       text-transform: uppercase;
       color: rgba(255, 255, 255, 0.6);
       display: block;
       margin-bottom: 0.25rem;
+    }
+
+    .couple-duo-title {
+      font-size: clamp(1.4rem, 4.5vw, 1.8rem);
+      color: #ffffff;
+      font-weight: 300;
+      letter-spacing: 0.06em;
+      margin: 0;
+    }
+
+    .couple-duo-card {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      gap: 1.1rem;
+      position: relative;
+      z-index: 2;
+    }
+
+    .couple-duo-card.first-host {
+      margin-right: auto;
+      justify-content: flex-start;
+    }
+
+    .couple-duo-card.second-host {
+      margin-left: auto;
+      justify-content: flex-end;
+    }
+
+    .couple-duo-avatar-wrap {
+      width: 96px;
+      height: 128px;
+      flex-shrink: 0;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55);
+      background: rgba(255, 255, 255, 0.05);
+      position: relative;
+    }
+
+    .couple-duo-avatar {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .couple-duo-card:hover .couple-duo-avatar {
+      transform: scale(1.05);
+    }
+
+    .couple-duo-info {
+      flex: 1;
+      min-width: 0;
+      text-align: left;
+    }
+
+    .couple-duo-info.right {
+      text-align: right;
+    }
+
+    .couple-duo-name {
+      font-size: clamp(1.25rem, 3.8vw, 1.6rem);
+      color: #ffffff;
+      line-height: 1.15;
+      margin-bottom: 0.35rem;
+      font-weight: 300;
+      word-break: break-word;
+    }
+
+    .couple-role {
+      font-size: 0.6rem;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.65);
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+
+    .couple-label {
+      font-size: 0.55rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.55);
+      display: block;
+      margin-bottom: 0.15rem;
       font-weight: 600;
     }
 
     .couple-parents {
+      font-size: 0.74rem;
+      color: rgba(255, 255, 255, 0.78);
+      line-height: 1.45;
+      margin-bottom: 0.65rem;
+      word-break: break-word;
+    }
+
+    /* FLOATING MONOGRAM / AMPERSAND CONNECTOR */
+    .couple-duo-connector {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      margin: 0.6rem 0;
+      position: relative;
+      z-index: 2;
+    }
+
+    .couple-duo-connector::before,
+    .couple-duo-connector::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18), transparent);
+    }
+
+    .monogram-badge {
+      padding: 6px 14px;
+      border-radius: 50px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      font-size: 0.85rem;
+      color: #ffffff;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+      margin: 0 0.8rem;
+    }
+
+    .mono-initial {
+      font-family: 'Playfair Display', serif;
+      font-weight: 400;
+      letter-spacing: 0.08em;
+    }
+
+    .mono-amp {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      color: rgba(255, 255, 255, 0.65);
       font-size: 0.78rem;
-      color: rgba(255, 255, 255, 0.8);
-      line-height: 1.55;
-      margin-bottom: 1.1rem;
     }
 
     .btn-ig-pill {
@@ -1126,7 +1365,7 @@
       box-sizing: border-box;
       text-align: center;
       padding: 4rem 1.5rem 6.5rem;
-      background: #050507;
+      background-color: #050507;
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
@@ -1139,14 +1378,6 @@
     .site-footer.has-closing-photo {
       justify-content: flex-end;
       align-items: center;
-    }
-    .site-footer.has-closing-photo::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.55) 50%, rgba(0,0,0,0.92) 100%);
-      pointer-events: none;
-      z-index: 1;
     }
     .site-footer .closing-content {
       position: relative;
@@ -1172,9 +1403,10 @@
       position: fixed;
       bottom: 18px;
       left: 50%;
-      transform: translateX(-50%);
+      transform: translate3d(-50%, 0, 0);
       background: rgba(15, 15, 18, 0.92);
       backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       border: 1px solid rgba(255, 255, 255, 0.15);
       border-radius: 50px;
       padding: 6px 14px;
@@ -1184,6 +1416,14 @@
       box-shadow: 0 10px 35px rgba(0, 0, 0, 0.5);
       z-index: 80;
       max-width: 92vw;
+      transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: transform, opacity;
+    }
+
+    .bottom-dock.dock-hidden {
+      transform: translate3d(-50%, calc(100% + 32px), 0);
+      opacity: 0;
+      pointer-events: none;
     }
 
     .dock-a {
@@ -1226,6 +1466,15 @@
       z-index: 100;
       cursor: pointer;
       backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: transform, opacity;
+    }
+
+    .music-fab.fab-hidden {
+      transform: translateY(-80px);
+      opacity: 0;
+      pointer-events: none;
     }
 
     .music-fab.playing svg {
@@ -1286,16 +1535,48 @@
     @media (min-width: 900px) {
       .left-hero {
         display: block;
+        width: calc(100% - 460px);
+      }
+
+      .cover-screen {
+        width: 100%;
+        left: 0;
+        right: 0;
+        padding: 4rem 2.5rem;
+      }
+
+      .cover-top {
+        max-width: 1100px;
+        margin: 0 auto;
+      }
+
+      .cover-center {
+        max-width: 850px;
+        margin: auto;
+      }
+
+      .cover-bottom {
+        max-width: 520px;
+        margin: 0 auto;
+      }
+
+      .cover-subtitle {
+        max-width: 460px;
+      }
+
+      .fixed-bg-layer {
+        left: calc(100% - 460px);
+        width: 460px;
       }
 
       .right-panel {
-        margin-left: 55%;
-        width: 45%;
-        min-width: 420px;
+        margin-left: calc(100% - 460px);
+        width: 460px;
+        min-width: 0;
       }
 
       .bottom-dock {
-        left: calc(55% + 22.5%);
+        left: calc(100% - 230px);
       }
 
       .music-fab {
@@ -1305,15 +1586,42 @@
       .sec-flow,
       .sec-journey {
         max-width: 100%;
-        padding: 6rem 3.5rem;
+        padding: 5.5rem 1.8rem;
       }
 
       .slide-opening {
-        padding: 4.5rem 3.5rem 4rem;
+        padding: 4.5rem 1.8rem 4rem;
       }
 
-      .slide-couple {
-        padding: 4rem 3.5rem 5rem;
+      .slide-couple,
+      .slide-couple-duo {
+        padding: 4rem 1.8rem 3.5rem;
+      }
+
+      .cover-names {
+        font-size: clamp(3.2rem, 5vw, 5.5rem) !important;
+        overflow-wrap: break-word !important;
+      }
+
+      .opening-title {
+        font-size: clamp(2.0rem, 2.4rem, 2.8rem) !important;
+        overflow-wrap: break-word !important;
+      }
+
+      .couple-name {
+        font-size: clamp(1.8rem, 2.2rem, 2.4rem) !important;
+        overflow-wrap: break-word !important;
+      }
+
+      .sec-main-title,
+      .sec-heading {
+        font-size: clamp(1.75rem, 2.1rem, 2.3rem) !important;
+        overflow-wrap: break-word !important;
+        word-break: break-word !important;
+      }
+
+      .cd-val {
+        font-size: clamp(1.8rem, 2.2rem, 2.6rem) !important;
       }
     }
   </style>
@@ -1343,7 +1651,7 @@
   <div class="left-hero" style="background-image: url('/demo/aurelia/hero.webp');">
     <div class="left-hero-content">
       <span class="left-hero-eyebrow">ROYAL LUXURY CELEBRATION</span>
-      <h1 class="serif left-hero-names">Arjuna <em>&amp;</em> Aurelia</h1>
+      <h1 class="serif left-hero-names">Yus <em>&amp;</em> Uppa</h1>
       <p class="left-hero-date">Minggu, 25 Oktober 2026</p>
     </div>
   </div>
@@ -1358,7 +1666,7 @@
 
     <div class="cover-center">
       <span class="cover-tagline">ROYAL LUXURY CELEBRATION</span>
-      <h1 class="cover-names serif">Arjuna <em>&amp;</em> Aurelia</h1>
+      <h1 class="cover-names serif">Yus <em>&amp;</em> Uppa</h1>
     </div>
 
     <div class="cover-bottom">
@@ -1367,27 +1675,29 @@
       <p class="cover-subtitle" data-lux-field="customLabels.coverSubtitle">Tanpa mengurangi rasa hormat, kami mengundang Anda untuk menghadiri acara pernikahan kami.</p>
       <button class="btn-buka" onclick="openInvitation()"
         data-lux-field="customLabels.openBtn">Buka Undangan</button>
-      <button type="button" class="btn-open-qr-cover" onclick="luxOpenAccessModal()" style="display:inline-block; margin-top:20px; padding:10px 24px; background:#111; color:#fff; border:none; border-radius:30px; font-size:12px; font-weight:600; letter-spacing:1px; cursor:pointer; box-shadow:0 4px 15px rgba(0,0,0,0.2); transition:transform 0.2s ease;">Kartu Akses QR</button>
     </div>
   </div>
+
+  <!-- FIXED PARALLAX BACKGROUND LAYER (GLOBAL BG) -->
+  <div class="fixed-bg-layer" style="background-image: linear-gradient(to bottom, rgba(7,7,9,0.55) 0%, rgba(7,7,9,0.40) 35%, rgba(7,7,9,0.82) 70%, rgba(7,7,9,0.94) 100%), url('/demo/aurelia/background.webp');"></div>
 
   <!-- RIGHT SCROLLABLE PANEL -->
   <div class="right-panel" id="rightPanel">
 
     <!-- 1. SLIDE 1: OPENING VIEW (100vh FULLSCREEN) -->
     <section class="slide-opening" id="home"
-      style="background-image: linear-gradient(to bottom, rgba(7,7,9,0.60) 0%, rgba(7,7,9,0.45) 40%, rgba(7,7,9,0.88) 100%), url('/demo/aurelia/background.webp');">
-      <div class="opening-top-date">
+      style="background-image: linear-gradient(to bottom, rgba(7,7,9,0.60) 0%, rgba(7,7,9,0.45) 40%, rgba(7,7,9,0.88) 100%), url('/demo/aurelia/home.webp');">
+      <div class="opening-top-date lux-reveal-top">
         <span>25/10</span>
         <span>2026</span>
       </div>
 
       <div class="opening-center">
-        <span class="opening-tagline">ROYAL LUXURY CELEBRATION</span>
-        <h1 class="opening-title serif">Arjuna <em>&amp;</em> Aurelia</h1>
+        <span class="opening-tagline lux-reveal delay-1">ROYAL LUXURY CELEBRATION</span>
+        <h1 class="opening-title serif lux-reveal delay-2">Yus <em>&amp;</em> Uppa</h1>
       </div>
 
-      <div class="opening-bottom">
+      <div class="opening-bottom lux-reveal delay-3">
         <p class="opening-quote-text">"Di mana cinta sejati bersemi, di sanalah berkah dan keabadian Tuhan menyinari setiap langkah."</p>
         <cite class="opening-quote-ref">LUXURY WEDDING ANTHOLOGY</cite>
         <div class="scroll-indicator">
@@ -1398,52 +1708,78 @@
       </div>
     </section>
 
-    <!-- 2. SLIDE 2: HOST 1 (100vh FULL PHOTO) -->
-    <section class="slide-couple" id="host1" style="background-image: url('/demo/aurelia/groom.webp');">
-      <div class="couple-content right">
-        <span class="couple-role">Mempelai Pria</span>
-        <h2 class="couple-name serif">Arjuna Wibowo, S.E., M.B.A.</h2>
-        <span class="couple-label">Putra Dari</span>
-        <p class="couple-parents">Putra Sulung dari Bpk. Ir. Gunawan Wibowo & Ibu Cynthia Wibowo</p>
-        <a href="https://instagram.com/arjuna.wibowo" target="_blank" class="btn-ig-pill">
-          <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
-            <path
-              d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
-          </svg>
-          @arjuna.wibowo
-        </a>
-      </div>
-    </section>
+    <!-- 2. SLIDE 2: COUPLE PROFILE DUO (100vh SINGLE SCREEN DIAGONAL) -->
+    <section class="slide-couple-duo" id="couple">
+      <span id="host1" class="couple-anchor"></span>
+      <span id="host2" class="couple-anchor"></span>
 
-    <!-- 3. SLIDE 3: HOST 2 (100vh FULL PHOTO) -->
-    <section class="slide-couple" id="host2" style="background-image: url('/demo/aurelia/bride.webp');">
-      <div class="couple-content">
-        <span class="couple-role">Mempelai Wanita</span>
-        <h2 class="couple-name serif">Aurelia Geraldine, S.Sn.</h2>
-        <span class="couple-label">Putri Dari</span>
-        <p class="couple-parents">Putri Bungsu dari Bpk. Henry Geraldine & Ibu Melani Geraldine</p>
-        <a href="https://instagram.com/aureliageraldine" target="_blank" class="btn-ig-pill">
-          <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
-            <path
-              d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
-          </svg>
-          @aureliageraldine
-        </a>
+      <div class="couple-duo-header lux-reveal">
+        <span class="couple-duo-eyebrow" data-lux-field="customLabels.coupleSub">THE HAPPY COUPLE</span>
+        <h2 class="couple-duo-title serif" data-lux-field="customLabels.coupleTitle">Groom &amp; Bride</h2>
+      </div>
+
+      <!-- FIRST HOST: TOP LEFT -->
+      <div class="couple-duo-card first-host lux-reveal-left delay-1">
+        <div class="couple-duo-avatar-wrap">
+          <img src="/demo/aurelia/groom.webp" alt="Yustandi" class="couple-duo-avatar" loading="lazy" />
+        </div>
+        <div class="couple-duo-info">
+          <span class="couple-role">Mempelai Pria</span>
+          <h3 class="couple-duo-name serif">Yustandi</h3>
+          <span class="couple-label">Putra Dari</span>
+          <p class="couple-parents">Putra Sulung dari Bpk. Ir. Gunawan Wibowo & Ibu Cynthia Wibowo</p>
+          <a href="https://instagram.com/Yustandi" target="_blank" class="btn-ig-pill">
+            <svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24">
+              <path
+                d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+            </svg>
+            @Yustandi
+          </a>
+        </div>
+      </div>
+
+      <!-- FLOATING MONOGRAM / AMPERSAND CONNECTOR (CENTER) -->
+      <div class="couple-duo-connector lux-reveal delay-2">
+        <div class="monogram-badge">
+          <span class="mono-initial" id="duoInit1">Yus</span>
+          <em class="mono-amp serif">&amp;</em>
+          <span class="mono-initial" id="duoInit2">Uppa</span>
+        </div>
+      </div>
+
+      <!-- SECOND HOST: BOTTOM RIGHT -->
+      <div class="couple-duo-card second-host lux-reveal-right delay-3">
+        <div class="couple-duo-info right">
+          <span class="couple-role">Mempelai Wanita</span>
+          <h3 class="couple-duo-name serif">Ulfa</h3>
+          <span class="couple-label">Putri Dari</span>
+          <p class="couple-parents">Putri Bungsu dari Bpk. Henry Geraldine & Ibu Melani Geraldine</p>
+          <a href="https://instagram.com/Ulfa" target="_blank" class="btn-ig-pill">
+            <svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24">
+              <path
+                d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+            </svg>
+            @Ulfa
+          </a>
+        </div>
+        <div class="couple-duo-avatar-wrap">
+          <img src="/demo/aurelia/bride.webp" alt="Ulfa" class="couple-duo-avatar" loading="lazy" />
+        </div>
       </div>
     </section>
 
     <!-- 4. SECTION: SAVE THE DATE & EVENTS -->
     <section class="sec-flow" id="event">
-      <h2 class="sec-main-title serif">SAVE THE DATE</h2>
-      <p class="event-full-date">Minggu, 25 Oktober 2026</p>
+      <h2 class="sec-main-title serif lux-reveal">SAVE THE DATE</h2>
+      <p class="event-full-date lux-reveal delay-1">Minggu, 25 Oktober 2026</p>
 
-      <div class="countdown-clean">
+      <div class="countdown-clean lux-reveal delay-2">
         <div class="cd-item"><span class="cd-val" id="cdDays">00</span><span class="cd-txt">HARI</span></div>
         <div class="cd-item"><span class="cd-val" id="cdHours">00</span><span class="cd-txt">JAM</span></div>
         <div class="cd-item"><span class="cd-val" id="cdMins">00</span><span class="cd-txt">MENIT</span></div>
         <div class="cd-item"><span class="cd-val" id="cdSecs">00</span><span class="cd-txt">DETIK</span></div>
       </div>
-      <a href="https://www.google.com/calendar/render?action=TEMPLATE&text=The%20Wedding%20of%20Arjuna%20%26%20Aurelia&dates=20261025T010000Z/20261025T140000Z&location=Katedral%20St.%20Maria%20Diangkat%20ke%20Surga" target="_blank" class="btn-outline-box">SIMPAN TANGGAL</a>
+      <a href="https://www.google.com/calendar/render?action=TEMPLATE&text=The%20Wedding%20of%20Yus%20%26%20Uppa&dates=20261025T010000Z/20261025T140000Z&location=Katedral%20St.%20Maria%20Diangkat%20ke%20Surga" target="_blank" class="btn-outline-box lux-reveal delay-3">SIMPAN TANGGAL</a>
 
       <div class="events-stack">
         
@@ -1501,7 +1837,7 @@
       <p class="sec-sub">Minggu, 25 Oktober 2026 • 08.00 – Selesai</p>
       <p class="sec-sub" style="margin-top:0.4rem;">Bagi keluarga &amp; sahabat yang menyaksikan dari jauh, bergabunglah melalui siaran daring:</p>
       <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:0.8rem; margin-top:1.5rem;">
-        <a href="https://instagram.com/aureliageraldine" target="_blank" class="btn-map-outline">INSTAGRAM LIVE ↗</a>
+        <a href="https://instagram.com/Ulfa" target="_blank" class="btn-map-outline">INSTAGRAM LIVE ↗</a>
         <a href="https://youtube.com" target="_blank" class="btn-map-outline">YOUTUBE LIVE ↗</a>
       </div>
     </section>
@@ -1530,7 +1866,7 @@
         </div>
         <div class="journey-footer">
           <div class="jf-line"></div>
-          <span class="jf-signature serif">Arjuna &amp; Aurelia</span>
+          <span class="jf-signature serif">Yus &amp; Uppa</span>
         </div>
       </div>
     </section>
@@ -1757,7 +2093,7 @@
         </p>
 
         <!-- 1. TOMBOL UPLOAD MOMEN (DIRECT LINK) -->
-        <a href="/demo/moment" style="display: block; width: 100%; max-width: 360px; margin: 0 auto 1.8rem auto; padding: 14px 20px; border-radius: 50px; background: #ffffff; color: #000000; font-weight: 700; font-size: 0.9rem; letter-spacing: 0.05em; text-align: center; text-decoration: none; box-shadow: 0 4px 15px rgba(255,255,255,0.18); transition: transform 0.15s ease;">
+        <a href="/demo/aurelia/sharemoment" style="display: block; width: 100%; max-width: 360px; margin: 0 auto 1.8rem auto; padding: 14px 20px; border-radius: 50px; background: #ffffff; color: #000000; font-weight: 700; font-size: 0.9rem; letter-spacing: 0.05em; text-align: center; text-decoration: none; box-shadow: 0 4px 15px rgba(255,255,255,0.18); transition: transform 0.15s ease;">
           BAGIKAN FOTO MOMEN ANDA
         </a>
 
@@ -1775,6 +2111,28 @@
           <div class="story-circles-track-wrapper" style="overflow: hidden; width: 100%; position: relative; mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent); -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);">
             <div class="story-circles-track" style="display: flex; gap: 14px; width: max-content; margin: 0 auto; animation: luxStoryLoop 24s linear infinite;">
               
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/aurelia/memory_01.webp', 'Budi Santoso')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/aurelia/memory_01.webp" onerror="this.onerror=null;this.src='/demo/aurelia/gallery_01.webp';" alt="Budi Santoso" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Budi
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/aurelia/gallery_08.webp', 'Eko & Nia')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/aurelia/gallery_08.webp" onerror="this.onerror=null;this.src='/demo/aurelia/bride.webp';" alt="Eko & Nia" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Eko
+      </span>
+    </div>
+  
     <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/aurelia/memory_02.webp', 'Sahabat SMA')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
@@ -1794,17 +2152,6 @@
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
         Dimas
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/aurelia/memory_01.webp', 'Budi Santoso')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/aurelia/memory_01.webp" onerror="this.onerror=null;this.src='/demo/aurelia/gallery_01.webp';" alt="Budi Santoso" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Budi
       </span>
     </div>
   
@@ -1849,21 +2196,32 @@
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
         Alumni
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/aurelia/gallery_08.webp', 'Eko & Nia')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/aurelia/gallery_08.webp" onerror="this.onerror=null;this.src='/demo/aurelia/bride.webp';" alt="Eko & Nia" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Eko
       </span>
     </div>
   
               
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/aurelia/memory_01.webp', 'Budi Santoso')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/aurelia/memory_01.webp" onerror="this.onerror=null;this.src='/demo/aurelia/gallery_01.webp';" alt="Budi Santoso" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Budi
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/aurelia/gallery_08.webp', 'Eko & Nia')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/aurelia/gallery_08.webp" onerror="this.onerror=null;this.src='/demo/aurelia/bride.webp';" alt="Eko & Nia" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Eko
+      </span>
+    </div>
+  
     <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/aurelia/memory_02.webp', 'Sahabat SMA')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
@@ -1883,17 +2241,6 @@
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
         Dimas
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/aurelia/memory_01.webp', 'Budi Santoso')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/aurelia/memory_01.webp" onerror="this.onerror=null;this.src='/demo/aurelia/gallery_01.webp';" alt="Budi Santoso" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Budi
       </span>
     </div>
   
@@ -1938,17 +2285,6 @@
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
         Alumni
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/aurelia/gallery_08.webp', 'Eko & Nia')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/aurelia/gallery_08.webp" onerror="this.onerror=null;this.src='/demo/aurelia/bride.webp';" alt="Eko & Nia" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Eko
       </span>
     </div>
   
@@ -1956,9 +2292,9 @@
           </div>
         </div>
 
-        <!-- 3. TOMBOL DIRECT KE HALAMAN GALERI WEB (galery.js) -->
+        <!-- 3. TOMBOL DIRECT KE HALAMAN GALERI WEB (memories) -->
         <div style="text-align: center;">
-          <a href="/demo/aurelia/galery" class="btn-outline-box" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; font-size: 12px; font-weight: 700; border-radius: 50px; text-decoration: none; border: 1px solid currentColor; color: inherit; transition: all 0.2s ease;">
+          <a href="/demo/aurelia/memories" class="btn-outline-box btn-memories-gallery" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 28px; font-size: 12px; font-weight: 700; border-radius: 50px; text-decoration: none; border: 1px solid currentColor; letter-spacing: 0.08em; transition: all 0.25s ease;">
             <span>✨ BUKA GALERI MOMEN LENGKAP</span>
             <span style="font-size: 14px;">↗</span>
           </a>
@@ -1980,6 +2316,16 @@
       }
       .story-circles-track:hover {
         animation-play-state: paused !important;
+      }
+      .btn-memories-gallery {
+        color: inherit;
+      }
+      .btn-memories-gallery:hover {
+        background: #ffffff !important;
+        color: #070709 !important;
+        border-color: #ffffff !important;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(255, 255, 255, 0.25);
       }
     </style>
 
@@ -2111,7 +2457,7 @@
         
     <div class="bank-card">
       <span class="bank-label">BCA Prioritas</span>
-      <span class="bank-owner">a.n Arjuna Wibowo</span>
+      <span class="bank-owner">a.n Yustandi</span>
       <div class="bank-row">
         <span class="bank-number">0081293847</span>
         <button class="btn-copy" onclick="copyText('0081293847')">Salin</button>
@@ -2180,7 +2526,7 @@
         <span class="wish-name">Budi Santoso &amp; Rekan Kerja</span>
         <span style="font-size:0.65rem; padding:2px 8px; border-radius:50px; background:rgba(74,222,128,0.15); color:#4ade80; font-weight:600;">Hadir (2 Orang)</span>
       </div>
-      <p class="wish-msg">“Selamat berbahagia untuk Arjuna &amp; Aurelia! Semoga menjadi keluarga yang senantiasa dipenuhi rahmat dan cinta abadi.”</p>
+      <p class="wish-msg">“Selamat berbahagia untuk Yus &amp; Uppa! Semoga menjadi keluarga yang senantiasa dipenuhi rahmat dan cinta abadi.”</p>
     </div>
     <div class="wish-item">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
@@ -2203,7 +2549,7 @@
       
       <div class="access-pass-card">
         <span class="pass-tagline">ROYAL LUXURY CELEBRATION</span>
-        <h3 class="pass-names serif">Arjuna <em>&amp;</em> Aurelia</h3>
+        <h3 class="pass-names serif">Yus <em>&amp;</em> Uppa</h3>
         <p class="pass-date">Minggu, 25 Oktober 2026</p>
         
         <div class="pass-qr-wrapper">
@@ -2237,13 +2583,13 @@
   
 
     <!-- 15. FOOTER / THANK YOU (Adaptive Full-Height 100vh) -->
-    <footer class="site-footer no-closing-photo" id="footer" style="">
+    <footer class="site-footer has-closing-photo" id="footer" style="background-image: url('/demo/aurelia/footer.webp');">
       <div class="closing-content">
         <p style="font-size:0.85rem; color:rgba(255,255,255,0.75); line-height:1.7; margin-bottom:1.5rem;">
           Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu.
         </p>
         <p style="font-size:0.75rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--accent); font-weight:600; margin-bottom:0.5rem;">Kami Yang Berbahagia,</p>
-        <h2 class="footer-name serif" style="font-size:2.4rem; margin-bottom:0.4rem;">Arjuna <em>&amp;</em> Aurelia</h2>
+        <h2 class="footer-name serif" style="font-size:2.4rem; margin-bottom:0.4rem;">Yus <em>&amp;</em> Uppa</h2>
         <p class="footer-sub" style="font-size:0.85rem; opacity:0.8;">Minggu, 25 Oktober 2026</p>
       </div>
     </footer>
@@ -2258,7 +2604,7 @@
       </svg>
       <span>Home</span>
     </a>
-    <a href="#host1" class="dock-a">
+    <a href="#couple" class="dock-a">
       <svg class="dock-ico" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round"
           d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
@@ -2351,6 +2697,17 @@
       const cover = document.getElementById('coverScreen');
       if (cover) cover.classList.add('hidden');
       playAudio();
+      const dock = document.querySelector('.bottom-dock');
+      if (dock) dock.classList.remove('dock-hidden');
+      const musicFab = document.querySelector('.music-fab');
+      if (musicFab) musicFab.classList.remove('fab-hidden');
+
+      // Trigger entrance reveal for home section elements
+      setTimeout(() => {
+        document.querySelectorAll('#home .lux-reveal, #home .lux-reveal-top').forEach(el => {
+          el.classList.add('revealed');
+        });
+      }, 180);
     }
 
     function openModal() {
@@ -2490,6 +2847,123 @@
       }
     }
 
+    // SMART AUTO-HIDE DOCK & MUSIC PLAYER ON SCROLL DOWN, REVEAL ON SCROLL UP
+    (function initSmartDock() {
+      const dock = document.querySelector('.bottom-dock');
+      const musicFab = document.querySelector('.music-fab');
+      if (!dock && !musicFab) return;
+
+      let lastScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+      let ticking = false;
+      const SCROLL_THRESHOLD = 12; // Minimum scroll delta before state changes
+      const TOP_REVEAL_ZONE = 70;  // Always visible at the top
+
+      function setVisible(visible) {
+        if (visible) {
+          if (dock) dock.classList.remove('dock-hidden');
+          if (musicFab) musicFab.classList.remove('fab-hidden');
+        } else {
+          if (dock) dock.classList.add('dock-hidden');
+          if (musicFab) musicFab.classList.add('fab-hidden');
+        }
+      }
+
+      function updateDock() {
+        const currentScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+        const windowHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+        const docHeight = Math.max(
+          document.body.scrollHeight,
+          document.documentElement.scrollHeight,
+          document.body.offsetHeight,
+          document.documentElement.offsetHeight
+        );
+        const isNearBottom = (currentScrollY + windowHeight) >= (docHeight - 60);
+
+        // Always show near top or at the very bottom
+        if (currentScrollY <= TOP_REVEAL_ZONE || isNearBottom) {
+          setVisible(true);
+          lastScrollY = currentScrollY;
+          ticking = false;
+          return;
+        }
+
+        const delta = currentScrollY - lastScrollY;
+
+        if (Math.abs(delta) >= SCROLL_THRESHOLD) {
+          if (delta > 0) {
+            // Scrolling down -> hide smoothly
+            setVisible(false);
+          } else {
+            // Scrolling up -> reveal smoothly
+            setVisible(true);
+          }
+          lastScrollY = currentScrollY;
+        }
+
+        ticking = false;
+      }
+
+      window.addEventListener('scroll', () => {
+        if (!ticking) {
+          window.requestAnimationFrame(updateDock);
+          ticking = true;
+        }
+      }, { passive: true });
+
+      // Keep revealed when clicking navigation links
+      if (dock) {
+        dock.querySelectorAll('.dock-a').forEach(link => {
+          link.addEventListener('click', () => {
+            setVisible(true);
+          });
+        });
+      }
+    })();
+
+    // AUTO-DETECT INITIALS FOR FLOATING MONOGRAM BADGE
+    (function initMonogram() {
+      const el1 = document.getElementById('duoInit1');
+      const el2 = document.getElementById('duoInit2');
+      if (el1 && el1.textContent) {
+        el1.textContent = el1.textContent.trim().charAt(0).toUpperCase();
+      }
+      if (el2 && el2.textContent) {
+        el2.textContent = el2.textContent.trim().charAt(0).toUpperCase();
+      }
+    })();
+
+    // EDITORIAL SCROLL REVEAL OBSERVER
+    (function initScrollReveal() {
+      const revealElements = document.querySelectorAll('.lux-reveal, .lux-reveal-top, .lux-reveal-left, .lux-reveal-right');
+      if (!revealElements.length) return;
+
+      if (!('IntersectionObserver' in window)) {
+        revealElements.forEach(el => el.classList.add('revealed'));
+        return;
+      }
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('revealed');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, {
+        threshold: 0.12,
+        rootMargin: '0px 0px -30px 0px'
+      });
+
+      revealElements.forEach(el => {
+        const cover = document.getElementById('coverScreen');
+        if (el.closest('#home') && (!cover || cover.classList.contains('hidden'))) {
+          el.classList.add('revealed');
+        } else if (!el.closest('#home')) {
+          observer.observe(el);
+        }
+      });
+    })();
+
     try {
       const bc = new BroadcastChannel("lux_preview_sync");
       bc.onmessage = (e) => {
@@ -2511,6 +2985,21 @@
     })();
   </script>
   \n 
+    <!-- UNIVERSAL MUSIC PLAYER INJECTED BY DEMO ENGINE -->
+    <audio id="luxAudioPlayer" loop preload="auto">
+      <source src="/music/bermuara.mp3" type="audio/ogg" />
+      <source src="/music/bermuara.mp3" type="audio/mpeg" />
+    </audio>
+    <script>
+      (function() {
+        var a = document.getElementById('luxAudioPlayer');
+        if (a) {
+          window.bgAudio = a;
+          window.weddingAudio = a;
+        }
+      })();
+    </script>
+    
 
 <script id="luxUnifiedClientRuntime">
 
@@ -2647,11 +3136,159 @@
     }
   };
 
+  // 6. Universal Audio Engine & Status Controller
+  window.playAudio = function() {
+    if (window.__DISABLE_AUDIO__) return;
+    try {
+      var p = new URLSearchParams(window.location.search);
+      if (p.get('autoplay') === '1') return;
+      if (window !== window.top && p.get('mode') === 'cover') return;
+
+      var audio = document.getElementById('luxAudioPlayer') ||
+                  document.getElementById('bgAudio') ||
+                  document.getElementById('weddingAudio') ||
+                  document.querySelector('audio');
+      if (!audio) return;
+
+      var playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.then(function() {
+          var fab = document.getElementById('musicFab') ||
+                    document.getElementById('musicToggle') ||
+                    document.querySelector('.audio-fab, .music-fab, .btn-music, .btn-audio-fab, #music-control');
+          if (fab) fab.classList.add('playing');
+        }).catch(function(err) {
+          console.log('Audio autoplay prevented by browser policy until user gesture:', err);
+        });
+      }
+    } catch(e) {}
+  };
+
+  window.luxToggleAudio = window.toggleAudio = function() {
+    try {
+      var audio = document.getElementById('luxAudioPlayer') ||
+                  document.getElementById('bgAudio') ||
+                  document.getElementById('weddingAudio') ||
+                  document.querySelector('audio');
+      if (!audio) return;
+      var fab = document.getElementById('musicFab') ||
+                document.getElementById('musicToggle') ||
+                document.querySelector('.audio-fab, .music-fab, .btn-music, .btn-audio-fab, #music-control');
+      if (audio.paused) {
+        audio.play().then(function() {
+          if (fab) fab.classList.add('playing');
+        }).catch(function(err) {
+          console.log('Audio toggle play failed:', err);
+        });
+      } else {
+        audio.pause();
+        if (fab) fab.classList.remove('playing');
+      }
+    } catch(e) {}
+  };
+
+  // 7. Auto-Sync Open Invitation Cover with Audio Playback
+  var origOpenInvitation = window.openInvitation;
+  window.openInvitation = function() {
+    if (typeof origOpenInvitation === 'function' && origOpenInvitation !== window.openInvitation) {
+      try { origOpenInvitation(); } catch(err) { console.warn(err); }
+    } else {
+      var cover = document.getElementById('coverScreen') || document.querySelector('.screen-cover, .landing-cover, .cover-screen');
+      if (cover) cover.classList.add('slide-up-hidden', 'opened', 'hidden');
+    }
+    window.playAudio();
+  };
+
+  // Delegated Capture Listener for Any Open-Invitation Button
+  document.addEventListener('click', function(e) {
+    var target = e.target;
+    if (!target) return;
+    var openBtn = target.closest(
+      '.btn-buka, .btn-buka-undangan, .cover-btn-open, .btn-open-issue, .cover-btn, [onclick*="openInvitation"], [data-lux-field="customLabels.openBtn"], #btnOpenInvitation'
+    );
+    if (openBtn) {
+      window.playAudio();
+    }
+  }, { capture: true, passive: true });
+
+  // 8. Interaction Fallback for Autoplay (First tap/click after cover opened)
+  function initAudioInteractionFallback() {
+    var unlockAudio = function() {
+      try {
+        var audio = document.getElementById('luxAudioPlayer') ||
+                    document.getElementById('bgAudio') ||
+                    document.getElementById('weddingAudio') ||
+                    document.querySelector('audio');
+        if (audio && audio.paused && !window.__DISABLE_AUDIO__) {
+          var cover = document.getElementById('coverScreen') || document.querySelector('.screen-cover, .landing-cover, .cover-screen');
+          var isCoverClosed = cover && !cover.classList.contains('slide-up-hidden') && !cover.classList.contains('opened') && !cover.classList.contains('hidden') && cover.style.display !== 'none';
+          if (!isCoverClosed) {
+            window.playAudio();
+          }
+        }
+      } catch(e) {}
+      document.removeEventListener('touchstart', unlockAudio);
+      document.removeEventListener('click', unlockAudio);
+    };
+    document.addEventListener('touchstart', unlockAudio, { passive: true });
+    document.addEventListener('click', unlockAudio, { passive: true });
+  }
+
+  // 9. Auto-Sync Navigation Dock & Audio FAB Based on Active Toggled Sections
+  function syncActiveTogglesUI() {
+    try {
+      // A. Synchronize navigation links (bottom dock, side nav, etc.)
+      var navLinks = document.querySelectorAll(
+        '.bottom-dock a, nav.bottom-dock a, .side-nav a, .dock-btn, .dock-a, .side-nav-link'
+      );
+      navLinks.forEach(function(link) {
+        var href = link.getAttribute('href');
+        if (href && href.startsWith('#') && href.length > 1) {
+          var targetId = href.substring(1);
+          var targetEl = document.getElementById(targetId);
+          if (!targetEl) {
+            link.style.display = 'none';
+          } else {
+            link.style.display = '';
+          }
+        }
+      });
+
+      // B. Synchronize Audio Player FAB (hide button if audio is disabled / has no valid source)
+      var audio = document.getElementById('luxAudioPlayer') ||
+                  document.getElementById('bgAudio') ||
+                  document.getElementById('weddingAudio') ||
+                  document.querySelector('audio');
+      var hasAudioSource = Boolean(
+        audio && (audio.getAttribute('src') || (audio.querySelector('source') && audio.querySelector('source').getAttribute('src')))
+      );
+      var fabs = document.querySelectorAll(
+        '#musicFab, #musicToggle, .audio-fab, .music-fab, .btn-music, .btn-audio-fab, #music-control'
+      );
+      fabs.forEach(function(fab) {
+        if (!hasAudioSource) {
+          fab.style.display = 'none';
+        } else {
+          fab.style.display = '';
+        }
+      });
+    } catch(err) {
+      console.warn('syncActiveTogglesUI error:', err);
+    }
+  }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', resolveGuestName);
+    document.addEventListener('DOMContentLoaded', function() {
+      resolveGuestName();
+      initAudioInteractionFallback();
+      syncActiveTogglesUI();
+    });
   } else {
     resolveGuestName();
+    initAudioInteractionFallback();
+    syncActiveTogglesUI();
   }
+  window.addEventListener('load', syncActiveTogglesUI);
 })();
 </script>
 

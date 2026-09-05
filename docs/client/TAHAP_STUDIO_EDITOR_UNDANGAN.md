@@ -109,8 +109,13 @@ Studio Editor membagi form input menjadi 14 seksi terorganisir untuk kenyamanan 
 - Fitur salin nomor rekening instan 1-klik.
 
 ### Seksi 10: Panduan Busana / Dress Code (`SEC10`)
-- Rekomendasi warna busana dan dress code tamu undangan.
-- Poin-poin himbauan kenyamanan acara.
+- **Dress Code Visual Color Studio**:
+  - Bulatan warna interaktif (*Visual Swatches*) dengan *isolated local state* (pembaruan visual instan 0ms tanpa me-render ulang seluruh halaman saat drag warna) & *color picker* langsung di layar tanpa perlu menghafal kode HEX.
+  - 8 Preset tren warna pernikahan 1-klik (*Earthy Terracotta, Sage & Champagne, Dusty Rose, dll.*).
+  - Tombol pintar `✨ Samakan Tema` untuk menyelaraskan busana dengan tema fisik aktif.
+  - Pratinjau instan (*Live Guest Preview*) kartu busana tamu.
+  - Mode lanjutan input manual kode hex untuk desainer/WO.
+- Catatan tambahan himbauan busana dan etika kehadiran tamu.
 
 ### Seksi 11: Live Streaming Pernikahan (`SEC11`)
 - Penayangan siaran langsung bagi tamu yang berhalangan hadir.
@@ -212,4 +217,24 @@ Studio Editor membagi form input menjadi 14 seksi terorganisir untuk kenyamanan 
     "bankList": []
   }
   ```
-- **Prinsip Zero-Loss / Dirty Tracking:** Tombol simpan memantau *deep-equality* antara snapshot terakhir dan input terkini untuk mencegah hilangnya revisi jika user meninggalkan halaman tanpa menyimpan.
+- **Prinsip Zero-Loss & Visual Header Dirty Tracking:** Setiap seksi form memiliki pemantau perubahan mandiri (`isDirty.secX`). Ketika seksi memiliki perubahan yang belum disimpan (termasuk saat seksi ditutup/dilipat), header seksi langsung menampilkan notifikasi tipografi bersih tanpa card: **"Perubahan belum tersimpan • Simpan"**. Pengantin dapat langsung menyimpan seksi tersebut dengan 1 klik tanpa harus membuka akordion kembali. Begitu data tersimpan, teks otomatis lenyap dan header kembali bersih total.
+
+---
+
+## 5. Proteksi Pasca Publikasi, Mode Darurat, & Atomic Single Deploy
+
+1. **Penguncian Studio Pasca Publikasi (`PUBLISHED`):**
+   - Begitu undangan resmi terbit, seluruh formulir di tab Edit Undangan (`/dashboard/invitation/[id]`) otomatis terkunci rapat (`isLocked = true`, `lockReason = "PUBLISHED"`).
+   - Menampilkan kartu proteksi minimalis elegan dengan ikon gembok vektor SVG modern, penjelasan pemeliharaan data, dan tombol langsung ke WhatsApp Admin CS.
+2. **Mekanisme Buka Kunci Darurat (Admin Emergency Unlock):**
+   - Klien yang memerlukan revisi mendesak (ralat jam acara, link Maps gedung, typo nama orang tua) dapat mengajukan pembukaan Kunci Darurat.
+   - Administrator membuka akses edit darurat melalui panel `/admin` (`adminUnlockedUntil`, default 24 jam).
+3. **Staging Save (Bebas dari Beban Perulangan Bake):**
+   - Selama masa darurat terbuka, tombol "Simpan" di masing-masing seksi hanya memperbarui data ke PostgreSQL database.
+   - Kompilasi file HTML statis dan upload ke Cloudflare R2 sengaja ditangguhkan (*deferred*) agar server tidak mengalami *rebake storm* berkali-kali.
+4. **Atomic Single Deploy & Auto-Lock (`DEPLOY_AND_LOCK`):**
+   - Banner darurat di puncak form menyediakan tombol aksi: **"Perbarui Undangan & Kunci Kembali"**.
+   - Saat ditekan, sistem menjalankan **1 kali kompilasi tunggal** (`buildAndSavePublishedHtml` dan `syncDraftToR2`) langsung ke live CDN, lalu otomatis menghapus izin darurat (`adminUnlockedUntil = null`).
+   - Studio seketika terkunci kembali secara otomatis tanpa perlu menunggu masa 24 jam habis.
+5. **Daur Ulang Subdomain:**
+   - Jika klien mengganti subdomain saat revisi, nilai lama otomatis terlepas dari basis data Prisma (`@unique`) dan kembali tersedia di pool publik secara instan. Kunjungan ke link lama dialihkan secara aman ke beranda dengan notice `subdomain-available`.

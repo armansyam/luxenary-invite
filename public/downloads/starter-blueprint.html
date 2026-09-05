@@ -20,7 +20,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>The Wedding of {{groomName}} &amp; {{brideName}}</title>
+  <title>The Wedding of {{firstName}} &amp; {{secondName}}</title>
 
   <!-- =================================================================== -->
   <!-- 1. GOOGLE FONTS (Self-Hosted Local Zero Latency)                   -->
@@ -68,14 +68,118 @@
       letter-spacing: 0.02em;
     }
 
-    /* Container Wrapper */
-    .app-container {
+    /* =================================================================== */
+    /* 2. ARSITEKTUR DESKTOP SPLIT & EMULASI MOBILE (GOLDEN STANDARD)      */
+    /*    - Layar Mobile (< 900px) : 100% Full Width Mobile First          */
+    /*    - Layar Desktop (>= 900px): Kiri Sidebar Foto + Kanan Panel 460px */
+    /* =================================================================== */
+    .layout-wrapper {
+      display: flex;
+      width: 100%;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    /* Fixed Left Hero / Sidebar untuk Layar Lebar */
+    .sidebar-desktop {
+      display: none;
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: calc(100% - 460px);
+      height: 100vh;
+      background: url('{{sidebarPhotoUrl}}') center/cover no-repeat;
+      z-index: 10;
+    }
+    .sidebar-desktop::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 50%, transparent 100%);
+    }
+    .sidebar-desktop-content {
+      position: absolute;
+      bottom: 4rem;
+      left: 3.5rem;
+      right: 3.5rem;
+      z-index: 20;
+      color: #fff;
+    }
+
+    /* Main Scroll Panel (Konten Undangan Utama) */
+    .app-container,
+    .main-scroll-panel {
+      width: 100%;
       max-width: 640px;
       margin: 0 auto;
       min-height: 100vh;
       background: #ffffff;
       position: relative;
+      z-index: 20;
       box-shadow: 0 0 50px rgba(0, 0, 0, 0.25);
+    }
+
+    /* FIXED PARALLAX BACKGROUND LAYER (FOTO 2 / OPTIONAL) */
+    .fixed-bg-layer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      z-index: 5;
+      background-position: center;
+      background-size: cover;
+      background-repeat: no-repeat;
+      pointer-events: none;
+    }
+
+    /* DESKTOP SPLIT RULES (>= 900px) */
+    @media (min-width: 900px) {
+      .sidebar-desktop {
+        display: block;
+        width: calc(100% - 460px);
+      }
+      .app-container,
+      .main-scroll-panel {
+        width: 460px;
+        max-width: 460px;
+        margin-left: calc(100% - 460px);
+        margin-right: 0;
+        min-width: 0;
+        box-shadow: -10px 0 35px rgba(0, 0, 0, 0.25);
+      }
+      .cover-overlay {
+        width: 460px;
+        left: calc(100% - 460px);
+      }
+      .bottom-dock {
+        left: calc(100% - 230px) !important;
+      }
+      .fixed-bg-layer {
+        left: calc(100% - 460px);
+        width: 460px;
+      }
+
+      /* =================================================================== */
+      /* STANDAR TIPOGRAFI DESKTOP SPLIT (ANTI-OVERFLOW / MOBILE SCALE)       */
+      /* CATATAN PENTING THEME BUILDER:                                      */
+      /* Unit 'vw' mengevaluasi seluruh viewport monitor (1440-1920px),      */
+      /* BUKAN lebar panel 460px. Selalu batasi judul h1/h2 di desktop split  */
+      /* maksimal 2.1rem - 2.3rem agar teks tidak meluap keluar panel kanan.  */
+      /* =================================================================== */
+      .cover-names {
+        font-size: clamp(2.2rem, 2.8rem, 3.2rem) !important;
+        overflow-wrap: break-word !important;
+      }
+      .sec-main-title,
+      .sec-heading {
+        font-size: clamp(1.75rem, 2.1rem, 2.3rem) !important;
+        overflow-wrap: break-word !important;
+        word-break: break-word !important;
+      }
+      .sec-flow {
+        padding: 4.5rem 1.8rem;
+      }
     }
 
     /* Section Flow Standard */
@@ -226,7 +330,31 @@
       justify-content: center;
       cursor: pointer;
       backdrop-filter: blur(12px);
-      transition: transform 0.2s;
+      -webkit-backdrop-filter: blur(12px);
+      transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: transform, opacity;
+    }
+
+    .audio-fab.fab-hidden {
+      transform: translateY(100px);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .bottom-dock {
+      position: fixed;
+      bottom: 18px;
+      left: 50%;
+      transform: translate3d(-50%, 0, 0);
+      z-index: 900;
+      transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: transform, opacity;
+    }
+
+    .bottom-dock.dock-hidden {
+      transform: translate3d(-50%, calc(100% + 32px), 0);
+      opacity: 0;
+      pointer-events: none;
     }
 
     .audio-fab.playing {
@@ -453,13 +581,54 @@
     }
 
     /* =================================================================== */
-    /* 9. FOOTER & CLOSING                                                 */
+    /* 9. FOOTER & CLOSING (Adaptive Full-Height 100vh)                    */
     /* =================================================================== */
     .closing-sec {
-      padding: 60px 24px 90px;
-      background: #fbf9f5;
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      box-sizing: border-box;
       text-align: center;
+      padding: 40px 24px 100px;
+      background: #fbf9f5;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
       border-top: 1px solid #eee5d8;
+    }
+    .closing-sec.no-closing-photo {
+      justify-content: center;
+      align-items: center;
+    }
+    .closing-sec.has-closing-photo {
+      justify-content: flex-end;
+      align-items: center;
+    }
+    .closing-sec.has-closing-photo::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.55) 50%, rgba(0,0,0,0.92) 100%);
+      pointer-events: none;
+      z-index: 1;
+    }
+    .closing-sec.has-closing-photo .closing-content {
+      color: #ffffff;
+    }
+    .closing-sec.has-closing-photo .closing-content p {
+      color: rgba(255,255,255,0.85) !important;
+    }
+    .closing-sec.has-closing-photo .closing-content h3 {
+      color: #ffffff !important;
+    }
+    .closing-content {
+      position: relative;
+      z-index: 2;
+      max-width: 520px;
+      margin: 0 auto;
     }
   </style>
 </head>
@@ -475,7 +644,7 @@
     </div>
 
     <div class="cover-center">
-      <h1 class="cover-names serif">{{groomName}} &amp; {{brideName}}</h1>
+      <h1 class="cover-names serif">{{firstName}} &amp; {{secondName}}</h1>
       <p style="font-size:13px; opacity:0.9; margin-top:8px;">{{weddingDate}}</p>
     </div>
 
@@ -496,9 +665,21 @@
   </div>
 
   <!-- =================================================================== -->
-  <!-- 2. KONTEN UTAMA UNDANGAN                                            -->
+  <!-- 2. KONTEN UTAMA UNDANGAN & DESKTOP SPLIT LAYOUT                     -->
   <!-- =================================================================== -->
-  <div class="app-container">
+  <div class="layout-wrapper">
+
+    <!-- DESKTOP FIXED SIDEBAR (Hanya tampil di layar desktop >= 900px) -->
+    <aside class="sidebar-desktop">
+      <div class="sidebar-desktop-content">
+        <span class="sidebar-eyebrow" style="font-size: 11px; letter-spacing: 0.25em; text-transform: uppercase; opacity: 0.8; display: block; margin-bottom: 8px;">{{weddingTagline}}</span>
+        <h1 class="sidebar-names serif" style="font-size: 2.8rem; line-height: 1.1; margin-bottom: 8px;">{{firstName}} &amp; {{secondName}}</h1>
+        <p class="sidebar-date" style="font-size: 13px; opacity: 0.85;">{{weddingDate}}</p>
+      </div>
+    </aside>
+
+    <!-- PANEL KONTEN UTAMA (EMULASI MOBILE 460PX PADA DESKTOP SPLIT) -->
+    <main class="main-scroll-panel app-container">
 
     <!-- SEKSI 1: KUTIPAN PEMBUKA & AYAT -->
     <section class="sec-flow" id="quote">
@@ -522,14 +703,14 @@
         <!-- Mempelai Pria -->
         <div class="couple-card">
           <div class="couple-photo-wrap">
-            <img src="{{groomPhotoUrl}}" alt="{{groomName}}" loading="lazy" />
+            <img src="{{firstPhotoUrl}}" alt="{{firstFullName}}" loading="lazy" />
           </div>
           <span class="couple-role">{{groomRole}}</span>
-          <h3 class="couple-name serif">{{groomDisplayName}}</h3>
-          <p class="couple-parents">{{groomParents}}</p>
-          <a href="https://instagram.com/{{groomInstagram}}" target="_blank" class="couple-ig">
+          <h3 class="couple-name serif">{{firstDisplayName}}</h3>
+          <p class="couple-parents">{{firstParents}}</p>
+          <a href="https://instagram.com/{{firstInstagram}}" target="_blank" class="couple-ig">
             <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-            @{{groomInstagram}}
+            @{{firstInstagram}}
           </a>
         </div>
 
@@ -538,14 +719,14 @@
         <!-- Mempelai Wanita -->
         <div class="couple-card">
           <div class="couple-photo-wrap">
-            <img src="{{bridePhotoUrl}}" alt="{{brideName}}" loading="lazy" />
+            <img src="{{secondPhotoUrl}}" alt="{{secondFullName}}" loading="lazy" />
           </div>
           <span class="couple-role">{{brideRole}}</span>
-          <h3 class="couple-name serif">{{brideDisplayName}}</h3>
-          <p class="couple-parents">{{brideParents}}</p>
-          <a href="https://instagram.com/{{brideInstagram}}" target="_blank" class="couple-ig">
+          <h3 class="couple-name serif">{{secondDisplayName}}</h3>
+          <p class="couple-parents">{{secondParents}}</p>
+          <a href="https://instagram.com/{{secondInstagram}}" target="_blank" class="couple-ig">
             <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-            @{{brideInstagram}}
+            @{{secondInstagram}}
           </a>
         </div>
       </div>
@@ -651,20 +832,23 @@
       </div>
     </section>
 
-    <!-- SEKSI 15: SALAM PENUTUP -->
-    <footer class="closing-sec">
-      <p style="font-size:13px; color:var(--text-muted, #736b63); max-width:480px; margin:0 auto 16px; line-height:1.7;">
-        Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Sahabat berkenan hadir dan memberikan doa restu bagi kami.
-      </p>
-      <p style="font-size:11px; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; color:var(--primary, #b5833c);">
-        Kami Yang Berbahagia,
-      </p>
-      <h3 class="serif" style="font-size:24px; margin-top:8px; color:#1a1614;">
-        {{groomName}} &amp; {{brideName}}
-      </h3>
-      <p style="font-size:12px; color:var(--text-muted, #736b63); margin-top:4px;">Beserta Keluarga Besar Kedua Mempelai</p>
+    <!-- SEKSI 15: SALAM PENUTUP (Adaptive Full-Height 100vh) -->
+    <footer class="closing-sec {{closingPhotoClass}}" style="{{closingBgStyle}}">
+      <div class="closing-content">
+        <p style="font-size:13px; color:var(--text-muted, #736b63); max-width:480px; margin:0 auto 16px; line-height:1.7;">
+          Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Sahabat berkenan hadir dan memberikan doa restu bagi kami.
+        </p>
+        <p style="font-size:11px; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; color:var(--primary, #b5833c);">
+          Kami Yang Berbahagia,
+        </p>
+        <h3 class="serif" style="font-size:24px; margin-top:8px; color:#1a1614;">
+          {{firstName}} &amp; {{secondName}}
+        </h3>
+        <p style="font-size:12px; color:var(--text-muted, #736b63); margin-top:4px;">Beserta Keluarga Besar Kedua Mempelai</p>
+      </div>
     </footer>
 
+    </main>
   </div>
 
   <!-- =================================================================== -->
@@ -684,8 +868,11 @@
     function openInvitation() {
       const cover = document.getElementById('coverOverlay');
       if (cover) cover.classList.add('opened');
-      const audio = document.getElementById('luxAudioPlayer');
       const fab = document.getElementById('musicToggle');
+      if (fab) fab.classList.remove('fab-hidden');
+      const dock = document.querySelector('.bottom-dock');
+      if (dock) dock.classList.remove('dock-hidden');
+      const audio = document.getElementById('luxAudioPlayer');
       if (audio) {
         audio.play().then(function() {
           if (fab) fab.classList.add('playing');
@@ -731,8 +918,74 @@
     // E. Hitung Mundur Otomatis
     
 
-    // F. Handler Kirim Form RSVP
-    
+    // SMART AUTO-HIDE DOCK & MUSIC PLAYER ON SCROLL DOWN, REVEAL ON SCROLL UP
+    (function initSmartControls() {
+      const dock = document.querySelector('.bottom-dock');
+      const fab = document.getElementById('musicToggle');
+      if (!dock && !fab) return;
+
+      let lastScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+      let ticking = false;
+      const SCROLL_THRESHOLD = 12;
+      const TOP_REVEAL_ZONE = 70;
+
+      function setVisible(visible) {
+        if (visible) {
+          if (dock) dock.classList.remove('dock-hidden');
+          if (fab) fab.classList.remove('fab-hidden');
+        } else {
+          if (dock) dock.classList.add('dock-hidden');
+          if (fab) fab.classList.add('fab-hidden');
+        }
+      }
+
+      function updateControls() {
+        const currentScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+        const windowHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+        const docHeight = Math.max(
+          document.body.scrollHeight,
+          document.documentElement.scrollHeight,
+          document.body.offsetHeight,
+          document.documentElement.offsetHeight
+        );
+        const isNearBottom = (currentScrollY + windowHeight) >= (docHeight - 60);
+
+        if (currentScrollY <= TOP_REVEAL_ZONE || isNearBottom) {
+          setVisible(true);
+          lastScrollY = currentScrollY;
+          ticking = false;
+          return;
+        }
+
+        const delta = currentScrollY - lastScrollY;
+
+        if (Math.abs(delta) >= SCROLL_THRESHOLD) {
+          if (delta > 0) {
+            setVisible(false);
+          } else {
+            setVisible(true);
+          }
+          lastScrollY = currentScrollY;
+        }
+
+        ticking = false;
+      }
+
+      window.addEventListener('scroll', () => {
+        if (!ticking) {
+          window.requestAnimationFrame(updateControls);
+          ticking = true;
+        }
+      }, { passive: true });
+
+      if (dock) {
+        dock.querySelectorAll('a, .dock-btn').forEach(link => {
+          link.addEventListener('click', () => {
+            setVisible(true);
+          });
+        });
+      }
+    })();
   </script>
 
 <!-- AMSDEV PROTECTION SCRIPT -->

@@ -1,5 +1,6 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import GuestMemoriesGalleryPage from "@/app/(public)/[slug]/memories/page";
 
 export const dynamic = "force-dynamic";
 
@@ -7,7 +8,7 @@ interface SubdomainMemoriesProps {
   params: Promise<{ subdomain: string }>;
 }
 
-export default async function SubdomainMemoriesRedirect({ params }: SubdomainMemoriesProps) {
+export default async function SubdomainMemoriesPage({ params }: SubdomainMemoriesProps) {
   const { subdomain } = await params;
 
   const invitation = await prisma.invitation.findFirst({
@@ -15,16 +16,16 @@ export default async function SubdomainMemoriesRedirect({ params }: SubdomainMem
       subdomain: subdomain.toLowerCase(),
     },
     select: {
-      groomSlug: true,
-      brideSlug: true,
       invitationSlug: true,
     },
   });
 
-  if (!invitation) {
+  if (!invitation || !invitation.invitationSlug) {
     notFound();
   }
 
-  // Redirect to canonical permanent album link
-  redirect(`/${invitation.invitationSlug}/memories`);
+  // Render memories gallery directly on the subdomain
+  return GuestMemoriesGalleryPage({
+    params: Promise.resolve({ slug: invitation.invitationSlug }),
+  });
 }

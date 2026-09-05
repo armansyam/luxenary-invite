@@ -10,6 +10,7 @@ import { AdminProfileSettings } from "@/components/admin/AdminProfileSettings";
 import { AdminTeamManagement } from "@/components/admin/AdminTeamManagement";
 import { AdminPortfolioTab } from "@/components/admin/AdminPortfolioTab";
 import { startRemoteSession } from "./actions/remote";
+import { compressImageToWebP } from "@/lib/clientImageCompressor";
 
 const tabs = [
   {
@@ -42,7 +43,7 @@ const tabs = [
 
   {
     id: "invitations",
-    label: "Undangan",
+    label: "Invitation Projects",
     icon: (
       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -69,7 +70,7 @@ const tabs = [
   },
   {
     id: "themes",
-    label: "Tema",
+    label: "Tema & Musik",
     icon: (
       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4 5 5 0 014-5h10a4 4 0 014 4v1a4 4 0 01-4 4H7zM7 7h10M7 11h10" />
@@ -133,6 +134,25 @@ const Badge = ({ status }: { status: string }) => {
     </span>
   );
 };
+
+function getInvitationEventDate(eventData: any): Date | null {
+  try {
+    const events = typeof eventData === "string" ? JSON.parse(eventData) : eventData || [];
+    if (!Array.isArray(events)) return null;
+    let latest: Date | null = null;
+    for (const ev of events) {
+      if (ev?.date) {
+        const d = new Date(ev.date);
+        if (!isNaN(d.getTime())) {
+          if (!latest || d > latest) latest = d;
+        }
+      }
+    }
+    return latest;
+  } catch {
+    return null;
+  }
+}
 
 function SettingsCard({
   title,
@@ -325,6 +345,21 @@ export default function AdminPage() {
   const [allOrders, setAllOrders] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [invitations, setInvitations] = useState<any[]>([]);
+  const [invitationFilter, setInvitationFilter] = useState<"ALL" | "DRAFT" | "PUBLISHED" | "EVENT_FINISHED" | "ARCHIVED">("ALL");
+
+  const draftInvitationCount = useMemo(() => invitations.filter((i) => i.status === "DRAFT").length, [invitations]);
+  const publishedInvitationCount = useMemo(() => invitations.filter((i) => i.status === "PUBLISHED").length, [invitations]);
+  const eventFinishedInvitationCount = useMemo(() => invitations.filter((i) => i.status === "EVENT_FINISHED").length, [invitations]);
+  const archivedInvitationCount = useMemo(() => invitations.filter((i) => i.status === "ARCHIVED" || i.status === "TAKEN_DOWN").length, [invitations]);
+
+  const filteredInvitations = useMemo(() => {
+    if (invitationFilter === "ALL") return invitations;
+    if (invitationFilter === "DRAFT") return invitations.filter((i) => i.status === "DRAFT");
+    if (invitationFilter === "PUBLISHED") return invitations.filter((i) => i.status === "PUBLISHED");
+    if (invitationFilter === "EVENT_FINISHED") return invitations.filter((i) => i.status === "EVENT_FINISHED");
+    if (invitationFilter === "ARCHIVED") return invitations.filter((i) => i.status === "ARCHIVED" || i.status === "TAKEN_DOWN");
+    return invitations;
+  }, [invitations, invitationFilter]);
   const [themes, setThemes] = useState<any[]>([]);
   const [logs, setLogs] = useState<any[]>([]);
   const [customDomainOrders, setCustomDomainOrders] = useState<any[]>([]);
@@ -478,6 +513,22 @@ export default function AdminPage() {
   const [uploadingSlot, setUploadingSlot] = useState<string | null>(null);
   const [updatedDemoSlots, setUpdatedDemoSlots] = useState<Record<string, number>>({});
   const [localPreviews, setLocalPreviews] = useState<Record<string, string>>({});
+
+  // System Music Library State
+  const [themeSubTab, setThemeSubTab] = useState<"themes" | "music">("themes");
+  const [systemMusics, setSystemMusics] = useState<any[]>([]);
+  const [musicLoading, setMusicLoading] = useState(false);
+  const [musicUploading, setMusicUploading] = useState(false);
+  const [showMusicModal, setShowMusicModal] = useState(false);
+  const [editingMusic, setEditingMusic] = useState<any | null>(null);
+  const [musicForm, setMusicForm] = useState({
+    title: "",
+    composer: "",
+    genre: "",
+  });
+  const [selectedMusicFile, setSelectedMusicFile] = useState<File | null>(null);
+  const [playingMusicId, setPlayingMusicId] = useState<string | null>(null);
+  const [musicAudioInstance, setMusicAudioInstance] = useState<HTMLAudioElement | null>(null);
 
   const isDemoStudioDirty = useMemo(() => {
     const hasStagedFiles = Object.keys(stagedDemoFiles).length > 0;
@@ -702,6 +753,159 @@ export default function AdminPage() {
     }
   };
 
+  const fetchSystemMusics = useCallback(async () => {
+    setMusicLoading(true);
+    try {
+      const res = await fetch("/api/admin/music", { cache: "no-store" });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.music)) {
+        setSystemMusics(data.music);
+      }
+    } catch (err) {
+      console.error("Gagal mengambil data musik:", err);
+    } finally {
+      setMusicLoading(false);
+    }
+  }, []);
+
+  const handleToggleMusicActive = async (id: string, currentActive: boolean) => {
+    try {
+      const res = await fetch(`/api/admin/music/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: !currentActive }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSystemMusics((prev) =>
+          prev.map((m) => (m.id === id ? { ...m, isActive: !currentActive } : m))
+        );
+      } else {
+        alert(data.error || "Gagal mengubah status musik");
+      }
+    } catch (err) {
+      alert("Terjadi kesalahan jaringan.");
+    }
+  };
+
+  const handleDeleteMusic = async (id: string, title: string) => {
+    if (!confirm(`Hapus lagu "${title}" dari pustaka musik sistem?`)) return;
+    try {
+      const res = await fetch(`/api/admin/music/${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (data.success) {
+        if (playingMusicId === id && musicAudioInstance) {
+          musicAudioInstance.pause();
+          setPlayingMusicId(null);
+        }
+        setSystemMusics((prev) => prev.filter((m) => m.id !== id));
+      } else {
+        alert(data.error || "Gagal menghapus musik");
+      }
+    } catch (err) {
+      alert("Terjadi kesalahan saat menghapus lagu.");
+    }
+  };
+
+  const handlePlayPreviewMusic = (music: any) => {
+    if (playingMusicId === music.id) {
+      musicAudioInstance?.pause();
+      setPlayingMusicId(null);
+      return;
+    }
+    if (musicAudioInstance) {
+      musicAudioInstance.pause();
+    }
+    const audio = new Audio(music.url);
+    audio.play().then(() => {
+      setMusicAudioInstance(audio);
+      setPlayingMusicId(music.id);
+    }).catch((e) => {
+      console.error("Gagal memutar audio preview:", e);
+    });
+    audio.onended = () => {
+      setPlayingMusicId(null);
+    };
+  };
+
+  const handleOpenAddMusic = () => {
+    setEditingMusic(null);
+    setMusicForm({ title: "", composer: "", genre: "" });
+    setSelectedMusicFile(null);
+    setShowMusicModal(true);
+  };
+
+  const handleOpenEditMusic = (music: any) => {
+    setEditingMusic(music);
+    setMusicForm({
+      title: music.title || "",
+      composer: music.composer || "",
+      genre: music.genre || "",
+    });
+    setSelectedMusicFile(null);
+    setShowMusicModal(true);
+  };
+
+  const handleSaveMusic = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!musicForm.title.trim()) {
+      alert("Judul lagu wajib diisi.");
+      return;
+    }
+
+    setMusicUploading(true);
+    try {
+      if (editingMusic) {
+        const res = await fetch(`/api/admin/music/${editingMusic.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: musicForm.title.trim(),
+            composer: musicForm.composer.trim() || null,
+            genre: musicForm.genre.trim() || null,
+          }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setSystemMusics((prev) =>
+            prev.map((m) => (m.id === editingMusic.id ? data.music : m))
+          );
+          setShowMusicModal(false);
+        } else {
+          alert(data.error || "Gagal memperbarui data musik");
+        }
+      } else {
+        if (!selectedMusicFile) {
+          alert("Pilih file audio terlebih dahulu.");
+          setMusicUploading(false);
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append("file", selectedMusicFile);
+        formData.append("title", musicForm.title.trim());
+        if (musicForm.composer.trim()) formData.append("composer", musicForm.composer.trim());
+        if (musicForm.genre.trim()) formData.append("genre", musicForm.genre.trim());
+
+        const res = await fetch("/api/admin/music", {
+          method: "POST",
+          body: formData,
+        });
+        const data = await res.json();
+        if (data.success) {
+          setSystemMusics((prev) => [data.music, ...prev]);
+          setShowMusicModal(false);
+        } else {
+          alert(data.error || "Gagal mengunggah musik baru");
+        }
+      }
+    } catch (err: any) {
+      alert(err.message || "Terjadi kesalahan saat menyimpan musik");
+    } finally {
+      setMusicUploading(false);
+    }
+  };
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       setCurrentOrigin(window.location.origin);
@@ -713,6 +917,7 @@ export default function AdminPage() {
     loadSettings();
     loadBrandAssets();
     loadSnapshots();
+    fetchSystemMusics();
 
     // Auto-refresh data overview setiap 15 detik (pause jika tab tidak aktif)
     const pollInterval = setInterval(() => {
@@ -943,6 +1148,10 @@ export default function AdminPage() {
     setStagedDemoFiles({});
     setShowDemoStudioModal(true);
 
+    if (systemMusics.length === 0) {
+      fetchSystemMusics();
+    }
+
     try {
       const res = await fetch(`/api/admin/themes/${theme.id}/demo-data`);
       const json = await res.json();
@@ -961,11 +1170,20 @@ export default function AdminPage() {
     }
   };
 
-  const handleStageDemoAsset = (slot: string, file: File) => {
+  const handleStageDemoAsset = async (slot: string, file: File) => {
     try {
-      const localUrl = URL.createObjectURL(file);
+      // Otomatis kompresi gambar di browser (Client-Side) ke format WebP ringan
+      let processedFile = file;
+      if (file.type.startsWith("image/")) {
+        processedFile = await compressImageToWebP(file, {
+          maxWidth: 1920,
+          maxHeight: 1920,
+          quality: 0.82,
+        });
+      }
+      const localUrl = URL.createObjectURL(processedFile);
       setLocalPreviews((prev) => ({ ...prev, [slot]: localUrl }));
-      setStagedDemoFiles((prev) => ({ ...prev, [slot]: file }));
+      setStagedDemoFiles((prev) => ({ ...prev, [slot]: processedFile }));
       setDemoStudioUploadSuccess(null);
     } catch (err: any) {
       alert("Gagal memuat file gambar lokal: " + err.message);
@@ -973,6 +1191,9 @@ export default function AdminPage() {
   };
 
   const handleDiscardStagedAsset = (slot: string) => {
+    if (localPreviews[slot]?.startsWith("blob:")) {
+      try { URL.revokeObjectURL(localPreviews[slot]); } catch {}
+    }
     setStagedDemoFiles((prev) => {
       const next = { ...prev };
       delete next[slot];
@@ -993,6 +1214,8 @@ export default function AdminPage() {
     try {
       // 1. Upload all staged files to server
       const slots = Object.keys(stagedDemoFiles);
+      const nextDemoData = { ...demoStudioData };
+
       if (slots.length > 0) {
         for (const slot of slots) {
           setUploadingSlot(slot);
@@ -1007,16 +1230,35 @@ export default function AdminPage() {
           });
           const data = await res.json();
           if (!data.success) {
-            throw new Error(`Gagal mengunggah foto slot ${slot}: ${data.error || "Gagal upload"}`);
+            throw new Error(`Gagal mengunggah slot ${slot}: ${data.error || "Gagal upload"}`);
+          }
+
+          // Synchronize URL in nextDemoData so step 2 preserves the updated media/video/audio URLs
+          const targetUrl = data.rawUrl || `/demo/${demoStudioTheme.id}/${data.fileName}`;
+          if (slot === "cover") nextDemoData.landingCoverUrl = targetUrl;
+          else if (slot === "hero") nextDemoData.sidebarPhotoUrl = targetUrl;
+          else if (slot === "background") nextDemoData.globalBgUrl = targetUrl;
+          else if (slot === "home") nextDemoData.homePhotoUrl = targetUrl;
+          else if (slot === "footer") nextDemoData.footerPhotoUrl = targetUrl;
+          else if (slot === "groom") nextDemoData.groomPhotoUrl = targetUrl;
+          else if (slot === "bride") nextDemoData.bridePhotoUrl = targetUrl;
+          else if (slot === "music") nextDemoData.audioUrl = targetUrl;
+          else if (slot.startsWith("gallery_")) {
+            const idx = parseInt(slot.replace("gallery_", ""), 10) - 1;
+            if (!Array.isArray(nextDemoData.galleryPhotos)) {
+              nextDemoData.galleryPhotos = [];
+            }
+            nextDemoData.galleryPhotos[idx] = targetUrl;
           }
         }
+        setDemoStudioData(nextDemoData);
       }
 
       // 2. Save text profile & story demo data
       const dataRes = await fetch(`/api/admin/themes/${demoStudioTheme.id}/demo-data`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(demoStudioData),
+        body: JSON.stringify(nextDemoData),
       });
       const dataJson = await dataRes.json();
       if (!dataJson.success) {
@@ -1030,7 +1272,7 @@ export default function AdminPage() {
         newUpdatedSlots[s] = now;
       });
       setUpdatedDemoSlots(newUpdatedSlots);
-      setInitialDemoStudioData(JSON.parse(JSON.stringify(demoStudioData)));
+      setInitialDemoStudioData(JSON.parse(JSON.stringify(nextDemoData)));
       setStagedDemoFiles({});
       setDemoStudioUploadSuccess(`✓ Semua perubahan demo tema ${demoStudioTheme.name} berhasil disimpan permanen!`);
       setTimeout(() => setDemoStudioUploadSuccess(null), 4000);
@@ -2336,12 +2578,43 @@ export default function AdminPage() {
                 </div>
               )}
 
-              {/* ── Invitations ── */}
+              {/* ── Invitations / Projek Undangan ── */}
               {activeTab === "invitations" && (
                 <div className="space-y-5">
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-900">Katalog Undangan Klien</h2>
-                    <p className="text-sm text-gray-500">{invitations.length} undangan terdaftar</p>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-900">Invitation Projects</h2>
+                      <p className="text-sm text-gray-500">{invitations.length} total projek terdaftar</p>
+                    </div>
+
+                    {/* ── Quick Status Filter Tabs ── */}
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs font-semibold">
+                      {[
+                        { id: "ALL", label: "Semua", count: invitations.length },
+                        { id: "DRAFT", label: "Draft", count: draftInvitationCount },
+                        { id: "PUBLISHED", label: "Undangan Tayang", count: publishedInvitationCount },
+                        { id: "EVENT_FINISHED", label: "Galeri Momen Tamu", count: eventFinishedInvitationCount },
+                        { id: "ARCHIVED", label: "Selesai / Arsip", count: archivedInvitationCount },
+                      ].map((tab) => (
+                        <button
+                          key={tab.id}
+                          type="button"
+                          onClick={() => setInvitationFilter(tab.id as any)}
+                          className={`px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                            invitationFilter === tab.id
+                              ? "bg-stone-900 text-white shadow-2xs"
+                              : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+                          }`}
+                        >
+                          <span>{tab.label}</span>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                            invitationFilter === tab.id ? "bg-stone-700 text-stone-200" : "bg-stone-200 text-stone-600"
+                          }`}>
+                            {tab.count}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
                   {/* ── Desktop Widescreen Table View ── */}
@@ -2350,106 +2623,205 @@ export default function AdminPage() {
                       <table className="min-w-full divide-y divide-gray-100">
                         <thead className="bg-gray-50">
                           <tr>
-                            {["Klien & Pasangan", "Undangan", "Status & Proteksi", "Aksi"].map((h) => (
+                            {["Klien & Pasangan", "Domain & Tema", "Status Projek", "Masa Tayang & Expired", "Aksi"].map((h) => (
                               <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{h}</th>
                             ))}
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
-                          {invitations.map((inv) => {
-                            const coupleName = `${inv.groomNickname || inv.groomName || "Mempelai Pria"} & ${inv.brideNickname || inv.brideName || "Mempelai Wanita"}`;
-                            const activeSub = inv.subdomain;
-                            const publicUrl = activeSub ? getInvitationPublicUrl(activeSub) : "#";
-                            const isEmergencyUnlocked = inv.adminUnlockedUntil && new Date(inv.adminUnlockedUntil) > new Date();
+                          {filteredInvitations.length === 0 ? (
+                            <tr>
+                              <td colSpan={5} className="px-5 py-8 text-center text-xs text-gray-400 italic">
+                                Tidak ada projek undangan dalam kategori ini.
+                              </td>
+                            </tr>
+                          ) : (
+                            filteredInvitations.map((inv) => {
+                              const coupleName = `${inv.groomNickname || inv.groomName || "Mempelai Pria"} & ${inv.brideNickname || inv.brideName || "Mempelai Wanita"}`;
+                              const activeSub = inv.subdomain;
+                              const publicUrl = activeSub ? getInvitationPublicUrl(activeSub) : "#";
+                              const isEmergencyUnlocked = inv.adminUnlockedUntil && new Date(inv.adminUnlockedUntil) > new Date();
+                              const eventDate = getInvitationEventDate(inv.eventData);
+                              const defaultGalleryExpiry = eventDate ? new Date(eventDate.getTime() + 30 * 24 * 60 * 60 * 1000) : null;
 
-                            return (
-                              <tr key={inv.id} className="hover:bg-gray-50 transition">
-                                <td className="px-5 py-3">
-                                  <div className="text-sm font-semibold text-gray-900">{coupleName}</div>
-                                  <div className="text-xs text-gray-500">{inv.user?.name || "Tanpa Nama"} &bull; <span className="font-mono">{inv.user?.email}</span></div>
-                                </td>
-                                <td className="px-5 py-3">
-                                  <div className="mb-1">
-                                    {activeSub ? (
-                                      <a
-                                        href={publicUrl}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="text-xs font-semibold text-indigo-700 hover:underline flex items-center gap-1 w-max"
-                                      >
-                                        <span>{activeSub}.{getApexRootDomain()}</span>
-                                        <span className="text-[10px] text-stone-400">↗</span>
-                                      </a>
-                                    ) : (
-                                      <span className="text-gray-400 font-sans italic text-[11px]">[URL Belum Setup]</span>
+                              return (
+                                <tr key={inv.id} className="hover:bg-gray-50 transition">
+                                  <td className="px-5 py-3.5">
+                                    <div className="text-sm font-semibold text-gray-900">{coupleName}</div>
+                                    <div className="text-xs text-gray-500 mt-0.5">{inv.user?.name || "Tanpa Nama"} &bull; <span className="font-mono">{inv.user?.email}</span></div>
+                                  </td>
+                                  <td className="px-5 py-3.5">
+                                    <div className="mb-0.5">
+                                      {activeSub ? (
+                                        <a
+                                          href={publicUrl}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          className="text-xs font-semibold text-indigo-700 hover:underline flex items-center gap-1 w-max"
+                                        >
+                                          <span>{activeSub}.{getApexRootDomain()}</span>
+                                          <span className="text-[10px] text-stone-400">↗</span>
+                                        </a>
+                                      ) : (
+                                        <span className="text-gray-400 font-sans italic text-[11px]">[URL Belum Setup]</span>
+                                      )}
+                                    </div>
+                                    <div className="text-xs text-gray-500 flex items-center gap-1.5">
+                                      <span>Tema:</span>
+                                      <span className="font-semibold text-stone-800 capitalize">{inv.themeId}</span>
+                                    </div>
+                                  </td>
+                                  <td className="px-5 py-3.5">
+                                    {/* Minimalist Dot Indicator & Status Label without heavy badges */}
+                                    {inv.status === "DRAFT" && (
+                                      <div className="flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
+                                        <div>
+                                          <div className="text-xs font-semibold text-stone-800">Draft</div>
+                                          <div className="text-[11px] text-stone-400">Penyusunan Klien</div>
+                                        </div>
+                                      </div>
                                     )}
-                                  </div>
-                                  <div className="text-xs text-gray-500">Tema: <span className="font-bold text-gray-900 capitalize">{inv.themeId}</span></div>
-                                </td>
-                                <td className="px-5 py-3 space-y-1.5">
-                                  <div><Badge status={inv.status} /></div>
-                                  <div>
-                                    {isEmergencyUnlocked ? (
-                                      <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-100 text-amber-900 border border-amber-300 inline-block">
-                                        Kunci Darurat Aktif
-                                      </span>
-                                    ) : inv.isLockedPermanently ? (
-                                      <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-red-100 text-red-800 border border-red-200 inline-block">
-                                        Terkunci Permanen
-                                      </span>
-                                    ) : (
-                                      <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 inline-block">
-                                        Bisa Diedit
-                                      </span>
-                                    )}
-                                  </div>
-                                </td>
-                                <td className="px-5 py-3">
-                                  <div className="flex items-center gap-2">
-                                    <button
-                                      type="button"
-                                      onClick={() => handleImpersonateClient(inv.userId, inv.user?.email || "", inv.user?.name || "")}
-                                      disabled={impersonatingClient}
-                                      className="p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50 border border-transparent hover:border-indigo-100 transition disabled:opacity-50 cursor-pointer"
-                                      title="Remote Dashboard (Impersonate)"
-                                    >
-                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                                    </button>
-
                                     {inv.status === "PUBLISHED" && (
-                                      <button
-                                        type="button"
-                                        onClick={() => handleCloseToGallery(inv)}
-                                        className="p-1.5 rounded-lg text-purple-600 hover:bg-purple-50 border border-transparent hover:border-purple-100 transition cursor-pointer"
-                                        title="Tutup ke Galeri Momen"
-                                      >
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                                      </button>
+                                      <div className="flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 animate-pulse" />
+                                        <div>
+                                          <div className="text-xs font-semibold text-emerald-800">Undangan Tayang</div>
+                                          <div className="text-[11px] text-stone-400">Pra-Acara & Hari H</div>
+                                        </div>
+                                      </div>
+                                    )}
+                                    {inv.status === "EVENT_FINISHED" && (
+                                      <div className="flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-purple-500 shrink-0" />
+                                        <div>
+                                          <div className="text-xs font-semibold text-purple-800">Galeri Momen Tamu</div>
+                                          <div className="text-[11px] text-stone-400">Pasca Acara (/memories)</div>
+                                        </div>
+                                      </div>
+                                    )}
+                                    {(inv.status === "ARCHIVED" || inv.status === "TAKEN_DOWN") && (
+                                      <div className="flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-stone-400 shrink-0" />
+                                        <div>
+                                          <div className="text-xs font-semibold text-stone-700">Selesai / Arsip</div>
+                                          <div className="text-[11px] text-stone-400">Dialihkan ke Portofolio</div>
+                                        </div>
+                                      </div>
                                     )}
 
-                                    {(isEmergencyUnlocked || inv.isLockedPermanently) && (
+                                    {/* Subtle Emergency Unlock Indicator if Active */}
+                                    {isEmergencyUnlocked && (
+                                      <div className="flex items-center gap-1.5 text-[10px] font-semibold text-amber-700 mt-1">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                                        <span>Kunci Darurat Aktif</span>
+                                      </div>
+                                    )}
+                                  </td>
+                                  <td className="px-5 py-3.5">
+                                    {/* Dedicated Masa Tayang & Expired Column */}
+                                    {inv.status === "DRAFT" && (
+                                      <span className="text-xs text-stone-400 italic">- Belum Rilis -</span>
+                                    )}
+                                    {inv.status === "PUBLISHED" && (
+                                      <div>
+                                        <div className="text-xs text-stone-700 font-medium">
+                                          {eventDate ? (
+                                            <span>Acara: <strong>{eventDate.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</strong></span>
+                                          ) : (
+                                            <span className="text-stone-400 italic">Tanggal acara belum diatur</span>
+                                          )}
+                                        </div>
+                                        <div className="text-[11px] text-stone-400 mt-0.5">Masa tayang undangan aktif</div>
+                                      </div>
+                                    )}
+                                    {inv.status === "EVENT_FINISHED" && (
+                                      <div>
+                                        {inv.galleryExpiresAt ? (
+                                          <div>
+                                            <div className="flex items-center gap-1.5 text-xs font-bold text-purple-700">
+                                              <span className="w-1.5 h-1.5 rounded-full bg-purple-500 shrink-0" />
+                                              <span>Extended: {new Date(inv.galleryExpiresAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</span>
+                                            </div>
+                                            <div className="text-[11px] text-purple-600/80 mt-0.5 font-medium">Masa galeri diperpanjang</div>
+                                          </div>
+                                        ) : defaultGalleryExpiry ? (
+                                          <div>
+                                            <div className="text-xs text-stone-700 font-medium">
+                                              s.d. {defaultGalleryExpiry.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
+                                            </div>
+                                            <div className="text-[11px] text-stone-400 mt-0.5">Standar 30 Hari pasca acara</div>
+                                          </div>
+                                        ) : (
+                                          <span className="text-xs text-stone-500">Standar 30 Hari</span>
+                                        )}
+                                      </div>
+                                    )}
+                                    {(inv.status === "ARCHIVED" || inv.status === "TAKEN_DOWN") && (
+                                      <div>
+                                        <div className="text-xs text-stone-500 font-medium">Masa Tayang Selesai</div>
+                                        <div className="text-[11px] text-stone-400 mt-0.5">Dialihkan ke Portofolio</div>
+                                      </div>
+                                    )}
+                                  </td>
+                                  <td className="px-5 py-3">
+                                    <div className="flex items-center gap-2">
                                       <button
                                         type="button"
-                                        onClick={() => handleToggleEmergencyUnlock(inv)}
-                                        className={`p-1.5 rounded-lg border border-transparent transition cursor-pointer ${
-                                          isEmergencyUnlocked
-                                            ? "text-red-600 hover:bg-red-50 hover:border-red-100"
-                                            : "text-stone-600 hover:bg-stone-50 hover:border-stone-100"
-                                        }`}
-                                        title={isEmergencyUnlocked ? "Kunci kembali sekarang" : "Buka kunci darurat (24 Jam)"}
+                                        onClick={() => handleImpersonateClient(inv.userId, inv.user?.email || "", inv.user?.name || "")}
+                                        disabled={impersonatingClient}
+                                        className="p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50 border border-transparent hover:border-indigo-100 transition disabled:opacity-50 cursor-pointer"
+                                        title="Remote Dashboard (Impersonate)"
                                       >
-                                        {isEmergencyUnlocked ? (
-                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8V7z" /></svg>
-                                        ) : (
-                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" /></svg>
-                                        )}
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
                                       </button>
-                                    )}
-                                  </div>
-                                </td>
-                              </tr>
-                            );
-                          })}
+
+                                      {inv.status === "PUBLISHED" && (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleCloseToGallery(inv)}
+                                          className="p-1.5 rounded-lg text-purple-600 hover:bg-purple-50 border border-transparent hover:border-purple-100 transition cursor-pointer"
+                                          title="Tutup ke Galeri Momen"
+                                        >
+                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                        </button>
+                                      )}
+
+                                      {inv.status === "EVENT_FINISHED" && (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleExtendGallery(inv)}
+                                          className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 border border-transparent hover:border-emerald-100 transition cursor-pointer"
+                                          title="Perpanjang Masa Galeri (+30 Hari)"
+                                        >
+                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                        </button>
+                                      )}
+
+                                      {(isEmergencyUnlocked || inv.isLockedPermanently || inv.status === "PUBLISHED" || inv.status === "EVENT_FINISHED") && (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleToggleEmergencyUnlock(inv)}
+                                          className={`p-1.5 rounded-lg border border-transparent transition cursor-pointer ${
+                                            isEmergencyUnlocked
+                                              ? "text-red-600 hover:bg-red-50 hover:border-red-100"
+                                              : "text-stone-600 hover:bg-stone-50 hover:border-stone-100"
+                                          }`}
+                                          title={isEmergencyUnlocked ? "Kunci kembali sekarang" : "Buka kunci darurat (24 Jam)"}
+                                        >
+                                          {isEmergencyUnlocked ? (
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8V7z" /></svg>
+                                          ) : (
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" /></svg>
+                                          )}
+                                        </button>
+                                      )}
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          )}
                         </tbody>
                       </table>
                     </div>
@@ -2457,16 +2829,18 @@ export default function AdminPage() {
 
                   {/* ── Mobile-Native Invitation Card List View ── */}
                   <div className="block md:hidden space-y-3">
-                    {invitations.length === 0 ? (
+                    {filteredInvitations.length === 0 ? (
                       <div className="p-8 text-center bg-white rounded-2xl border border-gray-200 text-gray-400 text-xs italic">
-                        Belum ada undangan terdaftar
+                        Tidak ada projek undangan dalam kategori ini.
                       </div>
                     ) : (
-                      invitations.map((inv) => {
+                      filteredInvitations.map((inv) => {
                         const coupleName = `${inv.groomNickname || inv.groomName || "Mempelai Pria"} & ${inv.brideNickname || inv.brideName || "Mempelai Wanita"}`;
                         const activeSub = inv.subdomain || `${inv.groomSlug || "mempelai"}-${inv.brideSlug || "pria"}`;
                         const publicUrl = getInvitationPublicUrl(activeSub);
                         const isEmergencyUnlocked = inv.adminUnlockedUntil && new Date(inv.adminUnlockedUntil) > new Date();
+                        const eventDate = getInvitationEventDate(inv.eventData);
+                        const defaultGalleryExpiry = eventDate ? new Date(eventDate.getTime() + 30 * 24 * 60 * 60 * 1000) : null;
 
                         return (
                           <div key={inv.id} className="bg-white rounded-2xl p-4 border border-gray-200 shadow-2xs space-y-3">
@@ -2483,28 +2857,71 @@ export default function AdminPage() {
                                   <span className="text-[10px] text-stone-400">↗</span>
                                 </a>
                               </div>
-                              <Badge status={inv.status} />
+                              {/* Dot indicator status mobile */}
+                              <div>
+                                {inv.status === "DRAFT" && (
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-800">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400" /> Draft
+                                  </span>
+                                )}
+                                {inv.status === "PUBLISHED" && (
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Tayang
+                                  </span>
+                                )}
+                                {inv.status === "EVENT_FINISHED" && (
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-purple-800">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-purple-500" /> Galeri
+                                  </span>
+                                )}
+                                {(inv.status === "ARCHIVED" || inv.status === "TAKEN_DOWN") && (
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-stone-600">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-stone-400" /> Arsip
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Lifecycle details on mobile */}
+                            <div className="text-xs text-stone-500 space-y-1">
+                              {inv.status === "PUBLISHED" && eventDate && (
+                                <div>Acara: <strong className="text-stone-700">{eventDate.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</strong></div>
+                              )}
+                              {inv.status === "EVENT_FINISHED" && (
+                                <div>
+                                  {inv.galleryExpiresAt ? (
+                                    <span className="text-purple-700 font-semibold">✦ Extended s.d. {new Date(inv.galleryExpiresAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</span>
+                                  ) : defaultGalleryExpiry ? (
+                                    <span>Masa Galeri: s.d. {defaultGalleryExpiry.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</span>
+                                  ) : (
+                                    <span>Masa Galeri Standar 30 Hari</span>
+                                  )}
+                                </div>
+                              )}
                             </div>
 
                             {/* Info Detail Mobile */}
                             <div className="flex items-center justify-between text-xs text-gray-500 pt-2 border-t border-gray-100">
                               <span>Tema: <strong className="capitalize text-gray-800">{inv.themeId}</strong></span>
                               {isEmergencyUnlocked ? (
-                                <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-100 text-amber-900 border border-amber-300">
-                                  Kunci Darurat Aktif
+                                <span className="flex items-center gap-1 text-[10px] font-semibold text-amber-700">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" /> Darurat Aktif
                                 </span>
                               ) : inv.isLockedPermanently ? (
-                                <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-red-100 text-red-800 border border-red-200">
-                                  Terkunci Permanen
+                                <span className="flex items-center gap-1 text-[10px] font-semibold text-red-700">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-red-400" /> Terkunci Permanen
+                                </span>
+                              ) : (inv.status === "PUBLISHED" || inv.status === "EVENT_FINISHED") ? (
+                                <span className="flex items-center gap-1 text-[10px] font-semibold text-stone-500">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-stone-300" /> Terkunci Pasca Publish
                                 </span>
                               ) : (
-                                <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
-                                  Bisa Diedit
+                                <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-700">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Bisa Diedit
                                 </span>
                               )}
                             </div>
 
-                            {/* Actions Mobile */}
                             {/* Actions Mobile */}
                             <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100 flex-wrap">
                               <button
@@ -2527,14 +2944,16 @@ export default function AdminPage() {
                                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                                 </button>
                               )}
-                              <button
-                                type="button"
-                                onClick={() => handleExtendGallery(inv)}
-                                className="px-2 py-1.5 rounded-lg text-xs font-bold text-emerald-600 hover:bg-emerald-50 border border-transparent hover:border-emerald-100 transition cursor-pointer"
-                                title="Tambah Masa Aktif 30 Hari"
-                              >
-                                +30H
-                              </button>
+                              {inv.status === "EVENT_FINISHED" && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleExtendGallery(inv)}
+                                  className="px-2 py-1.5 rounded-lg text-xs font-bold text-emerald-600 hover:bg-emerald-50 border border-transparent hover:border-emerald-100 transition cursor-pointer"
+                                  title="Tambah Masa Simpan Galeri (+30 Hari)"
+                                >
+                                  +30H
+                                </button>
+                              )}
                               <button
                                 type="button"
                                 onClick={() => handleToggleEmergencyUnlock(inv)}
@@ -2672,7 +3091,44 @@ export default function AdminPage() {
               {/* ── Themes Management ── */}
               {activeTab === "themes" && (
                 <div className="space-y-6">
-                  <div className="flex items-center justify-between flex-wrap gap-3">
+                  {/* Sub-Tab Navigation: Katalog Tema vs Pustaka Musik */}
+                  <div className="flex items-center gap-2 border-b border-stone-200 pb-3">
+                    <button
+                      type="button"
+                      onClick={() => setThemeSubTab("themes")}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+                        themeSubTab === "themes"
+                          ? "bg-stone-900 text-white shadow-xs"
+                          : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+                      }`}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                      </svg>
+                      <span>Katalog Tema ({themes.filter((t) => t.id !== "starter-blueprint").length})</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setThemeSubTab("music");
+                        fetchSystemMusics();
+                      }}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+                        themeSubTab === "music"
+                          ? "bg-amber-800 text-white shadow-xs"
+                          : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+                      }`}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                      </svg>
+                      <span>Pustaka Musik Sistem ({systemMusics.length})</span>
+                    </button>
+                  </div>
+
+                  {themeSubTab === "themes" ? (
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between flex-wrap gap-3">
                     <div>
                       <h2 className="text-2xl font-bold text-gray-900">Katalog &amp; Manajemen Tema</h2>
                       <p className="text-sm text-gray-500 mt-0.5">Kelola daftar tema per kategori (Modern &amp; Traditional), status aktif, dan urutan</p>
@@ -2880,7 +3336,175 @@ export default function AdminPage() {
                     );
                   })()}
                 </div>
+              ) : (
+                /* ── Sub-Tab: Pustaka Musik Sistem ── */
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between flex-wrap gap-3">
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-900">Pustaka Musik Sistem</h2>
+                      <p className="text-sm text-gray-500 mt-0.5">
+                        Kelola koleksi lagu pernikahan yang tersedia untuk dipilih klien pada editor undangan
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={fetchSystemMusics}
+                        disabled={musicLoading}
+                        className="px-3.5 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold rounded-xl transition flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <svg className={`w-3.5 h-3.5 ${musicLoading ? "animate-spin" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        <span>Segarkan</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleOpenAddMusic}
+                        className="px-3.5 py-2 bg-stone-900 hover:bg-stone-800 text-white text-xs font-semibold rounded-xl transition flex items-center gap-1.5 shadow-xs cursor-pointer"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        <span>Tambah Lagu Baru</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Music Grid */}
+                  {musicLoading && systemMusics.length === 0 ? (
+                    <div className="text-center py-16 bg-white rounded-3xl border border-stone-200">
+                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-stone-300 border-t-amber-800 mb-3" />
+                      <p className="text-sm font-medium text-stone-500">Memuat pustaka musik sistem...</p>
+                    </div>
+                  ) : systemMusics.length === 0 ? (
+                    <div className="text-center py-16 bg-white rounded-3xl border border-stone-200 p-6">
+                      <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-800 flex items-center justify-center mx-auto mb-3">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                        </svg>
+                      </div>
+                      <h4 className="text-base font-bold text-stone-800 mb-1">Belum Ada Lagu di Pustaka</h4>
+                      <p className="text-xs text-stone-500 max-w-sm mx-auto mb-4">
+                        Tambahkan file lagu latar (MP3 / OGG / WAV / M4A) untuk dijadikan pilihan bagi klien.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleOpenAddMusic}
+                        className="px-4 py-2 bg-stone-900 text-white rounded-xl text-xs font-semibold hover:bg-stone-800 transition cursor-pointer"
+                      >
+                        + Tambah Lagu Pertama
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {systemMusics.map((music) => {
+                        const isPlaying = playingMusicId === music.id;
+                        return (
+                          <div
+                            key={music.id}
+                            className={`p-4 rounded-2xl border transition-all ${
+                              music.isActive
+                                ? "bg-white border-stone-200 shadow-xs hover:border-amber-300"
+                                : "bg-stone-50/80 border-stone-200 opacity-60"
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <button
+                                type="button"
+                                onClick={() => handlePlayPreviewMusic(music)}
+                                className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition cursor-pointer ${
+                                  isPlaying
+                                    ? "bg-amber-800 text-white shadow-sm ring-2 ring-amber-400/50"
+                                    : "bg-stone-100 text-stone-700 hover:bg-amber-100 hover:text-amber-900"
+                                }`}
+                                title={isPlaying ? "Jeda Preview" : "Putar Preview"}
+                              >
+                                {isPlaying ? (
+                                  <svg className="w-4 h-4 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 9v6m4-6v6" />
+                                  </svg>
+                                ) : (
+                                  <svg className="w-4 h-4 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                  </svg>
+                                )}
+                              </button>
+
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center justify-between gap-1">
+                                  <h4 className="text-sm font-bold text-stone-900 truncate" title={music.title}>
+                                    {music.title}
+                                  </h4>
+                                  <span
+                                    className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
+                                      music.isActive
+                                        ? "bg-emerald-50 text-emerald-700"
+                                        : "bg-stone-200 text-stone-600"
+                                    }`}
+                                  >
+                                    {music.isActive ? "Aktif" : "Nonaktif"}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-stone-500 truncate mt-0.5">
+                                  {music.composer || "Pencipta Anonim"}
+                                </p>
+                                {music.genre && (
+                                  <span className="inline-block mt-1 text-[10px] font-medium text-amber-900/80 bg-amber-50 px-2 py-0.5 rounded-md">
+                                    {music.genre}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="mt-3 pt-3 border-t border-stone-100 flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-1.5">
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={music.isActive}
+                                    onChange={() => handleToggleMusicActive(music.id, music.isActive)}
+                                    className="sr-only peer"
+                                  />
+                                  <div className="w-8 h-4 bg-stone-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-600"></div>
+                                </label>
+                                <span className="text-[11px] text-stone-500">
+                                  {music.isActive ? "Tampil di Klien" : "Disembunyikan"}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenEditMusic(music)}
+                                  className="p-1.5 text-stone-400 hover:text-stone-700 rounded-lg hover:bg-stone-100 transition cursor-pointer"
+                                  title="Edit Metadata"
+                                >
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                  </svg>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteMusic(music.id, music.title)}
+                                  className="p-1.5 text-stone-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition cursor-pointer"
+                                  title="Hapus Lagu"
+                                >
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               )}
+            </div>
+          )}
 
               {activeTab === "portfolio" && (
                 <AdminPortfolioTab invitations={invitations} />
@@ -4080,25 +4704,39 @@ export default function AdminPage() {
                     description="Atur tarif dinamis untuk layanan integrasi custom domain (1 tahun) dan perpanjangan masa aktif URL asli pasca acara (bulanan via QRIS)."
                     isEditing={Boolean(editSection["addons"])}
                     onEdit={() => toggleEditSection("addons")}
-                    onCancel={() => cancelEdit("addons", ["gallery_extension_price_per_month", "addon_custom_domain_price"])}
-                    onSave={() => saveSettings(["gallery_extension_price_per_month", "addon_custom_domain_price"], setSavingAddons, "addons")}
+                    onCancel={() => cancelEdit("addons", ["gallery_extension_price_per_month", "addon_custom_domain_price", "addon_custom_domain_enabled"])}
+                    onSave={() => saveSettings(["gallery_extension_price_per_month", "addon_custom_domain_price", "addon_custom_domain_enabled"], setSavingAddons, "addons")}
                     saving={savingAddons}
-                    isDirty={isSectionDirty(["gallery_extension_price_per_month", "addon_custom_domain_price"])}
+                    isDirty={isSectionDirty(["gallery_extension_price_per_month", "addon_custom_domain_price", "addon_custom_domain_enabled"])}
                     saveSuccess={settingsSaved["addons"]}
-                    saveSuccessMessage="Harga layanan add-on berhasil diperbarui"
+                    saveSuccessMessage="Pengaturan layanan add-on berhasil diperbarui"
                     viewContent={
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="p-4 bg-amber-50/60 rounded-xl border border-amber-200">
-                          <span className="text-xs font-bold text-amber-900 block mb-1">Jasa Integrasi Custom Domain (1 Thn)</span>
-                          <div className="flex items-baseline gap-1.5">
-                            <span className="text-xl font-mono font-bold text-amber-950">
-                              Rp {Number(settingsMap["addon_custom_domain_price"] || 150000).toLocaleString("id-ID")}
-                            </span>
-                            <span className="text-xs text-amber-800 font-medium">/ 1 Tahun</span>
+                        <div className="p-4 bg-amber-50/60 rounded-xl border border-amber-200 flex flex-col justify-between">
+                          <div>
+                            <div className="flex items-center justify-between gap-2 mb-1">
+                              <span className="text-xs font-bold text-amber-900 block">Jasa Integrasi Custom Domain (1 Thn)</span>
+                              <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                                settingsMap["addon_custom_domain_enabled"] !== "false"
+                                  ? "bg-emerald-100 text-emerald-800 border border-emerald-300/60"
+                                  : "bg-amber-100 text-amber-800 border border-amber-300/60"
+                              }`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${
+                                  settingsMap["addon_custom_domain_enabled"] !== "false" ? "bg-emerald-500" : "bg-amber-500"
+                                }`}></span>
+                                {settingsMap["addon_custom_domain_enabled"] !== "false" ? "Aktif Ditawarkan" : "Coming Soon"}
+                              </span>
+                            </div>
+                            <div className="flex items-baseline gap-1.5">
+                              <span className="text-xl font-mono font-bold text-amber-950">
+                                Rp {Number(settingsMap["addon_custom_domain_price"] || 150000).toLocaleString("id-ID")}
+                              </span>
+                              <span className="text-xs text-amber-800 font-medium">/ 1 Tahun</span>
+                            </div>
+                            <p className="text-xs text-stone-600 mt-2 leading-relaxed">
+                              Jasa integrasi domain pribadi milik klien (DNS &amp; Auto-SSL) dan otomatis mengaktifkan masa tayang URL asli serta galeri kenangan undangan selama 1 tahun penuh.
+                            </p>
                           </div>
-                          <p className="text-xs text-stone-600 mt-2 leading-relaxed">
-                            Jasa integrasi domain pribadi milik klien (DNS &amp; Auto-SSL) dan otomatis mengaktifkan masa tayang URL asli serta galeri kenangan undangan selama 1 tahun penuh.
-                          </p>
                         </div>
 
                         <div className="p-4 bg-purple-50/60 rounded-xl border border-purple-200">
@@ -4117,6 +4755,28 @@ export default function AdminPage() {
                     }
                   >
                     <div className="space-y-4">
+                      <FieldRow
+                        label="Status Fitur Custom Domain (Dasbor Klien)"
+                        description="Aktifkan untuk membuka pemesanan domain pribadi bagi klien, atau nonaktifkan untuk menampilkan mode 'Segera Hadir / Belum Tersedia' di dasbor klien."
+                      >
+                        <div className="flex items-center gap-3 p-3 bg-stone-50 rounded-xl border border-stone-200">
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={settingsMap["addon_custom_domain_enabled"] !== "false"}
+                              onChange={(e) => setSetting("addon_custom_domain_enabled", e.target.checked ? "true" : "false")}
+                              className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-stone-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                          </label>
+                          <span className="text-xs font-bold text-stone-800">
+                            {settingsMap["addon_custom_domain_enabled"] !== "false"
+                              ? "Aktif — Klien dapat memesan custom domain pribadi"
+                              : "Nonaktif — Mode Coming Soon / Belum Tersedia di klien"}
+                          </span>
+                        </div>
+                      </FieldRow>
+
                       <FieldRow
                         label="Tarif Jasa Custom Domain &amp; Perpanjangan URL Asli (1 Tahun)"
                         description="Biaya jasa integrasi domain pribadi milik klien (DNS &amp; SSL) serta garansi masa aktif URL asli &amp; galeri kenangan selama 1 tahun penuh (Rupiah)."
@@ -5776,6 +6436,145 @@ export default function AdminPage() {
         </div>
       )}
 
+      {/* ── Add / Edit System Music Modal ── */}
+      {showMusicModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-xl space-y-4">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-800 flex items-center justify-center">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                  </svg>
+                </div>
+                <h3 className="font-bold text-gray-900 text-lg">
+                  {editingMusic ? "Edit Metadata Lagu" : "Tambah Lagu ke Pustaka Sistem"}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => !musicUploading && setShowMusicModal(false)}
+                disabled={musicUploading}
+                className="text-gray-400 hover:text-gray-600 font-bold text-lg cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveMusic} className="space-y-3.5">
+              {!editingMusic && (
+                <div>
+                  <label className="block text-xs font-bold text-gray-800 mb-1">
+                    File Audio (.mp3, .ogg, .wav, .m4a) <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="border-2 border-dashed border-gray-200 hover:border-amber-400 rounded-2xl p-3.5 bg-stone-50/50 transition">
+                    <input
+                      type="file"
+                      id="systemMusicFileInput"
+                      accept="audio/mp3,audio/mpeg,audio/ogg,audio/wav,audio/m4a,audio/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] || null;
+                        setSelectedMusicFile(file);
+                        if (file && !musicForm.title) {
+                          // Auto fill title from filename without extension
+                          const baseName = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+                          setMusicForm((prev) => ({ ...prev, title: baseName }));
+                        }
+                      }}
+                      className="hidden"
+                      disabled={musicUploading}
+                    />
+                    <label
+                      htmlFor="systemMusicFileInput"
+                      className="flex flex-col items-center justify-center cursor-pointer text-center py-2"
+                    >
+                      <svg className="w-7 h-7 text-amber-700 mb-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                      </svg>
+                      {selectedMusicFile ? (
+                        <div className="space-y-0.5">
+                          <p className="text-xs font-bold text-emerald-700 break-all">{selectedMusicFile.name}</p>
+                          <p className="text-[10px] text-gray-500">{(selectedMusicFile.size / (1024 * 1024)).toFixed(2)} MB — Siap diproses</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-0.5">
+                          <p className="text-xs font-semibold text-gray-700">Pilih atau seret file audio ke sini</p>
+                          <p className="text-[10px] text-gray-400">Otomatis dioptimalkan &amp; dikompres ke MP3 128 kbps (FFmpeg)</p>
+                        </div>
+                      )}
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-bold text-gray-800 mb-1">
+                  Judul Lagu <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={musicForm.title}
+                  onChange={(e) => setMusicForm({ ...musicForm, title: e.target.value })}
+                  placeholder="contoh: Canon in D (Johann Pachelbel)"
+                  className="w-full px-3.5 py-2 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500"
+                  required
+                  disabled={musicUploading}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-800 mb-1">Pencipta / Komposer</label>
+                <input
+                  type="text"
+                  value={musicForm.composer}
+                  onChange={(e) => setMusicForm({ ...musicForm, composer: e.target.value })}
+                  placeholder="contoh: Johann Pachelbel / Ludwig van Beethoven"
+                  className="w-full px-3.5 py-2 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500"
+                  disabled={musicUploading}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-800 mb-1">Genre / Mood</label>
+                <input
+                  type="text"
+                  value={musicForm.genre}
+                  onChange={(e) => setMusicForm({ ...musicForm, genre: e.target.value })}
+                  placeholder="contoh: Piano &amp; Strings Klasik Sakral"
+                  className="w-full px-3.5 py-2 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500"
+                  disabled={musicUploading}
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setShowMusicModal(false)}
+                  disabled={musicUploading}
+                  className="px-4 py-2 border border-gray-200 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-50 transition cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={musicUploading}
+                  className="px-4 py-2 bg-stone-900 hover:bg-stone-800 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs cursor-pointer"
+                >
+                  {musicUploading ? (
+                    <>
+                      <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      <span>Mengunggah &amp; Kompresi (FFmpeg)...</span>
+                    </>
+                  ) : (
+                    <span>{editingMusic ? "Simpan Perubahan" : "Simpan Lagu"}</span>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* ── Theme Demo Studio Modal ── */}
       {showDemoStudioModal && demoStudioTheme && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-6">
@@ -5880,33 +6679,51 @@ export default function AdminPage() {
                     <div className="space-y-6">
                       <div className="p-4 bg-amber-50/60 border border-amber-200/70 rounded-2xl text-amber-900 text-xs leading-relaxed">
                         <div>
-                          <strong>Panduan Aset:</strong> Foto yang diunggah akan otomatis dikonversi dan disimpan ke folder{" "}
+                          <strong>Panduan Aset:</strong> Foto atau Video MP4 yang diunggah akan otomatis disimpan ke folder{" "}
                           <code className="font-mono bg-amber-100 px-1 py-0.5 rounded text-amber-950 font-bold">
                             public/demo/{demoStudioTheme.id}/
                           </code>{" "}
-                          sebagai WebP beresolusi optimal dan langsung tampil di halaman showroom demo publik.
+                          dan langsung tampil di halaman showroom demo publik tema bersangkutan.
                         </div>
                       </div>
 
                       {/* Main Cover & Hero Slots Grid */}
                       <div>
                         <h4 className="font-bold text-gray-900 text-xs uppercase tracking-wider mb-3">
-                          1. Foto Utama &amp; Banner Hero
+                          1. Foto Utama &amp; Banner Hero (Mendukung Video MP4 Loop)
                         </h4>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                           {[
-                            { slot: "cover", label: "Landing Cover", file: "cover.webp", desc: "Tampilan layar pembuka & sampul awal" },
-                            { slot: "hero", label: "Hero / Sidebar", file: "hero.webp", desc: "Foto portrait sidebar desktop & hero" },
-                            { slot: "background", label: "Background Global", file: "background.webp", desc: "Latar belakang fixed blur tema" },
-                            { slot: "home", label: "Latar Home", file: "home.webp", desc: "Background khusus seksi Home (Opsional)" },
-                            { slot: "footer", label: "Foto Footer", file: "footer.webp", desc: "Foto penutup di bagian akhir undangan (Opsional)" },
-                            { slot: "groom", label: "Mempelai Pria", file: "groom.webp", desc: "Foto profil pria" },
-                            { slot: "bride", label: "Mempelai Wanita", file: "bride.webp", desc: "Foto profil wanita" },
+                            { slot: "cover", label: "Landing Cover", file: "cover.webp", allowVideo: true, desc: "Tampilan layar pembuka & sampul awal (Foto WebP/JPG atau Video Loop MP4)" },
+                            { slot: "hero", label: "Hero / Sidebar", file: "hero.webp", allowVideo: true, desc: "Foto portrait sidebar desktop & hero (Foto WebP/JPG atau Video Loop MP4)" },
+                            { slot: "background", label: "Background Global", file: "background.webp", allowVideo: true, desc: "Latar belakang fixed tema (Foto WebP/JPG atau Video Loop MP4)" },
+                            { slot: "home", label: "Latar Home", file: "home.webp", allowVideo: false, desc: "Background khusus seksi Home (Opsional)" },
+                            { slot: "footer", label: "Foto Footer", file: "footer.webp", allowVideo: false, desc: "Foto penutup di bagian akhir undangan (Opsional)" },
+                            { slot: "groom", label: "Mempelai Pria", file: "groom.webp", allowVideo: false, desc: "Foto profil pria" },
+                            { slot: "bride", label: "Mempelai Wanita", file: "bride.webp", allowVideo: false, desc: "Foto profil wanita" },
                           ].map((item) => {
                             const isStaged = Boolean(stagedDemoFiles[item.slot]);
                             const isSaved = Boolean(updatedDemoSlots[item.slot]) && !isStaged;
                             const isCurrentUploading = uploadingSlot === item.slot;
-                            const imgSrc = localPreviews[item.slot] || `/demo/${demoStudioTheme.id}/${item.file}?v=${updatedDemoSlots[item.slot] || 1}`;
+                            const stagedFile = stagedDemoFiles[item.slot];
+                            const localPreview = localPreviews[item.slot];
+                            const savedUrl = (
+                              item.slot === "cover" ? demoStudioData.landingCoverUrl :
+                              item.slot === "hero" ? demoStudioData.sidebarPhotoUrl :
+                              item.slot === "background" ? demoStudioData.globalBgUrl :
+                              item.slot === "home" ? demoStudioData.homePhotoUrl :
+                              item.slot === "footer" ? demoStudioData.footerPhotoUrl :
+                              item.slot === "groom" ? demoStudioData.groomPhotoUrl :
+                              item.slot === "bride" ? demoStudioData.bridePhotoUrl : null
+                            ) || `/demo/${demoStudioTheme.id}/${item.file}?v=${updatedDemoSlots[item.slot] || 1}`;
+
+                            const effectiveSrc = localPreview || savedUrl;
+                            const isVideoSlot = Boolean(
+                              item.allowVideo && (
+                                (stagedFile && (stagedFile.type?.startsWith("video/") || /\.(mp4|webm|mov)$/i.test(stagedFile.name))) ||
+                                (!stagedFile && effectiveSrc && /\.(mp4|webm|mov)(\?.*)?$/i.test(effectiveSrc))
+                              )
+                            );
                             return (
                               <div
                                 key={item.slot}
@@ -5936,33 +6753,50 @@ export default function AdminPage() {
                                   <p className="text-[11px] text-gray-500 leading-tight">{item.desc}</p>
                                 </div>
 
-                                <div className="relative aspect-video rounded-xl bg-gray-200 overflow-hidden border border-gray-300">
-                                  <img
-                                    key={isStaged ? localPreviews[item.slot] : updatedDemoSlots[item.slot] || imgSrc}
-                                    src={imgSrc}
-                                    alt={item.label}
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                      (e.target as HTMLElement).style.display = "none";
-                                    }}
-                                  />
+                                <div className="relative aspect-video rounded-xl bg-stone-900 overflow-hidden border border-gray-300">
+                                  {isVideoSlot ? (
+                                    <video
+                                      key={isStaged ? localPreview : updatedDemoSlots[item.slot] || effectiveSrc}
+                                      src={effectiveSrc}
+                                      autoPlay
+                                      loop
+                                      muted
+                                      playsInline
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : (
+                                    <img
+                                      key={isStaged ? localPreview : updatedDemoSlots[item.slot] || effectiveSrc}
+                                      src={effectiveSrc}
+                                      alt={item.label}
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        (e.target as HTMLElement).style.display = "none";
+                                      }}
+                                    />
+                                  )}
+                                  {isVideoSlot && (
+                                    <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-black/80 backdrop-blur-xs text-[9px] font-bold tracking-wider text-amber-300 rounded border border-amber-500/30 pointer-events-none z-10">
+                                      VIDEO MP4
+                                    </div>
+                                  )}
                                   {isCurrentUploading && (
                                     <div className="absolute inset-0 bg-stone-950/75 backdrop-blur-xs flex flex-col items-center justify-center gap-1.5 text-white p-2 text-center z-10 animate-fade-in">
                                       <svg className="animate-spin h-5 w-5 text-amber-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3"></circle>
                                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                       </svg>
-                                      <span className="text-[10px] font-bold text-amber-300 tracking-wider uppercase">Menyimpan WebP...</span>
+                                      <span className="text-[10px] font-bold text-amber-300 tracking-wider uppercase">Menyimpan Aset...</span>
                                     </div>
                                   )}
                                 </div>
 
                                 <div className="flex items-center gap-2">
                                   <label className="flex-1 py-2 bg-white hover:bg-amber-50 text-stone-800 hover:text-amber-900 border border-gray-300 hover:border-amber-300 rounded-xl text-xs font-bold transition text-center cursor-pointer block shadow-2xs">
-                                    <span>{isStaged ? "Ganti Lagi" : "Ganti Foto"}</span>
+                                    <span>{isStaged ? "Ganti Lagi" : item.allowVideo ? "Pilih Foto / Video" : "Ganti Foto"}</span>
                                     <input
                                       type="file"
-                                      accept="image/*"
+                                      accept={item.allowVideo ? "image/*,video/mp4,video/webm" : "image/*"}
                                       disabled={demoStudioSaving}
                                       className="hidden"
                                       onChange={(e) => {
@@ -5977,7 +6811,7 @@ export default function AdminPage() {
                                       type="button"
                                       onClick={() => handleDiscardStagedAsset(item.slot)}
                                       disabled={demoStudioSaving}
-                                      title="Batalkan draft foto ini"
+                                      title="Batalkan draft aset ini"
                                       className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl text-xs font-bold transition cursor-pointer"
                                     >
                                       Batal
@@ -6177,6 +7011,100 @@ export default function AdminPage() {
                               </div>
                             );
                           })}
+                        </div>
+                      </div>
+
+                      {/* 4. Audio Musik Latar Belakang Demo (BGM) */}
+                      <div className="p-4 bg-gray-50 border border-gray-200 rounded-2xl space-y-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                          <div>
+                            <h4 className="font-bold text-gray-900 text-xs uppercase tracking-wider">
+                              4. Musik Latar Belakang Demo (Audio BGM)
+                            </h4>
+                            <p className="text-[11px] text-gray-500 mt-0.5">
+                              Lagu latar yang akan otomatis diputar saat pengunjung menekan tombol &ldquo;Buka Undangan&rdquo; di showroom demo publik.
+                            </p>
+                          </div>
+                          {stagedDemoFiles["music"] ? (
+                            <span className="text-[10px] font-bold text-amber-800 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-md self-start sm:self-auto flex items-center gap-1">
+                              <span>●</span> Draft Audio Baru
+                            </span>
+                          ) : updatedDemoSlots["music"] ? (
+                            <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-md self-start sm:self-auto flex items-center gap-1">
+                              <span>✓</span> Tersimpan
+                            </span>
+                          ) : (
+                            <span className="font-mono text-[10px] text-gray-400 self-start sm:self-auto">
+                              {demoStudioData.audioUrl || "music.mp3"}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Pilihan: Pilih dari Pustaka Sistem vs Upload Sendiri */}
+                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                          <div className="sm:col-span-8 space-y-1">
+                            <label className="block text-[10px] font-bold text-gray-600 uppercase tracking-wider">
+                              Pilih dari Pustaka Musik Sistem ({systemMusics.length} Lagu):
+                            </label>
+                            <select
+                              value={stagedDemoFiles["music"] ? "" : (demoStudioData.audioUrl || "")}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                if (!val) return;
+                                if (stagedDemoFiles["music"]) {
+                                  handleDiscardStagedAsset("music");
+                                }
+                                setDemoStudioData((prev: any) => ({ ...prev, audioUrl: val }));
+                              }}
+                              disabled={demoStudioSaving}
+                              className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl text-xs font-semibold text-gray-800 focus:outline-none focus:border-amber-500 shadow-2xs cursor-pointer truncate"
+                            >
+                              <option value="">-- Pilih Lagu dari Pustaka Musik --</option>
+                              {systemMusics.map((m) => (
+                                <option key={m.id} value={m.url}>
+                                  {m.title} {m.composer ? `(${m.composer})` : ""} {m.genre ? `• ${m.genre}` : ""}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div className="sm:col-span-4 flex items-center gap-2">
+                            <label className="w-full px-3.5 py-2 bg-white hover:bg-amber-50 text-stone-800 hover:text-amber-900 border border-gray-300 hover:border-amber-300 rounded-xl text-xs font-bold transition text-center cursor-pointer block shadow-2xs truncate">
+                              <span>{stagedDemoFiles["music"] ? "Ganti File Audio" : "Upload File Baru"}</span>
+                              <input
+                                type="file"
+                                accept="audio/mpeg,audio/ogg,audio/mp3,.mp3,.ogg"
+                                disabled={demoStudioSaving}
+                                className="hidden"
+                                onChange={(e) => {
+                                  if (e.target.files && e.target.files[0]) {
+                                    handleStageDemoAsset("music", e.target.files[0]);
+                                  }
+                                }}
+                              />
+                            </label>
+                            {stagedDemoFiles["music"] && (
+                              <button
+                                type="button"
+                                onClick={() => handleDiscardStagedAsset("music")}
+                                disabled={demoStudioSaving}
+                                title="Batalkan file audio ini"
+                                className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl text-xs font-bold transition cursor-pointer shrink-0"
+                              >
+                                Batal
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Player Preview Audio */}
+                        <div>
+                          <audio
+                            key={stagedDemoFiles["music"] ? localPreviews["music"] : updatedDemoSlots["music"] || demoStudioData.audioUrl}
+                            controls
+                            src={localPreviews["music"] || demoStudioData.audioUrl || `/demo/${demoStudioTheme.id}/music.mp3`}
+                            className="w-full h-10 rounded-xl"
+                          />
                         </div>
                       </div>
                     </div>

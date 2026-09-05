@@ -103,7 +103,8 @@ export async function deleteFile(publicUrl: string | null): Promise<boolean> {
     
     // Local File Deletion
     if (publicUrl.startsWith("/uploads/")) {
-      const absolutePath = path.join(process.cwd(), "public", publicUrl);
+      const cleanPath = publicUrl.split("?")[0];
+      const absolutePath = path.join(process.cwd(), "public", cleanPath);
       if (fs.existsSync(absolutePath)) {
         await fs.promises.unlink(absolutePath);
         return true;
@@ -206,13 +207,14 @@ export async function syncDraftToR2(invitationId: string): Promise<void> {
     const syncSingleUrl = async (url: string | null): Promise<string | null> => {
       if (!url || !url.startsWith("/uploads/")) return url;
       
-      const localFilePath = path.join(process.cwd(), "public", url);
+      const cleanUrl = url.split("?")[0];
+      const localFilePath = path.join(process.cwd(), "public", cleanUrl);
       try {
         const buffer = await fs.promises.readFile(localFilePath);
-        const ext = path.extname(url).toLowerCase();
+        const ext = path.extname(cleanUrl).toLowerCase();
         const mime = mimeTypes[ext] || "application/octet-stream";
         // Remove leading "/uploads/" to get relative path for R2
-        const relativePath = url.substring(9); 
+        const relativePath = cleanUrl.substring(9); 
         
         const command = new PutObjectCommand({
           Bucket: bucketName,

@@ -7,6 +7,8 @@
 // - /demo/[theme]/bride.webp
 // - /demo/[theme]/gallery_01.webp ... gallery_08.webp
 
+import fs from "fs";
+import path from "path";
 import { COLOR_PALETTES } from "@/lib/colorPalettes";
 
 export interface DemoThemeData {
@@ -41,6 +43,7 @@ export interface DemoThemeData {
   
   // Curated Standardized WebP Photo Assets
   globalBgUrl: string;
+  homePhotoUrl?: string;
   groomPhotoUrl: string;
   bridePhotoUrl: string;
   sidebarPhotoUrl: string;
@@ -206,16 +209,16 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     ],
     events: [
       {
-        badge: "HOLY MATRIMONY",
-        title: "Holy Matrimony",
+        badge: "CEREMONY",
+        title: "Wedding Ceremony",
         time: "15.30 WITA",
-        location: "Cliffside Chapel, The Mulia Resort",
+        location: "Cliffside Glass Pavilion, The Mulia Resort",
         address: "Jl. Raya Nusa Dua Selatan, Sawangan, Nusa Dua, Bali",
         mapsUrl: "https://maps.google.com",
       },
       {
-        badge: "SUNSET RECEPTION",
-        title: "Sunset Dinner & After Party",
+        badge: "RECEPTION",
+        title: "Dinner Reception",
         time: "18.30 WITA",
         location: "Beachfront Ocean Lawn, The Mulia Resort",
         address: "Jl. Raya Nusa Dua Selatan, Nusa Dua, Bali",
@@ -1184,6 +1187,7 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     openingQuoteRef: "THE WEDDING CHRONICLE",
     city: "Surabaya",
     globalBgUrl: "/demo/chronicle/background.webp",
+    homePhotoUrl: "/demo/chronicle/hero.webp",
     groomPhotoUrl: "/demo/chronicle/groom.webp",
     bridePhotoUrl: "/demo/chronicle/bride.webp",
     sidebarPhotoUrl: "/demo/chronicle/hero.webp",
@@ -1235,7 +1239,28 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
 
 export function getDemoThemeData(themeId: string): DemoThemeData {
   const normalized = (themeId || "kalandra").toLowerCase().trim();
-  return DEMO_REGISTRY[normalized] || DEMO_REGISTRY.kalandra;
+  const base = DEMO_REGISTRY[normalized] || DEMO_REGISTRY.kalandra;
+  const demo: DemoThemeData = { ...base };
+
+  try {
+    const publicThemeDir = path.join(process.cwd(), "public", "demo", normalized);
+    if (fs.existsSync(path.join(publicThemeDir, "cover.mp4"))) {
+      demo.landingCoverUrl = `/demo/${normalized}/cover.mp4`;
+    }
+    if (fs.existsSync(path.join(publicThemeDir, "hero.mp4"))) {
+      demo.sidebarPhotoUrl = `/demo/${normalized}/hero.mp4`;
+    }
+    if (fs.existsSync(path.join(publicThemeDir, "background.mp4"))) {
+      demo.globalBgUrl = `/demo/${normalized}/background.mp4`;
+    }
+    if (fs.existsSync(path.join(publicThemeDir, "music.mp3"))) {
+      (demo as any).audioUrl = `/demo/${normalized}/music.mp3`;
+    } else if (fs.existsSync(path.join(publicThemeDir, "music.ogg"))) {
+      (demo as any).audioUrl = `/demo/${normalized}/music.ogg`;
+    }
+  } catch {}
+
+  return demo;
 }
 
 // Master composer to build ALL sections for the HTML templates
@@ -1654,7 +1679,7 @@ export function composeDemoTemplateData(
         </p>
 
         <!-- 1. TOMBOL UPLOAD MOMEN (DIRECT LINK) -->
-        <a href="/demo/moment" style="display: block; width: 100%; max-width: 360px; margin: 0 auto 1.8rem auto; padding: 14px 20px; border-radius: 50px; background: #ffffff; color: #000000; font-weight: 700; font-size: 0.9rem; letter-spacing: 0.05em; text-align: center; text-decoration: none; box-shadow: 0 4px 15px rgba(255,255,255,0.18); transition: transform 0.15s ease;">
+        <a href="/demo/${demo.themeId}/sharemoment" style="display: block; width: 100%; max-width: 360px; margin: 0 auto 1.8rem auto; padding: 14px 20px; border-radius: 50px; background: #ffffff; color: #000000; font-weight: 700; font-size: 0.9rem; letter-spacing: 0.05em; text-align: center; text-decoration: none; box-shadow: 0 4px 15px rgba(255,255,255,0.18); transition: transform 0.15s ease;">
           BAGIKAN FOTO MOMEN ANDA
         </a>
 
@@ -1677,9 +1702,9 @@ export function composeDemoTemplateData(
           </div>
         </div>
 
-        <!-- 3. TOMBOL DIRECT KE HALAMAN GALERI WEB (galery.js) -->
+        <!-- 3. TOMBOL DIRECT KE HALAMAN GALERI WEB (memories) -->
         <div style="text-align: center;">
-          <a href="/demo/${demo.themeId}/galery" class="btn-outline-box" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; font-size: 12px; font-weight: 700; border-radius: 50px; text-decoration: none; border: 1px solid currentColor; color: inherit; transition: all 0.2s ease;">
+          <a href="/demo/${demo.themeId}/memories" class="btn-outline-box btn-memories-gallery" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 28px; font-size: 12px; font-weight: 700; border-radius: 50px; text-decoration: none; border: 1px solid currentColor; letter-spacing: 0.08em; transition: all 0.25s ease;">
             <span>✨ BUKA GALERI MOMEN LENGKAP</span>
             <span style="font-size: 14px;">↗</span>
           </a>
@@ -1701,6 +1726,16 @@ export function composeDemoTemplateData(
       }
       .story-circles-track:hover {
         animation-play-state: paused !important;
+      }
+      .btn-memories-gallery {
+        color: inherit;
+      }
+      .btn-memories-gallery:hover {
+        background: #ffffff !important;
+        color: #070709 !important;
+        border-color: #ffffff !important;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(255, 255, 255, 0.25);
       }
     </style>
 
@@ -1815,6 +1850,15 @@ export function composeDemoTemplateData(
 
   const googleCalendarUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`The Wedding of ${demo.groomName} & ${demo.brideName}`)}&dates=${demo.weddingDateYear}${demo.weddingDateMonth}${demo.weddingDateDay}T010000Z/${demo.weddingDateYear}${demo.weddingDateMonth}${demo.weddingDateDay}T140000Z&location=${encodeURIComponent(demo.events[0]?.location || demo.city)}`;
 
+  const demoDir = path.join(process.cwd(), "public", "demo", demo.themeId);
+  const localHomeExists = fs.existsSync(path.join(demoDir, "home.webp"));
+  const localFooterExists = fs.existsSync(path.join(demoDir, "footer.webp"));
+  const rawClosing = (customData as any)?.closingPhotoUrl || (customData as any)?.footerPhotoUrl || (localFooterExists ? `/demo/${demo.themeId}/footer.webp` : null);
+  const effectiveHomePhoto = (customData as any)?.homePhotoUrl || demo.homePhotoUrl || (localHomeExists ? `/demo/${demo.themeId}/home.webp` : demo.globalBgUrl);
+  const defaultCanonExists = fs.existsSync(path.join(process.cwd(), "public", "music", "canon-in-d.ogg"));
+  const fallbackSong = defaultCanonExists ? "/music/canon-in-d.ogg" : (fs.existsSync(path.join(process.cwd(), "public", "music", "bermuara.mp3")) ? "/music/bermuara.mp3" : "");
+  const effectiveAudioUrl = (customData as any)?.audioUrl || (demo as any)?.audioUrl || fallbackSong;
+
   return {
     invitationId: `demo-${demo.themeId}`,
     themeId: demo.themeId,
@@ -1826,9 +1870,14 @@ export function composeDemoTemplateData(
     weddingDateMonth: demo.weddingDateMonth,
     weddingDateYear: demo.weddingDateYear,
     weddingDate: demo.weddingDateFormatted,
-    
+    firstInitial: (demo.groomName || "G").trim().charAt(0).toUpperCase(),
+    secondInitial: (demo.brideName || "B").trim().charAt(0).toUpperCase(),
+    firstNickname: demo.groomName,
+    secondNickname: demo.brideName,
     firstName: demo.groomName,
     secondName: demo.brideName,
+    groomNickname: demo.groomName,
+    brideNickname: demo.brideName,
     groomName: demo.groomName,
     brideName: demo.brideName,
     firstFullName: demo.groomDisplayName,
@@ -1854,9 +1903,10 @@ export function composeDemoTemplateData(
     secondInstagram: demo.brideInstagram,
     
     // Exact Standardized Local Assets
-    globalBgUrl: demo.globalBgUrl,
-    homePhotoUrl: demo.globalBgUrl,
-    footerPhotoUrl: `/demo/${demo.themeId}/footer.webp`,
+    globalBgUrl: (customData as any)?.globalBgUrl || demo.globalBgUrl,
+    homePhotoUrl: effectiveHomePhoto,
+    hasCustomHomePhoto: Boolean((customData as any)?.homePhotoUrl || localHomeExists),
+    footerPhotoUrl: rawClosing || `/demo/${demo.themeId}/footer.webp`,
     groomPhotoUrl: demo.groomPhotoUrl,
     bridePhotoUrl: demo.bridePhotoUrl,
     firstPhotoUrl: demo.groomPhotoUrl,
@@ -1873,6 +1923,12 @@ export function composeDemoTemplateData(
     
     openingQuote: demo.openingQuote,
     openingQuoteRef: demo.openingQuoteRef,
+    
+    coupleSectionEyebrow: "THE COUPLE",
+    coupleSectionTitle: "Mempelai",
+    coupleSectionSub: "Dengan penuh rasa syukur dan sukacita, kami mengundang Anda untuk merayakan persatuan cinta kami dalam ikatan suci pernikahan.",
+    coupleTitle: "Mempelai",
+    coupleEyebrow: "THE COUPLE",
     
     // Complete Composed Section Blocks
     eventDataHtml,
@@ -1894,7 +1950,23 @@ export function composeDemoTemplateData(
     
     googleCalendarUrl,
     waLink: `https://wa.me/6281234567890?text=Halo%20${encodeURIComponent(demo.groomName)}%20dan%20${encodeURIComponent(demo.brideName)}`,
-    audioUrl: "/music/canon-in-d.ogg",
+    audioUrl: effectiveAudioUrl,
+    musicPlayerHtml: effectiveAudioUrl ? `
+    <!-- UNIVERSAL MUSIC PLAYER INJECTED BY DEMO ENGINE -->
+    <audio id="luxAudioPlayer" loop preload="auto">
+      <source src="${effectiveAudioUrl}" type="audio/ogg" />
+      <source src="${effectiveAudioUrl}" type="audio/mpeg" />
+    </audio>
+    <script>
+      (function() {
+        var a = document.getElementById('luxAudioPlayer');
+        if (a) {
+          window.bgAudio = a;
+          window.weddingAudio = a;
+        }
+      })();
+    </script>
+    ` : "",
     
     colorPrimary: palette.primary,
     colorSecondary: palette.secondary,
@@ -1910,10 +1982,10 @@ export function composeDemoTemplateData(
       ...((customData as any)?.customLabels || {}),
     },
 
-    // Adaptive Full-Height Closing Section (Kanvas Kosong by default in demo, no dummy fallback)
-    closingPhotoUrl: (customData as any)?.closingPhotoUrl || null,
-    hasClosingPhoto: Boolean((customData as any)?.closingPhotoUrl),
-    closingPhotoClass: (customData as any)?.closingPhotoUrl ? "has-closing-photo" : "no-closing-photo",
-    closingBgStyle: (customData as any)?.closingPhotoUrl ? `background-image: url('${(customData as any).closingPhotoUrl}');` : "",
+    // Adaptive Full-Height Closing Section (Supports closingPhotoUrl and footerPhotoUrl)
+    closingPhotoUrl: rawClosing,
+    hasClosingPhoto: Boolean(rawClosing),
+    closingPhotoClass: rawClosing ? "has-closing-photo" : "no-closing-photo",
+    closingBgStyle: rawClosing ? `background-image: url('${rawClosing}');` : "",
   };
 }

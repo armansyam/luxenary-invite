@@ -1145,9 +1145,10 @@
       position: fixed;
       bottom: 18px;
       left: 50%;
-      transform: translateX(-50%);
+      transform: translate3d(-50%, 0, 0);
       background: rgba(15, 15, 18, 0.92);
       backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       border: 1px solid rgba(255, 255, 255, 0.15);
       border-radius: 50px;
       padding: 6px 14px;
@@ -1157,6 +1158,14 @@
       box-shadow: 0 10px 35px rgba(0, 0, 0, 0.5);
       z-index: 80;
       max-width: 92vw;
+      transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: transform, opacity;
+    }
+
+    .bottom-dock.dock-hidden {
+      transform: translate3d(-50%, calc(100% + 32px), 0);
+      opacity: 0;
+      pointer-events: none;
     }
 
     .dock-a {
@@ -1199,6 +1208,15 @@
       z-index: 100;
       cursor: pointer;
       backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: transform, opacity;
+    }
+
+    .music-fab.fab-hidden {
+      transform: translateY(-80px);
+      opacity: 0;
+      pointer-events: none;
     }
 
     .music-fab.playing svg {
@@ -1259,16 +1277,22 @@
     @media (min-width: 900px) {
       .left-hero {
         display: block;
+        width: calc(100% - 460px);
+      }
+
+      .cover-screen {
+        width: 460px;
+        left: calc(100% - 460px);
       }
 
       .right-panel {
-        margin-left: 55%;
-        width: 45%;
-        min-width: 420px;
+        margin-left: calc(100% - 460px);
+        width: 460px;
+        min-width: 0;
       }
 
       .bottom-dock {
-        left: calc(55% + 22.5%);
+        left: calc(100% - 230px);
       }
 
       .music-fab {
@@ -1278,15 +1302,41 @@
       .sec-flow,
       .sec-journey {
         max-width: 100%;
-        padding: 6rem 3.5rem;
+        padding: 5.5rem 1.8rem;
       }
 
       .slide-opening {
-        padding: 4.5rem 3.5rem 4rem;
+        padding: 4.5rem 1.8rem 4rem;
       }
 
       .slide-couple {
-        padding: 4rem 3.5rem 5rem;
+        padding: 4rem 1.8rem 4rem;
+      }
+
+      .cover-names {
+        font-size: clamp(2.2rem, 2.8rem, 3.2rem) !important;
+        overflow-wrap: break-word !important;
+      }
+
+      .opening-title {
+        font-size: clamp(2.0rem, 2.4rem, 2.8rem) !important;
+        overflow-wrap: break-word !important;
+      }
+
+      .couple-name {
+        font-size: clamp(1.8rem, 2.2rem, 2.4rem) !important;
+        overflow-wrap: break-word !important;
+      }
+
+      .sec-main-title,
+      .sec-heading {
+        font-size: clamp(1.75rem, 2.1rem, 2.3rem) !important;
+        overflow-wrap: break-word !important;
+        word-break: break-word !important;
+      }
+
+      .cd-val {
+        font-size: clamp(1.8rem, 2.2rem, 2.6rem) !important;
       }
     }
   </style>
@@ -1574,6 +1624,10 @@
       const cover = document.getElementById('coverScreen');
       if (cover) cover.classList.add('hidden');
       playAudio();
+      const dock = document.querySelector('.bottom-dock');
+      if (dock) dock.classList.remove('dock-hidden');
+      const musicFab = document.querySelector('.music-fab');
+      if (musicFab) musicFab.classList.remove('fab-hidden');
     }
 
     function openModal() {
@@ -1712,6 +1766,75 @@
         btn.textContent = 'Kirim Konfirmasi & Doa';
       }
     }
+
+    // SMART AUTO-HIDE DOCK & MUSIC PLAYER ON SCROLL DOWN, REVEAL ON SCROLL UP
+    (function initSmartDock() {
+      const dock = document.querySelector('.bottom-dock');
+      const musicFab = document.querySelector('.music-fab');
+      if (!dock && !musicFab) return;
+
+      let lastScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+      let ticking = false;
+      const SCROLL_THRESHOLD = 12;
+      const TOP_REVEAL_ZONE = 70;
+
+      function setVisible(visible) {
+        if (visible) {
+          if (dock) dock.classList.remove('dock-hidden');
+          if (musicFab) musicFab.classList.remove('fab-hidden');
+        } else {
+          if (dock) dock.classList.add('dock-hidden');
+          if (musicFab) musicFab.classList.add('fab-hidden');
+        }
+      }
+
+      function updateDock() {
+        const currentScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+        const windowHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+        const docHeight = Math.max(
+          document.body.scrollHeight,
+          document.documentElement.scrollHeight,
+          document.body.offsetHeight,
+          document.documentElement.offsetHeight
+        );
+        const isNearBottom = (currentScrollY + windowHeight) >= (docHeight - 60);
+
+        if (currentScrollY <= TOP_REVEAL_ZONE || isNearBottom) {
+          setVisible(true);
+          lastScrollY = currentScrollY;
+          ticking = false;
+          return;
+        }
+
+        const delta = currentScrollY - lastScrollY;
+
+        if (Math.abs(delta) >= SCROLL_THRESHOLD) {
+          if (delta > 0) {
+            setVisible(false);
+          } else {
+            setVisible(true);
+          }
+          lastScrollY = currentScrollY;
+        }
+
+        ticking = false;
+      }
+
+      window.addEventListener('scroll', () => {
+        if (!ticking) {
+          window.requestAnimationFrame(updateDock);
+          ticking = true;
+        }
+      }, { passive: true });
+
+      if (dock) {
+        dock.querySelectorAll('.dock-a').forEach(link => {
+          link.addEventListener('click', () => {
+            setVisible(true);
+          });
+        });
+      }
+    })();
 
     try {
       const bc = new BroadcastChannel("lux_preview_sync");

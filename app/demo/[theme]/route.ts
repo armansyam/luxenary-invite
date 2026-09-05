@@ -21,23 +21,30 @@ export async function GET(
     return new NextResponse(staticHtml, {
       headers: {
         "Content-Type": "text/html; charset=utf-8",
-        "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
+        "Cache-Control": "no-store, max-age=0, must-revalidate",
       },
     });
   } catch {}
 
-  // 2. Fallback: Compile on the fly, save to disk for future requests, and return
+  // 2. Fallback: Check if theme exists in DB before compiling on the fly
   try {
+    const { prisma } = await import("@/lib/prisma");
+    const themeRecord = await prisma.theme.findUnique({
+      where: { id: cleanTheme },
+      select: { isActive: true },
+    });
+
+    if (!themeRecord || !themeRecord.isActive) {
+      return new NextResponse("Tema tidak ditemukan", { status: 404 });
+    }
+
     let customDemoData = undefined;
-    try {
-      const { prisma } = await import("@/lib/prisma");
-      const setting = await prisma.adminSetting.findUnique({
-        where: { key: `theme_demo_${cleanTheme}` },
-      });
-      if (setting && setting.value) {
-        customDemoData = JSON.parse(setting.value);
-      }
-    } catch {}
+    const setting = await prisma.adminSetting.findUnique({
+      where: { key: `theme_demo_${cleanTheme}` },
+    });
+    if (setting && setting.value) {
+      customDemoData = JSON.parse(setting.value);
+    }
 
     await compileAndSaveStaticDemo(cleanTheme, customDemoData);
 
@@ -46,22 +53,11 @@ export async function GET(
     return new NextResponse(compiledHtml, {
       headers: {
         "Content-Type": "text/html; charset=utf-8",
-        "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
+        "Cache-Control": "no-store, max-age=0, must-revalidate",
       },
     });
   } catch (error) {
     console.error(`[Demo] Failed to compile static demo for ${cleanTheme}:`, error);
-  }
-
-  // 3. Ultimate Fallback to kalandra static demo
-  const fallbackPath = path.join(process.cwd(), "public", "demo", "kalandra", "index.html");
-  try {
-    await fs.promises.access(fallbackPath);
-    const fallbackHtml = await fs.promises.readFile(fallbackPath, "utf-8");
-    return new NextResponse(fallbackHtml, {
-      headers: { "Content-Type": "text/html; charset=utf-8" },
-    });
-  } catch {
     return new NextResponse("Tema tidak ditemukan", { status: 404 });
   }
 }

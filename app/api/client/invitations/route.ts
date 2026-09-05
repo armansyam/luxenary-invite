@@ -48,5 +48,11 @@ export async function GET() {
     staffPin: inv.staffPin ? decryptPin(inv.staffPin) : null,
   }));
 
-  return NextResponse.json(mapped);
+  return NextResponse.json(mapped, {
+    headers: {
+      "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
+    },
+  });
 }

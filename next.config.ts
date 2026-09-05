@@ -10,6 +10,9 @@ const nextConfig: NextConfig = {
     ],
   },
   allowedDevOrigins: ["*.trycloudflare.com"],
+  experimental: {
+    proxyClientMaxBodySize: "50mb",
+  },
   async headers() {
     return [
       // ── Font statis: cache permanen (tidak pernah berubah) ──
@@ -22,13 +25,24 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      // ── Demo tema: cache 1 hari, stale 7 hari ──
+      // ── Musik BGM statis bawaan (Canon in D, dll) ──
+      // Cache permanen 1 tahun di browser & Cloudflare CDN karena file audio tidak pernah berubah
+      {
+        source: "/music/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+      // ── Demo tema: cache 1 hari browser, 7 hari CDN, stale 7 hari ──
       {
         source: "/demo/:path*",
         headers: [
           {
             key: "Cache-Control",
-            value: "public, max-age=86400, stale-while-revalidate=604800",
+            value: "public, max-age=86400, s-maxage=604800, stale-while-revalidate=604800",
           },
         ],
       },
@@ -55,18 +69,28 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      // ── Media upload (foto, musik) ──
-      // Immutable karena nama file menyertakan hash/ID unik
+      // ── Media upload lokal klien (draft / dev) ──
+      // Cache 1 hari dengan background revalidasi agar pergantian media draft tetap mulus
       {
         source: "/uploads/:path*",
         headers: [
           {
             key: "Cache-Control",
-            value: "public, max-age=31536000, immutable",
+            value: "public, max-age=86400, stale-while-revalidate=86400",
           },
         ],
       },
-      // ── Aset sistem (brand, icon, css) ──
+      // ── Modul CSS sistem (modules.css) ──
+      {
+        source: "/css/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=604800, stale-while-revalidate=86400",
+          },
+        ],
+      },
+      // ── Aset sistem (brand logo, favicon, vector icons) ──
       {
         source: "/assets/:path*",
         headers: [

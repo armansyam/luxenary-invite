@@ -48,7 +48,7 @@ function DashboardHomeContent() {
   }, [invitation?.id]);
 
   useEffect(() => {
-    fetch("/api/client/invitations")
+    fetch("/api/client/invitations", { cache: "no-store" })
       .then((res) => res.json())
       .then(async (invitations) => {
         if (Array.isArray(invitations) && invitations.length > 0) {

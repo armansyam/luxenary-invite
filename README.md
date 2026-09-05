@@ -56,16 +56,20 @@ Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model 
 5. STUDIO UNDANGAN (/dashboard/invitation/[id])
    - Pilih & ganti tema (15 tema fisik aktif)
    - Isi data pengantin, keluarga, jadwal acara multi-event
-   - Pengaturan Musik Latar Pernikahan (Audio background, preset sakral, unggah MP3/M4A)
+   - Pengaturan Musik Latar Pernikahan (Audio background, preset sakral, unggah MP3/M4A, sinkronisasi otomatis tombol Buka Undangan & fallback interaksi)
    - Upload foto (cover, groom, bride, gallery, dll)
    - Kustomisasi seksi (Love Story, Gift, QR Check-in, Teks Galeri Kenangan Tamu)
    - Kelola tamu + generate WhatsApp link personal (Deteksi cerdas Custom Domain / Subdomain & proteksi draft)
    - RSVP & ucapan real-time
+   - **Proteksi Pasca Publish & Buka Kunci Darurat:** Begitu terbit, form editor terkunci otomatis demi melindungi integritas QR Code fisik dan data live. Admin dapat membuka izin edit darurat via panel `/admin` (24 jam). Pengeditan menerapkan *Staging Save* (tanpa beban rebake storm) dan diakhiri dengan tombol **"Perbarui Undangan & Kunci Kembali"** untuk 1x atomic bake ke Cloudflare R2 dan auto-lock instan.
      │
      ▼
-6. PUBLISH
-   HTML di-bake → disimpan ke 3 lokasi statis (subdomain, slug, ID)
-   Subdomain aktif, undangan bisa diakses publik
+6. HERO LAUNCHPAD PUBLIKASI (/dashboard/settings)
+   - Verifikasi Sekuensial 10 Bagian dengan radar audit & jendela sliding ticker 3-baris bergulir otomatis
+   - Validasi ketat tanggal acara sebagai referensi masa berlaku website & penanganan 2 opsi santun data opsional
+   - HTML mandiri di-bake (Zero-Flicker) → disimpan ke lokasi statis & R2 sync
+   - Banner sambutan formal & netral pasca-publikasi dengan Official Launch Box (SSL badge, Salin Tautan, Buka Web, WhatsApp)
+   - Sinkronisasi instan seketika ke Buku Tamu (/dashboard/guests) dan Dasbor (/dashboard) tanpa caching lag
      │
      ▼
 7. HARI H & PASCA ACARA (DASHBOARD OPERASIONAL)
@@ -85,13 +89,13 @@ ADMIN PORTAL (/admin)
    - Klien (Users): Daftar akun klien, detail profil, dan aksi **Remote Dasbor Klien**
    - Undangan (Invitations): Manajemen siklus hidup (Close to Gallery, Extend), dan fitur **Remote Klien** untuk mengendalikan Dasbor Klien secara utuh tanpa password (berbasis *httpOnly Cookie Session Override* dengan mekanisme *Restore 1-Klik*).
    - Domain Kustom (Custom Domains): Monitoring domain klien, panduan konfigurasi Caddy, dan shortcut ke tab Setup DNS.
-   - Tema (Themes): Manajemen katalog & sinkronisasi tema
+   - Tema & Musik (Themes & Music): Manajemen katalog tema, Demo Studio, serta Pustaka Musik Sistem dinamis (tambah audio dengan auto-kompresi FFmpeg MP3 128kbps, preview, edit, dan toggle aktif/nonaktif untuk klien)
    - Portofolio (Portfolio): Kurasi & kloning undangan pilihan → /portfolio
    - Tim (Team): Manajemen akun staff admin (SUPER_ADMIN, FINANCE, SUPPORT)
    - Pengaturan (Settings): 
      - **Tab Setup & Integrasi:** Konfigurasi DNS & IP Server (auto-detect IP publik VPS, CNAME target dinamis), SMTP Email Server, Batas Upload Galeri Tamu (MB), dan Siklus Hidup Subdomain & Retensi.
      - **Tab Platform:** Branding & Identitas Platform, CS Support, Hero Tagline, Fitur Landing Page, Template WhatsApp.
-     - **Tab Paket & Harga:** Konfigurasi harga paket undangan (Traditional, Modern, Premium) serta 2 Layanan Tambahan (Add-Ons) resmi: Jasa Custom Domain (1 Thn) dan Perpanjang Masa Aktif URL Asli / Galeri (Bulanan).
+     - **Tab Paket & Harga:** Konfigurasi harga paket undangan (Traditional, Modern, Premium) serta 2 Layanan Tambahan (Add-Ons) resmi: Jasa Custom Domain (1 Thn — dilengkapi toggle aktif/nonaktif & mode Coming Soon untuk klien) dan Perpanjang Masa Aktif URL Asli / Galeri (Bulanan).
      - **Tab Keuangan:** Rekening bank transfer manual dan 5 Payment Gateway.
    - Database (Database): Snapshot backup & restore PostgreSQL
    - Log (Logs): Audit aktivitas admin & webhook gateway logs
@@ -119,6 +123,13 @@ Sub-routes publik:
   /dimas-clarissa-030326/memories     → Galeri foto tamu (real-time SSE)
   /dimas-clarissa-030326/sharemoment  → Upload foto tamu
   /s/[subdomain]/receptionist         → Scanner QR tamu (PIN-protected)
+
+Pre-Flight Checklist & Smart Audit (/dashboard/settings):
+  - Evaluasi sekuensial 12 komponen data sebelum rilis resmi (termasuk verifikasi seluruh slot unggahan visual & foto kedua mempelai).
+  - Zero Data Bolong: Seksi bersakelar aktif wajib memiliki data lengkap; seksi yang dinonaktifkan berstatus "Nonaktif (Dilewati)" dan otomatis lolos.
+  - Verifikasi Slot Upload: Menjamin tidak ada foto model atau latar demo bawaan tema yang tertinggal karena kelupaan unggah.
+  - Runtime Auto-Pruning: Seksi yang dimatikan otomatis dihilangkan dari DOM dan navigasi dock bawah / tombol floating audio disembunyikan tanpa meninggalkan tombol statis kosong.
+  - Gatekeeper 6 URL: Tombol "Rilis Undangan Resmi" terkunci hingga ke-6 instrumen URL (Pintu Utama, Subdomain, Tamu, Resepsionis, Galeri Kenangan /memories, dan Form Kamera /sharemoment) terkonfirmasi dengan dukungan DRAFT preview (?preview=true).
 ```
 
 ---
@@ -137,6 +148,8 @@ Sub-routes publik:
 - **Cover Gate:** Tombol buka undangan (`data-lux-field="customLabels.openBtn"`) wajib memiliki teks fisik default `"Buka Undangan"` dan didukung fallback engine agar tidak pernah kosong/transparan.
 - **Dukungan Video Loop Sinematik:** Mendukung video background loop pada `LANDING_COVER` (Cover pembuka), `DESKTOP_SIDEBAR` (Hero layar lebar), dan `GLOBAL_FIXED_BG` (Latar kartu). Sistem otomatis memotong klip menjadi maksimal 20 detik, membuang audio track (`-an`), mengunci frame rate ke 30 fps, serta menyuntikkan tag HTML `<video>` dengan overlay gradasi kontras.
 - **Latar Belakang Seksi Home Mandiri (`HOME_PHOTO`):** Slot foto halaman utama terinjeksi mandiri ke Seksi 1 (`.slide-opening#home`) dengan scrim gradient pelindung teks. Jika kosong, seksi Home tetap transparan memperlihatkan kanvas atau video loop global.
+- **Arsitektur Desktop Split 460px (Golden Ratio Standard):** Pada layar desktop/layar lebar (≥ 1024px atau ≥ 900px), seluruh 15 tema fisik master menerapkan pembagian rasio presisi: sidebar kiri dinamis mengisi ruang panggung sisa (`width: calc(100% - 460px)`), sedangkan panel undangan utama dikunci tepat pada lebar mobile flagship ideal **460px** (`width: 460px; margin-left: calc(100% - 460px)`). Lapisan latar belakang (`.fixed-bg-layer`) dan video background berposisi fokus pada kolom undangan 460px di desktop (tidak tumpah 100vw ke belakang sidebar), dan otomatis 100% fullscreen di perangkat mobile. Navigasi floating dock bawah secara matematis dipusatkan di `left: calc(100% - 230px)`.
+- **Tipografi Anti-Overflow Split Desktop (Mobile-Emulation Scale):** Karena unit CSS `vw` mengevaluasi layar monitor utuh (1440–1920px), seluruh judul seksi `.sec-main-title, .sec-heading` pada mode split kanan dibatasi ketat dengan `clamp(1.75rem, 2.1rem, 2.3rem) !important;` serta proteksi `overflow-wrap: break-word !important; word-break: break-word !important;`. Padding seksi desktop dinormalisasi ke `1.8rem` (memberikan lebar efektif konten ~404px). Standar arsitektur ini terpasang secara permanen di seluruh 15 tema master serta template developer `starter-blueprint.html` (tersedia untuk diunduh di `/downloads/starter-blueprint.html`).
 - **Adaptive Full-Height Closing Section (`100vh`) & Flush Alignment:** Seksi outro (`.site-footer` / `.closing-sec`) berukuran layar penuh `100vh` dengan penataan *flush* ke dasar layar (bebas celah/gap 90px–110px) dan adaptif terhadap unggahan foto penutup (`CLOSING_COVER`):
   - *Mode Kanvas Kosong (Default):* Latar bersih sesuai palet tema tanpa dummy image palsu; teks ucapan terima kasih dan nama mempelai berposisi vertikal & horizontal tepat di tengah layar (`justify-content: center;`).
   - *Mode Foto Penutup:* Foto latar layar penuh dengan overlay gradasi; teks ucapan bergeser elegan ke bagian bawah layar (`justify-content: flex-end;`).
@@ -152,7 +165,7 @@ Sub-routes publik:
 | **Styling** | Tailwind CSS v4 + Vanilla CSS |
 | **Database** | PostgreSQL via Prisma 7.9.1 (`pg`) |
 | **Auth** | NextAuth.js v5 — Google OAuth + Credential Admin |
-| **Media Storage** | Cloudflare R2 (prod) + Local `public/uploads/` (dev) via `lib/storage.ts` |
+| **Media Storage** | Cloudflare R2 (prod) + Local disk VPS (draft/dev) via `lib/storage.ts` (penamaan slot deterministik & clean overwrite) |
 | **Image Processing** | `sharp` — WebP, resize, compress |
 | **Video Processing** | `FFmpeg` — H.264, auto-trim 20s, no audio loop, 30fps cap, +faststart streaming |
 | **Payment** | 5 Gateway (iPaymu, Duitku, Midtrans, TriPay, Xendit) + Transfer Bank Manual |
@@ -179,6 +192,7 @@ Sub-routes publik:
 | `AdminSetting` | Konfigurasi platform dinamis (key-value) |
 | `WebhookLog` | Log audit webhook payment (iPaymu, Duitku, Midtrans, TriPay, Xendit) |
 | `AdminAuditLog` | Log aktivitas staf admin |
+| `MusicPreset` | Pustaka musik sistem dinamis untuk latar undangan |
 
 ---
 
@@ -187,10 +201,10 @@ Sub-routes publik:
 ```
 Luxenary-Invite/
 ├── app/
-│   ├── (admin)/admin/         # Portal Admin (10 tab lengkap)
+│   ├── (admin)/admin/         # Portal Admin (10 tab lengkap, termasuk Projek Undangan terfilter)
 │   ├── (client)/dashboard/    # Studio klien (setup, invitation, guests, rsvp)
 │   ├── (public)/
-│   │   ├── [slug]/            # Canonical invitation route (graceful expired & memories redirect)
+│   │   ├── [slug]/            # Canonical invitation route (memories redirect & fallback pintar ke portofolio / beranda)
 │   │   └── s/[subdomain]/     # Sub-routes via subdomain
 │   ├── api/
 │   │   ├── admin/             # overview, orders, themes, settings, portfolio, invitations/[id]/lifecycle
@@ -357,7 +371,7 @@ pm2 start ecosystem.config.js
 - **Auth Guard**: Middleware memisahkan Admin, Client, dan Publik
 - **Upload**: Validasi kepemilikan via `userId` session
 - **RSVP/Memories**: Rate-limited untuk cegah spam
-- **Receptionist**: Scanner QR dilindungi `staffPin` (Hashed AES-256)
+- **Receptionist**: Scanner QR dilindungi PIN panitia (AES-256-GCM), token sesi HMAC di localStorage, header profesional dengan BrandLogo dan judul terpusat, aksi navbar minimalis icon-only dengan indikator hijau online, judul pemindai "SCAN" & "KAMERA LIVE", daftar tamu ringkas tanpa badge count, mode Layar Penuh (Fullscreen Kiosk), isolasi warna tema (anti distorsi Dark/Light OS), serta dukungan kamera multi-device (Laptop webcam & Tablet dual-camera) dengan audio beep dan visual laser.
 - **Portfolio**: Hanya SUPER_ADMIN yang bisa kloning undangan
 
 ---
@@ -388,6 +402,8 @@ Setiap developer atau AI Agent yang melakukan modifikasi pada codebase **WAJIB**
 2. **Katalog Tema Fisik:** Pastikan jumlah tema fisik yang aktif di database dan template selalu sinkron (15 tema fisik aktif).
 3. **No Phantom Docs:** Dokumentasi harus mencantumkan path dan nama variabel lingkungan aktual (misal format AWS SDK `S3_*` untuk R2, bukan format lama).
 4. **Standar Kontrak Placeholder Nama Mempelai:** Cover buka undangan, hero title, sidebar desktop, dan closing footer **MUTLAK** menggunakan Nama Panggilan (`{{firstName}} & {{secondName}}`). Nama lengkap beserta gelar (`{{firstDisplayName}} & {{secondDisplayName}}`) hanya digunakan pada Seksi Profil Pasangan (*The Couple*).
+5. **Standar Navigasi Imersif (Smart Auto-Hide):** Seluruh 15 tema fisik master dan starter blueprint menerapkan interaksi smart auto-hide untuk dock navigasi dan floating audio player saat pengguna menggulir ke bawah, dan otomatis kembali meluncur masuk saat menggulir ke atas atau mencapai footer.
+6. **Standar Watermark Monogram & Wording Universal:** Tema desktop sidebar mendukung watermark monogram inisial (`{{coupleMonogram}}`, `{{firstInitial}}`, `{{secondInitial}}`) dan salam pembuka universal non-sektarian (`{{coupleSectionSub}}`) untuk fleksibilitas multikultural.
 
 ---
 

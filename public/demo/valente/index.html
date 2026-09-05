@@ -21,7 +21,7 @@
 
 <script>
 (function() {
-  const isAutoplay = new URLSearchParams(window.location.search).get('autoplay') === '1' || (window !== window.top);
+  const isAutoplay = new URLSearchParams(window.location.search).get('autoplay') === '1' || (window !== window.top && new URLSearchParams(window.location.search).get('mode') !== 'edit');
   if (isAutoplay) {
     window.__DISABLE_AUDIO__ = true;
     try {
@@ -168,27 +168,22 @@
     .cover-date-sub { font-family: 'Cormorant Infant', serif; font-size: 0.82rem; letter-spacing: 0.2em; text-transform: uppercase; color: #d9d9d9; margin-top: 0.6rem; }
     .cover-bottom { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 0.8rem; }
     .cover-guest-box {
-      background: rgba(38, 38, 39, 0.85); backdrop-filter: blur(12px);
-      border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
-      padding: 1.2rem 1.6rem; width: 100%; max-width: 320px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      background: rgba(18, 18, 20, 0.40); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 16px;
+      padding: 1.4rem 1.8rem; width: 100%; max-width: 360px; box-shadow: 0 16px 36px rgba(0,0,0,0.35);
     }
-    .cover-kepada { font-family: 'Lora', serif; font-size: 0.72rem; letter-spacing: 0.1em; color: #a7a7a7; display: block; margin-bottom: 0.3rem; }
-    .cover-guest-name { font-size: clamp(1.25rem, 5vw, 1.65rem); font-family: 'Cormorant', serif; font-style: italic; color: #ffffff; line-height: 1.2; }
-    .cover-subtitle { font-size: 0.72rem; color: #d9d9d9; line-height: 1.5; margin-top: 0.4rem; font-family: 'Lora', serif; }
-    .cover-btn-group { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; width: 100%; max-width: 320px; margin-top: 0.4rem; }
+    .cover-kepada { font-family: 'Cormorant Infant', serif; font-size: 0.78rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--accent); display: block; margin-bottom: 0.35rem; font-weight: 600; }
+    .cover-guest-name { font-size: clamp(1.35rem, 5vw, 1.8rem); font-family: 'Cormorant', serif; font-style: italic; color: #ffffff; line-height: 1.25; }
+    .cover-subtitle { font-size: 0.75rem; color: rgba(220, 220, 220, 0.85); line-height: 1.6; margin-top: 0.45rem; font-family: 'Lora', serif; }
+    .cover-btn-group { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; width: 100%; max-width: 360px; margin-top: 0.6rem; }
     .btn-buka {
-      display: inline-block; padding: 0.85rem 2.2rem; border: none; border-radius: var(--radius-sm);
-      background: var(--bg-card); color: #d9d9d9; font-size: 0.75rem; border: 1px solid var(--border-subtle);
-      letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; font-family: 'Lora', serif;
-      font-weight: 500; transition: all 0.3s ease; width: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      display: inline-block; padding: 0.9rem 2.4rem; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 12px;
+      background: rgba(38, 38, 42, 0.65); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      color: #ffffff; font-size: 0.75rem;
+      letter-spacing: 0.22em; text-transform: uppercase; cursor: pointer; font-family: 'Lora', serif;
+      font-weight: 500; transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1); width: 100%; box-shadow: 0 8px 24px rgba(0,0,0,0.35);
     }
-    .btn-buka:hover { background: #d9d9d9; color: #262627; }
-    .btn-qr-ghost {
-      background: transparent; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
-      color: #a7a7a7; font-size: 0.7rem; letter-spacing: 0.18em; cursor: pointer; font-family: 'Lora', serif;
-      text-transform: uppercase; padding: 0.6rem 1.6rem; transition: all 0.3s; width: 100%;
-    }
-    .btn-qr-ghost:hover { background: rgba(255, 255, 255, 0.08); color: #ffffff; }
+    .btn-buka:hover { background: #ffffff; color: #121214; border-color: #ffffff; transform: translateY(-2px); box-shadow: 0 10px 28px rgba(255, 255, 255, 0.18); }
 
     /* =========================================
        2. HERO SLIDESHOW (100vh FULL PHOTO CROSSFADE)
@@ -468,12 +463,19 @@
     /* Top Right Menu Hamburger Button */
     .btn-top-menu {
       position: fixed; top: 18px; right: 18px; width: 44px; height: 44px;
-      border-radius: 12px; background: rgba(30, 30, 32, 0.85); backdrop-filter: blur(12px);
+      border-radius: 12px; background: rgba(30, 30, 32, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
       border: 1px solid var(--border-subtle); color: #ffffff; display: flex;
       align-items: center; justify-content: center; z-index: 120; cursor: pointer;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.5); transition: transform 0.2s;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+      transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: transform, opacity;
     }
     .btn-top-menu:hover { transform: scale(1.05); }
+    .btn-top-menu.btn-hidden {
+      transform: translateY(-80px);
+      opacity: 0;
+      pointer-events: none;
+    }
 
     /* Side Navigation Drawer */
     .side-nav-drawer {
@@ -501,6 +503,13 @@
     .floating-actions-bottom {
       position: fixed; bottom: 20px; right: 20px; z-index: 100;
       display: flex; flex-direction: column; align-items: center; gap: 10px;
+      transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: transform, opacity;
+    }
+    .floating-actions-bottom.actions-hidden {
+      transform: translateY(100px);
+      opacity: 0;
+      pointer-events: none;
     }
     .btn-fullscreen, .btn-audio-fab {
       width: 42px; height: 42px; border-radius: 50%;
@@ -530,14 +539,62 @@
     .left-hero-names { font-size: clamp(2.6rem, 4.2vw, 4.2rem); line-height: 1.1; color: #ffffff; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
     .left-hero-names em { font-style: italic; font-size: 0.8em; margin: 0 0.15em; color: var(--accent); display: inline; }
     .left-hero-date { font-family: 'Cormorant Infant', serif; font-size: 0.85rem; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(255,255,255,0.75); margin-top: 0.8rem; font-weight: 500; }
+    .left-hero-crest {
+      position: absolute; top: 3.5rem; left: 3.5rem; z-index: 3;
+      display: flex; flex-direction: column; align-items: flex-start; gap: 0.35rem;
+      pointer-events: none; user-select: none;
+    }
+    .crest-monogram-row {
+      display: inline-flex; align-items: center; gap: 0.85rem;
+    }
+    .crest-bar {
+      width: 28px; height: 1px; background: var(--accent); opacity: 0.65;
+    }
+    .crest-monogram {
+      font-family: 'Cormorant', serif; font-size: clamp(3.4rem, 5.5vw, 4.8rem);
+      font-weight: 500; color: rgba(255, 255, 255, 0.88); line-height: 0.92;
+      letter-spacing: 0.05em; display: inline-flex; align-items: baseline;
+      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.55);
+    }
+    .crest-monogram .crest-amp {
+      font-family: 'Great Vibes', cursive; font-size: 0.72em; margin: 0 0.22em;
+      color: var(--accent); font-weight: 400; font-style: italic;
+    }
+    .crest-tag {
+      font-family: 'Cormorant Infant', serif; font-size: 0.68rem; letter-spacing: 0.32em;
+      text-transform: uppercase; color: var(--accent); font-weight: 600;
+      display: block; margin-top: 0.15rem; opacity: 0.85; padding-left: 2px;
+    }
 
     @media (min-width: 900px) {
-      .left-hero { display: block; }
-      .page-wrap { margin-left: 55%; width: 45%; max-width: none; min-width: 420px; }
+      .left-hero { display: block; width: calc(100% - 460px); }
+      .page-wrap { margin-left: calc(100% - 460px); width: 460px; max-width: none; min-width: 0; }
+      .cover-screen {
+        width: 100%;
+        left: 0;
+        right: 0;
+        padding: 4.5rem 2.5rem;
+      }
+      .cover-top {
+        max-width: 1100px;
+        margin: 0 auto;
+      }
+      .cover-center {
+        max-width: 900px;
+        margin: auto;
+      }
+      .cover-bottom {
+        max-width: 480px;
+        margin: 0 auto;
+      }
       .btn-top-menu { right: 2rem; }
       .floating-actions-bottom { right: 2rem; }
-      .sec-flow, .sec-couple, .sec-events, .sec-journey { padding: 5.5rem 3rem; }
-      .sec-hero-slideshow { padding: 4.5rem 3rem 4rem; }
+      .sec-flow, .sec-couple, .sec-events, .sec-journey { padding: 5.5rem 1.8rem; }
+      .sec-hero-slideshow { padding: 4.5rem 1.8rem 4rem; }
+      .cover-names { font-size: clamp(3.2rem, 6.2vw, 5.5rem) !important; overflow-wrap: break-word !important; }
+      .hero-title { font-size: clamp(2.0rem, 2.4rem, 2.8rem) !important; overflow-wrap: break-word !important; }
+      .sec-main-title, .sec-heading { font-size: clamp(1.75rem, 2.1rem, 2.3rem) !important; overflow-wrap: break-word !important; word-break: break-word !important; }
+      .couple-name { font-size: clamp(1.8rem, 2.2rem, 2.4rem) !important; overflow-wrap: break-word !important; }
     }
 
     .modal-bg {
@@ -571,6 +628,20 @@
 
   <!-- FIXED LEFT HERO (DESKTOP ONLY) -->
   <div class="left-hero" style="background-image: url('/demo/valente/hero.webp');">
+    <!-- CREST MONOGRAM WATERMARK LOGO (TOP LEFT) -->
+    <div class="left-hero-crest">
+      <div class="crest-monogram-row">
+        <span class="crest-bar"></span>
+        <div class="crest-monogram serif">
+          <span>J</span>
+          <span class="crest-amp script-font">&amp;</span>
+          <span>V</span>
+        </div>
+        <span class="crest-bar"></span>
+      </div>
+      <span class="crest-tag">A CELEBRATION OF LOVE</span>
+    </div>
+
     <div class="left-hero-content">
       <span class="left-hero-eyebrow">A CELEBRATION OF LOVE</span>
       <h1 class="serif left-hero-names">Julian <em>&amp;</em> Valerie</h1>
@@ -599,7 +670,6 @@
       </div>
       <div class="cover-btn-group">
         <button class="btn-buka" onclick="openInvitation()" data-lux-field="customLabels.openBtn">Buka Undangan</button>
-        <button type="button" class="btn-open-qr-cover" onclick="luxOpenAccessModal()" style="display:inline-block; margin-top:20px; padding:10px 24px; background:#111; color:#fff; border:none; border-radius:30px; font-size:12px; font-weight:600; letter-spacing:1px; cursor:pointer; box-shadow:0 4px 15px rgba(0,0,0,0.2); transition:transform 0.2s ease;">Kartu Akses QR</button>
       </div>
     </div>
   </div>
@@ -643,7 +713,7 @@
     <section class="sec-hero-slideshow" id="home">
       <!-- Background Slideshow Layer (2-3 Photos) -->
       <div class="slideshow-bg-container">
-        <div class="slideshow-slide active" style="background-image: url('/demo/valente/home.webp');"></div>
+        <div class="slideshow-slide active" style="background-image: url('/demo/valente/background.webp');"></div>
         <div class="slideshow-slide" style="background-image: url('/demo/valente/background.webp');"></div>
         <div class="slideshow-slide" style="background-image: url('/demo/valente/hero.webp');"></div>
       </div>
@@ -663,19 +733,19 @@
 
     <!-- 2. SECTION: BRIDE & GROOM (DEDICATED PROFILE CARDS) -->
     <section class="sec-couple" id="couple">
-      <span class="eyebrow reveal">BRIDE &amp; GROOM</span>
-      <h2 class="sec-title serif reveal delay-1">Bride &amp; Groom</h2>
-      <p class="sec-sub reveal delay-1">Dengan segala puji bagi Allah yang telah menciptakan mahluk-Nya berpasang-pasangan, Ya Allah izinkanlah kami merangkai cinta dalam ikatan pernikahan.</p>
+      <span class="eyebrow reveal">THE COUPLE</span>
+      <h2 class="sec-title serif reveal delay-1" data-lux-field="customLabels.coupleTitle">Mempelai</h2>
+      <p class="sec-sub reveal delay-1" data-lux-field="customLabels.coupleSub">Dengan penuh rasa syukur dan sukacita, kami mengundang Anda untuk merayakan persatuan cinta kami dalam ikatan suci pernikahan.</p>
 
       <div class="couple-cards-stack">
-        <!-- Groom Card -->
+        <!-- Host 1 Card -->
         <div class="couple-card reveal-zoom">
           <div class="couple-photo-wrap">
             <img src="/demo/valente/groom.webp" alt="Julian Alexander, B.A.">
           </div>
-          <span class="couple-role-lbl">THE GROOM</span>
+          <span class="couple-role-lbl">Groom</span>
           <h3 class="couple-name serif">Julian Alexander, B.A.</h3>
-          <span class="couple-parents-lbl">Putra Tercinta dari</span>
+          <span class="couple-parents-lbl">Putra Dari</span>
           <p class="couple-parents">Son of Mr. Robert Alexander & Mrs. Shirley Wijaya</p>
           <a href="https://instagram.com/julian.alex" target="_blank" rel="noreferrer" class="btn-ig">
             <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
@@ -683,14 +753,14 @@
           </a>
         </div>
 
-        <!-- Bride Card -->
+        <!-- Host 2 Card -->
         <div class="couple-card reveal-zoom delay-1">
           <div class="couple-photo-wrap">
             <img src="/demo/valente/bride.webp" alt="Valerie Santoso, M.M.">
           </div>
-          <span class="couple-role-lbl">THE BRIDE</span>
+          <span class="couple-role-lbl">Bride</span>
           <h3 class="couple-name serif">Valerie Santoso, M.M.</h3>
-          <span class="couple-parents-lbl">Putri Tercinta dari</span>
+          <span class="couple-parents-lbl">Putri Dari</span>
           <p class="couple-parents">Daughter of Mr. David Santoso & Mrs. Linda Hartono</p>
           <a href="https://instagram.com/valeriesantoso" target="_blank" rel="noreferrer" class="btn-ig">
             <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
@@ -713,7 +783,7 @@
         <div class="cd-box"><span class="cd-val" id="cdMins">00</span><span class="cd-txt">MENIT</span></div>
         <div class="cd-box"><span class="cd-val" id="cdSecs">00</span><span class="cd-txt">DETIK</span></div>
       </div>
-      <a href="https://www.google.com/calendar/render?action=TEMPLATE&text=The%20Wedding%20of%20Julian%20%26%20Valerie&dates=20261205T010000Z/20261205T140000Z&location=Cliffside%20Chapel%2C%20The%20Mulia%20Resort" target="_blank" class="btn-cal reveal delay-2">SIMPAN TANGGAL</a>
+      <a href="https://www.google.com/calendar/render?action=TEMPLATE&text=The%20Wedding%20of%20Julian%20%26%20Valerie&dates=20261205T010000Z/20261205T140000Z&location=Cliffside%20Glass%20Pavilion%2C%20The%20Mulia%20Resort" target="_blank" class="btn-cal reveal delay-2">SIMPAN TANGGAL</a>
 
       <!-- Dynamic Events Stack -->
       <div class="events-stack reveal delay-3">
@@ -722,21 +792,21 @@
       <div class="events-sessions-stack">
         
     <div class="event-block-item unified-session">
-      <span class="ev-cat">HOLY MATRIMONY</span>
-      <h3 class="ev-name serif">HOLY MATRIMONY</h3>
+      <span class="ev-cat">CEREMONY</span>
+      <h3 class="ev-name serif">WEDDING CEREMONY</h3>
       <p class="ev-time">15.30 WITA</p>
     </div>
   
     <div class="event-block-item unified-session">
-      <span class="ev-cat">SUNSET RECEPTION</span>
-      <h3 class="ev-name serif">SUNSET DINNER & AFTER PARTY</h3>
+      <span class="ev-cat">RECEPTION</span>
+      <h3 class="ev-name serif">DINNER RECEPTION</h3>
       <p class="ev-time">18.30 WITA</p>
     </div>
   
       </div>
       <div class="event-unified-venue-card">
         <span class="venue-card-lbl">LOKASI ACARA</span>
-        <h4 class="ev-venue-unified serif">Cliffside Chapel, The Mulia Resort</h4>
+        <h4 class="ev-venue-unified serif">Cliffside Glass Pavilion, The Mulia Resort</h4>
         <p class="ev-address-unified">Jl. Raya Nusa Dua Selatan, Sawangan, Nusa Dua, Bali</p>
         <a href="https://maps.google.com" target="_blank" class="btn-map-outline">
           BUKA GOOGLE MAPS ↗
@@ -1042,7 +1112,7 @@
         </p>
 
         <!-- 1. TOMBOL UPLOAD MOMEN (DIRECT LINK) -->
-        <a href="/demo/moment" style="display: block; width: 100%; max-width: 360px; margin: 0 auto 1.8rem auto; padding: 14px 20px; border-radius: 50px; background: #ffffff; color: #000000; font-weight: 700; font-size: 0.9rem; letter-spacing: 0.05em; text-align: center; text-decoration: none; box-shadow: 0 4px 15px rgba(255,255,255,0.18); transition: transform 0.15s ease;">
+        <a href="/demo/valente/sharemoment" style="display: block; width: 100%; max-width: 360px; margin: 0 auto 1.8rem auto; padding: 14px 20px; border-radius: 50px; background: #ffffff; color: #000000; font-weight: 700; font-size: 0.9rem; letter-spacing: 0.05em; text-align: center; text-decoration: none; box-shadow: 0 4px 15px rgba(255,255,255,0.18); transition: transform 0.15s ease;">
           BAGIKAN FOTO MOMEN ANDA
         </a>
 
@@ -1060,6 +1130,50 @@
           <div class="story-circles-track-wrapper" style="overflow: hidden; width: 100%; position: relative; mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent); -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);">
             <div class="story-circles-track" style="display: flex; gap: 14px; width: max-content; margin: 0 auto; animation: luxStoryLoop 24s linear infinite;">
               
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/gallery_05.webp', 'Dimas Pratama')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/valente/gallery_05.webp" onerror="this.onerror=null;this.src='/demo/valente/cover.webp';" alt="Dimas Pratama" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Dimas
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/gallery_07.webp', 'Alumni Teknik')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/valente/gallery_07.webp" onerror="this.onerror=null;this.src='/demo/valente/groom.webp';" alt="Alumni Teknik" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Alumni
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/memory_04.webp', 'Tante Maya')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/valente/memory_04.webp" onerror="this.onerror=null;this.src='/demo/valente/gallery_04.webp';" alt="Tante Maya" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Tante
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/gallery_08.webp', 'Eko & Nia')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/valente/gallery_08.webp" onerror="this.onerror=null;this.src='/demo/valente/bride.webp';" alt="Eko & Nia" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Eko
+      </span>
+    </div>
+  
     <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/memory_01.webp', 'Budi Santoso')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
@@ -1090,50 +1204,6 @@
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
         Rina
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/memory_04.webp', 'Tante Maya')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/valente/memory_04.webp" onerror="this.onerror=null;this.src='/demo/valente/gallery_04.webp';" alt="Tante Maya" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Tante
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/gallery_08.webp', 'Eko & Nia')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/valente/gallery_08.webp" onerror="this.onerror=null;this.src='/demo/valente/bride.webp';" alt="Eko & Nia" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Eko
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/gallery_07.webp', 'Alumni Teknik')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/valente/gallery_07.webp" onerror="this.onerror=null;this.src='/demo/valente/groom.webp';" alt="Alumni Teknik" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Alumni
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/gallery_05.webp', 'Dimas Pratama')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/valente/gallery_05.webp" onerror="this.onerror=null;this.src='/demo/valente/cover.webp';" alt="Dimas Pratama" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Dimas
       </span>
     </div>
   
@@ -1149,6 +1219,50 @@
     </div>
   
               
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/gallery_05.webp', 'Dimas Pratama')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/valente/gallery_05.webp" onerror="this.onerror=null;this.src='/demo/valente/cover.webp';" alt="Dimas Pratama" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Dimas
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/gallery_07.webp', 'Alumni Teknik')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/valente/gallery_07.webp" onerror="this.onerror=null;this.src='/demo/valente/groom.webp';" alt="Alumni Teknik" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Alumni
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/memory_04.webp', 'Tante Maya')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/valente/memory_04.webp" onerror="this.onerror=null;this.src='/demo/valente/gallery_04.webp';" alt="Tante Maya" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Tante
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/gallery_08.webp', 'Eko & Nia')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/valente/gallery_08.webp" onerror="this.onerror=null;this.src='/demo/valente/bride.webp';" alt="Eko & Nia" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Eko
+      </span>
+    </div>
+  
     <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/memory_01.webp', 'Budi Santoso')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
@@ -1179,50 +1293,6 @@
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
         Rina
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/memory_04.webp', 'Tante Maya')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/valente/memory_04.webp" onerror="this.onerror=null;this.src='/demo/valente/gallery_04.webp';" alt="Tante Maya" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Tante
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/gallery_08.webp', 'Eko & Nia')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/valente/gallery_08.webp" onerror="this.onerror=null;this.src='/demo/valente/bride.webp';" alt="Eko & Nia" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Eko
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/gallery_07.webp', 'Alumni Teknik')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/valente/gallery_07.webp" onerror="this.onerror=null;this.src='/demo/valente/groom.webp';" alt="Alumni Teknik" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Alumni
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/gallery_05.webp', 'Dimas Pratama')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/valente/gallery_05.webp" onerror="this.onerror=null;this.src='/demo/valente/cover.webp';" alt="Dimas Pratama" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Dimas
       </span>
     </div>
   
@@ -1241,9 +1311,9 @@
           </div>
         </div>
 
-        <!-- 3. TOMBOL DIRECT KE HALAMAN GALERI WEB (galery.js) -->
+        <!-- 3. TOMBOL DIRECT KE HALAMAN GALERI WEB (memories) -->
         <div style="text-align: center;">
-          <a href="/demo/valente/galery" class="btn-outline-box" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; font-size: 12px; font-weight: 700; border-radius: 50px; text-decoration: none; border: 1px solid currentColor; color: inherit; transition: all 0.2s ease;">
+          <a href="/demo/valente/memories" class="btn-outline-box btn-memories-gallery" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 28px; font-size: 12px; font-weight: 700; border-radius: 50px; text-decoration: none; border: 1px solid currentColor; letter-spacing: 0.08em; transition: all 0.25s ease;">
             <span>✨ BUKA GALERI MOMEN LENGKAP</span>
             <span style="font-size: 14px;">↗</span>
           </a>
@@ -1265,6 +1335,16 @@
       }
       .story-circles-track:hover {
         animation-play-state: paused !important;
+      }
+      .btn-memories-gallery {
+        color: inherit;
+      }
+      .btn-memories-gallery:hover {
+        background: #ffffff !important;
+        color: #070709 !important;
+        border-color: #ffffff !important;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(255, 255, 255, 0.25);
       }
     </style>
 
@@ -1622,6 +1702,10 @@
       const cover = document.getElementById('coverScreen');
       if (cover) cover.classList.add('slide-up-hidden');
       playAudio();
+      const topMenu = document.querySelector('.btn-top-menu');
+      if (topMenu) topMenu.classList.remove('btn-hidden');
+      const bottomActions = document.querySelector('.floating-actions-bottom');
+      if (bottomActions) bottomActions.classList.remove('actions-hidden');
       setTimeout(() => {
         const home = document.getElementById('home');
         if (home) {
@@ -1767,6 +1851,73 @@
       }
     }
 
+    // SMART AUTO-HIDE FLOATING CONTROLS ON SCROLL DOWN, REVEAL ON SCROLL UP
+    (function initSmartControls() {
+      const topMenu = document.querySelector('.btn-top-menu');
+      const bottomActions = document.querySelector('.floating-actions-bottom');
+      if (!topMenu && !bottomActions) return;
+
+      let lastScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+      let ticking = false;
+      const SCROLL_THRESHOLD = 12;
+      const TOP_REVEAL_ZONE = 70;
+
+      function setVisible(visible) {
+        if (visible) {
+          if (topMenu) topMenu.classList.remove('btn-hidden');
+          if (bottomActions) bottomActions.classList.remove('actions-hidden');
+        } else {
+          if (topMenu) topMenu.classList.add('btn-hidden');
+          if (bottomActions) bottomActions.classList.add('actions-hidden');
+        }
+      }
+
+      function updateControls() {
+        const currentScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+        const windowHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+        const docHeight = Math.max(
+          document.body.scrollHeight,
+          document.documentElement.scrollHeight,
+          document.body.offsetHeight,
+          document.documentElement.offsetHeight
+        );
+        const isNearBottom = (currentScrollY + windowHeight) >= (docHeight - 60);
+
+        if (currentScrollY <= TOP_REVEAL_ZONE || isNearBottom) {
+          setVisible(true);
+          lastScrollY = currentScrollY;
+          ticking = false;
+          return;
+        }
+
+        const delta = currentScrollY - lastScrollY;
+
+        if (Math.abs(delta) >= SCROLL_THRESHOLD) {
+          if (delta > 0) {
+            setVisible(false);
+          } else {
+            setVisible(true);
+          }
+          lastScrollY = currentScrollY;
+        }
+
+        ticking = false;
+      }
+
+      window.addEventListener('scroll', () => {
+        if (!ticking) {
+          window.requestAnimationFrame(updateControls);
+          ticking = true;
+        }
+      }, { passive: true });
+
+      document.querySelectorAll('.side-nav-link').forEach(link => {
+        link.addEventListener('click', () => {
+          setVisible(true);
+        });
+      });
+    })();
+
     try {
       const bc = new BroadcastChannel("lux_preview_sync");
       bc.onmessage = (e) => {
@@ -1788,6 +1939,21 @@
   })();
 </script>
 \n  
+    <!-- UNIVERSAL MUSIC PLAYER INJECTED BY DEMO ENGINE -->
+    <audio id="luxAudioPlayer" loop preload="auto">
+      <source src="/music/canon-in-d.ogg" type="audio/ogg" />
+      <source src="/music/canon-in-d.ogg" type="audio/mpeg" />
+    </audio>
+    <script>
+      (function() {
+        var a = document.getElementById('luxAudioPlayer');
+        if (a) {
+          window.bgAudio = a;
+          window.weddingAudio = a;
+        }
+      })();
+    </script>
+    
 
 <script id="luxUnifiedClientRuntime">
 
@@ -1924,11 +2090,159 @@
     }
   };
 
+  // 6. Universal Audio Engine & Status Controller
+  window.playAudio = function() {
+    if (window.__DISABLE_AUDIO__) return;
+    try {
+      var p = new URLSearchParams(window.location.search);
+      if (p.get('autoplay') === '1') return;
+      if (window !== window.top && p.get('mode') === 'cover') return;
+
+      var audio = document.getElementById('luxAudioPlayer') ||
+                  document.getElementById('bgAudio') ||
+                  document.getElementById('weddingAudio') ||
+                  document.querySelector('audio');
+      if (!audio) return;
+
+      var playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.then(function() {
+          var fab = document.getElementById('musicFab') ||
+                    document.getElementById('musicToggle') ||
+                    document.querySelector('.audio-fab, .music-fab, .btn-music, .btn-audio-fab, #music-control');
+          if (fab) fab.classList.add('playing');
+        }).catch(function(err) {
+          console.log('Audio autoplay prevented by browser policy until user gesture:', err);
+        });
+      }
+    } catch(e) {}
+  };
+
+  window.luxToggleAudio = window.toggleAudio = function() {
+    try {
+      var audio = document.getElementById('luxAudioPlayer') ||
+                  document.getElementById('bgAudio') ||
+                  document.getElementById('weddingAudio') ||
+                  document.querySelector('audio');
+      if (!audio) return;
+      var fab = document.getElementById('musicFab') ||
+                document.getElementById('musicToggle') ||
+                document.querySelector('.audio-fab, .music-fab, .btn-music, .btn-audio-fab, #music-control');
+      if (audio.paused) {
+        audio.play().then(function() {
+          if (fab) fab.classList.add('playing');
+        }).catch(function(err) {
+          console.log('Audio toggle play failed:', err);
+        });
+      } else {
+        audio.pause();
+        if (fab) fab.classList.remove('playing');
+      }
+    } catch(e) {}
+  };
+
+  // 7. Auto-Sync Open Invitation Cover with Audio Playback
+  var origOpenInvitation = window.openInvitation;
+  window.openInvitation = function() {
+    if (typeof origOpenInvitation === 'function' && origOpenInvitation !== window.openInvitation) {
+      try { origOpenInvitation(); } catch(err) { console.warn(err); }
+    } else {
+      var cover = document.getElementById('coverScreen') || document.querySelector('.screen-cover, .landing-cover, .cover-screen');
+      if (cover) cover.classList.add('slide-up-hidden', 'opened', 'hidden');
+    }
+    window.playAudio();
+  };
+
+  // Delegated Capture Listener for Any Open-Invitation Button
+  document.addEventListener('click', function(e) {
+    var target = e.target;
+    if (!target) return;
+    var openBtn = target.closest(
+      '.btn-buka, .btn-buka-undangan, .cover-btn-open, .btn-open-issue, .cover-btn, [onclick*="openInvitation"], [data-lux-field="customLabels.openBtn"], #btnOpenInvitation'
+    );
+    if (openBtn) {
+      window.playAudio();
+    }
+  }, { capture: true, passive: true });
+
+  // 8. Interaction Fallback for Autoplay (First tap/click after cover opened)
+  function initAudioInteractionFallback() {
+    var unlockAudio = function() {
+      try {
+        var audio = document.getElementById('luxAudioPlayer') ||
+                    document.getElementById('bgAudio') ||
+                    document.getElementById('weddingAudio') ||
+                    document.querySelector('audio');
+        if (audio && audio.paused && !window.__DISABLE_AUDIO__) {
+          var cover = document.getElementById('coverScreen') || document.querySelector('.screen-cover, .landing-cover, .cover-screen');
+          var isCoverClosed = cover && !cover.classList.contains('slide-up-hidden') && !cover.classList.contains('opened') && !cover.classList.contains('hidden') && cover.style.display !== 'none';
+          if (!isCoverClosed) {
+            window.playAudio();
+          }
+        }
+      } catch(e) {}
+      document.removeEventListener('touchstart', unlockAudio);
+      document.removeEventListener('click', unlockAudio);
+    };
+    document.addEventListener('touchstart', unlockAudio, { passive: true });
+    document.addEventListener('click', unlockAudio, { passive: true });
+  }
+
+  // 9. Auto-Sync Navigation Dock & Audio FAB Based on Active Toggled Sections
+  function syncActiveTogglesUI() {
+    try {
+      // A. Synchronize navigation links (bottom dock, side nav, etc.)
+      var navLinks = document.querySelectorAll(
+        '.bottom-dock a, nav.bottom-dock a, .side-nav a, .dock-btn, .dock-a, .side-nav-link'
+      );
+      navLinks.forEach(function(link) {
+        var href = link.getAttribute('href');
+        if (href && href.startsWith('#') && href.length > 1) {
+          var targetId = href.substring(1);
+          var targetEl = document.getElementById(targetId);
+          if (!targetEl) {
+            link.style.display = 'none';
+          } else {
+            link.style.display = '';
+          }
+        }
+      });
+
+      // B. Synchronize Audio Player FAB (hide button if audio is disabled / has no valid source)
+      var audio = document.getElementById('luxAudioPlayer') ||
+                  document.getElementById('bgAudio') ||
+                  document.getElementById('weddingAudio') ||
+                  document.querySelector('audio');
+      var hasAudioSource = Boolean(
+        audio && (audio.getAttribute('src') || (audio.querySelector('source') && audio.querySelector('source').getAttribute('src')))
+      );
+      var fabs = document.querySelectorAll(
+        '#musicFab, #musicToggle, .audio-fab, .music-fab, .btn-music, .btn-audio-fab, #music-control'
+      );
+      fabs.forEach(function(fab) {
+        if (!hasAudioSource) {
+          fab.style.display = 'none';
+        } else {
+          fab.style.display = '';
+        }
+      });
+    } catch(err) {
+      console.warn('syncActiveTogglesUI error:', err);
+    }
+  }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', resolveGuestName);
+    document.addEventListener('DOMContentLoaded', function() {
+      resolveGuestName();
+      initAudioInteractionFallback();
+      syncActiveTogglesUI();
+    });
   } else {
     resolveGuestName();
+    initAudioInteractionFallback();
+    syncActiveTogglesUI();
   }
+  window.addEventListener('load', syncActiveTogglesUI);
 })();
 </script>
 

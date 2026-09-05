@@ -11,6 +11,12 @@ const connectionString = process.env.DATABASE_URL;
 const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool);
 
-export const prisma = global.prisma || new PrismaClient({ adapter });
+// In development, recreate client if new models (e.g. musicPreset) are not yet on the cached global instance
+const existingPrisma = global.prisma;
+const isStale = existingPrisma && !(existingPrisma as any).musicPreset;
+
+export const prisma = (!existingPrisma || isStale)
+  ? new PrismaClient({ adapter })
+  : existingPrisma;
 
 if (process.env.NODE_ENV !== 'production') global.prisma = prisma;

@@ -17,25 +17,69 @@
 -->
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>The Wedding of {{firstName}} &amp; {{secondName}} — Chronicle Editorial</title>
-  
+  <title>The Wedding of {{firstName}} &amp; {{secondName}}</title>
+
   <!-- THEME TYPOGRAPHY: Chronicle High-Fashion Editorial -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bellefair&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,700;1,6..96,400&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;1,6..72,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Bellefair&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,700;1,6..96,400&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;1,6..72,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Syne:wght@400;600;700;800&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="/fonts/fonts.css">
-  
+
   <style>
     :root {
-      --primary: {{colorPrimary}};
-      --secondary: {{colorSecondary}};
-      --accent: {{colorAccent}};
-      --bg-light: {{colorBgLight}};
-      --bg-dark: {{colorBgDark}};
-      --text-dark: {{colorTextDark}};
+      --primary: {
+          {
+          colorPrimary
+        }
+      }
+
+      ;
+
+      --secondary: {
+          {
+          colorSecondary
+        }
+      }
+
+      ;
+
+      --accent: {
+          {
+          colorAccent
+        }
+      }
+
+      ;
+
+      --bg-light: {
+          {
+          colorBgLight
+        }
+      }
+
+      ;
+
+      --bg-dark: {
+          {
+          colorBgDark
+        }
+      }
+
+      ;
+
+      --text-dark: {
+          {
+          colorTextDark
+        }
+      }
+
+      ;
       --editorial-cream: #f4ede4;
       --editorial-paper: #eae0d0;
       --editorial-dark: #0e0e11;
@@ -44,30 +88,50 @@
       --editorial-border-bright: rgba(244, 237, 228, 0.6);
     }
 
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
     body {
       font-family: 'Newsreader', serif;
       background-color: var(--bg-dark, var(--editorial-dark));
       color: #f4ede4;
       overflow-x: hidden;
       width: 100%;
-      background-image: linear-gradient(180deg, rgba(22,22,27,0.85) 0%, rgba(14,14,17,0.95) 100%), url('{{homePhotoUrl}}');
-      background-size: cover;
-      background-position: center;
-      background-attachment: fixed;
     }
 
     /* TYPOGRAPHY CLASSES */
-    .font-editorial-masthead { font-family: 'Bellefair', 'Bodoni Moda', serif; }
-    .font-editorial-sans { font-family: 'Syne', 'Plus Jakarta Sans', sans-serif; }
-    .font-editorial-body { font-family: 'Newsreader', serif; }
+    .font-editorial-masthead {
+      font-family: 'Bellefair', 'Bodoni Moda', serif;
+    }
+
+    .font-editorial-sans {
+      font-family: 'Syne', 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .font-editorial-body {
+      font-family: 'Newsreader', serif;
+    }
 
     /* ANIMATIONS & MICRO-INTERACTIONS */
     @keyframes editorialBorderScan {
-      0% { border-color: rgba(244,237,228,0.2); }
-      50% { border-color: rgba(244,237,228,0.6); }
-      100% { border-color: rgba(244,237,228,0.2); }
+      0% {
+        border-color: rgba(244, 237, 228, 0.2);
+      }
+
+      50% {
+        border-color: rgba(244, 237, 228, 0.6);
+      }
+
+      100% {
+        border-color: rgba(244, 237, 228, 0.2);
+      }
     }
 
     .reveal-on-scroll {
@@ -75,6 +139,7 @@
       transform: translateY(25px);
       transition: all 0.9s cubic-bezier(0.16, 1, 0.3, 1);
     }
+
     .reveal-on-scroll.is-visible {
       opacity: 1;
       transform: translateY(0);
@@ -82,75 +147,226 @@
 
     /* 1. COVER SCREEN (DREAMBOLLEN V2 OVERLAY) */
     .cover-overlay {
-      position: fixed; inset: 0; z-index: 9999;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      text-align: center; padding: 2.5rem 1.5rem;
-      background: radial-gradient(circle at center, rgba(22,22,27,0.9) 0%, rgba(14,14,17,0.98) 100%), url('{{landingCoverUrl}}') center/cover no-repeat;
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2.5rem 1.5rem;
+      background: radial-gradient(circle at center, rgba(22, 22, 27, 0.9) 0%, rgba(14, 14, 17, 0.98) 100%),
+      url('{{landingCoverUrl}}') center/cover no-repeat;
       transition: opacity 0.7s cubic-bezier(0.65, 0, 0.35, 1), visibility 0.7s;
     }
+
     .cover-overlay.opened {
-      opacity: 0; visibility: hidden; pointer-events: none;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
     }
 
     .cover-tagline {
-      font-family: 'Syne', sans-serif; font-size: 0.75rem; letter-spacing: 0.35em;
-      text-transform: uppercase; color: var(--editorial-paper); margin-bottom: 0.8rem; font-weight: 600;
+      font-family: 'Syne', sans-serif;
+      font-size: 0.75rem;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--editorial-paper);
+      margin-bottom: 0.8rem;
+      font-weight: 600;
     }
+
     .cover-names {
-      font-size: clamp(3rem, 11vw, 5.5rem); font-family: 'Bellefair', serif;
-      text-transform: uppercase; letter-spacing: 0.04em; color: #fff; line-height: 0.95;
+      font-size: clamp(3rem, 11vw, 5.5rem);
+      font-family: 'Bellefair', serif;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #fff;
+      line-height: 0.95;
       margin-bottom: 1.8rem;
     }
-    .cover-names em { font-style: italic; font-size: 0.75em; display: inline-block; margin: 0 0.15em; color: var(--editorial-paper); }
+
+    .cover-names em {
+      font-style: italic;
+      font-size: 0.75em;
+      display: inline-block;
+      margin: 0 0.15em;
+      color: var(--editorial-paper);
+    }
 
     .cover-guest-pill {
-      background: var(--editorial-card); border: 1px solid var(--editorial-border);
-      border-radius: 4px; padding: 1.2rem 2rem; margin-bottom: 2rem; max-width: 340px; width: 100%;
+      background: var(--editorial-card);
+      border: 1px solid var(--editorial-border);
+      border-radius: 4px;
+      padding: 1.2rem 2rem;
+      margin-bottom: 2rem;
+      max-width: 340px;
+      width: 100%;
     }
-    .cover-guest-to { font-family: 'Syne', sans-serif; font-size: 0.7rem; letter-spacing: 0.25em; text-transform: uppercase; color: rgba(244,237,228,0.7); }
-    .cover-guest-val { font-size: 1.35rem; color: #fff; margin-top: 0.3rem; font-style: italic; font-family: 'Bodoni Moda', serif; }
+
+    .cover-guest-to {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.7rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: rgba(244, 237, 228, 0.7);
+    }
+
+    .cover-guest-val {
+      font-size: 1.35rem;
+      color: #fff;
+      margin-top: 0.3rem;
+      font-style: italic;
+      font-family: 'Bodoni Moda', serif;
+    }
 
     .btn-open-issue {
-      display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem;
-      padding: 0.95rem 2.8rem; background: var(--editorial-cream); color: #0e0e11;
-      font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.78rem;
-      letter-spacing: 0.25em; text-transform: uppercase; border: none; border-radius: 4px;
-      cursor: pointer; box-shadow: 0 8px 25px rgba(244,237,228,0.25); transition: all 0.35s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      padding: 0.95rem 2.8rem;
+      background: var(--editorial-cream);
+      color: #0e0e11;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 0.78rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      box-shadow: 0 8px 25px rgba(244, 237, 228, 0.25);
+      transition: all 0.35s ease;
     }
-    .btn-open-issue:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(244,237,228,0.4); }
+
+    .btn-open-issue:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(244, 237, 228, 0.4);
+    }
 
     /* RESPONSIVE LAYOUT */
-    .layout-wrapper { display: flex; width: 100%; min-height: 100vh; position: relative; }
-    
+    .layout-wrapper {
+      display: flex;
+      width: 100%;
+      min-height: 100vh;
+      position: relative;
+    }
+
     .sidebar-desktop {
-      display: none; position: fixed; left: 0; top: 0; width: 55%; height: 100vh;
-      background: url('{{sidebarPhotoUrl}}') center/cover no-repeat; z-index: 10;
+      display: none;
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 55%;
+      height: 100vh;
+      background: url('{{sidebarPhotoUrl}}') center/cover no-repeat;
+      z-index: 10;
     }
+
     .sidebar-desktop::after {
-      content: ''; position: absolute; inset: 0;
-      background: linear-gradient(to top, rgba(14,14,17,0.96) 0%, rgba(14,14,17,0.3) 50%, transparent 100%);
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(14, 14, 17, 0.96) 0%, rgba(14, 14, 17, 0.3) 50%, transparent 100%);
     }
+
     .sidebar-desktop-content {
-      position: absolute; bottom: 4rem; left: 3.5rem; right: 3.5rem; z-index: 20; color: #fff;
+      position: absolute;
+      bottom: 4rem;
+      left: 3.5rem;
+      right: 3.5rem;
+      z-index: 20;
+      color: #fff;
+    }
+
+    /* FIXED BACKGROUND LAYER (FOKUS DI UNDANGAN) */
+    .fixed-bg-layer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100vh;
+      background-image: linear-gradient(180deg, rgba(22, 22, 27, 0.85) 0%, rgba(14, 14, 17, 0.95) 100%),
+      url('{{globalBgUrl}}');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      z-index: 5;
+      pointer-events: none;
     }
 
     .main-scroll-panel {
-      width: 100%; min-height: 100vh; padding-bottom: 110px; position: relative; z-index: 20;
+      width: 100%;
+      min-height: 100vh;
+      padding-bottom: 110px;
+      position: relative;
+      z-index: 20;
     }
 
     @media (min-width: 900px) {
-      .sidebar-desktop { display: block; }
-      .main-scroll-panel { width: 45%; margin-left: 55%; min-width: 420px; }
-      .cover-overlay { width: 45%; left: 55%; }
-      .bottom-dock { left: calc(55% + 22.5%) !important; }
+      .sidebar-desktop {
+        display: block;
+        width: calc(100% - 460px);
+      }
+
+      .fixed-bg-layer {
+        left: calc(100% - 460px);
+        width: 460px;
+      }
+
+      .main-scroll-panel {
+        width: 460px;
+        margin-left: calc(100% - 460px);
+        min-width: 0;
+      }
+
+      .cover-overlay {
+        width: 460px;
+        left: calc(100% - 460px);
+      }
+
+      .bottom-dock {
+        left: calc(100% - 230px) !important;
+      }
+
+      .cover-names {
+        font-size: clamp(2.2rem, 2.8rem, 3.2rem) !important;
+        overflow-wrap: break-word !important;
+      }
+
+      .hero-editorial-title {
+        font-size: clamp(2.0rem, 2.4rem, 2.8rem) !important;
+        overflow-wrap: break-word !important;
+      }
+
+      .sec-heading,
+      .sec-main-title {
+        font-size: clamp(1.75rem, 2.1rem, 2.3rem) !important;
+        overflow-wrap: break-word !important;
+        word-break: break-word !important;
+      }
     }
 
     /* ==========================================================================
        FULL VIEWPORT ISOLATED SLIDES (100VH SETIAP SEKSI)
        ========================================================================== */
-    .slide-section, .section-block, .sec-flow,
-    #section-quote, #section-couple, #section-events, #story, #moments, #gift,
-    #section-wishes, #access-pass, #dresscode, #live, #turut-mengundang {
+    .slide-section,
+    .section-block,
+    .sec-flow,
+    #home,
+    #section-quote,
+    #section-couple,
+    #section-events,
+    #story,
+    #moments,
+    #gift,
+    #section-wishes,
+    #access-pass,
+    #dresscode,
+    #live,
+    #turut-mengundang {
       width: 100%;
       min-height: 100vh;
       min-height: 100dvh;
@@ -165,6 +381,69 @@
       border-bottom: 1px solid var(--editorial-border);
     }
 
+    /* SEKSI HERO / OPENING SLIDE */
+    #home.sec-hero-editorial {
+      background-image: linear-gradient(180deg, rgba(14, 14, 17, 0.40) 0%, rgba(14, 14, 17, 0.70) 65%, rgba(14, 14, 17, 0.95) 100%),
+      url('{{homePhotoUrl}}');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      padding: 5rem 1.8rem;
+    }
+
+    .hero-editorial-tag {
+      font-size: 0.72rem;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--editorial-paper);
+      margin-bottom: 0.8rem;
+      font-weight: 600;
+    }
+
+    .hero-editorial-title {
+      font-size: clamp(2.6rem, 7vw, 4rem);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #fff;
+      line-height: 1.05;
+      margin: 0.5rem 0 1.2rem;
+    }
+
+    .hero-editorial-title em {
+      font-style: italic;
+      font-size: 0.8em;
+      color: var(--editorial-paper);
+      margin: 0 0.15em;
+    }
+
+    .hero-editorial-sub {
+      font-size: 0.95rem;
+      font-style: italic;
+      color: rgba(244, 237, 228, 0.85);
+      max-width: 380px;
+      margin: 0 auto 1.5rem;
+      line-height: 1.6;
+    }
+
+    .hero-scroll-indicator {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 1.2rem;
+      opacity: 0.8;
+    }
+
+    @keyframes heroBounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(6px); }
+    }
+
+    .hero-scroll-arrow {
+      animation: heroBounce 2s infinite ease-in-out;
+      color: var(--editorial-paper);
+    }
+
     .sec-content-box {
       width: 100%;
       max-width: 440px;
@@ -175,163 +454,622 @@
     }
 
     .masthead-banner {
-      width: 100%; border-top: 1px solid var(--editorial-cream); border-bottom: 1px solid var(--editorial-cream);
-      padding: 0.5rem 0; margin-bottom: 1.5rem; display: flex; justify-content: space-between;
-      align-items: center; font-family: 'Syne', sans-serif; font-size: 0.65rem;
-      letter-spacing: 0.25em; text-transform: uppercase; color: var(--editorial-paper);
+      width: 100%;
+      border-top: 1px solid var(--editorial-cream);
+      border-bottom: 1px solid var(--editorial-cream);
+      padding: 0.5rem 0;
+      margin-bottom: 1.5rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      font-family: 'Syne', sans-serif;
+      font-size: 0.65rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--editorial-paper);
     }
 
-    .sec-eyebrow { font-family: 'Syne', sans-serif; font-size: 0.68rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--editorial-paper); display: block; margin-bottom: 0.4rem; font-weight: 600; }
-    .sec-heading, .sec-main-title { font-size: clamp(2.3rem, 7vw, 3.2rem); font-family: 'Bellefair', serif; text-transform: uppercase; letter-spacing: 0.05em; color: #fff; margin-bottom: 0.6rem; }
-    .sec-subheading { font-family: 'Syne', sans-serif; font-size: 0.72rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--editorial-paper); margin-bottom: 2.2rem; }
+    .sec-eyebrow {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.68rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--editorial-paper);
+      display: block;
+      margin-bottom: 0.4rem;
+      font-weight: 600;
+    }
+
+    .sec-heading,
+    .sec-main-title {
+      font-size: clamp(2.3rem, 7vw, 3.2rem);
+      font-family: 'Bellefair', serif;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #fff;
+      margin-bottom: 0.6rem;
+    }
+
+    .sec-subheading {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.72rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--editorial-paper);
+      margin-bottom: 2.2rem;
+    }
 
     /* EDITORIAL COUPLE CARDS */
     .couple-card {
-      width: 100%; background: var(--editorial-card); border: 1px solid var(--editorial-border);
-      border-radius: 4px; padding: 2.2rem 1.5rem; margin-bottom: 1.8rem; transition: all 0.4s ease;
+      width: 100%;
+      background: var(--editorial-card);
+      border: 1px solid var(--editorial-border);
+      border-radius: 4px;
+      padding: 2.2rem 1.5rem;
+      margin-bottom: 1.8rem;
+      transition: all 0.4s ease;
     }
-    .couple-card:hover { border-color: var(--editorial-border-bright); transform: translateY(-4px); }
+
+    .couple-card:hover {
+      border-color: var(--editorial-border-bright);
+      transform: translateY(-4px);
+    }
+
     .couple-photo-wrap {
-      width: 155px; height: 205px; margin: 0 auto 1.3rem; border-radius: 4px;
-      padding: 3px; border: 1px solid var(--editorial-border); overflow: hidden;
+      width: 155px;
+      height: 205px;
+      margin: 0 auto 1.3rem;
+      border-radius: 4px;
+      padding: 3px;
+      border: 1px solid var(--editorial-border);
+      overflow: hidden;
     }
-    .couple-photo-wrap img { width: 100%; height: 100%; object-fit: cover; border-radius: 2px; filter: grayscale(20%); transition: filter 0.4s ease; }
-    .couple-photo-wrap:hover img { filter: grayscale(0%); }
-    .couple-name { font-size: 1.8rem; font-family: 'Bellefair', serif; text-transform: uppercase; color: #fff; margin-bottom: 0.3rem; }
-    .couple-parents { font-family: 'Newsreader', serif; font-size: 0.85rem; color: rgba(244,237,228,0.75); line-height: 1.6; font-style: italic; }
-    .couple-ig { display: inline-block; margin-top: 0.6rem; font-family: 'Syne', sans-serif; font-size: 0.78rem; color: var(--editorial-cream); text-decoration: none; }
+
+    .couple-photo-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 2px;
+      filter: grayscale(20%);
+      transition: filter 0.4s ease;
+    }
+
+    .couple-photo-wrap:hover img {
+      filter: grayscale(0%);
+    }
+
+    .couple-name {
+      font-size: 1.8rem;
+      font-family: 'Bellefair', serif;
+      text-transform: uppercase;
+      color: #fff;
+      margin-bottom: 0.3rem;
+    }
+
+    .couple-parents {
+      font-family: 'Newsreader', serif;
+      font-size: 0.85rem;
+      color: rgba(244, 237, 228, 0.75);
+      line-height: 1.6;
+      font-style: italic;
+    }
+
+    .couple-ig {
+      display: inline-block;
+      margin-top: 0.6rem;
+      font-family: 'Syne', sans-serif;
+      font-size: 0.78rem;
+      color: var(--editorial-cream);
+      text-decoration: none;
+    }
 
     /* COUNTDOWN */
-    .countdown-grid { display: flex; justify-content: center; gap: 0.8rem; margin: 1.8rem 0 1.2rem; }
-    .countdown-cell {
-      background: var(--editorial-card); border: 1px solid var(--editorial-border); border-radius: 4px;
-      padding: 0.85rem; min-width: 68px; text-align: center;
+    .countdown-grid {
+      display: flex;
+      justify-content: center;
+      gap: 0.8rem;
+      margin: 1.8rem 0 1.2rem;
     }
-    .countdown-val { font-size: 1.7rem; font-weight: 700; font-family: 'Bellefair', serif; color: var(--editorial-cream); line-height: 1; }
-    .countdown-lbl { font-family: 'Syne', sans-serif; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.15em; color: rgba(244,237,228,0.7); margin-top: 0.3rem; }
+
+    .countdown-cell {
+      background: var(--editorial-card);
+      border: 1px solid var(--editorial-border);
+      border-radius: 4px;
+      padding: 0.85rem;
+      min-width: 68px;
+      text-align: center;
+    }
+
+    .countdown-val {
+      font-size: 1.7rem;
+      font-weight: 700;
+      font-family: 'Bellefair', serif;
+      color: var(--editorial-cream);
+      line-height: 1;
+    }
+
+    .countdown-lbl {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: rgba(244, 237, 228, 0.7);
+      margin-top: 0.3rem;
+    }
 
     .btn-cal {
-      display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.8rem 2.2rem;
-      border: 1px solid var(--editorial-paper); border-radius: 4px; color: var(--editorial-cream);
-      font-family: 'Syne', sans-serif; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
-      text-decoration: none; transition: all 0.3s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.8rem 2.2rem;
+      border: 1px solid var(--editorial-paper);
+      border-radius: 4px;
+      color: var(--editorial-cream);
+      font-family: 'Syne', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      text-decoration: none;
+      transition: all 0.3s;
     }
-    .btn-cal:hover { background: var(--editorial-cream); color: #0e0e11; }
+
+    .btn-cal:hover {
+      background: var(--editorial-cream);
+      color: #0e0e11;
+    }
 
     /* EVENTS UNIFIED CONTAINER STYLING */
-    .events-unified-container { display: flex; flex-direction: column; gap: 1.5rem; width: 100%; max-width: 440px; }
-    .events-sessions-stack { display: flex; flex-direction: column; gap: 1.2rem; width: 100%; }
+    .events-unified-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      width: 100%;
+      max-width: 440px;
+    }
+
+    .events-sessions-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+      width: 100%;
+    }
+
     .event-block-item {
-      background: var(--editorial-card); border: 1px solid var(--editorial-border); border-radius: 4px;
-      padding: 1.8rem 1.4rem; text-align: center;
+      background: var(--editorial-card);
+      border: 1px solid var(--editorial-border);
+      border-radius: 4px;
+      padding: 1.8rem 1.4rem;
+      text-align: center;
     }
-    .ev-cat { font-family: 'Syne', sans-serif; font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--editorial-paper); font-weight: 600; margin-bottom: 0.3rem; display: block; }
-    .ev-name { font-size: 1.5rem; color: #fff; font-family: 'Bellefair', serif; text-transform: uppercase; margin-bottom: 0.4rem; }
-    .ev-time { font-family: 'Syne', sans-serif; font-size: 0.85rem; color: rgba(244,237,228,0.85); }
-    
+
+    .ev-cat {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.65rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--editorial-paper);
+      font-weight: 600;
+      margin-bottom: 0.3rem;
+      display: block;
+    }
+
+    .ev-name {
+      font-size: 1.5rem;
+      color: #fff;
+      font-family: 'Bellefair', serif;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+
+    .ev-time {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.85rem;
+      color: rgba(244, 237, 228, 0.85);
+    }
+
     .event-unified-venue-card {
-      background: var(--editorial-card); border: 1px solid var(--editorial-border); border-radius: 4px;
-      padding: 1.8rem 1.4rem; text-align: center;
+      background: var(--editorial-card);
+      border: 1px solid var(--editorial-border);
+      border-radius: 4px;
+      padding: 1.8rem 1.4rem;
+      text-align: center;
     }
-    .venue-card-lbl { font-family: 'Syne', sans-serif; font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--editorial-paper); font-weight: 600; margin-bottom: 0.4rem; display: block; }
-    .ev-venue-unified { font-size: 1.4rem; color: #ffffff; font-family: 'Bellefair', serif; text-transform: uppercase; margin-bottom: 0.4rem; }
-    .ev-address-unified { font-family: 'Newsreader', serif; font-size: 0.84rem; color: rgba(244,237,228,0.75); line-height: 1.6; margin-bottom: 1.2rem; font-style: italic; }
+
+    .venue-card-lbl {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.65rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--editorial-paper);
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+      display: block;
+    }
+
+    .ev-venue-unified {
+      font-size: 1.4rem;
+      color: #ffffff;
+      font-family: 'Bellefair', serif;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+
+    .ev-address-unified {
+      font-family: 'Newsreader', serif;
+      font-size: 0.84rem;
+      color: rgba(244, 237, 228, 0.75);
+      line-height: 1.6;
+      margin-bottom: 1.2rem;
+      font-style: italic;
+    }
+
     .btn-map-outline {
-      display: inline-flex; align-items: center; justify-content: center; padding: 0.8rem 2.2rem;
-      border: 1px solid var(--editorial-paper); border-radius: 4px; color: var(--editorial-cream);
-      font-family: 'Syne', sans-serif; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase;
-      text-decoration: none; transition: all 0.3s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.8rem 2.2rem;
+      border: 1px solid var(--editorial-paper);
+      border-radius: 4px;
+      color: var(--editorial-cream);
+      font-family: 'Syne', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      text-decoration: none;
+      transition: all 0.3s;
     }
-    .btn-map-outline:hover { background: var(--editorial-cream); color: #0e0e11; }
+
+    .btn-map-outline:hover {
+      background: var(--editorial-cream);
+      color: #0e0e11;
+    }
 
     /* JOURNEY / STORY STYLING */
     .journey-card-container {
-      background: var(--editorial-card); border: 1px solid var(--editorial-border); border-radius: 4px;
-      padding: 2rem 1.5rem; text-align: left; width: 100%; max-width: 440px;
+      background: var(--editorial-card);
+      border: 1px solid var(--editorial-border);
+      border-radius: 4px;
+      padding: 2rem 1.5rem;
+      text-align: left;
+      width: 100%;
+      max-width: 440px;
     }
-    .journey-chapters { display: flex; flex-direction: column; gap: 1.5rem; }
-    .story-chapter-block { padding-bottom: 0.8rem; border-bottom: 1px dashed var(--editorial-border); }
-    .story-chapter-block:last-child { border-bottom: none; }
-    .sc-label { font-family: 'Syne', sans-serif; font-size: 0.65rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--editorial-paper); font-weight: 600; display: block; margin-bottom: 0.2rem; }
-    .sc-title { font-size: 1.25rem; color: #fff; font-family: 'Bellefair', serif; text-transform: uppercase; margin-bottom: 0.4rem; }
-    .sc-desc { font-size: 0.88rem; color: rgba(244,237,228,0.8); line-height: 1.8; font-style: italic; }
-    .journey-footer { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem; }
-    .jf-line { flex: 1; height: 1px; background: var(--editorial-border); }
-    .jf-signature { font-family: 'Bellefair', serif; font-size: 1.5rem; text-transform: uppercase; color: var(--editorial-cream); }
+
+    .journey-chapters {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .story-chapter-block {
+      padding-bottom: 0.8rem;
+      border-bottom: 1px dashed var(--editorial-border);
+    }
+
+    .story-chapter-block:last-child {
+      border-bottom: none;
+    }
+
+    .sc-label {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.65rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--editorial-paper);
+      font-weight: 600;
+      display: block;
+      margin-bottom: 0.2rem;
+    }
+
+    .sc-title {
+      font-size: 1.25rem;
+      color: #fff;
+      font-family: 'Bellefair', serif;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+
+    .sc-desc {
+      font-size: 0.88rem;
+      color: rgba(244, 237, 228, 0.8);
+      line-height: 1.8;
+      font-style: italic;
+    }
+
+    .journey-footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .jf-line {
+      flex: 1;
+      height: 1px;
+      background: var(--editorial-border);
+    }
+
+    .jf-signature {
+      font-family: 'Bellefair', serif;
+      font-size: 1.5rem;
+      text-transform: uppercase;
+      color: var(--editorial-cream);
+    }
 
     /* GALLERY PUZZLE GRID & LIGHTBOX */
 
-    .btn-show-gallery, .btn-outline-box {
-      display: inline-flex; align-items: center; justify-content: center; padding: 0.8rem 2.2rem;
-      border: 1px solid var(--editorial-paper); border-radius: 4px; color: var(--editorial-cream);
-      font-family: 'Syne', sans-serif; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase;
-      cursor: pointer; background: transparent; transition: all 0.3s;
+    .btn-show-gallery,
+    .btn-outline-box {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.8rem 2.2rem;
+      border: 1px solid var(--editorial-paper);
+      border-radius: 4px;
+      color: var(--editorial-cream);
+      font-family: 'Syne', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      cursor: pointer;
+      background: transparent;
+      transition: all 0.3s;
     }
-    .btn-show-gallery:hover, .btn-outline-box:hover { background: var(--editorial-cream); color: #0e0e11; }
 
-    .gallery-modal-backdrop, 
-    .gallery-modal-backdrop.open, 
-
-    .gallery-modal-close, 
+    .btn-show-gallery:hover,
+    .btn-outline-box:hover {
+      background: var(--editorial-cream);
+      color: #0e0e11;
+    }
 
     /* DIGITAL GIFT & BANK CARDS */
     .bank-card {
-      background: var(--editorial-card); border: 1px solid var(--editorial-border); border-radius: 4px;
-      padding: 1.5rem; margin-bottom: 1rem; text-align: left; width: 100%; max-width: 440px;
+      background: var(--editorial-card);
+      border: 1px solid var(--editorial-border);
+      border-radius: 4px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      text-align: left;
+      width: 100%;
+      max-width: 440px;
     }
-    .bank-label { font-family: 'Syne', sans-serif; font-size: 0.85rem; font-weight: 700; color: #fff; display: block; margin-bottom: 0.2rem; }
-    .bank-owner { font-family: 'Newsreader', serif; font-size: 0.78rem; color: rgba(244,237,228,0.75); display: block; margin-bottom: 0.6rem; font-style: italic; }
+
+    .bank-label {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #fff;
+      display: block;
+      margin-bottom: 0.2rem;
+    }
+
+    .bank-owner {
+      font-family: 'Newsreader', serif;
+      font-size: 0.78rem;
+      color: rgba(244, 237, 228, 0.75);
+      display: block;
+      margin-bottom: 0.6rem;
+      font-style: italic;
+    }
+
     .bank-row {
-      display: flex; align-items: center; justify-content: space-between;
-      background: rgba(14,14,17,0.85); border: 1px solid var(--editorial-border); border-radius: 4px; padding: 0.7rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(14, 14, 17, 0.85);
+      border: 1px solid var(--editorial-border);
+      border-radius: 4px;
+      padding: 0.7rem 1rem;
     }
-    .bank-number { font-family: monospace; font-size: 1.05rem; color: #ffffff; letter-spacing: 0.08em; }
+
+    .bank-number {
+      font-family: monospace;
+      font-size: 1.05rem;
+      color: #ffffff;
+      letter-spacing: 0.08em;
+    }
+
     .btn-copy {
-      background: var(--editorial-cream); color: #0e0e11; border: none; padding: 0.45rem 1rem;
-      border-radius: 2px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.7rem; cursor: pointer; letter-spacing: 0.1em; text-transform: uppercase;
+      background: var(--editorial-cream);
+      color: #0e0e11;
+      border: none;
+      padding: 0.45rem 1rem;
+      border-radius: 2px;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 0.7rem;
+      cursor: pointer;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
     }
 
     /* WISHES & RSVP FORM */
-    .rsvp-form-wrap { text-align: left; margin-top: 1.5rem; width: 100%; max-width: 440px; }
-    .form-row { margin-bottom: 1rem; }
-    .form-lbl { font-family: 'Syne', sans-serif; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.15em; color: var(--editorial-paper); display: block; margin-bottom: 0.3rem; }
-    .form-in, .form-sel, .form-ta {
-      width: 100%; padding: 0.8rem 1rem; background: rgba(14,14,17,0.85); border: 1px solid var(--editorial-border);
-      border-radius: 4px; color: #ffffff; font-size: 0.85rem; outline: none; font-family: 'Plus Jakarta Sans', sans-serif;
+    .rsvp-form-wrap {
+      text-align: left;
+      margin-top: 1.5rem;
+      width: 100%;
+      max-width: 440px;
     }
+
+    .form-row {
+      margin-bottom: 1rem;
+    }
+
+    .form-lbl {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--editorial-paper);
+      display: block;
+      margin-bottom: 0.3rem;
+    }
+
+    .form-in,
+    .form-sel,
+    .form-ta {
+      width: 100%;
+      padding: 0.8rem 1rem;
+      background: rgba(14, 14, 17, 0.85);
+      border: 1px solid var(--editorial-border);
+      border-radius: 4px;
+      color: #ffffff;
+      font-size: 0.85rem;
+      outline: none;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
     .btn-rsvp-submit {
-      width: 100%; padding: 1rem; background: var(--editorial-cream);
-      color: #0e0e11; border: none; border-radius: 4px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.8rem;
-      letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; transition: all 0.3s;
+      width: 100%;
+      padding: 1rem;
+      background: var(--editorial-cream);
+      color: #0e0e11;
+      border: none;
+      border-radius: 4px;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 0.8rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.3s;
     }
-    .wishes-list { margin-top: 1.5rem; max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.9rem; width: 100%; max-width: 440px; }
+
+    .wishes-list {
+      margin-top: 1.5rem;
+      max-height: 320px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.9rem;
+      width: 100%;
+      max-width: 440px;
+    }
+
     .wish-item {
-      padding: 1.1rem; background: var(--editorial-card); border: 1px solid var(--editorial-border);
-      border-radius: 4px; text-align: left;
+      padding: 1.1rem;
+      background: var(--editorial-card);
+      border: 1px solid var(--editorial-border);
+      border-radius: 4px;
+      text-align: left;
     }
-    .wish-name { font-family: 'Syne', sans-serif; font-weight: 600; font-size: 0.85rem; color: #fff; }
-    .wish-msg { font-size: 0.88rem; color: rgba(244,237,228,0.85); line-height: 1.6; margin-top: 0.3rem; font-style: italic; }
+
+    .wish-name {
+      font-family: 'Syne', sans-serif;
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: #fff;
+    }
+
+    .wish-msg {
+      font-size: 0.88rem;
+      color: rgba(244, 237, 228, 0.85);
+      line-height: 1.6;
+      margin-top: 0.3rem;
+      font-style: italic;
+    }
 
     /* QR PASS CARD */
     .access-pass-card {
-      background: var(--editorial-card); border: 1px solid var(--editorial-border); border-radius: 4px;
-      padding: 2.4rem 1.5rem; text-align: center; width: 100%; max-width: 440px;
+      background: var(--editorial-card);
+      border: 1px solid var(--editorial-border);
+      border-radius: 4px;
+      padding: 2.4rem 1.5rem;
+      text-align: center;
+      width: 100%;
+      max-width: 440px;
     }
-    .pass-tagline { font-family: 'Syne', sans-serif; font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--editorial-paper); display: block; margin-bottom: 0.4rem; }
-    .pass-names { font-size: 1.8rem; color: #fff; font-family: 'Bellefair', serif; text-transform: uppercase; margin-bottom: 0.2rem; }
-    .pass-qr-wrapper { background: #ffffff; padding: 14px; display: inline-block; border-radius: 4px; margin: 1.2rem 0; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-    .pass-guest-name { font-size: 1.35rem; color: #ffffff; font-style: italic; font-family: 'Bodoni Moda', serif; }
+
+    .pass-tagline {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.65rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--editorial-paper);
+      display: block;
+      margin-bottom: 0.4rem;
+    }
+
+    .pass-names {
+      font-size: 1.8rem;
+      color: #fff;
+      font-family: 'Bellefair', serif;
+      text-transform: uppercase;
+      margin-bottom: 0.2rem;
+    }
+
+    .pass-qr-wrapper {
+      background: #ffffff;
+      padding: 14px;
+      display: inline-block;
+      border-radius: 4px;
+      margin: 1.2rem 0;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .pass-guest-name {
+      font-size: 1.35rem;
+      color: #ffffff;
+      font-style: italic;
+      font-family: 'Bodoni Moda', serif;
+    }
 
     /* DOCK */
     .bottom-dock {
-      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 100;
-      background: rgba(20, 20, 25, 0.95); border: 1px solid var(--editorial-border); border-radius: 4px;
-      padding: 0.5rem 1.2rem; display: flex; gap: 1.4rem; backdrop-filter: blur(15px);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.6); max-width: 440px; width: calc(100% - 30px); justify-content: space-around;
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translate3d(-50%, 0, 0);
+      z-index: 100;
+      background: rgba(20, 20, 25, 0.95);
+      border: 1px solid var(--editorial-border);
+      border-radius: 4px;
+      padding: 0.5rem 1.2rem;
+      display: flex;
+      gap: 1.4rem;
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      max-width: 440px;
+      width: calc(100% - 30px);
+      justify-content: space-around;
+      transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: transform, opacity;
     }
-    .dock-btn { color: rgba(244,237,228,0.7); font-family: 'Syne', sans-serif; font-size: 0.65rem; text-decoration: none; display: flex; flex-direction: column; align-items: center; gap: 0.2rem; }
-    .dock-btn:hover, .dock-btn.active { color: var(--editorial-cream); }
-    .dock-btn svg { width: 18px; height: 18px; fill: currentColor; }
+
+    .bottom-dock.dock-hidden {
+      transform: translate3d(-50%, calc(100% + 32px), 0);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .dock-btn {
+      color: rgba(244, 237, 228, 0.7);
+      font-family: 'Syne', sans-serif;
+      font-size: 0.65rem;
+      text-decoration: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.2rem;
+    }
+
+    .dock-btn:hover,
+    .dock-btn.active {
+      color: var(--editorial-cream);
+    }
+
+    .dock-btn svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+    }
 
     /* FOOTER & CLOSING (Adaptive Full-Height 100vh) */
     .site-footer {
@@ -350,22 +1088,26 @@
       background-repeat: no-repeat;
       border-top: 1px solid var(--cinema-border);
     }
+
     .site-footer.no-closing-photo {
       justify-content: center;
       align-items: center;
     }
+
     .site-footer.has-closing-photo {
       justify-content: flex-end;
       align-items: center;
     }
+
     .site-footer.has-closing-photo::before {
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(13,13,17,0.6) 50%, rgba(13,13,17,0.95) 100%);
+      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.2) 0%, rgba(13, 13, 17, 0.6) 50%, rgba(13, 13, 17, 0.95) 100%);
       pointer-events: none;
       z-index: 1;
     }
+
     .site-footer .closing-content {
       position: relative;
       z-index: 2;
@@ -374,65 +1116,110 @@
     }
   </style>
 </head>
+
 <body>
 
   <!-- 1. DREAMBOLLEN COVER OVERLAY -->
   <div id="coverOverlay" class="cover-overlay">
-    <p class="cover-tagline">THE WEDDING ISSUE &bull; SPECIAL EDITION</p>
+    <p class="cover-tagline">THE WEDDING &bull; SPECIAL EDITION</p>
     <h1 class="cover-names">{{firstName}} <em>&amp;</em> {{secondName}}</h1>
-    
+
     <div class="cover-guest-pill">
-      <p class="cover-guest-to">Exclusive Invitation For</p>
-      <h3 class="cover-guest-val">Special Guest</h3>
+      <p class="cover-guest-to">Kepada Yth. Bapak/Ibu/Saudara/i</p>
+      <h3 id="coverGuestName" class="cover-guest-val">Tamu Undangan</h3>
     </div>
 
-    <button class="btn-open-issue" onclick="openInvitation()">
-      <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
-      Read The Issue
+    <button class="btn-open-issue" onclick="openInvitation()" data-lux-field="customLabels.openBtn">
+      <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+        <path
+          d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
+      </svg>
+      Buka Undangan
     </button>
   </div>
 
+  <div class="fixed-bg-layer"></div>
+
   <div class="layout-wrapper">
-    
+
     <!-- DESKTOP SIDEBAR HERO -->
     <div class="sidebar-desktop">
       <div class="sidebar-desktop-content">
-        <p class="font-editorial-sans" style="letter-spacing: 0.3em; text-transform: uppercase; color: var(--editorial-paper); font-size: 0.75rem;">THE EDITORIAL ISSUE</p>
-        <h2 class="font-editorial-masthead" style="font-size: 4.5rem; text-transform: uppercase; color: #fff; margin: 0.5rem 0;">{{firstName}} &amp; {{secondName}}</h2>
-        <p class="font-editorial-sans" style="letter-spacing: 0.15em; font-size: 0.85rem; color: rgba(244,237,228,0.75);">{{weddingDate}}</p>
+        <p class="font-editorial-sans"
+          style="letter-spacing: 0.3em; text-transform: uppercase; color: var(--editorial-paper); font-size: 0.75rem;">
+          THE EDITORIAL ISSUE</p>
+        <h2 class="font-editorial-masthead"
+          style="font-size: 4.5rem; text-transform: uppercase; color: #fff; margin: 0.5rem 0;">{{firstName}} &amp;
+          {{secondName}}</h2>
+        <p class="font-editorial-sans"
+          style="letter-spacing: 0.15em; font-size: 0.85rem; color: rgba(244,237,228,0.75);">{{weddingDate}}</p>
       </div>
     </div>
 
     <!-- MAIN SCROLLABLE PANEL -->
     <main class="main-scroll-panel">
-      
+
+      <!-- SEKSI HERO EDITORIAL / SLIDE OPENING (100VH STANDALONE) -->
+      <section id="home" class="slide-section sec-hero-editorial">
+        <div class="sec-content-box reveal-on-scroll">
+          <p class="font-editorial-sans hero-editorial-tag">SPECIAL ISSUE &bull; THE WEDDING OF</p>
+          <h1 class="font-editorial-masthead hero-editorial-title">{{firstName}} <em>&amp;</em> {{secondName}}</h1>
+          <div class="masthead-banner" style="margin: 1.2rem 0;">
+            <span>{{weddingDate}}</span>
+          </div>
+          <p class="font-editorial-body hero-editorial-sub">An Exclusive Chronicle of Love, Devotion &amp; Everlasting Union</p>
+          <div class="hero-scroll-indicator">
+            <span class="font-editorial-sans" style="font-size: 0.68rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--editorial-paper); opacity: 0.8;">Gulir Ke Bawah</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="hero-scroll-arrow">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            </svg>
+          </div>
+        </div>
+      </section>
+
       <!-- SEKSI 1: KUTIPAN & COUNTDOWN (100VH STANDALONE) -->
       <section id="section-quote" class="slide-section">
         <div class="sec-content-box reveal-on-scroll">
           <div class="masthead-banner">
-            <span>SPECIAL EDITION</span>
-            <span>PROLOGUE</span>
             <span>{{weddingDate}}</span>
           </div>
-          <h2 class="sec-heading" style="margin-bottom: 0.8rem;">The Editorial Note</h2>
-          <p style="font-size: 0.98rem; line-height: 1.95; color: rgba(244,237,228,0.9); max-width: 420px; margin: 0 auto; font-style: italic;">
+          <h2 class="sec-heading" style="margin-bottom: 0.8rem;" data-lux-field="customLabels.quoteTitle">Doa &amp;
+            Harapan</h2>
+          <p
+            style="font-size: 0.98rem; line-height: 1.95; color: rgba(244,237,228,0.9); max-width: 420px; margin: 0 auto; font-style: italic;">
             "{{openingQuote}}"
           </p>
-          <span class="font-editorial-sans" style="display: block; font-size: 0.72rem; color: var(--editorial-paper); margin-top: 1.2rem; letter-spacing: 0.25em;">
+          <span class="font-editorial-sans"
+            style="display: block; font-size: 0.72rem; color: var(--editorial-paper); margin-top: 1.2rem; letter-spacing: 0.25em;">
             {{openingQuoteRef}}
           </span>
 
           <!-- COUNTDOWN -->
           <div class="countdown-grid">
-            <div class="countdown-cell"><div id="cDays" class="countdown-val">00</div><div class="countdown-lbl">Days</div></div>
-            <div class="countdown-cell"><div id="cHours" class="countdown-val">00</div><div class="countdown-lbl">Hours</div></div>
-            <div class="countdown-cell"><div id="cMins" class="countdown-val">00</div><div class="countdown-lbl">Mins</div></div>
-            <div class="countdown-cell"><div id="cSecs" class="countdown-val">00</div><div class="countdown-lbl">Secs</div></div>
+            <div class="countdown-cell">
+              <div id="cDays" class="countdown-val">00</div>
+              <div class="countdown-lbl" data-lux-field="customLabels.cdDays">Hari</div>
+            </div>
+            <div class="countdown-cell">
+              <div id="cHours" class="countdown-val">00</div>
+              <div class="countdown-lbl" data-lux-field="customLabels.cdHours">Jam</div>
+            </div>
+            <div class="countdown-cell">
+              <div id="cMins" class="countdown-val">00</div>
+              <div class="countdown-lbl" data-lux-field="customLabels.cdMins">Menit</div>
+            </div>
+            <div class="countdown-cell">
+              <div id="cSecs" class="countdown-val">00</div>
+              <div class="countdown-lbl" data-lux-field="customLabels.cdSecs">Detik</div>
+            </div>
           </div>
 
           <a href="{{googleCalendarUrl}}" target="_blank" class="btn-cal">
-            <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
-            Save to Calendar
+            <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
+              <path
+                d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z" />
+            </svg>
+            Simpan ke Google Calendar
           </a>
         </div>
       </section>
@@ -440,8 +1227,8 @@
       <!-- SEKSI 2: PROTAGONIS / MEMPELAI (100VH STANDALONE) -->
       <section id="section-couple" class="slide-section">
         <div class="sec-content-box reveal-on-scroll">
-          <h2 class="sec-heading">The Protagonists</h2>
-          <p class="sec-subheading">Two Stories, One Destiny</p>
+          <h2 class="sec-heading" data-lux-field="customLabels.coupleTitle">Mempelai</h2>
+          <p class="sec-subheading" data-lux-field="customLabels.coupleSub">Dua Hati Bersatu Dalam Janji Suci</p>
 
           <!-- GROOM -->
           <div class="couple-card">
@@ -460,7 +1247,8 @@
             </div>
             <h3 class="couple-name">{{secondDisplayName}}</h3>
             <p class="couple-parents">{{secondParents}}</p>
-            <a href="https://instagram.com/{{secondInstagram}}" target="_blank" class="couple-ig">@{{secondInstagram}}</a>
+            <a href="https://instagram.com/{{secondInstagram}}" target="_blank"
+              class="couple-ig">@{{secondInstagram}}</a>
           </div>
         </div>
       </section>
@@ -468,8 +1256,8 @@
       <!-- SEKSI 3: ITINERARY / ACARA (100VH STANDALONE) -->
       <section id="section-events" class="slide-section">
         <div class="sec-content-box reveal-on-scroll">
-          <h2 class="sec-heading">The Itinerary</h2>
-          <p class="sec-subheading">Official Schedule &amp; Venue</p>
+          <h2 class="sec-heading" data-lux-field="customLabels.eventsTitle">Rangkaian Acara</h2>
+          <p class="sec-subheading" data-lux-field="customLabels.eventsSub">Waktu &amp; Tempat Pelaksanaan</p>
           {{eventDataHtml}}
         </div>
       </section>
@@ -477,23 +1265,50 @@
       <!-- SEKSI 4: BLUEPRINT DYNAMIC MODULES (MASING-MASING 100VH STANDALONE) -->
       {{dressCodeHtml}}
       {{liveStreamingHtml}}
-      
+
       <!-- KISAH & GALERI MEMPELAI -->
       {{storySectionHtml}}
       {{gallerySectionHtml}}
-      
+
       <!-- INTERAKSI TAMU & TANDA KASIH -->
       {{weddingFilterHtml}}
       {{memoriesSectionHtml}}
       {{giftSectionHtml}}
       {{turutMengundangHtml}}
-      
+
       <!-- SEKSI 5: WISHES & BLESSINGS (100VH STANDALONE) -->
       <section id="section-wishes" class="slide-section">
         <div class="sec-content-box reveal-on-scroll">
-          <h2 class="sec-heading">Wishes &amp; Blessings</h2>
-          <p class="sec-subheading">Leave a Warm Message For The Couple</p>
-          {{wishesHtml}}
+          <h2 class="sec-heading" data-lux-field="customLabels.wishesTitle">Ucapan &amp; Doa Restu</h2>
+          <p class="sec-subheading" data-lux-field="customLabels.wishesSub">Kirimkan Pesan Manis Untuk Mempelai</p>
+        <div class="rsvp-form-wrap">
+          <form id="rsvpForm" onsubmit="luxSubmitRsvp(event)">
+            <div class="form-row">
+              <label class="form-lbl" data-lux-field="customLabels.rsvpNameLabel">Nama Lengkap</label>
+              <input type="text" id="rsvpName" required class="form-in" placeholder="Nama Anda">
+            </div>
+            <div class="form-row">
+              <label class="form-lbl" data-lux-field="customLabels.rsvpStatusLabel">Konfirmasi Kehadiran</label>
+              <select id="rsvpStatus" class="form-sel">
+                <option value="hadir">Konfirmasi Hadir</option>
+                <option value="tidak">Berhalangan Hadir</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label class="form-lbl" data-lux-field="customLabels.rsvpCountLabel">Jumlah Tamu</label>
+              <input type="number" id="rsvpCount" min="1" max="5" value="1" class="form-in">
+            </div>
+            <div class="form-row">
+              <label class="form-lbl" data-lux-field="customLabels.rsvpMessageLabel">Ucapan &amp; Doa Restu</label>
+              <textarea id="rsvpMessage" rows="3" class="form-ta" placeholder="Tuliskan ucapan dan doa terbaik Anda..."></textarea>
+            </div>
+            <button type="submit" id="btnSubmit" class="btn-rsvp-submit" data-lux-field="customLabels.rsvpBtnText">Kirim Konfirmasi &amp; Doa</button>
+          </form>
+
+          <div class="wishes-list" id="wishesList">
+            {{wishesHtml}}
+          </div>
+        </div>
         </div>
       </section>
 
@@ -502,12 +1317,19 @@
       <!-- FOOTER (Adaptive Full-Height 100vh) -->
       <footer class="site-footer {{closingPhotoClass}}" style="{{closingBgStyle}}">
         <div class="closing-content">
-          <p style="font-size: 0.85rem; color: rgba(255,255,255,0.8); line-height: 1.7; margin-bottom: 1.5rem; max-width: 480px; margin-left: auto; margin-right: auto;">
-            Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu bagi kami.
+          <p
+            style="font-size: 0.85rem; color: rgba(255,255,255,0.8); line-height: 1.7; margin-bottom: 1.5rem; max-width: 480px; margin-left: auto; margin-right: auto;">
+            Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir dan
+            memberikan doa restu bagi kami.
           </p>
-          <p style="font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--editorial-cream); font-weight: 600; margin-bottom: 0.5rem;">Kami Yang Berbahagia,</p>
-          <h3 class="font-cinema-title" style="font-size: 2.4rem; color: #ffffff; font-weight: 300; margin-bottom: 0.4rem;">{{firstName}} &amp; {{secondName}}</h3>
-          <p style="font-size: 0.75rem; color: rgba(255,255,255,0.7); letter-spacing: 0.2em; text-transform: uppercase; margin-top: 0.5rem;">
+          <p
+            style="font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--editorial-cream); font-weight: 600; margin-bottom: 0.5rem;">
+            Kami Yang Berbahagia,</p>
+          <h3 class="font-editorial-masthead"
+            style="font-size: 2.4rem; color: #ffffff; font-weight: 300; margin-bottom: 0.4rem;">{{firstName}} &amp;
+            {{secondName}}</h3>
+          <p
+            style="font-size: 0.75rem; color: rgba(255,255,255,0.7); letter-spacing: 0.2em; text-transform: uppercase; margin-top: 0.5rem;">
             THANK YOU FOR CELEBRATING WITH US
           </p>
         </div>
@@ -519,28 +1341,45 @@
 
   <!-- FLOATING NAVIGATION DOCK -->
   <nav class="bottom-dock">
-    <a href="#section-quote" class="dock-btn">
-      <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+    <a href="#home" class="dock-btn">
+      <svg viewBox="0 0 24 24">
+        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+      </svg>
       <span>Cover</span>
     </a>
     <a href="#section-couple" class="dock-btn">
-      <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+      <svg viewBox="0 0 24 24">
+        <path
+          d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+      </svg>
       <span>Couple</span>
     </a>
     <a href="#section-events" class="dock-btn">
-      <svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
+      <svg viewBox="0 0 24 24">
+        <path
+          d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z" />
+      </svg>
       <span>Events</span>
     </a>
     <a href="#moments" class="dock-btn">
-      <svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+      <svg viewBox="0 0 24 24">
+        <path
+          d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" />
+      </svg>
       <span>Gallery</span>
     </a>
     <a href="#section-memories" class="dock-btn">
-      <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+      <svg viewBox="0 0 24 24">
+        <path
+          d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+      </svg>
       <span>Momen</span>
     </a>
     <a href="#section-wishes" class="dock-btn">
-      <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+      <svg viewBox="0 0 24 24">
+        <path
+          d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z" />
+      </svg>
       <span>Wishes</span>
     </a>
   </nav>
@@ -549,11 +1388,70 @@
     function openInvitation() {
       const cover = document.getElementById('coverOverlay');
       if (cover) cover.classList.add('opened');
-      const audio = document.getElementById('weddingAudio');
-      if (audio && !window.__DISABLE_AUDIO__ && new URLSearchParams(window.location.search).get("autoplay") !== "1" && window === window.top) audio.play().catch(() => {});
+      const dock = document.querySelector('.bottom-dock');
+      if (dock) dock.classList.remove('dock-hidden');
+      if (typeof window.playAudio === 'function') {
+        window.playAudio();
+      }
       startCountdown();
       initScrollAnimations();
     }
+
+    // SMART AUTO-HIDE DOCK ON SCROLL DOWN, REVEAL ON SCROLL UP
+    (function initSmartDock() {
+      const dock = document.querySelector('.bottom-dock');
+      if (!dock) return;
+
+      let lastScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+      let ticking = false;
+      const SCROLL_THRESHOLD = 12;
+      const TOP_REVEAL_ZONE = 70;
+
+      function updateDock() {
+        const currentScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+        const windowHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+        const docHeight = Math.max(
+          document.body.scrollHeight,
+          document.documentElement.scrollHeight,
+          document.body.offsetHeight,
+          document.documentElement.offsetHeight
+        );
+        const isNearBottom = (currentScrollY + windowHeight) >= (docHeight - 60);
+
+        if (currentScrollY <= TOP_REVEAL_ZONE || isNearBottom) {
+          dock.classList.remove('dock-hidden');
+          lastScrollY = currentScrollY;
+          ticking = false;
+          return;
+        }
+
+        const delta = currentScrollY - lastScrollY;
+
+        if (Math.abs(delta) >= SCROLL_THRESHOLD) {
+          if (delta > 0) {
+            dock.classList.add('dock-hidden');
+          } else {
+            dock.classList.remove('dock-hidden');
+          }
+          lastScrollY = currentScrollY;
+        }
+
+        ticking = false;
+      }
+
+      window.addEventListener('scroll', () => {
+        if (!ticking) {
+          window.requestAnimationFrame(updateDock);
+          ticking = true;
+        }
+      }, { passive: true });
+
+      dock.querySelectorAll('.dock-btn, a').forEach(link => {
+        link.addEventListener('click', () => {
+          dock.classList.remove('dock-hidden');
+        });
+      });
+    })();
 
     function initScrollAnimations() {
       const observer = new IntersectionObserver((entries) => {
@@ -595,18 +1493,19 @@
   </script>
 
 
-<!-- AMSDEV PROTECTION SCRIPT -->
-<script>
-  (function() {
-    try {
-      if (window.console && console.log) {
-        console.log("%cSTOP!", "color: #ef4444; font-size: 50px; font-weight: 900; text-shadow: 2px 2px 0 #000; font-family: sans-serif;");
-        console.log("%cIni adalah properti eksklusif AMSDEV.", "color: #b5833c; font-size: 20px; font-weight: bold;");
-        console.log("%cSegala bentuk pencurian kode, scraping, atau modifikasi ilegal akan direkam. Domain saat ini: " + window.location.hostname, "font-size: 14px; color: #a8a29e;");
-      }
-    } catch(e) {}
-  })();
-</script>
-\n  {{musicPlayerHtml}}
+  <!-- AMSDEV PROTECTION SCRIPT -->
+  <script>
+    (function () {
+      try {
+        if (window.console && console.log) {
+          console.log("%cSTOP!", "color: #ef4444; font-size: 50px; font-weight: 900; text-shadow: 2px 2px 0 #000; font-family: sans-serif;");
+          console.log("%cIni adalah properti eksklusif AMSDEV.", "color: #b5833c; font-size: 20px; font-weight: bold;");
+          console.log("%cSegala bentuk pencurian kode, scraping, atau modifikasi ilegal akan direkam. Domain saat ini: " + window.location.hostname, "font-size: 14px; color: #a8a29e;");
+        }
+      } catch (e) { }
+    })();
+  </script>
+  \n {{musicPlayerHtml}}
 </body>
+
 </html>

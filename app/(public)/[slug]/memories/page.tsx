@@ -49,7 +49,6 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
 
   // Random 10 highlights for top story circles
   const shuffledMemories = [...memories].sort(() => 0.5 - Math.random()).slice(0, 10);
-  const photoMemories = memories.filter((m) => m.mediaType !== "VIDEO");
 
   return (
     <main className="min-h-screen bg-stone-950 text-stone-100 antialiased font-sans pb-24 selection:bg-amber-500/30">
@@ -62,9 +61,15 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
           <span>&larr;</span>
           <span>Kembali ke Undangan</span>
         </Link>
-        <span className="text-[11px] font-mono tracking-wider text-amber-400/90 uppercase font-bold">
-          MEMORY VAULT
-        </span>
+        <Link
+          href={`${invitationUrl}/sharemoment`}
+          className="px-3.5 py-1.5 rounded-full bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs flex items-center gap-1.5 shadow-sm transition cursor-pointer"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+          </svg>
+          <span>Bagikan Momen</span>
+        </Link>
       </header>
 
       {/* ── Hero Title Section ── */}
@@ -90,7 +95,7 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
             </span>
           </div>
 
-          <div className="flex items-center justify-center gap-3.5 overflow-x-auto pb-3 pt-1 scrollbar-none snap-x">
+          <div className="flex items-center justify-start sm:justify-center gap-3.5 overflow-x-auto pb-3 pt-1 scrollbar-none snap-x">
             {shuffledMemories.map((item, idx) => (
               <div
                 key={`story-${item.id}-${idx}`}
@@ -127,18 +132,6 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
           </div>
         </section>
       )}
-
-      {/* ── Interactive Tab Switcher ── */}
-      <section className="px-4 mt-4 max-w-4xl mx-auto">
-        <div className="flex items-center justify-center gap-2 p-1 bg-stone-900/90 rounded-2xl border border-white/10 max-w-xs mx-auto">
-          <button type="button" id="tabAll" className="flex-1 py-2 text-xs font-bold rounded-xl transition bg-amber-500 text-stone-950 shadow-xs">
-            Semua ({memories.length})
-          </button>
-          <button type="button" id="tabPhoto" className="flex-1 py-2 text-xs font-bold rounded-xl transition text-stone-400 hover:text-white">
-            Foto ({photoMemories.length})
-          </button>
-        </div>
-      </section>
 
       {/* ── Masonry Media Grid ── */}
       <section className="px-4 pt-6 max-w-4xl mx-auto">
@@ -228,19 +221,11 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
       <div
         id="galleryPreviewModal"
         style={{ display: "none" }}
-        className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md p-4 flex flex-col items-center justify-center"
-        onClick={(e) => {
-          if (e.target === e.currentTarget) {
-            (e.currentTarget as HTMLElement).style.display = "none";
-          }
-        }}
+        className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md p-4 flex flex-col items-center justify-center cursor-pointer"
       >
         <button
           type="button"
-          onClick={() => {
-            const m = document.getElementById("galleryPreviewModal");
-            if (m) m.style.display = "none";
-          }}
+          id="closeModalBtn"
           className="absolute top-4 right-4 text-white text-2xl font-bold p-2 hover:opacity-80 transition cursor-pointer"
         >
           ✕
@@ -248,30 +233,26 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
         <div id="previewModalContent" className="max-w-3xl w-full flex items-center justify-center"></div>
         <div id="previewModalCaption" className="mt-4 text-center max-w-md"></div>
       </div>
+      {/* ── Mobile Floating Action Button (When Photos Exist) ── */}
+      {memories.length > 0 && (
+        <div className="fixed bottom-6 right-6 z-40 sm:hidden">
+          <Link
+            href={`${invitationUrl}/sharemoment`}
+            className="px-4 py-3 rounded-full bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs flex items-center gap-2 shadow-2xl shadow-amber-950/60 transition cursor-pointer"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+            </svg>
+            <span>Bagikan Momen</span>
+          </Link>
+        </div>
+      )}
 
       {/* ── Client Scripts ── */}
       <script
         dangerouslySetInnerHTML={{
           __html: `
         document.addEventListener('DOMContentLoaded', function() {
-          const tabAll = document.getElementById('tabAll');
-          const tabPhoto = document.getElementById('tabPhoto');
-          const cards = document.querySelectorAll('.memory-grid-card');
-
-          function setFilter(type) {
-            [tabAll, tabPhoto].forEach(btn => {
-              if (btn) btn.className = "flex-1 py-2 text-xs font-bold rounded-xl transition text-stone-400 hover:text-white";
-            });
-            if (type === 'ALL' && tabAll) tabAll.className = "flex-1 py-2 text-xs font-bold rounded-xl transition bg-amber-500 text-stone-950 shadow-xs";
-            if (type === 'PHOTO' && tabPhoto) tabPhoto.className = "flex-1 py-2 text-xs font-bold rounded-xl transition bg-amber-500 text-stone-950 shadow-xs";
-            cards.forEach(card => {
-              card.style.display = (type === 'ALL' || card.getAttribute('data-type') === type) ? 'block' : 'none';
-            });
-          }
-
-          if (tabAll) tabAll.addEventListener('click', () => setFilter('ALL'));
-          if (tabPhoto) tabPhoto.addEventListener('click', () => setFilter('PHOTO'));
-
           const invitationId = "${invitation.id}";
           const sseEventSource = new EventSource('/api/sse/memories?invitationId=' + invitationId);
           let newMemoriesQueue = [];
@@ -318,6 +299,20 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
           }
 
           bindLightbox();
+
+          const modalEl = document.getElementById('galleryPreviewModal');
+          const closeBtnEl = document.getElementById('closeModalBtn');
+          if (modalEl) {
+            modalEl.addEventListener('click', (e) => {
+              if (e.target === modalEl) modalEl.style.display = 'none';
+            });
+          }
+          if (closeBtnEl) {
+            closeBtnEl.addEventListener('click', (e) => {
+              e.stopPropagation();
+              if (modalEl) modalEl.style.display = 'none';
+            });
+          }
         });
       `,
         }}

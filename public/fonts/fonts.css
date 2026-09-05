@@ -1029,7 +1029,7 @@ html {
   scroll-behavior: smooth;
   scroll-snap-type: y mandatory;
 }
-section, .screen, 
+section, footer, .screen, .site-footer, .closing-sec,
 .slide-opening, .slide-couple, .sec-journey, .sec-gallery, 
 .sec-event, .sec-closing, .slide-closing, .event-section, 
 .gallery-section, .wishes-section, .story-section, .rsvp-section {

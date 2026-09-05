@@ -11,7 +11,7 @@ Sistem template undangan menggunakan arsitektur HTML multi-layer mandiri dengan 
 
 ### A. Premium Series (`themes/premium/`)
 1. **Kalandra (`themes/premium/kalandra.html`)** *(Legacy Alias: `kila`)*
-   - Desktop 50% split-screen hero photo dengan subtle bottom scrim (25%).
+   - Desktop split-screen hero photo (lebar sisa layar) dengan panel undangan 460px dan subtle bottom scrim (25%).
    - Full-bleed vertical photo slides 100vh untuk Pengantin Pria & Wanita.
    - Live Countdown, Google Calendar sync, dan floating glass dock.
 2. **Valente (`themes/premium/valente.html`)**
@@ -25,6 +25,7 @@ Sistem template undangan menggunakan arsitektur HTML multi-layer mandiri dengan 
 4. **Artisan (`themes/premium/artisan.html`)**
    - Estetika tipografi atelier kontemporer dengan palet monokromatik hangat.
    - Transisi foto asimetris dan galeri grid editorial dinamis.
+   - Multi-Layer Visual Slots: Layar Sampul Fullscreen Global Desktop, Fixed Parallax Background Layer (`globalBgUrl`), Seksi Pembuka Khusus (`homePhotoUrl`), dan Penutup Adaptif Full-Height (`closingPhotoUrl`).
 
 ### B. Traditional Series (`themes/traditional/`)
 1. **Prameswari (`themes/traditional/prameswari.html`)**
@@ -49,7 +50,7 @@ Sistem template undangan menggunakan arsitektur HTML multi-layer mandiri dengan 
 3. **Ameera (`themes/modern/ameera.html`)**
    - Tipografi minimalis modern dengan layout kartu bersih dan palet dusty rose.
 4. **Chronicle (`themes/modern/chronicle.html`)**
-   - Gaya jurnal editorial berita cinta dengan kolom teks tipografi Times-style.
+   - Gaya jurnal editorial majalah eksklusif dengan tipografi Times-style masthead. Mengusung struktur slot visual presisi: Dynamic Desktop Sidebar (`{{sidebarPhotoUrl}}`), Cover Pop-up (`{{landingCoverUrl}}`), Slide Hero Pembuka Editorial `#home` (`{{homePhotoUrl}}`), dan Wallpaper Kanvas `.fixed-bg-layer` yang fokus presisi di kolom undangan 460px (`{{globalBgUrl}}`).
 5. **Lumina (`themes/modern/lumina.html`)**
    - Pencahayaan prisma lembut (*soft glow lens flares*) dengan layout ultra-modern.
 6. **Solaria (`themes/modern/solaria.html`)**
@@ -61,12 +62,37 @@ Sistem template undangan menggunakan arsitektur HTML multi-layer mandiri dengan 
 
 ### E. Standar Kontrak Placeholder Nama Mempelai (Cover vs Profil)
 1. **Cover Buka Undangan, Hero Title, Sidebar Desktop, & Closing Footer**:
-   - **MUTLAK** menggunakan Nama Panggilan (`{{firstName}} & {{secondName}}`).
+   - **MUTLAK** menggunakan Nama Panggilan murni dari field form `groomNickname` / `brideNickname` (`{{firstNickname}} & {{secondNickname}}` atau alias `{{firstName}} & {{secondName}}`).
    - Menghadirkan kesan visual yang intim, elegan, bersih, dan proporsional tanpa kepadatan gelar akademik atau nama panjang.
 2. **Seksi Profil Mempelai (*The Couple Section*)**:
-   - Menggunakan Nama Lengkap beserta Gelar Akademik/Adat (`{{firstDisplayName}} & {{secondDisplayName}}` atau `{{firstFullName}} & {{secondFullName}}`).
+   - **Aksen / Header Atas Foto**: Menggunakan Nama Panggilan murni (`{{firstNickname}}` / `{{secondNickname}}`).
+   - **Detail Identitas Resmi Bawah**: Menggunakan Nama Lengkap beserta Gelar Akademik/Adat (`{{firstDisplayName}} & {{secondDisplayName}}` atau `{{firstFullName}} & {{secondFullName}}`).
    - Dilengkapi silsilah orang tua (`{{firstParents}}` & `{{secondParents}}`) serta tautan Instagram (`@{{firstInstagram}}` & `@{{secondInstagram}}`).
+3. **Monogram & Inisial Logo Dinamis (`firstInitial`, `secondInitial`, `coupleMonogram`)**:
+   - Menghasilkan huruf inisial kapital mempelai secara otomatis berbasis `displayOrder` (`Julian` -> `J`, `Valerie` -> `V`).
+   - Digunakan untuk *brand crest watermark* di sudut kiri atas desktop hero atau badge monogram.
+4. **Sub-teks & Eyebrow Seksi Profil Universal**:
+   - `{{coupleSectionEyebrow}}` (default: `THE COUPLE`).
+   - `{{coupleSectionTitle}}` (default: `Mempelai`, mendukung *Inline Live Editor* via `data-lux-field="customLabels.coupleTitle"`).
+   - `{{coupleSectionSub}}` (pengantar pernikahan universal non-sektarian).
 
+### F. Standar Proporsi Desktop Split 460px (Golden Ratio Architecture)
+Seluruh 15 tema fisik master mengimplementasikan standarisasi tata letak split layar desktop (breakpoint `≥ 900px` atau `≥ 1024px`):
+1. **Sidebar Hero Kiri Dinamis (`width: calc(100% - 460px)`):** Membentang mengisi seluruh sisa ruang layar lebar/widescreen secara responsif.
+2. **Panel Undangan Kanan Terkunci 460px (`width: 460px; margin-left: calc(100% - 460px)`):** Menjaga rasio emas visual smartphone flagship tanpa distorsi tombol melebar atau tipografi renggang di monitor besar.
+3. **Fokus Latar Belakang & Video (`.fixed-bg-layer` & `.lux-fixed-bg-video`):**
+   - Layar Ponsel: Membentang penuh 100% viewport (`width: 100%; left: 0`).
+   - Layar Desktop: Terkunci di kolom kanan 460px (`left: calc(100% - 460px); width: 460px;`), mencegah latar terpotong atau tumpang-tindih di balik sidebar hero kiri.
+4. **Navigasi Dock Mengambang:** Terpusat presisi di tengah kolom undangan kanan via `left: calc(100% - 230px) !important;`.
+5. **Standar Tipografi Anti-Overflow Panel Kanan:**
+   - Karena perhitungan unit `vw` mengevaluasi layar monitor penuh (1440–1920px), seluruh judul seksi `.sec-main-title, .sec-heading` dikunci maksimal pada `font-size: clamp(1.75rem, 2.1rem, 2.3rem) !important;` dengan aturan protektif `overflow-wrap: break-word !important; word-break: break-word !important;`.
+   - Padding seksi desktop dinormalisasi menjadi `1.8rem` (~57px), menjamin ruang konten efektif sebesar ~404px yang identik dengan layar mobile sesungguhnya.
+6. **Integrasi Starter Blueprint (`themes/starter-blueprint.html` & `public/downloads/starter-blueprint.html`):**
+   - Arsitektur Golden Standard split 460px dan aturan tipografi anti-overflow telah dibundel secara bawaan ke dalam cetak biru developer untuk memudahkan para Theme Builder menciptakan tema baru tanpa perlu mendesain ulang sistem layout desktop.
+7. **Smart Auto-Hide Navigasi Dock & Floating Audio (`initSmartDock` / `initSmartControls`):**
+   - Seluruh 15 tema mengadopsi mekanisme auto-hide pintar hardware-accelerated (`translate3d` & `opacity`).
+   - Saat tamu menggulir ke bawah untuk membaca atau menikmati konten, dock dan tombol musik mengambang meluncur keluar layar secara serentak demi menghadirkan viewport yang 100% bersih dan imersif.
+   - Saat tamu menggulir ke atas (delta $\ge$ 12px), berada di posisi paling atas (`scrollTop <= 70px`), mencapai footer, atau menekan menu navigasi, seluruh kontrol mengambang otomatis meluncur masuk kembali dengan transisi lembut (`cubic-bezier(0.16, 1, 0.3, 1)`).
 
 ---
 
@@ -85,10 +111,46 @@ Sistem Studio Editor Klien (`/dashboard/invitation/[id]`) menyediakan kendali kr
    - **Himbauan Acara**: Catatan kenyamanan tamu, parkir, dan ketepatan waktu.
    - **Pesan Khusus**: Puisi dan ucapan terima kasih mendalam.
    - **Wedding Filter & Live Streaming**: Tautan Instagram Filter AR dan siaran YouTube/IG/Zoom Live.
-4. **Saklar Tampil/Sembunyikan (*Section Toggles*)**:
-   - Klien dapat mengaktifkan/menonaktifkan seksi (*Love Story, Galeri Foto, Amplop Digital, Dresscode, Mode Tanpa Foto*) secara instan.
-5. **Video Teaser Player Pre-Wedding**:
+4. **Dress Code Visual Color Studio (Panduan Busana)**:
+   - **Visual Color Swatches:** Bulatan warna interaktif dengan *native color picker* terintegrasi tanpa menghafal kode HEX.
+   - **8 Preset Tren Pernikahan 1-Klik:** *Earthy Terracotta, Sage & Champagne, Dusty Rose & Blush, Royal Navy & Gold, Emerald Luxury, Modern Monochrome, Sogan Batik Nusantara, Sunset Lilac*.
+   - **Smart Sync Tema:** Sekali klik `✨ Samakan Tema` untuk menyinkronkan warna busana dengan palet bawaan tema fisik yang sedang aktif.
+   - **Live Guest Preview:** Pratinjau instan tampilan kartu busana yang akan dilihat oleh tamu undangan.
+   - **Mode Lanjutan:** Opsi input teks manual kode hex dengan sinkronisasi dua arah (*two-way sync*).
+5. **Saklar Tampil/Sembunyikan (*Section Toggles*)**:
+   - Klien dapat mengaktifkan/menonaktifkan seksi (*Love Story, Galeri Foto, Amplop Digital, Dresscode*) secara instan.
+6. **Video Teaser Player Pre-Wedding**:
    - Mendukung tautan YouTube (Unlisted/Public), Vimeo, atau direct MP4 yang otomatis dirender sebagai pemutar video responsif 16:9 di bagian atas galeri.
+7. **Smart Audit Protocol (Zero Data Bolong)**:
+   - Audit 12 komponen sekuensial di `/dashboard/settings` (mencakup data teks inti, seluruh slot upload visual sampul & profil mempelai, serta modul opsional).
+   - Seluruh slot visual (Sampul Pop-Up, Sidebar Desktop, Fixed Background, Foto Penutup, dan Foto Kedua Mempelai) wajib terisi unggahan klien untuk mencegah tertampilkannya aset demo bawaan tema.
+   - Seksi dengan sakelar aktif wajib memiliki data lengkap (tidak boleh ada galeri/cerita/rekening kosong jika tombol toggle ON).
+   - Seksi dengan sakelar mati secara transparan berstatus `Nonaktif (Dilewati)` dan otomatis lolos audit tanpa menghalangi peluncuran.
+   - **Sinkronisasi Navigasi Runtime:** Seksi yang dimatikan otomatis terhapus dari DOM dan item navigasi dock bawah (`.bottom-dock a`) serta tombol audio floating (`.music-fab`) disembunyikan secara dinamis via `syncActiveTogglesUI()`.
+8. **Pre-Flight Gatekeeper Checklist (6 Instrumen URL)**:
+   - Menyajikan 6 instrumen URL resmi terpisah: (1) Pintu Utama Canonical, (2) Subdomain Eksklusif, (3) Simulasi Personalisasi Tamu (`?to=...`), (4) Portal Resepsionis & QR (`/receptionist`), (5) Galeri Kenangan Tamu (`/memories`), dan (6) Form Kamera Tamu (`/sharemoment`).
+   - Tombol *"Rilis Undangan Resmi"* terkunci sampai ke-6 instrumen URL terkonfirmasi 100% oleh klien. Seluruh tautan didukung mode `?preview=true` saat status DRAFT agar dapat diuji coba tanpa membuka akses publik prematur.
+9. **Portal Meja Resepsionis & QR Scanner (`/receptionist`)**:
+   - Dilindungi PIN Panitia 4-10 digit (dienkripsi AES-256-GCM dua arah di database).
+   - Menggunakan token sesi HMAC (`rcpt_${invitationId}_${hash}`) yang tersimpan di `localStorage`.
+   - **Tampilan Hasil Check-in Informatif:** Menampilkan nama tamu, badge kategori (VIP/Keluarga/Umum), jumlah alokasi pax, serta **Kartu Lokasi Meja / Tempat Duduk** (e.g. `Meja 5`) secara mencolok untuk kemudahan panitia dan tamu.
+   - **Header & Navbar Profesional:** 
+      - Sisi Kiri: Menampilkan `BrandLogo` resmi dan nama platform.
+      - Posisi Tengah: Judul aplikasi `"RECEPTIONIST SYSTEM"` dipusatkan (*perfect center*) untuk keseimbangan tata letak visual.
+      - Sisi Kanan: Menggunakan tombol kontrol minimalis bebas teks dengan ikon SVG (indikator status online hijau, tombol *Fullscreen*, dan tombol *Kunci Layar*).
+    - **Antarmuka Pemindai Minimalis & Fokus:** 
+      - Judul pemindai disederhanakan menjadi **"SCAN"** (saat scanner tembak/input) dan **"KAMERA LIVE"** (saat pemindaian kamera), menghilangkan label panjang yang tidak perlu.
+      - Kartu statistik kehadiran disembunyikan agar perhatian panitia tidak teralihkan dari alur verifikasi tamu.
+      - **Daftar Tamu Ringkas:** Disediakan sebagai tombol kecil *dropdown* (*"Daftar Tamu"*) di dalam kartu pemindai tanpa badge angka/hitungan, menjaga kerapian layar utama.
+    - **Fitur Kunci Layar (Logout Panitia):** Tombol modern di navbar header memungkinkan panitia mengunci kembali layar ke modal PIN kapan saja saat meninggalkan meja registrasi.
+    - **Multi-Device Live Camera Engine (Laptop & Tablet):**
+      - Kompatibel penuh dengan laptop webcam maupun tablet (iPad / Android Tablet) dengan auto-deteksi perangkat kamera.
+      - Tombol dinamis *Balik Kamera* untuk beralih instan antara kamera depan (menghadap tamu di stand) dan kamera belakang (dipegang panitia).
+      - Viewfinder interaktif dengan animasi laser scanner dan umpan balik suara *beep chime* (Web Audio API) saat QR terdeteksi.
+      - Mekanisme *Anti-Double Scan Lock* (jeda 3 detik dengan overlay sukses) untuk mencegah pembacaan ganda yang tidak disengaja.
+    - **Unified Card Switcher Control:** Antarmuka pemindai mengadopsi satu tombol switch dinamis (*"Buka Kamera"* / *"Mode Scan"*) terintegrasi di header kartu, menggantikan sistem tab ganda konvensional untuk estetika SaaS yang bersih dan hemat ruang.
+    - **Fullscreen Kiosk Mode & Color Scheme Isolation:** Mendukung mode layar penuh (HTML5 Fullscreen API) di perangkat tablet atau laptop untuk operasional kiosk meja registrasi, serta penguncian isolasi tema (*color-scheme: light*) agar palet warna, tipografi, dan kontras visual tidak terdistorsi oleh pengaturan Dark/Light mode bawaan sistem operasi pengguna.
+    - **Offline-First Resilience:** Daftar tamu dan antrean scan offline disimpan di `localStorage`. Jika panitia mengunci layar saat masih terdapat antrean scan offline, sistem memberikan dialog konfirmasi keamanan tanpa menghilangkan antrean data yang tersimpan di perangkat.
 
 ---
 
@@ -124,7 +186,16 @@ Sistem Studio Editor Klien (`/dashboard/invitation/[id]`) menyediakan kendali kr
 5. **Isolasi Seksi Home (`HOME_PHOTO`) & Container Flush Alignment:**
    - Slot `HOME_PHOTO` ("Latar Belakang Home (Opsional)") terinjeksi mandiri pada Seksi 1 (`.slide-opening#home`) dengan gradient overlay pelindung teks judul dan kutipan.
    - Jika slot kosong, seksi Home tetap transparan memperlihatkan latar belakang fixed global (video loop atau foto kanvas).
-   - Eliminasi total celah bawah (*gap*) 90px/110px di bawah footer `.site-footer` melalui `public/css/modules.css` dan `renderTemplate.ts`, sehingga footer 100vh menutup rapat ke dasar layar (*flush to bottom*).
+   - Eliminasi total celah bawah (*gap*) 90px/110px di bawah footer `.site-footer` melalui `public/css/modules.css` dan `renderTemplate.ts`, serta pendaftaran `footer, .site-footer, .closing-sec` ke CSS Scroll Snap (`scroll-snap-align: start; scroll-snap-stop: always;`) di `fonts.css` & `modules.css` sehingga footer 100vh menutup rapat ke dasar layar (*flush to bottom*) dan mengunci (*snap*) presisi tanpa memantul balik ke atas.
+6. **Sinkronisasi Audio Otomatis & Gerbang Tombol Buka Undangan:**
+   - Pemutaran musik latar disinkronkan langsung dengan tombol pembuka cover undangan (`.btn-buka`, `.btn-buka-undangan`, `.cover-btn-open`, dll.) sebagai *trusted user gesture* resmi browser.
+   - Jembatan ID dinamis (`luxAudioPlayer`, `bgAudio`, `weddingAudio`) memastikan kompatibilitas penuh seluruh tema tanpa kegagalan audio null.
+   - Dilengkapi fallback interaksi sentuhan pertama pasca cover terbuka dan isolasi otomatis untuk mencegah kebocoran audio pada pratinjau kartu katalog.
+7. **Penyimpanan Media Klien & Standarisasi Deterministik (Zero Disk Waste):**
+   - **Mode Draft 100% Fully Local:** Selama status undangan masih `DRAFT`, semua upload media (foto, video, musik) dipaksa disimpan di disk lokal VPS (`public/uploads/invitations/[id]/`) untuk menghemat biaya operasional API Write R2 dan mencegah akumulasi sampah dari draft coba-coba/batal.
+   - **Penamaan Deterministik Tanpa Date.now Fisik:** Seluruh slot memiliki nama file fisik tetap (misal `wedding-song.mp3`, `landing-cover.webp`, `home-photo.mp4`). Penggantian media kapan saja akan menimpa (*clean overwrite*) file lama secara otomatis tanpa penumpukan file yatim (*orphaned files*).
+   - **Bust Cache via Query Parameter:** Cache browser diatasi pada level URL publik (`?t=${Date.now()}`), menjamin audio/video dan foto selalu ter-refresh seketika tanpa mengubah nama file fisik di storage.
+   - **Migrasi ke R2 Saat Publish:** Fungsi `syncDraftToR2` memigrasikan seluruh media lokal ke Cloudflare R2 secara otomatis saat undangan diterbitkan.
 
 ---
 
@@ -145,19 +216,27 @@ Siklus hidup undangan diatur secara otomatis oleh cron job (`POST /api/cron/clea
      - Seluruh foto kenangan tamu (`GuestMemory`) di R2 dan disk lokal dihapus permanen.
      - Subdomain dilepaskan kembali ke pool umum (`subdomain = null`) agar dapat digunakan kembali oleh pasangan lain.
      - Status undangan menjadi `ARCHIVED`.
-3. **Graceful Expired Page**:
+3. **Smart Fallback ke Portofolio / Beranda**:
    - Jika slug diakses saat undangan berstatus `ARCHIVED`, sistem memeriksa apakah salinan portofolio ada di `/portfolio/[slug]`.
-   - Jika ada portofolio, otomatis dialihkan ke halaman portofolio.
-   - Jika tidak ada, disajikan halaman penutupan elegan bernuansa gelap dengan branding `{platformName}` dinamis dan tombol kembali ke beranda utama (`/`).
+   - Jika ada portofolio, otomatis dialihkan (*HTTP 307*) ke halaman portofolio sebagai arsip kenangan abadi.
+   - Jika tidak ada, sistem langsung mengalihkan (*HTTP 302/307*) pengunjung kembali ke Halaman Utama (`/`) secara elegan tanpa memunculkan error 404.
 4. **Pemisahan Desain & Operasional Galeri Kenangan Tamu**:
    - **Formulir Studio Editor (`/dashboard/invitation/[id]` Seksi 14):** Khusus styling & konfigurasi teks seksi (Toggle aktif, judul seksi, eyebrow, subjudul/deskripsi ajakan berbagi momen).
    - **Dashboard Klien (`/dashboard` Seksi 5 & Card 4):** Pusat operasional & monitoring momen tamu yang menyajikan tautan publik album kenangan, widget unduh arsip ZIP client-side, info retensi/perpanjangan masa simpan +30 hari via QRIS, dan monitoring/moderasi foto masuk secara real-time.
-5. **Manajemen Domain Undangan & Proteksi Status Draft (Buku Tamu / WhatsApp Broadcast)**:
+5. **Manajemen Domain Undangan & Hero Launchpad Publikasi (Buku Tamu / WhatsApp Broadcast)**:
+   - **Hero Launchpad Publikasi (/dashboard/settings):** Bagian peluncuran ditingkatkan menjadi Hero Launchpad mandiri di bagian teratas panel pengaturan. Dilengkapi mode fokus penuh dengan animasi pemindai radar dan jendela *sliding ticker* vertikal (maksimal 3 baris tampak). Item yang selesai diverifikasi otomatis bergulir naik ke atas secara sekuensial memeriksa 12 komponen data: Subdomain, Tema, Visual Sampul & Latar Belakang (Landing Cover, Desktop Sidebar, Fixed BG, Foto Penutup), Nama Kedua Mempelai, Foto Profil Kedua Mempelai (The Groom & The Bride), Tanggal Acara Utama (sebagai referensi masa berlaku website), Waktu & Lokasi, Galeri Foto, Cerita Cinta, Rekening/Hadiah, Musik Latar, dan PIN Keamanan Tamu.
    - **Resolusi Hierarkis Domain (`resolveEffectiveInvitationUrl`):** Sistem otomatis mendeteksi dan memprioritaskan domain tautan undangan dengan urutan jujur: (1) Custom Domain Klien (`customDomain`), (2) Subdomain Platform (`subdomain`). Menghilangkan total tebakan slug palsu/halusinasi saat domain belum disetel.
-   - **Proteksi Pengiriman Draft:** Jika undangan masih berstatus `DRAFT`, tombol Salin tautan dan tombol Kirim WhatsApp dikunci secara disabled dengan cursor `not-allowed` serta dilengkapi *floating hover tooltip* gelap elegan. Aksi baru terbuka setelah undangan dipublikasikan di Pengaturan.
+   - **Proteksi Pengiriman Draft:** Jika undangan masih berstatus `DRAFT`, tombol Salin tautan dan tombol Kirim WhatsApp dikunci secara disabled dengan cursor `not-allowed` serta dilengkapi *floating hover tooltip* gelap elegan.
+   - **Sinkronisasi Seketika Pasca-Publikasi (Zero-Cache):** Begitu status menjadi `PUBLISHED`, API `/api/client/invitations` mengirimkan `Cache-Control: no-store` dan seluruh halaman dasbor klien (`/dashboard`, `/dashboard/guests`, `/dashboard/settings`) menggunakan `{ cache: "no-store" }` sehingga tautan tamu `{link_undangan}` dan tombol WhatsApp langsung aktif seketika tanpa *caching lag*. Ditutup dengan Banner Selebrasi Resmi berbahasa formal-netral dan Official Launch Box dengan lencana SSL aktif.
 6. **Studio Editor — Seksi 15 (Pengaturan Teks UI & Label) & Netralisasi Live Editor:**
    - **Seksi 15 (`SEC15`):** Menyediakan kontrol formulir untuk kustomisasi teks tombol RSVP (`customLabels.rsvpBtnText`), form RSVP, tombol buka undangan, dan label hitung mundur.
    - **Live Editor Engine:** Saat mode edit aktif (`isEditMode`), seluruh form submission dinonaktifkan (`form.noValidate = true`, `preventDefault`) dan tombol submit dinetralkan ke `type="button"` sehingga pengguna dapat mengklik dan mengetik langsung teks tombol RSVP tanpa memicu balon validasi *"Please fill out this field"*.
+7. **Proteksi Studio Editor Pasca Publish, Buka Kunci Darurat, & Atomic Single Deploy:**
+   - **Proteksi Pasca Terbit (`PUBLISHED`):** Tab Edit Undangan otomatis terkunci dan menampilkan layar proteksi minimalis elegan dengan tombol kontak WhatsApp Admin untuk mencegah modifikasi data yang tidak sengaja saat tautan live sedang diakses tamu.
+   - **Buka Kunci Darurat (Admin Emergency Unlock):** Admin dapat memberikan izin edit darurat selama 24 jam dari tabel admin (`/admin`).
+   - **Staging Save (Anti Rebake Storm):** Penyimpanan seksi 1–15 selama masa darurat hanya memperbarui PostgreSQL database tanpa memicu kompilasi HTML dan sinkronisasi R2 berulang-ulang.
+   - **Atomic Single Deploy & Auto-Lock (`DEPLOY_AND_LOCK`):** Di puncak formulir tersedia tombol aksi **"Perbarui Undangan & Kunci Kembali"** yang mengeksekusi 1 kali kompilasi HTML penuh, migrasi/sinkronisasi ke Cloudflare R2, dan seketika mengunci kembali studio secara otomatis.
+   - **Pelepasan Subdomain Otomatis:** Jika subdomain diubah, subdomain lama langsung terlepas dari record database (`@unique`) dan kembali bebas ke pool publik secara otomatis.
 7. **Proteksi Siklus Download Galeri Tamu (ZIP) & Panduan DNS Dinamis Klien:**
    - **Proteksi Unduh ZIP & Status Draft:** Tombol unduh ZIP di dashboard klien otomatis dinonaktifkan saat status masih `DRAFT` atau jika belum ada foto tamu (`guestMemoriesCount === 0`).
    - **Pencegahan Data Tercecer (Early Lock Warning):** Jika klien mengunduh ZIP saat acara masih berjalan (`PUBLISHED` & `!memoriesUploadLocked`), sistem memunculkan modal dialog peringatan bahwa pengunduhan akan langsung mengunci upload tamu secara permanen.
@@ -168,6 +247,20 @@ Siklus hidup undangan diatur secara otomatis oleh cron job (`POST /api/cron/clea
    - **Seksi Penutup Adaptif Layar Penuh (`min-height: 100vh`):** Seksi outro/penutup (`.site-footer` / `.closing-sec`) dijamin selalu berukuran layar penuh `100vh` untuk kenyamanan navigasi scroll snap, menghilangkan masalah footer "nyempil" atau terpotong.
    - **Mode Kanvas Kosong (Default / Tanpa Foto Penutup):** Jika klien tidak mengunggah foto penutup (`CLOSING_COVER`), seksi otomatis menerima class `.no-closing-photo`. Background murni menggunakan palet warna tema (HARAM menggunakan fallback gambar dummy/Unsplash palsu). Konten teks ucapan terima kasih dan nama mempelai (`{{firstName}} & {{secondName}}`) terposisikan tepat di tengah-tengah layar secara vertikal dan horizontal (`justify-content: center; align-items: center;`).
    - **Mode Foto Penutup Terunggah:** Jika foto penutup diunggah (`.has-closing-photo`), foto mengisi latar belakang layar penuh (`background-size: cover; background-position: center;`) dengan overlay scrim gelap/gradasi elegan, dan blok teks penutup otomatis bergeser ke area bawah layar (*bottom-aligned*, `justify-content: flex-end;`).
+9. **Spesifikasi Theme Demo Studio & Dukungan Video MP4 / Audio BGM:**
+   - **Upload Video MP4 (Cover, Hero, & Background):** Demo Studio Admin mendukung upload file video `.mp4` / `.webm` untuk slot sampul (`cover`), sidebar/hero desktop (`hero`), dan background global (`background`). Mesin render (`lib/renderTemplate.ts`) secara otomatis memutar video ambient loop muted (`<video autoplay loop muted playsinline>`).
+   - **Pembersihan File Format Berlawanan:** Endpoint `demo-asset` otomatis membersihkan file format berlawanan (misal menghapus `.webp` lama saat `.mp4` diunggah) dan menyinkronkan URL ke `AdminSetting` (`theme_demo_${themeId}`) serta mengompilasi ulang halaman demo statis.
+   - **Audio BGM Demo Showroom:** Tab Aset Visual & Audio menyediakan slot pemutar dan pengunggah audio (`music.mp3`/`music.ogg`) yang otomatis dipicu saat tombol "Buka Undangan" ditekan.
+   - **Prinsip Content-Driven Rendering:** Meniadakan saklar on/off manual dan kerumitan kustomisasi label. Seksi otomatis tampil bila data diisi (cerita, rekening hadiah, dll.) dan padam bila dikosongkan.
+   - **Full Caching Strategy:** Seluruh aset showroom demo (`/demo/**`) dan pustaka musik bawaan (`/music/**`) dikonfigurasi dengan header HTTP `Cache-Control` optimal di `next.config.ts` (`s-maxage=604800` untuk Edge CDN Cloudflare, dan `immutable` untuk audio), disertai query cache buster `?t=...` saat admin memperbarui aset.
+10. **Standarisasi Formulir RSVP & Buku Tamu Interaktif (15 Master Tema Fisik):**
+    - Seluruh 15 tema fisik kini secara konsisten menyematkan blok `<form id="rsvpForm" onsubmit="luxSubmitRsvp(event)">` lengkap dengan input Nama Lengkap (`#rsvpName`), pilihan Kehadiran (`#rsvpStatus`), jumlah tamu (`#rsvpCount`), dan textarea Ucapan & Doa (`#rsvpMessage`), yang membungkus feed ucapan `{{wishesHtml}}` di dalam container `.wishes-list#wishesList`.
+    - Menghilangkan anomali seksi kosong tanpa formulir pada tema-tema seperti `candani`, `mayang`, `badrika`, `lumina`, `solaria`, dan `chronicle`.
+    - Terkoneksi secara otomatis ke endpoint publik `/api/public/rsvp` via engine JavaScript universal di `lib/renderTemplate.ts`, dengan kapabilitas real-time prepend ucapan baru ke dalam daftar seketika setelah formulir berhasil dikirim.
+11. **Pustaka Musik Sistem Dinamis (Zero Hardcode):**
+    - **Database-Driven Presets (`MusicPreset`):** Koleksi musik sistem dikelola secara dinamis via database PostgreSQL (`music_presets`), menggantikan seluruh array dan fallback hardcode di sisi klien.
+    - **Portal Admin Sub-Tab Musik:** Tab "Tema & Musik" menyediakan sub-tab "Pustaka Musik Sistem" untuk menambah lagu baru (dengan auto-kompresi FFmpeg 128 kbps MP3 yang hemat bandwidth), menyunting judul/komposer/genre, memutar pratinjau audio langsung, mengaktifkan/menonaktifkan lagu untuk klien, dan menghapus lagu dari pustaka.
+    - **Integrasi Klien Real-Time (`/api/public/music`):** Dasbor klien memuat daftar lagu aktif secara dinamis dan menampilkannya di pemilih lagu pernikahan tanpa data statis palsu.
 
 ---
 
@@ -233,6 +326,11 @@ Sistem pengiriman email otomatis menggunakan **Nodemailer** yang membaca kredens
    - Semua aset gambar dikompresi WebP tajam dan disimpan terisolasi di `public/portfolio/assets/[slug]/`.
 2. **Custom Domain Klien (`dimas-clarissa.com`) & 2 Layanan Tambahan Resmi**:
    - **SaaS Add-on Workflow**: Custom domain merupakan layanan jasa teknis integrasi berbayar terpisah dari paket undangan (orderType: `CUSTOM_DOMAIN_ADDON`, dibaca dari `addon_custom_domain_price`).
+   - **Fitur Toggle Admin & State Coming Soon**:
+     - Super Admin dapat menyalakan/mematikan layanan penawaran custom domain via toggle `addon_custom_domain_enabled` di Pengaturan Admin (Paket & Harga).
+     - Jika dinonaktifkan (`false`), Dasbor Klien (`/dashboard/settings`) yang belum memiliki domain pribadi akan menampilkan kartu status *Segera Hadir / Belum Tersedia* (non-aktif) tanpa opsi pemesanan.
+     - Klien yang sudah memiliki domain aktif (`invitation.customDomain`) terlindungi secara penuh (Zero-Regression) dan tetap dapat melihat konfigurasi DNS mereka tanpa gangguan.
+     - Endpoint checkout `POST /api/client/custom-domain/buy` dijaga ketat di tingkat backend dengan HTTP 403 jika admin menonaktifkan fitur ini.
    - Klien memesan & menginput domain pribadi mereka via Dashboard (Settings) lalu membayar melalui Payment Gateway.
    - Setelah lunas (PAID), fungsi `applyCustomDomainAddon` otomatis memasang custom domain dan menggaransi masa aktif URL Asli serta galeri kenangan selama **1 Tahun Penuh (+365 hari)**.
    - Integrasi berjalan mulus melalui **Caddy Server on-demand TLS** dengan Record A ke IP server VPS dan CNAME target dinamis, di mana middleware Next.js secara internal me-rewrite request domain ke endpoint **URL Asli** (`/[slug]` atau `/[slug]/memories`).
@@ -286,3 +384,28 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - Portal meja resepsionis, HTML5 QR scanner & souvenir (`05_SISTEM_RESEPSIONIS_DAN_CHECKIN_QR.md`)
    - Portal upload momen tamu & slideshow proyektor venue (`06_LIVE_MOMENT_DAN_CLOUD_MEMORIES.md`)
 
+---
+
+## 13. Standarisasi Modal Lightbox & Tipografi Split Desktop
+1. **Universal Lightbox Modal Overlay (`.gallery-modal-backdrop`):**
+   - Wajib berukuran `width: 100vw !important; height: 100vh !important; inset: 0 !important;` dengan latar gelap blur transparan penuh (`rgba(7,7,9,0.96)`, `backdrop-filter: blur(20px)`), serta `z-index: 99990 !important;`.
+   - Terisolasi dari styling kartu amplop (`.bank-card`), sehingga bebas dari batas `max-width: 440px` maupun sudut melengkung pada latar belakang.
+   - Konten grid modal (`.gallery-modal-container`) diposisikan persis di tengah layar (`margin: 0 auto !important; max-width: 600px !important;`) baik di smartphone maupun peramban desktop.
+2. **Skalabilitas Tipografi Split Desktop (Panel Kanan 460px):**
+   - Seluruh elemen judul utama (`.sec-heading`, `.sec-main-title`) dibatasi maksimal `2.1rem !important` dengan `overflow-wrap: break-word` untuk mencegah teks meluap (*overflow*) saat dibuka di layar lebar.
+3. **Tab Kategori Tema Dinamis Dasbor Klien:**
+   - Seksi 1 (*Pilihan Seri Desain & Palet Warna*) memfilter tema menggunakan bilah tab kategori adaptif sesuai hierarki paket order:
+     - Paket Traditional (1 Kategori): Tampil langsung tanpa tab.
+     - Paket Modern / Premium (>1 Kategori): Menampilkan tab per kategori (`[Premium]`, `[Modern]`, `[Traditional]`) dengan badge counter dan auto-focus pada tema aktif, menjaga tinggi halaman tetap ringkas.
+
+---
+
+## 14. Standarisasi Token Inisial Monogram & Wording Universal
+1. **Token Inisial & Monogram Pasangan (`firstInitial`, `secondInitial`, `coupleMonogram`):**
+   - Mendukung watermarking logo monogram eksklusif pada desktop sidebar (`.left-hero-crest`).
+   - Diekstrak secara dinamis dari karakter pertama nama panggilan masing-masing mempelai (`{{firstInitial}}` & `{{secondInitial}}`).
+2. **Fleksibilitas Label Seksi Profil Mempelai:**
+   - Menyediakan token `{{coupleSectionEyebrow}}`, `{{coupleSectionTitle}}`, `{{coupleSectionSub}}`, `{{firstRole}}`, `{{secondRole}}`, `{{firstParentLabel}}`, dan `{{secondParentLabel}}`.
+   - Mengeliminasi duplikasi teks judul/eyebrow pada tema editorial majalah dan mendukung kustomisasi langsung via dashboard maupun *Inline Live Editor*.
+3. **Netralitas Wording Undangan:**
+   - Menggunakan bahasa pengantar pernikahan netral dan universal secara bawaan agar fleksibel untuk seluruh latar belakang adat dan keyakinan klien tanpa benturan doa atau istilah liturgis sektarian.

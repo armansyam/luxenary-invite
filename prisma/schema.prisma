@@ -257,6 +257,21 @@ model Theme {
   @@map("themes")
 }
 
+model MusicPreset {
+  id          String   @id @default(uuid())
+  title       String
+  composer    String?
+  genre       String?
+  url         String   @unique
+  durationSec Int?     @default(0)
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  @@map("music_presets")
+}
+
 enum AdminRole {
   SUPER_ADMIN
   FINANCE

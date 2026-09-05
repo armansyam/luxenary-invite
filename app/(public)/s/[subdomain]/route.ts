@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isSubdomainExpired } from "@/lib/domainUtils";
 import { getPublishedHtml, buildAndSavePublishedHtml } from "@/lib/staticPublisher";
+import { composeTemplateData } from "@/lib/themeEngine";
+import { renderTemplateFile } from "@/lib/renderTemplate";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ subdomain: string }> }) {
   const { subdomain } = await params;
@@ -29,7 +31,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ subd
 
   // Jika undangan masih berstatus DRAFT (belum dipublikasikan)
   if (invitation.status === "DRAFT") {
-    const unreleasedHtml = `<!DOCTYPE html>
+    const isPreview = req.nextUrl.searchParams.get("preview") === "true";
+    if (!isPreview) {
+      const unreleasedHtml = `<!DOCTYPE html>
 <html lang="id">
 <head>
   <meta charset="UTF-8">
@@ -83,10 +87,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ subd
 </body>
 </html>`;
 
-    return new NextResponse(unreleasedHtml, {
-      status: 403,
-      headers: { "Content-Type": "text/html; charset=utf-8" },
-    });
+      return new NextResponse(unreleasedHtml, {
+        status: 403,
+        headers: { "Content-Type": "text/html; charset=utf-8" },
+      });
+    }
   }
 
   // Check if subdomain has expired (> 7 days post event)
@@ -110,12 +115,21 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ subd
     return NextResponse.redirect(new URL("/?notice=subdomain-expired", req.url));
   }
 
-  // 1. Direct Static Serving
-  let html = await getPublishedHtml(invitation.id);
+  let html: string | null = null;
+  const isPreview = req.nextUrl.searchParams.get("preview") === "true";
 
-  // 2. Fallback compilation
-  if (!html) {
-    html = await buildAndSavePublishedHtml(invitation.id);
+  if (invitation.status === "DRAFT" || isPreview) {
+    // Mode DRAFT / Preview: Selalu render data mutakhir langsung dari DB (Dynamic Live Preview)
+    const data = await composeTemplateData(invitation.id);
+    if (data && invitation.themeId) {
+      html = await renderTemplateFile(invitation.themeId, data, { editMode: false, invitationId: invitation.id });
+    }
+  } else {
+    // Mode PUBLISHED: Gunakan file statis yang telah dibake (Zero Overhead)
+    html = await getPublishedHtml(invitation.id);
+    if (!html) {
+      html = await buildAndSavePublishedHtml(invitation.id);
+    }
   }
 
   if (!html) {

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { compressImageToWebP } from "@/lib/clientImageCompressor";
 
 const THEMES = [
   // ── Premium Store (themes/premium/) ──
@@ -156,32 +157,68 @@ const COLOR_PALETTES = [
   { id: "monochrome", name: "Monochrome Dark & Silver", hex: "#262626", desc: "Minimalis editorial hitam-putih" },
 ];
 
-const MUSIC_PRESETS = [
+// Preset Palet Busana Pernikahan Populer (1-Klik untuk Pengguna Awam)
+const WEDDING_DRESSCODE_PRESETS = [
   {
-    id: "canon-in-d",
-    title: "Canon in D — Johann Pachelbel",
-    genre: "Piano & Strings Klasik Romantis",
-    url: "/music/canon-in-d.ogg",
+    name: "Earthy Terracotta",
+    category: "Rustic & Warm",
+    colors: ["#8b4513", "#c86d51", "#dfc9b8", "#fbf7f4"],
   },
   {
-    id: "pachelbel-piano",
-    title: "Canon in D — Piano Solo (Lee Galloway)",
-    genre: "Solo Piano Syahdu & Khidmat",
-    url: "/music/pachelbel-piano.ogg",
+    name: "Sage & Champagne",
+    category: "Botanical Nature",
+    colors: ["#4a5d4e", "#8f9779", "#d4af37", "#fbf9f5"],
   },
   {
-    id: "canon-gigue",
-    title: "Canon & Gigue in D — Strings & Organ",
-    genre: "Orkestra Strings Sakral & Megah",
-    url: "/music/canon-gigue.ogg",
+    name: "Dusty Rose & Blush",
+    category: "Romantic Pastel",
+    colors: ["#a36367", "#d9a5b3", "#ead8cd", "#ffffff"],
   },
   {
-    id: "moonlight-sonata",
-    title: "Moonlight Sonata Mvt. 2 — Beethoven",
-    genre: "Piano Klasik Lembut & Romantis",
-    url: "/music/moonlight-sonata.ogg",
+    name: "Royal Navy & Gold",
+    category: "Grand & Classic",
+    colors: ["#1b2a4a", "#415a77", "#d4af37", "#f0ebd8"],
+  },
+  {
+    name: "Emerald Luxury",
+    category: "Royal Heritage",
+    colors: ["#0f4336", "#2d6a4f", "#c5a059", "#f7f5f0"],
+  },
+  {
+    name: "Modern Monochrome",
+    category: "Minimalist Chic",
+    colors: ["#1a1a1a", "#4a4a4a", "#b0b0b0", "#ffffff"],
+  },
+  {
+    name: "Sogan Batik Nusantara",
+    category: "Traditional Heritage",
+    colors: ["#4a2c11", "#8c5827", "#c99700", "#f5efe6"],
+  },
+  {
+    name: "Sunset Lilac & Peach",
+    category: "Contemporary Sweet",
+    colors: ["#795578", "#a77b96", "#e8b4b8", "#fbf5f3"],
   },
 ];
+
+// Pemetaan Warna Palet Harmonis Berdasarkan Tema Fisik Aktif
+const THEME_DRESSCODE_MAP: Record<string, { name: string; colors: string[] }> = {
+  candani: { name: "Pesona Emas & Cokelat Jawa", colors: ["#8b6f38", "#2a2012", "#f5ebd9"] },
+  solaria: { name: "Romantic Sunset Terracotta", colors: ["#a85d42", "#dfc9b8", "#fbf7f4"] },
+  artisan: { name: "Editorial Noir & Earthy Bronze", colors: ["#1a1a1a", "#8c7355", "#f5f0ea"] },
+  kalandra: { name: "Warm Amber, Sand & Cream", colors: ["#a85d42", "#d4a373", "#fefae0"] },
+  aurelia: { name: "Royal Gold & Classic Black", colors: ["#bfa15f", "#1a1a1a", "#ffffff"] },
+  valente: { name: "Classic Navy & Slate Blue", colors: ["#2c3e50", "#7f8c8d", "#ecf0f1"] },
+  badrika: { name: "Saoraja Muted Earth Brown", colors: ["#6e5849", "#b08968", "#ede0d4"] },
+  mayang: { name: "Heritage Bronze & Ivory", colors: ["#3d342d", "#8d7b68", "#f5efe6"] },
+  prameswari: { name: "Keraton Green & Heritage Gold", colors: ["#4a5d4e", "#d4af37", "#fdfbf7"] },
+  dillalucky: { name: "Emerald Islamic Batik & Gold", colors: ["#0f2b23", "#c5a059", "#fbfaf7"] },
+  lumina: { name: "Golden Glass & Modern Bronze", colors: ["#b5833c", "#261b11", "#faf6f0"] },
+  chronicle: { name: "Vogue High-Fashion Monochrome", colors: ["#09090b", "#e5e7eb", "#ffffff"] },
+  papercut: { name: "Kraft Paper Clay & Terracotta", colors: ["#a8583c", "#d97736", "#fbf7f4"] },
+  wave: { name: "Dramatic Obsidian & Silver", colors: ["#0d0d0f", "#d8cebe", "#f4eee6"] },
+  ameera: { name: "Heritage Dark Modern Gray", colors: ["#736b5e", "#c2b69d", "#faf8f5"] },
+};
 
 const EVENT_PRESETS = [
   "Akad Nikah",
@@ -205,6 +242,7 @@ export default function EditInvitation() {
   const [bankList, setBankList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingSec, setSavingSec] = useState<string | null>(null);
   const [uploadingCount, setUploadingCount] = useState(0);
   const [lastSaved, setLastSaved] = useState<string>("");
   const [savedSnapshot, setSavedSnapshot] = useState<any>(null);
@@ -214,12 +252,15 @@ export default function EditInvitation() {
   const [adminWhatsapp, setAdminWhatsapp] = useState<string>("");
   const [platformSettings, setPlatformSettings] = useState<any>(null);
   const [themesList, setThemesList] = useState<any[]>(THEMES);
+  const [musicPresets, setMusicPresets] = useState<any[]>([]);
+  const [musicLoading, setMusicLoading] = useState(true);
 
   // Upgrade Paket State
   const [upgradeModal, setUpgradeModal] = useState(false);
   const [upgradeTarget, setUpgradeTarget] = useState<"MODERN" | "PREMIUM" | null>(null);
   const [upgrading, setUpgrading] = useState(false);
   const [upgradeError, setUpgradeError] = useState<string | null>(null);
+  const [isDeploying, setIsDeploying] = useState(false);
 
   const PLAN_HIERARCHY: Record<string, number> = { TRADITIONAL: 1, MODERN: 2, PREMIUM: 3 };
   const PLAN_PRICES: Record<string, number> = {
@@ -275,7 +316,12 @@ export default function EditInvitation() {
   // Dual-Native Studio State: Form Mode vs Live Visual Editor
   const [activeStudioTab, setActiveStudioTab] = useState<"form" | "live">("form");
   const [previewDevice, setPreviewDevice] = useState<"mobile" | "desktop">("mobile");
+  const [selectedThemeCategory, setSelectedThemeCategory] = useState<string>("");
   const liveIframeRef = useRef<HTMLIFrameElement>(null);
+
+  // Dress Code Color Studio State
+  const [showManualHex, setShowManualHex] = useState(false);
+  const [themeSyncSuccess, setThemeSyncSuccess] = useState(false);
 
   const isUploading = uploadingCount > 0;
   const handleUploadStart = () => setUploadingCount((c) => c + 1);
@@ -395,6 +441,16 @@ export default function EditInvitation() {
         }
       })
       .catch((err) => console.error(err));
+
+    fetch("/api/public/music")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.music)) {
+          setMusicPresets(data.music);
+        }
+      })
+      .catch((err) => console.error("[Client] Gagal memuat pustaka musik:", err))
+      .finally(() => setMusicLoading(false));
   }, []);
 
   useEffect(() => {
@@ -466,6 +522,7 @@ export default function EditInvitation() {
   const saveSection = async (secKey?: string) => {
     if (!invitation || saving) return;
     setSaving(true);
+    setSavingSec(secKey || null);
     try {
       const payload = {
         ...invitation,
@@ -521,6 +578,34 @@ export default function EditInvitation() {
       alert("Terjadi kendala saat menyimpan. Silakan coba lagi.");
     } finally {
       setSaving(false);
+      setSavingSec(null);
+    }
+  };
+
+  const handleDeployAndLock = async () => {
+    if (!invitation || isDeploying) return;
+    setIsDeploying(true);
+    try {
+      const res = await fetch(`/api/client/invitations/${invitationId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "DEPLOY_AND_LOCK" }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Gagal memperbarui undangan online.");
+      }
+      setInvitation((prev: any) => ({
+        ...prev,
+        ...data,
+        isLocked: true,
+        isEmergencyUnlocked: false,
+        lockReason: "PUBLISHED",
+      }));
+    } catch (err: any) {
+      alert(err.message || "Terjadi kendala saat memperbarui undangan online.");
+    } finally {
+      setIsDeploying(false);
     }
   };
 
@@ -648,7 +733,6 @@ export default function EditInvitation() {
     // Sec 2: Sampul & Visual
     const dirty2 = (
       JSON.stringify(media) !== JSON.stringify(savedSnapshot.media || {}) ||
-      Boolean(getFeatureSetting("isNoPhoto", false)) !== Boolean(getSavedFeatureSetting("isNoPhoto", false)) ||
       (invitation.musicUrl || "") !== (savedSnapshot.invitation?.musicUrl || "") ||
       Boolean(getFeatureSetting("showMusic", true)) !== Boolean(getSavedFeatureSetting("showMusic", true))
     );
@@ -863,7 +947,6 @@ export default function EditInvitation() {
 
   if (!invitation) return <div className="text-center py-12 text-rose-600 font-medium">Undangan tidak ditemukan</div>;
 
-  const isNoPhoto = Boolean(getFeatureSetting("isNoPhoto", false));
   const currentPalette = getFeatureSetting("colorPalette", "champagne");
   const displayOrder = getFeatureSetting("displayOrder", "BRIDE_FIRST");
 
@@ -887,26 +970,76 @@ export default function EditInvitation() {
   const showTurutMengundang = getFeatureSetting("showTurutMengundang", true);
   const showGuestMemoriesGlobal = hasCap("guest_memories") && getFeatureSetting("showGuestMemories", true);
   if (invitation.isLocked && !invitation.isEmergencyUnlocked) {
+    const isPublishedLock = invitation.lockReason === "PUBLISHED" || (!invitation.lockReason && (invitation.status === "PUBLISHED" || invitation.status === "EVENT_FINISHED"));
+    const coupleName = displayOrder === "BRIDE_FIRST"
+      ? `${invitation.brideNickname || invitation.brideName || "Mempelai Wanita"} & ${invitation.groomNickname || invitation.groomName || "Mempelai Pria"}`
+      : `${invitation.groomNickname || invitation.groomName || "Mempelai Pria"} & ${invitation.brideNickname || invitation.brideName || "Mempelai Wanita"}`;
+
     return (
-      <div className="max-w-5xl mx-auto space-y-6 pb-24 font-sans px-4 sm:px-0">
-        <div className="py-32 text-center space-y-5">
-          <div className="w-20 h-20 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner border border-stone-200">
-            <svg className="w-10 h-10 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="max-w-4xl mx-auto space-y-6 pb-24 font-sans px-4 sm:px-0">
+        <div className="py-16 sm:py-20 text-center space-y-6 bg-white rounded-3xl border border-stone-200 p-6 sm:p-12 shadow-xs">
+          <div className="w-16 h-16 bg-amber-50 text-amber-800 rounded-2xl flex items-center justify-center mx-auto shadow-inner border border-amber-200">
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
           </div>
-          <h2 className="text-2xl font-serif font-bold text-stone-900">Studio Terkunci Permanen</h2>
-          <p className="text-stone-500 font-medium max-w-md mx-auto leading-relaxed">
-            Acara telah lewat dan undangan ini kini berstatus Published Forever sebagai portofolio. Akses edit telah ditutup untuk menjaga keaslian arsip.
-          </p>
-          <div className="pt-4">
+
+          <div className="space-y-2 max-w-xl mx-auto">
+            <span className="px-3 py-1 bg-stone-100 border border-stone-200 text-stone-700 text-[10px] font-bold rounded-full uppercase tracking-wider inline-flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+              <span>{isPublishedLock ? "Terkunci Pasca Publikasi" : "Studio Terkunci Permanen"}</span>
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-serif font-bold text-stone-900">
+              {isPublishedLock ? "Studio Editor Terkunci" : "Studio Terkunci Permanen"}
+            </h2>
+            <p className="text-xs sm:text-sm text-stone-600 leading-relaxed">
+              {isPublishedLock
+                ? `Undangan resmi ${coupleName} saat ini telah aktif mengudara. Untuk melindungi keutuhan data dan keterhubungan QR Code fisik yang telah disebar kepada para tamu, form editor dikunci secara otomatis.`
+                : "Acara telah lewat dan undangan ini kini berstatus Published Forever sebagai portofolio. Akses edit telah ditutup untuk menjaga keaslian arsip."}
+            </p>
+          </div>
+
+          {isPublishedLock && (
+            <div className="max-w-lg mx-auto p-4 bg-stone-50 rounded-2xl border border-stone-200/80 text-left space-y-1.5">
+              <h3 className="text-xs font-bold text-stone-900 flex items-center gap-1.5">
+                <svg className="w-4 h-4 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Memerlukan Perbaikan Data Mendesak?</span>
+              </h3>
+              <p className="text-[11px] text-stone-500 leading-relaxed">
+                Jika Anda perlu merevisi data penting (seperti ralat jam sesi acara, pembaruan link Google Maps gedung, atau pembetulan kesalahan ketik nama keluarga), silakan ajukan <strong>Buka Kunci Darurat</strong> kepada Administrator. Akses edit akan dibuka sementara untuk Anda.
+              </p>
+            </div>
+          )}
+
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
             <a
-              href={`https://wa.me/${adminWhatsapp.replace(/\D/g, '').replace(/^0/, '62')}?text=Halo%20Admin,%20mohon%20bantuan%20buka%20kunci%20darurat%20undangan%20saya`}
+              href={`https://wa.me/${adminWhatsapp.replace(/\D/g, '').replace(/^0/, '62')}?text=${encodeURIComponent(
+                isPublishedLock
+                  ? `Halo Admin Luxenary, mohon bantuan Buka Kunci Darurat untuk undangan kami: ${coupleName} (ID: ${invitation.id}). Kami memerlukan perbaikan data.`
+                  : `Halo Admin Luxenary, mohon bantuan buka kunci undangan kami: ${coupleName}`
+              )}`}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex px-6 py-3 bg-stone-900 hover:bg-stone-800 text-white text-sm font-bold rounded-xl transition shadow-sm"
+              className="w-full sm:w-auto px-6 py-3 bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold rounded-xl transition shadow-xs flex items-center justify-center gap-2 cursor-pointer"
             >
-              Hubungi CS untuk Bantuan
+              <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              <span>{isPublishedLock ? "Ajukan Buka Kunci Darurat" : "Hubungi CS untuk Bantuan"}</span>
+            </a>
+
+            <a
+              href={`/api/client/invitations/${invitationId}/preview?mode=edit`}
+              target="_blank"
+              rel="noreferrer"
+              className="w-full sm:w-auto px-5 py-3 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold rounded-xl transition border border-stone-200 flex items-center justify-center gap-1.5"
+            >
+              <span>Lihat Undangan Online</span>
+              <svg className="w-3.5 h-3.5 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
             </a>
           </div>
         </div>
@@ -917,14 +1050,47 @@ export default function EditInvitation() {
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-24 font-sans">
       
-      {/* Emergency Unlock Banner */}
+      {/* Emergency Unlock Banner with Atomic Single Deploy */}
       {invitation.isEmergencyUnlocked && (
-        <div className="p-4 bg-amber-50 border border-amber-300 text-amber-950 rounded-2xl flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
-            <p className="text-xs font-semibold">
-              Kunci Darurat Aktif: Administrator telah membuka akses edit darurat hingga {invitation.unlockExpiresAt ? new Date(invitation.unlockExpiresAt).toLocaleString('id-ID') : "24 Jam kedepan"}.
+        <div className="p-5 sm:p-6 bg-gradient-to-r from-amber-50 via-amber-50/90 to-amber-100/60 border-2 border-amber-300/80 rounded-2xl sm:rounded-3xl shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1.5 max-w-2xl">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-600 animate-pulse"></span>
+              <span className="text-[11px] font-bold uppercase tracking-widest text-amber-900">Akses Kunci Darurat Aktif</span>
+            </div>
+            <h2 className="text-sm sm:text-base font-bold text-amber-950">
+              Mode Perbaikan Data Undangan
+            </h2>
+            <p className="text-xs text-amber-900/90 leading-relaxed">
+              Administrator telah membuka izin edit darurat hingga <strong>{invitation.unlockExpiresAt ? new Date(invitation.unlockExpiresAt).toLocaleString('id-ID') : "24 Jam kedepan"}</strong>. Silakan lakukan perubahan data yang dibutuhkan di formulir bawah ini. Setelah selesai, klik tombol di samping untuk menerapkan pembaruan ke website tamu dan mengunci kembali studio secara otomatis.
             </p>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={handleDeployAndLock}
+              disabled={isDeploying || saving}
+              className={`px-5 py-3 rounded-xl font-bold text-xs shadow-sm transition flex items-center gap-2 cursor-pointer ${
+                isDeploying
+                  ? "bg-amber-900/80 text-amber-100 cursor-not-allowed"
+                  : "bg-amber-900 hover:bg-amber-950 text-white"
+              }`}
+            >
+              {isDeploying ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>Memperbarui Online...</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>Perbarui Undangan &amp; Kunci Kembali</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
       )}
@@ -1063,6 +1229,62 @@ export default function EditInvitation() {
         </div>
       )}
 
+      {/* Smart Detector: Pengingat Foto Personal Belum Diunggah */}
+      {Boolean(invitation.themeId) && (!media["GROOM_PHOTO"] || !media["BRIDE_PHOTO"] || !media["LANDING_COVER"]) && (
+        <div className="bg-stone-900 text-white rounded-2xl p-4 sm:p-5 border border-stone-800 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0 mt-0.5 sm:mt-0">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-xs font-bold text-white tracking-wide uppercase">Detektor Foto Personal Undangan</h2>
+                <span className="text-[10px] bg-amber-400/20 text-amber-300 font-semibold px-2 py-0.5 rounded-full border border-amber-400/30">Pengingat</span>
+              </div>
+              <p className="text-xs text-stone-300 mt-1 leading-relaxed">
+                Slot foto personal berikut belum Anda unggah: <strong className="text-amber-300">{[
+                  !media["LANDING_COVER"] && "Sampul Pop-Up",
+                  !media["GROOM_PHOTO"] && "Foto Mempelai Pria",
+                  !media["BRIDE_PHOTO"] && "Foto Mempelai Wanita",
+                ].filter(Boolean).join(", ")}</strong>. Harap unggah foto asli Anda agar undangan tidak menampilkan avatar monogram default saat disebarkan.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0 self-start md:self-center flex-wrap">
+            {!media["LANDING_COVER"] && (
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveStudioTab("form");
+                  setCollapsed((prev) => ({ ...prev, sec2: false }));
+                  const el = document.getElementById("section-sec2");
+                  if (el) el.scrollIntoView({ behavior: "smooth" });
+                }}
+                className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl text-xs transition cursor-pointer"
+              >
+                Unggah Sampul
+              </button>
+            )}
+            {(!media["GROOM_PHOTO"] || !media["BRIDE_PHOTO"]) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveStudioTab("form");
+                  setCollapsed((prev) => ({ ...prev, sec3: false }));
+                  const el = document.getElementById("section-sec3");
+                  if (el) el.scrollIntoView({ behavior: "smooth" });
+                }}
+                className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold rounded-xl text-xs transition cursor-pointer shadow-sm"
+              >
+                Unggah Foto Mempelai
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Dual Native Studio Mode Switcher */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between p-2 bg-white rounded-2xl border border-stone-200 shadow-xs gap-3">
         <div className="flex items-center gap-1.5">
@@ -1192,15 +1414,14 @@ export default function EditInvitation() {
             <h2 className="text-base font-bold text-stone-900">1. Pilihan Seri Desain &amp; Palet Warna</h2>
             <p className="text-xs text-stone-500">Pilih tema utama dan nuansa warna undangan pernikahan Anda.</p>
           </div>
-          <button
-            type="button"
-            onClick={() => toggleSection("sec1")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-              collapsed.sec1 ? "bg-amber-50 text-amber-900 hover:bg-amber-100" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
-            }`}
-          >
-            {collapsed.sec1 ? (selectedThemeObj ? "Edit Tema & Warna" : "Pilih Tema") : "Tutup"}
-          </button>
+          <SectionHeaderActions
+            isDirty={Boolean(isDirty.sec1)}
+            isSaving={saving && savingSec === "sec1"}
+            onSave={() => saveSection("sec1")}
+            collapsed={Boolean(collapsed.sec1)}
+            onToggle={() => toggleSection("sec1")}
+            closedLabel={selectedThemeObj ? "Edit Tema & Warna" : "Pilih Tema"}
+          />
         </div>
 
         {collapsed.sec1 ? (
@@ -1268,54 +1489,131 @@ export default function EditInvitation() {
                 if (plan === "TRADITIONAL") return cat === "TRADITIONAL"; 
                 return true;
               });
+
+              // Dapatkan daftar kategori unik sesuai paket klien
+              const CATEGORY_ORDER = ["PREMIUM", "MODERN", "TRADITIONAL"];
+              const CATEGORY_LABELS: Record<string, string> = {
+                PREMIUM: "Premium",
+                MODERN: "Modern",
+                TRADITIONAL: "Traditional",
+              };
+              const rawCats = new Set(availableThemes.map((t) => (t.category || "").toUpperCase()));
+              const availableCategories = CATEGORY_ORDER.filter((c) => rawCats.has(c));
+
+              // Tentukan kategori dari tema yang sedang aktif dipakai
+              const currentTheme = themesList.find((t) => t.id === invitation?.themeId);
+              const currentThemeCategory = (currentTheme?.category || "").toUpperCase();
+
+              // Tab aktif: jika sudah dipilih dan valid gunakan pilihan user,
+              // jika belum, default ke kategori tema yang sedang terpilih, atau kategori pertama
+              const activeCategoryTab = (selectedThemeCategory && availableCategories.includes(selectedThemeCategory))
+                ? selectedThemeCategory
+                : (availableCategories.includes(currentThemeCategory) ? currentThemeCategory : (availableCategories[0] || ""));
+
+              // Jika lebih dari 1 kategori, filter tema sesuai tab aktif
+              const displayedThemes = availableCategories.length > 1
+                ? availableThemes.filter((t) => (t.category || "").toUpperCase() === activeCategoryTab)
+                : availableThemes;
+
               return (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  {availableThemes.map((th) => {
-                    const isSelected = Boolean(invitation.themeId) && invitation.themeId === th.id;
-                    return (
-                      <div
-                        key={th.id}
-                        onClick={() => updateField("themeId", th.id)}
-                        className={`rounded-2xl border overflow-hidden cursor-pointer transition flex flex-col ${
-                          isSelected
-                            ? "border-amber-800 bg-amber-50/30 ring-2 ring-amber-800/20 shadow-sm"
-                            : "border-stone-200 hover:border-stone-300 bg-white"
-                        }`}
-                      >
-                        <div className="relative aspect-video overflow-hidden bg-stone-100">
-                          <img src={th.coverUrl || th.cover} alt={th.name} className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" />
-                          <span className="absolute top-2.5 left-2.5 text-[9px] font-bold tracking-wider uppercase bg-black/70 backdrop-blur-xs text-white px-2 py-0.5 rounded">
-                            {th.series || th.tag || th.subtitle}
-                          </span>
-                          {isSelected && (
-                            <span className="absolute top-2.5 right-2.5 w-6 h-6 rounded-full bg-amber-800 text-white flex items-center justify-center text-xs font-bold shadow-md">
-                              ✓
+                <div className="space-y-4">
+                  {/* Tab Kategori (Hanya tampil jika klien memiliki hak akses > 1 kategori) */}
+                  {availableCategories.length > 1 && (
+                    <div className="flex items-center gap-1.5 p-1 bg-stone-100/90 rounded-xl w-fit border border-stone-200/80">
+                      {availableCategories.map((catKey) => {
+                        const isActive = activeCategoryTab === catKey;
+                        const count = availableThemes.filter((t) => (t.category || "").toUpperCase() === catKey).length;
+                        return (
+                          <button
+                            key={catKey}
+                            type="button"
+                            onClick={() => setSelectedThemeCategory(catKey)}
+                            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                              isActive
+                                ? "bg-white text-amber-900 shadow-xs border border-stone-200/60"
+                                : "text-stone-500 hover:text-stone-800 hover:bg-stone-200/50"
+                            }`}
+                          >
+                            <span>{CATEGORY_LABELS[catKey] || catKey}</span>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                              isActive ? "bg-amber-100 text-amber-900 font-semibold" : "bg-stone-200/80 text-stone-600"
+                            }`}>
+                              {count}
                             </span>
-                          )}
-                        </div>
-                        <div className="p-3.5 space-y-1 flex-1 flex flex-col justify-between">
-                          <div>
-                            <h3 className="font-bold text-stone-900 text-xs">{th.name}</h3>
-                            <p className="text-[10px] text-stone-500 line-clamp-2 mt-0.5 leading-relaxed">{th.desc}</p>
-                          </div>
-                          <div className="pt-2 flex items-center justify-between border-t border-stone-100">
-                            <a
-                              href={`/demo/${th.id}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="text-[10px] font-bold text-amber-800 hover:underline"
-                            >
-                              Lihat Demo
-                            </a>
-                            <span className={`text-[10px] font-bold ${isSelected ? "text-amber-900" : "text-stone-400"}`}>
-                              {isSelected ? "Terpilih" : "Pilih"}
-                            </span>
-                          </div>
-                        </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {(invitation?.status === "PUBLISHED" || invitation?.status === "EVENT_FINISHED") && (
+                    <div className="p-3.5 bg-amber-50/80 border border-amber-200/80 rounded-2xl flex items-start gap-3 text-xs text-amber-950">
+                      <svg className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                      <div>
+                        <p className="font-bold text-amber-900">Desain Tema Telah Terkunci</p>
+                        <p className="text-[11px] text-amber-800/90 mt-0.5 leading-relaxed">
+                          Pilihan desain tema dikunci secara permanen pasca publikasi demi menjaga konsistensi template HTML yang aktif. Jika Anda memerlukan penggantian tema secara darurat, silakan hubungi Administrator.
+                        </p>
                       </div>
-                    );
-                  })}
+                    </div>
+                  )}
+
+                  {/* Grid Tema Ringkas */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    {displayedThemes.map((th) => {
+                      const isSelected = Boolean(invitation.themeId) && invitation.themeId === th.id;
+                      const isThemeLocked = invitation?.status === "PUBLISHED" || invitation?.status === "EVENT_FINISHED";
+                      return (
+                        <div
+                          key={th.id}
+                          onClick={() => {
+                            if (!isThemeLocked) updateField("themeId", th.id);
+                          }}
+                          className={`rounded-2xl border overflow-hidden transition flex flex-col ${
+                            isThemeLocked ? "cursor-default opacity-90" : "cursor-pointer"
+                          } ${
+                            isSelected
+                              ? "border-amber-800 bg-amber-50/30 ring-2 ring-amber-800/20 shadow-sm"
+                              : "border-stone-200 hover:border-stone-300 bg-white"
+                          }`}
+                        >
+                          <div className="relative aspect-video overflow-hidden bg-stone-100">
+                            <img src={th.coverUrl || th.cover} alt={th.name} className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" />
+                            <span className="absolute top-2.5 left-2.5 text-[9px] font-bold tracking-wider uppercase bg-black/70 backdrop-blur-xs text-white px-2 py-0.5 rounded">
+                              {th.series || th.tag || th.subtitle}
+                            </span>
+                            {isSelected && (
+                              <span className="absolute top-2.5 right-2.5 w-6 h-6 rounded-full bg-amber-800 text-white flex items-center justify-center text-xs font-bold shadow-md">
+                                ✓
+                              </span>
+                            )}
+                          </div>
+                          <div className="p-3.5 space-y-1 flex-1 flex flex-col justify-between">
+                            <div>
+                              <h3 className="font-bold text-stone-900 text-xs">{th.name}</h3>
+                              <p className="text-[10px] text-stone-500 line-clamp-2 mt-0.5 leading-relaxed">{th.desc}</p>
+                            </div>
+                            <div className="pt-2 flex items-center justify-between border-t border-stone-100">
+                              <a
+                                href={`/demo/${th.id}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="text-[10px] font-bold text-amber-800 hover:underline"
+                              >
+                                Lihat Demo
+                              </a>
+                              <span className={`text-[10px] font-bold ${isSelected ? "text-amber-900" : "text-stone-400"}`}>
+                                {isSelected ? "Terpilih" : isThemeLocked ? "Terkunci" : "Pilih"}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               );
             })()}
@@ -1402,153 +1700,188 @@ export default function EditInvitation() {
             <h2 className="text-base font-bold text-stone-900">2. Sampul, Visual &amp; Musik Latar</h2>
             <p className="text-xs text-stone-500">Foto sampul pop-up, visual desktop widescreen, dan musik latar otomatis</p>
           </div>
-          <button
-            type="button"
-            onClick={() => toggleSection("sec2")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-              collapsed.sec2 ? "bg-amber-50 text-amber-900 hover:bg-amber-100" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
-            }`}
-          >
-            {collapsed.sec2 ? "Edit Visual & Musik" : "Tutup"}
-          </button>
+          <SectionHeaderActions
+            isDirty={Boolean(isDirty.sec2)}
+            isSaving={saving && savingSec === "sec2"}
+            onSave={() => saveSection("sec2")}
+            collapsed={Boolean(collapsed.sec2)}
+            onToggle={() => toggleSection("sec2")}
+            closedLabel="Edit Visual & Musik"
+          />
         </div>
 
-        {collapsed.sec2 ? (
-          <div className="p-5 bg-stone-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-3 flex-wrap text-xs text-stone-600">
-              <span className="flex items-center gap-1.5">
-                <span className={`w-2 h-2 rounded-full ${media["LANDING_COVER"] ? "bg-emerald-500" : "bg-stone-300"}`}></span>
-                <span>Sampul Pop-Up: <strong>{media["LANDING_COVER"] ? "Terpasang" : "Default"}</strong></span>
-              </span>
-              <span>•</span>
-              <span className="flex items-center gap-1.5">
-                <span className={`w-2 h-2 rounded-full ${media["DESKTOP_SIDEBAR"] ? "bg-emerald-500" : "bg-stone-300"}`}></span>
-                <span>Sidebar Desktop: <strong>{media["DESKTOP_SIDEBAR"] ? "Terpasang" : "Default"}</strong></span>
-              </span>
-              <span>•</span>
-              <span className="flex items-center gap-1.5">
-                <span className={`w-2 h-2 rounded-full ${media["CLOSING_COVER"] ? "bg-emerald-500" : "bg-stone-300"}`}></span>
-                <span>Foto Penutup: <strong>{media["CLOSING_COVER"] ? "Terpasang" : "Default"}</strong></span>
-              </span>
-              <span>•</span>
-              <span className="flex items-center gap-1.5">
-                <span className={`w-2 h-2 rounded-full ${showMusic ? "bg-emerald-500" : "bg-stone-300"}`}></span>
-                <span>Musik Latar: <strong>{showMusic ? (invitation.musicUrl ? "Aktif" : "Canon in D") : "Hening"}</strong></span>
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={() => toggleSection("sec2")}
-              className="text-xs font-bold text-amber-800 hover:underline"
-            >
-              Ubah Visual &amp; Musik
-            </button>
-          </div>
-        ) : (
-          <div className="p-5 sm:p-7 space-y-6">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-stone-700">Mode Tanpa Foto:</span>
-              <SectionHeaderToggle
-                label="Mode Tanpa Foto"
-                sub="Ganti foto dengan Monogram"
-                checked={isNoPhoto}
-                onChange={(v) => updateFeatureSetting("isNoPhoto", v)}
-              />
-            </div>
+        {collapsed.sec2 ? (() => {
+          const visualItems = [
+            {
+              id: "LANDING_COVER",
+              label: "Sampul Pop-Up",
+              isFilled: Boolean(media["LANDING_COVER"]),
+              statusText: media["LANDING_COVER"] ? "Terpasang" : "Bawaan Tema",
+            },
+            {
+              id: "DESKTOP_SIDEBAR",
+              label: "Sidebar Desktop",
+              isFilled: Boolean(media["DESKTOP_SIDEBAR"]),
+              statusText: media["DESKTOP_SIDEBAR"] ? "Terpasang" : "Bawaan Tema",
+            },
+            {
+              id: "MUSIC",
+              label: "Musik Latar",
+              isFilled: Boolean(showMusic && (invitation.musicUrl || musicPresets.length > 0)),
+              statusText: showMusic ? (invitation.musicUrl || musicPresets.length > 0 ? "Aktif" : "Bawaan Tema") : "Nonaktif",
+            },
+            {
+              id: "HOME_PHOTO",
+              label: "Latar Home",
+              isFilled: Boolean(media["HOME_PHOTO"]),
+              statusText: media["HOME_PHOTO"] ? "Terpasang" : "Bawaan Tema",
+            },
+            {
+              id: "CLOSING_COVER",
+              label: "Foto Penutup",
+              isFilled: Boolean(media["CLOSING_COVER"]),
+              statusText: media["CLOSING_COVER"] ? "Terpasang" : "Bawaan Tema",
+            },
+            {
+              id: "GLOBAL_FIXED_BG",
+              label: "Fixed Background",
+              isFilled: Boolean(media["GLOBAL_FIXED_BG"]),
+              statusText: media["GLOBAL_FIXED_BG"] ? "Terpasang" : "Bawaan Tema",
+            },
+          ];
 
-            {!isNoPhoto ? (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <PhotoInput
-                  label="Landing Cover (Pop-Up)"
-                  desc="Foto atau Video vertikal pembuka saat tamu klik 'Buka Undangan'"
-                  value={media["LANDING_COVER"] || ""}
-                  onChange={(url) => updateMedia("LANDING_COVER", url)}
-                  placeholder="https://.../cover-popup.jpg atau .mp4"
-                  allowVideo={true}
-                  invitationId={invitationId}
-                  slot="LANDING_COVER"
-                  onUploadStart={handleUploadStart}
-                  onUploadEnd={handleUploadEnd}
-                />
-                <PhotoInput
-                  label="Latar Belakang Home (Opsional)"
-                  desc="Foto di halaman utama setelah sampul dibuka. Jika kosong, akan menggunakan warna latar kanvas kosong."
-                  value={media["HOME_PHOTO"] || ""}
-                  onChange={(url) => updateMedia("HOME_PHOTO", url)}
-                  placeholder="https://.../home-bg.jpg"
-                  invitationId={invitationId}
-                  slot="HOME_PHOTO"
-                  onUploadStart={handleUploadStart}
-                  onUploadEnd={handleUploadEnd}
-                />
-                <PhotoInput
-                  label="Desktop Sidebar (70% Kiri)"
-                  desc="Foto landscape atau Video vertikal layar lebar"
-                  value={media["DESKTOP_SIDEBAR"] || ""}
-                  onChange={(url) => updateMedia("DESKTOP_SIDEBAR", url)}
-                  placeholder="https://.../sidebar-desktop.jpg atau .mp4"
-                  allowVideo={true}
-                  invitationId={invitationId}
-                  slot="DESKTOP_SIDEBAR"
-                  onUploadStart={handleUploadStart}
-                  onUploadEnd={handleUploadEnd}
-                />
-                <PhotoInput
-                  label="Foto Penutup (Footer)"
-                  desc="Foto background di bagian akhir / footer undangan"
-                  value={media["CLOSING_COVER"] || ""}
-                  onChange={(url) => updateMedia("CLOSING_COVER", url)}
-                  placeholder="https://.../closing.jpg"
-                  invitationId={invitationId}
-                  slot="CLOSING_COVER"
-                  onUploadStart={handleUploadStart}
-                  onUploadEnd={handleUploadEnd}
-                />
-                <PhotoInput
-                  label="Global Fixed Background"
-                  desc="Foto latar belakang di balik kartu undangan"
-                  value={media["GLOBAL_FIXED_BG"] || ""}
-                  onChange={(url) => updateMedia("GLOBAL_FIXED_BG", url)}
-                  placeholder="https://.../fixed-bg.jpg atau .mp4"
-                  allowVideo={true}
-                  invitationId={invitationId}
-                  slot="GLOBAL_FIXED_BG"
-                  onUploadStart={handleUploadStart}
-                  onUploadEnd={handleUploadEnd}
-                />
+          const completedVisuals = visualItems.filter((v) => v.isFilled);
+          const uncompletedVisuals = visualItems.filter((v) => !v.isFilled);
 
-                {/* Panduan Media Visual & Rekomendasi Video Loop */}
-                <div className="md:col-span-3 p-4 rounded-xl border border-stone-200/90 bg-stone-50/80 text-stone-700 text-xs space-y-2">
-                  <div className="flex items-center gap-2 text-stone-900 font-semibold">
-                    <svg className="w-4 h-4 text-amber-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>Panduan & Rekomendasi Media Visual Undangan</span>
+          return (
+            <div className="p-5 bg-stone-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-2">
+                {/* Baris 1: Media Kustom yang Sudah Terpasang (Indikator Hijau) */}
+                {completedVisuals.length > 0 ? (
+                  <div className="flex items-center gap-3 flex-wrap text-xs text-stone-600">
+                    {completedVisuals.map((item, idx) => (
+                      <span key={item.id} className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                        <span>{item.label}: <strong className="text-stone-800">{item.statusText}</strong></span>
+                        {idx < completedVisuals.length - 1 && <span className="text-stone-300 ml-1">•</span>}
+                      </span>
+                    ))}
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-[11px] text-stone-600 pt-1">
-                    <div className="p-2.5 bg-white rounded-lg border border-stone-200/70">
-                      <span className="font-bold text-stone-800 block mb-0.5">Format & Kompatibilitas</span>
-                      Foto: JPG, PNG, WebP (maks 15 MB). Video: MP4, MOV (iPhone), WebM (maks 30 MB).
-                    </div>
-                    <div className="p-2.5 bg-white rounded-lg border border-stone-200/70">
-                      <span className="font-bold text-stone-800 block mb-0.5">Rekomendasi Durasi Video</span>
-                      Ideal 10–20 detik (mode loop sinematik tanpa audio). Durasi di atas 20 detik dipotong otomatis oleh sistem.
-                    </div>
-                    <div className="p-2.5 bg-white rounded-lg border border-stone-200/70">
-                      <span className="font-bold text-stone-800 block mb-0.5">Orientasi Tampilan</span>
-                      Gunakan video portrait (9:16) untuk Landing Cover, dan landscape (16:9) untuk Desktop Sidebar.
-                    </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-xs text-stone-600">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                    <span>Format visual siap: <strong className="text-stone-800">Menggunakan Desain Asli Tema</strong></span>
+                  </div>
+                )}
+
+                {/* Baris 2: Keterangan Tenang untuk Slot Opsional / Bawaan Tema (Tanpa Titik Merah) */}
+                {uncompletedVisuals.length > 0 && (
+                  <div className="flex items-center gap-2 text-[11px] text-stone-500">
+                    <span className="w-1.5 h-1.5 rounded-full bg-stone-300 shrink-0"></span>
+                    <span>
+                      {completedVisuals.length > 0
+                        ? `Slot lainnya (${uncompletedVisuals.map((v) => v.label).join(", ")}): Bawaan Desain Tema (Opsional)`
+                        : "Semua slot visual menggunakan perpaduan estetika asli tema."}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => toggleSection("sec2")}
+                className="text-xs font-bold text-amber-800 hover:underline shrink-0 self-start sm:self-center cursor-pointer"
+              >
+                Ubah Visual &amp; Musik
+              </button>
+            </div>
+          );
+        })() : (
+          <div className="p-5 sm:p-7 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <PhotoInput
+                label="Landing Cover (Pop-Up)"
+                desc="Foto atau Video vertikal pembuka saat tamu klik 'Buka Undangan'"
+                value={media["LANDING_COVER"] || ""}
+                onChange={(url) => updateMedia("LANDING_COVER", url)}
+                placeholder="https://.../cover-popup.jpg atau .mp4"
+                allowVideo={true}
+                invitationId={invitationId}
+                slot="LANDING_COVER"
+                onUploadStart={handleUploadStart}
+                onUploadEnd={handleUploadEnd}
+              />
+              <PhotoInput
+                label="Latar Belakang Home (Opsional)"
+                desc="Foto di seksi pembuka setelah sampul dibuka. Jika kosong, otomatis menggunakan kanvas atau warna latar bawaan tema."
+                value={media["HOME_PHOTO"] || ""}
+                onChange={(url) => updateMedia("HOME_PHOTO", url)}
+                placeholder="https://.../home-bg.jpg"
+                invitationId={invitationId}
+                slot="HOME_PHOTO"
+                onUploadStart={handleUploadStart}
+                onUploadEnd={handleUploadEnd}
+              />
+              <PhotoInput
+                label="Desktop Sidebar (70% Kiri)"
+                desc="Foto landscape atau Video vertikal layar lebar desktop (Opsional)"
+                value={media["DESKTOP_SIDEBAR"] || ""}
+                onChange={(url) => updateMedia("DESKTOP_SIDEBAR", url)}
+                placeholder="https://.../sidebar-desktop.jpg atau .mp4"
+                allowVideo={true}
+                invitationId={invitationId}
+                slot="DESKTOP_SIDEBAR"
+                onUploadStart={handleUploadStart}
+                onUploadEnd={handleUploadEnd}
+              />
+              <PhotoInput
+                label="Foto Penutup (Footer - Opsional)"
+                desc="Foto background di seksi penutup undangan. Jika kosong, otomatis menggunakan desain penutup asli tema."
+                value={media["CLOSING_COVER"] || ""}
+                onChange={(url) => updateMedia("CLOSING_COVER", url)}
+                placeholder="https://.../closing.jpg"
+                invitationId={invitationId}
+                slot="CLOSING_COVER"
+                onUploadStart={handleUploadStart}
+                onUploadEnd={handleUploadEnd}
+              />
+              <PhotoInput
+                label="Global Fixed Background (Opsional)"
+                desc="Foto latar belakang kanvas di balik kartu undangan. Jika kosong, otomatis menggunakan wallpaper atau warna asli tema."
+                value={media["GLOBAL_FIXED_BG"] || ""}
+                onChange={(url) => updateMedia("GLOBAL_FIXED_BG", url)}
+                placeholder="https://.../fixed-bg.jpg atau .mp4"
+                allowVideo={true}
+                invitationId={invitationId}
+                slot="GLOBAL_FIXED_BG"
+                onUploadStart={handleUploadStart}
+                onUploadEnd={handleUploadEnd}
+              />
+
+              {/* Panduan Media Visual & Rekomendasi Video Loop */}
+              <div className="md:col-span-3 p-4 rounded-xl border border-stone-200/90 bg-stone-50/80 text-stone-700 text-xs space-y-2">
+                <div className="flex items-center gap-2 text-stone-900 font-semibold">
+                  <svg className="w-4 h-4 text-amber-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>Panduan & Rekomendasi Media Visual Undangan</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-[11px] text-stone-600 pt-1">
+                  <div className="p-2.5 bg-white rounded-lg border border-stone-200/70">
+                    <span className="font-bold text-stone-800 block mb-0.5">Format & Kompatibilitas</span>
+                    Foto: JPG, PNG, WebP (maks 15 MB). Video: MP4, MOV (iPhone), WebM (maks 30 MB).
+                  </div>
+                  <div className="p-2.5 bg-white rounded-lg border border-stone-200/70">
+                    <span className="font-bold text-stone-800 block mb-0.5">Rekomendasi Durasi Video</span>
+                    Ideal 10–20 detik (mode loop sinematik tanpa audio). Durasi di atas 20 detik dipotong otomatis oleh sistem.
+                  </div>
+                  <div className="p-2.5 bg-white rounded-lg border border-stone-200/70">
+                    <span className="font-bold text-stone-800 block mb-0.5">Orientasi Tampilan</span>
+                    Gunakan video portrait (9:16) untuk Landing Cover, dan landscape (16:9) untuk Desktop Sidebar.
                   </div>
                 </div>
               </div>
-            ) : (
-              <div className="p-5 bg-stone-50 border border-stone-200 rounded-2xl text-center space-y-1">
-                <span className="text-xs font-bold text-amber-900">Mode Tanpa Foto Aktif</span>
-                <p className="text-xs text-stone-500 max-w-md mx-auto">
-                  Undangan akan menggunakan Monogram Kaligrafi Inisial ({displayOrder === "BRIDE_FIRST" ? "N & D" : "D & N"}) dengan nuansa ornamen mewah tanpa foto mempelai.
-                </p>
-              </div>
-            )}
+            </div>
 
             {/* Musik Latar Pernikahan */}
             <div className="p-4 sm:p-5 rounded-2xl border border-amber-200/80 bg-amber-50/30 space-y-4">
@@ -1569,34 +1902,44 @@ export default function EditInvitation() {
                   {/* Current Active Music Bar */}
                   <div className="p-3 bg-white rounded-xl border border-stone-200 flex items-center justify-between gap-3 shadow-2xs">
                     <div className="flex items-center gap-3 min-w-0">
-                      <button
-                        type="button"
-                        onClick={() => togglePlayPreview(invitation.musicUrl || MUSIC_PRESETS[0].url)}
-                        className={`w-9 h-9 rounded-full flex items-center justify-center text-white transition shrink-0 cursor-pointer ${
-                          playingAudioUrl === (invitation.musicUrl || MUSIC_PRESETS[0].url)
-                            ? "bg-amber-800 ring-2 ring-amber-600 animate-pulse"
-                            : "bg-stone-900 hover:bg-stone-800"
-                        }`}
-                        title="Dengarkan Musik"
-                      >
-                        {playingAudioUrl === (invitation.musicUrl || MUSIC_PRESETS[0].url) ? (
-                          <span className="text-xs font-bold">❚❚</span>
-                        ) : (
-                          <span className="text-xs font-bold ml-0.5">▶</span>
-                        )}
-                      </button>
+                      {(() => {
+                        const currentMusicUrl = invitation.musicUrl || musicPresets[0]?.url || "";
+                        const isPlaying = playingAudioUrl === currentMusicUrl && Boolean(currentMusicUrl);
+                        return (
+                          <button
+                            type="button"
+                            onClick={() => currentMusicUrl && togglePlayPreview(currentMusicUrl)}
+                            disabled={!currentMusicUrl}
+                            className={`w-9 h-9 rounded-full flex items-center justify-center text-white transition shrink-0 cursor-pointer disabled:opacity-40 ${
+                              isPlaying
+                                ? "bg-amber-800 ring-2 ring-amber-600 animate-pulse"
+                                : "bg-stone-900 hover:bg-stone-800"
+                            }`}
+                            title={isPlaying ? "Jeda Musik" : "Dengarkan Musik"}
+                          >
+                            {isPlaying ? (
+                              <span className="text-xs font-bold">❚❚</span>
+                            ) : (
+                              <span className="text-xs font-bold ml-0.5">▶</span>
+                            )}
+                          </button>
+                        );
+                      })()}
                       <div className="min-w-0">
                         <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block">Lagu Terpasang:</span>
                         <p className="text-xs font-bold text-stone-900 truncate">
-                          {MUSIC_PRESETS.find((p) => p.url === invitation.musicUrl)?.title ||
+                          {musicPresets.find((p) => p.url === invitation.musicUrl)?.title ||
                             (invitation.musicUrl?.includes("uploads/invitations")
                               ? "File Musik Khusus (Upload Sendiri)"
                               : invitation.musicUrl?.includes("youtube.com") || invitation.musicUrl?.includes("youtu.be")
                               ? "Lagu dari YouTube"
-                              : (invitation.musicUrl ? "Musik Kustom (Tautan Eksternal)" : "Canon in D — Johann Pachelbel"))}
+                              : invitation.musicUrl
+                              ? "Musik Kustom (Tautan Eksternal)"
+                              : (musicPresets[0]?.title || "Belum ada musik dipilih"))}
                         </p>
                         <span className="text-[10px] text-stone-500 block truncate">
-                          {MUSIC_PRESETS.find((p) => p.url === invitation.musicUrl)?.genre || (invitation.musicUrl || "Piano & Strings Klasik Sakral")}
+                          {musicPresets.find((p) => p.url === invitation.musicUrl)?.genre ||
+                            (invitation.musicUrl ? invitation.musicUrl : (musicPresets[0]?.genre || "Pustaka Musik Sistem"))}
                         </span>
                       </div>
                     </div>
@@ -1634,56 +1977,68 @@ export default function EditInvitation() {
 
                   {/* Curated Presets Selection */}
                   <div>
-                    <span className="block text-[11px] font-bold text-stone-700 mb-2">Atau Pilih Lagu Pernikahan Sakral Pilihan:</span>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      {MUSIC_PRESETS.map((preset) => {
-                        const isSelected = (invitation.musicUrl || MUSIC_PRESETS[0].url) === preset.url;
-                        const isPlaying = playingAudioUrl === preset.url;
+                    <span className="block text-[11px] font-bold text-stone-700 mb-2">Atau Pilih Lagu Pernikahan Pilihan dari Sistem:</span>
+                    {musicLoading ? (
+                      <div className="p-6 text-center bg-stone-50 rounded-xl border border-stone-200 text-xs text-stone-500">
+                        <div className="w-5 h-5 border-2 border-stone-300 border-t-amber-800 rounded-full animate-spin mx-auto mb-2" />
+                        <span>Memuat pustaka musik...</span>
+                      </div>
+                    ) : musicPresets.length === 0 ? (
+                      <div className="p-4 text-center bg-stone-50 rounded-xl border border-stone-200 text-xs text-stone-500">
+                        Belum ada koleksi musik sistem aktif. Anda dapat mengunggah file musik sendiri di atas.
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        {musicPresets.map((preset) => {
+                          const currentSelectedUrl = invitation.musicUrl || musicPresets[0]?.url || "";
+                          const isSelected = currentSelectedUrl === preset.url;
+                          const isPlaying = playingAudioUrl === preset.url;
 
-                        return (
-                          <div
-                            key={preset.id}
-                            className={`p-3 rounded-xl border transition flex items-center justify-between gap-2.5 ${
-                              isSelected
-                                ? "border-amber-800 bg-amber-50/80 ring-1 ring-amber-800/40"
-                                : "border-stone-200 bg-white hover:border-stone-300"
-                            }`}
-                          >
-                            <div className="flex items-center gap-2.5 min-w-0">
-                              <button
-                                type="button"
-                                onClick={() => togglePlayPreview(preset.url)}
-                                className={`w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] transition shrink-0 cursor-pointer ${
-                                  isPlaying ? "bg-amber-800 animate-pulse" : "bg-stone-800 hover:bg-stone-700"
-                                }`}
-                                title="Dengarkan Contoh"
-                              >
-                                {isPlaying ? "❚❚" : "▶"}
-                              </button>
-                              <div className="min-w-0">
-                                <h4 className="text-xs font-bold text-stone-900 truncate">{preset.title}</h4>
-                                <p className="text-[10px] text-stone-500 truncate">{preset.genre}</p>
-                              </div>
-                            </div>
-
-                            <button
-                              type="button"
-                              onClick={() => {
-                                updateField("musicUrl", preset.url);
-                                updateFeatureSetting("musicUrl", preset.url);
-                              }}
-                              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition shrink-0 cursor-pointer ${
+                          return (
+                            <div
+                              key={preset.id}
+                              className={`p-3 rounded-xl border transition flex items-center justify-between gap-2.5 ${
                                 isSelected
-                                  ? "bg-amber-800 text-white"
-                                  : "bg-stone-100 hover:bg-stone-200 text-stone-700"
+                                  ? "border-amber-800 bg-amber-50/80 ring-1 ring-amber-800/40"
+                                  : "border-stone-200 bg-white hover:border-stone-300"
                               }`}
                             >
-                              {isSelected ? "✓ Terpilih" : "Pilih"}
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <button
+                                  type="button"
+                                  onClick={() => togglePlayPreview(preset.url)}
+                                  className={`w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] transition shrink-0 cursor-pointer ${
+                                    isPlaying ? "bg-amber-800 animate-pulse" : "bg-stone-800 hover:bg-stone-700"
+                                  }`}
+                                  title="Dengarkan Contoh"
+                                >
+                                  {isPlaying ? "❚❚" : "▶"}
+                                </button>
+                                <div className="min-w-0">
+                                  <h4 className="text-xs font-bold text-stone-900 truncate">{preset.title}</h4>
+                                  <p className="text-[10px] text-stone-500 truncate">{preset.genre || preset.composer || "Pustaka Sistem"}</p>
+                                </div>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  updateField("musicUrl", preset.url);
+                                  updateFeatureSetting("musicUrl", preset.url);
+                                }}
+                                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition shrink-0 cursor-pointer ${
+                                  isSelected
+                                    ? "bg-amber-800 text-white"
+                                    : "bg-stone-100 hover:bg-stone-200 text-stone-700"
+                                }`}
+                              >
+                                {isSelected ? "✓ Terpilih" : "Pilih"}
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
 
                   {/* Custom URL Option */}
@@ -1732,33 +2087,82 @@ export default function EditInvitation() {
             <h2 className="text-base font-bold text-stone-900">3. Profil Kedua Mempelai</h2>
             <p className="text-xs text-stone-500">Data lengkap, akun sosial media, dan foto portrait pengantin</p>
           </div>
-          <button
-            type="button"
-            onClick={() => toggleSection("sec3")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-              collapsed.sec3 ? "bg-amber-50 text-amber-900 hover:bg-amber-100" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
-            }`}
-          >
-            {collapsed.sec3 ? "Edit Profil" : "Tutup"}
-          </button>
+          <SectionHeaderActions
+            isDirty={Boolean(isDirty.sec3)}
+            isSaving={saving && savingSec === "sec3"}
+            onSave={() => saveSection("sec3")}
+            collapsed={Boolean(collapsed.sec3)}
+            onToggle={() => toggleSection("sec3")}
+            closedLabel="Edit Profil"
+          />
         </div>
 
-        {collapsed.sec3 ? (
-          <div className="p-5 bg-stone-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="space-y-0.5 text-xs text-stone-600">
-              <p>Mempelai Wanita: <strong className="text-stone-900">{invitation.brideName || "-"}</strong> ({invitation.brideNickname || "-"})</p>
-              <p>Mempelai Pria: <strong className="text-stone-900">{invitation.groomName || "-"}</strong> ({invitation.groomNickname || "-"})</p>
-              <p className="text-[11px] text-stone-400">Urutan Tampil: {displayOrder === "BRIDE_FIRST" ? "Pihak Wanita Dahulu" : "Pihak Pria Dahulu"}</p>
+        {collapsed.sec3 ? (() => {
+          const isBrideFirst = displayOrder === "BRIDE_FIRST";
+          const bridePhotoFilled = Boolean(media["BRIDE_PHOTO"]);
+          const groomPhotoFilled = Boolean(media["GROOM_PHOTO"]);
+
+          const photoItems = isBrideFirst
+            ? [
+                {
+                  id: "BRIDE_PHOTO",
+                  label: "Foto Mempelai Wanita",
+                  isFilled: bridePhotoFilled,
+                },
+                {
+                  id: "GROOM_PHOTO",
+                  label: "Foto Mempelai Pria",
+                  isFilled: groomPhotoFilled,
+                },
+              ]
+            : [
+                {
+                  id: "GROOM_PHOTO",
+                  label: "Foto Mempelai Pria",
+                  isFilled: groomPhotoFilled,
+                },
+                {
+                  id: "BRIDE_PHOTO",
+                  label: "Foto Mempelai Wanita",
+                  isFilled: bridePhotoFilled,
+                },
+              ];
+
+          return (
+            <div className="p-5 bg-stone-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-2 text-xs text-stone-600">
+                <div className="space-y-0.5">
+                  <p>Mempelai Wanita: <strong className="text-stone-900">{invitation.brideName || "-"}</strong> ({invitation.brideNickname || "-"})</p>
+                  <p>Mempelai Pria: <strong className="text-stone-900">{invitation.groomName || "-"}</strong> ({invitation.groomNickname || "-"})</p>
+                  <p className="text-[11px] text-stone-400">Urutan Tampil: {isBrideFirst ? "Pihak Wanita Dahulu" : "Pihak Pria Dahulu"}</p>
+                </div>
+
+                {/* Status Indikator Foto Portrait Kedua Mempelai */}
+                <div className="flex items-center gap-3 flex-wrap pt-1.5 border-t border-stone-200/60">
+                  {photoItems.map((item, idx) => (
+                    <span key={item.id} className="flex items-center gap-1.5">
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${item.isFilled ? "bg-emerald-500" : "bg-amber-500"}`}></span>
+                      <span>
+                        {item.label}: <strong className={item.isFilled ? "text-stone-800" : "text-amber-700 font-semibold"}>
+                          {item.isFilled ? "Terpasang" : "Perlu Diunggah (Atau Monogram)"}
+                        </strong>
+                      </span>
+                      {idx < photoItems.length - 1 && <span className="text-stone-300 ml-1">•</span>}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => toggleSection("sec3")}
+                className="text-xs font-bold text-amber-800 hover:underline self-start sm:self-center cursor-pointer shrink-0"
+              >
+                Ubah Profil
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => toggleSection("sec3")}
-              className="text-xs font-bold text-amber-800 hover:underline self-start sm:self-center"
-            >
-              Ubah Profil
-            </button>
-          </div>
-        ) : (
+          );
+        })() : (
           <div className="p-5 sm:p-7 space-y-6">
             <div className="flex items-center p-1 bg-stone-100 rounded-xl border border-stone-200 self-start sm:self-auto w-fit">
               <button
@@ -1817,40 +2221,38 @@ export default function EditInvitation() {
                   </div>
 
                   {/* Foto Portrait Berdampingan di Bagian Bawah */}
-                  {!isNoPhoto && (
-                    <div className="pt-1 space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="text-xs font-bold text-stone-900">Foto Portrait Kedua Mempelai</h3>
-                          <p className="text-[10px] text-stone-500">Foto portrait khusus masing-masing mempelai</p>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <PhotoInput
-                          label="Foto Portrait Mempelai Wanita"
-                          desc="Foto portrait khusus mempelai wanita"
-                          value={media["BRIDE_PHOTO"] || ""}
-                          onChange={(url) => updateMedia("BRIDE_PHOTO", url)}
-                          placeholder="https://.../bride-portrait.jpg"
-                          invitationId={invitationId}
-                          slot="BRIDE_PHOTO"
-                          onUploadStart={handleUploadStart}
-                          onUploadEnd={handleUploadEnd}
-                        />
-                        <PhotoInput
-                          label="Foto Portrait Mempelai Pria"
-                          desc="Foto portrait khusus mempelai pria"
-                          value={media["GROOM_PHOTO"] || ""}
-                          onChange={(url) => updateMedia("GROOM_PHOTO", url)}
-                          placeholder="https://.../groom-portrait.jpg"
-                          invitationId={invitationId}
-                          slot="GROOM_PHOTO"
-                          onUploadStart={handleUploadStart}
-                          onUploadEnd={handleUploadEnd}
-                        />
+                  <div className="pt-1 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-xs font-bold text-stone-900">Foto Portrait Kedua Mempelai</h3>
+                        <p className="text-[10px] text-stone-500">Foto portrait khusus masing-masing mempelai</p>
                       </div>
                     </div>
-                  )}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <PhotoInput
+                        label="Foto Portrait Mempelai Wanita"
+                        desc="Foto portrait khusus mempelai wanita"
+                        value={media["BRIDE_PHOTO"] || ""}
+                        onChange={(url) => updateMedia("BRIDE_PHOTO", url)}
+                        placeholder="https://.../bride-portrait.jpg"
+                        invitationId={invitationId}
+                        slot="BRIDE_PHOTO"
+                        onUploadStart={handleUploadStart}
+                        onUploadEnd={handleUploadEnd}
+                      />
+                      <PhotoInput
+                        label="Foto Portrait Mempelai Pria"
+                        desc="Foto portrait khusus mempelai pria"
+                        value={media["GROOM_PHOTO"] || ""}
+                        onChange={(url) => updateMedia("GROOM_PHOTO", url)}
+                        placeholder="https://.../groom-portrait.jpg"
+                        invitationId={invitationId}
+                        slot="GROOM_PHOTO"
+                        onUploadStart={handleUploadStart}
+                        onUploadEnd={handleUploadEnd}
+                      />
+                    </div>
+                  </div>
                 </>
               ) : (
                 <>
@@ -1883,40 +2285,38 @@ export default function EditInvitation() {
                   </div>
 
                   {/* Foto Portrait Berdampingan di Bagian Bawah */}
-                  {!isNoPhoto && (
-                    <div className="pt-1 space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="text-xs font-bold text-stone-900">Foto Portrait Kedua Mempelai</h3>
-                          <p className="text-[10px] text-stone-500">Foto portrait khusus masing-masing mempelai</p>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <PhotoInput
-                          label="Foto Portrait Mempelai Pria"
-                          desc="Foto portrait khusus mempelai pria"
-                          value={media["GROOM_PHOTO"] || ""}
-                          onChange={(url) => updateMedia("GROOM_PHOTO", url)}
-                          placeholder="https://.../groom-portrait.jpg"
-                          invitationId={invitationId}
-                          slot="GROOM_PHOTO"
-                          onUploadStart={handleUploadStart}
-                          onUploadEnd={handleUploadEnd}
-                        />
-                        <PhotoInput
-                          label="Foto Portrait Mempelai Wanita"
-                          desc="Foto portrait khusus mempelai wanita"
-                          value={media["BRIDE_PHOTO"] || ""}
-                          onChange={(url) => updateMedia("BRIDE_PHOTO", url)}
-                          placeholder="https://.../bride-portrait.jpg"
-                          invitationId={invitationId}
-                          slot="BRIDE_PHOTO"
-                          onUploadStart={handleUploadStart}
-                          onUploadEnd={handleUploadEnd}
-                        />
+                  <div className="pt-1 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-xs font-bold text-stone-900">Foto Portrait Kedua Mempelai</h3>
+                        <p className="text-[10px] text-stone-500">Foto portrait khusus masing-masing mempelai</p>
                       </div>
                     </div>
-                  )}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <PhotoInput
+                        label="Foto Portrait Mempelai Pria"
+                        desc="Foto portrait khusus mempelai pria"
+                        value={media["GROOM_PHOTO"] || ""}
+                        onChange={(url) => updateMedia("GROOM_PHOTO", url)}
+                        placeholder="https://.../groom-portrait.jpg"
+                        invitationId={invitationId}
+                        slot="GROOM_PHOTO"
+                        onUploadStart={handleUploadStart}
+                        onUploadEnd={handleUploadEnd}
+                      />
+                      <PhotoInput
+                        label="Foto Portrait Mempelai Wanita"
+                        desc="Foto portrait khusus mempelai wanita"
+                        value={media["BRIDE_PHOTO"] || ""}
+                        onChange={(url) => updateMedia("BRIDE_PHOTO", url)}
+                        placeholder="https://.../bride-portrait.jpg"
+                        invitationId={invitationId}
+                        slot="BRIDE_PHOTO"
+                        onUploadStart={handleUploadStart}
+                        onUploadEnd={handleUploadEnd}
+                      />
+                    </div>
+                  </div>
                 </>
               )}
             </div>
@@ -1949,15 +2349,14 @@ export default function EditInvitation() {
             <h2 className="text-base font-bold text-stone-900">4. Kutipan Pembuka</h2>
             <p className="text-xs text-stone-500">Kutipan indah, puisi cinta, kata mutiara, ayat suci, atau doa pembuka undangan</p>
           </div>
-          <button
-            type="button"
-            onClick={() => toggleSection("sec4")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-              collapsed.sec4 ? "bg-amber-50 text-amber-900 hover:bg-amber-100" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
-            }`}
-          >
-            {collapsed.sec4 ? "Edit Kutipan" : "Tutup"}
-          </button>
+          <SectionHeaderActions
+            isDirty={Boolean(isDirty.sec4)}
+            isSaving={saving && savingSec === "sec4"}
+            onSave={() => saveSection("sec4")}
+            collapsed={Boolean(collapsed.sec4)}
+            onToggle={() => toggleSection("sec4")}
+            closedLabel="Edit Kutipan"
+          />
         </div>
 
         {collapsed.sec4 ? (
@@ -2098,15 +2497,14 @@ export default function EditInvitation() {
             <h2 className="text-base font-bold text-stone-900">5. Rangkaian Acara (Multi-Event)</h2>
             <p className="text-xs text-stone-500">Atur seluruh agenda adat dan resepsi (Akad, Resepsi, Mappacci, dll.)</p>
           </div>
-          <button
-            type="button"
-            onClick={() => toggleSection("sec5")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-              collapsed.sec5 ? "bg-amber-50 text-amber-900 hover:bg-amber-100" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
-            }`}
-          >
-            {collapsed.sec5 ? "Edit Acara" : "Tutup"}
-          </button>
+          <SectionHeaderActions
+            isDirty={Boolean(isDirty.sec5)}
+            isSaving={saving && savingSec === "sec5"}
+            onSave={() => saveSection("sec5")}
+            collapsed={Boolean(collapsed.sec5)}
+            onToggle={() => toggleSection("sec5")}
+            closedLabel="Edit Acara"
+          />
         </div>
 
         {collapsed.sec5 ? (
@@ -2233,15 +2631,14 @@ export default function EditInvitation() {
             <h2 className="text-base font-bold text-stone-900">6. Kartu Akses QR &amp; Check-In Tamu</h2>
             <p className="text-xs text-stone-500">Tampilkan QR Code tiket dan tombol buka kartu akses untuk scanning buku tamu di lokasi acara</p>
           </div>
-          <button
-            type="button"
-            onClick={() => toggleSection("sec6")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-              collapsed.sec6 ? "bg-amber-50 text-amber-900 hover:bg-amber-100" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
-            }`}
-          >
-            {collapsed.sec6 ? "Edit QR Pass" : "Tutup"}
-          </button>
+          <SectionHeaderActions
+            isDirty={Boolean(isDirty.sec6)}
+            isSaving={saving && savingSec === "sec6"}
+            onSave={() => saveSection("sec6")}
+            collapsed={Boolean(collapsed.sec6)}
+            onToggle={() => toggleSection("sec6")}
+            closedLabel="Edit QR Pass"
+          />
         </div>
 
         {collapsed.sec6 ? (
@@ -2310,15 +2707,14 @@ export default function EditInvitation() {
             <h2 className="text-base font-bold text-stone-900">7. Kisah Cinta (Journey of Love)</h2>
             <p className="text-xs text-stone-500">Tuliskan babak perjalanan cinta dari awal bertemu hingga pernikahan</p>
           </div>
-          <button
-            type="button"
-            onClick={() => toggleSection("sec7")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-              collapsed.sec7 ? "bg-amber-50 text-amber-900 hover:bg-amber-100" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
-            }`}
-          >
-            {collapsed.sec7 ? "Edit Kisah" : "Tutup"}
-          </button>
+          <SectionHeaderActions
+            isDirty={Boolean(isDirty.sec7)}
+            isSaving={saving && savingSec === "sec7"}
+            onSave={() => saveSection("sec7")}
+            collapsed={Boolean(collapsed.sec7)}
+            onToggle={() => toggleSection("sec7")}
+            closedLabel="Edit Kisah"
+          />
         </div>
 
         {collapsed.sec7 ? (
@@ -2415,15 +2811,14 @@ export default function EditInvitation() {
             <h2 className="text-base font-bold text-stone-900">8. Galeri Foto Pre-Wedding &amp; Video Teaser</h2>
             <p className="text-xs text-stone-500">Mendukung Folder Google Drive (CDN stream), Smart Puzzle Grid dinamis acak, dan modal galeri penuh</p>
           </div>
-          <button
-            type="button"
-            onClick={() => toggleSection("sec8")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-              collapsed.sec8 ? "bg-amber-50 text-amber-900 hover:bg-amber-100" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
-            }`}
-          >
-            {collapsed.sec8 ? "Edit Galeri" : "Tutup"}
-          </button>
+          <SectionHeaderActions
+            isDirty={Boolean(isDirty.sec8)}
+            isSaving={saving && savingSec === "sec8"}
+            onSave={() => saveSection("sec8")}
+            collapsed={Boolean(collapsed.sec8)}
+            onToggle={() => toggleSection("sec8")}
+            closedLabel="Edit Galeri"
+          />
         </div>
 
         {collapsed.sec8 ? (
@@ -2534,15 +2929,14 @@ export default function EditInvitation() {
             <h2 className="text-base font-bold text-stone-900">9. Tanda Kasih &amp; Amplop Digital</h2>
             <p className="text-xs text-stone-500">Kelola nomor rekening bank, QRIS statis, dan alamat pengiriman kado fisik</p>
           </div>
-          <button
-            type="button"
-            onClick={() => toggleSection("sec9")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-              collapsed.sec9 ? "bg-amber-50 text-amber-900 hover:bg-amber-100" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
-            }`}
-          >
-            {collapsed.sec9 ? "Edit Amplop" : "Tutup"}
-          </button>
+          <SectionHeaderActions
+            isDirty={Boolean(isDirty.sec9)}
+            isSaving={saving && savingSec === "sec9"}
+            onSave={() => saveSection("sec9")}
+            collapsed={Boolean(collapsed.sec9)}
+            onToggle={() => toggleSection("sec9")}
+            closedLabel="Edit Amplop"
+          />
         </div>
 
         {collapsed.sec9 ? (
@@ -2684,15 +3078,14 @@ export default function EditInvitation() {
             <h2 className="text-base font-bold text-stone-900">10. Panduan Busana (Dress Code Guide)</h2>
             <p className="text-xs text-stone-500">Atur palet warna pakaian dan anjuran busana untuk para tamu undangan</p>
           </div>
-          <button
-            type="button"
-            onClick={() => toggleSection("sec10")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-              collapsed.sec10 ? "bg-amber-50 text-amber-900 hover:bg-amber-100" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
-            }`}
-          >
-            {collapsed.sec10 ? "Edit Dress Code" : "Tutup"}
-          </button>
+          <SectionHeaderActions
+            isDirty={Boolean(isDirty.sec10)}
+            isSaving={saving && savingSec === "sec10"}
+            onSave={() => saveSection("sec10")}
+            collapsed={Boolean(collapsed.sec10)}
+            onToggle={() => toggleSection("sec10")}
+            closedLabel="Edit Dress Code"
+          />
         </div>
 
         {collapsed.sec10 ? (
@@ -2719,34 +3112,255 @@ export default function EditInvitation() {
               />
             </div>
 
-            {showDresscode && (
-              <div className="space-y-4 mt-2">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {showDresscode && (() => {
+              const rawColors = getFeatureSetting("dressCodeColors", "#a67c52, #2b2725, #faf7f2");
+              const currentColorList: string[] = typeof rawColors === "string"
+                ? rawColors.split(",").map((c: string) => c.trim()).filter((c: string) => c.length > 0)
+                : ["#a67c52", "#2b2725", "#faf7f2"];
+              const safeColorList = currentColorList.length > 0 ? currentColorList : ["#a67c52", "#2b2725", "#faf7f2"];
+
+              const updateColors = (list: string[]) => {
+                updateFeatureSetting("dressCodeColors", list.join(", "));
+              };
+
+              const handleSwatchColorChange = (index: number, newHex: string) => {
+                const updated = [...safeColorList];
+                updated[index] = newHex;
+                updateColors(updated);
+              };
+
+              const handleRemoveSwatch = (index: number) => {
+                if (safeColorList.length <= 1) return;
+                const updated = safeColorList.filter((_, i) => i !== index);
+                updateColors(updated);
+              };
+
+              const handleAddSwatch = () => {
+                if (safeColorList.length >= 6) return;
+                const updated = [...safeColorList, "#d4af37"];
+                updateColors(updated);
+              };
+
+              const handleApplyPreset = (preset: { name: string; colors: string[] }) => {
+                updateColors(preset.colors);
+                if (!invitation.dresscode) {
+                  updateField("dresscode", preset.name);
+                }
+              };
+
+              const activeTheme = invitation?.themeId || "solaria";
+              const themePreset = THEME_DRESSCODE_MAP[activeTheme] || THEME_DRESSCODE_MAP["solaria"];
+
+              const handleSyncTheme = () => {
+                if (themePreset) {
+                  updateColors(themePreset.colors);
+                  if (!invitation.dresscode) {
+                    updateField("dresscode", themePreset.name);
+                  }
+                  setThemeSyncSuccess(true);
+                  setTimeout(() => setThemeSyncSuccess(false), 2500);
+                }
+              };
+
+              return (
+                <div className="space-y-5 mt-2">
+                  {/* Nuansa / Aturan Dress Code */}
                   <Input
                     label="Nuansa / Aturan Dress Code"
                     value={invitation.dresscode || ""}
                     onChange={(v) => updateField("dresscode", v)}
-                    placeholder="Sebutkan tema warna pakaian tamu (Dresscode)"
+                    placeholder="Contoh: Earthy Terracotta, Formal Batik, Modern Pastel"
                   />
-                  <Input
-                    label="Palet Warna Hex (Pisahkan dengan koma)"
-                    value={getFeatureSetting("dressCodeColors", "#a67c52, #2b2725, #faf7f2")}
-                    onChange={(v) => updateFeatureSetting("dressCodeColors", v)}
-                    placeholder="#a67c52, #2b2725, #faf7f2"
-                  />
+
+                  {/* Studio Palet Warna Visual */}
+                  <div className="p-4 sm:p-5 bg-stone-50/80 rounded-2xl border border-stone-200 space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                      <div>
+                        <label className="text-xs font-bold text-stone-800 flex items-center gap-2">
+                          <svg className="w-4 h-4 text-amber-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4 5 5 0 0110 0 4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" /></svg>
+                          <span>Palet Warna Busana Tamu (Visual Swatches)</span>
+                        </label>
+                        <p className="text-[11px] text-stone-500 mt-0.5">
+                          Klik bulatan warna untuk memilih warna secara visual. Tanpa perlu menghafal kode heksadesimal.
+                        </p>
+                      </div>
+
+                      {/* Tombol Pintas Cerdas: Samakan dengan Tema */}
+                      <button
+                        type="button"
+                        onClick={handleSyncTheme}
+                        className={`text-xs px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 cursor-pointer shrink-0 self-start sm:self-auto ${
+                          themeSyncSuccess
+                            ? "bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-xs"
+                            : "bg-white hover:bg-amber-50 text-amber-900 border border-amber-300/80 shadow-xs"
+                        }`}
+                        title="Samakan warna dress code dengan palet bawaan tema undangan Anda"
+                      >
+                        {themeSyncSuccess ? (
+                          <>
+                            <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                            <span>Tersinkron dengan Tema!</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-amber-600">✨</span>
+                            <span>Samakan Tema ({activeTheme.toUpperCase()})</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Bulatan Swatch Warna Interaktif (Isolasi Visual 0ms Delay) */}
+                    <div className="flex flex-wrap items-center gap-4 pt-1">
+                      {safeColorList.map((hex: string, idx: number) => (
+                        <ColorSwatchPicker
+                          key={idx}
+                          initialColor={hex}
+                          index={idx}
+                          totalColors={safeColorList.length}
+                          onCommit={handleSwatchColorChange}
+                          onRemove={handleRemoveSwatch}
+                        />
+                      ))}
+
+                      {/* Tombol Tambah Warna (+) */}
+                      {safeColorList.length < 6 && (
+                        <button
+                          type="button"
+                          onClick={handleAddSwatch}
+                          className="w-12 h-12 rounded-full border-2 border-dashed border-stone-300 hover:border-amber-700 text-stone-400 hover:text-amber-800 flex flex-col items-center justify-center transition-all cursor-pointer group bg-white hover:bg-amber-50/40 shadow-2xs"
+                          title="Tambah bulatan warna baru (Maksimal 6 warna)"
+                        >
+                          <svg className="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Pilihan Cepat: Palet Tren Pernikahan 1-Klik */}
+                    <div className="space-y-2 pt-3 border-t border-stone-200/80">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-stone-700 uppercase tracking-wider">
+                          Pilihan Cepat: Palet Tren Pernikahan
+                        </span>
+                        <span className="text-[10px] text-stone-400">1-Klik Terapkan</span>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {WEDDING_DRESSCODE_PRESETS.map((p, pIdx) => {
+                          const isSelected = p.colors.join(", ").toLowerCase() === safeColorList.join(", ").toLowerCase();
+                          return (
+                            <button
+                              key={pIdx}
+                              type="button"
+                              onClick={() => handleApplyPreset(p)}
+                              className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-1.5 ${
+                                isSelected
+                                  ? "bg-amber-50/80 border-amber-600 ring-2 ring-amber-500/20 shadow-xs"
+                                  : "bg-white hover:bg-stone-50/80 border-stone-200 hover:border-stone-300 shadow-2xs"
+                              }`}
+                            >
+                              <div className="flex items-center gap-1">
+                                {p.colors.map((c, cIdx) => (
+                                  <span
+                                    key={cIdx}
+                                    className="w-3.5 h-3.5 rounded-full border border-white shadow-2xs inline-block"
+                                    style={{ backgroundColor: c }}
+                                  />
+                                ))}
+                              </div>
+                              <div>
+                                <span className="text-xs font-bold text-stone-900 block truncate">{p.name}</span>
+                                <span className="text-[10px] text-stone-400 block truncate">{p.category}</span>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Pratinjau Tampilan Undangan Tamu (Live Preview) */}
+                  <div className="p-4 sm:p-5 bg-gradient-to-br from-stone-50 to-amber-50/30 border border-amber-200/70 rounded-2xl space-y-2.5 shadow-2xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold tracking-widest text-amber-900 uppercase flex items-center gap-1.5">
+                        <svg className="w-3.5 h-3.5 text-amber-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                        <span>Pratinjau Tampilan Tamu (Live Preview)</span>
+                      </span>
+                      <span className="text-[10px] text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Sesuai Tampilan Website
+                      </span>
+                    </div>
+
+                    <div className="bg-white p-4 rounded-xl border border-stone-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="space-y-1">
+                        <span className="text-[9px] font-bold tracking-widest text-stone-400 uppercase block">
+                          Panduan Busana Undangan
+                        </span>
+                        <h4 className="text-sm sm:text-base font-serif font-bold text-stone-900">
+                          {invitation.dresscode || "Panduan Busana"}
+                        </h4>
+                        <p className="text-xs text-stone-500 max-w-md leading-relaxed">
+                          {getFeatureSetting("dressCodeNote", "") || "Para tamu kehormatan dianjurkan mengenakan busana bernuansa senada."}
+                        </p>
+                      </div>
+
+                      {/* Swatches Tamu */}
+                      <div className="flex items-center gap-2 shrink-0">
+                        {safeColorList.map((c: string, i: number) => (
+                          <span
+                            key={i}
+                            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 border-white shadow-md inline-block transition-transform hover:scale-110 ring-1 ring-stone-200"
+                            style={{ backgroundColor: c }}
+                            title={c}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Catatan Tambahan Busana */}
+                  <div>
+                    <label className="block text-xs font-bold text-stone-700 mb-1">Catatan Tambahan Busana (Opsional)</label>
+                    <textarea
+                      rows={2}
+                      value={getFeatureSetting("dressCodeNote", "")}
+                      onChange={(e) => updateFeatureSetting("dressCodeNote", e.target.value)}
+                      placeholder="Contoh: Kami memohon agar para tamu menghindari warna putih atau pakaian kasual."
+                      className="w-full p-2.5 bg-white border border-stone-200 rounded-xl text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700/30"
+                    />
+                  </div>
+
+                  {/* Mode Lanjutan: Input Manual Kode Hex */}
+                  <div className="pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setShowManualHex(!showManualHex)}
+                      className="text-[11px] font-semibold text-stone-500 hover:text-stone-800 transition flex items-center gap-1 cursor-pointer"
+                    >
+                      <svg className={`w-3.5 h-3.5 transition-transform ${showManualHex ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                      <span>{showManualHex ? "Sembunyikan Pengaturan Kode Hex Manual" : "Pengaturan Lanjutan: Edit Kode Hex Manual"}</span>
+                    </button>
+
+                    {showManualHex && (
+                      <div className="mt-2.5 p-3.5 bg-stone-50 rounded-xl border border-stone-200 animate-in fade-in duration-200 space-y-1.5">
+                        <Input
+                          label="Palet Warna Hex (Pisahkan dengan koma)"
+                          value={rawColors}
+                          onChange={(v) => updateFeatureSetting("dressCodeColors", v)}
+                          placeholder="#a67c52, #2b2725, #faf7f2"
+                        />
+                        <p className="text-[10px] text-stone-400 leading-normal">
+                          Perubahan pada teks kode hex di atas akan otomatis memperbarui bulatan warna visual di atas secara dua arah (*two-way sync*).
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1">Catatan Tambahan Busana (Opsional)</label>
-                  <textarea
-                    rows={2}
-                    value={getFeatureSetting("dressCodeNote", "")}
-                    onChange={(e) => updateFeatureSetting("dressCodeNote", e.target.value)}
-                    placeholder="Masukkan deskripsi atau panduan busana untuk tamu"
-                    className="w-full p-2.5 bg-white border border-stone-200 rounded-xl text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700/30"
-                  />
-                </div>
-              </div>
-            )}
+              );
+            })()}
 
             <div className="pt-4 border-t border-stone-100 flex justify-end">
               <button
@@ -2774,15 +3388,14 @@ export default function EditInvitation() {
             <h2 className="text-base font-bold text-stone-900">11. Siaran Langsung (Live Streaming)</h2>
             <p className="text-xs text-stone-500">Tautkan link siaran virtual YouTube Live, Instagram Live, atau Zoom Meeting</p>
           </div>
-          <button
-            type="button"
-            onClick={() => toggleSection("sec11")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-              collapsed.sec11 ? "bg-amber-50 text-amber-900 hover:bg-amber-100" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
-            }`}
-          >
-            {collapsed.sec11 ? "Edit Live Stream" : "Tutup"}
-          </button>
+          <SectionHeaderActions
+            isDirty={Boolean(isDirty.sec11)}
+            isSaving={saving && savingSec === "sec11"}
+            onSave={() => saveSection("sec11")}
+            collapsed={Boolean(collapsed.sec11)}
+            onToggle={() => toggleSection("sec11")}
+            closedLabel="Edit Live Stream"
+          />
         </div>
 
         {collapsed.sec11 ? (
@@ -2860,15 +3473,14 @@ export default function EditInvitation() {
             <h2 className="text-base font-bold text-stone-900">12. Filter Instagram (Wedding Frame AR)</h2>
             <p className="text-xs text-stone-500">Tautkan link effect / filter Instagram Story resmi pernikahan Anda</p>
           </div>
-          <button
-            type="button"
-            onClick={() => toggleSection("sec12")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-              collapsed.sec12 ? "bg-amber-50 text-amber-900 hover:bg-amber-100" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
-            }`}
-          >
-            {collapsed.sec12 ? "Edit Filter" : "Tutup"}
-          </button>
+          <SectionHeaderActions
+            isDirty={Boolean(isDirty.sec12)}
+            isSaving={saving && savingSec === "sec12"}
+            onSave={() => saveSection("sec12")}
+            collapsed={Boolean(collapsed.sec12)}
+            onToggle={() => toggleSection("sec12")}
+            closedLabel="Edit Filter"
+          />
         </div>
 
         {collapsed.sec12 ? (
@@ -2932,15 +3544,14 @@ export default function EditInvitation() {
             <h2 className="text-base font-bold text-stone-900">13. Turut Mengundang &amp; Himbauan Tamu</h2>
             <p className="text-xs text-stone-500">Daftar keluarga besar yang turut mengundang dan catatan kenyamanan tamu</p>
           </div>
-          <button
-            type="button"
-            onClick={() => toggleSection("sec13")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-              collapsed.sec13 ? "bg-amber-50 text-amber-900 hover:bg-amber-100" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
-            }`}
-          >
-            {collapsed.sec13 ? "Edit Keluarga" : "Tutup"}
-          </button>
+          <SectionHeaderActions
+            isDirty={Boolean(isDirty.sec13)}
+            isSaving={saving && savingSec === "sec13"}
+            onSave={() => saveSection("sec13")}
+            collapsed={Boolean(collapsed.sec13)}
+            onToggle={() => toggleSection("sec13")}
+            closedLabel="Edit Keluarga"
+          />
         </div>
 
         {collapsed.sec13 ? (
@@ -3024,22 +3635,21 @@ export default function EditInvitation() {
             </div>
             <p className="text-xs text-stone-500">Tampung foto candid yang dibagikan para tamu undangan pasca acara</p>
           </div>
-          <button
-            type="button"
-            onClick={() => toggleSection("sec14")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-              collapsed.sec14 ? "bg-amber-50 text-amber-900 hover:bg-amber-100" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
-            }`}
-          >
-            {collapsed.sec14 ? "Kelola Kenangan" : "Tutup"}
-          </button>
+          <SectionHeaderActions
+            isDirty={Boolean(isDirty.sec14)}
+            isSaving={saving && savingSec === "sec14"}
+            onSave={() => saveSection("sec14")}
+            collapsed={Boolean(collapsed.sec14)}
+            onToggle={() => toggleSection("sec14")}
+            closedLabel="Kelola Kenangan"
+          />
         </div>
 
         {collapsed.sec14 ? (
           <div className="p-5 bg-stone-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="text-xs text-stone-600 flex items-center gap-3">
-              <span className={`w-2 h-2 rounded-full ${getFeatureSetting("showGuestMemories", true) ? "bg-emerald-500" : "bg-stone-300"}`}></span>
-              <span>Status: <strong>{getFeatureSetting("showGuestMemories", true) ? "Aktif di Undangan" : "Dinonaktifkan"}</strong></span>
+              <span className={`w-2 h-2 rounded-full ${getFeatureSetting("showGuestMemories", true) ? "bg-emerald-500" : "bg-rose-500"}`}></span>
+              <span>Status: <strong className={getFeatureSetting("showGuestMemories", true) ? "text-stone-900" : "text-rose-700"}>{getFeatureSetting("showGuestMemories", true) ? "Aktif di Undangan" : "Dinonaktifkan"}</strong></span>
             </div>
             <button
               type="button"
@@ -3147,15 +3757,14 @@ export default function EditInvitation() {
             <h2 className="text-base font-bold text-stone-900">15. Pengaturan Teks UI &amp; Label</h2>
             <p className="text-xs text-stone-500">Kustomisasi teks tombol RSVP, formulir, sampul, dan hitung mundur</p>
           </div>
-          <button
-            type="button"
-            onClick={() => toggleSection("sec15")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-              collapsed.sec15 ? "bg-amber-50 text-amber-900 hover:bg-amber-100" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
-            }`}
-          >
-            {collapsed.sec15 ? "Edit Label" : "Tutup"}
-          </button>
+          <SectionHeaderActions
+            isDirty={Boolean(isDirty.sec15)}
+            isSaving={saving && savingSec === "sec15"}
+            onSave={() => saveSection("sec15")}
+            collapsed={Boolean(collapsed.sec15)}
+            onToggle={() => toggleSection("sec15")}
+            closedLabel="Edit Label"
+          />
         </div>
 
         {collapsed.sec15 ? (
@@ -3487,8 +4096,17 @@ function PhotoInput({
     setUploading(true);
     onUploadStart?.();
     try {
+      let fileToUpload = file;
+      if (!isVideoFile) {
+        fileToUpload = await compressImageToWebP(file, {
+          maxWidth: slot?.toUpperCase() === "QRIS" ? 800 : 1600,
+          maxHeight: slot?.toUpperCase() === "QRIS" ? 800 : 1600,
+          quality: 0.82,
+        });
+      }
+
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", fileToUpload);
       if (invitationId) formData.append("invitationId", invitationId);
       if (slot) formData.append("slot", slot);
 
@@ -3670,6 +4288,161 @@ function SectionHeaderToggle({ label, sub, checked, onChange }: { label: string;
         />
       </button>
       {label && <span className="text-xs font-semibold text-stone-700">{label}</span>}
+    </div>
+  );
+}
+
+/**
+ * Tombol & Indikator Header Seksi (Clean Typography, Zero Nested Cards)
+ * Menampilkan teks "Perubahan belum tersimpan • Simpan" saat isDirty bernilai true.
+ * Begitu data tersimpan, teks otomatis lenyap dan header kembali bersih.
+ */
+function SectionHeaderActions({
+  isDirty,
+  isSaving,
+  onSave,
+  collapsed,
+  onToggle,
+  closedLabel,
+  openLabel = "Tutup",
+}: {
+  isDirty: boolean;
+  isSaving?: boolean;
+  onSave: () => void;
+  collapsed: boolean;
+  onToggle: () => void;
+  closedLabel: string;
+  openLabel?: string;
+}) {
+  return (
+    <div className="flex items-center gap-2.5 shrink-0 flex-wrap justify-end">
+      {isDirty && (
+        <div className="flex items-center gap-1.5 text-xs animate-in fade-in duration-200">
+          <span className="text-amber-800 font-medium">Perubahan belum tersimpan</span>
+          <span className="text-stone-300">•</span>
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={isSaving}
+            className="font-bold text-amber-900 hover:text-stone-900 underline cursor-pointer disabled:opacity-50"
+          >
+            {isSaving ? "Menyimpan..." : "Simpan"}
+          </button>
+        </div>
+      )}
+      <button
+        type="button"
+        onClick={onToggle}
+        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+          collapsed
+            ? "bg-amber-50 text-amber-900 hover:bg-amber-100"
+            : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+        }`}
+      >
+        {collapsed ? closedLabel : openLabel}
+      </button>
+    </div>
+  );
+}
+
+/**
+ * Komponen Swatch Warna Terisolasi (Isolated Visual Update)
+ * Memisahkan state render drag mouse native color picker dari root halaman EditInvitation.
+ * Hanya me-render bulatan 48px dan kode hex secara instan (0ms delay) tanpa memicu re-render 15 section lainnya.
+ */
+function ColorSwatchPicker({
+  initialColor,
+  index,
+  totalColors,
+  onCommit,
+  onRemove,
+}: {
+  initialColor: string;
+  index: number;
+  totalColors: number;
+  onCommit: (index: number, newColor: string) => void;
+  onRemove: (index: number) => void;
+}) {
+  const [color, setColor] = useState(initialColor);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Sinkronisasi saat parent mengubah warna (misal: 1-klik preset atau Samakan Tema)
+  useEffect(() => {
+    setColor(initialColor);
+  }, [initialColor]);
+
+  // Bersihkan debounce timer saat komponen di-unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
+
+  const handleColorChange = (newHex: string) => {
+    // 1. Update visual instan HANYA di bulatan ini (0ms delay, 0% beban CPU ke section lain)
+    setColor(newHex);
+
+    // 2. Debounce commit ke form utama (200ms setelah user berhenti drag)
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = setTimeout(() => {
+      onCommit(index, newHex);
+    }, 200);
+  };
+
+  const handleBlur = () => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
+    if (color !== initialColor) {
+      onCommit(index, color);
+    }
+  };
+
+  return (
+    <div className="relative group flex flex-col items-center gap-1.5">
+      {/* Lingkaran Warna dengan Native Color Picker Transparan di Atasnya */}
+      <div
+        className="w-12 h-12 rounded-full border-2 border-white shadow-md transition-all duration-200 group-hover:scale-105 group-hover:shadow-lg relative overflow-hidden flex items-center justify-center cursor-pointer ring-1 ring-stone-300"
+        style={{ backgroundColor: color }}
+        title={`Klik untuk ubah warna (${color})`}
+      >
+        <input
+          type="color"
+          value={color.startsWith("#") && color.length === 7 ? color : "#a67c52"}
+          onInput={(e) => handleColorChange((e.target as HTMLInputElement).value)}
+          onChange={(e) => handleColorChange(e.target.value)}
+          onBlur={handleBlur}
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+        />
+        {/* Ikon Pensil Halus saat Hover */}
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 text-white rounded-full p-1 pointer-events-none">
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+          </svg>
+        </div>
+      </div>
+
+      {/* Kode Hex Label Monospace */}
+      <span className="text-[10px] font-mono font-bold text-stone-600 uppercase bg-white border border-stone-200 px-1.5 py-0.5 rounded shadow-2xs tracking-tight">
+        {color}
+      </span>
+
+      {/* Tombol Hapus (x) Muncul Saat Hover */}
+      {totalColors > 1 && (
+        <button
+          type="button"
+          onClick={() => onRemove(index)}
+          className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-stone-800 hover:bg-rose-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all text-xs cursor-pointer shadow-sm"
+          title="Hapus warna ini"
+        >
+          &times;
+        </button>
+      )}
     </div>
   );
 }

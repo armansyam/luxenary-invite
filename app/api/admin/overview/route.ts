@@ -152,6 +152,10 @@ export async function GET() {
           themeId: true,
           status: true,
           subdomain: true,
+          eventData: true,
+          galleryExpiresAt: true,
+          adminUnlockedUntil: true,
+          isLockedPermanently: true,
           createdAt: true,
           user: {
             select: {
