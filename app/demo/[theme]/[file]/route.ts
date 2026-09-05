@@ -45,7 +45,13 @@ export async function GET(
     const filePath = path.join(process.cwd(), "public", "demo", cleanTheme, cleanFile);
 
     if (!fs.existsSync(filePath)) {
-      return new NextResponse("Not Found", { status: 404 });
+      return new NextResponse("Not Found", {
+        status: 404,
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0, s-maxage=0",
+          "Pragma": "no-cache",
+        },
+      });
     }
 
     const stat = await fs.promises.stat(filePath);

@@ -513,6 +513,7 @@ export default function AdminPage() {
   const [demoStudioUploadSuccess, setDemoStudioUploadSuccess] = useState<string | null>(null);
   const [uploadingSlot, setUploadingSlot] = useState<string | null>(null);
   const [updatedDemoSlots, setUpdatedDemoSlots] = useState<Record<string, number>>({});
+  const [demoStudioSessionTime, setDemoStudioSessionTime] = useState<number>(Date.now());
   const [localPreviews, setLocalPreviews] = useState<Record<string, string>>({});
 
   // System Music Library State
@@ -1152,6 +1153,7 @@ export default function AdminPage() {
     setDemoStudioLoading(true);
     setDemoStudioTab("visual");
     setDemoStudioUploadSuccess(null);
+    setDemoStudioSessionTime(Date.now());
     setUpdatedDemoSlots({});
     setLocalPreviews({});
     setStagedDemoFiles({});
@@ -1283,6 +1285,7 @@ export default function AdminPage() {
         newUpdatedSlots[s] = now;
       });
       setUpdatedDemoSlots(newUpdatedSlots);
+      setDemoStudioSessionTime(now);
       setInitialDemoStudioData(JSON.parse(JSON.stringify(nextDemoData)));
       setStagedDemoFiles({});
       setDemoStudioUploadSuccess(`✓ Semua perubahan demo tema ${demoStudioTheme.name} berhasil disimpan permanen!`);
@@ -6797,7 +6800,7 @@ export default function AdminPage() {
                             const isCurrentUploading = uploadingSlot === item.slot;
                             const stagedFile = stagedDemoFiles[item.slot];
                             const localPreview = localPreviews[item.slot];
-                            const savedUrl = (
+                            const rawSavedUrl = (
                               item.slot === "cover" ? demoStudioData.landingCoverUrl :
                               item.slot === "hero" ? demoStudioData.sidebarPhotoUrl :
                               item.slot === "background" ? demoStudioData.globalBgUrl :
@@ -6807,7 +6810,11 @@ export default function AdminPage() {
                               item.slot === "bride" ? demoStudioData.bridePhotoUrl :
                               item.slot === "thumbnail_mobile" ? demoStudioData.thumbnailMobileUrl :
                               item.slot === "thumbnail_desktop" ? demoStudioData.thumbnailDesktopUrl : null
-                            ) || `/demo/${demoStudioTheme.id}/${item.file}?v=${updatedDemoSlots[item.slot] || 1}`;
+                            ) || `/demo/${demoStudioTheme.id}/${item.file}`;
+
+                            const cacheVersion = updatedDemoSlots[item.slot] || demoStudioSessionTime;
+                            const cleanBaseUrl = rawSavedUrl.split("?")[0];
+                            const savedUrl = `${cleanBaseUrl}?v=${cacheVersion}`;
 
                             const effectiveSrc = localPreview || savedUrl;
                             const isVideoSlot = Boolean(
@@ -6845,7 +6852,13 @@ export default function AdminPage() {
                                   <p className="text-[11px] text-gray-500 leading-tight">{item.desc}</p>
                                 </div>
 
-                                <div className="relative aspect-video rounded-xl bg-stone-900 overflow-hidden border border-gray-300">
+                                <div className="relative aspect-video rounded-xl bg-stone-100 overflow-hidden border border-gray-300 flex items-center justify-center">
+                                  <div className="absolute inset-0 flex flex-col items-center justify-center p-3 text-center pointer-events-none text-stone-400">
+                                    <svg className="w-6 h-6 mb-1 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                    <span className="text-[10px] font-medium text-stone-500">Belum ada file</span>
+                                  </div>
                                   {isVideoSlot ? (
                                     <video
                                       key={isStaged ? localPreview : updatedDemoSlots[item.slot] || effectiveSrc}
@@ -6854,16 +6867,19 @@ export default function AdminPage() {
                                       loop
                                       muted
                                       playsInline
-                                      className="w-full h-full object-cover"
+                                      className="w-full h-full object-cover relative z-1"
                                     />
                                   ) : (
                                     <img
                                       key={isStaged ? localPreview : updatedDemoSlots[item.slot] || effectiveSrc}
                                       src={effectiveSrc}
                                       alt={item.label}
-                                      className="w-full h-full object-cover"
+                                      className="w-full h-full object-cover relative z-1"
                                       onError={(e) => {
                                         (e.target as HTMLElement).style.display = "none";
+                                      }}
+                                      onLoad={(e) => {
+                                        (e.target as HTMLElement).style.display = "block";
                                       }}
                                     />
                                   )}
@@ -6928,7 +6944,7 @@ export default function AdminPage() {
                             const isStaged = Boolean(stagedDemoFiles[slotName]);
                             const isSaved = Boolean(updatedDemoSlots[slotName]) && !isStaged;
                             const isCurrentUploading = uploadingSlot === slotName;
-                            const imgSrc = localPreviews[slotName] || `/demo/${demoStudioTheme.id}/${fileName}?v=${updatedDemoSlots[slotName] || 1}`;
+                            const imgSrc = localPreviews[slotName] || `/demo/${demoStudioTheme.id}/${fileName}?v=${updatedDemoSlots[slotName] || demoStudioSessionTime}`;
                             return (
                               <div
                                 key={slotName}
@@ -7024,7 +7040,7 @@ export default function AdminPage() {
                             const isStaged = Boolean(stagedDemoFiles[slotName]);
                             const isSaved = Boolean(updatedDemoSlots[slotName]) && !isStaged;
                             const isCurrentUploading = uploadingSlot === slotName;
-                            const imgSrc = localPreviews[slotName] || `/demo/${demoStudioTheme.id}/${fileName}?v=${updatedDemoSlots[slotName] || 1}`;
+                            const imgSrc = localPreviews[slotName] || `/demo/${demoStudioTheme.id}/${fileName}?v=${updatedDemoSlots[slotName] || demoStudioSessionTime}`;
                             return (
                               <div
                                 key={slotName}

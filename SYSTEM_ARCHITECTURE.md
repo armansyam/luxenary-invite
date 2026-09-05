@@ -1332,7 +1332,9 @@ Untuk memastikan showroom demo tema publik (`/demo/[themeId]`) tampil memukau da
    - **Mode Desktop:** Wadah kartu dikunci pada rasio **16 : 9** (`aspect-[16/9]`), menampilkan file `thumbnail_desktop.webp` (resolusi standar DevTools 1280 × 720 px).
    - **Auto-Fallback Cerdas:** Jika file thumbnail khusus belum diunggah, sistem otomatis melakukan fallback berjenjang ke `cover.webp` lalu `hero.webp`.
    - **Slot Demo Studio & Petunjuk Ukuran:** Di panel admin Demo Studio disediakan slot mandiri `thumbnail_mobile` dan `thumbnail_desktop` lengkap dengan catatan panduan ukuran pixel (iPad Mini 768×1024 px dan Desktop 1280×720 px) serta langkah 1-klik capture di Chrome DevTools.
-8. **Dynamic Asset Route Handler untuk Showroom Runtime Assets (`/demo/[theme]/[file]`):**
+8. **Dynamic Asset Route Handler & Anti-Stale Cache untuk Showroom Runtime Assets (`/demo/[theme]/[file]`):**
    - Mengatasi limitasi bawaan Next.js Standalone / Production yang hanya melayani file statis di `public/` saat proses build-time.
    - Route handler `app/demo/[theme]/[file]/route.ts` membaca langsung file runtime (`thumbnail_mobile.webp`, `thumbnail_desktop.webp`, lagu, dan aset visual lainnya) dari disk `public/demo/[theme]/[file]`.
-   - Dilengkapi validasi keamanan path traversal (`path.basename`), filter ekstensi media valid (webp, jpg, jpeg, png, svg, gif, mp4, webm, mov, mp3, ogg, wav, html), dan Smart HTTP Cache (`ETag` berbasis `stat.mtimeMs` + `stat.size`, serta respon `304 Not Modified` saat file tidak mengalami perubahan).
+   - Dilengkapi proteksi anti-cache 404 (`Cache-Control: no-store, no-cache, must-revalidate, max-age=0`) agar CDN Cloudflare dan browser tidak mengunci status 404 saat file baru belum diunggah.
+   - Di sisi admin Demo Studio, seluruh slot visual menggunakan timestamp dinamis (`?v=${cacheVersion}`) dan graceful placeholder saat file belum tersedia, memastikan pembaruan langsung tampil seketika (HTTP 200) tanpa terhalang cache lama.
+
