@@ -1,4 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+
+export const viewport: Viewport = {
+  themeColor: "#faf8f5",
+  colorScheme: "light",
+};
 import { Geist, Geist_Mono } from "next/font/google";
 import { Providers } from "@/lib/session";
 import "./globals.css";
@@ -98,8 +103,19 @@ const LUXENARY_WATERMARK = `
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="id" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">
+    <html
+      lang="id"
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      style={{ colorScheme: "light" }}
+    >
+      <head>
+        <meta name="color-scheme" content="light" />
+        <meta name="supported-color-schemes" content="light" />
+      </head>
+      <body
+        className="min-h-full flex flex-col bg-[#faf8f5] text-[#2d2c2a]"
+        style={{ colorScheme: "light", backgroundColor: "#faf8f5", color: "#2d2c2a" }}
+      >
         <div dangerouslySetInnerHTML={{ __html: LUXENARY_WATERMARK }} />
         <Providers>{children}</Providers>
       </body>

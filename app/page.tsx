@@ -19,7 +19,7 @@ export default async function Home() {
   } = await getPublicPlatformSettings();
 
   return (
-    <div className="min-h-screen bg-[#faf8f5] text-[#2d2c2a] flex flex-col selection:bg-amber-200 selection:text-amber-900 font-sans">
+    <div className="min-h-screen bg-[#faf8f5] text-[#2d2c2a] flex flex-col selection:bg-amber-200 selection:text-amber-900 font-sans" style={{ colorScheme: "light" }}>
       {/* Header / Navbar — Minimalis & Sleek */}
       <header className="border-b border-[#eadecf]/70 bg-[#faf8f5]/85 backdrop-blur-md sticky top-0 z-50 transition-all">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between">

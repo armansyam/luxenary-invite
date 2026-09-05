@@ -41,6 +41,7 @@
 | **Image Processing** | `sharp` v0.35.3 (WebP compression, resize, auto-rotate, sharpening) |
 | **Manajemen Proses** | PM2 |
 | **Middleware** | `middleware.ts` di root (Edge-compatible, async) |
+| **Color Scheme** | Strictly Locked to Light Mode (`color-scheme: light !important`, `<meta name="color-scheme" content="light">`, warm ivory `#faf8f5`, proteksi total terhadap auto-inversi dark mode device/browser) |
 
 ---
 
