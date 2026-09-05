@@ -2,47 +2,45 @@ import fs from "fs";
 import path from "path";
 import { prisma } from "@/lib/prisma";
 
+function formatTitleFromFilename(filename: string, ext: string): string {
+  const base = path.basename(filename, ext).replace(/[-_]+/g, " ").trim();
+  return base
+    .split(" ")
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ");
+}
+
 export async function syncPhysicalMusicPresets() {
   const musicDir = path.join(process.cwd(), "public", "music");
   if (!fs.existsSync(musicDir)) return;
 
   try {
     const files = await fs.promises.readdir(musicDir);
-    for (const f of files) {
+    const audioFiles = files.filter((f) => {
       const ext = path.extname(f).toLowerCase();
-      if ([".mp3", ".ogg", ".wav", ".m4a", ".flac", ".aac"].includes(ext)) {
-        const fileUrl = `/music/${f}`;
-        const exists = await prisma.musicPreset.findFirst({ where: { url: fileUrl } });
-        if (!exists) {
-          let title = path.basename(f, ext).replace(/[-_]/g, " ");
-          let composer = "Koleksi Musik Sistem";
-          let genre = "Romantis";
-          let sortOrder = 10;
+      return [".mp3", ".ogg", ".wav", ".m4a", ".flac", ".aac"].includes(ext);
+    });
 
-          if (f.toLowerCase().includes("bermuara")) {
-            title = "Bermuara";
-            composer = "Rizky Febian & Mahalini";
-            genre = "Pop Romantis";
-            sortOrder = 1;
-          } else if (f.toLowerCase().includes("canon")) {
-            title = "Canon in D";
-            composer = "Johann Pachelbel";
-            genre = "Klasik Instrumental Sakral";
-            sortOrder = 2;
-          }
+    for (const f of audioFiles) {
+      const ext = path.extname(f).toLowerCase();
+      const fileUrl = `/music/${f}`;
+      const exists = await prisma.musicPreset.findFirst({ where: { url: fileUrl } });
+      if (!exists) {
+        const title = formatTitleFromFilename(f, ext);
+        const count = await prisma.musicPreset.count();
 
-          await prisma.musicPreset.create({
-            data: {
-              title,
-              composer,
-              genre,
-              url: fileUrl,
-              durationSec: 180,
-              isActive: true,
-              sortOrder,
-            },
-          });
-        }
+        await prisma.musicPreset.create({
+          data: {
+            title,
+            composer: null,
+            genre: null,
+            url: fileUrl,
+            durationSec: 180,
+            isActive: true,
+            sortOrder: count + 1,
+          },
+        });
       }
     }
   } catch (err) {
