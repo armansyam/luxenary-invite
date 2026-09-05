@@ -207,32 +207,21 @@ export default function CatalogGridShowcase() {
 
                   {/* Subtle Hover Action Overlay */}
                   <div className="absolute inset-0 bg-stone-950/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center p-2 z-10">
-                    <span className="px-3 py-1.5 bg-white text-stone-900 font-bold text-[11px] rounded-full shadow-lg transform translate-y-1 group-hover:translate-y-0 transition-transform">
-                      Buka ↗
+                    <span className="px-3.5 py-1.5 bg-white text-stone-900 font-bold text-[11px] rounded-full shadow-lg transform translate-y-1 group-hover:translate-y-0 transition-transform tracking-wider">
+                      Buka
                     </span>
                   </div>
                 </Link>
 
-                {/* Card Info & Action Button (Compact) */}
-                <div className="p-2.5 space-y-2 bg-white">
-                  <div>
-                    <div className="flex items-center justify-between gap-1">
-                      <h3 className="font-bold text-stone-900 text-xs sm:text-sm truncate">{theme.name}</h3>
-                      <span className="text-[10px] font-semibold text-stone-500 shrink-0">{theme.series}</span>
-                    </div>
-                    <p className="text-[10px] text-stone-400 font-medium line-clamp-1 mt-0.5">{theme.desc}</p>
-                  </div>
-
-                  {/* Single Clean Action Button */}
-                  <div className="pt-0.5">
-                    <Link
-                      href={`/demo/${theme.id}`}
-                      target="_blank"
-                      className="w-full py-1.5 bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-lg text-[10px] text-center transition block shadow-2xs tracking-wider cursor-pointer"
-                    >
-                      PREVIEW
-                    </Link>
-                  </div>
+                {/* Single Clean Action Button (Compact) */}
+                <div className="p-2 bg-white border-t border-stone-100">
+                  <Link
+                    href={`/demo/${theme.id}`}
+                    target="_blank"
+                    className="w-full py-1.5 bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-lg text-[10px] text-center transition block shadow-2xs tracking-wider cursor-pointer"
+                  >
+                    PREVIEW
+                  </Link>
                 </div>
               </div>
             ))}
