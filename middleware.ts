@@ -206,7 +206,28 @@ export default auth(async (req) => {
 
   // 6. Canonical Path Routing — Flat Slug (e.g. /namapasangan-030326 atau /namapasangan-030326/memories)
   // Hanya untuk root domain, bukan subdomain atau custom domain
-  if (!isCustomDomain && !isSubdomainOfOurs && !pathname.startsWith("/api") && !pathname.startsWith("/_next") && !pathname.startsWith("/static") && !pathname.startsWith("/admin") && !pathname.startsWith("/dashboard") && !pathname.startsWith("/login") && !pathname.startsWith("/onboarding") && !pathname.startsWith("/packages") && !pathname.startsWith("/checkout") && !pathname.startsWith("/demo") && !pathname.startsWith("/portfolio") && !pathname.startsWith("/privacy") && !pathname.startsWith("/terms") && !pathname.startsWith("/refund") && !pathname.startsWith("/s/")) {
+  const PLATFORM_EXCLUSIONS = [
+    "/api",
+    "/_next",
+    "/static",
+    "/admin",
+    "/dashboard",
+    "/login",
+    "/onboarding",
+    "/packages",
+    "/checkout",
+    "/demo",
+    "/portfolio",
+    "/contact",
+    "/privacy",
+    "/terms",
+    "/refund",
+    "/sharemoment",
+    "/memories",
+    "/s/",
+  ];
+
+  if (!isCustomDomain && !isSubdomainOfOurs && !PLATFORM_EXCLUSIONS.some((prefix) => pathname.startsWith(prefix))) {
     const segments = pathname.split("/").filter(Boolean);
 
     // Exclusion list — path-path sistem yang tidak boleh di-intercept
@@ -226,13 +247,14 @@ export default auth(async (req) => {
           // Jika segment kedua BUKAN subRoute, berarti ini format SEO URL Portofolio: /groom-bride/invitation-slug
           // Maka slug aslinya adalah segment kedua
           slug = segments[1];
+          const rewriteUrl = new URL(`/${slug}`, req.url);
+          rewriteUrl.search = req.nextUrl.search;
+          return NextResponse.rewrite(rewriteUrl);
         }
       }
 
-      // Root slug — serve static HTML jika ada, fallback ke Next.js page
-      const rewriteUrl = new URL(`/${slug}`, req.url);
-      rewriteUrl.search = req.nextUrl.search;
-      return NextResponse.rewrite(rewriteUrl);
+      // Root slug — jika URL sudah persis /${slug}, biarkan Next.js route handler app/(public)/[slug]/route.ts menangani langsung tanpa rewrite loop
+      return NextResponse.next();
     }
   }
 

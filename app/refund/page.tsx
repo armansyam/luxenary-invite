@@ -18,7 +18,7 @@ export default async function RefundPage() {
   const supportWhatsapp = settings.supportWhatsapp || "";
 
   return (
-    <div className="min-h-screen bg-[#faf8f5] font-sans flex flex-col text-stone-800">
+    <div className="min-h-screen bg-[#faf8f5] font-sans flex flex-col text-stone-800" style={{ colorScheme: "only light", backgroundColor: "#faf8f5", color: "#292524" }}>
       <header className="border-b border-[#eadecf]/70 bg-white sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <BrandLogo size="sm" showName brandName={platformName} />

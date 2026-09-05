@@ -263,7 +263,10 @@ Extreme  : + random 4char → dimas-clarissa-030326-jakarta-x7k
 /{subdomain}.domain/sharemoment  → Upload via subdomain
 ```
 
-### 3.4 — Middleware Logic Flowchart
+### 3.4 — Platform Exclusions & Anti-Rewrite Loop di `middleware.ts`
+Seluruh rute sistem platform dikelompokkan dalam array `PLATFORM_EXCLUSIONS` (`/contact`, `/privacy`, `/terms`, `/refund`, `/demo`, `/portfolio`, `/packages`, `/checkout`, `/login`, `/onboarding`, `/dashboard`, `/admin`, `/api`, `/_next`, `/static`, `/s/`, `/sharemoment`, `/memories`). Rute-rute ini dilewati langsung (`NextResponse.next()`) tanpa di-intercept oleh *Flat Slug Routing* untuk mencegah siklus rekursif (*infinite rewrite loop*) dan error 403/1000 pada reverse proxy/CDN.
+
+### 3.5 — Middleware Logic Flowchart
 
 ```
 Request masuk

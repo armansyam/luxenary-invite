@@ -325,6 +325,9 @@ Sistem pengiriman email otomatis menggunakan **Nodemailer** yang membaca kredens
 4. **Isolasi Aset Statis & Cloudflare Edge Caching**:
    - Matcher middleware NextAuth secara ketat mengecualikan seluruh file aset statis dan media (`.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|mp3|ogg|wav|css|js|woff2?|ttf|map)$`).
    - Mencegah injeksi header `Set-Cookie` pada file media demo (`/demo/*`), sehingga Cloudflare Edge dapat meng-cache seluruh gambar WebP dan audio secara instan (`cf-cache-status: HIT`), memangkas latensi muat demo dari hitungan detik menjadi <20 milidetik.
+5. **Proteksi Anti-Rewrite Loop & Isolasi Rute Platform (`PLATFORM_EXCLUSIONS`)**:
+   - Middleware mengisolasi seluruh rute statis sistem (`/contact`, `/privacy`, `/terms`, `/refund`, `/demo`, `/portfolio`, `/packages`, `/checkout`, `/sharemoment`, `/memories`, dll.) agar tidak tertangkap oleh filter *Flat Slug canonical routing*.
+   - Menghilangkan potensi *infinite rewrite loop* (HTTP 403 / Cloudflare Error 1000) dan menjamin halaman kontak, legalitas, serta halaman sistem publik selalu di-render langsung oleh Next.js tanpa rekursi.
 
 ---
 
