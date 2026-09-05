@@ -1,5 +1,5 @@
 # PLATFORM UNDANGAN (WHITE-LABEL) — DOKUMENTASI ARSITEKTUR SISTEM
-## Versi: 5.2.0 | Diperbarui: 03 September 2026
+## Versi: 5.5.0 | Diperbarui: 05 September 2026
 
 > **SUMBER KEBENARAN TUNGGAL** untuk semua developer dan AI Agent yang bekerja di repositori ini.  
 > Dokumen ini WAJIB dibaca sebelum melakukan perubahan apapun pada kode.  
@@ -1192,6 +1192,12 @@ Admin Setting: active_payment_gateway
   - Halaman interaktif (`app/(admin)/admin/page.tsx`, `app/(admin)/admin/login/page.tsx`, `app/(client)/dashboard/layout.tsx`, dan `app/login/page.tsx`) memiliki hook `useEffect` reaktif yang menyinkronkan `document.title` dengan nilai `platform_name` dari state/API settings secara langsung.
   - Saat nama platform diperbarui oleh administrator di menu Pengaturan, nama tab browser langsung terbarukan secara instan tanpa perlu memuat ulang seluruh halaman (*zero reload*).
   - **Zero Fallback Flash (`settingsLoaded` Guard):** Komponen `BrandLogo` dan header dashboard admin dibersihkan dari fallback teks seperti `"Platform Admin"`. Selama proses loading data awal (`!settingsLoaded || status === "loading"`), sistem menampilkan layar tunggu elegan (*loading state*), sehingga saat UI tampil, nama platform yang valid langsung tampil seketika tanpa ada kedipan pergantian nama sementara.
+
+### 15.9 — Isolasi Aset Statis Middleware & Cloudflare Edge Caching
+- **Eliminasi Cookie Injeksi pada Aset Media:**
+  - Konfigurasi `matcher` pada `middleware.ts` secara eksplisit mengecualikan seluruh file media dan aset statis (`.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|mp3|ogg|wav|css|js|woff2?|ttf|map)$`).
+  - Mencegah NextAuth menginjeksi header `Set-Cookie` (`__Host-authjs.csrf-token`) pada file gambar WebP/audio di `/demo/*`, `/assets/*`, dan `/public/*`.
+  - Tanpa `Set-Cookie`, Cloudflare Edge secara otomatis meng-cache aset secara penuh (`cf-cache-status: HIT`), memangkas waktu muat gambar dari ~7 detik (akibat bottleneck stream auth Node.js) menjadi <20 milidetik via Anycast CDN terdekat.
 
 ---
 

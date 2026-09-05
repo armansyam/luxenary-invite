@@ -251,6 +251,6 @@ export default auth(async (req) => {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|uploads|music|assets|downloads).*)",
+    "/((?!_next/static|_next/image|favicon.ico|uploads|music|assets|downloads|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|mp4|webm|mov|m4v|mp3|ogg|wav|m4a|flac|aac|css|js|woff2?|ttf|eot|otf|map|webmanifest)$).*)",
   ],
 };

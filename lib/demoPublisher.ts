@@ -23,6 +23,35 @@ export async function compileAndSaveStaticDemo(themeId: string, customDemoData?:
 
   const chosenPalette = resolvedData?.defaultPalette || resolvedData?.colorPalette;
   const data = composeDemoTemplateData(cleanId, chosenPalette, resolvedData);
+
+  // Construct absolute OpenGraph meta tags for rich WhatsApp & social share previews
+  const demoHost = "https://luxvite.id";
+  const rawCover = (data as any).landingCoverUrl || (data as any).sidebarPhotoUrl || `/demo/${cleanId}/cover.webp`;
+  const absoluteCover = rawCover.startsWith("http") ? rawCover : `${demoHost}${rawCover.startsWith("/") ? "" : "/"}${rawCover}`;
+  const groom = (data as any).groomName || "Groom";
+  const bride = (data as any).brideName || "Bride";
+  const demoTitle = `The Wedding of ${groom} & ${bride} — ${(data as any).themeName || cleanId.toUpperCase()}`;
+  const demoDesc = `Undangan pernikahan digital eksklusif tema ${(data as any).themeName || cleanId.toUpperCase()}. Desain elegan, split desktop view, RSVP real-time & galeri momen.`;
+
+  (data as any).metaTagsHtml = `
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>${demoTitle}</title>
+    <meta name="description" content="${demoDesc}">
+    <meta property="og:site_name" content="Luxenary">
+    <meta property="og:title" content="${demoTitle}">
+    <meta property="og:description" content="${demoDesc}">
+    <meta property="og:image" content="${absoluteCover}">
+    <meta property="og:image:secure_url" content="${absoluteCover}">
+    <meta property="og:image:type" content="image/webp">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="${demoTitle}">
+    <meta name="twitter:description" content="${demoDesc}">
+    <meta name="twitter:image" content="${absoluteCover}">
+  `;
+
   let html = await renderTemplateFile(cleanId, data);
 
   // Inject cover-mode script & styles for lightweight catalog preview

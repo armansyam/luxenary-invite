@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import fs from "fs";
 import path from "path";
 import { optimizeWebAudio } from "@/lib/videoOptimizer";
+import { syncPhysicalMusicPresets } from "@/lib/musicPresetSync";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +16,9 @@ export async function GET() {
     if (!session?.user || !isAdmin) {
       return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
     }
+
+    // Auto-sync file fisik audio dari folder public/music/ jika belum terdaftar di database
+    await syncPhysicalMusicPresets();
 
     const musicList = await prisma.musicPreset.findMany({
       orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],

@@ -21,13 +21,40 @@ export const revalidate = 0;
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getPublicPlatformSettings();
   const brandName = settings.platformName || "Luxenary";
-  
+  const tagline = settings.heroTagline || "Undangan Pernikahan Digital Elegan, Hangat & Berkelas";
+  const desc = settings.heroSubtitle || "Platform undangan pernikahan digital self-service dengan desain estetika mewah dan eksklusif.";
+  const siteUrl = "https://luxvite.id";
+
   return {
+    metadataBase: new URL(siteUrl),
     title: {
       default: brandName,
       template: `%s | ${brandName}`,
     },
-    description: settings.heroTagline || "Platform undangan pernikahan digital self-service",
+    description: tagline,
+    openGraph: {
+      type: "website",
+      locale: "id_ID",
+      url: siteUrl,
+      siteName: brandName,
+      title: `${brandName} — ${tagline}`,
+      description: desc,
+      images: [
+        {
+          url: "/assets/brand/og-banner.png",
+          width: 1200,
+          height: 630,
+          alt: `${brandName} Preview`,
+          type: "image/png",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${brandName} — ${tagline}`,
+      description: desc,
+      images: ["/assets/brand/og-banner.png"],
+    },
     icons: {
       icon: [
         { url: `/assets/brand/favicon.png?t=${Date.now()}`, type: "image/png" },

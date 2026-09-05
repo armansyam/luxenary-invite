@@ -73,24 +73,34 @@ export async function buildAndSavePublishedHtml(invitationId: string): Promise<s
   const description = `Kami mengundang Anda untuk hadir di hari bahagia kami.`;
   
   const coverMedia = await prisma.invitationMedia.findFirst({
-    where: { invitationId: invitation.id, mediaSlot: "LANDING_COVER" }
+    where: { 
+      invitationId: invitation.id, 
+      mediaSlot: { in: ["LANDING_COVER", "HOME_PHOTO", "DESKTOP_SIDEBAR", "GROOM_PHOTO", "BRIDE_PHOTO"] } 
+    },
+    orderBy: { createdAt: "desc" },
   });
-  const appBaseUrl = (process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_ROOT_DOMAIN || "").replace(/\/$/, "");
-  const ogFallback = appBaseUrl ? `${appBaseUrl.startsWith("http") ? "" : "https://"}${appBaseUrl}/default-og.jpg` : "/default-og.jpg";
-  const imageUrl = coverMedia?.localPath || ogFallback;
+  
+  const siteOrigin = (process.env.NEXT_PUBLIC_APP_URL || "https://luxvite.id").replace(/\/$/, "");
+  const rawImage = coverMedia?.localPath || (data as any).landingCoverUrl || (data as any).sidebarPhotoUrl || (data as any).heroPhotoUrl || "/assets/brand/og-banner.png";
+  const absoluteImageUrl = rawImage.startsWith("http") ? rawImage : `${siteOrigin}${rawImage.startsWith("/") ? "" : "/"}${rawImage}`;
 
   const metaTagsHtml = `
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <title>${title}</title>
     <meta name="description" content="${description}">
+    <meta property="og:site_name" content="Luxenary">
     <meta property="og:title" content="${title}">
     <meta property="og:description" content="${description}">
-    <meta property="og:image" content="${imageUrl}">
+    <meta property="og:image" content="${absoluteImageUrl}">
+    <meta property="og:image:secure_url" content="${absoluteImageUrl}">
+    <meta property="og:image:type" content="image/jpeg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
     <meta property="og:type" content="website">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="${title}">
     <meta name="twitter:description" content="${description}">
-    <meta name="twitter:image" content="${imageUrl}">
+    <meta name="twitter:image" content="${absoluteImageUrl}">
   `;
   
   (data as any).metaTagsHtml = metaTagsHtml;

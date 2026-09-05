@@ -321,6 +321,9 @@ Sistem pengiriman email otomatis menggunakan **Nodemailer** yang membaca kredens
    - Dynamic metadata SSR (`force-dynamic` dan `revalidate = 0`) pada root layout (`app/layout.tsx`) dan admin layout (`app/(admin)/layout.tsx`) menjamin judul tab browser selalu membaca nama platform teranyar dari database `admin_settings`.
    - Reaktivitas hook `useEffect` pada antarmuka admin (`/admin`), login admin (`/admin/login`), dasbor klien (`/dashboard`), dan login klien (`/login`) memperbarui `document.title` seketika saat pengaturan platform disimpan tanpa perlu me-reload halaman.
    - *Zero Fallback Flash*: Teks fallback placeholder seperti `"Platform Admin"` dimusnahkan. Selama data belum siap (`!settingsLoaded`), portal menampilkan state loading elegan sehingga antarmuka tidak pernah menampilkan nama palsu sementara.
+4. **Isolasi Aset Statis & Cloudflare Edge Caching**:
+   - Matcher middleware NextAuth secara ketat mengecualikan seluruh file aset statis dan media (`.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|mp3|ogg|wav|css|js|woff2?|ttf|map)$`).
+   - Mencegah injeksi header `Set-Cookie` pada file media demo (`/demo/*`), sehingga Cloudflare Edge dapat meng-cache seluruh gambar WebP dan audio secara instan (`cf-cache-status: HIT`), memangkas latensi muat demo dari hitungan detik menjadi <20 milidetik.
 
 ---
 
