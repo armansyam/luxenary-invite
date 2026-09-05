@@ -973,9 +973,9 @@ export async function composeTemplateData(invitationId: string) {
         <p class="sec-sub">${weddingDate}${liveTimeStr}</p>
         <p class="sec-sub" style="margin-top:0.4rem;">Bagi keluarga &amp; sahabat yang berhalangan hadir langsung, prosesi pernikahan dapat disaksikan melalui siaran virtual:</p>
         <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:0.8rem; margin-top:1.5rem;">
-          ${liveStreamYoutubeUrl ? `<a href="${liveStreamYoutubeUrl}" target="_blank" class="btn-map-outline">YOUTUBE LIVE ↗</a>` : ""}
-          ${liveStreamInstagramUrl ? `<a href="${liveStreamInstagramUrl}" target="_blank" class="btn-map-outline">INSTAGRAM LIVE ↗</a>` : ""}
-          ${liveStreamZoomUrl ? `<a href="${liveStreamZoomUrl}" target="_blank" class="btn-map-outline">ZOOM MEETING ↗</a>` : ""}
+          ${liveStreamYoutubeUrl ? `<a href="${liveStreamYoutubeUrl}" target="_blank" class="btn-map-outline">YOUTUBE LIVE</a>` : ""}
+          ${liveStreamInstagramUrl ? `<a href="${liveStreamInstagramUrl}" target="_blank" class="btn-map-outline">INSTAGRAM LIVE</a>` : ""}
+          ${liveStreamZoomUrl ? `<a href="${liveStreamZoomUrl}" target="_blank" class="btn-map-outline">ZOOM MEETING</a>` : ""}
         </div>
       </section>
     `;
@@ -990,7 +990,7 @@ export async function composeTemplateData(invitationId: string) {
         <span class="sec-eyebrow">CAPTURE YOUR MOMENT</span>
         <h2 class="sec-main-title serif">WEDDING FRAME</h2>
         <p class="sec-sub">Unggah dan abadikan momen Anda saat menghadiri pernikahan kami menggunakan Wedding Frame resmi kami di Instagram.</p>
-        <a href="${instagramFilterUrl}" target="_blank" class="btn-outline-box" style="margin-top:1.8rem;">BUKA FILTER INSTAGRAM ↗</a>
+        <a href="${instagramFilterUrl}" target="_blank" class="btn-outline-box" style="margin-top:1.8rem;">BUKA FILTER INSTAGRAM</a>
       </section>
     `;
   }

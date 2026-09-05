@@ -459,3 +459,5 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - Auto-fallback cerdas ke `cover.webp` jika file thumbnail khusus belum tersedia.
 3. **Form Upload Mandiri di Demo Studio:**
    - Panel admin Demo Studio menyediakan 2 slot baru (`thumbnail_mobile` dan `thumbnail_desktop`) dengan catatan panduan ukuran pixel (iPad Mini 768×1024 px dan Desktop 1280×720 px) serta instruksi langkah 1-klik capture di Chrome DevTools.
+4. **Purifikasi Tipografi Minimalis & Eliminasi Total Simbol Panah AI / Emoji:**
+   - Seluruh tombol aksi pada engine undangan (`lib/themeEngine.ts`, `lib/demoRegistry.ts`), template undangan, katalog showroom `/demo`, serta tabel portal admin telah dibersihkan secara menyeluruh dari simbol panah diagonal AI (`↗`) dan emoji default OS. Seluruh tombol (`BUKA GOOGLE MAPS`, `INSTAGRAM LIVE`, `YOUTUBE LIVE`, `ZOOM MEETING`, `BUKA FILTER INSTAGRAM`, `BUKA GALERI MOMEN LENGKAP`) kini mengadopsi estetika tipografi clean dan elegan.

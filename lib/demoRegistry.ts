@@ -1295,7 +1295,7 @@ export function composeDemoTemplateData(
         <h4 class="ev-venue-unified serif">${demo.events[0]?.location || "Grand Ballroom"}</h4>
         <p class="ev-address-unified">${demo.events[0]?.address || ""}</p>
         <a href="${demo.events[0]?.mapsUrl || "https://maps.google.com"}" target="_blank" class="btn-map-outline">
-          BUKA GOOGLE MAPS ↗
+          BUKA GOOGLE MAPS
         </a>
       </div>
     </div>
@@ -1582,8 +1582,8 @@ export function composeDemoTemplateData(
       <p class="sec-sub">${demo.weddingDateFormatted} • 08.00 – Selesai</p>
       <p class="sec-sub" style="margin-top:0.4rem;">Bagi keluarga &amp; sahabat yang menyaksikan dari jauh, bergabunglah melalui siaran daring:</p>
       <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:0.8rem; margin-top:1.5rem;">
-        <a href="https://instagram.com/${demo.brideInstagram}" target="_blank" class="btn-map-outline">INSTAGRAM LIVE ↗</a>
-        <a href="https://youtube.com" target="_blank" class="btn-map-outline">YOUTUBE LIVE ↗</a>
+        <a href="https://instagram.com/${demo.brideInstagram}" target="_blank" class="btn-map-outline">INSTAGRAM LIVE</a>
+        <a href="https://youtube.com" target="_blank" class="btn-map-outline">YOUTUBE LIVE</a>
       </div>
     </section>
   `;
@@ -1636,7 +1636,7 @@ export function composeDemoTemplateData(
       <div style="display:flex; justify-content:center; margin-top:1.5rem;">
         <a href="https://instagram.com/ar/${demo.themeId}-wedding" target="_blank" class="btn-map-outline" style="display:inline-flex; align-items:center; gap:8px;">
           <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-          <span>BUKA INSTAGRAM FILTER ↗</span>
+          <span>BUKA INSTAGRAM FILTER</span>
         </a>
       </div>
     </section>
@@ -1708,8 +1708,7 @@ export function composeDemoTemplateData(
         <!-- 3. TOMBOL DIRECT KE HALAMAN GALERI WEB (memories) -->
         <div style="text-align: center;">
           <a href="/demo/${demo.themeId}/memories" class="btn-outline-box btn-memories-gallery" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 28px; font-size: 12px; font-weight: 700; border-radius: 50px; text-decoration: none; border: 1px solid currentColor; letter-spacing: 0.08em; transition: all 0.25s ease;">
-            <span>✨ BUKA GALERI MOMEN LENGKAP</span>
-            <span style="font-size: 14px;">↗</span>
+            <span>BUKA GALERI MOMEN LENGKAP</span>
           </a>
         </div>
       </div>

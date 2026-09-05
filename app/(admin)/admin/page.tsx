@@ -2680,7 +2680,6 @@ export default function AdminPage() {
                                           className="text-xs font-semibold text-indigo-700 hover:underline flex items-center gap-1 w-max"
                                         >
                                           <span>{activeSub}.{getApexRootDomain()}</span>
-                                          <span className="text-[10px] text-stone-400">↗</span>
                                         </a>
                                       ) : (
                                         <span className="text-gray-400 font-sans italic text-[11px]">[URL Belum Setup]</span>
@@ -2874,7 +2873,6 @@ export default function AdminPage() {
                                   className="text-xs font-mono text-amber-700 hover:underline inline-flex items-center gap-1 mt-0.5"
                                 >
                                   <span>{activeSub}.{getApexRootDomain()}</span>
-                                  <span className="text-[10px] text-stone-400">↗</span>
                                 </a>
                               </div>
                               {/* Dot indicator status mobile */}

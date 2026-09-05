@@ -849,7 +849,7 @@ FASE 5: DOKUMENTASI
 ❌ DILARANG: Mengedit file berdasarkan asumsi tanpa membaca isinya dulu
 ❌ DILARANG: Menyatakan "sudah fix" tanpa menjalankan typecheck
 ❌ DILARANG: Overwrite file panjang hanya untuk perubahan kecil
-❌ DILARANG: Menggunakan emoji di elemen UI profesional (navbar, card, badge)
+❌ DILARANG: Menggunakan emoji di elemen UI profesional (navbar, card, badge) atau simbol panah AI (seperti ↗) di tombol aksi undangan (Maps, Streaming, Filter), badge, tabel admin, dan showroom katalog
 ❌ DILARANG: Modifikasi file di luar scope yang diminta tanpa izin
 ❌ DILARANG: Membuat solusi baru tanpa mengecek apakah pola serupa sudah ada
 ❌ DILARANG: Menggunakan secret key selain tepat 32-byte pada AES-256-GCM (memicu fatal crash ERR_CRYPTO_INVALID_KEYLEN)

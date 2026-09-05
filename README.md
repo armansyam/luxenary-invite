@@ -419,6 +419,7 @@ Setiap developer atau AI Agent yang melakukan modifikasi pada codebase **WAJIB**
 4. **Standar Kontrak Placeholder Nama Mempelai:** Cover buka undangan, hero title, sidebar desktop, dan closing footer **MUTLAK** menggunakan Nama Panggilan (`{{firstName}} & {{secondName}}`). Nama lengkap beserta gelar (`{{firstDisplayName}} & {{secondDisplayName}}`) hanya digunakan pada Seksi Profil Pasangan (*The Couple*).
 5. **Standar Navigasi Imersif (Smart Auto-Hide):** Seluruh 15 tema fisik master dan starter blueprint menerapkan interaksi smart auto-hide untuk dock navigasi dan floating audio player saat pengguna menggulir ke bawah, dan otomatis kembali meluncur masuk saat menggulir ke atas atau mencapai footer.
 6. **Standar Watermark Monogram & Wording Universal:** Tema desktop sidebar mendukung watermark monogram inisial (`{{coupleMonogram}}`, `{{firstInitial}}`, `{{secondInitial}}`) dan salam pembuka universal non-sektarian (`{{coupleSectionSub}}`) untuk fleksibilitas multikultural.
+7. **Standar UI Bersih & Purifikasi Tipografi Tombol:** Dilarang keras menyisipkan emoji default sistem operasi maupun simbol panah AI (`↗`) ke dalam label tombol atau badge (seperti Google Maps, Live Streaming, Instagram Filter, atau Galeri Momen). Seluruh tombol aksi wajib menggunakan tipografi bersih, elegan, atau ikon vektor SVG murni.
 
 ---
 
