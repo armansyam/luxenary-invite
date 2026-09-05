@@ -191,16 +191,16 @@ export async function composeTemplateData(invitationId: string) {
   // Dynamic Couple Display Order Resolution
   const isGroomFirst = featureSettings.displayOrder === "GROOM_FIRST" || (!featureSettings.displayOrder && Boolean(inv.groomName));
 
-  const groomName = (inv.groomName && inv.groomName.trim()) || (inv.groomNickname && inv.groomNickname.trim()) || "Didan Faadhilah";
-  const brideName = (inv.brideName && inv.brideName.trim()) || (inv.brideNickname && inv.brideNickname.trim()) || "Nasha Selsabilla";
-  const groomNickname = (inv.groomNickname && inv.groomNickname.trim()) || (inv.groomName && inv.groomName.trim()) || "Didan";
-  const brideNickname = (inv.brideNickname && inv.brideNickname.trim()) || (inv.brideName && inv.brideName.trim()) || "Nasha";
-  const groomDisplayName = (inv.groomName && inv.groomName.trim()) || (inv.groomNickname && inv.groomNickname.trim()) || "Didan Faadhilah, S.T.";
-  const brideDisplayName = (inv.brideName && inv.brideName.trim()) || (inv.brideNickname && inv.brideNickname.trim()) || "Nasha Selsabilla, S.Ds.";
-  const groomParents = (inv.groomParents && inv.groomParents.trim()) || "Putra dari Bapak Arif Yaniadi & Ibu Yuni Widiastuti";
-  const brideParents = (inv.brideParents && inv.brideParents.trim()) || "Putri dari Bapak Tomm Posma & Ibu Endang Noffiyanti";
-  const groomInstagram = (inv.groomInstagram || "didanfaadhilah").trim().replace(/^@+/, "");
-  const brideInstagram = (inv.brideInstagram || "nashasl").trim().replace(/^@+/, "");
+  const groomName = (inv.groomName && inv.groomName.trim()) || (inv.groomNickname && inv.groomNickname.trim()) || "Mempelai Pria";
+  const brideName = (inv.brideName && inv.brideName.trim()) || (inv.brideNickname && inv.brideNickname.trim()) || "Mempelai Wanita";
+  const groomNickname = (inv.groomNickname && inv.groomNickname.trim()) || (inv.groomName && inv.groomName.trim()) || "Pria";
+  const brideNickname = (inv.brideNickname && inv.brideNickname.trim()) || (inv.brideName && inv.brideName.trim()) || "Wanita";
+  const groomDisplayName = (inv.groomName && inv.groomName.trim()) || (inv.groomNickname && inv.groomNickname.trim()) || groomName;
+  const brideDisplayName = (inv.brideName && inv.brideName.trim()) || (inv.brideNickname && inv.brideNickname.trim()) || brideName;
+  const groomParents = (inv.groomParents && inv.groomParents.trim()) || "";
+  const brideParents = (inv.brideParents && inv.brideParents.trim()) || "";
+  const groomInstagram = (inv.groomInstagram || "").trim().replace(/^@+/, "");
+  const brideInstagram = (inv.brideInstagram || "").trim().replace(/^@+/, "");
 
   // Resolve Photos (Theme-Aware Fallbacks without Stranger Model Fallbacks on Personal Slots)
   const themeFolder = inv.themeId || "kalandra";

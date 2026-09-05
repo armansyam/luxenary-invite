@@ -812,7 +812,7 @@ export default function EditInvitation() {
   const currentPalette = getFeatureSetting("colorPalette", "champagne");
   const displayOrder = getFeatureSetting("displayOrder", "BRIDE_FIRST");
 
-  const currentThemeId = invitation.themeId === "kila" ? "kalandra" : invitation.themeId === "aruna" ? "prameswari" : invitation.themeId === "ivanna" ? "valente" : invitation.themeId === "danila" ? "aurelia" : invitation.themeId === "papercut" ? "artisan" : (invitation.themeId || "");
+  const currentThemeId = invitation.themeId === "kila" ? "kalandra" : (invitation.themeId || "");
   const selectedThemeObj = currentThemeId ? (themesList.find((t) => t.id === currentThemeId) || null) : null;
   const selectedPaletteObj = COLOR_PALETTES.find((p) => p.id === currentPalette) || COLOR_PALETTES[0];
 
