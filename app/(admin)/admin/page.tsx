@@ -913,6 +913,11 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
+    const brand = settingsMap["platform_name"] || "Luxenary";
+    document.title = `${brand} Admin — Control Panel`;
+  }, [settingsMap["platform_name"]]);
+
+  useEffect(() => {
     loadOverviewData();
     loadSettings();
     loadBrandAssets();
@@ -5683,7 +5688,7 @@ export default function AdminPage() {
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                           <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
                             <span className="text-xs text-gray-500 block font-medium">Nama Platform</span>
-                            <span className="text-sm font-bold text-gray-800 mt-0.5 inline-block">{settingsMap["platform_name"] || "Sistem Undangan Digital"}</span>
+                            <span className="text-sm font-bold text-gray-800 mt-0.5 inline-block">{settingsMap["platform_name"] || "Luxenary"}</span>
                           </div>
                           <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
                             <span className="text-xs text-gray-500 block font-medium">Domain Host</span>
@@ -5716,7 +5721,7 @@ export default function AdminPage() {
                       <FieldRow label="Nama Platform">
                         <input
                           type="text"
-                          value={settingsMap["platform_name"] || "Sistem Undangan Digital"}
+                          value={settingsMap["platform_name"] !== undefined ? settingsMap["platform_name"] : "Luxenary"}
                           onChange={(e) => setSetting("platform_name", e.target.value)}
                           className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
                         />

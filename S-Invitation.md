@@ -317,6 +317,9 @@ Sistem pengiriman email otomatis menggunakan **Nodemailer** yang membaca kredens
    - Membedakan jenis invoice secara otomatis:
      - **Aktivasi Paket Undangan** (`NEW_INVITATION` / `UPGRADE`): Tombol CTA langsung menuju Studio Undangan.
      - **Perpanjangan Galeri Tamu** (`GALLERY_EXTENSION`): Penambahan masa aktif +30 hari dengan tombol CTA ke Galeri Momen.
+3. **Sinkronisasi Tab Browser & Identitas Visual Real-Time**:
+   - Dynamic metadata SSR (`force-dynamic` dan `revalidate = 0`) pada root layout (`app/layout.tsx`) dan admin layout (`app/(admin)/layout.tsx`) menjamin judul tab browser selalu membaca nama platform teranyar dari database `admin_settings`.
+   - Reaktivitas hook `useEffect` pada antarmuka admin (`/admin`), login admin (`/admin/login`), dasbor klien (`/dashboard`), dan login klien (`/login`) memperbarui `document.title` seketika saat pengaturan platform disimpan tanpa perlu me-reload halaman.
 
 ---
 

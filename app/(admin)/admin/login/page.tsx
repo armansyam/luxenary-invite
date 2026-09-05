@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
@@ -11,6 +11,18 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPass, setShowPass] = useState(false);
+
+  useEffect(() => {
+    document.title = "Admin Login — Luxenary";
+    fetch("/api/public/settings")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.platformName) {
+          document.title = `Admin Login — ${data.platformName}`;
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();

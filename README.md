@@ -2,7 +2,7 @@
 
 > **Platform Undangan Pernikahan Digital B2C Self-Service**  
 > Next.js 16.3.2 · Prisma 7.9 (PostgreSQL) · NextAuth v5 · Multi-Gateway (5 Gateway) · Nodemailer SMTP · Cloudflare R2  
-> **Versi Dokumen: 5.3.0 | Diperbarui: 04 September 2026**
+> **Versi Dokumen: 5.4.0 | Diperbarui: 05 September 2026**
 
 > [!IMPORTANT]
 > **PROTOKOL SINKRONISASI DOKUMENTASI OTOMATIS (MANDATORY POST-EDIT & PRE-PUSH PROTOCOL):**  
@@ -35,7 +35,7 @@ Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model 
    - `/privacy` (Kebijakan Privasi Data)
    - `/refund` (Kebijakan Pengembalian Dana)
    - `/contact` (Pusat Bantuan & Kontak WhatsApp/Email Resmi)
-   *(Seluruh informasi nama platform & kontak terhubung dinamis ke DB Admin Settings)*
+   *(Seluruh informasi nama platform, kontak, meta title & tab browser terhubung dinamis ke DB Admin Settings)*
      │
      ▼
 2. LOGIN + PILIH PAKET (/login → /packages)

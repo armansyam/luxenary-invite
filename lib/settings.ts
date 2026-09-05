@@ -106,7 +106,7 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
   };
 
   return {
-    platformName: map["platform_name"] || "Sistem Undangan Digital",
+    platformName: map["platform_name"] || "Luxenary",
     heroTagline: map["hero_tagline"] || "Undangan Pernikahan Digital Elegan, Hangat & Berkelas",
     heroSubtitle:
       map["hero_subtitle"] ||

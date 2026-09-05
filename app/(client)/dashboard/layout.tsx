@@ -92,7 +92,10 @@ export default function ClientDashboardLayout({
       .then(res => res.json())
       .then(data => {
         if (data?.supportWhatsapp) setWaContact(data.supportWhatsapp);
-        if (data?.platformName) setPlatformName(data.platformName);
+        if (data?.platformName) {
+          setPlatformName(data.platformName);
+          document.title = `${data.platformName} — Dasbor Klien`;
+        }
       })
       .catch(() => {});
   }, []);

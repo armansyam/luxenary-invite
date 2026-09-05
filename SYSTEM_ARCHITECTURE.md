@@ -50,6 +50,7 @@
 / (Root Project)
 ├── app/
 │   ├── (admin)/              # Panel Admin (dilindungi role ADMIN/SUPER_ADMIN)
+│   │   ├── layout.tsx        # Dynamic metadata layout (platform branding title & favicon)
 │   │   └── admin/page.tsx    # Single-page admin dashboard (10 Tab terintegrasi)
 │   │
 │   ├── (client)/             # Area Client yang sudah login
@@ -1183,6 +1184,14 @@ Admin Setting: active_payment_gateway
   - Tombol verifikasi persetujuan di portal `/admin` (baik di modal bukti transfer maupun tabel transaksi) menerapkan pola *In-Place Confirmation*.
   - Mengeliminasi popup kaku browser `window.confirm()` dan `alert()`. Tombol bertransisi halus di tempat menjadi `[Ya, Lunas]` dan `[Batal]` dengan proteksi auto-revert 5 detik jika tidak diklik, memangkas jarak gerak mouse dari ~800px menjadi 0px.
 
+### 15.8 — Sinkronisasi Dinamis Tab Browser & Favicon (Zero Build-Time Hardcode)
+- **Dynamic Metadata & Zero Caching SSR:**
+  - Root layout (`app/layout.tsx`) dan Admin layout (`app/(admin)/layout.tsx`) menerapkan `export const dynamic = "force-dynamic"` dan `export const revalidate = 0`.
+  - Fungsi `generateMetadata()` membaca nama platform real-time dari tabel database via `getPublicPlatformSettings()`. Mencegah build-time static HTML caching yang dapat membekukan judul tab ke nilai default saat aplikasi di-build.
+- **Client-Side Document Title Reactivity:**
+  - Halaman interaktif (`app/(admin)/admin/page.tsx`, `app/(admin)/admin/login/page.tsx`, `app/(client)/dashboard/layout.tsx`, dan `app/login/page.tsx`) memiliki hook `useEffect` reaktif yang menyinkronkan `document.title` dengan nilai `platform_name` dari state/API settings secara langsung.
+  - Saat nama platform diperbarui oleh administrator di menu Pengaturan, nama tab browser langsung terbarukan secara instan tanpa perlu memuat ulang seluruh halaman (*zero reload*).
+
 ---
 
 ## 16. SISTEM NOTIFIKASI EMAIL & FAKTUR TRANSAKSI
@@ -1234,8 +1243,6 @@ Untuk menangani arsitektur Multi-Tenant Custom Domain, sistem NGINX tradisional 
   {
       on_demand_tls {
           ask http://localhost:3001/api/public/resolve-custom-domain
-          interval 2m
-          burst 5
       }
   }
   

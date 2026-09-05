@@ -82,7 +82,11 @@ export default function ClientLoginPage() {
   useEffect(() => {
     fetch("/api/public/settings")
       .then(res => res.json())
-      .then(data => setPlatformName(data.platformName || ""))
+      .then(data => {
+        const name = data.platformName || "Luxenary";
+        setPlatformName(name);
+        document.title = `Masuk Akun | ${name}`;
+      })
       .catch(() => {});
   }, []);
 

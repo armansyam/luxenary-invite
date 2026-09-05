@@ -15,11 +15,18 @@ const geistMono = Geist_Mono({
 
 import { getPublicPlatformSettings } from "@/lib/settings";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getPublicPlatformSettings();
+  const brandName = settings.platformName || "Luxenary";
   
   return {
-    title: settings.platformName || "Sistem Undangan Digital",
+    title: {
+      default: brandName,
+      template: `%s | ${brandName}`,
+    },
     description: settings.heroTagline || "Platform undangan pernikahan digital self-service",
     icons: {
       icon: [
