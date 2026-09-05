@@ -4,12 +4,12 @@ module.exports = {
       name: 'luxenary-invite',
       script: 'node_modules/next/dist/bin/next',
       args: 'start',
-      instances: 1,
-      exec_mode: 'fork',
-      max_memory_restart: '500M',
+      instances: 'max',
+      exec_mode: 'cluster',
+      max_memory_restart: '450M',
       env: {
         NODE_ENV: 'production',
-        PORT: 3000
+        PORT: 3001
       },
       log_date_format: "YYYY-MM-DD HH:mm Z",
       error_file: "logs/error.log",

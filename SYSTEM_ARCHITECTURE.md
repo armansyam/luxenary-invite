@@ -1215,7 +1215,7 @@ Sistem Luxenary Invite dirancang sebagai aplikasi *self-hosted* yang berjalan pa
 
 ### 17.1 — PM2 Daemon & Deployment Engine
 - **Skrip Deployment Otomatis:** `deploy.sh` menangani pembaruan repositori, instalasi dependensi, inisialisasi kunci rahasia (*secret generator*), sinkronisasi Prisma, *build* Next.js, hingga proses *restart* peladen tanpa *downtime*.
-- **Manajemen Proses:** Node.js (Next.js) dijalankan menggunakan PM2 di belakang layar pada port internal (biasanya `localhost:3000`).
+- **Manajemen Proses:** Node.js (Next.js) dijalankan menggunakan PM2 di belakang layar pada port internal (`localhost:3001` dengan mode `cluster` multi-core).
 
 ### 17.2 — Caddy Server & Otomatisasi SSL SaaS (On-Demand TLS)
 Untuk menangani arsitektur Multi-Tenant Custom Domain, sistem NGINX tradisional digantikan secara total oleh **Caddy Server**.
@@ -1233,7 +1233,7 @@ Untuk menangani arsitektur Multi-Tenant Custom Domain, sistem NGINX tradisional 
   # 2. Otomatisasi SSL untuk Ribuan Custom Domain
   {
       on_demand_tls {
-          ask http://localhost:3000/api/public/resolve-custom-domain
+          ask http://localhost:3001/api/public/resolve-custom-domain
           interval 2m
           burst 5
       }
@@ -1243,7 +1243,7 @@ Untuk menangani arsitektur Multi-Tenant Custom Domain, sistem NGINX tradisional 
       tls {
           on_demand
       }
-      reverse_proxy localhost:3000
+      reverse_proxy localhost:3001
   }
   ```
 - **Kelebihan Caddy vs NGINX dalam SaaS:** Meringankan beban operasional Admin (Zero-Touch Provisioning), kode *proxy* jauh lebih pendek (5 baris vs 100 baris NGINX), serta menghapuskan risiko sertifikat SSL kadaluarsa.

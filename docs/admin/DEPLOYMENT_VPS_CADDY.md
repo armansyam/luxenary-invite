@@ -144,7 +144,7 @@ Hapus seluruh isi default, lalu isi dengan konfigurasi berikut *(ganti `domainan
 # ------------------------------------------------------------------------------
 {
     on_demand_tls {
-        ask http://localhost:3000/api/public/resolve-custom-domain
+        ask http://localhost:3001/api/public/resolve-custom-domain
         interval 2m
         burst 5
     }
@@ -155,7 +155,7 @@ Hapus seluruh isi default, lalu isi dengan konfigurasi berikut *(ganti `domainan
 # ------------------------------------------------------------------------------
 domainanda.id, *.domainanda.id {
     encode zstd gzip
-    reverse_proxy localhost:3000
+    reverse_proxy localhost:3001
 }
 
 # ------------------------------------------------------------------------------
@@ -166,7 +166,7 @@ https:// {
         on_demand
     }
     encode zstd gzip
-    reverse_proxy localhost:3000
+    reverse_proxy localhost:3001
 }
 ```
 
@@ -283,10 +283,10 @@ Tambahkan baris berikut di bagian paling bawah *(ganti `CRON_SECRET_ANDA` sesuai
 
 ```cron
 # 1. Pembersihan harian data kadaluarsa & cache usang (Pukul 02.00 pagi)
-0 2 * * * curl -X POST -H "Authorization: Bearer CRON_SECRET_ANDA" http://localhost:3000/api/cron/cleanup > /dev/null 2>&1
+0 2 * * * curl -X POST -H "Authorization: Bearer CRON_SECRET_ANDA" http://localhost:3001/api/cron/cleanup > /dev/null 2>&1
 
 # 2. Pencadangan database otomatis harian (Pukul 03.00 pagi)
-0 3 * * * curl -X POST -H "Authorization: Bearer CRON_SECRET_ANDA" http://localhost:3000/api/cron/backup > /dev/null 2>&1
+0 3 * * * curl -X POST -H "Authorization: Bearer CRON_SECRET_ANDA" http://localhost:3001/api/cron/backup > /dev/null 2>&1
 ```
 
 ---
