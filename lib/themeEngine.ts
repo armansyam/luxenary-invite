@@ -1619,6 +1619,26 @@ export async function composeTemplateData(invitationId: string) {
     colorBgLight: palette.bgLight,
     colorBgDark: palette.bgDark,
     colorTextDark: palette.textDark,
+
+    // Dynamic OpenGraph & Meta Tags Default
+    metaTagsHtml: `
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>${firstNickname} &amp; ${secondNickname} — Undangan Pernikahan</title>
+    <meta name="description" content="Undangan pernikahan ${firstFullName} &amp; ${secondFullName}. Simak informasi rangkaian acara, lokasi, dan konfirmasi kehadiran.">
+    <meta property="og:site_name" content="Luxenary">
+    <meta property="og:title" content="${firstNickname} &amp; ${secondNickname} — Undangan Pernikahan">
+    <meta property="og:description" content="Undangan pernikahan ${firstFullName} &amp; ${secondFullName}. Simak informasi rangkaian acara, lokasi, dan konfirmasi kehadiran.">
+    <meta property="og:image" content="${coverUrl.startsWith("http") ? coverUrl : `https://luxvite.id${coverUrl.startsWith("/") ? "" : "/"}${coverUrl}`}">
+    <meta property="og:image:secure_url" content="${coverUrl.startsWith("http") ? coverUrl : `https://luxvite.id${coverUrl.startsWith("/") ? "" : "/"}${coverUrl}`}">
+    <meta property="og:image:type" content="image/jpeg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="${firstNickname} &amp; ${secondNickname} — Undangan Pernikahan">
+    <meta name="twitter:description" content="Undangan pernikahan ${firstFullName} &amp; ${secondFullName}.">
+    <meta name="twitter:image" content="${coverUrl.startsWith("http") ? coverUrl : `https://luxvite.id${coverUrl.startsWith("/") ? "" : "/"}${coverUrl}`}">
+    `,
     
     // Feature Settings & Custom Labels for Rendering Engine
     featureSettings,
