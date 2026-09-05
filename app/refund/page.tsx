@@ -14,12 +14,14 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function RefundPage() {
   const settings = await getPublicPlatformSettings();
   const platformName = settings.platformName || "Platform Undangan";
+  const supportEmail = settings.supportEmail || "support@example.com";
+  const supportWhatsapp = settings.supportWhatsapp || "";
 
   return (
     <div className="min-h-screen bg-[#faf8f5] font-sans flex flex-col text-stone-800">
       <header className="border-b border-[#eadecf]/70 bg-white sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <BrandLogo size="sm" showName />
+          <BrandLogo size="sm" showName brandName={platformName} />
           <div className="text-xs font-semibold text-stone-500 hidden sm:block">Kebijakan Pengembalian Dana (Refund)</div>
           <Link href="/" className="text-xs text-stone-500 hover:text-amber-800 hover:underline">
             Kembali ke Beranda
@@ -59,7 +61,7 @@ export default async function RefundPage() {
               <li>Undangan sama sekali tidak dapat diterbitkan (Gagal Sistem) setelah pembayaran sukses, dan tim teknis kami gagal memperbaikinya dalam waktu 3x24 jam kerja.</li>
             </ul>
             <p className="mt-2">
-              Dalam kasus pengecualian ini, Anda wajib menghubungi dukungan pelanggan (CS) kami selambat-lambatnya 7 hari sejak transaksi terjadi, menyertakan bukti Invoice dari iPaymu dan tangkapan layar kegagalan sistem.
+              Dalam kasus pengecualian ini, Anda wajib menghubungi dukungan pelanggan (CS) kami selambat-lambatnya 7 hari sejak transaksi terjadi, menyertakan bukti Invoice resmi pembayaran dan tangkapan layar kegagalan sistem.
             </p>
           </section>
 
@@ -70,6 +72,39 @@ export default async function RefundPage() {
             </p>
           </section>
 
+          <section>
+            <h2 className="text-lg font-semibold text-stone-800 mb-2">Kontak & Layanan Bantuan</h2>
+            <p>
+              Apabila Anda memiliki pertanyaan atau pengajuan perihal kendala transaksi dan kebijakan ini, silakan hubungi saluran resmi kami:
+            </p>
+            <div className="mt-3 p-4 bg-stone-50 rounded-lg border border-stone-200 space-y-2 text-xs">
+              {supportEmail && (
+                <p>
+                  <strong>Email Resmi:</strong>{" "}
+                  <a href={`mailto:${supportEmail}`} className="text-amber-800 hover:underline font-medium">
+                    {supportEmail}
+                  </a>
+                </p>
+              )}
+              {supportWhatsapp && (
+                <p>
+                  <strong>WhatsApp Dukungan:</strong>{" "}
+                  <a
+                    href={`https://wa.me/${supportWhatsapp.replace(/\D/g, "").replace(/^0/, "62")}?text=${encodeURIComponent(`Halo ${platformName}, saya ingin berkonsultasi mengenai transaksi/layanan.`)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-emerald-700 hover:underline font-medium"
+                  >
+                    +{supportWhatsapp.replace(/\D/g, "").replace(/^0/, "62")}
+                  </a>
+                </p>
+              )}
+              <p>
+                Kunjungi juga laman <Link href="/contact" className="text-amber-800 hover:underline font-medium">Hubungi Kami</Link> untuk informasi kontak selengkapnya.
+              </p>
+            </div>
+          </section>
+
           <p className="pt-8 text-xs text-stone-400 italic">
             Terakhir diperbarui: {new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
@@ -77,7 +112,15 @@ export default async function RefundPage() {
       </main>
 
       <footer className="border-t border-[#eadecf] bg-[#f4ede4] py-8 px-6 text-center text-xs text-[#7d756b]">
-        <p>&copy; {new Date().getFullYear()} {platformName}. All Rights Reserved.</p>
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p>&copy; {new Date().getFullYear()} {platformName}. All Rights Reserved.</p>
+          <div className="flex gap-4">
+            <Link href="/terms" className="hover:text-amber-900 transition">Syarat & Ketentuan</Link>
+            <Link href="/privacy" className="hover:text-amber-900 transition">Kebijakan Privasi</Link>
+            <Link href="/refund" className="hover:text-amber-900 transition font-semibold underline">Pengembalian Dana</Link>
+            <Link href="/contact" className="hover:text-amber-900 transition">Hubungi Kami</Link>
+          </div>
+        </div>
       </footer>
     </div>
   );

@@ -14,10 +14,10 @@ export const dynamic = "force-dynamic";
  *   { error: "..." }                  → jika domain tidak ditemukan / tidak aktif
  */
 export async function GET(req: NextRequest) {
-  const host = req.nextUrl.searchParams.get("host");
+  const host = req.nextUrl.searchParams.get("host") || req.nextUrl.searchParams.get("domain");
 
   if (!host) {
-    return NextResponse.json({ error: "Parameter host wajib disertakan." }, { status: 400 });
+    return NextResponse.json({ error: "Parameter host atau domain wajib disertakan." }, { status: 400 });
   }
 
   const cleanHost = host.toLowerCase().trim();

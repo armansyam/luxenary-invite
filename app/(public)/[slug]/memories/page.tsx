@@ -107,21 +107,13 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
               >
                 <div className="w-16 h-16 rounded-full p-0.5 bg-gradient-to-tr from-amber-600 via-amber-400 to-amber-200 group-hover:scale-105 transition-transform duration-200">
                   <div className="w-full h-full rounded-full overflow-hidden bg-stone-900 border-2 border-stone-950">
-                    {item.mediaType === "VIDEO" ? (
-                      <div className="w-full h-full bg-stone-800 flex items-center justify-center text-xs">
-                        <svg className="w-4 h-4 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                        </svg>
-                      </div>
-                    ) : (
-                      <img
-                        src={item.thumbnailUrl || item.mediaUrl}
-                        alt={item.senderName}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    )}
+                    <img
+                      src={item.thumbnailUrl || item.mediaUrl}
+                      alt={item.senderName}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                      decoding="async"
+                    />
                   </div>
                 </div>
                 <span className="text-[11px] text-stone-300 font-medium truncate max-w-[68px] text-center">
@@ -169,22 +161,13 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
                 data-message={m.message || ""}
               >
                 <div className="relative overflow-hidden bg-stone-900">
-                  {m.mediaType === "VIDEO" ? (
-                    <div className="relative aspect-video bg-black flex items-center justify-center">
-                      <video src={m.mediaUrl} playsInline preload="metadata" className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center group-hover:bg-black/20 transition">
-                        <div className="w-10 h-10 rounded-full bg-amber-500/90 text-stone-950 flex items-center justify-center font-bold pl-0.5 shadow-lg">▶</div>
-                      </div>
-                    </div>
-                  ) : (
-                    <img
-                      src={m.mediaUrl}
-                      alt={`Momen dari ${m.senderName}`}
-                      loading="lazy"
-                      decoding="async"
-                      className="w-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  )}
+                  <img
+                    src={m.mediaUrl}
+                    alt={`Momen dari ${m.senderName}`}
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
                 </div>
                 <div className="p-3 bg-stone-900/90">
                   <div className="flex items-center justify-between gap-2">
@@ -287,11 +270,7 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
                 const modal = document.getElementById('galleryPreviewModal');
                 const content = document.getElementById('previewModalContent');
                 const caption = document.getElementById('previewModalCaption');
-                if (type === 'VIDEO') {
-                  content.innerHTML = '<video src="' + url + '" controls autoplay playsinline class="max-h-[75vh] max-w-full rounded-2xl shadow-2xl bg-black"></video>';
-                } else {
-                  content.innerHTML = '<img src="' + url + '" class="max-h-[75vh] max-w-full rounded-2xl object-contain shadow-2xl" />';
-                }
+                content.innerHTML = '<img src="' + url + '" class="max-h-[75vh] max-w-full rounded-2xl object-contain shadow-2xl" />';
                 caption.innerHTML = '<div class="font-bold text-sm text-white">' + (name || '') + '</div>' + (msg ? '<div class="text-xs text-stone-300 mt-1 italic font-serif">"' + msg + '"</div>' : '');
                 modal.style.display = 'flex';
               });

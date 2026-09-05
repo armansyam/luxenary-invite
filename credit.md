@@ -1,16 +1,16 @@
 <!--
-      _    __  __ ____  ____  _______     __
-     / \  |  \/  / ___||  _ \| ____\ \   / /
-    / _ \ | |\/| \___ \| | | |  _|  \ \ / / 
-   / ___ \| |  | |___) | |_| | |___  \ V /  
-  /_/   \_\_|  |_|____/|____/|_____|  \_/   
+ _      _   _  __  __  _____   _   _      _     ____   __   __
+| |    | | | | \ \/ / | ____| | \ | |    / \   |  _ \  \ \ / /
+| |    | | | |  \  /  |  _|   |  \| |   / _ \  | |_) |  \ V / 
+| |___ | |_| |  /  \  | |___  | |\  |  / ___ \ |  _ <    | |  
+|_____| \___/  /_/\_\ |_____| |_| \_| /_/   \_\|_| \_\   |_|  
 
   ==============================================================
   STOP! PERHATIAN!
   --------------------------------------------------------------
-  Sistem dan desain tema ini adalah milik eksklusif luxvite.id.
+  Sistem dan desain tema ini adalah milik eksklusif Luxenary.
   Dilarang keras menyalin, menduplikasi, atau menjual ulang 
-  tanpa izin resmi dari pihak luxvite.id.
+  tanpa izin resmi dari pihak Luxenary (luxenary.id).
   
   Hak cipta dilindungi undang-undang.
   ==============================================================

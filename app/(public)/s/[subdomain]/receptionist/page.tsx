@@ -17,7 +17,7 @@ export default async function ReceptionistPage({ params }: PageProps) {
       where: { subdomain },
       select: { id: true, staffPin: true, status: true }
     }),
-    getAdminSetting("platform_name", "Luxenary Invite")
+    getAdminSetting("platform_name", "Platform Undangan")
   ]);
 
   if (!invitation) notFound();

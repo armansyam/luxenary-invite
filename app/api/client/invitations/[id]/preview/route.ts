@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { composeTemplateData } from "@/lib/themeEngine";
 import { renderTemplateFile } from "@/lib/renderTemplate";
+import { getAdminSetting } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -47,13 +48,14 @@ export async function GET(
     }
 
     if (!invitation.themeId) {
+      const platformName = await getAdminSetting("platform_name", "Platform Undangan");
       return new NextResponse(
         `<!DOCTYPE html>
         <html lang="id">
         <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Tema Belum Dipilih - Luxenary</title>
+          <title>Tema Belum Dipilih - ${platformName}</title>
           <script src="https://cdn.tailwindcss.com"></script>
         </head>
         <body class="bg-stone-50 flex items-center justify-center min-h-screen p-4 font-sans text-stone-800">

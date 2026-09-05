@@ -43,11 +43,40 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Terlalu banyak permintaan unggahan. Silakan coba lagi sebentar." }, { status: 429 });
     }
 
-    const data = await req.json();
-    const { invitationId, base64File, mimeType, senderName, senderEmail, caption, fileName } = data;
+    let invitationId = "";
+    let senderName = "Guest";
+    let senderEmail = "guest@system";
+    let caption = "";
+    let buffer: Buffer | null = null;
 
-    if (!invitationId || !base64File) {
-      return NextResponse.json({ error: "Data tidak lengkap" }, { status: 400 });
+    const contentType = req.headers.get("content-type") || "";
+
+    if (contentType.includes("multipart/form-data")) {
+      const formData = await req.formData();
+      invitationId = (formData.get("invitationId") as string) || "";
+      senderName = (formData.get("senderName") as string) || "Guest";
+      senderEmail = (formData.get("senderEmail") as string) || "guest@system";
+      caption = ((formData.get("message") || formData.get("caption") || "") as string);
+
+      const file = formData.get("file") as File | null;
+      if (file) {
+        const arrayBuffer = await file.arrayBuffer();
+        buffer = Buffer.from(arrayBuffer);
+      }
+    } else {
+      const data = await req.json();
+      invitationId = data.invitationId || "";
+      senderName = data.senderName || "Guest";
+      senderEmail = data.senderEmail || "guest@system";
+      caption = data.caption || data.message || "";
+      if (data.base64File) {
+        const base64Data = data.base64File.replace(/^data:[^;]+;base64,/, "");
+        buffer = Buffer.from(base64Data, "base64");
+      }
+    }
+
+    if (!invitationId || !buffer || buffer.length === 0) {
+      return NextResponse.json({ error: "Data tidak lengkap atau foto belum dipilih." }, { status: 400 });
     }
 
     const invitation = await prisma.invitation.findUnique({
@@ -67,9 +96,6 @@ export async function POST(req: NextRequest) {
         { status: 423 } // 423 Locked — HTTP status yang tepat untuk resource terkunci
       );
     }
-
-    const base64Data = base64File.replace(/^data:[^;]+;base64,/, "");
-    const buffer = Buffer.from(base64Data, "base64");
 
 
     // ── VALIDASI MAGIC BYTES (server-side MIME detection) ──

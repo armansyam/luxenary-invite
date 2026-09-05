@@ -4,8 +4,9 @@ module.exports = {
       name: 'luxenary-invite',
       script: 'node_modules/next/dist/bin/next',
       args: 'start',
-      instances: 'max', // Gunakan seluruh core CPU untuk performa maksimal
-      exec_mode: 'cluster',
+      instances: 1,
+      exec_mode: 'fork',
+      max_memory_restart: '500M',
       env: {
         NODE_ENV: 'production',
         PORT: 3000

@@ -31,20 +31,22 @@ export async function generateMetadata(): Promise<Metadata> {
     },
   };
 }
-const AMSDEV_WATERMARK = `
+const LUXENARY_WATERMARK = `
 <!--
-      _    __  __ ____  ____  _______     __
-     / \\  |  \\/  / ___||  _ \\| ____\\ \\   / /
-    / _ \\ | |\\/| \\___ \\| | | |  _|  \\ \\ / / 
-   / ___ \\| |  | |___) | |_| | |___  \\ V /  
-  /_/   \\_\\_|  |_|____/|____/|_____|  \\_/   
+ _      _   _  __  __  _____   _   _      _     ____   __   __
+| |    | | | | \\ \\/ / | ____| | \\ | |    / \\   |  _ \\  \\ \\ / /
+| |    | | | |  \\  /  |  _|   |  \\| |   / _ \\  | |_) |  \\ V / 
+| |___ | |_| |  /  \\  | |___  | |\\  |  / ___ \\ |  _ <    | |  
+|_____| \\___/  /_/\\_\\ |_____| |_| \\_| /_/   \\_\\|_| \\_\\   |_|  
 
   ==============================================================
   STOP! PERHATIAN!
   --------------------------------------------------------------
-  Sistem dan desain ini adalah milik eksklusif AMSDEV.
+  Sistem dan desain ini adalah milik eksklusif Luxenary.
   Dilarang keras menyalin, menduplikasi, atau menjual ulang 
-  tanpa izin resmi dari pihak AMSDEV.
+  tanpa izin resmi dari pihak Luxenary (luxenary.id).
+  
+  Hak cipta dilindungi undang-undang.
   ==============================================================
 -->
 <script>
@@ -52,7 +54,7 @@ const AMSDEV_WATERMARK = `
     try {
       if (window.console && console.log) {
         console.log("%cSTOP!", "color: #ef4444; font-size: 50px; font-weight: 900; text-shadow: 2px 2px 0 #000; font-family: sans-serif;");
-        console.log("%cIni adalah properti eksklusif AMSDEV.", "color: #b5833c; font-size: 20px; font-weight: bold;");
+        console.log("%cIni adalah properti eksklusif Luxenary.", "color: #b5833c; font-size: 20px; font-weight: bold;");
         console.log("%cSegala bentuk pencurian kode, scraping, atau modifikasi ilegal akan direkam.\\nDomain saat ini: " + window.location.hostname, "font-size: 14px; color: #a8a29e;");
       }
     } catch(e) {}
@@ -64,7 +66,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="id" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
-        <div dangerouslySetInnerHTML={{ __html: AMSDEV_WATERMARK }} />
+        <div dangerouslySetInnerHTML={{ __html: LUXENARY_WATERMARK }} />
         <Providers>{children}</Providers>
       </body>
     </html>

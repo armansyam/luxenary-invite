@@ -30,7 +30,12 @@ Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model 
      │
      ▼
 1. LANDING PAGE (/)
-   Katalog paket + demo tema interaktif
+   Katalog paket + demo tema interaktif + Halaman Pendukung Dinamis:
+   - `/terms` (Syarat & Ketentuan Layanan)
+   - `/privacy` (Kebijakan Privasi Data)
+   - `/refund` (Kebijakan Pengembalian Dana)
+   - `/contact` (Pusat Bantuan & Kontak WhatsApp/Email Resmi)
+   *(Seluruh informasi nama platform & kontak terhubung dinamis ke DB Admin Settings)*
      │
      ▼
 2. LOGIN + PILIH PAKET (/login → /packages)
@@ -265,6 +270,11 @@ Luxenary-Invite/
 ├── docs/
 │   ├── README.md                              # Pusat indeks dokumentasi platform
 │   ├── ALUR_REGISTRASI_KE_DASHBOARD.md        # Alur lengkap registrasi Google hingga masuk studio
+│   ├── DATABASE_SCHEMA_DAN_RELASI.md          # Kamus data, ERD & lifecycle state machine
+│   ├── API_REFERENCE.md                       # Katalog lengkap seluruh 40+ REST API, SSE & Webhook
+│   ├── PANDUAN_PEMBUATAN_TEMA_BARU.md         # Theme developer guide, kamus token & standar HTML
+│   ├── CLOUDFLARE_R2_DAN_CDN_SETUP.md         # Setup Cloudflare R2, domain CDN & auto-CORS
+│   ├── SECURITY_DAN_PROTEKSI_DATA.md          # Arsitektur keamanan, AES-256-GCM & rate limit
 │   ├── client/
 │   │   ├── TAHAP_REGISTRASI_DAN_PEMBAYARAN.md  # Kasir checkout & pembayaran multi-gateway
 │   │   ├── TAHAP_DASHBOARD_SETUP_AWAL.md       # Wizard setup awal 3 langkah
@@ -279,6 +289,7 @@ Luxenary-Invite/
 │   │   ├── MANAJEMEN_TRANSAKSI_DAN_GATEWAY.md # Invoice, manual approval pembayaran & multi-gateway
 │   │   ├── MANAJEMEN_TEMA_ADMIN.md            # Upload master HTML fisik & auto-compile demo
 │   │   ├── PENGATURAN_SISTEM_BRANDING_DAN_DATABASE.md # White-label, Cloudflare R2 CORS & maintenance DB
+│   │   ├── CRON_DAN_MAINTENANCE_OTOMATIS.md   # Tugas terjadwal cleanup, retensi & backup DB
 │   │   └── DEPLOYMENT_VPS_CADDY.md            # Panduan deployment VPS Ubuntu & Caddy TLS
 │   └── public/
 │       ├── 01_ARSITEKTUR_RENDERING_TEMA_DAN_ROUTING.md # Multi-domain resolution, compiler & dynamic CSS
@@ -286,7 +297,7 @@ Luxenary-Invite/
 │       ├── 03_SISTEM_RSVP_DAN_BUKU_UCAPAN.md   # Form RSVP publik, rate limiting & nested wish reply
 │       ├── 04_AMPLOP_DIGITAL_DAN_HADIAH_PERNIKAHAN.md # Rekening bank copy button, QRIS & kado fisik
 │       ├── 05_SISTEM_RESEPSIONIS_DAN_CHECKIN_QR.md # Portal resepsionis, HTML5 QR scanner & souvenir
-│       └── 06_LIVE_MOMENT_DAN_CLOUD_MEMORIES.md # Upload momen tamu, live slideshow proyektor venue
+│       └── 06_LIVE_MOMENT_DAN_CLOUD_MEMORIES.md # Upload foto candid tamu, live slideshow proyektor venue
 ├── middleware.ts               # ⭐ Edge routing utama (CRITICAL)
 ├── SYSTEM_ARCHITECTURE.md      # ⭐ Dokumentasi arsitektur lengkap (WAJIB BACA)
 ├── AGENTS.md                   # Aturan perilaku AI Agent
@@ -311,9 +322,9 @@ DATABASE_URL="postgresql://luxenary_user:password_rahasia@localhost:5432/luxenar
 AUTH_SECRET="min-32-chars-random"
 NEXTAUTH_URL="http://localhost:3000"
 
-# Google OAuth (Klien)
-AUTH_GOOGLE_ID="..."
-AUTH_GOOGLE_SECRET="..."
+# Google OAuth (Klien & Admin)
+GOOGLE_CLIENT_ID="..."
+GOOGLE_CLIENT_SECRET="..."
 
 # Google API (untuk galeri Drive pre-wedding)
 GOOGLE_API_KEY="..."

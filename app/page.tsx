@@ -194,6 +194,7 @@ export default async function Home() {
             <Link href="/terms" className="hover:text-amber-900 transition">Syarat & Ketentuan</Link>
             <Link href="/privacy" className="hover:text-amber-900 transition">Kebijakan Privasi</Link>
             <Link href="/refund" className="hover:text-amber-900 transition">Kebijakan Pengembalian Dana</Link>
+            <Link href="/contact" className="hover:text-amber-900 transition">Hubungi Kami</Link>
           </div>
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 w-full pt-4 border-t border-[#eadecf]/50">
             <p>© {new Date().getFullYear()} {platformName} — Platform Undangan Pernikahan Digital.</p>

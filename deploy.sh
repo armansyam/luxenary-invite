@@ -78,11 +78,11 @@ npm install
 # 4. Database Setup
 echo "🗄️ Sinkronisasi skema database (Prisma)..."
 npx prisma generate
-npx prisma db push
+npx prisma migrate deploy || npx prisma db push
 
 # 5. Build Aplikasi Next.js
 echo "🏗️ Membangun (Build) aplikasi Next.js... (Ini mungkin memakan waktu)"
-npm run build
+NODE_OPTIONS="--max-old-space-size=1536" npm run build
 
 # 6. Restart Server
 echo "🔄 Merestart aplikasi..."
@@ -92,8 +92,8 @@ if command -v pm2 &> /dev/null; then
   # Pastikan direktori logs untuk PM2 tersedia
   mkdir -p logs
   
-  # Jalankan atau restart berdasarkan ecosystem.config.js
-  pm2 start ecosystem.config.js || pm2 restart ecosystem.config.js || echo "⚠️ Gagal merestart PM2."
+  # Jalankan atau reload zero-downtime berdasarkan ecosystem.config.js
+  pm2 reload ecosystem.config.js --update-env || pm2 start ecosystem.config.js || echo "⚠️ Gagal merestart PM2."
 else
   echo "⚠️ PM2 tidak terdeteksi di sistem ini. Jika server saat ini menyala, silakan restart manual (CTRL+C lalu 'npm run start')."
 fi

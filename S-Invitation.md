@@ -376,14 +376,21 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - Transaksi invoice, approval transfer manual & gateway switcher (`MANAJEMEN_TRANSAKSI_DAN_GATEWAY.md`)
    - Manajemen tema fisik & auto-compile demo (`MANAJEMEN_TEMA_ADMIN.md`)
    - Branding white-label, Cloudflare R2 CORS & maintenance database (`PENGATURAN_SISTEM_BRANDING_DAN_DATABASE.md`)
-   - Deployment VPS Ubuntu 22.04 & reverse proxy Caddy (`DEPLOYMENT_VPS_CADDY.md`)
+   - Pemeliharaan berkala cron job, retensi & auto-backup (`CRON_DAN_MAINTENANCE_OTOMATIS.md`)
+   - Deployment VPS Ubuntu 22.04/24.04 & reverse proxy Caddy (`DEPLOYMENT_VPS_CADDY.md`)
 3. **Sisi Publik & Resepsionis (`docs/public/`):**
    - Resolusi multi-domain & compiler token tema (`01_ARSITEKTUR_RENDERING_TEMA_DAN_ROUTING.md`)
    - Pengalaman tamu, cover gate & audio autoplay policy (`02_PENGALAMAN_TAMU_UNDANGAN.md`)
    - Formulir RSVP publik, rate limiting & nested wish reply (`03_SISTEM_RSVP_DAN_BUKU_UCAPAN.md`)
    - Tanda kasih cashless, rekening copy button & QRIS (`04_AMPLOP_DIGITAL_DAN_HADIAH_PERNIKAHAN.md`)
    - Portal meja resepsionis, HTML5 QR scanner & souvenir (`05_SISTEM_RESEPSIONIS_DAN_CHECKIN_QR.md`)
-   - Portal upload momen tamu & slideshow proyektor venue (`06_LIVE_MOMENT_DAN_CLOUD_MEMORIES.md`)
+   - Portal upload foto candid tamu & slideshow proyektor venue (`06_LIVE_MOMENT_DAN_CLOUD_MEMORIES.md`)
+4. **Engineering, Kamus Database & Keamanan (`docs/`):**
+   - Kamus data, relasi ERD & lifecycle state machine (`DATABASE_SCHEMA_DAN_RELASI.md`)
+   - Katalog lengkap 40+ REST API, SSE & Webhooks (`API_REFERENCE.md`)
+   - Theme developer guide, kamus token & standar HTML (`PANDUAN_PEMBUATAN_TEMA_BARU.md`)
+   - Panduan Cloudflare R2, domain CDN & auto-CORS (`CLOUDFLARE_R2_DAN_CDN_SETUP.md`)
+   - Arsitektur keamanan multi-layer, AES-256-GCM & rate limit (`SECURITY_DAN_PROTEKSI_DATA.md`)
 
 ---
 
@@ -409,4 +416,17 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - Menyediakan token `{{coupleSectionEyebrow}}`, `{{coupleSectionTitle}}`, `{{coupleSectionSub}}`, `{{firstRole}}`, `{{secondRole}}`, `{{firstParentLabel}}`, dan `{{secondParentLabel}}`.
    - Mengeliminasi duplikasi teks judul/eyebrow pada tema editorial majalah dan mendukung kustomisasi langsung via dashboard maupun *Inline Live Editor*.
 3. **Netralitas Wording Undangan:**
-   - Menggunakan bahasa pengantar pernikahan netral dan universal secara bawaan agar fleksibel untuk seluruh latar belakang adat dan keyakinan klien tanpa benturan doa atau istilah liturgis sektarian.
+    - Menggunakan bahasa pengantar pernikahan netral dan universal secara bawaan agar fleksibel untuk seluruh latar belakang adat dan keyakinan klien tanpa benturan doa atau istilah liturgis sektarian.
+
+---
+
+## 15. Arsitektur Halaman Legal & Pusat Dukungan Dinamis (Zero Hardcode)
+1. **Pusat Informasi & Saluran Bantuan Publik:**
+   - Menyediakan 4 rute publik esensial yang terhubung 100% dinamis ke `getPublicPlatformSettings()` dari database:
+     - `/terms`: Syarat & Ketentuan Layanan, lisensi kekayaan intelektual, batas retensi arsip, dan penguncian tema pasca-terbit.
+     - `/privacy`: Kebijakan privasi data klien & data tamu (buku tamu, RSVP, ucapan) serta kepatuhan pemrosesan gateway pihak ketiga tanpa penyimpanan kredensial perbankan di server platform.
+     - `/refund`: Kebijakan pengembalian dana (*No Refund Policy*) untuk produk komputasi perangkat lunak instan, pengecualian force majeure kegagalan sistem, dan panduan klaim resmi.
+     - `/contact`: Pusat bantuan pelanggan dengan kartu aksi cepat WhatsApp resmi (auto-prefix `62` & click-to-chat URL) dan Email resmi, jam operasional, serta FAQ ringkas.
+2. **Kepatuhan Zero Hardcode & UI Vector Clean:**
+   - Bebas dari referensi nama brand statis atau nama payment gateway tunggal di lapisan konten publik.
+   - Menggunakan logo adaptif `BrandLogo` dengan prop `brandName` dinamis serta ikon vektor SVG murni tanpa emoji bawaan sistem operasi.

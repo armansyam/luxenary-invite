@@ -53,6 +53,39 @@ const THEME_MAP: Record<string, { file: string; folder: "premium" | "traditional
   "kila": { file: "kalandra.html", folder: "premium" },
 };
 
+export const LUXENARY_BANNER = `<!--
+ _      _   _  __  __  _____   _   _      _     ____   __   __
+| |    | | | | \ \/ / | ____| | \ | |    / \   |  _ \  \ \ / /
+| |    | | | |  \  /  |  _|   |  \| |   / _ \  | |_) |  \ V / 
+| |___ | |_| |  /  \  | |___  | |\  |  / ___ \ |  _ <    | |  
+|_____| \___/  /_/\_\ |_____| |_| \_| /_/   \_\|_| \_\   |_|  
+
+  ==============================================================
+  STOP! PERHATIAN!
+  --------------------------------------------------------------
+  Sistem dan desain tema ini adalah milik eksklusif Luxenary.
+  Dilarang keras menyalin, menduplikasi, atau menjual ulang 
+  tanpa izin resmi dari pihak Luxenary (luxenary.id).
+  
+  Hak cipta dilindungi undang-undang.
+  ==============================================================
+-->\n`;
+
+export const LUXENARY_PROTECTION_SCRIPT = `
+<!-- LUXENARY PROTECTION SCRIPT -->
+<script>
+  (function() {
+    try {
+      if (window.console && console.log) {
+        console.log("%cSTOP!", "color: #ef4444; font-size: 50px; font-weight: 900; text-shadow: 2px 2px 0 #000; font-family: sans-serif;");
+        console.log("%cIni adalah properti eksklusif Luxenary.", "color: #b5833c; font-size: 20px; font-weight: bold;");
+        console.log("%cSegala bentuk pencurian kode, scraping, atau modifikasi ilegal akan direkam. Domain saat ini: " + window.location.hostname, "font-size: 14px; color: #a8a29e;");
+      }
+    } catch(e) {}
+  })();
+</script>
+`;
+
 const HEAD_AUDIO_BLOCKER_SCRIPT = `
 <script>
 (function() {
@@ -898,6 +931,22 @@ export async function renderTemplateFile(
 
   let tpl = await fs.promises.readFile(tplPath, "utf-8");
 
+  // Standarisasi banner kepemilikan dan proteksi Luxenary (Zero Hardcode & Identitas Publik Resmi)
+  if (tpl.startsWith("<!--")) {
+    const endCommentIdx = tpl.indexOf("-->");
+    if (endCommentIdx !== -1 && endCommentIdx < 1200) {
+      tpl = LUXENARY_BANNER + tpl.slice(endCommentIdx + 3).trimStart();
+    }
+  } else {
+    tpl = LUXENARY_BANNER + tpl;
+  }
+
+  if (tpl.includes("AMSDEV PROTECTION SCRIPT")) {
+    tpl = tpl.replace(/<!-- AMSDEV PROTECTION SCRIPT -->[\s\S]*?<\/script>/i, LUXENARY_PROTECTION_SCRIPT.trim());
+  } else if (tpl.includes("properti eksklusif AMSDEV")) {
+    tpl = tpl.replace(/properti eksklusif AMSDEV/g, "properti eksklusif Luxenary");
+  }
+
   // Fallback placement for Guest Memories if template doesn't explicitly have the placeholder
   if (!tpl.includes("{{memoriesSectionHtml}}") && data.memoriesSectionHtml) {
     if (tpl.includes("{{turutMengundangHtml}}")) {
@@ -1083,7 +1132,8 @@ export async function renderTemplateFile(
     tpl = tpl.replace("<HEAD>", `<HEAD>\n${metaTags}${HEAD_AUDIO_BLOCKER_SCRIPT}\n${GLOBAL_MODULES_CSS}${closingStyle}${combinedVideoStyle}`);
   }
 
-  const injectedScripts = `${UNIFIED_CLIENT_RUNTIME_SCRIPT}\n${AUTOPLAY_SHOWCASE_SCRIPT}\n${options?.editMode || data.__editMode ? INLINE_LIVE_EDITOR_SCRIPT : ""}`;
+  const protectionScript = !tpl.includes("LUXENARY PROTECTION SCRIPT") ? LUXENARY_PROTECTION_SCRIPT : "";
+  const injectedScripts = `${UNIFIED_CLIENT_RUNTIME_SCRIPT}\n${AUTOPLAY_SHOWCASE_SCRIPT}\n${protectionScript}\n${options?.editMode || data.__editMode ? INLINE_LIVE_EDITOR_SCRIPT : ""}`;
 
   if (tpl.includes("</body>")) {
     tpl = tpl.replace("</body>", `${injectedScripts}\n</body>`);

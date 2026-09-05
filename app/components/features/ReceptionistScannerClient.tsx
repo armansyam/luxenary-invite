@@ -487,7 +487,7 @@ export default function ReceptionistScannerClient({
       <header className="relative bg-stone-900 text-white px-6 py-3.5 shadow-md flex justify-between items-center">
         {/* Left: Brand Logo & Platform Name */}
         <div className="flex items-center gap-3 z-10">
-          <BrandLogo size="sm" showName brandName={platformName || "Luxenary Invite"} />
+          <BrandLogo size="sm" showName brandName={platformName || "Platform Undangan"} />
         </div>
 
         {/* Center: RECEPTIONIST SYSTEM */}

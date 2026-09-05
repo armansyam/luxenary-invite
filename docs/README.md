@@ -1,7 +1,7 @@
 # PUSAT DOKUMENTASI RESMI (DOCS INDEX)
 **Luxenary Invite Platform — Multi-Tenant Wedding SaaS & Online Receptionist**
 
-Direktori ini memuat seluruh dokumen spesifikasi teknis, alur data, panduan arsitektur, dan panduan operasional platform Luxenary Invite yang terbagi secara modular ke dalam 3 domain utama: **Client (Sisi Klien/Pengantin)**, **Admin (Sisi Administrator)**, dan **Public (Sisi Tamu Undangan & Meja Resepsionis)**.
+Direktori ini memuat seluruh dokumen spesifikasi teknis, kamus basis data, panduan arsitektur, standar keamanan, dan manual operasional platform Luxenary Invite yang terbagi secara modular ke dalam 4 domain utama: **Client (Sisi Pengantin)**, **Admin (Sisi Administrator & Sistem)**, **Public (Sisi Tamu & Meja Resepsionis)**, dan **Engineering & Infrastruktur**.
 
 ---
 
@@ -33,7 +33,8 @@ Dokumentasi ini mencakup seluruh instrumen pengelolaan bisnis, keuangan, tema, k
 | **04** | [MANAJEMEN_TRANSAKSI_DAN_GATEWAY.md](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/MANAJEMEN_TRANSAKSI_DAN_GATEWAY.md) | **Invoice & Gateway**: Tata kelola penagihan pesanan, verifikasi bukti bayar transfer manual 1-klik, refund, dan konfigurasi multi-gateway (iPaymu, Midtrans, Duitku, TriPay, Xendit). |
 | **05** | [MANAJEMEN_TEMA_ADMIN.md](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/MANAJEMEN_TEMA_ADMIN.md) | **Tema Fisik**: Arsitektur *Single Source of Truth* tema HTML fisik, upload master `.html`, auto-compile demo statis `/public/demo/`, dan sinkronisasi disk-to-database. |
 | **06** | [PENGATURAN_SISTEM_BRANDING_DAN_DATABASE.md](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/PENGATURAN_SISTEM_BRANDING_DAN_DATABASE.md) | **Branding, R2 & Database**: Kustomisasi logo/brand platform, sinkronisasi CORS Cloudflare R2 otomatis, manajemen tim administrator, dan pemeliharaan PostgreSQL. |
-| **07** | [DEPLOYMENT_VPS_CADDY.md](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/DEPLOYMENT_VPS_CADDY.md) | **Infrastruktur Produksi**: Panduan deployment VPS Ubuntu 22.04 LTS, cluster PM2, konfigurasi Caddy reverse proxy, firewall UFW, dan certbot auto SSL. |
+| **07** | [CRON_DAN_MAINTENANCE_OTOMATIS.md](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/CRON_DAN_MAINTENANCE_OTOMATIS.md) | **Tugas Terjadwal & Snapshot**: Siklus pembersihan harian `/api/cron/cleanup`, daur ulang subdomain, retensi foto tamu, dan auto-backup database `/api/cron/backup`. |
+| **08** | [DEPLOYMENT_VPS_CADDY.md](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/DEPLOYMENT_VPS_CADDY.md) | **Infrastruktur Produksi**: Panduan komprehensif setup VPS Ubuntu dari nol, Swap 2 GB, Node.js 20, PostgreSQL, Caddy auto-SSL, dan PM2 cluster. |
 
 ---
 
@@ -48,11 +49,25 @@ Dokumentasi ini menjelaskan pengalaman pengunjung, arsitektur penyajian tema, in
 | **03** | [03_SISTEM_RSVP_DAN_BUKU_UCAPAN.md](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/docs/public/03_SISTEM_RSVP_DAN_BUKU_UCAPAN.md) | **RSVP & Buku Doa**: Formulir kehadiran publik `/api/public/rsvp`, auto-fill nama dari `?to=...`, rate limit anti-spam IP, feed ucapan real-time, dan lencana balasan pengantin. |
 | **04** | [04_AMPLOP_DIGITAL_DAN_HADIAH_PERNIKAHAN.md](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/docs/public/04_AMPLOP_DIGITAL_DAN_HADIAH_PERNIKAHAN.md) | **Tanda Kasih Cashless**: Kartu rekening bank & e-wallet dengan tombol salin 1-klik, display & unduh QRIS statis, dan alamat kirim kado fisik. |
 | **05** | [05_SISTEM_RESEPSIONIS_DAN_CHECKIN_QR.md](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/docs/public/05_SISTEM_RESEPSIONIS_DAN_CHECKIN_QR.md) | **Portal Meja Resepsionis**: Portal `/s/[subdomain]/receptionist`, kunci 4-digit Staff PIN, scanner kamera QR Code HTML5, verifikasi meja & kuota, serta pencatatan souvenir. |
-| **06** | [06_LIVE_MOMENT_DAN_CLOUD_MEMORIES.md](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/docs/public/06_LIVE_MOMENT_DAN_CLOUD_MEMORIES.md) | **Live Moments & Galeri**: Portal upload foto candid tamu `/[slug]/sharemoment`, kompresi klien, R2 direct upload, slideshow proyektor fullscreen venue, dan auto-redirect `EVENT_FINISHED`. |
+| **06** | [06_LIVE_MOMENT_DAN_CLOUD_MEMORIES.md](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/docs/public/06_LIVE_MOMENT_DAN_CLOUD_MEMORIES.md) | **Live Moments & Galeri**: Portal upload foto candid tamu (murni foto: JPEG/PNG/WebP/GIF) `/[slug]/sharemoment`, kompresi klien, R2 direct upload, slideshow proyektor fullscreen venue, dan auto-redirect `EVENT_FINISHED`. |
 
 ---
 
-## 4. Dokumen Master Root Proyek
+## 4. Dokumentasi Engineering, Database & Keamanan (`docs/`)
+
+Dokumentasi tingkat dalam untuk developer, arsitek sistem, dan tim teknis:
+
+| Modul | Dokumen Spesifikasi | Ruang Lingkup & Deskripsi |
+|:---:|---|---|
+| **DB** | [DATABASE_SCHEMA_DAN_RELASI.md](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/docs/DATABASE_SCHEMA_DAN_RELASI.md) | **Kamus Data & Skema PostgreSQL**: Diagram ERD lengkap, 15 model Prisma, cascading keys, indeks, dan mesin siklus hidup status (`InvitationStatus`, `OrderStatus`). |
+| **API** | [API_REFERENCE.md](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/docs/API_REFERENCE.md) | **Katalog API Lengkap**: Referensi seluruh 40+ rute REST API, SSE real-time stream, kasir payment gateway, dan webhook handlers. |
+| **Theme** | [PANDUAN_PEMBUATAN_TEMA_BARU.md](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/docs/PANDUAN_PEMBUATAN_TEMA_BARU.md) | **Theme Developer Guide**: Standar arsitektur HTML 14 seksi, kamus token `{{token}}`, CSS variables, standar audio autoplay, dan registrasi tema ke sistem. |
+| **R2** | [CLOUDFLARE_R2_DAN_CDN_SETUP.md](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/docs/CLOUDFLARE_R2_DAN_CDN_SETUP.md) | **Object Storage & CDN**: Setup bucket Cloudflare R2, custom domain `cdn.domainanda.id`, sinkronisasi kebijakan CORS otomatis, dan lifecycle rules auto-delete 60 hari. |
+| **Sec** | [SECURITY_DAN_PROTEKSI_DATA.md](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/docs/SECURITY_DAN_PROTEKSI_DATA.md) | **Arsitektur Keamanan**: Defense-in-depth, enkripsi AES-256-GCM PIN panitia, validasi magic bytes file biner, in-memory rate limiting anti-DDoS, dan audit logging. |
+
+---
+
+## 5. Dokumen Master Root Proyek
 
 Di samping folder `docs/`, repositori ini memiliki 3 dokumen master arsitektur level atas yang wajib sinkron setiap saat:
 1. [`SYSTEM_ARCHITECTURE.md`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/SYSTEM_ARCHITECTURE.md) — Arsitektur sistem menyeluruh, diagram alur, skema database, dan API Route Map lengkap.

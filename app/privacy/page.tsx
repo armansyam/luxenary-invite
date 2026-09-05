@@ -14,12 +14,14 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function PrivacyPage() {
   const settings = await getPublicPlatformSettings();
   const platformName = settings.platformName || "Platform Undangan";
+  const supportEmail = settings.supportEmail || "";
+  const supportWhatsapp = settings.supportWhatsapp || "";
 
   return (
     <div className="min-h-screen bg-[#faf8f5] font-sans flex flex-col text-stone-800">
       <header className="border-b border-[#eadecf]/70 bg-white sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <BrandLogo size="sm" showName />
+          <BrandLogo size="sm" showName brandName={platformName} />
           <div className="text-xs font-semibold text-stone-500 hidden sm:block">Kebijakan Privasi</div>
           <Link href="/" className="text-xs text-stone-500 hover:text-amber-800 hover:underline">
             Kembali ke Beranda
@@ -68,8 +70,41 @@ export default async function PrivacyPage() {
           <section>
             <h2 className="text-lg font-semibold text-stone-800 mb-2">5. Pihak Ketiga (Payment Gateway)</h2>
             <p>
-              Proses pembayaran di {platformName} sepenuhnya ditangani oleh gerbang pembayaran resmi berlisensi (iPaymu). {platformName} tidak menyimpan, mengumpulkan, atau memproses detail kartu kredit atau informasi perbankan sensitif Anda di server kami.
+              Proses pembayaran di {platformName} sepenuhnya ditangani secara aman oleh gerbang pembayaran resmi berlisensi (seperti QRIS, Virtual Account, e-Wallet, maupun transfer bank). {platformName} tidak menyimpan, mengumpulkan, atau memproses detail kartu kredit atau informasi perbankan sensitif Anda di server kami.
             </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold text-stone-800 mb-2">6. Pertanyaan & Kontak Privasi</h2>
+            <p>
+              Jika Anda memiliki pertanyaan tentang kebijakan privasi ini atau hak perlindungan data Anda, silakan hubungi tim kami:
+            </p>
+            <div className="mt-3 p-4 bg-stone-50 rounded-lg border border-stone-200 space-y-2 text-xs">
+              {supportEmail && (
+                <p>
+                  <strong>Email Resmi:</strong>{" "}
+                  <a href={`mailto:${supportEmail}`} className="text-amber-800 hover:underline font-medium">
+                    {supportEmail}
+                  </a>
+                </p>
+              )}
+              {supportWhatsapp && (
+                <p>
+                  <strong>WhatsApp Dukungan:</strong>{" "}
+                  <a
+                    href={`https://wa.me/${supportWhatsapp.replace(/\D/g, "").replace(/^0/, "62")}?text=${encodeURIComponent(`Halo ${platformName}, saya ingin bertanya perihal privasi data.`)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-emerald-700 hover:underline font-medium"
+                  >
+                    +{supportWhatsapp.replace(/\D/g, "").replace(/^0/, "62")}
+                  </a>
+                </p>
+              )}
+              <p>
+                Informasi lebih lanjut dapat dilihat pada halaman <Link href="/contact" className="text-amber-800 hover:underline font-medium">Hubungi Kami</Link>.
+              </p>
+            </div>
           </section>
 
           <p className="pt-8 text-xs text-stone-400 italic">
@@ -79,7 +114,15 @@ export default async function PrivacyPage() {
       </main>
 
       <footer className="border-t border-[#eadecf] bg-[#f4ede4] py-8 px-6 text-center text-xs text-[#7d756b]">
-        <p>&copy; {new Date().getFullYear()} {platformName}. All Rights Reserved.</p>
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p>&copy; {new Date().getFullYear()} {platformName}. All Rights Reserved.</p>
+          <div className="flex gap-4">
+            <Link href="/terms" className="hover:text-amber-900 transition">Syarat & Ketentuan</Link>
+            <Link href="/privacy" className="hover:text-amber-900 transition">Kebijakan Privasi</Link>
+            <Link href="/refund" className="hover:text-amber-900 transition">Pengembalian Dana</Link>
+            <Link href="/contact" className="hover:text-amber-900 transition">Hubungi Kami</Link>
+          </div>
+        </div>
       </footer>
     </div>
   );

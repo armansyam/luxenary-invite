@@ -5103,7 +5103,7 @@ export default function AdminPage() {
                   {/* Limit Upload Memori */}
                   <SettingsCard
                     title="Batas Upload Galeri Tamu (Memories)"
-                    description="Tentukan batas ukuran file maksimum untuk foto dan video yang diunggah oleh tamu."
+                    description="Tentukan batas ukuran file maksimum untuk foto yang diunggah oleh tamu."
                     isEditing={Boolean(editSection["upload_limit"])}
                     onEdit={() => toggleEditSection("upload_limit")}
                     onCancel={() => cancelEdit("upload_limit", ["max_upload_mb"])}

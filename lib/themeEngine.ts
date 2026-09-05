@@ -1237,13 +1237,13 @@ export async function composeTemplateData(invitationId: string) {
             </div>
 
             <div>
-              <label style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: #d6d3d1;">Pilih Foto atau Video *</label>
-              <input type="file" id="luxMemFileInput" accept="image/*,video/mp4,video/quicktime" required onchange="luxHandleFileSelect(event)" style="display: none;">
+              <label style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: #d6d3d1;">Pilih Foto Kenangan *</label>
+              <input type="file" id="luxMemFileInput" accept="image/*" required onchange="luxHandleFileSelect(event)" style="display: none;">
               
               <div onclick="document.getElementById('luxMemFileInput').click()" style="border: 2px dashed rgba(255,255,255,0.25); border-radius: 14px; padding: 20px 14px; text-align: center; cursor: pointer; background: rgba(255,255,255,0.03); transition: all 0.2s;">
-                <div style="font-size: 28px; margin-bottom: 4px;">📷 / 🎥</div>
-                <div style="font-size: 13px; font-weight: 600; color: #f5f5f4;">Klik untuk Memilih Foto atau Video</div>
-                <div style="font-size: 11px; opacity: 0.6; margin-top: 2px;">Foto otomatis di-optimasi • Video maks. 25 MB (±30 dtk)</div>
+                <div style="font-size: 28px; margin-bottom: 4px;">📷</div>
+                <div style="font-size: 13px; font-weight: 600; color: #f5f5f4;">Klik untuk Memilih Foto Kenangan</div>
+                <div style="font-size: 11px; opacity: 0.6; margin-top: 2px;">Foto otomatis di-optimasi sebelum diunggah</div>
               </div>
 
               <!-- Preview Box -->
@@ -1365,8 +1365,8 @@ export async function composeTemplateData(invitationId: string) {
           const file = e.target.files && e.target.files[0];
           if (!file) return;
 
-          if (file.size > 25 * 1024 * 1024) {
-            alert('Ukuran file maksimal adalah 25 MB.');
+          if (file.size > 15 * 1024 * 1024) {
+            alert('Ukuran foto maksimal adalah 15 MB.');
             e.target.value = '';
             return;
           }
@@ -1379,11 +1379,9 @@ export async function composeTemplateData(invitationId: string) {
           if (previewBox && fileName) {
             fileName.textContent = file.name + " (" + (file.size / (1024 * 1024)).toFixed(1) + " MB)";
             previewBox.style.display = 'flex';
-            if (file.type.startsWith('image/') && previewImg) {
+            if (previewImg) {
               previewImg.src = URL.createObjectURL(file);
               previewImg.style.display = 'block';
-            } else if (previewImg) {
-              previewImg.style.display = 'none';
             }
           }
         };
@@ -1399,7 +1397,7 @@ export async function composeTemplateData(invitationId: string) {
         window.luxSubmitMemory = async function(e) {
           e.preventDefault();
           if (!window.luxSelectedMemoryFile) {
-            alert('Silakan pilih foto atau video terlebih dahulu.');
+            alert('Silakan pilih foto terlebih dahulu.');
             return;
           }
 
@@ -1414,14 +1412,14 @@ export async function composeTemplateData(invitationId: string) {
           if (progressBar) progressBar.style.width = '20%';
 
           try {
-            if (progressText) progressText.textContent = "Mengoptimasi kualitas media...";
+            if (progressText) progressText.textContent = "Mengoptimasi kualitas foto...";
             const optimizedFile = await compressImageInBrowser(window.luxSelectedMemoryFile);
             if (progressBar) progressBar.style.width = '60%';
 
             const form = document.getElementById('luxMemoryForm');
             const fd = new FormData(form);
             fd.set('file', optimizedFile);
-            fd.set('mediaType', optimizedFile.type.startsWith('video/') ? 'VIDEO' : 'PHOTO');
+            fd.set('mediaType', 'PHOTO');
 
             if (progressText) progressText.textContent = "Mengunggah ke album pengantin...";
             if (progressBar) progressBar.style.width = '85%';
@@ -1462,11 +1460,7 @@ export async function composeTemplateData(invitationId: string) {
           if (!modal || !content) return;
 
           const safeUrl = url.replace(/"/g, '&quot;');
-          if (type === 'VIDEO') {
-            content.innerHTML = '<video src="' + safeUrl + '" controls autoplay playsinline style="max-height: 75vh; max-width: 100%; border-radius: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.8); background: #000;"></video>';
-          } else {
-            content.innerHTML = '<img src="' + safeUrl + '" style="max-height: 75vh; max-width: 100%; border-radius: 16px; object-fit: contain; box-shadow: 0 20px 50px rgba(0,0,0,0.8);" />';
-          }
+          content.innerHTML = '<img src="' + safeUrl + '" style="max-height: 75vh; max-width: 100%; border-radius: 16px; object-fit: contain; box-shadow: 0 20px 50px rgba(0,0,0,0.8);" />';
 
           if (caption) {
             caption.textContent = '';

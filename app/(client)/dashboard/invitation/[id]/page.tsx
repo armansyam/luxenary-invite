@@ -1017,8 +1017,8 @@ export default function EditInvitation() {
             <a
               href={`https://wa.me/${adminWhatsapp.replace(/\D/g, '').replace(/^0/, '62')}?text=${encodeURIComponent(
                 isPublishedLock
-                  ? `Halo Admin Luxenary, mohon bantuan Buka Kunci Darurat untuk undangan kami: ${coupleName} (ID: ${invitation.id}). Kami memerlukan perbaikan data.`
-                  : `Halo Admin Luxenary, mohon bantuan buka kunci undangan kami: ${coupleName}`
+                  ? `Halo Admin ${platformSettings?.platformName || "Platform"}, mohon bantuan Buka Kunci Darurat untuk undangan kami: ${coupleName} (ID: ${invitation.id}). Kami memerlukan perbaikan data.`
+                  : `Halo Admin ${platformSettings?.platformName || "Platform"}, mohon bantuan buka kunci undangan kami: ${coupleName}`
               )}`}
               target="_blank"
               rel="noreferrer"

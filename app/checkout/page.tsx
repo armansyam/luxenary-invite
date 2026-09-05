@@ -608,7 +608,7 @@ function CheckoutContent() {
     <div className="min-h-screen bg-gradient-to-br from-stone-950 via-stone-900 to-amber-950 flex flex-col font-sans">
       <header className="px-6 py-5 flex items-center justify-between">
         <a href="/" className="flex items-center gap-2.5">
-          <BrandLogo size="sm" showName brandName={platformName || "Luxenary Invite"} />
+          <BrandLogo size="sm" showName brandName={platformName || "Platform Undangan"} />
         </a>
       </header>
 
@@ -986,7 +986,7 @@ function CheckoutContent() {
 
           <div className="text-center border-t border-white/5 pt-6">
             <p className="text-[10px] text-stone-500 mb-3 px-2 leading-relaxed max-w-md mx-auto">
-              Dengan melanjutkan pembayaran, Anda menyetujui <Link href="/terms" className="text-stone-400 hover:text-amber-500 underline">Syarat & Ketentuan</Link> serta <Link href="/privacy" className="text-stone-400 hover:text-amber-500 underline">Kebijakan Privasi</Link> {platformName || "Luxenary Invite"}, termasuk kebijakan <Link href="/refund" className="text-stone-400 hover:text-amber-500 underline font-medium">No Refund</Link> atas produk digital.
+              Dengan melanjutkan pembayaran, Anda menyetujui <Link href="/terms" className="text-stone-400 hover:text-amber-500 underline">Syarat & Ketentuan</Link> serta <Link href="/privacy" className="text-stone-400 hover:text-amber-500 underline">Kebijakan Privasi</Link> {platformName || "Platform Undangan"}, termasuk kebijakan <Link href="/refund" className="text-stone-400 hover:text-amber-500 underline font-medium">No Refund</Link> atas produk digital.
             </p>
             <button
               type="button"
