@@ -20,15 +20,42 @@ async function fileExists(filePath: string): Promise<boolean> {
 async function getFfmpegPath(): Promise<string> {
   if (await fileExists("/opt/homebrew/bin/ffmpeg")) return "/opt/homebrew/bin/ffmpeg";
   if (await fileExists("/usr/local/bin/ffmpeg")) return "/usr/local/bin/ffmpeg";
+  if (await fileExists("/usr/bin/ffmpeg")) return "/usr/bin/ffmpeg";
   return "ffmpeg";
 }
 
+// Resolve ffprobe binary path (works on macOS Homebrew & Linux)
+async function getFfprobePath(): Promise<string> {
+  if (await fileExists("/opt/homebrew/bin/ffprobe")) return "/opt/homebrew/bin/ffprobe";
+  if (await fileExists("/usr/local/bin/ffprobe")) return "/usr/local/bin/ffprobe";
+  if (await fileExists("/usr/bin/ffprobe")) return "/usr/bin/ffprobe";
+  return "ffprobe";
+}
+
+// Helper to determine input video duration
+async function getVideoDuration(filePath: string, ffprobePath: string): Promise<number | null> {
+  try {
+    const { stdout } = await execFileAsync(ffprobePath, [
+      "-v", "error",
+      "-show_entries", "format=duration",
+      "-of", "default=noprint_wrappers=1:nokey=1",
+      filePath
+    ], { timeout: 10000 });
+    const duration = parseFloat(stdout.trim());
+    return !isNaN(duration) && duration > 0 ? duration : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
- * Optimizes video files for fast web streaming playback:
+ * Optimizes video files for fast web streaming playback & infinite seamless looping:
  * - Codec: H.264 (Universal iOS, Android, Safari, Chrome support)
+ * - Seamless Looping: Crossfade blend (1.0s - 1.2s) between video tail and head so loop restart is 100% imperceptible
  * - Flag: +faststart (moov atom at start for instant streaming without full download)
  * - Resolution: Max 1080p (preserves aspect ratio)
- * - Quality: CRF 24-26 with web bitrate cap
+ * - Quality: CRF 26 with web bitrate cap & 30 FPS
+ * - Audio: Muted/Stripped (-an) for seamless background live wallpaper autoplay
  */
 export async function optimizeWebVideo(inputBuffer: Buffer, baseName: string): Promise<Buffer> {
   const tempDir = os.tmpdir();
@@ -39,22 +66,74 @@ export async function optimizeWebVideo(inputBuffer: Buffer, baseName: string): P
     await fs.promises.writeFile(inputTempPath, inputBuffer);
 
     const ffmpegPath = await getFfmpegPath();
+    const ffprobePath = await getFfprobePath();
 
-    const args = [
-      "-y",
-      "-i", inputTempPath,
-      "-t", "20",
-      "-c:v", "libx264",
-      "-preset", "fast",
-      "-crf", "26",
-      "-r", "30",
-      "-pix_fmt", "yuv420p",
-      "-vf", "scale='min(1080,iw)':-2",
-      "-movflags", "+faststart",
-      "-an",
-      "-max_muxing_queue_size", "1024",
-      outputTempPath,
-    ];
+    const rawDuration = await getVideoDuration(inputTempPath, ffprobePath);
+
+    let args: string[];
+
+    // Seamless Crossfade Looping logic:
+    // Jika durasi video >= 3.0 detik, lakukan crossfade blending antara ekor video dan kepala video
+    // sehingga frame akhir video dan frame awal video 100% identik dan mengalir mulus tanpa jump cut.
+    if (rawDuration && rawDuration >= 3.0) {
+      const targetDuration = Math.min(rawDuration, 20.0);
+      const crossfadeDuration = targetDuration >= 6.0 ? 1.2 : targetDuration >= 4.5 ? 1.0 : 0.6;
+      const offset = (targetDuration - crossfadeDuration) - crossfadeDuration; // offset = targetDuration - 2 * crossfadeDuration
+
+      if (offset > 0.2) {
+        const filterComplex = `[0:v]scale='min(1080,iw)':-2,split=2[v1_raw][v2_raw];[v1_raw]trim=start=${crossfadeDuration}:end=${targetDuration},setpts=PTS-STARTPTS[v1];[v2_raw]trim=start=0:end=${crossfadeDuration},setpts=PTS-STARTPTS[v2];[v1][v2]xfade=transition=fade:duration=${crossfadeDuration}:offset=${offset.toFixed(2)}[outv]`;
+
+        args = [
+          "-y",
+          "-i", inputTempPath,
+          "-filter_complex", filterComplex,
+          "-map", "[outv]",
+          "-c:v", "libx264",
+          "-preset", "fast",
+          "-crf", "26",
+          "-r", "30",
+          "-pix_fmt", "yuv420p",
+          "-movflags", "+faststart",
+          "-an",
+          "-max_muxing_queue_size", "1024",
+          outputTempPath,
+        ];
+      } else {
+        // Durasi mepet, gunakan potongan linear standar
+        args = [
+          "-y",
+          "-i", inputTempPath,
+          "-t", "20",
+          "-c:v", "libx264",
+          "-preset", "fast",
+          "-crf", "26",
+          "-r", "30",
+          "-pix_fmt", "yuv420p",
+          "-vf", "scale='min(1080,iw)':-2",
+          "-movflags", "+faststart",
+          "-an",
+          "-max_muxing_queue_size", "1024",
+          outputTempPath,
+        ];
+      }
+    } else {
+      // Fallback jika durasi < 3 detik atau ffprobe gagal
+      args = [
+        "-y",
+        "-i", inputTempPath,
+        "-t", "20",
+        "-c:v", "libx264",
+        "-preset", "fast",
+        "-crf", "26",
+        "-r", "30",
+        "-pix_fmt", "yuv420p",
+        "-vf", "scale='min(1080,iw)':-2",
+        "-movflags", "+faststart",
+        "-an",
+        "-max_muxing_queue_size", "1024",
+        outputTempPath,
+      ];
+    }
 
     await execFileAsync(ffmpegPath, args, { timeout: 45000 });
 

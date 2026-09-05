@@ -1043,7 +1043,8 @@ Sistem mendukung video loop bergerak (*ambient video*) pada 3 slot visual utama:
 ### 1. Pipeline Konversi & Optimalisasi Server (`videoOptimizer.ts`)
 - **Engine:** FFmpeg (`libx264`, preset `fast`, CRF 26, YUV420p).
 - **Auto-Trim Durasi:** Maksimal 20 detik pertama (`-t 20`). Video di atas 20 detik otomatis dipotong di server.
-- **Silent Loop Optimization:** Menghapus seluruh track audio (`-an`) untuk menghemat kapasitas ~20% dan memastikan kepatuhan mutlak terhadap kebijakan *mobile browser autoplay* (iOS Safari & Android Chrome).
+- **True Seamless Crossfade Looping (Zero-Jump Loop):** Sistem mendeteksi durasi video via `ffprobe` dan menerapkan filter `xfade` (durasi 0.6s–1.2s) yang memadukan ekor video dengan kepala video secara transparan. Frame akhir dan frame awal dibuat 100% identik, sehingga ketika atribut HTML5 `loop` browser mereset ke detik ke-0, transisi berputar mengalir mulus tanpa patahan atau lompatan visual (jump cut).
+- **Silent Loop Optimization & Kepatuhan Autoplay:** Menghapus seluruh track audio (`-an`) untuk menghemat kapasitas ~20% dan memastikan kepatuhan mutlak terhadap kebijakan *mobile browser autoplay* (iOS Safari & Android Chrome mewajibkan video berstatus `muted` agar bisa autoplay).
 - **FPS Capping:** Dibatasi maksimal 30 fps (`-r 30`) untuk menjaga efisiensi rendering GPU/CPU perangkat tamu.
 - **Streaming Instan:** Flag `+faststart` menempatkan moov atom di awal file MP4 sehingga video langsung berputar sebelum unduhan tuntas.
 

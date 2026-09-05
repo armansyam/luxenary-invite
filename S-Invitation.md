@@ -176,10 +176,11 @@ Sistem Studio Editor Klien (`/dashboard/invitation/[id]`) menyediakan kendali kr
    - Dukungan video background loop untuk `LANDING_COVER` (Cover pembuka), `DESKTOP_SIDEBAR` (Hero desktop), dan `GLOBAL_FIXED_BG` (Latar kartu).
    - Format input: MP4, MOV (kamera iPhone), WebM.
    - Pemotongan otomatis maksimal 20 detik pertama (`-t 20`).
+   - **True Seamless Crossfade Looping:** Menggunakan filter `xfade` (0.6s–1.2s) yang memadukan ekor video dengan kepala video secara transparan sehingga frame awal dan akhir 100% identik, menghasilkan pengulangan video mulus tanpa jump-cut patah.
    - Mode senyap (*Silent Loop*): Menghapus track audio (`-an`) untuk menghemat file ~20% dan menjamin pemutaran otomatis (*autoplay*) tanpa hambatan di iOS Safari dan Android Chrome.
    - Pembatasan frame rate ke 30 fps (`-r 30`) untuk efisiensi GPU dan memberikan efek gerak sinematik filmis.
    - Proteksi ukuran file berlapis: maks. 30MB untuk video dan 15MB untuk foto.
-   - Rendering engine otomatis menyuntikkan tag HTML5 `<video>` dengan overlay gradasi kontras tinggi.
+   - Rendering engine otomatis menyuntikkan tag HTML5 `<video class="..." autoplay loop muted playsinline webkit-playsinline>` dengan overlay gradasi kontras tinggi.
 4. **Cloudflare Edge Caching & Wildcard Subdomain:**
    - Subdomain otomatis `*.luxenary.id` (contoh: `dimas-clarissa.luxenary.id`).
    - Cache statis dengan `Cache-Control: public, max-age=31536000, immutable`.
