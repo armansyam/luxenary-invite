@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { encryptPin, decryptPin, isPinEncrypted } from "@/lib/pinEncryption";
+import { isReservedSubdomain } from "@/lib/domainUtils";
 
 
 export function getInvitationLockStatus(inv: any) {
@@ -269,8 +270,14 @@ export async function PUT(
       }
     }
 
-    // --- BUG FIX: Check Subdomain Uniqueness ---
+    // --- BUG FIX: Check Subdomain Uniqueness & Reserved Subdomains ---
     if (newSubdomain && newSubdomain !== currentInv.subdomain) {
+      if (isReservedSubdomain(newSubdomain)) {
+        return NextResponse.json(
+          { error: `Tautan/Subdomain "${newSubdomain}" dilindungi oleh sistem (seperti CDN/System) dan tidak dapat digunakan.` },
+          { status: 400 }
+        );
+      }
       const existingSub = await prisma.invitation.findUnique({ where: { subdomain: newSubdomain } });
       if (existingSub && existingSub.id !== id) {
         return NextResponse.json(

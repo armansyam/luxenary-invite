@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import NextAuth from "next-auth";
 import { authConfig } from "@/auth.config";
+import { isReservedSubdomain } from "@/lib/domainUtils";
 
 const { auth } = NextAuth(authConfig);
 
@@ -123,7 +124,9 @@ export default auth(async (req) => {
         return NextResponse.redirect(`${protocol}//${mainDomain}/`, 301);
       }
 
-      if (subdomain !== "www" && subdomain !== "admin" && subdomain !== "api") {
+      // Hanya subdomain klien yang diizinkan untuk di-rewrite ke undangan (/s/[subdomain])
+      // Subdomain cadangan sistem (cdn R2, admin, api, www, assets, static, dll.) tidak boleh di-intercept
+      if (!isReservedSubdomain(subdomain)) {
       if (pathname === "/" || pathname === "") {
         const rewriteUrl = new URL(`/s/${subdomain}`, req.url);
         rewriteUrl.search = req.nextUrl.search;

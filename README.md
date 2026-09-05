@@ -382,6 +382,7 @@ pm2 start ecosystem.config.js
 - **Webhook iPaymu**: Diverifikasi HMAC-SHA256 sebelum diproses
 - **Auth Guard**: Middleware memisahkan Admin, Client, dan Publik
 - **Routing Loop Protection**: Middleware mengisolasi seluruh rute statis sistem (`PLATFORM_EXCLUSIONS` seperti `/contact`, `/privacy`, `/terms`, `/refund`, dll.) dari Flat Slug interceptor untuk mencegah *infinite rewrite loop*.
+- **Reserved Subdomains Protection**: Subdomain `cdn` (Cloudflare R2), `admin`, `api`, `auth`, `static`, `assets`, dll. diproteksi terpusat via `lib/domainUtils.ts` dan dilarang diklaim oleh klien baik saat pemeriksaan ketersediaan maupun saat pembuatan/pembaruan undangan.
 - **Upload**: Validasi kepemilikan via `userId` session
 - **RSVP/Memories**: Rate-limited untuk cegah spam
 - **Receptionist**: Scanner QR dilindungi PIN panitia (AES-256-GCM), token sesi HMAC di localStorage, header profesional dengan BrandLogo dan judul terpusat, aksi navbar minimalis icon-only dengan indikator hijau online, judul pemindai "SCAN" & "KAMERA LIVE", daftar tamu ringkas tanpa badge count, mode Layar Penuh (Fullscreen Kiosk), isolasi warna tema (anti distorsi Dark/Light OS), serta dukungan kamera multi-device (Laptop webcam & Tablet dual-camera) dengan audio beep dan visual laser.

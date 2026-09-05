@@ -240,6 +240,10 @@ FORMAT 3 — Custom Domain Klien (Jasa Integrasi 1 Tahun Penuh)
          integrasi DNS + Auto-SSL Caddy yang otomatis menjamin URL Asli & Galeri aktif 1 tahun.
 ```
 
+> **Proteksi Subdomain Khusus (`RESERVED_SUBDOMAINS`):**  
+> Subdomain sistem (`cdn` untuk Cloudflare R2, `admin`, `api`, `auth`, `receptionist`, `dashboard`, `demo`, `login`, `checkout`, `pay`, `app`, `www`, `cname`, `host`, `alias`, `invite`, `static`, `assets`, `media`, `storage`, `r2`, `s3`) dikunci secara terpusat di `lib/domainUtils.ts`, divalidasi ketat pada endpoint pembuatan/pembaruan undangan (`create` & `[id]`), serta dilewati di `middleware.ts` sehingga tidak dapat diklaim oleh klien atau di-rewrite ke portal undangan.
+
+
 ### 3.2 — Format invitationSlug (Sistem Baru Sept 2026)
 
 ```

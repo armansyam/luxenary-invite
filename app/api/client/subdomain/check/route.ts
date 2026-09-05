@@ -1,26 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-
-const RESERVED_SUBDOMAINS = new Set([
-  "admin",
-  "api",
-  "receptionist",
-  "dashboard",
-  "demo",
-  "login",
-  "checkout",
-  "pay",
-  "app",
-  "www",
-  "mail",
-  "support",
-  "dev",
-  "staging",
-  "cdn",
-  "auth",
-  "order",
-  "orders",
-]);
+import { isReservedSubdomain } from "@/lib/domainUtils";
 
 export async function GET(req: Request) {
   try {
@@ -54,10 +34,10 @@ export async function GET(req: Request) {
       });
     }
 
-    if (RESERVED_SUBDOMAINS.has(cleanSubdomain)) {
+    if (isReservedSubdomain(cleanSubdomain)) {
       return NextResponse.json({
         available: false,
-        message: "Subdomain ini dilindungi oleh sistem dan tidak dapat digunakan.",
+        message: "Subdomain ini dilindungi oleh sistem (seperti CDN/Admin/System) dan tidak dapat digunakan.",
       });
     }
 

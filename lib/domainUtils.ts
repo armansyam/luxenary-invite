@@ -5,6 +5,46 @@
  * - Production: https://[subdomain].[root_domain]
  */
 
+/**
+ * Subdomain cadangan sistem yang dilindungi dan dilarang digunakan oleh klien.
+ * Termasuk cdn (Cloudflare R2), admin, api, auth, media, cname, dll.
+ */
+export const RESERVED_SUBDOMAINS = new Set([
+  "admin",
+  "api",
+  "receptionist",
+  "dashboard",
+  "demo",
+  "login",
+  "checkout",
+  "pay",
+  "app",
+  "www",
+  "mail",
+  "support",
+  "dev",
+  "staging",
+  "cdn",
+  "auth",
+  "order",
+  "orders",
+  "cname",
+  "host",
+  "alias",
+  "invite",
+  "static",
+  "assets",
+  "media",
+  "storage",
+  "r2",
+  "s3",
+]);
+
+export function isReservedSubdomain(subdomain: string): boolean {
+  if (!subdomain) return false;
+  return RESERVED_SUBDOMAINS.has(subdomain.toLowerCase().trim());
+}
+
 export function getApexRootDomain(): string {
   if (typeof window !== "undefined") {
     const hostname = window.location.hostname;

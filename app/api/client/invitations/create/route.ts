@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 
-import { getMonthYearSlug, isSubdomainExpired } from "@/lib/domainUtils";
+import { getMonthYearSlug, isSubdomainExpired, isReservedSubdomain } from "@/lib/domainUtils";
 
 function slugify(text: string): string {
   return text
@@ -130,6 +130,14 @@ export async function POST(req: Request) {
 
   if (requestedSubdomain) {
     let desiredSubdomain = slugify(requestedSubdomain);
+
+    if (isReservedSubdomain(desiredSubdomain)) {
+      return NextResponse.json(
+        { error: `Subdomain "${desiredSubdomain}" dilindungi oleh sistem (seperti CDN/System) dan tidak dapat digunakan.` },
+        { status: 400 }
+      );
+    }
+
     finalSubdomain = desiredSubdomain;
 
     const existingSubdomain = await prisma.invitation.findUnique({
