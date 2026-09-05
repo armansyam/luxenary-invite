@@ -6,7 +6,7 @@ import { getPublicPlatformSettings } from "@/lib/settings";
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getPublicPlatformSettings();
   return {
-    title: `Kebijakan Privasi | ${settings.platformName || "Platform Undangan"}`,
+    title: "Kebijakan Privasi",
     description: `Kebijakan privasi dan perlindungan data pengguna ${settings.platformName || "Platform Undangan"}.`,
   };
 }

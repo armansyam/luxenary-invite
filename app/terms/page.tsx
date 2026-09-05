@@ -6,7 +6,7 @@ import { getPublicPlatformSettings } from "@/lib/settings";
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getPublicPlatformSettings();
   return {
-    title: `Syarat dan Ketentuan | ${settings.platformName || "Platform Undangan"}`,
+    title: "Syarat dan Ketentuan",
     description: `Syarat dan ketentuan penggunaan layanan ${settings.platformName || "Platform Undangan"}.`,
   };
 }

@@ -7,7 +7,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const settings = await getPublicPlatformSettings();
   const platformName = settings.platformName || "Platform Undangan";
   return {
-    title: `Hubungi Kami | ${platformName}`,
+    title: "Hubungi Kami",
     description: `Hubungi tim layanan dan dukungan pelanggan ${platformName}. Kami siap membantu kebutuhan undangan pernikahan digital Anda.`,
   };
 }

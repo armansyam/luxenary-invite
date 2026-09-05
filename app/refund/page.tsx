@@ -6,7 +6,7 @@ import { getPublicPlatformSettings } from "@/lib/settings";
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getPublicPlatformSettings();
   return {
-    title: `Kebijakan Pengembalian Dana | ${settings.platformName || "Platform Undangan"}`,
+    title: "Kebijakan Pengembalian Dana",
     description: `Kebijakan pengembalian dana (Refund Policy) ${settings.platformName || "Platform Undangan"}.`,
   };
 }
