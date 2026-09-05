@@ -50,15 +50,56 @@ export default async function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-stone-800 mb-2">3. Kebijakan Retensi (Masa Aktif)</h2>
+            <h2 className="text-lg font-semibold text-stone-800 mb-2">3. Masa Aktif Layanan & Kebijakan Retensi Data</h2>
             <p>
-              Masa aktif undangan dan retensi data berlaku sesuai dengan ketentuan berikut:
+              Kami memahami pentingnya setiap momen pernikahan Anda. Agar tidak terjadi kesalahpahaman, berikut adalah rincian lengkap mengenai masa aktif undangan dan penyimpanan data di platform {platformName}:
             </p>
-            <ul className="list-disc pl-5 mt-2 space-y-1">
-              <li>Masa aktif subdomain undangan berlaku hingga {graceDays} hari setelah tanggal acara pernikahan selesai sesuai pengaturan sistem platform (dan dapat diperpanjang via add-on). Khusus undangan yang dikurasi dan dikloning ke portofolio resmi platform akan tetap tersedia permanen.</li>
-              <li>Hak akses <strong>Dashboard Editor</strong> dan <strong>seluruh interaksi tamu</strong> (seperti pengisian buku tamu, RSVP, dan fitur Guest Memories) akan <strong>dikunci (Locked)</strong> secara otomatis 24 jam setelah tanggal acara pernikahan terlewati.</li>
-              <li>Untuk paket dengan fitur Galeri Kenangan Tamu (/memories), seluruh berkas foto candid dan ucapan tamu disimpan serta dapat diakses aktif selama {galleryDays % 30 === 0 ? `${galleryDays / 30} bulan (${galleryDays} hari)` : `${galleryDays} hari`} pasca-acara sebelum dibersihkan otomatis dari server. Klien diimbau untuk mengunduh seluruh arsip kenangan tamu via unduh ZIP sebelum batas waktu tersebut atau memperpanjang masa aktif via add-on.</li>
-            </ul>
+            <div className="mt-4 space-y-3">
+              <div className="p-4 rounded-xl bg-stone-50 border border-stone-200/80 space-y-1">
+                <h3 className="font-bold text-xs uppercase tracking-wider text-amber-900">
+                  1. Masa Persiapan & Hari Pernikahan (Aktif Tanpa Batas / Unlimited)
+                </h3>
+                <p className="text-xs text-stone-600 leading-relaxed">
+                  Sejak undangan Anda diterbitkan hingga hari pernikahan (Hari-H) selesai dilaksanakan, website undangan Anda <strong>aktif penuh tanpa batasan waktu</strong>. Anda leluasa menyusun susunan acara, mengedit informasi, membagikan link ke para tamu, menerima konfirmasi kehadiran (RSVP), serta mengumpulkan ucapan doa kapan pun (bahkan jika undangan dibuat berbulan-bulan sebelum hari-H).
+                </p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-stone-50 border border-stone-200/80 space-y-1">
+                <h3 className="font-bold text-xs uppercase tracking-wider text-amber-900">
+                  2. Pasca Hari-H & Rekapitulasi Data Tamu (24 Jam Setelah Acara)
+                </h3>
+                <p className="text-xs text-stone-600 leading-relaxed">
+                  Untuk menjaga keabsahan dan kerapian data kehadiran, formulir interaktif (RSVP kehadiran dan Buku Tamu online) dikunci secara otomatis 24 jam setelah tanggal acara berakhir. Klien dapat mengunduh seluruh rekapan daftar tamu hadir dan ucapan doa ke dalam format <strong>Excel / CSV</strong> melalui Dasbor Klien kapan saja untuk disimpan pribadi.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-stone-50 border border-stone-200/80 space-y-1">
+                <h3 className="font-bold text-xs uppercase tracking-wider text-amber-900">
+                  3. Masa Transisi Subdomain ({graceDays} Hari Pasca-Acara)
+                </h3>
+                <p className="text-xs text-stone-600 leading-relaxed">
+                  Tautan alamat subdomain ringkas Anda (misal: <em>namakamu.luxvite.id</em>) tetap aktif melayani tamu hingga {graceDays} hari setelah tanggal acara selesai sebagai masa tenggang transisi. Setelah {graceDays} hari, alamat subdomain akan dinonaktifkan secara anggun, sementara akses kenangan beralih ke galeri foto atau layar ucapan terima kasih resmi.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-stone-50 border border-stone-200/80 space-y-1">
+                <h3 className="font-bold text-xs uppercase tracking-wider text-amber-900">
+                  4. Galeri Kenangan Tamu (/memories) & Hak Unduh Arsip Foto ZIP
+                </h3>
+                <p className="text-xs text-stone-600 leading-relaxed">
+                  Khusus Paket Premium yang dilengkapi fitur Galeri Kenangan Tamu, seluruh foto candid dan video ucapan yang diunggah para tamu tersimpan aman di cloud server dan dapat dibuka selama <strong>{galleryDays % 30 === 0 ? `${galleryDays / 30} bulan (${galleryDays} hari)` : `${galleryDays} hari`} pasca-acara</strong> secara gratis. Klien memiliki fasilitas untuk <strong>mengunduh seluruh foto resolusi asli dalam 1 file ZIP</strong> ke galeri ponsel/laptop pribadi agar tersimpan selamanya, atau dapat memperpanjang masa simpan cloud via Add-on.
+                </p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-stone-50 border border-stone-200/80 space-y-1">
+                <h3 className="font-bold text-xs uppercase tracking-wider text-amber-900">
+                  5. Layanan Custom Domain Pribadi (Aktif 1 Tahun Penuh)
+                </h3>
+                <p className="text-xs text-stone-600 leading-relaxed">
+                  Bagi klien yang memilih layanan integrasi Custom Domain pribadi (seperti <em>namakamu.com</em>), website undangan beserta galeri foto kenangan Anda dijamin aktif dan dapat diakses publik selama <strong>1 tahun penuh (365 hari)</strong> sejak aktivasi.
+                </p>
+              </div>
+            </div>
           </section>
 
           <section>

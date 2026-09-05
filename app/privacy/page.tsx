@@ -61,11 +61,13 @@ export default async function PrivacyPage() {
           <section>
             <h2 className="text-lg font-semibold text-stone-800 mb-2">4. Keamanan dan Retensi Data</h2>
             <p>
-              Kami menggunakan enkripsi dan langkah keamanan standar industri untuk melindungi data Anda. Namun, demi menjaga efisiensi ruang server kami, terdapat kebijakan retensi data otomatis:
+              Kami menerapkan standar keamanan dan enkripsi industri untuk melindungi seluruh informasi pribadi Anda dan para tamu. Terkait masa simpan data di cloud server kami:
             </p>
-            <ul className="list-disc pl-5 mt-2 space-y-1">
-              <li>Masa aktif subdomain undangan berlaku hingga {graceDays} hari setelah tanggal acara pernikahan selesai, sedangkan penyimpanan data Galeri Kenangan Tamu (/memories) tersimpan aktif selama {galleryDays % 30 === 0 ? `${galleryDays / 30} bulan (${galleryDays} hari)` : `${galleryDays} hari`} pasca-acara (atau sesuai perpanjangan aktif) sebelum dibersihkan demi performa server. Khusus undangan yang telah dikurasi ke portofolio resmi platform akan tetap tersedia permanen.</li>
-              <li>Klien diimbau untuk mengunduh seluruh memori tamu sebelum batas waktu tersebut.</li>
+            <ul className="list-disc pl-5 mt-2 space-y-1.5 text-xs text-stone-600 leading-relaxed">
+              <li><strong>Masa Persiapan & Hari-H:</strong> Seluruh data undangan aktif penuh tanpa batasan waktu sejak Anda mendaftar hingga rangkaian acara pernikahan selesai.</li>
+              <li><strong>Pasca Hari-H:</strong> Demi privasi dan kerapian data, formulir RSVP dan buku tamu ditutup 24 jam setelah acara berakhir. Klien dapat mengunduh seluruh rekapan daftar tamu hadir dalam format Excel/CSV kapan saja dari Dasbor Klien.</li>
+              <li><strong>Masa Transisi Subdomain:</strong> Subdomain publik aktif melayani pengunjung hingga {graceDays} hari pasca-acara sebelum dinonaktifkan secara anggun.</li>
+              <li><strong>Galeri Kenangan Tamu (/memories):</strong> Pada paket yang memiliki fitur kenangan tamu, foto tersimpan di server selama {galleryDays % 30 === 0 ? `${galleryDays / 30} bulan (${galleryDays} hari)` : `${galleryDays} hari`} pasca-acara (atau 1 tahun penuh bagi pengguna Custom Domain). Klien memiliki hak penuh untuk mengunduh seluruh arsip foto beresolusi penuh dalam 1 file ZIP ke perangkat pribadi sebelum pembersihan server dilakukan.</li>
             </ul>
           </section>
 

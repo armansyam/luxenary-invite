@@ -152,7 +152,7 @@ export default async function ContactPage() {
               <div>
                 <p className="font-semibold text-stone-800 mb-0.5">Berapa lama masa aktif undangan digital saya?</p>
                 <p>
-                  Masa aktif tautan (subdomain) undangan digital berlaku hingga {graceDays} hari setelah tanggal acara pernikahan selesai sesuai pengaturan sistem platform (dan dapat diperpanjang via paket add-on). Khusus paket yang memiliki fitur Galeri Kenangan Tamu (/memories), halaman galeri foto momen candid tamu dapat diakses aktif selama {galleryDurationLabel} pasca-acara sebelum diarsipkan atau dibersihkan otomatis oleh sistem. Undangan yang telah dikurasi dan dikloning ke galeri portofolio resmi platform akan terus tersedia secara permanen sebagai arsip kenangan.
+                  Website undangan Anda <strong>aktif penuh tanpa batas waktu</strong> sejak pertama kali dibuat hingga hari pernikahan Anda selesai dilaksanakan. Setelah acara selesai, tautan subdomain tetap aktif melayani tamu selama {graceDays} hari pasca-acara. Khusus Paket Premium, halaman galeri foto momen candid tamu dapat diakses aktif selama {galleryDurationLabel} pasca-acara (atau 1 tahun penuh jika menggunakan Custom Domain), dan Anda dapat mengunduh seluruh foto resolusi penuh (ZIP) ke perangkat pribadi untuk disimpan selamanya.
                 </p>
               </div>
               <div>
