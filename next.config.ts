@@ -46,16 +46,7 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      // ── Demo tema: cache 1 hari browser, 7 hari CDN, stale 7 hari ──
-      {
-        source: "/demo/:path*",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=86400, s-maxage=604800, stale-while-revalidate=604800",
-          },
-        ],
-      },
+
       // ── HTML undangan baked (subdomains, slugs, ids) ──
       // s-maxage = di-cache Cloudflare selama 7 hari
       // stale-while-revalidate = Cloudflare serve stale sambil refresh di background
