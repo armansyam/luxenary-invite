@@ -6,9 +6,9 @@
 
 echo "🚀 Memulai proses deployment otomatis..."
 
-# 1. Tarik pembaruan terbaru dari repository (Abaikan jika gagal agar proses tetap lanjut)
-echo "📦 Menarik pembaruan terbaru dari Git..."
-git pull || echo "⚠️ Git pull gagal atau ini bukan git repository. Melanjutkan proses..."
+# 1. Tarik pembaruan terbaru dari repository
+echo "📦 Menarik pembaruan terbaru dari Git (origin main)..."
+git pull origin main || git pull || echo "⚠️ Git pull gagal atau ini bukan git repository. Melanjutkan proses..."
 
 # 2. Setup Environment Variables
 echo "⚙️ Memeriksa konfigurasi Environment Variables (.env)..."

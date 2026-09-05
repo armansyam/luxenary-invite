@@ -302,12 +302,11 @@ Buka peramban (browser) Anda dan uji beberapa hal berikut:
 
 ## Panduan Pembaruan Kode Selanjutnya (Update/Maintenance)
 
-Jika di kemudian hari Anda melakukan update kode dari komputer lokal dan melakukan `git push` ke GitHub, cara memperbarui server produksi sangat sederhana:
+Jika di kemudian hari Anda melakukan update kode dari komputer lokal dan melakukan `git push` ke GitHub, cara memperbarui server produksi sangat praktis karena skrip `./deploy.sh` sudah otomatis menjalankan `git pull origin main`:
 
 ```bash
 cd ~/luxenary-invite
-git pull origin main
 ./deploy.sh
 ```
-*Dalam hitungan 1–2 menit, server akan ter-update dan ter-reload otomatis secara zero-downtime!*
+*Skrip akan otomatis menarik kode terbaru dari GitHub (`git pull origin main`), memperbarui dependensi, migrasi database, me-rebuild Next.js, dan me-reload PM2 secara zero-downtime!*
 
