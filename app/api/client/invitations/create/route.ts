@@ -67,6 +67,20 @@ export async function POST(req: Request) {
     subdomain: requestedSubdomain,
   } = body;
 
+  if (themeId && typeof themeId === "string" && themeId.trim()) {
+    const cleanThemeId = themeId.trim().toLowerCase();
+    const requestedTheme = await prisma.theme.findUnique({
+      where: { id: cleanThemeId },
+      select: { isActive: true },
+    });
+    if (!requestedTheme || !requestedTheme.isActive) {
+      return NextResponse.json(
+        { error: "Tema yang dipilih tidak tersedia atau sedang dinonaktifkan." },
+        { status: 400 }
+      );
+    }
+  }
+
   const finalGroomNick = (groomNickname || groomName || "").trim();
   const finalBrideNick = (brideNickname || brideName || "").trim();
 

@@ -5,148 +5,8 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { compressImageToWebP } from "@/lib/clientImageCompressor";
 
-const THEMES = [
-  // ── Premium Store (themes/premium/) ──
-  {
-    id: "kalandra",
-    name: "Kalandra",
-    subtitle: "Premium",
-    category: "premium",
-    desc: "Modern, Elegan & Minimalis",
-    cover: "/demo/kalandra/cover.webp",
-    tag: "Editorial",
-  },
-  {
-    id: "valente",
-    name: "Valente",
-    subtitle: "Premium",
-    category: "premium",
-    desc: "High-Fashion, Editorial & Mewah",
-    cover: "/demo/valente/cover.webp",
-    tag: "Editorial",
-  },
-  {
-    id: "aurelia",
-    name: "Aurelia",
-    subtitle: "Premium",
-    category: "premium",
-    desc: "Romantis, Sinematik & Anggun",
-    cover: "/demo/aurelia/cover.webp",
-    tag: "Cinematic",
-  },
-  {
-    id: "artisan",
-    name: "Artisan",
-    subtitle: "Premium",
-    category: "premium",
-    desc: "Artistik, Hangat & Vintage",
-    cover: "/demo/artisan/cover.webp",
-    tag: "Vintage",
-  },
+// Pilihan tema dimuat secara dinamis dari API /api/public/themes untuk menjamin sinkronisasi status aktif
 
-  // ── Traditional Store (themes/traditional/) ──
-  {
-    id: "badrika",
-    name: "Badrika",
-    subtitle: "Traditional",
-    category: "traditional",
-    desc: "Walimatul 'Urs & Saoraja Royal",
-    cover: "/demo/badrika/cover.webp",
-    tag: "Saoraja",
-  },
-  {
-    id: "candani",
-    name: "Candani",
-    subtitle: "Traditional",
-    category: "traditional",
-    desc: "Pesona Nusantara Floral",
-    cover: "/demo/candani/cover.webp",
-    tag: "Nusantara",
-  },
-  {
-    id: "dillalucky",
-    name: "Dilla Lucky",
-    subtitle: "Traditional",
-    category: "traditional",
-    desc: "Islami Sakral — Batik Ornament & Penuh Berkah",
-    cover: "/demo/dillalucky/cover.webp",
-    tag: "Islami",
-  },
-  {
-    id: "mayang",
-    name: "Mayang",
-    subtitle: "Traditional",
-    category: "traditional",
-    desc: "Nuansa Adat & Anggun",
-    cover: "/demo/mayang/cover.webp",
-    tag: "Traditional",
-  },
-  {
-    id: "prameswari",
-    name: "Prameswari",
-    subtitle: "Traditional",
-    category: "traditional",
-    desc: "Sakral, Megah & Royal Keraton",
-    cover: "/demo/prameswari/cover.webp",
-    tag: "Keraton",
-  },
-
-  // ── Modern Store (themes/modern/) ──
-  {
-    id: "ameera",
-    name: "Ameera",
-    subtitle: "Modern",
-    category: "modern",
-    desc: "Heritage Modern — Elegan Dark & Nuansa Warisan",
-    cover: "/demo/ameera/cover.webp",
-    tag: "Heritage",
-  },
-  {
-    id: "chronicle",
-    name: "Chronicle",
-    subtitle: "Modern",
-    category: "modern",
-    desc: "High-Fashion Vogue Editorial",
-    cover: "/demo/chronicle/cover.webp",
-    tag: "Editorial",
-  },
-  {
-    id: "lumina",
-    name: "Lumina",
-    subtitle: "Modern",
-    category: "modern",
-    desc: "Minimalist Glass & Cinema",
-    cover: "/demo/lumina/cover.webp",
-    tag: "Glass",
-  },
-  {
-    id: "papercut",
-    name: "Papercut",
-    subtitle: "Modern",
-    category: "modern",
-    desc: "Moody Papercut — Kraft Paper Aesthetic & Artistik",
-    cover: "/demo/papercut/cover.webp",
-    tag: "Papercut",
-  },
-  {
-    id: "solaria",
-    name: "Solaria",
-    subtitle: "Modern",
-    category: "modern",
-    desc: "Romantic Sunset Glow",
-    cover: "/demo/solaria/cover.webp",
-    tag: "Sunset",
-  },
-  {
-    id: "wave",
-    name: "Wave",
-    subtitle: "Modern",
-    category: "modern",
-    desc: "Dark, Moody & Dramatic — Gelombang Elegan",
-    cover: "/demo/wave/cover.webp",
-    tag: "Moody",
-  },
-];
 
 const COLOR_PALETTES = [
   { id: "champagne", name: "Royal Champagne Gold", hex: "#a67c52", desc: "Elegan, netral, universal mewah" },
@@ -251,7 +111,8 @@ export default function EditInvitation() {
   const [uploadingAudio, setUploadingAudio] = useState(false);
   const [adminWhatsapp, setAdminWhatsapp] = useState<string>("");
   const [platformSettings, setPlatformSettings] = useState<any>(null);
-  const [themesList, setThemesList] = useState<any[]>(THEMES);
+  const [themesList, setThemesList] = useState<any[]>([]);
+  const [themesLoading, setThemesLoading] = useState(true);
   const [musicPresets, setMusicPresets] = useState<any[]>([]);
   const [musicLoading, setMusicLoading] = useState(true);
 
@@ -440,7 +301,8 @@ export default function EditInvitation() {
           setThemesList(data);
         }
       })
-      .catch((err) => console.error(err));
+      .catch((err) => console.error(err))
+      .finally(() => setThemesLoading(false));
 
     fetch("/api/public/music")
       .then((r) => r.json())
@@ -1561,7 +1423,17 @@ export default function EditInvitation() {
                   )}
 
                   {/* Grid Tema Ringkas */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  {themesLoading && themesList.length === 0 ? (
+                    <div className="py-10 text-center text-stone-500 text-xs bg-stone-50/50 rounded-2xl border border-stone-200/60">
+                      <div className="inline-block animate-spin rounded-full h-5 w-5 border-2 border-stone-300 border-t-amber-800 mb-2" />
+                      <p className="font-medium">Memuat daftar tema aktif...</p>
+                    </div>
+                  ) : displayedThemes.length === 0 ? (
+                    <div className="py-8 text-center text-stone-500 text-xs bg-stone-50/50 rounded-2xl border border-stone-200/60">
+                      <p className="font-medium">Tidak ada tema yang tersedia untuk kategori ini.</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                     {displayedThemes.map((th) => {
                       const isSelected = Boolean(invitation.themeId) && invitation.themeId === th.id;
                       const isThemeLocked = invitation?.status === "PUBLISHED" || invitation?.status === "EVENT_FINISHED";
@@ -1614,6 +1486,7 @@ export default function EditInvitation() {
                       );
                     })}
                   </div>
+                  )}
                 </div>
               );
             })()}
