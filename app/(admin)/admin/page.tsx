@@ -6625,7 +6625,7 @@ export default function AdminPage() {
 
               <div className="flex items-center gap-2.5">
                 <a
-                  href={`/demo/${demoStudioTheme.id}`}
+                  href={`/demo/${demoStudioTheme.id}${demoStudioSessionTime ? `?t=${demoStudioSessionTime}` : ""}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-500 text-stone-950 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm cursor-pointer"

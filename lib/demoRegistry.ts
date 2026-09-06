@@ -1265,16 +1265,34 @@ export function getDemoThemeData(themeId: string): DemoThemeData {
   return demo;
 }
 
+// Helper to append dynamic cache version to local demo asset URLs
+function appendDemoAssetVersion(url?: string | null, v?: number | string): string {
+  if (!url) return "";
+  if (!v) return url;
+  if (!url.startsWith("/demo/")) return url;
+  if (url.includes("?")) {
+    const [base, qs] = url.split("?");
+    const sp = new URLSearchParams(qs);
+    sp.set("v", String(v));
+    return `${base}?${sp.toString()}`;
+  }
+  return `${url}?v=${v}`;
+}
+
 // Master composer to build ALL sections for the HTML templates
 export function composeDemoTemplateData(
   themeId: string,
   paletteKey: string = "champagne",
-  customData?: Partial<DemoThemeData>
+  customData?: Partial<DemoThemeData>,
+  cacheVersion?: number | string
 ) {
   const baseDemo = getDemoThemeData(themeId);
   const demo: DemoThemeData = customData ? { ...baseDemo, ...customData } : baseDemo;
   const resolvedPalette = customData?.defaultPalette || demo.defaultPalette || paletteKey || "champagne";
   const palette = COLOR_PALETTES[resolvedPalette] || COLOR_PALETTES.champagne;
+
+  const v = cacheVersion || (customData as any)?.cacheVersion || undefined;
+  const withV = (url?: string | null) => appendDemoAssetVersion(url, v);
 
   // 1. Events HTML (Deduplicated Unified Card)
   const sessionsListHtml = demo.events.map((ev) => `
@@ -1329,13 +1347,13 @@ export function composeDemoTemplateData(
   // 3. Gallery Section HTML with Smart Auto-Packing Grid and Zoom Lightbox
   const photosFeedHtml = demo.galleryPhotos.map((imgUrl, i) => `
     <div class="moment-photo-item" data-idx="${i}" onclick="luxOpenZoom(${i})">
-      <img src="${imgUrl}" alt="Our Moment ${i + 1}" loading="lazy" decoding="async">
+      <img src="${withV(imgUrl)}" alt="Our Moment ${i + 1}" loading="lazy" decoding="async">
     </div>
   `).join("");
 
   const allPhotosGridHtml = demo.galleryPhotos.map((imgUrl, i) => `
     <div class="full-gallery-item" onclick="luxOpenZoom(${i})">
-      <img src="${imgUrl}" alt="Photo ${i + 1}" loading="lazy" decoding="async">
+      <img src="${withV(imgUrl)}" alt="Photo ${i + 1}" loading="lazy" decoding="async">
     </div>
   `).join("");
 
@@ -1374,14 +1392,14 @@ export function composeDemoTemplateData(
       <button class="lux-zoom-close" onclick="luxCloseZoom()">✕</button>
       <button class="lux-zoom-nav prev" onclick="luxPrevZoom(event)">‹</button>
       <div class="lux-zoom-img-box" onclick="event.stopPropagation()">
-        <img id="luxZoomActiveImg" src="${demo.galleryPhotos[0] || ''}" alt="Zoom View">
+        <img id="luxZoomActiveImg" src="${withV(demo.galleryPhotos[0] || '')}" alt="Zoom View">
         <div class="lux-zoom-counter" id="luxZoomCounter">1 / ${demo.galleryPhotos.length}</div>
       </div>
       <button class="lux-zoom-nav next" onclick="luxNextZoom(event)">›</button>
     </div>
 
     <script>
-      window.LUX_ALL_PHOTOS = ${JSON.stringify(demo.galleryPhotos)};
+      window.LUX_ALL_PHOTOS = ${JSON.stringify((demo.galleryPhotos || []).map((p) => withV(p)))};
       window.luxActivePhotoIdx = 0;
 
       function ensureModalsOnBody() {
@@ -1659,18 +1677,22 @@ export function composeDemoTemplateData(
   const totalCount = randomSampleMemories.length;
   const isMarquee = totalCount > 5;
 
-  const storyCirclesHtml = randomSampleMemories.map((sm) => `
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('${sm.img}', '${sm.name}')">
+  const storyCirclesHtml = randomSampleMemories.map((sm) => {
+    const vImg = withV(sm.img);
+    const vAlt = withV(sm.alt);
+    return `
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('${vImg}', '${sm.name}')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="${sm.img}" onerror="this.onerror=null;this.src='${sm.alt}';" alt="${sm.name}" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="${vImg}" onerror="this.onerror=null;this.src='${vAlt}';" alt="${sm.name}" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
         ${sm.name.split(" ")[0]}
       </span>
     </div>
-  `).join("");
+  `;
+  }).join("");
 
   const memoriesSectionHtml = `
     <section class="sec-flow slide-section" id="section-memories" style="position: relative; padding: 3rem 1rem;">
@@ -1859,7 +1881,16 @@ export function composeDemoTemplateData(
   const effectiveHomePhoto = (customData as any)?.homePhotoUrl || demo.homePhotoUrl || (localHomeExists ? `/demo/${demo.themeId}/home.webp` : demo.globalBgUrl);
   const defaultCanonExists = fs.existsSync(path.join(process.cwd(), "public", "music", "canon-in-d.ogg"));
   const fallbackSong = defaultCanonExists ? "/music/canon-in-d.ogg" : (fs.existsSync(path.join(process.cwd(), "public", "music", "bermuara.mp3")) ? "/music/bermuara.mp3" : "");
-  const effectiveAudioUrl = (customData as any)?.audioUrl || (demo as any)?.audioUrl || fallbackSong;
+  const effectiveAudioUrl = withV((customData as any)?.audioUrl || (demo as any)?.audioUrl || fallbackSong);
+
+  const effectiveLandingCover = withV(demo.landingCoverUrl);
+  const effectiveSidebarPhoto = withV(demo.sidebarPhotoUrl);
+  const effectiveGlobalBg = withV((customData as any)?.globalBgUrl || demo.globalBgUrl);
+  const effectiveHome = withV(effectiveHomePhoto);
+  const effectiveFooter = withV(rawClosing || `/demo/${demo.themeId}/footer.webp`);
+  const effectiveGroom = withV(demo.groomPhotoUrl);
+  const effectiveBride = withV(demo.bridePhotoUrl);
+  const versionedGallery = (demo.galleryPhotos || []).map((p) => withV(p));
 
   return {
     invitationId: `demo-${demo.themeId}`,
@@ -1905,23 +1936,23 @@ export function composeDemoTemplateData(
     secondInstagram: demo.brideInstagram,
     
     // Exact Standardized Local Assets
-    globalBgUrl: (customData as any)?.globalBgUrl || demo.globalBgUrl,
-    homePhotoUrl: effectiveHomePhoto,
+    globalBgUrl: effectiveGlobalBg,
+    homePhotoUrl: effectiveHome,
     hasCustomHomePhoto: Boolean((customData as any)?.homePhotoUrl || localHomeExists),
-    footerPhotoUrl: rawClosing || `/demo/${demo.themeId}/footer.webp`,
-    groomPhotoUrl: demo.groomPhotoUrl,
-    bridePhotoUrl: demo.bridePhotoUrl,
-    firstPhotoUrl: demo.groomPhotoUrl,
-    secondPhotoUrl: demo.bridePhotoUrl,
-    sidebarPhotoUrl: demo.sidebarPhotoUrl,
-    landingCoverUrl: demo.landingCoverUrl,
-    coverHeroUrl: demo.landingCoverUrl,
-    galleryPhoto1: demo.galleryPhotos[0] || demo.landingCoverUrl,
-    galleryPhoto2: demo.galleryPhotos[1] || demo.landingCoverUrl,
-    galleryPhoto3: demo.galleryPhotos[2] || demo.landingCoverUrl,
-    galleryPhoto4: demo.galleryPhotos[3] || demo.landingCoverUrl,
-    galleryPhoto5: demo.galleryPhotos[4] || demo.landingCoverUrl,
-    galleryPhoto6: demo.galleryPhotos[5] || demo.landingCoverUrl,
+    footerPhotoUrl: effectiveFooter,
+    groomPhotoUrl: effectiveGroom,
+    bridePhotoUrl: effectiveBride,
+    firstPhotoUrl: effectiveGroom,
+    secondPhotoUrl: effectiveBride,
+    sidebarPhotoUrl: effectiveSidebarPhoto,
+    landingCoverUrl: effectiveLandingCover,
+    coverHeroUrl: effectiveLandingCover,
+    galleryPhoto1: versionedGallery[0] || effectiveLandingCover,
+    galleryPhoto2: versionedGallery[1] || effectiveLandingCover,
+    galleryPhoto3: versionedGallery[2] || effectiveLandingCover,
+    galleryPhoto4: versionedGallery[3] || effectiveLandingCover,
+    galleryPhoto5: versionedGallery[4] || effectiveLandingCover,
+    galleryPhoto6: versionedGallery[5] || effectiveLandingCover,
     
     openingQuote: demo.openingQuote,
     openingQuoteRef: demo.openingQuoteRef,
@@ -1986,9 +2017,9 @@ export function composeDemoTemplateData(
     },
 
     // Adaptive Full-Height Closing Section (Supports closingPhotoUrl and footerPhotoUrl)
-    closingPhotoUrl: rawClosing,
+    closingPhotoUrl: effectiveFooter,
     hasClosingPhoto: Boolean(rawClosing),
     closingPhotoClass: rawClosing ? "has-closing-photo" : "no-closing-photo",
-    closingBgStyle: rawClosing ? `background-image: url('${rawClosing}');` : "",
+    closingBgStyle: effectiveFooter ? `background-image: url('${effectiveFooter}');` : "",
   };
 }

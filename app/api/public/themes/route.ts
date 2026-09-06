@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { DEMO_REGISTRY } from "@/lib/demoRegistry";
+import fs from "fs";
+import path from "path";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -49,6 +51,20 @@ export async function GET() {
           ? "Traditional"
           : "Modern");
 
+      // Verify if specific thumbnail files actually exist on disk to prevent 404 cascade
+      const demoThemeDir = path.join(process.cwd(), "public", "demo", themeKey);
+      const hasMobileThumb = fs.existsSync(path.join(demoThemeDir, "thumbnail_mobile.webp"));
+      const hasDesktopThumb = fs.existsSync(path.join(demoThemeDir, "thumbnail_desktop.webp"));
+      const defaultCoverFallback = source?.landingCoverUrl || `/demo/${themeKey}/cover.webp`;
+
+      const rawThumbMobile = customData?.thumbnailMobileUrl || (hasMobileThumb ? `/demo/${themeKey}/thumbnail_mobile.webp` : defaultCoverFallback);
+      const rawThumbDesktop = customData?.thumbnailDesktopUrl || (hasDesktopThumb ? `/demo/${themeKey}/thumbnail_desktop.webp` : defaultCoverFallback);
+
+      const thumbMobile = rawThumbMobile.includes("?") ? `${rawThumbMobile}&v=${v}` : `${rawThumbMobile}?v=${v}`;
+      const thumbDesktop = rawThumbDesktop.includes("?") ? `${rawThumbDesktop}&v=${v}` : `${rawThumbDesktop}?v=${v}`;
+      const rawCoverUrl = source?.landingCoverUrl || `/demo/${themeKey}/cover.webp`;
+      const coverUrl = rawCoverUrl.includes("?") ? `${rawCoverUrl}&v=${v}` : `${rawCoverUrl}?v=${v}`;
+
       return {
         id: t.id,
         name: t.name,
@@ -56,17 +72,13 @@ export async function GET() {
         category: t.category.toUpperCase(),
         tagline,
         desc: tagline,
-        thumbnailMobile: customData?.thumbnailMobileUrl
-          ? (customData.thumbnailMobileUrl.includes("?") ? `${customData.thumbnailMobileUrl}&v=${v}` : `${customData.thumbnailMobileUrl}?v=${v}`)
-          : `/demo/${themeKey}/thumbnail_mobile.webp?v=${v}`,
-        thumbnailDesktop: customData?.thumbnailDesktopUrl
-          ? (customData.thumbnailDesktopUrl.includes("?") ? `${customData.thumbnailDesktopUrl}&v=${v}` : `${customData.thumbnailDesktopUrl}?v=${v}`)
-          : `/demo/${themeKey}/thumbnail_desktop.webp?v=${v}`,
+        thumbnailMobile: thumbMobile,
+        thumbnailDesktop: thumbDesktop,
         // Cover card data — DB-first, then registry, then fallback
         groomName: source?.groomDisplayName || source?.groomName || "Pengantin Pria",
         brideName: source?.brideDisplayName || source?.brideName || "Pengantin Wanita",
         eyebrow: source?.tagline || tagline || "Wedding Invitation",
-        coverUrl: source?.landingCoverUrl || `/demo/${themeKey}/cover.webp`,
+        coverUrl,
         weddingDay: source?.weddingDateDay || "--",
         weddingMonth: source?.weddingDateMonth || "--",
         weddingYear: source?.weddingDateYear || "----",

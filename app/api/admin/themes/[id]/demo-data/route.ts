@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { DEMO_REGISTRY } from "@/lib/demoRegistry";
@@ -65,7 +66,7 @@ export async function POST(
     const body = await req.json();
 
     const settingKey = `theme_demo_${themeId}`;
-    await prisma.adminSetting.upsert({
+    const updatedSetting = await prisma.adminSetting.upsert({
       where: { key: settingKey },
       create: {
         key: settingKey,
@@ -78,9 +79,17 @@ export async function POST(
       },
     });
 
+    const version = updatedSetting.updatedAt ? new Date(updatedSetting.updatedAt).getTime() : Date.now();
     // Re-compile static demo HTML file instantly
     const { compileAndSaveStaticDemo } = await import("@/lib/demoPublisher");
-    await compileAndSaveStaticDemo(themeId, body);
+    await compileAndSaveStaticDemo(themeId, body, version);
+
+    // Invalidate Next.js cache
+    try {
+      revalidatePath("/demo");
+      revalidatePath(`/demo/${themeId}`);
+      revalidatePath("/api/public/themes");
+    } catch {}
 
     return NextResponse.json({
       success: true,

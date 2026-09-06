@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import fs from "fs";
 import path from "path";
@@ -115,7 +116,7 @@ export async function POST(
         customData.galleryPhotos[idx] = rawUrl;
       }
 
-      await prisma.adminSetting.upsert({
+      const upserted = await prisma.adminSetting.upsert({
         where: { key: settingKey },
         create: {
           key: settingKey,
@@ -128,8 +129,15 @@ export async function POST(
         },
       });
 
+      const version = upserted.updatedAt ? new Date(upserted.updatedAt).getTime() : Date.now();
       const { compileAndSaveStaticDemo } = await import("@/lib/demoPublisher");
-      await compileAndSaveStaticDemo(themeId, customData);
+      await compileAndSaveStaticDemo(themeId, customData, version);
+
+      try {
+        revalidatePath("/demo");
+        revalidatePath(`/demo/${themeId}`);
+        revalidatePath("/api/public/themes");
+      } catch {}
     } catch (publishErr) {
       console.error("[DemoAsset-Publish-Error]:", publishErr);
     }

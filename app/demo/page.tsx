@@ -184,7 +184,7 @@ export default function CatalogGridShowcase() {
                 <Link
                   href={`/demo/${theme.id}`}
                   target="_blank"
-                  className={`relative bg-stone-950 overflow-hidden block cursor-pointer group ${
+                  className={`relative bg-stone-100 overflow-hidden block cursor-pointer group ${
                     viewMode === "mobile" ? "aspect-[3/4]" : "aspect-[16/9]"
                   }`}
                 >
@@ -192,7 +192,6 @@ export default function CatalogGridShowcase() {
                   <img
                     src={theme.thumbnailMobile || `/demo/${theme.id}/thumbnail_mobile.webp`}
                     alt={`${theme.name} Mobile Preview`}
-                    loading="lazy"
                     className={`absolute inset-0 w-full h-full object-cover object-top transition duration-300 ease-in-out group-hover:scale-105 ${
                       viewMode === "mobile" ? "opacity-100 z-[1] pointer-events-auto" : "opacity-0 z-0 pointer-events-none"
                     }`}
@@ -210,7 +209,6 @@ export default function CatalogGridShowcase() {
                   <img
                     src={theme.thumbnailDesktop || `/demo/${theme.id}/thumbnail_desktop.webp`}
                     alt={`${theme.name} Desktop Preview`}
-                    loading="lazy"
                     className={`absolute inset-0 w-full h-full object-cover object-top transition duration-300 ease-in-out group-hover:scale-105 ${
                       viewMode === "desktop" ? "opacity-100 z-[1] pointer-events-auto" : "opacity-0 z-0 pointer-events-none"
                     }`}

@@ -7,22 +7,33 @@ import { prisma } from "./prisma";
 /**
  * Compiles a single theme demo into a standalone static HTML file in public/demo/[themeId]/index.html
  */
-export async function compileAndSaveStaticDemo(themeId: string, customDemoData?: any): Promise<string> {
+export async function compileAndSaveStaticDemo(
+  themeId: string,
+  customDemoData?: any,
+  forcedVersion?: number | string
+): Promise<string> {
   const cleanId = themeId.toLowerCase().trim();
   let resolvedData = customDemoData;
-  if (resolvedData === undefined) {
-    try {
-      const setting = await prisma.adminSetting.findUnique({
-        where: { key: `theme_demo_${cleanId}` },
-      });
-      if (setting && setting.value) {
+  let settingUpdatedAt: number = Date.now();
+
+  try {
+    const setting = await prisma.adminSetting.findUnique({
+      where: { key: `theme_demo_${cleanId}` },
+      select: { value: true, updatedAt: true },
+    });
+    if (setting) {
+      if (resolvedData === undefined && setting.value) {
         resolvedData = JSON.parse(setting.value);
       }
-    } catch {}
-  }
+      if (setting.updatedAt) {
+        settingUpdatedAt = new Date(setting.updatedAt).getTime();
+      }
+    }
+  } catch {}
 
+  const version = forcedVersion || settingUpdatedAt || Date.now();
   const chosenPalette = resolvedData?.defaultPalette || resolvedData?.colorPalette;
-  const data = composeDemoTemplateData(cleanId, chosenPalette, resolvedData);
+  const data = composeDemoTemplateData(cleanId, chosenPalette, resolvedData, version);
 
   // Construct absolute OpenGraph meta tags for rich WhatsApp & social share previews
   const demoHost = "https://luxvite.id";
