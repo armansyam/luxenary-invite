@@ -19,6 +19,10 @@ export default async function ReceptionistPage({ params }: PageProps) {
         id: true,
         staffPin: true,
         status: true,
+        groomNickname: true,
+        brideNickname: true,
+        groomName: true,
+        brideName: true,
         order: { select: { planType: true } },
       },
     }),
@@ -65,9 +69,28 @@ export default async function ReceptionistPage({ params }: PageProps) {
     );
   }
 
+  const groomFirst = (invitation.groomNickname || invitation.groomName || "").trim();
+  const brideFirst = (invitation.brideNickname || invitation.brideName || "").trim();
+  
+  let clientInitials = "";
+  if (groomFirst && brideFirst) {
+    clientInitials = `${groomFirst.charAt(0).toUpperCase()} & ${brideFirst.charAt(0).toUpperCase()}`;
+  } else if (groomFirst) {
+    clientInitials = groomFirst.charAt(0).toUpperCase();
+  } else if (brideFirst) {
+    clientInitials = brideFirst.charAt(0).toUpperCase();
+  }
+
+  const clientNames = groomFirst && brideFirst ? `${groomFirst} & ${brideFirst}` : (groomFirst || brideFirst || "");
+
   return (
     <StaffLockScreen invitationId={invitation.id}>
-      <ReceptionistScannerClient invitationId={invitation.id} platformName={platformName} />
+      <ReceptionistScannerClient 
+        invitationId={invitation.id} 
+        platformName={platformName} 
+        clientInitials={clientInitials}
+        clientNames={clientNames}
+      />
     </StaffLockScreen>
   );
 }

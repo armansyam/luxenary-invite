@@ -31,10 +31,14 @@ function getCleanCameraLabel(label: string, index: number): string {
 export default function ReceptionistScannerClient({ 
   invitationId,
   platformName,
+  clientInitials,
+  clientNames,
   onLock
 }: { 
   invitationId: string;
   platformName?: string;
+  clientInitials?: string;
+  clientNames?: string;
   onLock?: () => void;
 }) {
   const staffAuth = useStaffAuth();
@@ -46,6 +50,10 @@ export default function ReceptionistScannerClient({
   const [scanResult, setScanResult] = useState<{ type: "success" | "error"; message: string; guest?: Guest; showDuplicatePrompt?: boolean; scannedName?: string; } | null>(null);
   const [scannerMode, setScannerMode] = useState<"PHYSICAL" | "CAMERA">("PHYSICAL");
   const [showManualList, setShowManualList] = useState(false);
+
+  // Ambient Screensaver State (Standby Mode)
+  const [isScreensaverActive, setIsScreensaverActive] = useState(false);
+  const [currentTime, setCurrentTime] = useState("");
 
   // Multi-Camera & Viewfinder States (Laptop Webcam & Tablet Support)
   const [cameraList, setCameraList] = useState<{ id: string; label: string }[]>([]);
@@ -60,10 +68,88 @@ export default function ReceptionistScannerClient({
   const isScanningLockedRef = useRef(false);
   const isTransitioningRef = useRef(false);
   const guestsRef = useRef(guests);
+  const scanResultRef = useRef(scanResult);
+  const isScreensaverActiveRef = useRef(isScreensaverActive);
 
   useEffect(() => {
     guestsRef.current = guests;
   }, [guests]);
+
+  useEffect(() => {
+    scanResultRef.current = scanResult;
+  }, [scanResult]);
+
+  useEffect(() => {
+    isScreensaverActiveRef.current = isScreensaverActive;
+  }, [isScreensaverActive]);
+
+  // Auto-Dismiss Notifikasi Hasil Scan (15 Detik Kembali ke "Siaga Menerima Tamu")
+  useEffect(() => {
+    if (!scanResult) return;
+
+    const autoDismissTimer = setTimeout(() => {
+      setScanResult(null);
+    }, 15000);
+
+    return () => clearTimeout(autoDismissTimer);
+  }, [scanResult]);
+
+  // Real-time Clock for Screensaver
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      setCurrentTime(
+        now.toLocaleTimeString("id-ID", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        })
+      );
+    };
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Idle Timer Detector untuk Ambient Screensaver (120 Detik / 2 Menit)
+  useEffect(() => {
+    let idleTimer: NodeJS.Timeout;
+
+    const resetIdleTimer = () => {
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => {
+        setIsScreensaverActive(true);
+      }, 120000);
+    };
+
+    let lastActivity = Date.now();
+    const handleUserActivity = (e: Event) => {
+      const now = Date.now();
+      if (now - lastActivity > 1000) {
+        lastActivity = now;
+        resetIdleTimer();
+      }
+      // Jika screensaver sedang aktif dan terdeteksi interaksi, bangunkan layar seketika
+      if (isScreensaverActiveRef.current && (e.type === "keydown" || e.type === "mousedown" || e.type === "touchstart")) {
+        setIsScreensaverActive(false);
+      }
+    };
+
+    window.addEventListener("mousemove", handleUserActivity, { passive: true });
+    window.addEventListener("mousedown", handleUserActivity, { passive: true });
+    window.addEventListener("keydown", handleUserActivity, { passive: true });
+    window.addEventListener("touchstart", handleUserActivity, { passive: true });
+
+    resetIdleTimer();
+
+    return () => {
+      clearTimeout(idleTimer);
+      window.removeEventListener("mousemove", handleUserActivity);
+      window.removeEventListener("mousedown", handleUserActivity);
+      window.removeEventListener("keydown", handleUserActivity);
+      window.removeEventListener("touchstart", handleUserActivity);
+    };
+  }, []);
 
   // Fullscreen Change Event Tracker
   useEffect(() => {
@@ -104,25 +190,58 @@ export default function ReceptionistScannerClient({
   };
 
   const safeStopScanner = useCallback(async () => {
-    const scanner = html5QrCodeRef.current;
-    if (!scanner) return;
-
-    if (isTransitioningRef.current) return;
-
+    // 1. Matikan langsung semua hardware video track di DOM secara paksa agar lampu webcam seketika padam
     try {
-      isTransitioningRef.current = true;
-      if (scanner.isScanning) {
-        await scanner.stop();
+      const qrReaderEl = document.getElementById("qr-reader");
+      if (qrReaderEl) {
+        const videoElements = qrReaderEl.querySelectorAll("video");
+        videoElements.forEach((video) => {
+          if (video.srcObject) {
+            const stream = video.srcObject as MediaStream;
+            stream.getTracks().forEach((track) => {
+              try {
+                track.stop();
+              } catch {}
+            });
+            video.srcObject = null;
+          }
+          try {
+            video.pause();
+            video.removeAttribute("src");
+            video.load();
+          } catch {}
+        });
       }
-      try {
-        await scanner.clear();
-      } catch {}
-    } catch (err) {
-      console.warn("Non-fatal scanner stop notice:", err);
-    } finally {
-      isTransitioningRef.current = false;
-      html5QrCodeRef.current = null;
+    } catch (domErr) {
+      console.warn("DOM video track cleanup notice:", domErr);
     }
+
+    // 2. Hentikan instance Html5Qrcode jika sedang aktif
+    const scanner = html5QrCodeRef.current;
+    if (scanner) {
+      try {
+        isTransitioningRef.current = true;
+        if (scanner.isScanning) {
+          await scanner.stop();
+        }
+        try {
+          await scanner.clear();
+        } catch {}
+      } catch (err) {
+        console.warn("Non-fatal scanner stop notice:", err);
+      } finally {
+        isTransitioningRef.current = false;
+        html5QrCodeRef.current = null;
+      }
+    }
+
+    // 3. Bersihkan elemen DOM
+    try {
+      const qrReaderEl = document.getElementById("qr-reader");
+      if (qrReaderEl) {
+        qrReaderEl.innerHTML = "";
+      }
+    } catch {}
   }, []);
 
   // Audio Beep Feedback via Web Audio API (Offline, zero dependency)
@@ -236,6 +355,7 @@ export default function ReceptionistScannerClient({
 
   // 3. Handle Scan / Search
   const handleCheckIn = (guest: Guest) => {
+    setIsScreensaverActive(false);
     if (guest.isTokenRedeemed) {
       setScanResult({ 
         type: "error", 
@@ -288,6 +408,7 @@ export default function ReceptionistScannerClient({
   };
 
   const processScanToken = (token: string) => {
+    setIsScreensaverActive(false);
     if (!token) return;
     let targetName = token;
     let targetCategory = "Umum";
@@ -341,12 +462,15 @@ export default function ReceptionistScannerClient({
   useEffect(() => {
     let isCancelled = false;
 
-    if (scannerMode !== "CAMERA") {
+    if (scannerMode !== "CAMERA" || isScreensaverActive) {
       safeStopScanner();
-      const timer = setTimeout(() => {
-        if (inputRef.current) inputRef.current.focus();
-      }, 80);
-      return () => clearTimeout(timer);
+      if (scannerMode !== "CAMERA") {
+        const timer = setTimeout(() => {
+          if (inputRef.current) inputRef.current.focus();
+        }, 80);
+        return () => clearTimeout(timer);
+      }
+      return;
     }
 
     setIsCameraLoading(true);
@@ -411,7 +535,7 @@ export default function ReceptionistScannerClient({
             },
           },
           (decodedText) => {
-            if (isScanningLockedRef.current) return;
+            if (isScanningLockedRef.current || scanResultRef.current !== null) return;
             isScanningLockedRef.current = true;
             playBeep();
             setScanCooldown(true);
@@ -452,7 +576,7 @@ export default function ReceptionistScannerClient({
       isCancelled = true;
       safeStopScanner();
     };
-  }, [scannerMode, selectedCameraIndex, playBeep, invitationId, safeStopScanner]);
+  }, [scannerMode, selectedCameraIndex, isScreensaverActive, playBeep, invitationId, safeStopScanner]);
 
   const handleSwitchCamera = () => {
     if (cameraList.length <= 1) return;
@@ -480,11 +604,11 @@ export default function ReceptionistScannerClient({
 
   return (
     <div 
-      className="min-h-screen bg-stone-100 text-stone-900 flex flex-col font-sans selection:bg-amber-500 selection:text-white"
+      className="h-screen overflow-hidden bg-stone-100 text-stone-900 flex flex-col font-sans selection:bg-amber-500 selection:text-white"
       style={{ colorScheme: 'light' }}
     >
       {/* Header */}
-      <header className="relative bg-stone-900 text-white px-6 py-3.5 shadow-md flex justify-between items-center">
+      <header className="relative bg-stone-900 text-white px-6 py-3.5 shadow-md flex justify-between items-center flex-shrink-0">
         {/* Left: Brand Logo & Platform Name */}
         <div className="flex items-center gap-3 z-10">
           <BrandLogo size="sm" showName brandName={platformName || "Platform Undangan"} />
@@ -554,7 +678,18 @@ export default function ReceptionistScannerClient({
             </div>
           )}
 
-          <div className="h-4 w-px bg-stone-700/80 mx-0.5"></div>
+          {/* Standby Screensaver Button */}
+          <button
+            type="button"
+            onClick={() => setIsScreensaverActive(true)}
+            title="Mode Standby (Screensaver)"
+            aria-label="Mode Standby"
+            className="w-9 h-9 rounded-xl flex items-center justify-center transition duration-150 shadow-sm cursor-pointer border bg-stone-800/90 hover:bg-stone-700 active:bg-stone-600 text-stone-300 hover:text-white border-stone-700/80"
+          >
+            <svg className="w-4 h-4 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+            </svg>
+          </button>
 
           {/* Fullscreen Kiosk Mode Button (Icon SVG only) */}
           <button
@@ -594,102 +729,120 @@ export default function ReceptionistScannerClient({
         </div>
       </header>
 
-      <main className="flex-1 p-6 max-w-5xl mx-auto w-full grid grid-cols-1 md:grid-cols-12 gap-6">
+      <main className="flex-1 p-4 md:p-6 max-w-6xl mx-auto w-full grid grid-cols-1 md:grid-cols-12 gap-6 min-h-0 overflow-hidden">
         
         {/* Left Col: Result Card (Big Display) */}
-        <div className="md:col-span-5 flex flex-col gap-6">
-          <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6 flex-1 flex flex-col justify-center min-h-[400px]">
-            {!scanResult ? (
-              <div className="text-center text-stone-400 flex flex-col items-center justify-center">
-                <div className="w-20 h-20 bg-stone-100 rounded-full flex items-center justify-center mb-4">
-                  <svg className="w-8 h-8 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+        <div className="md:col-span-5 h-full flex flex-col min-h-0">
+          <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6 h-full flex flex-col justify-between overflow-hidden">
+            <div className="my-auto w-full">
+              {!scanResult ? (
+                <div className="text-center text-stone-400 flex flex-col items-center justify-center">
+                  <div className="w-20 h-20 bg-stone-100 rounded-full flex items-center justify-center mb-4">
+                    <svg className="w-8 h-8 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                  </div>
+                  <h3 className="font-bold text-lg text-stone-600 mb-1">Siap Menerima Tamu</h3>
+                  <p className="text-sm">Silakan lakukan scan QR atau cari nama tamu.</p>
                 </div>
-                <h3 className="font-bold text-lg text-stone-600 mb-1">Siap Menerima Tamu</h3>
-                <p className="text-sm">Silakan lakukan scan QR atau cari nama tamu.</p>
-              </div>
-            ) : (
-              <div className={`p-8 rounded-2xl border w-full text-center shadow-inner ${scanResult.type === 'success' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                {scanResult.type === 'success' ? (
-                  <>
-                    <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-5 shadow-xl shadow-green-500/30">
-                      <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
-                    </div>
-                    
-                    <h3 className="text-3xl md:text-4xl font-black text-green-950 mb-3 tracking-tight">{scanResult.guest?.name}</h3>
-                    
-                    {/* Badge Kategori & Kuota */}
-                    <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
-                      {scanResult.guest?.category && (
-                        <span className="inline-flex items-center px-4 py-1.5 bg-green-200/80 text-green-900 rounded-full text-xs font-bold uppercase tracking-wider border border-green-300 shadow-sm">
-                          {scanResult.guest.category}
+              ) : (
+                <div className={`p-8 rounded-2xl border w-full text-center shadow-inner ${scanResult.type === 'success' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                  {scanResult.type === 'success' ? (
+                    <>
+                      <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-5 shadow-xl shadow-green-500/30">
+                        <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                      </div>
+                      
+                      <h3 className="text-3xl md:text-4xl font-black text-green-950 mb-3 tracking-tight">{scanResult.guest?.name}</h3>
+                      
+                      {/* Badge Kategori & Kuota */}
+                      <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
+                        {scanResult.guest?.category && (
+                          <span className="inline-flex items-center px-4 py-1.5 bg-green-200/80 text-green-900 rounded-full text-xs font-bold uppercase tracking-wider border border-green-300 shadow-sm">
+                            {scanResult.guest.category}
+                          </span>
+                        )}
+                        <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-stone-100 text-stone-700 rounded-full text-xs font-bold uppercase tracking-wider border border-stone-200 shadow-sm">
+                          <svg className="w-3.5 h-3.5 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                          </svg>
+                          {scanResult.guest?.guestQuota ? `${scanResult.guest.guestQuota} Pax` : "1 Pax"}
                         </span>
+                      </div>
+
+                      {/* Informasi Nomor Meja (Focal Card) */}
+                      <div className="my-4 p-4 bg-white/95 border border-green-200/90 rounded-2xl shadow-sm flex items-center justify-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-amber-500/15 text-amber-600 flex items-center justify-center">
+                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                          </svg>
+                        </div>
+                        <div className="text-left">
+                          <p className="text-[10px] uppercase font-bold text-stone-400 tracking-wider">Lokasi Meja / Tempat Duduk</p>
+                          <p className="text-2xl font-black text-stone-900">
+                            {scanResult.guest?.tableNumber ? `Meja ${scanResult.guest.tableNumber}` : "Bebas / Tanpa Meja"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <p className="text-green-700 font-bold mt-2 text-base">{scanResult.message}</p>
+                    </>
+                  ) : (
+                     <>
+                       <div className="w-24 h-24 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-5 shadow-xl shadow-red-500/30">
+                        <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
+                      </div>
+                      <h3 className="text-2xl font-bold text-red-900 mb-2">{scanResult.guest?.name || "Akses Ditolak"}</h3>
+                      <p className="text-red-700 font-medium text-base mb-3">{scanResult.message}</p>
+                      
+                      {scanResult.guest && (
+                        <div className="my-3 p-3.5 bg-white/95 border border-red-200 rounded-xl shadow-sm inline-flex items-center gap-3">
+                          <span className="text-xs font-bold text-stone-500 uppercase">Lokasi Duduk:</span>
+                          <span className="text-base font-extrabold text-stone-900">
+                            {scanResult.guest.tableNumber ? `Meja ${scanResult.guest.tableNumber}` : "Bebas / Tanpa Meja"}
+                          </span>
+                          <span className="text-xs text-stone-400">&bull;</span>
+                          <span className="text-xs font-bold text-stone-700">{scanResult.guest.guestQuota || 1} Pax</span>
+                        </div>
                       )}
-                      <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-stone-100 text-stone-700 rounded-full text-xs font-bold uppercase tracking-wider border border-stone-200 shadow-sm">
-                        <svg className="w-3.5 h-3.5 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                        </svg>
-                        {scanResult.guest?.guestQuota ? `${scanResult.guest.guestQuota} Pax` : "1 Pax"}
-                      </span>
-                    </div>
 
-                    {/* Informasi Nomor Meja (Focal Card) */}
-                    <div className="my-4 p-4 bg-white/95 border border-green-200/90 rounded-2xl shadow-sm flex items-center justify-center gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-amber-500/15 text-amber-600 flex items-center justify-center">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                        </svg>
-                      </div>
-                      <div className="text-left">
-                        <p className="text-[10px] uppercase font-bold text-stone-400 tracking-wider">Lokasi Meja / Tempat Duduk</p>
-                        <p className="text-2xl font-black text-stone-900">
-                          {scanResult.guest?.tableNumber ? `Meja ${scanResult.guest.tableNumber}` : "Bebas / Tanpa Meja"}
-                        </p>
-                      </div>
-                    </div>
+                      {scanResult.showDuplicatePrompt && scanResult.scannedName && (
+                        <div className="mt-6 pt-6 border-t border-red-200">
+                          <p className="text-sm text-red-800 mb-3">Apakah ini tamu umum baru yang namanya kebetulan sama?</p>
+                          <button
+                            onClick={() => handleDuplicateGuestArrival(scanResult.scannedName!)}
+                            className="w-full py-3 bg-red-800 hover:bg-red-900 text-white font-bold rounded-xl transition"
+                          >
+                            Tandai sebagai Orang Berbeda
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
 
-                    <p className="text-green-700 font-bold mt-2 text-base">{scanResult.message}</p>
-                  </>
-                ) : (
-                   <>
-                     <div className="w-24 h-24 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-5 shadow-xl shadow-red-500/30">
-                      <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
-                    </div>
-                    <h3 className="text-2xl font-bold text-red-900 mb-2">{scanResult.guest?.name || "Akses Ditolak"}</h3>
-                    <p className="text-red-700 font-medium text-base mb-3">{scanResult.message}</p>
-                    
-                    {scanResult.guest && (
-                      <div className="my-3 p-3.5 bg-white/95 border border-red-200 rounded-xl shadow-sm inline-flex items-center gap-3">
-                        <span className="text-xs font-bold text-stone-500 uppercase">Lokasi Duduk:</span>
-                        <span className="text-base font-extrabold text-stone-900">
-                          {scanResult.guest.tableNumber ? `Meja ${scanResult.guest.tableNumber}` : "Bebas / Tanpa Meja"}
-                        </span>
-                        <span className="text-xs text-stone-400">&bull;</span>
-                        <span className="text-xs font-bold text-stone-700">{scanResult.guest.guestQuota || 1} Pax</span>
-                      </div>
-                    )}
-
-                    {scanResult.showDuplicatePrompt && scanResult.scannedName && (
-                      <div className="mt-6 pt-6 border-t border-red-200">
-                        <p className="text-sm text-red-800 mb-3">Apakah ini tamu umum baru yang namanya kebetulan sama?</p>
-                        <button
-                          onClick={() => handleDuplicateGuestArrival(scanResult.scannedName!)}
-                          className="w-full py-3 bg-red-800 hover:bg-red-900 text-white font-bold rounded-xl transition"
-                        >
-                          Tandai sebagai Orang Berbeda
-                        </button>
-                      </div>
-                    )}
-                  </>
-                )}
+            {/* Tombol Reset ke Siaga Scan */}
+            {scanResult && (
+              <div className="mt-4 pt-3 border-t border-stone-200/60 flex justify-center flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setScanResult(null)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-white hover:bg-stone-100 text-stone-700 rounded-xl text-xs font-semibold border border-stone-200 transition cursor-pointer shadow-2xs"
+                >
+                  <svg className="w-3.5 h-3.5 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  <span>Kembali ke Siaga Scan</span>
+                </button>
               </div>
             )}
           </div>
         </div>
 
         {/* Right Col: Scanner Input & Guest List */}
-        <div className="md:col-span-7 flex flex-col gap-6">
-          <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-stone-100 bg-stone-50/70 flex items-center justify-between">
+        <div className="md:col-span-7 h-full flex flex-col min-h-0">
+          <div className="bg-white rounded-2xl shadow-sm border border-stone-200 h-full flex flex-col overflow-hidden">
+            <div className="px-6 py-4 border-b border-stone-100 bg-stone-50/70 flex items-center justify-between flex-shrink-0">
               <div className="flex items-center gap-3">
                 <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${scannerMode === 'PHYSICAL' ? 'bg-amber-500/10 text-amber-600' : 'bg-emerald-500/10 text-emerald-600'}`}>
                   {scannerMode === "PHYSICAL" ? (
@@ -727,7 +880,6 @@ export default function ReceptionistScannerClient({
                   <>
                     <svg className="w-4 h-4 text-amber-500 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                     <span>Buka Kamera</span>
                   </>
@@ -745,7 +897,7 @@ export default function ReceptionistScannerClient({
               </button>
             </div>
             
-            <div className="p-6">
+            <div className="flex-1 p-6 overflow-y-auto custom-scrollbar">
               {/* Mode Scanner Fisik */}
               <div className={scannerMode === "PHYSICAL" ? "block" : "hidden"}>
                 <p className="text-xs text-stone-500 mb-4 text-center">Gunakan alat scanner barcode tembak (Bluetooth/USB) atau ketik nama tamu.</p>
@@ -812,9 +964,9 @@ export default function ReceptionistScannerClient({
                   {/* Camera Controls & Status Bar */}
                   <div className="flex items-center justify-between px-1 py-1">
                     <div className="flex items-center gap-2">
-                      <span className={`w-2 h-2 rounded-full ${isCameraLoading ? 'bg-amber-400 animate-ping' : cameraError ? 'bg-red-500' : 'bg-emerald-500 animate-pulse'}`} />
+                      <span className={`w-2 h-2 rounded-full ${isCameraLoading ? 'bg-amber-400 animate-ping' : cameraError ? 'bg-red-500' : scanResult ? 'bg-amber-400' : 'bg-emerald-500 animate-pulse'}`} />
                       <span className="text-xs font-semibold text-stone-600">
-                        {isCameraLoading ? "Menyiapkan Kamera..." : cameraError ? "Kamera Terkendala" : "Kamera Siap Scan"}
+                        {isCameraLoading ? "Menyiapkan Kamera..." : cameraError ? "Kamera Terkendala" : scanResult ? "Pemindaian Dijeda (Hasil Tampil)" : "Kamera Siap Scan"}
                       </span>
                       {!isCameraLoading && !cameraError && cameraList[selectedCameraIndex]?.label && (
                         <span className="hidden sm:inline-block text-[11px] text-stone-400">
@@ -880,7 +1032,7 @@ export default function ReceptionistScannerClient({
                         <div id="qr-reader" className="w-full"></div>
 
                         {/* Visual scanning laser beam */}
-                        {!scanCooldown && !isCameraLoading && (
+                        {!scanCooldown && !isCameraLoading && !scanResult && (
                           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                             <div className="w-52 h-52 sm:w-64 sm:h-64 relative">
                               <div 
@@ -925,7 +1077,7 @@ export default function ReceptionistScannerClient({
                     #qr-reader video {
                       border-radius: 0.75rem;
                       width: 100% !important;
-                      max-height: 440px;
+                      max-height: 380px;
                       object-fit: cover;
                     }
                     #qr-reader__scan_region {
@@ -936,12 +1088,85 @@ export default function ReceptionistScannerClient({
                     #qr-reader__dashboard {
                       display: none !important;
                     }
+                    .custom-scrollbar::-webkit-scrollbar {
+                      width: 5px;
+                    }
+                    .custom-scrollbar::-webkit-scrollbar-track {
+                      background: transparent;
+                    }
+                    .custom-scrollbar::-webkit-scrollbar-thumb {
+                      background: #e7e5e4;
+                      border-radius: 9999px;
+                    }
+                    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                      background: #d6d3d1;
+                    }
                   `}</style>
                 </div>
             </div>
           </div>
         </div>
       </main>
+
+      {/* Ambient Standby Screensaver Overlay (Watermark Inisial Mempelai) */}
+      {isScreensaverActive && (
+        <div
+          onClick={() => setIsScreensaverActive(false)}
+          className="fixed inset-0 z-50 bg-stone-950 flex flex-col justify-between items-center p-6 sm:p-10 select-none cursor-pointer animate-in fade-in duration-500 overflow-hidden"
+          style={{
+            backgroundImage: "radial-gradient(circle at center, rgba(38, 33, 28, 0.96) 0%, rgba(12, 10, 9, 0.99) 70%)",
+          }}
+        >
+          {/* Top Bar Screensaver: Jam Digital & Status Mini */}
+          <div className="w-full flex justify-between items-center text-stone-500 text-xs font-mono tracking-widest uppercase">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-amber-400/80"></span>
+              <span className="text-stone-400 font-semibold tracking-wider text-[11px]">Mode Standby &bull; Hemat Daya</span>
+            </div>
+            <div className="text-stone-300 font-bold tracking-widest text-sm sm:text-base">
+              {currentTime}
+            </div>
+            <div className="text-stone-500 text-[11px] hidden sm:block">
+              {platformName || "Luxenary Invite"}
+            </div>
+          </div>
+
+          {/* Center: Monogram Watermark Keren Agak Besar di Tengah */}
+          <div className="my-auto flex flex-col items-center justify-center text-center relative px-4">
+            {/* Watermark Glow Ambient */}
+            <div className="absolute w-80 h-80 sm:w-[420px] sm:h-[420px] rounded-full bg-amber-500/5 blur-3xl pointer-events-none -z-10 animate-pulse"></div>
+
+            {/* Inisial Raksasa Watermark Monogram */}
+            <div className="font-serif text-8xl sm:text-9xl md:text-[140px] font-extralight tracking-widest text-transparent bg-clip-text bg-gradient-to-b from-stone-100/40 via-stone-300/15 to-transparent drop-shadow-2xl leading-none mb-3">
+              {clientInitials || "L & I"}
+            </div>
+
+            {/* Garis Aksen Emas Halus */}
+            <div className="w-28 sm:w-44 h-px bg-gradient-to-r from-transparent via-amber-400/40 to-transparent my-3"></div>
+
+            {/* Nama Pasangan / Judul Acara */}
+            {clientNames && (
+              <h2 className="text-sm sm:text-base md:text-lg font-light tracking-[0.25em] uppercase text-stone-300/80 font-serif">
+                {clientNames}
+              </h2>
+            )}
+
+            <p className="text-[11px] tracking-[0.3em] uppercase text-stone-500 mt-2 font-medium">
+              Wedding Reception &bull; Guest Check-in
+            </p>
+          </div>
+
+          {/* Bottom Hint Bar */}
+          <div className="text-center flex flex-col items-center gap-2 pb-2">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-stone-900/70 border border-stone-800 text-stone-400 text-xs font-medium backdrop-blur-xs">
+              <svg className="w-4 h-4 text-amber-400/80 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+              </svg>
+              <span>Sentuh layar untuk mulai scan</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

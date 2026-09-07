@@ -29,12 +29,17 @@ Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model 
 [Calon Klien]
      │
      ▼
-1. LANDING PAGE (/)
-   Katalog paket + demo tema interaktif + Halaman Pendukung Dinamis:
-   - `/terms` (Syarat & Ketentuan Layanan)
-   - `/privacy` (Kebijakan Privasi Data)
-   - `/refund` (Kebijakan Pengembalian Dana)
-   - `/contact` (Pusat Bantuan & Kontak WhatsApp/Email Resmi)
+1. LANDING PAGE (/) & SHOWROOM KATALOG (/demo)
+   - Katalog paket + demo tema interaktif (15 tema fisik master)
+   - Tab "Sistem & Fitur Acara" (Demo Interaktif Hari-H):
+      - `/demo/receptionist` (Sistem Meja Resepsionis, Generator Tiket QR & Pemindai Live)
+      - `/demo/sharemoment` (Buku Tamu Foto Digital & Simulasi Upload Kamera)
+      - `/demo/memories` (Galeri Kenangan Tamu Live Feed Fluid Masonry `max-w-[1920px]`, Clean Touch-Swipe & Keyboard Lightbox Navigation, dan Unduh ZIP)
+   - Halaman Pendukung Dinamis:
+     - `/terms` (Syarat & Ketentuan Layanan)
+     - `/privacy` (Kebijakan Privasi Data)
+     - `/refund` (Kebijakan Pengembalian Dana)
+     - `/contact` (Pusat Bantuan & Kontak WhatsApp/Email Resmi)
    *(Seluruh informasi nama platform, kontak, meta title & tab browser terhubung dinamis ke DB Admin Settings)*
      │
      ▼
@@ -164,7 +169,7 @@ Pre-Flight Checklist & Smart Audit (/dashboard/settings):
 - **Palet Warna Showroom Demo Dinamis:** Admin Demo Studio menyediakan selektor 6 palet warna resmi (`champagne`, `emerald`, `burgundy`, `sage`, `terracotta`, `monochrome`) yang dikompilasi secara on-the-fly ke `/demo/[theme]`, memungkinkan tema tradisional seperti Badrika tampil dalam palet khas Bugis Royal Emerald tanpa hardcoding di CSS.
 - **Showroom Katalog Demo Ringan (`/demo`) & Snapshot Thumbnail (60 FPS Cross-Fade):** Kartu katalog `/demo` menggunakan snapshot visual presisi (Mobile/Tablet `768 × 1024 px` rasio 3:4 dan Desktop `1280 × 720 px` rasio 16:9) yang mengeliminasi seluruh 10 tag `<iframe>` berat. Dilengkapi transisi *dual-layer opacity cross-fade* 60 FPS bebas lag reflow saat berganti mode mobile/desktop, auto-fallback cerdas di server tanpa error 404 ganda, frame elegan `bg-stone-100` tanpa blank hitam, dan form upload mandiri di Demo Studio lengkap dengan panduan pixel.
 - **Dynamic Asset Route Handler & Universal Cache-Busting (`/demo/[theme]/[file]`):** Mengatasi limitasi Next.js Standalone yang hanya melayani aset statis `public/` saat build-time. Route handler menyajikan file thumbnail, gambar, dan audio baru secara instan dengan proteksi path traversal dan Smart ETag Cache (`304 Not Modified`). Mesin kompilasi demo HTML secara otomatis menyematkan timestamp versi `?v=${updatedAt}` pada seluruh slot aset (cover, hero, bg, mempelai, galeri, musik) sehingga pembaruan media langsung menembus cache Cloudflare Edge CDN seketika.
-- **Proteksi Anti-Download & Privasi Galeri Kenangan (`/memories`):** Halaman kenangan tamu dirancang *View-Only* dengan proteksi browser bawaan (blokir klik kanan `contextmenu`, pencegahan menu pop-up tahan layar `touch-callout: none`, serta blokir drag-and-drop) agar foto kenangan tamu aman dari pengunduhan langsung oleh pihak yang tidak berhak.
+- **Proteksi Anti-Download, Fluid Layout & Clean Lightbox Navigation Galeri Kenangan (`/memories`):** Halaman kenangan tamu dirancang *View-Only* dengan proteksi browser bawaan (blokir klik kanan `contextmenu`, pencegahan menu pop-up tahan layar `touch-callout: none`, serta blokir drag-and-drop). Tampilan menggunakan format fluid edge-to-edge `max-w-[1920px]` (2-7 kolom) yang optimal di proyektor venue dan desktop, dilengkapi modal preview bersih tanpa ikon panah mengambang yang mendukung tombol keyboard panah (desktop) dan touch swipe (mobile), serta real-time SSE stream terintegrasi.
 - **Pemisahan Terstruktur 4 Kolom Orang Tua (Discrete Parents Architecture) & Murni String Bebas:** Formulir profil klien dan demo studio memisahkan input nama Ayah dan Ibu secara diskret (`groomFather`, `groomMother`, `brideFather`, `brideMother`). Theme Engine secara otomatis mendeteksi awalan `{{firstParentPrefix}}` / `{{secondParentPrefix}}` ("Putra dari" untuk Groom, "Putri dari" untuk Bride) serta menyuplai token discrete `{{firstFather}}` dan `{{firstMother}}` secara bersih murni sebagai *raw string* tanpa paksaan sapaan Bpk/Ibu, sehingga klien bebas mencantumkan gelar akademik/adat, sapaan penghormatan, atau status almarhum/almarhumah (`Alm.`, `Almh.`), sekaligus mengeliminasi duplikasi label, membuang simbol `&` yang tidak diinginkan pada tata letak vertikal, dan mencegah kata menggantung (*orphan words*) pada tipografi kartu profil di seluruh 15 tema fisik master.
 
 ---
@@ -411,7 +416,7 @@ pm2 start ecosystem.config.js
 - **Reserved Subdomains Protection**: Subdomain `cdn` (Cloudflare R2), `admin`, `api`, `auth`, `static`, `assets`, dll. diproteksi terpusat via `lib/domainUtils.ts` dan dilarang diklaim oleh klien baik saat pemeriksaan ketersediaan maupun saat pembuatan/pembaruan undangan.
 - **Upload**: Validasi kepemilikan via `userId` session
 - **RSVP/Memories**: Rate-limited untuk cegah spam
-- **Receptionist**: Scanner QR dilindungi PIN panitia (AES-256-GCM), token sesi HMAC di localStorage, header profesional dengan BrandLogo dan judul terpusat, aksi navbar minimalis icon-only dengan indikator hijau online, judul pemindai "SCAN" & "KAMERA LIVE", daftar tamu ringkas tanpa badge count, mode Layar Penuh (Fullscreen Kiosk), isolasi warna tema (anti distorsi Dark/Light OS), serta dukungan kamera multi-device (Laptop webcam & Tablet dual-camera) dengan audio beep dan visual laser.
+- **Receptionist**: Scanner QR dilindungi PIN panitia (AES-256-GCM), token sesi HMAC di localStorage, header profesional dengan BrandLogo dan judul terpusat, aksi navbar minimalis icon-only dengan indikator hijau online, arsitektur *Single-Screen Zero-Scroll Kiosk* (`h-screen overflow-hidden`) bebas scroll vertikal di seluruh jenis monitor/tablet, kolom kiri-kanan simetris dinamis (`h-full min-h-0`), tombol manual *"Kembali ke Siaga Scan"*, tombol Standby Screensaver di navbar, *Ambient Standby Screensaver* otomatis saat idle (Watermark inisial monogram mempelai di live dan Watermark BrandLogo platform di demo) dengan mode *True Standby* (hardware kamera mati total demi hemat daya, anti-overheating, dan perlindungan privasi; langsung aktif kembali saat layar disentuh atau barcode ditembak), auto-dismiss kartu check-in 15 detik, jeda kamera otomatis saat notifikasi aktif (anti-loop scan), judul pemindai "SCAN" & "KAMERA LIVE", daftar tamu ringkas tanpa badge count, mode Layar Penuh (Fullscreen Kiosk), isolasi warna tema (anti distorsi Dark/Light OS), serta dukungan kamera multi-device (Laptop webcam & Tablet dual-camera) dengan audio beep dan visual laser.
 - **Portfolio**: Hanya SUPER_ADMIN yang bisa kloning undangan
 
 ---

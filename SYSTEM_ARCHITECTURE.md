@@ -1486,7 +1486,31 @@ Untuk memastikan showroom demo tema publik (`/demo/[themeId]`) tampil memukau da
    - Resolusi template di `lib/demoRegistry.ts` membedakan antara field yang sengaja dikosongkan (`""`) versus field yang belum didefinisikan (`undefined`), sehingga foto default tidak dipaksakan muncul kembali saat admin sengaja mengosongkannya.
    - Dilengkapi aturan CSS global di `public/css/modules.css`: `img[src=""], img:not([src]) { display: none !important; }`.
 
-### 17.6 — Isolasi Transaksi & Order-Level Payment Method Lock
+### 17.7 — Ekosistem Demo Publik Mandiri Fitur Hari-H (Day-of-Event Tech Demo)
+
+Untuk memberikan pengalaman interaktif penuh bagi calon klien sebelum memesan paket, platform menghadirkan rute demo mandiri non-rute tema (*zero-database client demo*):
+1. **Dual-Tab Hub di `/demo`:**
+   - Menyediakan dua tab utama di bagian atas katalog showroom: *"Koleksi Desain Tema"* (menampilkan 15 desain undangan visual) dan *"Sistem & Fitur Acara"* (menampilkan kartu modul teknologi operasional Hari-H).
+2. **Demo Meja Resepsionis & QR Scanner (`/demo/receptionist`):**
+   - Beroperasi 100% di memori browser tanpa mutasi basis data.
+   - Dilengkapi **Generator Tiket QR Kustom** (input nama tamu, kategori VIP/Keluarga/Reguler, alokasi pax, dan nomor meja) dengan fitur unduh gambar QR PNG dan preview fullscreen untuk pengujian kamera.
+   - Mode Scanner Kamera Live berbasis `html5-qrcode` dengan deteksi multi-kamera (laptop & tablet), laser viewfinder, feedback audio *beep chime* via Web Audio API, serta tombol *Simulasi Scan Cepat 1-Klik*.
+   - Dilengkapi proteksi anti-double scan, daftar kehadiran tamu real-time, dan simulasi kunci layar PIN panitia (PIN Demo: `1234`).
+3. **Demo Buku Tamu Foto Digital (`/demo/sharemoment`):**
+   - Formulir mandiri bagi tamu untuk mengambil foto selfie/candid dan mengirimkan doa restu dari smartphone.
+   - Menampilkan tahapan simulasi upload realistis (kompresi gambar, enkripsi stempel waktu, dan konfirmasi sukses) tanpa menyimpan file ke storage cloud/disk.
+   - Hasil simulasi disimpan pada `sessionStorage` peramban (`demo_guest_moments`) dan otomatis terpampang di posisi teratas pada galeri kenangan tamu.
+4. **Demo Galeri Kenangan Tamu Live Feed (`/demo/memories`):**
+   - Menampilkan feed kumpulan foto kenangan tamu berformat **Fluid Full-Width Masonry Grid** (`max-w-[1920px]` dengan rentang responsif 2 kolom di mobile hingga 7 kolom di layar monitor lebar), mengeliminasi margin kosong raksasa dan menyajikan rasio kartu yang proporsional dan elegan.
+   - Dilengkapi **Instagram Story Highlights Rail** (`Sorotan Cerita Tamu`) di bagian atas feed dengan avatar lingkaran beraksen gradasi emas yang dapat digulir horizontal, identik dengan fitur pada sistem live (`/s/[subdomain]/memories`).
+   - Dilengkapi modal perbesar foto resolusi penuh berfitur **Clean Lightbox Navigation** tanpa ikon panah mengambang:
+     - *Desktop:* Navigasi tombol keyboard (Panah Kanan `ArrowRight` untuk next, Panah Kiri `ArrowLeft` untuk prev, `Escape` untuk tutup).
+     - *Mobile:* Gesture sentuh jari (*touch swipe left* untuk next, *touch swipe right* untuk prev).
+     - Menjaga estetika foto tetap 100% bersih, rapi, dan elegan dengan counter halus (`1 / 16`).
+   - Berlaku seragam pada **Demo Memories** (`/demo/memories`) dan **Live Memories** (`/[slug]/memories` & `/s/[subdomain]/memories`) dengan layout fluid edge-to-edge `max-w-[1920px]` (2 hingga 7 kolom), klik instan reload pada toast momen baru, serta pemancaran event real-time `sseEmitter.emit("new_memory", memory)` pada endpoint upload publik.
+   - Dilengkapi tombol *Simulasi Unduh Arsip ZIP* untuk mendemonstrasikan kemudahan pengantin menyimpan seluruh kenangan acara.
+
+### 17.8 — Isolasi Transaksi & Order-Level Payment Method Lock
 1. **Pemisahan Daur Hidup Transaksi:**
    - Transaksi di tabel `orders` menyimpan data metode (`GATEWAY` vs `MANUAL_TRANSFER`), `snapToken`, dan `proofImageUrl` secara mandiri.
    - Perubahan toggle global `payment_mode` oleh admin di menu Pengaturan hanya mengubah baris setting platform, tidak mengubah status maupun riwayat order yang sedang berjalan.
@@ -1494,7 +1518,7 @@ Untuk memastikan showroom demo tema publik (`/demo/[themeId]`) tampil memukau da
    - Halaman checkout mengunci mode tampilan secara presisi: jika pesanan memiliki `paymentMethod === "MANUAL_TRANSFER"` atau sudah ada `proofImageUrl`, tampilan klien dikunci ke mode `MANUAL` (menampilkan status *"Menunggu Verifikasi Admin"* dan struk pembayaran).
    - Menjamin bahwa klien yang sudah transfer manual tidak akan pernah terganggu atau tertutup oleh tampilan QRIS gateway meskipun Admin mengubah toggle global di tengah jalan.
 
-### 17.7 — Arsitektur Theme-Specific Blueprint & Dynamic Custom Labels
+### 17.9 — Arsitektur Theme-Specific Blueprint & Dynamic Custom Labels
 1. **Registri Kamus Budaya & Narasi Bawaan (`lib/themeDefaults.ts`):**
    - Mendefinisikan cetak biru teks narasi spesifik untuk seluruh 15 tema lintas 3 kategori:
      - **Tradisional:** Sentuhan bahasa adat & doa kedaerahan (Bugis Candani, Jawa Keraton Dillalucky, Sunda Mayang, Keraton Prameswari, Nusantara Badrika).
@@ -1520,8 +1544,10 @@ Untuk memastikan showroom demo tema publik (`/demo/[themeId]`) tampil memukau da
      - `DEFAULT_MODERN_BLUEPRINT`: Estetika modern bilingual, Celebration of Love, Love Story, Our Moments, Dress Code, Live Streaming.
      - `DEFAULT_PREMIUM_BLUEPRINT`: Diksi luxury monokrom, Sacred Vows, The Solemnity, The Tapestry, Curated Frames, Wedding Registry, Expressions of Grace.
    - Nama tema diturunkan otomatis dari database (`theme.name`) atau kapitalisasi `themeId`. Saat Admin membuka Demo Studio pertama kali (`GET /api/admin/themes/[id]/demo-data`), seluruh formulir 4 Tab sudah 100% terisi data awal yang rapi tanpa ada input kosong.
+5. **Garansi Kompatibilitas Mundur 100% (Zero-Breaking Policy):**
+   - Seluruh 14 tema master lainnya tetap berfungsi normal tanpa regresi karena Engine tetap mengekspor fallback token lama (`storySectionHtml`, dll.).
 
-### 17.8 — Arsitektur Theme Freedom: Pemisahan Desain Tema Master & Conditional Blocks (`{{#if}}`)
+### 17.10 — Arsitektur Theme Freedom: Pemisahan Desain Tema Master & Conditional Blocks (`{{#if}}`)
 1. **Prinsip Independensi Desain Tema Master:**
    - Menghapus monopoli tampilan Engine atas seksi-seksi dinamis. Engine (`lib/themeEngine.ts` & `lib/demoRegistry.ts`) bertindak sebagai **penyedia data murni** (data provider), sedangkan Tema Master (`themes/**/*.html`) memiliki kebebasan penuh merancang struktur DOM, ornamen, tipografi, dan tata letak visualnya sendiri.
 2. **Conditional Template Block Parser (`lib/renderTemplate.ts`):**
@@ -1544,5 +1570,26 @@ Untuk memastikan showroom demo tema publik (`/demo/[themeId]`) tampil memukau da
      - **Opsi B (Native Master Theme):** Menggunakan blok kondisional `{{#if showStory}}` dengan kelas CSS kustom dan token item granular (`{{storyItemsHtml}}`).
 5. **Garansi Kompatibilitas Mundur 100% (Zero-Breaking Policy):**
    - Seluruh 14 tema master lainnya tetap berfungsi normal tanpa regresi karena Engine tetap mengekspor fallback token lama (`storySectionHtml`, dll.).
+
+### 17.11 — Arsitektur Single-Screen Zero-Scroll Kiosk pada Meja Resepsionis Live & Demo
+1. **Pemberantasan Window Scrolling (`h-screen overflow-hidden`):**
+   - Baik pada sistem resepsionis live (`app/components/features/ReceptionistScannerClient.tsx`) maupun showroom demo (`app/demo/receptionist/page.tsx`), viewport dikunci kokoh pada `h-screen overflow-hidden`.
+   - Mengeliminasi distorsi *elastic bounce*, pergeseran layout, dan scrollbar vertikal browser saat panitia menyentuh layar tablet (iPad) atau mengarahkan barcode scanner tembak.
+2. **Layout Kolom Dinamis Simetris (`h-full min-h-0`):**
+   - Main container menggunakan `min-h-0 overflow-hidden` dengan grid 12 kolom:
+     - Kolom Kiri (`md:col-span-5`): Kartu display status siaga dan konfirmasi check-in tamu yang berpusat vertikal presisi (`my-auto`) dan dilengkapi tombol manual *"Kembali ke Siaga Scan"*.
+     - Kolom Kanan (`md:col-span-7`): Kartu scanner pemindai (Kamera Live vs Mode Scan tembak) dengan tinggi penuh (`h-full flex flex-col overflow-hidden`) dan internal scrollbar tipis (`custom-scrollbar`) yang terisolasi di dalam kartu tanpa memengaruhi window utama.
+3. **Efisiensi Viewfinder Kamera:**
+   - Tinggi maksimum video scanner dibatasi pada `max-height: 380px` (`object-fit: cover`) agar pas dan nyaman di seluruh resolusi layar laptop 13-inch maupun tablet dalam mode horizontal tanpa memicu scroll kartu.
+4. **Fitur Ambient Standby Screensaver (Watermark Cover):**
+   - Otomatis aktif saat layar tidak ada interaksi selama 2 menit (atau melalui tombol Standby di navbar).
+   - Menampilkan watermark tipografi besar dan glow ambient di tengah layar:
+     - **Mode Live:** Inisial monogram pasangan mempelai (e.g. `R & J`), nama lengkap pasangan, garis ornamen emas, dan jam digital.
+     - **Mode Demo:** Logo platform (`BrandLogo`), tipografi `LUXENARY INVITE`, subteks sistem, dan jam digital.
+   - **True Standby Hardware Shutdown & Privacy:** Saat screensaver aktif, perangkat keras kamera (sensor CMOS & track MediaStream peramban) dimatikan tuntas secara otomatis demi efisiensi daya/baterai, mencegah panas berlebih pada tablet/laptop, serta menjaga privasi tamu (lampu webcam hijau padam total). Begitu layar disentuh (*Tap to Wake*) atau tombol/barcode scanner ditekan, screensaver tertutup dan kamera langsung diinisialisasi ulang dalam ~400ms.
+   - **Throttled Standby Idle Timer:** Deteksi interaksi mouse/touchscreen menggunakan ambang batas peredam getaran 1000ms (*throttling*) agar pergerakan mikro mouse/trackpad tidak menahan pergantian layar ke standby.
+5. **Auto-Dismiss 15 Detik & Proteksi Jeda Kamera (Scan Pause):**
+   - Notifikasi / kartu check-in tamu otomatis ditutup kembali ke status *"Siaga Menerima Tamu"* setelah 15 detik jika tidak ada aktivitas baru.
+   - Selama kartu notifikasi sedang aktif di sisi kiri, decoding kamera di sisi kanan dijeda (*paused*) dan animasi visual laser beam dimatikan sementara. Ini secara efektif mencegah pemindaian berulang (*re-scan looping*) pada barcode yang masih berada di depan lensa kamera.
 
 

@@ -4,6 +4,7 @@ import { getPublicPlatformSettings } from "@/lib/settings";
 import crypto from "crypto";
 import { uploadFile } from "@/lib/storage";
 import { rateLimit } from "@/lib/rateLimit";
+import { sseEmitter } from "@/lib/sseEmitter";
 
 export const dynamic = "force-dynamic";
 
@@ -150,6 +151,13 @@ export async function POST(req: NextRequest) {
         message: caption || "",
       },
     });
+
+    // Pancarkan event real-time ke SSE stream proyektor/layar venue
+    try {
+      sseEmitter.emit("new_memory", memory);
+    } catch (sseErr) {
+      console.error("[SSE Emitter Error]", sseErr);
+    }
 
     return NextResponse.json({ 
       success: true, 
