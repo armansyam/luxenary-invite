@@ -1,35 +1,37 @@
 # DOKUMENTASI RESMI: MANAJEMEN TRANSAKSI & PAYMENT GATEWAY
-**Luxenary Invite Platform — Pemantauan Invoice, Konfirmasi Manual, & Konfigurasi Multi-Gateway**
+**Luxenary Invite Platform — Pemantauan Invoice, Rekonsiliasi Transfer Manual, & Konfigurasi Multi-Gateway**
 
-Dokumen ini membedah arsitektur pemrosesan transaksi keuangan, alur rekonsiliasi manual, serta tata kelola kredensial multi-payment gateway pada panel administrator (`/admin` tab Orders & Settings).
+Dokumen ini membedah arsitektur pemrosesan transaksi keuangan, alur rekonsiliasi manual, serta tata kelola kredensial payment gateway pada panel administrator (`/admin` tab Orders & Settings).
 
 ---
 
 ## 1. Arsitektur Pemrosesan Transaksi Keuangan
 
-Platform mendukung transaksi otomatis (via payment gateway) dan transaksi konfirmasi manual (transfer langsung ke rekening admin):
+Platform mendukung dua jalur transaksi terintegrasi: pembayaran otomatis (melalui Payment Gateway) dan pembayaran konfirmasi manual (transfer rekening bank langsung ke admin):
 
 ```mermaid
 flowchart TD
     subgraph KasirCheckout [Kasir: /checkout]
         A[Klien Memilih Metode Pembayaran] --> B{Jalur Pembayaran}
-        B -->|Gateway Otomatis: QRIS / VA| C[Kirim Request ke Payment Gateway]
-        B -->|Transfer Bank Manual| D[Tampilkan Rekening Bank Admin & Upload Bukti]
+        B -->|Gateway Otomatis: Midtrans / Xendit| C[Generate SnapToken / Invoice QRIS]
+        B -->|Transfer Bank Manual| D[Tampilkan Rekening Bank Admin & Upload Bukti Struk]
     end
     
-    subgraph GatewayOtomatis [Gateway Server]
-        C --> E[Tamu Menyelesaikan Pembayaran]
-        E --> F[Webhook / IPN Callback: POST /api/payments/webhook/:provider]
+    subgraph GatewayOtomatis [Payment Gateway Server]
+        C --> E[Klien Menyelesaikan Pembayaran QRIS / VA]
+        E --> F[Webhook Callback: POST /api/payments/webhook/:provider]
         F --> G[Verifikasi Signature Kriptografi]
-        G -->|Signature Valid| H[Auto Update Order: PAID & Generate Undangan]
+        G -->|Signature Valid & Status Settlement| H[Auto Update Order: PAID & Terbitkan Undangan]
     end
     
     subgraph AdminConsole [Admin Panel: /admin Tab Orders]
         D --> I[Order Berstatus PENDING & Muncul Bukti Transfer]
-        I --> J[Admin Memeriksa Mutasi Rekening Bank]
-        J -->|Dana Masuk Valid| K[Tombol: Manual Approve 1-Klik]
+        I --> J[Admin Klik: Lihat Struk]
+        J -->|Struk Valid & Mutasi Masuk| K[Tombol: Konfirmasi Lunas / Approve]
         K --> H
-        J -->|Dana Palsu / Tidak Masuk| L[Tombol: Batalkan Order]
+        J -->|Struk Palsu / Salah Nominal| L[Tombol: Tolak Pembayaran / Reject]
+        L --> M[Update Status: FAILED + Alasan Penolakan]
+        M --> N[Kasir Klien: Muncul Persistent Rejection Warning Card]
     end
 ```
 
@@ -37,49 +39,71 @@ flowchart TD
 
 ## 2. Modul Pemantauan Order (`Tab: orders`)
 
-Menampilkan catatan seluruh lembar penagihan (invoice) yang tercipta di sistem:
+Menampilkan catatan seluruh lembar penagihan (*invoice*) yang tercipta di sistem dengan 4 sub-tab filter:
 
-### Informasi pada Tabel Transaksi:
-- **Nomor Invoice:** Kode unik penagihan (contoh: `INV-20260904-XXXX`).
-- **Klien Pemesan:** Nama akun dan alamat email pembeli.
-- **Item Pembelian:** Paket Utama (`TRADITIONAL`, `MODERN`, `PREMIUM`), Add-on Perpanjangan Galeri, atau Domain Kustom.
-- **Nominal Transaksi:** Total tagihan termasuk kode unik jika menggunakan transfer manual.
-- **Kanal Pembayaran:** Provider gateway yang digunakan (iPaymu, Midtrans, Duitku, TriPay, Xendit, atau Manual Transfer).
-- **Status Invoice:**
-  - `PENDING`: Menunggu pembayaran klien.
-  - `PAID`: Pembayaran berhasil diverifikasi; lisensi/fitur aktif seketika.
-  - `EXPIRED`: Batas waktu pembayaran habis (otomatis 24 jam).
-  - `CANCELLED`: Dibatalkan oleh klien atau ditolak oleh admin.
+### Sub-Tab Navigasi:
+1. **Menunggu Pembayaran (`PENDING`):** Memantau pesanan yang sedang menunggu pembayaran klien atau menunggu verifikasi bukti transfer.
+2. **Sukses / Lunas (`PAID`):** Menampilkan seluruh invoice yang telah lunas.
+3. **Gagal / Dibatalkan (`FAILED`):** Menampilkan transaksi yang gagal, ditolak admin, atau kadaluarsa (`EXPIRED`) lengkap dengan badge penolakan dan alasan penolakan pada kolom aksi.
+4. **Semua Transaksi (`SEMUA`):** Rekapitulasi menyeluruh seluruh transaksi tanpa filter status.
 
-### Fitur Persetujuan Pembayaran Manual (Manual Approval):
-1. Jika klien memilih transfer bank manual dan mengunggah slip bukti transfer, muncul tombol aksi **"Lihat Bukti & Approve"**.
-2. Modal pratinjau menampilkan gambar struk transfer, bank asal, dan nominal transfer.
-3. Saat admin menekan tombol **"Setujui Pembayaran (Approve)"**:
-   - Status invoice langsung berganti menjadi `PAID`.
-   - Sistem secara otomatis memicu generator undangan atau meningkatkan hak akses akun klien.
-   - Klien menerima notifikasi email / WhatsApp bahwa pesanan telah aktif dan siap digunakan.
+### Kolom Data pada Tabel Transaksi:
+- **Invoice:** Nomor faktur unik sistem (contoh: `INV-20260904-XXXX`).
+- **Klien:** Nama akun dan email klien pemesan.
+- **Paket:** Tier paket yang dibeli (`TRADITIONAL`, `MODERN`, `PREMIUM`) atau add-on.
+- **Metode:** Indikator badge metode pembayaran:
+  - `Transfer Bank` (Manual Transfer)
+  - `QRIS / Otomatis` (Midtrans / Xendit)
+  - `Belum Dipilih` (Checkout belum memilih metode)
+- **Jumlah:** Total tagihan nominal rupiah resmi.
+- **Bukti Transfer:** Tombol interaktif **"Lihat Struk"** untuk memeriksa foto slip transfer yang diunggah klien.
+- **Status:** Status kontekstual realtime (`Menunggu Bukti`, `Menunggu Verifikasi`, `Menunggu Pembayaran`, `Lunas`, `Ditolak / Expired`).
+- **Tanggal:** Timestamp waktu pembuatan pesanan.
+- **Aksi:** Tombol verifikasi manual persetujuan atau penolakan transaksi.
+
+### Prosedur Verifikasi Transfer Manual (Manual Approval & Rejection):
+1. **Persetujuan (Approve):**
+   - Admin menekan tombol *"Konfirmasi Lunas"* di modal struk.
+   - Status order berubah menjadi `PAID`, timestamp `paidAt` tercatat.
+   - Hak akses paket aktif seketika dan proyek undangan langsung dipublikasikan (`PUBLISHED`).
+2. **Penolakan (Reject):**
+   - Admin menekan tombol *"Tolak"* dan memasukkan alasan penolakan secara spesifik (misal: *Nominal tidak sesuai* atau *Mutasi belum masuk*).
+   - Status invoice berubah menjadi `FAILED`, alasan penolakan tersimpan di kolom `rejectReason`.
+   - Di halaman kasir klien, sistem memunculkan kartu peringatan permanen (*Persistent Rejection Warning Card*) yang memandu klien untuk mengunggah ulang bukti yang valid.
 
 ---
 
-## 3. Konfigurasi Multi-Payment Gateway (`Tab: settings`)
+## 3. Konfigurasi Payment Gateway (`Tab: settings` -> Subtab `Gateway QRIS` & `Pembayaran`)
 
-Platform dilengkapi mesin *Payment Gateway Switcher* modular yang memungkinkan pemilik bisnis berganti provider pembayaran tanpa mengubah kode aplikasi:
+Sistem mengadopsi pergantian gateway instan 1-klik (*Hot-Switching*) langsung dari database `AdminSetting`:
 
-### Provider yang Didukung:
-1. **iPaymu:** QRIS instan, Virtual Account, & gerai minimarket.
-2. **Midtrans:** Snap API (GoPay, ShopeePay, VA BCA, Mandiri Bill).
-3. **Duitku:** Solusi payment gateway lokal dengan biaya rendah.
-4. **TriPay:** Virtual Account dan gerai Alfamart/Indomaret.
-5. **Xendit:** Transfer bank internasional, e-wallet, dan kartu kredit.
+### Provider Gateway yang Didukung:
+1. **Midtrans:**
+   - Mendukung integrasi Midtrans Snap API (QRIS GoPay, ShopeePay, Virtual Account Bank).
+   - Parameter: `midtrans_server_key` dan `midtrans_client_key`.
+2. **Xendit:**
+   - Mendukung integrasi Xendit Invoice & QRIS.
+   - Parameter: `xendit_api_key` dan `xendit_webhook_token`.
+3. **Transfer Bank Manual:**
+   - Pengaturan rekening penerima: Nama Bank, Nomor Rekening, Nama Pemilik Rekening, dan Catatan Instruksi Pembayaran.
 
-### Tata Kelola Parameter Kredensial:
-Admin dapat mengatur nilai berikut langsung dari UI admin:
-- **Environment Mode:** Toggle antara `SANDBOX` (Uji coba tanpa uang sungguhan) dan `PRODUCTION` (Live transaksi riil).
-- **Kredensial Gateway:**
-  - `Merchant ID` / `Client Key`
-  - `API Key` / `Secret Key`
-  - `Callback / Webhook Verification Token`
-- **Pengaturan Rekening Manual Admin:**
-  - Nama Bank (BCA, Mandiri, BRI, BNI, BSI).
-  - Nomor Rekening Resmi.
-  - Nama Pemilik Rekening (Atas Nama).
+### Pengaturan Mode Pembayaran Global (`payment_mode`):
+- `both`: Mengaktifkan pembayaran QRIS otomatis dan transfer bank manual secara bersamaan.
+- `gateway`: Hanya mengizinkan pembayaran otomatis via gateway.
+- `manual`: Hanya mengizinkan pembayaran transfer bank manual ke rekening admin.
+
+### Gateway Aktif (`active_payment_gateway`):
+- Pilihan radio button: `midtrans` atau `xendit`.
+- Pergantian vendor berlangsung instan pada sesi checkout klien tanpa perlu restart server.
+
+---
+
+## 4. Batasan Teknis Faktual & Roadmap Pengembangan
+
+1. **Volume Data Terbatas (`take: 50`):**
+   - Daftar pesanan saat ini dimuat dari query agregasi overview dengan batasan 50 transaksi mutakhir.
+   - *Roadmap*: Pembuatan endpoint terpisah `GET /api/admin/orders` dengan pagination server-side, search berdasarkan nomor invoice/nama klien, dan filter rentang tanggal.
+2. **Ekspor Laporan Finansial:**
+   - *Roadmap*: Penambahan tombol *"Ekspor CSV/Excel"* untuk mempermudah audit akuntansi dan rekonsiliasi kas admin.
+3. **Cetak Invoice PDF:**
+   - *Roadmap*: Pembuatan template cetak invoice resmi berformat PDF.

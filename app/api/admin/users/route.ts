@@ -1,6 +1,115 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { Prisma } from "@prisma/client";
+
+export const dynamic = "force-dynamic";
+
+export async function GET(req: NextRequest) {
+  try {
+    const session = await auth();
+    const role = (session?.user as any)?.role;
+    const isAdmin =
+      (session?.user as any)?.isAdmin === true ||
+      role === "SUPER_ADMIN" ||
+      role === "ADMIN" ||
+      role === "SUPPORT" ||
+      role === "FINANCE";
+
+    if (!session?.user || !isAdmin) {
+      return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20", 10)));
+    const search = searchParams.get("search")?.trim() || "";
+
+    const whereClause: Prisma.UserWhereInput = {
+      role: "CLIENT",
+    };
+
+    if (search) {
+      whereClause.OR = [
+        { name: { contains: search, mode: "insensitive" } },
+        { email: { contains: search, mode: "insensitive" } },
+        { phoneNumber: { contains: search, mode: "insensitive" } },
+      ];
+    }
+
+    const [total, rawUsers] = await Promise.all([
+      prisma.user.count({ where: whereClause }),
+      prisma.user.findMany({
+        where: whereClause,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          phoneNumber: true,
+          avatarUrl: true,
+          createdAt: true,
+          orders: {
+            where: { status: "PAID" },
+            select: { planType: true, amount: true, paidAt: true, invoiceNumber: true },
+            orderBy: { createdAt: "desc" },
+          },
+          invitations: {
+            select: {
+              id: true,
+              subdomain: true,
+              invitationSlug: true,
+              status: true,
+              themeId: true,
+              eventData: true,
+              groomName: true,
+              brideName: true,
+            },
+            take: 3,
+          },
+          _count: {
+            select: {
+              orders: true,
+              invitations: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    const users = rawUsers.map((u) => {
+      const totalSpent = u.orders.reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
+      const latestOrder = u.orders[0] || null;
+      return {
+        ...u,
+        totalSpent,
+        latestOrder,
+      };
+    });
+
+    const totalPages = Math.ceil(total / limit) || 1;
+
+    return NextResponse.json({
+      success: true,
+      users,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+      },
+    });
+  } catch (error: any) {
+    console.error("GET /api/admin/users error:", error);
+    return NextResponse.json(
+      { error: process.env.NODE_ENV === "production" ? "Gagal memuat data klien" : error.message },
+      { status: 500 }
+    );
+  }
+}
 
 export async function DELETE(req: Request) {
   try {

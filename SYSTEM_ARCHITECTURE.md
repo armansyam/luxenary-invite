@@ -95,10 +95,15 @@
 │   │   │   ├── GuestMomentClient.tsx     # UI upload momen tamu
 │   │   │   ├── ReceptionistScannerClient.tsx # Scanner QR
 │   │   │   └── StaffLockScreen.tsx       # Lock screen PIN panitia
-│   │   └── admin/
 │   │       ├── AdminPortfolioTab.tsx
 │   │       ├── AdminProfileSettings.tsx
-│   │       └── AdminTeamManagement.tsx
+│   │       ├── AdminTeamManagement.tsx
+│   │       ├── AdminOrdersTab.tsx        # Manajemen transaksi terpaginasi server-side & ekspor CSV
+│   │       ├── AdminClientsTab.tsx       # Manajemen klien & remote impersonation
+│   │       ├── AdminInvitationsTab.tsx   # Siklus hidup projek & emergency unlock
+│   │       ├── AdminCustomDomainsTab.tsx # Live DNS check resolver & aktivasi 1-klik
+│   │       ├── AdminMonitoringTab.tsx    # Audit aktivitas staf & log webhook gateway
+│   │       └── AdminDiagnostics.tsx      # Uji coba live SMTP mailer & latensi storage cloud R2
 │   │
 │   ├── checkout/             # Halaman checkout & pembayaran (multi-gateway 2-arah + manual transfer)
 │   ├── demo/                 # Demo tema publik
@@ -700,14 +705,24 @@ CLIENT (auth required, role=USER):
 
 ADMIN (auth required, role=ADMIN/SUPER_ADMIN):
   GET  /api/admin/overview            → Statistik platform
-  GET  /api/admin/users               → List semua user
+  GET  /api/admin/orders              → List transaksi terpaginasi server-side, filter status, tanggal, multi-search & streaming CSV
+  POST /api/admin/orders/{id}/approve → Konfirmasi lunas transfer bank manual & auto-audit log
+  POST /api/admin/orders/{id}/reject  → Tolak bukti transfer dengan alasan penolakan & auto-audit log
+  GET  /api/admin/users               → List akun klien terpaginasi server-side dengan totalSpent & histori transaksi
+  GET  /api/admin/invitations         → List projek undangan terpaginasi server-side dengan filter status & pencarian multi-field
   GET/POST/PUT/DELETE /api/admin/themes → Manajemen tema (Upload master .html, update metadata, auto-compile demo, hard-delete steril)
   POST /api/admin/themes/sync         → Sinkronisasi tema disk-to-DB, auto-discovery & auto-purge tema zombie
   POST /api/admin/settings            → Update platform settings
+  POST /api/admin/test-smtp           → Uji coba handshake live email SMTP & pengiriman pesan diagnostik
+  POST /api/admin/test-storage        → Uji coba penulisan & pengukuran latensi cloud storage Cloudflare R2/S3
+  POST /api/admin/custom-domains/check-dns → Live DNS resolver evaluator untuk A record & CNAME
+  POST /api/admin/custom-domains/activate  → 1-klik aktivasi tautan custom domain ke undangan klien
+  GET  /api/admin/audit-logs          → Riwayat audit aktivitas staf administrator terpaginasi
+  GET  /api/admin/webhooks            → Riwayat payload & status webhook payment gateway terpaginasi
   POST /api/admin/database/backup     → Backup database
   POST /api/admin/subdomains/recycle  → Daur ulang subdomain kedaluwarsa
   GET/POST/DELETE /api/admin/portfolio → Manajemen kloning portofolio statis mandiri
-  POST /api/admin/invitations/{id}/lifecycle → Kontrol siklus hidup (CLOSE_TO_GALLERY, EXTEND_GALLERY, UPDATE_EVENT_DATE)
+  POST /api/admin/invitations/{id}/lifecycle → Kontrol siklus hidup (CLOSE_TO_GALLERY, EXTEND_GALLERY, UPDATE_EVENT_DATE, TOGGLE_EMERGENCY_UNLOCK)
   GET/DELETE /api/admin/remote-session → Manajemen sesi Remote Klien (Baca status & hapus cookie remote)
   GET/POST /api/admin/music            → Pustaka musik sistem (List all & upload audio + kompresi FFmpeg 128kbps)
   PATCH/DELETE /api/admin/music/{id}   → Edit metadata/status & hapus lagu sistem

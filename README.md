@@ -237,7 +237,7 @@ Sistem mendukung 3 kondisi transaksi dengan integrasi 2-arah eksklusif (Midtrans
 ```
 Luxenary-Invite/
 ├── app/
-│   ├── (admin)/admin/         # Portal Admin (10 tab lengkap, termasuk Projek Undangan terfilter)
+│   ├── (admin)/admin/         # Portal Admin (11 tab navigasi lengkap, termasuk Projek Undangan terfilter)
 │   ├── (client)/dashboard/    # Studio klien (setup, invitation, guests, rsvp)
 │   ├── (public)/
 │   │   ├── [slug]/            # Canonical invitation route (memories redirect & fallback pintar ke portofolio / beranda)
@@ -287,7 +287,13 @@ Luxenary-Invite/
 │   └── admin/
 │       ├── AdminPortfolioTab.tsx
 │       ├── AdminProfileSettings.tsx
-│       └── AdminTeamManagement.tsx
+│       ├── AdminTeamManagement.tsx
+│       ├── AdminOrdersTab.tsx        # Transaksi terpaginasi & ekspor CSV
+│       ├── AdminClientsTab.tsx       # Klien, WhatsApp link & impersonate
+│       ├── AdminInvitationsTab.tsx   # Siklus hidup projek & emergency unlock
+│       ├── AdminCustomDomainsTab.tsx # Live DNS check & aktivasi 1-klik
+│       ├── AdminMonitoringTab.tsx    # Audit staf & log webhook gateway
+│       └── AdminDiagnostics.tsx      # Uji SMTP mailer & latensi R2 storage
 ├── public/
 │   ├── published/             # HTML baked (subdomains/, slugs/, ids/)
 │   ├── uploads/               # Media lokal (R2 di produksi)

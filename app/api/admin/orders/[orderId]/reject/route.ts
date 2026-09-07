@@ -46,6 +46,23 @@ export async function POST(
       },
     });
 
+    // Catat ke AdminAuditLog
+    try {
+      const adminRecord = await prisma.admin.findFirst({
+        where: { email: (session.user as any).email },
+      });
+      if (adminRecord) {
+        await prisma.adminAuditLog.create({
+          data: {
+            adminId: adminRecord.id,
+            action: "REJECT_MANUAL_ORDER",
+            details: `Menolak transaksi order ${order.invoiceNumber || orderId}. Alasan: ${reason}`,
+            ipAddress: req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "localhost",
+          },
+        });
+      }
+    } catch {}
+
     return NextResponse.json({
       success: true,
       message: "Order berhasil ditolak.",

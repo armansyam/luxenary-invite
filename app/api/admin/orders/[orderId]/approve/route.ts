@@ -55,8 +55,21 @@ export async function POST(
       },
     });
 
-    // Log audit
+    // Log audit internal staf & webhook
     try {
+      const adminRecord = await prisma.admin.findFirst({
+        where: { email: (session.user as any).email },
+      });
+      if (adminRecord) {
+        await prisma.adminAuditLog.create({
+          data: {
+            adminId: adminRecord.id,
+            action: "APPROVE_MANUAL_ORDER",
+            details: `Menyetujui transaksi manual order ${order.invoiceNumber || orderId} sebesar Rp ${Number(order.amount).toLocaleString("id-ID")}`,
+            ipAddress: req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "localhost",
+          },
+        });
+      }
       await prisma.webhookLog.create({
         data: {
           source: "admin",

@@ -440,6 +440,8 @@ Dalam pengelolaan Klien dan Undangan di Dashboard Admin (`app/(admin)/admin/page
 4. **Logika Fitur Kunci Darurat:** Opsi `Buka Kunci Darurat` hanya muncul jika sistem secara objektif mendeteksi undangan telah terkunci permanen. Jika status masih `DRAFT` atau "Bisa Diedit", tombol tersebut secara otomatis disembunyikan.
 5. **Kalkulasi Kedaluwarsa Dinamis (On-The-Fly):** Nilai `expiresAt` akan tetap `null` di database sampai benar-benar di-hardcode. Untuk tampilan UI Admin, masa aktif dihitung dinamis menggunakan rumus `Tanggal Acara Utama + retention_invitation_days`.
 6. **Mekanisme Remote Klien (Restore 1-Klik) (`docs/admin/REMOTE_DAN_MANAJEMEN_KLIEN.md`):** Admin dapat meremote Dasbor Klien secara utuh tanpa meminta password melalui arsitektur *httpOnly Cookie Session Override (`lux_remote_client_id`)*. Server Action `startRemoteSession(clientId)` menetapkan cookie dan mengarahkan ke `/dashboard`. Callback `session` di `auth.ts` secara dinamis memetakan workspace ke profil klien target (`id`, `name`, `email`, `role`) sembari mempertahankan penanda hak akses Admin. Hal ini membuat seluruh ratusan API klien (`/api/client/**`) otomatis membaca dan mengelola data klien yang di-remote tanpa mengubah atau merusak JWT Admin asli. Saat klien di-remote, banner peringatan menyala merah di Dasbor Klien, dan Admin dapat melakukan *Restore 1-Klik* via `DELETE /api/admin/remote-session` untuk kembali ke singgasananya tanpa perlu login ulang. Referensi teknis dan diagram alir lengkap terdokumentasi di `docs/admin/REMOTE_DAN_MANAJEMEN_KLIEN.md`.
+7. **Arsitektur Tab Modular & Standar Desain Clean SaaS (Zero OS Emojis):** Seluruh antarmuka admin dipecah menjadi komponen modular terisolasi (`AdminOrdersTab`, `AdminClientsTab`, `AdminInvitationsTab`, `AdminCustomDomainsTab`, `AdminMonitoringTab`, `AdminDiagnostics`). Seluruh emoji OS bawaan (seperti 🔒, ✏️, 💾, 💳, 🌐, ⚡) dihapus total dan digantikan oleh ikon vektor SVG modern serta indikator titik (*subtle 1.5px dot indicators*).
+8. **Paginasi Server-Side Murni & Diagnostik Infrastruktur Live:** Seluruh pemuatan data transaksi (`/api/admin/orders`), klien (`/api/admin/users`), projek undangan (`/api/admin/invitations`), log audit staf (`/api/admin/audit-logs`), dan webhook (`/api/admin/webhooks`) menerapkan paginasi server-side murni dengan debounce search dan filter dinamis. Dilengkapi alat uji diagnostik live mandiri untuk handshake SMTP email transaksi dan pengukuran latensi cloud storage Cloudflare R2 / S3.
 
 ---
 
@@ -453,12 +455,12 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - Monitoring RSVP, kalkulasi pax katering & feed doa (`TAHAP_RSVP_DAN_MODERASI_UCAPAN.md`)
    - Subdomain checker real-time, CNAME & publish pipeline (`TAHAP_PENGATURAN_AKUN_CUSTOM_DOMAIN_DAN_ADDON.md`)
 2. **Sisi Administrator (`docs/admin/`):**
-   - Analitik metrik bisnis & grafik pendapatan (`DASHBOARD_OVERVIEW_DAN_STATISTIK.md`)
+   - Analitik metrik bisnis, distribusi tier paket & popularitas tema (`DASHBOARD_OVERVIEW_DAN_STATISTIK.md`)
    - Remote session impersonasi & user lifecycle (`REMOTE_DAN_MANAJEMEN_KLIEN.md`)
-   - Tata kelola undangan, suspend & custom domain (`MANAJEMEN_UNDANGAN_DAN_DOMAIN.md`)
-   - Transaksi invoice, approval transfer manual & gateway switcher (`MANAJEMEN_TRANSAKSI_DAN_GATEWAY.md`)
+   - Tata kelola projek undangan terfilter & custom domain Caddy (`MANAJEMEN_UNDANGAN_DAN_DOMAIN.md`)
+   - Transaksi invoice, inspeksi struk manual & gateway 2-arah Midtrans/Xendit (`MANAJEMEN_TRANSAKSI_DAN_GATEWAY.md`)
    - Manajemen tema fisik & auto-compile demo (`MANAJEMEN_TEMA_ADMIN.md`)
-   - Branding white-label, Cloudflare R2 CORS & maintenance database (`PENGATURAN_SISTEM_BRANDING_DAN_DATABASE.md`)
+   - Branding platform, Cloudflare R2 CORS & disaster recovery snapshot PostgreSQL (`PENGATURAN_SISTEM_BRANDING_DAN_DATABASE.md`)
    - Pemeliharaan berkala cron job, retensi & auto-backup (`CRON_DAN_MAINTENANCE_OTOMATIS.md`)
    - Deployment VPS Ubuntu 22.04/24.04 & reverse proxy Caddy (`DEPLOYMENT_VPS_CADDY.md`)
 3. **Sisi Publik & Resepsionis (`docs/public/`):**

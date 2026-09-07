@@ -9,6 +9,12 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { AdminProfileSettings } from "@/components/admin/AdminProfileSettings";
 import { AdminTeamManagement } from "@/components/admin/AdminTeamManagement";
 import { AdminPortfolioTab } from "@/components/admin/AdminPortfolioTab";
+import AdminOrdersTab from "@/components/admin/AdminOrdersTab";
+import AdminClientsTab from "@/components/admin/AdminClientsTab";
+import AdminInvitationsTab from "@/components/admin/AdminInvitationsTab";
+import AdminCustomDomainsTab from "@/components/admin/AdminCustomDomainsTab";
+import AdminMonitoringTab from "@/components/admin/AdminMonitoringTab";
+import AdminDiagnostics from "@/components/admin/AdminDiagnostics";
 import { startRemoteSession } from "./actions/remote";
 import { compressImageToWebP } from "@/lib/clientImageCompressor";
 import { getThemeBlueprint } from "@/lib/themeDefaults";
@@ -371,8 +377,6 @@ export default function AdminPage() {
   const [currentOrigin, setCurrentOrigin] = useState<string>("");
   const [initialSettingsMap, setInitialSettingsMap] = useState<Record<string, string>>({});
   const [editSection, setEditSection] = useState<Record<string, boolean>>({});
-  const [savingGoogle, setSavingGoogle] = useState(false);
-  const [showGoogleSecret, setShowGoogleSecret] = useState(false);
   const [savingPricing, setSavingPricing] = useState(false);
   const [savingAddons, setSavingAddons] = useState(false);
   const [savingPlatform, setSavingPlatform] = useState(false);
@@ -386,7 +390,7 @@ export default function AdminPage() {
   const [savingDomainDns, setSavingDomainDns] = useState(false);
   const [detectingServerIp, setDetectingServerIp] = useState(false);
   const [detectIpResult, setDetectIpResult] = useState<{ success: boolean; message: string } | null>(null);
-  const [activeSettingsTab, setActiveSettingsTab] = useState<"akun" | "pembayaran" | "gateway" | "paket" | "setup" | "platform" | "autentikasi">("akun");
+  const [activeSettingsTab, setActiveSettingsTab] = useState<"akun" | "pembayaran" | "gateway" | "paket" | "setup" | "platform">("akun");
   const [selectedGatewayVendor, setSelectedGatewayVendor] = useState<"midtrans" | "xendit">("midtrans");
 
   const handleDetectServerIp = async () => {
@@ -2242,985 +2246,29 @@ export default function AdminPage() {
 
               {/* ── Orders ── */}
               {activeTab === "orders" && (
-                <div className="space-y-5">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-2xl font-bold text-gray-900">Daftar Transaksi</h2>
-                      <p className="text-sm text-gray-500">{orders.length} transaksi total</p>
-                    </div>
-                    <button onClick={() => loadOverviewData()} className="px-3 py-1.5 text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition cursor-pointer">
-                      ↻ Refresh
-                    </button>
-                  </div>
-
-                  {/* ── Transaction Subtabs ── */}
-                  <div className="flex border-b border-gray-200 overflow-x-auto hide-scrollbar">
-                    {["PENDING", "PAID", "FAILED", "SEMUA"].map(tab => (
-                      <button
-                        key={tab}
-                        onClick={() => setOrderTab(tab)}
-                        className={`px-5 py-3 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${
-                          orderTab === tab 
-                            ? "border-amber-500 text-amber-600" 
-                            : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                        }`}
-                      >
-                        {tab === "PENDING" ? "Menunggu Pembayaran" : tab === "PAID" ? "Sukses / Lunas" : tab === "FAILED" ? "Gagal / Dibatalkan" : "Semua Transaksi"}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* ── Desktop Widescreen Table View ── */}
-                  <div className="hidden md:block bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div className="overflow-x-auto w-full">
-                      <table className="min-w-full divide-y divide-gray-100">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            {["Invoice", "Klien", "Paket", "Metode", "Jumlah", "Bukti Transfer", "Status", "Tanggal", "Aksi"].map((h) => (
-                              <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{h}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-50">
-                          {orders.filter(ord => orderTab === "SEMUA" || (orderTab === "FAILED" ? (ord.status === "FAILED" || ord.status === "EXPIRED") : ord.status === orderTab)).length === 0 ? (
-                            <tr><td colSpan={9} className="px-5 py-8 text-center text-gray-400 italic">Belum ada transaksi</td></tr>
-                          ) : orders.filter(ord => orderTab === "SEMUA" || (orderTab === "FAILED" ? (ord.status === "FAILED" || ord.status === "EXPIRED") : ord.status === orderTab)).map((ord) => (
-                            <tr key={ord.id} className="hover:bg-gray-50 transition">
-                              <td className="px-4 py-3 text-xs font-mono text-gray-700 font-bold">{ord.invoiceNumber}</td>
-                              <td className="px-4 py-3 text-xs text-gray-800 font-medium">
-                                <div className="font-semibold text-gray-900">{ord.user?.name || "Klien"}</div>
-                                <div className="text-gray-400 text-[11px] font-mono">{ord.user?.email}</div>
-                              </td>
-                              <td className="px-4 py-3 text-xs font-semibold text-gray-900">{ord.planType}</td>
-                              <td className="px-4 py-3 text-xs">
-                                {ord.paymentMethod === "MANUAL_TRANSFER" ? (
-                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
-                                    Transfer Bank
-                                  </span>
-                                ) : (ord.status === "PENDING" && !ord.proofImageUrl && !ord.snapToken) ? (
-                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-500 border border-gray-200">
-                                    Belum Dipilih
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-sky-50 text-sky-800 border border-sky-200">
-                                    QRIS / Otomatis
-                                  </span>
-                                )}
-                              </td>
-                              <td className="px-4 py-3 text-xs font-bold text-gray-900 font-mono">Rp {Number(ord.amount).toLocaleString("id-ID")}</td>
-                              <td className="px-4 py-3 text-xs">
-                                {ord.proofImageUrl ? (
-                                  <button
-                                    type="button"
-                                    onClick={() => setPreviewProofOrder(ord)}
-                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-lg text-[11px] font-bold transition cursor-pointer shadow-2xs"
-                                  >
-                                    <svg className="w-3.5 h-3.5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                    </svg>
-                                    <span>Lihat Struk</span>
-                                  </button>
-                                ) : (
-                                  <span className="text-gray-400 text-xs">-</span>
-                                )}
-                              </td>
-                              <td className="px-4 py-3">
-                                <div className="space-y-1">
-                                  {/* Status kontekstual sesuai metode & kondisi */}
-                                  {ord.status === "PENDING" && ord.paymentMethod === "MANUAL_TRANSFER" && !ord.proofImageUrl && (
-                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600 border border-gray-200">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
-                                      Menunggu Bukti
-                                    </span>
-                                  )}
-                                  {ord.status === "PENDING" && ord.paymentMethod === "MANUAL_TRANSFER" && ord.proofImageUrl && (
-                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-                                      Menunggu Verifikasi
-                                    </span>
-                                  )}
-                                  {ord.status === "PENDING" && ord.paymentMethod !== "MANUAL_TRANSFER" && (
-                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-sky-50 text-sky-800 border border-sky-200">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse"></span>
-                                      Menunggu Pembayaran
-                                    </span>
-                                  )}
-                                  {ord.status === "PAID" && (
-                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                      Lunas
-                                    </span>
-                                  )}
-                                  {ord.status === "EXPIRED" && (
-                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-500 border border-gray-200">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
-                                      QRIS Kedaluwarsa
-                                    </span>
-                                  )}
-                                  {ord.status === "FAILED" && (
-                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-                                      Ditolak
-                                    </span>
-                                  )}
-                                </div>
-                              </td>
-                              <td className="px-4 py-3 text-[11px] text-gray-400">{new Date(ord.createdAt).toLocaleDateString("id-ID")}</td>
-                              <td className="px-4 py-3">
-                                {/* Tombol Konfirmasi/Tolak HANYA untuk Transfer Manual yang sudah upload struk */}
-                                {ord.status === "PENDING" && ord.paymentMethod === "MANUAL_TRANSFER" && ord.proofImageUrl && (
-                                  <div className="flex items-center gap-1.5">
-                                    {orderActionFeedback && orderActionFeedback.id === ord.id && orderActionFeedback.type === "success" ? (
-                                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-600 text-white animate-in zoom-in-95 duration-150">
-                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                                        </svg>
-                                        Lunas!
-                                      </span>
-                                    ) : confirmApproveOrderId === ord.id ? (
-                                      <div className="flex items-center gap-1 p-0.5 bg-emerald-50 border border-emerald-300 rounded-lg animate-in zoom-in-95 duration-150">
-                                        <button
-                                          onClick={() => handleApproveOrder(ord.id)}
-                                          disabled={processingOrderAction}
-                                          className="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-md text-[11px] font-bold transition cursor-pointer disabled:opacity-50 flex items-center gap-1 active:scale-95"
-                                        >
-                                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                                          </svg>
-                                          {processingOrderAction ? "..." : "Ya"}
-                                        </button>
-                                        <button
-                                          onClick={() => setConfirmApproveOrderId(null)}
-                                          disabled={processingOrderAction}
-                                          className="px-1.5 py-0.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-md text-[11px] font-semibold transition cursor-pointer"
-                                        >
-                                          Batal
-                                        </button>
-                                      </div>
-                                    ) : (
-                                      <button
-                                        onClick={() => setConfirmApproveOrderId(ord.id)}
-                                        disabled={processingOrderAction}
-                                        className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-semibold transition cursor-pointer disabled:opacity-50 active:scale-95"
-                                      >
-                                        Konfirmasi
-                                      </button>
-                                    )}
-                                    <button
-                                      onClick={() => {
-                                       setRejectModalOrder(ord);
-                                       setRejectReasonInput("Bukti transfer tidak valid atau dana belum masuk.");
-                                      }}
-                                      disabled={processingOrderAction}
-                                      className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 rounded-lg text-xs font-semibold transition cursor-pointer disabled:opacity-50"
-                                    >
-                                      Tolak
-                                    </button>
-                                  </div>
-                                )}
-                                {/* QRIS: Menunggu otomatis dari webhook gateway */}
-                                {ord.status === "PENDING" && ord.paymentMethod !== "MANUAL_TRANSFER" && (
-                                  <span className="text-[10px] text-gray-400 italic">Auto via gateway</span>
-                                )}
-                                {/* Transfer Manual: Menunggu klien upload struk */}
-                                {ord.status === "PENDING" && ord.paymentMethod === "MANUAL_TRANSFER" && !ord.proofImageUrl && (
-                                  <span className="text-[10px] text-gray-400 italic">Menunggu bukti upload</span>
-                                )}
-                                {ord.status === "FAILED" && ord.rejectReason && (
-                                  <span className="text-[10px] text-rose-600 italic block max-w-[120px] truncate" title={ord.rejectReason}>
-                                    {ord.rejectReason}
-                                  </span>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-
-                  {/* ── Mobile-Native Compact Feed View ── */}
-                  <div className="block md:hidden space-y-3">
-                    {orders.filter(ord => orderTab === "SEMUA" || (orderTab === "FAILED" ? (ord.status === "FAILED" || ord.status === "EXPIRED") : ord.status === orderTab)).length === 0 ? (
-                      <div className="p-8 text-center bg-white rounded-2xl border border-gray-200 text-gray-400 text-xs italic">
-                        Belum ada transaksi
-                      </div>
-                    ) : orders.filter(ord => orderTab === "SEMUA" || (orderTab === "FAILED" ? (ord.status === "FAILED" || ord.status === "EXPIRED") : ord.status === orderTab)).map((ord) => (
-                        <div key={ord.id} className="bg-white rounded-2xl p-4 border border-gray-200 shadow-2xs space-y-2.5">
-                          {/* Top: Invoice + Status */}
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="font-mono font-bold text-xs text-gray-900 truncate">{ord.invoiceNumber}</span>
-                            <div>
-                              {ord.status === "PENDING" && ord.paymentMethod === "MANUAL_TRANSFER" && !ord.proofImageUrl && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600 border border-gray-200">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
-                                  Menunggu Bukti
-                                </span>
-                              )}
-                              {ord.status === "PENDING" && ord.paymentMethod === "MANUAL_TRANSFER" && ord.proofImageUrl && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-                                  Verifikasi
-                                </span>
-                              )}
-                              {ord.status === "PENDING" && ord.paymentMethod !== "MANUAL_TRANSFER" && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-sky-50 text-sky-800 border border-sky-200">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse"></span>
-                                  Pending
-                                </span>
-                              )}
-                              {ord.status === "PAID" && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                  Lunas
-                                </span>
-                              )}
-                              {ord.status === "EXPIRED" && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-500 border border-gray-200">
-                                  Kedaluwarsa
-                                </span>
-                              )}
-                              {ord.status === "FAILED" && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-                                  Ditolak
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Client info */}
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="font-semibold text-gray-900">{ord.user?.name || "Klien"}</span>
-                            <span className="text-gray-400 font-mono text-[11px] truncate max-w-[160px]">{ord.user?.email}</span>
-                          </div>
-
-                          {/* Meta & Amount Row */}
-                          <div className="flex items-center justify-between pt-2 border-t border-gray-100 text-xs">
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-bold text-amber-900 bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded-md text-[10px] uppercase">
-                                {ord.planType}
-                              </span>
-                              <span className="text-[10px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md font-medium">
-                                {ord.paymentMethod === "MANUAL_TRANSFER" ? "Transfer" : "QRIS"}
-                              </span>
-                            </div>
-                            <div className="text-right">
-                              <span className="font-bold text-gray-900 font-mono text-sm">Rp {Number(ord.amount).toLocaleString("id-ID")}</span>
-                              <span className="text-[10px] text-gray-400 block">{new Date(ord.createdAt).toLocaleDateString("id-ID")}</span>
-                            </div>
-                          </div>
-
-                          {/* Manual transfer proof & actions */}
-                          {ord.paymentMethod === "MANUAL_TRANSFER" && (
-                            <div className="pt-2 border-t border-gray-100 flex items-center justify-between gap-2">
-                              {ord.proofImageUrl ? (
-                                <button
-                                  type="button"
-                                  onClick={() => setPreviewProofOrder(ord)}
-                                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-lg text-xs font-bold transition cursor-pointer"
-                                >
-                                  <svg className="w-3.5 h-3.5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                  </svg>
-                                  <span>Lihat Struk</span>
-                                </button>
-                              ) : (
-                                <span className="text-[11px] text-gray-400 italic">Belum ada struk</span>
-                              )}
-
-                              {ord.status === "PENDING" && ord.proofImageUrl && (
-                                <div className="flex items-center gap-1.5 ml-auto">
-                                  {orderActionFeedback && orderActionFeedback.id === ord.id && orderActionFeedback.type === "success" ? (
-                                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-bold bg-emerald-600 text-white animate-in zoom-in-95 duration-150">
-                                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                                      </svg>
-                                      Lunas!
-                                    </span>
-                                  ) : confirmApproveOrderId === ord.id ? (
-                                    <div className="flex items-center gap-1 p-0.5 bg-emerald-50 border border-emerald-300 rounded-lg animate-in zoom-in-95 duration-150">
-                                      <button
-                                        onClick={() => handleApproveOrder(ord.id)}
-                                        disabled={processingOrderAction}
-                                        className="px-2.5 py-0.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-md text-xs font-bold transition cursor-pointer disabled:opacity-50 flex items-center gap-1 active:scale-95"
-                                      >
-                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                                        </svg>
-                                        Ya
-                                      </button>
-                                      <button
-                                        onClick={() => setConfirmApproveOrderId(null)}
-                                        disabled={processingOrderAction}
-                                        className="px-2 py-0.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-md text-xs font-semibold transition cursor-pointer"
-                                      >
-                                        Batal
-                                      </button>
-                                    </div>
-                                  ) : (
-                                    <button
-                                      onClick={() => setConfirmApproveOrderId(ord.id)}
-                                      disabled={processingOrderAction}
-                                      className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold transition cursor-pointer disabled:opacity-50 active:scale-95"
-                                    >
-                                      Konfirmasi
-                                    </button>
-                                  )}
-                                  <button
-                                    onClick={() => {
-                                      setRejectModalOrder(ord);
-                                      setRejectReasonInput("Bukti transfer tidak valid atau dana belum masuk.");
-                                    }}
-                                    disabled={processingOrderAction}
-                                    className="px-3 py-1 bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 rounded-lg text-xs font-semibold transition cursor-pointer disabled:opacity-50"
-                                  >
-                                    Tolak
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      ))
-                    }
-                  </div>
-                </div>
+                <AdminOrdersTab />
               )}
 
-              {/* ── Users ── */}
+              {/* ── Users / Klien ── */}
               {activeTab === "users" && (
-                <div className="space-y-5">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-2xl font-bold text-gray-900">Daftar Klien</h2>
-                      <p className="text-sm text-gray-500">{users.filter((u) => u.role !== "ADMIN").length} klien terdaftar</p>
-                    </div>
-                  </div>
-
-                  {/* ── Desktop Widescreen Table View ── */}
-                  <div className="hidden md:block bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div className="overflow-x-auto w-full">
-                      <table className="min-w-full divide-y divide-gray-100">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            {["Nama", "Email", "Terdaftar", "Aksi"].map((h) => (
-                              <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{h}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-50">
-                          {users
-                            .filter((usr) => usr.role !== "ADMIN")
-                            .slice((clientPage - 1) * 10, clientPage * 10)
-                            .map((usr) => (
-                              <tr key={usr.id} className="hover:bg-gray-50 transition">
-                                <td className="px-5 py-3 text-sm font-semibold text-gray-900">{usr.name}</td>
-                                <td className="px-5 py-3 text-sm text-gray-600 font-mono text-xs">{usr.email}</td>
-                                <td className="px-5 py-3 text-xs text-gray-500">{new Date(usr.createdAt).toLocaleDateString("id-ID")}</td>
-                                <td className="px-5 py-3">
-                                  <div className="flex items-center gap-2">
-                                    <button
-                                      type="button"
-                                      onClick={() => handleImpersonateClient(usr.id, usr.email, usr.name)}
-                                      disabled={impersonatingClient}
-                                      className="p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50 border border-transparent hover:border-indigo-100 transition disabled:opacity-50 cursor-pointer"
-                                      title="Remote Dasbor Klien"
-                                    >
-                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                                    </button>
-                                    <button onClick={() => { setManageClient(usr); setClientActionMsg(null); }} className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-semibold transition cursor-pointer">
-                                      Kelola Klien
-                                    </button>
-                                  </div>
-                                </td>
-                              </tr>
-                            ))}
-                          {users.filter((usr) => usr.role !== "ADMIN").length === 0 && (
-                            <tr>
-                              <td colSpan={4} className="px-5 py-8 text-center text-xs text-gray-400">
-                                Belum ada akun klien terdaftar.
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-
-                  {/* ── Mobile-Native Contact Feed View ── */}
-                  <div className="block md:hidden space-y-2.5">
-                    {users.filter((u) => u.role !== "ADMIN").length === 0 ? (
-                      <div className="p-8 text-center bg-white rounded-2xl border border-gray-200 text-gray-400 text-xs italic">
-                        Belum ada akun klien terdaftar.
-                      </div>
-                    ) : (
-                      users
-                        .filter((usr) => usr.role !== "ADMIN")
-                        .slice((clientPage - 1) * 10, clientPage * 10)
-                        .map((usr) => (
-                          <div key={usr.id} className="bg-white rounded-2xl p-3.5 border border-gray-200 shadow-2xs flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-3 min-w-0">
-                              <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-900 font-bold flex items-center justify-center text-xs shrink-0">
-                                {(usr.name || "K")[0].toUpperCase()}
-                              </div>
-                              <div className="min-w-0">
-                                <div className="font-semibold text-xs text-gray-900 truncate">{usr.name || "Klien"}</div>
-                                <div className="text-gray-500 text-[11px] font-mono truncate">{usr.email}</div>
-                                <div className="text-[10px] text-gray-400 mt-0.5">{new Date(usr.createdAt).toLocaleDateString("id-ID")}</div>
-                              </div>
-                            </div>
-                            <div className="shrink-0 flex items-center gap-1.5">
-                              <button
-                                type="button"
-                                onClick={() => handleImpersonateClient(usr.id, usr.email, usr.name)}
-                                disabled={impersonatingClient}
-                                className="p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50 border border-transparent hover:border-indigo-100 transition disabled:opacity-50 cursor-pointer"
-                                title="Remote Dasbor Klien"
-                              >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                              </button>
-                              <button onClick={() => { setManageClient(usr); setClientActionMsg(null); }} className="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-semibold transition cursor-pointer">
-                                Kelola
-                              </button>
-                            </div>
-                          </div>
-                        ))
-                    )}
-                  </div>
-
-                  {/* ── Pagination Controls ── */}
-                  {users.filter((usr) => usr.role !== "ADMIN").length > 10 && (
-                    <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                      <button
-                        onClick={() => setClientPage(p => Math.max(1, p - 1))}
-                        disabled={clientPage === 1}
-                        className="px-4 py-2 text-xs font-semibold bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition"
-                      >
-                        Sebelumnya
-                      </button>
-                      <span className="text-xs font-medium text-gray-500">
-                        Halaman {clientPage} dari {Math.ceil(users.filter(u => u.role !== "ADMIN").length / 10)}
-                      </span>
-                      <button
-                        onClick={() => setClientPage(p => Math.min(Math.ceil(users.filter(u => u.role !== "ADMIN").length / 10), p + 1))}
-                        disabled={clientPage === Math.ceil(users.filter(u => u.role !== "ADMIN").length / 10)}
-                        className="px-4 py-2 text-xs font-semibold bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition"
-                      >
-                        Selanjutnya
-                      </button>
-                    </div>
-                  )}
-                </div>
+                <AdminClientsTab />
               )}
 
               {/* ── Invitations / Projek Undangan ── */}
               {activeTab === "invitations" && (
-                <div className="space-y-5">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div>
-                      <h2 className="text-2xl font-bold text-gray-900">Invitation Projects</h2>
-                      <p className="text-sm text-gray-500">{invitations.length} total projek terdaftar</p>
-                    </div>
-
-                    {/* ── Quick Status Filter Tabs ── */}
-                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs font-semibold">
-                      {[
-                        { id: "ALL", label: "Semua", count: invitations.length },
-                        { id: "DRAFT", label: "Draft", count: draftInvitationCount },
-                        { id: "PUBLISHED", label: "Undangan Tayang", count: publishedInvitationCount },
-                        { id: "EVENT_FINISHED", label: "Galeri Momen Tamu", count: eventFinishedInvitationCount },
-                        { id: "ARCHIVED", label: "Selesai / Arsip", count: archivedInvitationCount },
-                      ].map((tab) => (
-                        <button
-                          key={tab.id}
-                          type="button"
-                          onClick={() => setInvitationFilter(tab.id as any)}
-                          className={`px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
-                            invitationFilter === tab.id
-                              ? "bg-stone-900 text-white shadow-2xs"
-                              : "bg-stone-100 text-stone-600 hover:bg-stone-200"
-                          }`}
-                        >
-                          <span>{tab.label}</span>
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                            invitationFilter === tab.id ? "bg-stone-700 text-stone-200" : "bg-stone-200 text-stone-600"
-                          }`}>
-                            {tab.count}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* ── Desktop Widescreen Table View ── */}
-                  <div className="hidden md:block bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div className="overflow-x-auto w-full">
-                      <table className="min-w-full divide-y divide-gray-100">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            {["Klien & Pasangan", "Domain & Tema", "Status Projek", "Masa Tayang & Expired", "Aksi"].map((h) => (
-                              <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{h}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-50">
-                          {filteredInvitations.length === 0 ? (
-                            <tr>
-                              <td colSpan={5} className="px-5 py-8 text-center text-xs text-gray-400 italic">
-                                Tidak ada projek undangan dalam kategori ini.
-                              </td>
-                            </tr>
-                          ) : (
-                            filteredInvitations.map((inv) => {
-                              const coupleName = `${inv.groomNickname || inv.groomName || "Mempelai Pria"} & ${inv.brideNickname || inv.brideName || "Mempelai Wanita"}`;
-                              const activeSub = inv.subdomain;
-                              const publicUrl = activeSub ? getInvitationPublicUrl(activeSub) : "#";
-                              const isEmergencyUnlocked = inv.adminUnlockedUntil && new Date(inv.adminUnlockedUntil) > new Date();
-                              const eventDate = getInvitationEventDate(inv.eventData);
-                              const defaultGalleryExpiry = eventDate ? new Date(eventDate.getTime() + 30 * 24 * 60 * 60 * 1000) : null;
-
-                              return (
-                                <tr key={inv.id} className="hover:bg-gray-50 transition">
-                                  <td className="px-5 py-3.5">
-                                    <div className="text-sm font-semibold text-gray-900">{coupleName}</div>
-                                    <div className="text-xs text-gray-500 mt-0.5">{inv.user?.name || "Tanpa Nama"} &bull; <span className="font-mono">{inv.user?.email}</span></div>
-                                  </td>
-                                  <td className="px-5 py-3.5">
-                                    <div className="mb-0.5">
-                                      {activeSub ? (
-                                        <a
-                                          href={publicUrl}
-                                          target="_blank"
-                                          rel="noreferrer"
-                                          className="text-xs font-semibold text-indigo-700 hover:underline flex items-center gap-1 w-max"
-                                        >
-                                          <span>{activeSub}.{getApexRootDomain()}</span>
-                                        </a>
-                                      ) : (
-                                        <span className="text-gray-400 font-sans italic text-[11px]">[URL Belum Setup]</span>
-                                      )}
-                                    </div>
-                                    <div className="text-xs text-gray-500 flex items-center gap-1.5">
-                                      <span>Tema:</span>
-                                      <span className="font-semibold text-stone-800 capitalize">{inv.themeId}</span>
-                                    </div>
-                                  </td>
-                                  <td className="px-5 py-3.5">
-                                    {/* Minimalist Dot Indicator & Status Label without heavy badges */}
-                                    {inv.status === "DRAFT" && (
-                                      <div className="flex items-center gap-2">
-                                        <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
-                                        <div>
-                                          <div className="text-xs font-semibold text-stone-800">Draft</div>
-                                          <div className="text-[11px] text-stone-400">Penyusunan Klien</div>
-                                        </div>
-                                      </div>
-                                    )}
-                                    {inv.status === "PUBLISHED" && (
-                                      <div className="flex items-center gap-2">
-                                        <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 animate-pulse" />
-                                        <div>
-                                          <div className="text-xs font-semibold text-emerald-800">Undangan Tayang</div>
-                                          <div className="text-[11px] text-stone-400">Pra-Acara & Hari H</div>
-                                        </div>
-                                      </div>
-                                    )}
-                                    {inv.status === "EVENT_FINISHED" && (
-                                      <div className="flex items-center gap-2">
-                                        <span className="w-2 h-2 rounded-full bg-purple-500 shrink-0" />
-                                        <div>
-                                          <div className="text-xs font-semibold text-purple-800">Galeri Momen Tamu</div>
-                                          <div className="text-[11px] text-stone-400">Pasca Acara (/memories)</div>
-                                        </div>
-                                      </div>
-                                    )}
-                                    {(inv.status === "ARCHIVED" || inv.status === "TAKEN_DOWN") && (
-                                      <div className="flex items-center gap-2">
-                                        <span className="w-2 h-2 rounded-full bg-stone-400 shrink-0" />
-                                        <div>
-                                          <div className="text-xs font-semibold text-stone-700">Selesai / Arsip</div>
-                                          <div className="text-[11px] text-stone-400">Dialihkan ke Portofolio</div>
-                                        </div>
-                                      </div>
-                                    )}
-
-                                    {/* Subtle Emergency Unlock Indicator if Active */}
-                                    {isEmergencyUnlocked && (
-                                      <div className="flex items-center gap-1.5 text-[10px] font-semibold text-amber-700 mt-1">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                                        <span>Kunci Darurat Aktif</span>
-                                      </div>
-                                    )}
-                                  </td>
-                                  <td className="px-5 py-3.5">
-                                    {/* Dedicated Masa Tayang & Expired Column */}
-                                    {inv.status === "DRAFT" && (
-                                      <span className="text-xs text-stone-400 italic">- Belum Rilis -</span>
-                                    )}
-                                    {inv.status === "PUBLISHED" && (
-                                      <div>
-                                        <div className="text-xs text-stone-700 font-medium">
-                                          {eventDate ? (
-                                            <span>Acara: <strong>{eventDate.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</strong></span>
-                                          ) : (
-                                            <span className="text-stone-400 italic">Tanggal acara belum diatur</span>
-                                          )}
-                                        </div>
-                                        <div className="text-[11px] text-stone-400 mt-0.5">Masa tayang undangan aktif</div>
-                                      </div>
-                                    )}
-                                    {inv.status === "EVENT_FINISHED" && (
-                                      <div>
-                                        {inv.galleryExpiresAt ? (
-                                          <div>
-                                            <div className="flex items-center gap-1.5 text-xs font-bold text-purple-700">
-                                              <span className="w-1.5 h-1.5 rounded-full bg-purple-500 shrink-0" />
-                                              <span>Extended: {new Date(inv.galleryExpiresAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</span>
-                                            </div>
-                                            <div className="text-[11px] text-purple-600/80 mt-0.5 font-medium">Masa galeri diperpanjang</div>
-                                          </div>
-                                        ) : defaultGalleryExpiry ? (
-                                          <div>
-                                            <div className="text-xs text-stone-700 font-medium">
-                                              s.d. {defaultGalleryExpiry.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
-                                            </div>
-                                            <div className="text-[11px] text-stone-400 mt-0.5">Standar 30 Hari pasca acara</div>
-                                          </div>
-                                        ) : (
-                                          <span className="text-xs text-stone-500">Standar 30 Hari</span>
-                                        )}
-                                      </div>
-                                    )}
-                                    {(inv.status === "ARCHIVED" || inv.status === "TAKEN_DOWN") && (
-                                      <div>
-                                        <div className="text-xs text-stone-500 font-medium">Masa Tayang Selesai</div>
-                                        <div className="text-[11px] text-stone-400 mt-0.5">Dialihkan ke Portofolio</div>
-                                      </div>
-                                    )}
-                                  </td>
-                                  <td className="px-5 py-3">
-                                    <div className="flex items-center gap-2">
-                                      <button
-                                        type="button"
-                                        onClick={() => handleImpersonateClient(inv.userId, inv.user?.email || "", inv.user?.name || "")}
-                                        disabled={impersonatingClient}
-                                        className="p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50 border border-transparent hover:border-indigo-100 transition disabled:opacity-50 cursor-pointer"
-                                        title="Remote Dashboard (Impersonate)"
-                                      >
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                                      </button>
-
-                                      {inv.status === "PUBLISHED" && (
-                                        <button
-                                          type="button"
-                                          onClick={() => handleCloseToGallery(inv)}
-                                          className="p-1.5 rounded-lg text-purple-600 hover:bg-purple-50 border border-transparent hover:border-purple-100 transition cursor-pointer"
-                                          title="Tutup ke Galeri Momen"
-                                        >
-                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                                        </button>
-                                      )}
-
-                                      {inv.status === "EVENT_FINISHED" && (
-                                        <button
-                                          type="button"
-                                          onClick={() => handleExtendGallery(inv)}
-                                          className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 border border-transparent hover:border-emerald-100 transition cursor-pointer"
-                                          title="Perpanjang Masa Galeri (+30 Hari)"
-                                        >
-                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                        </button>
-                                      )}
-
-                                      {(isEmergencyUnlocked || inv.isLockedPermanently || inv.status === "PUBLISHED" || inv.status === "EVENT_FINISHED") && (
-                                        <button
-                                          type="button"
-                                          onClick={() => handleToggleEmergencyUnlock(inv)}
-                                          className={`p-1.5 rounded-lg border border-transparent transition cursor-pointer ${
-                                            isEmergencyUnlocked
-                                              ? "text-red-600 hover:bg-red-50 hover:border-red-100"
-                                              : "text-stone-600 hover:bg-stone-50 hover:border-stone-100"
-                                          }`}
-                                          title={isEmergencyUnlocked ? "Kunci kembali sekarang" : "Buka kunci darurat (24 Jam)"}
-                                        >
-                                          {isEmergencyUnlocked ? (
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8V7z" /></svg>
-                                          ) : (
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" /></svg>
-                                          )}
-                                        </button>
-                                      )}
-                                    </div>
-                                  </td>
-                                </tr>
-                              );
-                            })
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-
-                  {/* ── Mobile-Native Invitation Card List View ── */}
-                  <div className="block md:hidden space-y-3">
-                    {filteredInvitations.length === 0 ? (
-                      <div className="p-8 text-center bg-white rounded-2xl border border-gray-200 text-gray-400 text-xs italic">
-                        Tidak ada projek undangan dalam kategori ini.
-                      </div>
-                    ) : (
-                      filteredInvitations.map((inv) => {
-                        const coupleName = `${inv.groomNickname || inv.groomName || "Mempelai Pria"} & ${inv.brideNickname || inv.brideName || "Mempelai Wanita"}`;
-                        const activeSub = inv.subdomain || `${inv.groomSlug || "mempelai"}-${inv.brideSlug || "pria"}`;
-                        const publicUrl = getInvitationPublicUrl(activeSub);
-                        const isEmergencyUnlocked = inv.adminUnlockedUntil && new Date(inv.adminUnlockedUntil) > new Date();
-                        const eventDate = getInvitationEventDate(inv.eventData);
-                        const defaultGalleryExpiry = eventDate ? new Date(eventDate.getTime() + 30 * 24 * 60 * 60 * 1000) : null;
-
-                        return (
-                          <div key={inv.id} className="bg-white rounded-2xl p-4 border border-gray-200 shadow-2xs space-y-3">
-                            <div className="flex items-start justify-between gap-2">
-                              <div>
-                                <h3 className="font-bold text-sm text-gray-900">{coupleName}</h3>
-                                <a
-                                  href={publicUrl}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="text-xs font-mono text-amber-700 hover:underline inline-flex items-center gap-1 mt-0.5"
-                                >
-                                  <span>{activeSub}.{getApexRootDomain()}</span>
-                                </a>
-                              </div>
-                              {/* Dot indicator status mobile */}
-                              <div>
-                                {inv.status === "DRAFT" && (
-                                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-800">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400" /> Draft
-                                  </span>
-                                )}
-                                {inv.status === "PUBLISHED" && (
-                                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-800">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Tayang
-                                  </span>
-                                )}
-                                {inv.status === "EVENT_FINISHED" && (
-                                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-purple-800">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-purple-500" /> Galeri
-                                  </span>
-                                )}
-                                {(inv.status === "ARCHIVED" || inv.status === "TAKEN_DOWN") && (
-                                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-stone-600">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-stone-400" /> Arsip
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Lifecycle details on mobile */}
-                            <div className="text-xs text-stone-500 space-y-1">
-                              {inv.status === "PUBLISHED" && eventDate && (
-                                <div>Acara: <strong className="text-stone-700">{eventDate.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</strong></div>
-                              )}
-                              {inv.status === "EVENT_FINISHED" && (
-                                <div>
-                                  {inv.galleryExpiresAt ? (
-                                    <span className="text-purple-700 font-semibold">✦ Extended s.d. {new Date(inv.galleryExpiresAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</span>
-                                  ) : defaultGalleryExpiry ? (
-                                    <span>Masa Galeri: s.d. {defaultGalleryExpiry.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</span>
-                                  ) : (
-                                    <span>Masa Galeri Standar 30 Hari</span>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Info Detail Mobile */}
-                            <div className="flex items-center justify-between text-xs text-gray-500 pt-2 border-t border-gray-100">
-                              <span>Tema: <strong className="capitalize text-gray-800">{inv.themeId}</strong></span>
-                              {isEmergencyUnlocked ? (
-                                <span className="flex items-center gap-1 text-[10px] font-semibold text-amber-700">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" /> Darurat Aktif
-                                </span>
-                              ) : inv.isLockedPermanently ? (
-                                <span className="flex items-center gap-1 text-[10px] font-semibold text-red-700">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-red-400" /> Terkunci Permanen
-                                </span>
-                              ) : (inv.status === "PUBLISHED" || inv.status === "EVENT_FINISHED") ? (
-                                <span className="flex items-center gap-1 text-[10px] font-semibold text-stone-500">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-stone-300" /> Terkunci Pasca Publish
-                                </span>
-                              ) : (
-                                <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-700">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" /> Bisa Diedit
-                                </span>
-                              )}
-                            </div>
-
-                            {/* Actions Mobile */}
-                            <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100 flex-wrap">
-                              <button
-                                type="button"
-                                onClick={() => handleImpersonateClient(inv.userId, inv.user?.email || "", inv.user?.name || "")}
-                                disabled={impersonatingClient}
-                                className="p-2 rounded-lg text-indigo-600 hover:bg-indigo-50 border border-transparent hover:border-indigo-100 transition disabled:opacity-50 cursor-pointer"
-                                title="Remote Dashboard (Impersonate)"
-                              >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                              </button>
-
-                              {inv.status === "PUBLISHED" && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleCloseToGallery(inv)}
-                                  className="p-2 rounded-lg text-purple-600 hover:bg-purple-50 border border-transparent hover:border-purple-100 transition cursor-pointer"
-                                  title="Tutup ke Galeri"
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                                </button>
-                              )}
-                              {inv.status === "EVENT_FINISHED" && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleExtendGallery(inv)}
-                                  className="px-2 py-1.5 rounded-lg text-xs font-bold text-emerald-600 hover:bg-emerald-50 border border-transparent hover:border-emerald-100 transition cursor-pointer"
-                                  title="Tambah Masa Simpan Galeri (+30 Hari)"
-                                >
-                                  +30H
-                                </button>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => handleToggleEmergencyUnlock(inv)}
-                                className={`p-2 rounded-lg border border-transparent transition cursor-pointer ${
-                                  isEmergencyUnlocked
-                                    ? "text-red-600 hover:bg-red-50 hover:border-red-100"
-                                    : "text-stone-600 hover:bg-stone-50 hover:border-stone-100"
-                                }`}
-                                title={isEmergencyUnlocked ? "Kunci kembali sekarang" : "Buka kunci darurat (24 Jam)"}
-                              >
-                                {isEmergencyUnlocked ? (
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8V7z" /></svg>
-                                ) : (
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" /></svg>
-                                )}
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
+                <AdminInvitationsTab onNavigateToThemes={() => setActiveTab("themes")} />
               )}
 
               {/* ── Custom Domain Management ── */}
               {activeTab === "custom_domains" && (
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between flex-wrap gap-3">
-                    <div>
-                      <h2 className="text-2xl font-bold text-gray-900">Custom Domain</h2>
-                      <p className="text-sm text-gray-500 mt-0.5">Pantau pesanan add-on Custom Domain dari klien dan status penyelesaiannya.</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveTab("settings");
-                        setActiveSettingsTab("setup");
-                      }}
-                      className="px-3.5 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold rounded-xl transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
-                    >
-                      <svg className="w-3.5 h-3.5 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                      <span>Pengaturan DNS &amp; IP Server</span>
-                    </button>
-                  </div>
-
-                  <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-sm whitespace-nowrap">
-                        <thead>
-                          <tr className="bg-gray-50/50 border-b border-gray-200">
-                            <th className="py-4 px-6 font-semibold text-gray-900">Klien</th>
-                            <th className="py-4 px-6 font-semibold text-gray-900">Undangan (Asli)</th>
-                            <th className="py-4 px-6 font-semibold text-gray-900">Domain Diminta</th>
-                            <th className="py-4 px-6 font-semibold text-gray-900">Pembayaran</th>
-                            <th className="py-4 px-6 font-semibold text-gray-900">Status Terhubung</th>
-                            <th className="py-4 px-6 font-semibold text-gray-900">Aksi (Admin)</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                          {customDomainOrders.length === 0 ? (
-                            <tr>
-                              <td colSpan={6} className="py-8 text-center text-gray-500">Belum ada pesanan Custom Domain.</td>
-                            </tr>
-                          ) : (
-                            customDomainOrders.map((ord: any) => {
-                              const isPaid = ord.status === "PAID";
-                              const isConnected = ord.invitation?.customDomain === ord.requestedDomain;
-                              return (
-                                <tr key={ord.id} className="hover:bg-gray-50/50 transition">
-                                  <td className="py-4 px-6">
-                                    <div className="font-semibold text-gray-900">{ord.user?.name || "Klien Terhapus"}</div>
-                                    <div className="text-xs text-gray-500">{ord.user?.email}</div>
-                                  </td>
-                                  <td className="py-4 px-6 text-gray-600 font-mono text-xs">
-                                    {ord.invitation?.subdomain ? `https://${ord.invitation.subdomain}.${process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost:3000'}` : "-"}
-                                  </td>
-                                  <td className="py-4 px-6">
-                                    <div className="flex items-center gap-2">
-                                      <span className="font-bold text-gray-900">{ord.requestedDomain || "-"}</span>
-                                      {ord.requestedDomain && (
-                                        <button
-                                          type="button"
-                                          title="Copy Domain"
-                                          onClick={() => {
-                                            navigator.clipboard.writeText(ord.requestedDomain);
-                                            alert(`Domain ${ord.requestedDomain} tersalin!`);
-                                          }}
-                                          className="p-1 hover:bg-gray-200 rounded text-gray-500 transition"
-                                        >
-                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                                        </button>
-                                      )}
-                                    </div>
-                                  </td>
-                                  <td className="py-4 px-6">
-                                    <Badge status={ord.status} />
-                                  </td>
-                                  <td className="py-4 px-6">
-                                    {isConnected ? (
-                                      <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-lg">Terhubung</span>
-                                    ) : (
-                                      <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs font-bold rounded-lg">Belum Terhubung</span>
-                                    )}
-                                  </td>
-                                  <td className="py-4 px-6 text-xs font-medium">
-                                    {!isPaid ? (
-                                      <span className="text-amber-600">Menunggu Lunas</span>
-                                    ) : isConnected ? (
-                                      <span className="text-emerald-600 flex items-center gap-1">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/></svg>
-                                        Selesai
-                                      </span>
-                                    ) : (
-                                      <div className="flex flex-col gap-1 text-rose-600 font-bold">
-                                        <span>Menunggu Konfigurasi SSL</span>
-                                        <span className="text-[10px] text-gray-500 font-normal">Buat config Nginx & reload</span>
-                                      </div>
-                                    )}
-                                  </td>
-                                </tr>
-                              );
-                            })
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
+                <AdminCustomDomainsTab
+                  orders={customDomainOrders}
+                  onRefresh={() => loadOverviewData()}
+                  onNavigateToSetup={() => {
+                    setActiveTab("settings");
+                    setActiveSettingsTab("setup");
+                  }}
+                />
               )}
 
               {/* ── Themes Management ── */}
@@ -3661,7 +2709,7 @@ export default function AdminPage() {
                   </div>
 
                   {/* ── Sub-Tab Navigation (Widescreen Responsive Grid) ── */}
-                  <div className="w-full grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-1.5 p-1.5 bg-gray-100 rounded-2xl border border-gray-200">
+                  <div className="w-full grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5 p-1.5 bg-gray-100 rounded-2xl border border-gray-200">
                     {([
                       { id: "akun",        label: "Akun & Keamanan" },
                       { id: "pembayaran",  label: "Pembayaran" },
@@ -3669,7 +2717,6 @@ export default function AdminPage() {
                       { id: "paket",       label: "Paket & Harga" },
                       { id: "setup",       label: "Setup & Integrasi" },
                       { id: "platform",    label: "Platform & Tampilan" },
-                      { id: "autentikasi", label: "Autentikasi" },
                     ] as const).map((t) => (
                       <button
                         key={t.id}
@@ -4209,184 +3256,6 @@ export default function AdminPage() {
                   </>
                   )}
 
-                  {/* ══ TAB: AUTENTIKASI ══ */}
-                  {activeSettingsTab === "autentikasi" && (
-                  <>
-                  {/* Google OAuth 2.0 Settings */}
-                  <SettingsCard
-                    title="Google OAuth 2.0 (Login & Registrasi Klien)"
-                    description="Kelola kredensial Google API Console untuk mengaktifkan fitur 1-Click Login dan Registrasi instan bagi calon pengantin via akun Google."
-                    isEditing={Boolean(editSection["google"])}
-                    onEdit={() => toggleEditSection("google")}
-                    onCancel={() => cancelEdit("google", ["google_auth_enabled", "google_client_id", "google_client_secret"])}
-                    onSave={() => saveSettings(["google_auth_enabled", "google_client_id", "google_client_secret"], setSavingGoogle, "google")}
-                    saving={savingGoogle}
-                    isDirty={isSectionDirty(["google_auth_enabled", "google_client_id", "google_client_secret"])}
-                    saveSuccess={settingsSaved["google"]}
-                    saveSuccessMessage="Pengaturan Google OAuth berhasil disimpan"
-                    viewContent={
-                      <div className="space-y-3">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                          <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
-                            <span className="text-xs text-gray-500 block font-medium">Status Fitur Google</span>
-                            <div className="mt-1">
-                              {(settingsMap["google_auth_enabled"] ?? "true") === "true" ? (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                  Aktif
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
-                                  Nonaktif
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
-                            <span className="text-xs text-gray-500 block font-medium">Google Client ID</span>
-                            <span className="text-xs font-mono font-bold text-gray-800 mt-1 block truncate" title={settingsMap["google_client_id"]}>
-                              {settingsMap["google_client_id"] ? settingsMap["google_client_id"] : <em className="text-gray-400 font-sans font-normal">Belum diatur</em>}
-                            </span>
-                          </div>
-                          <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
-                            <span className="text-xs text-gray-500 block font-medium">Google Client Secret</span>
-                            <span className="text-sm font-mono font-bold text-gray-800 mt-1 inline-block">
-                              {settingsMap["google_client_secret"] ? "••••••••••••••••" : <em className="text-gray-400 font-sans font-normal text-xs">Belum diatur</em>}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="p-3 bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-between gap-2 text-xs flex-wrap">
-                          <span className="text-gray-600 font-medium">
-                            Redirect Callback: <code className="font-mono text-gray-900 font-semibold">{`${currentOrigin}/api/auth/callback/google`}</code>
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => navigator.clipboard.writeText(`${currentOrigin}/api/auth/callback/google`)}
-                            className="px-3 py-1 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 rounded-lg font-semibold transition cursor-pointer"
-                          >
-                            Salin Callback
-                          </button>
-                        </div>
-                      </div>
-                    }
-                  >
-                    <FieldRow label="Status Fitur Login Google" description="Aktifkan atau nonaktifkan tombol 'Masuk / Daftar dengan Google' di portal klien.">
-                      <div className="flex gap-3">
-                        {[
-                          { id: "true", label: "Aktif" },
-                          { id: "false", label: "Nonaktif" },
-                        ].map((opt) => (
-                          <button
-                            key={opt.id}
-                            type="button"
-                            onClick={() => setSetting("google_auth_enabled", opt.id)}
-                            className={`px-4 py-2 rounded-xl text-sm font-semibold border transition cursor-pointer flex items-center gap-1.5 ${
-                              (settingsMap["google_auth_enabled"] || "true") === opt.id
-                                ? opt.id === "true"
-                                  ? "bg-emerald-600 text-white border-emerald-600"
-                                  : "bg-stone-700 text-white border-stone-700"
-                                : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
-                            }`}
-                          >
-                            <span className={`w-1.5 h-1.5 rounded-full ${
-                              (settingsMap["google_auth_enabled"] || "true") === opt.id
-                                ? "bg-white"
-                                : opt.id === "true" ? "bg-emerald-500" : "bg-gray-400"
-                            }`}></span>
-                            <span>{opt.label}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </FieldRow>
-
-                    <FieldRow label="Google Client ID" description="Client ID dari Google Cloud Console (contoh: 123456789-abc.apps.googleusercontent.com)">
-                      <input
-                        type="text"
-                        value={settingsMap["google_client_id"] || ""}
-                        onChange={(e) => setSetting("google_client_id", e.target.value)}
-                        placeholder="Contoh: 123456789012-xxxx.apps.googleusercontent.com"
-                        className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
-                      />
-                    </FieldRow>
-
-                    <FieldRow label="Google Client Secret" description="Client Secret rahasia yang digenerate oleh Google Cloud Console">
-                      <div className="relative">
-                        <input
-                          type={showGoogleSecret ? "text" : "password"}
-                          value={settingsMap["google_client_secret"] || ""}
-                          onChange={(e) => setSetting("google_client_secret", e.target.value)}
-                          placeholder="••••••••••••••••••••••••••••••••"
-                          className="w-full pl-3.5 pr-24 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowGoogleSecret(!showGoogleSecret)}
-                          className="absolute right-2.5 top-2.5 text-xs text-stone-700 hover:text-stone-900 font-semibold px-2.5 py-1 bg-stone-200 hover:bg-stone-300 rounded-md cursor-pointer transition"
-                        >
-                          {showGoogleSecret ? "Sembunyikan" : "Tampilkan"}
-                        </button>
-                      </div>
-                    </FieldRow>
-
-                    <FieldRow label="Authorized JavaScript Origins" description="Tambahkan URL ini ke 'Authorized JavaScript origins' di Google Cloud Console">
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={currentOrigin}
-                          readOnly
-                          className="flex-1 px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-gray-100 text-gray-900 font-semibold select-all shadow-2xs"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => navigator.clipboard.writeText(currentOrigin)}
-                          className="px-3.5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300 rounded-xl text-xs font-semibold transition cursor-pointer"
-                        >
-                          Salin
-                        </button>
-                      </div>
-                    </FieldRow>
-
-                    <FieldRow label="Authorized Redirect URI (Callback URL)" description="Tambahkan URL ini ke 'Authorized redirect URIs' di Google Cloud Console">
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={`${currentOrigin}/api/auth/callback/google`}
-                          readOnly
-                          className="flex-1 px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-gray-100 text-gray-900 font-semibold select-all shadow-2xs"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => navigator.clipboard.writeText(`${currentOrigin}/api/auth/callback/google`)}
-                          className="px-3.5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300 rounded-xl text-xs font-semibold transition cursor-pointer"
-                        >
-                          Salin
-                        </button>
-                      </div>
-                    </FieldRow>
-
-                    <div className="pt-3 border-t border-gray-100">
-                      <div className="p-3 rounded-xl bg-stone-50 border border-stone-200">
-                        <p className="text-xs text-stone-500 leading-relaxed">
-                          <strong className="text-stone-700">Catatan:</strong> Integrasi Google Drive telah dihapus dari sistem.
-                          Media undangan kini disimpan di Cloudflare R2 atau penyimpanan lokal server.
-                          Field <em>Google Client ID</em> dan <em>Client Secret</em> di atas tidak lagi digunakan.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200 text-xs text-gray-800 space-y-1.5 mt-2">
-                      <span className="font-bold block text-gray-900">Panduan Konfigurasi Google Cloud Console:</span>
-                      <ol className="list-decimal list-inside space-y-1 text-[11px] text-gray-600">
-                        <li>Buka <strong className="text-gray-800">console.cloud.google.com</strong> Buat Project Buka <strong className="text-gray-800">APIs &amp; Services Credentials</strong>.</li>
-                        <li>Klik <strong className="text-gray-800">Create Credentials OAuth client ID</strong>, pilih tipe <strong className="text-gray-800">Web application</strong>.</li>
-                        <li>Salin dan tempelkan <em>Authorized JavaScript Origins</em> dan <em>Authorized Redirect URI</em> di atas.</li>
-                        <li>Salin <strong className="text-gray-800">Client ID</strong> &amp; <strong className="text-gray-800">Client Secret</strong> yang didapat ke form ini, lalu klik tombol Uji Kredensial &amp; Simpan.</li>
-                      </ol>
-                    </div>
-                  </SettingsCard>
-                  </>
-                  )}
 
                   {/* ══ TAB: PAKET & HARGA ══ */}
                   {activeSettingsTab === "paket" && (
@@ -5256,6 +4125,55 @@ export default function AdminPage() {
                     </div>
                   </SettingsCard>
 
+                  <AdminDiagnostics adminEmail={session?.user?.email || undefined} />
+
+                  {/* Google OAuth 2.0 Integration Info */}
+                  <div className="bg-white rounded-2xl border border-gray-200/80 shadow-xs p-6 space-y-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-base font-bold text-gray-900">Google OAuth 2.0 (Login & Registrasi Klien)</h3>
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            Terkonfigurasi di .env
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                          Sesuai standar keamanan NextAuth v5, kredensial Google Client ID &amp; Client Secret dikelola terpusat melalui environment variable server (<code className="font-mono text-gray-700">.env</code>).
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-2">
+                      <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200">
+                        <span className="text-xs text-gray-500 block font-medium mb-1">Authorized JavaScript Origin</span>
+                        <div className="flex items-center gap-2">
+                          <code className="text-xs font-mono font-semibold text-gray-900 truncate flex-1">{currentOrigin}</code>
+                          <button
+                            type="button"
+                            onClick={() => navigator.clipboard.writeText(currentOrigin)}
+                            className="px-2.5 py-1 bg-white hover:bg-gray-100 text-gray-700 border border-gray-300 rounded-lg text-xs font-medium transition cursor-pointer"
+                          >
+                            Salin
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200">
+                        <span className="text-xs text-gray-500 block font-medium mb-1">Authorized Redirect URI (Callback)</span>
+                        <div className="flex items-center gap-2">
+                          <code className="text-xs font-mono font-semibold text-gray-900 truncate flex-1">{`${currentOrigin}/api/auth/callback/google`}</code>
+                          <button
+                            type="button"
+                            onClick={() => navigator.clipboard.writeText(`${currentOrigin}/api/auth/callback/google`)}
+                            className="px-2.5 py-1 bg-white hover:bg-gray-100 text-gray-700 border border-gray-300 rounded-lg text-xs font-medium transition cursor-pointer"
+                          >
+                            Salin
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                   </>
                   )}
 
@@ -6146,40 +5064,9 @@ export default function AdminPage() {
                 </div>
               )}
 
-              {/* ── Logs ── */}
+              {/* ── Logs & Monitoring ── */}
               {activeTab === "logs" && (
-                <div className="space-y-5">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-2xl font-bold text-gray-900">Monitoring Webhook &amp; Log</h2>
-                      <p className="text-sm text-gray-500">{logs.length} log terekam</p>
-                    </div>
-                    <button onClick={() => loadOverviewData()} className="px-3 py-1.5 text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition cursor-pointer">↻ Refresh</button>
-                  </div>
-
-                  {logs.length === 0 ? (
-                    <div className="bg-white rounded-2xl shadow-sm p-8 text-center text-gray-400 italic">Belum ada webhook log yang terekam</div>
-                  ) : (
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-50">
-                      {logs.map((log) => (
-                        <div key={log.id} className="p-4">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${
-                                log.status === "processed" ? "bg-green-100 text-green-700" : log.status === "failed" ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-600"
-                              }`}>{log.status}</span>
-                              <span className="font-semibold text-gray-800 text-sm uppercase">{log.source} — {log.event}</span>
-                            </div>
-                            <span className="text-xs text-gray-400">{new Date(log.createdAt).toLocaleString("id-ID")}</span>
-                          </div>
-                          <pre className="text-xs bg-gray-50 p-3 rounded-xl overflow-x-auto text-gray-600 max-h-40">
-                            {JSON.stringify(log.payload, null, 2)}
-                          </pre>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <AdminMonitoringTab />
               )}
             </>
           )}

@@ -68,22 +68,22 @@ Mengatur akses keamanan internal pengelola sistem:
 
 ---
 
-## 5. Pemeliharaan & Monitoring Database (`Tab: database`)
+## 5. Pemeliharaan & Manajemen Snapshot Database (`Tab: database`)
 
-Menyediakan visibilitas operasional terhadap database PostgreSQL:
-- **Tabel Metrik Baris (Row Count Monitor):**
-  Memantau pertumbuhan data pada masing-masing tabel: `User`, `Invitation`, `Guest`, `Order`, `Rsvp`, `Wish`, `Theme`, `AdminSetting`.
-- **Ukuran Disk Database:**
-  Menampilkan total konsumsi ruang penyimpanan pada database server.
-- **Prosedur Backup Mandiri:**
-  Panduan dump berkala menggunakan perintah:
-  ```bash
-  pg_dump -U postgres -d luxenary_db -F c -b -v -f /backup/luxenary_$(date +%Y%m%d).dump
-  ```
-- **Prosedur Restore:**
-  ```bash
-  pg_restore -U postgres -d luxenary_db -v /backup/luxenary_20260904.dump
-  ```
+Menyediakan antarmuka Disaster Recovery mandiri untuk database PostgreSQL:
+- **Kartu Status Mesin Database:**
+  - Menampilkan mesin aktif: `PostgreSQL (pg_dump)` dengan indikator status koneksi (*Connected & Running*).
+  - Total file snapshot yang tersedia di direktori penyimpanan lokal server.
+  - Direktori path penyimpanan backup (default: `/data/backups` atau sesuai nilai `backup_path`).
+- **Pembuatan Snapshot Mandiri 1-Klik:**
+  - Tombol *"Buat Snapshot Sekarang"* (`POST /api/admin/database/backup`) yang memicu eksekusi utilitas `pg_dump` secara asynchronous tanpa menghentikan lalu lintas web.
+- **Upload & Restore Snapshot Eksternal:**
+  - Mengizinkan administrator mengunggah file cadangan berformat `.sql` atau `.backup`.
+  - **Proteksi Safety Backup Otomatis:** Sistem selalu membuat snapshot darurat dari data yang sedang berjalan sebelum file baru ditimpa (*restore*).
+- **Tabel Tata Kelola Snapshot:**
+  - Menampilkan riwayat snapshot lengkap dengan timestamp, ukuran file, tombol Unduh (*Download*) ke komputer lokal, tombol Pulihkan (*Restore*), dan tombol Hapus (*Delete*).
+- **Roadmap Peningkatan:**
+  - Penambahan visualisasi live jumlah baris (*row counts*) per tabel Prisma dan pemantauan ukuran disk database PostgreSQL realtime.
 
 ---
 
@@ -126,3 +126,18 @@ Sistem mengadopsi arsitektur hierarki URL yang bersih dan hemat sumber daya name
    - Foto kenangan tamu dipertahankan selama `retention_gallery_default_days` (default: 30 hari) atau sesuai perpanjangan `galleryExpiresAt`.
    - Jika klien tidak memperpanjang via add-on bulanan, cron cleanup membersihkan foto-foto dari Cloudflare R2 / lokal dan menandai undangan sebagai `ARCHIVED`.
    - Akun klien lama yang tidak memiliki undangan aktif akan dibersihkan secara menyeluruh setelah `retention_account_days` (default: 365 hari).
+
+---
+
+## 8. Autentikasi Google OAuth 2.0 (Single Source of Truth `.env`) (`Tab: Setup & Integrasi`)
+
+- **Konfigurasi Lingkungan Terpusat:** Sesuai arsitektur keamanan NextAuth v5, kredensial autentikasi Google (`GOOGLE_CLIENT_ID` dan `GOOGLE_CLIENT_SECRET`) didefinisikan secara eksklusif pada variabel lingkungan server (`.env`) saat inisialisasi boot.
+- **Informational Card di Admin:** Di panel admin tab *Setup & Integrasi*, sistem menyediakan kartu ringkas informatif yang menampilkan URL *Authorized JavaScript Origin* (`${currentOrigin}`) dan *Authorized Redirect URI (Callback)* (`${currentOrigin}/api/auth/callback/google`) lengkap dengan tombol salin 1-klik untuk pendaftaran pada Google Cloud Console.
+
+---
+
+## 9. Diagnostik Langsung: SMTP & Cloud Storage (`Tab: Setup & Integrasi`)
+
+Melalui komponen modular `AdminDiagnostics`:
+- **Uji Coba Handshake Live Email SMTP (`POST /api/admin/test-smtp`):** Menguji konektivitas server SMTP ke port 587/465 dan mengirim email uji coba HTML instan ke alamat administrator.
+- **Uji Latensi & Izin Tulis Cloudflare R2 / S3 (`POST /api/admin/test-storage`):** Mengunggah objek token sementara dan mengukur latensi round-trip (ms) untuk memastikan kesiapan infrastruktur sebelum digunakan oleh klien.
