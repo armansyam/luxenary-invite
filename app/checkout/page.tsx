@@ -298,6 +298,17 @@ function CheckoutContent() {
             });
           }
 
+          // ORDER-LEVEL PAYMENT METHOD LOCK:
+          // Jika order sudah memiliki bukti transfer atau tercatat MANUAL_TRANSFER, kunci mode ke MANUAL
+          // Mencegah switch setting global admin merusak tampilan verifikasi klien yang sudah transfer
+          if (orderStatusData.paymentMethod === "MANUAL_TRANSFER" || Boolean(orderStatusData.proofImageUrl)) {
+            setPaymentMode("MANUAL");
+            setSelectedMethod("MANUAL");
+          } else if (orderStatusData.paymentMethod === "GATEWAY" && orderStatusData.snapToken) {
+            setPaymentMode("GATEWAY");
+            setSelectedMethod("GATEWAY");
+          }
+
           if (orderStatusData.proofImageUrl && orderStatusData.status !== "FAILED" && orderStatusData.status !== "REJECTED") {
             setUploadedProofUrl(orderStatusData.proofImageUrl);
           } else if (orderStatusData.status === "FAILED" || orderStatusData.status === "REJECTED") {

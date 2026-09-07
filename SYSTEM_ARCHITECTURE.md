@@ -607,9 +607,13 @@ HTML standalone lengkap (self-contained, inline CSS/JS)
     - **Penerapan pada Starter Blueprint (`themes/starter-blueprint.html` & `public/downloads/starter-blueprint.html`):** Arsitektur `.layout-wrapper`, `.sidebar-desktop`, `.main-scroll-panel` (460px), dan aturan tipografi anti-overflow telah diintegrasikan langsung ke dalam master starter blueprint sebagai standar emas bagi para Theme Builder.
   - **Standarisasi Smart Auto-Hide Navigasi Dock & Kontrol Audio Mengambang:**
     - Seluruh 15 tema fisik master dan `starter-blueprint.html` dilengkapi mekanisme auto-hide pintar berbasis hardware acceleration (`translate3d` & `opacity`).
-    - Saat tamu melakukan scroll ke bawah (membaca isi undangan/galeri), dock navigasi dan tombol kontrol musik meluncur keluar layar secara serentak sehingga ruang pandang 100% bersih tanpa gangguan floating button.
-    - Saat tamu melakukan scroll ke atas (delta $\ge$ 12px), berada di area paling atas (`scrollTop <= 70px`), tiba di footer, atau mengklik tautan menu, kontrol mengambang otomatis meluncur masuk kembali secara halus (*cubic-bezier(0.16, 1, 0.3, 1)*).
-  - **Arsitektur Preloader Hibrida & Proteksi Anti-Visual Leak (Zero-Flicker Preload Engine):**
+    - **Engine Smart Dock Home Zone State Guard (`body.lux-at-home-zone`):**
+      - Saat tamu pertama kali membuka undangan atau berada di seksi pembuka/Home (zona cover/quote/doa/countdown awal), dock navigasi bawah (`.bottom-dock`) **tetap tersembunyi (hidden)** secara mutlak (`transform: translate3d(-50%, calc(100% + 48px), 0) !important; opacity: 0 !important; pointer-events: none !important;`) sehingga tampilan Home section 100% bersih, elegan, dan bebas dari polusi floating bar.
+      - Saat tamu melakukan scroll ke bawah menuju seksi berikutnya (Couple, Event, Gallery, Wishes, dsb), dock navigasi tetap berstatus tersembunyi.
+      - Saat tamu melakukan scroll ke atas di seksi bawah, dock navigasi otomatis meluncur masuk (*reveal*) untuk memberikan kemudahan navigasi antar-seksi.
+      - Saat tamu melakukan scroll kembali ke atas hingga memasuki Home Zone (`scrollY < homeBoundary`), guard engine otomatis menginjeksi kembali kelas `lux-at-home-zone` pada `<body>` dengan hysteresis 40px anti-flicker, sehingga dock meluncur keluar secara halus (*cubic-bezier(0.16, 1, 0.3, 1)*) dan seksi Home kembali bersih total.
+      - Arsitektur ini 100% aman untuk tema majalah editorial tanpa dock (seperti `valente.html`) dengan pengecekan instan `if (!dock) return;`.
+    - Saat tamu tiba di footer atau mengklik tautan menu, kontrol mengambang otomatis meluncur masuk kembali secara halus.
     - **Akar Masalah Kebocoran Visual (Visual Leak):** Pada peramban ponsel atau jaringan lambat, DOM HTML di-parse lebih cepat daripada unduhan berkas gambar cover pembuka (`landingCoverUrl`). Jika layar penutup (*cover screen*) memiliki gradasi transparan, seksi isi undangan di bawahnya (`.page-wrap`, profil mempelai, floating bar) sempat bocor terlihat sekejap (*flash of unstyled/underlying content*).
     - **Prinsip Arsitektur Hibrida (Theme-First with Engine Fallback):**
       1. *Master Preloader Khusus (`id="themePreloader"`):* Jika berkas HTML tema master/piring telah memiliki elemen dengan atribut `id="themePreloader"`, engine `lib/renderTemplate.ts` secara otomatis **TIDAK AKAN** menyuntikkan preloader bawaan engine. Gaya, animasi, atau ornamen khas milik tema tersebut akan dihormati sepenuhnya.
@@ -625,6 +629,13 @@ HTML standalone lengkap (self-contained, inline CSS/JS)
       - Di Komputer/Desktop (`≥ 900px`): Dibatasi presisi hanya menyelimuti kolom undangan kanan (`width: 460px; left: calc(100% - 460px);`), sehingga titik fokus foto simetris di tengah undangan dan tidak terpotong atau tertutup oleh panel Hero kiri.
     - Seksi awal panel scroll kanan memiliki slide pembuka editorial resmi `<section id="home" class="slide-section sec-hero-editorial">` yang menggunakan `{{homePhotoUrl}}` (Slot *Latar Belakang Home*), menyajikan impresi cover majalah eksklusif dengan judul masthead dan tanggal acara yang sangat memukau di perangkat Mobile maupun Desktop.
     - Sisi kiri widescreen dikendalikan oleh `.sidebar-desktop` via `{{sidebarPhotoUrl}}` (Slot *Desktop Sidebar*).
+  - **Standarisasi Slot Visual & Refinement Khusus Tema Candani:**
+    - Background kanvas tidak lagi dipasang pada `body` 100vw, melainkan menggunakan elemen kanvas independen `.fixed-bg-layer` (460px di desktop `≥ 900px`, 100% di mobile) dengan URL dinamis `{{homePhotoUrl}}` berbalut radial gradient pelindung.
+    - Seksi Home (`#home`) dirancang murni tanpa card berbingkai (*optical center typography* dengan ritme vertikal kompak), menjaga keterbacaan teks doa pembuka, monogram, dan grid hitung mundur tetap 100% kontras dan menyatu dengan latar belakang.
+    - Profil Mempelai (`#section-couple` via `.couple-staggered-container`) mengadopsi arsitektur *Card-less Counter-Balance*: menghilangkan kotak kartu pembatas, mempertahankan bingkai kubah melengkung berbayangan mewah (*luxury layered shadow*), First (Pria) berposisi kiri dengan inisial huruf pertama bergradasi (*watermark gradient*) di sisi kanannya, Second (Wanita) di kanan dengan inisial di sisi kirinya, terhubung oleh ampersand puitis `&`, serta bebas dari efek loncat hover/scroll yang mengganggu.
+    - Bottom Dock terintegrasi penuh: tombol pertama diarahkan ke `#home` dengan label 'Home', dan tombol musik ditempatkan langsung di dock (`#musicToggle` / `.dock-music-btn`) yang tersinkronisasi otomatis dengan status audio engine (`.playing` dengan pulse animation saat memutar, tanpa emoji sistem bawaan).
+    - Terintegrasi penuh dengan Universal Smart Dock Home Zone State Guard (`body.lux-at-home-zone`), memastikan seksi Home bebas dari dock saat pertama dibuka atau di-scroll balik ke paling atas.
+    - Dilengkapi modal terpadu `#modalBg` untuk kartu akses QR dan souvenir voucher, serta seluruh elemen teks menggunakan atribut standar `data-lux-field`.
 
 ---
 
@@ -768,6 +779,12 @@ Field Kritis di Invitation:
   invitationSlug  @unique   ← Flat slug canonical: dimas-clarissa-030326
   subdomain       @unique   ← Subdomain: dimas-clarissa (nullable saat di-recycle)
   customDomain    @unique   ← Custom domain klien (nullable, fitur & UI aktif)
+  groomFather     String?   ← Nama Ayah Mempelai Pria (terpisah)
+  groomMother     String?   ← Nama Ibu Mempelai Pria (terpisah)
+  brideFather     String?   ← Nama Ayah Mempelai Wanita (terpisah)
+  brideMother     String?   ← Nama Ibu Mempelai Wanita (terpisah)
+  groomParents    String?   ← String warisan / fallback otomatis
+  brideParents    String?   ← String warisan / fallback otomatis
   staffPin        String?   ← PIN panitia terenkripsi AES-256-GCM (wajib diisi)
   eventData       String?   ← JSON array multi-event
   featureSettings String?   ← JSON settings fitur & color palette
@@ -1064,7 +1081,7 @@ Sistem mendukung video loop bergerak (*ambient video*) pada 3 slot visual utama:
 ### 3. Rendering Engine Dinamis (`renderTemplate.ts`)
 - `renderTemplateFile` secara cerdas mendeteksi tipe media melalui ekstensi URL (kebal query timestamp).
 - **Isolasi Split Screen Desktop:** Pada layar desktop (>= 900px), video background global (`GLOBAL_FIXED_BG`) dikunci secara ketat pada kolom panel undangan kanan (`left: 55%; width: 45%;`), sehingga tidak bocor ke bawah hero kiri (`.left-hero`). Hero kiri tetap murni menampilkan medianya sendiri (`DESKTOP_SIDEBAR`).
-- **Pencahayaan Soft Scrim:** Menggunakan rasio gradien transparan lembut (puncak 0.22, tengah 0.06, dasar 0.38) sehingga video prewedding tampak terang, jernih, dan hidup tanpa terbenam oleh lapisan gelap pekat. Kontras teks dijaga dengan `text-shadow`.
+- **Pencahayaan Soft Scrim:** Menggunakan rasio gradien transparan seimbang (puncak 0.55, tengah 0.38, dasar 0.70) sehingga video prewedding tetap hidup dan dinamis namun teks kutipan, doa, dan tipografi di atasnya memiliki kontras tinggi yang mudah dibaca.
 - Jika berformat video (`.mp4`, `.webm`, `.mov`), template tema otomatis menyuntikkan elemen HTML5 `<video class="..." autoplay loop muted playsinline webkit-playsinline>` dengan `object-fit: cover` dan `object-position: center center`.
 - Jika berformat gambar, tetap mempertahankan CSS `background-image` standar tanpa regresi.
 
@@ -1142,6 +1159,31 @@ Seluruh sakelar seksi dikelola dalam JSON field `featureSettings` pada model `In
 - Seluruh template master dan data demo mengadopsi standar salam pernikahan universal elegan non-sektarian secara default:
   > *"Dengan penuh rasa syukur dan sukacita, kami mengundang Anda untuk merayakan persatuan cinta kami dalam ikatan suci pernikahan."*
 - Penamaan sesi acara default diatur ke standar universal: `WEDDING CEREMONY` dan `DINNER RECEPTION`.
+
+### 4. Arsitektur Pemisahan Orang Tua & Deteksi Otomatis Relasi (Zero-Dropdown)
+- **Pemisahan 4 Kolom Terstruktur:**
+  - `groomFather` & `groomMother` (Ayah & Ibu Mempelai Pria)
+  - `brideFather` & `brideMother` (Ayah & Ibu Mempelai Wanita)
+- **Deteksi Relasi Otomatis (Zero-Hardcode & Zero-Dropdown):**
+  - Groom secara otomatis mendapat awalan `"Putra dari"`.
+  - Bride secara otomatis mendapat awalan `"Putri dari"`.
+  - Mengeliminasi kebutuhan dropdown urutan anak ("anak ke-1", "anak bungsu", dsb) yang rentan typo dan memperlambat onboarding user.
+- **Format Rendering Bersih & Anti-Orphan:**
+  - `candani.html` dkk menyusunnya dalam struktur vertikal terorganisir:
+    ```html
+    <div class="couple-parents" data-lux-field="groomParents">
+      <span class="parent-prefix">{{firstParentPrefix}}</span>
+      <span class="parent-father">{{firstFather}}</span>
+      <span class="parent-mother">{{firstMother}}</span>
+    </div>
+    ```
+  - Menjamin nama orang tua dan gelar kehormatan tersusun murni dan natural secara vertikal tanpa simbol `&` liar di awal baris nama ibu (*zero awkward orphan symbols*).
+- **Murni String Bebas & Otonomi Sapaan Klien (Pure Raw String Input):**
+  - Sistem tidak menyisipkan atau memaksakan prefix sapaan seperti `"Bpk."` atau `"Ibu"` pada nama orang tua.
+  - Klien memiliki kebebasan penuh menuliskan gelar akademik/adat, sapaan penghormatan, status almarhum/almarhumah (misal: `"Alm."`, `"Almh."`, `"†"`), atau nama langsung tanpa manipulasi otomatis string.
+- **Kompatibilitas Penuh Warisan (Backward Compatibility):**
+  - Kolom gabungan `groomParents` dan `brideParents` tetap dipertahankan.
+  - `lib/themeEngine.ts` otomatis merakit `firstParents` & `secondParents` jika kolom terpisah digunakan, atau sebaliknya otomatis mem-parse string gabungan warisan jika klien lama belum mengisi kolom terpisah.
 
 ---
 
@@ -1432,4 +1474,75 @@ Untuk memastikan showroom demo tema publik (`/demo/[themeId]`) tampil memukau da
    - Route handler `app/demo/[theme]/[file]/route.ts` membaca langsung file runtime (`thumbnail_mobile.webp`, `thumbnail_desktop.webp`, lagu, dan aset visual lainnya) dari disk `public/demo/[theme]/[file]`.
    - Dilengkapi proteksi anti-cache 404 (`Cache-Control: no-store, no-cache, must-revalidate, max-age=0`) agar CDN Cloudflare dan browser tidak mengunci status 404 saat file baru belum diunggah.
    - **Universal Multi-Slot Cache Busting di HTML Statis:** Mesin kompilasi (`lib/demoPublisher.ts` dan `lib/demoRegistry.ts`) secara otomatis menyuntikkan timestamp versi dinamis `?v=${updatedAt}` pada seluruh slot aset (`landingCoverUrl`, `sidebarPhotoUrl`, `globalBgUrl`, `homePhotoUrl`, `footerPhotoUrl`, `groomPhotoUrl`, `bridePhotoUrl`, `galleryPhotos`, dan `audioUrl`). Hal ini menjamin setiap pergantian foto/video/lagu di Demo Studio langsung aktif seketika di browser dan menembus cache Cloudflare Edge CDN (HTTP 200 fresh) tanpa perlu membuka via IP atau melakukan purge cache manual.
+
+### 17.5 — Penghapusan Aset Bersih & Fallback Kanvas Transparan di Demo Studio
+1. **Pembersihan Fisik & Basis Data Terpadu:**
+   - Endpoint `DELETE /api/admin/themes/[id]/demo-asset?slot=[slot]` memverifikasi sesi admin, menghapus file fisik di `public/demo/[themeId]/` untuk seluruh variasi format (`.webp`, `.jpg`, `.png`, `.mp4`, `.mp3`, dll.), dan memperbarui data JSON di `adminSetting.theme_demo_[themeId]` dengan string kosong `""`.
+   - Mengompilasi ulang file statis `index.html` dan merevalidasi cache Next.js (`/demo`, `/demo/[themeId]`, `/api/public/themes`).
+2. **Staged Deletion & Restorasi di UI Admin:**
+   - Menyediakan tombol *Hapus* dan *Pulihkan* (undo) pada setiap slot foto sampul, 8 galeri showroom, dan 4 kenangan tamu.
+   - Status draft penghapusan ditandai dengan badge tegas *"✕ Dikosongkan"* dan placeholder netral.
+3. **Graceful Zero-Asset Handling:**
+   - Resolusi template di `lib/demoRegistry.ts` membedakan antara field yang sengaja dikosongkan (`""`) versus field yang belum didefinisikan (`undefined`), sehingga foto default tidak dipaksakan muncul kembali saat admin sengaja mengosongkannya.
+   - Dilengkapi aturan CSS global di `public/css/modules.css`: `img[src=""], img:not([src]) { display: none !important; }`.
+
+### 17.6 — Isolasi Transaksi & Order-Level Payment Method Lock
+1. **Pemisahan Daur Hidup Transaksi:**
+   - Transaksi di tabel `orders` menyimpan data metode (`GATEWAY` vs `MANUAL_TRANSFER`), `snapToken`, dan `proofImageUrl` secara mandiri.
+   - Perubahan toggle global `payment_mode` oleh admin di menu Pengaturan hanya mengubah baris setting platform, tidak mengubah status maupun riwayat order yang sedang berjalan.
+2. **Order-Level Lock di Halaman Checkout (`/checkout`):**
+   - Halaman checkout mengunci mode tampilan secara presisi: jika pesanan memiliki `paymentMethod === "MANUAL_TRANSFER"` atau sudah ada `proofImageUrl`, tampilan klien dikunci ke mode `MANUAL` (menampilkan status *"Menunggu Verifikasi Admin"* dan struk pembayaran).
+   - Menjamin bahwa klien yang sudah transfer manual tidak akan pernah terganggu atau tertutup oleh tampilan QRIS gateway meskipun Admin mengubah toggle global di tengah jalan.
+
+### 17.7 — Arsitektur Theme-Specific Blueprint & Dynamic Custom Labels
+1. **Registri Kamus Budaya & Narasi Bawaan (`lib/themeDefaults.ts`):**
+   - Mendefinisikan cetak biru teks narasi spesifik untuk seluruh 15 tema lintas 3 kategori:
+     - **Tradisional:** Sentuhan bahasa adat & doa kedaerahan (Bugis Candani, Jawa Keraton Dillalucky, Sunda Mayang, Keraton Prameswari, Nusantara Badrika).
+     - **Modern Editorial:** Narasi puitis editorial majalah dwi-bahasa (Ameera, Chronicle, Lumina, Papercut, Solaria, Wave).
+     - **Premium Exclusive:** Diksi mewah monokrom dan formal terhormat (Artisan, Aurelia, Kalandra, Valente).
+   - **Tipografi Harmonis (Title Case vs Uppercase):** Menyesuaikan karakteristik font khas tema; tema berskrip kaligrafi (*Parisienne* di Candani) dikonfigurasi dengan Title Case (`Dress Code`, `Live Streaming`, `Love Story`, `Our Moments`, `Turut Mengundang`) guna mengeliminasi tabrakan glif huruf bersambung yang rusak saat dijadikan all-caps.
+2. **Tab Khusus di Admin Demo Studio (`app/(admin)/admin/page.tsx`):**
+   - **Tab 2 (Mempelai & Rangkaian Acara):** Formulir Timeline Acara demo yang dapat ditambah (`+ Tambah Acara`) atau dihapus per item secara dinamis.
+   - **Tab 3 (Kisah Cinta & Tanda Kasih):** Formulir Bab Cerita demo yang dapat ditambah (`+ Tambah Bab Cerita`) atau dihapus per item secara dinamis, serta rekening bank demo dengan `+ Tambah Rekening` & `Hapus Rekening`.
+   - **Tab 4 (Teks Seksi & Narasi Bawaan):** 6 Sub-Panel lengkap yang mengontrol:
+     - Sub-Panel 1: Pembuka & Sampul Undangan (Cover, Quote, Open Button)
+     - Sub-Panel 2: Seksi Mempelai & Acara (`coupleTitle`, `coupleSub`, `eventsTitle`, `eventsSub`)
+     - Sub-Panel 3: Seksi Kisah Cinta & Galeri Momen (`storyTitle`, `storyEyebrow`, `galleryTitle`, `galleryEyebrow`, `galleryQuote`)
+     - Sub-Panel 4: Seksi Dress Code & Live Streaming (`dressCodeTitle`, `dressCodeEyebrow`, `dressCodeSubtitle`, `streamingTitle`, `streamingEyebrow`, `streamingSubtitle`)
+     - Sub-Panel 5: Seksi Tanda Kasih & Turut Mengundang (`giftTitle`, `giftEyebrow`, `giftDesc`, `turutMengundangTitle`, `turutMengundangEyebrow`, `turutMengundangSubtitle`)
+     - Sub-Panel 6: Doa Penutup, Ucapan & RSVP (`closingQuote`, `closingSub`, `rsvpTitle`, `rsvpBtnText`, `wishesTitle`, `wishesSub`)
+3. **Pewarisan Dinamis Klien (Inheritance Architecture):**
+   - Saat klien membuat undangan via `POST /api/client/invitations/create`, sistem mengambil konfigurasi `theme_demo_${themeId}` dari `prisma.adminSetting` dan menggabungkannya dengan `getThemeBlueprint(themeId)`.
+   - Hal ini menjamin bahwa seluruh perbaikan label dan penyesuaian teks yang dibuat Admin di Demo Studio terwariskan secara otomatis ke setiap undangan baru yang dibuat klien tanpa memerlukan hardcode.
+4. **Sintesis Arketipe Otomatis untuk Tema Baru (Zero-Configuration Fallback):**
+   - Bila Administrator mengunggah tema baru yang belum tercatat di daftar `THEME_BLUEPRINTS`, fungsi `getThemeBlueprint` secara otomatis mendeteksi kategori tema (`traditional`, `modern`, atau `premium`) dan menyintesiskan blueprint arketipe default yang selaras:
+     - `DEFAULT_TRADITIONAL_BLUEPRINT`: Nuansa adat nusantara, doa Ar-Rum 21, Mempelai, Rangkaian Acara, Tanda Kasih, Turut Mengundang.
+     - `DEFAULT_MODERN_BLUEPRINT`: Estetika modern bilingual, Celebration of Love, Love Story, Our Moments, Dress Code, Live Streaming.
+     - `DEFAULT_PREMIUM_BLUEPRINT`: Diksi luxury monokrom, Sacred Vows, The Solemnity, The Tapestry, Curated Frames, Wedding Registry, Expressions of Grace.
+   - Nama tema diturunkan otomatis dari database (`theme.name`) atau kapitalisasi `themeId`. Saat Admin membuka Demo Studio pertama kali (`GET /api/admin/themes/[id]/demo-data`), seluruh formulir 4 Tab sudah 100% terisi data awal yang rapi tanpa ada input kosong.
+
+### 17.8 — Arsitektur Theme Freedom: Pemisahan Desain Tema Master & Conditional Blocks (`{{#if}}`)
+1. **Prinsip Independensi Desain Tema Master:**
+   - Menghapus monopoli tampilan Engine atas seksi-seksi dinamis. Engine (`lib/themeEngine.ts` & `lib/demoRegistry.ts`) bertindak sebagai **penyedia data murni** (data provider), sedangkan Tema Master (`themes/**/*.html`) memiliki kebebasan penuh merancang struktur DOM, ornamen, tipografi, dan tata letak visualnya sendiri.
+2. **Conditional Template Block Parser (`lib/renderTemplate.ts`):**
+   - Menambahkan evaluator blok kondisional deterministik:
+     ```html
+     {{#if showStory}}
+     <section id="story" class="slide-section">
+       <!-- Struktur HTML bebas khas tema master -->
+       {{storyItemsHtml}}
+     </section>
+     {{/if}}
+     ```
+   - **Evaluasi Truthiness:** Blok dipertahankan jika nilai variabel truthy (bukan `undefined`, `null`, `false`, `"false"`, `0`, atau `"0"`). Jika klien menonaktifkan sakelar fitur di dashboard, seluruh blok dihapus bersih dari dokumen (*zero ghost elements* / tanpa menyisakan tag kosong).
+   - Mendukung blok invers `{{#unless condition}} ... {{/unless}}`.
+3. **Penerapan Pilot pada Tema Candani (`themes/traditional/candani.html`):**
+   - Menggantikan injeksi kartu hitam generik `.journey-card-container` dengan tata letak native `.candani-story-flow` yang terintegrasi dengan ornamen floral, pembatas SVG melengkung, tipografi *Italiana* / *Playfair Display*, dan tanda tangan *Parisienne*.
+4. **Pembaruan Starter Blueprint (`themes/starter-blueprint.html` & `public/downloads/starter-blueprint.html`):**
+   - Mendokumentasikan dua opsi implementasi seksi dinamis bagi para pengembang tema (Theme Builders):
+     - **Opsi A (Bawaan Engine):** Menggunakan token seksi terkomposisi instan (`{{storySectionHtml}}`).
+     - **Opsi B (Native Master Theme):** Menggunakan blok kondisional `{{#if showStory}}` dengan kelas CSS kustom dan token item granular (`{{storyItemsHtml}}`).
+5. **Garansi Kompatibilitas Mundur 100% (Zero-Breaking Policy):**
+   - Seluruh 14 tema master lainnya tetap berfungsi normal tanpa regresi karena Engine tetap mengekspor fallback token lama (`storySectionHtml`, dll.).
+
 

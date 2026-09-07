@@ -758,6 +758,9 @@ const UNIFIED_CLIENT_RUNTIME_SCRIPT = `
       if (cover) cover.classList.add('slide-up-hidden', 'opened', 'hidden');
     }
     window.playAudio();
+    if (typeof window.__luxEvaluateHomeDock === 'function') {
+      window.__luxEvaluateHomeDock();
+    }
   };
 
   // Delegated Capture Listener for Any Open-Invitation Button
@@ -769,6 +772,9 @@ const UNIFIED_CLIENT_RUNTIME_SCRIPT = `
     );
     if (openBtn) {
       window.playAudio();
+      if (typeof window.__luxEvaluateHomeDock === 'function') {
+        window.__luxEvaluateHomeDock();
+      }
     }
   }, { capture: true, passive: true });
 
@@ -896,22 +902,92 @@ const UNIFIED_CLIENT_RUNTIME_SCRIPT = `
   }
   initPreloaderGuard();
 
+  // 11. Universal Smart Dock Home Zone State Guard
+  function initHomeDockGuard() {
+    var dock = document.querySelector('.bottom-dock, nav.bottom-dock');
+    if (!dock) return;
+
+    function getHomeBoundary() {
+      var homeEl = document.querySelector(
+        '#home, #section-quote, .slide-opening, .sec-hero-slideshow, .sec-hero-editorial, main > section:first-of-type, .main-scroll-panel > section:first-of-type, section:first-of-type'
+      );
+      if (homeEl) {
+        var rect = homeEl.getBoundingClientRect();
+        var scrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+        var top = scrollY + rect.top;
+        var h = homeEl.offsetHeight || window.innerHeight;
+        return Math.max(window.innerHeight * 0.65, (top + h) - 80);
+      }
+      return window.innerHeight * 0.75;
+    }
+
+    var isAtHome = true;
+    var ticking = false;
+
+    function evaluateHomeZone() {
+      var scrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+      var baseThreshold = getHomeBoundary();
+      var exitThreshold = baseThreshold;
+      var enterThreshold = Math.max(80, baseThreshold - 40);
+
+      if (isAtHome) {
+        if (scrollY >= exitThreshold) {
+          isAtHome = false;
+          document.body.classList.remove('lux-at-home-zone');
+        }
+      } else {
+        if (scrollY < enterThreshold) {
+          isAtHome = true;
+          document.body.classList.add('lux-at-home-zone');
+        }
+      }
+      ticking = false;
+    }
+
+    window.__luxEvaluateHomeDock = evaluateHomeZone;
+
+    evaluateHomeZone();
+
+    window.addEventListener('scroll', function() {
+      if (!ticking) {
+        window.requestAnimationFrame(evaluateHomeZone);
+        ticking = true;
+      }
+    }, { passive: true });
+
+    window.addEventListener('resize', function() {
+      evaluateHomeZone();
+    }, { passive: true });
+
+    dock.addEventListener('click', function(e) {
+      var a = e.target && e.target.closest ? e.target.closest('a') : null;
+      if (!a) return;
+      var href = a.getAttribute('href') || '';
+      if (href === '#home' || href === '#section-quote' || href === '#section-opening' || href === '#quote') {
+        setTimeout(evaluateHomeZone, 60);
+      }
+    }, { passive: true });
+  }
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
       initPreloaderGuard();
       resolveGuestName();
       initAudioInteractionFallback();
       syncActiveTogglesUI();
+      initHomeDockGuard();
     });
   } else {
     initPreloaderGuard();
     resolveGuestName();
     initAudioInteractionFallback();
     syncActiveTogglesUI();
+    initHomeDockGuard();
   }
   window.addEventListener('load', function() {
     initPreloaderGuard();
     syncActiveTogglesUI();
+    initHomeDockGuard();
   });
 })();
 </script>
@@ -1022,7 +1098,17 @@ export async function renderTemplateFile(
   }
 
   // Injections: Meta Tags, Head Audio Blocker, Global Modules CSS, Unified Runtime, Autoplay Script & Inline Live Editor Script
-  const GLOBAL_MODULES_CSS = `<link rel="stylesheet" href="/css/modules.css">`;
+  const GLOBAL_MODULES_CSS = `<link rel="stylesheet" href="/css/modules.css">
+  <style id="luxSmartDockStyles">
+    /* Luxenary Engine Smart Dock Home Zone State Guard */
+    body.lux-at-home-zone .bottom-dock,
+    .bottom-dock.lux-dock-home-hidden {
+      transform: translate3d(-50%, calc(100% + 48px), 0) !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+      transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease !important;
+    }
+  </style>`;
   const metaTags = data.metaTagsHtml ? `${data.metaTagsHtml}\n` : '';
   let closingStyle = '';
   if (data.closingPhotoUrl) {
@@ -1138,7 +1224,7 @@ export async function renderTemplateFile(
         left: 0;
         width: 100vw;
         height: 100vh;
-        background: linear-gradient(to bottom, rgba(7,7,9,0.22) 0%, rgba(7,7,9,0.06) 35%, rgba(7,7,9,0.38) 100%);
+        background: linear-gradient(to bottom, rgba(7,7,9,0.55) 0%, rgba(7,7,9,0.38) 35%, rgba(7,7,9,0.70) 100%);
         z-index: 1;
         pointer-events: none;
       }
@@ -1338,6 +1424,15 @@ export async function renderTemplateFile(
 `;
   }
 
+  // Pre-seed body with lux-at-home-zone for zero-FOUC clean Home screen
+  if (!tpl.includes("lux-at-home-zone")) {
+    if (tpl.match(/<body\b([^>]*)class=(["'])([^"']*)\2/i)) {
+      tpl = tpl.replace(/<body\b([^>]*)class=(["'])([^"']*)\2/i, '<body$1class=$2$3 lux-at-home-zone$2');
+    } else if (tpl.match(/<body\b/i)) {
+      tpl = tpl.replace(/<body\b/i, '<body class="lux-at-home-zone"');
+    }
+  }
+
   if (universalPreloaderHtml) {
     if (tpl.match(/(<body[^>]*>)/i)) {
       tpl = tpl.replace(/(<body[^>]*>)/i, `$1\n  ${universalPreloaderHtml}`);
@@ -1374,6 +1469,51 @@ export async function renderTemplateFile(
         return `<${tagName}${attrs}>${svgPrefix}${escapeHtmlAttr(String(val))}</${tagName}>`;
       }
       return match;
+    }
+  );
+
+  // Conditional Template Blocks: {{#if condition}} ... {{/if}} and {{#unless condition}} ... {{/unless}}
+  tpl = tpl.replace(
+    /\{[\s\n]*\{[\s\n]*#if\s+([\w.]+)[\s\n]*\}[\s\n]*\}([\s\S]*?)\{[\s\n]*\{[\s\n]*\/if[\s\n]*\}[\s\n]*\}/gi,
+    (_, key: string, innerContent: string) => {
+      let val = data[key];
+      if (val === undefined && key.includes(".")) {
+        const parts = key.split(".");
+        let curr: any = data;
+        for (const p of parts) {
+          if (curr && typeof curr === "object") {
+            curr = curr[p];
+          } else {
+            curr = undefined;
+            break;
+          }
+        }
+        val = curr;
+      }
+      const isTruthy = Boolean(val && val !== "false" && val !== "0" && val !== 0);
+      return isTruthy ? innerContent : "";
+    }
+  );
+
+  tpl = tpl.replace(
+    /\{[\s\n]*\{[\s\n]*#unless\s+([\w.]+)[\s\n]*\}[\s\n]*\}([\s\S]*?)\{[\s\n]*\{[\s\n]*\/unless[\s\n]*\}[\s\n]*\}/gi,
+    (_, key: string, innerContent: string) => {
+      let val = data[key];
+      if (val === undefined && key.includes(".")) {
+        const parts = key.split(".");
+        let curr: any = data;
+        for (const p of parts) {
+          if (curr && typeof curr === "object") {
+            curr = curr[p];
+          } else {
+            curr = undefined;
+            break;
+          }
+        }
+        val = curr;
+      }
+      const isTruthy = Boolean(val && val !== "false" && val !== "0" && val !== 0);
+      return !isTruthy ? innerContent : "";
     }
   );
 

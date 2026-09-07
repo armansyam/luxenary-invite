@@ -36,28 +36,46 @@
       --bg-light: {{colorBgLight}};
       --bg-dark: {{colorBgDark}};
       --text-dark: {{colorTextDark}};
-      --floral-terracotta: #ab5e44;
-      --floral-terracotta-light: #d68f76;
-      --floral-sand: #e6d3c4;
-      --floral-dark: #140c08;
-      --floral-card: rgba(33, 19, 14, 0.94);
-      --floral-border: rgba(214, 143, 118, 0.35);
-      --floral-border-bright: rgba(214, 143, 118, 0.7);
-      --floral-glow: 0 0 25px rgba(171, 94, 68, 0.3);
+      /* DYNAMIC FLORAL PALETTE MAPPING */
+      --floral-terracotta: var(--primary, #ab5e44);
+      --floral-terracotta-light: var(--accent, #d68f76);
+      --floral-sand: var(--bg-light, #e6d3c4);
+      --floral-dark: var(--bg-dark, #140c08);
+      --floral-card: color-mix(in srgb, var(--primary, #ab5e44) 18%, var(--bg-dark, #140c08) 92%);
+      --floral-card-deep: color-mix(in srgb, var(--bg-dark, #140c08) 95%, transparent);
+      --floral-border: color-mix(in srgb, var(--accent, #d68f76) 35%, transparent);
+      --floral-border-bright: color-mix(in srgb, var(--accent, #d68f76) 75%, transparent);
+      --floral-border-dim: color-mix(in srgb, var(--accent, #d68f76) 22%, transparent);
+      --floral-glow: 0 0 25px color-mix(in srgb, var(--primary, #ab5e44) 30%, transparent);
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html { scroll-behavior: smooth; }
     body {
       font-family: 'Jost', 'Plus Jakarta Sans', sans-serif;
-      background-color: var(--bg-dark, var(--floral-dark));
+      background-color: var(--bg-dark, #140c08);
       color: #fbf7f4;
       overflow-x: hidden;
       width: 100%;
-      background-image: radial-gradient(circle at 50% 10%, rgba(43,23,15,0.85) 0%, rgba(20,12,8,0.98) 85%), url('{{homePhotoUrl}}');
+    }
+
+    /* FIXED BACKGROUND CANVAS (FOKUS DI PANEL UNDANGAN & ANTI-LAG IOS) */
+    .fixed-bg-layer {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100vh;
+      height: 100dvh;
+      background-image: radial-gradient(
+        circle at 50% 25%,
+        color-mix(in srgb, var(--primary, #ab5e44) 30%, var(--bg-dark, #140c08) 82%) 0%,
+        color-mix(in srgb, var(--bg-dark, #140c08) 96%, transparent) 88%
+      ), url('{{homePhotoUrl}}');
       background-size: cover;
       background-position: center;
-      background-attachment: fixed;
+      background-repeat: no-repeat;
+      z-index: 1;
+      pointer-events: none;
     }
 
     /* TYPOGRAPHY CLASSES */
@@ -67,8 +85,8 @@
 
     /* ANIMATIONS & MICRO-INTERACTIONS */
     @keyframes floralPetalGlow {
-      0%, 100% { transform: translateY(0px) rotate(0deg) scale(1); filter: drop-shadow(0 6px 18px rgba(214,143,118,0.35)); }
-      50% { transform: translateY(-8px) rotate(3deg) scale(1.04); filter: drop-shadow(0 12px 28px rgba(214,143,118,0.6)); }
+      0%, 100% { transform: translateY(0px) rotate(0deg) scale(1); filter: drop-shadow(0 6px 18px var(--floral-border)); }
+      50% { transform: translateY(-8px) rotate(3deg) scale(1.04); filter: drop-shadow(0 12px 28px var(--floral-border-bright)); }
     }
 
     .reveal-on-scroll {
@@ -82,14 +100,14 @@
     }
 
     /* 1. COVER SCREEN */
-    .cover-overlay {
+    .cover-screen, .cover-overlay {
       position: fixed; inset: 0; z-index: 9999;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       text-align: center; padding: 2.5rem 1.5rem;
-      background: radial-gradient(circle at center, rgba(33,19,14,0.9) 0%, rgba(20,12,8,0.98) 100%), url('{{landingCoverUrl}}') center/cover no-repeat;
+      background: radial-gradient(circle at center, color-mix(in srgb, var(--primary, #ab5e44) 28%, var(--bg-dark, #140c08) 90%) 0%, color-mix(in srgb, var(--bg-dark, #140c08) 98%, transparent) 100%), url('{{landingCoverUrl}}') center/cover no-repeat;
       transition: transform 0.85s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.85s ease;
     }
-    .cover-overlay.opened {
+    .cover-screen.opened, .cover-screen.slide-up-hidden, .cover-overlay.opened {
       transform: translateY(-100%); pointer-events: none; opacity: 0;
     }
 
@@ -116,24 +134,24 @@
     
     .btn-buka-undangan {
       display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem;
-      padding: 0.95rem 2.8rem; background: linear-gradient(90deg, #ab5e44 0%, #d68f76 50%, #ab5e44 100%);
+      padding: 0.95rem 2.8rem; background: linear-gradient(90deg, var(--floral-terracotta) 0%, var(--floral-terracotta-light) 50%, var(--floral-terracotta) 100%);
       background-size: 200% auto;
       color: #ffffff; font-family: 'Jost', sans-serif; font-weight: 600; font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase;
-      border: none; border-radius: 50px; cursor: pointer; box-shadow: 0 6px 20px rgba(171,94,68,0.45);
+      border: none; border-radius: 50px; cursor: pointer; box-shadow: 0 6px 20px color-mix(in srgb, var(--floral-terracotta) 45%, transparent);
       transition: all 0.35s ease;
     }
-    .btn-buka-undangan:hover { background-position: right center; transform: translateY(-2px); box-shadow: 0 10px 25px rgba(171,94,68,0.65); }
+    .btn-buka-undangan:hover { background-position: right center; transform: translateY(-2px); box-shadow: 0 10px 25px color-mix(in srgb, var(--floral-terracotta) 65%, transparent); }
 
     /* RESPONSIVE LAYOUT */
     .layout-wrapper { display: flex; width: 100%; min-height: 100vh; position: relative; }
     
-    .sidebar-desktop {
+    .sidebar-desktop, .left-hero {
       display: none; position: fixed; left: 0; top: 0; width: 55%; height: 100vh;
       background: url('{{sidebarPhotoUrl}}') center/cover no-repeat; z-index: 10;
     }
-    .sidebar-desktop::after {
+    .sidebar-desktop::after, .left-hero::after {
       content: ''; position: absolute; inset: 0;
-      background: linear-gradient(to top, rgba(20,12,8,0.96) 0%, rgba(20,12,8,0.3) 50%, transparent 100%);
+      background: linear-gradient(to top, var(--bg-dark, #140c08) 0%, color-mix(in srgb, var(--bg-dark, #140c08) 30%, transparent) 50%, transparent 100%);
     }
     .sidebar-desktop-content {
       position: absolute; bottom: 4rem; left: 3.5rem; right: 3.5rem; z-index: 20; color: #fff;
@@ -144,9 +162,10 @@
     }
 
     @media (min-width: 900px) {
-      .sidebar-desktop { display: block; width: calc(100% - 460px); }
+      .sidebar-desktop, .left-hero { display: block; width: calc(100% - 460px); }
       .main-scroll-panel { width: 460px; margin-left: calc(100% - 460px); min-width: 0; }
-      .cover-overlay { width: 460px; left: calc(100% - 460px); }
+      .cover-screen, .cover-overlay { width: 460px; left: calc(100% - 460px); }
+      .fixed-bg-layer { width: 460px; left: calc(100% - 460px); right: 0; }
       .bottom-dock { left: calc(100% - 230px) !important; }
       .sec-main-title,
       .sec-heading {
@@ -163,7 +182,7 @@
        FULL VIEWPORT ISOLATED SLIDES (100VH SETIAP SEKSI)
        ========================================================================== */
     .slide-section, .section-block, .sec-flow,
-    #section-quote, #section-couple, #section-events, #story, #moments, #gift,
+    #home, #section-quote, #section-couple, #section-events, #story, #moments, #gift,
     #section-wishes, #access-pass, #dresscode, #live, #turut-mengundang {
       width: 100%;
       min-height: 100vh;
@@ -176,7 +195,7 @@
       box-sizing: border-box;
       position: relative;
       text-align: center;
-      border-bottom: 1px solid rgba(214,143,118,0.18);
+      border-bottom: 1px solid var(--floral-border-dim);
     }
 
     .sec-content-box {
@@ -186,6 +205,15 @@
       display: flex;
       flex-direction: column;
       align-items: center;
+    }
+
+    /* SIGNATURE BOTANICAL DIVIDER */
+    .floral-divider-ornament {
+      width: 130px;
+      height: 18px;
+      margin: 0.4rem auto 1rem;
+      display: block;
+      opacity: 0.85;
     }
 
     .sec-eyebrow {
@@ -204,40 +232,217 @@
     }
 
     /* MEMPELAI CARD */
-    .couple-card {
-      width: 100%; background: var(--floral-card); border: 1px solid var(--floral-border); border-radius: 24px;
-      padding: 2.2rem 1.5rem; margin-bottom: 1.8rem; box-shadow: var(--floral-glow); position: relative;
-      transition: transform 0.4s ease, border-color 0.4s ease;
+    /* ==========================================
+       MEMPELAI PROFILE STYLING (CARD-LESS ARCHITECTURE)
+       ========================================== */
+    .couple-staggered-container {
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.8rem;
+      margin-top: 0.8rem;
     }
-    .couple-card:hover { transform: translateY(-4px); border-color: var(--floral-border-bright); }
+
+    .couple-unit {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .couple-unit.unit-left {
+      align-items: flex-start;
+      text-align: left;
+    }
+    .couple-unit.unit-right {
+      align-items: flex-end;
+      text-align: right;
+    }
+
+    .couple-frame-anchor {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      margin-bottom: 0.9rem;
+    }
+
+    /* BINGKAI FOTO KUBAH LENGKUNG TRADISIONAL BER-SHADOW */
     .couple-photo-wrap {
-      width: 155px; height: 200px; margin: 0 auto 1.3rem; border-radius: 100px 100px 20px 20px;
-      padding: 5px; border: 2px solid var(--floral-terracotta-light); overflow: hidden;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+      width: 145px;
+      height: 190px;
+      border-radius: 95px 95px 20px 20px;
+      padding: 4px;
+      border: 2px solid var(--floral-terracotta-light);
+      overflow: hidden;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.65), 0 0 22px color-mix(in srgb, var(--floral-terracotta-light) 25%, transparent);
+      position: relative;
+      z-index: 2;
+      background: color-mix(in srgb, var(--bg-dark, #140c08) 85%, transparent);
     }
-    .couple-photo-wrap img { width: 100%; height: 100%; object-fit: cover; border-radius: 94px 94px 15px 15px; }
-    .couple-name { font-size: 1.7rem; color: var(--floral-sand); margin-bottom: 0.4rem; font-family: 'Italiana', serif; font-weight: 600; }
-    .couple-parents { font-size: 0.84rem; color: rgba(251,247,244,0.85); line-height: 1.6; font-style: italic; font-family: 'Playfair Display', serif; }
+    .couple-photo-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 88px 88px 16px 16px;
+      display: block;
+    }
+
+    /* WATERMARK GRADIENT INITIAL DI SAMPING FOTO (BOLD EDITORIAL SCALE) */
+    .couple-watermark-initial {
+      font-family: 'Italiana', 'Playfair Display', serif;
+      font-weight: 700;
+      font-size: clamp(9.5rem, 32vw, 13rem);
+      line-height: 0.8;
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      z-index: 1;
+      background: linear-gradient(180deg, var(--floral-terracotta-light) 10%, rgba(223,140,102,0.18) 75%, transparent 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      opacity: 0.45;
+      letter-spacing: -0.06em;
+      filter: drop-shadow(0 4px 18px rgba(0,0,0,0.5));
+    }
+    .initial-right {
+      left: calc(100% - 35px);
+    }
+    .initial-left {
+      right: calc(100% - 35px);
+    }
+
+    .couple-info {
+      width: 100%;
+      max-width: 320px;
+    }
+    .unit-left .couple-info {
+      margin-left: 0.2rem;
+    }
+    .unit-right .couple-info {
+      margin-right: 0.2rem;
+    }
+
+    .couple-role {
+      font-family: 'Jost', sans-serif;
+      font-size: 0.68rem;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: var(--floral-sand);
+      font-weight: 600;
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+    .couple-name {
+      font-size: 1.65rem;
+      color: var(--floral-terracotta-light);
+      margin-bottom: 0.35rem;
+      font-family: 'Italiana', serif;
+      font-weight: 600;
+      line-height: 1.25;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.7);
+    }
+    .couple-parents {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      margin-top: 0.2rem;
+      font-size: 0.82rem;
+      color: rgba(251,247,244,0.88);
+      line-height: 1.45;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+    }
+    .unit-left .couple-parents {
+      align-items: flex-start;
+      text-align: left;
+    }
+    .unit-right .couple-parents {
+      align-items: flex-end;
+      text-align: right;
+    }
+    .parent-prefix {
+      font-family: 'Jost', sans-serif;
+      font-size: 0.63rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--floral-sand);
+      font-weight: 600;
+      opacity: 0.85;
+      display: block;
+      margin-bottom: 0.15rem;
+    }
+    .parent-father,
+    .parent-mother {
+      font-style: italic;
+      font-family: 'Playfair Display', serif;
+      font-size: 0.84rem;
+      color: rgba(251,247,244,0.92);
+      display: block;
+    }
     .couple-ig {
-      display: inline-flex; align-items: center; gap: 0.4rem; margin-top: 0.8rem;
-      font-family: 'Jost', sans-serif; font-size: 0.78rem; color: var(--floral-terracotta-light); text-decoration: none; font-weight: 600;
-      padding: 0.4rem 1rem; border-radius: 50px; background: rgba(214,143,118,0.1); border: 1px solid var(--floral-border);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-top: 0.7rem;
+      font-family: 'Jost', sans-serif;
+      font-size: 0.74rem;
+      color: var(--floral-terracotta-light);
+      text-decoration: none;
+      font-weight: 600;
+      padding: 0.35rem 0.9rem;
+      border-radius: 50px;
+      background: color-mix(in srgb, var(--floral-terracotta-light) 12%, transparent);
+      border: 1px solid var(--floral-border);
+      transition: background 0.2s ease;
+    }
+    .couple-ig:hover {
+      background: color-mix(in srgb, var(--floral-terracotta-light) 25%, transparent);
+    }
+
+    /* AMPERSAND CONNECTOR */
+    .couple-connector {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: -0.6rem 0;
+    }
+    .connector-amp {
+      font-family: 'Parisienne', cursive;
+      font-size: 2.8rem;
+      color: var(--floral-sand);
+      opacity: 0.75;
+      line-height: 1;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.8);
+    }
+
+    /* HOME SECTION COMPACT RHYTHM */
+    .sec-home {
+      padding: 3.8rem 1.4rem 3.2rem;
     }
 
     /* COUNTDOWN */
-    .countdown-grid { display: flex; justify-content: center; gap: 0.8rem; margin: 1.8rem 0 1.2rem; }
+    .countdown-grid { display: flex; justify-content: center; gap: 0.65rem; margin: 1.2rem 0 1.1rem; }
     .countdown-cell {
-      background: var(--floral-card); border: 1px solid var(--floral-border); border-radius: 14px;
-      padding: 0.85rem; min-width: 68px; text-align: center; box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+      background: color-mix(in srgb, var(--floral-card) 60%, transparent);
+      border: 1px solid var(--floral-border);
+      border-radius: 12px;
+      padding: 0.6rem 0.5rem;
+      min-width: 60px;
+      text-align: center;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
     }
-    .countdown-val { font-size: 1.7rem; font-weight: 700; font-family: 'Italiana', serif; color: var(--floral-terracotta-light); line-height: 1; }
-    .countdown-lbl { font-family: 'Jost', sans-serif; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.15em; color: rgba(251,247,244,0.7); margin-top: 0.3rem; font-weight: 500; }
+    .countdown-val { font-size: 1.45rem; font-weight: 700; font-family: 'Italiana', serif; color: var(--floral-terracotta-light); line-height: 1; }
+    .countdown-lbl { font-family: 'Jost', sans-serif; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.14em; color: rgba(251,247,244,0.75); margin-top: 0.25rem; font-weight: 500; }
 
     .btn-cal {
-      display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.8rem 2.2rem;
+      display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.65rem 1.8rem;
       border: 1px solid var(--floral-terracotta-light); border-radius: 50px; color: var(--floral-sand);
-      font-family: 'Jost', sans-serif; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
-      text-decoration: none; transition: all 0.3s; background: rgba(33,19,14,0.6);
+      font-family: 'Jost', sans-serif; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
+      text-decoration: none; transition: all 0.3s; background: color-mix(in srgb, var(--floral-card) 55%, transparent);
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
     }
     .btn-cal:hover { background: var(--floral-terracotta-light); color: #fff; transform: translateY(-2px); }
 
@@ -267,19 +472,20 @@
     }
     .btn-map-outline:hover { background: var(--floral-terracotta-light); color: #fff; }
 
-    /* JOURNEY / STORY STYLING */
-    .journey-card-container {
-      background: var(--floral-card); border: 1px solid var(--floral-border); border-radius: 18px;
-      padding: 2rem 1.5rem; text-align: left; box-shadow: var(--floral-glow); width: 100%; max-width: 440px;
+    /* JOURNEY / STORY STYLING (NATIVE CANDANI FLOW) */
+    .candani-story-flow {
+      display: flex; flex-direction: column; gap: 1.25rem; width: 100%; max-width: 440px; text-align: left;
+      background: rgba(43, 30, 24, 0.45); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      border: none; border-radius: 16px; padding: 1.5rem 1.4rem;
+      box-shadow: 0 12px 36px rgba(0,0,0,0.3);
     }
-    .journey-chapters { display: flex; flex-direction: column; gap: 1.5rem; }
-    .story-chapter-block { padding-bottom: 0.8rem; border-bottom: 1px dashed rgba(214,143,118,0.25); }
-    .story-chapter-block:last-child { border-bottom: none; }
+    .story-chapter-block { padding-bottom: 0.8rem; border-bottom: 1px dashed var(--floral-border-dim); }
+    .story-chapter-block:last-child { border-bottom: none; padding-bottom: 0; }
     .sc-label { font-family: 'Jost', sans-serif; font-size: 0.65rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--floral-terracotta-light); font-weight: 600; display: block; margin-bottom: 0.2rem; }
     .sc-title { font-size: 1.25rem; color: var(--floral-sand); font-family: 'Italiana', serif; margin-bottom: 0.4rem; }
     .sc-desc { font-size: 0.84rem; color: rgba(251,247,244,0.85); line-height: 1.7; font-family: 'Playfair Display', serif; font-style: italic; }
-    .journey-footer { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem; }
-    .jf-line { flex: 1; height: 1px; background: rgba(214,143,118,0.3); }
+    .journey-footer { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; margin-top: 1.25rem; width: 100%; max-width: 440px; }
+    .jf-line { flex: 1; height: 1px; background: var(--floral-border-dim); }
     .jf-signature { font-family: 'Parisienne', cursive; font-size: 2rem; color: var(--floral-terracotta-light); }
 
     /* GALLERY PUZZLE GRID & LIGHTBOX */
@@ -301,7 +507,7 @@
     .bank-owner { font-size: 0.78rem; color: rgba(251,247,244,0.75); display: block; margin-bottom: 0.6rem; font-style: italic; }
     .bank-row {
       display: flex; align-items: center; justify-content: space-between;
-      background: rgba(20,12,8,0.85); border: 1px solid var(--floral-border); border-radius: 10px; padding: 0.7rem 1rem;
+      background: color-mix(in srgb, var(--bg-dark, #140c08) 88%, transparent); border: 1px solid var(--floral-border); border-radius: 10px; padding: 0.7rem 1rem;
     }
     .bank-number { font-family: monospace; font-size: 1.05rem; color: #ffffff; letter-spacing: 0.08em; }
     .btn-copy {
@@ -314,11 +520,11 @@
     .form-row { margin-bottom: 1rem; }
     .form-lbl { font-family: 'Jost', sans-serif; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.15em; color: var(--floral-sand); display: block; margin-bottom: 0.3rem; }
     .form-in, .form-sel, .form-ta {
-      width: 100%; padding: 0.8rem 1rem; background: rgba(20,12,8,0.85); border: 1px solid var(--floral-border);
+      width: 100%; padding: 0.8rem 1rem; background: color-mix(in srgb, var(--bg-dark, #140c08) 88%, transparent); border: 1px solid var(--floral-border);
       border-radius: 10px; color: #ffffff; font-size: 0.85rem; outline: none; font-family: 'Jost', sans-serif;
     }
     .btn-rsvp-submit {
-      width: 100%; padding: 1rem; background: linear-gradient(90deg, #ab5e44 0%, #d68f76 50%, #ab5e44 100%);
+      width: 100%; padding: 1rem; background: linear-gradient(90deg, var(--floral-terracotta) 0%, var(--floral-terracotta-light) 50%, var(--floral-terracotta) 100%);
       color: #ffffff; border: none; border-radius: 50px; font-family: 'Jost', sans-serif; font-weight: 700; font-size: 0.8rem;
       letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; transition: all 0.3s;
     }
@@ -343,7 +549,7 @@
     /* DOCK */
     .bottom-dock {
       position: fixed; bottom: 20px; left: 50%; transform: translate3d(-50%, 0, 0); z-index: 100;
-      background: rgba(33, 19, 14, 0.95); border: 1px solid var(--floral-border); border-radius: 50px;
+      background: color-mix(in srgb, var(--floral-card) 95%, transparent); border: 1px solid var(--floral-border); border-radius: 50px;
       padding: 0.5rem 1.2rem; display: flex; gap: 1.4rem; backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
       box-shadow: 0 10px 30px rgba(0,0,0,0.6); max-width: 440px; width: calc(100% - 30px); justify-content: space-around;
       transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.42s cubic-bezier(0.16, 1, 0.3, 1);
@@ -357,6 +563,42 @@
     .dock-btn { color: rgba(251,247,244,0.7); font-family: 'Jost', sans-serif; font-size: 0.65rem; text-decoration: none; display: flex; flex-direction: column; align-items: center; gap: 0.2rem; }
     .dock-btn:hover, .dock-btn.active { color: var(--floral-terracotta-light); }
     .dock-btn svg { width: 18px; height: 18px; fill: currentColor; }
+    .dock-music-btn {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+    }
+    .dock-music-btn.playing svg {
+      animation: dockMusicPulse 1.8s ease-in-out infinite;
+      color: var(--floral-terracotta-light);
+    }
+    @keyframes dockMusicPulse {
+      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 2px var(--floral-terracotta-light)); }
+      50% { transform: scale(1.18); filter: drop-shadow(0 0 6px var(--floral-terracotta-light)); }
+    }
+
+    /* MODAL POPUP */
+    .modal-bg {
+      position: fixed; inset: 0; z-index: 10000;
+      background: rgba(10, 6, 4, 0.88); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      display: flex; align-items: center; justify-content: center; padding: 1.5rem;
+      opacity: 0; pointer-events: none; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .modal-bg.open { opacity: 1; pointer-events: auto; }
+    .modal-card {
+      background: var(--floral-card); border: 1px solid var(--floral-border); border-radius: 24px;
+      padding: 2.2rem 1.6rem; max-width: 400px; width: 100%; position: relative;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.8), var(--floral-glow);
+      transform: translateY(20px); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .modal-bg.open .modal-card { transform: translateY(0); }
+    .modal-close {
+      position: absolute; top: 16px; right: 16px; background: color-mix(in srgb, var(--floral-card) 80%, transparent);
+      border: 1px solid var(--floral-border); color: var(--floral-sand); width: 34px; height: 34px; border-radius: 50%;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.85rem;
+      transition: all 0.2s ease;
+    }
+    .modal-close:hover { background: var(--floral-terracotta-light); color: #fff; }
 
     /* FOOTER & CLOSING (Adaptive Full-Height 100vh) */
     .site-footer {
@@ -369,7 +611,7 @@
       box-sizing: border-box;
       text-align: center;
       padding: 4rem 1.5rem 6.5rem;
-      background: #1b120c;
+      background: var(--bg-dark, #140c08);
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
@@ -387,7 +629,7 @@
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(27,18,12,0.6) 50%, rgba(27,18,12,0.95) 100%);
+      background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, color-mix(in srgb, var(--bg-dark, #140c08) 60%, transparent) 50%, color-mix(in srgb, var(--bg-dark, #140c08) 95%, transparent) 100%);
       pointer-events: none;
       z-index: 1;
     }
@@ -401,25 +643,25 @@
 </head>
 <body>
 
-  <!-- 1. COVER OVERLAY -->
-  <div id="coverOverlay" class="cover-overlay">
+  <!-- 1. COVER SCREEN -->
+  <div id="coverScreen" class="cover-screen cover-overlay">
     <!-- FLORAL VECTOR ICON -->
     <svg class="floral-hero-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M32 6C32 6 22 18 22 30C22 38 27 44 32 46C37 44 42 38 42 30C42 18 32 6 32 6Z" stroke="#d68f76" stroke-width="2.5" stroke-linejoin="round"/>
-      <path d="M16 26C16 26 24 28 28 36" stroke="#d68f76" stroke-width="2" stroke-linecap="round"/>
-      <path d="M48 26C48 26 40 28 36 36" stroke="#d68f76" stroke-width="2" stroke-linecap="round"/>
-      <path d="M32 46V58" stroke="#d68f76" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M32 6C32 6 22 18 22 30C22 38 27 44 32 46C37 44 42 38 42 30C42 18 32 6 32 6Z" stroke="var(--floral-terracotta-light)" stroke-width="2.5" stroke-linejoin="round"/>
+      <path d="M16 26C16 26 24 28 28 36" stroke="var(--floral-terracotta-light)" stroke-width="2" stroke-linecap="round"/>
+      <path d="M48 26C48 26 40 28 36 36" stroke="var(--floral-terracotta-light)" stroke-width="2" stroke-linecap="round"/>
+      <path d="M32 46V58" stroke="var(--floral-terracotta-light)" stroke-width="2.5" stroke-linecap="round"/>
     </svg>
 
-    <p class="cover-badge">THE WEDDING CELEBRATION</p>
+    <p class="cover-badge" data-lux-field="customLabels.theWedding">{{weddingTagline}}</p>
     <h1 class="cover-names">{{firstName}} &amp; {{secondName}}</h1>
     
     <div class="cover-guest-card">
       <p class="cover-guest-lbl">Kepada Yth. Bapak/Ibu/Saudara/i</p>
-      <h3 class="cover-guest-val">Tamu Undangan</h3>
+      <h3 class="cover-guest-val" id="coverGuestName">Tamu Undangan</h3>
     </div>
 
-    <button class="btn-buka-undangan" onclick="openInvitation()">
+    <button class="btn-buka-undangan" onclick="openInvitation()" data-lux-field="customLabels.openBtn">
       <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
       Buka Undangan
     </button>
@@ -427,10 +669,13 @@
 
   <div class="layout-wrapper">
     
+    <!-- FIXED BACKGROUND CANVAS (Fokus di Panel Undangan) -->
+    <div class="fixed-bg-layer"></div>
+
     <!-- DESKTOP SIDEBAR HERO -->
-    <div class="sidebar-desktop">
+    <div class="sidebar-desktop left-hero">
       <div class="sidebar-desktop-content">
-        <p class="font-floral-sans" style="letter-spacing: 0.3em; text-transform: uppercase; color: var(--floral-sand); font-size: 0.75rem;">FLORAL HERITAGE</p>
+        <p class="font-floral-sans" style="letter-spacing: 0.3em; text-transform: uppercase; color: var(--floral-sand); font-size: 0.75rem;">{{weddingTagline}}</p>
         <h2 class="font-floral-script" style="font-size: 4.8rem; color: var(--floral-terracotta-light); margin: 0.5rem 0;">{{firstName}} &amp; {{secondName}}</h2>
         <p class="font-floral-sans" style="letter-spacing: 0.15em; font-size: 0.85rem; color: rgba(251,247,244,0.75);">{{weddingDate}}</p>
       </div>
@@ -440,26 +685,33 @@
     <main class="main-scroll-panel">
       
       <!-- SEKSI 1: DOA & COUNTDOWN (100VH STANDALONE) -->
-      <section id="section-quote" class="slide-section">
+      <section id="home" class="slide-section sec-home">
         <div class="sec-content-box reveal-on-scroll">
-          <span style="font-size: 2rem; color: var(--floral-terracotta-light); display: block; margin-bottom: 0.4rem;">﷽</span>
-          <span class="sec-eyebrow">THE WEDDING OF</span>
-          <h2 class="sec-heading" style="margin-bottom: 0.8rem;">Doa &amp; Harapan</h2>
-          <p style="font-size: 0.94rem; line-height: 1.9; color: rgba(251,247,244,0.9); max-width: 420px; margin: 0 auto; font-style: italic; font-family: 'Playfair Display', serif;">
+          <span style="font-size: 1.8rem; color: var(--floral-terracotta-light); display: block; margin-bottom: 0.2rem; text-shadow: 0 2px 10px rgba(0,0,0,0.85);">﷽</span>
+          <span class="sec-eyebrow" data-lux-field="customLabels.theWedding" style="font-size: 0.68rem; letter-spacing: 0.25em; margin-bottom: 0.2rem; text-shadow: 0 2px 10px rgba(0,0,0,0.85);">{{weddingTagline}}</span>
+          <h2 class="sec-heading" style="font-size: clamp(2.1rem, 7vw, 2.8rem); margin-bottom: 0.15rem; text-shadow: 0 2px 16px rgba(0,0,0,0.9);">Doa &amp; Harapan</h2>
+          <svg class="floral-divider-ornament" viewBox="0 0 160 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 110px; height: 14px; margin: 0.2rem auto 0.6rem;">
+            <path d="M10 12h50M100 12h50" stroke="var(--floral-border)" stroke-width="1.2" stroke-linecap="round"/>
+            <circle cx="80" cy="12" r="3" fill="var(--floral-terracotta-light)"/>
+            <path d="M72 12c-3-4-8-4-10-1 3 3 7 3 10 1zM88 12c3-4 8-4 10-1-3 3-7 3-10 1z" fill="var(--floral-border-bright)"/>
+            <circle cx="65" cy="12" r="1.5" fill="var(--floral-terracotta-light)"/>
+            <circle cx="95" cy="12" r="1.5" fill="var(--floral-terracotta-light)"/>
+          </svg>
+          <p style="font-size: 0.88rem; line-height: 1.75; color: rgba(251,247,244,0.95); max-width: 360px; margin: 0 auto; font-style: italic; font-family: 'Playfair Display', serif; text-shadow: 0 2px 12px rgba(0,0,0,0.95);">
             "{{openingQuote}}"
           </p>
-          <span class="font-floral-sans" style="display: block; font-size: 0.75rem; color: var(--floral-sand); margin-top: 0.8rem; letter-spacing: 0.25em;">{{openingQuoteRef}}</span>
+          <span class="font-floral-sans" style="display: block; font-size: 0.72rem; color: var(--floral-sand); margin-top: 0.5rem; letter-spacing: 0.22em; text-shadow: 0 2px 10px rgba(0,0,0,0.85);">{{openingQuoteRef}}</span>
 
           <!-- COUNTDOWN -->
           <div class="countdown-grid">
-            <div class="countdown-cell"><div id="cDays" class="countdown-val">00</div><div class="countdown-lbl">Hari</div></div>
-            <div class="countdown-cell"><div id="cHours" class="countdown-val">00</div><div class="countdown-lbl">Jam</div></div>
-            <div class="countdown-cell"><div id="cMins" class="countdown-val">00</div><div class="countdown-lbl">Menit</div></div>
-            <div class="countdown-cell"><div id="cSecs" class="countdown-val">00</div><div class="countdown-lbl">Detik</div></div>
+            <div class="countdown-cell"><div id="cDays" class="countdown-val">00</div><div class="countdown-lbl" data-lux-field="customLabels.cdDays">Hari</div></div>
+            <div class="countdown-cell"><div id="cHours" class="countdown-val">00</div><div class="countdown-lbl" data-lux-field="customLabels.cdHours">Jam</div></div>
+            <div class="countdown-cell"><div id="cMins" class="countdown-val">00</div><div class="countdown-lbl" data-lux-field="customLabels.cdMins">Menit</div></div>
+            <div class="countdown-cell"><div id="cSecs" class="countdown-val">00</div><div class="countdown-lbl" data-lux-field="customLabels.cdSecs">Detik</div></div>
           </div>
 
-          <a href="{{googleCalendarUrl}}" target="_blank" class="btn-cal">
-            <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
+          <a href="{{googleCalendarUrl}}" target="_blank" class="btn-cal" data-lux-field="customLabels.btnSaveCal">
+            <svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
             Simpan ke Google Calendar
           </a>
         </div>
@@ -468,27 +720,70 @@
       <!-- SEKSI 2: MEMPELAI (100VH STANDALONE) -->
       <section id="section-couple" class="slide-section">
         <div class="sec-content-box reveal-on-scroll">
-          <h2 class="sec-heading">Mempelai</h2>
-          <p class="sec-subheading">Dua Insan Dalam Ikatan Cinta</p>
+          <h2 class="sec-heading" data-lux-field="customLabels.coupleTitle">{{coupleSectionTitle}}</h2>
+          <svg class="floral-divider-ornament" viewBox="0 0 160 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 12h50M100 12h50" stroke="var(--floral-border)" stroke-width="1.2" stroke-linecap="round"/>
+            <circle cx="80" cy="12" r="3" fill="var(--floral-terracotta-light)"/>
+            <path d="M72 12c-3-4-8-4-10-1 3 3 7 3 10 1zM88 12c3-4 8-4 10-1-3 3-7 3-10 1z" fill="var(--floral-border-bright)"/>
+            <circle cx="65" cy="12" r="1.5" fill="var(--floral-terracotta-light)"/>
+            <circle cx="95" cy="12" r="1.5" fill="var(--floral-terracotta-light)"/>
+          </svg>
+          <p class="sec-subheading" data-lux-field="customLabels.coupleSub">{{coupleSectionSub}}</p>
 
-          <!-- GROOM -->
-          <div class="couple-card">
-            <div class="couple-photo-wrap">
-              <img src="{{firstPhotoUrl}}" alt="{{firstDisplayName}}">
-            </div>
-            <h3 class="couple-name">{{firstDisplayName}}</h3>
-            <p class="couple-parents">{{firstParents}}</p>
-            <a href="https://instagram.com/{{firstInstagram}}" target="_blank" class="couple-ig">@{{firstInstagram}}</a>
-          </div>
+          <!-- MEMPELAI CONTAINER (CARD-LESS LUXURY LAYOUT) -->
+          <div class="couple-staggered-container">
 
-          <!-- BRIDE -->
-          <div class="couple-card">
-            <div class="couple-photo-wrap">
-              <img src="{{secondPhotoUrl}}" alt="{{secondDisplayName}}">
+            <!-- FIRST PROFILE (MEMPELAI UTAMA / PRIA: FOTO KIRI, INISIAL KANAN) -->
+            <div class="couple-unit unit-left">
+              <div class="couple-frame-anchor">
+                <div class="couple-photo-wrap">
+                  <img src="{{firstPhotoUrl}}" alt="{{firstFullName}}" loading="lazy">
+                </div>
+                <div class="couple-watermark-initial initial-right" aria-hidden="true">{{firstInitial}}</div>
+              </div>
+              <div class="couple-info">
+                <span class="couple-role" data-lux-field="roles.groom">{{groomRole}}</span>
+                <h3 class="couple-name" data-lux-field="groomName">{{firstDisplayName}}</h3>
+                <div class="couple-parents" data-lux-field="groomParents">
+                  <span class="parent-prefix">{{firstParentPrefix}}</span>
+                  <span class="parent-father">{{firstFather}}</span>
+                  <span class="parent-mother">{{firstMother}}</span>
+                </div>
+                <a href="https://instagram.com/{{firstInstagram}}" target="_blank" class="couple-ig">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                  @{{firstInstagram}}
+                </a>
+              </div>
             </div>
-            <h3 class="couple-name">{{secondDisplayName}}</h3>
-            <p class="couple-parents">{{secondParents}}</p>
-            <a href="https://instagram.com/{{secondInstagram}}" target="_blank" class="couple-ig">@{{secondInstagram}}</a>
+
+            <!-- AMPERSAND CONNECTOR -->
+            <div class="couple-connector">
+              <span class="connector-amp">&amp;</span>
+            </div>
+
+            <!-- SECOND PROFILE (PASANGAN / WANITA: FOTO KANAN, INISIAL KIRI) -->
+            <div class="couple-unit unit-right">
+              <div class="couple-frame-anchor">
+                <div class="couple-watermark-initial initial-left" aria-hidden="true">{{secondInitial}}</div>
+                <div class="couple-photo-wrap">
+                  <img src="{{secondPhotoUrl}}" alt="{{secondFullName}}" loading="lazy">
+                </div>
+              </div>
+              <div class="couple-info">
+                <span class="couple-role" data-lux-field="roles.bride">{{brideRole}}</span>
+                <h3 class="couple-name" data-lux-field="brideName">{{secondDisplayName}}</h3>
+                <div class="couple-parents" data-lux-field="brideParents">
+                  <span class="parent-prefix">{{secondParentPrefix}}</span>
+                  <span class="parent-father">{{secondFather}}</span>
+                  <span class="parent-mother">{{secondMother}}</span>
+                </div>
+                <a href="https://instagram.com/{{secondInstagram}}" target="_blank" class="couple-ig">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                  @{{secondInstagram}}
+                </a>
+              </div>
+            </div>
+
           </div>
         </div>
       </section>
@@ -496,8 +791,15 @@
       <!-- SEKSI 3: RANGKAIAN ACARA (100VH STANDALONE) -->
       <section id="section-events" class="slide-section">
         <div class="sec-content-box reveal-on-scroll">
-          <h2 class="sec-heading">Rangkaian Acara</h2>
-          <p class="sec-subheading">Waktu &amp; Lokasi Acara</p>
+          <h2 class="sec-heading" data-lux-field="customLabels.eventsTitle">{{eventsSectionTitle}}</h2>
+          <svg class="floral-divider-ornament" viewBox="0 0 160 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 12h50M100 12h50" stroke="var(--floral-border)" stroke-width="1.2" stroke-linecap="round"/>
+            <circle cx="80" cy="12" r="3" fill="var(--floral-terracotta-light)"/>
+            <path d="M72 12c-3-4-8-4-10-1 3 3 7 3 10 1zM88 12c3-4 8-4 10-1-3 3-7 3-10 1z" fill="var(--floral-border-bright)"/>
+            <circle cx="65" cy="12" r="1.5" fill="var(--floral-terracotta-light)"/>
+            <circle cx="95" cy="12" r="1.5" fill="var(--floral-terracotta-light)"/>
+          </svg>
+          <p class="sec-subheading" data-lux-field="customLabels.eventsSub">{{eventsSectionSub}}</p>
           {{eventDataHtml}}
         </div>
       </section>
@@ -507,8 +809,29 @@
       {{dressCodeHtml}}
       {{liveStreamingHtml}}
       
-      <!-- KISAH & GALERI MEMPELAI -->
-      {{storySectionHtml}}
+      <!-- KISAH MEMPELAI (NATIVE MASTER THEME DESIGN) -->
+      {{#if showStory}}
+      <section id="story" class="slide-section">
+        <div class="sec-content-box reveal-on-scroll">
+          <span class="sec-eyebrow" data-lux-field="customLabels.storyEyebrow">{{storySectionEyebrow}}</span>
+          <h2 class="sec-heading" data-lux-field="customLabels.storyTitle">{{storySectionTitle}}</h2>
+          <svg class="floral-divider-ornament" viewBox="0 0 160 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 12h50M100 12h50" stroke="var(--floral-border)" stroke-width="1.2" stroke-linecap="round"/>
+            <circle cx="80" cy="12" r="3" fill="var(--floral-terracotta-light)"/>
+            <path d="M72 12c-3-4-8-4-10-1 3 3 7 3 10 1zM88 12c3-4 8-4 10-1-3 3-7 3-10 1z" fill="var(--floral-border-bright)"/>
+            <circle cx="65" cy="12" r="1.5" fill="var(--floral-terracotta-light)"/>
+            <circle cx="95" cy="12" r="1.5" fill="var(--floral-terracotta-light)"/>
+          </svg>
+          <div class="candani-story-flow">
+            {{storyItemsHtml}}
+          </div>
+          <div class="journey-footer">
+            <div class="jf-line"></div>
+            <span class="jf-signature serif">{{groomName}} &amp; {{brideName}}</span>
+          </div>
+        </div>
+      </section>
+      {{/if}}
       {{gallerySectionHtml}}
       
       <!-- INTERAKSI TAMU & TANDA KASIH -->
@@ -520,8 +843,15 @@
       <!-- SEKSI 5: BUKU TAMU & UCAPAN (100VH STANDALONE) -->
       <section id="section-wishes" class="slide-section">
         <div class="sec-content-box reveal-on-scroll">
-          <h2 class="sec-heading">Doa &amp; Ucapan</h2>
-          <p class="sec-subheading">Kirimkan Pesan Manis Untuk Mempelai</p>
+          <h2 class="sec-heading" data-lux-field="customLabels.wishesTitle">{{wishesSectionTitle}}</h2>
+          <svg class="floral-divider-ornament" viewBox="0 0 160 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 12h50M100 12h50" stroke="var(--floral-border)" stroke-width="1.2" stroke-linecap="round"/>
+            <circle cx="80" cy="12" r="3" fill="var(--floral-terracotta-light)"/>
+            <path d="M72 12c-3-4-8-4-10-1 3 3 7 3 10 1zM88 12c3-4 8-4 10-1-3 3-7 3-10 1z" fill="var(--floral-border-bright)"/>
+            <circle cx="65" cy="12" r="1.5" fill="var(--floral-terracotta-light)"/>
+            <circle cx="95" cy="12" r="1.5" fill="var(--floral-terracotta-light)"/>
+          </svg>
+          <p class="sec-subheading" data-lux-field="customLabels.wishesSub">{{wishesSectionSub}}</p>
         <div class="rsvp-form-wrap">
           <form id="rsvpForm" onsubmit="luxSubmitRsvp(event)">
             <div class="form-row">
@@ -575,9 +905,9 @@
 
   <!-- FLOATING NAVIGATION DOCK -->
   <nav class="bottom-dock">
-    <a href="#section-quote" class="dock-btn">
+    <a href="#home" class="dock-btn">
       <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-      <span>Cover</span>
+      <span>Home</span>
     </a>
     <a href="#section-couple" class="dock-btn">
       <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
@@ -599,18 +929,45 @@
       <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
       <span>Wishes</span>
     </a>
+    <button type="button" class="dock-btn dock-music-btn" id="musicToggle" onclick="luxToggleAudio()" title="Musik" aria-label="Putar / Jeda Musik">
+      <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+      <span class="dock-music-lbl">Musik</span>
+    </button>
   </nav>
+
+  <!-- QR / TICKET MODAL POPUP -->
+  <div class="modal-bg" id="modalBg" onclick="closeModal(event)">
+    <div class="modal-card" onclick="event.stopPropagation()">
+      <button class="modal-close" onclick="closeModal()" aria-label="Tutup Modal">✕</button>
+      {{qrAccessCardHtml}}
+      <div style="margin-top:1.2rem;padding:0.9rem;background:var(--floral-card);border:1px solid var(--floral-border);border-radius:12px;text-align:center;">
+        <span style="font-size:0.62rem;letter-spacing:0.2em;color:var(--floral-sand);text-transform:uppercase;font-weight:600;display:block;margin-bottom:0.4rem;">Voucher Souvenir</span>
+        <div style="font-family:monospace;font-weight:700;font-size:0.85rem;color:#ffffff;letter-spacing:0.12em;padding:0.45rem;background:color-mix(in srgb, var(--bg-dark, #140c08) 80%, transparent);border:1px solid var(--floral-border);border-radius:6px;">SOUVENIR-{{invitationId}}</div>
+      </div>
+    </div>
+  </div>
 
   <script>
     function openInvitation() {
-      const cover = document.getElementById('coverOverlay');
-      if (cover) cover.classList.add('opened');
-      const dock = document.querySelector('.bottom-dock');
-      if (dock) dock.classList.remove('dock-hidden');
-      const audio = document.getElementById('weddingAudio');
-      if (audio && !window.__DISABLE_AUDIO__ && new URLSearchParams(window.location.search).get("autoplay") !== "1" && window === window.top) audio.play().catch(() => {});
+      const cover = document.getElementById('coverScreen') || document.getElementById('coverOverlay');
+      if (cover) cover.classList.add('opened', 'slide-up-hidden');
       startCountdown();
       initScrollAnimations();
+      if (typeof window.__luxEvaluateHomeDock === 'function') {
+        window.__luxEvaluateHomeDock();
+      }
+    }
+
+    function openModal() {
+      const modal = document.getElementById('modalBg');
+      if (modal) modal.classList.add('open');
+    }
+
+    function closeModal(e) {
+      if (!e || e.target === document.getElementById('modalBg') || (e.target && e.target.classList && e.target.classList.contains('modal-close'))) {
+        const modal = document.getElementById('modalBg');
+        if (modal) modal.classList.remove('open');
+      }
     }
 
     // SMART AUTO-HIDE DOCK ON SCROLL DOWN, REVEAL ON SCROLL UP
@@ -708,19 +1065,6 @@
     }
   </script>
 
-
-<!-- LUXENARY PROTECTION SCRIPT -->
-<script>
-  (function() {
-    try {
-      if (window.console && console.log) {
-        console.log("%cSTOP!", "color: #ef4444; font-size: 50px; font-weight: 900; text-shadow: 2px 2px 0 #000; font-family: sans-serif;");
-        console.log("%cIni adalah properti eksklusif Luxenary.", "color: #b5833c; font-size: 20px; font-weight: bold;");
-        console.log("%cSegala bentuk pencurian kode, scraping, atau modifikasi ilegal akan direkam. Domain saat ini: " + window.location.hostname, "font-size: 14px; color: #a8a29e;");
-      }
-    } catch(e) {}
-  })();
-</script>
-\n  {{musicPlayerHtml}}
+  {{musicPlayerHtml}}
 </body>
 </html>

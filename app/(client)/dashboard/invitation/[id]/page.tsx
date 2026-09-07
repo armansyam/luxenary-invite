@@ -601,7 +601,11 @@ export default function EditInvitation() {
       (invitation.groomNickname || "") !== (savedSnapshot.invitation?.groomNickname || "") ||
       (invitation.brideNickname || "") !== (savedSnapshot.invitation?.brideNickname || "") ||
       (invitation.groomParents || "") !== (savedSnapshot.invitation?.groomParents || "") ||
+      (invitation.groomFather || "") !== (savedSnapshot.invitation?.groomFather || "") ||
+      (invitation.groomMother || "") !== (savedSnapshot.invitation?.groomMother || "") ||
       (invitation.brideParents || "") !== (savedSnapshot.invitation?.brideParents || "") ||
+      (invitation.brideFather || "") !== (savedSnapshot.invitation?.brideFather || "") ||
+      (invitation.brideMother || "") !== (savedSnapshot.invitation?.brideMother || "") ||
       (invitation.groomInstagram || "") !== (savedSnapshot.invitation?.groomInstagram || "") ||
       (invitation.brideInstagram || "") !== (savedSnapshot.invitation?.brideInstagram || "") ||
       getFeatureSetting("displayOrder", "BRIDE_FIRST") !== getSavedFeatureSetting("displayOrder", "BRIDE_FIRST") ||
@@ -2075,7 +2079,8 @@ export default function EditInvitation() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <Input label="Nama Lengkap Wanita *" value={invitation.brideName || ""} onChange={(v) => updateField("brideName", v)} placeholder="Masukkan nama lengkap mempelai wanita" />
                       <Input label="Nama Panggilan Wanita" value={invitation.brideNickname || ""} onChange={(v) => updateField("brideNickname", v)} placeholder="Masukkan panggilan wanita" />
-                      <Input label="Nama Orang Tua Wanita" value={invitation.brideParents || ""} onChange={(v) => updateField("brideParents", v)} placeholder="Putri dari Bapak Tomm Posma & Ibu Endang Noffiyanti" />
+                      <Input label="Nama Ayah (Mempelai Wanita)" value={invitation.brideFather || ""} onChange={(v) => updateField("brideFather", v)} placeholder="Contoh: Tomm Posma / Alm. Tomm Posma / Bpk. Tomm Posma" />
+                      <Input label="Nama Ibu (Mempelai Wanita)" value={invitation.brideMother || ""} onChange={(v) => updateField("brideMother", v)} placeholder="Contoh: Endang Noffiyanti / Almh. Endang Noffiyanti / Ibu Endang Noffiyanti" />
                       <Input label="Username Instagram Wanita" value={invitation.brideInstagram || ""} onChange={(v) => updateField("brideInstagram", v)} placeholder="usernameig (tanpa @)" />
                     </div>
                   </div>
@@ -2089,7 +2094,8 @@ export default function EditInvitation() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <Input label="Nama Lengkap Pria *" value={invitation.groomName || ""} onChange={(v) => updateField("groomName", v)} placeholder="Masukkan nama lengkap mempelai pria" />
                       <Input label="Nama Panggilan Pria" value={invitation.groomNickname || ""} onChange={(v) => updateField("groomNickname", v)} placeholder="Masukkan panggilan pria" />
-                      <Input label="Nama Orang Tua Pria" value={invitation.groomParents || ""} onChange={(v) => updateField("groomParents", v)} placeholder="Putra dari Bapak Arif Yaniadi & Ibu Yuni Widiastuti" />
+                      <Input label="Nama Ayah (Mempelai Pria)" value={invitation.groomFather || ""} onChange={(v) => updateField("groomFather", v)} placeholder="Contoh: Arif Yaniadi / Alm. Arif Yaniadi / Bpk. Arif Yaniadi" />
+                      <Input label="Nama Ibu (Mempelai Pria)" value={invitation.groomMother || ""} onChange={(v) => updateField("groomMother", v)} placeholder="Contoh: Yuni Widiastuti / Almh. Yuni Widiastuti / Ibu Yuni Widiastuti" />
                       <Input label="Username Instagram Pria" value={invitation.groomInstagram || ""} onChange={(v) => updateField("groomInstagram", v)} placeholder="usernameig (tanpa @)" />
                     </div>
                   </div>
@@ -2139,7 +2145,8 @@ export default function EditInvitation() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <Input label="Nama Lengkap Pria *" value={invitation.groomName || ""} onChange={(v) => updateField("groomName", v)} placeholder="Masukkan nama lengkap mempelai pria" />
                       <Input label="Nama Panggilan Pria" value={invitation.groomNickname || ""} onChange={(v) => updateField("groomNickname", v)} placeholder="Masukkan panggilan pria" />
-                      <Input label="Nama Orang Tua Pria" value={invitation.groomParents || ""} onChange={(v) => updateField("groomParents", v)} placeholder="Putra dari Bapak Arif Yaniadi & Ibu Yuni Widiastuti" />
+                      <Input label="Nama Ayah (Mempelai Pria)" value={invitation.groomFather || ""} onChange={(v) => updateField("groomFather", v)} placeholder="Contoh: Arif Yaniadi / Alm. Arif Yaniadi / Bpk. Arif Yaniadi" />
+                      <Input label="Nama Ibu (Mempelai Pria)" value={invitation.groomMother || ""} onChange={(v) => updateField("groomMother", v)} placeholder="Contoh: Yuni Widiastuti / Almh. Yuni Widiastuti / Ibu Yuni Widiastuti" />
                       <Input label="Username Instagram Pria" value={invitation.groomInstagram || ""} onChange={(v) => updateField("groomInstagram", v)} placeholder="usernameig (tanpa @)" />
                     </div>
                   </div>
@@ -2153,7 +2160,8 @@ export default function EditInvitation() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <Input label="Nama Lengkap Wanita *" value={invitation.brideName || ""} onChange={(v) => updateField("brideName", v)} placeholder="Masukkan nama lengkap mempelai wanita" />
                       <Input label="Nama Panggilan Wanita" value={invitation.brideNickname || ""} onChange={(v) => updateField("brideNickname", v)} placeholder="Masukkan panggilan wanita" />
-                      <Input label="Nama Orang Tua Wanita" value={invitation.brideParents || ""} onChange={(v) => updateField("brideParents", v)} placeholder="Putri dari Bapak Tomm Posma & Ibu Endang Noffiyanti" />
+                      <Input label="Nama Ayah (Mempelai Wanita)" value={invitation.brideFather || ""} onChange={(v) => updateField("brideFather", v)} placeholder="Contoh: Tomm Posma / Alm. Tomm Posma / Bpk. Tomm Posma" />
+                      <Input label="Nama Ibu (Mempelai Wanita)" value={invitation.brideMother || ""} onChange={(v) => updateField("brideMother", v)} placeholder="Contoh: Endang Noffiyanti / Almh. Endang Noffiyanti / Ibu Endang Noffiyanti" />
                       <Input label="Username Instagram Wanita" value={invitation.brideInstagram || ""} onChange={(v) => updateField("brideInstagram", v)} placeholder="usernameig (tanpa @)" />
                     </div>
                   </div>

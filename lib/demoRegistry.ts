@@ -10,6 +10,7 @@
 import fs from "fs";
 import path from "path";
 import { COLOR_PALETTES } from "@/lib/colorPalettes";
+import { getThemeBlueprint } from "@/lib/themeDefaults";
 
 export interface DemoThemeData {
   themeId: string;
@@ -26,7 +27,11 @@ export interface DemoThemeData {
   groomRole: string;
   brideRole: string;
   groomParents: string;
+  groomFather?: string;
+  groomMother?: string;
   brideParents: string;
+  brideFather?: string;
+  brideMother?: string;
   groomInstagram: string;
   brideInstagram: string;
   monogramInitial: string;
@@ -93,8 +98,12 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     brideDisplayName: "Alana Khairunnisa, B.Des.",
     groomRole: "The Groom",
     brideRole: "The Bride",
-    groomParents: "Putra Kedua dari Bpk. Ir. Hendra Pratama & Ibu Ratna Dewi",
-    brideParents: "Putri Pertama dari Bpk. Dr. Faisal Basri & Ibu Soraya Latief",
+    groomParents: "Putra dari Ir. Hendra Pratama & Ratna Dewi",
+    groomFather: "Ir. Hendra Pratama",
+    groomMother: "Ratna Dewi",
+    brideParents: "Putri dari Dr. Faisal Basri & Soraya Latief",
+    brideFather: "Dr. Faisal Basri",
+    brideMother: "Soraya Latief",
     groomInstagram: "raditya.pratama",
     brideInstagram: "alana.khairunnisa",
     monogramInitial: "R & A",
@@ -163,8 +172,8 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#1a1a1a, #8c7355, #f5f0ea",
     dressCodeNote: "Formal Monochrome / Editorial Chic (Hitam, Nuansa Earth Tone & Champagne)",
     turutMengundang: [
-      "Keluarga Besar Bpk. Ir. Hendra Pratama (Jakarta)",
-      "Keluarga Besar Bpk. Dr. Faisal Basri (Bandung)",
+      "Keluarga Besar Ir. Hendra Pratama (Jakarta)",
+      "Keluarga Besar Dr. Faisal Basri (Bandung)",
     ],
   },
 
@@ -181,7 +190,11 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     groomRole: "Groom",
     brideRole: "Bride",
     groomParents: "Son of Mr. Robert Alexander & Mrs. Shirley Wijaya",
+    groomFather: "Mr. Robert Alexander",
+    groomMother: "Mrs. Shirley Wijaya",
     brideParents: "Daughter of Mr. David Santoso & Mrs. Linda Hartono",
+    brideFather: "Mr. David Santoso",
+    brideMother: "Mrs. Linda Hartono",
     groomInstagram: "julian.alex",
     brideInstagram: "valeriesantoso",
     monogramInitial: "J & V",
@@ -266,8 +279,12 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     brideDisplayName: "Aurelia Geraldine, S.Sn.",
     groomRole: "Mempelai Pria",
     brideRole: "Mempelai Wanita",
-    groomParents: "Putra Sulung dari Bpk. Ir. Gunawan Wibowo & Ibu Cynthia Wibowo",
-    brideParents: "Putri Bungsu dari Bpk. Henry Geraldine & Ibu Melani Geraldine",
+    groomParents: "Putra dari Ir. Gunawan Wibowo & Cynthia Wibowo",
+    groomFather: "Ir. Gunawan Wibowo",
+    groomMother: "Cynthia Wibowo",
+    brideParents: "Putri dari Henry Geraldine & Melani Geraldine",
+    brideFather: "Henry Geraldine",
+    brideMother: "Melani Geraldine",
     groomInstagram: "arjuna.wibowo",
     brideInstagram: "aureliageraldine",
     monogramInitial: "A & A",
@@ -330,8 +347,8 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#bfa15f, #1a1a1a, #ffffff",
     dressCodeNote: "Black Tie & Classic Luxury Gold / Evening Gown",
     turutMengundang: [
-      "Keluarga Besar Bpk. Ir. Gunawan Wibowo",
-      "Keluarga Besar Bpk. Henry Geraldine",
+      "Keluarga Besar Ir. Gunawan Wibowo",
+      "Keluarga Besar Henry Geraldine",
     ],
   },
 
@@ -347,8 +364,12 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     brideDisplayName: "Raden Ajeng Prameswari Kusumaningrum, S.H.",
     groomRole: "Penganten Kakung",
     brideRole: "Penganten Putri",
-    groomParents: "Putra saking Bpk. K.R.T. Joyodiningrat & Ibu R.Ay. Sri Handayani",
-    brideParents: "Putri saking Bpk. K.P.H. Kusumaningrat & Ibu R.Ay. Endang Puspita",
+    groomParents: "Putra dari K.R.T. Joyodiningrat & R.Ay. Sri Handayani",
+    groomFather: "K.R.T. Joyodiningrat",
+    groomMother: "R.Ay. Sri Handayani",
+    brideParents: "Putri dari K.P.H. Kusumaningrat & R.Ay. Endang Puspita",
+    brideFather: "K.P.H. Kusumaningrat",
+    brideMother: "R.Ay. Endang Puspita",
     groomInstagram: "danang.joyo",
     brideInstagram: "prameswari.kusuma",
     monogramInitial: "D & P",
@@ -406,8 +427,8 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#8b6f38, #2a2012, #f5ebd9",
     dressCodeNote: "Busana Adat Jawa / Batik Klasik Gagrak Surakarta",
     turutMengundang: [
-      "Keluarga Ageng Bpk. K.R.T. Joyodiningrat",
-      "Keluarga Ageng Bpk. K.P.H. Kusumaningrat",
+      "Keluarga Ageng K.R.T. Joyodiningrat",
+      "Keluarga Ageng K.P.H. Kusumaningrat",
     ],
   },
 
@@ -423,8 +444,12 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     brideDisplayName: "Clarissa Tanuwidjaja, B.A.",
     groomRole: "The Groom",
     brideRole: "The Bride",
-    groomParents: "Putra dari Bpk. Surya Sanjaya & Ibu Meilani Sanjaya",
-    brideParents: "Putri dari Bpk. Franky Tanuwidjaja & Ibu Evelyn Hartarto",
+    groomParents: "Putra dari Surya Sanjaya & Meilani Sanjaya",
+    groomFather: "Surya Sanjaya",
+    groomMother: "Meilani Sanjaya",
+    brideParents: "Putri dari Franky Tanuwidjaja & Evelyn Hartarto",
+    brideFather: "Franky Tanuwidjaja",
+    brideMother: "Evelyn Hartarto",
     groomInstagram: "kevinsanjaya",
     brideInstagram: "clarissatan",
     monogramInitial: "K & C",
@@ -482,8 +507,8 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#2c3e50, #7f8c8d, #ecf0f1",
     dressCodeNote: "Moody Slate, Deep Navy & Silver Glam",
     turutMengundang: [
-      "Keluarga Besar Bpk. Surya Sanjaya",
-      "Keluarga Besar Bpk. Franky Tanuwidjaja",
+      "Keluarga Besar Surya Sanjaya",
+      "Keluarga Besar Franky Tanuwidjaja",
     ],
   },
 
@@ -499,8 +524,12 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     brideDisplayName: "Kiara Anindita, S.I.Kom.",
     groomRole: "Mempelai Pria",
     brideRole: "Mempelai Wanita",
-    groomParents: "Putra dari Bpk. Bambang Sutrisno & Ibu Endang Lestari",
-    brideParents: "Putri dari Bpk. Agus Wicaksono & Ibu Rini Handayani",
+    groomParents: "Putra dari Bambang Sutrisno & Endang Lestari",
+    groomFather: "Bambang Sutrisno",
+    groomMother: "Endang Lestari",
+    brideParents: "Putri dari Agus Wicaksono & Rini Handayani",
+    brideFather: "Agus Wicaksono",
+    brideMother: "Rini Handayani",
     groomInstagram: "dimas.anggara",
     brideInstagram: "kiaraanindita",
     monogramInitial: "D & K",
@@ -558,8 +587,8 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#736b5e, #c2b69d, #faf8f5",
     dressCodeNote: "Earthy Botanical & Warm Linen Tones",
     turutMengundang: [
-      "Keluarga Besar Bpk. Bambang Sutrisno",
-      "Keluarga Besar Bpk. Agus Wicaksono",
+      "Keluarga Besar Bambang Sutrisno",
+      "Keluarga Besar Agus Wicaksono",
     ],
   },
 
@@ -575,8 +604,12 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     brideDisplayName: "Maudy Ayunda Putri, S.Pd.",
     groomRole: "Mempelai Pria",
     brideRole: "Mempelai Wanita",
-    groomParents: "Putra dari Bpk. Ir. Rasyid Alamsyah & Ibu Nurul Hidayah",
-    brideParents: "Putri dari Bpk. Dedi Supriyadi & Ibu Maya Anggraeni",
+    groomParents: "Putra dari Ir. Rasyid Alamsyah & Nurul Hidayah",
+    groomFather: "Ir. Rasyid Alamsyah",
+    groomMother: "Nurul Hidayah",
+    brideParents: "Putri dari Dedi Supriyadi & Maya Anggraeni",
+    brideFather: "Dedi Supriyadi",
+    brideMother: "Maya Anggraeni",
     groomInstagram: "rafi.alamsyah",
     brideInstagram: "maudy.putri",
     monogramInitial: "R & M",
@@ -634,8 +667,8 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#6e5849, #b08968, #ede0d4",
     dressCodeNote: "Vintage Earthy, Pastel Cream & Warm Brown",
     turutMengundang: [
-      "Keluarga Besar Bpk. Ir. Rasyid Alamsyah",
-      "Keluarga Besar Bpk. Dedi Supriyadi",
+      "Keluarga Besar Ir. Rasyid Alamsyah",
+      "Keluarga Besar Dedi Supriyadi",
     ],
   },
 
@@ -651,8 +684,12 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     brideDisplayName: "Ameera Zhafira, S.E.",
     groomRole: "Mempelai Pria",
     brideRole: "Mempelai Wanita",
-    groomParents: "Putra dari Bpk. H. Malik Ibrahim & Ibu Hj. Zahra Malik",
-    brideParents: "Putri dari Bpk. Ir. H. Firdaus & Ibu Hj. Aminah Firdaus",
+    groomParents: "Putra dari H. Malik Ibrahim & Hj. Zahra Malik",
+    groomFather: "H. Malik Ibrahim",
+    groomMother: "Hj. Zahra Malik",
+    brideParents: "Putri dari Ir. H. Firdaus & Hj. Aminah Firdaus",
+    brideFather: "Ir. H. Firdaus",
+    brideMother: "Hj. Aminah Firdaus",
     groomInstagram: "farhan.malik",
     brideInstagram: "ameera.zhafira",
     monogramInitial: "F & A",
@@ -710,8 +747,8 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#3d342d, #8d7b68, #f5efe6",
     dressCodeNote: "Contemporary Modest & Modern Tenun/Batik",
     turutMengundang: [
-      "Keluarga Besar Bpk. H. Malik Ibrahim",
-      "Keluarga Besar Bpk. Ir. H. Firdaus",
+      "Keluarga Besar H. Malik Ibrahim",
+      "Keluarga Besar Ir. H. Firdaus",
     ],
   },
 
@@ -727,8 +764,12 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     brideDisplayName: "Nurfadillah Lucky, S.Ked.",
     groomRole: "Mempelai Pria",
     brideRole: "Mempelai Wanita",
-    groomParents: "Putra dari Bpk. Drs. H. Anugrah Mansyur & Ibu Hj. Siti Fatimah",
-    brideParents: "Putri dari Bpk. H. Lucky Basri & Ibu Hj. Mardiah Basri",
+    groomParents: "Putra dari Drs. H. Anugrah Mansyur & Hj. Siti Fatimah",
+    groomFather: "Drs. H. Anugrah Mansyur",
+    groomMother: "Hj. Siti Fatimah",
+    brideParents: "Putri dari H. Lucky Basri & Hj. Mardiah Basri",
+    brideFather: "H. Lucky Basri",
+    brideMother: "Hj. Mardiah Basri",
     groomInstagram: "fadil.anugrah",
     brideInstagram: "dillaluckyy",
     monogramInitial: "F & D",
@@ -787,8 +828,8 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeColors: "#4a5d4e, #d4af37, #fdfbf7",
     dressCodeNote: "Busana Adat Baju Bodo Modern / Muslimah Formal (Sage Green & Emas)",
     turutMengundang: [
-      "Keluarga Besar Bpk. Drs. H. Anugrah Mansyur",
-      "Keluarga Besar Bpk. H. Lucky Basri",
+      "Keluarga Besar Drs. H. Anugrah Mansyur",
+      "Keluarga Besar H. Lucky Basri",
     ],
   },
 
@@ -805,8 +846,12 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     brideDisplayName: "Andi Elyana Tenri, S.Ked.",
     groomRole: "Mempelai Pria",
     brideRole: "Mempelai Wanita",
-    groomParents: "Putra dari Bpk. Andi Ramadhan & Ibu Andi Rosmini",
-    brideParents: "Putri dari Bpk. Andi Tenri Tatta & Ibu Andi Sitti Nur",
+    groomParents: "Putra dari Andi Ramadhan & Andi Rosmini",
+    groomFather: "Andi Ramadhan",
+    groomMother: "Andi Rosmini",
+    brideParents: "Putri dari Andi Tenri Tatta & Andi Sitti Nur",
+    brideFather: "Andi Tenri Tatta",
+    brideMother: "Andi Sitti Nur",
     groomInstagram: "syahril.tenri",
     brideInstagram: "elyana.andi",
     monogramInitial: "S & E",
@@ -864,7 +909,7 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     ],
     dressCodeColors: "#0f2b23, #c5a059, #fbfaf7",
     dressCodeNote: "Busana Adat Bugis / Nuansa Emerald Hijau & Emas Saoraja",
-    turutMengundang: ["Keluarga Besar Bpk. Andi Ramadhan", "Keluarga Besar Bpk. Andi Tenri Tatta"],
+    turutMengundang: ["Keluarga Besar Andi Ramadhan", "Keluarga Besar Andi Tenri Tatta"],
   },
 
   mayang: {
@@ -879,8 +924,12 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     brideDisplayName: "Raden Ajeng Mayang Kusuma, S.Sn.",
     groomRole: "Mempelai Pria",
     brideRole: "Mempelai Wanita",
-    groomParents: "Putra dari Bpk. K.R.T. Suryonegoro & Ibu Dra. Retno Palupi",
-    brideParents: "Putri dari Bpk. Ir. H. Bambang Hartono & Ibu Hj. Endang Sulistyowati",
+    groomParents: "Putra dari K.R.T. Suryonegoro & Dra. Retno Palupi",
+    groomFather: "K.R.T. Suryonegoro",
+    groomMother: "Dra. Retno Palupi",
+    brideParents: "Putri dari Ir. H. Bambang Hartono & Hj. Endang Sulistyowati",
+    brideFather: "Ir. H. Bambang Hartono",
+    brideMother: "Hj. Endang Sulistyowati",
     groomInstagram: "bagus.wicaksono",
     brideInstagram: "mayangkusuma",
     monogramInitial: "B & M",
@@ -938,7 +987,7 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     ],
     dressCodeColors: "#b5833c, #261b11, #faf6f0",
     dressCodeNote: "Batik Tradisional / Nuansa Coklat Kayu & Emas",
-    turutMengundang: ["Keluarga Besar Trah Suryonegoro", "Keluarga Besar Bpk. Ir. H. Bambang Hartono"],
+    turutMengundang: ["Keluarga Besar Trah Suryonegoro", "Keluarga Besar Ir. H. Bambang Hartono"],
   },
 
   candani: {
@@ -946,6 +995,7 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     themeName: "Candani",
     series: "Traditional",
     category: "traditional",
+    defaultPalette: "terracotta",
     tagline: "PESONA NUSANTARA FLORAL",
     groomName: "Rijal",
     brideName: "Mega",
@@ -953,8 +1003,12 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     brideDisplayName: "Mega Puspita, S.I.Kom.",
     groomRole: "Mempelai Pria",
     brideRole: "Mempelai Wanita",
-    groomParents: "Putra dari Bpk. H. Ahmad Fauzi & Ibu Hj. Aminah",
-    brideParents: "Putri dari Bpk. Drs. H. Hendra Suwandi & Ibu Hj. Yuliana",
+    groomParents: "Putra dari Ir. Irawan Sadjojo & Dra. Indriwati Parayana.ME",
+    groomFather: "Ir. Irawan Sadjojo",
+    groomMother: "Dra. Indriwati Parayana.ME",
+    brideParents: "Putri dari Ir. Radja Rejaja & Dra. Riska Maryam.SE",
+    brideFather: "Ir. Radja Rejaja",
+    brideMother: "Dra. Riska Maryam.SE",
     groomInstagram: "rijal.fauzi",
     brideInstagram: "mega.puspita",
     monogramInitial: "R & M",
@@ -1012,7 +1066,7 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     ],
     dressCodeColors: "#a85d42, #dfc9b8, #fbf7f4",
     dressCodeNote: "Busana Nuansa Terracotta, Sand & Earthy Tone",
-    turutMengundang: ["Keluarga Besar Bpk. H. Ahmad Fauzi", "Keluarga Besar Bpk. Drs. H. Hendra Suwandi"],
+    turutMengundang: ["Keluarga Besar Ir. Irawan Sadjojo", "Keluarga Besar Ir. Radja Rejaja"],
   },
 
   lumina: {
@@ -1028,7 +1082,11 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     groomRole: "The Groom",
     brideRole: "The Bride",
     groomParents: "Son of Mr. Robert Nicholas & Mrs. Diana Nicholas",
+    groomFather: "Mr. Robert Nicholas",
+    groomMother: "Mrs. Diana Nicholas",
     brideParents: "Daughter of Mr. William Alexander & Mrs. Evelyn Alexander",
+    brideFather: "Mr. William Alexander",
+    brideMother: "Mrs. Evelyn Alexander",
     groomInstagram: "bryan.nicholas",
     brideInstagram: "celine.anastasia",
     monogramInitial: "B & C",
@@ -1101,8 +1159,12 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     brideDisplayName: "Aurora Valerie, M.Ds.",
     groomRole: "The Groom",
     brideRole: "The Bride",
-    groomParents: "Putra dari Bpk. Ir. Gunawan Alexander & Ibu Maria",
-    brideParents: "Putri dari Bpk. Dr. Hartanto Suwandi & Ibu Sylvia",
+    groomParents: "Putra dari Ir. Gunawan Alexander & Maria",
+    groomFather: "Ir. Gunawan Alexander",
+    groomMother: "Maria",
+    brideParents: "Putri dari Dr. Hartanto Suwandi & Sylvia",
+    brideFather: "Dr. Hartanto Suwandi",
+    brideMother: "Sylvia",
     groomInstagram: "damian.alexander",
     brideInstagram: "aurora.valerie",
     monogramInitial: "D & A",
@@ -1176,7 +1238,11 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     groomRole: "The Groom",
     brideRole: "The Bride",
     groomParents: "Son of Mr. Arthur Maverick & Mrs. Helena Maverick",
+    groomFather: "Mr. Arthur Maverick",
+    groomMother: "Mrs. Helena Maverick",
     brideParents: "Daughter of Mr. Marcus Hartono & Mrs. Catherine Hartono",
+    brideFather: "Mr. Marcus Hartono",
+    brideMother: "Mrs. Catherine Hartono",
     groomInstagram: "julian.maverick",
     brideInstagram: "valerie.clarissa",
     monogramInitial: "J & V",
@@ -1243,6 +1309,10 @@ export function getDemoThemeData(themeId: string): DemoThemeData {
   const normalized = (themeId || "kalandra").toLowerCase().trim();
   const base = DEMO_REGISTRY[normalized] || DEMO_REGISTRY.kalandra;
   const demo: DemoThemeData = { ...base };
+  if (!DEMO_REGISTRY[normalized]) {
+    demo.themeId = normalized;
+    demo.themeName = normalized ? normalized.charAt(0).toUpperCase() + normalized.slice(1) : "Demo Theme";
+  }
 
   try {
     const publicThemeDir = path.join(process.cwd(), "public", "demo", normalized);
@@ -1282,13 +1352,14 @@ function appendDemoAssetVersion(url?: string | null, v?: number | string): strin
 // Master composer to build ALL sections for the HTML templates
 export function composeDemoTemplateData(
   themeId: string,
-  paletteKey: string = "champagne",
+  paletteKey?: string,
   customData?: Partial<DemoThemeData>,
   cacheVersion?: number | string
 ) {
   const baseDemo = getDemoThemeData(themeId);
   const demo: DemoThemeData = customData ? { ...baseDemo, ...customData } : baseDemo;
-  const resolvedPalette = customData?.defaultPalette || demo.defaultPalette || paletteKey || "champagne";
+  const blueprint = getThemeBlueprint(themeId, customData);
+  const resolvedPalette = paletteKey || customData?.defaultPalette || demo.defaultPalette || "champagne";
   const palette = COLOR_PALETTES[resolvedPalette] || COLOR_PALETTES.champagne;
 
   const v = cacheVersion || (customData as any)?.cacheVersion || undefined;
@@ -1330,8 +1401,8 @@ export function composeDemoTemplateData(
 
   const storySectionHtml = `
     <section class="sec-flow" id="story">
-      <span class="sec-eyebrow">OUR JOURNEY</span>
-      <h2 class="sec-main-title serif">LOVE STORY</h2>
+      <span class="sec-eyebrow" data-lux-field="customLabels.storyEyebrow">${blueprint.storySectionEyebrow || "OUR JOURNEY"}</span>
+      <h2 class="sec-main-title serif" data-lux-field="customLabels.storyTitle">${blueprint.storySectionTitle || "Love Story"}</h2>
       <div class="journey-card-container">
         <div class="journey-chapters">
           ${storyItemsHtml}
@@ -1345,13 +1416,16 @@ export function composeDemoTemplateData(
   `;
 
   // 3. Gallery Section HTML with Smart Auto-Packing Grid and Zoom Lightbox
-  const photosFeedHtml = demo.galleryPhotos.map((imgUrl, i) => `
+  const rawGallery = Array.isArray(customData?.galleryPhotos) ? customData.galleryPhotos : demo.galleryPhotos || [];
+  const activeGallery = rawGallery.filter((p) => Boolean(p && typeof p === "string" && p.trim()));
+
+  const photosFeedHtml = activeGallery.map((imgUrl, i) => `
     <div class="moment-photo-item" data-idx="${i}" onclick="luxOpenZoom(${i})">
       <img src="${withV(imgUrl)}" alt="Our Moment ${i + 1}" loading="lazy" decoding="async">
     </div>
   `).join("");
 
-  const allPhotosGridHtml = demo.galleryPhotos.map((imgUrl, i) => `
+  const allPhotosGridHtml = activeGallery.map((imgUrl, i) => `
     <div class="full-gallery-item" onclick="luxOpenZoom(${i})">
       <img src="${withV(imgUrl)}" alt="Photo ${i + 1}" loading="lazy" decoding="async">
     </div>
@@ -1359,10 +1433,10 @@ export function composeDemoTemplateData(
 
   const gallerySectionHtml = `
     <section class="sec-flow" id="moments">
-      <span class="sec-eyebrow">GALLERY</span>
-      <h2 class="sec-main-title serif">OUR MOMENT</h2>
-      <p class="moment-quote serif">
-        “And I’d choose you; in a hundred lifetimes, in a hundred worlds, in any version of reality, I’d find you and I’d choose you.”
+      <span class="sec-eyebrow" data-lux-field="customLabels.galleryEyebrow">${blueprint.gallerySectionEyebrow || "GALLERY"}</span>
+      <h2 class="sec-main-title serif" data-lux-field="customLabels.galleryTitle">${blueprint.gallerySectionTitle || "Our Moments"}</h2>
+      <p class="moment-quote serif" data-lux-field="customLabels.galleryQuote">
+        “${blueprint.galleryQuote || "And I’d choose you; in a hundred lifetimes, in a hundred worlds, in any version of reality, I’d find you and I’d choose you."}”
       </p>
 
       <div class="moments-grid-10">
@@ -1370,7 +1444,7 @@ export function composeDemoTemplateData(
       </div>
 
       <button type="button" class="btn-outline-box btn-show-gallery" onclick="luxOpenFullGallery()">
-        LIHAT SEMUA FOTO (${demo.galleryPhotos.length} FOTO)
+        LIHAT SEMUA FOTO (${activeGallery.length} FOTO)
       </button>
     </section>
 
@@ -1392,14 +1466,14 @@ export function composeDemoTemplateData(
       <button class="lux-zoom-close" onclick="luxCloseZoom()">✕</button>
       <button class="lux-zoom-nav prev" onclick="luxPrevZoom(event)">‹</button>
       <div class="lux-zoom-img-box" onclick="event.stopPropagation()">
-        <img id="luxZoomActiveImg" src="${withV(demo.galleryPhotos[0] || '')}" alt="Zoom View">
-        <div class="lux-zoom-counter" id="luxZoomCounter">1 / ${demo.galleryPhotos.length}</div>
+        <img id="luxZoomActiveImg" src="${withV(activeGallery[0] || '')}" alt="Zoom View">
+        <div class="lux-zoom-counter" id="luxZoomCounter">1 / ${activeGallery.length || 1}</div>
       </div>
       <button class="lux-zoom-nav next" onclick="luxNextZoom(event)">›</button>
     </div>
 
     <script>
-      window.LUX_ALL_PHOTOS = ${JSON.stringify((demo.galleryPhotos || []).map((p) => withV(p)))};
+      window.LUX_ALL_PHOTOS = ${JSON.stringify(activeGallery.map((p) => withV(p)))};
       window.luxActivePhotoIdx = 0;
 
       function ensureModalsOnBody() {
@@ -1498,10 +1572,10 @@ export function composeDemoTemplateData(
 
   const giftSectionHtml = `
     <section class="sec-flow" id="gift">
-      <span class="sec-eyebrow">WEDDING GIFT</span>
-      <h2 class="sec-main-title serif">TANDA KASIH</h2>
-      <p class="sec-sub">
-        Doa restu Anda merupakan karunia yang sangat berarti bagi kami. Bagi Anda yang ingin memberikan tanda kasih:
+      <span class="sec-eyebrow" data-lux-field="customLabels.giftEyebrow">${blueprint.giftSectionEyebrow || "WEDDING GIFT"}</span>
+      <h2 class="sec-main-title serif" data-lux-field="customLabels.giftTitle">${blueprint.giftSectionTitle || "Tanda Kasih"}</h2>
+      <p class="sec-sub" data-lux-field="customLabels.giftDesc">
+        ${blueprint.giftSectionDesc || "Doa restu Anda merupakan karunia yang sangat berarti bagi kami. Bagi Anda yang ingin memberikan tanda kasih:"}
       </p>
 
       <div class="gift-tabs">
@@ -1584,9 +1658,9 @@ export function composeDemoTemplateData(
 
   const dressCodeHtml = `
     <section class="sec-flow" id="dresscode">
-      <span class="sec-eyebrow">A GUIDE TO</span>
-      <h2 class="sec-main-title serif">DRESS CODES</h2>
-      <p class="sec-sub">Kami mengundang tamu undangan untuk mengenakan palet warna berikut:</p>
+      <span class="sec-eyebrow" data-lux-field="customLabels.dressCodeEyebrow">${blueprint.dressCodeEyebrow || "A GUIDE TO"}</span>
+      <h2 class="sec-main-title serif" data-lux-field="customLabels.dressCodeTitle">${blueprint.dressCodeTitle || "Dress Code"}</h2>
+      <p class="sec-sub" data-lux-field="customLabels.dressCodeSubtitle">${blueprint.dressCodeSubtitle || "Kami mengundang tamu undangan untuk mengenakan palet warna berikut:"}</p>
       <div style="display:flex; justify-content:center; gap:12px; margin: 1.5rem 0;">${colorBadges}</div>
       <p style="margin:0; font-size:0.8rem; color:rgba(255,255,255,0.75); line-height:1.5;">${demo.dressCodeNote}</p>
     </section>
@@ -1595,10 +1669,10 @@ export function composeDemoTemplateData(
   // 7. Live Streaming Section
   const liveStreamingHtml = `
     <section class="sec-flow" id="live">
-      <span class="sec-eyebrow">VIRTUAL CEREMONY</span>
-      <h2 class="sec-main-title serif">LIVE STREAMING</h2>
+      <span class="sec-eyebrow" data-lux-field="customLabels.streamingEyebrow">${blueprint.streamingEyebrow || "VIRTUAL CEREMONY"}</span>
+      <h2 class="sec-main-title serif" data-lux-field="customLabels.streamingTitle">${blueprint.streamingTitle || "Live Streaming"}</h2>
       <p class="sec-sub">${demo.weddingDateFormatted} • 08.00 – Selesai</p>
-      <p class="sec-sub" style="margin-top:0.4rem;">Bagi keluarga &amp; sahabat yang menyaksikan dari jauh, bergabunglah melalui siaran daring:</p>
+      <p class="sec-sub" style="margin-top:0.4rem;" data-lux-field="customLabels.streamingSubtitle">${blueprint.streamingSubtitle || "Bagi keluarga &amp; sahabat yang menyaksikan dari jauh, bergabunglah melalui siaran daring:"}</p>
       <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:0.8rem; margin-top:1.5rem;">
         <a href="https://instagram.com/${demo.brideInstagram}" target="_blank" class="btn-map-outline">INSTAGRAM LIVE</a>
         <a href="https://youtube.com" target="_blank" class="btn-map-outline">YOUTUBE LIVE</a>
@@ -1609,9 +1683,9 @@ export function composeDemoTemplateData(
   // 8. Turut Mengundang Section
   const turutMengundangHtml = `
     <section class="sec-flow" id="turut-mengundang">
-      <span class="sec-eyebrow">KELUARGA BESAR</span>
-      <h2 class="sec-main-title serif">TURUT MENGUNDANG</h2>
-      <p class="sec-sub">Keluarga Besar &amp; Kerabat yang turut berbahagia:</p>
+      <span class="sec-eyebrow" data-lux-field="customLabels.turutMengundangEyebrow">${blueprint.turutMengundangEyebrow || "KELUARGA BESAR"}</span>
+      <h2 class="sec-main-title serif" data-lux-field="customLabels.turutMengundangTitle">${blueprint.turutMengundangTitle || "Turut Mengundang"}</h2>
+      <p class="sec-sub" data-lux-field="customLabels.turutMengundangSubtitle">${blueprint.turutMengundangSubtitle || "Keluarga Besar &amp; Kerabat yang turut berbahagia:"}</p>
       <div style="display:flex; flex-direction:column; gap:0.6rem; margin-top:1.5rem; font-size:0.88rem; color:rgba(255,255,255,0.85);">
         ${demo.turutMengundang.map((line) => `<p style="margin:0; padding:0.4rem 0; border-bottom:1px dashed rgba(255,255,255,0.12);">${line}</p>`).join("")}
       </div>
@@ -1877,20 +1951,33 @@ export function composeDemoTemplateData(
   const demoDir = path.join(process.cwd(), "public", "demo", demo.themeId);
   const localHomeExists = fs.existsSync(path.join(demoDir, "home.webp"));
   const localFooterExists = fs.existsSync(path.join(demoDir, "footer.webp"));
-  const rawClosing = (customData as any)?.closingPhotoUrl || (customData as any)?.footerPhotoUrl || (localFooterExists ? `/demo/${demo.themeId}/footer.webp` : null);
-  const effectiveHomePhoto = (customData as any)?.homePhotoUrl || demo.homePhotoUrl || (localHomeExists ? `/demo/${demo.themeId}/home.webp` : demo.globalBgUrl);
+
+  // Closing / Footer Photo
+  const customClosing = (customData as any)?.closingPhotoUrl !== undefined 
+    ? (customData as any)?.closingPhotoUrl 
+    : (customData as any)?.footerPhotoUrl;
+  const rawClosing = customClosing !== undefined 
+    ? customClosing 
+    : (localFooterExists ? `/demo/${demo.themeId}/footer.webp` : "");
+
+  // Home Photo
+  const customHome = (customData as any)?.homePhotoUrl;
+  const effectiveHomePhoto = customHome !== undefined 
+    ? customHome 
+    : (localHomeExists ? `/demo/${demo.themeId}/home.webp` : demo.globalBgUrl);
+
   const defaultCanonExists = fs.existsSync(path.join(process.cwd(), "public", "music", "canon-in-d.ogg"));
   const fallbackSong = defaultCanonExists ? "/music/canon-in-d.ogg" : (fs.existsSync(path.join(process.cwd(), "public", "music", "bermuara.mp3")) ? "/music/bermuara.mp3" : "");
-  const effectiveAudioUrl = withV((customData as any)?.audioUrl || (demo as any)?.audioUrl || fallbackSong);
+  const effectiveAudioUrl = withV((customData as any)?.audioUrl !== undefined ? (customData as any)?.audioUrl : ((demo as any)?.audioUrl || fallbackSong));
 
-  const effectiveLandingCover = withV(demo.landingCoverUrl);
-  const effectiveSidebarPhoto = withV(demo.sidebarPhotoUrl);
-  const effectiveGlobalBg = withV((customData as any)?.globalBgUrl || demo.globalBgUrl);
+  const effectiveLandingCover = withV((customData as any)?.landingCoverUrl !== undefined ? (customData as any)?.landingCoverUrl : demo.landingCoverUrl);
+  const effectiveSidebarPhoto = withV((customData as any)?.sidebarPhotoUrl !== undefined ? (customData as any)?.sidebarPhotoUrl : demo.sidebarPhotoUrl);
+  const effectiveGlobalBg = withV((customData as any)?.globalBgUrl !== undefined ? (customData as any)?.globalBgUrl : demo.globalBgUrl);
   const effectiveHome = withV(effectiveHomePhoto);
-  const effectiveFooter = withV(rawClosing || `/demo/${demo.themeId}/footer.webp`);
-  const effectiveGroom = withV(demo.groomPhotoUrl);
-  const effectiveBride = withV(demo.bridePhotoUrl);
-  const versionedGallery = (demo.galleryPhotos || []).map((p) => withV(p));
+  const effectiveFooter = rawClosing ? withV(rawClosing) : "";
+  const effectiveGroom = withV((customData as any)?.groomPhotoUrl !== undefined ? (customData as any)?.groomPhotoUrl : demo.groomPhotoUrl);
+  const effectiveBride = withV((customData as any)?.bridePhotoUrl !== undefined ? (customData as any)?.bridePhotoUrl : demo.bridePhotoUrl);
+  const versionedGallery = activeGallery.map((p) => withV(p));
 
   return {
     invitationId: `demo-${demo.themeId}`,
@@ -1926,8 +2013,18 @@ export function composeDemoTemplateData(
     secondRoleLabel: demo.brideRole,
     firstParentLabel: "Putra Dari",
     secondParentLabel: "Putri Dari",
+    firstParentPrefix: "Putra dari",
+    secondParentPrefix: "Putri dari",
     groomParents: demo.groomParents,
     brideParents: demo.brideParents,
+    groomFather: demo.groomFather || "",
+    groomMother: demo.groomMother || "",
+    brideFather: demo.brideFather || "",
+    brideMother: demo.brideMother || "",
+    firstFather: demo.groomFather || "",
+    firstMother: demo.groomMother || "",
+    secondFather: demo.brideFather || "",
+    secondMother: demo.brideMother || "",
     firstParents: demo.groomParents,
     secondParents: demo.brideParents,
     groomInstagram: demo.groomInstagram,
@@ -1938,7 +2035,7 @@ export function composeDemoTemplateData(
     // Exact Standardized Local Assets
     globalBgUrl: effectiveGlobalBg,
     homePhotoUrl: effectiveHome,
-    hasCustomHomePhoto: Boolean((customData as any)?.homePhotoUrl || localHomeExists),
+    hasCustomHomePhoto: Boolean(effectiveHomePhoto),
     footerPhotoUrl: effectiveFooter,
     groomPhotoUrl: effectiveGroom,
     bridePhotoUrl: effectiveBride,
@@ -1954,18 +2051,32 @@ export function composeDemoTemplateData(
     galleryPhoto5: versionedGallery[4] || effectiveLandingCover,
     galleryPhoto6: versionedGallery[5] || effectiveLandingCover,
     
-    openingQuote: demo.openingQuote,
-    openingQuoteRef: demo.openingQuoteRef,
+    openingQuote: (customData as any)?.openingQuote || blueprint.openingQuote || demo.openingQuote,
+    openingQuoteRef: (customData as any)?.openingQuoteRef || blueprint.openingQuoteRef || demo.openingQuoteRef,
     
-    coupleSectionEyebrow: "THE COUPLE",
-    coupleSectionTitle: "Mempelai",
-    coupleSectionSub: "Dengan penuh rasa syukur dan sukacita, kami mengundang Anda untuk merayakan persatuan cinta kami dalam ikatan suci pernikahan.",
-    coupleTitle: "Mempelai",
-    coupleEyebrow: "THE COUPLE",
+    quoteSectionTitle: blueprint.quoteSectionTitle,
+    quoteSectionEyebrow: blueprint.quoteSectionEyebrow,
+    quoteTitle: blueprint.quoteSectionTitle,
+    quoteEyebrow: blueprint.quoteSectionEyebrow,
+    coupleSectionEyebrow: blueprint.coupleSectionEyebrow || "THE COUPLE",
+    coupleSectionTitle: blueprint.coupleSectionTitle || "Mempelai",
+    coupleSectionSub: blueprint.coupleSectionSub || "Dengan penuh rasa syukur dan sukacita, kami mengundang Anda untuk merayakan persatuan cinta kami dalam ikatan suci pernikahan.",
+    coupleTitle: blueprint.coupleSectionTitle || "Mempelai",
+    coupleEyebrow: blueprint.coupleSectionEyebrow || "THE COUPLE",
+    closingQuote: (customData as any)?.closingQuote || blueprint.closingQuote,
+    closingSub: (customData as any)?.closingSub || blueprint.closingSub,
     
     // Complete Composed Section Blocks
     eventDataHtml,
     storySectionHtml,
+    storyItemsHtml,
+    showStory: (customData as any)?.featureSettings?.showStory !== undefined ? Boolean((customData as any).featureSettings.showStory) : true,
+    showGallery: true,
+    showGift: true,
+    showDressCode: true,
+    showStreaming: true,
+    showWeddingFilter: true,
+    showTurutMengundang: true,
     gallerySectionHtml,
     giftSectionHtml,
     qrAccessSectionHtml,
@@ -2008,11 +2119,38 @@ export function composeDemoTemplateData(
     colorBgDark: palette.bgDark,
     colorTextDark: palette.textDark || "#1a1a1a",
 
-    // Custom Labels (Zero-Hardcode Fallback for Demo)
+    // Custom Labels (Theme-Specific Blueprint Defaults)
     customLabels: {
-      openBtn: "Buka Undangan",
-      coverSubtitle: "Tanpa mengurangi rasa hormat, kami mengundang Anda untuk menghadiri acara pernikahan kami.",
-      rsvpTitle: "Konfirmasi Kehadiran & Doa",
+      openBtn: blueprint.openBtn,
+      coverSubtitle: blueprint.coverSubtitle,
+      rsvpTitle: blueprint.rsvpTitle,
+      rsvpBtnText: blueprint.rsvpBtnText || "Kirim Konfirmasi & Doa",
+      quoteTitle: blueprint.quoteSectionTitle,
+      quoteEyebrow: blueprint.quoteSectionEyebrow,
+      coupleTitle: blueprint.coupleSectionTitle,
+      coupleEyebrow: blueprint.coupleSectionEyebrow || "THE COUPLE",
+      coupleSub: blueprint.coupleSectionSub,
+      eventsTitle: blueprint.eventsSectionTitle,
+      eventsSub: blueprint.eventsSectionSub,
+      storyTitle: blueprint.storySectionTitle,
+      storyEyebrow: blueprint.storySectionEyebrow || "OUR JOURNEY",
+      galleryTitle: blueprint.gallerySectionTitle,
+      galleryEyebrow: blueprint.gallerySectionEyebrow,
+      galleryQuote: blueprint.galleryQuote,
+      dressCodeTitle: blueprint.dressCodeTitle || "Dress Code",
+      dressCodeEyebrow: blueprint.dressCodeEyebrow || "A Guide To",
+      dressCodeSubtitle: blueprint.dressCodeSubtitle || "Kami mengundang tamu undangan untuk mengenakan palet warna berikut:",
+      streamingTitle: blueprint.streamingTitle || "Live Streaming",
+      streamingEyebrow: blueprint.streamingEyebrow || "Virtual Ceremony",
+      streamingSubtitle: blueprint.streamingSubtitle || "Bagi keluarga & sahabat yang menyaksikan dari jauh, bergabunglah melalui siaran daring:",
+      giftTitle: blueprint.giftSectionTitle,
+      giftEyebrow: blueprint.giftSectionEyebrow,
+      giftDesc: blueprint.giftSectionDesc,
+      turutMengundangTitle: blueprint.turutMengundangTitle || "Turut Mengundang",
+      turutMengundangEyebrow: blueprint.turutMengundangEyebrow || "Keluarga Besar",
+      turutMengundangSubtitle: blueprint.turutMengundangSubtitle || "Keluarga Besar & Kerabat yang turut berbahagia:",
+      wishesTitle: blueprint.wishesSectionTitle,
+      wishesSub: blueprint.wishesSectionSub,
       ...((customData as any)?.customLabels || {}),
     },
 

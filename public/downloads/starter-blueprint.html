@@ -759,8 +759,22 @@
       {{eventDataHtml}}
     </section>
 
-    <!-- SEKSI 5: KISAH CINTA (LOVE STORY) -->
-    {{storySectionHtml}}
+    <!-- =================================================================== -->
+    <!-- SEKSI 5: KISAH CINTA (LOVE STORY)                                    -->
+    <!-- Theme Builder memiliki 2 opsi:                                      -->
+    <!-- Opsi A (Bawaan Engine): Gunakan {{storySectionHtml}}                 -->
+    <!-- Opsi B (Native Master Theme): Gunakan {{#if showStory}} ... {{/if}} -->
+    <!--   dengan tata letak bebas khas tema Anda + {{storyItemsHtml}}        -->
+    <!-- =================================================================== -->
+    {{#if showStory}}
+    <section class="sec-flow" id="story">
+      <span class="sec-eyebrow">{{storySectionEyebrow}}</span>
+      <h2 class="sec-main-title serif">{{storySectionTitle}}</h2>
+      <div class="custom-story-container">
+        {{storyItemsHtml}}
+      </div>
+    </section>
+    {{/if}}
 
     <!-- SEKSI 6: GALERI FOTO & VIDEO -->
     {{gallerySectionHtml}}

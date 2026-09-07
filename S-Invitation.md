@@ -37,7 +37,13 @@ Sistem template undangan menggunakan arsitektur HTML multi-layer mandiri dengan 
 2. **Badrika (`themes/traditional/badrika.html`)**
    - Nuansa adat Bugis-Makassar royal celebration dengan aksen emas tembaga, rumah adat Bugis, dan arsitektur split-desktop (`.fixed-bg-layer` 460px semi-transparan berpadu kain sutra Lontara).
 3. **Candani (`themes/traditional/candani.html`)**
-   - Ornamen batik klasik dan palet warna bumi (terracotta & sand).
+   - Floral Heritage Nusantara berpadu palet warna bumi (*terracotta, sand, warm gold*), serta dukungan penuh palet dinamis sistem (`{{colorPrimary}}`, `{{colorSecondary}}`, `{{colorAccent}}`, `{{colorBgDark}}`).
+   - Arsitektur Desktop Split 460px presisi: `.sidebar-desktop .left-hero` dinamis (`calc(100% - 460px)`), panel undangan terisolasi 460px, serta kanvas `.fixed-bg-layer` fokus 460px di desktop dan 100% di mobile.
+   - Home Section dinamis murni tanpa card (`#home` berpadu *optical center typography* dengan ritme vertikal kompak sehingga teks doa & countdown menyatu leluasa dengan kanvas latar belakang).
+   - Profil Mempelai Card-less Staggered (`.couple-staggered-container`): Menghilangkan kotak card tebal, mempertahankan bingkai kubah melengkung berbayangan mewah (*luxury layered shadow*), First (Pria) berposisi di kiri dengan inisial huruf pertama bergradasi (*watermark gradient*) di sisi kanannya, Second (Wanita) di kanan dengan inisial di sisi kirinya, terhubung oleh ampersand puitis `&`, serta bebas dari efek loncat hover/scroll yang mengganggu.
+   - Keterangan Orang Tua Terstruktur Anti-Orphan & Murni String Bebas (`.couple-parents`): Menggunakan pemisahan 4 kolom terstruktur (`groomFather`, `groomMother`, `brideFather`, `brideMother`) dengan deteksi awalan otomatis (`{{firstParentPrefix}}` = "Putra dari" / "Putri dari") dan penataan hierarki vertikal per baris tanpa paksaan awalan Bpk/Ibu, sehingga klien bebas menuliskan nama langsung, gelar akademik/adat, atau status almarhum/almarhumah (`Alm.`, `Almh.`), tersusun rapi tanpa patah kata (*no orphan wrapping*).
+   - Smart Bottom Dock dengan navigasi berlabel 'Home' (menuju `#home`), integrasi pemutar musik langsung di dock (`#musicToggle` berstatus pulsing animasi saat menyala, tanpa emoji OS), dan integrasi Universal Smart Dock Home Zone Guard (`body.lux-at-home-zone`).
+   - Zero-hardcode dengan atribut `data-lux-field`, peranan mempelai dinamis (`{{groomRole}}` & `{{brideRole}}`), divider floral ornamen SVG khas, serta modal QR Check-in (`#modalBg`) terpadu.
 4. **Dillalucky (`themes/traditional/dillalucky.html`)**
    - Motif floral tradisional yang anggun dengan sentuhan pastel sakral.
 5. **Mayang (`themes/traditional/mayang.html`)**
@@ -143,7 +149,7 @@ Sistem Studio Editor Klien (`/dashboard/invitation/[id]`) menyediakan kendali kr
    - Seluruh slot visual (Sampul Pop-Up, Sidebar Desktop, Fixed Background, Foto Penutup, dan Foto Kedua Mempelai) wajib terisi unggahan klien untuk mencegah tertampilkannya aset demo bawaan tema.
    - Seksi dengan sakelar aktif wajib memiliki data lengkap (tidak boleh ada galeri/cerita/rekening kosong jika tombol toggle ON).
    - Seksi dengan sakelar mati secara transparan berstatus `Nonaktif (Dilewati)` dan otomatis lolos audit tanpa menghalangi peluncuran.
-   - **Sinkronisasi Navigasi Runtime:** Seksi yang dimatikan otomatis terhapus dari DOM dan item navigasi dock bawah (`.bottom-dock a`) serta tombol audio floating (`.music-fab`) disembunyikan secara dinamis via `syncActiveTogglesUI()`.
+   - **Sinkronisasi Navigasi Runtime & Smart Dock Home Zone Guard:** Seksi yang dimatikan otomatis terhapus dari DOM dan item navigasi dock bawah (`.bottom-dock a`) serta tombol audio floating (`.music-fab`) disembunyikan secara dinamis via `syncActiveTogglesUI()`. Selain itu, `UNIFIED_CLIENT_RUNTIME_SCRIPT` mengawal status dock (`lux-at-home-zone`), memastikan dock bawah tetap tersembunyi secara murni di seksi Home/Hero dan hanya muncul saat scroll-up di seksi berikutnya.
 8. **Pre-Flight Gatekeeper Checklist (6 Instrumen URL)**:
    - Menyajikan 6 instrumen URL resmi terpisah: (1) Pintu Utama Canonical, (2) Subdomain Eksklusif, (3) Simulasi Personalisasi Tamu (`?to=...`), (4) Portal Resepsionis & QR (`/receptionist`), (5) Galeri Kenangan Tamu (`/memories`), dan (6) Form Kamera Tamu (`/sharemoment`).
    - Tombol *"Rilis Undangan Resmi"* terkunci sampai ke-6 instrumen URL terkonfirmasi 100% oleh klien. Seluruh tautan didukung mode `?preview=true` saat status DRAFT agar dapat diuji coba tanpa membuka akses publik prematur.
@@ -408,6 +414,13 @@ Sistem pengiriman email otomatis menggunakan **Nodemailer** yang membaca kredens
 2. **Sinkronisasi Otomatis & Anti-Zombie**:
    - Tombol *Sinkronisasi Tema & Cache* (`POST /api/admin/themes/sync`) memindai direktori fisik `themes/` dan otomatis menghapus record tema usang (*auto-purge*) yang tidak lagi memiliki file fisik master.
    - Menjamin prinsip *Single Source of Truth* terjaga 100%.
+3. **Studio Tema Admin & Kustomisasi Custom Labels Menyeluruh**:
+   - **Formulir Interaktif Dinamis:** Admin dapat menambah dan menghapus rangkaian acara (`events`), bab kisah cinta (`stories`), dan rekening bank (`banks`) demo secara langsung tanpa batasan statis.
+   - **6 Sub-Panel Narasi Tema:** Meliputi seluruh seksi undangan (Sampul & Pembuka, Mempelai & Acara, Kisah Cinta & Galeri, Dress Code & Streaming, Tanda Kasih & Turut Mengundang, Doa Penutup & RSVP).
+   - **Harmonisasi Tipografi Casing (Anti-Collision Parisienne):** Menghindari huruf kapital semua (*ALL-CAPS*) pada font kaligrafi bersambung seperti di tema Candani, menyajikan Title Case anggun (`Dress Code`, `Live Streaming`, `Love Story`, `Our Moments`, `Turut Mengundang`) yang terbaca jernih.
+   - **Pewarisan Otomatis ke Undangan Klien (Smart Inheritance):** Saat klien membuat undangan baru via `POST /api/client/invitations/create`, sistem secara dinamis mewariskan seluruh label dan narasi yang telah disempurnakan admin di database (`theme_demo_${themeId}`) atau `ThemeBlueprint`.
+   - **Sintesis Arketipe Kategori Otomatis (Zero-Config untuk Tema Baru):** Saat Admin mengunggah file tema baru, sistem secara cerdas mendeteksi kategori dan memetakannya ke arketipe default (`DEFAULT_TRADITIONAL_BLUEPRINT`, `DEFAULT_MODERN_BLUEPRINT`, atau `DEFAULT_PREMIUM_BLUEPRINT`). Seluruh formulir di Demo Studio otomatis terisi lengkap tanpa ada input kosong.
+
 ## 11. Filosofi Integritas UI Admin & Perlindungan Hak Klien
 Dalam pengelolaan Klien dan Undangan di Dashboard Admin (`app/(admin)/admin/page.tsx`), prinsip **Anti-Overreach** (anti-intervensi berlebih) ditegakkan secara ketat untuk mencegah manipulasi data yang membingungkan klien dan merusak metrik sistem:
 1. **Pencegahan URL Halusinasi:** Jika klien belum mengatur subdomain di dashboard mereka (status DRAFT), Admin akan jujur menampilkan indikator `[Belum Setup]`. Tidak ada rakitan URL tebakan dari `groomSlug` dan `brideSlug`.
@@ -511,3 +524,15 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - **Zero-404 Server Verification di `/api/public/themes`:** Memeriksa ketersediaan thumbnail fisik di VPS sebelum mengirimkan URL, langsung mengalihkan ke `cover.webp` jika belum ada sehingga kartu katalog bebas dari siklus 404 ganda. Frame wadah kartu diperbarui ke `bg-stone-100` untuk transisi loading yang lembut tanpa blank hitam.
 6. **Proteksi Anti-Download & Privasi Tamu Galeri Kenangan (`/memories`):**
    - Galeri kenangan tamu diproteksi secara menyeluruh dari unduhan tidak sah melalui pelarangan menu klik kanan (`onContextMenu` preventDefault), pencegahan touch-callout pada mobile (`-webkit-touch-callout: none`), larangan dragging gambar (`draggable={false}`), serta pointer containment pada preview lightbox modal.
+7. **Fitur Hapus Foto Bersih & Unlink Fisik di Demo Studio:**
+   - Menyediakan tombol *Hapus* dan *Pulihkan* pada seluruh slot aset foto Demo Studio (sampul, background, foto mempelai, 8 galeri showroom, dan 4 kenangan tamu).
+   - Saat disimpan, backend memanggil `DELETE /api/admin/themes/[id]/demo-asset?slot=[slot]`, menghapus file fisik di `public/demo/[themeId]/` untuk seluruh variasi ekstensi, mengosongkan data di database, dan mengompilasi ulang file statis tanpa foto tersebut (menghasilkan fallback kanvas transparan).
+8. **Isolasi Transaksi & Order-Level Payment Method Lock di `/checkout`:**
+   - Menyelesaikan celah saat admin beralih dari mode Transfer Manual ke Gateway. Halaman `/checkout` mengunci tampilan berdasarkan status pesanan: order yang berstatus `MANUAL_TRANSFER` atau telah memiliki `proofImageUrl` tetap mengunci tampilan pada alur transfer manual dan kotak verifikasi struk, tanpa tertutup oleh tombol QRIS gateway.
+9. **Theme-Specific Blueprint Architecture & Kamus Narasi Bawaan per Tema:**
+   - Menggantikan teks generic hardcoded dengan registri cetak biru khusus tema (`lib/themeDefaults.ts`) yang mencakup 15 tema tradisional, modern editorial, dan premium.
+   - Dilengkapi tab ke-4 di Demo Studio (*"Teks Seksi & Narasi Bawaan"*) sehingga teks bawaan per tema dapat diedit langsung di panel Admin dan diwariskan secara cerdas (*smart inheritance*) ke formulir undangan klien di dashboard.
+10. **Theme Freedom Architecture & Conditional Blocks (`{{#if}}`):**
+   - **Independensi Markup:** Tema master tidak lagi dipaksa menggunakan template seksi seragam yang dicetak mati oleh Engine. Tema dapat merancang sendiri layout HTML-nya di dalam file template master (`themes/**/*.html`).
+   - **Blok Kondisional:** Didukung blok `{{#if <fitur>}} ... {{/if}}` di `lib/renderTemplate.ts`. Jika klien mematikan seksi di dashboard, seluruh tag HTML seksi lenyap bersih dari halaman (*zero ghost elements*).
+   - **Pilot Candani & Starter Blueprint:** Diterapkan langsung pada seksi Kisah Cinta (*Love Story*) Candani dengan estetika floral terakota anggun (`.candani-story-flow`), dan didokumentasikan di `themes/starter-blueprint.html` serta `public/downloads/starter-blueprint.html` sebagai standar emas pembuatan tema master baru.

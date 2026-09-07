@@ -160,3 +160,118 @@ export async function POST(
     );
   }
 }
+
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await auth();
+    const isAdmin =
+      (session?.user as any)?.isAdmin === true ||
+      (session?.user as any)?.role === "SUPER_ADMIN" ||
+      (session?.user as any)?.role === "ADMIN";
+    if (!session || !isAdmin) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id } = await params;
+    const themeId = id.toLowerCase().trim();
+
+    const { searchParams } = new URL(req.url);
+    const slot = searchParams.get("slot");
+
+    if (!slot) {
+      return NextResponse.json({ error: "Slot harus disertakan" }, { status: 400 });
+    }
+
+    const targetDir = path.join(process.cwd(), "public", "demo", themeId);
+
+    // Delete any existing files for this slot regardless of extension
+    const extensions = ["webp", "png", "jpg", "jpeg", "mp4", "webm", "mp3", "ogg"];
+    extensions.forEach((ext) => {
+      const targetFile = path.join(targetDir, `${slot}.${ext}`);
+      if (fs.existsSync(targetFile)) {
+        try {
+          fs.unlinkSync(targetFile);
+        } catch {}
+      }
+    });
+
+    // Update database adminSetting theme_demo_${themeId}
+    try {
+      const { prisma } = await import("@/lib/prisma");
+      const settingKey = `theme_demo_${themeId}`;
+      const setting = await prisma.adminSetting.findUnique({
+        where: { key: settingKey },
+      });
+      const customData = setting?.value ? JSON.parse(setting.value) : {};
+
+      if (slot === "cover") {
+        customData.landingCoverUrl = "";
+      } else if (slot === "hero") {
+        customData.sidebarPhotoUrl = "";
+      } else if (slot === "background") {
+        customData.globalBgUrl = "";
+      } else if (slot === "home") {
+        customData.homePhotoUrl = "";
+      } else if (slot === "footer") {
+        customData.footerPhotoUrl = "";
+        customData.closingPhotoUrl = "";
+      } else if (slot === "groom") {
+        customData.groomPhotoUrl = "";
+      } else if (slot === "bride") {
+        customData.bridePhotoUrl = "";
+      } else if (slot === "thumbnail_mobile") {
+        customData.thumbnailMobileUrl = "";
+      } else if (slot === "thumbnail_desktop") {
+        customData.thumbnailDesktopUrl = "";
+      } else if (slot === "music") {
+        customData.audioUrl = "";
+      } else if (slot.startsWith("gallery_")) {
+        const idx = parseInt(slot.replace("gallery_", ""), 10) - 1;
+        if (Array.isArray(customData.galleryPhotos)) {
+          customData.galleryPhotos[idx] = "";
+        }
+      }
+
+      const upserted = await prisma.adminSetting.upsert({
+        where: { key: settingKey },
+        create: {
+          key: settingKey,
+          value: JSON.stringify(customData),
+          label: `Demo Data Konfigurasi - ${themeId.toUpperCase()}`,
+          group: "themes",
+        },
+        update: {
+          value: JSON.stringify(customData),
+        },
+      });
+
+      const version = upserted.updatedAt ? new Date(upserted.updatedAt).getTime() : Date.now();
+      const { compileAndSaveStaticDemo } = await import("@/lib/demoPublisher");
+      await compileAndSaveStaticDemo(themeId, customData, version);
+
+      try {
+        revalidatePath("/demo");
+        revalidatePath(`/demo/${themeId}`);
+        revalidatePath("/api/public/themes");
+      } catch {}
+    } catch (publishErr) {
+      console.error("[DemoAsset-Delete-Publish-Error]:", publishErr);
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: `Aset ${slot} berhasil dihapus dari tema ${themeId} & file preview statis telah diperbarui`,
+      slot,
+      themeId,
+    });
+  } catch (err: any) {
+    console.error("[DemoAsset-Delete-Error]:", err);
+    return NextResponse.json(
+      { error: err.message || "Gagal menghapus aset demo" },
+      { status: 500 }
+    );
+  }
+}

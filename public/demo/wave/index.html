@@ -26,8 +26,8 @@
     <meta property="og:site_name" content="Luxenary">
     <meta property="og:title" content="The Wedding of Kevin & Clarissa — WAVE">
     <meta property="og:description" content="Undangan pernikahan digital eksklusif tema WAVE. Desain elegan, split desktop view, RSVP real-time & galeri momen.">
-    <meta property="og:image" content="https://luxvite.id/demo/wave/cover.webp?v=1788678254272">
-    <meta property="og:image:secure_url" content="https://luxvite.id/demo/wave/cover.webp?v=1788678254272">
+    <meta property="og:image" content="https://luxvite.id/demo/wave/cover.webp?v=1788784393168">
+    <meta property="og:image:secure_url" content="https://luxvite.id/demo/wave/cover.webp?v=1788784393168">
     <meta property="og:image:type" content="image/webp">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
@@ -35,7 +35,7 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="The Wedding of Kevin & Clarissa — WAVE">
     <meta name="twitter:description" content="Undangan pernikahan digital eksklusif tema WAVE. Desain elegan, split desktop view, RSVP real-time & galeri momen.">
-    <meta name="twitter:image" content="https://luxvite.id/demo/wave/cover.webp?v=1788678254272">
+    <meta name="twitter:image" content="https://luxvite.id/demo/wave/cover.webp?v=1788784393168">
   
 
 <script>
@@ -64,22 +64,26 @@
 </script>
 
 <link rel="stylesheet" href="/css/modules.css">
+  <style id="luxSmartDockStyles">
+    /* Luxenary Engine Smart Dock Home Zone State Guard */
+    body.lux-at-home-zone .bottom-dock,
+    .bottom-dock.lux-dock-home-hidden {
+      transform: translate3d(-50%, calc(100% + 48px), 0) !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+      transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease !important;
+    }
+  </style>
 <style>
-      .site-footer, footer, footer#footer {
-        background-image: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 38%, rgba(0,0,0,0.55) 65%, rgba(0,0,0,0.92) 100%), url('/demo/wave/footer.webp?v=1788678254272') !important;
+
+      .slide-opening#home, section#home.slide-opening, section#home, .sec-hero-slideshow#home {
+        background-image: linear-gradient(to bottom, rgba(7,7,9,0.55) 0%, rgba(7,7,9,0.35) 40%, rgba(7,7,9,0.80) 100%), url('/demo/wave/background.webp?v=1788784393168') !important;
         background-size: cover !important;
-        background-position: center bottom !important;
-        color: #fff !important;
-        border-top: none !important;
-        position: relative;
+        background-position: center center !important;
+        background-repeat: no-repeat !important;
       }
-      .site-footer::before, footer::before, footer#footer::before {
-        display: none !important;
-      }
-      .site-footer *, footer *, footer#footer * {
-        color: #fff !important;
-      }
-    </style>
+      
+</style>
 <style id="luxPreloaderGlobalStyle">
   .preloader-hidden {
     opacity: 0 !important;
@@ -1509,7 +1513,7 @@
   </head>
   
 
-<body style="--gold: #a67c52; --gold-dim: #7a5430; --gold-pale: #faf7f2;">
+<body class="lux-at-home-zone" style="--gold: #a67c52; --gold-dim: #7a5430; --gold-pale: #faf7f2;">
   
 <div id="themePreloader" class="lux-universal-preloader" aria-label="Loading Invitation">
   <div class="lux-preloader-inner">
@@ -1524,7 +1528,7 @@
 
 
   <!-- FIXED LEFT HERO (DESKTOP ONLY) -->
-  <div class="left-hero" style="background-image: url('/demo/wave/hero.webp?v=1788678254272');">
+  <div class="left-hero" style="background-image: url('/demo/wave/hero.webp?v=1788784393168');">
     <div class="left-hero-content">
       <span class="left-hero-eyebrow">MODERN LIQUID CINEMA</span>
       <h1 class="serif left-hero-names">Kevin <em>&amp;</em> Clarissa</h1>
@@ -1534,7 +1538,7 @@
 
   <!-- COVER SCREEN -->
   <div class="cover-screen" id="coverScreen"
-    style="background-image: linear-gradient(to bottom, rgba(7,7,9,0.2) 0%, rgba(7,7,9,0.0) 25%, rgba(7,7,9,0.55) 60%, rgba(7,7,9,0.92) 100%), url('/demo/wave/cover.webp?v=1788678254272');">
+    style="background-image: linear-gradient(to bottom, rgba(7,7,9,0.2) 0%, rgba(7,7,9,0.0) 25%, rgba(7,7,9,0.55) 60%, rgba(7,7,9,0.92) 100%), url('/demo/wave/cover.webp?v=1788784393168');">
     <div class="cover-top">
       <span class="cover-date-part">18/10</span>
       <span class="cover-date-part">2026</span>
@@ -1548,9 +1552,9 @@
     <div class="cover-bottom">
       <span class="cover-kepada">Kepada</span>
       <h2 class="cover-guest-name serif" id="coverGuestName">Tamu Undangan</h2>
-      <p class="cover-subtitle" data-lux-field="customLabels.coverSubtitle">Tanpa mengurangi rasa hormat, kami mengundang Anda untuk menghadiri acara pernikahan kami.</p>
+      <p class="cover-subtitle" data-lux-field="customLabels.coverSubtitle">Please join us as we celebrate our new beginning on this momentous day.</p>
       <button class="btn-buka" onclick="openInvitation()"
-        data-lux-field="customLabels.openBtn">Buka Undangan</button>
+        data-lux-field="customLabels.openBtn">Open Invitation</button>
       <button type="button" class="btn-open-qr-cover" onclick="luxOpenAccessModal()" style="display:inline-block; margin-top:20px; padding:10px 24px; background:#111; color:#fff; border:none; border-radius:30px; font-size:12px; font-weight:600; letter-spacing:1px; cursor:pointer; box-shadow:0 4px 15px rgba(0,0,0,0.2); transition:transform 0.2s ease;">Kartu Akses QR</button>
     </div>
   </div>
@@ -1560,7 +1564,7 @@
 
     <!-- 1. SLIDE 1: OPENING VIEW (100vh FULLSCREEN) -->
     <section class="slide-opening" id="home"
-      style="background-image: linear-gradient(to bottom, rgba(7,7,9,0.60) 0%, rgba(7,7,9,0.45) 40%, rgba(7,7,9,0.88) 100%), url('/demo/wave/background.webp?v=1788678254272');">
+      style="background-image: linear-gradient(to bottom, rgba(7,7,9,0.60) 0%, rgba(7,7,9,0.45) 40%, rgba(7,7,9,0.88) 100%), url('/demo/wave/background.webp?v=1788784393168');">
       <div class="opening-top-date">
         <span>18/10</span>
         <span>2026</span>
@@ -1572,8 +1576,8 @@
       </div>
 
       <div class="opening-bottom">
-        <p class="opening-quote-text">"In the depth of the ocean of life, we found the rhythm of our destiny together."</p>
-        <cite class="opening-quote-ref">THE WAVE JOURNAL</cite>
+        <p class="opening-quote-text">"Like ocean waves returning to the shore, true love always finds its way home."</p>
+        <cite class="opening-quote-ref">OCEAN OF DEVOTION</cite>
         <div class="scroll-indicator">
           <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
             <path d="M12 5v14M5 12l7 7 7-7" />
@@ -1583,12 +1587,12 @@
     </section>
 
     <!-- 2. SLIDE 2: HOST 1 (100vh FULL PHOTO) -->
-    <section class="slide-couple" id="host1" style="background-image: url('/demo/wave/groom.webp?v=1788678254272');">
+    <section class="slide-couple" id="host1" style="background-image: url('/demo/wave/groom.webp?v=1788784393168');">
       <div class="couple-content right">
         <span class="couple-role">The Groom</span>
         <h2 class="couple-name serif">Kevin Sanjaya, B.Sc.</h2>
         <span class="couple-label">Putra Dari</span>
-        <p class="couple-parents">Putra dari Bpk. Surya Sanjaya & Ibu Meilani Sanjaya</p>
+        <p class="couple-parents">Surya Sanjaya &amp; Meilani Sanjaya</p>
         <a href="https://instagram.com/kevinsanjaya" target="_blank" class="btn-ig-pill">
           <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
             <path
@@ -1600,12 +1604,12 @@
     </section>
 
     <!-- 3. SLIDE 3: HOST 2 (100vh FULL PHOTO) -->
-    <section class="slide-couple" id="host2" style="background-image: url('/demo/wave/bride.webp?v=1788678254272');">
+    <section class="slide-couple" id="host2" style="background-image: url('/demo/wave/bride.webp?v=1788784393168');">
       <div class="couple-content">
         <span class="couple-role">The Bride</span>
         <h2 class="couple-name serif">Clarissa Tanuwidjaja, B.A.</h2>
         <span class="couple-label">Putri Dari</span>
-        <p class="couple-parents">Putri dari Bpk. Franky Tanuwidjaja & Ibu Evelyn Hartarto</p>
+        <p class="couple-parents">Franky Tanuwidjaja &amp; Evelyn Hartarto</p>
         <a href="https://instagram.com/clarissatan" target="_blank" class="btn-ig-pill">
           <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
             <path
@@ -1663,9 +1667,9 @@
     <!-- 5. SECTION: A GUIDE TO DRESS CODES -->
     
     <section class="sec-flow" id="dresscode">
-      <span class="sec-eyebrow">A GUIDE TO</span>
-      <h2 class="sec-main-title serif">DRESS CODES</h2>
-      <p class="sec-sub">Kami mengundang tamu undangan untuk mengenakan palet warna berikut:</p>
+      <span class="sec-eyebrow" data-lux-field="customLabels.dressCodeEyebrow">A GUIDE TO</span>
+      <h2 class="sec-main-title serif" data-lux-field="customLabels.dressCodeTitle">Dress Code</h2>
+      <p class="sec-sub" data-lux-field="customLabels.dressCodeSubtitle">Kami mengundang tamu undangan untuk mengenakan palet warna berikut:</p>
       <div style="display:flex; justify-content:center; gap:12px; margin: 1.5rem 0;">
     <span style="width:28px; height:28px; border-radius:50%; background:#2c3e50; display:inline-block; border:2px solid rgba(255,255,255,0.7); box-shadow:0 4px 10px rgba(0,0,0,0.35);"></span>
   
@@ -1680,10 +1684,10 @@
     <!-- 6. SECTION: LIVE WEDDING (VIRTUAL CEREMONY) -->
     
     <section class="sec-flow" id="live">
-      <span class="sec-eyebrow">VIRTUAL CEREMONY</span>
-      <h2 class="sec-main-title serif">LIVE STREAMING</h2>
+      <span class="sec-eyebrow" data-lux-field="customLabels.streamingEyebrow">VIRTUAL CEREMONY</span>
+      <h2 class="sec-main-title serif" data-lux-field="customLabels.streamingTitle">Live Streaming</h2>
       <p class="sec-sub">Minggu, 18 Oktober 2026 • 08.00 – Selesai</p>
-      <p class="sec-sub" style="margin-top:0.4rem;">Bagi keluarga &amp; sahabat yang menyaksikan dari jauh, bergabunglah melalui siaran daring:</p>
+      <p class="sec-sub" style="margin-top:0.4rem;" data-lux-field="customLabels.streamingSubtitle">Bagi keluarga &amp; sahabat yang menyaksikan dari jauh, bergabunglah melalui siaran daring:</p>
       <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:0.8rem; margin-top:1.5rem;">
         <a href="https://instagram.com/clarissatan" target="_blank" class="btn-map-outline">INSTAGRAM LIVE</a>
         <a href="https://youtube.com" target="_blank" class="btn-map-outline">YOUTUBE LIVE</a>
@@ -1694,8 +1698,8 @@
     <!-- 7. SECTION: JOURNEY OF LOVE -->
     
     <section class="sec-flow" id="story">
-      <span class="sec-eyebrow">OUR JOURNEY</span>
-      <h2 class="sec-main-title serif">LOVE STORY</h2>
+      <span class="sec-eyebrow" data-lux-field="customLabels.storyEyebrow">OUR JOURNEY</span>
+      <h2 class="sec-main-title serif" data-lux-field="customLabels.storyTitle">Tides of Time</h2>
       <div class="journey-card-container">
         <div class="journey-chapters">
           
@@ -1718,44 +1722,44 @@
     <div id="moments">
       
     <section class="sec-flow" id="moments">
-      <span class="sec-eyebrow">GALLERY</span>
-      <h2 class="sec-main-title serif">OUR MOMENT</h2>
-      <p class="moment-quote serif">
-        “And I’d choose you; in a hundred lifetimes, in a hundred worlds, in any version of reality, I’d find you and I’d choose you.”
+      <span class="sec-eyebrow" data-lux-field="customLabels.galleryEyebrow">TIMELESS MOMENTS</span>
+      <h2 class="sec-main-title serif" data-lux-field="customLabels.galleryTitle">Gallery of Memories</h2>
+      <p class="moment-quote serif" data-lux-field="customLabels.galleryQuote">
+        “Love is the anchor that holds our hearts through every tide.”
       </p>
 
       <div class="moments-grid-10">
         
     <div class="moment-photo-item" data-idx="0" onclick="luxOpenZoom(0)">
-      <img src="/demo/wave/gallery_01.webp?v=1788678254272" alt="Our Moment 1" loading="lazy" decoding="async">
+      <img src="/demo/wave/gallery_01.webp?v=1788784393168" alt="Our Moment 1" loading="lazy" decoding="async">
     </div>
   
     <div class="moment-photo-item" data-idx="1" onclick="luxOpenZoom(1)">
-      <img src="/demo/wave/gallery_02.webp?v=1788678254272" alt="Our Moment 2" loading="lazy" decoding="async">
+      <img src="/demo/wave/gallery_02.webp?v=1788784393168" alt="Our Moment 2" loading="lazy" decoding="async">
     </div>
   
     <div class="moment-photo-item" data-idx="2" onclick="luxOpenZoom(2)">
-      <img src="/demo/wave/gallery_03.webp?v=1788678254272" alt="Our Moment 3" loading="lazy" decoding="async">
+      <img src="/demo/wave/gallery_03.webp?v=1788784393168" alt="Our Moment 3" loading="lazy" decoding="async">
     </div>
   
     <div class="moment-photo-item" data-idx="3" onclick="luxOpenZoom(3)">
-      <img src="/demo/wave/gallery_04.webp?v=1788678254272" alt="Our Moment 4" loading="lazy" decoding="async">
+      <img src="/demo/wave/gallery_04.webp?v=1788784393168" alt="Our Moment 4" loading="lazy" decoding="async">
     </div>
   
     <div class="moment-photo-item" data-idx="4" onclick="luxOpenZoom(4)">
-      <img src="/demo/wave/gallery_05.webp?v=1788678254272" alt="Our Moment 5" loading="lazy" decoding="async">
+      <img src="/demo/wave/gallery_05.webp?v=1788784393168" alt="Our Moment 5" loading="lazy" decoding="async">
     </div>
   
     <div class="moment-photo-item" data-idx="5" onclick="luxOpenZoom(5)">
-      <img src="/demo/wave/gallery_06.webp?v=1788678254272" alt="Our Moment 6" loading="lazy" decoding="async">
+      <img src="/demo/wave/gallery_06.webp?v=1788784393168" alt="Our Moment 6" loading="lazy" decoding="async">
     </div>
   
     <div class="moment-photo-item" data-idx="6" onclick="luxOpenZoom(6)">
-      <img src="/demo/wave/gallery_07.webp?v=1788678254272" alt="Our Moment 7" loading="lazy" decoding="async">
+      <img src="/demo/wave/gallery_07.webp?v=1788784393168" alt="Our Moment 7" loading="lazy" decoding="async">
     </div>
   
     <div class="moment-photo-item" data-idx="7" onclick="luxOpenZoom(7)">
-      <img src="/demo/wave/gallery_08.webp?v=1788678254272" alt="Our Moment 8" loading="lazy" decoding="async">
+      <img src="/demo/wave/gallery_08.webp?v=1788784393168" alt="Our Moment 8" loading="lazy" decoding="async">
     </div>
   
       </div>
@@ -1775,35 +1779,35 @@
         <div class="gallery-modal-grid">
           
     <div class="full-gallery-item" onclick="luxOpenZoom(0)">
-      <img src="/demo/wave/gallery_01.webp?v=1788678254272" alt="Photo 1" loading="lazy" decoding="async">
+      <img src="/demo/wave/gallery_01.webp?v=1788784393168" alt="Photo 1" loading="lazy" decoding="async">
     </div>
   
     <div class="full-gallery-item" onclick="luxOpenZoom(1)">
-      <img src="/demo/wave/gallery_02.webp?v=1788678254272" alt="Photo 2" loading="lazy" decoding="async">
+      <img src="/demo/wave/gallery_02.webp?v=1788784393168" alt="Photo 2" loading="lazy" decoding="async">
     </div>
   
     <div class="full-gallery-item" onclick="luxOpenZoom(2)">
-      <img src="/demo/wave/gallery_03.webp?v=1788678254272" alt="Photo 3" loading="lazy" decoding="async">
+      <img src="/demo/wave/gallery_03.webp?v=1788784393168" alt="Photo 3" loading="lazy" decoding="async">
     </div>
   
     <div class="full-gallery-item" onclick="luxOpenZoom(3)">
-      <img src="/demo/wave/gallery_04.webp?v=1788678254272" alt="Photo 4" loading="lazy" decoding="async">
+      <img src="/demo/wave/gallery_04.webp?v=1788784393168" alt="Photo 4" loading="lazy" decoding="async">
     </div>
   
     <div class="full-gallery-item" onclick="luxOpenZoom(4)">
-      <img src="/demo/wave/gallery_05.webp?v=1788678254272" alt="Photo 5" loading="lazy" decoding="async">
+      <img src="/demo/wave/gallery_05.webp?v=1788784393168" alt="Photo 5" loading="lazy" decoding="async">
     </div>
   
     <div class="full-gallery-item" onclick="luxOpenZoom(5)">
-      <img src="/demo/wave/gallery_06.webp?v=1788678254272" alt="Photo 6" loading="lazy" decoding="async">
+      <img src="/demo/wave/gallery_06.webp?v=1788784393168" alt="Photo 6" loading="lazy" decoding="async">
     </div>
   
     <div class="full-gallery-item" onclick="luxOpenZoom(6)">
-      <img src="/demo/wave/gallery_07.webp?v=1788678254272" alt="Photo 7" loading="lazy" decoding="async">
+      <img src="/demo/wave/gallery_07.webp?v=1788784393168" alt="Photo 7" loading="lazy" decoding="async">
     </div>
   
     <div class="full-gallery-item" onclick="luxOpenZoom(7)">
-      <img src="/demo/wave/gallery_08.webp?v=1788678254272" alt="Photo 8" loading="lazy" decoding="async">
+      <img src="/demo/wave/gallery_08.webp?v=1788784393168" alt="Photo 8" loading="lazy" decoding="async">
     </div>
   
         </div>
@@ -1815,14 +1819,14 @@
       <button class="lux-zoom-close" onclick="luxCloseZoom()">✕</button>
       <button class="lux-zoom-nav prev" onclick="luxPrevZoom(event)">‹</button>
       <div class="lux-zoom-img-box" onclick="event.stopPropagation()">
-        <img id="luxZoomActiveImg" src="/demo/wave/gallery_01.webp?v=1788678254272" alt="Zoom View">
+        <img id="luxZoomActiveImg" src="/demo/wave/gallery_01.webp?v=1788784393168" alt="Zoom View">
         <div class="lux-zoom-counter" id="luxZoomCounter">1 / 8</div>
       </div>
       <button class="lux-zoom-nav next" onclick="luxNextZoom(event)">›</button>
     </div>
 
     <script>
-      window.LUX_ALL_PHOTOS = ["/demo/wave/gallery_01.webp?v=1788678254272","/demo/wave/gallery_02.webp?v=1788678254272","/demo/wave/gallery_03.webp?v=1788678254272","/demo/wave/gallery_04.webp?v=1788678254272","/demo/wave/gallery_05.webp?v=1788678254272","/demo/wave/gallery_06.webp?v=1788678254272","/demo/wave/gallery_07.webp?v=1788678254272","/demo/wave/gallery_08.webp?v=1788678254272"];
+      window.LUX_ALL_PHOTOS = ["/demo/wave/gallery_01.webp?v=1788784393168","/demo/wave/gallery_02.webp?v=1788784393168","/demo/wave/gallery_03.webp?v=1788784393168","/demo/wave/gallery_04.webp?v=1788784393168","/demo/wave/gallery_05.webp?v=1788784393168","/demo/wave/gallery_06.webp?v=1788784393168","/demo/wave/gallery_07.webp?v=1788784393168","/demo/wave/gallery_08.webp?v=1788784393168"];
       window.luxActivePhotoIdx = 0;
 
       function ensureModalsOnBody() {
@@ -1953,43 +1957,10 @@
           <div class="story-circles-track-wrapper" style="overflow: hidden; width: 100%; position: relative; mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent); -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);">
             <div class="story-circles-track" style="display: flex; gap: 14px; width: max-content; margin: 0 auto; animation: luxStoryLoop 24s linear infinite;">
               
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/wave/gallery_06.webp?v=1788678254272', 'Keluarga Solo')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/wave/memory_03.webp?v=1788784393168', 'Rina & Teman')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/wave/gallery_06.webp?v=1788678254272" onerror="this.onerror=null;this.src='/demo/wave/hero.webp?v=1788678254272';" alt="Keluarga Solo" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Keluarga
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/wave/memory_04.webp?v=1788678254272', 'Tante Maya')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/wave/memory_04.webp?v=1788678254272" onerror="this.onerror=null;this.src='/demo/wave/gallery_04.webp?v=1788678254272';" alt="Tante Maya" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Tante
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/wave/gallery_07.webp?v=1788678254272', 'Alumni Teknik')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/wave/gallery_07.webp?v=1788678254272" onerror="this.onerror=null;this.src='/demo/wave/groom.webp?v=1788678254272';" alt="Alumni Teknik" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Alumni
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/wave/memory_03.webp?v=1788678254272', 'Rina & Teman')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/wave/memory_03.webp?v=1788678254272" onerror="this.onerror=null;this.src='/demo/wave/gallery_03.webp?v=1788678254272';" alt="Rina & Teman" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/wave/memory_03.webp?v=1788784393168" onerror="this.onerror=null;this.src='/demo/wave/gallery_03.webp?v=1788784393168';" alt="Rina & Teman" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
@@ -1997,10 +1968,10 @@
       </span>
     </div>
   
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/wave/gallery_08.webp?v=1788678254272', 'Eko & Nia')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/wave/gallery_08.webp?v=1788784393168', 'Eko & Nia')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/wave/gallery_08.webp?v=1788678254272" onerror="this.onerror=null;this.src='/demo/wave/bride.webp?v=1788678254272';" alt="Eko & Nia" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/wave/gallery_08.webp?v=1788784393168" onerror="this.onerror=null;this.src='/demo/wave/bride.webp?v=1788784393168';" alt="Eko & Nia" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
@@ -2008,21 +1979,32 @@
       </span>
     </div>
   
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/wave/memory_01.webp?v=1788678254272', 'Budi Santoso')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/wave/gallery_06.webp?v=1788784393168', 'Keluarga Solo')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/wave/memory_01.webp?v=1788678254272" onerror="this.onerror=null;this.src='/demo/wave/gallery_01.webp?v=1788678254272';" alt="Budi Santoso" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/wave/gallery_06.webp?v=1788784393168" onerror="this.onerror=null;this.src='/demo/wave/hero.webp?v=1788784393168';" alt="Keluarga Solo" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Budi
+        Keluarga
       </span>
     </div>
   
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/wave/gallery_05.webp?v=1788678254272', 'Dimas Pratama')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/wave/memory_02.webp?v=1788784393168', 'Sahabat SMA')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/wave/gallery_05.webp?v=1788678254272" onerror="this.onerror=null;this.src='/demo/wave/cover.webp?v=1788678254272';" alt="Dimas Pratama" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/wave/memory_02.webp?v=1788784393168" onerror="this.onerror=null;this.src='/demo/wave/gallery_02.webp?v=1788784393168';" alt="Sahabat SMA" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Sahabat
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/wave/gallery_05.webp?v=1788784393168', 'Dimas Pratama')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/wave/gallery_05.webp?v=1788784393168" onerror="this.onerror=null;this.src='/demo/wave/cover.webp?v=1788784393168';" alt="Dimas Pratama" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
@@ -2030,55 +2012,44 @@
       </span>
     </div>
   
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/wave/memory_02.webp?v=1788678254272', 'Sahabat SMA')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/wave/memory_01.webp?v=1788784393168', 'Budi Santoso')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/wave/memory_02.webp?v=1788678254272" onerror="this.onerror=null;this.src='/demo/wave/gallery_02.webp?v=1788678254272';" alt="Sahabat SMA" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/wave/memory_01.webp?v=1788784393168" onerror="this.onerror=null;this.src='/demo/wave/gallery_01.webp?v=1788784393168';" alt="Budi Santoso" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Sahabat
+        Budi
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/wave/memory_04.webp?v=1788784393168', 'Tante Maya')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/wave/memory_04.webp?v=1788784393168" onerror="this.onerror=null;this.src='/demo/wave/gallery_04.webp?v=1788784393168';" alt="Tante Maya" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Tante
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/wave/gallery_07.webp?v=1788784393168', 'Alumni Teknik')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/wave/gallery_07.webp?v=1788784393168" onerror="this.onerror=null;this.src='/demo/wave/groom.webp?v=1788784393168';" alt="Alumni Teknik" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Alumni
       </span>
     </div>
   
               
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/wave/gallery_06.webp?v=1788678254272', 'Keluarga Solo')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/wave/memory_03.webp?v=1788784393168', 'Rina & Teman')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/wave/gallery_06.webp?v=1788678254272" onerror="this.onerror=null;this.src='/demo/wave/hero.webp?v=1788678254272';" alt="Keluarga Solo" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Keluarga
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/wave/memory_04.webp?v=1788678254272', 'Tante Maya')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/wave/memory_04.webp?v=1788678254272" onerror="this.onerror=null;this.src='/demo/wave/gallery_04.webp?v=1788678254272';" alt="Tante Maya" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Tante
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/wave/gallery_07.webp?v=1788678254272', 'Alumni Teknik')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/wave/gallery_07.webp?v=1788678254272" onerror="this.onerror=null;this.src='/demo/wave/groom.webp?v=1788678254272';" alt="Alumni Teknik" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Alumni
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/wave/memory_03.webp?v=1788678254272', 'Rina & Teman')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/wave/memory_03.webp?v=1788678254272" onerror="this.onerror=null;this.src='/demo/wave/gallery_03.webp?v=1788678254272';" alt="Rina & Teman" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/wave/memory_03.webp?v=1788784393168" onerror="this.onerror=null;this.src='/demo/wave/gallery_03.webp?v=1788784393168';" alt="Rina & Teman" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
@@ -2086,10 +2057,10 @@
       </span>
     </div>
   
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/wave/gallery_08.webp?v=1788678254272', 'Eko & Nia')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/wave/gallery_08.webp?v=1788784393168', 'Eko & Nia')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/wave/gallery_08.webp?v=1788678254272" onerror="this.onerror=null;this.src='/demo/wave/bride.webp?v=1788678254272';" alt="Eko & Nia" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/wave/gallery_08.webp?v=1788784393168" onerror="this.onerror=null;this.src='/demo/wave/bride.webp?v=1788784393168';" alt="Eko & Nia" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
@@ -2097,21 +2068,32 @@
       </span>
     </div>
   
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/wave/memory_01.webp?v=1788678254272', 'Budi Santoso')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/wave/gallery_06.webp?v=1788784393168', 'Keluarga Solo')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/wave/memory_01.webp?v=1788678254272" onerror="this.onerror=null;this.src='/demo/wave/gallery_01.webp?v=1788678254272';" alt="Budi Santoso" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/wave/gallery_06.webp?v=1788784393168" onerror="this.onerror=null;this.src='/demo/wave/hero.webp?v=1788784393168';" alt="Keluarga Solo" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Budi
+        Keluarga
       </span>
     </div>
   
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/wave/gallery_05.webp?v=1788678254272', 'Dimas Pratama')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/wave/memory_02.webp?v=1788784393168', 'Sahabat SMA')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/wave/gallery_05.webp?v=1788678254272" onerror="this.onerror=null;this.src='/demo/wave/cover.webp?v=1788678254272';" alt="Dimas Pratama" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/wave/memory_02.webp?v=1788784393168" onerror="this.onerror=null;this.src='/demo/wave/gallery_02.webp?v=1788784393168';" alt="Sahabat SMA" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Sahabat
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/wave/gallery_05.webp?v=1788784393168', 'Dimas Pratama')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/wave/gallery_05.webp?v=1788784393168" onerror="this.onerror=null;this.src='/demo/wave/cover.webp?v=1788784393168';" alt="Dimas Pratama" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
@@ -2119,14 +2101,36 @@
       </span>
     </div>
   
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/wave/memory_02.webp?v=1788678254272', 'Sahabat SMA')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/wave/memory_01.webp?v=1788784393168', 'Budi Santoso')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/wave/memory_02.webp?v=1788678254272" onerror="this.onerror=null;this.src='/demo/wave/gallery_02.webp?v=1788678254272';" alt="Sahabat SMA" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/wave/memory_01.webp?v=1788784393168" onerror="this.onerror=null;this.src='/demo/wave/gallery_01.webp?v=1788784393168';" alt="Budi Santoso" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Sahabat
+        Budi
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/wave/memory_04.webp?v=1788784393168', 'Tante Maya')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/wave/memory_04.webp?v=1788784393168" onerror="this.onerror=null;this.src='/demo/wave/gallery_04.webp?v=1788784393168';" alt="Tante Maya" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Tante
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/wave/gallery_07.webp?v=1788784393168', 'Alumni Teknik')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/wave/gallery_07.webp?v=1788784393168" onerror="this.onerror=null;this.src='/demo/wave/groom.webp?v=1788784393168';" alt="Alumni Teknik" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Alumni
       </span>
     </div>
   
@@ -2283,10 +2287,10 @@
     <!-- 11. SECTION: WEDDING GIFT -->
     
     <section class="sec-flow" id="gift">
-      <span class="sec-eyebrow">WEDDING GIFT</span>
-      <h2 class="sec-main-title serif">TANDA KASIH</h2>
-      <p class="sec-sub">
-        Doa restu Anda merupakan karunia yang sangat berarti bagi kami. Bagi Anda yang ingin memberikan tanda kasih:
+      <span class="sec-eyebrow" data-lux-field="customLabels.giftEyebrow">TOKEN OF BLESSING</span>
+      <h2 class="sec-main-title serif" data-lux-field="customLabels.giftTitle">Gift & Registry</h2>
+      <p class="sec-sub" data-lux-field="customLabels.giftDesc">
+        Your presence is our present. Should you wish to bless us with a cashless wedding gift:
       </p>
 
       <div class="gift-tabs">
@@ -2320,11 +2324,11 @@
     <!-- 12. SECTION: TURUT MENGUNDANG -->
     
     <section class="sec-flow" id="turut-mengundang">
-      <span class="sec-eyebrow">KELUARGA BESAR</span>
-      <h2 class="sec-main-title serif">TURUT MENGUNDANG</h2>
-      <p class="sec-sub">Keluarga Besar &amp; Kerabat yang turut berbahagia:</p>
+      <span class="sec-eyebrow" data-lux-field="customLabels.turutMengundangEyebrow">KELUARGA BESAR</span>
+      <h2 class="sec-main-title serif" data-lux-field="customLabels.turutMengundangTitle">Turut Mengundang</h2>
+      <p class="sec-sub" data-lux-field="customLabels.turutMengundangSubtitle">Keluarga Besar &amp; Kerabat yang turut berbahagia:</p>
       <div style="display:flex; flex-direction:column; gap:0.6rem; margin-top:1.5rem; font-size:0.88rem; color:rgba(255,255,255,0.85);">
-        <p style="margin:0; padding:0.4rem 0; border-bottom:1px dashed rgba(255,255,255,0.12);">Keluarga Besar Bpk. Surya Sanjaya</p><p style="margin:0; padding:0.4rem 0; border-bottom:1px dashed rgba(255,255,255,0.12);">Keluarga Besar Bpk. Franky Tanuwidjaja</p>
+        <p style="margin:0; padding:0.4rem 0; border-bottom:1px dashed rgba(255,255,255,0.12);">Keluarga Besar Surya Sanjaya</p><p style="margin:0; padding:0.4rem 0; border-bottom:1px dashed rgba(255,255,255,0.12);">Keluarga Besar Franky Tanuwidjaja</p>
       </div>
     </section>
   
@@ -2332,7 +2336,7 @@
     <!-- 13. SECTION: RSVP & WISHES -->
     <section class="sec-flow" id="rsvp">
       <span class="sec-eyebrow">Greet &amp; Wish</span>
-      <h2 class="sec-main-title serif" data-lux-field="customLabels.rsvpTitle">Konfirmasi Kehadiran &amp; Doa</h2>
+      <h2 class="sec-main-title serif" data-lux-field="customLabels.rsvpTitle">RSVP &amp; Confirmation</h2>
 
       <div class="rsvp-form-wrap">
         <form id="rsvpForm" onsubmit="luxSubmitRsvp(event)">
@@ -2356,8 +2360,7 @@
             <textarea id="rsvpMessage" rows="4" class="form-ta"
               placeholder="Tuliskan ucapan dan doa terbaik Anda..."></textarea>
           </div>
-          <button type="submit" id="btnSubmit" class="btn-rsvp-submit" data-lux-field="customLabels.rsvpBtnText">Kirim
-            Konfirmasi &amp; Doa</button>
+          <button type="submit" id="btnSubmit" class="btn-rsvp-submit" data-lux-field="customLabels.rsvpBtnText">Kirim Konfirmasi &amp; Doa</button>
         </form>
 
         <div class="wishes-list" id="wishesList">
@@ -2424,7 +2427,7 @@
   
 
     <!-- 15. FOOTER / THANK YOU (Adaptive Full-Height 100vh) -->
-    <footer class="site-footer no-closing-photo" id="footer" style="background-image: url('/demo/wave/footer.webp?v=1788678254272');">
+    <footer class="site-footer no-closing-photo" id="footer" style="">
       <div class="closing-content">
         <p style="font-size:0.85rem; color:rgba(255,255,255,0.75); line-height:1.7; margin-bottom:1.5rem;">
           Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu.
@@ -2983,6 +2986,9 @@
       if (cover) cover.classList.add('slide-up-hidden', 'opened', 'hidden');
     }
     window.playAudio();
+    if (typeof window.__luxEvaluateHomeDock === 'function') {
+      window.__luxEvaluateHomeDock();
+    }
   };
 
   // Delegated Capture Listener for Any Open-Invitation Button
@@ -2994,6 +3000,9 @@
     );
     if (openBtn) {
       window.playAudio();
+      if (typeof window.__luxEvaluateHomeDock === 'function') {
+        window.__luxEvaluateHomeDock();
+      }
     }
   }, { capture: true, passive: true });
 
@@ -3121,22 +3130,92 @@
   }
   initPreloaderGuard();
 
+  // 11. Universal Smart Dock Home Zone State Guard
+  function initHomeDockGuard() {
+    var dock = document.querySelector('.bottom-dock, nav.bottom-dock');
+    if (!dock) return;
+
+    function getHomeBoundary() {
+      var homeEl = document.querySelector(
+        '#home, #section-quote, .slide-opening, .sec-hero-slideshow, .sec-hero-editorial, main > section:first-of-type, .main-scroll-panel > section:first-of-type, section:first-of-type'
+      );
+      if (homeEl) {
+        var rect = homeEl.getBoundingClientRect();
+        var scrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+        var top = scrollY + rect.top;
+        var h = homeEl.offsetHeight || window.innerHeight;
+        return Math.max(window.innerHeight * 0.65, (top + h) - 80);
+      }
+      return window.innerHeight * 0.75;
+    }
+
+    var isAtHome = true;
+    var ticking = false;
+
+    function evaluateHomeZone() {
+      var scrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+      var baseThreshold = getHomeBoundary();
+      var exitThreshold = baseThreshold;
+      var enterThreshold = Math.max(80, baseThreshold - 40);
+
+      if (isAtHome) {
+        if (scrollY >= exitThreshold) {
+          isAtHome = false;
+          document.body.classList.remove('lux-at-home-zone');
+        }
+      } else {
+        if (scrollY < enterThreshold) {
+          isAtHome = true;
+          document.body.classList.add('lux-at-home-zone');
+        }
+      }
+      ticking = false;
+    }
+
+    window.__luxEvaluateHomeDock = evaluateHomeZone;
+
+    evaluateHomeZone();
+
+    window.addEventListener('scroll', function() {
+      if (!ticking) {
+        window.requestAnimationFrame(evaluateHomeZone);
+        ticking = true;
+      }
+    }, { passive: true });
+
+    window.addEventListener('resize', function() {
+      evaluateHomeZone();
+    }, { passive: true });
+
+    dock.addEventListener('click', function(e) {
+      var a = e.target && e.target.closest ? e.target.closest('a') : null;
+      if (!a) return;
+      var href = a.getAttribute('href') || '';
+      if (href === '#home' || href === '#section-quote' || href === '#section-opening' || href === '#quote') {
+        setTimeout(evaluateHomeZone, 60);
+      }
+    }, { passive: true });
+  }
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
       initPreloaderGuard();
       resolveGuestName();
       initAudioInteractionFallback();
       syncActiveTogglesUI();
+      initHomeDockGuard();
     });
   } else {
     initPreloaderGuard();
     resolveGuestName();
     initAudioInteractionFallback();
     syncActiveTogglesUI();
+    initHomeDockGuard();
   }
   window.addEventListener('load', function() {
     initPreloaderGuard();
     syncActiveTogglesUI();
+    initHomeDockGuard();
   });
 })();
 </script>

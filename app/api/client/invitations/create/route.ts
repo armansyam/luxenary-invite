@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 
 import { getMonthYearSlug, isSubdomainExpired, isReservedSubdomain } from "@/lib/domainUtils";
+import { getThemeBlueprint } from "@/lib/themeDefaults";
 
 function slugify(text: string): string {
   return text
@@ -206,6 +207,32 @@ export async function POST(req: Request) {
   const invitationStatus = "DRAFT";
   const publishedAt = paidOrder ? new Date() : undefined;
 
+  const chosenTheme = themeId?.trim() || "kalandra";
+  let customDemoData: any = null;
+  try {
+    const customSetting = await prisma.adminSetting.findUnique({
+      where: { key: `theme_demo_${chosenTheme.toLowerCase()}` },
+      select: { value: true },
+    });
+    if (customSetting?.value) {
+      customDemoData = JSON.parse(customSetting.value);
+    }
+  } catch {}
+
+  let themeMeta: { name: string; category: string; series: string | null } | null = null;
+  try {
+    themeMeta = await prisma.theme.findUnique({
+      where: { id: chosenTheme.toLowerCase() },
+      select: { name: true, category: true, series: true },
+    });
+  } catch {}
+
+  const blueprint = getThemeBlueprint(chosenTheme, {
+    ...(customDemoData || {}),
+    themeName: themeMeta?.name,
+    series: themeMeta?.series || themeMeta?.category,
+  });
+
   try {
     const invitation = await prisma.invitation.create({
       data: {
@@ -220,9 +247,8 @@ export async function POST(req: Request) {
         invitationSlug,
         subdomain: finalSubdomain,
         themeId: themeId?.trim() || "", // Murni kosong tanpa default tema paksaan
-        openingQuote:
-          "Dan di antara tanda-tanda (kebesaran)-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri...",
-        openingQuoteRef: "QS. AR-RUM : 21",
+        openingQuote: blueprint.openingQuote,
+        openingQuoteRef: blueprint.openingQuoteRef,
         // staffPin: Diisi secara mandiri oleh Klien sbg syarat Publish
         eventData: JSON.stringify(initialEvents),
         featureSettings: JSON.stringify({
@@ -234,14 +260,40 @@ export async function POST(req: Request) {
           showDresscode: true,
           showMusic: true,
           customLabels: {
-            coverSubtitle: "Dengan segala hormat, kami mengundang Anda untuk menghadiri acara pernikahan kami.",
-            openBtn: "Buka Undangan",
-            rsvpTitle: "RSVP & Doa Restu",
+            coverSubtitle: blueprint.coverSubtitle,
+            openBtn: blueprint.openBtn,
+            rsvpTitle: blueprint.rsvpTitle,
+            rsvpBtnText: blueprint.rsvpBtnText || "Kirim Konfirmasi & Doa",
+            quoteTitle: blueprint.quoteSectionTitle,
+            quoteEyebrow: blueprint.quoteSectionEyebrow,
+            coupleTitle: blueprint.coupleSectionTitle,
+            coupleEyebrow: blueprint.coupleSectionEyebrow || "THE COUPLE",
+            coupleSub: blueprint.coupleSectionSub,
+            eventsTitle: blueprint.eventsSectionTitle,
+            eventsSub: blueprint.eventsSectionSub,
+            storyTitle: blueprint.storySectionTitle,
+            storyEyebrow: blueprint.storySectionEyebrow || "OUR JOURNEY",
+            galleryTitle: blueprint.gallerySectionTitle,
+            galleryEyebrow: blueprint.gallerySectionEyebrow,
+            galleryQuote: blueprint.galleryQuote,
+            dressCodeTitle: blueprint.dressCodeTitle || "Dress Code",
+            dressCodeEyebrow: blueprint.dressCodeEyebrow || "A Guide To",
+            dressCodeSubtitle: blueprint.dressCodeSubtitle || "Kami mengundang tamu undangan untuk mengenakan palet warna berikut:",
+            streamingTitle: blueprint.streamingTitle || "Live Streaming",
+            streamingEyebrow: blueprint.streamingEyebrow || "Virtual Ceremony",
+            streamingSubtitle: blueprint.streamingSubtitle || "Bagi keluarga & sahabat yang menyaksikan dari jauh, bergabunglah melalui siaran daring:",
+            giftTitle: blueprint.giftSectionTitle,
+            giftEyebrow: blueprint.giftSectionEyebrow,
+            giftDesc: blueprint.giftSectionDesc,
+            turutMengundangTitle: blueprint.turutMengundangTitle || "Turut Mengundang",
+            turutMengundangEyebrow: blueprint.turutMengundangEyebrow || "Keluarga Besar",
+            turutMengundangSubtitle: blueprint.turutMengundangSubtitle || "Keluarga Besar & Kerabat yang turut berbahagia:",
+            wishesTitle: blueprint.wishesSectionTitle,
+            wishesSub: blueprint.wishesSectionSub,
             rsvpNameLabel: "Nama Lengkap",
             rsvpStatusLabel: "Konfirmasi Kehadiran",
             rsvpCountLabel: "Jumlah Tamu",
-            rsvpMessageLabel: "Ucapan & Doa Restu",
-            rsvpBtnText: "Kirim Konfirmasi & Doa"
+            rsvpMessageLabel: "Ucapan & Doa Restu"
           }
         }),
         status: invitationStatus,

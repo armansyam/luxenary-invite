@@ -26,20 +26,78 @@ export async function GET(
       where: { key: settingKey },
     });
 
+    const dbTheme = await prisma.theme.findUnique({
+      where: { id: themeId },
+      select: { name: true, category: true, series: true },
+    });
+
+    const { getThemeBlueprint } = await import("@/lib/themeDefaults");
+    const blueprint = getThemeBlueprint(themeId, {
+      themeName: dbTheme?.name,
+      series: dbTheme?.series || dbTheme?.category,
+    });
+    let resolvedData: any = null;
+    let isCustom = false;
+
     if (setting && setting.value) {
       try {
-        const parsed = JSON.parse(setting.value);
-        return NextResponse.json({ success: true, themeId, data: parsed, isCustom: true });
+        resolvedData = JSON.parse(setting.value);
+        isCustom = true;
       } catch {}
     }
 
-    // Fallback to DEMO_REGISTRY
-    const defaultData = DEMO_REGISTRY[themeId] || DEMO_REGISTRY["kalandra"];
+    if (!resolvedData) {
+      const defaultData = DEMO_REGISTRY[themeId] || DEMO_REGISTRY["kalandra"];
+      resolvedData = JSON.parse(JSON.stringify(defaultData));
+      if (dbTheme?.name) resolvedData.themeName = dbTheme.name;
+      resolvedData.themeId = themeId;
+    }
+
+    // Ensure customLabels has theme-specific blueprint fallbacks
+    resolvedData.customLabels = {
+      openBtn: blueprint.openBtn,
+      coverSubtitle: blueprint.coverSubtitle,
+      rsvpTitle: blueprint.rsvpTitle,
+      rsvpBtnText: blueprint.rsvpBtnText || "Kirim Konfirmasi & Doa",
+      quoteTitle: blueprint.quoteSectionTitle,
+      quoteEyebrow: blueprint.quoteSectionEyebrow,
+      coupleTitle: blueprint.coupleSectionTitle,
+      coupleEyebrow: blueprint.coupleSectionEyebrow || "THE COUPLE",
+      coupleSub: blueprint.coupleSectionSub,
+      eventsTitle: blueprint.eventsSectionTitle,
+      eventsSub: blueprint.eventsSectionSub,
+      storyTitle: blueprint.storySectionTitle,
+      storyEyebrow: blueprint.storySectionEyebrow || "OUR JOURNEY",
+      galleryTitle: blueprint.gallerySectionTitle,
+      galleryEyebrow: blueprint.gallerySectionEyebrow,
+      galleryQuote: blueprint.galleryQuote,
+      dressCodeTitle: blueprint.dressCodeTitle || "Dress Code",
+      dressCodeEyebrow: blueprint.dressCodeEyebrow || "A Guide To",
+      dressCodeSubtitle: blueprint.dressCodeSubtitle || "Kami mengundang tamu undangan untuk mengenakan palet warna berikut:",
+      streamingTitle: blueprint.streamingTitle || "Live Streaming",
+      streamingEyebrow: blueprint.streamingEyebrow || "Virtual Ceremony",
+      streamingSubtitle: blueprint.streamingSubtitle || "Bagi keluarga & sahabat yang menyaksikan dari jauh, bergabunglah melalui siaran daring:",
+      giftTitle: blueprint.giftSectionTitle,
+      giftEyebrow: blueprint.giftSectionEyebrow,
+      giftDesc: blueprint.giftSectionDesc,
+      turutMengundangTitle: blueprint.turutMengundangTitle || "Turut Mengundang",
+      turutMengundangEyebrow: blueprint.turutMengundangEyebrow || "Keluarga Besar",
+      turutMengundangSubtitle: blueprint.turutMengundangSubtitle || "Keluarga Besar & Kerabat yang turut berbahagia:",
+      wishesTitle: blueprint.wishesSectionTitle,
+      wishesSub: blueprint.wishesSectionSub,
+      ...(resolvedData.customLabels || {}),
+    };
+
+    if (!resolvedData.openingQuote) resolvedData.openingQuote = blueprint.openingQuote;
+    if (!resolvedData.openingQuoteRef) resolvedData.openingQuoteRef = blueprint.openingQuoteRef;
+    if (!resolvedData.closingQuote) resolvedData.closingQuote = blueprint.closingQuote;
+    if (!resolvedData.closingSub) resolvedData.closingSub = blueprint.closingSub;
+
     return NextResponse.json({
       success: true,
       themeId,
-      data: defaultData,
-      isCustom: false,
+      data: resolvedData,
+      isCustom,
     });
   } catch (err: any) {
     console.error("[DemoData-Get-Error]:", err);

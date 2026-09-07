@@ -109,10 +109,14 @@ model Invitation {
   groomName            String?
   groomNickname        String?
   groomParents         String?
+  groomFather          String?
+  groomMother          String?
   groomInstagram       String?
   brideName            String?
   brideNickname        String?
   brideParents         String?
+  brideFather          String?
+  brideMother          String?
   brideInstagram       String?
   liveStreamUrl        String?
   isLockedPermanently  Boolean           @default(false)

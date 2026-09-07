@@ -63,7 +63,7 @@ Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model 
      ▼
 5. STUDIO UNDANGAN (/dashboard/invitation/[id])
    - Pilih & ganti tema (15 tema fisik aktif)
-   - Isi data pengantin, keluarga, jadwal acara multi-event
+   - Isi data pengantin & keluarga (4 kolom terpisah: Ayah & Ibu dengan deteksi otomatis awalan "Putra dari" / "Putri dari" tanpa dropdown anak ke-n), jadwal acara multi-event
    - Pengaturan Musik Latar Pernikahan (Audio background, preset sakral, unggah MP3/M4A, sinkronisasi otomatis tombol Buka Undangan & fallback interaksi)
    - Upload foto (cover, groom, bride, gallery, dll)
    - Kustomisasi seksi (Love Story, Gift, QR Check-in, Teks Galeri Kenangan Tamu)
@@ -97,7 +97,7 @@ ADMIN PORTAL (/admin)
    - Klien (Users): Daftar akun klien, detail profil, dan aksi **Remote Dasbor Klien**
    - Undangan (Invitations): Manajemen siklus hidup (Close to Gallery, Extend), dan fitur **Remote Klien** untuk mengendalikan Dasbor Klien secara utuh tanpa password (berbasis *httpOnly Cookie Session Override* dengan mekanisme *Restore 1-Klik*).
    - Domain Kustom (Custom Domains): Monitoring domain klien, panduan konfigurasi Caddy, dan shortcut ke tab Setup DNS.
-   - Tema & Musik (Themes & Music): Manajemen katalog tema, Demo Studio, serta Pustaka Musik Sistem dinamis (auto-sync file fisik audio di disk `public/music/` ke database, tambah audio dengan auto-kompresi FFmpeg MP3 128kbps, preview, edit, dan toggle aktif/nonaktif untuk klien)
+   - Tema & Musik (Themes & Music): Manajemen katalog tema, Demo Studio (kustomisasi 6 seksi narasi & label tema, dynamic timeline acara, dynamic bab cerita, dynamic rekening bank, harmonisasi casing font skrip vs uppercase, dan pewarisan otomatis ke undangan klien), serta Pustaka Musik Sistem dinamis (auto-sync file fisik audio di disk `public/music/` ke database, tambah audio dengan auto-kompresi FFmpeg MP3 128kbps, preview, edit, dan toggle aktif/nonaktif untuk klien)
    - Portofolio (Portfolio): Kurasi & kloning undangan pilihan → /portfolio
    - Tim (Team): Manajemen akun staff admin (SUPER_ADMIN, FINANCE, SUPPORT)
    - Pengaturan (Settings): 
@@ -165,6 +165,7 @@ Pre-Flight Checklist & Smart Audit (/dashboard/settings):
 - **Showroom Katalog Demo Ringan (`/demo`) & Snapshot Thumbnail (60 FPS Cross-Fade):** Kartu katalog `/demo` menggunakan snapshot visual presisi (Mobile/Tablet `768 × 1024 px` rasio 3:4 dan Desktop `1280 × 720 px` rasio 16:9) yang mengeliminasi seluruh 10 tag `<iframe>` berat. Dilengkapi transisi *dual-layer opacity cross-fade* 60 FPS bebas lag reflow saat berganti mode mobile/desktop, auto-fallback cerdas di server tanpa error 404 ganda, frame elegan `bg-stone-100` tanpa blank hitam, dan form upload mandiri di Demo Studio lengkap dengan panduan pixel.
 - **Dynamic Asset Route Handler & Universal Cache-Busting (`/demo/[theme]/[file]`):** Mengatasi limitasi Next.js Standalone yang hanya melayani aset statis `public/` saat build-time. Route handler menyajikan file thumbnail, gambar, dan audio baru secara instan dengan proteksi path traversal dan Smart ETag Cache (`304 Not Modified`). Mesin kompilasi demo HTML secara otomatis menyematkan timestamp versi `?v=${updatedAt}` pada seluruh slot aset (cover, hero, bg, mempelai, galeri, musik) sehingga pembaruan media langsung menembus cache Cloudflare Edge CDN seketika.
 - **Proteksi Anti-Download & Privasi Galeri Kenangan (`/memories`):** Halaman kenangan tamu dirancang *View-Only* dengan proteksi browser bawaan (blokir klik kanan `contextmenu`, pencegahan menu pop-up tahan layar `touch-callout: none`, serta blokir drag-and-drop) agar foto kenangan tamu aman dari pengunduhan langsung oleh pihak yang tidak berhak.
+- **Pemisahan Terstruktur 4 Kolom Orang Tua (Discrete Parents Architecture) & Murni String Bebas:** Formulir profil klien dan demo studio memisahkan input nama Ayah dan Ibu secara diskret (`groomFather`, `groomMother`, `brideFather`, `brideMother`). Theme Engine secara otomatis mendeteksi awalan `{{firstParentPrefix}}` / `{{secondParentPrefix}}` ("Putra dari" untuk Groom, "Putri dari" untuk Bride) serta menyuplai token discrete `{{firstFather}}` dan `{{firstMother}}` secara bersih murni sebagai *raw string* tanpa paksaan sapaan Bpk/Ibu, sehingga klien bebas mencantumkan gelar akademik/adat, sapaan penghormatan, atau status almarhum/almarhumah (`Alm.`, `Almh.`), sekaligus mengeliminasi duplikasi label, membuang simbol `&` yang tidak diinginkan pada tata letak vertikal, dan mencegah kata menggantung (*orphan words*) pada tipografi kartu profil di seluruh 15 tema fisik master.
 
 ---
 
@@ -255,8 +256,9 @@ Luxenary-Invite/
 │   └── globals.css
 ├── lib/
 │   ├── themeEngine.ts         # ⭐ Mesin render HTML undangan (CORE)
+│   ├── themeDefaults.ts       # ⭐ Theme Blueprint Registry (kamus narasi budaya & editorial per tema)
 │   ├── staticPublisher.ts     # ⭐ Bake HTML statis saat Publish (CORE)
-│   ├── renderTemplate.ts      # Injeksi data, mapping tema, runtime script, & Hybrid Preloader Engine
+│   ├── renderTemplate.ts      # Injeksi data, mapping tema, runtime script, Smart Dock Home Zone Guard & Hybrid Preloader Engine
 │   ├── storage.ts             # Upload/delete media (R2 / S3 / Local switch)
 │   ├── mailer.ts              # ⭐ Nodemailer transactional & invoice email generator
 │   ├── driveHelper.ts         # Fetch foto Google Drive API v3
@@ -443,6 +445,7 @@ Setiap developer atau AI Agent yang melakukan modifikasi pada codebase **WAJIB**
 5. **Standar Navigasi Imersif (Smart Auto-Hide):** Seluruh 15 tema fisik master dan starter blueprint menerapkan interaksi smart auto-hide untuk dock navigasi dan floating audio player saat pengguna menggulir ke bawah, dan otomatis kembali meluncur masuk saat menggulir ke atas atau mencapai footer.
 6. **Standar Watermark Monogram & Wording Universal:** Tema desktop sidebar mendukung watermark monogram inisial (`{{coupleMonogram}}`, `{{firstInitial}}`, `{{secondInitial}}`) dan salam pembuka universal non-sektarian (`{{coupleSectionSub}}`) untuk fleksibilitas multikultural.
 7. **Standar UI Bersih & Purifikasi Tipografi Tombol:** Dilarang keras menyisipkan emoji default sistem operasi maupun simbol panah AI (`↗`) ke dalam label tombol atau badge (seperti Google Maps, Live Streaming, Instagram Filter, atau Galeri Momen). Seluruh tombol aksi wajib menggunakan tipografi bersih, elegan, atau ikon vektor SVG murni.
+8. **Standar Theme Freedom & Conditional Blocks (`{{#if}}`):** Tema master memiliki kebebasan penuh merancang struktur DOM, ornamen, dan seninya sendiri tanpa dipaksa memakai kartu seragam dari Engine. Template renderer (`lib/renderTemplate.ts`) mendukung blok `{{#if <key>}} ... {{/if}}` sehingga sakelar tampil/sembunyi klien di dashboard tetap 100% dinamis dan bersih dari elemen hantu saat dinonaktifkan.
 
 ---
 

@@ -11,6 +11,7 @@ import { AdminTeamManagement } from "@/components/admin/AdminTeamManagement";
 import { AdminPortfolioTab } from "@/components/admin/AdminPortfolioTab";
 import { startRemoteSession } from "./actions/remote";
 import { compressImageToWebP } from "@/lib/clientImageCompressor";
+import { getThemeBlueprint } from "@/lib/themeDefaults";
 
 const tabs = [
   {
@@ -512,16 +513,20 @@ export default function AdminPage() {
   // Theme Demo Studio State
   const [showDemoStudioModal, setShowDemoStudioModal] = useState(false);
   const [demoStudioTheme, setDemoStudioTheme] = useState<any | null>(null);
-  const [demoStudioTab, setDemoStudioTab] = useState<"visual" | "profile" | "stories">("visual");
+  const [demoStudioTab, setDemoStudioTab] = useState<"visual" | "profile" | "stories" | "narratives">("visual");
   const [demoStudioData, setDemoStudioData] = useState<any>({});
   const [initialDemoStudioData, setInitialDemoStudioData] = useState<any>({});
   const [stagedDemoFiles, setStagedDemoFiles] = useState<Record<string, File>>({});
+  const [stagedDeletedSlots, setStagedDeletedSlots] = useState<Record<string, boolean>>({});
   const [demoStudioLoading, setDemoStudioLoading] = useState(false);
   const [demoStudioSaving, setDemoStudioSaving] = useState(false);
   const [demoStudioUploadSuccess, setDemoStudioUploadSuccess] = useState<string | null>(null);
   const [uploadingSlot, setUploadingSlot] = useState<string | null>(null);
   const [updatedDemoSlots, setUpdatedDemoSlots] = useState<Record<string, number>>({});
   const [demoStudioSessionTime, setDemoStudioSessionTime] = useState<number>(Date.now());
+  const currentDemoBlueprint = useMemo(() => {
+    return demoStudioTheme ? getThemeBlueprint(demoStudioTheme.id, demoStudioData) : null;
+  }, [demoStudioTheme, demoStudioData]);
   const [localPreviews, setLocalPreviews] = useState<Record<string, string>>({});
 
   // System Music Library State
@@ -542,9 +547,10 @@ export default function AdminPage() {
 
   const isDemoStudioDirty = useMemo(() => {
     const hasStagedFiles = Object.keys(stagedDemoFiles).length > 0;
+    const hasDeletedSlots = Object.keys(stagedDeletedSlots).length > 0;
     const hasDataChanges = JSON.stringify(demoStudioData) !== JSON.stringify(initialDemoStudioData);
-    return hasStagedFiles || hasDataChanges;
-  }, [stagedDemoFiles, demoStudioData, initialDemoStudioData]);
+    return hasStagedFiles || hasDeletedSlots || hasDataChanges;
+  }, [stagedDemoFiles, stagedDeletedSlots, demoStudioData, initialDemoStudioData]);
 
   const loadOverviewData = useCallback((isBackground = false) => {
     if (!isBackground) setLoading(true);
@@ -1166,6 +1172,7 @@ export default function AdminPage() {
     setUpdatedDemoSlots({});
     setLocalPreviews({});
     setStagedDemoFiles({});
+    setStagedDeletedSlots({});
     setShowDemoStudioModal(true);
 
     if (systemMusics.length === 0) {
@@ -1204,6 +1211,11 @@ export default function AdminPage() {
       const localUrl = URL.createObjectURL(processedFile);
       setLocalPreviews((prev) => ({ ...prev, [slot]: localUrl }));
       setStagedDemoFiles((prev) => ({ ...prev, [slot]: processedFile }));
+      setStagedDeletedSlots((prev) => {
+        const next = { ...prev };
+        delete next[slot];
+        return next;
+      });
       setDemoStudioUploadSuccess(null);
     } catch (err: any) {
       alert("Gagal memuat file gambar lokal: " + err.message);
@@ -1226,13 +1238,101 @@ export default function AdminPage() {
     });
   };
 
+  const handleStageDeleteAsset = (slot: string) => {
+    if (localPreviews[slot]?.startsWith("blob:")) {
+      try { URL.revokeObjectURL(localPreviews[slot]); } catch {}
+    }
+    setLocalPreviews((prev) => {
+      const next = { ...prev };
+      delete next[slot];
+      return next;
+    });
+    setStagedDemoFiles((prev) => {
+      const next = { ...prev };
+      delete next[slot];
+      return next;
+    });
+    setStagedDeletedSlots((prev) => ({ ...prev, [slot]: true }));
+    setDemoStudioData((prev: any) => {
+      const next = { ...prev };
+      if (slot === "cover") next.landingCoverUrl = "";
+      else if (slot === "hero") next.sidebarPhotoUrl = "";
+      else if (slot === "background") next.globalBgUrl = "";
+      else if (slot === "home") next.homePhotoUrl = "";
+      else if (slot === "footer") {
+        next.footerPhotoUrl = "";
+        next.closingPhotoUrl = "";
+      }
+      else if (slot === "groom") next.groomPhotoUrl = "";
+      else if (slot === "bride") next.bridePhotoUrl = "";
+      else if (slot === "thumbnail_mobile") next.thumbnailMobileUrl = "";
+      else if (slot === "thumbnail_desktop") next.thumbnailDesktopUrl = "";
+      else if (slot === "music") next.audioUrl = "";
+      else if (slot.startsWith("gallery_")) {
+        const idx = parseInt(slot.replace("gallery_", ""), 10) - 1;
+        if (Array.isArray(next.galleryPhotos)) {
+          next.galleryPhotos = [...next.galleryPhotos];
+          next.galleryPhotos[idx] = "";
+        }
+      }
+      return next;
+    });
+  };
+
+  const handleRestoreDeletedAsset = (slot: string) => {
+    setStagedDeletedSlots((prev) => {
+      const next = { ...prev };
+      delete next[slot];
+      return next;
+    });
+    setDemoStudioData((prev: any) => {
+      const next = { ...prev };
+      if (slot === "cover") next.landingCoverUrl = initialDemoStudioData.landingCoverUrl;
+      else if (slot === "hero") next.sidebarPhotoUrl = initialDemoStudioData.sidebarPhotoUrl;
+      else if (slot === "background") next.globalBgUrl = initialDemoStudioData.globalBgUrl;
+      else if (slot === "home") next.homePhotoUrl = initialDemoStudioData.homePhotoUrl;
+      else if (slot === "footer") {
+        next.footerPhotoUrl = initialDemoStudioData.footerPhotoUrl;
+        next.closingPhotoUrl = initialDemoStudioData.closingPhotoUrl;
+      }
+      else if (slot === "groom") next.groomPhotoUrl = initialDemoStudioData.groomPhotoUrl;
+      else if (slot === "bride") next.bridePhotoUrl = initialDemoStudioData.bridePhotoUrl;
+      else if (slot === "thumbnail_mobile") next.thumbnailMobileUrl = initialDemoStudioData.thumbnailMobileUrl;
+      else if (slot === "thumbnail_desktop") next.thumbnailDesktopUrl = initialDemoStudioData.thumbnailDesktopUrl;
+      else if (slot === "music") next.audioUrl = initialDemoStudioData.audioUrl;
+      else if (slot.startsWith("gallery_")) {
+        const idx = parseInt(slot.replace("gallery_", ""), 10) - 1;
+        if (Array.isArray(initialDemoStudioData.galleryPhotos)) {
+          next.galleryPhotos = [...(next.galleryPhotos || [])];
+          next.galleryPhotos[idx] = initialDemoStudioData.galleryPhotos[idx];
+        }
+      }
+      return next;
+    });
+  };
+
   const handleSaveAllDemoChanges = async () => {
     if (!demoStudioTheme || !isDemoStudioDirty) return;
     setDemoStudioSaving(true);
     setDemoStudioUploadSuccess(null);
 
     try {
-      // 1. Upload all staged files to server
+      // 1. Process deletions
+      const delSlots = Object.keys(stagedDeletedSlots);
+      if (delSlots.length > 0) {
+        for (const slot of delSlots) {
+          setUploadingSlot(slot);
+          const delRes = await fetch(`/api/admin/themes/${demoStudioTheme.id}/demo-asset?slot=${slot}`, {
+            method: "DELETE",
+          });
+          const delData = await delRes.json();
+          if (!delData.success) {
+            throw new Error(`Gagal menghapus slot ${slot}: ${delData.error || "Gagal delete"}`);
+          }
+        }
+      }
+
+      // 2. Upload all staged files to server
       const slots = Object.keys(stagedDemoFiles);
       const nextDemoData = { ...demoStudioData };
 
@@ -1253,7 +1353,7 @@ export default function AdminPage() {
             throw new Error(`Gagal mengunggah slot ${slot}: ${data.error || "Gagal upload"}`);
           }
 
-          // Synchronize URL in nextDemoData so step 2 preserves the updated media/video/audio URLs
+          // Synchronize URL in nextDemoData so step 3 preserves the updated media/video/audio URLs
           const targetUrl = data.rawUrl || `/demo/${demoStudioTheme.id}/${data.fileName}`;
           if (slot === "cover") nextDemoData.landingCoverUrl = targetUrl;
           else if (slot === "hero") nextDemoData.sidebarPhotoUrl = targetUrl;
@@ -1276,7 +1376,7 @@ export default function AdminPage() {
         setDemoStudioData(nextDemoData);
       }
 
-      // 2. Save text profile & story demo data
+      // 3. Save text profile & story demo data
       const dataRes = await fetch(`/api/admin/themes/${demoStudioTheme.id}/demo-data`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1287,16 +1387,20 @@ export default function AdminPage() {
         throw new Error(dataJson.error || "Gagal menyimpan data demo");
       }
 
-      // 3. Mark successfully saved
+      // 4. Mark successfully saved
       const now = Date.now();
       const newUpdatedSlots: Record<string, number> = { ...updatedDemoSlots };
       slots.forEach((s) => {
+        newUpdatedSlots[s] = now;
+      });
+      delSlots.forEach((s) => {
         newUpdatedSlots[s] = now;
       });
       setUpdatedDemoSlots(newUpdatedSlots);
       setDemoStudioSessionTime(now);
       setInitialDemoStudioData(JSON.parse(JSON.stringify(nextDemoData)));
       setStagedDemoFiles({});
+      setStagedDeletedSlots({});
       setDemoStudioUploadSuccess(`✓ Semua perubahan demo tema ${demoStudioTheme.name} berhasil disimpan permanen!`);
       setTimeout(() => setDemoStudioUploadSuccess(null), 4000);
     } catch (err: any) {
@@ -1315,6 +1419,7 @@ export default function AdminPage() {
     }
     setShowDemoStudioModal(false);
     setStagedDemoFiles({});
+    setStagedDeletedSlots({});
     setLocalPreviews({});
   };
 
@@ -6476,6 +6581,17 @@ export default function AdminPage() {
               >
                 Kisah Cinta &amp; Rekening
               </button>
+              <button
+                type="button"
+                onClick={() => setDemoStudioTab("narratives")}
+                className={`px-4 py-2.5 text-xs font-bold rounded-t-xl transition border-b-2 cursor-pointer ${
+                  demoStudioTab === "narratives"
+                    ? "bg-white text-stone-900 border-amber-600 shadow-2xs"
+                    : "text-gray-500 hover:text-gray-800 border-transparent"
+                }`}
+              >
+                Teks Seksi &amp; Narasi Bawaan
+              </button>
             </div>
 
             {/* Modal Body */}
@@ -6587,12 +6703,14 @@ export default function AdminPage() {
                               desc: "Snapshot layar desktop untuk kartu /demo. Ukuran: 1280 × 720 px (Rasio 16:9). Cara: Inspect -> Device Responsive (1280×720) -> Titik 3 (⋮) -> Capture screenshot." 
                             },
                           ].map((item) => {
+                            const isDeleted = Boolean(stagedDeletedSlots[item.slot]);
                             const isStaged = Boolean(stagedDemoFiles[item.slot]);
-                            const isSaved = Boolean(updatedDemoSlots[item.slot]) && !isStaged;
+                            const isSaved = Boolean(updatedDemoSlots[item.slot]) && !isStaged && !isDeleted;
                             const isCurrentUploading = uploadingSlot === item.slot;
                             const stagedFile = stagedDemoFiles[item.slot];
                             const localPreview = localPreviews[item.slot];
-                            const rawSavedUrl = (
+
+                            const explicitUrl = (
                               item.slot === "cover" ? demoStudioData.landingCoverUrl :
                               item.slot === "hero" ? demoStudioData.sidebarPhotoUrl :
                               item.slot === "background" ? demoStudioData.globalBgUrl :
@@ -6601,14 +6719,17 @@ export default function AdminPage() {
                               item.slot === "groom" ? demoStudioData.groomPhotoUrl :
                               item.slot === "bride" ? demoStudioData.bridePhotoUrl :
                               item.slot === "thumbnail_mobile" ? demoStudioData.thumbnailMobileUrl :
-                              item.slot === "thumbnail_desktop" ? demoStudioData.thumbnailDesktopUrl : null
-                            ) || `/demo/${demoStudioTheme.id}/${item.file}`;
+                              item.slot === "thumbnail_desktop" ? demoStudioData.thumbnailDesktopUrl : undefined
+                            );
+
+                            const isExplicitlyEmpty = isDeleted || explicitUrl === "";
+                            const rawSavedUrl = isExplicitlyEmpty ? "" : (explicitUrl || `/demo/${demoStudioTheme.id}/${item.file}`);
 
                             const cacheVersion = updatedDemoSlots[item.slot] || demoStudioSessionTime;
-                            const cleanBaseUrl = rawSavedUrl.split("?")[0];
-                            const savedUrl = `${cleanBaseUrl}?v=${cacheVersion}`;
+                            const cleanBaseUrl = rawSavedUrl ? rawSavedUrl.split("?")[0] : "";
+                            const savedUrl = cleanBaseUrl ? `${cleanBaseUrl}?v=${cacheVersion}` : "";
 
-                            const effectiveSrc = localPreview || savedUrl;
+                            const effectiveSrc = isDeleted ? "" : (localPreview || savedUrl);
                             const isVideoSlot = Boolean(
                               item.allowVideo && (
                                 (stagedFile && (stagedFile.type?.startsWith("video/") || /\.(mp4|webm|mov)$/i.test(stagedFile.name))) ||
@@ -6619,7 +6740,9 @@ export default function AdminPage() {
                               <div
                                 key={item.slot}
                                 className={`border rounded-2xl p-4 space-y-3 flex flex-col justify-between transition-all ${
-                                  isStaged
+                                  isDeleted
+                                    ? "bg-rose-50/40 border-rose-300 ring-1 ring-rose-400/20"
+                                    : isStaged
                                     ? "bg-amber-50/60 border-amber-400 ring-2 ring-amber-500/25 shadow-sm"
                                     : isSaved
                                     ? "bg-emerald-50/40 border-emerald-300 ring-1 ring-emerald-500/15"
@@ -6629,7 +6752,11 @@ export default function AdminPage() {
                                 <div>
                                   <div className="flex items-center justify-between mb-1">
                                     <span className="font-bold text-xs text-gray-900">{item.label}</span>
-                                    {isStaged ? (
+                                    {isDeleted ? (
+                                      <span className="text-[10px] font-bold text-rose-800 bg-rose-100 border border-rose-300 px-2 py-0.5 rounded-md flex items-center gap-1">
+                                        <span>✕</span> Dikosongkan
+                                      </span>
+                                    ) : isStaged ? (
                                       <span className="text-[10px] font-bold text-amber-800 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-md flex items-center gap-1">
                                         <span>●</span> Draft Baru
                                       </span>
@@ -6637,6 +6764,8 @@ export default function AdminPage() {
                                       <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-md flex items-center gap-1">
                                         <span>✓</span> Tersimpan
                                       </span>
+                                    ) : !effectiveSrc ? (
+                                      <span className="text-[10px] font-semibold text-gray-400 italic">Kosong</span>
                                     ) : (
                                       <span className="font-mono text-[10px] text-gray-400">{item.file}</span>
                                     )}
@@ -6649,9 +6778,11 @@ export default function AdminPage() {
                                     <svg className="w-6 h-6 mb-1 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                     </svg>
-                                    <span className="text-[10px] font-medium text-stone-500">Belum ada file</span>
+                                    <span className="text-[10px] font-medium text-stone-500">
+                                      {isDeleted ? "Foto dikosongkan (tanpa foto)" : "Belum ada file / Kosong"}
+                                    </span>
                                   </div>
-                                  {isVideoSlot ? (
+                                  {effectiveSrc && isVideoSlot ? (
                                     <video
                                       key={isStaged ? localPreview : updatedDemoSlots[item.slot] || effectiveSrc}
                                       src={effectiveSrc}
@@ -6661,7 +6792,7 @@ export default function AdminPage() {
                                       playsInline
                                       className="w-full h-full object-cover relative z-1"
                                     />
-                                  ) : (
+                                  ) : effectiveSrc ? (
                                     <img
                                       key={isStaged ? localPreview : updatedDemoSlots[item.slot] || effectiveSrc}
                                       src={effectiveSrc}
@@ -6674,8 +6805,8 @@ export default function AdminPage() {
                                         (e.target as HTMLElement).style.display = "block";
                                       }}
                                     />
-                                  )}
-                                  {isVideoSlot && (
+                                  ) : null}
+                                  {effectiveSrc && isVideoSlot && (
                                     <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-black/80 backdrop-blur-xs text-[9px] font-bold tracking-wider text-amber-300 rounded border border-amber-500/30 pointer-events-none z-10">
                                       VIDEO MP4
                                     </div>
@@ -6693,7 +6824,7 @@ export default function AdminPage() {
 
                                 <div className="flex items-center gap-2">
                                   <label className="flex-1 py-2 bg-white hover:bg-amber-50 text-stone-800 hover:text-amber-900 border border-gray-300 hover:border-amber-300 rounded-xl text-xs font-bold transition text-center cursor-pointer block shadow-2xs">
-                                    <span>{isStaged ? "Ganti Lagi" : item.allowVideo ? "Pilih Foto / Video" : "Ganti Foto"}</span>
+                                    <span>{isStaged ? "Ganti Lagi" : effectiveSrc ? (item.allowVideo ? "Ganti File" : "Ganti Foto") : (item.allowVideo ? "Pilih Foto / Video" : "Pilih Foto")}</span>
                                     <input
                                       type="file"
                                       accept={item.allowVideo ? "image/*,video/mp4,video/webm" : "image/*"}
@@ -6712,9 +6843,31 @@ export default function AdminPage() {
                                       onClick={() => handleDiscardStagedAsset(item.slot)}
                                       disabled={demoStudioSaving}
                                       title="Batalkan draft aset ini"
-                                      className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-xl text-xs font-bold transition cursor-pointer"
+                                      className="px-3 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-300 rounded-xl text-xs font-bold transition cursor-pointer"
                                     >
                                       Batal
+                                    </button>
+                                  )}
+                                  {isDeleted && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRestoreDeletedAsset(item.slot)}
+                                      disabled={demoStudioSaving}
+                                      title="Pulihkan foto sebelumnya"
+                                      className="px-3 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-300 rounded-xl text-xs font-bold transition cursor-pointer"
+                                    >
+                                      Pulihkan
+                                    </button>
+                                  )}
+                                  {!isDeleted && effectiveSrc && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleStageDeleteAsset(item.slot)}
+                                      disabled={demoStudioSaving}
+                                      title="Hapus / kosongkan foto slot ini"
+                                      className="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition cursor-pointer"
+                                    >
+                                      Hapus
                                     </button>
                                   )}
                                 </div>
@@ -6733,15 +6886,22 @@ export default function AdminPage() {
                           {Array.from({ length: 8 }).map((_, idx) => {
                             const slotName = `gallery_0${idx + 1}`;
                             const fileName = `${slotName}.webp`;
+                            const isDeleted = Boolean(stagedDeletedSlots[slotName]);
                             const isStaged = Boolean(stagedDemoFiles[slotName]);
-                            const isSaved = Boolean(updatedDemoSlots[slotName]) && !isStaged;
+                            const isSaved = Boolean(updatedDemoSlots[slotName]) && !isStaged && !isDeleted;
                             const isCurrentUploading = uploadingSlot === slotName;
-                            const imgSrc = localPreviews[slotName] || `/demo/${demoStudioTheme.id}/${fileName}?v=${updatedDemoSlots[slotName] || demoStudioSessionTime}`;
+
+                            const rawGalleryUrl = Array.isArray(demoStudioData.galleryPhotos) ? demoStudioData.galleryPhotos[idx] : undefined;
+                            const isExplicitlyEmpty = isDeleted || rawGalleryUrl === "";
+                            const cleanSaved = isExplicitlyEmpty ? "" : (rawGalleryUrl || `/demo/${demoStudioTheme.id}/${fileName}`);
+                            const imgSrc = isDeleted ? "" : (localPreviews[slotName] || (cleanSaved ? `${cleanSaved.split("?")[0]}?v=${updatedDemoSlots[slotName] || demoStudioSessionTime}` : ""));
                             return (
                               <div
                                 key={slotName}
                                 className={`border rounded-2xl p-3 space-y-2 transition-all ${
-                                  isStaged
+                                  isDeleted
+                                    ? "bg-rose-50/40 border-rose-300 ring-1 ring-rose-400/20"
+                                    : isStaged
                                     ? "bg-amber-50/60 border-amber-400 ring-2 ring-amber-500/25 shadow-sm"
                                     : isSaved
                                     ? "bg-emerald-50/40 border-emerald-300 ring-1 ring-emerald-500/15"
@@ -6750,7 +6910,11 @@ export default function AdminPage() {
                               >
                                 <div className="flex items-center justify-between text-[11px] font-bold text-gray-800">
                                   <span>Galeri #{idx + 1}</span>
-                                  {isStaged ? (
+                                  {isDeleted ? (
+                                    <span className="text-[9px] font-bold text-rose-800 bg-rose-100 border border-rose-300 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                                      <span>✕</span> Dihapus
+                                    </span>
+                                  ) : isStaged ? (
                                     <span className="text-[9px] font-bold text-amber-800 bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded flex items-center gap-0.5">
                                       <span>●</span> Draft
                                     </span>
@@ -6758,20 +6922,30 @@ export default function AdminPage() {
                                     <span className="text-[9px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-1.5 py-0.5 rounded flex items-center gap-0.5">
                                       <span>✓</span> Tersimpan
                                     </span>
+                                  ) : !imgSrc ? (
+                                    <span className="text-[9px] font-semibold text-gray-400 italic">Kosong</span>
                                   ) : (
                                     <span className="font-mono text-[9px] text-gray-400">{fileName}</span>
                                   )}
                                 </div>
                                 <div className="relative aspect-square rounded-xl bg-gray-200 overflow-hidden border border-gray-300">
-                                  <img
-                                    key={isStaged ? localPreviews[slotName] : updatedDemoSlots[slotName] || imgSrc}
-                                    src={imgSrc}
-                                    alt={`Gallery ${idx + 1}`}
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                      (e.target as HTMLElement).style.display = "none";
-                                    }}
-                                  />
+                                  {imgSrc ? (
+                                    <img
+                                      key={isStaged ? localPreviews[slotName] : updatedDemoSlots[slotName] || imgSrc}
+                                      src={imgSrc}
+                                      alt={`Gallery ${idx + 1}`}
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        (e.target as HTMLElement).style.display = "none";
+                                      }}
+                                    />
+                                  ) : (
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center p-2 text-center pointer-events-none text-stone-400 bg-stone-100">
+                                      <span className="text-[10px] font-medium text-stone-500">
+                                        {isDeleted ? "Dikosongkan" : "Kosong"}
+                                      </span>
+                                    </div>
+                                  )}
                                   {isCurrentUploading && (
                                     <div className="absolute inset-0 bg-stone-950/75 backdrop-blur-xs flex flex-col items-center justify-center gap-1 text-white p-1.5 text-center z-10 animate-fade-in">
                                       <svg className="animate-spin h-4 w-4 text-amber-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -6784,7 +6958,7 @@ export default function AdminPage() {
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                   <label className="flex-1 py-1.5 bg-white hover:bg-amber-50 text-stone-800 hover:text-amber-900 border border-gray-300 hover:border-amber-300 rounded-lg text-[11px] font-bold transition text-center cursor-pointer block shadow-2xs">
-                                    <span>{isStaged ? "Ganti" : "Pilih"}</span>
+                                    <span>{isStaged ? "Ganti" : imgSrc ? "Ganti" : "Pilih"}</span>
                                     <input
                                       type="file"
                                       accept="image/*"
@@ -6803,7 +6977,29 @@ export default function AdminPage() {
                                       onClick={() => handleDiscardStagedAsset(slotName)}
                                       disabled={demoStudioSaving}
                                       title="Batalkan draft foto ini"
-                                      className="px-2 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg text-[11px] font-bold transition cursor-pointer"
+                                      className="px-2 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-300 rounded-lg text-[11px] font-bold transition cursor-pointer"
+                                    >
+                                      ✕
+                                    </button>
+                                  )}
+                                  {isDeleted && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRestoreDeletedAsset(slotName)}
+                                      disabled={demoStudioSaving}
+                                      title="Pulihkan foto galeri ini"
+                                      className="px-2 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-300 rounded-lg text-[11px] font-bold transition cursor-pointer"
+                                    >
+                                      ↩
+                                    </button>
+                                  )}
+                                  {!isDeleted && imgSrc && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleStageDeleteAsset(slotName)}
+                                      disabled={demoStudioSaving}
+                                      title="Hapus foto galeri ini"
+                                      className="px-2 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-[11px] font-bold transition cursor-pointer"
                                     >
                                       ✕
                                     </button>
@@ -6829,15 +7025,18 @@ export default function AdminPage() {
                           {Array.from({ length: 4 }).map((_, idx) => {
                             const slotName = `memory_0${idx + 1}`;
                             const fileName = `${slotName}.webp`;
+                            const isDeleted = Boolean(stagedDeletedSlots[slotName]);
                             const isStaged = Boolean(stagedDemoFiles[slotName]);
-                            const isSaved = Boolean(updatedDemoSlots[slotName]) && !isStaged;
+                            const isSaved = Boolean(updatedDemoSlots[slotName]) && !isStaged && !isDeleted;
                             const isCurrentUploading = uploadingSlot === slotName;
-                            const imgSrc = localPreviews[slotName] || `/demo/${demoStudioTheme.id}/${fileName}?v=${updatedDemoSlots[slotName] || demoStudioSessionTime}`;
+                            const imgSrc = isDeleted ? "" : (localPreviews[slotName] || `/demo/${demoStudioTheme.id}/${fileName}?v=${updatedDemoSlots[slotName] || demoStudioSessionTime}`);
                             return (
                               <div
                                 key={slotName}
                                 className={`border rounded-2xl p-3 space-y-2 transition-all ${
-                                  isStaged
+                                  isDeleted
+                                    ? "bg-rose-50/40 border-rose-300 ring-1 ring-rose-400/20"
+                                    : isStaged
                                     ? "bg-amber-50/60 border-amber-400 ring-2 ring-amber-500/25 shadow-sm"
                                     : isSaved
                                     ? "bg-emerald-50/40 border-emerald-300 ring-1 ring-emerald-500/15"
@@ -6846,7 +7045,11 @@ export default function AdminPage() {
                               >
                                 <div className="flex items-center justify-between text-[11px] font-bold text-gray-800">
                                   <span>Momen #{idx + 1}</span>
-                                  {isStaged ? (
+                                  {isDeleted ? (
+                                    <span className="text-[9px] font-bold text-rose-800 bg-rose-100 border border-rose-300 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                                      <span>✕</span> Dihapus
+                                    </span>
+                                  ) : isStaged ? (
                                     <span className="text-[9px] font-bold text-amber-800 bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded flex items-center gap-0.5">
                                       <span>●</span> Draft
                                     </span>
@@ -6854,23 +7057,33 @@ export default function AdminPage() {
                                     <span className="text-[9px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-1.5 py-0.5 rounded flex items-center gap-0.5">
                                       <span>✓</span> Tersimpan
                                     </span>
+                                  ) : !imgSrc ? (
+                                    <span className="text-[9px] font-semibold text-gray-400 italic">Kosong</span>
                                   ) : (
                                     <span className="font-mono text-[9px] text-gray-400">{fileName}</span>
                                   )}
                                 </div>
                                 <div className="relative aspect-square rounded-xl bg-gray-200 overflow-hidden border border-gray-300">
-                                  <img
-                                    key={isStaged ? localPreviews[slotName] : updatedDemoSlots[slotName] || imgSrc}
-                                    src={imgSrc}
-                                    alt={`Memory ${idx + 1}`}
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => {
-                                      const img = e.target as HTMLImageElement;
-                                      if (!img.src.includes("gallery_0")) {
-                                        img.src = `/demo/${demoStudioTheme.id}/gallery_0${idx + 1}.webp?v=${updatedDemoSlots[slotName] || 1}`;
-                                      }
-                                    }}
-                                  />
+                                  {imgSrc ? (
+                                    <img
+                                      key={isStaged ? localPreviews[slotName] : updatedDemoSlots[slotName] || imgSrc}
+                                      src={imgSrc}
+                                      alt={`Memory ${idx + 1}`}
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        const img = e.target as HTMLImageElement;
+                                        if (!img.src.includes("gallery_0")) {
+                                          img.src = `/demo/${demoStudioTheme.id}/gallery_0${idx + 1}.webp?v=${updatedDemoSlots[slotName] || 1}`;
+                                        }
+                                      }}
+                                    />
+                                  ) : (
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center p-2 text-center pointer-events-none text-stone-400 bg-stone-100">
+                                      <span className="text-[10px] font-medium text-stone-500">
+                                        {isDeleted ? "Dikosongkan" : "Kosong"}
+                                      </span>
+                                    </div>
+                                  )}
                                   {isCurrentUploading && (
                                     <div className="absolute inset-0 bg-stone-950/75 backdrop-blur-xs flex flex-col items-center justify-center gap-1 text-white p-1.5 text-center z-10 animate-fade-in">
                                       <svg className="animate-spin h-4 w-4 text-amber-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -6883,7 +7096,7 @@ export default function AdminPage() {
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                   <label className="flex-1 py-1.5 bg-white hover:bg-amber-50 text-stone-800 hover:text-amber-900 border border-gray-300 hover:border-amber-300 rounded-lg text-[11px] font-bold transition text-center cursor-pointer block shadow-2xs">
-                                    <span>{isStaged ? "Ganti" : "Pilih"}</span>
+                                    <span>{isStaged ? "Ganti" : imgSrc ? "Ganti" : "Pilih"}</span>
                                     <input
                                       type="file"
                                       accept="image/*"
@@ -6902,7 +7115,29 @@ export default function AdminPage() {
                                       onClick={() => handleDiscardStagedAsset(slotName)}
                                       disabled={demoStudioSaving}
                                       title="Batalkan draft foto ini"
-                                      className="px-2 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg text-[11px] font-bold transition cursor-pointer"
+                                      className="px-2 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-300 rounded-lg text-[11px] font-bold transition cursor-pointer"
+                                    >
+                                      ✕
+                                    </button>
+                                  )}
+                                  {isDeleted && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRestoreDeletedAsset(slotName)}
+                                      disabled={demoStudioSaving}
+                                      title="Pulihkan foto momen ini"
+                                      className="px-2 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-300 rounded-lg text-[11px] font-bold transition cursor-pointer"
+                                    >
+                                      ↩
+                                    </button>
+                                  )}
+                                  {!isDeleted && imgSrc && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleStageDeleteAsset(slotName)}
+                                      disabled={demoStudioSaving}
+                                      title="Hapus foto momen ini"
+                                      className="px-2 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-[11px] font-bold transition cursor-pointer"
                                     >
                                       ✕
                                     </button>
@@ -7061,15 +7296,27 @@ export default function AdminPage() {
                               className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
                             />
                           </div>
-                          <div>
-                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Keterangan Orang Tua</label>
-                            <input
-                              type="text"
-                              value={demoStudioData.groomParents || ""}
-                              onChange={(e) => setDemoStudioData({ ...demoStudioData, groomParents: e.target.value })}
-                              placeholder="Putra Kedua dari Bpk. Ir. Hendra..."
-                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
-                            />
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="block text-[11px] font-bold text-gray-700 mb-1">Nama Ayah Pria</label>
+                              <input
+                                type="text"
+                                value={demoStudioData.groomFather || ""}
+                                onChange={(e) => setDemoStudioData({ ...demoStudioData, groomFather: e.target.value })}
+                                placeholder="Contoh: Ir. Hendra Pratama / Alm. Hendra Pratama"
+                                className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-bold text-gray-700 mb-1">Nama Ibu Pria</label>
+                              <input
+                                type="text"
+                                value={demoStudioData.groomMother || ""}
+                                onChange={(e) => setDemoStudioData({ ...demoStudioData, groomMother: e.target.value })}
+                                placeholder="Contoh: Ratna Dewi / Almh. Ratna Dewi"
+                                className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
+                              />
+                            </div>
                           </div>
                           <div>
                             <label className="block text-[11px] font-bold text-gray-700 mb-1">Instagram (@)</label>
@@ -7106,15 +7353,27 @@ export default function AdminPage() {
                               className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
                             />
                           </div>
-                          <div>
-                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Keterangan Orang Tua</label>
-                            <input
-                              type="text"
-                              value={demoStudioData.brideParents || ""}
-                              onChange={(e) => setDemoStudioData({ ...demoStudioData, brideParents: e.target.value })}
-                              placeholder="Putri Pertama dari Bpk. Dr. Faisal..."
-                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
-                            />
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="block text-[11px] font-bold text-gray-700 mb-1">Nama Ayah Wanita</label>
+                              <input
+                                type="text"
+                                value={demoStudioData.brideFather || ""}
+                                onChange={(e) => setDemoStudioData({ ...demoStudioData, brideFather: e.target.value })}
+                                placeholder="Contoh: Dr. Faisal Basri / Alm. Faisal Basri"
+                                className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-bold text-gray-700 mb-1">Nama Ibu Wanita</label>
+                              <input
+                                type="text"
+                                value={demoStudioData.brideMother || ""}
+                                onChange={(e) => setDemoStudioData({ ...demoStudioData, brideMother: e.target.value })}
+                                placeholder="Contoh: Soraya Latief / Almh. Soraya Latief"
+                                className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
+                              />
+                            </div>
                           </div>
                           <div>
                             <label className="block text-[11px] font-bold text-gray-700 mb-1">Instagram (@)</label>
@@ -7163,6 +7422,151 @@ export default function AdminPage() {
                           </div>
                         </div>
                       </div>
+
+                      {/* Timeline & Sesi Acara Demo */}
+                      <div className="p-4 bg-gray-50 border border-gray-200 rounded-2xl space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="font-bold text-gray-900 text-xs uppercase tracking-wider">
+                              Timeline &amp; Rangkaian Acara Demo
+                            </h4>
+                            <p className="text-[11px] text-gray-500 mt-0.5">Kelola sesi acara (Akad Nikah, Resepsi, Walimah, dll.) untuk tema ini.</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const events = [...(demoStudioData.events || [])];
+                              events.push({
+                                badge: "RESEPSI",
+                                title: "Sesi Acara Baru",
+                                time: "11.00 – 14.00 WIB",
+                                location: demoStudioData.city ? `Ballroom di ${demoStudioData.city}` : "Ballroom Hotel",
+                                address: demoStudioData.city ? `Jl. Utama No. 1, ${demoStudioData.city}` : "Jl. Utama No. 1",
+                                mapsUrl: "https://maps.google.com",
+                              });
+                              setDemoStudioData({ ...demoStudioData, events });
+                            }}
+                            className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                          >
+                            <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                            <span>Tambah Acara</span>
+                          </button>
+                        </div>
+
+                        <div className="space-y-3">
+                          {(demoStudioData.events || []).length === 0 ? (
+                            <div className="p-4 bg-white border border-dashed border-gray-300 rounded-xl text-center text-xs text-gray-400">
+                              Belum ada sesi acara. Klik "Tambah Acara" di atas untuk menambahkan.
+                            </div>
+                          ) : (
+                            (demoStudioData.events || []).map((ev: any, evIdx: number) => (
+                              <div key={evIdx} className="p-4 bg-white border border-gray-200 rounded-xl space-y-3 shadow-2xs">
+                                <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                                  <span className="text-xs font-bold text-amber-900 font-mono">Sesi {evIdx + 1}: {ev.title || "Acara"}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const events = (demoStudioData.events || []).filter((_: any, idx: number) => idx !== evIdx);
+                                      setDemoStudioData({ ...demoStudioData, events });
+                                    }}
+                                    className="text-xs text-red-600 hover:text-red-700 font-semibold px-2 py-0.5 rounded hover:bg-red-50 transition cursor-pointer"
+                                  >
+                                    Hapus Acara
+                                  </button>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                  <div>
+                                    <label className="block text-[10px] font-bold text-gray-600 mb-1">Kategori / Badge Sesi</label>
+                                    <input
+                                      type="text"
+                                      value={ev.badge || ""}
+                                      onChange={(e) => {
+                                        const events = [...(demoStudioData.events || [])];
+                                        events[evIdx].badge = e.target.value;
+                                        setDemoStudioData({ ...demoStudioData, events });
+                                      }}
+                                      placeholder="AKAD NIKAH / RESEPSI"
+                                      className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs bg-white uppercase font-mono"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[10px] font-bold text-gray-600 mb-1">Nama / Judul Acara</label>
+                                    <input
+                                      type="text"
+                                      value={ev.title || ""}
+                                      onChange={(e) => {
+                                        const events = [...(demoStudioData.events || [])];
+                                        events[evIdx].title = e.target.value;
+                                        setDemoStudioData({ ...demoStudioData, events });
+                                      }}
+                                      placeholder="Akad Nikah &amp; Resepsi"
+                                      className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[10px] font-bold text-gray-600 mb-1">Waktu / Jam Pelaksanaan</label>
+                                    <input
+                                      type="text"
+                                      value={ev.time || ""}
+                                      onChange={(e) => {
+                                        const events = [...(demoStudioData.events || [])];
+                                        events[evIdx].time = e.target.value;
+                                        setDemoStudioData({ ...demoStudioData, events });
+                                      }}
+                                      placeholder="08.00 – 11.00 WIB"
+                                      className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
+                                    />
+                                  </div>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                  <div>
+                                    <label className="block text-[10px] font-bold text-gray-600 mb-1">Nama Tempat / Gedung</label>
+                                    <input
+                                      type="text"
+                                      value={ev.location || ""}
+                                      onChange={(e) => {
+                                        const events = [...(demoStudioData.events || [])];
+                                        events[evIdx].location = e.target.value;
+                                        setDemoStudioData({ ...demoStudioData, events });
+                                      }}
+                                      placeholder="Grand Ballroom Gedong Putih"
+                                      className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[10px] font-bold text-gray-600 mb-1">Link Google Maps</label>
+                                    <input
+                                      type="text"
+                                      value={ev.mapsUrl || ""}
+                                      onChange={(e) => {
+                                        const events = [...(demoStudioData.events || [])];
+                                        events[evIdx].mapsUrl = e.target.value;
+                                        setDemoStudioData({ ...demoStudioData, events });
+                                      }}
+                                      placeholder="https://maps.google.com/..."
+                                      className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs bg-white text-blue-600 font-mono"
+                                    />
+                                  </div>
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] font-bold text-gray-600 mb-1">Alamat Lengkap</label>
+                                  <textarea
+                                    rows={2}
+                                    value={ev.address || ""}
+                                    onChange={(e) => {
+                                      const events = [...(demoStudioData.events || [])];
+                                      events[evIdx].address = e.target.value;
+                                      setDemoStudioData({ ...demoStudioData, events });
+                                    }}
+                                    placeholder="Jl. Villa Triniti KM 4.7, Parongpong, Bandung Barat"
+                                    className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs bg-white resize-none"
+                                  />
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
                     </div>
                   )}
 
@@ -7170,110 +7574,708 @@ export default function AdminPage() {
                   {demoStudioTab === "stories" && (
                     <div className="space-y-6">
                       <div>
-                        <h4 className="font-bold text-gray-900 text-xs uppercase tracking-wider mb-3">
-                          Kisah Cinta Demo (Love Story Chapters)
-                        </h4>
+                        <div className="flex items-center justify-between mb-3">
+                          <div>
+                            <h4 className="font-bold text-gray-900 text-xs uppercase tracking-wider">
+                              Kisah Cinta Demo (Love Story Chapters)
+                            </h4>
+                            <p className="text-[11px] text-gray-500 mt-0.5">Kelola bab alur cerita cinta yang ditampilkan pada demo tema ini.</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const stories = [...(demoStudioData.stories || [])];
+                              stories.push({
+                                chapter: `Bab ${stories.length + 1}`,
+                                title: "Momen Indah",
+                                content: "",
+                              });
+                              setDemoStudioData({ ...demoStudioData, stories });
+                            }}
+                            className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                          >
+                            <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                            <span>Tambah Bab Cerita</span>
+                          </button>
+                        </div>
+
                         <div className="space-y-3">
-                          {(demoStudioData.stories || []).map((story: any, sIdx: number) => (
-                            <div key={sIdx} className="p-4 bg-gray-50 border border-gray-200 rounded-2xl space-y-2">
-                              <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                  <label className="block text-[10px] font-bold text-gray-600 mb-1">Bab / Chapter</label>
-                                  <input
-                                    type="text"
-                                    value={story.chapter || ""}
-                                    onChange={(e) => {
-                                      const stories = [...(demoStudioData.stories || [])];
-                                      stories[sIdx].chapter = e.target.value;
-                                      setDemoStudioData({ ...demoStudioData, stories });
-                                    }}
-                                    className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-[10px] font-bold text-gray-600 mb-1">Judul Bab</label>
-                                  <input
-                                    type="text"
-                                    value={story.title || ""}
-                                    onChange={(e) => {
-                                      const stories = [...(demoStudioData.stories || [])];
-                                      stories[sIdx].title = e.target.value;
-                                      setDemoStudioData({ ...demoStudioData, stories });
-                                    }}
-                                    className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
-                                  />
-                                </div>
-                              </div>
-                              <div>
-                                <label className="block text-[10px] font-bold text-gray-600 mb-1">Isi Cerita</label>
-                                <textarea
-                                  rows={2}
-                                  value={story.content || ""}
-                                  onChange={(e) => {
-                                    const stories = [...(demoStudioData.stories || [])];
-                                    stories[sIdx].content = e.target.value;
-                                    setDemoStudioData({ ...demoStudioData, stories });
-                                  }}
-                                  className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white resize-none"
-                                />
-                              </div>
+                          {(demoStudioData.stories || []).length === 0 ? (
+                            <div className="p-4 bg-gray-50 border border-dashed border-gray-300 rounded-xl text-center text-xs text-gray-400">
+                              Belum ada bab cerita cinta. Klik "Tambah Bab Cerita" di atas untuk menambahkan.
                             </div>
-                          ))}
+                          ) : (
+                            (demoStudioData.stories || []).map((story: any, sIdx: number) => (
+                              <div key={sIdx} className="p-4 bg-gray-50 border border-gray-200 rounded-2xl space-y-2.5">
+                                <div className="flex items-center justify-between border-b border-gray-200/60 pb-1.5">
+                                  <span className="text-xs font-bold text-amber-900 font-mono">Bab {sIdx + 1}: {story.title || "Kisah"}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const stories = (demoStudioData.stories || []).filter((_: any, idx: number) => idx !== sIdx);
+                                      setDemoStudioData({ ...demoStudioData, stories });
+                                    }}
+                                    className="text-xs text-red-600 hover:text-red-700 font-semibold px-2 py-0.5 rounded hover:bg-red-50 transition cursor-pointer"
+                                  >
+                                    Hapus Bab
+                                  </button>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div>
+                                    <label className="block text-[10px] font-bold text-gray-600 mb-1">Label / Bab</label>
+                                    <input
+                                      type="text"
+                                      value={story.chapter || ""}
+                                      onChange={(e) => {
+                                        const stories = [...(demoStudioData.stories || [])];
+                                        stories[sIdx].chapter = e.target.value;
+                                        setDemoStudioData({ ...demoStudioData, stories });
+                                      }}
+                                      placeholder="Pertemuan / Lamaran"
+                                      className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[10px] font-bold text-gray-600 mb-1">Judul Bab</label>
+                                    <input
+                                      type="text"
+                                      value={story.title || ""}
+                                      onChange={(e) => {
+                                        const stories = [...(demoStudioData.stories || [])];
+                                        stories[sIdx].title = e.target.value;
+                                        setDemoStudioData({ ...demoStudioData, stories });
+                                      }}
+                                      placeholder="Langkah Awal"
+                                      className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
+                                    />
+                                  </div>
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] font-bold text-gray-600 mb-1">Isi Cerita</label>
+                                  <textarea
+                                    rows={2}
+                                    value={story.content || ""}
+                                    onChange={(e) => {
+                                      const stories = [...(demoStudioData.stories || [])];
+                                      stories[sIdx].content = e.target.value;
+                                      setDemoStudioData({ ...demoStudioData, stories });
+                                    }}
+                                    placeholder="Ceritakan momen indah perjalanan cinta..."
+                                    className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white resize-none"
+                                  />
+                                </div>
+                              </div>
+                            ))
+                          )}
                         </div>
                       </div>
 
                       {/* Bank Accounts */}
                       <div>
-                        <h4 className="font-bold text-gray-900 text-xs uppercase tracking-wider mb-3">
-                          Rekening Hadiah Digital Demo
-                        </h4>
+                        <div className="flex items-center justify-between mb-3">
+                          <div>
+                            <h4 className="font-bold text-gray-900 text-xs uppercase tracking-wider">
+                              Rekening Hadiah Digital Demo
+                            </h4>
+                            <p className="text-[11px] text-gray-500 mt-0.5">Kelola rekening bank atau dompet digital untuk fitur tanda kasih.</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const banks = [...(demoStudioData.banks || [])];
+                              banks.push({
+                                bank: "BCA",
+                                number: "",
+                                name: demoStudioData.groomName || "Mempelai",
+                              });
+                              setDemoStudioData({ ...demoStudioData, banks });
+                            }}
+                            className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                          >
+                            <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                            <span>Tambah Rekening</span>
+                          </button>
+                        </div>
+
                         <div className="space-y-3">
-                          {(demoStudioData.banks || []).map((bank: any, bIdx: number) => (
-                            <div key={bIdx} className="p-4 bg-gray-50 border border-gray-200 rounded-2xl grid grid-cols-3 gap-3">
-                              <div>
-                                <label className="block text-[10px] font-bold text-gray-600 mb-1">Nama Bank</label>
-                                <input
-                                  type="text"
-                                  value={bank.bank || ""}
-                                  onChange={(e) => {
-                                    const banks = [...(demoStudioData.banks || [])];
-                                    banks[bIdx].bank = e.target.value;
-                                    setDemoStudioData({ ...demoStudioData, banks });
-                                  }}
-                                  placeholder="Bank BCA"
-                                  className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-[10px] font-bold text-gray-600 mb-1">Nomor Rekening</label>
-                                <input
-                                  type="text"
-                                  value={bank.number || ""}
-                                  onChange={(e) => {
-                                    const banks = [...(demoStudioData.banks || [])];
-                                    banks[bIdx].number = e.target.value;
-                                    setDemoStudioData({ ...demoStudioData, banks });
-                                  }}
-                                  placeholder="8830192831"
-                                  className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white font-mono"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-[10px] font-bold text-gray-600 mb-1">Atas Nama</label>
-                                <input
-                                  type="text"
-                                  value={bank.name || ""}
-                                  onChange={(e) => {
-                                    const banks = [...(demoStudioData.banks || [])];
-                                    banks[bIdx].name = e.target.value;
-                                    setDemoStudioData({ ...demoStudioData, banks });
-                                  }}
-                                  placeholder="Raditya Pratama"
-                                  className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
-                                />
-                              </div>
+                          {(demoStudioData.banks || []).length === 0 ? (
+                            <div className="p-4 bg-gray-50 border border-dashed border-gray-300 rounded-xl text-center text-xs text-gray-400">
+                              Belum ada rekening demo. Klik "Tambah Rekening" di atas.
                             </div>
-                          ))}
+                          ) : (
+                            (demoStudioData.banks || []).map((bank: any, bIdx: number) => (
+                              <div key={bIdx} className="p-4 bg-gray-50 border border-gray-200 rounded-2xl space-y-2.5">
+                                <div className="flex items-center justify-between border-b border-gray-200/60 pb-1.5">
+                                  <span className="text-xs font-bold text-amber-900 font-mono">Rekening {bIdx + 1}: {bank.bank || "Bank"}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const banks = (demoStudioData.banks || []).filter((_: any, idx: number) => idx !== bIdx);
+                                      setDemoStudioData({ ...demoStudioData, banks });
+                                    }}
+                                    className="text-xs text-red-600 hover:text-red-700 font-semibold px-2 py-0.5 rounded hover:bg-red-50 transition cursor-pointer"
+                                  >
+                                    Hapus Rekening
+                                  </button>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                  <div>
+                                    <label className="block text-[10px] font-bold text-gray-600 mb-1">Nama Bank / Wallet</label>
+                                    <input
+                                      type="text"
+                                      value={bank.bank || ""}
+                                      onChange={(e) => {
+                                        const banks = [...(demoStudioData.banks || [])];
+                                        banks[bIdx].bank = e.target.value;
+                                        setDemoStudioData({ ...demoStudioData, banks });
+                                      }}
+                                      placeholder="Bank BCA / Mandiri / BSI"
+                                      className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[10px] font-bold text-gray-600 mb-1">Nomor Rekening</label>
+                                    <input
+                                      type="text"
+                                      value={bank.number || ""}
+                                      onChange={(e) => {
+                                        const banks = [...(demoStudioData.banks || [])];
+                                        banks[bIdx].number = e.target.value;
+                                        setDemoStudioData({ ...demoStudioData, banks });
+                                      }}
+                                      placeholder="8830192831"
+                                      className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white font-mono"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[10px] font-bold text-gray-600 mb-1">Atas Nama (Pemilik)</label>
+                                    <input
+                                      type="text"
+                                      value={bank.name || ""}
+                                      onChange={(e) => {
+                                        const banks = [...(demoStudioData.banks || [])];
+                                        banks[bIdx].name = e.target.value;
+                                        setDemoStudioData({ ...demoStudioData, banks });
+                                      }}
+                                      placeholder="Raditya Pratama"
+                                      className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TAB 4: THEME BLUEPRINT & SECTION TEXTS */}
+                  {demoStudioTab === "narratives" && (
+                    <div className="space-y-6">
+                      <div className="p-4 bg-amber-50/60 border border-amber-200/70 rounded-2xl text-amber-900 text-xs leading-relaxed">
+                        <div>
+                          <strong>Cetak Biru Teks Bawaan Tema:</strong> Teks dan narasi di bawah ini merupakan teks penulisan bawaan untuk tema <strong>{demoStudioTheme.name}</strong>. Ketika calon klien memilih tema ini di dashboard, teks inilah yang otomatis dimuat ke formulir undangan mereka (tidak disamaratakan).
+                        </div>
+                      </div>
+
+                      {/* Sub-Panel 1: Kutipan Pembuka & Sampul */}
+                      <div className="p-4 bg-gray-50 border border-gray-200 rounded-2xl space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-bold text-gray-900 text-xs uppercase tracking-wider">
+                            1. Pembuka &amp; Sampul Undangan (Cover Section)
+                          </h4>
+                          <span className="text-[10px] font-mono text-gray-400">Opening &amp; Cover</span>
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-gray-700 mb-1">Kutipan Ayat / Kata Mutiara Pembuka</label>
+                          <textarea
+                            rows={3}
+                            value={demoStudioData.openingQuote ?? currentDemoBlueprint?.openingQuote ?? ""}
+                            onChange={(e) => setDemoStudioData({ ...demoStudioData, openingQuote: e.target.value })}
+                            placeholder="Kutipan pembuka..."
+                            className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 resize-none focus:outline-none focus:border-amber-500"
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Rujukan / Sumber Kutipan</label>
+                            <input
+                              type="text"
+                              value={demoStudioData.openingQuoteRef ?? currentDemoBlueprint?.openingQuoteRef ?? ""}
+                              onChange={(e) => setDemoStudioData({ ...demoStudioData, openingQuoteRef: e.target.value })}
+                              placeholder="QS. AR-RUM: 21"
+                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Label Tombol Buka Undangan</label>
+                            <input
+                              type="text"
+                              value={demoStudioData.customLabels?.openBtn ?? currentDemoBlueprint?.openBtn ?? "Buka Undangan"}
+                              onChange={(e) => {
+                                const customLabels = { ...(demoStudioData.customLabels || {}) };
+                                customLabels.openBtn = e.target.value;
+                                setDemoStudioData({ ...demoStudioData, customLabels });
+                              }}
+                              placeholder="Buka Undangan"
+                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-gray-700 mb-1">Subjudul Sampul / Teks Undangan</label>
+                          <textarea
+                            rows={2}
+                            value={demoStudioData.customLabels?.coverSubtitle ?? currentDemoBlueprint?.coverSubtitle ?? ""}
+                            onChange={(e) => {
+                              const customLabels = { ...(demoStudioData.customLabels || {}) };
+                              customLabels.coverSubtitle = e.target.value;
+                              setDemoStudioData({ ...demoStudioData, customLabels });
+                            }}
+                            placeholder="Tanpa mengurangi rasa hormat..."
+                            className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 resize-none focus:outline-none focus:border-amber-500"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Sub-Panel 2: Seksi Mempelai & Acara */}
+                      <div className="p-4 bg-gray-50 border border-gray-200 rounded-2xl space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-bold text-gray-900 text-xs uppercase tracking-wider">
+                            2. Teks Seksi Mempelai &amp; Rangkaian Acara
+                          </h4>
+                          <span className="text-[10px] font-mono text-gray-400">Couple &amp; Events</span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Judul Seksi Mempelai</label>
+                            <input
+                              type="text"
+                              value={demoStudioData.customLabels?.coupleTitle ?? currentDemoBlueprint?.coupleSectionTitle ?? "Mempelai"}
+                              onChange={(e) => {
+                                const customLabels = { ...(demoStudioData.customLabels || {}) };
+                                customLabels.coupleTitle = e.target.value;
+                                setDemoStudioData({ ...demoStudioData, customLabels });
+                              }}
+                              placeholder="Mempelai / The Couple"
+                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Judul Seksi Rangkaian Acara</label>
+                            <input
+                              type="text"
+                              value={demoStudioData.customLabels?.eventsTitle ?? currentDemoBlueprint?.eventsSectionTitle ?? "Rangkaian Acara"}
+                              onChange={(e) => {
+                                const customLabels = { ...(demoStudioData.customLabels || {}) };
+                                customLabels.eventsTitle = e.target.value;
+                                setDemoStudioData({ ...demoStudioData, customLabels });
+                              }}
+                              placeholder="Rangkaian Acara"
+                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500"
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Deskripsi Pengantar Mempelai</label>
+                            <textarea
+                              rows={2}
+                              value={demoStudioData.customLabels?.coupleSub ?? currentDemoBlueprint?.coupleSectionSub ?? ""}
+                              onChange={(e) => {
+                                const customLabels = { ...(demoStudioData.customLabels || {}) };
+                                customLabels.coupleSub = e.target.value;
+                                setDemoStudioData({ ...demoStudioData, customLabels });
+                              }}
+                              placeholder="Dengan penuh rasa syukur..."
+                              className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 resize-none focus:outline-none focus:border-amber-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Deskripsi Pengantar Rangkaian Acara</label>
+                            <textarea
+                              rows={2}
+                              value={demoStudioData.customLabels?.eventsSub ?? currentDemoBlueprint?.eventsSectionSub ?? ""}
+                              onChange={(e) => {
+                                const customLabels = { ...(demoStudioData.customLabels || {}) };
+                                customLabels.eventsSub = e.target.value;
+                                setDemoStudioData({ ...demoStudioData, customLabels });
+                              }}
+                              placeholder="Merupakan suatu kehormatan dan kebahagiaan bagi kami..."
+                              className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 resize-none focus:outline-none focus:border-amber-500"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Sub-Panel 3: Seksi Kisah Cinta & Galeri Momen */}
+                      <div className="p-4 bg-gray-50 border border-gray-200 rounded-2xl space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-bold text-gray-900 text-xs uppercase tracking-wider">
+                            3. Teks Seksi Kisah Cinta &amp; Galeri Momen
+                          </h4>
+                          <span className="text-[10px] font-mono text-gray-400">Story &amp; Gallery</span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Judul Seksi Kisah Cinta (Story)</label>
+                            <input
+                              type="text"
+                              value={demoStudioData.customLabels?.storyTitle ?? currentDemoBlueprint?.storySectionTitle ?? "Love Story"}
+                              onChange={(e) => {
+                                const customLabels = { ...(demoStudioData.customLabels || {}) };
+                                customLabels.storyTitle = e.target.value;
+                                setDemoStudioData({ ...demoStudioData, customLabels });
+                              }}
+                              placeholder="Love Story / Cerita Cinta"
+                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Eyebrow / Subjudul Kisah Cinta</label>
+                            <input
+                              type="text"
+                              value={demoStudioData.customLabels?.storyEyebrow ?? currentDemoBlueprint?.storySectionEyebrow ?? "Our Journey"}
+                              onChange={(e) => {
+                                const customLabels = { ...(demoStudioData.customLabels || {}) };
+                                customLabels.storyEyebrow = e.target.value;
+                                setDemoStudioData({ ...demoStudioData, customLabels });
+                              }}
+                              placeholder="Our Journey / Perjalanan Kisah Kami"
+                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500"
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Judul Seksi Galeri Momen</label>
+                            <input
+                              type="text"
+                              value={demoStudioData.customLabels?.galleryTitle ?? currentDemoBlueprint?.gallerySectionTitle ?? "Our Moments"}
+                              onChange={(e) => {
+                                const customLabels = { ...(demoStudioData.customLabels || {}) };
+                                customLabels.galleryTitle = e.target.value;
+                                setDemoStudioData({ ...demoStudioData, customLabels });
+                              }}
+                              placeholder="Our Moments / Galeri Momen"
+                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Eyebrow / Subjudul Galeri</label>
+                            <input
+                              type="text"
+                              value={demoStudioData.customLabels?.galleryEyebrow ?? currentDemoBlueprint?.gallerySectionEyebrow ?? "Sweet Memories"}
+                              onChange={(e) => {
+                                const customLabels = { ...(demoStudioData.customLabels || {}) };
+                                customLabels.galleryEyebrow = e.target.value;
+                                setDemoStudioData({ ...demoStudioData, customLabels });
+                              }}
+                              placeholder="Sweet Memories / Momen Bahagia"
+                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-gray-700 mb-1">Kutipan / Narasi Pengantar Galeri</label>
+                          <textarea
+                            rows={2}
+                            value={demoStudioData.customLabels?.galleryQuote ?? currentDemoBlueprint?.galleryQuote ?? ""}
+                            onChange={(e) => {
+                              const customLabels = { ...(demoStudioData.customLabels || {}) };
+                              customLabels.galleryQuote = e.target.value;
+                              setDemoStudioData({ ...demoStudioData, customLabels });
+                            }}
+                            placeholder="Kebahagiaan yang terabadikan dalam setiap bingkai cerita kami."
+                            className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 resize-none focus:outline-none focus:border-amber-500"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Sub-Panel 4: Seksi Dress Code & Live Streaming */}
+                      <div className="p-4 bg-gray-50 border border-gray-200 rounded-2xl space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-bold text-gray-900 text-xs uppercase tracking-wider">
+                            4. Teks Dress Code &amp; Live Streaming
+                          </h4>
+                          <span className="text-[10px] font-mono text-gray-400">Dress Code &amp; Streaming</span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Judul Seksi Dress Code</label>
+                            <input
+                              type="text"
+                              value={demoStudioData.customLabels?.dressCodeTitle ?? currentDemoBlueprint?.dressCodeTitle ?? "Dress Code"}
+                              onChange={(e) => {
+                                const customLabels = { ...(demoStudioData.customLabels || {}) };
+                                customLabels.dressCodeTitle = e.target.value;
+                                setDemoStudioData({ ...demoStudioData, customLabels });
+                              }}
+                              placeholder="Dress Code / Aturan Busana"
+                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Eyebrow Dress Code</label>
+                            <input
+                              type="text"
+                              value={demoStudioData.customLabels?.dressCodeEyebrow ?? currentDemoBlueprint?.dressCodeEyebrow ?? "Attire Guide"}
+                              onChange={(e) => {
+                                const customLabels = { ...(demoStudioData.customLabels || {}) };
+                                customLabels.dressCodeEyebrow = e.target.value;
+                                setDemoStudioData({ ...demoStudioData, customLabels });
+                              }}
+                              placeholder="Attire Guide / Panduan Busana"
+                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-gray-700 mb-1">Deskripsi Panduan Dress Code</label>
+                          <textarea
+                            rows={2}
+                            value={demoStudioData.customLabels?.dressCodeSubtitle ?? currentDemoBlueprint?.dressCodeSubtitle ?? ""}
+                            onChange={(e) => {
+                              const customLabels = { ...(demoStudioData.customLabels || {}) };
+                              customLabels.dressCodeSubtitle = e.target.value;
+                              setDemoStudioData({ ...demoStudioData, customLabels });
+                            }}
+                            placeholder="Nuansa pakaian yang disarankan untuk keharmonisan momen istimewa kami"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 resize-none focus:outline-none focus:border-amber-500"
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-gray-200">
+                          <div>
+                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Judul Seksi Live Streaming</label>
+                            <input
+                              type="text"
+                              value={demoStudioData.customLabels?.streamingTitle ?? currentDemoBlueprint?.streamingTitle ?? "Live Streaming"}
+                              onChange={(e) => {
+                                const customLabels = { ...(demoStudioData.customLabels || {}) };
+                                customLabels.streamingTitle = e.target.value;
+                                setDemoStudioData({ ...demoStudioData, customLabels });
+                              }}
+                              placeholder="Live Streaming"
+                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Eyebrow Live Streaming</label>
+                            <input
+                              type="text"
+                              value={demoStudioData.customLabels?.streamingEyebrow ?? currentDemoBlueprint?.streamingEyebrow ?? "Virtual Attendance"}
+                              onChange={(e) => {
+                                const customLabels = { ...(demoStudioData.customLabels || {}) };
+                                customLabels.streamingEyebrow = e.target.value;
+                                setDemoStudioData({ ...demoStudioData, customLabels });
+                              }}
+                              placeholder="Virtual Attendance / Siaran Langsung"
+                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-gray-700 mb-1">Deskripsi Pengantar Live Streaming</label>
+                          <textarea
+                            rows={2}
+                            value={demoStudioData.customLabels?.streamingSubtitle ?? currentDemoBlueprint?.streamingSubtitle ?? ""}
+                            onChange={(e) => {
+                              const customLabels = { ...(demoStudioData.customLabels || {}) };
+                              customLabels.streamingSubtitle = e.target.value;
+                              setDemoStudioData({ ...demoStudioData, customLabels });
+                            }}
+                            placeholder="Bagi keluarga dan sahabat yang berhalangan hadir secara langsung, Anda dapat menyaksikan momen bahagia kami secara virtual."
+                            className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 resize-none focus:outline-none focus:border-amber-500"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Sub-Panel 5: Seksi Tanda Kasih & Turut Mengundang */}
+                      <div className="p-4 bg-gray-50 border border-gray-200 rounded-2xl space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-bold text-gray-900 text-xs uppercase tracking-wider">
+                            5. Teks Tanda Kasih &amp; Turut Mengundang
+                          </h4>
+                          <span className="text-[10px] font-mono text-gray-400">Gifts &amp; Family</span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Judul Seksi Tanda Kasih</label>
+                            <input
+                              type="text"
+                              value={demoStudioData.customLabels?.giftTitle ?? currentDemoBlueprint?.giftSectionTitle ?? "Tanda Kasih"}
+                              onChange={(e) => {
+                                const customLabels = { ...(demoStudioData.customLabels || {}) };
+                                customLabels.giftTitle = e.target.value;
+                                setDemoStudioData({ ...demoStudioData, customLabels });
+                              }}
+                              placeholder="Tanda Kasih / Wedding Gift"
+                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Eyebrow Tanda Kasih</label>
+                            <input
+                              type="text"
+                              value={demoStudioData.customLabels?.giftEyebrow ?? currentDemoBlueprint?.giftSectionEyebrow ?? "Wedding Gift"}
+                              onChange={(e) => {
+                                const customLabels = { ...(demoStudioData.customLabels || {}) };
+                                customLabels.giftEyebrow = e.target.value;
+                                setDemoStudioData({ ...demoStudioData, customLabels });
+                              }}
+                              placeholder="Wedding Gift / Kirim Hadiah"
+                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-gray-700 mb-1">Deskripsi Pengantar Tanda Kasih</label>
+                          <textarea
+                            rows={2}
+                            value={demoStudioData.customLabels?.giftDesc ?? currentDemoBlueprint?.giftSectionDesc ?? ""}
+                            onChange={(e) => {
+                              const customLabels = { ...(demoStudioData.customLabels || {}) };
+                              customLabels.giftDesc = e.target.value;
+                              setDemoStudioData({ ...demoStudioData, customLabels });
+                            }}
+                            placeholder="Doa restu Anda adalah hadiah terindah bagi kami..."
+                            className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 resize-none focus:outline-none focus:border-amber-500"
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-gray-200">
+                          <div>
+                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Judul Turut Mengundang</label>
+                            <input
+                              type="text"
+                              value={demoStudioData.customLabels?.turutMengundangTitle ?? currentDemoBlueprint?.turutMengundangTitle ?? "Turut Mengundang"}
+                              onChange={(e) => {
+                                const customLabels = { ...(demoStudioData.customLabels || {}) };
+                                customLabels.turutMengundangTitle = e.target.value;
+                                setDemoStudioData({ ...demoStudioData, customLabels });
+                              }}
+                              placeholder="Turut Mengundang"
+                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Eyebrow Turut Mengundang</label>
+                            <input
+                              type="text"
+                              value={demoStudioData.customLabels?.turutMengundangEyebrow ?? currentDemoBlueprint?.turutMengundangEyebrow ?? "Hormat Kami"}
+                              onChange={(e) => {
+                                const customLabels = { ...(demoStudioData.customLabels || {}) };
+                                customLabels.turutMengundangEyebrow = e.target.value;
+                                setDemoStudioData({ ...demoStudioData, customLabels });
+                              }}
+                              placeholder="Hormat Kami"
+                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Subjudul Turut Mengundang</label>
+                            <input
+                              type="text"
+                              value={demoStudioData.customLabels?.turutMengundangSubtitle ?? currentDemoBlueprint?.turutMengundangSubtitle ?? "Keluarga Besar"}
+                              onChange={(e) => {
+                                const customLabels = { ...(demoStudioData.customLabels || {}) };
+                                customLabels.turutMengundangSubtitle = e.target.value;
+                                setDemoStudioData({ ...demoStudioData, customLabels });
+                              }}
+                              placeholder="Keluarga Besar"
+                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Sub-Panel 6: Doa Penutup, RSVP & Ucapan */}
+                      <div className="p-4 bg-gray-50 border border-gray-200 rounded-2xl space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-bold text-gray-900 text-xs uppercase tracking-wider">
+                            6. Doa Penutup, Ucapan &amp; RSVP
+                          </h4>
+                          <span className="text-[10px] font-mono text-gray-400">Closing &amp; Wishes</span>
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-gray-700 mb-1">Kutipan Doa / Narasi Penutup</label>
+                          <textarea
+                            rows={2}
+                            value={demoStudioData.closingQuote ?? currentDemoBlueprint?.closingQuote ?? ""}
+                            onChange={(e) => setDemoStudioData({ ...demoStudioData, closingQuote: e.target.value })}
+                            placeholder="Merupakan suatu kehormatan dan kebahagiaan bagi kami..."
+                            className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 resize-none focus:outline-none focus:border-amber-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-gray-700 mb-1">Salam Penutup / Tanda Hormat Keluarga</label>
+                          <input
+                            type="text"
+                            value={demoStudioData.closingSub ?? currentDemoBlueprint?.closingSub ?? ""}
+                            onChange={(e) => setDemoStudioData({ ...demoStudioData, closingSub: e.target.value })}
+                            placeholder="Salam hangat dari keluarga besar..."
+                            className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500"
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Judul Seksi RSVP</label>
+                            <input
+                              type="text"
+                              value={demoStudioData.customLabels?.rsvpTitle ?? currentDemoBlueprint?.rsvpTitle ?? "Konfirmasi Kehadiran & Doa"}
+                              onChange={(e) => {
+                                const customLabels = { ...(demoStudioData.customLabels || {}) };
+                                customLabels.rsvpTitle = e.target.value;
+                                setDemoStudioData({ ...demoStudioData, customLabels });
+                              }}
+                              placeholder="RSVP & Doa"
+                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Label Tombol RSVP</label>
+                            <input
+                              type="text"
+                              value={demoStudioData.customLabels?.rsvpBtnText ?? currentDemoBlueprint?.rsvpBtnText ?? "Kirim Konfirmasi Kehadiran"}
+                              onChange={(e) => {
+                                const customLabels = { ...(demoStudioData.customLabels || {}) };
+                                customLabels.rsvpBtnText = e.target.value;
+                                setDemoStudioData({ ...demoStudioData, customLabels });
+                              }}
+                              placeholder="Kirim Konfirmasi Kehadiran"
+                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500"
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Judul Seksi Ucapan</label>
+                            <input
+                              type="text"
+                              value={demoStudioData.customLabels?.wishesTitle ?? currentDemoBlueprint?.wishesSectionTitle ?? "Ucapan & Doa Restu"}
+                              onChange={(e) => {
+                                const customLabels = { ...(demoStudioData.customLabels || {}) };
+                                customLabels.wishesTitle = e.target.value;
+                                setDemoStudioData({ ...demoStudioData, customLabels });
+                              }}
+                              placeholder="Ucapan & Doa Restu"
+                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Deskripsi Pengantar Ucapan</label>
+                            <input
+                              type="text"
+                              value={demoStudioData.customLabels?.wishesSub ?? currentDemoBlueprint?.wishesSectionSub ?? ""}
+                              onChange={(e) => {
+                                const customLabels = { ...(demoStudioData.customLabels || {}) };
+                                customLabels.wishesSub = e.target.value;
+                                setDemoStudioData({ ...demoStudioData, customLabels });
+                              }}
+                              placeholder="Berikan doa & restu untuk kedua mempelai"
+                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500"
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>

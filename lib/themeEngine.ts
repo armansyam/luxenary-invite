@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getGoogleDriveFolderPhotos } from "@/lib/driveHelper";
 import { escapeHtml } from "@/lib/escapeHtml";
+import { getThemeBlueprint } from "@/lib/themeDefaults";
 
 function nl2br(str: string): string {
   if (!str) return "";
@@ -197,8 +198,49 @@ export async function composeTemplateData(invitationId: string) {
   const brideNickname = (inv.brideNickname && inv.brideNickname.trim()) || (inv.brideName && inv.brideName.trim()) || "Wanita";
   const groomDisplayName = (inv.groomName && inv.groomName.trim()) || (inv.groomNickname && inv.groomNickname.trim()) || groomName;
   const brideDisplayName = (inv.brideName && inv.brideName.trim()) || (inv.brideNickname && inv.brideNickname.trim()) || brideName;
-  const groomParents = (inv.groomParents && inv.groomParents.trim()) || "";
-  const brideParents = (inv.brideParents && inv.brideParents.trim()) || "";
+  const rawGroomFather = ((inv as any).groomFather && (inv as any).groomFather.trim()) || "";
+  const rawGroomMother = ((inv as any).groomMother && (inv as any).groomMother.trim()) || "";
+  const rawBrideFather = ((inv as any).brideFather && (inv as any).brideFather.trim()) || "";
+  const rawBrideMother = ((inv as any).brideMother && (inv as any).brideMother.trim()) || "";
+
+  let groomFather = rawGroomFather;
+  let groomMother = rawGroomMother;
+  let brideFather = rawBrideFather;
+  let brideMother = rawBrideMother;
+
+  // Intelligent fallback: If father/mother not separated yet, parse from combined legacy string
+  if (!groomFather && !groomMother && inv.groomParents) {
+    const cleaned = inv.groomParents.replace(/^(putra|anak|putri|son|daughter)\s+(ke-[0-9a-z]+|pertama|kedua|ketiga|keempat|kelima|sulung|bungsu)?\s*(dari|of|saking)?\s*/i, "").trim();
+    const splitIdx = cleaned.search(/\s+(&|dan|and)\s+/i);
+    if (splitIdx !== -1) {
+      groomFather = cleaned.substring(0, splitIdx).trim();
+      groomMother = cleaned.substring(splitIdx).trim().replace(/^(&|dan|and)\s*/i, "").trim();
+    } else {
+      groomFather = cleaned;
+    }
+  }
+
+  if (!brideFather && !brideMother && inv.brideParents) {
+    const cleaned = inv.brideParents.replace(/^(putra|anak|putri|son|daughter)\s+(ke-[0-9a-z]+|pertama|kedua|ketiga|keempat|kelima|sulung|bungsu)?\s*(dari|of|saking)?\s*/i, "").trim();
+    const splitIdx = cleaned.search(/\s+(&|dan|and)\s+/i);
+    if (splitIdx !== -1) {
+      brideFather = cleaned.substring(0, splitIdx).trim();
+      brideMother = cleaned.substring(splitIdx).trim().replace(/^(&|dan|and)\s*/i, "").trim();
+    } else {
+      brideFather = cleaned;
+    }
+  }
+
+  // Dynamic automatic parents fallback if groomParents/brideParents not explicitly given
+  const groomAutoParents = (groomFather || groomMother)
+    ? `Putra dari ${groomFather}${groomFather && groomMother ? " & " : ""}${groomMother}`
+    : "";
+  const brideAutoParents = (brideFather || brideMother)
+    ? `Putri dari ${brideFather}${brideFather && brideMother ? " & " : ""}${brideMother}`
+    : "";
+
+  const groomParents = (inv.groomParents && inv.groomParents.trim()) || groomAutoParents;
+  const brideParents = (inv.brideParents && inv.brideParents.trim()) || brideAutoParents;
   const groomInstagram = (inv.groomInstagram || "").trim().replace(/^@+/, "");
   const brideInstagram = (inv.brideInstagram || "").trim().replace(/^@+/, "");
 
@@ -240,6 +282,12 @@ export async function composeTemplateData(invitationId: string) {
   const secondRoleLabel = isGroomFirst ? "Mempelai Wanita" : "Mempelai Pria";
   const firstParentLabel = isGroomFirst ? "Putra Dari" : "Putri Dari";
   const secondParentLabel = isGroomFirst ? "Putri Dari" : "Putra Dari";
+  const firstParentPrefix = isGroomFirst ? "Putra dari" : "Putri dari";
+  const secondParentPrefix = isGroomFirst ? "Putri dari" : "Putra dari";
+  const firstFather = isGroomFirst ? groomFather : brideFather;
+  const firstMother = isGroomFirst ? groomMother : brideMother;
+  const secondFather = isGroomFirst ? brideFather : groomFather;
+  const secondMother = isGroomFirst ? brideMother : groomMother;
   const firstParents = isGroomFirst ? groomParents : brideParents;
   const secondParents = isGroomFirst ? brideParents : groomParents;
   const firstInstagram = isGroomFirst ? groomInstagram : brideInstagram;
@@ -342,32 +390,73 @@ export async function composeTemplateData(invitationId: string) {
     }
   }
 
-  // Custom Labels & Section Titles Override (with Zero-Hardcode Fallbacks)
+  // Theme Blueprint Defaults Resolution
+  const blueprint = getThemeBlueprint(inv.themeId || "kalandra");
+
+  // Custom Labels & Section Titles Override (with Theme Blueprint Fallbacks)
   const customLabels = {
-    openBtn: "Buka Undangan",
-    coverSubtitle: "Tanpa mengurangi rasa hormat, kami mengundang Anda untuk menghadiri acara pernikahan kami.",
-    rsvpTitle: "Konfirmasi Kehadiran & Doa",
+    openBtn: blueprint.openBtn,
+    coverSubtitle: blueprint.coverSubtitle,
+    rsvpTitle: blueprint.rsvpTitle,
+    quoteTitle: blueprint.quoteSectionTitle,
+    quoteEyebrow: blueprint.quoteSectionEyebrow,
+    coupleTitle: blueprint.coupleSectionTitle,
+    coupleEyebrow: blueprint.coupleSectionEyebrow || "THE COUPLE",
+    coupleSub: blueprint.coupleSectionSub,
+    eventsTitle: blueprint.eventsSectionTitle,
+    eventsSub: blueprint.eventsSectionSub,
+    storyTitle: blueprint.storySectionTitle,
+    galleryTitle: blueprint.gallerySectionTitle,
+    galleryEyebrow: blueprint.gallerySectionEyebrow,
+    galleryQuote: blueprint.galleryQuote,
+    giftTitle: blueprint.giftSectionTitle,
+    giftEyebrow: blueprint.giftSectionEyebrow,
+    giftDesc: blueprint.giftSectionDesc,
+    wishesTitle: blueprint.wishesSectionTitle,
+    wishesSub: blueprint.wishesSectionSub,
+    storyEyebrow: blueprint.storySectionEyebrow || "OUR JOURNEY",
+    dressCodeTitle: blueprint.dressCodeTitle || "Dress Code",
+    dressCodeEyebrow: blueprint.dressCodeEyebrow || "A Guide To",
+    dressCodeSubtitle: blueprint.dressCodeSubtitle || "Kami mengundang tamu undangan untuk mengenakan palet warna berikut:",
+    streamingTitle: blueprint.streamingTitle || "Live Streaming",
+    streamingEyebrow: blueprint.streamingEyebrow || "Virtual Ceremony",
+    streamingSubtitle: blueprint.streamingSubtitle || "Bagi keluarga & sahabat yang menyaksikan dari jauh, bergabunglah melalui siaran daring:",
+    turutMengundangTitle: blueprint.turutMengundangTitle || "Turut Mengundang",
+    turutMengundangEyebrow: blueprint.turutMengundangEyebrow || "Keluarga Besar",
+    turutMengundangSubtitle: blueprint.turutMengundangSubtitle || "Keluarga Besar & Kerabat yang turut berbahagia:",
+    rsvpBtnText: blueprint.rsvpBtnText || "Kirim Konfirmasi & Doa",
     ...(featureSettings.customLabels || {}),
   };
-  const quoteSectionTitle = customLabels.quoteTitle || featureSettings.quoteTitle || "Pappaseng & Doa";
-  const quoteSectionEyebrow = customLabels.quoteEyebrow || "WALIMATUL 'URSY";
-  const coupleSectionEyebrow = customLabels.coupleEyebrow || "THE COUPLE";
-  const coupleSectionTitle = customLabels.coupleTitle || "Mempelai";
-  const coupleSectionSub = customLabels.coupleSub || "Dua Hati Bersatu Dalam Janji Suci";
-  const eventsSectionTitle = customLabels.eventsTitle || "Rangkaian Acara";
-  const eventsSectionSub = customLabels.eventsSub || "Waktu & Tempat Pelaksanaan";
-  const storySectionTitle = customLabels.storyTitle || "Kisah Cinta";
-  const gallerySectionTitle = customLabels.galleryTitle || "Galeri Momen";
-  const gallerySectionEyebrow = customLabels.galleryEyebrow || "GALLERY";
-  const galleryQuote = customLabels.galleryQuote || "And I'd choose you; in a hundred lifetimes, in a hundred worlds, in any version of reality, I'd find you and I'd choose you.";
-  const giftSectionTitle = customLabels.giftTitle || "Tanda Kasih";
-  const giftSectionEyebrow = customLabels.giftEyebrow || "WEDDING GIFT";
-  const giftSectionDesc = customLabels.giftDesc || "Doa restu Anda merupakan karunia yang sangat berarti bagi kami. Dan jika memberi adalah ungkapan tanda kasih Anda, Anda dapat memberi kado secara cashless:";
-  const wishesSectionTitle = customLabels.wishesTitle || "Ucapan & Doa Restu";
-  const wishesSectionSub = customLabels.wishesSub || "Kirimkan Pesan Manis Untuk Mempelai";
+  const quoteSectionTitle = customLabels.quoteTitle || featureSettings.quoteTitle || blueprint.quoteSectionTitle;
+  const quoteSectionEyebrow = customLabels.quoteEyebrow || blueprint.quoteSectionEyebrow;
+  const coupleSectionEyebrow = customLabels.coupleEyebrow || blueprint.coupleSectionEyebrow || "THE COUPLE";
+  const coupleSectionTitle = customLabels.coupleTitle || blueprint.coupleSectionTitle;
+  const coupleSectionSub = customLabels.coupleSub || blueprint.coupleSectionSub;
+  const eventsSectionTitle = customLabels.eventsTitle || blueprint.eventsSectionTitle;
+  const eventsSectionSub = customLabels.eventsSub || blueprint.eventsSectionSub;
+  const storySectionTitle = customLabels.storyTitle || blueprint.storySectionTitle;
+  const storySectionEyebrow = customLabels.storyEyebrow || blueprint.storySectionEyebrow || "OUR JOURNEY";
+  const gallerySectionTitle = customLabels.galleryTitle || blueprint.gallerySectionTitle;
+  const gallerySectionEyebrow = customLabels.galleryEyebrow || blueprint.gallerySectionEyebrow;
+  const galleryQuote = customLabels.galleryQuote || blueprint.galleryQuote;
+  const dressCodeTitle = customLabels.dressCodeTitle || blueprint.dressCodeTitle || "Dress Code";
+  const dressCodeEyebrow = customLabels.dressCodeEyebrow || blueprint.dressCodeEyebrow || "A Guide To";
+  const dressCodeSubtitle = customLabels.dressCodeSubtitle || blueprint.dressCodeSubtitle || "Kami mengundang tamu undangan untuk mengenakan palet warna berikut:";
+  const streamingTitle = customLabels.streamingTitle || blueprint.streamingTitle || "Live Streaming";
+  const streamingEyebrow = customLabels.streamingEyebrow || blueprint.streamingEyebrow || "Virtual Ceremony";
+  const streamingSubtitle = customLabels.streamingSubtitle || blueprint.streamingSubtitle || "Bagi keluarga & sahabat yang menyaksikan dari jauh, bergabunglah melalui siaran daring:";
+  const turutMengundangTitle = customLabels.turutMengundangTitle || blueprint.turutMengundangTitle || "Turut Mengundang";
+  const turutMengundangEyebrow = customLabels.turutMengundangEyebrow || blueprint.turutMengundangEyebrow || "Keluarga Besar";
+  const turutMengundangSubtitle = customLabels.turutMengundangSubtitle || blueprint.turutMengundangSubtitle || "Keluarga Besar & Kerabat yang turut berbahagia:";
+  const giftSectionTitle = customLabels.giftTitle || blueprint.giftSectionTitle;
+  const giftSectionEyebrow = customLabels.giftEyebrow || blueprint.giftSectionEyebrow;
+  const giftSectionDesc = customLabels.giftDesc || blueprint.giftSectionDesc;
+  const wishesSectionTitle = customLabels.wishesTitle || blueprint.wishesSectionTitle;
+  const wishesSectionSub = customLabels.wishesSub || blueprint.wishesSectionSub;
 
   // 2. Dynamic Journey of Love / Story Module
   let storySectionHtml = "";
+  let storyItemsHtml = "";
   if (showStory) {
     const rawStories = Array.isArray(loveStories) && loveStories.length > 0
       ? loveStories
@@ -376,16 +465,17 @@ export async function composeTemplateData(invitationId: string) {
         { title: "Lamaran Resmi", date: "2025", content: "Momen sakral saat kedua keluarga besar saling bersilaturahmi dan bersepakat." },
       ];
 
-    const storyItemsHtml = rawStories.map((st: any, idx: number) => {
+    storyItemsHtml = rawStories.map((st: any, idx: number) => {
       const numWord = NUMBER_WORDS[idx] || String(idx + 1);
       let heading = st.title || "";
       if (!heading.toLowerCase().startsWith("chapter")) {
         heading = `Chapter ${numWord}: ${heading}`;
       }
       return `
-        <div class="journey-chapter-item">
-          <h4 class="chapter-heading">${heading}</h4>
-          <p class="chapter-desc">${nl2br(st.content || st.description || "")}</p>
+        <div class="story-chapter-block journey-chapter-item">
+          <span class="sc-label chapter-eyebrow">CHAPTER ${numWord}</span>
+          <h4 class="sc-title chapter-heading serif">${st.title || heading}</h4>
+          <p class="sc-desc chapter-desc">${nl2br(st.content || st.description || "")}</p>
         </div>
       `;
     }).join("");
@@ -397,6 +487,7 @@ export async function composeTemplateData(invitationId: string) {
             <div class="jp-item"><img src="${firstPhotoUrl}" alt="Journey Preview 1" loading="lazy"></div>
             <div class="jp-item"><img src="${secondPhotoUrl}" alt="Journey Preview 2" loading="lazy"></div>
           </div>
+          <span class="sec-eyebrow" data-lux-field="customLabels.storyEyebrow" style="text-align:center;">${storySectionEyebrow}</span>
           <h2 class="journey-title serif" data-lux-field="customLabels.storyTitle">${storySectionTitle}</h2>
           <div class="journey-chapters">
             ${storyItemsHtml}
@@ -950,9 +1041,9 @@ export async function composeTemplateData(invitationId: string) {
 
     dressCodeHtml = `
       <section class="sec-flow" id="dresscode">
-        <span class="sec-eyebrow">A GUIDE TO</span>
-        <h2 class="sec-main-title serif">DRESS CODES</h2>
-        <p class="sec-sub">Kami mengundang tamu undangan untuk mengenakan palet warna berikut untuk keseragaman foto:</p>
+        <span class="sec-eyebrow" data-lux-field="customLabels.dressCodeEyebrow">${dressCodeEyebrow}</span>
+        <h2 class="sec-main-title serif" data-lux-field="customLabels.dressCodeTitle">${dressCodeTitle}</h2>
+        <p class="sec-sub" data-lux-field="customLabels.dressCodeSubtitle">${dressCodeSubtitle}</p>
         <div style="display:flex; justify-content:center; gap:12px; margin: 1.5rem 0;">${colorBadges}</div>
         ${dressCodeNote ? `<p style="margin:0; font-size:0.8rem; color:rgba(255,255,255,0.75); line-height:1.5;">${escapeHtml(dressCodeNote)}</p>` : ""}
       </section>
@@ -968,10 +1059,10 @@ export async function composeTemplateData(invitationId: string) {
     const liveTimeStr = rawEventsList[0]?.time ? ` • ${rawEventsList[0].time}` : "";
     liveStreamingHtml = `
       <section class="sec-flow" id="live">
-        <span class="sec-eyebrow">VIRTUAL CEREMONY</span>
-        <h2 class="sec-main-title serif">LIVE WEDDING</h2>
+        <span class="sec-eyebrow" data-lux-field="customLabels.streamingEyebrow">${streamingEyebrow}</span>
+        <h2 class="sec-main-title serif" data-lux-field="customLabels.streamingTitle">${streamingTitle}</h2>
         <p class="sec-sub">${weddingDate}${liveTimeStr}</p>
-        <p class="sec-sub" style="margin-top:0.4rem;">Bagi keluarga &amp; sahabat yang berhalangan hadir langsung, prosesi pernikahan dapat disaksikan melalui siaran virtual:</p>
+        <p class="sec-sub" style="margin-top:0.4rem;" data-lux-field="customLabels.streamingSubtitle">${streamingSubtitle}</p>
         <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:0.8rem; margin-top:1.5rem;">
           ${liveStreamYoutubeUrl ? `<a href="${liveStreamYoutubeUrl}" target="_blank" class="btn-map-outline">YOUTUBE LIVE</a>` : ""}
           ${liveStreamInstagramUrl ? `<a href="${liveStreamInstagramUrl}" target="_blank" class="btn-map-outline">INSTAGRAM LIVE</a>` : ""}
@@ -1002,9 +1093,9 @@ export async function composeTemplateData(invitationId: string) {
     const lines = turutMengundangList.split("\n").filter((l: string) => l.trim() !== "");
     turutMengundangHtml = `
       <section class="sec-flow" id="turut-mengundang">
-        <span class="sec-eyebrow">KELUARGA BESAR</span>
-        <h2 class="sec-main-title serif">TURUT MENGUNDANG</h2>
-        <p class="sec-sub">Keluarga Besar &amp; Kerabat yang turut berbahagia:</p>
+        <span class="sec-eyebrow" data-lux-field="customLabels.turutMengundangEyebrow">${turutMengundangEyebrow}</span>
+        <h2 class="sec-main-title serif" data-lux-field="customLabels.turutMengundangTitle">${turutMengundangTitle}</h2>
+        <p class="sec-sub" data-lux-field="customLabels.turutMengundangSubtitle">${turutMengundangSubtitle}</p>
         <div style="display:flex; flex-direction:column; gap:0.6rem; margin-top:1.5rem; font-size:0.88rem; color:rgba(255,255,255,0.85);">
           ${lines.map((line: string) => `<p style="margin:0; padding:0.4rem 0; border-bottom:1px dashed rgba(255,255,255,0.12);">${escapeHtml(line.trim())}</p>`).join("")}
         </div>
@@ -1033,10 +1124,10 @@ export async function composeTemplateData(invitationId: string) {
 
     giftSectionHtml = `
       <section class="sec-flow" id="gift">
-        <span class="sec-eyebrow">WEDDING GIFT</span>
-        <h2 class="sec-main-title serif">TANDA KASIH</h2>
-        <p class="sec-sub">
-          Doa restu Anda merupakan karunia yang sangat berarti bagi kami. Bagi Anda yang ingin memberikan tanda kasih:
+        <span class="sec-eyebrow" data-lux-field="customLabels.giftEyebrow">${giftSectionEyebrow}</span>
+        <h2 class="sec-main-title serif" data-lux-field="customLabels.giftTitle">${giftSectionTitle}</h2>
+        <p class="sec-sub" data-lux-field="customLabels.giftDesc">
+          ${giftSectionDesc}
         </p>
 
         <div class="gift-tabs">
@@ -1519,6 +1610,12 @@ export async function composeTemplateData(invitationId: string) {
     secondRoleLabel,
     firstParentLabel,
     secondParentLabel,
+    firstParentPrefix,
+    secondParentPrefix,
+    firstFather,
+    firstMother,
+    secondFather,
+    secondMother,
     firstParents,
     secondParents,
     firstInstagram,
@@ -1535,6 +1632,10 @@ export async function composeTemplateData(invitationId: string) {
     brideDisplayName,
     groomParents,
     brideParents,
+    groomFather,
+    groomMother,
+    brideFather,
+    brideMother,
     groomInstagram,
     brideInstagram,
     groomPhotoUrl: groomPhoto,
@@ -1557,8 +1658,10 @@ export async function composeTemplateData(invitationId: string) {
     audioUrl: finalAudioUrl,
 
     // Quotes & Dates
-    openingQuote: inv.openingQuote ? nl2br(inv.openingQuote) : "Dan di antara tanda-tanda (kebesaran)-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri, agar kamu cenderung dan merasa tenteram kepadanya, dan Dia menjadikan diantaramu rasa kasih dan sayang.",
-    openingQuoteRef: inv.openingQuoteRef || "QS. AR-RUM : 21",
+    openingQuote: inv.openingQuote ? nl2br(inv.openingQuote) : nl2br(blueprint.openingQuote),
+    openingQuoteRef: inv.openingQuoteRef || blueprint.openingQuoteRef,
+    closingQuote: (inv as any).closingQuote ? nl2br((inv as any).closingQuote) : nl2br(blueprint.closingQuote),
+    closingSub: (inv as any).closingSub || blueprint.closingSub,
     targetDate,
     weddingDate,
     weddingDateDay,
@@ -1569,6 +1672,7 @@ export async function composeTemplateData(invitationId: string) {
     // Dynamic Section Blocks (Chronological Sequence)
     eventDataHtml: eventsHtml,
     storySectionHtml,
+    storyItemsHtml,
     qrAccessSectionHtml,
     dressCodeHtml,
     liveStreamingHtml,
@@ -1585,6 +1689,18 @@ export async function composeTemplateData(invitationId: string) {
     qrDockButtonHtml: showQrCheckin ? `<button onclick="openModal()" class="dock-a" style="background:none;border:none;cursor:pointer;"><svg class="dock-ico" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg><span>Ticket</span></button>` : "",
     qrSideNavButtonHtml: showQrCheckin ? `<a href="javascript:void(0)" class="side-nav-link" onclick="openModal(); toggleSideNav();">Souvenir Card</a>` : "",
     showQrCheckin,
+
+    // Dynamic Section Flags (Theme Freedom & Conditional Blocks)
+    showStory,
+    showGallery,
+    showGift,
+    showDressCode: showDresscode,
+    showDresscode,
+    showStreaming: showLiveStream,
+    showLiveStream,
+    showWeddingFilter: showFilter,
+    showFilter,
+    showTurutMengundang,
 
     // Custom Section Titles & Labels
     quoteSectionTitle,
