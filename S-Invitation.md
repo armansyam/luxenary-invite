@@ -16,9 +16,10 @@ Sistem template undangan menggunakan arsitektur HTML multi-layer mandiri dengan 
    - Full-bleed vertical photo slides 100vh untuk Pengantin Pria & Wanita.
    - Live Countdown, Google Calendar sync, dan floating glass dock.
 2. **Valente (`themes/premium/valente.html`)**
-   - Strict 100vh CSS Scroll Snap per seksi halaman penuh (`scroll-snap-type: y mandatory`).
-   - Watermark monogram inisial tipografi *Bodoni Moda* raksasa.
-   - Tata letak editorial majalah mode kelas atas (*haute couture*).
+   - High-fashion editorial spread dengan framing foto portrait 3:4 dan indeks terbitan majalah (`NO. 01 / THE GROOM`, `NO. 02 / THE BRIDE`).
+   - Countdown tipografis minimalis bergaris hairline editorial tanpa box kaku.
+   - Side Navigation Drawer ala daftar isi majalah (*Table of Contents*) bernomor urut dan cover berlabel special issue.
+   - Responsif 100% full-bleed di layar mobile/tablet dan desktop split-screen 460px.
 3. **Aurelia (`themes/premium/aurelia.html`)**
    - Kanvas video sutra bergerak (*Video Canvas Backdrop*) dengan fallback poster.
    - Partikel kelopak bunga melayang lembut (*ambient petals*).
@@ -94,6 +95,21 @@ Seluruh 15 tema fisik master mengimplementasikan standarisasi tata letak split l
    - Seluruh 15 tema mengadopsi mekanisme auto-hide pintar hardware-accelerated (`translate3d` & `opacity`).
    - Saat tamu menggulir ke bawah untuk membaca atau menikmati konten, dock dan tombol musik mengambang meluncur keluar layar secara serentak demi menghadirkan viewport yang 100% bersih dan imersif.
    - Saat tamu menggulir ke atas (delta $\ge$ 12px), berada di posisi paling atas (`scrollTop <= 70px`), mencapai footer, atau menekan menu navigasi, seluruh kontrol mengambang otomatis meluncur masuk kembali dengan transisi lembut (`cubic-bezier(0.16, 1, 0.3, 1)`).
+
+### G. Arsitektur Preloader Hibrida & Anti-Visual Leak Guard
+Sistem mengimplementasikan proteksi pembuka dua tingkat (*Hybrid Preloader Architecture*) untuk mencegah bocornya lapisan isi undangan sebelum aset gambar cover pembuka selesai diunduh:
+1. **Prioritas Preloader Master (`id="themePreloader"`):**
+   - Jika tema master memiliki elemen berkontrak `id="themePreloader"`, engine **TIDAK** menyuntikkan preloader bawaan, memberikan keleluasaan penuh bagi desainer untuk menciptakan animasi dan ornamen khas tema.
+2. **Injeksi Preloader Universal (Fallback Mewah Bawaan Engine):**
+   - Jika tema tidak memiliki `id="themePreloader"`, engine otomatis menyuntikkan Universal Preloader berlatar obsidian (`#0c0c0e`, z-index 999999) dengan inisial monogram tipografi minimalis (*Native Luxury Serif Didot/Georgia*) yang melekat sejak milidetik ke-0 (`{{firstInitial}} & {{secondInitial}}`), nama panggilan mempelai (`{{firstName}} & {{secondName}}`), dan bilah progres berkilau (*golden shimmer bar*) tanpa ornamen lingkaran yang ramai.
+3. **Solid Backdrop Guard:**
+   - Seluruh selektor cover pembuka diproteksi dengan `background-color: #0c0c0e !important;` sehingga peramban tidak pernah menampilkan latar tembus pandang ke seksi di bawahnya.
+4. **Universal Client Dismissal Driver (`initPreloaderGuard`):**
+   - Runtime klien di `lib/renderTemplate.ts` menghitung durasi sejak first paint. Begitu gambar cover selesai di-decode (`landingCoverUrl`), preloader ditahan hingga genap memenuhi **durasi minimal 1.2 detik (1200ms)** agar tamu sempat menikmati monogram dan kilau emas tanpa terburu-buru.
+   - Setelah durasi minimal tercapai, preloader memudar mulus via `.preloader-hidden` (transisi opacity 600ms) dan dicopot dari DOM (`remove()`).
+   - Dilengkapi *Safety Timeout 2.5 Detik (2500ms)* agar pengunjung dengan koneksi lambat tidak pernah terhenti di layar preloader.
+5. **Keamanan 100% Publikasi (Baked Standalone Safe):**
+   - Saat undangan diterbitkan melalui `staticPublisher.ts`, seluruh struktur preloader, CSS inline, dan runtime dismissal di-bake secara permanen ke dalam file HTML mandiri (`data/published/ids/{id}.html`), menjamin performa instan tanpa flicker di semua platform hosting.
 
 ---
 
@@ -268,20 +284,18 @@ Siklus hidup undangan diatur secara otomatis oleh cron job (`POST /api/cron/clea
 
 ---
 
-## 7. Orkestrasi Multi-Payment Gateway & Dynamic Fee
+## 7. Orkestrasi Multi-Payment Gateway 2-Arah & Dynamic Fee
 
-Platform mendukung 5 payment gateway terintegrasi dengan pergantian instan 1-klik dari dashboard Admin (`active_payment_gateway`):
+Platform mendukung arsitektur payment gateway 2-arah (*two-way handshake*) terintegrasi dengan pergantian instan 1-klik dari dashboard Admin (`active_payment_gateway`):
 
-1. **Gateway Terintegrasi**:
-   - **iPaymu** (QRIS, VA, E-Wallet)
-   - **Duitku** (QRIS, VA, E-Wallet)
-   - **Midtrans** (Snap QRIS, VA, GoPay)
-   - **TriPay** (Closed Payment QRIS, VA)
-   - **Xendit** (Invoice QRIS, VA, E-Wallet)
+1. **Gateway 2-Arah Terintegrasi**:
+   - **Midtrans** (Core API In-App QRIS, GoPay, VA Multi-Bank, Snap Fallback, pembatalan instan via `/v2/{orderId}/cancel`)
+   - **Xendit** (Invoice QRIS, VA Multi-Bank, E-Wallet, pembatalan instan via `/v2/invoices/{invoiceId}/expire`)
    - **Transfer Bank Manual** (Verifikasi struk transfer manual oleh Admin)
-2. **Peralihan Gateway Bersih (*Cancel Before Re-Init*)**:
+   - *Penghapusan Gateway 1-Arah:* Seluruh gateway 1-arah (iPaymu, Duitku, Tripay) telah dieliminasi dari arsitektur sistem karena ketiadaan API pembatalan publik. Ketiadaan fungsi pembatalan 2-arah memicu celah fatal *ghost payment* di mana QRIS/VA tetap aktif di bank setelah order dibatalkan di aplikasi.
+2. **Two-Way Cancellation Handshake**:
    - Order melacak `gatewayId` dan `gatewayTxId`.
-   - Jika klien beralih gateway sebelum membayar, transaksi lama di-cancel pada gateway asal sebelum transaksi baru diinisialisasi.
+   - Saat klien membatalkan tagihan, mengubah paket sebelum bayar, atau waktu kedaluwarsa habis, sistem secara proaktif memanggil API pembatalan resmi ke gateway aktif (Midtrans `/v2/cancel` atau Xendit `/v2/invoices/.../expire`) agar QRIS di jaringan perbankan (ASPI / BI) langsung hangus seketika.
 3. **Perhitungan Fee Dinamis (Zero Hardcode)**:
    - Parameter `payment_fee_payer` (`BUYER` vs `MERCHANT`).
    - Parameter `payment_gateway_fee_percent` (misal `0.7%`).
@@ -290,6 +304,9 @@ Platform mendukung 5 payment gateway terintegrasi dengan pergantian instan 1-kli
    - Durasi QRIS dibaca dari `payment_expiry_minutes` (default 60 menit).
 5. **Kebijakan Tagihan Tunggal & Proteksi Tagihan Usang (*Superseded Guard*)**:
    - Pola *Single Active Order*: Klien yang mengganti paket atau mengulang transaksi sebelum lunas otomatis me-reuse/meng-update order yang ada (`PENDING` atau `FAILED`) sehingga zero order duplikat di database.
+   - *Persistent URL State & QRIS Hydration*: Kasir checkout mengikat parameter `?order=ID` pada URL via `history.replaceState`. Muat ulang halaman (F5) ribuan kali tetap menampilkan summary pesanan dan countdown QRIS aktif secara instan tanpa mereset ke tombol awal.
+   - *Onboarding Guard (`/packages`)*: Klien dengan order `PENDING` aktif otomatis dicegat dari `/packages` dan dialihkan kembali ke kasir aktifnya (`/checkout?order=ID`), mencegah pembatalan sepihak di Midtrans saat klien sedang melakukan pembayaran.
+   - *Penyimpanan Nyata Database*: Seluruh data order, user, dan sesi pembayaran tersimpan langsung di database PostgreSQL (`orders` table dengan indeks optimal), bukan mock in-memory, sehingga verifikasi summary dan lifecycle pembayaran 100% konsisten.
    - *Superseded Redirection*: Akses ke link order lama (`?order=OLD_ID`) otomatis di-redirect oleh kasir ke order aktif terbaru (`?order=NEW_ID`). Upload ke order usang diblokir keras oleh API backend.
 6. **Transfer Bank Manual & Cloudflare R2 Edge CDN Delivery**:
    - Struk bukti transfer manual diunggah ke storage Cloudflare R2 dan disajikan instan via Custom Domain Edge CDN (`https://cdn.luxvite.id`) dengan HTTP/2 (<200ms latency).
@@ -300,10 +317,34 @@ Platform mendukung 5 payment gateway terintegrasi dengan pergantian instan 1-kli
 8. **Pembersihan Otomatis Bukti & Order Usang (*Auto-Purge Storage & Obsolete Orders*)**:
    - Sistem menerapkan arsitektur *Single State* di mana order non-PAID usang otomatis dibersihkan saat klien mengunggah bukti baru, mengganti paket, atau saat transaksi dinyatakan lunas (`PAID`).
    - File foto bukti transfer lama dimusnahkan permanen dari Cloudflare R2 bucket (`deleteFile`) untuk menghemat storage, dan record order lama dihapus dari database PostgreSQL.
-   - Klien yang sudah berstatus `PAID` dicegat dari halaman checkout dan dialihkan langsung ke dashboard undangan.
+   - *Zero Visual Leak Dashboard Guard*: Layout dasbor klien (`app/(client)/dashboard/layout.tsx`) menerapkan *state gate* `isAuthorized`. Seluruh elemen header navigasi dan shell dasbor diblokir dari rendering sampai `onboarding-state` mengonfirmasi order lunas. Pengguna belum lunas seketika dialihkan ke `/checkout?order=...` tanpa kebocoran tampilan dasbor. Rute `/login` pada `middleware.ts` mengalihkan ke `/onboarding` (bukan `/dashboard`).
 9. **Inline Action Confirmation (Zero Mouse Travel)**:
    - Tombol verifikasi konfirmasi lunas di portal `/admin` menerapkan *in-place micro-interaction* bebas dari popup browser `confirm()` dan `alert()`.
    - Tombol bertransisi halus di tempat menjadi `[Ya, Lunas]` dan `[Batal]` dengan auto-revert 5 detik.
+10. **Kredensial Tunggal Terpadu & Resolusi Endpoint Otomatis**:
+    - Gateway pembayaran (Midtrans dan Xendit) menggunakan set kredensial tunggal yang dikonfigurasi langsung di Portal Admin (`midtrans_server_key`, `midtrans_client_key`, `xendit_api_key`, `xendit_webhook_token`) tanpa konfigurasi mode ganda.
+    - Midtrans Gateway secara otomatis mendeteksi environment endpoint berdasarkan format server key yang dimasukkan: jika key diawali `SB-` (kunci sandbox Midtrans), panggilan diarahkan ke server simulator Midtrans (`api.sandbox.midtrans.com`); jika diawali format standar `Mid-`, otomatis diarahkan ke server produksi live (`api.midtrans.com`).
+    - Verifikasi signature webhook terpadu untuk memastikan callback transaksi terotentikasi secara presisi.
+11. **Sub-Tabs Vendor Payment Gateway di Admin Settings**:
+    - Penyusunan form pengaturan 2 vendor gateway 2-arah ke dalam kontrol sub-tab segmented control horizontal (`Midtrans` dan `Xendit`).
+    - Kartu global pusat kontrol tetap berada di posisi atas, sementara vendor cards diisolasi per tab sehingga antarmuka ringkas dan tidak memerlukan vertical scrolling panjang.
+    - Indikator badge visual "Aktif" otomatis menandai vendor yang sedang dijadikan gateway default pembayaran klien.
+12. **Rekonsiliasi Real-Time & Deteksi Host Dinamis**:
+    - Sistem mendeteksi `appUrl` secara dinamis dari request headers (`x-forwarded-host`, `host`, `x-forwarded-proto`), kompatibel secara native di lingkungan pengembangan `localhost`, reverse proxy VPS, custom domain, maupun tunnel dev tanpa hardcode URL.
+    - Rekonsiliasi status real-time pada `GET /api/client/orders/[id]/status` memverifikasi status pembayaran langsung ke API gateway sehingga status terdeteksi responsif seketika.
+13. **Tiga Kondisi Pembayaran & Transmisi Data Lengkap (Rich Payload Delivery)**:
+    - **Tiga Kondisi Pembayaran**:
+      1. *Registrasi Paket Awal (`NEW`)*: Pemilihan tier paket via `/packages` -> in-app QRIS checkout -> pasca lunas dialihkan ke `/dashboard/setup`.
+      2. *Upgrade Layanan (`UPGRADE`)*: Menaikkan tier paket langsung dari studio undangan `/dashboard/invitation/[id]` dengan kalkulasi selisih harga dinamis -> pasca lunas tier induk diperbarui seketika.
+      3. *Add-on Layanan Tambahan*:
+         - *Perpanjang Galeri Tamu (`GALLERY_EXTENSION`)*: Menambah masa aktif penyimpanan galeri foto momen tamu selama +30 hari dan membuka kembali kunci formulir upload.
+         - *Jasa Integrasi Custom Domain (`CUSTOM_DOMAIN_ADDON`)*: Integrasi domain kustom klien (lengkap dengan SSL/TLS & Cloudflare DNS) selama +365 hari / 1 tahun via `/dashboard/settings`.
+    - **Transmisi Detail Lengkap ke Payment Gateway**:
+      - *Profil Pembeli*: Nama depan & nama belakang (`first_name`, `last_name` / `given_names`, `surname`), alamat email resmi akun, dan nomor kontak WhatsApp aktif klien (`phoneNumber` terformat E.164).
+      - *Alamat*: Alamat penagihan & pengiriman digital terstandarisasi ISO `IDN`, terhubung ke alamat pengiriman fisik jika tersedia di data undangan.
+      - *Item Details & Branding*: Identitas item spesifik per kondisi transaksi, brand platform dinamis dari `AdminSetting`, kategori layanan, dan pemisahan biaya layanan admin (`ADMIN_FEE`) dengan presisi matematika penuh (`gross_amount === sum(item.price * item.quantity)`).
+      - *Notifikasi Multi-Kanal*: Xendit otomatis mengirim invoice dan status pembayaran via WhatsApp, SMS, dan Email jika nomor ponsel disediakan.
+      - *Metadata Komprehensif Dua Arah*: Midtrans `custom_field1` (Invoice), `custom_field2` (Order Type & Full Name), `custom_field3` (Context detail); Xendit `metadata` objek berisi `orderId`, `invoiceNumber`, `orderType`, `planType`, `targetPlanType`, `upgradedFromPlan`, `requestedDomain`, `customerFullName`, `customerEmail`, `customerPhone`, `invitationSlug`, `coupleName`, dan `platformName`.
 
 ---
 

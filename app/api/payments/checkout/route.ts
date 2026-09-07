@@ -9,12 +9,11 @@ export const dynamic = "force-dynamic";
  * POST /api/payments/checkout
  * Trigger pembayaran QRIS/Gateway untuk order PENDING.
  *
- * Dynamic Gateway Switching — Arsitektur:
- * - Setiap order menyimpan `gatewayId` dan `gatewayTxId` (ID transaksi di sisi gateway)
- * - Sebelum init ke gateway (baru/sama), sistem akan cancel transaksi lama di gateway tsb
- * - Ini mencegah error "transaction already exists" di Midtrans saat user regenerate
- * - Gateway stateless (iPaymu, Tripay, Duitku) cancel() = no-op, langsung re-init
- * - Gateway stateful (Midtrans, Xendit) cancel() = real API call ke gateway
+ * Dynamic Gateway Switching — Arsitektur 2-Arah (Two-Way Handshake):
+ * - Gateway yang didukung secara eksklusif: Midtrans dan Xendit.
+ * - Setiap order menyimpan `gatewayId` dan `gatewayTxId` (ID transaksi di sisi gateway).
+ * - Saat pembatalan, penggantian paket, atau timeout expired, sistem memanggil cancel() ke gateway aktif.
+ * - Midtrans memanggil /v2/{orderId}/cancel dan Xendit memanggil /v2/invoices/{invoiceId}/expire.
  */
 export async function POST(req: Request) {
   try {
@@ -30,14 +29,14 @@ export async function POST(req: Request) {
       (session.user as any).role === "ADMIN" ||
       (session.user as any).isAdmin === true;
 
-    const { orderId, gateway: requestedGateway } = await req.json();
+    const { orderId, gateway: requestedGateway, customerName, customerPhone } = await req.json();
     if (!orderId) {
       return NextResponse.json({ error: "orderId wajib diisi" }, { status: 400 });
     }
 
     const order = await prisma.order.findUnique({
       where: { id: orderId },
-      include: { user: { select: { id: true, email: true } } },
+      include: { user: { select: { id: true, email: true, name: true, phoneNumber: true } } },
     });
 
     if (!order) {
@@ -53,7 +52,33 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Akses ditolak. Bukan order Anda." }, { status: 403 });
     }
 
-    if (order.status !== "PENDING" && order.status !== "FAILED" && order.status !== "EXPIRED") {
+    // Sinkronisasi data kontak pembeli (Nama & WhatsApp) jika dikirimkan dari UI checkout
+    if (order.user) {
+      const userUpdates: { name?: string; phoneNumber?: string } = {};
+      if (typeof customerName === "string" && customerName.trim().length > 0) {
+        userUpdates.name = customerName.trim();
+      }
+      if (typeof customerPhone === "string" && customerPhone.trim().length > 0) {
+        userUpdates.phoneNumber = customerPhone.trim();
+      }
+      if (Object.keys(userUpdates).length > 0) {
+        await prisma.user.update({
+          where: { id: order.userId },
+          data: userUpdates,
+        });
+      }
+    }
+
+
+
+    if (order.status === "EXPIRED") {
+      return NextResponse.json({
+        error: "Tagihan ini sudah kedaluwarsa. Silakan muat ulang halaman untuk mendapatkan tagihan baru.",
+        isExpired: true,
+      }, { status: 400 });
+    }
+
+    if (order.status !== "PENDING" && order.status !== "FAILED") {
       return NextResponse.json({
         error: `Order tidak bisa diproses, status saat ini: ${order.status}`,
       }, { status: 400 });
@@ -72,13 +97,37 @@ export async function POST(req: Request) {
     const activeGatewayId = requestedGateway || (await getActiveGatewayId());
 
     // ──────────────────────────────────────────────────────────────────────
+    // IDEMPOTENCY / SESI QRIS AKTIF:
+    // Jika order masih PENDING, gateway tidak berubah, dan sudah memiliki QRIS aktif
+    // yang belum kedaluwarsa: langsung kembalikan sesi yang sama tanpa panggil ulang gateway.
+    // Ini mencegah error "order_id already been taken" pada Midtrans & gateway stateful lainnya.
+    // ──────────────────────────────────────────────────────────────────────
+    if (order.status === "PENDING" && order.snapToken && order.gatewayId === activeGatewayId) {
+      try {
+        const parsed = JSON.parse(order.snapToken);
+        const now = Date.now();
+        if (parsed.qrString && parsed.expiry > now) {
+          return NextResponse.json({
+            qrString: parsed.qrString,
+            sessionId: parsed.sessionId,
+            expiryTimestamp: parsed.expiry,
+            serverTime: now,
+            gateway: activeGatewayId,
+          });
+        }
+      } catch {
+        // Jika bukan JSON (misal format redirect lama), lanjutkan alur inisialisasi ulang
+      }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
     // DYNAMIC GATEWAY SWITCHING — Cancel transaksi lama sebelum re-init
     //
     // Jika order sudah punya gatewayTxId (transaksi sebelumnya sudah pernah di-init),
     // kita WAJIB membatalkan transaksi lama di gateway tersebut sebelum membuat yang baru.
     //
-    // Kenapa: Midtrans menolak init ulang jika order_id yang sama masih pending.
-    //         Xendit sama. iPaymu/Tripay/Duitku no-op (aman langsung).
+    // Kenapa: Midtrans dan Xendit memerlukan pembatalan resmi via API agar status
+    //         di jaringan perbankan (ASPI / BI) langsung hangus dan tidak terjadi pembayaran ganda.
     // ──────────────────────────────────────────────────────────────────────
     const prevGatewayTxId = (order as any).gatewayTxId as string | null;
     const prevGatewayId = (order as any).gatewayId as string | null;

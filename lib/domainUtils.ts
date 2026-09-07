@@ -60,7 +60,7 @@ export function getApexRootDomain(): string {
       return `${hostname}${port}`;
     }
 
-    // Live Apex Domain (strip app/admin/studio prefix if present)
+    // Live Apex Domain (strip app/admin/studio/www prefix if present)
     const parts = hostname.split(".");
     if (parts.length > 2 && (parts[0] === "app" || parts[0] === "admin" || parts[0] === "studio" || parts[0] === "www")) {
       return parts.slice(1).join(".") + port;

@@ -40,11 +40,17 @@ export async function POST(
     // 2. Hubungi Gateway untuk membatalkan tagihan aktif (QRIS/VA) agar tidak bisa dibayar ganda
     if (order.snapToken || order.gatewayTxId) {
       try {
-        const { getActiveGateway } = await import("@/lib/gatewayRegistry");
-        const gateway = await getActiveGateway();
+        const { getGatewayById, getActiveGateway } = await import("@/lib/gatewayRegistry");
+        const gateway = order.gatewayId ? await getGatewayById(order.gatewayId) : await getActiveGateway();
         if (gateway.cancel) {
-          const targetTxId = order.gatewayTxId || orderId; // Midtrans biasanya pakai orderId
-          await gateway.cancel(targetTxId);
+          const targetTxId = order.gatewayTxId || orderId;
+          const cancelRes = await gateway.cancel(targetTxId);
+          if (cancelRes && !cancelRes.success && cancelRes.error?.includes("terbayar")) {
+            return NextResponse.json({
+              error: "Pesanan ini sudah terbayar di Payment Gateway dan tidak dapat dibatalkan.",
+              isPaid: true,
+            }, { status: 400 });
+          }
         }
       } catch (err) {
         console.error("Gagal sinkronisasi cancel dengan Payment Gateway:", err);
@@ -52,14 +58,20 @@ export async function POST(
       }
     }
 
-    // 3. Soft Cancel: Ubah status menjadi FAILED dengan alasan historis yang jelas
+    // 3. Soft Cancel: Ubah status menjadi EXPIRED agar sinkron dengan webhook Midtrans & alur checkout
     await prisma.order.update({
       where: { id: orderId },
       data: {
-        status: "FAILED",
+        status: "EXPIRED",
         rejectReason: "Dibatalkan secara mandiri oleh Klien",
       },
     });
+
+    // 4. Emit SSE ke browser klien agar antarmuka kasir langsung reset secara real-time
+    try {
+      const { paymentEmitter } = await import("@/lib/paymentEvents");
+      paymentEmitter.emit(orderId, { status: "EXPIRED", planType: order.planType });
+    } catch {}
 
     return NextResponse.json({ success: true, message: "Pesanan berhasil dibatalkan." });
   } catch (error: any) {

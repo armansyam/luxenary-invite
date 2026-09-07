@@ -17,15 +17,16 @@ import { NextRequest, NextResponse } from "next/server";
  *   - status: "PAID" | "EXPIRED" | "SETTLED"
  */
 
-async function getXenditWebhookToken(): Promise<string> {
-  let token = process.env.XENDIT_WEBHOOK_TOKEN || "";
+async function getXenditWebhookTokens(): Promise<string[]> {
+  const tokens: string[] = [];
+  if (process.env.XENDIT_WEBHOOK_TOKEN) tokens.push(process.env.XENDIT_WEBHOOK_TOKEN);
   try {
     const setting = await prisma.adminSetting.findUnique({
       where: { key: "xendit_webhook_token" },
     });
-    if (setting?.value) token = setting.value;
+    if (setting?.value) tokens.push(setting.value);
   } catch {}
-  return token;
+  return Array.from(new Set(tokens.filter((t) => t && !t.includes("your_"))));
 }
 
 export async function POST(req: NextRequest) {
@@ -49,13 +50,13 @@ export async function POST(req: NextRequest) {
 
     // Verifikasi x-callback-token dari header
     const incomingToken = req.headers.get("x-callback-token") || "";
-    const storedToken = await getXenditWebhookToken();
+    const storedTokens = await getXenditWebhookTokens();
 
-    if (storedToken && !storedToken.includes("your_")) {
+    if (storedTokens.length > 0) {
       if (!incomingToken) {
         return NextResponse.json({ status: "rejected", reason: "missing_callback_token" }, { status: 400 });
       }
-      const isValid = XenditGateway.verifyWebhookToken(incomingToken, storedToken);
+      const isValid = storedTokens.some((token) => XenditGateway.verifyWebhookToken(incomingToken, token));
       if (!isValid) {
         console.warn("[Xendit Webhook] x-callback-token tidak valid — payload diabaikan untuk order:", orderId);
         return NextResponse.json({ status: "ignored", reason: "invalid_token" }, { status: 200 });

@@ -160,20 +160,8 @@ export default function EditInvitation() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Gagal membuat order upgrade.");
-      // Buka checkout dengan orderId baru
-      const checkoutRes = await fetch("/api/payments/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId: data.orderId }),
-      });
-      const checkoutData = await checkoutRes.json();
-      if (!checkoutRes.ok) throw new Error(checkoutData.error || "Gagal memulai pembayaran.");
       setUpgradeModal(false);
-      if (checkoutData.checkoutUrl) {
-        window.open(checkoutData.checkoutUrl, "_blank");
-      } else {
-        alert(`Order upgrade berhasil dibuat (Invoice: ${data.invoiceNumber}). Silakan selesaikan pembayaran.`);
-      }
+      window.location.href = `/checkout?order=${data.orderId}`;
     } catch (err: any) {
       setUpgradeError(err.message);
     } finally {

@@ -45,8 +45,8 @@ export async function applyR2CorsPolicy(): Promise<{ success: boolean; origins: 
     allowedOrigins.push(`https://www.${rootDomain}`);
   }
 
-  // 3. Cloudflare Tunnel dev (opsional, tambah via env)
-  const devOrigin = process.env.DEV_ORIGIN; // misal: https://xxx.trycloudflare.com
+  // 3. Custom dev origin (opsional, tambah via env)
+  const devOrigin = process.env.DEV_ORIGIN;
   if (devOrigin) {
     allowedOrigins.push(devOrigin.replace(/\/$/, ""));
   }

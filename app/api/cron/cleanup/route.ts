@@ -287,7 +287,7 @@ export async function POST(req: NextRequest) {
       deletedUsers: totalDeletedUsers,
       deletedFolders: totalDeletedFolders,
       deletedOrders: deletedOrdersCount.count,
-      message: `Pembersihan selesai: ${transitionCount} undangan dialihkan ke galeri momen, ${recycledSubdomainCount} subdomain didaur ulang, ${cleanedGalleryCount} galeri tamu kadaluarsa dibersihkan, ${totalDeletedUsers} klien lama dihapus.`
+      message: `Pembersihan selesai: ${transitionCount} undangan dialihkan ke galeri momen, ${recycledSubdomainCount} subdomain didaur ulang, ${cleanedGalleryCount} galeri tamu kadaluarsa dibersihkan, ${totalDeletedUsers} klien lama dihapus.`,
     });
   } catch (error: any) {
     console.error("[Cleanup Cron Error]", error);

@@ -370,7 +370,6 @@ export default function AdminPage() {
   const [currentOrigin, setCurrentOrigin] = useState<string>("");
   const [initialSettingsMap, setInitialSettingsMap] = useState<Record<string, string>>({});
   const [editSection, setEditSection] = useState<Record<string, boolean>>({});
-  const [savingIpaymu, setSavingIpaymu] = useState(false);
   const [savingGoogle, setSavingGoogle] = useState(false);
   const [showGoogleSecret, setShowGoogleSecret] = useState(false);
   const [savingPricing, setSavingPricing] = useState(false);
@@ -382,13 +381,12 @@ export default function AdminPage() {
   const [savingActiveGateway, setSavingActiveGateway] = useState(false);
   const [savingMidtrans, setSavingMidtrans] = useState(false);
   const [savingXendit, setSavingXendit] = useState(false);
-  const [savingDuitku, setSavingDuitku] = useState(false);
-  const [savingTripay, setSavingTripay] = useState(false);
   const [savingSmtp, setSavingSmtp] = useState(false);
   const [savingDomainDns, setSavingDomainDns] = useState(false);
   const [detectingServerIp, setDetectingServerIp] = useState(false);
   const [detectIpResult, setDetectIpResult] = useState<{ success: boolean; message: string } | null>(null);
   const [activeSettingsTab, setActiveSettingsTab] = useState<"akun" | "pembayaran" | "gateway" | "paket" | "setup" | "platform" | "autentikasi">("akun");
+  const [selectedGatewayVendor, setSelectedGatewayVendor] = useState<"midtrans" | "xendit">("midtrans");
 
   const handleDetectServerIp = async () => {
     setDetectingServerIp(true);
@@ -497,8 +495,18 @@ export default function AdminPage() {
   const [themeSaving, setThemeSaving] = useState(false);
   const [themeSyncing, setThemeSyncing] = useState(false);
   const [themeSyncResult, setThemeSyncResult] = useState<any>(null);
+
+  // Auto-dismiss banner sinkronisasi tema setelah 4.5 detik
+  useEffect(() => {
+    if (!themeSyncResult) return;
+    const timer = setTimeout(() => {
+      setThemeSyncResult(null);
+    }, 4500);
+    return () => clearTimeout(timer);
+  }, [themeSyncResult]);
+
   const [themeError, setThemeError] = useState<string | null>(null);
-  const [themeCategoryFilter, setThemeCategoryFilter] = useState<string>("all");
+  const [themeCategoryFilter, setThemeCategoryFilter] = useState<string>("premium");
   const [themeFile, setThemeFile] = useState<File | null>(null);
 
   // Theme Demo Studio State
@@ -921,6 +929,7 @@ export default function AdminPage() {
     const brand = settingsMap["platform_name"] || "Luxenary";
     document.title = `${brand} Admin — Control Panel`;
   }, [settingsMap["platform_name"]]);
+
 
   useEffect(() => {
     loadOverviewData();
@@ -3232,10 +3241,10 @@ export default function AdminPage() {
                       <>
                         <div className="flex items-center gap-2 border-b border-gray-200 pb-3 overflow-x-auto no-scrollbar">
                           {[
-                            { id: "all", label: `Semua Tema (${validThemes.length})` },
                             { id: "premium", label: `Premium (${countPremium})` },
                             { id: "modern", label: `Modern (${countModern})` },
                             { id: "traditional", label: `Traditional (${countTraditional})` },
+                            { id: "all", label: `Semua Tema (${validThemes.length})` },
                           ].map((cat) => (
                             <button
                               key={cat.id}
@@ -3547,7 +3556,7 @@ export default function AdminPage() {
                   </div>
 
                   {/* ── Sub-Tab Navigation (Widescreen Responsive Grid) ── */}
-                  <div className="w-full grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-1.5 p-1.5 bg-gray-100 rounded-2xl border border-gray-200">
+                  <div className="w-full grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-1.5 p-1.5 bg-gray-100 rounded-2xl border border-gray-200">
                     {([
                       { id: "akun",        label: "Akun & Keamanan" },
                       { id: "pembayaran",  label: "Pembayaran" },
@@ -3768,19 +3777,12 @@ export default function AdminPage() {
                           </div>
 
                           <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200">
-                            <span className="text-xs text-gray-500 block font-medium">Mode Lingkungan</span>
+                            <span className="text-xs text-gray-500 block font-medium">Status Sistem</span>
                             <div className="mt-1.5">
-                              {(settingsMap["payment_gateway_mode"] || "sandbox") === "production" ? (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-300">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                  Produksi (Live)
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-50 text-amber-800 border border-amber-300">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                                  Sandbox (Testing)
-                                </span>
-                              )}
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-300">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                Produksi (Live)
+                              </span>
                             </div>
                           </div>
 
@@ -3816,67 +3818,31 @@ export default function AdminPage() {
                     }
                   >
                     <div className="space-y-4">
-                      <FieldRow label="Pilih Gateway Aktif" description="Gateway utama yang memproses pembayaran saat klien klik bayar via QRIS / Online">
+                      <FieldRow label="Pilih Gateway Aktif" description="Gateway utama 2-arah yang memproses pembayaran saat klien klik bayar via QRIS / Online">
                         <div className="flex flex-wrap gap-2">
                           {[
-                            { id: "ipaymu", label: "iPaymu", desc: "QRIS, VA, GoPay, OVO" },
-                            { id: "midtrans", label: "Midtrans", desc: "Snap UI, VA, GoPay" },
-                            { id: "xendit", label: "Xendit", desc: "Invoice, VA, OVO, DANA" },
-                            { id: "duitku", label: "Duitku", desc: "QRIS, VA, GoPay, ShopeePay" },
-                            { id: "tripay", label: "Tripay", desc: "QRIS, VA, Alfamart, Indomaret" },
+                            { id: "midtrans", label: "Midtrans", desc: "Core API QRIS (In-App), Snap UI, GoPay, VA" },
+                            { id: "xendit", label: "Xendit", desc: "Invoice UI, Multi-Bank VA, OVO, DANA, QRIS" },
                           ].map((gw) => (
                             <button
                               key={gw.id}
                               type="button"
                               onClick={() => setSetting("active_payment_gateway", gw.id)}
                               className={`px-4 py-2.5 rounded-xl text-xs font-semibold border transition cursor-pointer text-left ${
-                                (settingsMap["active_payment_gateway"] || "ipaymu") === gw.id
+                                (settingsMap["active_payment_gateway"] || "midtrans") === gw.id
                                   ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
                                   : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
                               }`}
                             >
                               <div className="font-bold">{gw.label}</div>
                               <div className={`text-[10px] mt-0.5 ${
-                                (settingsMap["active_payment_gateway"] || "ipaymu") === gw.id ? "text-emerald-100" : "text-gray-400"
+                                (settingsMap["active_payment_gateway"] || "midtrans") === gw.id ? "text-emerald-100" : "text-gray-400"
                               }`}>{gw.desc}</div>
                             </button>
                           ))}
                         </div>
                       </FieldRow>
 
-                      <FieldRow label="Mode Lingkungan Global" description="Ganti status seluruh gateway ke Sandbox (uji coba) atau Produksi (live) sekaligus dengan 1 klik">
-                        <div className="flex gap-3">
-                          {[
-                            { id: "sandbox", label: "Sandbox (Uji Coba)", desc: "Testing tanpa uang sungguhan" },
-                            { id: "production", label: "Produksi (Live)", desc: "Transaksi uang nyata" },
-                          ].map((mode) => (
-                            <button
-                              key={mode.id}
-                              type="button"
-                              onClick={() => setSetting("payment_gateway_mode", mode.id)}
-                              className={`px-4 py-2.5 rounded-xl text-xs font-semibold border transition cursor-pointer flex items-center gap-2 ${
-                                (settingsMap["payment_gateway_mode"] || "sandbox") === mode.id
-                                  ? mode.id === "production"
-                                    ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
-                                    : "bg-amber-600 text-white border-amber-600 shadow-sm"
-                                  : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
-                              }`}
-                            >
-                              <span className={`w-2 h-2 rounded-full ${
-                                (settingsMap["payment_gateway_mode"] || "sandbox") === mode.id
-                                  ? "bg-white"
-                                  : mode.id === "production" ? "bg-emerald-500" : "bg-amber-500"
-                              }`}></span>
-                              <div>
-                                <span className="font-bold block">{mode.label}</span>
-                                <span className={`text-[10px] block ${
-                                  (settingsMap["payment_gateway_mode"] || "sandbox") === mode.id ? "text-white/80" : "text-gray-400"
-                                }`}>{mode.desc}</span>
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      </FieldRow>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                         <FieldRow label="Masa Berlaku Tagihan (Menit)" description="Durasi QRIS/Invoice sebelum kedaluwarsa otomatis (contoh: 15, 30, 60, atau 1440 untuk 24 jam).">
@@ -3947,198 +3913,130 @@ export default function AdminPage() {
                     </div>
                   </SettingsCard>
 
-                  {/* iPaymu Settings */}
+                  {/* ── Sub-Tab Selector Vendor Gateway ── */}
+                  <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-xs space-y-3">
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <div>
+                        <h3 className="text-sm font-bold text-gray-900">Vendor Payment Gateway Setup</h3>
+                        <p className="text-xs text-gray-500">Pilih vendor gateway untuk konfigurasi kredensial API resmi</p>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        <span>Gateway utama aktif: <strong className="text-gray-900 font-bold uppercase">{settingsMap["active_payment_gateway"] || "midtrans"}</strong></span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl">
+                      {[
+                        { id: "midtrans", name: "Midtrans", desc: "Core API QRIS (In-App), Snap UI, GoPay, VA" },
+                        { id: "xendit", name: "Xendit", desc: "Invoice UI, Multi-Bank VA, OVO, DANA, QRIS" },
+                      ].map((v) => {
+                        const isSelected = selectedGatewayVendor === v.id;
+                        const isCurrentlyActive = (settingsMap["active_payment_gateway"] || "midtrans") === v.id;
+                        return (
+                          <button
+                            key={v.id}
+                            type="button"
+                            onClick={() => setSelectedGatewayVendor(v.id as any)}
+                            className={`p-3 rounded-xl border text-left transition cursor-pointer relative ${
+                              isSelected
+                                ? "bg-amber-50/70 border-amber-500 ring-1 ring-amber-500 shadow-xs"
+                                : "bg-gray-50/80 border-gray-200 hover:bg-gray-100/80 hover:border-gray-300"
+                            }`}
+                          >
+                            {isCurrentlyActive && (
+                              <span className="absolute top-2 right-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                <span className="w-1 h-1 rounded-full bg-emerald-600"></span>
+                                Aktif
+                              </span>
+                            )}
+                            <span className={`text-xs font-bold block ${isSelected ? "text-amber-950" : "text-gray-900"}`}>
+                              {v.name}
+                            </span>
+                            <span className="text-[10px] text-gray-400 block mt-0.5 truncate">
+                              {v.desc}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* ═══ MIDTRANS SETTINGS ═══ */}
+                  {selectedGatewayVendor === "midtrans" && (
                   <SettingsCard
-                    title="iPaymu Payment Gateway"
-                    description="Konfigurasi koneksi ke iPaymu. Dapatkan VA dan API Key dari dashboard iPaymu."
-                    isEditing={Boolean(editSection["ipaymu"])}
-                    onEdit={() => toggleEditSection("ipaymu")}
-                    onCancel={() => cancelEdit("ipaymu", ["ipaymu_mode", "ipaymu_va", "ipaymu_api_key"])}
-                    onSave={() => saveSettings(["ipaymu_mode", "ipaymu_va", "ipaymu_api_key"], setSavingIpaymu, "ipaymu")}
-                    saving={savingIpaymu}
-                    isDirty={isSectionDirty(["ipaymu_mode", "ipaymu_va", "ipaymu_api_key"])}
-                    saveSuccess={settingsSaved["ipaymu"]}
-                    saveSuccessMessage="Pengaturan iPaymu berhasil disimpan"
+                    title="Midtrans Payment Gateway"
+                    description="Konfigurasi Midtrans Snap — payment gateway resmi berlisensi Bank Indonesia (GoTo Group)."
+                    isEditing={Boolean(editSection["midtrans"])}
+                    onEdit={() => toggleEditSection("midtrans")}
+                    onCancel={() => cancelEdit("midtrans", ["midtrans_server_key", "midtrans_client_key"])}
+                    onSave={() => saveSettings(["midtrans_server_key", "midtrans_client_key"], setSavingMidtrans, "midtrans")}
+                    saving={savingMidtrans}
+                    isDirty={isSectionDirty(["midtrans_server_key", "midtrans_client_key"])}
+                    saveSuccess={settingsSaved["midtrans"]}
+                    saveSuccessMessage="Pengaturan Midtrans berhasil disimpan"
                     viewContent={
                       <div className="space-y-3">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                          <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
-                            <span className="text-xs text-gray-500 block font-medium">Mode Gateway</span>
-                            <div className="mt-1">
-                              {settingsMap["ipaymu_mode"] === "production" ? (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                  Produksi (Live)
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                                  Sandbox (Testing)
-                                </span>
-                              )}
-                            </div>
+                        <div className="p-3 bg-white rounded-xl border border-gray-200 space-y-2">
+                          <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                            <span>Kredensial API Midtrans</span>
                           </div>
-                          <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
-                            <span className="text-xs text-gray-500 block font-medium">Virtual Account (VA)</span>
-                            <span className="text-sm font-mono font-bold text-gray-800 mt-1 inline-block">
-                              {settingsMap["ipaymu_va"] ? settingsMap["ipaymu_va"] : <em className="text-gray-400 font-sans font-normal text-xs">Belum diatur</em>}
-                            </span>
+                          <div className="text-xs">
+                            <span className="text-gray-500 block">Server Key:</span>
+                            <span className="font-mono font-medium text-gray-900">{settingsMap["midtrans_server_key"] ? "••••••••••••" : <em className="text-gray-400 font-sans font-normal">Belum diatur</em>}</span>
                           </div>
-                          <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
-                            <span className="text-xs text-gray-500 block font-medium">API Key</span>
-                            <span className="text-sm font-mono font-bold text-gray-800 mt-1 inline-block">
-                              {settingsMap["ipaymu_api_key"] ? "••••••••••••••••" : <em className="text-gray-400 font-sans font-normal text-xs">Belum diatur</em>}
-                            </span>
+                          <div className="text-xs">
+                            <span className="text-gray-500 block">Client Key:</span>
+                            <span className="font-mono font-medium text-gray-900">{settingsMap["midtrans_client_key"] ? "••••••••••••" : <em className="text-gray-400 font-sans font-normal">Belum diatur</em>}</span>
                           </div>
                         </div>
+
                         <div className="p-3 bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-between gap-2 text-xs flex-wrap">
                           <span className="text-gray-600 font-medium">
-                            URL Webhook: <code className="font-mono text-gray-900 font-semibold">{`${settingsMap["platform_url"] || currentOrigin}/api/webhook/ipaymu`}</code>
+                            URL Webhook: <code className="font-mono text-gray-900 font-semibold">{`${settingsMap["platform_url"] || currentOrigin}/api/webhook/midtrans`}</code>
                           </span>
-                          <button
-                            type="button"
-                            onClick={() => navigator.clipboard.writeText(`${settingsMap["platform_url"] || currentOrigin}/api/webhook/ipaymu`)}
-                            className="px-3 py-1 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 rounded-lg font-semibold transition cursor-pointer"
-                          >
+                          <button type="button" onClick={() => navigator.clipboard.writeText(`${settingsMap["platform_url"] || currentOrigin}/api/webhook/midtrans`)}
+                            className="px-3 py-1 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 rounded-lg font-semibold transition cursor-pointer">
                             Salin Webhook
                           </button>
                         </div>
                       </div>
                     }
                   >
-                    <FieldRow label="Mode Gateway" description="Gunakan Sandbox untuk pengujian, Produksi untuk transaksi nyata">
-                      <div className="flex gap-3">
-                        {["sandbox", "production"].map((mode) => (
-                          <button
-                            key={mode}
-                            type="button"
-                            onClick={() => setSetting("ipaymu_mode", mode)}
-                            className={`px-4 py-2 rounded-xl text-sm font-semibold border transition cursor-pointer flex items-center gap-1.5 ${
-                              (settingsMap["ipaymu_mode"] || "sandbox") === mode
-                                ? mode === "production"
-                                  ? "bg-emerald-600 text-white border-emerald-600"
-                                  : "bg-amber-600 text-white border-amber-600"
-                                : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
-                            }`}
-                          >
-                            <span className={`w-1.5 h-1.5 rounded-full ${
-                              (settingsMap["ipaymu_mode"] || "sandbox") === mode
-                                ? "bg-white"
-                                : mode === "production" ? "bg-emerald-500" : "bg-amber-500"
-                            }`}></span>
-                            <span>{mode === "sandbox" ? "Sandbox" : "Produksi"}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </FieldRow>
-
-                    <FieldRow label="Virtual Account (VA)" description="Nomor VA iPaymu Anda (dari Dashboard → Akun → VA Number)">
-                      <input
-                        type="text"
-                        value={settingsMap["ipaymu_va"] || ""}
-                        onChange={(e) => setSetting("ipaymu_va", e.target.value)}
-                        placeholder="Contoh: 0000000000000000"
-                        className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
-                      />
-                    </FieldRow>
-
-                    <FieldRow label="API Key" description="API Key dari Dashboard iPaymu Pengaturan API Key">
-                      <input
-                        type="password"
-                        value={settingsMap["ipaymu_api_key"] || ""}
-                        onChange={(e) => setSetting("ipaymu_api_key", e.target.value)}
-                        placeholder="••••••••••••••••••••••••••••••••"
-                        className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
-                      />
-                    </FieldRow>
-
-                    <FieldRow label="URL Webhook (Otomatis)" description="URL ini harus dikonfigurasi di dashboard iPaymu sebagai Notify URL">
+                    <div className="p-4 bg-emerald-50/50 rounded-xl border border-emerald-200 space-y-4">
                       <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={`${settingsMap["platform_url"] || currentOrigin}/api/webhook/ipaymu`}
-                          readOnly
-                          className="flex-1 px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-gray-100 text-gray-900 font-semibold select-all shadow-2xs"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => navigator.clipboard.writeText(`${settingsMap["platform_url"] || currentOrigin}/api/webhook/ipaymu`)}
-                          className="px-3.5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300 rounded-xl text-xs font-semibold transition cursor-pointer"
-                        >
-                          Salin
-                        </button>
+                        <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
+                        <h4 className="text-xs font-bold text-emerald-900 uppercase tracking-wider">Kredensial Midtrans</h4>
                       </div>
-                    </FieldRow>
-                  </SettingsCard>
+                      <FieldRow label="Server Key" description="Dari Midtrans Dashboard → Settings → Access Keys">
+                        <input type="password" value={settingsMap["midtrans_server_key"] || ""} onChange={(e) => setSetting("midtrans_server_key", e.target.value)}
+                          placeholder="Mid-server-xxxx"
+                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs" />
+                      </FieldRow>
+                      <FieldRow label="Client Key" description="Dari Midtrans Dashboard → Settings → Access Keys">
+                        <input type="text" value={settingsMap["midtrans_client_key"] || ""} onChange={(e) => setSetting("midtrans_client_key", e.target.value)}
+                          placeholder="Mid-client-xxxx"
+                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs" />
+                      </FieldRow>
+                    </div>
 
-                  {/* ═══ MIDTRANS SETTINGS ═══ */}
-                  <SettingsCard
-                    title="Midtrans Payment Gateway"
-                    description="Konfigurasi Midtrans Snap — payment gateway terbesar Indonesia (GoTo Group). Dapatkan Server Key & Client Key dari Midtrans Dashboard."
-                    isEditing={Boolean(editSection["midtrans"])}
-                    onEdit={() => toggleEditSection("midtrans")}
-                    onCancel={() => cancelEdit("midtrans", ["midtrans_mode", "midtrans_server_key", "midtrans_client_key"])}
-                    onSave={() => saveSettings(["midtrans_mode", "midtrans_server_key", "midtrans_client_key"], setSavingMidtrans, "midtrans")}
-                    saving={savingMidtrans}
-                    isDirty={isSectionDirty(["midtrans_mode", "midtrans_server_key", "midtrans_client_key"])}
-                    saveSuccess={settingsSaved["midtrans"]}
-                    saveSuccessMessage="Pengaturan Midtrans berhasil disimpan"
-                    viewContent={
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
-                          <span className="text-xs text-gray-500 block font-medium">Mode</span>
-                          <span className="text-sm font-semibold text-gray-800 mt-1 block">{settingsMap["midtrans_mode"] || "sandbox"}</span>
-                        </div>
-                        <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
-                          <span className="text-xs text-gray-500 block font-medium">Server Key</span>
-                          <span className="text-sm font-mono text-gray-800 mt-1 block">{settingsMap["midtrans_server_key"] ? "••••••••••••" : <em className="text-gray-400 font-sans font-normal text-xs">Belum diatur</em>}</span>
-                        </div>
-                        <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
-                          <span className="text-xs text-gray-500 block font-medium">Client Key</span>
-                          <span className="text-sm font-mono text-gray-800 mt-1 block">{settingsMap["midtrans_client_key"] ? "••••••••••••" : <em className="text-gray-400 font-sans font-normal text-xs">Belum diatur</em>}</span>
-                        </div>
-                      </div>
-                    }
-                  >
-                    <FieldRow label="Mode" description="Sandbox untuk testing, Produksi untuk live">
-                      <div className="flex gap-3">
-                        {["sandbox", "production"].map((mode) => (
-                          <button key={mode} type="button" onClick={() => setSetting("midtrans_mode", mode)}
-                            className={`px-4 py-2 rounded-xl text-sm font-semibold border transition cursor-pointer flex items-center gap-1.5 ${
-                              (settingsMap["midtrans_mode"] || "sandbox") === mode
-                                ? mode === "production" ? "bg-emerald-600 text-white border-emerald-600" : "bg-amber-600 text-white border-amber-600"
-                                : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
-                            }`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${(settingsMap["midtrans_mode"] || "sandbox") === mode ? "bg-white" : mode === "production" ? "bg-emerald-500" : "bg-amber-500"}`}></span>
-                            {mode === "sandbox" ? "Sandbox" : "Produksi"}
-                          </button>
-                        ))}
-                      </div>
-                    </FieldRow>
-                    <FieldRow label="Server Key" description="Dari Midtrans Dashboard → Settings → Access Keys">
-                      <input type="password" value={settingsMap["midtrans_server_key"] || ""} onChange={(e) => setSetting("midtrans_server_key", e.target.value)}
-                        placeholder="SB-Mid-server-xxxx / Mid-server-xxxx"
-                        className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs" />
-                    </FieldRow>
-                    <FieldRow label="Client Key" description="Dari Midtrans Dashboard → Settings → Access Keys">
-                      <input type="text" value={settingsMap["midtrans_client_key"] || ""} onChange={(e) => setSetting("midtrans_client_key", e.target.value)}
-                        placeholder="SB-Mid-client-xxxx / Mid-client-xxxx"
-                        className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs" />
-                    </FieldRow>
                     <FieldRow label="URL Webhook (Otomatis)" description="Daftarkan URL ini di Midtrans Dashboard → Settings → Configuration → Notification URL">
                       <div className="flex items-center gap-2">
-                        <input type="text" readOnly value={`${settingsMap["platform_url"] || (typeof window !== "undefined" ? window.location.origin : "")}/api/webhook/midtrans`}
+                        <input type="text" readOnly value={`${settingsMap["platform_url"] || currentOrigin}/api/webhook/midtrans`}
                           className="flex-1 px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-gray-100 text-gray-900 font-semibold shadow-2xs" />
-                        <button type="button" onClick={() => navigator.clipboard.writeText(`${settingsMap["platform_url"] || (typeof window !== "undefined" ? window.location.origin : "")}/api/webhook/midtrans`)}
+                        <button type="button" onClick={() => navigator.clipboard.writeText(`${settingsMap["platform_url"] || currentOrigin}/api/webhook/midtrans`)}
                           className="px-3.5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300 rounded-xl text-xs font-semibold transition cursor-pointer">Salin</button>
                       </div>
                     </FieldRow>
                   </SettingsCard>
+                  )}
 
                   {/* ═══ XENDIT SETTINGS ═══ */}
+                  {selectedGatewayVendor === "xendit" && (
                   <SettingsCard
                     title="Xendit Payment Gateway"
-                    description="Konfigurasi Xendit Invoice — payment gateway modern untuk startup Indonesia. Dapatkan API Key dari Xendit Dashboard."
+                    description="Konfigurasi Xendit Invoice — payment gateway modern untuk startup Indonesia."
                     isEditing={Boolean(editSection["xendit"])}
                     onEdit={() => toggleEditSection("xendit")}
                     onCancel={() => cancelEdit("xendit", ["xendit_api_key", "xendit_webhook_token"])}
@@ -4148,168 +4046,61 @@ export default function AdminPage() {
                     saveSuccess={settingsSaved["xendit"]}
                     saveSuccessMessage="Pengaturan Xendit berhasil disimpan"
                     viewContent={
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
-                          <span className="text-xs text-gray-500 block font-medium">API Key</span>
-                          <span className="text-sm font-mono text-gray-800 mt-1 block">{settingsMap["xendit_api_key"] ? "••••••••••••" : <em className="text-gray-400 font-sans font-normal text-xs">Belum diatur</em>}</span>
+                      <div className="space-y-3">
+                        <div className="p-3 bg-white rounded-xl border border-gray-200 space-y-2">
+                          <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                            <span>Kredensial API Xendit</span>
+                          </div>
+                          <div className="text-xs">
+                            <span className="text-gray-500 block">Secret API Key:</span>
+                            <span className="font-mono font-medium text-gray-900">{settingsMap["xendit_api_key"] ? "••••••••••••" : <em className="text-gray-400 font-sans font-normal">Belum diatur</em>}</span>
+                          </div>
+                          <div className="text-xs">
+                            <span className="text-gray-500 block">Webhook Token:</span>
+                            <span className="font-mono font-medium text-gray-900">{settingsMap["xendit_webhook_token"] ? "••••••••••••" : <em className="text-gray-400 font-sans font-normal">Belum diatur</em>}</span>
+                          </div>
                         </div>
-                        <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
-                          <span className="text-xs text-gray-500 block font-medium">Webhook Token</span>
-                          <span className="text-sm font-mono text-gray-800 mt-1 block">{settingsMap["xendit_webhook_token"] ? "••••••••••••" : <em className="text-gray-400 font-sans font-normal text-xs">Belum diatur</em>}</span>
+
+                        <div className="p-3 bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-between gap-2 text-xs flex-wrap">
+                          <span className="text-gray-600 font-medium">
+                            URL Webhook: <code className="font-mono text-gray-900 font-semibold">{`${settingsMap["platform_url"] || currentOrigin}/api/webhook/xendit`}</code>
+                          </span>
+                          <button type="button" onClick={() => navigator.clipboard.writeText(`${settingsMap["platform_url"] || currentOrigin}/api/webhook/xendit`)}
+                            className="px-3 py-1 bg-white hover:bg-gray-100 text-gray-800 border border-gray-300 rounded-lg font-semibold transition cursor-pointer">
+                            Salin Webhook
+                          </button>
                         </div>
                       </div>
                     }
                   >
-                    <FieldRow label="API Key" description="Dari Xendit Dashboard → Settings → API Keys → Secret Key">
-                      <input type="password" value={settingsMap["xendit_api_key"] || ""} onChange={(e) => setSetting("xendit_api_key", e.target.value)}
-                        placeholder="xnd_production_xxxx / xnd_development_xxxx"
-                        className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs" />
-                    </FieldRow>
-                    <FieldRow label="Webhook Token" description="Dari Xendit Dashboard → Settings → Webhooks → Webhook Verification Token">
-                      <input type="password" value={settingsMap["xendit_webhook_token"] || ""} onChange={(e) => setSetting("xendit_webhook_token", e.target.value)}
-                        placeholder="Token verifikasi webhook Xendit"
-                        className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs" />
-                    </FieldRow>
+                    <div className="p-4 bg-emerald-50/50 rounded-xl border border-emerald-200 space-y-4">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
+                        <h4 className="text-xs font-bold text-emerald-900 uppercase tracking-wider">Kredensial Xendit</h4>
+                      </div>
+                      <FieldRow label="Secret API Key" description="Dari Xendit Dashboard → Settings → API Keys">
+                        <input type="password" value={settingsMap["xendit_api_key"] || ""} onChange={(e) => setSetting("xendit_api_key", e.target.value)}
+                          placeholder="xnd_production_xxxx"
+                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs" />
+                      </FieldRow>
+                      <FieldRow label="Webhook Verification Token" description="Dari Xendit Dashboard → Settings → Webhooks">
+                        <input type="password" value={settingsMap["xendit_webhook_token"] || ""} onChange={(e) => setSetting("xendit_webhook_token", e.target.value)}
+                          placeholder="Token verifikasi webhook"
+                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs" />
+                      </FieldRow>
+                    </div>
+
                     <FieldRow label="URL Webhook (Otomatis)" description="Daftarkan di Xendit Dashboard → Settings → Webhooks → Invoice Paid">
                       <div className="flex items-center gap-2">
-                        <input type="text" readOnly value={`${settingsMap["platform_url"] || (typeof window !== "undefined" ? window.location.origin : "")}/api/webhook/xendit`}
+                        <input type="text" readOnly value={`${settingsMap["platform_url"] || currentOrigin}/api/webhook/xendit`}
                           className="flex-1 px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-gray-100 text-gray-900 font-semibold shadow-2xs" />
-                        <button type="button" onClick={() => navigator.clipboard.writeText(`${settingsMap["platform_url"] || (typeof window !== "undefined" ? window.location.origin : "")}/api/webhook/xendit`)}
+                        <button type="button" onClick={() => navigator.clipboard.writeText(`${settingsMap["platform_url"] || currentOrigin}/api/webhook/xendit`)}
                           className="px-3.5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300 rounded-xl text-xs font-semibold transition cursor-pointer">Salin</button>
                       </div>
                     </FieldRow>
                   </SettingsCard>
-
-                  {/* ═══ DUITKU SETTINGS ═══ */}
-                  <SettingsCard
-                    title="Duitku Payment Gateway"
-                    description="Konfigurasi Duitku — payment gateway lokal terjangkau untuk UMKM Indonesia. Fee rendah dan onboarding cepat."
-                    isEditing={Boolean(editSection["duitku"])}
-                    onEdit={() => toggleEditSection("duitku")}
-                    onCancel={() => cancelEdit("duitku", ["duitku_mode", "duitku_merchant_code", "duitku_api_key"])}
-                    onSave={() => saveSettings(["duitku_mode", "duitku_merchant_code", "duitku_api_key"], setSavingDuitku, "duitku")}
-                    saving={savingDuitku}
-                    isDirty={isSectionDirty(["duitku_mode", "duitku_merchant_code", "duitku_api_key"])}
-                    saveSuccess={settingsSaved["duitku"]}
-                    saveSuccessMessage="Pengaturan Duitku berhasil disimpan"
-                    viewContent={
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
-                          <span className="text-xs text-gray-500 block font-medium">Mode</span>
-                          <span className="text-sm font-semibold text-gray-800 mt-1 block">{settingsMap["duitku_mode"] || "sandbox"}</span>
-                        </div>
-                        <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
-                          <span className="text-xs text-gray-500 block font-medium">Merchant Code</span>
-                          <span className="text-sm font-mono text-gray-800 mt-1 block">{settingsMap["duitku_merchant_code"] || <em className="text-gray-400 font-sans font-normal text-xs">Belum diatur</em>}</span>
-                        </div>
-                        <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
-                          <span className="text-xs text-gray-500 block font-medium">API Key</span>
-                          <span className="text-sm font-mono text-gray-800 mt-1 block">{settingsMap["duitku_api_key"] ? "••••••••••••" : <em className="text-gray-400 font-sans font-normal text-xs">Belum diatur</em>}</span>
-                        </div>
-                      </div>
-                    }
-                  >
-                    <FieldRow label="Mode" description="Sandbox untuk testing, Produksi untuk live">
-                      <div className="flex gap-3">
-                        {["sandbox", "production"].map((mode) => (
-                          <button key={mode} type="button" onClick={() => setSetting("duitku_mode", mode)}
-                            className={`px-4 py-2 rounded-xl text-sm font-semibold border transition cursor-pointer flex items-center gap-1.5 ${
-                              (settingsMap["duitku_mode"] || "sandbox") === mode
-                                ? mode === "production" ? "bg-emerald-600 text-white border-emerald-600" : "bg-amber-600 text-white border-amber-600"
-                                : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
-                            }`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${(settingsMap["duitku_mode"] || "sandbox") === mode ? "bg-white" : mode === "production" ? "bg-emerald-500" : "bg-amber-500"}`}></span>
-                            {mode === "sandbox" ? "Sandbox" : "Produksi"}
-                          </button>
-                        ))}
-                      </div>
-                    </FieldRow>
-                    <FieldRow label="Merchant Code" description="Dari Duitku Dashboard → Profil Merchant → Merchant Code">
-                      <input type="text" value={settingsMap["duitku_merchant_code"] || ""} onChange={(e) => setSetting("duitku_merchant_code", e.target.value)}
-                        placeholder="Contoh: Dxxxx"
-                        className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs" />
-                    </FieldRow>
-                    <FieldRow label="API Key" description="Dari Duitku Dashboard → Pengaturan → API Key">
-                      <input type="password" value={settingsMap["duitku_api_key"] || ""} onChange={(e) => setSetting("duitku_api_key", e.target.value)}
-                        placeholder="••••••••••••••••••••••••••••••••"
-                        className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs" />
-                    </FieldRow>
-                    <FieldRow label="URL Webhook (Otomatis)" description="Daftarkan di Duitku Dashboard → Pengaturan → Callback URL">
-                      <div className="flex items-center gap-2">
-                        <input type="text" readOnly value={`${settingsMap["platform_url"] || (typeof window !== "undefined" ? window.location.origin : "")}/api/webhook/duitku`}
-                          className="flex-1 px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-gray-100 text-gray-900 font-semibold shadow-2xs" />
-                        <button type="button" onClick={() => navigator.clipboard.writeText(`${settingsMap["platform_url"] || (typeof window !== "undefined" ? window.location.origin : "")}/api/webhook/duitku`)}
-                          className="px-3.5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300 rounded-xl text-xs font-semibold transition cursor-pointer">Salin</button>
-                      </div>
-                    </FieldRow>
-                  </SettingsCard>
-
-                  {/* ═══ TRIPAY SETTINGS ═══ */}
-                  <SettingsCard
-                    title="Tripay Payment Gateway"
-                    description="Konfigurasi Tripay — payment gateway developer-friendly dengan flat fee transparan. Mendukung QRIS, VA, Alfamart, dan Indomaret."
-                    isEditing={Boolean(editSection["tripay"])}
-                    onEdit={() => toggleEditSection("tripay")}
-                    onCancel={() => cancelEdit("tripay", ["tripay_mode", "tripay_merchant_code", "tripay_api_key", "tripay_private_key"])}
-                    onSave={() => saveSettings(["tripay_mode", "tripay_merchant_code", "tripay_api_key", "tripay_private_key"], setSavingTripay, "tripay")}
-                    saving={savingTripay}
-                    isDirty={isSectionDirty(["tripay_mode", "tripay_merchant_code", "tripay_api_key", "tripay_private_key"])}
-                    saveSuccess={settingsSaved["tripay"]}
-                    saveSuccessMessage="Pengaturan Tripay berhasil disimpan"
-                    viewContent={
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        {["tripay_mode", "tripay_merchant_code", "tripay_api_key", "tripay_private_key"].map((key) => (
-                          <div key={key} className="p-3 bg-gray-50 rounded-xl border border-gray-200">
-                            <span className="text-xs text-gray-500 block font-medium capitalize">{key.replace("tripay_", "").replace("_", " ")}</span>
-                            <span className="text-sm font-mono text-gray-800 mt-1 block">
-                              {settingsMap[key]
-                                ? (key.includes("key") ? "••••••••••••" : settingsMap[key])
-                                : <em className="text-gray-400 font-sans font-normal text-xs">Belum diatur</em>}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    }
-                  >
-                    <FieldRow label="Mode" description="Sandbox untuk testing, Produksi untuk live">
-                      <div className="flex gap-3">
-                        {["sandbox", "production"].map((mode) => (
-                          <button key={mode} type="button" onClick={() => setSetting("tripay_mode", mode)}
-                            className={`px-4 py-2 rounded-xl text-sm font-semibold border transition cursor-pointer flex items-center gap-1.5 ${
-                              (settingsMap["tripay_mode"] || "sandbox") === mode
-                                ? mode === "production" ? "bg-emerald-600 text-white border-emerald-600" : "bg-amber-600 text-white border-amber-600"
-                                : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
-                            }`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${(settingsMap["tripay_mode"] || "sandbox") === mode ? "bg-white" : mode === "production" ? "bg-emerald-500" : "bg-amber-500"}`}></span>
-                            {mode === "sandbox" ? "Sandbox" : "Produksi"}
-                          </button>
-                        ))}
-                      </div>
-                    </FieldRow>
-                    <FieldRow label="Merchant Code" description="Dari Tripay Dashboard → Merchant → Kode Merchant">
-                      <input type="text" value={settingsMap["tripay_merchant_code"] || ""} onChange={(e) => setSetting("tripay_merchant_code", e.target.value)}
-                        placeholder="Contoh: T00001"
-                        className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs" />
-                    </FieldRow>
-                    <FieldRow label="API Key" description="Dari Tripay Dashboard → Developer → API Key">
-                      <input type="password" value={settingsMap["tripay_api_key"] || ""} onChange={(e) => setSetting("tripay_api_key", e.target.value)}
-                        placeholder="••••••••••••••••••••••••••••••••"
-                        className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs" />
-                    </FieldRow>
-                    <FieldRow label="Private Key" description="Dari Tripay Dashboard → Developer → Private Key (untuk signature)">
-                      <input type="password" value={settingsMap["tripay_private_key"] || ""} onChange={(e) => setSetting("tripay_private_key", e.target.value)}
-                        placeholder="••••••••••••••••••••••••••••••••"
-                        className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs" />
-                    </FieldRow>
-                    <FieldRow label="URL Webhook (Otomatis)" description="Daftarkan di Tripay Dashboard → Developer → Callback URL">
-                      <div className="flex items-center gap-2">
-                        <input type="text" readOnly value={`${settingsMap["platform_url"] || (typeof window !== "undefined" ? window.location.origin : "")}/api/webhook/tripay`}
-                          className="flex-1 px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-gray-100 text-gray-900 font-semibold shadow-2xs" />
-                        <button type="button" onClick={() => navigator.clipboard.writeText(`${settingsMap["platform_url"] || (typeof window !== "undefined" ? window.location.origin : "")}/api/webhook/tripay`)}
-                          className="px-3.5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300 rounded-xl text-xs font-semibold transition cursor-pointer">Salin</button>
-                      </div>
-                    </FieldRow>
-                  </SettingsCard>
+                  )}
                   </>
                   )}
 
@@ -5795,6 +5586,7 @@ export default function AdminPage() {
                   </SettingsCard>
                   </>
                   )}
+
                 </div>
               )}
 

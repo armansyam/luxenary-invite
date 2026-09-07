@@ -23,9 +23,10 @@ const DEFAULT_SETTINGS: Array<{ key: string; value: string; label: string; group
   { key: "cname_target", value: "", label: "Host Target CNAME (Custom Domain)", group: "setup" },
   { key: "hero_tagline", value: "Undangan Pernikahan Digital Elegan, Hangat & Berkelas", label: "Tagline Hero", group: "platform" },
   { key: "hero_subtitle", value: "Didesain khusus dengan sentuhan estetika mewah dan eksklusif. Hadirkan pengalaman berkesan dengan layout split desktop, custom subdomain, buku tamu real-time, dan video booth ucapan.", label: "Deskripsi Hero", group: "platform" },
-  { key: "ipaymu_mode", value: "sandbox", label: "Mode iPaymu (sandbox/production)", group: "ipaymu" },
-  { key: "ipaymu_va", value: "", label: "Virtual Account iPaymu", group: "ipaymu" },
-  { key: "ipaymu_api_key", value: "", label: "API Key iPaymu", group: "ipaymu" },
+  { key: "midtrans_server_key", value: "", label: "Server Key Midtrans", group: "midtrans" },
+  { key: "midtrans_client_key", value: "", label: "Client Key Midtrans", group: "midtrans" },
+  { key: "xendit_api_key", value: "", label: "Secret API Key Xendit", group: "xendit" },
+  { key: "xendit_webhook_token", value: "", label: "Webhook Token Xendit", group: "xendit" },
   { key: "google_auth_enabled", value: "true", label: "Aktifkan Login Google", group: "google" },
   { key: "google_client_id", value: "", label: "Google Client ID", group: "google" },
   { key: "google_client_secret", value: "", label: "Google Client Secret", group: "google" },
@@ -52,9 +53,8 @@ const DEFAULT_SETTINGS: Array<{ key: string; value: string; label: string; group
   { key: "smtp_password", value: "", label: "Password SMTP", group: "platform" },
   { key: "smtp_from_email", value: "", label: "Email Pengirim", group: "platform" },
   { key: "smtp_from_name", value: "Billing & Finance", label: "Nama Pengirim", group: "platform" },
-  // Gateway aktif — admin pilih dari sini tanpa deploy ulang
-  { key: "active_payment_gateway", value: "ipaymu", label: "Gateway Pembayaran Aktif (ipaymu/midtrans/xendit/tripay/duitku)", group: "payment" },
-  { key: "payment_gateway_mode", value: "sandbox", label: "Mode Gateway Global (sandbox/production)", group: "payment" },
+  // Gateway 2-arah aktif — admin pilih dari sini tanpa deploy ulang
+  { key: "active_payment_gateway", value: "midtrans", label: "Gateway Pembayaran Aktif (midtrans/xendit)", group: "payment" },
   { key: "bank_name", value: "", label: "Nama Bank Transfer Manual", group: "payment" },
   { key: "bank_account_number", value: "", label: "Nomor Rekening Bank", group: "payment" },
   { key: "bank_account_holder", value: "", label: "Nama Pemilik Rekening", group: "payment" },
@@ -127,9 +127,6 @@ export async function POST(req: NextRequest) {
     const envKeyMap: Record<string, string> = {
       google_client_id: "GOOGLE_CLIENT_ID",
       google_client_secret: "GOOGLE_CLIENT_SECRET",
-      ipaymu_va: "IPAYMU_VA",
-      ipaymu_api_key: "IPAYMU_API_KEY",
-      ipaymu_mode: "IPAYMU_SANDBOX",
       platform_url: "APP_URL",
     };
 
@@ -147,9 +144,8 @@ export async function POST(req: NextRequest) {
 
       if (envKeyMap[key]) {
         const envVar = envKeyMap[key];
-        const finalVal = key === "ipaymu_mode" ? (strVal === "sandbox" ? "true" : "false") : strVal;
-        process.env[envVar] = finalVal;
-        envUpdates[envVar] = finalVal;
+        process.env[envVar] = strVal;
+        envUpdates[envVar] = strVal;
       }
 
       // Sync Cloudflare R2 Object Lifecycle dynamically if retention setting is updated

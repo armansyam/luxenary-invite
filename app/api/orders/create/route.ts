@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => ({}));
-    const { planType } = body;
+    const { planType, regenerate, buyerName, buyerPhone, phoneNumber } = body;
 
     if (!planType) {
       return NextResponse.json({ error: "Missing planType" }, { status: 400 });
@@ -54,6 +54,19 @@ export async function POST(req: NextRequest) {
     }
 
     const validUserId = targetUser.id;
+
+    // Sinkronisasi data pembeli jika disediakan saat pembuatan pesanan
+    const phoneVal = (buyerPhone || phoneNumber || "").trim();
+    const nameVal = (buyerName || "").trim();
+    if (phoneVal || (nameVal && !targetUser.name)) {
+      await prisma.user.update({
+        where: { id: validUserId },
+        data: {
+          ...(phoneVal ? { phoneNumber: phoneVal } : {}),
+          ...(nameVal && !targetUser.name ? { name: nameVal } : {}),
+        },
+      });
+    }
 
     // KONSISTENSI GUARD: Cegah klien yang sudah memiliki undangan / order PAID membuat order baru 
     // dari tab usang. (Tipe order NEW_INVITATION implicitly)
@@ -102,35 +115,18 @@ export async function POST(req: NextRequest) {
     });
 
     if (existingPending) {
-      // Cari dan bersihkan file bukti transfer pada duplikat draf order pending/failed lama lainnya
-      try {
-        const duplicateOrders = await prisma.order.findMany({
-          where: {
-            userId: validUserId,
-            status: { in: ["PENDING", "FAILED"] },
-            id: { not: existingPending.id },
-            linkedOrderId: null,
-          },
-          select: { id: true, proofImageUrl: true },
-        });
-
-        for (const dup of duplicateOrders) {
-          if (dup.proofImageUrl) {
-            try {
-              await deleteFile(dup.proofImageUrl);
-            } catch (e) {
-              console.error("Gagal menghapus file bukti order duplikat:", e);
-            }
+      const nowMs = Date.now();
+      let isExpired = false;
+      if (existingPending.expiredAt && nowMs > existingPending.expiredAt.getTime()) {
+        isExpired = true;
+      }
+      if (!isExpired && existingPending.snapToken) {
+        try {
+          const parsed = JSON.parse(existingPending.snapToken);
+          if (parsed?.expiry && nowMs > parsed.expiry) {
+            isExpired = true;
           }
-        }
-
-        if (duplicateOrders.length > 0) {
-          await prisma.order.deleteMany({
-            where: { id: { in: duplicateOrders.map((o) => o.id) } },
-          });
-        }
-      } catch (dupErr) {
-        console.error("Gagal membersihkan duplikat order:", dupErr);
+        } catch {}
       }
 
       // FIX: Jangan izinkan ubah paket jika status masih PENDING dan sudah ada bukti transfer (menunggu verifikasi admin)
@@ -142,90 +138,109 @@ export async function POST(req: NextRequest) {
           planType: existingPending.planType,
           status: existingPending.status,
           proofImageUrl: existingPending.proofImageUrl,
+          serverTime: Date.now(),
         });
       }
 
-      // Update planType & amount langsung ke order aktif, reset bukti transfer jika paket berubah atau sebelumnya FAILED
       const isPlanChanged = existingPending.planType !== planType;
-      const isResetProof = isPlanChanged || existingPending.status === "FAILED";
+      const hadGatewaySession = !!(existingPending.snapToken || existingPending.gatewayTxId);
 
-      // Hapus file bukti lama dari storage jika paket berubah atau sebelumnya berstatus FAILED
-      if (isResetProof && existingPending.proofImageUrl) {
-        try {
-          await deleteFile(existingPending.proofImageUrl);
-        } catch (e) {
-          console.error("Gagal menghapus file bukti lama saat reset order:", e);
+      // Jika regenerate diminta, atau tagihan sudah expired, atau paket diubah padahal sudah pernah diproses gateway:
+      // Wajib matikan order lama (Soft Cancel ke EXPIRED) dan JANGAN PERNAH me-reuse ID lama (Midtrans melarang reuse order_id).
+      if (regenerate || isExpired || (isPlanChanged && hadGatewaySession)) {
+        await prisma.order.update({
+          where: { id: existingPending.id },
+          data: {
+            status: "EXPIRED",
+            rejectReason: regenerate
+              ? "Digantikan oleh tagihan baru"
+              : isExpired
+              ? "Waktu pembayaran telah habis"
+              : "Paket diubah oleh klien",
+          },
+        });
+
+        // Hubungi gateway cancel jika ada transaksi gateway aktif
+        if (hadGatewaySession && existingPending.gatewayId) {
+          try {
+            const { getGatewayById, getActiveGateway } = await import("@/lib/gatewayRegistry");
+            const gw = existingPending.gatewayId ? await getGatewayById(existingPending.gatewayId) : await getActiveGateway();
+            if (gw.cancel) {
+              await gw.cancel(existingPending.gatewayTxId || existingPending.id);
+            }
+          } catch (cancelErr) {
+            console.warn("[Orders Create] Gateway cancel notice:", cancelErr);
+          }
         }
+        // Biarkan alur lanjut ke bawah membuat order baru dengan UUID & Invoice baru yang segar!
+      } else {
+        // Cari dan bersihkan file bukti transfer pada duplikat draf order pending/failed lama lainnya
+        try {
+          const duplicateOrders = await prisma.order.findMany({
+            where: {
+              userId: validUserId,
+              status: { in: ["PENDING", "FAILED"] },
+              id: { not: existingPending.id },
+              linkedOrderId: null,
+            },
+            select: { id: true, proofImageUrl: true },
+          });
+
+          for (const dup of duplicateOrders) {
+            if (dup.proofImageUrl) {
+              try {
+                await deleteFile(dup.proofImageUrl);
+              } catch (e) {
+                console.error("Gagal menghapus file bukti order duplikat:", e);
+              }
+            }
+          }
+
+          if (duplicateOrders.length > 0) {
+            await prisma.order.deleteMany({
+              where: { id: { in: duplicateOrders.map((o) => o.id) } },
+            });
+          }
+        } catch (dupErr) {
+          console.error("Gagal membersihkan duplikat order:", dupErr);
+        }
+
+        const isResetProof = isPlanChanged || existingPending.status === "FAILED";
+
+        if (isResetProof && existingPending.proofImageUrl) {
+          try {
+            await deleteFile(existingPending.proofImageUrl);
+          } catch (e) {
+            console.error("Gagal menghapus file bukti lama saat reset order:", e);
+          }
+        }
+
+        const updated = await prisma.order.update({
+          where: { id: existingPending.id },
+          data: {
+            planType: planType as "TRADITIONAL" | "MODERN" | "PREMIUM",
+            amount,
+            status: "PENDING",
+            proofImageUrl: isResetProof ? null : existingPending.proofImageUrl,
+            proofUploadedAt: isResetProof ? null : existingPending.proofUploadedAt,
+            rejectReason: isResetProof ? null : existingPending.rejectReason,
+            snapToken: isPlanChanged ? null : existingPending.snapToken,
+            expiredAt: isPlanChanged ? null : existingPending.expiredAt,
+          },
+        });
+
+        return NextResponse.json({
+          orderId: updated.id,
+          invoiceNumber: updated.invoiceNumber,
+          amount,
+          planType,
+          existing: true,
+          planChanged: isPlanChanged,
+          proofImageUrl: updated.proofImageUrl,
+          snapToken: updated.snapToken,
+          serverTime: Date.now(),
+        });
       }
-
-      const updated = await prisma.order.update({
-        where: { id: existingPending.id },
-        data: {
-          planType: planType as "TRADITIONAL" | "MODERN" | "PREMIUM",
-          amount,
-          status: "PENDING",
-          proofImageUrl: isResetProof ? null : existingPending.proofImageUrl,
-          proofUploadedAt: isResetProof ? null : existingPending.proofUploadedAt,
-          rejectReason: isResetProof ? null : existingPending.rejectReason,
-          snapToken: null,
-          expiredAt: null,
-        },
-      });
-
-      return NextResponse.json({
-        orderId: updated.id,
-        invoiceNumber: updated.invoiceNumber,
-        amount,
-        planType,
-        existing: true,
-        planChanged: isPlanChanged,
-        proofImageUrl: updated.proofImageUrl,
-      });
-    }
-
-    /**
-     * Tidak ada order PENDING / FAILED — cek apakah ada order EXPIRED dengan planType yang sama.
-     * Jika ada, reset ke PENDING dan reuse daripada membuat order baru.
-     * Ini mencegah akumulasi order EXPIRED orphaned di DB setiap kali QRIS kedaluwarsa
-     * dan user mencoba bayar ulang (flow: iPaymu kirim webhook expired → handleRegenerateOrder
-     * → orders/create dipanggil lagi dengan planType yang sama).
-     */
-    const existingExpired = await prisma.order.findFirst({
-      where: {
-        userId: validUserId,
-        status: "EXPIRED",
-        planType: planType as "TRADITIONAL" | "MODERN" | "PREMIUM",
-        // Hanya reuse order EXPIRED yang belum punya bukti transfer
-        proofImageUrl: null,
-        // Hanya reuse jika bukan order UPGRADE (order upgrade memiliki linkedOrderId)
-        linkedOrderId: null,
-      },
-      orderBy: { createdAt: "desc" },
-    });
-
-    if (existingExpired) {
-      // Reset order EXPIRED ke PENDING dengan harga terbaru dari AdminSetting
-      const updated = await prisma.order.update({
-        where: { id: existingExpired.id },
-        data: {
-          status: "PENDING",
-          amount,
-          // Bersihkan token lama yang sudah tidak valid
-          snapToken: null,
-          expiredAt: null,
-          rejectReason: null,
-        },
-      });
-
-      return NextResponse.json({
-        orderId: updated.id,
-        invoiceNumber: updated.invoiceNumber,
-        amount,
-        planType,
-        existing: true,
-        planChanged: false,
-        reusedFromExpired: true,
-      });
     }
 
     // Pastikan tidak ada order draf PENDING/FAILED lama yang tertinggal
@@ -255,6 +270,7 @@ export async function POST(req: NextRequest) {
       amount,
       planType,
       existing: false,
+      serverTime: Date.now(),
     });
   } catch (error: any) {
     console.error("[Orders Create Error]", error);

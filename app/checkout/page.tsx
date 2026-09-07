@@ -66,6 +66,28 @@ function CheckoutContent() {
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
   const [retentionDays, setRetentionDays] = useState<number>(30);
   const [statusModal, setStatusModal] = useState<{ show: boolean; title?: string; message: string; isError?: boolean }>({ show: false, message: "" });
+  const [iframeUrl, setIframeUrl] = useState<string | null>(null);
+  const [cancellingOrder, setCancellingOrder] = useState(false);
+  const [requestedDomain, setRequestedDomain] = useState<string | null>(null);
+
+  // Buyer Contact Profile States
+  const [buyerName, setBuyerName] = useState<string>("");
+  const [buyerEmail, setBuyerEmail] = useState<string>("");
+  const [buyerPhone, setBuyerPhone] = useState<string>("");
+
+  // Helper routing setelah pembayaran lunas (PAID) untuk 3 kondisi sistem
+  const getPostPaymentRedirect = useCallback((type: string, id: string, plan: string) => {
+    if (type === "GALLERY_EXTENSION") {
+      return "/dashboard?msg=gallery_extended";
+    }
+    if (type === "CUSTOM_DOMAIN_ADDON") {
+      return "/dashboard/settings?msg=custom_domain_activated";
+    }
+    if (type === "UPGRADE") {
+      return "/dashboard?msg=plan_upgraded";
+    }
+    return `/dashboard/setup?order=${id}&plan=${plan}`;
+  }, []);
 
   // Auto close status modal after 5 seconds
   useEffect(() => {
@@ -112,15 +134,43 @@ function CheckoutContent() {
     setProofPreview(null);
     setUploadedProofUrl(null);
     setUploadSuccessMsg(null);
+
+    // Untuk pesanan add-on atau upgrade, jangan buat order paket baru
+    if (currentOrderType === "GALLERY_EXTENSION" || currentOrderType === "CUSTOM_DOMAIN_ADDON" || currentOrderType === "UPGRADE") {
+      const returnUrl = currentOrderType === "CUSTOM_DOMAIN_ADDON" ? "/dashboard/settings?msg=order_expired" : "/dashboard?msg=order_expired";
+      router.replace(returnUrl);
+      return;
+    }
+
     // Gunakan currentPlanType (dari state) bukan planParam (dari URL) agar paket tidak salah
     const targetPlan = currentPlanType || planParam || "";
     if (!targetPlan) {
       router.replace("/packages");
       return;
     }
-    router.replace(`/checkout?plan=${targetPlan}&msg=qris_expired`);
+    try {
+      const res = await fetch("/api/orders/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          planType: targetPlan,
+          regenerate: true,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.orderId) {
+        setOrderId(data.orderId);
+        setInvoiceNumber(data.invoiceNumber);
+        if (data.serverTime) {
+          setServerTimeOffset(data.serverTime - Date.now());
+        }
+        router.replace(`/checkout?order=${data.orderId}&msg=qris_expired`);
+      } else {
+        router.replace(`/checkout?plan=${targetPlan}&msg=qris_expired`);
+      }
+    } catch {}
     setReloadKey(prev => prev + 1);
-  }, [currentPlanType, planParam, router]);
+  }, [currentOrderType, currentPlanType, planParam, router]);
 
   // Load / Create Order Flow
   const initializeCheckout = useCallback(async () => {
@@ -171,8 +221,14 @@ function CheckoutContent() {
         const orderStatusData = await orderStatusRes.json();
 
         if (orderStatusRes.ok && orderStatusData.id) {
-          // SINGLE STATE GUARD: Jika klien sudah memiliki order PAID (klien aktif), jangan izinkan ke kasir
-          if (orderStatusData.isUserPaid && orderStatusData.paidOrderId) {
+          // SINGLE STATE GUARD: Hanya berlaku untuk pendaftaran paket baru (NEW)
+          // Add-on (GALLERY_EXTENSION, CUSTOM_DOMAIN_ADDON) dan UPGRADE tidak boleh memicu pengalihan
+          const isAddonOrder =
+            orderStatusData.orderType === "GALLERY_EXTENSION" ||
+            orderStatusData.orderType === "CUSTOM_DOMAIN_ADDON" ||
+            orderStatusData.orderType === "UPGRADE";
+
+          if (!isAddonOrder && orderStatusData.isUserPaid && orderStatusData.paidOrderId) {
             const planQuery = orderStatusData.paidPlanType ? `&plan=${orderStatusData.paidPlanType}` : "";
             router.replace(`/dashboard/setup?order=${orderStatusData.paidOrderId}${planQuery}`);
             return;
@@ -185,17 +241,25 @@ function CheckoutContent() {
           }
 
           if (orderStatusData.status === "PAID") {
-            if (orderStatusData.orderType === "GALLERY_EXTENSION") {
-              router.replace("/dashboard?msg=gallery_extended");
-            } else {
-              router.replace(`/dashboard/setup?order=${orderStatusData.id}&plan=${orderStatusData.planType}`);
-            }
+            router.replace(getPostPaymentRedirect(orderStatusData.orderType, orderStatusData.id, orderStatusData.planType));
             return;
           }
 
           setOrderId(orderStatusData.id);
           setInvoiceNumber(orderStatusData.invoiceNumber);
           setCurrentOrderType(orderStatusData.orderType || "NEW_INVITATION");
+          if (orderStatusData.requestedDomain) {
+            setRequestedDomain(orderStatusData.requestedDomain);
+          }
+          if (orderStatusData.buyerName) {
+            setBuyerName(orderStatusData.buyerName);
+          }
+          if (orderStatusData.buyerEmail) {
+            setBuyerEmail(orderStatusData.buyerEmail);
+          }
+          if (orderStatusData.buyerPhone) {
+            setBuyerPhone(orderStatusData.buyerPhone);
+          }
 
           let currentOffset = 0;
           if (orderStatusData.serverTime) {
@@ -209,6 +273,20 @@ function CheckoutContent() {
               name: "Perpanjang Galeri Tamu (+30 Hari)",
               price: Number(orderStatusData.amount),
               desc: "Perpanjangan penyimpanan foto momen para tamu di server selama +30 hari tambahan.",
+            });
+          } else if (orderStatusData.orderType === "CUSTOM_DOMAIN_ADDON") {
+            setCurrentPlanType("CUSTOM_DOMAIN_ADDON");
+            setPlanData({
+              name: "Jasa Integrasi Custom Domain (1 Tahun)",
+              price: Number(orderStatusData.amount),
+              desc: `Aktivasi domain ${orderStatusData.requestedDomain || "kustom"} lengkap dengan SSL/TLS & Cloudflare DNS selama 1 tahun.`,
+            });
+          } else if (orderStatusData.orderType === "UPGRADE") {
+            setCurrentPlanType(orderStatusData.planType || "");
+            setPlanData({
+              name: `Upgrade Paket ${orderStatusData.planType || ""}`,
+              price: Number(orderStatusData.amount),
+              desc: `Peningkatan fitur undangan digital ke tier ${orderStatusData.planType || ""}.`,
             });
           } else {
             const currentPkg = packages.find((p) => p.id === orderStatusData.planType);
@@ -296,8 +374,10 @@ function CheckoutContent() {
         body: JSON.stringify({
           userId: (session as any).user.id,
           planType: targetPlan,
-          buyerName: session.user?.name || "",
-          buyerEmail: session.user?.email || "",
+          buyerName: buyerName || session.user?.name || "",
+          buyerEmail: buyerEmail || session.user?.email || "",
+          buyerPhone: buyerPhone || "",
+          regenerate: msgParam === "qris_expired",
         }),
       });
 
@@ -306,8 +386,29 @@ function CheckoutContent() {
 
       setOrderId(orderData.orderId);
       setInvoiceNumber(orderData.invoiceNumber);
+      if (typeof window !== "undefined" && orderData.orderId) {
+        window.history.replaceState(null, "", `/checkout?order=${orderData.orderId}`);
+      }
+      if (orderData.serverTime) {
+        setServerTimeOffset(orderData.serverTime - Date.now());
+      }
       setIsGatewayExpired(false);
       
+      if (orderData.snapToken) {
+        try {
+          const parsed = JSON.parse(orderData.snapToken);
+          const syncedNow = Date.now() + (orderData.serverTime ? (orderData.serverTime - Date.now()) : 0);
+          if (parsed.qrString && parsed.expiry > syncedNow) {
+            setQrData(parsed.qrString);
+            setQrisSessionId(parsed.sessionId || null);
+            setQrisExpiry(parsed.expiry);
+            if (parsed.expiry && orderData.serverTime) {
+              setQrisTotalDuration(parsed.expiry - orderData.serverTime);
+            }
+          }
+        } catch {}
+      }
+
       if (orderData.proofImageUrl && orderData.status !== "FAILED" && orderData.status !== "REJECTED") {
         setUploadedProofUrl(orderData.proofImageUrl);
       } else if (orderData.rejectReason) {
@@ -330,7 +431,7 @@ function CheckoutContent() {
     }
   }, [status, sessionUserId, isAdmin, planParam, orderIdParam, reloadKey, initializeCheckout]);
 
-  // --- SSE PAYMENT STATUS (Menggantikan polling — server push via iPaymu webhook) ---
+  // --- SSE PAYMENT STATUS (Menggantikan polling — server push via gateway webhook) ---
   useEffect(() => {
     if (!qrData || !orderId) return;
 
@@ -351,7 +452,7 @@ function CheckoutContent() {
       }
     }, 1000);
 
-    // SSE — server push saat iPaymu webhook masuk dan update DB
+    // SSE — server push saat gateway webhook (Midtrans / Xendit) masuk dan update DB
     const eventSource = new EventSource(`/api/payments/status-stream/${orderId}`);
 
     eventSource.onmessage = (event) => {
@@ -360,11 +461,7 @@ function CheckoutContent() {
         if (data.status === "PAID") {
           eventSource.close();
           clearInterval(timerInterval);
-          if (currentOrderType === "GALLERY_EXTENSION") {
-            router.replace("/dashboard?msg=gallery_extended");
-          } else {
-            router.replace(`/dashboard/setup?order=${orderId}&plan=${data.planType}`);
-          }
+          router.replace(getPostPaymentRedirect(currentOrderType, orderId, data.planType));
         } else if (data.status === "EXPIRED") {
           eventSource.close();
           clearInterval(timerInterval);
@@ -383,7 +480,7 @@ function CheckoutContent() {
       clearInterval(timerInterval);
       eventSource.close();
     };
-  }, [qrData, orderId, qrisExpiry, router, serverTimeOffset, handleRegenerateOrder]);
+  }, [qrData, orderId, qrisExpiry, router, serverTimeOffset, handleRegenerateOrder, currentOrderType, getPostPaymentRedirect]);
 
   // Polling for Approval when Proof is Uploaded
   // Auto Polling for Manual Approval
@@ -403,11 +500,7 @@ function CheckoutContent() {
 
           if (data.status === "PAID") {
             clearInterval(manualPoll);
-            if (currentOrderType === "GALLERY_EXTENSION" || data.orderType === "GALLERY_EXTENSION") {
-              router.replace("/dashboard?msg=gallery_extended");
-            } else {
-              router.replace(`/dashboard/setup?order=${orderId}&plan=${data.planType}`);
-            }
+            router.replace(getPostPaymentRedirect(data.orderType || currentOrderType, orderId, data.planType));
           } else if (data.status === "FAILED" || data.status === "REJECTED") {
             clearInterval(manualPoll);
             setUploadedProofUrl(null);
@@ -427,7 +520,7 @@ function CheckoutContent() {
     }, 5000); // Check every 5s
 
     return () => clearInterval(manualPoll);
-  }, [orderId, uploadedProofUrl, uploadSuccessMsg, router, currentOrderType]);
+  }, [orderId, uploadedProofUrl, uploadSuccessMsg, router, currentOrderType, getPostPaymentRedirect]);
 
   // Manual Check Status Handler
   const handleCheckStatus = async () => {
@@ -439,11 +532,7 @@ function CheckoutContent() {
       setIsCheckingStatus(false);
       
       if (data.status === "PAID") {
-        if (currentOrderType === "GALLERY_EXTENSION") {
-          router.replace("/dashboard?msg=gallery_extended");
-        } else {
-          router.replace(`/dashboard/setup?order=${orderId}&plan=${data.planType}`);
-        }
+        router.replace(getPostPaymentRedirect(data.orderType || currentOrderType, orderId, data.planType));
       } else if (data.status === "FAILED" || data.status === "REJECTED") {
         setUploadedProofUrl(null);
         setUploadSuccessMsg(null);
@@ -485,10 +574,20 @@ function CheckoutContent() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         // Tidak kirim `gateway` — biarkan server memilih gateway aktif dari AdminSetting
-        body: JSON.stringify({ orderId }),
+        body: JSON.stringify({
+          orderId,
+          customerName: buyerName.trim() || undefined,
+          customerPhone: buyerPhone.trim() || undefined,
+        }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Gagal memulai pembayaran");
+      if (!res.ok) {
+        if (data.isExpired) {
+          handleRegenerateOrder();
+          return;
+        }
+        throw new Error(data.error || "Gagal memulai pembayaran");
+      }
       
       if (data.serverTime) {
         setServerTimeOffset(data.serverTime - Date.now());
@@ -504,8 +603,12 @@ function CheckoutContent() {
         if (data.expiryTimestamp && data.serverTime) {
           setQrisTotalDuration(data.expiryTimestamp - data.serverTime);
         }
+        if (typeof window !== "undefined" && orderId) {
+          window.history.replaceState(null, "", `/checkout?order=${orderId}`);
+        }
       } else if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl;
+        // Tampilkan modal iframe in-app (Zero External Redirect)
+        setIframeUrl(data.checkoutUrl);
       } else {
         throw new Error("Respons gateway tidak valid: Tidak ada QR String");
       }
@@ -513,6 +616,76 @@ function CheckoutContent() {
       setError(err.message);
     } finally {
       setPaying(false);
+    }
+  };
+
+  // Handle Cancel Order secara Dinamis ke Gateway (Midtrans /v2/{order_id}/cancel)
+  const handleCancelOrder = async () => {
+    if (!orderId || cancellingOrder) return;
+    setCancellingOrder(true);
+    setError(null);
+    try {
+      // 1. Hubungi endpoint cancel di server (yang akan cancel ke gateway, misal Midtrans /v2/{order_id}/cancel)
+      const res = await fetch(`/api/client/orders/${orderId}/cancel`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Gagal membatalkan tagihan.");
+      }
+
+      // 2. Bersihkan state QRIS
+      setQrData(null);
+      setQrisSessionId(null);
+      setQrisExpiry(null);
+      setCountdownStr("");
+
+      // 3. Batalkan sesuai jenis pesanan
+      if (currentOrderType === "GALLERY_EXTENSION") {
+        router.replace("/dashboard?msg=extension_cancelled");
+        return;
+      }
+      if (currentOrderType === "CUSTOM_DOMAIN_ADDON") {
+        router.replace("/dashboard/settings?msg=domain_addon_cancelled");
+        return;
+      }
+      if (currentOrderType === "UPGRADE") {
+        router.replace("/dashboard?msg=upgrade_cancelled");
+        return;
+      }
+
+      // Untuk order pendaftaran awal (NEW): buat order baru yang segar (regenerate: true)
+      const targetPlan = currentPlanType || planParam || "TRADITIONAL";
+      const newOrderRes = await fetch("/api/orders/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          planType: targetPlan,
+          regenerate: true,
+        }),
+      });
+
+      const newOrderData = await newOrderRes.json();
+      if (newOrderRes.ok && newOrderData.orderId) {
+        setOrderId(newOrderData.orderId);
+        setInvoiceNumber(newOrderData.invoiceNumber);
+        if (newOrderData.serverTime) {
+          setServerTimeOffset(newOrderData.serverTime - Date.now());
+        }
+        setStatusModal({
+          show: true,
+          title: "Tagihan Berhasil Dibatalkan",
+          message: "Tagihan QRIS sebelumnya telah dibatalkan di sistem. Tagihan baru dengan nomor invoice baru siap dibayar.",
+          isError: false,
+        });
+        router.replace(`/checkout?order=${newOrderData.orderId}`);
+      } else {
+        router.replace("/packages");
+      }
+    } catch (err: any) {
+      setError(err.message || "Gagal membatalkan tagihan.");
+    } finally {
+      setCancellingOrder(false);
     }
   };
 
@@ -537,8 +710,22 @@ function CheckoutContent() {
       if (!res.ok) throw new Error(data.error || "Gagal mengunggah bukti transfer");
 
       setUploadedProofUrl(data.proofImageUrl);
-      setUploadSuccessMsg("Bukti transfer berhasil dikirim! Tim Admin sedang memverifikasi pembayaran Anda.");
       setRejectReason(null);
+
+      if (data.order?.status === "PAID") {
+        setUploadSuccessMsg("Bukti transfer berhasil diverifikasi! Pembayaran Anda telah lunas.");
+        setStatusModal({
+          show: true,
+          title: "Pembayaran Berhasil!",
+          message: "Pembayaran Anda berhasil diverifikasi. Mengalihkan...",
+          isError: false,
+        });
+        setTimeout(() => {
+          router.replace(getPostPaymentRedirect(currentOrderType, orderId, currentPlanType));
+        }, 1500);
+      } else {
+        setUploadSuccessMsg("Bukti transfer berhasil dikirim! Tim Admin sedang memverifikasi pembayaran Anda.");
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -634,28 +821,72 @@ function CheckoutContent() {
           {/* Invoice Summary Card */}
           {planData && (
             <div className="bg-white/5 border border-white/10 rounded-3xl p-6 space-y-4 backdrop-blur-xs">
-              {/* Buyer info */}
-              <div className="flex items-center gap-3 pb-4 border-b border-white/10">
-                {session?.user?.image ? (
-                  <img src={session.user.image} alt="" className="w-10 h-10 rounded-full ring-2 ring-amber-500/30 object-cover" />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-amber-600/30 border border-amber-500/40 flex items-center justify-center text-amber-300 font-bold text-sm">
-                    {session?.user?.name ? session.user.name.charAt(0).toUpperCase() : "M"}
+              {/* Buyer info & Contact Details */}
+              <div className="pb-4 border-b border-white/10 space-y-3">
+                <div className="flex items-center gap-3">
+                  {session?.user?.image ? (
+                    <img src={session.user.image} alt="" className="w-10 h-10 rounded-full ring-2 ring-amber-500/30 object-cover" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-amber-600/30 border border-amber-500/40 flex items-center justify-center text-amber-300 font-bold text-sm">
+                      {buyerName ? buyerName.charAt(0).toUpperCase() : session?.user?.name ? session.user.name.charAt(0).toUpperCase() : "M"}
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-white font-semibold text-sm truncate">{buyerName || session?.user?.name || "Mempelai"}</p>
+                    <p className="text-stone-400 text-xs truncate">{buyerEmail || session?.user?.email}</p>
+                  </div>
+                </div>
+
+                {/* Input Kontak WhatsApp untuk Pengiriman Invoice Resmi */}
+                {!qrData && !uploadedProofUrl && (
+                  <div className="pt-2 border-t border-white/5 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label htmlFor="buyerPhone" className="text-[11px] font-medium text-stone-300 flex items-center gap-1.5">
+                        <svg className="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                        </svg>
+                        <span>Nomor WhatsApp / Seluler Aktif</span>
+                      </label>
+                      <span className="text-[10px] text-stone-500">Kirim ke Payment Gateway</span>
+                    </div>
+                    <input
+                      id="buyerPhone"
+                      type="tel"
+                      value={buyerPhone}
+                      onChange={(e) => setBuyerPhone(e.target.value)}
+                      placeholder="Contoh: 081234567890"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-stone-900/60 border border-white/10 text-white placeholder-stone-500 text-xs focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 transition font-mono"
+                    />
+                    <p className="text-[10px] text-stone-400 leading-relaxed">
+                      Detail nama lengkap, email resmi, dan nomor kontak Anda akan dikirimkan langsung ke payment gateway untuk penerbitan kuitansi dan konfirmasi transaksi otomatis.
+                    </p>
                   </div>
                 )}
-                <div className="min-w-0 flex-1">
-                  <p className="text-white font-semibold text-sm truncate">{session?.user?.name || "Mempelai"}</p>
-                  <p className="text-stone-400 text-xs truncate">{session?.user?.email}</p>
-                </div>
+
+                {/* Tampilan Kontak Terkonfirmasi saat QRIS Sudah Terbit */}
+                {(qrData || uploadedProofUrl) && buyerPhone && (
+                  <div className="pt-2 border-t border-white/5 flex items-center justify-between text-xs">
+                    <span className="text-stone-400 text-[11px]">WhatsApp Terdaftar:</span>
+                    <span className="text-amber-300 font-mono text-[11px] font-semibold">{buyerPhone}</span>
+                  </div>
+                )}
               </div>
 
               {/* Plan detail */}
               <div className="space-y-3">
                 <div className="flex justify-between items-center bg-stone-900/30 px-4 py-3 rounded-xl border border-white/5">
-                  <span className="text-stone-400 font-medium text-xs">Aktivasi Paket</span>
+                  <span className="text-stone-400 font-medium text-xs">
+                    {currentOrderType === "GALLERY_EXTENSION"
+                      ? "Item Perpanjangan"
+                      : currentOrderType === "CUSTOM_DOMAIN_ADDON"
+                      ? "Add-on Kustom"
+                      : currentOrderType === "UPGRADE"
+                      ? "Upgrade Layanan"
+                      : "Aktivasi Paket"}
+                  </span>
                   <div className="flex items-center gap-3">
                     <span className="text-white font-bold">{planData.name}</span>
-                    {!uploadedProofUrl && !qrData && (
+                    {!uploadedProofUrl && !qrData && (!currentOrderType || currentOrderType === "NEW") && (
                       <a href="/packages" className="text-[10px] bg-white/10 hover:bg-white/20 text-stone-300 px-2 py-0.5 rounded-full transition">Ubah</a>
                     )}
                   </div>
@@ -664,10 +895,28 @@ function CheckoutContent() {
                   <span className="text-stone-400">Nomor Invoice</span>
                   <span className="text-amber-300 font-mono text-[11px] font-bold">{invoiceNumber}</span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-stone-400">Masa Aktif Undangan</span>
-                  <span className="text-emerald-400 font-semibold">Aktif hingga {retentionDays} Hari Setelah Acara</span>
-                </div>
+                {currentOrderType === "CUSTOM_DOMAIN_ADDON" ? (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="text-stone-400">Domain Tujuan</span>
+                      <span className="text-amber-400 font-mono text-xs font-bold">{requestedDomain || "-"}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-stone-400">Masa Aktif Domain</span>
+                      <span className="text-emerald-400 font-semibold">1 Tahun (365 Hari)</span>
+                    </div>
+                  </>
+                ) : currentOrderType === "GALLERY_EXTENSION" ? (
+                  <div className="flex justify-between items-center">
+                    <span className="text-stone-400">Masa Tambahan Galeri</span>
+                    <span className="text-emerald-400 font-semibold">+30 Hari Kalender</span>
+                  </div>
+                ) : (
+                  <div className="flex justify-between items-center">
+                    <span className="text-stone-400">Masa Aktif Undangan</span>
+                    <span className="text-emerald-400 font-semibold">Aktif hingga {retentionDays} Hari Setelah Acara</span>
+                  </div>
+                )}
               </div>
 
               {/* Rincian Fee Gateway Dinamis (%) */}
@@ -750,6 +999,31 @@ function CheckoutContent() {
                     <p className="text-[11px] text-stone-400 max-w-xs mx-auto leading-relaxed">
                       Buka aplikasi m-Banking atau e-Wallet Anda (BCA, Mandiri, GoPay, OVO, Dana, dll) dan scan QRIS di atas. Layar otomatis berpindah jika sukses.
                     </p>
+                  </div>
+
+                  {/* Tombol Batalkan Tagihan Ini (Kirim signal Cancel ke Gateway & Buat Order Baru) */}
+                  <div className="pt-1">
+                    <button
+                      id="btn-cancel-qris"
+                      type="button"
+                      onClick={handleCancelOrder}
+                      disabled={cancellingOrder}
+                      className="inline-flex items-center gap-1.5 text-xs text-stone-400 hover:text-rose-400 transition py-1.5 px-3 rounded-xl hover:bg-rose-500/10 border border-white/5 hover:border-rose-500/20 cursor-pointer disabled:opacity-50"
+                    >
+                      {cancellingOrder ? (
+                        <>
+                          <span className="w-3 h-3 border-2 border-stone-400 border-t-transparent rounded-full animate-spin"></span>
+                          <span>Membatalkan Tagihan...</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                          <span>Batalkan Tagihan Ini</span>
+                        </>
+                      )}
+                    </button>
                   </div>
                 </div>
               ) : (
@@ -841,7 +1115,7 @@ function CheckoutContent() {
                 </div>
 
                 {uploadedProofUrl || uploadSuccessMsg ? (
-                  <div className="p-4 bg-emerald-950/50 border border-emerald-500/40 rounded-2xl space-y-3 text-center">
+                  <div className="p-4 border rounded-2xl space-y-3 text-center" style={{ background: "rgba(6,78,59,0.3)", borderColor: "rgba(52,211,153,0.4)" }}>
                     <div className="flex items-center justify-center gap-2 text-emerald-300 font-bold text-xs">
                       <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                       <span>Menunggu Verifikasi Admin</span>
@@ -849,42 +1123,42 @@ function CheckoutContent() {
                     <p className="text-[11px] text-emerald-300/80 leading-relaxed">
                       Bukti transfer Anda telah diterima dan sedang menunggu konfirmasi admin. Anda dapat mengecek status persetujuan secara manual.
                     </p>
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-2 mt-2">
-                      <button
-                        type="button"
-                        onClick={handleCheckStatus}
-                        disabled={isCheckingStatus}
-                        className="w-full sm:w-auto px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-stone-950 font-bold rounded-xl text-[11px] transition shadow-lg cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                      >
-                        {isCheckingStatus ? (
-                          <>
-                            <svg className="animate-spin h-3.5 w-3.5 text-stone-950" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-2 mt-2">
+                          <button
+                            type="button"
+                            onClick={handleCheckStatus}
+                            disabled={isCheckingStatus}
+                            className="w-full sm:w-auto px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-stone-950 font-bold rounded-xl text-[11px] transition shadow-lg cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                          >
+                            {isCheckingStatus ? (
+                              <>
+                                <svg className="animate-spin h-3.5 w-3.5 text-stone-950" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span>Mengecek...</span>
+                              </>
+                            ) : (
+                              <span>Cek Status Pembayaran ⟳</span>
+                            )}
+                          </button>
+                          <a
+                            href={`https://wa.me/${adminWa.replace(/^0/, "62")}?text=${encodeURIComponent(`Halo Admin, saya sudah melakukan pembayaran manual untuk Invoice: *${invoiceNumber}*. Mohon dicek dan dikonfirmasi ya. Terima kasih.`)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-full sm:w-auto px-4 py-2 bg-stone-800 hover:bg-stone-700 text-emerald-400 border border-emerald-500/30 font-bold rounded-xl text-[11px] transition shadow-lg flex items-center justify-center gap-1.5 cursor-pointer"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 00-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
                             </svg>
-                            <span>Mengecek...</span>
-                          </>
-                        ) : (
-                          <span>Cek Status Pembayaran ⟳</span>
+                            <span>Konfirmasi via WA</span>
+                          </a>
+                        </div>
+                        {uploadedProofUrl && (
+                          <div className="mt-3">
+                            <img src={uploadedProofUrl} alt="Bukti Transfer" className="max-h-36 rounded-xl mx-auto border border-emerald-500/30 object-cover" />
+                          </div>
                         )}
-                      </button>
-                      <a
-                        href={`https://wa.me/${adminWa.replace(/^0/, "62")}?text=${encodeURIComponent(`Halo Admin, saya sudah melakukan pembayaran manual untuk Invoice: *${invoiceNumber}*. Mohon dicek dan dikonfirmasi ya. Terima kasih.`)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-full sm:w-auto px-4 py-2 bg-stone-800 hover:bg-stone-700 text-emerald-400 border border-emerald-500/30 font-bold rounded-xl text-[11px] transition shadow-lg flex items-center justify-center gap-1.5 cursor-pointer"
-                      >
-                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 00-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                        </svg>
-                        <span>Konfirmasi via WA</span>
-                      </a>
-                    </div>
-                    {uploadedProofUrl && (
-                      <div className="mt-3">
-                        <img src={uploadedProofUrl} alt="Bukti Transfer" className="max-h-36 rounded-xl mx-auto border border-emerald-500/30 object-cover" />
-                      </div>
-                    )}
                   </div>
                 ) : (
                   <>
@@ -1018,10 +1292,45 @@ function CheckoutContent() {
             <p className="text-stone-300 text-sm whitespace-pre-line mb-6">{statusModal.message}</p>
             <button
               onClick={() => setStatusModal({ show: false, message: "" })}
-              className="w-full py-2.5 bg-white hover:bg-stone-200 text-stone-900 font-bold rounded-xl text-sm transition"
+              className="w-full py-2.5 bg-white hover:bg-stone-200 text-stone-900 font-bold rounded-xl text-sm transition cursor-pointer"
             >
               Tutup
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* In-App Payment Modal (Zero External Window Redirection) */}
+      {iframeUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-2 sm:p-4">
+          <div className="bg-stone-900 border border-white/10 rounded-2xl w-full max-w-2xl h-[88vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-stone-950/80">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-xs font-semibold text-stone-200 uppercase tracking-wider">Pembayaran Aman (In-App)</span>
+              </div>
+              <button
+                onClick={() => setIframeUrl(null)}
+                className="px-3 py-1 text-stone-400 hover:text-white rounded-lg hover:bg-white/10 transition text-xs flex items-center gap-1.5 cursor-pointer"
+                title="Tutup Halaman Pembayaran"
+              >
+                <span>Tutup</span>
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Iframe Body */}
+            <div className="flex-1 w-full relative bg-white">
+              <iframe
+                src={iframeUrl}
+                className="w-full h-full border-0"
+                allow="payment; camera; microphone"
+                title="Halaman Pembayaran Gateway"
+              />
+            </div>
           </div>
         </div>
       )}

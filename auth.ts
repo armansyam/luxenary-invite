@@ -20,14 +20,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       credentials: {
         email: { label: "Email / Username", type: "text" },
         password: { label: "Password", type: "password" },
-        portal: { label: "Portal", type: "text" }, // "ADMIN" or "CLIENT"
+        portal: { label: "Portal", type: "text" }, // "ADMIN"
       },
       async authorize(credentials) {
-        const portal = (credentials?.portal as string)?.toUpperCase() || "CLIENT";
+        const portal = (credentials?.portal as string)?.toUpperCase() || "ADMIN";
         const emailOrUser = (credentials?.email as string)?.trim().toLowerCase() || "";
         const password = (credentials?.password as string) || "";
 
-        // CredentialsProvider HANYA untuk Admin Portal (Verifikasi username/email & bcrypt hash)
+        // PORTAL ADMIN (Verifikasi username/email & bcrypt hash)
         if (portal !== "ADMIN") {
           return null;
         }

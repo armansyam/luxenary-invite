@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { applyUpgradePlan } from "@/lib/upgradeHelper";
+import { paymentEmitter } from "@/lib/paymentEvents";
 
 export const dynamic = "force-dynamic";
 
@@ -74,6 +75,11 @@ export async function POST(
 
     // If this is an UPGRADE order, update planType on the linked original order
     await applyUpgradePlan(orderId);
+
+    // Push notifikasi real-time ke browser klien via SSE
+    try {
+      paymentEmitter.emit(orderId, { status: "PAID", planType: order.planType });
+    } catch {}
 
     return NextResponse.json({ success: true, message: "Order berhasil dikonfirmasi lunas" });
   } catch (error: any) {

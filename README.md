@@ -39,15 +39,18 @@ Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model 
      │
      ▼
 2. LOGIN + PILIH PAKET (/login → /packages)
-   Google OAuth → Pilih paket (Traditional / Modern / Premium)
+   Google OAuth → Pilih paket (Traditional / Modern / Premium).
+   *Onboarding Guard:* Jika klien memiliki tagihan aktif berstatus PENDING, akses ke /packages otomatis dicegat dan dilempar kembali ke kasir aktif (/checkout?order=...).
      │
      ▼
 3. CHECKOUT (/checkout)
    Pola Single State (1 Klien = 1 Transaksi) + Auto-Purge Obsolete Storage
+   - *URL State & QRIS Hydration:* URL mengikat `?order=ID`. Refresh halaman (F5) ribuan kali tetap menampilkan summary dan countdown QRIS tanpa reset ke tombol awal.
+   - *Penyimpanan Nyata Database:* Seluruh transaksi tersimpan permanen di PostgreSQL (`orders` table), menjamin verifikasi status dan summary 100% konsisten.
    ┌─────────────────────────────────────┬──────────────────────────┐
-   │  Multi-Gateway (5 Gateway Aktif)    │  Transfer Bank Manual    │
-   │  iPaymu / Duitku / Midtrans /       │  (Bebas Hardcode)        │
-   │  TriPay / Xendit (QRIS/VA/E-Wallet) │  Upload WebP ke R2 via   │
+   │  Gateway 2-Arah (Midtrans & Xendit) │  Transfer Bank Manual    │
+   │  Core API QRIS / Snap / Invoice     │  (Bebas Hardcode)        │
+   │  Two-Way Cancel & Zero Ghost Payment│  Upload WebP ke R2 via   │
    │  → Webhook Auto-PAID + Invoice Email│  Custom Domain Edge CDN  │
    │                                     │  → Admin Approve/Reject  │
    │                                     │    (Inline Action Switch)│
@@ -72,7 +75,7 @@ Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model 
 6. HERO LAUNCHPAD PUBLIKASI (/dashboard/settings)
    - Verifikasi Sekuensial 10 Bagian dengan radar audit & jendela sliding ticker 3-baris bergulir otomatis
    - Validasi ketat tanggal acara sebagai referensi masa berlaku website & penanganan 2 opsi santun data opsional
-   - HTML mandiri di-bake (Zero-Flicker) → disimpan ke lokasi statis & R2 sync
+   - HTML mandiri di-bake (Zero-Flicker) → disimpan ke lokasi statis & R2 sync (dilengkapi Arsitektur Preloader Hibrida & Anti-Visual Leak: deteksi otomatis preloader kustom master tema atau injeksi Universal Obsidian Gold Shimmer)
    - Banner sambutan formal & netral pasca-publikasi dengan Official Launch Box (SSL badge, Salin Tautan, Buka Web, WhatsApp)
    - Sinkronisasi instan seketika ke Buku Tamu (/dashboard/guests) dan Dasbor (/dashboard) tanpa caching lag
      │
@@ -101,7 +104,7 @@ ADMIN PORTAL (/admin)
      - **Tab Setup & Integrasi:** Konfigurasi DNS & IP Server (auto-detect IP publik VPS, CNAME target dinamis), SMTP Email Server, Batas Upload Galeri Tamu (MB), dan Siklus Hidup Subdomain & Retensi.
      - **Tab Platform:** Branding & Identitas Platform, CS Support, Hero Tagline, Fitur Landing Page, Template WhatsApp.
      - **Tab Paket & Harga:** Konfigurasi harga paket undangan (Traditional, Modern, Premium) serta 2 Layanan Tambahan (Add-Ons) resmi: Jasa Custom Domain (1 Thn — dilengkapi toggle aktif/nonaktif & mode Coming Soon untuk klien) dan Perpanjang Masa Aktif URL Asli / Galeri (Bulanan).
-     - **Tab Keuangan:** Rekening bank transfer manual dan 5 Payment Gateway.
+     - **Tab Gateway QRIS:** Pusat kontrol global dan sub-tabs terisolasi per vendor gateway 2-arah (Midtrans dan Xendit) dengan kredensial terpadu dan resolusi endpoint otomatis.
    - Database (Database): Snapshot backup & restore PostgreSQL
    - Log (Logs): Audit aktivitas admin & webhook gateway logs
 ```
@@ -177,10 +180,28 @@ Pre-Flight Checklist & Smart Audit (/dashboard/settings):
 | **Media Storage** | Cloudflare R2 (prod) + Local disk VPS (draft/dev) via `lib/storage.ts` (penamaan slot deterministik & clean overwrite) |
 | **Image Processing** | `sharp` — WebP, resize, compress |
 | **Video Processing** | `FFmpeg` — H.264, auto-trim 20s, no audio loop, 30fps cap, +faststart streaming |
-| **Payment** | 5 Gateway (iPaymu, Duitku, Midtrans, TriPay, Xendit) + Transfer Bank Manual |
+| **Payment** | Gateway 2-Arah (Midtrans Core API QRIS & Xendit Invoice) + Transfer Bank Manual dengan transmisi profil pembeli lengkap (Nama, Email, WhatsApp/HP, Alamat, Item Branding, & Metadata) |
 | **Mailer** | Nodemailer dengan kredensial SMTP dinamis via `admin_settings` |
 | **Cron** | `POST /api/cron/cleanup` — retensi & cleanup otomatis |
 | **Manajemen Proses** | PM2 (VPS) |
+
+---
+
+## 3 Kondisi Pembayaran & Transmisi Data Lengkap Gateway (Rich Payload)
+
+Sistem mendukung 3 kondisi transaksi dengan integrasi 2-arah eksklusif (Midtrans & Xendit) yang dilengkapi pembatalan seketika (*two-way cancel/expire*) dan payload lengkap:
+1. **Registrasi Paket Awal (`NEW`):** Aktivasi paket baru (Traditional / Modern / Premium). Setelah lunas, klien langsung diarahkan ke `/dashboard/setup`.
+2. **Upgrade Layanan (`UPGRADE`):** Klien menaikkan tier paket (misal Traditional ke Modern / Premium) dengan selisih harga dinamis. Tier induk diperbarui seketika.
+3. **Add-on Layanan Tambahan:**
+   - **Perpanjang Galeri Tamu (`GALLERY_EXTENSION`):** Menambah masa simpan foto momen tamu selama +30 hari dan membuka kunci form upload.
+   - **Jasa Integrasi Custom Domain (`CUSTOM_DOMAIN_ADDON`):** Integrasi domain kustom klien (lengkap dengan sertifikat SSL/TLS & Cloudflare DNS) selama +365 hari / 1 tahun.
+
+**Data Lengkap yang Ditransmisikan ke Payment Gateway:**
+- **Profil Klien:** Nama depan & belakang (`first_name`, `last_name` / `given_names`, `surname`), email resmi, dan nomor kontak WhatsApp aktif (`phoneNumber` E.164).
+- **Alamat:** Alamat penagihan & pengiriman digital terstandarisasi ISO `IDN`.
+- **Notifikasi Multi-Kanal:** Xendit otomatis mengirim kuitansi dan status tagihan via WhatsApp, SMS, dan Email jika nomor ponsel disediakan.
+- **Rincian Item & Branding:** Nama item spesifik, brand platform (`AdminSetting`), kategori layanan, dan biaya layanan admin (`ADMIN_FEE`) terpisah transparan.
+- **Metadata Dua Arah:** Nomor invoice, UUID order, tipe pesanan, nama domain kustom, nama kedua mempelai, slug undangan, dan rincian transaksi platform.
 
 ---
 
@@ -188,9 +209,9 @@ Pre-Flight Checklist & Smart Audit (/dashboard/settings):
 
 | Model | Fungsi |
 |:--|:--|
-| `User` | Akun klien (Google OAuth, role: CLIENT / ADMIN) |
+| `User` | Akun klien (Google OAuth, role: CLIENT / ADMIN, nomor WhatsApp `phoneNumber`) |
 | `Admin` | Akun tim admin (SUPER_ADMIN, FINANCE, SUPPORT) |
-| `Order` | Invoice pembelian paket & perpanjangan galeri (`NEW`, `UPGRADE`, `GALLERY_EXTENSION`) |
+| `Order` | Invoice pembelian paket & add-on (`NEW`, `UPGRADE`, `GALLERY_EXTENSION`, `CUSTOM_DOMAIN_ADDON`) |
 | `Invitation` | Inti undangan (`DRAFT`, `PUBLISHED`, `EVENT_FINISHED`, `TAKEN_DOWN`, `ARCHIVED`) |
 | `InvitationMedia` | Media per slot (8 slot: LANDING_COVER, HOME_PHOTO, GROOM_PHOTO, dll) |
 | `Guest` | Daftar tamu + nomor kontak `phone` + QR token |
@@ -199,7 +220,7 @@ Pre-Flight Checklist & Smart Audit (/dashboard/settings):
 | `GuestMemory` | Foto candid kenangan tamu pasca-acara |
 | `Theme` | Katalog tema undangan |
 | `AdminSetting` | Konfigurasi platform dinamis (key-value) |
-| `WebhookLog` | Log audit webhook payment (iPaymu, Duitku, Midtrans, TriPay, Xendit) |
+| `WebhookLog` | Log audit webhook payment (Midtrans & Xendit) |
 | `AdminAuditLog` | Log aktivitas staf admin |
 | `MusicPreset` | Pustaka musik sistem dinamis untuk latar undangan |
 
@@ -221,10 +242,10 @@ Luxenary-Invite/
 │   │   ├── public/            # settings, themes, rsvp, memories, resolve-custom-domain, version
 │   │   ├── payments/          # checkout, status-stream
 │   │   ├── orders/            # create invoice
-│   │   ├── webhook/           # ipaymu, duitku, midtrans, tripay, xendit
+│   │   ├── webhook/           # midtrans, xendit (gateway 2-arah)
 │   │   ├── cron/              # cleanup (retensi otomatis H+7 & H+30)
 │   │   └── sse/               # Server-Sent Events (memories real-time)
-│   ├── checkout/              # Flow pembayaran (multi-gateway + manual transfer)
+│   ├── checkout/              # Flow pembayaran (multi-gateway 2-arah + manual transfer)
 │   ├── demo/                  # Preview tema publik
 │   ├── login/                 # Login klien
 │   ├── onboarding/            # Flow setup awal pasca bayar
@@ -235,14 +256,14 @@ Luxenary-Invite/
 ├── lib/
 │   ├── themeEngine.ts         # ⭐ Mesin render HTML undangan (CORE)
 │   ├── staticPublisher.ts     # ⭐ Bake HTML statis saat Publish (CORE)
-│   ├── renderTemplate.ts      # Injeksi data & mapping tema ke template .html
+│   ├── renderTemplate.ts      # Injeksi data, mapping tema, runtime script, & Hybrid Preloader Engine
 │   ├── storage.ts             # Upload/delete media (R2 / S3 / Local switch)
 │   ├── mailer.ts              # ⭐ Nodemailer transactional & invoice email generator
 │   ├── driveHelper.ts         # Fetch foto Google Drive API v3
 │   ├── settings.ts            # Single source of truth admin_settings dari DB
 │   ├── domainUtils.ts         # URL builder (subdomain, canonical)
-│   ├── gatewayRegistry.ts     # Registry 5 payment gateway
-│   ├── gateways/              # Implementasi gateway: iPaymu, Duitku, Midtrans, TriPay, Xendit
+│   ├── gatewayRegistry.ts     # Registry payment gateway 2-arah (Midtrans & Xendit)
+│   ├── gateways/              # Implementasi gateway 2-arah: Midtrans, Xendit
 │   ├── upgradeHelper.ts       # Upgrade paket & perpanjangan galeri (+30 hari)
 │   ├── rateLimit.ts           # Rate limiter API publik
 │   ├── sseEmitter.ts          # SSE emitter (momen real-time)
@@ -348,8 +369,8 @@ NEXT_PUBLIC_APP_URL="http://localhost:3000"
 NEXT_PUBLIC_ROOT_DOMAIN="localhost:3000"
 ```
 
-> **Catatan Pengaturan Dinamis:**  
-> Kredensial Payment Gateway (iPaymu, Duitku, Midtrans, TriPay, Xendit), konfigurasi SMTP Email (Host, Port, User, Password), tarif fee, durasi QRIS, dan harga paket dapat diatur **secara langsung dari Admin Portal (Tab Pengaturan)** tanpa perlu restart server atau edit `.env`.
+> **Catatan Pengaturan Dinamis & Integrasi Gateway Terpadu:**  
+> Kredensial Payment Gateway 2-Arah (Midtrans & Xendit) dikelola langsung melalui tab Gateway QRIS di Portal Admin. Midtrans secara otomatis mengarahkan panggilan ke endpoint Sandbox jika Server Key diawali `SB-`, atau ke Live Produksi jika diawali format standar `Mid-`. Konfigurasi SMTP Email, tarif fee, durasi QRIS, dan harga paket dikelola **secara langsung dari Admin Portal (Tab Pengaturan)** tanpa perlu restart server atau edit `.env`.
 
 ### 3. Setup Database
 ```bash
@@ -382,7 +403,7 @@ pm2 start ecosystem.config.js
 
 ## Keamanan
 
-- **Webhook iPaymu**: Diverifikasi HMAC-SHA256 sebelum diproses
+- **Webhook Payment 2-Arah (Midtrans & Xendit)**: Diverifikasi signature SHA512 (Midtrans) & x-callback-token timing-safe (Xendit) dengan garansi pembatalan instan untuk mencegah ghost payment
 - **Auth Guard**: Middleware memisahkan Admin, Client, dan Publik
 - **Routing Loop Protection**: Middleware mengisolasi seluruh rute statis sistem (`PLATFORM_EXCLUSIONS` seperti `/contact`, `/privacy`, `/terms`, `/refund`, dll.) dari Flat Slug interceptor untuk mencegah *infinite rewrite loop*.
 - **Reserved Subdomains Protection**: Subdomain `cdn` (Cloudflare R2), `admin`, `api`, `auth`, `static`, `assets`, dll. diproteksi terpusat via `lib/domainUtils.ts` dan dilarang diklaim oleh klien baik saat pemeriksaan ketersediaan maupun saat pembuatan/pembaruan undangan.

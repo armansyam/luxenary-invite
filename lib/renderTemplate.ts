@@ -119,6 +119,7 @@ const AUTOPLAY_SHOWCASE_SCRIPT = `
   .music-fab, #musicFab, .floating-music, .audio-player,
   .fullscreen-btn, #fullscreenBtn, .btn-fullscreen, .btn-fs, .floating-action,
   .bottom-dock, nav.bottom-dock, .dock-container, nav.bottom-nav, .dock, .bottom-nav,
+  #themePreloader, .lux-universal-preloader,
   button[onclick*="toggleFullscreen"], button[onclick*="toggleAudio"] {
     display: none !important;
     visibility: hidden !important;
@@ -162,7 +163,8 @@ const AUTOPLAY_SHOWCASE_SCRIPT = `
       const selectors = [
         '.music-fab', '#musicFab', '.floating-music',
         '.fullscreen-btn', '#fullscreenBtn', '.btn-fullscreen', '.btn-fs',
-        '.bottom-dock', 'nav.bottom-dock', '.dock-container', 'nav.bottom-nav'
+        '.bottom-dock', 'nav.bottom-dock', '.dock-container', 'nav.bottom-nav',
+        '#themePreloader', '.lux-universal-preloader'
       ];
       selectors.forEach(sel => {
         document.querySelectorAll(sel).forEach(el => {
@@ -836,18 +838,81 @@ const UNIFIED_CLIENT_RUNTIME_SCRIPT = `
     }
   }
 
+  // 10. Universal Theme Preloader Dismissal Driver (Graceful Minimum Time & Zero Visual Leak)
+  function initPreloaderGuard() {
+    var preloader = document.getElementById('themePreloader');
+    if (!preloader) return;
+    if (preloader.__guardInitialized) return;
+    preloader.__guardInitialized = true;
+
+    var startTime = Date.now();
+    var MIN_DISPLAY_MS = 1200; // 1.2s minimum duration for luxury brand entrance
+    var MAX_SAFETY_MS = 2500;  // 2.5s absolute safety cap for slow network
+
+    var dismissed = false;
+    function dismiss() {
+      if (dismissed) return;
+      dismissed = true;
+      preloader.classList.add('preloader-hidden');
+      setTimeout(function() {
+        try { preloader.remove(); } catch(e) { preloader.style.display = 'none'; }
+      }, 650);
+    }
+
+    function scheduleDismiss() {
+      var elapsed = Date.now() - startTime;
+      var remaining = Math.max(0, MIN_DISPLAY_MS - elapsed);
+      setTimeout(dismiss, remaining);
+    }
+
+    // Try detecting cover image to wait for full decode
+    var coverEl = document.getElementById('coverScreen') || document.querySelector('.cover-screen, #coverOverlay, .screen-cover');
+    var coverUrl = '';
+    if (coverEl) {
+      var bg = window.getComputedStyle(coverEl).backgroundImage || '';
+      var match = bg.match(/url\\(["']?([^"')]+)["']?\\)/);
+      if (match && match[1]) coverUrl = match[1];
+    }
+
+    if (coverUrl && !coverUrl.startsWith('data:')) {
+      var img = new Image();
+      img.src = coverUrl;
+      if (img.complete) {
+        scheduleDismiss();
+      } else {
+        img.onload = scheduleDismiss;
+        img.onerror = scheduleDismiss;
+      }
+    } else {
+      if (document.readyState === 'complete') {
+        scheduleDismiss();
+      } else {
+        window.addEventListener('load', scheduleDismiss);
+      }
+    }
+
+    // Safety Timeout: Maximum 2500ms so visitors on slower networks never stall
+    setTimeout(dismiss, MAX_SAFETY_MS);
+  }
+  initPreloaderGuard();
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
+      initPreloaderGuard();
       resolveGuestName();
       initAudioInteractionFallback();
       syncActiveTogglesUI();
     });
   } else {
+    initPreloaderGuard();
     resolveGuestName();
     initAudioInteractionFallback();
     syncActiveTogglesUI();
   }
-  window.addEventListener('load', syncActiveTogglesUI);
+  window.addEventListener('load', function() {
+    initPreloaderGuard();
+    syncActiveTogglesUI();
+  });
 })();
 </script>
 `;
@@ -1126,10 +1191,165 @@ export async function renderTemplateFile(
     tpl = tpl.replace(/(<body[^>]*>)/i, `$1\n  ${fixedBgVideoHtml}`);
   }
 
+  // --- PRELOADER INJECTION (HYBRID ARCHITECTURE) ---
+  // If master template already defines id="themePreloader", honor it and skip injecting fallback.
+  // Otherwise, automatically inject the luxury Universal Obsidian & Shimmer Preloader.
+  const hasCustomPreloader = tpl.includes('id="themePreloader"');
+  let preloaderStyles = `
+<style id="luxPreloaderGlobalStyle">
+  .preloader-hidden {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.45s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+</style>
+`;
+  let universalPreloaderHtml = "";
+
+  if (!hasCustomPreloader) {
+    const firstInitial = escapeHtmlAttr(
+      String(
+        data.firstInitial ||
+        (data.firstName ? String(data.firstName).trim().charAt(0).toUpperCase() : "") ||
+        (data.groomName ? String(data.groomName).trim().charAt(0).toUpperCase() : "") ||
+        "L"
+      )
+    );
+
+    const secondInitial = escapeHtmlAttr(
+      String(
+        data.secondInitial ||
+        (data.secondName ? String(data.secondName).trim().charAt(0).toUpperCase() : "") ||
+        (data.brideName ? String(data.brideName).trim().charAt(0).toUpperCase() : "") ||
+        "I"
+      )
+    );
+
+    const coupleNames = escapeHtmlAttr(
+      String(
+        data.coupleNames ||
+        (data.firstName && data.secondName ? `${data.firstName} & ${data.secondName}` : "") ||
+        (data.groomName && data.brideName ? `${data.groomName} & ${data.brideName}` : "") ||
+        "Special Invitation"
+      )
+    );
+
+    const preloaderTagline = escapeHtmlAttr(
+      String(
+        data.featureSettings?.customLabels?.theWedding ||
+        data.customLabels?.theWedding ||
+        "THE WEDDING INVITATION"
+      )
+    );
+
+    preloaderStyles += `
+<style id="luxUniversalPreloaderStyle">
+  #themePreloader.lux-universal-preloader {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    background-color: #0c0c0e;
+    z-index: 999999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    pointer-events: auto;
+    transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .lux-preloader-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 24px;
+    max-width: 90vw;
+  }
+  .lux-preloader-badge {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 9px;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: rgba(212, 175, 55, 0.75);
+    margin-bottom: 14px;
+    font-weight: 500;
+  }
+  .lux-preloader-monogram {
+    font-family: Didot, "Bodoni MT", "Cinzel", "Times New Roman", Georgia, serif;
+    font-size: clamp(2.4rem, 8vw, 3.4rem);
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    color: #f6e8cc;
+    text-shadow: 0 2px 24px rgba(212, 175, 55, 0.28);
+    line-height: 1;
+    margin: 6px 0 16px;
+  }
+  .lux-preloader-names {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.75);
+    margin-bottom: 24px;
+    font-weight: 400;
+  }
+  .lux-preloader-track {
+    width: 140px;
+    height: 1.5px;
+    background: rgba(255, 255, 255, 0.1);
+    position: relative;
+    overflow: hidden;
+    border-radius: 2px;
+  }
+  .lux-preloader-bar {
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, #d4af37, #fdf6e2, transparent);
+    animation: luxPreloadShimmer 1.5s infinite cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  @keyframes luxPreloadShimmer {
+    0% { left: -100%; }
+    100% { left: 100%; }
+  }
+  .cover-screen, #coverScreen, .screen-cover, #coverOverlay {
+    background-color: #0c0c0e !important;
+  }
+</style>
+`;
+
+    universalPreloaderHtml = `
+<div id="themePreloader" class="lux-universal-preloader" aria-label="Loading Invitation">
+  <div class="lux-preloader-inner">
+    <div class="lux-preloader-badge">${preloaderTagline}</div>
+    <div class="lux-preloader-monogram">${firstInitial} &amp; ${secondInitial}</div>
+    <div class="lux-preloader-names">${coupleNames}</div>
+    <div class="lux-preloader-track" aria-hidden="true">
+      <div class="lux-preloader-bar"></div>
+    </div>
+  </div>
+</div>
+`;
+  }
+
+  if (universalPreloaderHtml) {
+    if (tpl.match(/(<body[^>]*>)/i)) {
+      tpl = tpl.replace(/(<body[^>]*>)/i, `$1\n  ${universalPreloaderHtml}`);
+    } else {
+      tpl = universalPreloaderHtml + tpl;
+    }
+  }
+
   if (tpl.includes("<head>")) {
-    tpl = tpl.replace("<head>", `<head>\n${metaTags}${HEAD_AUDIO_BLOCKER_SCRIPT}\n${GLOBAL_MODULES_CSS}${closingStyle}${combinedVideoStyle}`);
+    tpl = tpl.replace("<head>", `<head>\n${metaTags}${HEAD_AUDIO_BLOCKER_SCRIPT}\n${GLOBAL_MODULES_CSS}${closingStyle}${combinedVideoStyle}${preloaderStyles}`);
   } else if (tpl.includes("<HEAD>")) {
-    tpl = tpl.replace("<HEAD>", `<HEAD>\n${metaTags}${HEAD_AUDIO_BLOCKER_SCRIPT}\n${GLOBAL_MODULES_CSS}${closingStyle}${combinedVideoStyle}`);
+    tpl = tpl.replace("<HEAD>", `<HEAD>\n${metaTags}${HEAD_AUDIO_BLOCKER_SCRIPT}\n${GLOBAL_MODULES_CSS}${closingStyle}${combinedVideoStyle}${preloaderStyles}`);
   }
 
   const protectionScript = !tpl.includes("LUXENARY PROTECTION SCRIPT") ? LUXENARY_PROTECTION_SCRIPT : "";

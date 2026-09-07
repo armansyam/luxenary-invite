@@ -64,6 +64,7 @@ export default function ClientDashboardLayout({
   const [platformName, setPlatformName] = useState("");
   const [isRestoring, setIsRestoring] = useState(false);
   const [remoteInfo, setRemoteInfo] = useState<{ isRemote: boolean; clientName: string } | null>(null);
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
   // Cek apakah Admin sedang dalam mode Remote
   useEffect(() => {
@@ -100,40 +101,64 @@ export default function ClientDashboardLayout({
       .catch(() => {});
   }, []);
 
+  // --- Strict Protection: ONLY PAID USERS ALLOWED (ZERO VISUAL LEAK) ---
   useEffect(() => {
     if (status === "unauthenticated") {
       router.replace("/login");
+      return;
     }
-  }, [status, router]);
 
-  // --- Strict Protection: ONLY PAID USERS ALLOWED ---
-  useEffect(() => {
     if (status === "authenticated" && session?.user) {
       // Mode Remote atau Admin: Jangan pernah tendang ke onboarding agar admin dapat menginspeksi dasbor
       if ((session.user as any).isAdmin || (session.user as any).isRemote || remoteInfo?.isRemote) {
+        setIsAuthorized(true);
         return;
       }
 
-      // Periksa secara asinkron status pembayaran pengguna
+      // Periksa secara asinkron status pembayaran pengguna SEBELUM mengizinkan render dasbor
       fetch("/api/client/onboarding-state", { cache: "no-store" })
         .then((res) => res.json())
         .then((data) => {
-          // Jika tidak ada data atau order belum lunas, tendang ke onboarding
           if (!data || !data.hasPaidOrder) {
-            router.replace("/onboarding");
+            // User belum bayar / belum aktif: Lempar seketika tanpa membuka izin render
+            router.replace(data?.redirectUrl || "/onboarding");
+          } else {
+            setIsAuthorized(true);
           }
         })
         .catch(() => {
-          // Abaikan error jaringan
+          router.replace("/onboarding");
         });
     }
   }, [status, session, router, remoteInfo]);
 
+  // ZERO VISUAL LEAK: Blokir total render Header & Navigasi jika belum terverifikasi
   if (
+    status === "loading" ||
     status === "unauthenticated" ||
-    (status === "authenticated" && !session?.user)
+    !session?.user ||
+    !isAuthorized
   ) {
-    return null;
+    return (
+      <div className="min-h-screen bg-[#faf8f5] flex items-center justify-center font-sans">
+        <div className="flex flex-col items-center space-y-4">
+          <BrandLogo size="md" />
+          <div className="w-8 h-8 border-2 border-amber-800 border-t-transparent rounded-full animate-spin mt-2"></div>
+          <p className="text-xs text-stone-500 font-medium tracking-wide">
+            Memverifikasi status akses...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Khusus rute /dashboard/setup (wizard inisiasi): render anak tanpa menimpa header dasbor klien
+  if (pathname === "/dashboard/setup") {
+    return (
+      <div className="min-h-screen bg-[#faf8f5] text-stone-900 font-sans flex flex-col selection:bg-amber-100 selection:text-amber-900">
+        {children}
+      </div>
+    );
   }
 
   return (

@@ -105,7 +105,7 @@ export async function GET() {
       prisma.order.findMany({
         take: 50,
         orderBy: { createdAt: "desc" },
-        include: { user: { select: { name: true, email: true } } },
+        include: { user: { select: { name: true, email: true, phoneNumber: true } } },
       }),
       // Daftar Klien Resmi: Hanya user yang SUDAH LUNAS atau SUDAH MEMILIKI UNDANGAN
       prisma.user.findMany({
@@ -173,7 +173,7 @@ export async function GET() {
         where: { orderType: "CUSTOM_DOMAIN_ADDON" },
         orderBy: { createdAt: "desc" },
         include: {
-          user: { select: { name: true, email: true } },
+          user: { select: { name: true, email: true, phoneNumber: true } },
           invitation: { select: { subdomain: true, customDomain: true } }
         }
       }),

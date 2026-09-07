@@ -14,11 +14,11 @@ export default function OnboardingHub() {
         if (data.redirectUrl) {
           router.replace(data.redirectUrl);
         } else {
-          router.replace("/dashboard");
+          router.replace("/packages");
         }
       })
       .catch(() => {
-        router.replace("/dashboard");
+        router.replace("/packages");
       });
   }, [router]);
 

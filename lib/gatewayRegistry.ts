@@ -1,18 +1,15 @@
 /**
- * Gateway Registry — Dynamic Multi-Gateway Payment Factory
+ * Gateway Registry — Dynamic Two-Way Multi-Gateway Payment Factory
  *
  * Cara kerja:
- * 1. Admin memilih gateway aktif di Admin Portal → Pengaturan
+ * 1. Admin memilih gateway aktif di Admin Portal → Pengaturan (Midtrans atau Xendit)
  * 2. Pilihan disimpan ke AdminSetting dengan key "active_payment_gateway"
  * 3. Setiap request checkout membaca setting ini dan menginisialisasi gateway yang sesuai
- * 4. Tidak perlu deploy ulang untuk ganti gateway!
+ * 4. Kedua gateway mendukung Two-Way Handshake (Cancel / Expire seketika pada switch pembayaran)
  *
- * Gateway yang tersedia:
- * - ipaymu   → iPaymu (default)
- * - midtrans → Midtrans Snap
- * - xendit   → Xendit Invoice
- * - duitku   → Duitku
- * - tripay   → Tripay
+ * Gateway 2-arah yang didukung:
+ * - midtrans → Midtrans (Core API QRIS / Snap UI)
+ * - xendit   → Xendit (Invoice API)
  */
 
 import { PaymentGateway, GATEWAY_CATALOG, GatewayMeta } from "@/lib/gateways/types";
@@ -20,11 +17,9 @@ import { prisma } from "@/lib/prisma";
 
 /** Lazy import masing-masing gateway untuk menghindari bundle bloat */
 async function loadGateway(gatewayId: string): Promise<PaymentGateway> {
-  switch (gatewayId.toLowerCase()) {
-    case "ipaymu": {
-      const { IPaymuGateway } = await import("@/lib/ipaymu");
-      return new IPaymuGateway();
-    }
+  const normalized = (gatewayId || "midtrans").toLowerCase();
+
+  switch (normalized) {
     case "midtrans": {
       const { MidtransGateway } = await import("@/lib/gateways/midtrans");
       return new MidtransGateway();
@@ -33,33 +28,38 @@ async function loadGateway(gatewayId: string): Promise<PaymentGateway> {
       const { XenditGateway } = await import("@/lib/gateways/xendit");
       return new XenditGateway();
     }
-    case "duitku": {
-      const { DuitkuGateway } = await import("@/lib/gateways/duitku");
-      return new DuitkuGateway();
-    }
+    // Fallback otomatis jika setting DB masih menyimpan vendor legacy 1-arah
+    case "ipaymu":
+    case "duitku":
     case "tripay": {
-      const { TripayGateway } = await import("@/lib/gateways/tripay");
-      return new TripayGateway();
+      console.warn(`[Gateway Registry] Vendor "${normalized}" (1-arah) telah dihentikan. Dialihkan ke Midtrans (2-arah).`);
+      const { MidtransGateway } = await import("@/lib/gateways/midtrans");
+      return new MidtransGateway();
     }
     default:
       throw new Error(
-        `Gateway "${gatewayId}" tidak dikenali. Pilihan yang tersedia: ipaymu, midtrans, xendit, duitku, tripay`
+        `Gateway "${gatewayId}" tidak dikenali. Sistem hanya mendukung gateway 2-arah: midtrans, xendit`
       );
   }
 }
 
 /**
  * Baca gateway aktif dari AdminSetting.
- * Fallback ke "ipaymu" jika belum diset.
+ * Fallback ke "midtrans" jika belum diset atau jika diset ke vendor nonaktif.
  */
 export async function getActiveGatewayId(): Promise<string> {
   try {
     const setting = await prisma.adminSetting.findUnique({
       where: { key: "active_payment_gateway" },
     });
-    if (setting?.value) return setting.value.toLowerCase();
+    if (setting?.value) {
+      const val = setting.value.toLowerCase();
+      if (val === "midtrans" || val === "xendit") return val;
+      // Jika diset ke vendor legacy 1-arah, otomatis gunakan midtrans
+      return "midtrans";
+    }
   } catch {}
-  return "ipaymu"; // Default gateway
+  return "midtrans"; // Default gateway 2-arah
 }
 
 /**

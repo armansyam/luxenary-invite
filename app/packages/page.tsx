@@ -2,15 +2,31 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useSession, signOut } from "next-auth/react";
 import { BrandLogo } from "@/components/BrandLogo";
 
 export default function PackageSelectionPage() {
+  const router = useRouter();
+  const { data: session, status } = useSession();
   const [packages, setPackages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [platformName, setPlatformName] = useState("");
 
   useEffect(() => {
+    // 1. Cek status keaktifan order: Jika user punya order PENDING aktif, tolak akses dan lempar ke kasir
+    if (status === "authenticated") {
+      fetch("/api/client/onboarding-state", { cache: "no-store" })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && data.redirectUrl && data.redirectUrl !== "/packages") {
+            router.replace(data.redirectUrl);
+          }
+        })
+        .catch(() => {});
+    }
+
+    // 2. Muat konfigurasi paket
     fetch("/api/public/settings", { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
@@ -25,7 +41,7 @@ export default function PackageSelectionPage() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, []);
+  }, [status, router]);
 
   if (loading) {
     return (

@@ -29,8 +29,14 @@ export async function POST(req: NextRequest) {
 
     const cleanDomain = requestedDomain.toLowerCase().replace(/^https?:\/\//, "").replace(/\/$/, "").replace(/\s/g, "").trim();
 
-    if (!cleanDomain.includes(".")) {
+    if (!cleanDomain.includes(".") || cleanDomain.length < 4) {
       return NextResponse.json({ error: "Format domain tidak valid." }, { status: 400 });
+    }
+
+    // Proteksi domain sistem
+    const reservedPlatformHosts = ["luxvite.id", "luxenary.com", "localhost", "amsdev.my.id"];
+    if (reservedPlatformHosts.some((h) => cleanDomain === h || cleanDomain.endsWith(`.${h}`))) {
+      return NextResponse.json({ error: "Domain tersebut merupakan domain platform sistem dan tidak dapat digunakan." }, { status: 400 });
     }
 
     // 1. Verifikasi kepemilikan undangan
@@ -50,6 +56,18 @@ export async function POST(req: NextRequest) {
 
     if (!isOwner && !isAdmin) {
       return NextResponse.json({ error: "Anda tidak memiliki akses ke undangan ini." }, { status: 403 });
+    }
+
+    // Cek apakah domain sudah dipakai undangan lain
+    const existingDomain = await prisma.invitation.findFirst({
+      where: {
+        customDomain: cleanDomain,
+        id: { not: invitationId },
+      },
+      select: { id: true },
+    });
+    if (existingDomain) {
+      return NextResponse.json({ error: "Domain tersebut sudah digunakan oleh undangan lain di sistem." }, { status: 400 });
     }
 
     // 2. Cek status aktivasi fitur Custom Domain
@@ -84,6 +102,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Bersihkan / tandai usang order custom domain PENDING sebelumnya untuk undangan ini
+    await prisma.order.updateMany({
+      where: {
+        userId: session.user.id,
+        linkedOrderId: invitation.id,
+        orderType: "CUSTOM_DOMAIN_ADDON",
+        status: "PENDING",
+      },
+      data: {
+        status: "EXPIRED",
+        rejectReason: "Digantikan oleh tagihan custom domain baru",
+      },
+    });
+
     // 4. Buat Order baru dengan orderType = CUSTOM_DOMAIN_ADDON
     const newOrder = await prisma.order.create({
       data: {
@@ -105,6 +137,7 @@ export async function POST(req: NextRequest) {
       orderId: newOrder.id,
       invoiceNumber: newOrder.invoiceNumber,
       amount: extensionPrice,
+      paymentUrl: `/checkout?order=${newOrder.id}`,
       message: "Order Custom Domain berhasil dibuat.",
     });
   } catch (error: any) {

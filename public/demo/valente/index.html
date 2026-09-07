@@ -25,8 +25,8 @@
     <meta property="og:site_name" content="Luxenary">
     <meta property="og:title" content="The Wedding of Julian & Valerie — VALENTE">
     <meta property="og:description" content="Undangan pernikahan digital eksklusif tema VALENTE. Desain elegan, split desktop view, RSVP real-time & galeri momen.">
-    <meta property="og:image" content="https://luxvite.id/demo/valente/cover.webp">
-    <meta property="og:image:secure_url" content="https://luxvite.id/demo/valente/cover.webp">
+    <meta property="og:image" content="https://luxvite.id/demo/valente/cover.webp?v=1788678254321">
+    <meta property="og:image:secure_url" content="https://luxvite.id/demo/valente/cover.webp?v=1788678254321">
     <meta property="og:image:type" content="image/webp">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
@@ -34,7 +34,7 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="The Wedding of Julian & Valerie — VALENTE">
     <meta name="twitter:description" content="Undangan pernikahan digital eksklusif tema VALENTE. Desain elegan, split desktop view, RSVP real-time & galeri momen.">
-    <meta name="twitter:image" content="https://luxvite.id/demo/valente/cover.webp">
+    <meta name="twitter:image" content="https://luxvite.id/demo/valente/cover.webp?v=1788678254321">
   
 
 <script>
@@ -63,6 +63,110 @@
 </script>
 
 <link rel="stylesheet" href="/css/modules.css">
+<style>
+      .site-footer, footer, footer#footer {
+        background-image: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 38%, rgba(0,0,0,0.55) 65%, rgba(0,0,0,0.92) 100%), url('/demo/valente/footer.webp?v=1788678254321') !important;
+        background-size: cover !important;
+        background-position: center bottom !important;
+        color: #fff !important;
+        border-top: none !important;
+        position: relative;
+      }
+      .site-footer::before, footer::before, footer#footer::before {
+        display: none !important;
+      }
+      .site-footer *, footer *, footer#footer * {
+        color: #fff !important;
+      }
+    </style>
+<style id="luxPreloaderGlobalStyle">
+  .preloader-hidden {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.45s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+</style>
+
+<style id="luxUniversalPreloaderStyle">
+  #themePreloader.lux-universal-preloader {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    background-color: #0c0c0e;
+    z-index: 999999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    pointer-events: auto;
+    transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .lux-preloader-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 24px;
+    max-width: 90vw;
+  }
+  .lux-preloader-badge {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 9px;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: rgba(212, 175, 55, 0.75);
+    margin-bottom: 14px;
+    font-weight: 500;
+  }
+  .lux-preloader-monogram {
+    font-family: Didot, "Bodoni MT", "Cinzel", "Times New Roman", Georgia, serif;
+    font-size: clamp(2.4rem, 8vw, 3.4rem);
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    color: #f6e8cc;
+    text-shadow: 0 2px 24px rgba(212, 175, 55, 0.28);
+    line-height: 1;
+    margin: 6px 0 16px;
+  }
+  .lux-preloader-names {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.75);
+    margin-bottom: 24px;
+    font-weight: 400;
+  }
+  .lux-preloader-track {
+    width: 140px;
+    height: 1.5px;
+    background: rgba(255, 255, 255, 0.1);
+    position: relative;
+    overflow: hidden;
+    border-radius: 2px;
+  }
+  .lux-preloader-bar {
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, #d4af37, #fdf6e2, transparent);
+    animation: luxPreloadShimmer 1.5s infinite cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  @keyframes luxPreloadShimmer {
+    0% { left: -100%; }
+    100% { left: 100%; }
+  }
+  .cover-screen, #coverScreen, .screen-cover, #coverOverlay {
+    background-color: #0c0c0e !important;
+  }
+</style>
+
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Julian &amp; Valerie — The Wedding</title>
@@ -151,7 +255,7 @@
        PAGE WRAPPER (CENTERED EDITORIAL MAGAZINE)
        ========================================= */
     .page-wrap {
-      width: 100%; max-width: 500px; margin: 0 auto; background: var(--bg-main);
+      width: 100%; margin: 0 auto; background: var(--bg-main);
       min-height: 100vh; position: relative; box-shadow: 0 0 60px rgba(0,0,0,0.8);
       overflow-x: hidden;
     }
@@ -164,6 +268,7 @@
       display: flex; flex-direction: column;
       align-items: center; justify-content: space-between;
       padding: 3.5rem 2rem 4rem; text-align: center;
+      background-color: #0c0c0e;
       background-position: center; background-size: cover; background-repeat: no-repeat;
       transition: transform 1.25s cubic-bezier(0.76, 0, 0.24, 1), opacity 1.2s cubic-bezier(0.76, 0, 0.24, 1), visibility 1.25s;
       box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95);
@@ -176,6 +281,16 @@
       pointer-events: none;
     }
     .cover-top { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 0.3rem; }
+    .cover-issue-badge {
+      display: inline-flex; align-items: center; gap: 0.6rem;
+      font-family: 'Cormorant Infant', serif; font-size: 0.72rem; letter-spacing: 0.28em;
+      text-transform: uppercase; color: var(--accent); margin-bottom: 0.4rem;
+    }
+    .issue-pill {
+      background: rgba(255, 255, 255, 0.1); padding: 0.15rem 0.6rem;
+      border-radius: 50px; font-size: 0.62rem; border: 1px solid rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(8px);
+    }
     .cover-tagline-top { font-family: 'Cormorant Infant', serif; font-size: 0.85rem; letter-spacing: 0.25em; text-transform: uppercase; color: #d9d9d9; }
     .cover-center { display: flex; flex-direction: column; align-items: center; margin: auto 0; }
     .cover-names {
@@ -183,7 +298,11 @@
       text-transform: uppercase; font-family: 'Cormorant', serif; font-weight: 400;
       -webkit-text-stroke: 0.5px #e9e9e9; text-shadow: 0 4px 25px rgba(0,0,0,0.7);
     }
-    .cover-date-sub { font-family: 'Cormorant Infant', serif; font-size: 0.82rem; letter-spacing: 0.2em; text-transform: uppercase; color: #d9d9d9; margin-top: 0.6rem; }
+    .cover-divider-line {
+      width: 48px; height: 1px; background: var(--accent);
+      margin: 0.8rem auto 0.4rem; opacity: 0.75;
+    }
+    .cover-date-sub { font-family: 'Cormorant Infant', serif; font-size: 0.82rem; letter-spacing: 0.2em; text-transform: uppercase; color: #d9d9d9; margin-top: 0.2rem; }
     .cover-bottom { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 0.8rem; }
     .cover-guest-box {
       background: rgba(18, 18, 20, 0.40); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
@@ -264,49 +383,238 @@
     }
 
     /* =========================================
-       3. BRIDE & GROOM (DEDICATED PROFILE CARDS)
+       3. BRIDE & GROOM (HIGH-FASHION EDITORIAL SPREAD)
        ========================================= */
-    .sec-couple { padding: 4.8rem 1.8rem; background: var(--bg-surface); text-align: center; }
-    .couple-cards-stack { display: flex; flex-direction: column; gap: 2rem; margin-top: 2rem; }
-    .couple-card {
-      background: var(--bg-card); border-radius: var(--radius-lg); padding: 2.2rem 1.6rem;
-      border: 1px solid var(--border-subtle); box-shadow: 0 10px 30px rgba(0,0,0,0.4); text-align: center;
+    .sec-couple {
+      padding: 5.5rem 1.6rem;
+      background: linear-gradient(180deg, #101010 0%, #161618 50%, #101010 100%);
+      text-align: center;
+      position: relative;
     }
-    .couple-photo-wrap {
-      width: 100%; aspect-ratio: 1/1; max-width: 240px; margin: 0 auto 1.5rem;
-      border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border-subtle); box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+    .couple-cards-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 3rem;
+      margin-top: 2.8rem;
     }
-    .couple-photo-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.45s ease; }
-    .couple-card:hover .couple-photo-wrap img { transform: scale(1.05); }
-    .couple-role-lbl { font-family: 'Cormorant Infant', serif; font-size: 0.75rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--accent); font-weight: 600; display: block; margin-bottom: 0.35rem; }
-    .couple-name { font-size: clamp(2.0rem, 6.5vw, 2.6rem); color: var(--text-heading); margin-bottom: 0.5rem; text-transform: uppercase; }
-    .couple-parents-lbl { font-family: 'Lora', serif; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 0.25rem; }
-    .couple-parents { font-size: 0.82rem; color: #d9d9d9; line-height: 1.6; margin-bottom: 1.4rem; }
+    .couple-editorial-card {
+      background: linear-gradient(180deg, rgba(28, 28, 30, 0.85) 0%, rgba(18, 18, 20, 0.95) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 2.4rem 1.6rem 2rem;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      position: relative;
+      text-align: center;
+      overflow: hidden;
+    }
+    .couple-editorial-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 10%;
+      right: 10%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      opacity: 0.6;
+    }
+    .couple-issue-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: 'Cormorant Infant', serif;
+      font-size: 0.72rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 600;
+      margin-bottom: 1.4rem;
+      opacity: 0.9;
+    }
+    .couple-photo-frame {
+      position: relative;
+      width: 100%;
+      max-width: 280px;
+      margin: 0 auto 1.8rem;
+    }
+    .couple-photo-inner {
+      width: 100%;
+      aspect-ratio: 3/4;
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .couple-photo-inner img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .couple-editorial-card:hover .couple-photo-inner img {
+      transform: scale(1.05);
+    }
+    .couple-photo-frame::after {
+      content: '';
+      position: absolute;
+      inset: -6px;
+      border: 1px solid var(--accent);
+      border-radius: 14px;
+      opacity: 0.25;
+      pointer-events: none;
+    }
+    .couple-name {
+      font-size: clamp(2.2rem, 7vw, 2.8rem);
+      color: #ffffff;
+      line-height: 1.1;
+      margin-bottom: 0.6rem;
+      text-transform: uppercase;
+      font-family: 'Cormorant', serif;
+      font-weight: 400;
+      letter-spacing: 0.04em;
+    }
+    .couple-parents-lbl {
+      font-family: 'Cormorant Infant', serif;
+      font-size: 0.72rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent);
+      display: block;
+      margin-bottom: 0.35rem;
+      font-weight: 600;
+    }
+    .couple-parents {
+      font-size: 0.85rem;
+      color: #d0d0d0;
+      line-height: 1.65;
+      margin-bottom: 1.6rem;
+      max-width: 320px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .editorial-amp-divider {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1.2rem;
+      margin: 0.5rem 0;
+    }
+    .editorial-amp-line {
+      flex: 1;
+      max-width: 80px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15));
+    }
+    .editorial-amp-line.rev {
+      background: linear-gradient(90deg, rgba(255, 255, 255, 0.15), transparent);
+    }
+    .editorial-amp-symbol {
+      font-family: 'Great Vibes', cursive;
+      font-size: 2.4rem;
+      color: var(--accent);
+      line-height: 1;
+      transform: translateY(-2px);
+    }
     .btn-ig {
-      display: inline-flex; align-items: center; gap: 6px; padding: 0.55rem 1.4rem;
-      border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); color: #d9d9d9; text-decoration: none;
-      font-size: 0.75rem; letter-spacing: 0.08em; font-family: 'Lora', serif; transition: all 0.3s; background: var(--bg-surface);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0.65rem 1.6rem;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 50px;
+      color: #e0e0e0;
+      text-decoration: none;
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      font-family: 'Cormorant Infant', serif;
+      text-transform: uppercase;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      background: rgba(255, 255, 255, 0.03);
     }
-    .btn-ig:hover { background: #d9d9d9; color: #262627; }
+    .btn-ig:hover {
+      background: #ffffff;
+      color: #101010;
+      border-color: #ffffff;
+      transform: translateY(-2px);
+    }
 
     /* =========================================
-       4. SAVE THE DATE & COUNTDOWN & EVENTS
+       4. SAVE THE DATE & COUNTDOWN (EDITORIAL TYPOGRAPHY)
        ========================================= */
-    .sec-events { padding: 4.8rem 1.8rem; text-align: center; }
-    .event-full-date { font-family: 'Cormorant Infant', serif; font-size: 0.95rem; letter-spacing: 0.15em; color: #d9d9d9; text-transform: uppercase; margin-bottom: 2rem; display: block; }
-    .countdown-boxes { display: flex; justify-content: center; gap: 8px; margin-bottom: 2.2rem; }
-    .cd-box {
-      flex: 1; max-width: 82px; background: var(--bg-card); border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-sm); padding: 0.9rem 0.4rem; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    .sec-events { padding: 5.5rem 1.8rem; text-align: center; }
+    .event-full-date { font-family: 'Cormorant Infant', serif; font-size: 0.95rem; letter-spacing: 0.22em; color: var(--accent); text-transform: uppercase; margin-bottom: 2.2rem; display: block; font-weight: 600; }
+    .countdown-editorial-strip {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.8rem;
+      margin: 0 auto 2.5rem;
+      max-width: 380px;
+      padding: 1.8rem 1rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      position: relative;
     }
-    .cd-val { display: block; font-size: clamp(1.8rem, 5.5vw, 2.4rem); font-family: 'Cormorant', serif; font-weight: 600; color: #ffffff; line-height: 1; }
-    .cd-txt { display: block; font-family: 'Cormorant Infant', serif; font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.2em; color: var(--accent); margin-top: 0.4rem; font-weight: 600; }
+    .cd-editorial-unit {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .cd-editorial-val {
+      font-size: clamp(2.2rem, 7.5vw, 3.2rem);
+      font-family: 'Cormorant', serif;
+      font-weight: 300;
+      color: #ffffff;
+      line-height: 1;
+      letter-spacing: 0.02em;
+      text-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    }
+    .cd-editorial-lbl {
+      font-family: 'Cormorant Infant', serif;
+      font-size: 0.65rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-top: 0.5rem;
+      font-weight: 600;
+    }
+    .cd-editorial-sep {
+      font-family: 'Cormorant', serif;
+      font-size: 1.8rem;
+      color: rgba(255, 255, 255, 0.25);
+      line-height: 1;
+      margin-top: -12px;
+      user-select: none;
+    }
     .btn-cal {
-      display: inline-block; padding: 0.8rem 2.2rem; border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-sm); color: #d9d9d9; font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase;
-      text-decoration: none; transition: all 0.3s; margin-bottom: 3.5rem; font-family: 'Lora', serif; background: var(--bg-card);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0.85rem 2.2rem;
+      border: 1px solid var(--border-subtle);
+      border-radius: 50px;
+      color: #ffffff;
+      font-size: 0.72rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      text-decoration: none;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      margin-bottom: 3.5rem;
+      font-family: 'Cormorant Infant', serif;
+      font-weight: 600;
+      background: rgba(30, 30, 32, 0.75);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
     }
-    .btn-cal:hover { background: #d9d9d9; color: #262627; }
+    .btn-cal:hover {
+      background: #ffffff;
+      color: #101010;
+      border-color: #ffffff;
+      transform: translateY(-2px);
+    }
 
     /* Event Blocks */
     .events-stack { display: flex; flex-direction: column; gap: 2rem; text-align: center; }
@@ -497,23 +805,69 @@
 
     /* Side Navigation Drawer */
     .side-nav-drawer {
-      position: fixed; top: 0; right: 0; bottom: 0; width: 280px; max-width: 80vw;
-      background: rgba(22, 22, 24, 0.97); backdrop-filter: blur(20px);
-      border-left: 1px solid var(--border-subtle); z-index: 150; padding: 4rem 1.8rem 2rem;
-      display: flex; flex-direction: column; gap: 1.2rem; transform: translateX(100%);
+      position: fixed; top: 0; right: 0; bottom: 0; width: 300px; max-width: 85vw;
+      background: rgba(18, 18, 20, 0.98); backdrop-filter: blur(24px);
+      border-left: 1px solid var(--border-subtle); z-index: 150; padding: 4.5rem 2rem 2.5rem;
+      display: flex; flex-direction: column; gap: 0.8rem; transform: translateX(100%);
       transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-      box-shadow: -10px 0 40px rgba(0,0,0,0.7);
+      box-shadow: -12px 0 45px rgba(0,0,0,0.8);
     }
     .side-nav-drawer.open { transform: translateX(0); }
     .side-nav-close {
-      position: absolute; top: 16px; right: 16px; width: 34px; height: 34px;
+      position: absolute; top: 18px; right: 18px; width: 36px; height: 36px;
       border-radius: 50%; background: var(--bg-card); border: 1px solid var(--border-subtle);
-      color: #ffffff; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      color: #ffffff; font-size: 0.95rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: all 0.25s ease;
+    }
+    .side-nav-close:hover { background: #ffffff; color: #101010; }
+    .side-nav-header {
+      margin-bottom: 1.2rem;
+      text-align: left;
+    }
+    .side-nav-eyebrow {
+      font-family: 'Cormorant Infant', serif;
+      font-size: 0.68rem;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--accent);
+      display: block;
+      margin-bottom: 0.4rem;
+      font-weight: 600;
+    }
+    .side-nav-title {
+      font-size: 1.6rem;
+      color: #ffffff;
+      font-weight: 400;
+      line-height: 1.1;
+      letter-spacing: 0.02em;
+      font-family: 'Cormorant', serif;
+    }
+    .side-nav-hr {
+      width: 100%;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.1);
+      margin-top: 1rem;
     }
     .side-nav-link {
-      font-family: 'Cormorant', serif; font-size: 1.25rem; color: #d9d9d9;
-      text-decoration: none; text-transform: uppercase; letter-spacing: 0.08em;
-      padding: 0.6rem 0; border-bottom: 1px solid rgba(255,255,255,0.06); transition: color 0.2s, padding-left 0.2s;
+      display: flex;
+      align-items: baseline;
+      gap: 0.9rem;
+      font-family: 'Cormorant', serif;
+      font-size: 1.2rem;
+      color: #d9d9d9;
+      text-decoration: none;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 0.55rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      transition: color 0.2s, padding-left 0.2s;
+    }
+    .side-nav-link .nav-num {
+      font-family: 'Cormorant Infant', serif;
+      font-size: 0.72rem;
+      letter-spacing: 0.15em;
+      color: var(--accent);
+      font-weight: 600;
     }
     .side-nav-link:hover { color: var(--accent); padding-left: 6px; }
 
@@ -643,9 +997,21 @@
   </head>
   
 <body style="--accent: #a67c52;">
+  
+<div id="themePreloader" class="lux-universal-preloader" aria-label="Loading Invitation">
+  <div class="lux-preloader-inner">
+    <div class="lux-preloader-badge">THE WEDDING INVITATION</div>
+    <div class="lux-preloader-monogram">J &amp; V</div>
+    <div class="lux-preloader-names">Julian &amp; Valerie</div>
+    <div class="lux-preloader-track" aria-hidden="true">
+      <div class="lux-preloader-bar"></div>
+    </div>
+  </div>
+</div>
+
 
   <!-- FIXED LEFT HERO (DESKTOP ONLY) -->
-  <div class="left-hero" style="background-image: url('/demo/valente/hero.webp');">
+  <div class="left-hero" style="background-image: url('/demo/valente/hero.webp?v=1788678254321');">
     <!-- CREST MONOGRAM WATERMARK LOGO (TOP LEFT) -->
     <div class="left-hero-crest">
       <div class="crest-monogram-row">
@@ -670,13 +1036,19 @@
   <!-- =========================================
        1. COVER SCREEN (POPUP PEMBUKA)
        ========================================= -->
-  <div class="cover-screen" id="coverScreen" style="background-image: linear-gradient(to bottom, rgba(16,16,16,0.3) 0%, rgba(16,16,16,0.05) 25%, rgba(16,16,16,0.7) 65%, rgba(16,16,16,0.96) 100%), url('/demo/valente/cover.webp');">
+  <div class="cover-screen" id="coverScreen" style="background-image: linear-gradient(to bottom, rgba(16,16,16,0.3) 0%, rgba(16,16,16,0.05) 25%, rgba(16,16,16,0.7) 65%, rgba(16,16,16,0.96) 100%), url('/demo/valente/cover.webp?v=1788678254321');">
     <div class="cover-top reveal active">
+      <div class="cover-issue-badge">
+        <span class="issue-pill">SPECIAL ISSUE</span>
+        <span class="issue-dot">•</span>
+        <span class="issue-vol">VOL. 2026</span>
+      </div>
       <span class="cover-tagline-top">A CELEBRATION OF LOVE</span>
     </div>
 
     <div class="cover-center reveal-zoom active">
       <h1 class="cover-names serif">Julian &amp; Valerie</h1>
+      <div class="cover-divider-line"></div>
       <span class="cover-date-sub">Sabtu, 05 Desember 2026</span>
     </div>
 
@@ -700,13 +1072,18 @@
   <!-- SIDE NAVIGATION DRAWER -->
   <div class="side-nav-drawer" id="sideNavDrawer">
     <button class="side-nav-close" onclick="toggleSideNav()">✕</button>
-    <a href="#home" class="side-nav-link" onclick="toggleSideNav()">Home</a>
-    <a href="#couple" class="side-nav-link" onclick="toggleSideNav()">Bride &amp; Groom</a>
-    <a href="#event" class="side-nav-link" onclick="toggleSideNav()">Wedding Event</a>
-    <a href="#story" class="side-nav-link" onclick="toggleSideNav()">Love Story</a>
-    <a href="#moments" class="side-nav-link" onclick="toggleSideNav()">Gallery</a>
-    <a href="#rsvp" class="side-nav-link" onclick="toggleSideNav()">RSVP &amp; Wishes</a>
-    <a href="#gift" class="side-nav-link" onclick="toggleSideNav()">Wedding Gift</a>
+    <div class="side-nav-header">
+      <span class="side-nav-eyebrow">INDEX OF PROGRAM</span>
+      <h3 class="side-nav-title serif">Julian &amp; Valerie</h3>
+      <div class="side-nav-hr"></div>
+    </div>
+    <a href="#home" class="side-nav-link" onclick="toggleSideNav()"><span class="nav-num">01</span><span>Home</span></a>
+    <a href="#couple" class="side-nav-link" onclick="toggleSideNav()"><span class="nav-num">02</span><span>Bride &amp; Groom</span></a>
+    <a href="#event" class="side-nav-link" onclick="toggleSideNav()"><span class="nav-num">03</span><span>Wedding Event</span></a>
+    <a href="#story" class="side-nav-link" onclick="toggleSideNav()"><span class="nav-num">04</span><span>Love Story</span></a>
+    <a href="#moments" class="side-nav-link" onclick="toggleSideNav()"><span class="nav-num">05</span><span>Gallery</span></a>
+    <a href="#rsvp" class="side-nav-link" onclick="toggleSideNav()"><span class="nav-num">06</span><span>RSVP &amp; Wishes</span></a>
+    <a href="#gift" class="side-nav-link" onclick="toggleSideNav()"><span class="nav-num">07</span><span>Wedding Gift</span></a>
     
   </div>
 
@@ -731,9 +1108,9 @@
     <section class="sec-hero-slideshow" id="home">
       <!-- Background Slideshow Layer (2-3 Photos) -->
       <div class="slideshow-bg-container">
-        <div class="slideshow-slide active" style="background-image: url('/demo/valente/background.webp');"></div>
-        <div class="slideshow-slide" style="background-image: url('/demo/valente/background.webp');"></div>
-        <div class="slideshow-slide" style="background-image: url('/demo/valente/hero.webp');"></div>
+        <div class="slideshow-slide active" style="background-image: url('/demo/valente/background.webp?v=1788678254321');"></div>
+        <div class="slideshow-slide" style="background-image: url('/demo/valente/background.webp?v=1788678254321');"></div>
+        <div class="slideshow-slide" style="background-image: url('/demo/valente/hero.webp?v=1788678254321');"></div>
       </div>
       <div class="slideshow-scrim"></div>
 
@@ -749,19 +1126,25 @@
       </div>
     </section>
 
-    <!-- 2. SECTION: BRIDE & GROOM (DEDICATED PROFILE CARDS) -->
+    <!-- 2. SECTION: BRIDE & GROOM (HIGH-FASHION EDITORIAL SPREAD) -->
     <section class="sec-couple" id="couple">
       <span class="eyebrow reveal">THE COUPLE</span>
       <h2 class="sec-title serif reveal delay-1" data-lux-field="customLabels.coupleTitle">Mempelai</h2>
       <p class="sec-sub reveal delay-1" data-lux-field="customLabels.coupleSub">Dengan penuh rasa syukur dan sukacita, kami mengundang Anda untuk merayakan persatuan cinta kami dalam ikatan suci pernikahan.</p>
 
       <div class="couple-cards-stack">
-        <!-- Host 1 Card -->
-        <div class="couple-card reveal-zoom">
-          <div class="couple-photo-wrap">
-            <img src="/demo/valente/groom.webp" alt="Julian Alexander, B.A.">
+        <!-- Host 1 Card (Groom) -->
+        <div class="couple-editorial-card reveal-zoom">
+          <div class="couple-issue-badge">
+            <span>NO. 01</span>
+            <span>•</span>
+            <span>Groom</span>
           </div>
-          <span class="couple-role-lbl">Groom</span>
+          <div class="couple-photo-frame">
+            <div class="couple-photo-inner">
+              <img src="/demo/valente/groom.webp?v=1788678254321" alt="Julian Alexander, B.A." loading="lazy">
+            </div>
+          </div>
           <h3 class="couple-name serif">Julian Alexander, B.A.</h3>
           <span class="couple-parents-lbl">Putra Dari</span>
           <p class="couple-parents">Son of Mr. Robert Alexander & Mrs. Shirley Wijaya</p>
@@ -771,12 +1154,25 @@
           </a>
         </div>
 
-        <!-- Host 2 Card -->
-        <div class="couple-card reveal-zoom delay-1">
-          <div class="couple-photo-wrap">
-            <img src="/demo/valente/bride.webp" alt="Valerie Santoso, M.M.">
+        <!-- Editorial Ampersand Bridge -->
+        <div class="editorial-amp-divider reveal">
+          <span class="editorial-amp-line"></span>
+          <span class="editorial-amp-symbol">&amp;</span>
+          <span class="editorial-amp-line rev"></span>
+        </div>
+
+        <!-- Host 2 Card (Bride) -->
+        <div class="couple-editorial-card reveal-zoom delay-1">
+          <div class="couple-issue-badge">
+            <span>NO. 02</span>
+            <span>•</span>
+            <span>Bride</span>
           </div>
-          <span class="couple-role-lbl">Bride</span>
+          <div class="couple-photo-frame">
+            <div class="couple-photo-inner">
+              <img src="/demo/valente/bride.webp?v=1788678254321" alt="Valerie Santoso, M.M." loading="lazy">
+            </div>
+          </div>
           <h3 class="couple-name serif">Valerie Santoso, M.M.</h3>
           <span class="couple-parents-lbl">Putri Dari</span>
           <p class="couple-parents">Daughter of Mr. David Santoso & Mrs. Linda Hartono</p>
@@ -794,14 +1190,32 @@
       <h2 class="sec-title serif reveal delay-1">Save The Date</h2>
       <span class="event-full-date reveal delay-1">Sabtu, 05 Desember 2026</span>
 
-      <!-- Boxed Countdown Timer -->
-      <div class="countdown-boxes reveal-zoom delay-2">
-        <div class="cd-box"><span class="cd-val" id="cdDays">00</span><span class="cd-txt">HARI</span></div>
-        <div class="cd-box"><span class="cd-val" id="cdHours">00</span><span class="cd-txt">JAM</span></div>
-        <div class="cd-box"><span class="cd-val" id="cdMins">00</span><span class="cd-txt">MENIT</span></div>
-        <div class="cd-box"><span class="cd-val" id="cdSecs">00</span><span class="cd-txt">DETIK</span></div>
+      <!-- Editorial Typographic Countdown Strip -->
+      <div class="countdown-editorial-strip reveal-zoom delay-2">
+        <div class="cd-editorial-unit">
+          <span class="cd-editorial-val" id="cdDays">00</span>
+          <span class="cd-editorial-lbl">HARI</span>
+        </div>
+        <span class="cd-editorial-sep">:</span>
+        <div class="cd-editorial-unit">
+          <span class="cd-editorial-val" id="cdHours">00</span>
+          <span class="cd-editorial-lbl">JAM</span>
+        </div>
+        <span class="cd-editorial-sep">:</span>
+        <div class="cd-editorial-unit">
+          <span class="cd-editorial-val" id="cdMins">00</span>
+          <span class="cd-editorial-lbl">MENIT</span>
+        </div>
+        <span class="cd-editorial-sep">:</span>
+        <div class="cd-editorial-unit">
+          <span class="cd-editorial-val" id="cdSecs">00</span>
+          <span class="cd-editorial-lbl">DETIK</span>
+        </div>
       </div>
-      <a href="https://www.google.com/calendar/render?action=TEMPLATE&text=The%20Wedding%20of%20Julian%20%26%20Valerie&dates=20261205T010000Z/20261205T140000Z&location=Cliffside%20Glass%20Pavilion%2C%20The%20Mulia%20Resort" target="_blank" class="btn-cal reveal delay-2">SIMPAN TANGGAL</a>
+      <a href="https://www.google.com/calendar/render?action=TEMPLATE&text=The%20Wedding%20of%20Julian%20%26%20Valerie&dates=20261205T010000Z/20261205T140000Z&location=Cliffside%20Glass%20Pavilion%2C%20The%20Mulia%20Resort" target="_blank" class="btn-cal reveal delay-2">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+        SIMPAN TANGGAL
+      </a>
 
       <!-- Dynamic Events Stack -->
       <div class="events-stack reveal delay-3">
@@ -920,35 +1334,35 @@
       <div class="moments-grid-10">
         
     <div class="moment-photo-item" data-idx="0" onclick="luxOpenZoom(0)">
-      <img src="/demo/valente/gallery_01.webp" alt="Our Moment 1" loading="lazy" decoding="async">
+      <img src="/demo/valente/gallery_01.webp?v=1788678254321" alt="Our Moment 1" loading="lazy" decoding="async">
     </div>
   
     <div class="moment-photo-item" data-idx="1" onclick="luxOpenZoom(1)">
-      <img src="/demo/valente/gallery_02.webp" alt="Our Moment 2" loading="lazy" decoding="async">
+      <img src="/demo/valente/gallery_02.webp?v=1788678254321" alt="Our Moment 2" loading="lazy" decoding="async">
     </div>
   
     <div class="moment-photo-item" data-idx="2" onclick="luxOpenZoom(2)">
-      <img src="/demo/valente/gallery_03.webp" alt="Our Moment 3" loading="lazy" decoding="async">
+      <img src="/demo/valente/gallery_03.webp?v=1788678254321" alt="Our Moment 3" loading="lazy" decoding="async">
     </div>
   
     <div class="moment-photo-item" data-idx="3" onclick="luxOpenZoom(3)">
-      <img src="/demo/valente/gallery_04.webp" alt="Our Moment 4" loading="lazy" decoding="async">
+      <img src="/demo/valente/gallery_04.webp?v=1788678254321" alt="Our Moment 4" loading="lazy" decoding="async">
     </div>
   
     <div class="moment-photo-item" data-idx="4" onclick="luxOpenZoom(4)">
-      <img src="/demo/valente/gallery_05.webp" alt="Our Moment 5" loading="lazy" decoding="async">
+      <img src="/demo/valente/gallery_05.webp?v=1788678254321" alt="Our Moment 5" loading="lazy" decoding="async">
     </div>
   
     <div class="moment-photo-item" data-idx="5" onclick="luxOpenZoom(5)">
-      <img src="/demo/valente/gallery_06.webp" alt="Our Moment 6" loading="lazy" decoding="async">
+      <img src="/demo/valente/gallery_06.webp?v=1788678254321" alt="Our Moment 6" loading="lazy" decoding="async">
     </div>
   
     <div class="moment-photo-item" data-idx="6" onclick="luxOpenZoom(6)">
-      <img src="/demo/valente/gallery_07.webp" alt="Our Moment 7" loading="lazy" decoding="async">
+      <img src="/demo/valente/gallery_07.webp?v=1788678254321" alt="Our Moment 7" loading="lazy" decoding="async">
     </div>
   
     <div class="moment-photo-item" data-idx="7" onclick="luxOpenZoom(7)">
-      <img src="/demo/valente/gallery_08.webp" alt="Our Moment 8" loading="lazy" decoding="async">
+      <img src="/demo/valente/gallery_08.webp?v=1788678254321" alt="Our Moment 8" loading="lazy" decoding="async">
     </div>
   
       </div>
@@ -968,35 +1382,35 @@
         <div class="gallery-modal-grid">
           
     <div class="full-gallery-item" onclick="luxOpenZoom(0)">
-      <img src="/demo/valente/gallery_01.webp" alt="Photo 1" loading="lazy" decoding="async">
+      <img src="/demo/valente/gallery_01.webp?v=1788678254321" alt="Photo 1" loading="lazy" decoding="async">
     </div>
   
     <div class="full-gallery-item" onclick="luxOpenZoom(1)">
-      <img src="/demo/valente/gallery_02.webp" alt="Photo 2" loading="lazy" decoding="async">
+      <img src="/demo/valente/gallery_02.webp?v=1788678254321" alt="Photo 2" loading="lazy" decoding="async">
     </div>
   
     <div class="full-gallery-item" onclick="luxOpenZoom(2)">
-      <img src="/demo/valente/gallery_03.webp" alt="Photo 3" loading="lazy" decoding="async">
+      <img src="/demo/valente/gallery_03.webp?v=1788678254321" alt="Photo 3" loading="lazy" decoding="async">
     </div>
   
     <div class="full-gallery-item" onclick="luxOpenZoom(3)">
-      <img src="/demo/valente/gallery_04.webp" alt="Photo 4" loading="lazy" decoding="async">
+      <img src="/demo/valente/gallery_04.webp?v=1788678254321" alt="Photo 4" loading="lazy" decoding="async">
     </div>
   
     <div class="full-gallery-item" onclick="luxOpenZoom(4)">
-      <img src="/demo/valente/gallery_05.webp" alt="Photo 5" loading="lazy" decoding="async">
+      <img src="/demo/valente/gallery_05.webp?v=1788678254321" alt="Photo 5" loading="lazy" decoding="async">
     </div>
   
     <div class="full-gallery-item" onclick="luxOpenZoom(5)">
-      <img src="/demo/valente/gallery_06.webp" alt="Photo 6" loading="lazy" decoding="async">
+      <img src="/demo/valente/gallery_06.webp?v=1788678254321" alt="Photo 6" loading="lazy" decoding="async">
     </div>
   
     <div class="full-gallery-item" onclick="luxOpenZoom(6)">
-      <img src="/demo/valente/gallery_07.webp" alt="Photo 7" loading="lazy" decoding="async">
+      <img src="/demo/valente/gallery_07.webp?v=1788678254321" alt="Photo 7" loading="lazy" decoding="async">
     </div>
   
     <div class="full-gallery-item" onclick="luxOpenZoom(7)">
-      <img src="/demo/valente/gallery_08.webp" alt="Photo 8" loading="lazy" decoding="async">
+      <img src="/demo/valente/gallery_08.webp?v=1788678254321" alt="Photo 8" loading="lazy" decoding="async">
     </div>
   
         </div>
@@ -1008,14 +1422,14 @@
       <button class="lux-zoom-close" onclick="luxCloseZoom()">✕</button>
       <button class="lux-zoom-nav prev" onclick="luxPrevZoom(event)">‹</button>
       <div class="lux-zoom-img-box" onclick="event.stopPropagation()">
-        <img id="luxZoomActiveImg" src="/demo/valente/gallery_01.webp" alt="Zoom View">
+        <img id="luxZoomActiveImg" src="/demo/valente/gallery_01.webp?v=1788678254321" alt="Zoom View">
         <div class="lux-zoom-counter" id="luxZoomCounter">1 / 8</div>
       </div>
       <button class="lux-zoom-nav next" onclick="luxNextZoom(event)">›</button>
     </div>
 
     <script>
-      window.LUX_ALL_PHOTOS = ["/demo/valente/gallery_01.webp","/demo/valente/gallery_02.webp","/demo/valente/gallery_03.webp","/demo/valente/gallery_04.webp","/demo/valente/gallery_05.webp","/demo/valente/gallery_06.webp","/demo/valente/gallery_07.webp","/demo/valente/gallery_08.webp"];
+      window.LUX_ALL_PHOTOS = ["/demo/valente/gallery_01.webp?v=1788678254321","/demo/valente/gallery_02.webp?v=1788678254321","/demo/valente/gallery_03.webp?v=1788678254321","/demo/valente/gallery_04.webp?v=1788678254321","/demo/valente/gallery_05.webp?v=1788678254321","/demo/valente/gallery_06.webp?v=1788678254321","/demo/valente/gallery_07.webp?v=1788678254321","/demo/valente/gallery_08.webp?v=1788678254321"];
       window.luxActivePhotoIdx = 0;
 
       function ensureModalsOnBody() {
@@ -1148,76 +1562,10 @@
           <div class="story-circles-track-wrapper" style="overflow: hidden; width: 100%; position: relative; mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent); -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);">
             <div class="story-circles-track" style="display: flex; gap: 14px; width: max-content; margin: 0 auto; animation: luxStoryLoop 24s linear infinite;">
               
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/gallery_05.webp', 'Dimas Pratama')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/memory_01.webp?v=1788678254321', 'Budi Santoso')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/valente/gallery_05.webp" onerror="this.onerror=null;this.src='/demo/valente/cover.webp';" alt="Dimas Pratama" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Dimas
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/memory_04.webp', 'Tante Maya')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/valente/memory_04.webp" onerror="this.onerror=null;this.src='/demo/valente/gallery_04.webp';" alt="Tante Maya" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Tante
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/memory_03.webp', 'Rina & Teman')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/valente/memory_03.webp" onerror="this.onerror=null;this.src='/demo/valente/gallery_03.webp';" alt="Rina & Teman" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Rina
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/gallery_08.webp', 'Eko & Nia')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/valente/gallery_08.webp" onerror="this.onerror=null;this.src='/demo/valente/bride.webp';" alt="Eko & Nia" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Eko
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/memory_02.webp', 'Sahabat SMA')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/valente/memory_02.webp" onerror="this.onerror=null;this.src='/demo/valente/gallery_02.webp';" alt="Sahabat SMA" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Sahabat
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/gallery_07.webp', 'Alumni Teknik')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/valente/gallery_07.webp" onerror="this.onerror=null;this.src='/demo/valente/groom.webp';" alt="Alumni Teknik" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Alumni
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/memory_01.webp', 'Budi Santoso')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/valente/memory_01.webp" onerror="this.onerror=null;this.src='/demo/valente/gallery_01.webp';" alt="Budi Santoso" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/valente/memory_01.webp?v=1788678254321" onerror="this.onerror=null;this.src='/demo/valente/gallery_01.webp?v=1788678254321';" alt="Budi Santoso" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
@@ -1225,88 +1573,88 @@
       </span>
     </div>
   
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/gallery_06.webp', 'Keluarga Solo')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/gallery_08.webp?v=1788678254321', 'Eko & Nia')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/valente/gallery_06.webp" onerror="this.onerror=null;this.src='/demo/valente/hero.webp';" alt="Keluarga Solo" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/valente/gallery_08.webp?v=1788678254321" onerror="this.onerror=null;this.src='/demo/valente/bride.webp?v=1788678254321';" alt="Eko & Nia" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Eko
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/memory_02.webp?v=1788678254321', 'Sahabat SMA')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/valente/memory_02.webp?v=1788678254321" onerror="this.onerror=null;this.src='/demo/valente/gallery_02.webp?v=1788678254321';" alt="Sahabat SMA" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Sahabat
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/memory_03.webp?v=1788678254321', 'Rina & Teman')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/valente/memory_03.webp?v=1788678254321" onerror="this.onerror=null;this.src='/demo/valente/gallery_03.webp?v=1788678254321';" alt="Rina & Teman" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Rina
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/gallery_06.webp?v=1788678254321', 'Keluarga Solo')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/valente/gallery_06.webp?v=1788678254321" onerror="this.onerror=null;this.src='/demo/valente/hero.webp?v=1788678254321';" alt="Keluarga Solo" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
         Keluarga
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/memory_04.webp?v=1788678254321', 'Tante Maya')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/valente/memory_04.webp?v=1788678254321" onerror="this.onerror=null;this.src='/demo/valente/gallery_04.webp?v=1788678254321';" alt="Tante Maya" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Tante
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/gallery_05.webp?v=1788678254321', 'Dimas Pratama')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/valente/gallery_05.webp?v=1788678254321" onerror="this.onerror=null;this.src='/demo/valente/cover.webp?v=1788678254321';" alt="Dimas Pratama" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Dimas
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/gallery_07.webp?v=1788678254321', 'Alumni Teknik')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/valente/gallery_07.webp?v=1788678254321" onerror="this.onerror=null;this.src='/demo/valente/groom.webp?v=1788678254321';" alt="Alumni Teknik" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Alumni
       </span>
     </div>
   
               
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/gallery_05.webp', 'Dimas Pratama')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/memory_01.webp?v=1788678254321', 'Budi Santoso')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/valente/gallery_05.webp" onerror="this.onerror=null;this.src='/demo/valente/cover.webp';" alt="Dimas Pratama" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Dimas
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/memory_04.webp', 'Tante Maya')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/valente/memory_04.webp" onerror="this.onerror=null;this.src='/demo/valente/gallery_04.webp';" alt="Tante Maya" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Tante
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/memory_03.webp', 'Rina & Teman')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/valente/memory_03.webp" onerror="this.onerror=null;this.src='/demo/valente/gallery_03.webp';" alt="Rina & Teman" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Rina
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/gallery_08.webp', 'Eko & Nia')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/valente/gallery_08.webp" onerror="this.onerror=null;this.src='/demo/valente/bride.webp';" alt="Eko & Nia" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Eko
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/memory_02.webp', 'Sahabat SMA')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/valente/memory_02.webp" onerror="this.onerror=null;this.src='/demo/valente/gallery_02.webp';" alt="Sahabat SMA" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Sahabat
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/gallery_07.webp', 'Alumni Teknik')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/valente/gallery_07.webp" onerror="this.onerror=null;this.src='/demo/valente/groom.webp';" alt="Alumni Teknik" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Alumni
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/memory_01.webp', 'Budi Santoso')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/valente/memory_01.webp" onerror="this.onerror=null;this.src='/demo/valente/gallery_01.webp';" alt="Budi Santoso" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/valente/memory_01.webp?v=1788678254321" onerror="this.onerror=null;this.src='/demo/valente/gallery_01.webp?v=1788678254321';" alt="Budi Santoso" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
@@ -1314,14 +1662,80 @@
       </span>
     </div>
   
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/gallery_06.webp', 'Keluarga Solo')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/gallery_08.webp?v=1788678254321', 'Eko & Nia')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/valente/gallery_06.webp" onerror="this.onerror=null;this.src='/demo/valente/hero.webp';" alt="Keluarga Solo" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/valente/gallery_08.webp?v=1788678254321" onerror="this.onerror=null;this.src='/demo/valente/bride.webp?v=1788678254321';" alt="Eko & Nia" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Eko
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/memory_02.webp?v=1788678254321', 'Sahabat SMA')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/valente/memory_02.webp?v=1788678254321" onerror="this.onerror=null;this.src='/demo/valente/gallery_02.webp?v=1788678254321';" alt="Sahabat SMA" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Sahabat
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/memory_03.webp?v=1788678254321', 'Rina & Teman')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/valente/memory_03.webp?v=1788678254321" onerror="this.onerror=null;this.src='/demo/valente/gallery_03.webp?v=1788678254321';" alt="Rina & Teman" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Rina
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/gallery_06.webp?v=1788678254321', 'Keluarga Solo')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/valente/gallery_06.webp?v=1788678254321" onerror="this.onerror=null;this.src='/demo/valente/hero.webp?v=1788678254321';" alt="Keluarga Solo" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
         Keluarga
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/memory_04.webp?v=1788678254321', 'Tante Maya')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/valente/memory_04.webp?v=1788678254321" onerror="this.onerror=null;this.src='/demo/valente/gallery_04.webp?v=1788678254321';" alt="Tante Maya" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Tante
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/gallery_05.webp?v=1788678254321', 'Dimas Pratama')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/valente/gallery_05.webp?v=1788678254321" onerror="this.onerror=null;this.src='/demo/valente/cover.webp?v=1788678254321';" alt="Dimas Pratama" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Dimas
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/valente/gallery_07.webp?v=1788678254321', 'Alumni Teknik')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/valente/gallery_07.webp?v=1788678254321" onerror="this.onerror=null;this.src='/demo/valente/groom.webp?v=1788678254321';" alt="Alumni Teknik" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Alumni
       </span>
     </div>
   
@@ -1623,7 +2037,7 @@
     </div>
 
     <!-- 14. FOOTER / THANK YOU (Adaptive Full-Height 100vh) -->
-    <footer class="site-footer no-closing-photo" id="footer" style="">
+    <footer class="site-footer no-closing-photo" id="footer" style="background-image: url('/demo/valente/footer.webp?v=1788678254321');">
       <div class="closing-content">
         <p class="footer-note" style="margin-bottom:1.5rem;">Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu.</p>
         <p class="footer-sub" style="margin-bottom:0.5rem;">Kami Yang Berbahagia,</p>
@@ -2248,18 +2662,81 @@
     }
   }
 
+  // 10. Universal Theme Preloader Dismissal Driver (Graceful Minimum Time & Zero Visual Leak)
+  function initPreloaderGuard() {
+    var preloader = document.getElementById('themePreloader');
+    if (!preloader) return;
+    if (preloader.__guardInitialized) return;
+    preloader.__guardInitialized = true;
+
+    var startTime = Date.now();
+    var MIN_DISPLAY_MS = 1200; // 1.2s minimum duration for luxury brand entrance
+    var MAX_SAFETY_MS = 2500;  // 2.5s absolute safety cap for slow network
+
+    var dismissed = false;
+    function dismiss() {
+      if (dismissed) return;
+      dismissed = true;
+      preloader.classList.add('preloader-hidden');
+      setTimeout(function() {
+        try { preloader.remove(); } catch(e) { preloader.style.display = 'none'; }
+      }, 650);
+    }
+
+    function scheduleDismiss() {
+      var elapsed = Date.now() - startTime;
+      var remaining = Math.max(0, MIN_DISPLAY_MS - elapsed);
+      setTimeout(dismiss, remaining);
+    }
+
+    // Try detecting cover image to wait for full decode
+    var coverEl = document.getElementById('coverScreen') || document.querySelector('.cover-screen, #coverOverlay, .screen-cover');
+    var coverUrl = '';
+    if (coverEl) {
+      var bg = window.getComputedStyle(coverEl).backgroundImage || '';
+      var match = bg.match(/url\(["']?([^"')]+)["']?\)/);
+      if (match && match[1]) coverUrl = match[1];
+    }
+
+    if (coverUrl && !coverUrl.startsWith('data:')) {
+      var img = new Image();
+      img.src = coverUrl;
+      if (img.complete) {
+        scheduleDismiss();
+      } else {
+        img.onload = scheduleDismiss;
+        img.onerror = scheduleDismiss;
+      }
+    } else {
+      if (document.readyState === 'complete') {
+        scheduleDismiss();
+      } else {
+        window.addEventListener('load', scheduleDismiss);
+      }
+    }
+
+    // Safety Timeout: Maximum 2500ms so visitors on slower networks never stall
+    setTimeout(dismiss, MAX_SAFETY_MS);
+  }
+  initPreloaderGuard();
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
+      initPreloaderGuard();
       resolveGuestName();
       initAudioInteractionFallback();
       syncActiveTogglesUI();
     });
   } else {
+    initPreloaderGuard();
     resolveGuestName();
     initAudioInteractionFallback();
     syncActiveTogglesUI();
   }
-  window.addEventListener('load', syncActiveTogglesUI);
+  window.addEventListener('load', function() {
+    initPreloaderGuard();
+    syncActiveTogglesUI();
+  });
 })();
 </script>
 
@@ -2269,6 +2746,7 @@
   .music-fab, #musicFab, .floating-music, .audio-player,
   .fullscreen-btn, #fullscreenBtn, .btn-fullscreen, .btn-fs, .floating-action,
   .bottom-dock, nav.bottom-dock, .dock-container, nav.bottom-nav, .dock, .bottom-nav,
+  #themePreloader, .lux-universal-preloader,
   button[onclick*="toggleFullscreen"], button[onclick*="toggleAudio"] {
     display: none !important;
     visibility: hidden !important;
@@ -2312,7 +2790,8 @@
       const selectors = [
         '.music-fab', '#musicFab', '.floating-music',
         '.fullscreen-btn', '#fullscreenBtn', '.btn-fullscreen', '.btn-fs',
-        '.bottom-dock', 'nav.bottom-dock', '.dock-container', 'nav.bottom-nav'
+        '.bottom-dock', 'nav.bottom-dock', '.dock-container', 'nav.bottom-nav',
+        '#themePreloader', '.lux-universal-preloader'
       ];
       selectors.forEach(sel => {
         document.querySelectorAll(sel).forEach(el => {

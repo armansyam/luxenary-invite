@@ -25,6 +25,8 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     "scripts/**",
+    ".vscode_history_backup/**",
+    ".claude/**",
   ]),
 ]);
 

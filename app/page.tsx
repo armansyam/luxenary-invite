@@ -200,13 +200,8 @@ export default async function Home() {
             <Link href="/refund" className="hover:text-amber-900 transition">Kebijakan Pengembalian Dana</Link>
             <Link href="/contact" className="hover:text-amber-900 transition">Hubungi Kami</Link>
           </div>
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 w-full pt-4 border-t border-[#eadecf]/50">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full pt-4 border-t border-[#eadecf]/50">
             <p>© {new Date().getFullYear()} {platformName} — Platform Undangan Pernikahan Digital.</p>
-            <div className="flex gap-6 text-[#524d45]">
-              <Link href="/demo" className="hover:text-amber-900 transition">Demo Tema</Link>
-              <Link href="/login" className="hover:text-amber-900 transition">Portal Klien</Link>
-              <Link href="/admin/login" className="hover:text-amber-900 transition">Admin</Link>
-            </div>
           </div>
         </div>
       </footer>

@@ -63,6 +63,27 @@ export default auth(async (req) => {
   const isAdmin = (req.auth?.user as any)?.isAdmin === true || (req.auth?.user as any)?.role === "ADMIN" || (req.auth?.user as any)?.role === "SUPER_ADMIN";
   const { pathname } = req.nextUrl;
 
+  const host = req.headers.get("host") || "";
+  const cleanHost = host.split(":")[0].toLowerCase(); // remove port & normalize
+  const envRootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost:3000").split(":")[0].toLowerCase();
+  
+  const rootDomains = [envRootDomain, "localhost", "127.0.0.1"].filter(Boolean);
+
+  const isRootDomain = rootDomains.some((d) => cleanHost === d || cleanHost === `www.${d}`);
+  const isSubdomainOfOurs = rootDomains.some((d) => cleanHost.endsWith(`.${d}`) && cleanHost !== d && cleanHost !== `www.${d}`);
+  const isCustomDomain = !isSubdomainOfOurs && !isRootDomain;
+
+  // C. Blokir Halaman Admin di subdomain klien (misal budi-ani.luxvite.id/admin)
+  if (isSubdomainOfOurs && (pathname === "/admin" || pathname.startsWith("/admin/"))) {
+    const protocol = req.nextUrl.protocol;
+    const portSuffix = host.includes(":") ? `:${host.split(":")[1]}` : "";
+    const matchedRoot = rootDomains.find((d) => cleanHost.endsWith(`.${d}`)) || "localhost";
+    const targetHost = `${matchedRoot}${portSuffix}`;
+    const redirectUrl = new URL(pathname, `${protocol}//${targetHost}`);
+    redirectUrl.search = req.nextUrl.search;
+    return NextResponse.redirect(redirectUrl, 307);
+  }
+
   // 1. Admin login page
   if (pathname === "/admin/login") {
     if (isLoggedIn && isAdmin) {
@@ -74,7 +95,7 @@ export default auth(async (req) => {
   // 2. Client login page
   if (pathname === "/login") {
     if (isLoggedIn && !isAdmin) {
-      return NextResponse.redirect(new URL("/dashboard", req.url));
+      return NextResponse.redirect(new URL("/onboarding", req.url));
     }
     return NextResponse.next();
   }
@@ -102,14 +123,6 @@ export default auth(async (req) => {
   }
 
   // 5. Wildcard Subdomain Routing (e.g. didan-nasha.luxenary.id or didan-nasha.localhost:3000)
-  const host = req.headers.get("host") || "";
-  const cleanHost = host.split(":")[0]; // remove port
-  // Root domain dibaca dari env — tidak hardcode agar bisa ganti domain tanpa ubah kode
-  const envRootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost:3000").split(":")[0];
-  const rootDomains = [envRootDomain, "localhost", "trycloudflare.com"].filter(Boolean);
-  const isSubdomainOfOurs = rootDomains.some((d) => cleanHost.endsWith(`.${d}`));
-  const isRootDomain = rootDomains.some((d) => cleanHost === d || cleanHost === `www.${d}`);
-  const isCustomDomain = !isSubdomainOfOurs && !isRootDomain;
 
   // ── A. Subdomain milik kita (e.g. namapasangan.luxenary.id) ──
   if (isSubdomainOfOurs && !pathname.startsWith("/api") && !pathname.startsWith("/_next") && !pathname.startsWith("/static")) {

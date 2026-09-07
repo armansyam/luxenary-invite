@@ -55,6 +55,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Paket undangan tidak valid atau belum terdaftar pada pesanan." }, { status: 400 });
     }
 
+    // Bersihkan / tandai usang order perpanjangan galeri PENDING sebelumnya untuk undangan ini
+    await prisma.order.updateMany({
+      where: {
+        userId: session.user.id,
+        linkedOrderId: invitation.id,
+        orderType: "GALLERY_EXTENSION",
+        status: "PENDING",
+      },
+      data: {
+        status: "EXPIRED",
+        rejectReason: "Digantikan oleh tagihan perpanjangan baru",
+      },
+    });
+
     // 4. Buat Order baru dengan orderType = GALLERY_EXTENSION
     const newOrder = await prisma.order.create({
       data: {
@@ -75,6 +89,7 @@ export async function POST(req: NextRequest) {
       orderId: newOrder.id,
       invoiceNumber: newOrder.invoiceNumber,
       amount: extensionPrice,
+      paymentUrl: `/checkout?order=${newOrder.id}`,
       message: "Order perpanjangan galeri berhasil dibuat. Silakan lanjutkan ke pembayaran QRIS.",
     });
   } catch (error: any) {

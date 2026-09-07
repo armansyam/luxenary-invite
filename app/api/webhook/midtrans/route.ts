@@ -21,11 +21,16 @@ export async function POST(req: NextRequest) {
     }
 
     // Ambil server key dari AdminSetting atau env
-    let serverKey = process.env.MIDTRANS_SERVER_KEY || "";
+    const serverKeys: string[] = [];
+    if (process.env.MIDTRANS_SERVER_KEY) serverKeys.push(process.env.MIDTRANS_SERVER_KEY);
     try {
-      const setting = await prisma.adminSetting.findUnique({ where: { key: "midtrans_server_key" } });
-      if (setting?.value) serverKey = setting.value;
+      const setting = await prisma.adminSetting.findUnique({
+        where: { key: "midtrans_server_key" },
+      });
+      if (setting?.value) serverKeys.push(setting.value);
     } catch {}
+
+    const validServerKeys = Array.from(new Set(serverKeys.filter((k) => k && !k.includes("your_"))));
 
     // Validasi format orderId (harus UUID v4 — mencegah query sia-sia dengan input sembarang)
     const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -34,20 +39,22 @@ export async function POST(req: NextRequest) {
     }
 
     // Verifikasi Signature — WAJIB jika server key terkonfigurasi
-    if (serverKey && !serverKey.includes("your_")) {
+    if (validServerKeys.length > 0) {
       // Jika server key ada tapi signatureKey tidak dikirim — tolak (kemungkinan payload palsu)
       if (!signatureKey) {
         console.warn("[Midtrans Webhook] Payload tanpa signature_key ditolak untuk order:", orderId);
         return NextResponse.json({ status: "rejected", reason: "missing_signature" }, { status: 400 });
       }
 
-      const isValid = MidtransGateway.verifyWebhookSignature({
-        order_id: orderId,
-        status_code: statusCode,
-        gross_amount: grossAmount,
-        signature_key: signatureKey,
-        serverKey,
-      });
+      const isValid = validServerKeys.some((serverKey) =>
+        MidtransGateway.verifyWebhookSignature({
+          order_id: orderId,
+          status_code: statusCode,
+          gross_amount: grossAmount,
+          signature_key: signatureKey,
+          serverKey,
+        })
+      );
 
       if (!isValid) {
         console.warn("[Midtrans Webhook] Signature tidak valid — payload diabaikan untuk order:", orderId);

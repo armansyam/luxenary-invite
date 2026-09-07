@@ -117,7 +117,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         style={{ colorScheme: "only light" as any, backgroundColor: "#faf8f5", color: "#2d2c2a" }}
       >
         <div dangerouslySetInnerHTML={{ __html: LUXENARY_WATERMARK }} />
-        <Providers>{children}</Providers>
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );

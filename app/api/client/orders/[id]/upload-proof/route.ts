@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import path from "path";
 import sharp from "sharp";
 import { uploadFile, deleteFile } from "@/lib/storage";
+import { applyUpgradePlan } from "@/lib/upgradeHelper";
+import { paymentEmitter } from "@/lib/paymentEvents";
 
 export const dynamic = "force-dynamic";
 
@@ -145,6 +147,8 @@ export async function POST(
           proofImageUrl: publicUrl,
           proofUploadedAt: new Date(),
           status: "PENDING",
+          paymentGatewayRef: null,
+          paidAt: null,
           rejectReason: null,
         },
       });
@@ -190,6 +194,8 @@ export async function POST(
         proofImageUrl: publicUrl,
         proofUploadedAt: new Date(),
         status: "PENDING",
+        paymentGatewayRef: null,
+        paidAt: null,
         rejectReason: null, // Clear any previous rejection
       },
     });

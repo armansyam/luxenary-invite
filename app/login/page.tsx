@@ -19,12 +19,13 @@ function LoginForm({ platformName }: { platformName: string }) {
     <div className="min-h-screen flex items-center justify-center bg-[#faf7f2] px-4 py-12 relative overflow-hidden font-sans">
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-amber-700/8 rounded-full blur-[140px] pointer-events-none" />
 
-      <div className="max-w-sm w-full bg-white border border-amber-900/10 rounded-3xl p-8 sm:p-10 shadow-xl relative z-10 text-stone-900 space-y-7">
+      <div className="max-w-sm w-full bg-white border border-amber-900/10 rounded-3xl p-8 sm:p-10 shadow-xl relative z-10 text-stone-900 space-y-6">
         {/* Brand Header */}
         <div className="text-center space-y-2">
           <div className="flex justify-center">
             <BrandLogo size="lg" lightBg />
           </div>
+
           <span className="text-[11px] font-bold uppercase tracking-widest text-amber-700 block">{platformName}</span>
           <h1 className="text-2xl font-serif font-bold text-stone-900">Masuk / Daftar Akun</h1>
           <p className="text-xs text-stone-400 leading-relaxed">
@@ -60,16 +61,15 @@ function LoginForm({ platformName }: { platformName: string }) {
         </div>
 
         {/* Divider */}
-        <div className="border-t border-stone-100 pt-5 space-y-3">
+        <div className="border-t border-stone-100 pt-4 space-y-2">
           <p className="text-center text-xs text-stone-500">
             Akses aman dan mudah, cukup gunakan akun Google Anda.
           </p>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between text-[11px] text-stone-400 border-t border-stone-100 pt-4">
+        <div className="flex items-center justify-center text-[11px] text-stone-400 border-t border-stone-100 pt-4">
           <a href="/demo" className="hover:text-stone-700 transition">← Lihat Demo Tema</a>
-          <a href="/admin/login" className="hover:text-stone-700 transition">Portal Admin</a>
         </div>
       </div>
     </div>

@@ -160,6 +160,7 @@ export async function POST(req: Request) {
       targetPlan: targetPlanUpper,
       amount: upgradeAmount,
       requestedDomain: cleanDomain,
+      paymentUrl: `/checkout?order=${upgradeOrder.id}`,
       message: `Upgrade dari ${currentPlan} ke ${targetPlanUpper}${cleanDomain ? ` + Custom Domain (${cleanDomain})` : ""}. Nominal: Rp ${upgradeAmount.toLocaleString("id-ID")}`,
     });
 

@@ -2014,8 +2014,8 @@ export default function SettingsPage() {
                           })
                         });
                         const resData = await response.json();
-                        if (response.ok && resData.paymentUrl) {
-                          window.location.href = resData.paymentUrl;
+                        if (response.ok && (resData.paymentUrl || resData.orderId)) {
+                          window.location.href = resData.paymentUrl || `/checkout?order=${resData.orderId}`;
                         } else {
                           setCustomDomainError(resData.error || "Gagal membuat invoice");
                         }
