@@ -1290,20 +1290,25 @@ export default function EditInvitation() {
             <button
               type="button"
               onClick={() => setShowLivePalette((prev) => !prev)}
-              className={`px-3 py-1.5 rounded-xl border text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer ${
+              className={`h-9 px-2.5 rounded-xl border text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer shadow-2xs ${
                 showLivePalette
-                  ? "bg-stone-900 text-white border-stone-900 shadow-xs"
+                  ? "bg-stone-900 text-white border-stone-900"
                   : "bg-white text-stone-700 border-stone-200 hover:border-stone-300 hover:bg-stone-50"
               }`}
-              title="Sesuaikan Palet Warna"
+              title={`Palet: ${selectedPaletteObj.name} (Klik untuk ${showLivePalette ? "menutup" : "mengubah"})`}
+              aria-label={`Palet: ${selectedPaletteObj.name}`}
             >
+              <svg className="w-3.5 h-3.5 opacity-75 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 3a9 9 0 00-9 9c0 4.97 4.03 9 9 9 1.1 0 2-.9 2-2 0-.46-.17-.89-.46-1.22-.29-.33-.46-.76-.46-1.22 0-1.1.9-2 2-2h2.5c3.59 0 6.5-2.91 6.5-6.5C21 6.48 16.97 3 12 3z" />
+                <circle cx="7.5" cy="10.5" r="1" fill="currentColor" />
+                <circle cx="12" cy="7.5" r="1" fill="currentColor" />
+                <circle cx="16.5" cy="10.5" r="1" fill="currentColor" />
+              </svg>
               <span
-                className="w-2.5 h-2.5 rounded-full border border-black/10 flex-shrink-0"
+                className="w-3 h-3 rounded-full border border-black/15 shadow-xs flex-shrink-0"
                 style={{ backgroundColor: selectedPaletteObj.hex }}
               />
-              <span className="hidden sm:inline">Palet:</span>
-              <span className="font-bold">{selectedPaletteObj.name}</span>
-              <svg className={`w-3 h-3 transition-transform ${showLivePalette ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={`w-3 h-3 transition-transform duration-200 ${showLivePalette ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </button>
