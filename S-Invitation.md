@@ -47,7 +47,12 @@ Sistem template undangan menggunakan arsitektur HTML multi-layer mandiri dengan 
 4. **Dillalucky (`themes/traditional/dillalucky.html`)**
    - Motif floral tradisional yang anggun dengan sentuhan pastel sakral.
 5. **Mayang (`themes/traditional/mayang.html`)**
-   - Sentuhan janur & motif adat Melayu-Jawa dengan tipografi serif elegan dan dukungan penuh Dynamic Kraton Heritage Palette (`--jawa-gold`, `--jawa-gold-light`, `--jawa-dark`, `--jawa-card`) adaptif multi-tema selaras Candani.
+   - Mengusung keanggunan Pawikahan Ageng Keraton Jawi dengan dukungan penuh Dynamic Kraton Heritage Palette (`--jawa-gold`, `--jawa-gold-light`, `--jawa-dark`, `--jawa-card`, `--jawa-border`) berbasis `:root` tokens dan `color-mix(...)` selaras Candani.
+   - Mengadopsi kanvas `.fixed-bg-layer` anti-lag iOS yang terkunci di dalam kolom layout wrapper 460px (tidak bocor ke background desktop).
+   - Discrete Parents Architecture (`{{firstParentPrefix}}`, `{{firstFather}}`, `{{firstMother}}`, `{{secondParentPrefix}}`, `{{secondFather}}`, `{{secondMother}}`) lengkap dengan frame lengkung Jawa dan inisial monogram melayang.
+   - Identifikasi seksi pembuka menggunakan ID `#home` yang kompatibel penuh dengan injeksi template engine (`homePhotoUrl`).
+   - Integrasi seksi kisah `#story` (`{{storyItemsHtml}}`), ornamen pembatas kraton SVG murni tanpa emoji OS, Smart Bottom Dock dengan audio toggle terintegrasi (`luxToggleAudio()`), serta modal voucher souvenir QR (`#modalBg`).
+   - Terpasang atribut `data-lux-field` lengkap untuk mendukung pengalaman Live Visual Studio Click-to-Edit.
 
 ### C. Modern Series (`themes/modern/`)
 1. **Wave (`themes/modern/wave.html`)**

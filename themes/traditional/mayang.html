@@ -40,29 +40,41 @@
       --jawa-gold: var(--accent, var(--primary, #cfa859));
       --jawa-gold-light: var(--bg-light, #f5e2b8);
       --jawa-dark: var(--bg-dark, #120c06);
-      --jawa-card: color-mix(in srgb, var(--primary, #cfa859) 16%, var(--bg-dark, #120c06) 94%);
+      --jawa-card: color-mix(in srgb, var(--primary, #cfa859) 18%, var(--bg-dark, #120c06) 92%);
       --jawa-card-deep: color-mix(in srgb, var(--bg-dark, #120c06) 95%, transparent);
       --jawa-border: color-mix(in srgb, var(--accent, #cfa859) 35%, transparent);
-      --jawa-border-bright: color-mix(in srgb, var(--accent, #cfa859) 70%, transparent);
-      --border-glow: 0 0 25px color-mix(in srgb, var(--primary, #cfa859) 25%, transparent);
+      --jawa-border-bright: color-mix(in srgb, var(--accent, #cfa859) 75%, transparent);
+      --jawa-border-dim: color-mix(in srgb, var(--accent, #cfa859) 22%, transparent);
+      --border-glow: 0 0 25px color-mix(in srgb, var(--primary, #cfa859) 30%, transparent);
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html { scroll-behavior: smooth; }
     body {
       font-family: 'Playfair Display', 'Plus Jakarta Sans', serif;
-      background-color: var(--bg-dark, var(--jawa-dark));
+      background-color: var(--bg-dark, #120c06);
       color: #ffffff;
       overflow-x: hidden;
       width: 100%;
+    }
+
+    /* FIXED BACKGROUND CANVAS (FOKUS DI PANEL UNDANGAN & ANTI-LAG IOS) */
+    .fixed-bg-layer {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100vh;
+      height: 100dvh;
       background-image: radial-gradient(
-        circle at 50% 10%,
-        color-mix(in srgb, var(--primary, #cfa859) 25%, var(--bg-dark, #120c06) 85%) 0%,
-        color-mix(in srgb, var(--bg-dark, #120c06) 98%, transparent) 85%
+        circle at 50% 25%,
+        color-mix(in srgb, var(--primary, #cfa859) 30%, var(--bg-dark, #120c06) 82%) 0%,
+        color-mix(in srgb, var(--bg-dark, #120c06) 96%, transparent) 88%
       ), url('{{homePhotoUrl}}');
       background-size: cover;
       background-position: center;
-      background-attachment: fixed;
+      background-repeat: no-repeat;
+      z-index: 1;
+      pointer-events: none;
     }
 
     /* TYPOGRAPHY CLASSES */
@@ -92,18 +104,18 @@
     }
 
     /* 1. COVER SCREEN (JAVANESE KRATON FULLSCREEN OVERLAY) */
-    .cover-overlay {
+    .cover-screen, .cover-overlay {
       position: fixed; inset: 0; z-index: 9999;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       text-align: center; padding: 2.5rem 1.5rem;
       background: radial-gradient(
         circle at center,
-        color-mix(in srgb, var(--primary, #cfa859) 25%, var(--bg-dark, #120c06) 90%) 0%,
+        color-mix(in srgb, var(--primary, #cfa859) 28%, var(--bg-dark, #120c06) 90%) 0%,
         color-mix(in srgb, var(--bg-dark, #120c06) 98%, transparent) 100%
       ), url('{{landingCoverUrl}}') center/cover no-repeat;
       transition: transform 0.85s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.85s ease;
     }
-    .cover-overlay.opened {
+    .cover-screen.opened, .cover-screen.slide-up-hidden, .cover-overlay.opened {
       transform: translateY(-100%); pointer-events: none; opacity: 0;
     }
 
@@ -130,9 +142,9 @@
     
     .btn-buka-undangan {
       display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem;
-      padding: 0.95rem 2.8rem; background: linear-gradient(90deg, var(--jawa-gold) 0%, var(--jawa-gold-light) 50%, var(--jawa-gold) 100%);
+      padding: 0.95rem 2.8rem; background: linear-gradient(90deg, var(--primary, var(--jawa-gold)) 0%, var(--accent, var(--jawa-gold-light)) 50%, var(--primary, var(--jawa-gold)) 100%);
       background-size: 200% auto;
-      color: var(--jawa-dark); font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--bg-dark, #120c06); font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase;
       border: none; border-radius: 50px; cursor: pointer; box-shadow: 0 6px 20px color-mix(in srgb, var(--jawa-gold) 45%, transparent);
       transition: all 0.35s ease;
     }
@@ -147,20 +159,21 @@
     }
     .sidebar-desktop::after {
       content: ''; position: absolute; inset: 0;
-      background: linear-gradient(to top, var(--jawa-dark) 0%, color-mix(in srgb, var(--jawa-dark) 30%, transparent) 50%, transparent 100%);
+      background: linear-gradient(to top, var(--bg-dark, #120c06) 0%, color-mix(in srgb, var(--bg-dark, #120c06) 30%, transparent) 50%, transparent 100%);
     }
     .sidebar-desktop-content {
       position: absolute; bottom: 4rem; left: 3.5rem; right: 3.5rem; z-index: 20; color: #fff;
     }
 
     .main-scroll-panel {
-      width: 100%; min-height: 100vh; padding-bottom: 110px; position: relative; z-index: 20;
+      width: 100%; min-height: 100vh; padding-bottom: 0; position: relative; z-index: 20;
     }
 
     @media (min-width: 900px) {
       .sidebar-desktop { display: block; width: calc(100% - 460px); }
       .main-scroll-panel { width: 460px; margin-left: calc(100% - 460px); min-width: 0; }
-      .cover-overlay { width: 460px; left: calc(100% - 460px); }
+      .cover-screen, .cover-overlay { width: 460px; left: calc(100% - 460px); }
+      .fixed-bg-layer { width: 460px; left: calc(100% - 460px); right: 0; }
       .bottom-dock { left: calc(100% - 230px) !important; }
       .sec-main-title,
       .sec-heading {
@@ -177,7 +190,7 @@
        FULL VIEWPORT ISOLATED SLIDES (100VH SETIAP SEKSI)
        ========================================================================== */
     .slide-section, .section-block, .sec-flow,
-    #section-quote, #section-couple, #section-events, #story, #moments, #gift,
+    #home, #section-couple, #section-events, #story, #moments, #gift,
     #section-wishes, #access-pass, #dresscode, #live, #turut-mengundang {
       width: 100%;
       min-height: 100vh;
@@ -190,7 +203,7 @@
       box-sizing: border-box;
       position: relative;
       text-align: center;
-      border-bottom: 1px solid var(--jawa-border);
+      border-bottom: 1px solid var(--jawa-border-dim);
     }
 
     .sec-content-box {
@@ -200,6 +213,15 @@
       display: flex;
       flex-direction: column;
       align-items: center;
+    }
+
+    /* SIGNATURE KRATON DIVIDER */
+    .kraton-divider-ornament {
+      width: 130px;
+      height: 18px;
+      margin: 0.4rem auto 1rem;
+      display: block;
+      opacity: 0.9;
     }
 
     .sec-eyebrow {
@@ -214,28 +236,164 @@
     }
     .sec-subheading {
       font-family: 'Playfair Display', serif;
-      font-size: 0.8rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--jawa-gold-light); margin-bottom: 2.2rem; font-style: italic;
+      font-size: 0.82rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--jawa-gold-light); margin-bottom: 2.2rem; font-style: italic;
     }
 
-    /* MEMPELAI CARD */
-    .couple-card {
-      width: 100%; background: var(--jawa-card); border: 1px solid var(--jawa-border); border-radius: 24px;
-      padding: 2.2rem 1.5rem; margin-bottom: 1.8rem; box-shadow: var(--border-glow); position: relative;
-      transition: transform 0.4s ease, border-color 0.4s ease;
+    /* ==========================================
+       MEMPELAI PROFILE STYLING (CARD-LESS LUXURY ARCHITECTURE)
+       ========================================== */
+    .couple-staggered-container {
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.8rem;
+      margin-top: 0.8rem;
     }
-    .couple-card:hover { transform: translateY(-4px); border-color: var(--jawa-border-bright); }
+
+    .couple-unit {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .couple-unit.unit-left {
+      align-items: flex-start;
+      text-align: left;
+    }
+    .couple-unit.unit-right {
+      align-items: flex-end;
+      text-align: right;
+    }
+
+    .couple-frame-anchor {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      margin-bottom: 0.9rem;
+    }
+
+    /* BINGKAI FOTO KUBAH KRATON LENGKUNG TRADISIONAL BER-SHADOW */
     .couple-photo-wrap {
-      width: 155px; height: 200px; margin: 0 auto 1.3rem; border-radius: 100px 100px 20px 20px;
-      padding: 5px; border: 2px solid var(--jawa-gold); overflow: hidden;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+      width: 145px;
+      height: 190px;
+      border-radius: 95px 95px 20px 20px;
+      padding: 4px;
+      border: 2px solid var(--jawa-gold);
+      overflow: hidden;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.65), 0 0 22px color-mix(in srgb, var(--jawa-gold) 25%, transparent);
+      position: relative;
+      z-index: 2;
+      background: color-mix(in srgb, var(--bg-dark, #120c06) 85%, transparent);
     }
-    .couple-photo-wrap img { width: 100%; height: 100%; object-fit: cover; border-radius: 94px 94px 15px 15px; }
-    .couple-name { font-size: 1.7rem; color: var(--jawa-gold-light); margin-bottom: 0.4rem; font-family: 'Cinzel Decorative', serif; }
-    .couple-parents { font-size: 0.84rem; color: rgba(255,255,255,0.85); line-height: 1.6; font-style: italic; }
+    .couple-photo-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 88px 88px 16px 16px;
+      display: block;
+    }
+
+    /* WATERMARK INITIAL DI SAMPING FOTO (BOLD EDITORIAL SCALE) */
+    .couple-watermark-initial {
+      font-family: 'Cinzel Decorative', 'Playfair Display', serif;
+      font-weight: 700;
+      font-size: clamp(9.5rem, 32vw, 13rem);
+      line-height: 0.8;
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      z-index: 1;
+      background: linear-gradient(180deg, var(--jawa-gold) 10%, rgba(207,168,89,0.18) 75%, transparent 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      opacity: 0.35;
+      letter-spacing: -0.06em;
+      filter: drop-shadow(0 4px 18px rgba(0,0,0,0.5));
+    }
+    .initial-right {
+      left: calc(100% - 35px);
+    }
+    .initial-left {
+      right: calc(100% - 35px);
+    }
+
+    .couple-info {
+      width: 100%;
+      max-width: 320px;
+    }
+    .unit-left .couple-info {
+      margin-left: 0.2rem;
+    }
+    .unit-right .couple-info {
+      margin-right: 0.2rem;
+    }
+
+    .couple-role {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.72rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--jawa-gold-light);
+      display: block;
+      margin-bottom: 0.25rem;
+      font-weight: 600;
+    }
+    .couple-name {
+      font-size: 1.55rem;
+      color: #ffffff;
+      font-family: 'Cinzel Decorative', serif;
+      font-weight: 600;
+      line-height: 1.25;
+      margin-bottom: 0.5rem;
+      letter-spacing: 0.02em;
+    }
+    .couple-parents {
+      font-size: 0.84rem;
+      color: rgba(255,255,255,0.85);
+      line-height: 1.6;
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      margin-bottom: 0.7rem;
+    }
+    .couple-parents span { display: block; }
+    .parent-prefix { font-size: 0.78rem; opacity: 0.8; margin-bottom: 0.15rem; }
+    .parent-father, .parent-mother { font-weight: 500; }
     .couple-ig {
-      display: inline-flex; align-items: center; gap: 0.4rem; margin-top: 0.8rem;
-      font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.78rem; color: var(--jawa-gold); text-decoration: none; font-weight: 600;
-      padding: 0.4rem 1rem; border-radius: 50px; background: color-mix(in srgb, var(--jawa-gold) 10%, transparent); border: 1px solid var(--jawa-border);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      color: var(--jawa-gold);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.25s ease;
+      background: color-mix(in srgb, var(--jawa-gold) 12%, transparent);
+      padding: 0.35rem 0.85rem;
+      border-radius: 50px;
+      border: 1px solid var(--jawa-border);
+    }
+    .couple-ig:hover { color: #fff; background: var(--jawa-gold); }
+
+    .couple-connector {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: -0.8rem 0;
+      position: relative;
+      z-index: 5;
+    }
+    .connector-amp {
+      font-family: 'Pinyon Script', cursive;
+      font-size: 3.5rem;
+      color: var(--jawa-gold);
+      opacity: 0.85;
+      text-shadow: 0 4px 18px rgba(0,0,0,0.8);
+      line-height: 1;
     }
 
     /* COUNTDOWN */
@@ -253,7 +411,7 @@
       font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
       text-decoration: none; transition: all 0.3s; background: color-mix(in srgb, var(--jawa-dark) 60%, transparent);
     }
-    .btn-cal:hover { background: var(--jawa-gold); color: var(--jawa-dark); transform: translateY(-2px); }
+    .btn-cal:hover { background: var(--jawa-gold); color: var(--bg-dark, #120c06); transform: translateY(-2px); }
 
     /* EVENTS UNIFIED CONTAINER STYLING */
     .events-unified-container { display: flex; flex-direction: column; gap: 1.5rem; width: 100%; max-width: 440px; }
@@ -279,32 +437,31 @@
       font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase;
       text-decoration: none; transition: all 0.3s;
     }
-    .btn-map-outline:hover { background: var(--jawa-gold); color: var(--jawa-dark); }
+    .btn-map-outline:hover { background: var(--jawa-gold); color: var(--bg-dark, #120c06); }
 
     /* JOURNEY / STORY STYLING */
-    .journey-card-container {
-      background: var(--jawa-card); border: 1px solid var(--jawa-border); border-radius: 18px;
-      padding: 2rem 1.5rem; text-align: left; box-shadow: var(--border-glow); width: 100%; max-width: 440px;
+    .mayang-story-flow {
+      display: flex; flex-direction: column; gap: 1.25rem; width: 100%; max-width: 440px; text-align: left;
+      background: var(--jawa-card); border: 1px solid var(--jawa-border); border-radius: 18px; padding: 1.8rem 1.5rem;
+      box-shadow: var(--border-glow);
     }
-    .journey-chapters { display: flex; flex-direction: column; gap: 1.5rem; }
-    .story-chapter-block { padding-bottom: 0.8rem; border-bottom: 1px dashed var(--jawa-border); }
-    .story-chapter-block:last-child { border-bottom: none; }
+    .story-chapter-block { padding-bottom: 0.8rem; border-bottom: 1px dashed var(--jawa-border-dim); }
+    .story-chapter-block:last-child { border-bottom: none; padding-bottom: 0; }
     .sc-label { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.65rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--jawa-gold); font-weight: 600; display: block; margin-bottom: 0.2rem; }
     .sc-title { font-size: 1.25rem; color: var(--jawa-gold-light); font-family: 'Cinzel Decorative', serif; margin-bottom: 0.4rem; }
     .sc-desc { font-size: 0.84rem; color: rgba(255,255,255,0.85); line-height: 1.7; font-style: italic; }
-    .journey-footer { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem; }
+    .journey-footer { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; margin-top: 1.25rem; width: 100%; max-width: 440px; }
     .jf-line { flex: 1; height: 1px; background: var(--jawa-border); }
     .jf-signature { font-family: 'Pinyon Script', cursive; font-size: 2rem; color: var(--jawa-gold); }
 
     /* GALLERY PUZZLE GRID & LIGHTBOX */
-
     .btn-show-gallery, .btn-outline-box {
       display: inline-flex; align-items: center; justify-content: center; padding: 0.8rem 2.2rem;
       border: 1px solid var(--jawa-gold); border-radius: 50px; color: var(--jawa-gold-light);
       font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase;
       cursor: pointer; background: transparent; transition: all 0.3s;
     }
-    .btn-show-gallery:hover, .btn-outline-box:hover { background: var(--jawa-gold); color: var(--jawa-dark); }
+    .btn-show-gallery:hover, .btn-outline-box:hover { background: var(--jawa-gold); color: var(--bg-dark, #120c06); }
 
     /* DIGITAL GIFT & BANK CARDS */
     .bank-card {
@@ -319,7 +476,7 @@
     }
     .bank-number { font-family: monospace; font-size: 1.05rem; color: #ffffff; letter-spacing: 0.08em; }
     .btn-copy {
-      background: var(--jawa-gold); color: var(--jawa-dark); border: none; padding: 0.45rem 1rem;
+      background: var(--jawa-gold); color: var(--bg-dark, #120c06); border: none; padding: 0.45rem 1rem;
       border-radius: 6px; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 0.7rem; cursor: pointer; letter-spacing: 0.1em; text-transform: uppercase;
     }
 
@@ -332,8 +489,8 @@
       border-radius: 10px; color: #ffffff; font-size: 0.85rem; outline: none; font-family: 'Plus Jakarta Sans', sans-serif;
     }
     .btn-rsvp-submit {
-      width: 100%; padding: 1rem; background: linear-gradient(90deg, var(--jawa-gold) 0%, var(--jawa-gold-light) 50%, var(--jawa-gold) 100%);
-      color: var(--jawa-dark); border: none; border-radius: 50px; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 0.8rem;
+      width: 100%; padding: 1rem; background: linear-gradient(90deg, var(--primary, var(--jawa-gold)) 0%, var(--accent, var(--jawa-gold-light)) 50%, var(--primary, var(--jawa-gold)) 100%);
+      color: var(--bg-dark, #120c06); border: none; border-radius: 50px; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 0.8rem;
       letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; transition: all 0.3s;
     }
     .wishes-list { margin-top: 1.5rem; max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.9rem; width: 100%; max-width: 440px; }
@@ -371,6 +528,42 @@
     .dock-btn { color: rgba(255,255,255,0.7); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.65rem; text-decoration: none; display: flex; flex-direction: column; align-items: center; gap: 0.2rem; }
     .dock-btn:hover, .dock-btn.active { color: var(--jawa-gold); }
     .dock-btn svg { width: 18px; height: 18px; fill: currentColor; }
+    .dock-music-btn {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+    }
+    .dock-music-btn.playing svg {
+      animation: dockMusicPulse 1.8s ease-in-out infinite;
+      color: var(--jawa-gold);
+    }
+    @keyframes dockMusicPulse {
+      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 2px var(--jawa-gold)); }
+      50% { transform: scale(1.18); filter: drop-shadow(0 0 6px var(--jawa-gold)); }
+    }
+
+    /* MODAL POPUP */
+    .modal-bg {
+      position: fixed; inset: 0; z-index: 10000;
+      background: rgba(10, 6, 4, 0.88); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      display: flex; align-items: center; justify-content: center; padding: 1.5rem;
+      opacity: 0; pointer-events: none; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .modal-bg.open { opacity: 1; pointer-events: auto; }
+    .modal-card {
+      background: var(--jawa-card); border: 1px solid var(--jawa-border); border-radius: 24px;
+      padding: 2.2rem 1.6rem; max-width: 400px; width: 100%; position: relative;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.8), var(--border-glow);
+      transform: translateY(20px); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .modal-bg.open .modal-card { transform: translateY(0); }
+    .modal-close {
+      position: absolute; top: 16px; right: 16px; background: color-mix(in srgb, var(--jawa-card) 80%, transparent);
+      border: 1px solid var(--jawa-border); color: var(--jawa-gold-light); width: 34px; height: 34px; border-radius: 50%;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.85rem;
+      transition: all 0.2s ease;
+    }
+    .modal-close:hover { background: var(--jawa-gold); color: var(--bg-dark, #120c06); }
 
     /* FOOTER & CLOSING (Adaptive Full-Height 100vh) */
     .site-footer {
@@ -383,7 +576,7 @@
       box-sizing: border-box;
       text-align: center;
       padding: 4rem 1.5rem 6.5rem;
-      background: var(--jawa-dark);
+      background: var(--bg-dark, #120c06);
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
@@ -401,7 +594,7 @@
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, color-mix(in srgb, var(--jawa-dark) 60%, transparent) 50%, var(--jawa-dark) 100%);
+      background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, color-mix(in srgb, var(--bg-dark, #120c06) 60%, transparent) 50%, color-mix(in srgb, var(--bg-dark, #120c06) 95%, transparent) 100%);
       pointer-events: none;
       z-index: 1;
     }
@@ -415,8 +608,8 @@
 </head>
 <body>
 
-  <!-- 1. COVER OVERLAY (FAVOMO A3 SIGNATURE) -->
-  <div id="coverOverlay" class="cover-overlay">
+  <!-- 1. COVER SCREEN -->
+  <div id="coverOverlay" class="cover-screen cover-overlay">
     <!-- GUNUNGAN WAYANG VECTOR -->
     <svg class="gunungan-hero" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M32 2C32 2 12 18 10 38C8 58 32 62 32 62C32 62 56 58 54 38C52 18 32 2 32 2Z" stroke="var(--jawa-gold)" stroke-width="2.5" stroke-linejoin="round"/>
@@ -425,15 +618,15 @@
       <path d="M20 40C26 46 38 46 44 40" stroke="var(--jawa-gold)" stroke-width="1.5"/>
     </svg>
 
-    <p class="cover-badge">PAWIKAHAN AGENG &bull; ADAT JAWA</p>
+    <p class="cover-badge" data-lux-field="customLabels.theWedding">{{weddingTagline}}</p>
     <h1 class="cover-names">{{firstName}} &amp; {{secondName}}</h1>
     
     <div class="cover-guest-card">
-      <p class="cover-guest-lbl">Katur Dhumateng Panjenenganipun</p>
-      <h3 class="cover-guest-val">Tamu Undangan</h3>
+      <p class="cover-guest-lbl" data-lux-field="customLabels.coverSubtitle">Katur Dhumateng Panjenenganipun</p>
+      <h3 class="cover-guest-val" id="coverGuestName">Tamu Undangan</h3>
     </div>
 
-    <button class="btn-buka-undangan" onclick="openInvitation()">
+    <button class="btn-buka-undangan" onclick="openInvitation()" data-lux-field="customLabels.openBtn">
       <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
       Buka Undangan
     </button>
@@ -441,10 +634,13 @@
 
   <div class="layout-wrapper">
     
+    <!-- FIXED BACKGROUND CANVAS (Fokus di Panel Undangan) -->
+    <div class="fixed-bg-layer"></div>
+
     <!-- DESKTOP SIDEBAR HERO -->
     <div class="sidebar-desktop">
       <div class="sidebar-desktop-content">
-        <p class="font-kraton-sans" style="letter-spacing: 0.3em; text-transform: uppercase; color: var(--jawa-gold-light); font-size: 0.75rem;">ROYAL JAVANESE HERITAGE</p>
+        <p class="font-kraton-sans" style="letter-spacing: 0.3em; text-transform: uppercase; color: var(--jawa-gold-light); font-size: 0.75rem;" data-lux-field="customLabels.theWedding">{{weddingTagline}}</p>
         <h2 class="font-kraton-script" style="font-size: 4.8rem; color: var(--jawa-gold); margin: 0.5rem 0;">{{firstName}} &amp; {{secondName}}</h2>
         <p class="font-kraton-sans" style="letter-spacing: 0.15em; font-size: 0.85rem; color: rgba(255,255,255,0.75);">{{weddingDate}}</p>
       </div>
@@ -454,27 +650,34 @@
     <main class="main-scroll-panel">
       
       <!-- SEKSI 1: KUTIPAN PEMBUKA & COUNTDOWN (100VH STANDALONE) -->
-      <section id="section-quote" class="slide-section">
+      <section id="home" class="slide-section sec-home">
         <div class="sec-content-box reveal-on-scroll">
-          <span style="font-size: 2rem; color: var(--jawa-gold); display: block; margin-bottom: 0.4rem;">﷽</span>
-          <span class="sec-eyebrow">PAWIKAHAN AGENG</span>
-          <h2 class="sec-heading" style="margin-bottom: 0.8rem;">Panyuwunan Berkah</h2>
-          <p style="font-size: 0.94rem; line-height: 1.9; color: rgba(255,255,255,0.9); max-width: 420px; margin: 0 auto; font-style: italic;">
+          <span style="font-size: 2rem; color: var(--jawa-gold); display: block; margin-bottom: 0.2rem; text-shadow: 0 2px 10px rgba(0,0,0,0.85);">﷽</span>
+          <span class="sec-eyebrow" data-lux-field="customLabels.theWedding">{{weddingTagline}}</span>
+          <h2 class="sec-heading" data-lux-field="customLabels.quoteTitle" style="margin-bottom: 0.2rem;">{{quoteTitle}}</h2>
+          <svg class="kraton-divider-ornament" viewBox="0 0 160 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 12h45M105 12h45" stroke="var(--jawa-border)" stroke-width="1.2" stroke-linecap="round"/>
+            <circle cx="80" cy="12" r="3.5" fill="var(--jawa-gold)"/>
+            <path d="M68 12c-4-5-9-4-12-1 4 4 8 4 12 1zM92 12c4-5 9-4 12-1-4 4-8 4-12 1z" fill="var(--jawa-border-bright)"/>
+            <circle cx="60" cy="12" r="1.5" fill="var(--jawa-gold-light)"/>
+            <circle cx="100" cy="12" r="1.5" fill="var(--jawa-gold-light)"/>
+          </svg>
+          <p style="font-size: 0.94rem; line-height: 1.9; color: rgba(255,255,255,0.95); max-width: 420px; margin: 0 auto; font-style: italic; text-shadow: 0 2px 12px rgba(0,0,0,0.9);" data-lux-field="openingQuote">
             "{{openingQuote}}"
           </p>
-          <span class="font-kraton-sans" style="display: block; font-size: 0.72rem; color: var(--jawa-gold-light); margin-top: 0.8rem; letter-spacing: 0.25em;">{{openingQuoteRef}}</span>
+          <span class="font-kraton-sans" style="display: block; font-size: 0.72rem; color: var(--jawa-gold-light); margin-top: 0.6rem; letter-spacing: 0.25em;" data-lux-field="openingQuoteRef">{{openingQuoteRef}}</span>
 
           <!-- COUNTDOWN -->
           <div class="countdown-grid">
-            <div class="countdown-cell"><div id="cDays" class="countdown-val">00</div><div class="countdown-lbl">Hari</div></div>
-            <div class="countdown-cell"><div id="cHours" class="countdown-val">00</div><div class="countdown-lbl">Jam</div></div>
-            <div class="countdown-cell"><div id="cMins" class="countdown-val">00</div><div class="countdown-lbl">Menit</div></div>
-            <div class="countdown-cell"><div id="cSecs" class="countdown-val">00</div><div class="countdown-lbl">Detik</div></div>
+            <div class="countdown-cell"><div id="cDays" class="countdown-val">00</div><div class="countdown-lbl" data-lux-field="customLabels.cdDays">Hari</div></div>
+            <div class="countdown-cell"><div id="cHours" class="countdown-val">00</div><div class="countdown-lbl" data-lux-field="customLabels.cdHours">Jam</div></div>
+            <div class="countdown-cell"><div id="cMins" class="countdown-val">00</div><div class="countdown-lbl" data-lux-field="customLabels.cdMins">Menit</div></div>
+            <div class="countdown-cell"><div id="cSecs" class="countdown-val">00</div><div class="countdown-lbl" data-lux-field="customLabels.cdSecs">Detik</div></div>
           </div>
 
-          <a href="{{googleCalendarUrl}}" target="_blank" class="btn-cal">
+          <a href="{{googleCalendarUrl}}" target="_blank" class="btn-cal" data-lux-field="customLabels.btnSaveCal">
             <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
-            Simpen Wanci wonten Kalender
+            Simpan ke Google Calendar
           </a>
         </div>
       </section>
@@ -482,27 +685,70 @@
       <!-- SEKSI 2: MEMPELAI (100VH STANDALONE) -->
       <section id="section-couple" class="slide-section">
         <div class="sec-content-box reveal-on-scroll">
-          <h2 class="sec-heading">Temanten Kalih</h2>
-          <p class="sec-subheading">Dua Pribadi Dalam Ikatan Suci</p>
+          <h2 class="sec-heading" data-lux-field="customLabels.coupleTitle">{{coupleSectionTitle}}</h2>
+          <svg class="kraton-divider-ornament" viewBox="0 0 160 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 12h45M105 12h45" stroke="var(--jawa-border)" stroke-width="1.2" stroke-linecap="round"/>
+            <circle cx="80" cy="12" r="3.5" fill="var(--jawa-gold)"/>
+            <path d="M68 12c-4-5-9-4-12-1 4 4 8 4 12 1zM92 12c4-5 9-4 12-1-4 4-8 4-12 1z" fill="var(--jawa-border-bright)"/>
+            <circle cx="60" cy="12" r="1.5" fill="var(--jawa-gold-light)"/>
+            <circle cx="100" cy="12" r="1.5" fill="var(--jawa-gold-light)"/>
+          </svg>
+          <p class="sec-subheading" data-lux-field="customLabels.coupleSub">{{coupleSectionSub}}</p>
 
-          <!-- GROOM -->
-          <div class="couple-card">
-            <div class="couple-photo-wrap">
-              <img src="{{firstPhotoUrl}}" alt="{{firstDisplayName}}">
-            </div>
-            <h3 class="couple-name">{{firstDisplayName}}</h3>
-            <p class="couple-parents">{{firstParents}}</p>
-            <a href="https://instagram.com/{{firstInstagram}}" target="_blank" class="couple-ig">@{{firstInstagram}}</a>
-          </div>
+          <!-- MEMPELAI CONTAINER (CARD-LESS LUXURY LAYOUT) -->
+          <div class="couple-staggered-container">
 
-          <!-- BRIDE -->
-          <div class="couple-card">
-            <div class="couple-photo-wrap">
-              <img src="{{secondPhotoUrl}}" alt="{{secondDisplayName}}">
+            <!-- FIRST PROFILE (MEMPELAI PRIA: FOTO KIRI, INISIAL KANAN) -->
+            <div class="couple-unit unit-left">
+              <div class="couple-frame-anchor">
+                <div class="couple-photo-wrap">
+                  <img src="{{firstPhotoUrl}}" alt="{{firstFullName}}" loading="lazy">
+                </div>
+                <div class="couple-watermark-initial initial-right" aria-hidden="true">{{firstInitial}}</div>
+              </div>
+              <div class="couple-info">
+                <span class="couple-role" data-lux-field="roles.groom">{{groomRole}}</span>
+                <h3 class="couple-name" data-lux-field="groomName">{{firstDisplayName}}</h3>
+                <div class="couple-parents" data-lux-field="groomParents">
+                  <span class="parent-prefix">{{firstParentPrefix}}</span>
+                  <span class="parent-father">{{firstFather}}</span>
+                  <span class="parent-mother">{{firstMother}}</span>
+                </div>
+                <a href="https://instagram.com/{{firstInstagram}}" target="_blank" class="couple-ig">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                  @{{firstInstagram}}
+                </a>
+              </div>
             </div>
-            <h3 class="couple-name">{{secondDisplayName}}</h3>
-            <p class="couple-parents">{{secondParents}}</p>
-            <a href="https://instagram.com/{{secondInstagram}}" target="_blank" class="couple-ig">@{{secondInstagram}}</a>
+
+            <!-- AMPERSAND CONNECTOR -->
+            <div class="couple-connector">
+              <span class="connector-amp">&amp;</span>
+            </div>
+
+            <!-- SECOND PROFILE (MEMPELAI WANITA: FOTO KANAN, INISIAL KIRI) -->
+            <div class="couple-unit unit-right">
+              <div class="couple-frame-anchor">
+                <div class="couple-watermark-initial initial-left" aria-hidden="true">{{secondInitial}}</div>
+                <div class="couple-photo-wrap">
+                  <img src="{{secondPhotoUrl}}" alt="{{secondFullName}}" loading="lazy">
+                </div>
+              </div>
+              <div class="couple-info">
+                <span class="couple-role" data-lux-field="roles.bride">{{brideRole}}</span>
+                <h3 class="couple-name" data-lux-field="brideName">{{secondDisplayName}}</h3>
+                <div class="couple-parents" data-lux-field="brideParents">
+                  <span class="parent-prefix">{{secondParentPrefix}}</span>
+                  <span class="parent-father">{{secondFather}}</span>
+                  <span class="parent-mother">{{secondMother}}</span>
+                </div>
+                <a href="https://instagram.com/{{secondInstagram}}" target="_blank" class="couple-ig">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                  @{{secondInstagram}}
+                </a>
+              </div>
+            </div>
+
           </div>
         </div>
       </section>
@@ -510,8 +756,15 @@
       <!-- SEKSI 3: TATA TITIMANGSA / JADWAL ACARA (100VH STANDALONE) -->
       <section id="section-events" class="slide-section">
         <div class="sec-content-box reveal-on-scroll">
-          <h2 class="sec-heading">Tata Titimangsa</h2>
-          <p class="sec-subheading">Wanci Saha Papan Palakrama</p>
+          <h2 class="sec-heading" data-lux-field="customLabels.eventsTitle">{{eventsSectionTitle}}</h2>
+          <svg class="kraton-divider-ornament" viewBox="0 0 160 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 12h45M105 12h45" stroke="var(--jawa-border)" stroke-width="1.2" stroke-linecap="round"/>
+            <circle cx="80" cy="12" r="3.5" fill="var(--jawa-gold)"/>
+            <path d="M68 12c-4-5-9-4-12-1 4 4 8 4 12 1zM92 12c4-5 9-4 12-1-4 4-8 4-12 1z" fill="var(--jawa-border-bright)"/>
+            <circle cx="60" cy="12" r="1.5" fill="var(--jawa-gold-light)"/>
+            <circle cx="100" cy="12" r="1.5" fill="var(--jawa-gold-light)"/>
+          </svg>
+          <p class="sec-subheading" data-lux-field="customLabels.eventsSub">{{eventsSectionSub}}</p>
           {{eventDataHtml}}
         </div>
       </section>
@@ -521,7 +774,28 @@
       {{liveStreamingHtml}}
       
       <!-- KISAH & GALERI MEMPELAI -->
-      {{storySectionHtml}}
+      {{#if showStory}}
+      <section id="story" class="slide-section">
+        <div class="sec-content-box reveal-on-scroll">
+          <span class="sec-eyebrow" data-lux-field="customLabels.storyEyebrow">{{storySectionEyebrow}}</span>
+          <h2 class="sec-heading" data-lux-field="customLabels.storyTitle">{{storySectionTitle}}</h2>
+          <svg class="kraton-divider-ornament" viewBox="0 0 160 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 12h45M105 12h45" stroke="var(--jawa-border)" stroke-width="1.2" stroke-linecap="round"/>
+            <circle cx="80" cy="12" r="3.5" fill="var(--jawa-gold)"/>
+            <path d="M68 12c-4-5-9-4-12-1 4 4 8 4 12 1zM92 12c4-5 9-4 12-1-4 4-8 4-12 1z" fill="var(--jawa-border-bright)"/>
+            <circle cx="60" cy="12" r="1.5" fill="var(--jawa-gold-light)"/>
+            <circle cx="100" cy="12" r="1.5" fill="var(--jawa-gold-light)"/>
+          </svg>
+          <div class="mayang-story-flow">
+            {{storyItemsHtml}}
+          </div>
+          <div class="journey-footer">
+            <div class="jf-line"></div>
+            <span class="jf-signature">{{firstName}} &amp; {{secondName}}</span>
+          </div>
+        </div>
+      </section>
+      {{/if}}
       {{gallerySectionHtml}}
       
       <!-- INTERAKSI TAMU & TANDA KASIH -->
@@ -533,8 +807,15 @@
       <!-- SEKSI 5: BUKU TAMU & UCAPAN (100VH STANDALONE) -->
       <section id="section-wishes" class="slide-section">
         <div class="sec-content-box reveal-on-scroll">
-          <h2 class="sec-heading">Panyuwunan &amp; Donga</h2>
-          <p class="sec-subheading">Kintun Atur Wilujeng Dhumateng Temanten</p>
+          <h2 class="sec-heading" data-lux-field="customLabels.wishesTitle">{{wishesSectionTitle}}</h2>
+          <svg class="kraton-divider-ornament" viewBox="0 0 160 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 12h45M105 12h45" stroke="var(--jawa-border)" stroke-width="1.2" stroke-linecap="round"/>
+            <circle cx="80" cy="12" r="3.5" fill="var(--jawa-gold)"/>
+            <path d="M68 12c-4-5-9-4-12-1 4 4 8 4 12 1zM92 12c4-5 9-4 12-1-4 4-8 4-12 1z" fill="var(--jawa-border-bright)"/>
+            <circle cx="60" cy="12" r="1.5" fill="var(--jawa-gold-light)"/>
+            <circle cx="100" cy="12" r="1.5" fill="var(--jawa-gold-light)"/>
+          </svg>
+          <p class="sec-subheading" data-lux-field="customLabels.wishesSub">{{wishesSectionSub}}</p>
         <div class="rsvp-form-wrap">
           <form id="rsvpForm" onsubmit="luxSubmitRsvp(event)">
             <div class="form-row">
@@ -588,9 +869,9 @@
 
   <!-- FLOATING NAVIGATION DOCK -->
   <nav class="bottom-dock">
-    <a href="#section-quote" class="dock-btn">
+    <a href="#home" class="dock-btn">
       <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-      <span>Cover</span>
+      <span>Home</span>
     </a>
     <a href="#section-couple" class="dock-btn">
       <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
@@ -612,18 +893,46 @@
       <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
       <span>Wishes</span>
     </a>
+    <button type="button" class="dock-btn dock-music-btn" id="musicToggle" onclick="luxToggleAudio()" title="Musik" aria-label="Putar / Jeda Musik">
+      <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+      <span class="dock-music-lbl">Musik</span>
+    </button>
   </nav>
+
+  <!-- QR / TICKET MODAL POPUP -->
+  <div class="modal-bg" id="modalBg" onclick="closeModal(event)">
+    <div class="modal-card" onclick="event.stopPropagation()">
+      <button class="modal-close" onclick="closeModal()" aria-label="Tutup Modal">✕</button>
+      {{qrAccessCardHtml}}
+      <div style="margin-top:1.2rem;padding:0.9rem;background:var(--jawa-card);border:1px solid var(--jawa-border);border-radius:12px;text-align:center;">
+        <span style="font-size:0.62rem;letter-spacing:0.2em;color:var(--jawa-gold-light);text-transform:uppercase;font-weight:600;display:block;margin-bottom:0.4rem;">Voucher Souvenir</span>
+        <div style="font-family:monospace;font-weight:700;font-size:0.85rem;color:#ffffff;letter-spacing:0.12em;padding:0.45rem;background:color-mix(in srgb, var(--bg-dark, #120c06) 80%, transparent);border:1px solid var(--jawa-border);border-radius:6px;">SOUVENIR-{{invitationId}}</div>
+      </div>
+    </div>
+  </div>
 
   <script>
     function openInvitation() {
       const cover = document.getElementById('coverOverlay');
-      if (cover) cover.classList.add('opened');
+      if (cover) cover.classList.add('opened', 'slide-up-hidden');
       const dock = document.querySelector('.bottom-dock');
       if (dock) dock.classList.remove('dock-hidden');
       const audio = document.getElementById('weddingAudio');
       if (audio && !window.__DISABLE_AUDIO__ && new URLSearchParams(window.location.search).get("autoplay") !== "1" && window === window.top) audio.play().catch(() => {});
       startCountdown();
       initScrollAnimations();
+    }
+
+    function openModal() {
+      const modal = document.getElementById('modalBg');
+      if (modal) modal.classList.add('open');
+    }
+
+    function closeModal(e) {
+      if (!e || e.target === document.getElementById('modalBg') || (e.target && e.target.classList && e.target.classList.contains('modal-close'))) {
+        const modal = document.getElementById('modalBg');
+        if (modal) modal.classList.remove('open');
+      }
     }
 
     // SMART AUTO-HIDE DOCK ON SCROLL DOWN, REVEAL ON SCROLL UP
@@ -721,19 +1030,19 @@
     }
   </script>
 
+  <!-- LUXENARY PROTECTION SCRIPT -->
+  <script>
+    (function() {
+      try {
+        if (window.console && console.log) {
+          console.log("%cSTOP!", "color: #ef4444; font-size: 50px; font-weight: 900; text-shadow: 2px 2px 0 #000; font-family: sans-serif;");
+          console.log("%cIni adalah properti eksklusif Luxenary.", "color: #b5833c; font-size: 20px; font-weight: bold;");
+          console.log("%cSegala bentuk pencurian kode, scraping, atau modifikasi ilegal akan direkam. Domain saat ini: " + window.location.hostname, "font-size: 14px; color: #a8a29e;");
+        }
+      } catch(e) {}
+    })();
+  </script>
 
-<!-- LUXENARY PROTECTION SCRIPT -->
-<script>
-  (function() {
-    try {
-      if (window.console && console.log) {
-        console.log("%cSTOP!", "color: #ef4444; font-size: 50px; font-weight: 900; text-shadow: 2px 2px 0 #000; font-family: sans-serif;");
-        console.log("%cIni adalah properti eksklusif Luxenary.", "color: #b5833c; font-size: 20px; font-weight: bold;");
-        console.log("%cSegala bentuk pencurian kode, scraping, atau modifikasi ilegal akan direkam. Domain saat ini: " + window.location.hostname, "font-size: 14px; color: #a8a29e;");
-      }
-    } catch(e) {}
-  })();
-</script>
-\n  {{musicPlayerHtml}}
+  {{musicPlayerHtml}}
 </body>
 </html>

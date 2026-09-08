@@ -917,6 +917,7 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     themeName: "Mayang",
     series: "Traditional",
     category: "traditional",
+    defaultPalette: "champagne",
     tagline: "PAWIKAHAN AGENG KERATON",
     groomName: "Bagus",
     brideName: "Mayang",

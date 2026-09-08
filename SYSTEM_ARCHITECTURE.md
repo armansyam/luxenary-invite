@@ -605,6 +605,7 @@ Katalog Tema Aktual (15 File Template Fisik + 1 Blueprint):
 Backward Compatibility Alias Mapping (di lib/renderTemplate.ts):
   - "kila"                   → mapped ke kalandra.html (fallback backward compatibility)
   - Seluruh tema zombie / artefak pengujian lama telah dibersihkan secara tuntas (sistem beroperasi murni 1:1 dengan 15 file master).
+  - Modern Traditional Standard (Candani & Mayang): Dynamic Palette Tokens (`:root`, `color-mix(...)`), Discrete Parents Architecture (`{{firstParentPrefix}}`, `{{firstFather}}`, `{{firstMother}}`), `.fixed-bg-layer` layout-wrapper encapsulation, dan full click-to-edit `data-lux-field`.
 ```
 
 **Alur render:**
