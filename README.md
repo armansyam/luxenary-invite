@@ -303,7 +303,7 @@ Luxenary-Invite/
 │       └── AdminFinanceTab.tsx       # Finance center, multi-chart visualisasi & pembukuan kas
 ├── public/
 │   ├── published/             # HTML baked (subdomains/, slugs/, ids/)
-│   ├── uploads/               # Media lokal (R2 di produksi)
+│   ├── uploads/               # Media lokal draft (disajikan dinamis via app/uploads/[...path]/route.ts)
 │   ├── portfolio/             # HTML portofolio terisolasi + aset lokal WebP
 │   ├── demo/                  # Preview tema
 │   └── music/fonts/assets/    # Aset statis sistem

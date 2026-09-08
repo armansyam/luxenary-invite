@@ -370,6 +370,11 @@ Pola Polimorfik Database (InvitationMedia.localPath):
   - Mode R2    : Menyimpan URL absolut (misal: https://cdn.luxenary.id/invitations/xxx/cover.webp)
   - Mode Local : Menyimpan path relatif (misal: /uploads/invitations/xxx/cover.webp)
   Keduanya dirender transparan oleh tag <img> browser dan renderTemplate.ts tanpa penyesuaian kode.
+
+Dynamic Uploads Serving (Next.js Production Bridge):
+  - app/uploads/[...path]/route.ts: Menyajikan file runtime dari disk /public/uploads/ secara dinamis
+    dengan dukungan MIME types, cache headers, dan HTTP 206 Range Streaming (video/audio).
+    Menghilangkan limitasi Next.js static manifest freeze saat mode produksi (`next start`).
 ```
 
 > ⚠️ **Google Drive TIDAK DIGUNAKAN UNTUK UPLOAD.**  
