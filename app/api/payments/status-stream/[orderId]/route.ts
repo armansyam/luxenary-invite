@@ -70,16 +70,33 @@ export async function GET(
     start(controller) {
       const encoder = new TextEncoder();
 
-      // Heartbeat setiap 25 detik agar koneksi tidak di-drop oleh proxy/load balancer
-      const heartbeat = setInterval(() => {
+      // Heartbeat setiap 15 detik agar koneksi tidak di-drop oleh Caddy/Nginx proxy
+      // Sekaligus pasif safety-net jika ada race condition atau event terlewat
+      let isChecking = false;
+      const heartbeat = setInterval(async () => {
         try {
           controller.enqueue(encoder.encode(": heartbeat\n\n"));
+          if (!isChecking) {
+            isChecking = true;
+            const latest = await prisma.order.findUnique({
+              where: { id: orderId },
+              select: { status: true, planType: true, rejectReason: true },
+            });
+            if (latest && (latest.status === "PAID" || latest.status === "EXPIRED" || latest.status === "FAILED")) {
+              onPaymentUpdate({
+                status: latest.status === "FAILED" ? "REJECTED" : latest.status,
+                planType: latest.planType,
+                ...(latest.rejectReason ? { rejectReason: latest.rejectReason } : {}),
+              });
+            }
+            isChecking = false;
+          }
         } catch {
           clearInterval(heartbeat);
         }
-      }, 25000);
+      }, 15000);
 
-      const onPaymentUpdate = (data: { status: string; planType: string }) => {
+      const onPaymentUpdate = (data: { status: string; planType?: string; rejectReason?: string }) => {
         try {
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
           clearInterval(heartbeat);

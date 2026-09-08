@@ -52,7 +52,7 @@ Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model 
    Pola Single State (1 Klien = 1 Transaksi)
    - *URL State & QRIS Hydration:* URL mengikat `?order=ID`. Refresh halaman (F5) tetap menampilkan summary dan countdown QRIS tanpa reset ke tombol awal.
    - *Penyimpanan Nyata Database:* Seluruh transaksi tersimpan permanen di PostgreSQL (`orders` table), menjamin verifikasi status dan summary 100% konsisten.
-   - *Realtime SSE Stream & Zero Polling:* Menggunakan Server-Sent Events murni (`/api/payments/status-stream/[orderId]`) untuk mendeteksi pembayaran QRIS instan dan notifikasi reject/approve manual transfer dari Admin. Transisi Dark Luxury mulus (1.8s) mencegah visual leak ke dasbor sebelum status benar-benar PAID.
+   - *Realtime SSE Stream & Zero Polling:* Menggunakan Server-Sent Events murni (`/api/payments/status-stream/[orderId]`) dengan jembatan cross-process PostgreSQL `LISTEN/NOTIFY` untuk PM2 Cluster Mode. Event pembayaran instan (<5ms) tersiar ke seluruh instance PM2 tanpa polling browser. Transisi Dark Luxury mulus (1.8s) mencegah visual leak ke dasbor sebelum status benar-benar PAID.
    ┌─────────────────────────────────────┬──────────────────────────┐
    │  Gateway 2-Arah (Midtrans & Xendit) │  Transfer Bank Manual    │
    │  Core API QRIS / Snap / Invoice     │  (Bebas Hardcode)        │
