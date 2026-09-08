@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { startRemoteSession } from "@/app/(admin)/admin/actions/remote";
 
+import { getLatestEventDate } from "@/lib/domainUtils";
+
 interface InvitationItem {
   id: string;
   userId: string;
@@ -178,18 +180,9 @@ export default function AdminInvitationsTab({ onNavigateToThemes }: AdminInvitat
     }
   };
 
-  // Parse tanggal acara dari eventData JSON
+  // Parse tanggal acara dari eventData JSON (mengambil tanggal sesi acara terakhir)
   const getEventDate = (eventDataRaw?: string | null) => {
-    if (!eventDataRaw) return null;
-    try {
-      const data = JSON.parse(eventDataRaw);
-      const events = Array.isArray(data) ? data : data.events;
-      if (Array.isArray(events) && events.length > 0 && events[0].date) {
-        const d = new Date(events[0].date);
-        return isNaN(d.getTime()) ? null : d;
-      }
-    } catch {}
-    return null;
+    return getLatestEventDate(eventDataRaw);
   };
 
   return (

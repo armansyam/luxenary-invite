@@ -95,17 +95,7 @@ async function runCleanup() {
     const publishedDir = path.join(process.cwd(), "public", "published");
 
     for (const inv of publishedInvitations) {
-      let eventDateToTest: string | null = null;
-      try {
-        if (inv.eventData) {
-          const parsed = JSON.parse(inv.eventData);
-          if (Array.isArray(parsed) && parsed[0]?.date) {
-            eventDateToTest = parsed[0].date;
-          }
-        }
-      } catch {}
-
-      if (isSubdomainExpired(eventDateToTest, retentionDays)) {
+      if (isSubdomainExpired(inv.eventData, retentionDays)) {
         console.log(`- Undangan [${inv.subdomain}] telah kedaluwarsa (> ${retentionDays} hari setelah acara).`);
         expiredCount++;
         

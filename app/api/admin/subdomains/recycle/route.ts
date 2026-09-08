@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
-import { isSubdomainExpired } from "@/lib/domainUtils";
+import { isSubdomainExpired, getLatestEventDate } from "@/lib/domainUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -47,26 +47,16 @@ export async function GET() {
     });
 
     const items = invitations.map((inv) => {
-      let eventDate: string | null = null;
-      try {
-        if (inv.eventData) {
-          const parsed = JSON.parse(inv.eventData);
-          if (Array.isArray(parsed) && parsed[0]?.date) {
-            eventDate = parsed[0].date;
-          }
-        }
-      } catch {}
+      const latestDate = getLatestEventDate(inv.eventData);
+      const eventDate = latestDate ? latestDate.toISOString().split("T")[0] : null;
 
       const hasSubdomain = Boolean(inv.subdomain);
-      const isExpired = eventDate ? isSubdomainExpired(eventDate, graceDays) : false;
+      const isExpired = latestDate ? isSubdomainExpired(latestDate, graceDays) : false;
 
       let remainingDays: number | null = null;
-      if (eventDate) {
-        const parsedDate = new Date(eventDate);
-        if (!isNaN(parsedDate.getTime())) {
-          const expiryTime = parsedDate.getTime() + graceDays * 24 * 60 * 60 * 1000;
-          remainingDays = Math.ceil((expiryTime - Date.now()) / (1000 * 60 * 60 * 24));
-        }
+      if (latestDate) {
+        const expiryTime = latestDate.getTime() + graceDays * 24 * 60 * 60 * 1000;
+        remainingDays = Math.ceil((expiryTime - Date.now()) / (1000 * 60 * 60 * 24));
       }
 
       return {
@@ -124,17 +114,9 @@ export async function POST() {
     for (const inv of invitations) {
       if (!inv.subdomain) continue;
 
-      let eventDate: string | null = null;
-      try {
-        if (inv.eventData) {
-          const parsed = JSON.parse(inv.eventData);
-          if (Array.isArray(parsed) && parsed[0]?.date) {
-            eventDate = parsed[0].date;
-          }
-        }
-      } catch {}
+      const latestDate = getLatestEventDate(inv.eventData);
 
-      if (eventDate && isSubdomainExpired(eventDate, graceDays)) {
+      if (latestDate && isSubdomainExpired(latestDate, graceDays)) {
         await prisma.invitation.update({
           where: { id: inv.id },
           data: { subdomain: null },

@@ -427,8 +427,9 @@ Cron job dilindungi oleh header `Authorization: Bearer <CRON_SECRET>` atau sesi 
 5. **Daur Ulang Subdomain ke Pool:**
    - Jika subdomain diganti, nilai lama seketika terlepas dari record Prisma (`@unique`) dan langsung kembali ke pool publik secara otomatis. Tamu yang membuka link lama dialihkan dengan aman ke `/?notice=subdomain-available`.
 2. **Fase 1.5 (Daur Ulang Subdomain Otomatis — H + `subdomain_grace_days`, default 7 Hari):**
+   - Perhitungan masa tenggang H+grace_days secara mutlak dan terpusat mengacu pada **Tanggal Acara Paling Akhir (`getLatestEventDate(eventData)`)**, sehingga undangan dengan multi-agenda (misal Akad di Hari ke-1 dan Resepsi di Hari ke-3) dijamin tetap aktif aman hingga seluruh rangkaian acara selesai.
    - Jika `subdomain_auto_recycle = "true"`, sistem secara otomatis memeriksa undangan yang telah lewat masa tenggang subdomain dan melepaskan nama subdomain ke *pool* (`subdomain: null`).
-   - Nama subdomain kembali bebas digunakan pasangan baru, sementara URL Asli tetap hidup dan menyajikan galeri kenangan.
+   - Nama subdomain kembali bebas digunakan pasangan baru, sementara URL Asli (`https://platform.id/[invitationSlug]`) tetap hidup permanen menyajikan galeri kenangan dan otomatis disajikan di Dashboard Klien (`resolveEffectiveInvitationUrl`).
 3. **Fase 2 (Pembersihan Galeri & Arsip Total — H + `retention_gallery_default_days` ATAU `galleryExpiresAt`):**
    - Jika `now > effectiveExpiry` (tidak diperpanjang klien via QRIS):
      - Menghapus seluruh file fisik foto kenangan tamu (`GuestMemory`) dari Cloudflare R2 (`deleteFile`) dan disk lokal.

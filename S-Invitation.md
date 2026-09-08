@@ -239,11 +239,11 @@ Sistem Studio Editor Klien (`/dashboard/invitation/[id]`) menyediakan kendali kr
 Siklus hidup undangan diatur secara otomatis oleh cron job (`POST /api/cron/cleanup`) yang dilindungi `CRON_SECRET`:
 
 1. **Fase 1: Transisi Pasca Acara (H + `retention_invitation_grace_days`, default 7 hari)**:
-   - Undangan utama ditutup, file HTML subdomain dihapus via `deleteSubdomainHtmlOnly`.
-   - Status undangan diperbarui menjadi `EVENT_FINISHED`.
+   - Perhitungan batas waktu pasca-acara dihitung otomatis dari **Tanggal Acara Paling Akhir (`getLatestEventDate`)** untuk melindungi pernikahan multi-sesi (misal Akad Hari-1 dan Resepsi Hari-3).
+   - Undangan fisik ditutup dan status undangan diperbarui menjadi `EVENT_FINISHED`.
    - Upload momen tamu dikunci secara otomatis (`memoriesUploadLocked = true`) agar aman dari race condition upload detik-detik terakhir.
    - Data formulir RSVP dibersihkan otomatis untuk melindungi privasi.
-   - Kunjungan ke URL subdomain/slug otomatis dialihkan (*redirect 307*) langsung ke **Galeri Momen Tamu (`/memories`)**.
+   - Kunjungan ke URL subdomain/slug otomatis dialihkan (*redirect 307*) langsung ke **Galeri Momen Tamu (`/memories`)**. Saat subdomain dilepas, URL Asli (`/[invitationSlug]`) otomatis menjadi rujukan permanen.
 2. **Fase 2: Retensi Galeri Momen (H + `retention_gallery_default_days` atau `galleryExpiresAt`)**:
    - Paket yang mencakup fitur `guest_memories` (`/memories`) mengadopsi durasi retensi dinamis dari pengaturan admin (`retention_gallery_default_days`, default 30 hari / 1 bulan) pada seluruh paket publik dan dashboard klien.
    - Tamu dan pengantin dapat mengunduh seluruh koleksi foto kenangan dalam format ZIP via `streamMemoriesToZip`.

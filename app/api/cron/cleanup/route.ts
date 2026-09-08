@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import fs from "fs";
 import path from "path";
 import { buildAndSavePublishedHtml, deletePublishedHtml } from "@/lib/staticPublisher";
+import { getLatestEventDate } from "@/lib/domainUtils";
 
 async function fileExists(filePath: string): Promise<boolean> {
   try {
@@ -62,26 +63,6 @@ export async function POST(req: NextRequest) {
     const thresholdSubdomainDate = new Date(now.getTime() - (subdomainGraceDays * 24 * 60 * 60 * 1000));
     const thresholdAccountDate = new Date(now.getTime() - (retentionAccountDays * 24 * 60 * 60 * 1000));
     const thresholdOrderDate = new Date(now.getTime() - (retentionOrderDays * 24 * 60 * 60 * 1000));
-
-    // Helper untuk mengambil tanggal pernikahan terbaru dari eventData
-    function getLatestEventDate(eventData: any): Date | null {
-      try {
-        const events = typeof eventData === "string" ? JSON.parse(eventData) : eventData || [];
-        if (!Array.isArray(events)) return null;
-        let latest: Date | null = null;
-        for (const ev of events) {
-          if (ev?.date) {
-            const d = new Date(ev.date);
-            if (!isNaN(d.getTime())) {
-              if (!latest || d > latest) latest = d;
-            }
-          }
-        }
-        return latest;
-      } catch {
-        return null;
-      }
-    }
 
     // ── FASE 1: Transisi Undangan ke Galeri Momen (H + graceDays) ──
     // Undangan yang sudah lewat H+graceDays ditutup file fisiknya dan beralih peran ke Galeri Momen

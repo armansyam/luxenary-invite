@@ -138,7 +138,7 @@ export interface ResolvedInvitationUrl {
  * 3. Unconfigured / Empty state (No fake simulation fallbacks)
  */
 export function resolveEffectiveInvitationUrl(options: ResolveInvitationUrlOptions): ResolvedInvitationUrl {
-  const { customDomain, subdomain, guestSlug } = options;
+  const { customDomain, subdomain, guestSlug, invitationSlug } = options;
   const queryParam = guestSlug ? `?to=${encodeURIComponent(guestSlug)}` : "";
 
   // 1. Custom Domain Priority
@@ -169,7 +169,25 @@ export function resolveEffectiveInvitationUrl(options: ResolveInvitationUrlOptio
     };
   }
 
-  // 3. Unconfigured state: No fake fallback URLs
+  // 3. Fallback to Canonical Flat Slug (URL Asli) if subdomain is absent/recycled
+  if (invitationSlug && invitationSlug.trim()) {
+    const cleanSlug = invitationSlug.trim().toLowerCase();
+    const apexRoot = getApexRootDomain();
+    let protocol = "https:";
+    if (typeof window !== "undefined") {
+      protocol = window.location.protocol;
+    } else {
+      protocol = process.env.NODE_ENV === "production" ? "https:" : "http:";
+    }
+    return {
+      url: `${protocol}//${apexRoot}/${cleanSlug}${queryParam}`,
+      domainType: "FALLBACK",
+      domainIdentifier: cleanSlug,
+      isConfigured: true,
+    };
+  }
+
+  // 4. Unconfigured state: No fake fallback URLs
   return {
     url: "",
     domainType: "FALLBACK",
@@ -200,13 +218,48 @@ export function getMonthYearSlug(dateInput?: string | Date | null): string {
 }
 
 /**
+ * Resolves the latest/most recent wedding event date from an eventData JSON array or string.
+ * Ensures multi-session weddings (e.g. Akad on Day 1, Reception on Day 3) use the final event date.
+ */
+export function getLatestEventDate(eventData: any): Date | null {
+  try {
+    const events = typeof eventData === "string" ? JSON.parse(eventData) : eventData || [];
+    const list = Array.isArray(events) ? events : events?.events;
+    if (!Array.isArray(list)) return null;
+    let latest: Date | null = null;
+    for (const ev of list) {
+      if (ev?.date) {
+        const d = new Date(ev.date);
+        if (!isNaN(d.getTime())) {
+          if (!latest || d > latest) latest = d;
+        }
+      }
+    }
+    return latest;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Checks if a wedding event date has exceeded the grace period (default: 7 days).
+ * Accepts Date object, ISO date string, or raw eventData JSON string.
  */
 export function isSubdomainExpired(eventDateInput?: string | Date | null, gracePeriodDays: number = 7): boolean {
   if (!eventDateInput) return false;
   try {
-    const eventDate = new Date(eventDateInput);
-    if (isNaN(eventDate.getTime())) return false;
+    let eventDate: Date | null = null;
+    if (eventDateInput instanceof Date) {
+      eventDate = eventDateInput;
+    } else if (typeof eventDateInput === "string") {
+      const trimmed = eventDateInput.trim();
+      if (trimmed.startsWith("[") || trimmed.startsWith("{")) {
+        eventDate = getLatestEventDate(trimmed);
+      } else {
+        eventDate = new Date(trimmed);
+      }
+    }
+    if (!eventDate || isNaN(eventDate.getTime())) return false;
 
     const expiryTime = eventDate.getTime() + gracePeriodDays * 24 * 60 * 60 * 1000;
     return Date.now() > expiryTime;
