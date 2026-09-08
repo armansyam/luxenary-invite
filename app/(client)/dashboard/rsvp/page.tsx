@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export default function RsvpPage() {
   const [loading, setLoading] = useState(true);
@@ -15,6 +15,24 @@ export default function RsvpPage() {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [platformName, setPlatformName] = useState("Platform");
+
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [beamStyle, setBeamStyle] = useState({ left: 0, width: 0 });
+
+  const RSVP_TABS = [
+    { id: "all", label: "Semua", count: stats.totalResponses },
+    { id: "hadir", label: "Hadir", count: `${stats.attending} Pax` },
+    { id: "tidak", label: "Tidak Hadir", count: stats.declined },
+    { id: "ragu", label: "Ragu-ragu", count: stats.uncertain },
+  ];
+
+  useEffect(() => {
+    const idx = RSVP_TABS.findIndex((t) => t.id === filterStatus);
+    const el = tabRefs.current[idx];
+    if (el) {
+      setBeamStyle({ left: el.offsetLeft, width: el.offsetWidth });
+    }
+  }, [filterStatus, stats]);
 
   useEffect(() => {
     fetch("/api/public/settings").then(r => r.json()).then(d => {
@@ -184,41 +202,58 @@ export default function RsvpPage() {
         </button>
       </div>
 
-      {/* Filter & Search Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-stone-200 shadow-xs">
+      {/* Borderless Glowing Beam Filter & Search Bar */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-b border-stone-200/80 pb-1 relative">
         
-        {/* Filter Tabs */}
-        <div className="flex bg-stone-100 p-1 rounded-xl gap-1 text-xs overflow-x-auto">
-          {[
-            { id: "all", label: `Semua (${stats.totalResponses})` },
-            { id: "hadir", label: `Hadir (${stats.attending} Pax)` },
-            { id: "tidak", label: `Tidak Hadir (${stats.declined})` },
-            { id: "ragu", label: `Ragu-ragu (${stats.uncertain})` },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setFilterStatus(tab.id)}
-              className={`px-3 py-1.5 rounded-lg font-semibold transition whitespace-nowrap cursor-pointer ${
-                filterStatus === tab.id
-                  ? "bg-white text-stone-900 shadow-xs font-bold"
-                  : "text-stone-500 hover:text-stone-900"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+        {/* Glowing Beam Tabs */}
+        <div className="relative flex items-center gap-1 sm:gap-2 overflow-x-auto pb-2 sm:pb-1 scrollbar-none">
+          {RSVP_TABS.map((tab, idx) => {
+            const isActive = filterStatus === tab.id;
+            return (
+              <button
+                key={tab.id}
+                ref={(el) => { tabRefs.current[idx] = el; }}
+                type="button"
+                onClick={() => setFilterStatus(tab.id)}
+                className={`relative px-3 py-2 text-xs font-bold transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                  isActive ? "text-stone-900" : "text-stone-500 hover:text-stone-800"
+                }`}
+              >
+                <span>{tab.label}</span>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-medium transition-colors ${
+                  isActive ? "bg-amber-100 text-amber-900" : "bg-stone-200/70 text-stone-600"
+                }`}>
+                  {tab.count}
+                </span>
+              </button>
+            );
+          })}
+
+          {/* Animated Sliding Glowing Light Beam */}
+          {beamStyle.width > 0 && (
+            <>
+              <span
+                className="absolute bottom-0 h-[2.5px] bg-gradient-to-r from-amber-700 via-amber-500 to-amber-600 rounded-full shadow-[0_1px_8px_rgba(217,119,6,0.6)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
+                style={{ left: `${beamStyle.left}px`, width: `${beamStyle.width}px` }}
+              />
+              <span
+                className="absolute bottom-0 h-2 bg-amber-500/20 blur-xs rounded-full pointer-events-none transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
+                style={{ left: `${beamStyle.left}px`, width: `${beamStyle.width}px` }}
+              />
+            </>
+          )}
         </div>
 
         {/* Search Box */}
-        <div className="relative flex-1 sm:max-w-xs">
+        <div className="relative flex-1 sm:max-w-xs pb-1 sm:pb-0">
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Cari nama atau doa restu..."
-            className="w-full pl-9 pr-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
+            className="w-full pl-8 pr-3 py-1.5 bg-white border border-stone-200/80 rounded-xl text-xs text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-600/10 shadow-2xs"
           />
-          <svg className="w-4 h-4 text-stone-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-3.5 h-3.5 text-stone-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         </div>

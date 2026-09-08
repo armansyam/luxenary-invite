@@ -1,5 +1,5 @@
 # PLATFORM UNDANGAN (WHITE-LABEL) — DOKUMENTASI ARSITEKTUR SISTEM
-## Versi: 5.7.0 | Diperbarui: 09 September 2026
+## Versi: 5.7.1 | Diperbarui: 09 September 2026
 
 > **SUMBER KEBENARAN TUNGGAL** untuk semua developer dan AI Agent yang bekerja di repositori ini.  
 > Dokumen ini WAJIB dibaca sebelum melakukan perubahan apapun pada kode.  
@@ -27,6 +27,8 @@
 16. [Sistem Notifikasi Email & Faktur Transaksi](#16-sistem-notifikasi-email--faktur-transaksi)
 17. [Arsitektur Infrastruktur & Deployment (VPS)](#17-arsitektur-infrastruktur--deployment-vps)
 18. [Sistem Finance & Rekapitulasi Kas Terpusat](#18-sistem-finance--rekapitulasi-kas-terpusat)
+19. [Arsitektur Pemantauan Server & Kesehatan Sistem (Monitoring Hub)](#19-arsitektur-pemantauan-server--kesehatan-sistem-monitoring-hub)
+20. [Arsitektur Antarmuka Dasbor Klien Modern (Borderless Glowing Beam & Sliding Magnetic Pill)](#20-arsitektur-antarmuka-dasbor-klien-modern-borderless-glowing-beam--sliding-magnetic-pill)
 
 ---
 
@@ -1759,3 +1761,36 @@ Untuk memberikan pengalaman interaktif penuh bagi calon klien sebelum memesan pa
 │    - Log webhook notifikasi transaksi Midtrans & Xendit dengan modal JSON viewer │
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## 20. ARSITEKTUR ANTARMUKA DASBOR KLIEN MODERN (BORDERLESS GLOWING BEAM & SLIDING MAGNETIC PILL)
+
+**File Terkait:** `app/(client)/dashboard/rsvp/page.tsx`, `app/(client)/dashboard/guests/page.tsx`, `app/(client)/dashboard/invitation/[id]/page.tsx`
+
+### 20.1 — Filosofi Anti-Card Fatigue & Ruang Napas Vertikal
+1. **Masalah Desain Boxy (Card Overload):**
+   - Menumpuk filter tab di dalam bungkusan kartu putih (`bg-white rounded-2xl border shadow-xs`) di atas tabel/konten memakan 60–80px ruang vertikal yang tidak perlu dan memicu keletihan visual (*card fatigue*).
+2. **Solusi Desain Borderless Hairline:**
+   - Menghilangkan kontainer card penutup dan membiarkan tab beristirahat langsung di atas garis hairline halus (`border-b border-stone-200/80`). Memberikan kanvas dasbor ruang napas yang bersih, minimalis, dan elegan setara standar SaaS modern (Linear / Vercel).
+
+### 20.2 — Borderless Glowing Beam Tabs (`/dashboard/rsvp` & `/dashboard/guests`)
+1. **Dynamic Beam Measurement:**
+   - Menggunakan referensi DOM reaktif (`useRef<(HTMLButtonElement | null)[]>`) dan state `beamStyle = { left, width }` yang mengukur secara tepat `offsetLeft` dan `offsetWidth` tombol tab yang sedang aktif.
+2. **Glow & Gradient Signature (60 FPS Native CSS):**
+   - Batang penanda aktif berupa balok 2.5px dengan gradasi emas hangat (`bg-gradient-to-r from-amber-700 via-amber-500 to-amber-600 rounded-full`) berpadu pendaran halus `shadow-[0_1px_8px_rgba(217,119,6,0.6)]` dan ambient blur `bg-amber-500/20 blur-xs`.
+   - Transisi pergeseran sehalus sutra menggunakan timing function hardware-accelerated: `transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]`.
+3. **Pill Badges Bersih:**
+   - Status counter tamu dan RSVP disematkan dalam pil monospace minimalis (`font-mono text-[10px]`) yang bertransisi warna lembut saat dipilih (`bg-amber-100 text-amber-900` vs `bg-stone-200/70 text-stone-600`), tanpa emoji OS ataupun badge status berlebihan.
+
+### 20.3 — Sliding Magnetic Pill Dual Switcher (`/dashboard/invitation/[id]`)
+1. **Track Inset Container:**
+   - Rel switcher berada di dalam kontainer `relative flex items-center bg-stone-100/90 p-1 rounded-xl border border-stone-200/80`.
+2. **Sliding Magnetic Thumb:**
+   - Latar tombol aktif bergeser secara fisik (magnetic thumb) di bawah teks tombol dengan rumus offset deterministik:
+     - **Mode Mobile:** `w-[calc(50%-4px)]` dengan titik pergeseran `left-1` (Tab Form Data) dan `left-1/2` (Tab Live Editor).
+     - **Mode Desktop:** Lebar tombol tetap `sm:w-[220px]` dengan posisi `left-1` (4px) vs `sm:left-[224px]` (4px + 220px).
+   - Indikator thumb bertransisi warna kontekstual: `bg-stone-900` saat di mode Form Data dan berubah hangat ke `bg-amber-800` saat di mode Live Editor Visual.
+3. **Penerapan Serupa pada Device Preview Switcher:**
+   - Toggle preview perangkat (`Mobile` vs `Layar Penuh`) mengadopsi mekanisme sliding magnetic pill serupa berlatar putih halus `bg-white shadow-2xs` di atas rel `bg-stone-100`.
+

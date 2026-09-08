@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getInvitationPublicUrl, resolveEffectiveInvitationUrl } from "@/lib/domainUtils";
 
 interface Guest {
@@ -79,6 +79,9 @@ export default function GuestsPage() {
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterStatus, setFilterStatus] = useState<"all" | "SENT" | "PENDING">("all");
   const [copiedGuestId, setCopiedGuestId] = useState<string | null>(null);
+
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [beamStyle, setBeamStyle] = useState({ left: 0, width: 0 });
 
   // WhatsApp Template Customization States
   const [waTemplate, setWaTemplate] = useState(DEFAULT_WA_TEMPLATE);
@@ -376,6 +379,20 @@ export default function GuestsPage() {
   const sentCount = guests.filter((g) => g.waStatus === "SENT").length;
   const pendingCount = totalGuests - sentCount;
 
+  const GUEST_STATUS_TABS = [
+    { id: "all", label: "Semua Tamu", count: totalGuests },
+    { id: "SENT", label: "Sudah Terkirim", count: sentCount },
+    { id: "PENDING", label: "Belum Dikirim", count: pendingCount },
+  ];
+
+  useEffect(() => {
+    const idx = GUEST_STATUS_TABS.findIndex((t) => t.id === filterStatus);
+    const el = tabRefs.current[idx];
+    if (el) {
+      setBeamStyle({ left: el.offsetLeft, width: el.offsetWidth });
+    }
+  }, [filterStatus, totalGuests, sentCount, pendingCount]);
+
   return (
     <div className="space-y-2.5 sm:space-y-3 font-sans pb-20">
       
@@ -509,53 +526,57 @@ export default function GuestsPage() {
         </div>
       )}
 
-      {/* Filter Toolbar (Status Tabs + Category Pills + Search) */}
-      <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-stone-200 shadow-xs space-y-3">
+      {/* Borderless Glowing Beam Filter Toolbar (Status Tabs + Category Pills + Search) */}
+      <div className="space-y-2 pt-1">
         
-        {/* Status Tabs Header */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-b border-stone-100 pb-3">
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-            <span className="text-[11px] font-bold text-stone-400 uppercase tracking-wider mr-1 shrink-0">Status:</span>
-            {[
-              { id: "all", label: "Semua Tamu", count: totalGuests },
-              { id: "SENT", label: "Sudah Terkirim", count: sentCount },
-              { id: "PENDING", label: "Belum Dikirim", count: pendingCount },
-            ].map((tab) => {
+        {/* Status Tabs Header with Glowing Light Beam */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-b border-stone-200/80 pb-1 relative">
+          <div className="relative flex items-center gap-1 sm:gap-2 overflow-x-auto pb-2 sm:pb-1 scrollbar-none">
+            {GUEST_STATUS_TABS.map((tab, idx) => {
               const isActive = filterStatus === tab.id;
               return (
                 <button
                   key={tab.id}
+                  ref={(el) => { tabRefs.current[idx] = el; }}
                   type="button"
                   onClick={() => setFilterStatus(tab.id as any)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-                    isActive
-                      ? tab.id === "SENT"
-                        ? "bg-emerald-700 text-white shadow-xs"
-                        : tab.id === "PENDING"
-                        ? "bg-amber-800 text-white shadow-xs"
-                        : "bg-stone-900 text-white shadow-xs"
-                      : "bg-stone-100 hover:bg-stone-200 text-stone-600"
+                  className={`relative px-3 py-2 text-xs font-bold transition-colors whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                    isActive ? "text-stone-900" : "text-stone-500 hover:text-stone-800"
                   }`}
                 >
                   <span>{tab.label}</span>
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                    isActive ? "bg-white/25 text-white" : "bg-stone-200 text-stone-700"
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-medium transition-colors ${
+                    isActive ? "bg-amber-100 text-amber-900" : "bg-stone-200/70 text-stone-600"
                   }`}>
                     {tab.count}
                   </span>
                 </button>
               );
             })}
+
+            {/* Animated Sliding Glowing Light Beam */}
+            {beamStyle.width > 0 && (
+              <>
+                <span
+                  className="absolute bottom-0 h-[2.5px] bg-gradient-to-r from-amber-700 via-amber-500 to-amber-600 rounded-full shadow-[0_1px_8px_rgba(217,119,6,0.6)] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
+                  style={{ left: `${beamStyle.left}px`, width: `${beamStyle.width}px` }}
+                />
+                <span
+                  className="absolute bottom-0 h-2 bg-amber-500/20 blur-xs rounded-full pointer-events-none transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
+                  style={{ left: `${beamStyle.left}px`, width: `${beamStyle.width}px` }}
+                />
+              </>
+            )}
           </div>
 
           {/* Search Box */}
-          <div className="relative flex-1 sm:max-w-xs">
+          <div className="relative flex-1 sm:max-w-xs pb-1 sm:pb-0">
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Cari nama atau nomor HP..."
-              className="w-full pl-9 pr-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
+              className="w-full pl-9 pr-3 py-2 bg-white border border-stone-200 rounded-xl text-xs text-stone-900 placeholder:text-stone-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30 shadow-2xs"
             />
             <svg className="w-4 h-4 text-stone-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -563,8 +584,8 @@ export default function GuestsPage() {
           </div>
         </div>
 
-        {/* Category Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto text-xs pt-0.5">
+        {/* Category Pills (Clean Minimalist Badges) */}
+        <div className="flex items-center gap-1.5 overflow-x-auto text-xs py-1 scrollbar-none">
           <span className="text-[11px] font-bold text-stone-400 uppercase tracking-wider mr-1 shrink-0">Kategori:</span>
           {[
             { id: "all", label: "Semua Kategori" },
@@ -576,10 +597,10 @@ export default function GuestsPage() {
             <button
               key={tab.id}
               onClick={() => setFilterCategory(tab.id)}
-              className={`px-3 py-1 rounded-lg text-xs font-semibold transition whitespace-nowrap cursor-pointer ${
+              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition whitespace-nowrap cursor-pointer ${
                 filterCategory === tab.id
-                  ? "bg-amber-50 text-amber-900 border border-amber-300/80 font-bold"
-                  : "text-stone-500 hover:text-stone-900 hover:bg-stone-100"
+                  ? "bg-amber-100/80 text-amber-900 border border-amber-300/80 font-bold shadow-2xs"
+                  : "text-stone-500 hover:text-stone-800 hover:bg-stone-100"
               }`}
             >
               {tab.label}

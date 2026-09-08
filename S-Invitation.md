@@ -1,5 +1,5 @@
 # S-Invitation: Luxenary Invite System Architecture & Master Specification
-> **Versi: 5.7.0 | Diperbarui: 09 September 2026**
+> **Versi: 5.7.1 | Diperbarui: 09 September 2026**
 
 ## 1. Executive Summary & Core Philosophy
 **Luxenary Invite** adalah platform ekosistem undangan pernikahan digital modern berbasis Next.js 16 (App Router + Turbopack) yang menghadirkan pengalaman visual mewah (*haute couture*), kecepatan muat instan (<0.8 detik), self-service dashboard mandiri bagi klien, dan integrasi cloud edge caching.
@@ -615,5 +615,23 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
 7. **Rekapitulasi Pajak PPh Final UMKM 0,5% (PP 55/2022):**
    - Lembar kerja fiskal 12 bulan (Januari s.d. Desember) menghitung otomatis tarif 0,5% dari peredaran bruto omzet order.
    - Pencatatan kode NTPN/BPN resmi hasil setoran di bank persepsi untuk kelengkapan pelaporan SPT Tahunan di DJP Online.
+
+---
+
+## 18. Arsitektur Desain Antarmuka Dasbor Klien: Eliminasi Card Fatigue, Borderless Glowing Beam Tabs & Sliding Magnetic Pill Switcher
+
+1. **Eliminasi Card Fatigue (Container-itis):**
+   - Menghapus kontainer kartu putih berlapis (`bg-white rounded-2xl border shadow-xs`) yang sebelumnya mengungkung filter tab di halaman RSVP (`/dashboard/rsvp`) dan Buku Tamu (`/dashboard/guests`).
+   - Memberikan ritme vertikal yang lebih lega, menghemat 60–80px ruang layar, dan menyatukan elemen kontrol filter langsung dengan garis hairline pembatas tabel.
+2. **Tab Navigasi Borderless Glowing Beam:**
+   - Diterapkan pada filter status RSVP (`Semua`, `Hadir`, `Tidak Hadir`, `Ragu-ragu`) dan filter pengiriman Buku Tamu (`Semua Tamu`, `Sudah Terkirim`, `Belum Dikirim`).
+   - Ditenagai pengukuran DOM reaktif (`useRef` + `offsetLeft` / `offsetWidth`) dan batang pendar emas 2.5px (`bg-gradient-to-r from-amber-700 via-amber-500 to-amber-600`) dengan pendaran amber halus (`shadow-[0_1px_8px_rgba(217,119,6,0.6)]`) serta transisi native hardware-accelerated 60 FPS `cubic-bezier(0.16,1,0.3,1)`.
+3. **Sliding Magnetic Pill Dual Switcher:**
+   - Diterapkan pada peralihan mode Studio Undangan (`/dashboard/invitation/[id]`): `Edit Undangan (Form Data)` vs `Live Editor (Visual Mode)` dan kontrol preview perangkat (`Mobile` vs `Layar Penuh`).
+   - Track inset abu-abu lembut (`bg-stone-100/90`) dengan sliding thumb fisik di balik tombol yang meluncur dinamis:
+     - Lebar 50% di mobile dan 220px tetap di desktop.
+     - Perubahan warna kontekstual (`bg-stone-900` pada Form Mode vs `bg-amber-800` pada Live Visual Mode).
+     - Menghadirkan umpan balik taktil modern setara standar industri tanpa library eksternal berlebih.
+
 
 

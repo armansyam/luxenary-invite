@@ -2,7 +2,7 @@
 
 > **Platform Undangan Pernikahan Digital B2C Self-Service**  
 > Next.js 16.3.2 · Prisma 7.9 (PostgreSQL) · NextAuth v5 · Multi-Gateway (5 Gateway) · Nodemailer SMTP · Cloudflare R2  
-> **Versi Dokumen: 5.7.2 | Diperbarui: 09 September 2026**
+> **Versi Dokumen: 5.7.3 | Diperbarui: 09 September 2026**
 
 > [!IMPORTANT]
 > **PROTOKOL SINKRONISASI DOKUMENTASI OTOMATIS (MANDATORY POST-EDIT & PRE-PUSH PROTOCOL):**  
@@ -75,10 +75,10 @@ Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model 
    - Pengaturan Musik Latar Pernikahan (Audio background, preset sakral, unggah MP3/M4A, sinkronisasi otomatis tombol Buka Undangan & fallback interaksi)
    - Upload foto (cover, groom, bride, gallery, dll)
    - Kustomisasi seksi (Love Story, Gift, QR Check-in, Teks Galeri Kenangan Tamu)
-   - Kelola tamu + generate WhatsApp link personal (Deteksi cerdas Custom Domain / Subdomain & proteksi draft)
-   - RSVP & ucapan real-time
-   - **Studio Editor & Dual View (Form Data vs Live Visual):** 15 seksi terstruktur dengan sistem **Ultra-Slim Exclusive Accordion** (membuka 1 seksi otomatis menutup seksi lainnya, mengeliminasi scroll fatigue, ketinggian tertutup terpangkas dari 4.101px ke ~750px pas dalam 1 layar desktop dengan cuplikan ringkas inline), dirty tracking per-seksi, isolasi warna swatch busana, dan Live Visual Editor Canvas.
-   - **Live View Real-Time Palette Synchronizer & Clean Preview:** Panel palet 6 warna utama terpasang langsung di atas kanvas Live View dengan *two-way sync* instan ke Seksi 1 formulir data. Tombol *"Buka di Tab Baru"* dan tombol navigasi layar proteksi terhubung ke `mode=preview` murni untuk evaluasi visual bersih tanpa gangguan widget editor.
+   - Kelola tamu + generate WhatsApp link personal (Deteksi cerdas Custom Domain / Subdomain & proteksi draft) dengan filter toolbar **Borderless Glowing Beam Tabs** (`Semua Tamu`, `Sudah Terkirim`, `Belum Dikirim`) dan badge kategori minimalis.
+   - RSVP & ucapan real-time dengan tab navigasi **Borderless Glowing Beam** beranimasi sliding light beam 60 FPS (`Semua`, `Hadir`, `Tidak Hadir`, `Ragu-ragu`).
+   - **Studio Editor & Dual View (Form Data vs Live Visual):** Switcher mode ditenagai animasi **Sliding Magnetic Pill** (rel inset lembut dengan thumb fisik bergeser deterministik `Form Data` vs `Live Editor`), 15 seksi terstruktur dengan sistem **Ultra-Slim Exclusive Accordion** (membuka 1 seksi otomatis menutup seksi lainnya, mengeliminasi scroll fatigue, ketinggian terpangkas dari 4.101px ke ~750px pas dalam 1 layar desktop dengan cuplikan ringkas inline), dirty tracking per-seksi, isolasi warna swatch busana, dan Live Visual Editor Canvas.
+   - **Live View Real-Time Palette Synchronizer, Clean Preview & Magnetic Device Switcher:** Panel palet 6 warna utama terpasang langsung di atas kanvas Live View dengan *two-way sync* instan ke Seksi 1 formulir data. Tombol *"Buka di Tab Baru"* dan tombol navigasi layar proteksi terhubung ke `mode=preview` murni untuk evaluasi visual bersih tanpa gangguan widget editor, serta kontrol pratinjau (`Mobile` vs `Layar Penuh`) mengusung animasi *Sliding Magnetic Pill*.
    - **Proteksi Pasca Publish & Buka Kunci Darurat:** Begitu terbit, form editor terkunci otomatis demi melindungi integritas QR Code fisik dan data live. Admin dapat membuka izin edit darurat via panel `/admin` (24 jam). Pengeditan menerapkan *Staging Save* (tanpa beban rebake storm) dan diakhiri dengan tombol **"Perbarui Undangan & Kunci Kembali"** untuk 1x atomic bake ke Cloudflare R2 dan auto-lock instan.
      │
      ▼

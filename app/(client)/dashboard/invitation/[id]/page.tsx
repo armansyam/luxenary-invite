@@ -1253,17 +1253,23 @@ export default function EditInvitation() {
 
       {/* Dual Native Studio Mode Switcher */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between p-2 bg-white rounded-2xl border border-stone-200 shadow-xs gap-3">
-        <div className="flex items-center gap-1.5">
+        {/* Sliding Magnetic Pill Track */}
+        <div className="relative flex items-center bg-stone-100/90 p-1 rounded-xl border border-stone-200/80 w-full sm:w-auto">
+          {/* Animated Magnetic Sliding Pill Thumb */}
+          <div
+            className={`absolute top-1 bottom-1 w-[calc(50%-4px)] sm:w-[220px] rounded-lg shadow-sm transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+              activeStudioTab === "form" ? "left-1 bg-stone-900" : "left-1/2 sm:left-[224px] bg-amber-800"
+            }`}
+          />
+
           <button
             type="button"
             onClick={() => setActiveStudioTab("form")}
-            className={`flex-1 sm:flex-none px-5 py-2.5 rounded-xl font-bold text-xs transition flex items-center justify-center gap-2 ${
-              activeStudioTab === "form"
-                ? "bg-stone-900 text-white shadow-sm"
-                : "text-stone-600 hover:text-stone-900 bg-stone-50"
+            className={`relative z-10 flex-1 sm:w-[220px] py-2.5 px-4 rounded-lg font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer ${
+              activeStudioTab === "form" ? "text-white" : "text-stone-600 hover:text-stone-900"
             }`}
           >
-            <svg className="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className={`w-4 h-4 transition-colors ${activeStudioTab === "form" ? "text-amber-400" : "text-stone-400"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
             <span>Edit Undangan (Form Data)</span>
@@ -1272,13 +1278,11 @@ export default function EditInvitation() {
           <button
             type="button"
             onClick={() => setActiveStudioTab("live")}
-            className={`flex-1 sm:flex-none px-5 py-2.5 rounded-xl font-bold text-xs transition flex items-center justify-center gap-2 ${
-              activeStudioTab === "live"
-                ? "bg-amber-800 text-white shadow-sm"
-                : "text-stone-600 hover:text-stone-900 bg-stone-50"
+            className={`relative z-10 flex-1 sm:w-[220px] py-2.5 px-4 rounded-lg font-bold text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer ${
+              activeStudioTab === "live" ? "text-white" : "text-stone-600 hover:text-stone-900"
             }`}
           >
-            <svg className="w-4 h-4 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className={`w-4 h-4 transition-colors ${activeStudioTab === "live" ? "text-amber-300" : "text-stone-400"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
             </svg>
             <span>Live Editor (Visual Click-to-Edit)</span>
@@ -1313,11 +1317,16 @@ export default function EditInvitation() {
               </svg>
             </button>
 
-            <div className="flex items-center bg-stone-100 p-1 rounded-xl border border-stone-200 text-xs">
+            <div className="relative flex items-center bg-stone-100 p-0.5 rounded-xl border border-stone-200 text-xs">
+              <div
+                className={`absolute top-0.5 bottom-0.5 w-[calc(50%-2px)] rounded-lg bg-white shadow-2xs transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                  previewDevice === "mobile" ? "left-0.5" : "left-1/2"
+                }`}
+              />
               <button
                 type="button"
                 onClick={() => setPreviewDevice("mobile")}
-                className={`px-3 py-1.5 rounded-lg font-semibold transition flex items-center gap-1.5 ${previewDevice === "mobile" ? "bg-white text-stone-900 shadow-xs" : "text-stone-600 hover:text-stone-900"}`}
+                className={`relative z-10 px-3 py-1.5 rounded-lg font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${previewDevice === "mobile" ? "text-stone-900 font-bold" : "text-stone-500 hover:text-stone-800"}`}
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
@@ -1327,7 +1336,7 @@ export default function EditInvitation() {
               <button
                 type="button"
                 onClick={() => setPreviewDevice("desktop")}
-                className={`px-3 py-1.5 rounded-lg font-semibold transition flex items-center gap-1.5 ${previewDevice === "desktop" ? "bg-white text-stone-900 shadow-xs" : "text-stone-600 hover:text-stone-900"}`}
+                className={`relative z-10 px-3 py-1.5 rounded-lg font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${previewDevice === "desktop" ? "text-stone-900 font-bold" : "text-stone-500 hover:text-stone-800"}`}
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
