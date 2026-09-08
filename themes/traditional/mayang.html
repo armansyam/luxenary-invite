@@ -921,6 +921,9 @@
       if (audio && !window.__DISABLE_AUDIO__ && new URLSearchParams(window.location.search).get("autoplay") !== "1" && window === window.top) audio.play().catch(() => {});
       startCountdown();
       initScrollAnimations();
+      if (typeof window.__luxEvaluateHomeDock === 'function') {
+        window.__luxEvaluateHomeDock();
+      }
     }
 
     function openModal() {
