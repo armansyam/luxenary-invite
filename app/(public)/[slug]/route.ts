@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getPublishedHtml, buildAndSavePublishedHtml } from "@/lib/staticPublisher";
 import { composeTemplateData } from "@/lib/themeEngine";
 import { renderTemplateFile } from "@/lib/renderTemplate";
-import { getPublicPlatformSettings } from "@/lib/settings";
+import { getPublicPlatformSettings, hasPlanCapability } from "@/lib/settings";
 import { STORAGE_PROVIDER, s3Client } from "@/lib/storage";
 import { HeadObjectCommand } from "@aws-sdk/client-s3";
 import fs from "fs";
@@ -46,8 +46,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
 
   // Jika acara sudah selesai
   if (invitation.status === "EVENT_FINISHED") {
-    // Jika paket PREMIUM (memiliki hak akses galeri kenangan tamu), alihkan ke /memories
-    if (invitation.order?.planType === "PREMIUM") {
+    // Jika paket memiliki kapabilitas galeri kenangan tamu, alihkan ke /memories
+    const canAccessMemories = await hasPlanCapability(invitation.order?.planType, "guest_memories");
+    if (canAccessMemories) {
       const memoriesUrl = new URL(`/${slug}/memories`, req.url);
       memoriesUrl.search = req.nextUrl.search;
       return NextResponse.redirect(memoriesUrl);

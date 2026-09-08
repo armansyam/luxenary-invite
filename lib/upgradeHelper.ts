@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { deleteFile } from "@/lib/storage";
 import { sendInvoiceEmail } from "@/lib/mailer";
+import { hasPlanCapability } from "./settings";
 
 /**
  * applyGalleryExtension
@@ -181,8 +182,9 @@ export async function applyUpgradePlan(paidOrderId: string): Promise<void> {
     data: { planType: order.targetPlanType },
   });
 
-  // Jika paket upgrade ke PREMIUM dan menyertakan custom domain (order.requestedDomain)
-  if (order.targetPlanType === "PREMIUM" && order.requestedDomain) {
+  // Jika paket upgrade menyertakan custom domain dan target tier memiliki kapabilitas custom_domain
+  const canHaveCustomDomain = await hasPlanCapability(order.targetPlanType, "custom_domain");
+  if (canHaveCustomDomain && order.requestedDomain) {
     const invitation = await prisma.invitation.findFirst({
       where: {
         OR: [

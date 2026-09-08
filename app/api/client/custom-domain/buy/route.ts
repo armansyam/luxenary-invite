@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { randomUUID } from "crypto";
+import { hasPlanCapability } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -95,9 +96,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Paket undangan tidak valid atau belum terdaftar pada pesanan." }, { status: 400 });
     }
 
-    if (invitation.order.planType !== "PREMIUM") {
+    const canUseCustomDomain = await hasPlanCapability(invitation.order.planType, "custom_domain");
+    if (!canUseCustomDomain) {
       return NextResponse.json(
-        { error: "Layanan integrasi Custom Domain eksklusif untuk Paket Premium. Silakan upgrade paket Anda terlebih dahulu." },
+        { error: "Layanan integrasi Custom Domain tidak termasuk dalam kapabilitas paket Anda. Silakan hubungi admin atau upgrade paket Anda." },
         { status: 403 }
       );
     }

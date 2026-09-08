@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
+import { hasPlanCapability } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -93,8 +94,9 @@ export async function POST(req: Request) {
     let upgradeAmount = priceTo - priceFrom;
     let cleanDomain: string | null = null;
 
-    // Tambahan Add-on Custom Domain opsional jika memilih tier PREMIUM
-    if (includeCustomDomain && targetPlanUpper === "PREMIUM") {
+    // Tambahan Add-on Custom Domain opsional jika targetPlan memiliki kapabilitas custom_domain
+    const targetHasCustomDomain = await hasPlanCapability(targetPlanUpper, "custom_domain");
+    if (includeCustomDomain && targetHasCustomDomain) {
       const enabledSetting = await prisma.adminSetting.findUnique({
         where: { key: "addon_custom_domain_enabled" },
       });

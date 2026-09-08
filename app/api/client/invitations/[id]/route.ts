@@ -316,7 +316,7 @@ export async function PUT(
             }
 
             const packageConfig = platformSettings.packages?.find(p => p.id === planType);
-            const allowedCaps = packageConfig?.capabilities || [];
+            const allowedCaps = packageConfig?.capabilities || (planType === "PREMIUM" ? ["music", "gallery", "qr_checkin", "guest_memories", "custom_domain"] : planType === "MODERN" ? ["music", "gallery", "qr_checkin"] : ["music", "gallery"]);
             const hasCap = (cap: string) => allowedCaps.includes(cap);
 
             // Force override if they try to enable features they don't have

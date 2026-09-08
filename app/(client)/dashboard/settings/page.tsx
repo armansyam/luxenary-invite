@@ -59,6 +59,7 @@ export default function SettingsPage() {
   const [isCustomDomainEnabled, setIsCustomDomainEnabled] = useState(true);
   const [retentionGraceDays, setRetentionGraceDays] = useState(7);
   const [retentionGalleryDays, setRetentionGalleryDays] = useState(30);
+  const [platformPackages, setPlatformPackages] = useState<any[]>([]);
 
   const handleCopyDns = async (val: string, key: string) => {
     if (!val) return;
@@ -405,6 +406,9 @@ export default function SettingsPage() {
         if (d?.retentionGalleryDefaultDays !== undefined || d?.retention_gallery_default_days !== undefined) {
           setRetentionGalleryDays(Number(d.retentionGalleryDefaultDays ?? d.retention_gallery_default_days) || 30);
         }
+        if (Array.isArray(d?.packages)) {
+          setPlatformPackages(d.packages);
+        }
       })
       .catch(() => {});
   }, []);
@@ -591,8 +595,11 @@ export default function SettingsPage() {
   const memoriesUrl = subdomainUrl ? `${subdomainUrl.replace(/\/$/, "")}/memories` : "";
   const shareMomentUrl = subdomainUrl ? `${subdomainUrl.replace(/\/$/, "")}/sharemoment` : "";
   const planType = (invitation?.order?.planType || invitation?.planType || "TRADITIONAL").toUpperCase();
-  const hasQrCheckin = planType === "MODERN" || planType === "PREMIUM";
-  const hasGuestMemories = planType === "PREMIUM";
+  const currentPkg = platformPackages.find((p: any) => p.id === planType);
+  const allowedCaps: string[] = currentPkg?.capabilities || (planType === "PREMIUM" ? ["music", "gallery", "qr_checkin", "guest_memories", "custom_domain"] : planType === "MODERN" ? ["music", "gallery", "qr_checkin"] : ["music", "gallery"]);
+  const hasQrCheckin = allowedCaps.includes("qr_checkin");
+  const hasGuestMemories = allowedCaps.includes("guest_memories");
+  const canUseCustomDomain = allowedCaps.includes("custom_domain");
 
   const reviewItems: any[] = [
     {
@@ -855,7 +862,7 @@ export default function SettingsPage() {
                     ? "Dihitung otomatis 1 tahun pasca tanggal acara (Layanan Custom Domain Aktif)."
                     : `Dihitung otomatis ${retentionGraceDays} hari pasca tanggal acara pernikahan Anda (Masa Aktif Subdomain).`}
                 </p>
-                {invitation?.planType === "PREMIUM" && (
+                {hasGuestMemories && (
                   <p className="text-[10px] text-purple-300/90 pt-1 border-t border-stone-700/60 leading-normal">
                     Galeri Kenangan Tamu (/memories) aktif {retentionGalleryDays >= 30 && retentionGalleryDays % 30 === 0 ? `${retentionGalleryDays / 30} bulan (${retentionGalleryDays} hari)` : `${retentionGalleryDays} hari`} pasca-acara.
                   </p>
@@ -1757,12 +1764,12 @@ export default function SettingsPage() {
               ? "bg-amber-100/70 text-amber-900 border-amber-300"
               : "bg-amber-50 text-amber-700 border border-amber-200"
           }`}>
-            {!invitation?.customDomain && !isCustomDomainEnabled ? "Segera Hadir" : "Premium"}
+            {!invitation?.customDomain && !isCustomDomainEnabled ? "Segera Hadir" : (canUseCustomDomain ? "Tersedia" : "Terkunci")}
           </span>
         </div>
 
-        {planType !== "PREMIUM" && !invitation?.customDomain ? (
-          /* Mode Terkunci: Eksklusif Paket Premium */
+        {!canUseCustomDomain && !invitation?.customDomain ? (
+          /* Mode Terkunci: Memerlukan kapabilitas Custom Domain */
           <div className="p-5 rounded-2xl border border-violet-200 bg-violet-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-start gap-3.5">
               <div className="w-10 h-10 rounded-xl bg-violet-100 text-violet-800 flex items-center justify-center shrink-0">
@@ -1771,9 +1778,9 @@ export default function SettingsPage() {
                 </svg>
               </div>
               <div>
-                <h4 className="text-xs font-bold text-stone-900">Eksklusif untuk Paket Premium</h4>
+                <h4 className="text-xs font-bold text-stone-900">Fitur Custom Domain Belum Aktif</h4>
                 <p className="text-[11px] text-stone-600 mt-1 leading-relaxed max-w-xl">
-                  Layanan integrasi nama domain pribadi (.com / .id) dan retensi galeri kenangan tamu 1 tahun penuh tersedia eksklusif pada Paket Premium. Tingkatkan paket Anda untuk menikmati fitur ini.
+                  Layanan integrasi nama domain pribadi (.com / .id) dan retensi galeri kenangan tamu 1 tahun penuh belum aktif untuk paket Anda. Hubungi administrator atau tingkatkan paket Anda untuk menikmati fitur ini.
                 </p>
               </div>
             </div>

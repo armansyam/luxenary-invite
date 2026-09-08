@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import GuestMomentClient from "@/app/components/features/GuestMomentClient";
-import { getAdminSetting } from "@/lib/settings";
+import { getAdminSetting, hasPlanCapability } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -47,8 +47,9 @@ export default async function FreeGuestMemoriesStandalonePage({ params }: PagePr
     notFound();
   }
 
-  // Jika paket bukan PREMIUM, fitur sharemoment / foto meja tamu tidak tersedia
-  if (invitation.order?.planType !== "PREMIUM") {
+  // Cek kapabilitas guest_memories secara dinamis berdasarkan konfigurasi admin
+  const canAccessMemories = await hasPlanCapability(invitation.order?.planType, "guest_memories");
+  if (!canAccessMemories) {
     redirect(`/${slug}`);
   }
 

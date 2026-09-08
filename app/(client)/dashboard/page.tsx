@@ -453,13 +453,13 @@ function DashboardHomeContent() {
             )}
           </div>
           <span className="text-[10px] text-stone-400 block">
-            {invitation?.order?.planType === "PREMIUM"
+            {packageConfig?.desc || (invitation?.order?.planType === "PREMIUM"
               ? "Akses semua tema Premium, Modern & Traditional"
               : invitation?.order?.planType === "MODERN"
               ? "Akses tema Modern & Traditional"
               : invitation?.order?.planType === "TRADITIONAL"
               ? "Akses tema Traditional"
-              : "Belum ada paket aktif"}
+              : "Belum ada paket aktif")}
           </span>
         </div>
       </div>

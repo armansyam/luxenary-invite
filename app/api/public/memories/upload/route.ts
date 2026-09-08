@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getPublicPlatformSettings } from "@/lib/settings";
+import { getPublicPlatformSettings, hasPlanCapability } from "@/lib/settings";
 import crypto from "crypto";
 import { uploadFile } from "@/lib/storage";
 import { rateLimit } from "@/lib/rateLimit";
@@ -93,9 +93,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Undangan tidak ditemukan." }, { status: 404 });
     }
 
-    if (invitation.order?.planType !== "PREMIUM") {
+    const canUploadMemories = await hasPlanCapability(invitation.order?.planType, "guest_memories");
+    if (!canUploadMemories) {
       return NextResponse.json(
-        { error: "Fitur unggah momen kenangan tamu eksklusif untuk Paket Premium." },
+        { error: "Fitur unggah momen kenangan tamu tidak termasuk dalam kapabilitas paket Anda." },
         { status: 403 }
       );
     }

@@ -211,3 +211,30 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
     ],
   };
 }
+
+/**
+ * Checks whether a given planType has a specific capability.
+ * Reads dynamically from AdminSetting DB with sensible fallbacks.
+ */
+export async function hasPlanCapability(planType: string | null | undefined, capability: string): Promise<boolean> {
+  const normPlan = (planType || "TRADITIONAL").toUpperCase();
+  try {
+    const settingKey = `capabilities_${normPlan.toLowerCase()}`;
+    const setting = await prisma.adminSetting.findUnique({ where: { key: settingKey } });
+    if (setting?.value) {
+      const caps = JSON.parse(setting.value);
+      if (Array.isArray(caps)) {
+        return caps.includes(capability);
+      }
+    }
+  } catch {}
+
+  // Default fallback if not set in DB
+  const defaultCaps: Record<string, string[]> = {
+    TRADITIONAL: ["music", "gallery"],
+    MODERN: ["music", "gallery"],
+    PREMIUM: ["music", "gallery", "qr_checkin", "guest_memories", "custom_domain"],
+  };
+  return (defaultCaps[normPlan] || []).includes(capability);
+}
+
