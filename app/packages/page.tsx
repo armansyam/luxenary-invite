@@ -65,7 +65,9 @@ export default function PackageSelectionPage() {
 
       <main className="flex-1 max-w-6xl mx-auto px-4 sm:px-6 py-12 w-full">
         <div className="text-center mb-10">
-          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#1e1c1a]">Selamat Datang!</h1>
+          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#1e1c1a]">
+            Selamat Datang{session?.user?.name ? `, ${session.user.name}` : session?.user?.email ? `, ${session.user.email.split("@")[0]}` : ""}!
+          </h1>
           <p className="text-sm text-stone-500 mt-2 max-w-lg mx-auto">
             Akun Anda telah berhasil terdaftar. Silakan pilih paket undangan digital yang paling sesuai dengan kebutuhan pernikahan Anda untuk melanjutkan.
           </p>
