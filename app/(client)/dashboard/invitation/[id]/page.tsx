@@ -974,7 +974,7 @@ export default function EditInvitation() {
             </a>
 
             <a
-              href={`/api/client/invitations/${invitationId}/preview?mode=edit`}
+              href={`/api/client/invitations/${invitationId}/preview?mode=preview`}
               target="_blank"
               rel="noreferrer"
               className="w-full sm:w-auto px-5 py-3 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold rounded-xl transition border border-stone-200 flex items-center justify-center gap-1.5"
@@ -1134,7 +1134,7 @@ export default function EditInvitation() {
           </div>
 
           <a
-            href={`/api/client/invitations/${invitationId}/preview?mode=edit`}
+            href={`/api/client/invitations/${invitationId}/preview?mode=preview`}
             target="_blank"
             rel="noreferrer"
             className="px-4 py-2 bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-xl text-xs transition flex items-center gap-1.5 shadow-xs"
