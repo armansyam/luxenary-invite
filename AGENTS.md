@@ -27,11 +27,17 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   - SEBELUM melakukan perubahan kode (terutama pada perbaikan *bug*), Agen **WAJIB** melacak aliran data dari hulu ke hilir (misalnya memastikan `select` Prisma benar-benar mereturn kolom yang diakses di UI, atau memeriksa *console.log*).
   - JANGAN PERNAH menebak-nebak akar masalah. Cari tahu faktanya (baca *log*, jalankan skrip *test*, atau periksa respons API) lalu beritahukan fakta tersebut kepada user **sebelum** merubah apapun.
 
-## 3. Mandatory Empirical Verification Loop
-- Before declaring any code task complete, the agent MUST run:
-  - Typecheck: `npx tsc --noEmit` (MUST output Exit Code 0).
-  - Relevant test or runtime checks if applicable.
-- If `tsc` outputs errors, the agent MUST self-correct and re-verify before handing over to the user.
+## 3. Mandatory Empirical Verification Loop (Bukan Sekadar `tsc --noEmit`)
+- **DILARANG MENYATAKAN SELESAI HANYA BERDASARKAN `npx tsc --noEmit` EXIT 0:**
+  - `tsc --noEmit` hanya membuktikan kode valid secara sintaks dan tipe data statis, TETAPI TIDAK MEMBUKTIKAN alur kerja sistem, logika bisnis, integritas relasi database, maupun pengalaman antarmuka (UI/UX) berjalan dengan benar.
+- **WAJIB PENGUJIAN FAKTUAL SISTEM & ALUR KERJA (END-TO-END WORKFLOW):**
+  - Agen WAJIB memvalidasi alur kerja hulu-ke-hilir nyata (misal: pendaftaran -> pembayaran -> setup onboarding -> studio -> publish).
+  - Agen WAJIB menguji skenario batas (*edge cases*), *re-entry* (membuka ulang halaman yang sama), dan submit berulang/klik ganda (idempotensi) pada endpoint backend dan constraint database.
+- **WAJIB VALIDASI RUNTIME & UI/UX NYATA:**
+  - Periksa respons aktual endpoint API (status HTTP riil, data JSON faktual, tidak ada pesan error palsu/halusinasi catch-block).
+  - Periksa perilaku antarmuka pengguna (UI/UX): transisi halaman tidak hang/deadlock, tidak ada layar macet, dan navigasi berpindah mulus ke halaman tujuan yang tepat.
+  - Sediakan bukti empiris konkret (terminal execution logs, respons API nyata, atau log/rekaman interaksi browser faktual) sebelum menyerahkan hasil ke pengguna.
+- **Typecheck Statis Tetap Wajib:** `npx tsc --noEmit` tetap harus menghasilkan Exit Code 0 sebagai batas minimum kebersihan kode.
 
 ## 4. Strict Scope Isolation
 - ONLY modify files explicitly requested or strictly required to solve the target bug.
