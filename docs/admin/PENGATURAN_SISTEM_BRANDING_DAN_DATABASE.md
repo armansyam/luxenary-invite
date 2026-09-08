@@ -136,8 +136,6 @@ Sistem mengadopsi arsitektur hierarki URL yang bersih dan hemat sumber daya name
 
 ---
 
-## 9. Diagnostik Langsung: SMTP & Cloud Storage (`Tab: Setup & Integrasi`)
-
-Melalui komponen modular `AdminDiagnostics`:
-- **Uji Coba Handshake Live Email SMTP (`POST /api/admin/test-smtp`):** Menguji konektivitas server SMTP ke port 587/465 dan mengirim email uji coba HTML instan ke alamat administrator.
-- **Uji Latensi & Izin Tulis Cloudflare R2 / S3 (`POST /api/admin/test-storage`):** Mengunggah objek token sementara dan mengukur latensi round-trip (ms) untuk memastikan kesiapan infrastruktur sebelum digunakan oleh klien.
+## 9. Diagnostik Langsung: SMTP & Cloud Storage
+- **Uji Coba Handshake Live Email SMTP (`POST /api/admin/test-smtp`):** Terintegrasi langsung (*inline*) pada kartu konfigurasi *Server Email (SMTP)* di Tab *Pengaturan* -> *Setup & Integrasi*. Menguji konektivitas server SMTP ke port 587/465 dan mengirim email uji coba HTML instan ke alamat administrator tanpa membuat card terpisah atau card bertumpuk.
+- **Uji Latensi, Detak Server & Cloudflare R2 (`GET /api/admin/monitoring/health`):** Terpusat di Tab *Monitoring* -> Sub-tab *Kesehatan & Storage*. Menguji konektivitas bucket cloud (write/delete handshake sementara), mengukur latensi round-trip (ms), memantau pemakaian kuota media R2, serta kapasitas partisi disk VPS Ubuntu dan status detak server secara terpadu.

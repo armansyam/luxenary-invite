@@ -8,13 +8,13 @@ import { BrandLogo } from "@/components/BrandLogo";
 
 import { AdminProfileSettings } from "@/components/admin/AdminProfileSettings";
 import { AdminTeamManagement } from "@/components/admin/AdminTeamManagement";
+import { AdminFinanceTab } from "@/components/admin/AdminFinanceTab";
 import { AdminPortfolioTab } from "@/components/admin/AdminPortfolioTab";
 import AdminOrdersTab from "@/components/admin/AdminOrdersTab";
 import AdminClientsTab from "@/components/admin/AdminClientsTab";
 import AdminInvitationsTab from "@/components/admin/AdminInvitationsTab";
 import AdminCustomDomainsTab from "@/components/admin/AdminCustomDomainsTab";
 import AdminMonitoringTab from "@/components/admin/AdminMonitoringTab";
-import AdminDiagnostics from "@/components/admin/AdminDiagnostics";
 import { startRemoteSession } from "./actions/remote";
 import { compressImageToWebP } from "@/lib/clientImageCompressor";
 import { getThemeBlueprint } from "@/lib/themeDefaults";
@@ -118,6 +118,15 @@ const tabs = [
     icon: (
       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+      </svg>
+    ),
+  },
+  {
+    id: "finance",
+    label: "Finance & Keuangan",
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
     ),
   },
@@ -294,11 +303,45 @@ const AVAILABLE_CAPABILITIES = [
   { id: "guest_memories", label: "Galeri Kenangan Tamu (Live Photo Drop)" },
   { id: "qr_checkin", label: "QR Code Check-in Tamu" }
 ];
+
+const VALID_ADMIN_TABS = [
+  "overview",
+  "orders",
+  "users",
+  "invitations",
+  "portfolio",
+  "custom_domains",
+  "themes",
+  "settings",
+  "database",
+  "logs",
+  "team",
+  "finance",
+];
+
+const VALID_SETTINGS_SUBS = [
+  "akun",
+  "pembayaran",
+  "gateway",
+  "paket",
+  "setup",
+  "platform",
+];
+
 export default function AdminPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const urlTab = params.get("tab");
+      if (urlTab && VALID_ADMIN_TABS.includes(urlTab)) return urlTab;
+      const stored = localStorage.getItem("lux_admin_active_tab");
+      if (stored && VALID_ADMIN_TABS.includes(stored)) return stored;
+    }
+    return "overview";
+  });
   const [orderTab, setOrderTab] = useState("PENDING"); // PENDING, PAID, FAILED, SEMUA
   const [clientPage, setClientPage] = useState(1);
   const [manageClient, setManageClient] = useState<any | null>(null);
@@ -325,11 +368,33 @@ export default function AdminPage() {
   const filteredTabs = useMemo(() => {
     return tabs.filter(tab => {
       if (userRole === "SUPER_ADMIN") return true;
-      if (userRole === "FINANCE") return ["overview", "orders", "users"].includes(tab.id);
-      if (userRole === "SUPPORT") return ["users", "invitations"].includes(tab.id);
+      if (userRole === "ADMIN") {
+        return [
+          "overview",
+          "orders",
+          "users",
+          "invitations",
+          "portfolio",
+          "custom_domains",
+          "themes",
+        ].includes(tab.id);
+      }
+      if (userRole === "FINANCE") {
+        return ["overview", "orders", "users", "finance"].includes(tab.id);
+      }
+      if (userRole === "SUPPORT") {
+        return ["users", "invitations", "custom_domains"].includes(tab.id);
+      }
       return false;
     });
   }, [userRole]);
+
+  // Otomatis arahkan ke tab pertama yang sah jika tab aktif saat ini di luar izin role
+  useEffect(() => {
+    if (filteredTabs.length > 0 && !filteredTabs.some(t => t.id === activeTab)) {
+      setActiveTab(filteredTabs[0].id);
+    }
+  }, [filteredTabs, activeTab]);
 
   // Strict session enforcement
   useEffect(() => {
@@ -339,7 +404,9 @@ export default function AdminPage() {
       const isAdmin =
         (session?.user as any)?.isAdmin === true ||
         (session?.user as any)?.role === "ADMIN" ||
-        (session?.user as any)?.role === "SUPER_ADMIN";
+        (session?.user as any)?.role === "SUPER_ADMIN" ||
+        (session?.user as any)?.role === "FINANCE" ||
+        (session?.user as any)?.role === "SUPPORT";
       if (!isAdmin) {
         router.replace("/admin/login");
       }
@@ -390,8 +457,87 @@ export default function AdminPage() {
   const [savingDomainDns, setSavingDomainDns] = useState(false);
   const [detectingServerIp, setDetectingServerIp] = useState(false);
   const [detectIpResult, setDetectIpResult] = useState<{ success: boolean; message: string } | null>(null);
-  const [activeSettingsTab, setActiveSettingsTab] = useState<"akun" | "pembayaran" | "gateway" | "paket" | "setup" | "platform">("akun");
+  const [activeSettingsTab, setActiveSettingsTab] = useState<"akun" | "pembayaran" | "gateway" | "paket" | "setup" | "platform">(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const urlSub = params.get("sub");
+      if (urlSub && VALID_SETTINGS_SUBS.includes(urlSub as any)) return urlSub as any;
+      const stored = localStorage.getItem("lux_admin_settings_subtab");
+      if (stored && VALID_SETTINGS_SUBS.includes(stored as any)) return stored as any;
+    }
+    return "akun";
+  });
+
+  // Sinkronisasi Tab Utama & Sub-Tab Pengaturan ke URL (?tab=...&sub=...) dan localStorage
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    try {
+      localStorage.setItem("lux_admin_active_tab", activeTab);
+      const params = new URLSearchParams(window.location.search);
+      params.set("tab", activeTab);
+
+      if (activeTab === "settings") {
+        localStorage.setItem("lux_admin_settings_subtab", activeSettingsTab);
+        params.set("sub", activeSettingsTab);
+      } else {
+        params.delete("sub");
+      }
+
+      const newUrl = `${window.location.pathname}?${params.toString()}`;
+      window.history.replaceState(null, "", newUrl);
+    } catch {}
+  }, [activeTab, activeSettingsTab]);
+
+  // Dukungan tombol navigasi Back / Forward browser
+  useEffect(() => {
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlTab = params.get("tab");
+      const urlSub = params.get("sub");
+
+      if (urlTab && VALID_ADMIN_TABS.includes(urlTab)) {
+        setActiveTab(urlTab);
+      }
+      if (urlSub && VALID_SETTINGS_SUBS.includes(urlSub as any)) {
+        setActiveSettingsTab(urlSub as any);
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
   const [selectedGatewayVendor, setSelectedGatewayVendor] = useState<"midtrans" | "xendit">("midtrans");
+  const [testingSmtp, setTestingSmtp] = useState(false);
+  const [testSmtpEmail, setTestSmtpEmail] = useState("");
+  const [testSmtpResult, setTestSmtpResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  const handleTestSmtp = async () => {
+    const target = testSmtpEmail.trim() || session?.user?.email || "";
+    if (!target || !target.includes("@")) {
+      setTestSmtpResult({ success: false, message: "Masukkan alamat email penerima yang valid." });
+      return;
+    }
+    setTestingSmtp(true);
+    setTestSmtpResult(null);
+    try {
+      const res = await fetch("/api/admin/test-smtp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recipientEmail: target }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setTestSmtpResult({ success: true, message: data.message });
+      } else {
+        setTestSmtpResult({ success: false, message: data.error || "Gagal melakukan handshake SMTP." });
+      }
+    } catch (err: any) {
+      setTestSmtpResult({ success: false, message: err.message || "Kesalahan jaringan saat menghubungi server." });
+    } finally {
+      setTestingSmtp(false);
+    }
+  };
 
   const handleDetectServerIp = async () => {
     setDetectingServerIp(true);
@@ -935,10 +1081,11 @@ export default function AdminPage() {
     }
   }, []);
 
+  const platformName = settingsMap["platform_name"];
   useEffect(() => {
-    const brand = settingsMap["platform_name"] || "Luxenary";
+    const brand = platformName || "Luxenary";
     document.title = `${brand} Admin — Control Panel`;
-  }, [settingsMap["platform_name"]]);
+  }, [platformName]);
 
 
   useEffect(() => {
@@ -947,27 +1094,7 @@ export default function AdminPage() {
     loadBrandAssets();
     loadSnapshots();
     fetchSystemMusics();
-
-    // Auto-refresh data overview setiap 15 detik (pause jika tab tidak aktif)
-    const pollInterval = setInterval(() => {
-      if (document.visibilityState === "visible") {
-        loadOverviewData(true);
-      }
-    }, 15000);
-
-    // Otomatis refresh data (background) langsung saat Bapak kembali ke tab ini
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        loadOverviewData(true);
-      }
-    };
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      clearInterval(pollInterval);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, [loadOverviewData, loadSettings, loadBrandAssets, loadSnapshots]);
+  }, [loadOverviewData, loadSettings, loadBrandAssets, loadSnapshots, fetchSystemMusics]);
 
   const setSetting = (key: string, value: string) => {
     setSettingsMap((prev) => ({ ...prev, [key]: value }));
@@ -1808,6 +1935,19 @@ export default function AdminPage() {
 
                     {/* Quick Action Buttons */}
                     <div className="flex flex-wrap items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => loadOverviewData()}
+                        disabled={loading}
+                        className="px-3.5 py-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 shadow-2xs cursor-pointer disabled:opacity-50"
+                        title="Segarkan data ringkasan"
+                      >
+                        <svg className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        <span>{loading ? "Menyegarkan..." : "Segarkan Data"}</span>
+                      </button>
+
                       <button
                         type="button"
                         onClick={handleCreateSnapshot}
@@ -2697,6 +2837,13 @@ export default function AdminPage() {
               {activeTab === "team" && (
                 <div className="max-w-5xl w-full">
                   <AdminTeamManagement />
+                </div>
+              )}
+
+              {/* ── Finance & Keuangan Terpusat ── */}
+              {activeTab === "finance" && (
+                <div className="w-full">
+                  <AdminFinanceTab />
                 </div>
               )}
 
@@ -3813,6 +3960,65 @@ export default function AdminPage() {
                             ? "Klien akan menerima faktur invoice HTML otomatis setiap kali checkout dan setelah pembayaran QRIS lunas."
                             : "Server email belum diatur. Transaksi tetap berjalan normal via QRIS, dan pengiriman email otomatis dilewati secara aman."}
                         </p>
+
+                        {/* Inline Test Handshake SMTP */}
+                        {settingsMap["smtp_host"] && settingsMap["smtp_user"] && (
+                          <div className="pt-3 border-t border-gray-200/80 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-semibold text-gray-800">Uji Transmisi Email Live:</span>
+                              <span className="text-[11px] text-gray-400">Verifikasi port & kredensial</span>
+                            </div>
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                              <input
+                                type="email"
+                                placeholder={session?.user?.email || "email@anda.com"}
+                                value={testSmtpEmail}
+                                onChange={(e) => setTestSmtpEmail(e.target.value)}
+                                className="px-3.5 py-2 border border-gray-200 rounded-xl text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500 w-full sm:w-80"
+                              />
+                              <button
+                                type="button"
+                                onClick={handleTestSmtp}
+                                disabled={testingSmtp}
+                                className="px-4 py-2 bg-stone-900 hover:bg-stone-800 disabled:opacity-50 text-white rounded-xl text-xs font-semibold transition shrink-0 inline-flex items-center justify-center gap-1.5"
+                              >
+                                {testingSmtp ? (
+                                  <>
+                                    <svg className="animate-spin w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24">
+                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                                    </svg>
+                                    <span>Menguji...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <svg className="w-3.5 h-3.5 text-stone-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                    </svg>
+                                    <span>Kirim Email Uji Coba</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
+
+                            {testSmtpResult && (
+                              <div className={`p-3 rounded-xl text-xs flex items-center justify-between border ${
+                                testSmtpResult.success
+                                  ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                                  : "bg-rose-50 text-rose-800 border-rose-200"
+                              }`}>
+                                <span className="font-medium">{testSmtpResult.message}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setTestSmtpResult(null)}
+                                  className="text-gray-400 hover:text-gray-600 font-bold text-sm ml-2"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     }
                   >
@@ -4124,8 +4330,6 @@ export default function AdminPage() {
                       </FieldRow>
                     </div>
                   </SettingsCard>
-
-                  <AdminDiagnostics adminEmail={session?.user?.email || undefined} />
 
                   {/* Google OAuth 2.0 Integration Info */}
                   <div className="bg-white rounded-2xl border border-gray-200/80 shadow-xs p-6 space-y-4">
@@ -6343,7 +6547,7 @@ export default function AdminPage() {
                         <div className="space-y-3">
                           {(demoStudioData.events || []).length === 0 ? (
                             <div className="p-4 bg-white border border-dashed border-gray-300 rounded-xl text-center text-xs text-gray-400">
-                              Belum ada sesi acara. Klik "Tambah Acara" di atas untuk menambahkan.
+                              Belum ada sesi acara. Klik &quot;Tambah Acara&quot; di atas untuk menambahkan.
                             </div>
                           ) : (
                             (demoStudioData.events || []).map((ev: any, evIdx: number) => (
@@ -6489,7 +6693,7 @@ export default function AdminPage() {
                         <div className="space-y-3">
                           {(demoStudioData.stories || []).length === 0 ? (
                             <div className="p-4 bg-gray-50 border border-dashed border-gray-300 rounded-xl text-center text-xs text-gray-400">
-                              Belum ada bab cerita cinta. Klik "Tambah Bab Cerita" di atas untuk menambahkan.
+                              Belum ada bab cerita cinta. Klik &quot;Tambah Bab Cerita&quot; di atas untuk menambahkan.
                             </div>
                           ) : (
                             (demoStudioData.stories || []).map((story: any, sIdx: number) => (
@@ -6587,7 +6791,7 @@ export default function AdminPage() {
                         <div className="space-y-3">
                           {(demoStudioData.banks || []).length === 0 ? (
                             <div className="p-4 bg-gray-50 border border-dashed border-gray-300 rounded-xl text-center text-xs text-gray-400">
-                              Belum ada rekening demo. Klik "Tambah Rekening" di atas.
+                              Belum ada rekening demo. Klik &quot;Tambah Rekening&quot; di atas.
                             </div>
                           ) : (
                             (demoStudioData.banks || []).map((bank: any, bIdx: number) => (

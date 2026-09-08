@@ -354,7 +354,7 @@ export default function ReceptionistScannerClient({
   }, [invitationId]);
 
   // 3. Handle Scan / Search
-  const handleCheckIn = (guest: Guest) => {
+  const handleCheckIn = useCallback((guest: Guest) => {
     setIsScreensaverActive(false);
     if (guest.isTokenRedeemed) {
       setScanResult({ 
@@ -378,7 +378,7 @@ export default function ReceptionistScannerClient({
     setScanResult({ type: "success", message: `Berhasil Check-in!`, guest });
     setSearchInput("");
     if (inputRef.current) inputRef.current.focus();
-  };
+  }, [guests, invitationId, offlineQueue]);
 
   const handleDuplicateGuestArrival = (originalName: string) => {
     // Cari angka terakhir untuk nama yang sama
@@ -407,7 +407,7 @@ export default function ReceptionistScannerClient({
     setSearchInput("");
   };
 
-  const processScanToken = (token: string) => {
+  const processScanToken = useCallback((token: string) => {
     setIsScreensaverActive(false);
     if (!token) return;
     let targetName = token;
@@ -451,7 +451,7 @@ export default function ReceptionistScannerClient({
     } else {
       setScanResult({ type: "error", message: "Data tamu tidak ditemukan di sistem." });
     }
-  };
+  }, [invitationId, guests, guestsRef, handleCheckIn]);
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -576,7 +576,7 @@ export default function ReceptionistScannerClient({
       isCancelled = true;
       safeStopScanner();
     };
-  }, [scannerMode, selectedCameraIndex, isScreensaverActive, playBeep, invitationId, safeStopScanner]);
+  }, [scannerMode, selectedCameraIndex, isScreensaverActive, playBeep, invitationId, safeStopScanner, processScanToken]);
 
   const handleSwitchCamera = () => {
     if (cameraList.length <= 1) return;

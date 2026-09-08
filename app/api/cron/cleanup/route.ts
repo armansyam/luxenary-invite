@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import fs from "fs";
 import path from "path";
-import { buildAndSavePublishedHtml, deletePublishedHtml, deleteSubdomainHtmlOnly } from "@/lib/staticPublisher";
+import { buildAndSavePublishedHtml, deletePublishedHtml } from "@/lib/staticPublisher";
 
 async function fileExists(filePath: string): Promise<boolean> {
   try {
@@ -103,8 +103,8 @@ export async function POST(req: NextRequest) {
         // 1. Pastikan canonical HTML sudah tersimpan sebelum subdomain ditakedown
         await buildAndSavePublishedHtml(inv.id);
 
-        // 2. Hapus fisik file subdomain HTML (agar URL otomatis fallback / rewrite ke galeri)
-        await deleteSubdomainHtmlOnly(inv.id);
+        // 2. Subdomain HTML file sudah tidak digunakan (single source of truth by ID)
+        // Tidak ada file terpisah yang perlu dihapus
 
         // 3. Update status menjadi EVENT_FINISHED & kunci upload tamu (masuk masa galeri)
         await prisma.invitation.update({

@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getInvitationPublicUrl, getApexRootDomain, resolveEffectiveInvitationUrl } from "@/lib/domainUtils";
 
 export default function SettingsPage() {
+  const router = useRouter();
   const [invitation, setInvitation] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [savingSec, setSavingSec] = useState<string | null>(null);
@@ -2015,7 +2017,7 @@ export default function SettingsPage() {
                         });
                         const resData = await response.json();
                         if (response.ok && (resData.paymentUrl || resData.orderId)) {
-                          window.location.href = resData.paymentUrl || `/checkout?order=${resData.orderId}`;
+                          router.push(resData.paymentUrl || `/checkout?order=${resData.orderId}`);
                         } else {
                           setCustomDomainError(resData.error || "Gagal membuat invoice");
                         }

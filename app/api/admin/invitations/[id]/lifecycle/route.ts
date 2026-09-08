@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
-import { deleteSubdomainHtmlOnly } from "@/lib/staticPublisher";
 
 export const dynamic = "force-dynamic";
 
@@ -41,8 +40,7 @@ export async function POST(
     const now = new Date();
 
     if (action === "CLOSE_TO_GALLERY") {
-      // 1. Hapus subdomain HTML agar URL otomatis rewrite ke galeri
-      await deleteSubdomainHtmlOnly(id);
+      // 1. Status langsung di-update ke EVENT_FINISHED (subdomain HTML sudah dihapus via single-source-of-truth flow)
 
       // 2. Set status EVENT_FINISHED
       const updated = await prisma.invitation.update({

@@ -52,6 +52,16 @@ export async function POST(req: NextRequest) {
     const incomingToken = req.headers.get("x-callback-token") || "";
     const storedTokens = await getXenditWebhookTokens();
 
+    // Hard-block di production jika tidak ada token terkonfigurasi.
+    // Di dev/staging: webhook tetap bisa masuk tapi dengan warning (sandbox testing).
+    if (storedTokens.length === 0) {
+      if (process.env.NODE_ENV === "production") {
+        console.error("[Xendit Webhook] KRITIS: XENDIT_WEBHOOK_TOKEN tidak terkonfigurasi. Webhook ditolak.");
+        return NextResponse.json({ error: "Gateway not configured" }, { status: 503 });
+      }
+      console.warn("[Xendit Webhook] ⚠️ Webhook token tidak terkonfigurasi — dev/sandbox bypass aktif.");
+    }
+
     if (storedTokens.length > 0) {
       if (!incomingToken) {
         return NextResponse.json({ status: "rejected", reason: "missing_callback_token" }, { status: 400 });

@@ -42,7 +42,7 @@ export default function AdminOrdersTab() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusTab, setStatusTab] = useState<"SEMUA" | "PENDING" | "PAID" | "FAILED">("SEMUA");
-  const [dateFilter, setDateFilter] = useState<"ALL" | "TODAY" | "7DAYS" | "THIS_MONTH">("ALL");
+  const [dateFilter, setDateFilter] = useState<"ALL" | "TODAY" | "7DAYS" | "THIS_MONTH">("TODAY");
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 1 });
   const [summary, setSummary] = useState({ totalFilteredRevenue: 0, totalFilteredPaidOrders: 0 });
 
@@ -272,10 +272,10 @@ export default function AdminOrdersTab() {
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
             <span className="text-[11px] font-semibold text-gray-400 mr-1 shrink-0">Periode:</span>
             {[
-              { id: "ALL", label: "Semua Waktu" },
               { id: "TODAY", label: "Hari Ini" },
               { id: "7DAYS", label: "7 Hari" },
               { id: "THIS_MONTH", label: "Bulan Ini" },
+              { id: "ALL", label: "Semua Waktu" },
             ].map((preset) => (
               <button
                 key={preset.id}
@@ -299,10 +299,10 @@ export default function AdminOrdersTab() {
         {/* Status Subtabs Pills */}
         <div className="flex items-center gap-2 pt-2 border-t border-gray-100 overflow-x-auto pb-1">
           {[
-            { id: "SEMUA", label: "Semua Transaksi" },
             { id: "PENDING", label: "Menunggu Pembayaran" },
             { id: "PAID", label: "Sukses / Lunas" },
             { id: "FAILED", label: "Gagal / Dibatalkan" },
+            { id: "SEMUA", label: "Semua Transaksi" },
           ].map((tab) => (
             <button
               key={tab.id}

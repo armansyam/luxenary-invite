@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 interface PortfolioTabProps {
   invitations: any[];
@@ -29,7 +29,7 @@ export function AdminPortfolioTab({ invitations }: PortfolioTabProps) {
     setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 5000);
   };
 
-  const fetchPortfolios = async () => {
+  const fetchPortfolios = useCallback(async () => {
     try {
       const res = await fetch("/api/admin/portfolio");
       const data = await res.json();
@@ -39,9 +39,9 @@ export function AdminPortfolioTab({ invitations }: PortfolioTabProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  useEffect(() => { fetchPortfolios(); }, []);
+  useEffect(() => { fetchPortfolios(); }, [fetchPortfolios]);
 
   useEffect(() => {
     if (processing) {

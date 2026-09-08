@@ -140,9 +140,3 @@ export async function deletePublishedHtml(invitationId: string): Promise<boolean
   return deleted;
 }
 
-/**
- * Deprecated: Fungsi ini dihapus karena sistem tidak lagi menggunakan file HTML subdomain terpisah.
- */
-export async function deleteSubdomainHtmlOnly(invitationId: string): Promise<boolean> {
-  return true; // No-op
-}

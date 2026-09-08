@@ -200,33 +200,6 @@ export function getMonthYearSlug(dateInput?: string | Date | null): string {
 }
 
 /**
- * Returns the permanent canonical path URL:
- * - Localhost:  http://localhost:3000/[groom]-[bride]/[invitationSlug](?to=...)
- * - Production: https://[apexDomain]/[groom]-[bride]/[invitationSlug](?to=...)
- */
-export function getPermanentPathUrl(
-  groomSlug: string,
-  brideSlug: string,
-  invitationSlug: string,
-  guestSlug?: string
-): string {
-  const g = (groomSlug || "groom").toLowerCase().trim();
-  const b = (brideSlug || "bride").toLowerCase().trim();
-  const s = (invitationSlug || "wedding").toLowerCase().trim();
-  const query = guestSlug ? `?to=${encodeURIComponent(guestSlug)}` : "";
-
-  if (typeof window !== "undefined") {
-    const { protocol, hostname, port } = window.location;
-    const portSuffix = port ? `:${port}` : "";
-    return `${protocol}//${hostname}${portSuffix}/${g}-${b}/${s}${query}`;
-  }
-
-  const root = process.env.NEXT_PUBLIC_ROOT_DOMAIN || process.env.NEXT_PUBLIC_APP_URL || "";
-  const cleanRoot = root.replace(/^https?:\/\//, "").replace(/\/$/, "");
-  return `https://${cleanRoot}/${g}-${b}/${s}${query}`;
-}
-
-/**
  * Checks if a wedding event date has exceeded the grace period (default: 7 days).
  */
 export function isSubdomainExpired(eventDateInput?: string | Date | null, gracePeriodDays: number = 7): boolean {
@@ -241,4 +214,3 @@ export function isSubdomainExpired(eventDateInput?: string | Date | null, graceP
     return false;
   }
 }
-

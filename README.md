@@ -2,7 +2,7 @@
 
 > **Platform Undangan Pernikahan Digital B2C Self-Service**  
 > Next.js 16.3.2 · Prisma 7.9 (PostgreSQL) · NextAuth v5 · Multi-Gateway (5 Gateway) · Nodemailer SMTP · Cloudflare R2  
-> **Versi Dokumen: 5.5.1 | Diperbarui: 06 September 2026**
+> **Versi Dokumen: 5.6.0 | Diperbarui: 08 September 2026**
 
 > [!IMPORTANT]
 > **PROTOKOL SINKRONISASI DOKUMENTASI OTOMATIS (MANDATORY POST-EDIT & PRE-PUSH PROTOCOL):**  
@@ -104,14 +104,16 @@ ADMIN PORTAL (/admin)
    - Domain Kustom (Custom Domains): Monitoring domain klien, panduan konfigurasi Caddy, dan shortcut ke tab Setup DNS.
    - Tema & Musik (Themes & Music): Manajemen katalog tema, Demo Studio (kustomisasi 6 seksi narasi & label tema, dynamic timeline acara, dynamic bab cerita, dynamic rekening bank, harmonisasi casing font skrip vs uppercase, dan pewarisan otomatis ke undangan klien), serta Pustaka Musik Sistem dinamis (auto-sync file fisik audio di disk `public/music/` ke database, tambah audio dengan auto-kompresi FFmpeg MP3 128kbps, preview, edit, dan toggle aktif/nonaktif untuk klien)
    - Portofolio (Portfolio): Kurasi & kloning undangan pilihan → /portfolio
-   - Tim (Team): Manajemen akun staff admin (SUPER_ADMIN, FINANCE, SUPPORT)
    - Pengaturan (Settings): 
      - **Tab Setup & Integrasi:** Konfigurasi DNS & IP Server (auto-detect IP publik VPS, CNAME target dinamis), SMTP Email Server, Batas Upload Galeri Tamu (MB), dan Siklus Hidup Subdomain & Retensi.
      - **Tab Platform:** Branding & Identitas Platform, CS Support, Hero Tagline, Fitur Landing Page, Template WhatsApp.
      - **Tab Paket & Harga:** Konfigurasi harga paket undangan (Traditional, Modern, Premium) serta 2 Layanan Tambahan (Add-Ons) resmi: Jasa Custom Domain (1 Thn — dilengkapi toggle aktif/nonaktif & mode Coming Soon untuk klien) dan Perpanjang Masa Aktif URL Asli / Galeri (Bulanan).
      - **Tab Gateway QRIS:** Pusat kontrol global dan sub-tabs terisolasi per vendor gateway 2-arah (Midtrans dan Xendit) dengan kredensial terpadu dan resolusi endpoint otomatis.
    - Database (Database): Snapshot backup & restore PostgreSQL
-   - Log (Logs): Audit aktivitas admin & webhook gateway logs
+   - Monitoring (Monitoring & Status Server): Pemantauan kestabilan sistem 60-hari interaktif (Interactive Uptime Status Bar), pemantauan memori fisik Host RAM VPS (`os.totalmem()`), Host OS Uptime, beban partisi root Linux (/), latensi & metrik ukuran terpakai Cloudflare R2 Media Storage (kapasitas terpakai, sisa kuota bebas biaya 10 GB), serta audit aktivitas staf & webhook gateway.
+   - Tim & Akses (Team): Manajemen akun staf admin dengan isolasi 4-tier Role Access Matrix (`SUPER_ADMIN`, `ADMIN`, `FINANCE`, `SUPPORT`) dilengkapi pratinjau hak akses menu dinamis (*Reactive Allowed vs Restricted Tab Badges*).
+   - **Finance & Keuangan (Posisi Paling Bawah):** Pusat pembukuan keuangan terpadu dengan Continuous Editorial Canvas (bebas tumpukan card AI klise), visualisasi grafik interaktif multi-model 60 FPS SVG (Dual Bar, Kurva Kontinu, dan Net Flow Baseline Rp 0), buku kas keluar (OPEX) terstruktur dengan tagging sumber bayar & bukti struk, pelacak tagihan rutin 1-klik (VPS, internet, listrik), prosedur audit-safe Tutup Buku bulanan/tahunan (penguncian mutasi kas permanen), dan lembar kerja Rekapitulasi Pajak PPh Final 0,5% (PP 55/2022) siap lapor SPT di DJP Online.
+   *(Dilengkapi Tab Memory Persistence via URL Query & LocalStorage sehingga reload halaman tidak pernah terpental kembali ke tab ringkasan)*
 ```
 
 ---
@@ -292,8 +294,8 @@ Luxenary-Invite/
 │       ├── AdminClientsTab.tsx       # Klien, WhatsApp link & impersonate
 │       ├── AdminInvitationsTab.tsx   # Siklus hidup projek & emergency unlock
 │       ├── AdminCustomDomainsTab.tsx # Live DNS check & aktivasi 1-klik
-│       ├── AdminMonitoringTab.tsx    # Audit staf & log webhook gateway
-│       └── AdminDiagnostics.tsx      # Uji SMTP mailer & latensi R2 storage
+│       ├── AdminMonitoringTab.tsx    # Detak kesehatan server, kuota & ukuran riil R2 (MB/GB), disk VPS, audit staf & webhook
+│       └── AdminFinanceTab.tsx       # Finance center, multi-chart visualisasi & pembukuan kas
 ├── public/
 │   ├── published/             # HTML baked (subdomains/, slugs/, ids/)
 │   ├── uploads/               # Media lokal (R2 di produksi)

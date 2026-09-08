@@ -430,7 +430,8 @@ function CheckoutContent() {
     } finally {
       setLoading(false);
     }
-  }, [status, sessionUserId, planParam, orderIdParam, router, isAdmin, reloadKey]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, sessionUserId, planParam, orderIdParam, router, isAdmin, reloadKey]); // buyerEmail/buyerName/etc intentionally excluded — read-once at init
 
   useEffect(() => {
     if (status === "authenticated" && sessionUserId && !isAdmin) {

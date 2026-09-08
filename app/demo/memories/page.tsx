@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { BrandLogo } from "@/components/BrandLogo";
 
@@ -136,13 +136,13 @@ export default function DemoGuestMemoriesPage() {
 
   const selectedPhoto = selectedIndex !== null && memories[selectedIndex] ? memories[selectedIndex] : null;
 
-  const handlePrev = () => {
+  const handlePrev = useCallback(() => {
     setSelectedIndex((prev) => (prev !== null ? (prev - 1 + memories.length) % memories.length : null));
-  };
+  }, [memories.length]);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     setSelectedIndex((prev) => (prev !== null ? (prev + 1) % memories.length : null));
-  };
+  }, [memories.length]);
 
   // Keyboard navigation untuk desktop (ArrowLeft / ArrowRight / Escape)
   useEffect(() => {
@@ -161,7 +161,7 @@ export default function DemoGuestMemoriesPage() {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedIndex, memories.length]);
+  }, [selectedIndex, memories.length, handleNext, handlePrev]);
 
   // Touch swipe gestures untuk mobile
   const touchStartXRef = React.useRef<number | null>(null);

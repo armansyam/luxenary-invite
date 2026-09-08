@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 interface Props {
   invitationId: string;
@@ -23,6 +24,7 @@ export function MemoriesDownloadSection({
   invitationStatus = "PUBLISHED",
   guestMemoriesCount = 0,
 }: Props) {
+  const router = useRouter();
   const [phase, setPhase] = useState<Phase>("idle");
   const [progress, setProgress] = useState(0);
   const [total, setTotal] = useState(0);
@@ -48,7 +50,7 @@ export function MemoriesDownloadSection({
       });
       const data = await res.json();
       if (data.success && data.orderId) {
-        window.location.href = `/checkout?order=${data.orderId}`;
+        router.push(`/checkout?order=${data.orderId}`);
       } else {
         alert(data.error || "Gagal membuat pesanan perpanjangan");
       }

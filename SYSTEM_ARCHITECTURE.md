@@ -1,5 +1,5 @@
 # PLATFORM UNDANGAN (WHITE-LABEL) — DOKUMENTASI ARSITEKTUR SISTEM
-## Versi: 5.5.1 | Diperbarui: 06 September 2026
+## Versi: 5.6.0 | Diperbarui: 08 September 2026
 
 > **SUMBER KEBENARAN TUNGGAL** untuk semua developer dan AI Agent yang bekerja di repositori ini.  
 > Dokumen ini WAJIB dibaca sebelum melakukan perubahan apapun pada kode.  
@@ -25,6 +25,8 @@
 14. [Sistem Portofolio Mandiri](#14-sistem-portofolio-mandiri)
 15. [Orkestrasi Multi-Payment Gateway & Dynamic Fee](#15-orkestrasi-multi-payment-gateway--dynamic-fee)
 16. [Sistem Notifikasi Email & Faktur Transaksi](#16-sistem-notifikasi-email--faktur-transaksi)
+17. [Arsitektur Infrastruktur & Deployment (VPS)](#17-arsitektur-infrastruktur--deployment-vps)
+18. [Sistem Finance & Rekapitulasi Kas Terpusat](#18-sistem-finance--rekapitulasi-kas-terpusat)
 
 ---
 
@@ -102,8 +104,8 @@
 │   │       ├── AdminClientsTab.tsx       # Manajemen klien & remote impersonation
 │   │       ├── AdminInvitationsTab.tsx   # Siklus hidup projek & emergency unlock
 │   │       ├── AdminCustomDomainsTab.tsx # Live DNS check resolver & aktivasi 1-klik
-│   │       ├── AdminMonitoringTab.tsx    # Audit aktivitas staf & log webhook gateway
-│   │       └── AdminDiagnostics.tsx      # Uji coba live SMTP mailer & latensi storage cloud R2
+│   │       ├── AdminMonitoringTab.tsx    # Detak kesehatan server, kuota & ukuran riil Cloudflare R2 (MB/GB), kapasitas disk VPS, audit staf & webhook
+│   │       └── AdminFinanceTab.tsx       # Finance center, multi-chart visualisasi, pembukuan & tutup buku
 │   │
 │   ├── checkout/             # Halaman checkout & pembayaran (multi-gateway 2-arah + manual transfer)
 │   ├── demo/                 # Demo tema publik
@@ -285,17 +287,17 @@ Request masuk
     ├─ /dashboard/**         → Guard: hanya Client (non-Admin)
     │
     ├─ Host = subdomain milik kita (e.g. dimas-clarissa.luxenary.id)
-    │   ├─ /                 → Rewrite → /published/{subdomain}.html
+    │   ├─ /                 → Rewrite → /s/{subdomain} (route handler)
     │   ├─ /memories         → Rewrite → /s/{subdomain}/memories
     │   ├─ /receptionist     → Rewrite → /s/{subdomain}/receptionist
     │   ├─ /sharemoment      → Rewrite → /s/{subdomain}/sharemoment
-    │   └─ /{guest}          → Rewrite → /published/{subdomain}.html?to={guest}
+    │   └─ /{guest}          → Rewrite → /s/{subdomain}?to={guest}
     │
     ├─ Host = custom domain klien (e.g. dimas-clarissa.com) — INFRASTRUKTUR SIAP
     │   └─ Fetch resolve-custom-domain API → dapat subdomain → rewrite
     │
     └─ Root domain path (e.g. luxenary.id/dimas-clarissa-030326)
-        ├─ /{slug}                    → Rewrite → /published/{slug}.html
+        ├─ /{slug}                    → Route handler /[slug]/route.ts (serve from published/ids/)
         └─ /{slug}/memories|sharemoment → NextResponse.next() (ke Next.js page)
 ```
 
@@ -335,10 +337,8 @@ Saat client menekan tombol "Publish", sistem memanggil `buildAndSavePublishedHtm
 2. Compose data via themeEngine.composeTemplateData()
 3. Render HTML via renderTemplateFile() → HTML lengkap + inline CSS/JS
 4. Inject Open Graph meta tags
-5. Simpan ke TIGA lokasi:
-   a. public/published/{subdomain}.html     → Untuk subdomain URL
-   b. public/published/{invitationSlug}.html → Untuk canonical URL
-   c. public/published/{category}/{id}.html  → Fallback by ID
+5. Simpan ke SATU lokasi (Single Source of Truth by ID):
+   a. public/published/ids/{invitationId}.html  → Single canonical file
 6. Return HTML string
 ```
 
@@ -650,15 +650,21 @@ HTML standalone lengkap (self-contained, inline CSS/JS)
 
 ```
 Peran (role):
-  SUPER_ADMIN → Akses penuh semua area
-  ADMIN       → Akses /admin/**
-  USER        → Akses /dashboard/** (client biasa)
+  SUPER_ADMIN → Akses mutlak semua 12 modul sistem (Ringkasan, Pesanan, Klien, Undangan, Portofolio, Custom Domain, Tema & Musik, Pengaturan, Database, Monitoring, Tim & Hak Akses, Finance)
+  ADMIN       → Akses operasional harian (Ringkasan, Pesanan, Klien, Undangan, Portofolio, Custom Domain, Tema & Musik). Terkunci dari keuangan, platform settings, DB, monitoring, & tim.
+  FINANCE     → Akses finansial & kas (Ringkasan Finansial, Pesanan & Transaksi, Daftar Klien, Finance & Pembukuan)
+  SUPPORT     → Akses customer care & darurat (Klien & Remote Dasbor, Projek Undangan & Buka Kunci Darurat, Custom Domain)
+  CLIENT/USER → Akses /dashboard/** (klien biasa pemilik undangan)
 
-Guard di middleware:
-  /admin/**    → Hanya ADMIN atau SUPER_ADMIN
-  /dashboard/** → Hanya USER (non-Admin)
+Guard di middleware & layout:
+  /admin/**     → Hanya akun terautentikasi dengan role SUPER_ADMIN, ADMIN, FINANCE, atau SUPPORT
+  /dashboard/** → Klien biasa (atau Admin dalam sesi Remote Klien yang sah)
   /api/admin/** → Server-side check via auth()
-  /api/client/** → Server-side check via auth() + userId match
+  /api/client/** → Server-side check via auth() + userId match (atau impersonated userId pada mode remote)
+
+Persistensi Navigasi Admin (Tab Memory Persistence):
+  Navigasi tab (/admin?tab=...&sub=...) dan sub-tab pengaturan/monitoring disimpan secara otomatis ke URL search params dan localStorage (lux_admin_active_tab & lux_admin_settings_subtab).
+  Saat pengguna me-reload halaman (F5) atau kembali dari rute lain, portal admin tidak pernah terpental kembali ke tab ringkasan ("overview").
 ```
 
 ### 9.1 Mekanisme Remote Klien (Cookie-Based Workspace Override)
@@ -715,6 +721,7 @@ ADMIN (auth required, role=ADMIN/SUPER_ADMIN):
   POST /api/admin/settings            → Update platform settings
   POST /api/admin/test-smtp           → Uji coba handshake live email SMTP & pengiriman pesan diagnostik
   POST /api/admin/test-storage        → Uji coba penulisan & pengukuran latensi cloud storage Cloudflare R2/S3
+  GET  /api/admin/monitoring/health   → Metrik proses (CPU/RAM), kapasitas disk root VPS, kuota & ukuran riil Cloudflare R2 (ListObjectsV2), latensi database PostgreSQL, status SMTP
   POST /api/admin/custom-domains/check-dns → Live DNS resolver evaluator untuk A record & CNAME
   POST /api/admin/custom-domains/activate  → 1-klik aktivasi tautan custom domain ke undangan klien
   GET  /api/admin/audit-logs          → Riwayat audit aktivitas staf administrator terpaginasi
@@ -726,6 +733,15 @@ ADMIN (auth required, role=ADMIN/SUPER_ADMIN):
   GET/DELETE /api/admin/remote-session → Manajemen sesi Remote Klien (Baca status & hapus cookie remote)
   GET/POST /api/admin/music            → Pustaka musik sistem (List all & upload audio + kompresi FFmpeg 128kbps)
   PATCH/DELETE /api/admin/music/{id}   → Edit metadata/status & hapus lagu sistem
+  GET  /api/admin/finance/overview     → Executive finance metrics (Revenue, OPEX, Margin, MoM), native SVG time-series, alokasi kategori, agenda tagihan
+  GET/POST /api/admin/finance/expenses → Buku kas keluar terpaginasi, multi-filter, ekspor CSV, dan catat mutasi baru (cek lock closing)
+  PUT/DELETE /api/admin/finance/expenses/{id} → Koreksi mutasi kas dan hapus transaksi (dilindungi validasi isLocked & status closing)
+  POST /api/admin/finance/upload-receipt → Unggah berkas fisik struk/nota/invoice (WebP/PDF maks 5MB)
+  GET/POST/PUT/DELETE /api/admin/finance/recurring → Manajemen komitmen pengeluaran rutin bulanan (server, wifi, PLN)
+  POST /api/admin/finance/recurring/{id}/pay → Eksekusi 1-klik pembayaran tagihan rutin langsung masuk ke Expense buku kas
+  GET/POST/DELETE /api/admin/finance/closing → Prosedur audit-safe tutup buku bulanan, penguncian mutasi kas permanen & reopen approval
+  GET/POST /api/admin/finance/tax      → Lembar kerja rekapitulasi PPh Final UMKM 0,5% 12 bulan (PP 55/2022) & pencatatan nomor NTPN resmi
+
 
 PUBLIC:
   GET  /api/public/music               → Pustaka musik sistem aktif untuk pemilih lagu klien (auto-seed fallback)
@@ -770,7 +786,7 @@ STATUS WARISAN / DEPRECATED:
 ```
 Model Utama:
   User           → Akun user (client, role: CLIENT | ADMIN)
-  Admin          → Akun admin terpisah dari User (role: SUPER_ADMIN | FINANCE | SUPPORT)
+  Admin          → Akun admin terpisah dari User (role: SUPER_ADMIN | ADMIN | FINANCE | SUPPORT)
   Order          → Pesanan paket undangan & perpanjangan galeri
   Invitation     → Inti undangan (DRAFT | PUBLISHED | EVENT_FINISHED | TAKEN_DOWN | ARCHIVED)
   Guest          → Daftar tamu per undangan (phone, waStatus: PENDING | SENT, qrToken)
@@ -782,6 +798,10 @@ Model Utama:
   WebhookLog     → Log audit webhook payment (Midtrans, Xendit)
   AdminAuditLog  → Log audit aktivitas admin
   MusicPreset    → Pustaka musik sistem dinamis (id, title, composer, genre, url, durationSec, isActive, sortOrder)
+  Expense        → Buku kas mutasi pengeluaran operasional (title, category, amount, expenseDate, paymentSource, referenceNumber, receiptUrl, isLocked)
+  RecurringExpense → Tagihan komitmen berkala bulanan (name, category, estimatedAmount, dueDayOfMonth, vendorName, isActive)
+  FinancialClosing → Snapshot tutup buku permanen (periodMonth, periodYear, grossRevenue, totalExpenses, netProfit, taxAmount, taxPaid, closedAt, isLocked)
+  ExpenseCategory (Enum) → INFRASTRUCTURE | UTILITIES | MARKETING | SOFTWARE_LICENSES | OPERATIONAL | OTHER
 
 Field Kritis di Order:
   orderType       NEW | UPGRADE | GALLERY_EXTENSION | CUSTOM_DOMAIN_ADDON
@@ -940,7 +960,7 @@ prisma.invitation.findUnique({
 ### 13.5 — URL BUILDER YANG BENAR
 
 ```typescript
-import { getInvitationPublicUrl, getPermanentPathUrl, resolveEffectiveInvitationUrl } from "@/lib/domainUtils";
+import { getInvitationPublicUrl, resolveEffectiveInvitationUrl } from "@/lib/domainUtils";
 
 // Resolusi URL Undangan Terpadu (Prioritas: Custom Domain > Subdomain > Fallback Draft):
 const { url, domainType, domainIdentifier, isConfigured } = resolveEffectiveInvitationUrl({
@@ -960,10 +980,10 @@ getInvitationPublicUrl("dimas-clarissa")
 // → http://dimas-clarissa.localhost:3000 (dev)
 // → https://dimas-clarissa.luxenary.id (prod)
 
-// Canonical URL (permanen, FLAT SLUG):
-getPermanentPathUrl("dimas-clarissa-030326")
-// → http://localhost:3000/dimas-clarissa-030326 (dev)
-// → https://luxenary.id/dimas-clarissa-030326 (prod)
+// Canonical URL (permanen, by invitationSlug flat path — single source of truth):
+// https://luxenary.id/{invitationSlug}
+// File disimpan di: public/published/ids/{invitationId}.html
+// Catatan: getPermanentPathUrl() telah dihapus (dead code, format URL lama).
 ```
 
 ---
@@ -1607,4 +1627,78 @@ Untuk memberikan pengalaman interaktif penuh bagi calon klien sebelum memesan pa
    - Notifikasi / kartu check-in tamu otomatis ditutup kembali ke status *"Siaga Menerima Tamu"* setelah 15 detik jika tidak ada aktivitas baru.
    - Selama kartu notifikasi sedang aktif di sisi kiri, decoding kamera di sisi kanan dijeda (*paused*) dan animasi visual laser beam dimatikan sementara. Ini secara efektif mencegah pemindaian berulang (*re-scan looping*) pada barcode yang masih berada di depan lensa kamera.
 
+---
 
+## 18. SISTEM FINANCE & REKAPITULASI KAS TERPUSAT
+
+### 18.1 — Filosofi Desain Continuous Editorial Canvas
+1. **Pemberantasan Klise Card AI:**
+   - Tidak menggunakan kotak-kotak card tebal berbayangan tajam yang bertumpuk-tumpuk.
+   - Menggunakan kanvas mengalir datar dengan garis pembatas rambut tipis (*hairline*) `border-stone-200/80`, tipografi serif hangat berkarakter korporat eksekutif, dan pita metrik horizontal (*horizontal metric ribbon*) terintegrasi.
+2. **Palet Bebas Kelelahan Mata (Low Eye Strain):**
+   - Latar belakang warm stone `#FAFAF9`, charcoal `#1C1917`, hijau sage `#15803D` untuk omzet, dan terracotta `#B91C1C` untuk beban, tanpa saturasi neon mencolok.
+3. **Pemberantasan Emoji Sistem Operasi (Zero OS Emojis):**
+   - Seluruh status diwakili oleh vektor SVG murni, tipografi angka monospaced, dan indikator titik halus (*1.5px dot indicators*).
+
+### 18.2 — Alur Arus Kas & Anti-Redundansi Pendapatan
+1. **Otomatisasi 100% Pemasukan:**
+   - Data arus kas masuk (*Gross Revenue*) mengalir murni secara dinamis dari tabel `Order` berstatus `PAID` (baik auto-PAID via Midtrans/Xendit maupun approval transfer bank manual).
+   - Admin dilarang menginput pendapatan order klien secara manual untuk mencegah redundansi, selisih kas (*discrepancy*), dan *ghost revenue*.
+2. **Pencatatan Beban Kas Operasional (OPEX):**
+   - Mutasi pengeluaran kas dicatat dalam tabel `Expense` dengan parameter kategori (`ExpenseCategory`), tanggal mutasi, sumber bayar (`paymentSource`), nomor referensi, catatan audit, dan berkas fisik bukti struk.
+
+### 18.3 — Engine Grafik Interaktif Multi-Model (Native 60 FPS SVG)
+1. **3 Model Grafik:**
+   - **Batang Komparasi (Dual Bar):** Perbandingan bersanding omzet penjualan vs beban operasional.
+   - **Kurva Kontinu (Smooth Area):** Tren kurva Bezier halus dengan gradient transparan dan tooltip hover interaktif.
+   - **Net Flow Baseline (Rp 0):** Grafik deviasi laba bersih di atas / di bawah garis impas Rp 0.
+2. **3 Rentang Waktu:** Harian (30 Hari), Bulanan (12 Bulan), dan Tahunan (Multi-Tahun).
+
+### 18.4 — Tagihan Rutin Bulanan (1-Klik Bayar & Bukukan)
+- Mengelola komitmen rutin bulanan (Server VPS Hostinger, Fiber IndiHome, Listrik PLN, lisensi software) dalam model `RecurringExpense`.
+- Fitur **1-Klik Bayar** mengonversi tagihan langsung menjadi catatan `Expense` di buku kas dengan referensi unik `REC-{ID}-{TAHUN}-{BULAN}` dan memutakhirkan agenda lunas bulan berjalan secara instan.
+
+### 18.5 — Prosedur Audit-Safe Tutup Buku (Financial Closing)
+- Menyimpan snapshot agregasi laba rugi bulanan ke dalam model `FinancialClosing`.
+- Mengunci mutasi kas secara otomatis (`isLocked = true`) sehingga transaksi pada bulan tersebut tidak dapat diubah atau dihapus kembali.
+- Menolak penambahan transaksi baru pada periode yang telah ditutup buku.
+- Pembukaan kembali (*reopen/unlock*) periode tutup buku dibatasi khusus untuk pemegang role `SUPER_ADMIN`.
+
+### 18.6 — Rekapitulasi Pajak PPh Final UMKM 0,5% (PP 55/2022)
+- Lembar kerja 12 bulan (Januari s.d. Desember) menghitung otomatis kewajiban PPh Final 0,5% atas peredaran bruto (omzet kotor).
+- Menyediakan pencatatan nomor transaksi penerimaan negara (NTPN/BPN) dan tanggal setor bank persepsi untuk kelengkapan arsip pelaporan SPT Tahunan di DJP Online.
+
+---
+
+## 19. ARSITEKTUR PEMANTAUAN SERVER & KESEHATAN SISTEM (MONITORING HUB)
+
+**File:** `components/admin/AdminMonitoringTab.tsx`, `app/api/admin/monitoring/health/route.ts`
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│                   PUSAT PEMANTAUAN SISTEM & STATUS SERVER                        │
+├──────────────────────────────────────────────────────────────────────────────────┤
+│ 1. KESTABILAN SISTEM & RIWAYAT UPTIME (60 HARI ALA UPTIMEROBOT / VERCEL STATUS)  │
+│    - Status ketersediaan 60-hari interaktif dengan hover tooltip latensi & status│
+│    - Pemantauan Uptime Host OS Linux fisik (os.uptime()) vs Runtime Node.js      │
+│    - Metrik insiden/downtime tercatat (0 crash, 99.98% operasional)              │
+│                                                                                  │
+│ 2. TIGA METERAN HARDWARE & PENYIMPANAN                                           │
+│    a. RAM Memori Server VPS (Host RAM):                                          │
+│       - Total kapasitas fisik (os.totalmem()), terpakai, dan sisa bebas (GB)     │
+│       - Heap Node.js (heapUsed / heapTotal) & RSS resident memory footprint      │
+│       - Sistem peringatan ambang batas beban memori (>70% amber, >85% rose)      │
+│    b. Disk Penyimpanan VPS Server (Partisi /):                                   │
+│       - Pengukuran kapasitas partisi root Linux (/), terpakai & sisa bebas       │
+│       - Audit ukuran folder lokal /public/uploads dan /data/drafts               │
+│    c. Cloudflare R2 Media Storage:                                               │
+│       - Metrik ukuran terpakai faktual (bytes, KB, MB) via S3 ListObjectsV2 API  │
+│       - Sisa kuota bebas biaya (Free Tier 10 GB / bulan)                         │
+│       - Rata-rata ukuran file per objek media & status bucket Cloudflare         │
+│       - Penegasan siklus retensi: foto tamu dibersihkan pasca 30 hari via cron   │
+│                                                                                  │
+│ 3. AUDIT STAF & LOG WEBHOOK GATEWAY                                              │
+│    - Paginasi server-side log aktivitas perubahan admin                          │
+│    - Log webhook notifikasi transaksi Midtrans & Xendit dengan modal JSON viewer │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```

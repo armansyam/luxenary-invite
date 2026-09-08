@@ -20,6 +20,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing order_id" }, { status: 400 });
     }
 
+    // Validasi format orderId (harus UUID v4 — mencegah query DB sia-sia dari input sembarang)
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!UUID_REGEX.test(orderId)) {
+      return NextResponse.json({ status: "ignored", reason: "invalid_order_id_format" }, { status: 200 });
+    }
+
     // Ambil server key dari AdminSetting atau env
     const serverKeys: string[] = [];
     if (process.env.MIDTRANS_SERVER_KEY) serverKeys.push(process.env.MIDTRANS_SERVER_KEY);
@@ -32,10 +38,14 @@ export async function POST(req: NextRequest) {
 
     const validServerKeys = Array.from(new Set(serverKeys.filter((k) => k && !k.includes("your_"))));
 
-    // Validasi format orderId (harus UUID v4 — mencegah query sia-sia dengan input sembarang)
-    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!UUID_REGEX.test(orderId)) {
-      return NextResponse.json({ status: "ignored", reason: "invalid_order_id_format" }, { status: 200 });
+    // Hard-block di production jika tidak ada key terkonfigurasi.
+    // Di dev/staging: webhook tetap bisa masuk tapi dengan warning (agar sandbox testing bisa jalan).
+    if (validServerKeys.length === 0) {
+      if (process.env.NODE_ENV === "production") {
+        console.error("[Midtrans Webhook] KRITIS: MIDTRANS_SERVER_KEY tidak terkonfigurasi. Webhook ditolak.");
+        return NextResponse.json({ error: "Gateway not configured" }, { status: 503 });
+      }
+      console.warn("[Midtrans Webhook] ⚠️ Server key tidak terkonfigurasi — dev/sandbox bypass aktif.");
     }
 
     // Verifikasi Signature — WAJIB jika server key terkonfigurasi

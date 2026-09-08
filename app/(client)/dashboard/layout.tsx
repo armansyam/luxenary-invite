@@ -81,7 +81,7 @@ export default function ClientDashboardLayout({
       setIsRestoring(true);
       // Hapus cookie remote via API DELETE lalu pulangkan Admin
       await fetch("/api/admin/remote-session", { method: "DELETE" });
-      window.location.href = "/admin";
+      router.push("/admin");
     } catch (error) {
       console.error("Gagal restore ke admin", error);
       setIsRestoring(false);

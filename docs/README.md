@@ -35,6 +35,7 @@ Dokumentasi ini mencakup seluruh instrumen pengelolaan bisnis, keuangan, tema, k
 | **06** | [PENGATURAN_SISTEM_BRANDING_DAN_DATABASE.md](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/PENGATURAN_SISTEM_BRANDING_DAN_DATABASE.md) | **Branding, R2 & Database**: Kustomisasi identitas platform, sinkronisasi CORS Cloudflare R2 otomatis, manajemen tim administrator, dan disaster recovery snapshot PostgreSQL. |
 | **07** | [CRON_DAN_MAINTENANCE_OTOMATIS.md](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/CRON_DAN_MAINTENANCE_OTOMATIS.md) | **Tugas Terjadwal & Snapshot**: Siklus pembersihan harian `/api/cron/cleanup`, daur ulang subdomain, retensi foto tamu, dan auto-backup database `/api/cron/backup`. |
 | **08** | [DEPLOYMENT_VPS_CADDY.md](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/DEPLOYMENT_VPS_CADDY.md) | **Infrastruktur Produksi**: Panduan komprehensif setup VPS Ubuntu dari nol, Swap 2 GB, Node.js 20, PostgreSQL, Caddy auto-SSL, dan PM2 cluster. |
+| **09** | [MANAJEMEN_FINANCE_DAN_PEMBUKUAN.md](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/docs/admin/MANAJEMEN_FINANCE_DAN_PEMBUKUAN.md) | **Finance & Kas Terpusat**: Continuous Editorial Canvas (bebas card AI), 3 model grafik SVG 60 FPS (Dual Bar, Smooth Area, Net Flow Baseline Rp 0), buku kas keluar OPEX, pelacak tagihan rutin 1-klik, audit-safe Tutup Buku bulanan, dan rekapitulasi PPh Final 0,5% (PP 55/2022) siap lapor SPT. |
 
 ---
 

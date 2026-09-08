@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { compressImageToWebP } from "@/lib/clientImageCompressor";
 
@@ -93,6 +93,7 @@ const EVENT_PRESETS = [
 
 export default function EditInvitation() {
   const params = useParams();
+  const router = useRouter();
   const invitationId = params.id as string;
 
   const [invitation, setInvitation] = useState<any>(null);
@@ -161,7 +162,7 @@ export default function EditInvitation() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Gagal membuat order upgrade.");
       setUpgradeModal(false);
-      window.location.href = `/checkout?order=${data.orderId}`;
+      router.push(`/checkout?order=${data.orderId}`);
     } catch (err: any) {
       setUpgradeError(err.message);
     } finally {

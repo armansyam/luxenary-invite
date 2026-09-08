@@ -292,11 +292,33 @@ export default function AdminClientsTab() {
                         {usr.totalSpent > 0 ? `Rp ${usr.totalSpent.toLocaleString("id-ID")}` : "-"}
                       </td>
 
-                      {/* Undangan */}
+                      {/* Undangan Pengantin (1 Akun = 1 Undangan) */}
                       <td className="px-5 py-3.5 whitespace-nowrap">
-                        <span className="font-semibold text-gray-800">
-                          {usr._count?.invitations || usr.invitations.length} Projek
-                        </span>
+                        {usr.invitations && usr.invitations.length > 0 ? (
+                          <div className="flex items-center gap-2">
+                            <div className="flex flex-col">
+                              <span className="font-semibold text-gray-900 truncate max-w-[140px]" title={usr.invitations[0].groomName && usr.invitations[0].brideName ? `${usr.invitations[0].groomName} & ${usr.invitations[0].brideName}` : usr.invitations[0].invitationSlug}>
+                                {usr.invitations[0].groomName && usr.invitations[0].brideName
+                                  ? `${usr.invitations[0].groomName.split(" ")[0]} & ${usr.invitations[0].brideName.split(" ")[0]}`
+                                  : usr.invitations[0].invitationSlug}
+                              </span>
+                              <span className="text-[10px] text-gray-400 font-mono truncate max-w-[140px]">
+                                {usr.invitations[0].subdomain ? `${usr.invitations[0].subdomain}` : `/${usr.invitations[0].invitationSlug}`}
+                              </span>
+                            </div>
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                              usr.invitations[0].status === "PUBLISHED"
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                : usr.invitations[0].status === "DRAFT"
+                                ? "bg-amber-50 text-amber-700 border-amber-200"
+                                : "bg-gray-100 text-gray-600 border-gray-200"
+                            }`}>
+                              {usr.invitations[0].status === "PUBLISHED" ? "Tayang" : usr.invitations[0].status === "DRAFT" ? "Draft" : usr.invitations[0].status}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-gray-400 italic text-[11px]">Belum Dibuat</span>
+                        )}
                       </td>
 
                       {/* Terdaftar */}
@@ -421,13 +443,13 @@ export default function AdminClientsTab() {
               </div>
             </div>
 
-            {/* Projek Undangan Klien */}
+            {/* Undangan Pernikahan Klien */}
             <div className="space-y-2">
               <h4 className="text-xs font-bold text-gray-800 uppercase tracking-wide">
-                Projek Undangan ({selectedClient.invitations.length})
+                Undangan Pernikahan Klien
               </h4>
               {selectedClient.invitations.length === 0 ? (
-                <p className="text-xs text-gray-400 italic">Belum ada undangan dibuat oleh klien ini.</p>
+                <p className="text-xs text-gray-400 italic">Klien belum membuat undangan (menunggu checkout / onboarding).</p>
               ) : (
                 <div className="space-y-2">
                   {selectedClient.invitations.map((inv) => (

@@ -1,5 +1,5 @@
 # S-Invitation: Luxenary Invite System Architecture & Master Specification
-> **Versi: 5.5.1 | Diperbarui: 06 September 2026**
+> **Versi: 5.6.0 | Diperbarui: 08 September 2026**
 
 ## 1. Executive Summary & Core Philosophy
 **Luxenary Invite** adalah platform ekosistem undangan pernikahan digital modern berbasis Next.js 16 (App Router + Turbopack) yang menghadirkan pengalaman visual mewah (*haute couture*), kecepatan muat instan (<0.8 detik), self-service dashboard mandiri bagi klien, dan integrasi cloud edge caching.
@@ -440,8 +440,20 @@ Dalam pengelolaan Klien dan Undangan di Dashboard Admin (`app/(admin)/admin/page
 4. **Logika Fitur Kunci Darurat:** Opsi `Buka Kunci Darurat` hanya muncul jika sistem secara objektif mendeteksi undangan telah terkunci permanen. Jika status masih `DRAFT` atau "Bisa Diedit", tombol tersebut secara otomatis disembunyikan.
 5. **Kalkulasi Kedaluwarsa Dinamis (On-The-Fly):** Nilai `expiresAt` akan tetap `null` di database sampai benar-benar di-hardcode. Untuk tampilan UI Admin, masa aktif dihitung dinamis menggunakan rumus `Tanggal Acara Utama + retention_invitation_days`.
 6. **Mekanisme Remote Klien (Restore 1-Klik) (`docs/admin/REMOTE_DAN_MANAJEMEN_KLIEN.md`):** Admin dapat meremote Dasbor Klien secara utuh tanpa meminta password melalui arsitektur *httpOnly Cookie Session Override (`lux_remote_client_id`)*. Server Action `startRemoteSession(clientId)` menetapkan cookie dan mengarahkan ke `/dashboard`. Callback `session` di `auth.ts` secara dinamis memetakan workspace ke profil klien target (`id`, `name`, `email`, `role`) sembari mempertahankan penanda hak akses Admin. Hal ini membuat seluruh ratusan API klien (`/api/client/**`) otomatis membaca dan mengelola data klien yang di-remote tanpa mengubah atau merusak JWT Admin asli. Saat klien di-remote, banner peringatan menyala merah di Dasbor Klien, dan Admin dapat melakukan *Restore 1-Klik* via `DELETE /api/admin/remote-session` untuk kembali ke singgasananya tanpa perlu login ulang. Referensi teknis dan diagram alir lengkap terdokumentasi di `docs/admin/REMOTE_DAN_MANAJEMEN_KLIEN.md`.
-7. **Arsitektur Tab Modular & Standar Desain Clean SaaS (Zero OS Emojis):** Seluruh antarmuka admin dipecah menjadi komponen modular terisolasi (`AdminOrdersTab`, `AdminClientsTab`, `AdminInvitationsTab`, `AdminCustomDomainsTab`, `AdminMonitoringTab`, `AdminDiagnostics`). Seluruh emoji OS bawaan (seperti 🔒, ✏️, 💾, 💳, 🌐, ⚡) dihapus total dan digantikan oleh ikon vektor SVG modern serta indikator titik (*subtle 1.5px dot indicators*).
-8. **Paginasi Server-Side Murni & Diagnostik Infrastruktur Live:** Seluruh pemuatan data transaksi (`/api/admin/orders`), klien (`/api/admin/users`), projek undangan (`/api/admin/invitations`), log audit staf (`/api/admin/audit-logs`), dan webhook (`/api/admin/webhooks`) menerapkan paginasi server-side murni dengan debounce search dan filter dinamis. Dilengkapi alat uji diagnostik live mandiri untuk handshake SMTP email transaksi dan pengukuran latensi cloud storage Cloudflare R2 / S3.
+7. **Arsitektur Tab Modular & Standar Desain Clean SaaS (Zero OS Emojis):** Seluruh antarmuka admin dipecah menjadi komponen modular terisolasi (`AdminOrdersTab`, `AdminClientsTab`, `AdminInvitationsTab`, `AdminCustomDomainsTab`, `AdminMonitoringTab`, `AdminFinanceTab`). Seluruh emoji OS bawaan (seperti 🔒, ✏️, 💾, 💳, 🌐, ⚡) dihapus total dan digantikan oleh ikon vektor SVG modern serta indikator titik (*subtle 1.5px dot indicators*).
+8. **Paginasi Server-Side Murni & Diagnostik Infrastruktur Live:** Seluruh pemuatan data transaksi (`/api/admin/orders`), klien (`/api/admin/users`), projek undangan (`/api/admin/invitations`), log audit staf (`/api/admin/audit-logs`), dan webhook (`/api/admin/webhooks`) menerapkan paginasi server-side murni dengan debounce search dan filter dinamis. Dilengkapi alat uji diagnostik live mandiri: pengujian handshake SMTP email transaksi terintegrasi langsung (*inline*) pada kartu pengaturan email, serta pengukuran latensi handshake Cloudflare R2 / S3 terpusat di tab Monitoring.
+9. **Role-Based Access Control (RBAC) 4-Tingkat Terisolasi:** Pembagian peran administrator ke dalam 4 tier ketat:
+   - `SUPER_ADMIN`: Pemilik sistem dengan akses mutlak ke seluruh 12 modul (termasuk snapshot database, finance ledger, tim, dan platform settings).
+   - `ADMIN`: Staf operasional harian (Ringkasan, Pesanan, Klien, Undangan, Portofolio, Custom Domain, Tema & Musik). Terkunci dari finance ledger, database snapshot, monitoring, dan tim.
+   - `FINANCE`: Staf akuntansi & kasir (Ringkasan Finansial, Pesanan & Transaksi, Klien, dan Finance Hub).
+   - `SUPPORT`: Tim customer care (Klien & Remote Dasbor, Projek Undangan & Buka Kunci Darurat, Custom Domain).
+   Modal pembuatan admin menyajikan *Pratinjau Hak Akses Menu Dinamis* yang langsung menampilkan daftar menu yang dapat diakses (hijau) vs menu yang terkunci (abu-abu gembok) secara instan saat role diubah.
+10. **Persistensi State Navigasi Tab Admin (Tab Memory Persistence):** Sinkronisasi 2-arah antara tab aktif, URL search params (`?tab=...&sub=...`), dan `localStorage` (`lux_admin_active_tab` & `lux_admin_settings_subtab`). Pengguna yang me-refresh halaman (F5) saat berada di sub-tab pengaturan atau monitoring tidak akan pernah terpental kembali ke tab ringkasan ("overview").
+11. **Pusat Pemantauan Kestabilan 60-Hari & Meteran Hardware (Monitoring Hub):**
+   - **Bilah Riwayat Uptime 60-Hari Interaktif:** Visualisasi ketersediaan layanan ala UptimeRobot/Vercel dengan 60 bar segmen harian responsif, tooltip latensi & status operasional, serta rasio uptime (99.98%).
+   - **Pemantauan Host RAM Fisik VPS:** Menampilkan kapasitas nyata RAM Host VPS (`os.totalmem()`, terpakai, sisa bebas dalam GB) serta footprint memori internal Node.js (heap & RSS) dengan indikator ambang batas beban.
+   - **Host OS Uptime:** Menghitung waktu nyala fisik server Linux VPS (`os.uptime()`) berdampingan dengan runtime Next.js.
+   - **Ringkasan Bersih Cloudflare R2 (2-Card Standard):** Menghilangkan redundansi kartu kuota gratis; hanya menyajikan 2 kartu ringkas: *Ukuran Terpakai* (bytes/KB/MB riil dari S3 API) dan *Sisa Bebas Biaya* (10.00 GB free tier bulanan).
 
 ---
 
@@ -556,4 +568,31 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - **Demo Meja Resepsionis & QR Scanner (`/demo/receptionist`):** Arsitektur *zero-database in-memory client demo*. Dilengkapi generator tiket QR kustom (Nama, Kategori VIP/Keluarga/Reguler, Pax, Nomor Meja), unduh QR PNG, modal preview layar HP untuk scan kamera, live camera scanner via `html5-qrcode`, audio beep chime, proteksi anti-double scan, daftar kehadiran tamu real-time, dan simulasi kunci layar PIN panitia (`1234`).
    - **Demo Buku Tamu Foto Digital (`/demo/sharemoment`):** Upload selfie & ucapan bertahap simulasi non-database, disimpan di `sessionStorage` lokal (`demo_guest_moments`) dan otomatis terpampang di posisi teratas pada galeri kenangan tamu.
    - **Demo Galeri Kenangan Tamu (`/demo/memories`):** Feed foto kenangan tamu berformat *Fluid Full-Width Masonry Grid* (`max-w-[1920px]`, 2 hingga 7 kolom adaptif), Instagram Story Highlights Rail di bagian atas feed, lencana khusus *"Momen Baru Diunggah (Anda)"* untuk foto hasil sesi user, Clean Modal Lightbox tanpa ikon panah mengambang (dukungan swipe sentuh di smartphone & tombol panah keyboard di desktop), serta tombol simulasi unduh ZIP resolusi asli.
+
+---
+
+## 17. Modul Eksekutif Finance & Pembukuan Kas Terpusat (`/admin?tab=finance`)
+1. **Prinsip Continuous Editorial Canvas & Zero AI Cards:**
+   - Menghilangkan tumpukan kartu box berbayangan tebal yang membuat mata lelah.
+   - Kanvas mengalir bebas card dengan garis hairline pembatas halus `border-stone-200/80`, tipografi serif hangat, dan pita metrik horizontal (*horizontal metric ribbon*) terpadu.
+   - Eliminasi total emoji OS bawaan (digantikan oleh vektor SVG murni dan dot indicator 1.5px).
+2. **Arsitektur Aliran Kas Pemasukan 100% Otomatis (Zero-Duplication):**
+   - Gross Revenue diperoleh secara deterministik dan non-duplikatif dari tabel `Order` berstatus `PAID`.
+   - Admin dilarang menginput omzet order secara manual untuk menjaga keaslian mutasi dan mencegah selisih kas.
+3. **Engine Grafik Interaktif Multi-Model 60 FPS Native SVG:**
+   - 3 Model: Batang Komparasi (*Dual Bar*), Kurva Kontinu (*Smooth Area*), dan Net Flow Baseline (*Rp 0 Break-Even Equilibrium*).
+   - 3 Timeframe: Harian (30 Hari), Bulanan (12 Bulan), dan Tahunan (Multi-Tahun).
+4. **Buku Kas Pengeluaran (OPEX) & Unggah Struk:**
+   - Pencatatan mutasi kas keluar dengan kategori, sumber dana (BCA, Mandiri, QRIS, Kas Tunai), nomor referensi, catatan memo, dan upload struk fisik (JPG, PNG, WebP, PDF) tersimpan di `/uploads/finance/receipts/`.
+   - Filter lengkap kategori, sumber dana, pencarian, dan ekspor streaming CSV.
+5. **Jadwal Tagihan Rutin Bulanan & 1-Klik Bayar:**
+   - Katalog tagihan rutin (Server VPS Hostinger, Internet IndiHome, Listrik PLN, lisensi aplikasi).
+   - Aksi 1-klik bayar yang membukukan tagihan langsung ke tabel `Expense` dengan referensi unik `REC-{ID}-{TAHUN}-{BULAN}` dan memutakhirkan agenda bulan berjalan secara instan.
+6. **Prosedur Audit-Safe Tutup Buku (Financial Closing):**
+   - Mengagregasi snapshot laba rugi ke model `FinancialClosing` dan mengunci seluruh mutasi kas pengeluaran bulan tersebut (`isLocked = true`).
+   - Mencegah input mutasi baru pada bulan yang telah dikunci. Pembukaan kunci (*reopen/unlock*) dilindungi otorisasi khusus `SUPER_ADMIN`.
+7. **Rekapitulasi Pajak PPh Final UMKM 0,5% (PP 55/2022):**
+   - Lembar kerja fiskal 12 bulan (Januari s.d. Desember) menghitung otomatis tarif 0,5% dari peredaran bruto omzet order.
+   - Pencatatan kode NTPN/BPN resmi hasil setoran di bank persepsi untuk kelengkapan pelaporan SPT Tahunan di DJP Online.
+
 
