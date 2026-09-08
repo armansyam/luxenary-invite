@@ -47,7 +47,7 @@ Sistem template undangan menggunakan arsitektur HTML multi-layer mandiri dengan 
 4. **Dillalucky (`themes/traditional/dillalucky.html`)**
    - Motif floral tradisional yang anggun dengan sentuhan pastel sakral.
 5. **Mayang (`themes/traditional/mayang.html`)**
-   - Sentuhan janur & motif adat Melayu-Jawa dengan tipografi serif elegan.
+   - Sentuhan janur & motif adat Melayu-Jawa dengan tipografi serif elegan dan dukungan penuh Dynamic Kraton Heritage Palette (`--jawa-gold`, `--jawa-gold-light`, `--jawa-dark`, `--jawa-card`) adaptif multi-tema selaras Candani.
 
 ### C. Modern Series (`themes/modern/`)
 1. **Wave (`themes/modern/wave.html`)**

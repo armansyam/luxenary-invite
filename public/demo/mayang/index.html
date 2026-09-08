@@ -189,13 +189,15 @@
       --bg-light: #faf7f2;
       --bg-dark: #1a1614;
       --text-dark: #2b2725;
-      --jawa-gold: #cfa859;
-      --jawa-gold-light: #f5e2b8;
-      --jawa-dark: #120c06;
-      --jawa-card: rgba(28, 19, 11, 0.94);
-      --jawa-border: rgba(207, 168, 89, 0.35);
-      --jawa-border-bright: rgba(207, 168, 89, 0.7);
-      --border-glow: 0 0 25px rgba(207, 168, 89, 0.25);
+      /* DYNAMIC JAVANESE KRATON PALETTE MAPPING */
+      --jawa-gold: var(--accent, var(--primary, #cfa859));
+      --jawa-gold-light: var(--bg-light, #f5e2b8);
+      --jawa-dark: var(--bg-dark, #120c06);
+      --jawa-card: color-mix(in srgb, var(--primary, #cfa859) 16%, var(--bg-dark, #120c06) 94%);
+      --jawa-card-deep: color-mix(in srgb, var(--bg-dark, #120c06) 95%, transparent);
+      --jawa-border: color-mix(in srgb, var(--accent, #cfa859) 35%, transparent);
+      --jawa-border-bright: color-mix(in srgb, var(--accent, #cfa859) 70%, transparent);
+      --border-glow: 0 0 25px color-mix(in srgb, var(--primary, #cfa859) 25%, transparent);
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -206,7 +208,11 @@
       color: #ffffff;
       overflow-x: hidden;
       width: 100%;
-      background-image: radial-gradient(circle at 50% 10%, rgba(41,26,12,0.85) 0%, rgba(18,12,6,0.98) 85%), url('/demo/mayang/background.webp?v=1788784393182');
+      background-image: radial-gradient(
+        circle at 50% 10%,
+        color-mix(in srgb, var(--primary, #cfa859) 25%, var(--bg-dark, #120c06) 85%) 0%,
+        color-mix(in srgb, var(--bg-dark, #120c06) 98%, transparent) 85%
+      ), url('/demo/mayang/background.webp?v=1788784393182');
       background-size: cover;
       background-position: center;
       background-attachment: fixed;
@@ -219,8 +225,8 @@
 
     /* ANIMATIONS & MICRO-INTERACTIONS */
     @keyframes wayangFloat {
-      0%, 100% { transform: translateY(0px) scale(1); filter: drop-shadow(0 6px 18px rgba(207,168,89,0.4)); }
-      50% { transform: translateY(-7px) scale(1.03); filter: drop-shadow(0 12px 28px rgba(207,168,89,0.65)); }
+      0%, 100% { transform: translateY(0px) scale(1); filter: drop-shadow(0 6px 18px var(--jawa-border)); }
+      50% { transform: translateY(-7px) scale(1.03); filter: drop-shadow(0 12px 28px var(--jawa-border-bright)); }
     }
 
     @keyframes keratonAura {
@@ -243,7 +249,11 @@
       position: fixed; inset: 0; z-index: 9999;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       text-align: center; padding: 2.5rem 1.5rem;
-      background: radial-gradient(circle at center, rgba(28,19,11,0.9) 0%, rgba(18,12,6,0.98) 100%), url('/demo/mayang/cover.webp?v=1788784393182') center/cover no-repeat;
+      background: radial-gradient(
+        circle at center,
+        color-mix(in srgb, var(--primary, #cfa859) 25%, var(--bg-dark, #120c06) 90%) 0%,
+        color-mix(in srgb, var(--bg-dark, #120c06) 98%, transparent) 100%
+      ), url('/demo/mayang/cover.webp?v=1788784393182') center/cover no-repeat;
       transition: transform 0.85s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.85s ease;
     }
     .cover-overlay.opened {
@@ -273,13 +283,13 @@
     
     .btn-buka-undangan {
       display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem;
-      padding: 0.95rem 2.8rem; background: linear-gradient(90deg, #cfa859 0%, #f5e2b8 50%, #cfa859 100%);
+      padding: 0.95rem 2.8rem; background: linear-gradient(90deg, var(--jawa-gold) 0%, var(--jawa-gold-light) 50%, var(--jawa-gold) 100%);
       background-size: 200% auto;
-      color: #120c06; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase;
-      border: none; border-radius: 50px; cursor: pointer; box-shadow: 0 6px 20px rgba(207,168,89,0.45);
+      color: var(--jawa-dark); font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase;
+      border: none; border-radius: 50px; cursor: pointer; box-shadow: 0 6px 20px color-mix(in srgb, var(--jawa-gold) 45%, transparent);
       transition: all 0.35s ease;
     }
-    .btn-buka-undangan:hover { background-position: right center; transform: translateY(-2px); box-shadow: 0 10px 25px rgba(207,168,89,0.65); }
+    .btn-buka-undangan:hover { background-position: right center; transform: translateY(-2px); box-shadow: 0 10px 25px color-mix(in srgb, var(--jawa-gold) 65%, transparent); }
 
     /* RESPONSIVE LAYOUT */
     .layout-wrapper { display: flex; width: 100%; min-height: 100vh; position: relative; }

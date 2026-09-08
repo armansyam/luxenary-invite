@@ -565,6 +565,8 @@ const INLINE_LIVE_EDITOR_SCRIPT = `
         if (p.primary) el.style.setProperty('--primary', p.primary);
         if (p.secondary) el.style.setProperty('--secondary', p.secondary);
         if (p.accent) el.style.setProperty('--accent', p.accent);
+        if (p.bgLight) el.style.setProperty('--bg-light', p.bgLight);
+        if (p.bgDark) el.style.setProperty('--bg-dark', p.bgDark);
       });
     }
   });

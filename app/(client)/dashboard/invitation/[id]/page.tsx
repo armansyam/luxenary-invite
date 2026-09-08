@@ -125,6 +125,7 @@ export default function EditInvitation() {
   const [upgrading, setUpgrading] = useState(false);
   const [upgradeError, setUpgradeError] = useState<string | null>(null);
   const [isDeploying, setIsDeploying] = useState(false);
+  const [showLivePalette, setShowLivePalette] = useState(false);
   const [studioNotification, setStudioNotification] = useState<{ type: "error" | "success"; message: string } | null>(null);
 
   useEffect(() => {
@@ -549,13 +550,13 @@ export default function EditInvitation() {
   };
 
   const applyPaletteToIframe = useCallback((paletteId: string) => {
-    const palTokens: Record<string, { primary: string; secondary: string; accent: string; bgLight: string }> = {
-      champagne: { primary: "#a67c52", secondary: "#7a5430", accent: "#b38b4d", bgLight: "#faf7f2" },
-      emerald: { primary: "#1b4332", secondary: "#2d6a4f", accent: "#c9a227", bgLight: "#f2f7f4" },
-      burgundy: { primary: "#54192b", secondary: "#7a253f", accent: "#d4a373", bgLight: "#faf2f4" },
-      sage: { primary: "#4a5d4e", secondary: "#627d68", accent: "#b89f81", bgLight: "#f1f5f2" },
-      terracotta: { primary: "#8c583a", secondary: "#a86b47", accent: "#c99a57", bgLight: "#fdf8f4" },
-      monochrome: { primary: "#262626", secondary: "#404040", accent: "#737373", bgLight: "#f8f8f8" },
+    const palTokens: Record<string, { primary: string; secondary: string; accent: string; bgLight: string; bgDark: string }> = {
+      champagne: { primary: "#a67c52", secondary: "#7a5430", accent: "#b38b4d", bgLight: "#faf7f2", bgDark: "#1a1614" },
+      emerald: { primary: "#1b4332", secondary: "#2d6a4f", accent: "#c9a227", bgLight: "#f2f7f4", bgDark: "#0b1c14" },
+      burgundy: { primary: "#54192b", secondary: "#7a253f", accent: "#d4a373", bgLight: "#faf2f4", bgDark: "#1c070e" },
+      sage: { primary: "#4a5d4e", secondary: "#627d68", accent: "#b89f81", bgLight: "#f1f5f2", bgDark: "#141c16" },
+      terracotta: { primary: "#8c583a", secondary: "#a86b47", accent: "#c99a57", bgLight: "#fdf8f4", bgDark: "#1c120c" },
+      monochrome: { primary: "#262626", secondary: "#404040", accent: "#737373", bgLight: "#f8f8f8", bgDark: "#121212" },
     };
     const t = palTokens[paletteId] || palTokens.champagne;
 
@@ -570,6 +571,8 @@ export default function EditInvitation() {
           el.style.setProperty("--primary", t.primary);
           el.style.setProperty("--secondary", t.secondary);
           el.style.setProperty("--accent", t.accent);
+          el.style.setProperty("--bg-light", t.bgLight);
+          el.style.setProperty("--bg-dark", t.bgDark);
         });
       }
     } catch {}
@@ -1284,6 +1287,27 @@ export default function EditInvitation() {
 
         {activeStudioTab === "live" && (
           <div className="flex items-center justify-end gap-2 pr-1">
+            <button
+              type="button"
+              onClick={() => setShowLivePalette((prev) => !prev)}
+              className={`px-3 py-1.5 rounded-xl border text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer ${
+                showLivePalette
+                  ? "bg-stone-900 text-white border-stone-900 shadow-xs"
+                  : "bg-white text-stone-700 border-stone-200 hover:border-stone-300 hover:bg-stone-50"
+              }`}
+              title="Sesuaikan Palet Warna"
+            >
+              <span
+                className="w-2.5 h-2.5 rounded-full border border-black/10 flex-shrink-0"
+                style={{ backgroundColor: selectedPaletteObj.hex }}
+              />
+              <span className="hidden sm:inline">Palet:</span>
+              <span className="font-bold">{selectedPaletteObj.name}</span>
+              <svg className={`w-3 h-3 transition-transform ${showLivePalette ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
             <div className="flex items-center bg-stone-100 p-1 rounded-xl border border-stone-200 text-xs">
               <button
                 type="button"
@@ -1315,7 +1339,7 @@ export default function EditInvitation() {
                 }
               }}
               title="Muat Ulang Canvas"
-              className="p-2 bg-stone-100 hover:bg-stone-200 border border-stone-200 rounded-xl text-stone-700 transition"
+              className="p-2 bg-stone-100 hover:bg-stone-200 border border-stone-200 rounded-xl text-stone-700 transition cursor-pointer"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -1327,60 +1351,72 @@ export default function EditInvitation() {
 
       {activeStudioTab === "live" ? (
         <div className="space-y-4">
-          {/* Palet Warna Sync Bar di Atas Live View */}
-          <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-stone-200 shadow-xs">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-              <div>
-                <label className="block text-xs font-bold text-stone-800 uppercase tracking-wider">
-                  Pilih Nuansa Warna Utama:
-                </label>
-                <p className="text-[11px] text-stone-500 mt-0.5">
-                  Ubah nuansa warna secara instan tanpa perlu berpindah tab. Warna otomatis tersinkronisasi dua arah dengan form data undangan.
-                </p>
-              </div>
-              {isDirty.sec1 && (
+          {/* Palet Warna Sync Bar di Atas Live View (Collapsed by Default) */}
+          {showLivePalette && (
+            <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-stone-200 shadow-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                <div>
+                  <label className="block text-xs font-bold text-stone-800 uppercase tracking-wider">
+                    Pilih Nuansa Warna Utama:
+                  </label>
+                  <p className="text-[11px] text-stone-500 mt-0.5">
+                    Ubah nuansa warna secara instan tanpa perlu berpindah tab. Warna otomatis tersinkronisasi dua arah dengan form data undangan.
+                  </p>
+                </div>
                 <div className="flex items-center gap-2 self-start sm:self-auto">
-                  <span className="text-[11px] font-medium text-amber-800 bg-amber-50 border border-amber-200/80 px-2.5 py-1 rounded-full flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse"></span>
-                    Palet belum disimpan
-                  </span>
+                  {isDirty.sec1 && (
+                    <>
+                      <span className="text-[11px] font-medium text-amber-800 bg-amber-50 border border-amber-200/80 px-2.5 py-1 rounded-full flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse"></span>
+                        Palet belum disimpan
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => saveSection("sec1")}
+                        disabled={saving}
+                        className="px-3 py-1 bg-stone-900 hover:bg-stone-800 text-white rounded-lg text-xs font-semibold transition"
+                      >
+                        {saving && savingSec === "sec1" ? "Menyimpan..." : "Simpan Palet"}
+                      </button>
+                    </>
+                  )}
                   <button
                     type="button"
-                    onClick={() => saveSection("sec1")}
-                    disabled={saving}
-                    className="px-3 py-1 bg-stone-900 hover:bg-stone-800 text-white rounded-lg text-xs font-semibold transition"
+                    onClick={() => setShowLivePalette(false)}
+                    className="p-1 rounded-lg text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition"
+                    title="Tutup Palet"
                   >
-                    {saving && savingSec === "sec1" ? "Menyimpan..." : "Simpan Palet"}
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
                   </button>
                 </div>
-              )}
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {COLOR_PALETTES.map((pal) => {
-                const isSelected = currentPalette === pal.id;
-                return (
-                  <div
-                    key={pal.id}
-                    onClick={() => handleSelectPalette(pal.id)}
-                    className={`p-3 rounded-xl border cursor-pointer flex items-center gap-3 transition ${
-                      isSelected
-                        ? "border-amber-800 bg-amber-50/50 ring-2 ring-amber-800/20 shadow-xs"
-                        : "border-stone-200 hover:border-stone-300 bg-white"
-                    }`}
-                  >
-                    <span
-                      className="w-7 h-7 rounded-full shadow-inner border border-black/10 flex-shrink-0"
-                      style={{ backgroundColor: pal.hex }}
-                    ></span>
-                    <div className="min-w-0">
-                      <h4 className="text-xs font-bold text-stone-900 truncate">{pal.name}</h4>
-                      <p className="text-[10px] text-stone-500 line-clamp-1">{pal.desc}</p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {COLOR_PALETTES.map((pal) => {
+                  const isSelected = currentPalette === pal.id;
+                  return (
+                    <div
+                      key={pal.id}
+                      onClick={() => handleSelectPalette(pal.id)}
+                      className={`p-3 rounded-xl border cursor-pointer flex items-center gap-3 transition ${
+                        isSelected
+                          ? "border-amber-800 bg-amber-50/50 ring-2 ring-amber-800/20 shadow-xs"
+                          : "border-stone-200 hover:border-stone-300 bg-white"
+                      }`}
+                    >
+                      <span
+                        className="w-7 h-7 rounded-full shadow-inner border border-black/10 flex-shrink-0"
+                        style={{ backgroundColor: pal.hex }}
+                      ></span>
+                      <div className="min-w-0">
+                        <h4 className="text-xs font-bold text-stone-900 truncate">{pal.name}</h4>
+                        <p className="text-[10px] text-stone-500 line-clamp-1">{pal.desc}</p>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* ==========================================================================
              LIVE VISUAL INLINE EDITOR CANVAS (CANVA / NOTION STYLE)

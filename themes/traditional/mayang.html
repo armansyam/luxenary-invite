@@ -36,13 +36,15 @@
       --bg-light: {{colorBgLight}};
       --bg-dark: {{colorBgDark}};
       --text-dark: {{colorTextDark}};
-      --jawa-gold: #cfa859;
-      --jawa-gold-light: #f5e2b8;
-      --jawa-dark: #120c06;
-      --jawa-card: rgba(28, 19, 11, 0.94);
-      --jawa-border: rgba(207, 168, 89, 0.35);
-      --jawa-border-bright: rgba(207, 168, 89, 0.7);
-      --border-glow: 0 0 25px rgba(207, 168, 89, 0.25);
+      /* DYNAMIC JAVANESE KRATON PALETTE MAPPING */
+      --jawa-gold: var(--accent, var(--primary, #cfa859));
+      --jawa-gold-light: var(--bg-light, #f5e2b8);
+      --jawa-dark: var(--bg-dark, #120c06);
+      --jawa-card: color-mix(in srgb, var(--primary, #cfa859) 16%, var(--bg-dark, #120c06) 94%);
+      --jawa-card-deep: color-mix(in srgb, var(--bg-dark, #120c06) 95%, transparent);
+      --jawa-border: color-mix(in srgb, var(--accent, #cfa859) 35%, transparent);
+      --jawa-border-bright: color-mix(in srgb, var(--accent, #cfa859) 70%, transparent);
+      --border-glow: 0 0 25px color-mix(in srgb, var(--primary, #cfa859) 25%, transparent);
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -53,7 +55,11 @@
       color: #ffffff;
       overflow-x: hidden;
       width: 100%;
-      background-image: radial-gradient(circle at 50% 10%, rgba(41,26,12,0.85) 0%, rgba(18,12,6,0.98) 85%), url('{{homePhotoUrl}}');
+      background-image: radial-gradient(
+        circle at 50% 10%,
+        color-mix(in srgb, var(--primary, #cfa859) 25%, var(--bg-dark, #120c06) 85%) 0%,
+        color-mix(in srgb, var(--bg-dark, #120c06) 98%, transparent) 85%
+      ), url('{{homePhotoUrl}}');
       background-size: cover;
       background-position: center;
       background-attachment: fixed;
@@ -66,8 +72,8 @@
 
     /* ANIMATIONS & MICRO-INTERACTIONS */
     @keyframes wayangFloat {
-      0%, 100% { transform: translateY(0px) scale(1); filter: drop-shadow(0 6px 18px rgba(207,168,89,0.4)); }
-      50% { transform: translateY(-7px) scale(1.03); filter: drop-shadow(0 12px 28px rgba(207,168,89,0.65)); }
+      0%, 100% { transform: translateY(0px) scale(1); filter: drop-shadow(0 6px 18px var(--jawa-border)); }
+      50% { transform: translateY(-7px) scale(1.03); filter: drop-shadow(0 12px 28px var(--jawa-border-bright)); }
     }
 
     @keyframes keratonAura {
@@ -90,7 +96,11 @@
       position: fixed; inset: 0; z-index: 9999;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       text-align: center; padding: 2.5rem 1.5rem;
-      background: radial-gradient(circle at center, rgba(28,19,11,0.9) 0%, rgba(18,12,6,0.98) 100%), url('{{landingCoverUrl}}') center/cover no-repeat;
+      background: radial-gradient(
+        circle at center,
+        color-mix(in srgb, var(--primary, #cfa859) 25%, var(--bg-dark, #120c06) 90%) 0%,
+        color-mix(in srgb, var(--bg-dark, #120c06) 98%, transparent) 100%
+      ), url('{{landingCoverUrl}}') center/cover no-repeat;
       transition: transform 0.85s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.85s ease;
     }
     .cover-overlay.opened {
@@ -120,13 +130,13 @@
     
     .btn-buka-undangan {
       display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem;
-      padding: 0.95rem 2.8rem; background: linear-gradient(90deg, #cfa859 0%, #f5e2b8 50%, #cfa859 100%);
+      padding: 0.95rem 2.8rem; background: linear-gradient(90deg, var(--jawa-gold) 0%, var(--jawa-gold-light) 50%, var(--jawa-gold) 100%);
       background-size: 200% auto;
-      color: #120c06; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase;
-      border: none; border-radius: 50px; cursor: pointer; box-shadow: 0 6px 20px rgba(207,168,89,0.45);
+      color: var(--jawa-dark); font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.2em; text-transform: uppercase;
+      border: none; border-radius: 50px; cursor: pointer; box-shadow: 0 6px 20px color-mix(in srgb, var(--jawa-gold) 45%, transparent);
       transition: all 0.35s ease;
     }
-    .btn-buka-undangan:hover { background-position: right center; transform: translateY(-2px); box-shadow: 0 10px 25px rgba(207,168,89,0.65); }
+    .btn-buka-undangan:hover { background-position: right center; transform: translateY(-2px); box-shadow: 0 10px 25px color-mix(in srgb, var(--jawa-gold) 65%, transparent); }
 
     /* RESPONSIVE LAYOUT */
     .layout-wrapper { display: flex; width: 100%; min-height: 100vh; position: relative; }
@@ -137,7 +147,7 @@
     }
     .sidebar-desktop::after {
       content: ''; position: absolute; inset: 0;
-      background: linear-gradient(to top, rgba(18,12,6,0.96) 0%, rgba(18,12,6,0.3) 50%, transparent 100%);
+      background: linear-gradient(to top, var(--jawa-dark) 0%, color-mix(in srgb, var(--jawa-dark) 30%, transparent) 50%, transparent 100%);
     }
     .sidebar-desktop-content {
       position: absolute; bottom: 4rem; left: 3.5rem; right: 3.5rem; z-index: 20; color: #fff;
@@ -180,7 +190,7 @@
       box-sizing: border-box;
       position: relative;
       text-align: center;
-      border-bottom: 1px solid rgba(207, 168, 89, 0.18);
+      border-bottom: 1px solid var(--jawa-border);
     }
 
     .sec-content-box {
@@ -225,7 +235,7 @@
     .couple-ig {
       display: inline-flex; align-items: center; gap: 0.4rem; margin-top: 0.8rem;
       font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.78rem; color: var(--jawa-gold); text-decoration: none; font-weight: 600;
-      padding: 0.4rem 1rem; border-radius: 50px; background: rgba(207,168,89,0.1); border: 1px solid var(--jawa-border);
+      padding: 0.4rem 1rem; border-radius: 50px; background: color-mix(in srgb, var(--jawa-gold) 10%, transparent); border: 1px solid var(--jawa-border);
     }
 
     /* COUNTDOWN */
@@ -241,9 +251,9 @@
       display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.8rem 2.2rem;
       border: 1px solid var(--jawa-gold); border-radius: 50px; color: var(--jawa-gold-light);
       font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase;
-      text-decoration: none; transition: all 0.3s; background: rgba(28,19,11,0.6);
+      text-decoration: none; transition: all 0.3s; background: color-mix(in srgb, var(--jawa-dark) 60%, transparent);
     }
-    .btn-cal:hover { background: var(--jawa-gold); color: #120c06; transform: translateY(-2px); }
+    .btn-cal:hover { background: var(--jawa-gold); color: var(--jawa-dark); transform: translateY(-2px); }
 
     /* EVENTS UNIFIED CONTAINER STYLING */
     .events-unified-container { display: flex; flex-direction: column; gap: 1.5rem; width: 100%; max-width: 440px; }
@@ -269,7 +279,7 @@
       font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase;
       text-decoration: none; transition: all 0.3s;
     }
-    .btn-map-outline:hover { background: var(--jawa-gold); color: #120c06; }
+    .btn-map-outline:hover { background: var(--jawa-gold); color: var(--jawa-dark); }
 
     /* JOURNEY / STORY STYLING */
     .journey-card-container {
@@ -277,13 +287,13 @@
       padding: 2rem 1.5rem; text-align: left; box-shadow: var(--border-glow); width: 100%; max-width: 440px;
     }
     .journey-chapters { display: flex; flex-direction: column; gap: 1.5rem; }
-    .story-chapter-block { padding-bottom: 0.8rem; border-bottom: 1px dashed rgba(207,168,89,0.25); }
+    .story-chapter-block { padding-bottom: 0.8rem; border-bottom: 1px dashed var(--jawa-border); }
     .story-chapter-block:last-child { border-bottom: none; }
     .sc-label { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.65rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--jawa-gold); font-weight: 600; display: block; margin-bottom: 0.2rem; }
     .sc-title { font-size: 1.25rem; color: var(--jawa-gold-light); font-family: 'Cinzel Decorative', serif; margin-bottom: 0.4rem; }
     .sc-desc { font-size: 0.84rem; color: rgba(255,255,255,0.85); line-height: 1.7; font-style: italic; }
     .journey-footer { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem; }
-    .jf-line { flex: 1; height: 1px; background: rgba(207,168,89,0.3); }
+    .jf-line { flex: 1; height: 1px; background: var(--jawa-border); }
     .jf-signature { font-family: 'Pinyon Script', cursive; font-size: 2rem; color: var(--jawa-gold); }
 
     /* GALLERY PUZZLE GRID & LIGHTBOX */
@@ -294,7 +304,7 @@
       font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase;
       cursor: pointer; background: transparent; transition: all 0.3s;
     }
-    .btn-show-gallery:hover, .btn-outline-box:hover { background: var(--jawa-gold); color: #120c06; }
+    .btn-show-gallery:hover, .btn-outline-box:hover { background: var(--jawa-gold); color: var(--jawa-dark); }
 
     /* DIGITAL GIFT & BANK CARDS */
     .bank-card {
@@ -305,11 +315,11 @@
     .bank-owner { font-size: 0.78rem; color: rgba(255,255,255,0.75); display: block; margin-bottom: 0.6rem; font-style: italic; }
     .bank-row {
       display: flex; align-items: center; justify-content: space-between;
-      background: rgba(18,12,6,0.85); border: 1px solid var(--jawa-border); border-radius: 10px; padding: 0.7rem 1rem;
+      background: color-mix(in srgb, var(--jawa-dark) 85%, transparent); border: 1px solid var(--jawa-border); border-radius: 10px; padding: 0.7rem 1rem;
     }
     .bank-number { font-family: monospace; font-size: 1.05rem; color: #ffffff; letter-spacing: 0.08em; }
     .btn-copy {
-      background: var(--jawa-gold); color: #120c06; border: none; padding: 0.45rem 1rem;
+      background: var(--jawa-gold); color: var(--jawa-dark); border: none; padding: 0.45rem 1rem;
       border-radius: 6px; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 0.7rem; cursor: pointer; letter-spacing: 0.1em; text-transform: uppercase;
     }
 
@@ -318,12 +328,12 @@
     .form-row { margin-bottom: 1rem; }
     .form-lbl { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.15em; color: var(--jawa-gold-light); display: block; margin-bottom: 0.3rem; }
     .form-in, .form-sel, .form-ta {
-      width: 100%; padding: 0.8rem 1rem; background: rgba(18,12,6,0.85); border: 1px solid var(--jawa-border);
+      width: 100%; padding: 0.8rem 1rem; background: color-mix(in srgb, var(--jawa-dark) 85%, transparent); border: 1px solid var(--jawa-border);
       border-radius: 10px; color: #ffffff; font-size: 0.85rem; outline: none; font-family: 'Plus Jakarta Sans', sans-serif;
     }
     .btn-rsvp-submit {
-      width: 100%; padding: 1rem; background: linear-gradient(90deg, #cfa859 0%, #f5e2b8 50%, #cfa859 100%);
-      color: #120c06; border: none; border-radius: 50px; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 0.8rem;
+      width: 100%; padding: 1rem; background: linear-gradient(90deg, var(--jawa-gold) 0%, var(--jawa-gold-light) 50%, var(--jawa-gold) 100%);
+      color: var(--jawa-dark); border: none; border-radius: 50px; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 0.8rem;
       letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; transition: all 0.3s;
     }
     .wishes-list { margin-top: 1.5rem; max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.9rem; width: 100%; max-width: 440px; }
@@ -347,7 +357,7 @@
     /* DOCK */
     .bottom-dock {
       position: fixed; bottom: 20px; left: 50%; transform: translate3d(-50%, 0, 0); z-index: 100;
-      background: rgba(28, 19, 11, 0.95); border: 1px solid var(--jawa-border); border-radius: 50px;
+      background: color-mix(in srgb, var(--jawa-card) 95%, transparent); border: 1px solid var(--jawa-border); border-radius: 50px;
       padding: 0.5rem 1.2rem; display: flex; gap: 1.4rem; backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
       box-shadow: 0 10px 30px rgba(0,0,0,0.6); max-width: 440px; width: calc(100% - 30px); justify-content: space-around;
       transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.42s cubic-bezier(0.16, 1, 0.3, 1);
@@ -373,7 +383,7 @@
       box-sizing: border-box;
       text-align: center;
       padding: 4rem 1.5rem 6.5rem;
-      background: #120f0b;
+      background: var(--jawa-dark);
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
@@ -391,7 +401,7 @@
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(18,15,11,0.6) 50%, rgba(18,15,11,0.95) 100%);
+      background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, color-mix(in srgb, var(--jawa-dark) 60%, transparent) 50%, var(--jawa-dark) 100%);
       pointer-events: none;
       z-index: 1;
     }
@@ -409,10 +419,10 @@
   <div id="coverOverlay" class="cover-overlay">
     <!-- GUNUNGAN WAYANG VECTOR -->
     <svg class="gunungan-hero" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M32 2C32 2 12 18 10 38C8 58 32 62 32 62C32 62 56 58 54 38C52 18 32 2 32 2Z" stroke="#cfa859" stroke-width="2.5" stroke-linejoin="round"/>
-      <path d="M32 14V50" stroke="#cfa859" stroke-width="2" stroke-linecap="round"/>
-      <path d="M22 28C26 34 38 34 42 28" stroke="#cfa859" stroke-width="1.5"/>
-      <path d="M20 40C26 46 38 46 44 40" stroke="#cfa859" stroke-width="1.5"/>
+      <path d="M32 2C32 2 12 18 10 38C8 58 32 62 32 62C32 62 56 58 54 38C52 18 32 2 32 2Z" stroke="var(--jawa-gold)" stroke-width="2.5" stroke-linejoin="round"/>
+      <path d="M32 14V50" stroke="var(--jawa-gold)" stroke-width="2" stroke-linecap="round"/>
+      <path d="M22 28C26 34 38 34 42 28" stroke="var(--jawa-gold)" stroke-width="1.5"/>
+      <path d="M20 40C26 46 38 46 44 40" stroke="var(--jawa-gold)" stroke-width="1.5"/>
     </svg>
 
     <p class="cover-badge">PAWIKAHAN AGENG &bull; ADAT JAWA</p>
