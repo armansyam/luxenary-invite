@@ -962,8 +962,8 @@ function CheckoutContent() {
                   </span>
                   <div className="flex items-center gap-3">
                     <span className="text-white font-bold">{planData.name}</span>
-                    {!uploadedProofUrl && !qrData && (!currentOrderType || currentOrderType === "NEW") && (
-                      <a href="/packages" className="text-[10px] bg-white/10 hover:bg-white/20 text-stone-300 px-2 py-0.5 rounded-full transition">Ubah</a>
+                    {!uploadedProofUrl && !qrData && (!currentOrderType || currentOrderType === "NEW" || currentOrderType === "NEW_INVITATION") && (
+                      <Link href="/packages" className="text-[10px] bg-white/10 hover:bg-white/20 text-stone-300 px-2 py-0.5 rounded-full transition">Ubah</Link>
                     )}
                   </div>
                 </div>

@@ -14,13 +14,14 @@ export default function PackageSelectionPage() {
   const [platformName, setPlatformName] = useState("");
 
   useEffect(() => {
-    // 1. Cek status keaktifan order: Jika user punya order PENDING aktif, tolak akses dan lempar ke kasir
+    // 1. Cek status: HANYA redirect jika user SUDAH MEMILIKI UNDANGAN atau SUDAH BAYAR LUNAS (PAID)
+    // Klien dengan order PENDING tetap bebas mengakses halaman ini untuk melihat dan mengubah pilihan paket
     if (status === "authenticated") {
       fetch("/api/client/onboarding-state", { cache: "no-store" })
         .then((res) => res.json())
         .then((data) => {
-          if (data && data.redirectUrl && data.redirectUrl !== "/packages") {
-            router.replace(data.redirectUrl);
+          if (data && (data.step === "COMPLETED" || data.step === "PAID_NEED_SETUP")) {
+            router.replace(data.redirectUrl || "/dashboard");
           }
         })
         .catch(() => {});
