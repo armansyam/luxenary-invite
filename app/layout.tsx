@@ -60,6 +60,19 @@ export async function generateMetadata(): Promise<Metadata> {
       description: desc,
       images: ["/assets/brand/og-banner.png"],
     },
+    keywords: [
+      brandName,
+      "Luxvite",
+      "luxvite.id",
+      "Undangan Pernikahan Digital",
+      "Undangan Digital",
+      "Wedding Invitation Digital",
+      "Undangan Website",
+      "Undangan Online",
+    ],
+    alternates: {
+      canonical: siteUrl,
+    },
     icons: {
       icon: [
         { url: `/assets/brand/favicon.png?t=${Date.now()}`, type: "image/png" },
@@ -111,6 +124,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <meta name="color-scheme" content="only light" />
         <meta name="supported-color-schemes" content="only light" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              "name": "Luxvite",
+              "alternateName": ["Luxvite Invite", "Luxvite.id", "Luxenary"],
+              "url": "https://luxvite.id",
+              "description": "Platform Undangan Pernikahan Digital Elegan, Hangat & Berkelas",
+              "potentialAction": {
+                "@type": "SearchAction",
+                "target": "https://luxvite.id/demo?q={search_term_string}",
+                "query-input": "required name=search_term_string",
+              },
+            }),
+          }}
+        />
       </head>
       <body
         className="min-h-full flex flex-col bg-[#faf8f5] text-[#2d2c2a]"

@@ -259,6 +259,8 @@ Luxenary-Invite/
 │   ├── onboarding/            # Flow setup awal pasca bayar
 │   ├── packages/              # Halaman paket harga
 │   ├── portfolio/             # Galeri portofolio publik terisolasi
+│   ├── robots.ts              # SEO Googlebot crawler rules
+│   ├── sitemap.ts             # Dynamic XML sitemap generator
 │   ├── page.tsx               # Landing page utama
 │   └── globals.css
 ├── lib/

@@ -115,8 +115,10 @@
 │   ├── portfolio/            # Portofolio undangan selesai terisolasi
 │   ├── 403/                  # Halaman forbidden
 │   ├── privacy/terms/refund/contact/ # Legal & public support pages
-│   ├── layout.tsx            # Root layout
-│   ├── page.tsx              # Landing page utama (luxenary.id)
+│   ├── robots.ts             # SEO Googlebot crawler guidelines
+│   ├── sitemap.ts            # Dynamic XML Sitemap generator (static & themes)
+│   ├── layout.tsx            # Root layout (JSON-LD WebSite schema & dynamic metadata)
+│   ├── page.tsx              # Landing page utama
 │   └── globals.css           # Global CSS
 │
 ├── lib/                      # Business logic & service layer
