@@ -63,8 +63,10 @@ Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model 
    └─────────────────────────────────────┴──────────────────────────┘
      │
      ▼
-4. ONBOARDING (/onboarding)
-   Setup awal: pilih subdomain, isi nama pengantin
+4. ONBOARDING & SETUP IDEMPOTEN (/dashboard/setup)
+   - Setup awal: nama mempelai, tanggal acara, dan tema perdana
+   - Idempotent Setup & Auto-Bypass: Jika klien sudah memiliki draft terdaftar, sistem langsung mengarahkan ke Studio Undangan tanpa form ganda atau error bentrokan orderId.
+   - Lewati Setup (Atur Nanti): Membuat draft netral seketika untuk langsung melompat ke Studio.
      │
      ▼
 5. STUDIO UNDANGAN (/dashboard/invitation/[id])

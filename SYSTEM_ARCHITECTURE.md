@@ -537,16 +537,34 @@ Khusus SUPER_ADMIN / ADMIN untuk intervensi operasional langsung dari dashboard:
 
 ---
 
-## 7. SISTEM SUBDOMAIN
+## 7. SISTEM SUBDOMAIN & MANAJEMEN ONBOARDING
 
-**Dual-check ketersediaan subdomain:**
+### 7.1. Alur Idempotensi Onboarding Pasca-Bayar
+- **Pemeriksaan Draft (`existingDraft`):** Saat klien mengakses `/dashboard/setup`, sistem melakukan `fetch('/api/client/onboarding-state')`. Jika klien sudah memiliki draft terdaftar dari order aktifnya, sistem otomatis membypass form kosong dan langsung mengarahkan klien ke Studio Undangan (`/dashboard/invitation/[id]`).
+- **Operasi Idempoten Backend:** Di `app/api/client/invitations/create/route.ts`, sistem memeriksa ketersediaan draft sebelum melakukan operasi DB:
+  - Jika draft sudah ada: mengeksekusi `prisma.invitation.update()` untuk memperbarui tema/nama tanpa membuat baris baru.
+  - Jika belum ada: mengeksekusi `prisma.invitation.create()`.
+- **Target-Specific P2002 Catch (Anti-False Claim):** Error database `P2002` dipilah secara presisi:
+  - `target.includes('subdomain')`: Menampilkan pesan bentrok subdomain asli.
+  - `target.includes('orderId')`: Melakukan *self-healing* pemulihan data dengan mengembalikan `invitationId` draft yang sudah ada.
+  - `target.includes('invitationSlug')`: Menambahkan sufiks unik otomatis.
 
+### 7.2. Dual-Check Ketersediaan Subdomain
 1. **Setup Awal (Onboarding):** `POST /api/client/invitations/create` → cek `prisma.invitation.findUnique({ where: { subdomain } })`
 2. **Settings Page:** `GET /api/client/subdomain/check?subdomain=xxx` → cek ketersediaan real-time
 
-**Recycle Subdomain:** Jika subdomain sudah kedaluwarsa (acara lewat 7 hari), sistem otomatis mengosongkan kolom `subdomain` dari pemilik lama dan mengizinkan klien baru mengambilnya.
+### 7.3. Subdomain Monitor & Live Inspector (Admin Panel)
+- **Endpoint Terpusat:** `GET /api/admin/subdomains`
+  - Agregasi metrik KPI real-time: `totalActive`, `totalPublished`, `totalDraft`, `totalExpired`.
+  - **Live Subdomain Inspector (`?search=xxx`):** Memvalidasi status ketersediaan subdomain instan:
+    - *Available*: Bebas diklaim oleh calon klien baru.
+    - *Occupied*: Menampilkan kartu pemilik lengkap (Klien, Email, WhatsApp, Mempelai, Status Undangan, Tanggal Acara).
+    - *Reserved*: Terlindungi sistem (CDN, Auth, Admin, Receptionist).
+  - **Daftar Tabel Subdomain:** Menampilkan seluruh subdomain aktif di sistem lengkap dengan URL langsung dan tombol salin.
 
-**PENTING:** Kolom `subdomain` di DB ber-constraint `@unique`. Race condition ditangani via constraint DB + try/catch `P2002`.
+### 7.4. Recycle Subdomain Kedaluwarsa
+- **Endpoint:** `POST /api/admin/subdomains/recycle`
+- **Mekanisme:** Jika acara telah melewati masa tenggang (*grace period*, default 7 hari), admin dapat melakukan daur ulang 1-klik untuk melepaskan `subdomain` menjadi `null`, sehingga nama tersebut kembali ke pool umum tanpa menghapus data acara klien.
 
 ---
 

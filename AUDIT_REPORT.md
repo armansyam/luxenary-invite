@@ -10,16 +10,22 @@
 
 ---
 
-## STATUS RESOLUSI (Update 8 September 2026)
+## STATUS RESOLUSI (Update 8 September 2026 — Malam)
 
-| Kategori | Status | Skor |
+| Kategori | Status | Keterangan |
 |---|---|---|
-| **TypeScript (`tsc --noEmit`)** | ✅ CLEAN | 100/100 |
-| **ESLint** | ✅ CLEAN | 100/100 |
-| **Dead Code** | ✅ CLEAN | 100/100 |
-| **File Sampah** | ✅ CLEAN | 100/100 |
-| **Migrasi DB** | ✅ SYNCED | 100/100 |
-| **Middleware & Routing** | ✅ SOLID | 100/100 |
+| **Idempotensi Setup (`create/route.ts`)** | ✅ RESOLVED | Operasi upsert idempoten, penanganan P2002 spesifik kolom (`orderId` vs `subdomain`). |
+| **Bypass Otomatis (`setup/page.tsx`)** | ✅ RESOLVED | Klien yang telah memiliki draft otomatis diarahkan langsung ke Studio Undangan. |
+| **Subdomain Monitor & Inspector Admin** | ✅ DEPLOYED | Endpoint `GET /api/admin/subdomains`, 3 kartu KPI real-time, Live Inspector, tabel subdomain. |
+| **TypeScript (`tsc --noEmit`)** | ✅ CLEAN | Exit Code 0, 0 error. |
+| **ESLint** | ✅ CLEAN | 0 error. |
+| **Migrasi & Skema Database** | ✅ SYNCED | Relasi `@unique` pada `orderId` dan `subdomain` diverifikasi aman. |
+
+### 🚨 Catatan Investigasi Khusus Runtime (8 September 2026)
+Pada pengujian runtime alur pendaftaran, ditemukan kelemahan fatal penanganan *re-entry* / klik ganda pada `/dashboard/setup`:
+- **Akar Masalah:** Klik tombol *"Lewati Setup"* membuat record DRAFT. Saat form disubmit ulang, backend mengeksekusi `prisma.invitation.create` dengan `orderId` yang sama sehingga PostgreSQL menolak dengan error `P2002`. Blok *catch* lama secara buta mengeluarkan teks template menuduh subdomain diklaim orang lain, padahal kolom subdomain bernilai `null` dan bentrokan terjadi pada `orderId`.
+- **Resolusi:** Backend diubah menjadi operasi upsert idempoten (`existingDraft` -> `update`, belum ada -> `create`), error `P2002` orderId ditangani dengan *self-healing* pengembalian `invitationId`, dan frontend `/dashboard/setup` otomatis mendeteksi draft terdaftar untuk segera mengalihkan ke `/dashboard/invitation/[id]`.
+- **Fitur Tambahan:** Modul Subdomain Monitor & Live Inspector dipasang pada panel Admin (`/admin?tab=custom_domains`) untuk visibilitas penuh subdomain aktif dan cek ketersediaan nama secara langsung.
 
 ---
 

@@ -25,6 +25,7 @@ function SetupWizardContent() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isBypassing, setIsBypassing] = useState(false);
 
   // Form State: Murni kosong tanpa default palsu
   const [groomNickname, setGroomNickname] = useState("");
@@ -79,9 +80,22 @@ function SetupWizardContent() {
     localStorage.setItem("luxenary_setup_draft", JSON.stringify(draft));
   }, [groomNickname, brideNickname, groomName, brideName, weddingDate, city, timeZone, akadTime, resepsiTime, themeId, step, isDraftLoaded]);
 
-  // Resolve dynamic host, settings, and themes on mount
+  // Resolve dynamic host, settings, themes, and detect existing draft on mount
   useEffect(() => {
-    
+    // 1. Cek apakah user sudah memiliki undangan di database (Auto-Bypass jika sudah punya draft)
+    fetch("/api/client/onboarding-state", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((state) => {
+        if (state.step === "COMPLETED" && state.invitation?.id) {
+          setIsBypassing(true);
+          window.location.href = `/dashboard/invitation/${state.invitation.id}`;
+          return;
+        }
+        if (state.planType) {
+          setCurrentPlan(state.planType.toUpperCase());
+        }
+      })
+      .catch(() => {});
 
     // Fetch dynamic themes list
     fetch("/api/public/themes")
@@ -120,24 +134,8 @@ function SetupWizardContent() {
           }
         })
         .catch(() => {});
-    } else if (!queryPlan) {
-      // Jika tidak ada query param, ambil paket aktif dari onboarding-state klien
-      fetch("/api/client/onboarding-state")
-        .then((r) => r.json())
-        .then((state) => {
-          if (state.planType) {
-            setCurrentPlan(state.planType.toUpperCase());
-          } else if (state.redirectUrl) {
-            try {
-              const parsedUrl = new URL(state.redirectUrl, window.location.origin);
-              const p = parsedUrl.searchParams.get("plan");
-              if (p) setCurrentPlan(p.toUpperCase());
-            } catch {}
-          }
-        })
-        .catch(() => {});
     }
-  }, [queryOrder, queryPlan]);
+  }, [queryOrder]);
 
   // Filter themes based on the user's purchased package tier (Waterfall / All-Access Mapping)
   const filteredThemes = themesList.filter((t) => {
@@ -206,7 +204,7 @@ function SetupWizardContent() {
 
       // Success Redirect directly to the invitation editor
       localStorage.removeItem("luxenary_setup_draft");
-      router.push(`/dashboard/invitation/${data.invitationId}`);
+      window.location.href = `/dashboard/invitation/${data.invitationId}`;
     } catch (err: any) {
       setError(err.message || "Terjadi kesalahan. Silakan coba lagi.");
       setLoading(false);
@@ -239,12 +237,23 @@ function SetupWizardContent() {
       }
 
       localStorage.removeItem("luxenary_setup_draft");
-      router.push(`/dashboard/invitation/${data.invitationId}`);
+      window.location.href = `/dashboard/invitation/${data.invitationId}`;
     } catch (err: any) {
       setError(err.message || "Terjadi kesalahan. Silakan coba lagi.");
       setLoading(false);
     }
   };
+
+  if (isBypassing) {
+    return (
+      <div className="min-h-screen bg-[#faf8f5] flex items-center justify-center">
+        <div className="text-center space-y-3">
+          <div className="w-8 h-8 border-2 border-amber-800 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-xs text-stone-600 font-medium">Menyiapkan Studio Undangan Anda...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#faf8f5] text-stone-900 flex flex-col justify-between font-sans">
@@ -278,9 +287,21 @@ function SetupWizardContent() {
       {/* Main Container */}
       <main className="max-w-3xl w-full mx-auto px-4 py-8 sm:py-12 flex-1">
         {error && (
-          <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium flex items-center justify-between">
-            <span>{error}</span>
-            <button onClick={() => setError(null)} className="text-rose-600 hover:text-rose-900 font-bold ml-3">✕</button>
+          <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium space-y-2">
+            <div className="flex items-center justify-between">
+              <span>{error}</span>
+              <button onClick={() => setError(null)} className="text-rose-600 hover:text-rose-900 font-bold ml-3 cursor-pointer">✕</button>
+            </div>
+            <div className="pt-2 border-t border-rose-200/60 flex items-center justify-between">
+              <span className="text-[11px] text-rose-700">Sudah memiliki draf atau pernah membuat undangan?</span>
+              <button
+                type="button"
+                onClick={() => { window.location.href = "/dashboard"; }}
+                className="text-[11px] font-bold text-rose-900 underline hover:text-black cursor-pointer"
+              >
+                Masuk Langsung ke Studio Undangan &rarr;
+              </button>
+            </div>
           </div>
         )}
 
