@@ -244,7 +244,9 @@ export default function ClientDashboardLayout({
       )}
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-5 sm:py-8 pb-24 md:pb-12">
+      <main className={`flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 pb-24 md:pb-12 ${
+        pathname?.includes("/dashboard/invitation/") ? "pt-2 sm:pt-3" : "py-4 sm:py-6"
+      }`}>
         {children}
       </main>
 
