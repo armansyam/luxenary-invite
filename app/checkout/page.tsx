@@ -66,6 +66,8 @@ function CheckoutContent() {
   const [isCheckingStatus, setIsCheckingStatus] = useState(false);
   const [retentionDays, setRetentionDays] = useState<number>(30);
   const [statusModal, setStatusModal] = useState<{ show: boolean; title?: string; message: string; isError?: boolean }>({ show: false, message: "" });
+  // SSE connection error state — tampil saat koneksi realtime terputus (network blip / server restart)
+  const [sseError, setSseError] = useState(false);
   const [iframeUrl, setIframeUrl] = useState<string | null>(null);
   const [cancellingOrder, setCancellingOrder] = useState(false);
   const [requestedDomain, setRequestedDomain] = useState<string | null>(null);
@@ -88,6 +90,20 @@ function CheckoutContent() {
     }
     return `/dashboard/setup?order=${id}&plan=${plan}`;
   }, []);
+
+  // Transisi halus saat pembayaran terverifikasi lunas (PAID)
+  const [paidTransition, setPaidTransition] = useState<{
+    active: boolean;
+    redirectUrl: string;
+    planType?: string;
+  }>({ active: false, redirectUrl: "" });
+
+  const handlePaymentSuccess = useCallback((targetUrl: string, plan?: string) => {
+    setPaidTransition({ active: true, redirectUrl: targetUrl, planType: plan });
+    setTimeout(() => {
+      router.replace(targetUrl);
+    }, 1800);
+  }, [router]);
 
   // Auto close status modal after 5 seconds
   useEffect(() => {
@@ -443,9 +459,11 @@ function CheckoutContent() {
     }
   }, [status, sessionUserId, isAdmin, planParam, orderIdParam, reloadKey, initializeCheckout]);
 
-  // --- SSE PAYMENT STATUS (Menggantikan polling — server push via gateway webhook) ---
+  // --- REALTIME SSE PAYMENT STATUS (Server-Sent Events Murni Tanpa Polling) ---
   useEffect(() => {
     if (!qrData || !orderId) return;
+
+    let isDisposed = false;
 
     // Countdown Timer — Sinkron dengan waktu server untuk mencegah drift
     const timerInterval = setInterval(() => {
@@ -464,19 +482,29 @@ function CheckoutContent() {
       }
     }, 1000);
 
-    // SSE — server push saat gateway webhook (Midtrans / Xendit) masuk dan update DB
+    const cleanup = () => {
+      isDisposed = true;
+      clearInterval(timerInterval);
+      try { eventSource.close(); } catch {}
+    };
+
+    const triggerPaid = (planType?: string) => {
+      if (isDisposed) return;
+      cleanup();
+      const targetUrl = getPostPaymentRedirect(currentOrderType, orderId, planType || currentPlanType);
+      handlePaymentSuccess(targetUrl, planType);
+    };
+
+    // Jalur Murni: SSE (Server-Sent Events untuk instant push langsung dari Webhook Midtrans)
     const eventSource = new EventSource(`/api/payments/status-stream/${orderId}`);
 
     eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
         if (data.status === "PAID") {
-          eventSource.close();
-          clearInterval(timerInterval);
-          router.replace(getPostPaymentRedirect(currentOrderType, orderId, data.planType));
+          triggerPaid(data.planType);
         } else if (data.status === "EXPIRED") {
-          eventSource.close();
-          clearInterval(timerInterval);
+          cleanup();
           setQrData(null);
           handleRegenerateOrder();
         }
@@ -484,55 +512,68 @@ function CheckoutContent() {
     };
 
     eventSource.onerror = () => {
-      // Jika koneksi SSE putus (misalnya restart server), tutup saja — tidak perlu retry
-      eventSource.close();
+      // SSE terputus (network blip / proxy timeout / server restart)
+      // Jangan retry otomatis — tampilkan CTA manual ke user agar tidak terjadi glitch
+      setSseError(true);
+      try { eventSource.close(); } catch {}
     };
 
     return () => {
-      clearInterval(timerInterval);
-      eventSource.close();
+      setSseError(false);
+      cleanup();
     };
-  }, [qrData, orderId, qrisExpiry, router, serverTimeOffset, handleRegenerateOrder, currentOrderType, getPostPaymentRedirect]);
+  }, [qrData, orderId, qrisExpiry, currentPlanType, serverTimeOffset, handleRegenerateOrder, currentOrderType, getPostPaymentRedirect, handlePaymentSuccess]);
 
-  // Polling for Approval when Proof is Uploaded
-  // Auto Polling for Manual Approval
+  // SSE untuk Manual Transfer — Mendengarkan Approval / Rejection dari Admin secara Real-time
+  // Dibuka saat proof diunggah, ditutup otomatis saat menerima event atau klien tutup tab
   useEffect(() => {
-    if (!orderId || (!uploadedProofUrl && !uploadSuccessMsg)) return;
-    
-    const manualPoll = setInterval(async () => {
-      try {
-        const res = await fetch(`/api/client/orders/${orderId}/status`, { cache: "no-store" });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.isSuperseded && data.activeOrderId) {
-            clearInterval(manualPoll);
-            router.replace(`/checkout?order=${data.activeOrderId}`);
-            return;
-          }
+    // Hanya aktif untuk jalur manual transfer (tidak ada QRIS) dan ada bukti yang sedang diverifikasi
+    if (!orderId || !uploadedProofUrl || qrData) return;
 
-          if (data.status === "PAID") {
-            clearInterval(manualPoll);
-            router.replace(getPostPaymentRedirect(data.orderType || currentOrderType, orderId, data.planType));
-          } else if (data.status === "FAILED" || data.status === "REJECTED") {
-            clearInterval(manualPoll);
-            setUploadedProofUrl(null);
-            setUploadSuccessMsg(null);
-            setProofFile(null);
-            setProofPreview(null);
-            setRejectReason(data.rejectReason || "Bukti transfer tidak valid atau dana belum masuk.");
-            setStatusModal({
-              show: true,
-              title: "Bukti Transfer Perlu Diperbaiki",
-              message: `Alasan Admin: ${data.rejectReason || "Tidak valid"}.\nSilakan periksa dan unggah ulang bukti yang benar pada formulir yang tersedia.`,
-              isError: true,
-            });
-          }
+    let isDisposed = false;
+
+    const manualEventSource = new EventSource(`/api/payments/status-stream/${orderId}`);
+
+    manualEventSource.onmessage = (event) => {
+      if (isDisposed) return;
+      try {
+        const data = JSON.parse(event.data);
+
+        if (data.status === "PAID") {
+          isDisposed = true;
+          manualEventSource.close();
+          const targetUrl = getPostPaymentRedirect(data.orderType || currentOrderType, orderId, data.planType);
+          handlePaymentSuccess(targetUrl, data.planType);
+
+        } else if (data.status === "REJECTED" || data.status === "FAILED") {
+          isDisposed = true;
+          manualEventSource.close();
+          const rejectMsg = data.rejectReason || "Bukti transfer tidak valid atau dana belum masuk.";
+          setUploadedProofUrl(null);
+          setUploadSuccessMsg(null);
+          setProofFile(null);
+          setProofPreview(null);
+          setRejectReason(rejectMsg);
+          setStatusModal({
+            show: true,
+            title: "Bukti Transfer Ditolak",
+            message: `Alasan Admin: ${rejectMsg}\nSilakan periksa dan unggah ulang bukti yang benar pada formulir yang tersedia.`,
+            isError: true,
+          });
         }
       } catch {}
-    }, 5000); // Check every 5s
+    };
 
-    return () => clearInterval(manualPoll);
-  }, [orderId, uploadedProofUrl, uploadSuccessMsg, router, currentOrderType, getPostPaymentRedirect]);
+    manualEventSource.onerror = () => {
+      // SSE terputus — tutup koneksi, biarkan user klik manual jika perlu
+      try { manualEventSource.close(); } catch {}
+    };
+
+    return () => {
+      isDisposed = true;
+      try { manualEventSource.close(); } catch {}
+    };
+  }, [orderId, uploadedProofUrl, qrData, currentOrderType, getPostPaymentRedirect, handlePaymentSuccess]);
 
   // Manual Check Status Handler
   const handleCheckStatus = async () => {
@@ -544,7 +585,8 @@ function CheckoutContent() {
       setIsCheckingStatus(false);
       
       if (data.status === "PAID") {
-        router.replace(getPostPaymentRedirect(data.orderType || currentOrderType, orderId, data.planType));
+        const targetUrl = getPostPaymentRedirect(data.orderType || currentOrderType, orderId, data.planType);
+        handlePaymentSuccess(targetUrl, data.planType);
       } else if (data.status === "FAILED" || data.status === "REJECTED") {
         setUploadedProofUrl(null);
         setUploadSuccessMsg(null);
@@ -1004,13 +1046,42 @@ function CheckoutContent() {
                     <img src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}`} alt="QRIS Code" className="w-48 h-48 sm:w-56 sm:h-56 object-contain" />
                   </div>
                   <div className="space-y-2">
-                    <div className="flex items-center justify-center gap-2 text-amber-400 font-bold text-xs">
-                      <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-                      <span>Menunggu Pembayaran Otomatis...</span>
-                    </div>
-                    <p className="text-[11px] text-stone-400 max-w-xs mx-auto leading-relaxed">
-                      Buka aplikasi m-Banking atau e-Wallet Anda (BCA, Mandiri, GoPay, OVO, Dana, dll) dan scan QRIS di atas. Layar otomatis berpindah jika sukses.
-                    </p>
+                    {sseError ? (
+                      /* Banner SSE Terputus — tampil saat koneksi realtime gagal */
+                      <div className="px-4 py-3 bg-amber-950/60 border border-amber-500/40 rounded-2xl text-center space-y-2">
+                        <div className="flex items-center justify-center gap-2 text-amber-400 font-semibold text-xs">
+                          <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                          </svg>
+                          <span>Koneksi realtime terputus</span>
+                        </div>
+                        <p className="text-[11px] text-stone-400 leading-relaxed">
+                          Pemantauan otomatis tidak aktif. Jika Anda sudah membayar, klik tombol di bawah untuk memeriksa status secara manual.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={handleCheckStatus}
+                          disabled={isCheckingStatus}
+                          className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs rounded-xl transition cursor-pointer disabled:opacity-60"
+                        >
+                          {isCheckingStatus ? (
+                            <><span className="w-3 h-3 border-2 border-stone-950 border-t-transparent rounded-full animate-spin" /><span>Memeriksa...</span></>
+                          ) : (
+                            <><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg><span>Cek Status Pembayaran</span></>
+                          )}
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-center gap-2 text-amber-400 font-bold text-xs">
+                          <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                          <span>Menunggu Pembayaran Otomatis...</span>
+                        </div>
+                        <p className="text-[11px] text-stone-400 max-w-xs mx-auto leading-relaxed">
+                          Buka aplikasi m-Banking atau e-Wallet Anda (BCA, Mandiri, GoPay, OVO, Dana, dll) dan scan QRIS di atas. Layar otomatis berpindah jika sukses.
+                        </p>
+                      </>
+                    )}
                   </div>
 
                   {/* Tombol Batalkan Tagihan Ini (Kirim signal Cancel ke Gateway & Buat Order Baru) */}
@@ -1284,7 +1355,45 @@ function CheckoutContent() {
           </div>
         </div>
       </div>
-    
+      {/* ── Transition Modal / Overlay Saat Pembayaran Berhasil (PAID) ── */}
+      {paidTransition.active && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="bg-stone-900 border border-emerald-500/30 rounded-3xl p-8 max-w-md w-full shadow-2xl flex flex-col items-center text-center space-y-5 animate-in zoom-in-95 duration-300">
+            {/* Animated Success Badge */}
+            <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 shadow-inner">
+              <svg className="w-9 h-9" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+
+            <div className="space-y-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                Pembayaran Terverifikasi
+              </span>
+              <h3 className="text-xl font-bold text-white pt-1">
+                Selamat, Pembayaran Berhasil!
+              </h3>
+              <p className="text-xs text-stone-400 leading-relaxed max-w-xs mx-auto">
+                {invoiceNumber ? `Invoice #${invoiceNumber} telah lunas.` : "Transaksi Anda telah berhasil diverifikasi."}
+                <br />
+                Menyiapkan ruang kerja undangan digital Anda...
+              </p>
+            </div>
+
+            {/* Loading progress bar */}
+            <div className="w-full space-y-2 pt-2">
+              <div className="w-full h-1.5 bg-stone-800 rounded-full overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-emerald-500 to-amber-500 rounded-full animate-[pulse_1s_ease-in-out_infinite] w-full" />
+              </div>
+              <p className="text-[11px] text-stone-500 font-mono">
+                Mengalihkan ke Dasbor Ruang Kerja...
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Custom Status Modal */}
       {statusModal.show && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">

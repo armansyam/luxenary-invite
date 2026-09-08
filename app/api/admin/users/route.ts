@@ -9,12 +9,16 @@ export async function GET(req: NextRequest) {
   try {
     const session = await auth();
     const role = (session?.user as any)?.role;
+    const isRemote = (session?.user as any)?.isRemote === true;
+    // Jika Admin sedang dalam mode remote (isRemote), identitasnya sudah di-override ke CLIENT
+    // Jangan izinkan akses endpoint admin dalam kondisi remote — harus keluar dari remote terlebih dahulu
     const isAdmin =
-      (session?.user as any)?.isAdmin === true ||
-      role === "SUPER_ADMIN" ||
-      role === "ADMIN" ||
-      role === "SUPPORT" ||
-      role === "FINANCE";
+      !isRemote &&
+      ((session?.user as any)?.isAdmin === true ||
+       role === "SUPER_ADMIN" ||
+       role === "ADMIN" ||
+       role === "SUPPORT" ||
+       role === "FINANCE");
 
     if (!session?.user || !isAdmin) {
       return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
@@ -24,20 +28,40 @@ export async function GET(req: NextRequest) {
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20", 10)));
     const search = searchParams.get("search")?.trim() || "";
+    const filter = searchParams.get("filter")?.trim() || "all";
+
+    const andConditions: Prisma.UserWhereInput[] = [];
+
+    if (search) {
+      andConditions.push({
+        OR: [
+          { name: { contains: search, mode: "insensitive" } },
+          { email: { contains: search, mode: "insensitive" } },
+          { phoneNumber: { contains: search, mode: "insensitive" } },
+        ],
+      });
+    }
+
+    if (filter === "active") {
+      andConditions.push({
+        OR: [
+          { orders: { some: { status: "PAID" } } },
+          { invitations: { some: {} } },
+        ],
+      });
+    } else if (filter === "leads") {
+      andConditions.push({
+        orders: { none: { status: "PAID" } },
+        invitations: { none: {} },
+      });
+    }
 
     const whereClause: Prisma.UserWhereInput = {
       role: "CLIENT",
+      ...(andConditions.length > 0 ? { AND: andConditions } : {}),
     };
 
-    if (search) {
-      whereClause.OR = [
-        { name: { contains: search, mode: "insensitive" } },
-        { email: { contains: search, mode: "insensitive" } },
-        { phoneNumber: { contains: search, mode: "insensitive" } },
-      ];
-    }
-
-    const [total, rawUsers] = await Promise.all([
+    const [total, rawUsers, countAll, countActive, countLeads] = await Promise.all([
       prisma.user.count({ where: whereClause }),
       prisma.user.findMany({
         where: whereClause,
@@ -78,6 +102,20 @@ export async function GET(req: NextRequest) {
           },
         },
       }),
+      prisma.user.count({ where: { role: "CLIENT" } }),
+      prisma.user.count({
+        where: {
+          role: "CLIENT",
+          OR: [{ orders: { some: { status: "PAID" } } }, { invitations: { some: {} } }],
+        },
+      }),
+      prisma.user.count({
+        where: {
+          role: "CLIENT",
+          orders: { none: { status: "PAID" } },
+          invitations: { none: {} },
+        },
+      }),
     ]);
 
     const users = rawUsers.map((u) => {
@@ -95,6 +133,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       success: true,
       users,
+      counts: {
+        all: countAll,
+        active: countActive,
+        leads: countLeads,
+      },
       pagination: {
         page,
         limit,

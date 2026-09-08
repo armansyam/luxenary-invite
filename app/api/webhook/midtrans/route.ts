@@ -26,14 +26,33 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ status: "ignored", reason: "invalid_order_id_format" }, { status: 200 });
     }
 
-    // Ambil server key dari AdminSetting atau env
+    // Ambil server key dari AdminSetting atau env dengan pembersihan whitespace & auto-swap guard
     const serverKeys: string[] = [];
-    if (process.env.MIDTRANS_SERVER_KEY) serverKeys.push(process.env.MIDTRANS_SERVER_KEY);
+    if (process.env.MIDTRANS_SERVER_KEY) serverKeys.push(process.env.MIDTRANS_SERVER_KEY.trim());
     try {
-      const setting = await prisma.adminSetting.findUnique({
-        where: { key: "midtrans_server_key" },
+      const settings = await prisma.adminSetting.findMany({
+        where: { group: "midtrans" },
       });
-      if (setting?.value) serverKeys.push(setting.value);
+      const map: Record<string, string> = {};
+      settings.forEach((s) => (map[s.key] = s.value?.trim() || ""));
+
+      let dbServerKey = map["midtrans_server_key"] || "";
+      let dbClientKey = map["midtrans_client_key"] || "";
+
+      // Auto-swap guard jika user menukar Server Key & Client Key di Admin Settings
+      if (
+        (dbServerKey.startsWith("Mid-client-") || dbServerKey.startsWith("SB-Mid-client-")) &&
+        (dbClientKey.startsWith("Mid-server-") || dbClientKey.startsWith("SB-Mid-server-"))
+      ) {
+        const temp = dbServerKey;
+        dbServerKey = dbClientKey;
+        dbClientKey = temp;
+      }
+
+      if (dbServerKey) serverKeys.push(dbServerKey);
+      if (dbClientKey && (dbClientKey.startsWith("Mid-server-") || dbClientKey.startsWith("SB-Mid-server-"))) {
+        serverKeys.push(dbClientKey);
+      }
     } catch {}
 
     const validServerKeys = Array.from(new Set(serverKeys.filter((k) => k && !k.includes("your_"))));

@@ -365,7 +365,20 @@ export default function AdminPage() {
     }
   };
 
-  const userRole = (session?.user as any)?.role || "CLIENT";
+  const handleAdminLogout = async () => {
+    try {
+      await fetch("/api/admin/remote-session", { method: "DELETE" });
+    } catch {}
+    // Bersihkan state tab dari localStorage agar tidak "bocor" ke sesi login berikutnya
+    try {
+      localStorage.removeItem("lux_admin_active_tab");
+      localStorage.removeItem("lux_admin_settings_subtab");
+    } catch {}
+    signOut({ callbackUrl: "/admin/login" });
+  };
+
+  const rawRole = (session?.user as any)?.originalRole || (session?.user as any)?.role;
+  const userRole = rawRole === "CLIENT" && (session?.user as any)?.isAdmin ? "ADMIN" : (rawRole || "CLIENT");
   const filteredTabs = useMemo(() => {
     return tabs.filter(tab => {
       if (userRole === "SUPER_ADMIN") return true;
@@ -1754,6 +1767,33 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col text-gray-900">
+      {/* Remote Mode Warning Banner for Admin */}
+      {Boolean((session?.user as any)?.isRemote) && (
+        <div className="bg-amber-600 text-white px-4 py-2.5 text-xs font-medium flex flex-wrap items-center justify-between gap-3 shadow-xs sticky top-0 z-40">
+          <div className="flex items-center gap-2">
+            <svg className="w-4 h-4 shrink-0 text-white animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span>
+              <strong>Mode Remote Sedang Aktif:</strong> Anda sedang mengemulasikan akun klien{" "}
+              <strong>{(session?.user as any)?.name || "Klien"}</strong> ({(session?.user as any)?.email}). Fitur Administrator tetap terbuka penuh.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                await fetch("/api/admin/remote-session", { method: "DELETE" });
+              } catch {}
+              window.location.href = "/admin";
+            }}
+            className="px-3 py-1 bg-white text-amber-900 rounded-lg text-xs font-bold hover:bg-amber-50 transition cursor-pointer shadow-2xs shrink-0"
+          >
+            Hentikan Sesi Remote
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-30">
         <div className="w-full px-4 sm:px-6 lg:px-8">
@@ -1794,7 +1834,7 @@ export default function AdminPage() {
               </a>
               <button
                 type="button"
-                onClick={() => signOut({ callbackUrl: "/admin/login" })}
+                onClick={handleAdminLogout}
                 className="text-xs font-semibold text-rose-600 hover:text-rose-700 transition cursor-pointer px-2 py-1 rounded-lg hover:bg-rose-50"
               >
                 Logout
@@ -1860,7 +1900,7 @@ export default function AdminPage() {
               </div>
               <button
                 type="button"
-                onClick={() => signOut({ callbackUrl: "/admin/login" })}
+                onClick={handleAdminLogout}
                 className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50/80 transition cursor-pointer"
               >
                 <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1897,7 +1937,7 @@ export default function AdminPage() {
           <div className="p-3 border-t border-gray-100">
             <button
               type="button"
-              onClick={() => signOut({ callbackUrl: "/admin/login" })}
+              onClick={handleAdminLogout}
               className="w-full flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50/70 transition cursor-pointer"
             >
               <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

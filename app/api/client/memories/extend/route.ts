@@ -55,6 +55,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Paket undangan tidak valid atau belum terdaftar pada pesanan." }, { status: 400 });
     }
 
+    // Baca paymentMode dari AdminSetting (GATEWAY, MANUAL, atau BOTH → default ke GATEWAY)
+    // Agar mode pembayaran addon mengikuti konfigurasi platform secara dinamis
+    const paymentModeSetting = await prisma.adminSetting.findUnique({ where: { key: "payment_mode" } });
+    const activePaymentMode = paymentModeSetting?.value || "GATEWAY";
+    const resolvedPaymentMethod = activePaymentMode === "MANUAL" ? "MANUAL_TRANSFER" : "GATEWAY";
+
     // Bersihkan / tandai usang order perpanjangan galeri PENDING sebelumnya untuk undangan ini
     await prisma.order.updateMany({
       where: {
@@ -79,7 +85,7 @@ export async function POST(req: NextRequest) {
         orderType: "GALLERY_EXTENSION",
         amount: extensionPrice,
         status: "PENDING",
-        paymentMethod: "QRIS",
+        paymentMethod: resolvedPaymentMethod, // Dinamis dari AdminSetting payment_mode
         linkedOrderId: invitation.id, // Menyimpan referensi ID invitation
       },
     });

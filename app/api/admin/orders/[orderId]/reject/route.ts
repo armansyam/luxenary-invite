@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { paymentEmitter } from "@/lib/paymentEvents";
 
 export const dynamic = "force-dynamic";
 
@@ -63,6 +64,12 @@ export async function POST(
       }
     } catch {}
 
+    // Push notifikasi real-time ke browser klien via SSE
+    // Klien menerima event REJECTED secara instan — tidak perlu polling
+    try {
+      paymentEmitter.emit(orderId, { status: "REJECTED", rejectReason: reason, planType: order.planType });
+    } catch {}
+
     return NextResponse.json({
       success: true,
       message: "Order berhasil ditolak.",
@@ -74,3 +81,5 @@ export async function POST(
     return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Terjadi kesalahan server" : error.message }, { status: 500 });
   }
 }
+
+

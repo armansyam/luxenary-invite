@@ -473,8 +473,23 @@ export class MidtransGateway implements PaymentGateway {
     serverKey: string;
   }): boolean {
     const { order_id, status_code, gross_amount, signature_key, serverKey } = payload;
-    const raw = `${order_id}${status_code}${gross_amount}${serverKey}`;
-    const expected = crypto.createHash("sha512").update(raw).digest("hex");
-    return expected === signature_key;
+    const cleanServerKey = (serverKey || "").trim();
+    const cleanSignatureKey = (signature_key || "").trim().toLowerCase();
+    if (!cleanServerKey || !cleanSignatureKey) return false;
+
+    // Coba variasi format gross_amount (dengan desimal .00 atau integer polos)
+    const amountCandidates = [gross_amount];
+    if (gross_amount && gross_amount.includes(".")) {
+      amountCandidates.push(gross_amount.split(".")[0]);
+    } else if (gross_amount && !gross_amount.includes(".")) {
+      amountCandidates.push(`${gross_amount}.00`);
+    }
+
+    for (const amt of amountCandidates) {
+      const raw = `${order_id}${status_code}${amt}${cleanServerKey}`;
+      const expected = crypto.createHash("sha512").update(raw).digest("hex").toLowerCase();
+      if (expected === cleanSignatureKey) return true;
+    }
+    return false;
   }
 }

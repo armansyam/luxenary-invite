@@ -144,6 +144,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             });
             if (clientUser && session.user) {
               (session.user as any).originalAdminId = token.id || token.sub;
+              (session.user as any).originalRole = (token as any).role || "ADMIN";
               (session.user as any).isRemote = true;
               (session.user as any).id = clientUser.id;
               (session.user as any).email = clientUser.email;

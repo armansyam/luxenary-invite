@@ -96,6 +96,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Paket undangan tidak valid atau belum terdaftar pada pesanan." }, { status: 400 });
     }
 
+    // Baca paymentMode dari AdminSetting secara dinamis — mengikuti konfigurasi platform
+    const paymentModeSetting = await prisma.adminSetting.findUnique({ where: { key: "payment_mode" } });
+    const activePaymentMode = paymentModeSetting?.value || "GATEWAY";
+    const resolvedPaymentMethod = activePaymentMode === "MANUAL" ? "MANUAL_TRANSFER" : "GATEWAY";
+
     const canUseCustomDomain = await hasPlanCapability(invitation.order.planType, "custom_domain");
     if (!canUseCustomDomain) {
       return NextResponse.json(
@@ -128,7 +133,7 @@ export async function POST(req: NextRequest) {
         orderType: "CUSTOM_DOMAIN_ADDON",
         amount: extensionPrice,
         status: "PENDING",
-        paymentMethod: "GATEWAY", // Sesuai default untuk checkout otomatis
+        paymentMethod: resolvedPaymentMethod, // Dinamis dari AdminSetting payment_mode
         linkedOrderId: invitation.id, // Menyimpan referensi ID invitation
         requestedDomain: cleanDomain,
       },

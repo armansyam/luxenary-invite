@@ -40,6 +40,12 @@ export default function AdminClientsTab() {
   const [limit, setLimit] = useState(20);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [filter, setFilter] = useState<"all" | "active" | "leads">("all");
+  const [counts, setCounts] = useState<{ all: number; active: number; leads: number }>({
+    all: 0,
+    active: 0,
+    leads: 0,
+  });
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 1 });
 
   // Modal State
@@ -62,6 +68,7 @@ export default function AdminClientsTab() {
       const params = new URLSearchParams({
         page: String(page),
         limit: String(limit),
+        filter,
       });
       if (debouncedSearch) params.set("search", debouncedSearch);
 
@@ -70,6 +77,7 @@ export default function AdminClientsTab() {
 
       if (data.success) {
         setUsers(data.users || []);
+        if (data.counts) setCounts(data.counts);
         setPagination(data.pagination || { page: 1, limit: 20, total: 0, totalPages: 1 });
       }
     } catch (err) {
@@ -77,11 +85,16 @@ export default function AdminClientsTab() {
     } finally {
       setLoading(false);
     }
-  }, [page, limit, debouncedSearch]);
+  }, [page, limit, filter, debouncedSearch]);
 
   useEffect(() => {
     fetchClients();
   }, [fetchClients]);
+
+  const handleFilterChange = (newFilter: "all" | "active" | "leads") => {
+    setFilter(newFilter);
+    setPage(1);
+  };
 
   // Handle Impersonate
   const handleRemote = async (clientId: string) => {
@@ -156,6 +169,60 @@ export default function AdminClientsTab() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
           <span>Segarkan</span>
+        </button>
+      </div>
+
+      {/* ── Segment Tabs: Semua, Klien Aktif, Calon Klien (Leads) ── */}
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => handleFilterChange("all")}
+          className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center gap-2 ${
+            filter === "all"
+              ? "bg-amber-600 text-white shadow-xs"
+              : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+          }`}
+        >
+          <span>Semua Akun</span>
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+            filter === "all" ? "bg-amber-700/60 text-white" : "bg-gray-100 text-gray-600"
+          }`}>
+            {counts.all}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleFilterChange("active")}
+          className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center gap-2 ${
+            filter === "active"
+              ? "bg-amber-600 text-white shadow-xs"
+              : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+          }`}
+        >
+          <span>Klien Aktif (Berbayar / Ada Undangan)</span>
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+            filter === "active" ? "bg-amber-700/60 text-white" : "bg-emerald-50 text-emerald-700"
+          }`}>
+            {counts.active}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleFilterChange("leads")}
+          className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center gap-2 ${
+            filter === "leads"
+              ? "bg-amber-600 text-white shadow-xs"
+              : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+          }`}
+        >
+          <span>Calon Klien / Leads (Belum Checkout)</span>
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+            filter === "leads" ? "bg-amber-700/60 text-white" : "bg-amber-50 text-amber-700"
+          }`}>
+            {counts.leads}
+          </span>
         </button>
       </div>
 
@@ -329,17 +396,28 @@ export default function AdminClientsTab() {
                       {/* Aksi */}
                       <td className="px-5 py-3.5 whitespace-nowrap">
                         <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleRemote(usr.id)}
-                            disabled={impersonating}
-                            className="p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50 border border-transparent hover:border-indigo-100 transition disabled:opacity-50 cursor-pointer"
-                            title="Remote Dasbor Klien (Impersonate)"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                            </svg>
-                          </button>
+                          {Boolean((usr.invitations && usr.invitations.length > 0) || (usr.latestOrder && usr.totalSpent > 0)) ? (
+                            <button
+                              type="button"
+                              onClick={() => handleRemote(usr.id)}
+                              disabled={impersonating}
+                              className="p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50 border border-transparent hover:border-indigo-100 transition disabled:opacity-50 cursor-pointer"
+                              title="Remote Dasbor Klien (Impersonate)"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                              </svg>
+                            </button>
+                          ) : (
+                            <span
+                              className="p-1.5 rounded-lg text-gray-300 cursor-not-allowed"
+                              title="Klien belum menyelesaikan checkout / belum ada dasbor untuk di-remote"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                              </svg>
+                            </span>
+                          )}
 
                           <button
                             type="button"
@@ -473,17 +551,43 @@ export default function AdminClientsTab() {
 
             {/* Tombol Aksi Klien */}
             <div className="pt-3 border-t border-gray-100 space-y-2.5">
-              <button
-                type="button"
-                onClick={() => handleRemote(selectedClient.id)}
-                disabled={impersonating}
-                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer shadow-xs"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-                <span>Remote Dasbor Klien Sekarang</span>
-              </button>
+              {Boolean(
+                (selectedClient.invitations && selectedClient.invitations.length > 0) ||
+                (selectedClient.latestOrder && selectedClient.totalSpent > 0)
+              ) ? (
+                <button
+                  type="button"
+                  onClick={() => handleRemote(selectedClient.id)}
+                  disabled={impersonating}
+                  className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  <span>Remote Dasbor Klien Sekarang</span>
+                </button>
+              ) : (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-[11px] text-amber-900 flex items-start gap-2">
+                  <svg className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>Klien ini berstatus <strong>Calon Klien (Leads)</strong> yang belum checkout atau belum membuat undangan. Tidak ada ruang kerja dasbor untuk di-remote.</span>
+                </div>
+              )}
+
+              {selectedClient.phoneNumber && (
+                <a
+                  href={getWhatsAppLink(selectedClient.phoneNumber, selectedClient.name) || "#"}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.771-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86.174.086.275.073.376-.043.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.043.072.043.419-.101.824z" />
+                  </svg>
+                  <span>Chat Follow-Up WhatsApp</span>
+                </a>
+              )}
 
               <button
                 type="button"

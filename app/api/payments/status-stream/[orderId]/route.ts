@@ -18,7 +18,7 @@ export async function GET(
 
   const order = await prisma.order.findUnique({
     where: { id: orderId },
-    select: { userId: true, status: true, planType: true },
+    select: { userId: true, status: true, planType: true, rejectReason: true },
   });
 
   if (!order) {
@@ -27,21 +27,32 @@ export async function GET(
 
   const isAdmin =
     (session.user as any)?.role === "SUPER_ADMIN" ||
-    (session.user as any)?.role === "ADMIN";
+    (session.user as any)?.role === "ADMIN" ||
+    (session.user as any)?.role === "FINANCE" ||
+    (session.user as any)?.role === "SUPPORT";
+  // Saat Admin sedang dalam sesi remote (isRemote=true), identitasnya sudah di-override ke CLIENT
+  // Gunakan originalRole untuk deteksi isAdmin yang sesungguhnya
+  const isRealAdmin = isAdmin && !(session.user as any)?.isRemote;
   const isOwner = order.userId === (session.user as any)?.id;
 
-  if (!isAdmin && !isOwner) {
+  if (!isRealAdmin && !isOwner) {
     return new Response("Forbidden", { status: 403 });
   }
 
-  // Jika sudah PAID/EXPIRED sebelum SSE terbuka, kirim langsung dan tutup koneksi
-  if (order.status === "PAID" || order.status === "EXPIRED") {
-    const body = `data: ${JSON.stringify({ status: order.status, planType: order.planType })}\n\n`;
+  // Jika sudah PAID/EXPIRED/FAILED (REJECTED) sebelum SSE terbuka, kirim langsung dan tutup koneksi
+  if (order.status === "PAID" || order.status === "EXPIRED" || order.status === "FAILED") {
+    const payload: Record<string, any> = { status: order.status, planType: order.planType };
+    if (order.status === "FAILED" && (order as any).rejectReason) {
+      payload.rejectReason = (order as any).rejectReason;
+      payload.status = "REJECTED"; // Normalisasi nama status ke REJECTED agar klien konsisten
+    }
+    const body = `retry: 0\ndata: ${JSON.stringify(payload)}\n\n`;
     return new Response(body, {
       headers: {
         "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
+        "Cache-Control": "no-cache, no-transform",
         "Connection": "keep-alive",
+        "X-Accel-Buffering": "no",
       },
     });
   }

@@ -49,16 +49,17 @@ Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model 
      │
      ▼
 3. CHECKOUT (/checkout)
-   Pola Single State (1 Klien = 1 Transaksi) + Auto-Purge Obsolete Storage
-   - *URL State & QRIS Hydration:* URL mengikat `?order=ID`. Refresh halaman (F5) ribuan kali tetap menampilkan summary dan countdown QRIS tanpa reset ke tombol awal.
+   Pola Single State (1 Klien = 1 Transaksi)
+   - *URL State & QRIS Hydration:* URL mengikat `?order=ID`. Refresh halaman (F5) tetap menampilkan summary dan countdown QRIS tanpa reset ke tombol awal.
    - *Penyimpanan Nyata Database:* Seluruh transaksi tersimpan permanen di PostgreSQL (`orders` table), menjamin verifikasi status dan summary 100% konsisten.
+   - *Realtime SSE Stream & Zero Polling:* Menggunakan Server-Sent Events murni (`/api/payments/status-stream/[orderId]`) untuk mendeteksi pembayaran QRIS instan dan notifikasi reject/approve manual transfer dari Admin. Transisi Dark Luxury mulus (1.8s) mencegah visual leak ke dasbor sebelum status benar-benar PAID.
    ┌─────────────────────────────────────┬──────────────────────────┐
    │  Gateway 2-Arah (Midtrans & Xendit) │  Transfer Bank Manual    │
    │  Core API QRIS / Snap / Invoice     │  (Bebas Hardcode)        │
    │  Two-Way Cancel & Zero Ghost Payment│  Upload WebP ke R2 via   │
    │  → Webhook Auto-PAID + Invoice Email│  Custom Domain Edge CDN  │
-   │                                     │  → Admin Approve/Reject  │
-   │                                     │    (Inline Action Switch)│
+   │  → Realtime SSE Push to Client      │  → Admin Approve/Reject  │
+   │                                     │  → Instant SSE Broadcast │
    └─────────────────────────────────────┴──────────────────────────┘
      │
      ▼
@@ -99,8 +100,8 @@ Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model 
 ADMIN PORTAL (/admin)
    - Ringkasan (Overview): Metrik transaksi, klien aktif, omset
    - Pesanan (Orders): Kelola order, konfirmasi/tolak struk manual, cancel gateway
-   - Klien (Users): Daftar akun klien, detail profil, dan aksi **Remote Dasbor Klien**
-   - Undangan (Invitations): Manajemen siklus hidup (Close to Gallery, Extend), dan fitur **Remote Klien** untuk mengendalikan Dasbor Klien secara utuh tanpa password (berbasis *httpOnly Cookie Session Override* dengan mekanisme *Restore 1-Klik*).
+   - Klien (Users): Manajemen akun terbagi ke dalam 3 segmen filter (*Semua*, *Klien Aktif*, dan *Calon Klien / Leads*). Tombol **Remote Dasbor Klien** hanya aktif untuk klien yang memiliki ruang kerja/undangan, sedangkan calon klien dilengkapi pintasan follow-up WhatsApp dan opsi penghapusan akun lead yang batal.
+   - Undangan (Invitations): Manajemen siklus hidup (Close to Gallery, Extend), dan fitur **Remote Klien** untuk mengendalikan Dasbor Klien secara utuh tanpa password (berbasis *httpOnly Cookie Session Override* dengan *Immunity Guard* di Admin, Emergency Amber Warning Banner, dan auto-cleanup cookie saat logout).
    - Domain Kustom (Custom Domains): Monitoring domain klien, panduan konfigurasi Caddy, dan shortcut ke tab Setup DNS.
    - Tema & Musik (Themes & Music): Manajemen katalog tema, Demo Studio (kustomisasi 6 seksi narasi & label tema, dynamic timeline acara, dynamic bab cerita, dynamic rekening bank, harmonisasi casing font skrip vs uppercase, dan pewarisan otomatis ke undangan klien), serta Pustaka Musik Sistem dinamis (auto-sync file fisik audio di disk `public/music/` ke database, tambah audio dengan auto-kompresi FFmpeg MP3 128kbps, preview, edit, dan toggle aktif/nonaktif untuk klien)
    - Portofolio (Portfolio): Kurasi & kloning undangan pilihan → /portfolio

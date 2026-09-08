@@ -69,18 +69,24 @@ export async function POST(req: Request) {
       }, { status: 400 });
     }
 
-    // 3. Ambil harga paket dari AdminSetting (dinamis, bisa berubah-ubah)
-    const priceKeys = ["price_traditional", "price_modern", "price_premium"];
+    // 3. Ambil harga paket dan payment_mode dari AdminSetting sekaligus (1 roundtrip)
+    const priceKeys = ["price_traditional", "price_modern", "price_premium", "payment_mode"];
     const settings = await prisma.adminSetting.findMany({
       where: { key: { in: priceKeys } },
       select: { key: true, value: true },
     });
 
     const priceMap: Record<string, number> = {};
+    let activePaymentMode = "GATEWAY";
     for (const s of settings) {
-      const plan = s.key.replace("price_", "").toUpperCase();
-      priceMap[plan] = Number(s.value) || 0;
+      if (s.key === "payment_mode") {
+        activePaymentMode = s.value || "GATEWAY";
+      } else {
+        const plan = s.key.replace("price_", "").toUpperCase();
+        priceMap[plan] = Number(s.value) || 0;
+      }
     }
+    const resolvedPaymentMethod = activePaymentMode === "MANUAL" ? "MANUAL_TRANSFER" : "GATEWAY";
 
     const priceFrom = priceMap[currentPlan] ?? 0;
     const priceTo = priceMap[targetPlanUpper] ?? 0;
@@ -149,7 +155,7 @@ export async function POST(req: Request) {
         linkedOrderId: currentOrder.id,
         amount: upgradeAmount,
         status: "PENDING",
-        paymentMethod: "GATEWAY",
+        paymentMethod: resolvedPaymentMethod, // Dinamis dari AdminSetting payment_mode
         requestedDomain: cleanDomain || undefined,
       },
     });
