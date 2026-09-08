@@ -140,6 +140,10 @@ Sistem Studio Editor Klien (`/dashboard/invitation/[id]`) menyediakan kendali kr
    - **Smart Sync Tema:** Sekali klik `✨ Samakan Tema` untuk menyinkronkan warna busana dengan palet bawaan tema fisik yang sedang aktif.
    - **Live Guest Preview:** Pratinjau instan tampilan kartu busana yang akan dilihat oleh tamu undangan.
    - **Mode Lanjutan:** Opsi input teks manual kode hex dengan sinkronisasi dua arah (*two-way sync*).
+4.1. **Live View Real-Time Palette Synchronizer (Two-Way Sync):**
+   - **Panel 6 Palet Warna di Atas Kanvas Live View:** Klien dapat langsung mengganti nuansa tema utama di tab Live View tanpa harus bolak-balik ke tab form edit data.
+   - **Injeksi CSS Seketika & PostMessage:** Perubahan warna diaplikasikan instan ke preview iframe melalui manipulasi token CSS (`--gold`, `--primary`, dll.) dan pesan `LUX_PALETTE_CHANGED`.
+   - **Sinkronisasi Otomatis dengan Seksi 1:** Tetap mempertahankan pemilih palet warna di Seksi 1 formulir data dengan status aktif dan penyimpanan yang selalu sinkron.
 5. **Saklar Tampil/Sembunyikan (*Section Toggles*)**:
    - Klien dapat mengaktifkan/menonaktifkan seksi (*Love Story, Galeri Foto, Amplop Digital, Dresscode*) secara instan.
 6. **Video Teaser Player Pre-Wedding**:

@@ -529,6 +529,51 @@ export default function EditInvitation() {
     });
   };
 
+  const applyPaletteToIframe = useCallback((paletteId: string) => {
+    const palTokens: Record<string, { primary: string; secondary: string; accent: string; bgLight: string }> = {
+      champagne: { primary: "#a67c52", secondary: "#7a5430", accent: "#b38b4d", bgLight: "#faf7f2" },
+      emerald: { primary: "#1b4332", secondary: "#2d6a4f", accent: "#c9a227", bgLight: "#f2f7f4" },
+      burgundy: { primary: "#54192b", secondary: "#7a253f", accent: "#d4a373", bgLight: "#faf2f4" },
+      sage: { primary: "#4a5d4e", secondary: "#627d68", accent: "#b89f81", bgLight: "#f1f5f2" },
+      terracotta: { primary: "#8c583a", secondary: "#a86b47", accent: "#c99a57", bgLight: "#fdf8f4" },
+      monochrome: { primary: "#262626", secondary: "#404040", accent: "#737373", bgLight: "#f8f8f8" },
+    };
+    const t = palTokens[paletteId] || palTokens.champagne;
+
+    try {
+      if (liveIframeRef.current?.contentDocument) {
+        const doc = liveIframeRef.current.contentDocument;
+        const targets = [doc.body, doc.documentElement].filter(Boolean);
+        targets.forEach((el) => {
+          el.style.setProperty("--gold", t.primary);
+          el.style.setProperty("--gold-dim", t.secondary);
+          el.style.setProperty("--gold-pale", t.bgLight);
+          el.style.setProperty("--primary", t.primary);
+          el.style.setProperty("--secondary", t.secondary);
+          el.style.setProperty("--accent", t.accent);
+        });
+      }
+    } catch {}
+
+    try {
+      if (liveIframeRef.current?.contentWindow) {
+        liveIframeRef.current.contentWindow.postMessage(
+          {
+            type: "LUX_PALETTE_CHANGED",
+            paletteId,
+            palette: t,
+          },
+          "*"
+        );
+      }
+    } catch {}
+  }, []);
+
+  const handleSelectPalette = useCallback((paletteId: string) => {
+    updateFeatureSetting("colorPalette", paletteId);
+    applyPaletteToIframe(paletteId);
+  }, [applyPaletteToIframe]);
+
   const getFeatureSetting = (key: string, fallback: any = "") => {
     if (!invitation?.featureSettings) return fallback;
     try {
@@ -1262,42 +1307,100 @@ export default function EditInvitation() {
       </div>
 
       {activeStudioTab === "live" ? (
-        /* ==========================================================================
-           LIVE VISUAL INLINE EDITOR CANVAS (CANVA / NOTION STYLE)
-           ========================================================================== */
-        <div className="bg-stone-950 rounded-3xl p-4 sm:p-8 border border-stone-800 shadow-xl flex flex-col items-center min-h-[850px]">
-          <div className="w-full flex items-center justify-between pb-4 border-b border-stone-800 mb-6 text-xs text-stone-400">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span className="text-white font-medium">Mode Visual Click-to-Edit</span>
-              <span className="text-stone-600">•</span>
-              <span className="hidden sm:inline">Klik langsung teks judul, kutipan doa, atau nama untuk mengedit</span>
+        <div className="space-y-4">
+          {/* Palet Warna Sync Bar di Atas Live View */}
+          <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-stone-200 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+              <div>
+                <label className="block text-xs font-bold text-stone-800 uppercase tracking-wider">
+                  Pilih Nuansa Warna Utama:
+                </label>
+                <p className="text-[11px] text-stone-500 mt-0.5">
+                  Ubah nuansa warna secara instan tanpa perlu berpindah tab. Warna otomatis tersinkronisasi dua arah dengan form data undangan.
+                </p>
+              </div>
+              {isDirty.sec1 && (
+                <div className="flex items-center gap-2 self-start sm:self-auto">
+                  <span className="text-[11px] font-medium text-amber-800 bg-amber-50 border border-amber-200/80 px-2.5 py-1 rounded-full flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse"></span>
+                    Palet belum disimpan
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => saveSection("sec1")}
+                    disabled={saving}
+                    className="px-3 py-1 bg-stone-900 hover:bg-stone-800 text-white rounded-lg text-xs font-semibold transition"
+                  >
+                    {saving && savingSec === "sec1" ? "Menyimpan..." : "Simpan Palet"}
+                  </button>
+                </div>
+              )}
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => saveSection()}
-                disabled={saving}
-                className="px-4 py-1.5 bg-gradient-to-r from-amber-700 to-amber-600 hover:from-amber-600 hover:to-amber-500 text-white font-bold rounded-lg text-xs transition shadow-sm"
-              >
-                {saving ? "Menyimpan..." : "Simpan Semua"}
-              </button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {COLOR_PALETTES.map((pal) => {
+                const isSelected = currentPalette === pal.id;
+                return (
+                  <div
+                    key={pal.id}
+                    onClick={() => handleSelectPalette(pal.id)}
+                    className={`p-3 rounded-xl border cursor-pointer flex items-center gap-3 transition ${
+                      isSelected
+                        ? "border-amber-800 bg-amber-50/50 ring-2 ring-amber-800/20 shadow-xs"
+                        : "border-stone-200 hover:border-stone-300 bg-white"
+                    }`}
+                  >
+                    <span
+                      className="w-7 h-7 rounded-full shadow-inner border border-black/10 flex-shrink-0"
+                      style={{ backgroundColor: pal.hex }}
+                    ></span>
+                    <div className="min-w-0">
+                      <h4 className="text-xs font-bold text-stone-900 truncate">{pal.name}</h4>
+                      <p className="text-[10px] text-stone-500 line-clamp-1">{pal.desc}</p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          <div
-            className={`transition-all duration-300 rounded-2xl overflow-hidden border border-stone-700/60 shadow-2xl bg-black flex justify-center ${
-              previewDevice === "mobile"
-                ? "w-[390px] h-[780px] max-w-full"
-                : "w-full h-[850px]"
-            }`}
-          >
-            <iframe
-              ref={liveIframeRef}
-              src={`/api/client/invitations/${invitationId}/preview?mode=edit`}
-              className="w-full h-full border-0 bg-stone-900"
-              title="Live Visual Editor"
-            />
+          {/* ==========================================================================
+             LIVE VISUAL INLINE EDITOR CANVAS (CANVA / NOTION STYLE)
+             ========================================================================== */}
+          <div className="bg-stone-950 rounded-3xl p-4 sm:p-8 border border-stone-800 shadow-xl flex flex-col items-center min-h-[850px]">
+            <div className="w-full flex items-center justify-between pb-4 border-b border-stone-800 mb-6 text-xs text-stone-400">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span className="text-white font-medium">Mode Visual Click-to-Edit</span>
+                <span className="text-stone-600">•</span>
+                <span className="hidden sm:inline">Klik langsung teks judul, kutipan doa, atau nama untuk mengedit</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => saveSection()}
+                  disabled={saving}
+                  className="px-4 py-1.5 bg-gradient-to-r from-amber-700 to-amber-600 hover:from-amber-600 hover:to-amber-500 text-white font-bold rounded-lg text-xs transition shadow-sm"
+                >
+                  {saving ? "Menyimpan..." : "Simpan Semua"}
+                </button>
+              </div>
+            </div>
+
+            <div
+              className={`transition-all duration-300 rounded-2xl overflow-hidden border border-stone-700/60 shadow-2xl bg-black flex justify-center ${
+                previewDevice === "mobile"
+                  ? "w-[390px] h-[780px] max-w-full"
+                  : "w-full h-[850px]"
+              }`}
+            >
+              <iframe
+                ref={liveIframeRef}
+                src={`/api/client/invitations/${invitationId}/preview?mode=edit`}
+                onLoad={() => applyPaletteToIframe(currentPalette)}
+                className="w-full h-full border-0 bg-stone-900"
+                title="Live Visual Editor"
+              />
+            </div>
           </div>
         </div>
       ) : (
@@ -1537,7 +1640,7 @@ export default function EditInvitation() {
                   return (
                     <div
                       key={pal.id}
-                      onClick={() => updateFeatureSetting("colorPalette", pal.id)}
+                      onClick={() => handleSelectPalette(pal.id)}
                       className={`p-3 rounded-xl border cursor-pointer flex items-center gap-3 transition ${
                         isSelected
                           ? "border-amber-800 bg-amber-50/50 ring-2 ring-amber-800/20"

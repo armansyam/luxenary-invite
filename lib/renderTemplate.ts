@@ -552,6 +552,23 @@ const INLINE_LIVE_EDITOR_SCRIPT = `
     }
   };
 
+  // Live Palette Synchronization Listener
+  window.addEventListener('message', function(e) {
+    if (!e.data || typeof e.data !== 'object') return;
+    if (e.data.type === 'LUX_PALETTE_CHANGED' && e.data.palette) {
+      const p = e.data.palette;
+      const targets = [document.body, document.documentElement].filter(Boolean);
+      targets.forEach(function(el) {
+        if (p.primary) el.style.setProperty('--gold', p.primary);
+        if (p.secondary) el.style.setProperty('--gold-dim', p.secondary);
+        if (p.bgLight) el.style.setProperty('--gold-pale', p.bgLight);
+        if (p.primary) el.style.setProperty('--primary', p.primary);
+        if (p.secondary) el.style.setProperty('--secondary', p.secondary);
+        if (p.accent) el.style.setProperty('--accent', p.accent);
+      });
+    }
+  });
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initEditableFields);
   } else {
