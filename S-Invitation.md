@@ -1,5 +1,5 @@
 # S-Invitation: Luxenary Invite System Architecture & Master Specification
-> **Versi: 5.6.1 | Diperbarui: 09 September 2026**
+> **Versi: 5.7.0 | Diperbarui: 09 September 2026**
 
 ## 1. Executive Summary & Core Philosophy
 **Luxenary Invite** adalah platform ekosistem undangan pernikahan digital modern berbasis Next.js 16 (App Router + Turbopack) yang menghadirkan pengalaman visual mewah (*haute couture*), kecepatan muat instan (<0.8 detik), self-service dashboard mandiri bagi klien, dan integrasi cloud edge caching.
@@ -285,8 +285,8 @@ Siklus hidup undangan diatur secara otomatis oleh cron job (`POST /api/cron/clea
    - **Seksi Penutup Adaptif Layar Penuh (`min-height: 100vh`):** Seksi outro/penutup (`.site-footer` / `.closing-sec`) dijamin selalu berukuran layar penuh `100vh` untuk kenyamanan navigasi scroll snap, menghilangkan masalah footer "nyempil" atau terpotong.
    - **Mode Kanvas Kosong (Default / Tanpa Foto Penutup):** Jika klien tidak mengunggah foto penutup (`CLOSING_COVER`), seksi otomatis menerima class `.no-closing-photo`. Background murni menggunakan palet warna tema (HARAM menggunakan fallback gambar dummy/Unsplash palsu). Konten teks ucapan terima kasih dan nama mempelai (`{{firstName}} & {{secondName}}`) terposisikan tepat di tengah-tengah layar secara vertikal dan horizontal (`justify-content: center; align-items: center;`).
    - **Mode Foto Penutup Terunggah:** Jika foto penutup diunggah (`.has-closing-photo`), foto mengisi latar belakang layar penuh (`background-size: cover; background-position: center;`) dengan overlay scrim gelap/gradasi elegan, dan blok teks penutup otomatis bergeser ke area bawah layar (*bottom-aligned*, `justify-content: flex-end;`).
-9. **Spesifikasi Theme Demo Studio & Dukungan Video MP4 / Audio BGM:**
-   - **Upload Video MP4 (Cover, Hero, & Background):** Demo Studio Admin mendukung upload file video `.mp4` / `.webm` untuk slot sampul (`cover`), sidebar/hero desktop (`hero`), dan background global (`background`). Mesin render (`lib/renderTemplate.ts`) secara otomatis memutar video ambient loop muted (`<video autoplay loop muted playsinline>`).
+9. **Spesifikasi Theme Demo Studio & Dukungan Video MP4 / Audio BGM (v5.7.0)**:
+   - **Upload Video MP4 (Cover, Hero, Background, Home, & Closing):** Mesin render (`lib/renderTemplate.ts`) mendukung pemutaran video ambient loop muted (`<video autoplay loop muted playsinline>`) untuk slot sampul (`cover`), sidebar/hero desktop (`hero`), background global (`background`), serta seksi pembuka (`homePhotoUrl` → `.lux-home-video`) dan seksi penutup (`closingPhotoUrl` → `.lux-closing-video`).
    - **Pembersihan File Format Berlawanan:** Endpoint `demo-asset` otomatis membersihkan file format berlawanan (misal menghapus `.webp` lama saat `.mp4` diunggah) dan menyinkronkan URL ke `AdminSetting` (`theme_demo_${themeId}`) serta mengompilasi ulang halaman demo statis.
    - **Audio BGM Demo Showroom:** Tab Aset Visual & Audio menyediakan slot pemutar dan pengunggah audio (`music.mp3`/`music.ogg`) yang otomatis dipicu saat tombol "Buka Undangan" ditekan.
    - **Prinsip Content-Driven Rendering:** Meniadakan saklar on/off manual dan kerumitan kustomisasi label. Seksi otomatis tampil bila data diisi (cerita, rekening hadiah, dll.) dan padam bila dikosongkan.
@@ -295,11 +295,15 @@ Siklus hidup undangan diatur secara otomatis oleh cron job (`POST /api/cron/clea
 10. **Standarisasi Formulir RSVP & Buku Tamu Interaktif (15 Master Tema Fisik):**
     - Seluruh 15 tema fisik kini secara konsisten menyematkan blok `<form id="rsvpForm" onsubmit="luxSubmitRsvp(event)">` lengkap dengan input Nama Lengkap (`#rsvpName`), pilihan Kehadiran (`#rsvpStatus`), jumlah tamu (`#rsvpCount`), dan textarea Ucapan & Doa (`#rsvpMessage`), yang membungkus feed ucapan `{{wishesHtml}}` di dalam container `.wishes-list#wishesList`.
     - Menghilangkan anomali seksi kosong tanpa formulir pada tema-tema seperti `candani`, `mayang`, `badrika`, `lumina`, `solaria`, dan `chronicle`.
-    - Terkoneksi secara otomatis ke endpoint publik `/api/public/rsvp` via engine JavaScript universal di `lib/renderTemplate.ts`, dengan kapabilitas real-time prepend ucapan baru ke dalam daftar seketika setelah formulir berhasil dikirim.
+    - Terkoneksi secara otomatis ke endpoint publik `/api/public/rsvp` via engine JavaScript universal di `lib/renderTemplate.ts`, dengan kapabilitas real-time prepend ucapan baru ke dalam daftar seketika setelah formulir berhasil dikirim, serta status feedback box elegan (`#luxRsvpStatusBox`) tanpa native browser alert.
 11. **Pustaka Musik Sistem Dinamis (Zero Hardcode):**
     - **Database-Driven Presets (`MusicPreset`):** Koleksi musik sistem dikelola secara dinamis via database PostgreSQL (`music_presets`), menggantikan seluruh array dan fallback hardcode di sisi klien.
     - **Portal Admin Sub-Tab Musik:** Tab "Tema & Musik" menyediakan sub-tab "Pustaka Musik Sistem" untuk menambah lagu baru (dengan auto-kompresi FFmpeg 128 kbps MP3 yang hemat bandwidth), menyunting judul/komposer/genre, memutar pratinjau audio langsung, mengaktifkan/menonaktifkan lagu untuk klien, dan menghapus lagu dari pustaka.
     - **Integrasi Klien Real-Time (`/api/public/music`):** Dasbor klien memuat daftar lagu aktif secara dinamis dan menampilkannya di pemilih lagu pernikahan tanpa data statis palsu.
+12. **Standar Antarmuka Bersih SaaS & Zero Native Dialogs:**
+    - Seluruh dialog konfirmasi penghapusan (Klien, Undangan, Portofolio, Domain Kustom, Tamu, RSVP) dan notifikasi status menggunakan dialog modal kustom berlatar *backdrop blur*, kartu bersudut lengkung *rounded-2xl*, tombol aksi berdiferensiasi tegas (batal vs konfirmasi), dan status aksi dinamis.
+    - **In-Button Feedback Principle:** Aksi yang bersifat konfirmasi lokal atau salin tautan (seperti tombol Salin Link, Samakan Tema, simpan seksi) mempertahankan respons visual langsung di tombolnya sendiri tanpa memunculkan toast berlebihan. Toast melayang (`fixed bottom-6 right-6 z-[80]`) dirancang ringkas dan minimalis khusus untuk pesan sistem penting dan kendala server/koneksi dengan auto-dismiss 4 detik.
+    - Zero `window.alert()` dan zero `window.confirm()` di seluruh modul operasional maupun publik.
 
 ---
 

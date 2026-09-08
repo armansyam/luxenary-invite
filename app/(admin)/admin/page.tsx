@@ -350,6 +350,14 @@ export default function AdminPage() {
   const [clientActionMsg, setClientActionMsg] = useState<{ ok: boolean; msg: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [impersonatingClient, setImpersonatingClient] = useState(false);
+  const [adminToast, setAdminToast] = useState<{ ok: boolean; msg: string } | null>(null);
+
+  const showAdminToast = (msg: string, ok: boolean = true) => {
+    setAdminToast({ ok, msg });
+    setTimeout(() => {
+      setAdminToast((prev) => (prev?.msg === msg ? null : prev));
+    }, 4000);
+  };
 
   const handleImpersonateClient = async (clientId: string, clientEmail: string, clientName: string) => {
     try {
@@ -737,7 +745,6 @@ export default function AdminPage() {
   }, []);
 
   const handleDeleteClient = async (id: string) => {
-    if (!confirm("Hapus klien ini secara permanen? Semua data undangan dan transaksi miliknya akan terhapus juga!")) return;
     setDeletingClient(true);
     setClientActionMsg(null);
     try {
@@ -854,9 +861,6 @@ export default function AdminPage() {
   };
 
   const handleRestoreSnapshot = async (filename: string) => {
-    if (!window.confirm(`PERINGATAN: Anda akan me-restore database dari snapshot:\n${filename}\n\nSistem akan otomatis membuat safety backup terlebih dahulu sebelum menimpa. Lanjutkan?`)) {
-      return;
-    }
     setRestoringSnapshot(filename);
     setBackupActionMsg(null);
     try {
@@ -885,9 +889,6 @@ export default function AdminPage() {
 
   const handleUploadAndRestore = async () => {
     if (!pendingRestoreFile) return;
-    if (!window.confirm(`PERINGATAN: Database aktif akan ditimpa dengan file:\n${pendingRestoreFile.name}\n\nSistem akan membuat safety backup database saat ini secara otomatis. Lanjutkan proses restore?`)) {
-      return;
-    }
     setUploadingRestoreFile(true);
     setBackupActionMsg(null);
     try {
@@ -915,7 +916,6 @@ export default function AdminPage() {
   };
 
   const handleDeleteSnapshot = async (filename: string) => {
-    if (!window.confirm(`Hapus file snapshot "${filename}" secara permanen?`)) return;
     setDeletingSnapshot(filename);
     setBackupActionMsg(null);
     try {
@@ -963,16 +963,16 @@ export default function AdminPage() {
         setSystemMusics((prev) =>
           prev.map((m) => (m.id === id ? { ...m, isActive: !currentActive } : m))
         );
+        showAdminToast(currentActive ? "Musik dinonaktifkan" : "Musik diaktifkan", true);
       } else {
-        alert(data.error || "Gagal mengubah status musik");
+        showAdminToast(data.error || "Gagal mengubah status musik", false);
       }
     } catch (err) {
-      alert("Terjadi kesalahan jaringan.");
+      showAdminToast("Terjadi kesalahan jaringan saat mengubah status musik.", false);
     }
   };
 
   const handleDeleteMusic = async (id: string, title: string) => {
-    if (!confirm(`Hapus lagu "${title}" dari pustaka musik sistem?`)) return;
     try {
       const res = await fetch(`/api/admin/music/${id}`, { method: "DELETE" });
       const data = await res.json();
@@ -982,11 +982,12 @@ export default function AdminPage() {
           setPlayingMusicId(null);
         }
         setSystemMusics((prev) => prev.filter((m) => m.id !== id));
+        showAdminToast(`Lagu "${title}" berhasil dihapus`, true);
       } else {
-        alert(data.error || "Gagal menghapus musik");
+        showAdminToast(data.error || "Gagal menghapus musik", false);
       }
     } catch (err) {
-      alert("Terjadi kesalahan saat menghapus lagu.");
+      showAdminToast("Terjadi kesalahan saat menghapus lagu.", false);
     }
   };
 
@@ -996,24 +997,25 @@ export default function AdminPage() {
       setPlayingMusicId(null);
       return;
     }
+
     if (musicAudioInstance) {
       musicAudioInstance.pause();
     }
+
     const audio = new Audio(music.url);
-    audio.play().then(() => {
-      setMusicAudioInstance(audio);
-      setPlayingMusicId(music.id);
-    }).catch((e) => {
-      console.error("Gagal memutar audio preview:", e);
-    });
-    audio.onended = () => {
-      setPlayingMusicId(null);
-    };
+    audio.play().catch(() => {});
+    audio.onended = () => setPlayingMusicId(null);
+    setMusicAudioInstance(audio);
+    setPlayingMusicId(music.id);
   };
 
-  const handleOpenAddMusic = () => {
+  const handleOpenAddMusicModal = () => {
     setEditingMusic(null);
-    setMusicForm({ title: "", composer: "", genre: "" });
+    setMusicForm({
+      title: "",
+      composer: "",
+      genre: "ROMANTIC",
+    });
     setSelectedMusicFile(null);
     setShowMusicModal(true);
   };
@@ -1032,7 +1034,7 @@ export default function AdminPage() {
   const handleSaveMusic = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!musicForm.title.trim()) {
-      alert("Judul lagu wajib diisi.");
+      showAdminToast("Judul lagu wajib diisi.", false);
       return;
     }
 
@@ -1054,12 +1056,13 @@ export default function AdminPage() {
             prev.map((m) => (m.id === editingMusic.id ? data.music : m))
           );
           setShowMusicModal(false);
+          showAdminToast("Data musik berhasil diperbarui!", true);
         } else {
-          alert(data.error || "Gagal memperbarui data musik");
+          showAdminToast(data.error || "Gagal memperbarui data musik", false);
         }
       } else {
         if (!selectedMusicFile) {
-          alert("Pilih file audio terlebih dahulu.");
+          showAdminToast("Pilih file audio terlebih dahulu.", false);
           setMusicUploading(false);
           return;
         }
@@ -1078,12 +1081,13 @@ export default function AdminPage() {
         if (data.success) {
           setSystemMusics((prev) => [data.music, ...prev]);
           setShowMusicModal(false);
+          showAdminToast("Musik baru berhasil diunggah!", true);
         } else {
-          alert(data.error || "Gagal mengunggah musik baru");
+          showAdminToast(data.error || "Gagal mengunggah musik baru", false);
         }
       }
     } catch (err: any) {
-      alert(err.message || "Terjadi kesalahan saat menyimpan musik");
+      showAdminToast(err.message || "Terjadi kesalahan saat menyimpan musik", false);
     } finally {
       setMusicUploading(false);
     }
@@ -1261,17 +1265,17 @@ export default function AdminPage() {
   };
 
   const handleDeleteTheme = async (themeId: string, themeName: string) => {
-    if (!confirm(`Hapus tema "${themeName}" (${themeId}) dari katalog?`)) return;
     try {
       const res = await fetch(`/api/admin/themes?id=${themeId}`, { method: "DELETE" });
       if (res.ok) {
+        showAdminToast(`Tema "${themeName}" berhasil dihapus`, true);
         loadOverviewData();
       } else {
         const d = await res.json();
-        alert("Error: " + d.error);
+        showAdminToast("Error: " + d.error, false);
       }
     } catch (err: any) {
-      alert("Gagal: " + err.message);
+      showAdminToast("Gagal: " + err.message, false);
     }
   };
 
@@ -1282,9 +1286,10 @@ export default function AdminPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: th.id, isActive: !th.isActive }),
       });
+      showAdminToast(`Status tema "${th.name}" diperbarui`, true);
       loadOverviewData();
     } catch (err: any) {
-      alert("Gagal: " + err.message);
+      showAdminToast("Gagal: " + err.message, false);
     }
   };
 
@@ -1296,12 +1301,13 @@ export default function AdminPage() {
       const data = await res.json();
       if (data.success) {
         setThemeSyncResult(data);
+        showAdminToast("Sinkronisasi tema berhasil!", true);
         loadOverviewData();
       } else {
-        alert(data.error || "Gagal menyinkronkan tema");
+        showAdminToast(data.error || "Gagal menyinkronkan tema", false);
       }
     } catch (err: any) {
-      alert("Gagal: " + err.message);
+      showAdminToast("Gagal: " + err.message, false);
     } finally {
       setThemeSyncing(false);
     }
@@ -1363,7 +1369,7 @@ export default function AdminPage() {
       });
       setDemoStudioUploadSuccess(null);
     } catch (err: any) {
-      alert("Gagal memuat file gambar lokal: " + err.message);
+      showAdminToast("Gagal memuat file gambar: " + err.message, false);
     }
   };
 
@@ -1549,7 +1555,7 @@ export default function AdminPage() {
       setDemoStudioUploadSuccess(`✓ Semua perubahan demo tema ${demoStudioTheme.name} berhasil disimpan permanen!`);
       setTimeout(() => setDemoStudioUploadSuccess(null), 4000);
     } catch (err: any) {
-      alert("Error: " + err.message);
+      showAdminToast("Error: " + err.message, false);
     } finally {
       setUploadingSlot(null);
       setDemoStudioSaving(false);
@@ -1557,11 +1563,6 @@ export default function AdminPage() {
   };
 
   const handleCloseDemoStudio = () => {
-    if (isDemoStudioDirty) {
-      if (!confirm("Ada draft perubahan yang belum disimpan. Yakin ingin menutup tanpa menyimpan?")) {
-        return;
-      }
-    }
     setShowDemoStudioModal(false);
     setStagedDemoFiles({});
     setStagedDeletedSlots({});
@@ -1570,37 +1571,28 @@ export default function AdminPage() {
 
 
   const handleToggleEmergencyUnlock = async (inv: any) => {
-    const isCurrentlyUnlocked = inv.adminUnlockedUntil && new Date(inv.adminUnlockedUntil) > new Date();
-    const actionLabel = isCurrentlyUnlocked
-      ? `Kunci kembali undangan ${inv.groomName || ""} & ${inv.brideName || ""}?`
-      : `Buka kunci darurat edit undangan untuk ${inv.groomName || ""} & ${inv.brideName || ""} selama 24 jam?`;
-    if (!confirm(actionLabel)) return;
-
     try {
       const res = await fetch(`/api/admin/invitations/${inv.id}/unlock`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           durationHours: 24,
-          lockImmediately: isCurrentlyUnlocked,
+          lockImmediately: inv.adminUnlockedUntil && new Date(inv.adminUnlockedUntil) > new Date(),
         }),
       });
       const data = await res.json();
       if (data.success) {
-        alert(data.message);
+        showAdminToast(data.message, true);
         loadOverviewData();
       } else {
-        alert(data.error || "Gagal mengubah status kunci");
+        showAdminToast(data.error || "Gagal mengubah status kunci", false);
       }
     } catch (e: any) {
-      alert("Error: " + e.message);
+      showAdminToast("Error: " + e.message, false);
     }
   };
 
   const handleCloseToGallery = async (inv: any) => {
-    const couple = `${inv.groomName || ""} & ${inv.brideName || ""}`;
-    if (!confirm(`Tutup undangan utama ${couple} sekarang dan alihkan URL secara otomatis menjadi Galeri Momen Acara?`)) return;
-
     try {
       const res = await fetch(`/api/admin/invitations/${inv.id}/lifecycle`, {
         method: "POST",
@@ -1609,20 +1601,17 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (data.success) {
-        alert(data.message);
+        showAdminToast(data.message, true);
         loadOverviewData();
       } else {
-        alert(data.error || "Gagal menutup undangan");
+        showAdminToast(data.error || "Gagal menutup undangan", false);
       }
     } catch (e: any) {
-      alert("Error: " + e.message);
+      showAdminToast("Error: " + e.message, false);
     }
   };
 
   const handleExtendGallery = async (inv: any) => {
-    const couple = `${inv.groomName || ""} & ${inv.brideName || ""}`;
-    if (!confirm(`Perpanjang masa simpan galeri foto tamu untuk ${couple} sebanyak +30 hari?`)) return;
-
     try {
       const res = await fetch(`/api/admin/invitations/${inv.id}/lifecycle`, {
         method: "POST",
@@ -1631,13 +1620,13 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (data.success) {
-        alert(data.message);
+        showAdminToast(data.message, true);
         loadOverviewData();
       } else {
-        alert(data.error || "Gagal memperpanjang galeri");
+        showAdminToast(data.error || "Gagal memperpanjang galeri", false);
       }
     } catch (e: any) {
-      alert("Error: " + e.message);
+      showAdminToast("Error: " + e.message, false);
     }
   };
 
@@ -1650,8 +1639,9 @@ export default function AdminPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...invData, themeId: newTheme }),
       });
+      showAdminToast("Tema berhasil dialihkan", true);
       loadOverviewData();
-    } catch (err: any) { alert("Gagal: " + err.message); }
+    } catch (err: any) { showAdminToast("Gagal: " + err.message, false); }
   };
 
   const handleApproveOrder = async (orderId: string) => {
@@ -1660,21 +1650,15 @@ export default function AdminPage() {
     try {
       const res = await fetch(`/api/admin/orders/${orderId}/approve`, { method: "POST" });
       if (res.ok) {
-        setOrderActionFeedback({ id: orderId, type: "success", msg: "Lunas & Aktif!" });
         setConfirmApproveOrderId(null);
-        setTimeout(() => {
-          setPreviewProofOrder(null);
-          setOrderActionFeedback(null);
-          loadOverviewData(true);
-        }, 700);
+        setPreviewProofOrder(null);
+        loadOverviewData(true);
       } else {
         const d = await res.json();
-        setOrderActionFeedback({ id: orderId, type: "error", msg: d.error || "Gagal konfirmasi" });
-        setTimeout(() => setOrderActionFeedback(null), 3500);
+        setOrderActionFeedback({ id: orderId, type: "error", msg: d.error || "Gagal menyetujui transaksi." });
       }
     } catch (err: any) {
-      setOrderActionFeedback({ id: orderId, type: "error", msg: err.message || "Gagal konfirmasi" });
-      setTimeout(() => setOrderActionFeedback(null), 3500);
+      setOrderActionFeedback({ id: orderId, type: "error", msg: err.message || "Gagal menyetujui transaksi." });
     } finally {
       setProcessingOrderAction(false);
     }
@@ -1694,13 +1678,14 @@ export default function AdminPage() {
         setPreviewProofOrder(null);
         setRejectReasonInput("");
         setConfirmApproveOrderId(null);
+        showAdminToast("Transaksi berhasil ditolak", true);
         loadOverviewData(true);
       } else {
         const d = await res.json();
-        alert("Error: " + d.error);
+        showAdminToast("Error: " + d.error, false);
       }
     } catch (err: any) {
-      alert("Gagal: " + err.message);
+      showAdminToast("Gagal: " + err.message, false);
     } finally {
       setProcessingOrderAction(false);
     }
@@ -2724,7 +2709,7 @@ export default function AdminPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={handleOpenAddMusic}
+                        onClick={handleOpenAddMusicModal}
                         className="px-3.5 py-2 bg-stone-900 hover:bg-stone-800 text-white text-xs font-semibold rounded-xl transition flex items-center gap-1.5 shadow-xs cursor-pointer"
                       >
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2754,7 +2739,7 @@ export default function AdminPage() {
                       </p>
                       <button
                         type="button"
-                        onClick={handleOpenAddMusic}
+                        onClick={handleOpenAddMusicModal}
                         className="px-4 py-2 bg-stone-900 text-white rounded-xl text-xs font-semibold hover:bg-stone-800 transition cursor-pointer"
                       >
                         + Tambah Lagu Pertama
@@ -5329,15 +5314,21 @@ export default function AdminPage() {
               <button
                 type="button"
                 onClick={() => setShowThemeModal(false)}
-                className="text-gray-400 hover:text-gray-600 font-bold text-lg"
+                className="p-1.5 text-stone-400 hover:text-stone-700 rounded-lg hover:bg-stone-100 transition cursor-pointer"
+                title="Tutup"
               >
-                ✕
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
 
             {themeError && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs">
-                ⚠ {themeError}
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs flex items-center gap-2">
+                <svg className="w-4 h-4 shrink-0 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <span>{themeError}</span>
               </div>
             )}
 
@@ -7750,6 +7741,27 @@ export default function AdminPage() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Global Admin Toast Notification */}
+      {adminToast && (
+        <div
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl shadow-xl border bg-white/95 backdrop-blur-md max-w-md animate-in slide-in-from-bottom-3 duration-200"
+          style={{ borderColor: adminToast.ok ? "#a7f3d0" : "#fecdd3" }}
+        >
+          <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${adminToast.ok ? "bg-emerald-500" : "bg-rose-500"}`} />
+          <span className="text-xs font-semibold text-stone-800 leading-snug">{adminToast.msg}</span>
+          <button
+            type="button"
+            onClick={() => setAdminToast(null)}
+            className="p-1 text-stone-400 hover:text-stone-600 rounded-lg hover:bg-stone-100 transition cursor-pointer shrink-0 ml-1"
+            title="Tutup pesan"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
       )}
 

@@ -1111,25 +1111,64 @@ export async function renderTemplateFile(
   </style>`;
   const metaTags = data.metaTagsHtml ? `${data.metaTagsHtml}\n` : '';
   let closingStyle = '';
+  let closingVideoHtml = '';
   if (data.closingPhotoUrl) {
-    const safeUrl = sanitizeCssUrl(String(data.closingPhotoUrl));
-    if (safeUrl) {
+    if (isVideoMedia(data.closingPhotoUrl)) {
+      const safeClosingVideo = escapeHtmlAttr(String(data.closingPhotoUrl));
+      closingVideoHtml = `<video class="lux-closing-video" autoplay loop muted playsinline webkit-playsinline preload="auto"><source src="${safeClosingVideo}" type="video/mp4"></video>`;
       closingStyle = `\n<style>
+      .lux-closing-video {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center bottom;
+        z-index: 0;
+        pointer-events: none;
+      }
       .site-footer, footer, footer#footer {
-        background-image: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 38%, rgba(0,0,0,0.55) 65%, rgba(0,0,0,0.92) 100%), url('${safeUrl}') !important;
-        background-size: cover !important;
-        background-position: center bottom !important;
+        position: relative !important;
+        overflow: hidden !important;
+        background-image: none !important;
         color: #fff !important;
         border-top: none !important;
-        position: relative;
       }
       .site-footer::before, footer::before, footer#footer::before {
-        display: none !important;
+        content: '' !important;
+        position: absolute !important;
+        inset: 0 !important;
+        background: linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.45) 50%, rgba(0,0,0,0.85) 100%) !important;
+        z-index: 1 !important;
+        pointer-events: none !important;
+        display: block !important;
       }
-      .site-footer *, footer *, footer#footer * {
+      .site-footer > *:not(.lux-closing-video), footer > *:not(.lux-closing-video), footer#footer > *:not(.lux-closing-video) {
+        position: relative !important;
+        z-index: 2 !important;
         color: #fff !important;
       }
     </style>`;
+    } else {
+      const safeUrl = sanitizeCssUrl(String(data.closingPhotoUrl));
+      if (safeUrl) {
+        closingStyle = `\n<style>
+        .site-footer, footer, footer#footer {
+          background-image: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 38%, rgba(0,0,0,0.55) 65%, rgba(0,0,0,0.92) 100%), url('${safeUrl}') !important;
+          background-size: cover !important;
+          background-position: center bottom !important;
+          color: #fff !important;
+          border-top: none !important;
+          position: relative;
+        }
+        .site-footer::before, footer::before, footer#footer::before {
+          display: none !important;
+        }
+        .site-footer *, footer *, footer#footer * {
+          color: #fff !important;
+        }
+      </style>`;
+      }
     }
   }
 
@@ -1251,30 +1290,71 @@ export async function renderTemplateFile(
     `;
   }
 
+  let homeVideoHtml = "";
   if (data.hasCustomHomePhoto && data.homePhotoUrl) {
-    const safeHomePhoto = sanitizeCssUrl(String(data.homePhotoUrl));
-    if (safeHomePhoto) {
+    if (isVideoMedia(data.homePhotoUrl)) {
+      const safeHomeVideo = escapeHtmlAttr(String(data.homePhotoUrl));
+      homeVideoHtml = `<video class="lux-home-video" autoplay loop muted playsinline webkit-playsinline preload="auto"><source src="${safeHomeVideo}" type="video/mp4"></video>`;
       videoStyles += `
+      .lux-home-video {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center center;
+        z-index: 0;
+        pointer-events: none;
+      }
       .slide-opening#home, section#home.slide-opening, section#home, .sec-hero-slideshow#home {
-        background-image: linear-gradient(to bottom, rgba(7,7,9,0.55) 0%, rgba(7,7,9,0.35) 40%, rgba(7,7,9,0.80) 100%), url('${safeHomePhoto}') !important;
-        background-size: cover !important;
-        background-position: center center !important;
-        background-repeat: no-repeat !important;
+        position: relative !important;
+        overflow: hidden !important;
+        background-image: none !important;
+      }
+      .slide-opening#home::before, section#home::before, .sec-hero-slideshow#home::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to bottom, rgba(7,7,9,0.55) 0%, rgba(7,7,9,0.35) 40%, rgba(7,7,9,0.80) 100%);
+        z-index: 1;
+        pointer-events: none;
+      }
+      .slide-opening#home > *:not(.lux-home-video), section#home > *:not(.lux-home-video), .sec-hero-slideshow#home > *:not(.lux-home-video) {
+        position: relative;
+        z-index: 2;
       }
       `;
+    } else {
+      const safeHomePhoto = sanitizeCssUrl(String(data.homePhotoUrl));
+      if (safeHomePhoto) {
+        videoStyles += `
+        .slide-opening#home, section#home.slide-opening, section#home, .sec-hero-slideshow#home {
+          background-image: linear-gradient(to bottom, rgba(7,7,9,0.55) 0%, rgba(7,7,9,0.35) 40%, rgba(7,7,9,0.80) 100%), url('${safeHomePhoto}') !important;
+          background-size: cover !important;
+          background-position: center center !important;
+          background-repeat: no-repeat !important;
+        }
+        `;
+      }
     }
   }
 
   const combinedVideoStyle = videoStyles ? `\n<style>\n${videoStyles}\n</style>` : "";
 
   if (coverVideoHtml) {
-    tpl = tpl.replace(/(<div[^>]*class="[^"]*\bcover-screen\b[^"]*"[^>]*>)/i, `$1\n    ${coverVideoHtml}`);
+    tpl = tpl.replace(/(<div[^>]*class="[^"]*\b(cover-screen|cover-overlay)\b[^"]*"[^>]*>)/i, `$1\n    ${coverVideoHtml}`);
   }
   if (sidebarVideoHtml) {
     tpl = tpl.replace(/(<div[^>]*class="[^"]*\bleft-hero\b[^"]*"[^>]*>)/i, `$1\n    ${sidebarVideoHtml}`);
   }
   if (fixedBgVideoHtml) {
     tpl = tpl.replace(/(<body[^>]*>)/i, `$1\n  ${fixedBgVideoHtml}`);
+  }
+  if (homeVideoHtml) {
+    tpl = tpl.replace(/(<section[^>]*id="home"[^>]*>|<div[^>]*class="[^"]*\bslide-opening\b[^"]*"[^>]*>)/i, `$1\n    ${homeVideoHtml}`);
+  }
+  if (closingVideoHtml) {
+    tpl = tpl.replace(/(<footer[^>]*>|<div[^>]*class="[^"]*\bsite-footer\b[^"]*"[^>]*>)/i, `$1\n    ${closingVideoHtml}`);
   }
 
   // --- PRELOADER INJECTION (HYBRID ARCHITECTURE) ---

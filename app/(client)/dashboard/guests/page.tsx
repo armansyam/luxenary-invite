@@ -73,6 +73,7 @@ export default function GuestsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [guestToDelete, setGuestToDelete] = useState<{ id: string; name: string } | null>(null);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
@@ -181,12 +182,16 @@ export default function GuestsPage() {
     }
   };
 
-  const handleDeleteGuest = async (id: string) => {
-    if (!confirm("Hapus tamu ini dari daftar undangan?")) return;
+  const confirmDeleteGuest = async () => {
+    if (!guestToDelete) return;
+    const targetId = guestToDelete.id;
     setLoading(true);
     try {
-      await fetch(`/api/client/guests/${id}`, { method: "DELETE" });
+      await fetch(`/api/client/guests/${targetId}`, { method: "DELETE" });
+      setGuestToDelete(null);
       loadGuests(invitationId);
+    } catch {
+      setError("Gagal menghapus tamu");
     } finally {
       setLoading(false);
     }
@@ -758,7 +763,7 @@ export default function GuestsPage() {
                     {/* Delete Button */}
                     <button
                       type="button"
-                      onClick={() => handleDeleteGuest(guest.id)}
+                      onClick={() => setGuestToDelete({ id: guest.id, name: guest.name })}
                       className="p-1.5 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
                       title="Hapus Tamu"
                     >
@@ -1125,6 +1130,42 @@ export default function GuestsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Guest Confirmation Modal */}
+      {guestToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-stone-200 space-y-4">
+            <div className="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </div>
+            <div className="text-center space-y-1.5">
+              <h3 className="text-base font-bold text-stone-900">Hapus Tamu Undangan?</h3>
+              <p className="text-xs text-stone-600">
+                Apakah Anda yakin ingin menghapus <strong className="text-stone-900 font-semibold">{guestToDelete.name}</strong> dari daftar tamu? Tautan khusus dan catatan RSVP tamu ini akan dihapus.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setGuestToDelete(null)}
+                className="flex-1 py-2.5 px-4 text-xs font-semibold text-stone-600 bg-stone-100 hover:bg-stone-200 rounded-xl transition cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteGuest}
+                disabled={loading}
+                className="flex-1 py-2.5 px-4 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition shadow-sm cursor-pointer disabled:opacity-50"
+              >
+                {loading ? "Menghapus..." : "Hapus Tamu"}
+              </button>
+            </div>
           </div>
         </div>
       )}

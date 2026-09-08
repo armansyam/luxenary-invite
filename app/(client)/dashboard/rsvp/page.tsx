@@ -56,10 +56,7 @@ export default function RsvpPage() {
   });
 
   const handleExportCSV = () => {
-    if (rsvps.length === 0) {
-      alert("Belum ada data RSVP untuk diekspor.");
-      return;
-    }
+    if (rsvps.length === 0) return;
     const headers = ["Nama Tamu", "Status Kehadiran", "Jumlah Pax", "Pesan / Doa", "Waktu Respon"];
     const rows = rsvps.map((r) => [
       `"${r.guestName || ""}"`,
@@ -111,7 +108,9 @@ export default function RsvpPage() {
           <button
             type="button"
             onClick={handleExportCSV}
-            className="px-4 py-2.5 bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+            disabled={rsvps.length === 0 || loading}
+            title={rsvps.length === 0 ? "Belum ada data RSVP untuk diekspor" : "Unduh data RSVP ke format CSV"}
+            className="px-4 py-2.5 bg-stone-900 hover:bg-stone-800 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-2 cursor-pointer shadow-xs"
           >
             <svg className="w-4 h-4 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />

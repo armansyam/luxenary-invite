@@ -125,6 +125,15 @@ export default function EditInvitation() {
   const [upgrading, setUpgrading] = useState(false);
   const [upgradeError, setUpgradeError] = useState<string | null>(null);
   const [isDeploying, setIsDeploying] = useState(false);
+  const [studioNotification, setStudioNotification] = useState<{ type: "error" | "success"; message: string } | null>(null);
+
+  useEffect(() => {
+    if (!studioNotification) return;
+    const timer = setTimeout(() => {
+      setStudioNotification(null);
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [studioNotification]);
 
   const PLAN_HIERARCHY: Record<string, number> = { TRADITIONAL: 1, MODERN: 2, PREMIUM: 3 };
   const PLAN_PRICES: Record<string, number> = {
@@ -207,9 +216,22 @@ export default function EditInvitation() {
     };
   }, [audioElement]);
 
+  const [audioUploadError, setAudioUploadError] = useState<string | null>(null);
+
   const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !invitationId) return;
+
+    setAudioUploadError(null);
+
+    // Audio size guard (Maks 20 MB)
+    const maxAudioSize = 20 * 1024 * 1024;
+    if (file.size > maxAudioSize) {
+      const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+      setAudioUploadError(`Ukuran file musik "${file.name}" (${sizeMB} MB) melebihi batas maksimal 20 MB. Silakan gunakan file musik berukuran lebih kecil.`);
+      e.target.value = "";
+      return;
+    }
 
     setUploadingAudio(true);
     try {
@@ -223,15 +245,19 @@ export default function EditInvitation() {
         body: data,
       });
 
-      if (!res.ok) throw new Error("Gagal mengunggah file audio");
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || "Gagal mengunggah file audio ke server");
+      }
       const result = await res.json();
       if (result.url) {
+        setAudioUploadError(null);
         updateField("musicUrl", result.url);
         updateFeatureSetting("musicUrl", result.url);
         updateFeatureSetting("showMusic", true);
       }
     } catch (err: any) {
-      alert(err.message || "Gagal mengunggah file musik");
+      setAudioUploadError(err.message || "Gagal mengunggah file musik. Periksa koneksi internet Anda.");
     } finally {
       setUploadingAudio(false);
     }
@@ -436,7 +462,10 @@ export default function EditInvitation() {
       } catch {}
     } catch (err: any) {
       console.error("Save failed:", err);
-      alert("Terjadi kendala saat menyimpan. Silakan coba lagi.");
+      setStudioNotification({
+        type: "error",
+        message: "Terjadi kendala saat menyimpan data ke server. Silakan periksa koneksi internet Anda dan coba lagi.",
+      });
     } finally {
       setSaving(false);
       setSavingSec(null);
@@ -446,6 +475,7 @@ export default function EditInvitation() {
   const handleDeployAndLock = async () => {
     if (!invitation || isDeploying) return;
     setIsDeploying(true);
+    setStudioNotification(null);
     try {
       const res = await fetch(`/api/client/invitations/${invitationId}`, {
         method: "PUT",
@@ -464,7 +494,10 @@ export default function EditInvitation() {
         lockReason: "PUBLISHED",
       }));
     } catch (err: any) {
-      alert(err.message || "Terjadi kendala saat memperbarui undangan online.");
+      setStudioNotification({
+        type: "error",
+        message: err.message || "Terjadi kendala saat memperbarui undangan online.",
+      });
     } finally {
       setIsDeploying(false);
     }
@@ -1695,10 +1728,11 @@ export default function EditInvitation() {
               />
               <PhotoInput
                 label="Latar Belakang Home (Opsional)"
-                desc="Foto di seksi pembuka setelah sampul dibuka. Jika kosong, otomatis menggunakan kanvas atau warna latar bawaan tema."
+                desc="Foto atau Video di seksi pembuka setelah sampul dibuka. Jika kosong, otomatis menggunakan kanvas atau warna latar bawaan tema."
                 value={media["HOME_PHOTO"] || ""}
                 onChange={(url) => updateMedia("HOME_PHOTO", url)}
-                placeholder="https://.../home-bg.jpg"
+                placeholder="https://.../home-bg.jpg atau .mp4"
+                allowVideo={true}
                 invitationId={invitationId}
                 slot="HOME_PHOTO"
                 onUploadStart={handleUploadStart}
@@ -1717,11 +1751,12 @@ export default function EditInvitation() {
                 onUploadEnd={handleUploadEnd}
               />
               <PhotoInput
-                label="Foto Penutup (Footer - Opsional)"
-                desc="Foto background di seksi penutup undangan. Jika kosong, otomatis menggunakan desain penutup asli tema."
+                label="Media Penutup (Footer - Opsional)"
+                desc="Foto atau Video background di seksi penutup undangan. Jika kosong, otomatis menggunakan desain penutup asli tema."
                 value={media["CLOSING_COVER"] || ""}
                 onChange={(url) => updateMedia("CLOSING_COVER", url)}
-                placeholder="https://.../closing.jpg"
+                placeholder="https://.../closing.jpg atau .mp4"
+                allowVideo={true}
                 invitationId={invitationId}
                 slot="CLOSING_COVER"
                 onUploadStart={handleUploadStart}
@@ -1729,7 +1764,7 @@ export default function EditInvitation() {
               />
               <PhotoInput
                 label="Global Fixed Background (Opsional)"
-                desc="Foto latar belakang kanvas di balik kartu undangan. Jika kosong, otomatis menggunakan wallpaper atau warna asli tema."
+                desc="Foto atau Video latar belakang kanvas di balik kartu undangan. Jika kosong, otomatis menggunakan wallpaper atau warna asli tema."
                 value={media["GLOBAL_FIXED_BG"] || ""}
                 onChange={(url) => updateMedia("GLOBAL_FIXED_BG", url)}
                 placeholder="https://.../fixed-bg.jpg atau .mp4"
@@ -1828,10 +1863,10 @@ export default function EditInvitation() {
                   </div>
 
                   {/* Direct Upload Option */}
-                  <div className="p-3.5 bg-white rounded-xl border border-dashed border-amber-800/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className={`p-3.5 bg-white rounded-xl border border-dashed transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${audioUploadError ? "border-rose-300 bg-rose-50/30" : "border-amber-800/40"}`}>
                     <div>
                       <span className="text-xs font-bold text-stone-900 block">Upload File Musik (.mp3 / .m4a)</span>
-                      <span className="text-[11px] text-stone-500">Pilih lagu dari laptop atau HP Anda (Maksimal 15 MB)</span>
+                      <span className="text-[11px] text-stone-500">Pilih lagu dari laptop atau HP Anda (Maksimal 20 MB)</span>
                     </div>
                     <label className={`px-4 py-2 bg-amber-800 hover:bg-amber-900 text-white font-bold rounded-xl text-xs transition shadow-xs flex items-center gap-1.5 shrink-0 cursor-pointer ${uploadingAudio ? "opacity-60 cursor-not-allowed" : ""}`}>
                       {uploadingAudio ? (
@@ -1856,6 +1891,28 @@ export default function EditInvitation() {
                       />
                     </label>
                   </div>
+
+                  {audioUploadError && (
+                    <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-xs text-rose-800 animate-in fade-in duration-200">
+                      <svg className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-rose-900 leading-tight">Gagal Mengunggah Lagu</p>
+                        <p className="text-[11px] text-rose-700 mt-0.5 leading-relaxed">{audioUploadError}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setAudioUploadError(null)}
+                        className="text-rose-400 hover:text-rose-700 p-0.5 rounded transition cursor-pointer"
+                        title="Tutup pesan"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
 
                   {/* Curated Presets Selection */}
                   <div>
@@ -3089,7 +3146,9 @@ export default function EditInvitation() {
                           </>
                         ) : (
                           <>
-                            <span className="text-amber-600">✨</span>
+                            <svg className="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                            </svg>
                             <span>Samakan Tema ({activeTheme.toUpperCase()})</span>
                           </>
                         )}
@@ -3948,6 +4007,29 @@ export default function EditInvitation() {
         </div>
       )}
 
+      {/* Studio Action Notification Toast (Fixed Viewport, Minimalist SaaS) */}
+      {studioNotification && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-6 right-6 z-[80] flex items-center gap-3 px-4 py-3 rounded-2xl shadow-xl border bg-white/95 backdrop-blur-md max-w-md animate-in slide-in-from-bottom-3 duration-200"
+          style={{ borderColor: studioNotification.type === "error" ? "#fecdd3" : "#a7f3d0" }}
+        >
+          <span className={`w-2 h-2 rounded-full shrink-0 ${studioNotification.type === "error" ? "bg-rose-500" : "bg-emerald-500"}`} />
+          <p className="text-xs font-semibold text-stone-800 leading-snug flex-1">{studioNotification.message}</p>
+          <button
+            type="button"
+            onClick={() => setStudioNotification(null)}
+            className="p-1 text-stone-400 hover:text-stone-600 rounded-lg hover:bg-stone-100 transition cursor-pointer shrink-0 ml-1"
+            title="Tutup pesan"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
+
     </div>
   );
 }
@@ -4014,6 +4096,12 @@ function PhotoInput({
 }) {
   const [uploading, setUploading] = useState(false);
   const [showUrlInput, setShowUrlInput] = useState(false);
+  const [uploadError, setUploadError] = useState<{
+    title: string;
+    message: string;
+    fileName?: string;
+    fileSize?: string;
+  } | null>(null);
 
   const isVideo = Boolean(
     value && /\.(mp4|webm|mov)(\?.*)?$/i.test(value)
@@ -4023,6 +4111,8 @@ function PhotoInput({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setUploadError(null);
+
     // Client-side file size guards
     const isVideoFile = file.type.startsWith("video/") || /\.(mp4|webm|mov)$/i.test(file.name);
     const maxVideoSize = 30 * 1024 * 1024; // 30 MB
@@ -4030,14 +4120,24 @@ function PhotoInput({
 
     if (isVideoFile && file.size > maxVideoSize) {
       const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
-      alert(`Ukuran video terlalu besar (${sizeMB} MB). Maksimal ukuran file video adalah 30 MB. Silakan potong durasi (maks 20 detik) atau kompres video Anda terlebih dahulu.`);
+      setUploadError({
+        title: "Ukuran Video Terlalu Besar (Maksimal 30 MB)",
+        message: `File video "${file.name}" berukuran ${sizeMB} MB. Batas maksimal ukuran video adalah 30 MB agar halaman undangan tetap ringan dibuka oleh tamu undangan. Silakan kompres atau potong durasi video (ideal 10–20 detik) terlebih dahulu.`,
+        fileName: file.name,
+        fileSize: `${sizeMB} MB`,
+      });
       e.target.value = "";
       return;
     }
 
     if (!isVideoFile && file.size > maxPhotoSize) {
       const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
-      alert(`Ukuran foto terlalu besar (${sizeMB} MB). Maksimal ukuran foto adalah 15 MB.`);
+      setUploadError({
+        title: "Ukuran Foto Terlalu Besar (Maksimal 15 MB)",
+        message: `File foto "${file.name}" berukuran ${sizeMB} MB. Batas maksimal ukuran foto adalah 15 MB. Silakan gunakan foto yang telah dikompres.`,
+        fileName: file.name,
+        fileSize: `${sizeMB} MB`,
+      });
       e.target.value = "";
       return;
     }
@@ -4066,12 +4166,21 @@ function PhotoInput({
 
       const data = await res.json();
       if (data.success && data.url) {
+        setUploadError(null);
         onChange(data.url);
       } else {
-        alert(data.error || "Gagal mengunggah file.");
+        setUploadError({
+          title: "Gagal Mengunggah Media",
+          message: data.error || "Terjadi kendala saat memproses file di server. Silakan coba beberapa saat lagi.",
+          fileName: file.name,
+        });
       }
-    } catch (err) {
-      alert("Terjadi kesalahan saat mengunggah file.");
+    } catch (err: any) {
+      setUploadError({
+        title: "Koneksi Terputus",
+        message: err?.message || "Terjadi gangguan jaringan saat mengunggah file ke server. Silakan periksa koneksi internet Anda.",
+        fileName: file.name,
+      });
     } finally {
       setUploading(false);
       onUploadEnd?.();
@@ -4079,13 +4188,50 @@ function PhotoInput({
   };
 
   return (
-    <div className="p-4 rounded-2xl border border-stone-200 bg-stone-50/60 space-y-3">
+    <div className={`p-4 rounded-2xl border transition-colors space-y-3 ${uploadError ? "border-rose-300 bg-rose-50/30" : "border-stone-200 bg-stone-50/60"}`}>
       <div className="flex items-start justify-between gap-2">
         <div>
           <h4 className="text-xs font-bold text-stone-900">{label}</h4>
           <p className="text-[10px] text-stone-500 leading-tight mt-0.5">{desc}</p>
         </div>
       </div>
+
+      {uploadError && (
+        <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl space-y-1.5 text-xs text-rose-800 animate-in fade-in duration-200">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-1.5 font-bold text-rose-900">
+              <svg className="w-4 h-4 text-rose-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <span>{uploadError.title}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setUploadError(null)}
+              className="text-rose-400 hover:text-rose-700 p-0.5 rounded transition cursor-pointer"
+              title="Tutup pesan error"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <p className="text-[11px] text-rose-700 leading-relaxed pl-5.5">
+            {uploadError.message}
+          </p>
+          {uploadError.fileName && (
+            <div className="pl-5.5 flex items-center gap-2 pt-0.5 text-[10px] text-rose-600 font-mono">
+              <span className="truncate max-w-[220px]">{uploadError.fileName}</span>
+              {uploadError.fileSize && (
+                <>
+                  <span>•</span>
+                  <span className="font-bold">{uploadError.fileSize}</span>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {value ? (
         <div className="space-y-2">
@@ -4178,8 +4324,8 @@ function PhotoInput({
                 <span className="text-xs font-bold text-stone-800">
                   Pilih File dari Galeri HP / Komputer
                 </span>
-                <span className="text-[10px] text-stone-400">
-                  {allowVideo ? "Foto (JPG, PNG, WebP) atau Video (MP4, MOV, WebM)" : "Format Foto (JPG, PNG)"}
+                <span className="text-[10px] text-stone-500 font-medium">
+                  {allowVideo ? "Video MP4/MOV/WebM (Maks 30 MB) • Foto JPG/PNG/WebP (Maks 15 MB)" : "Format Foto JPG, PNG, WebP (Maks 15 MB)"}
                 </span>
               </>
             )}

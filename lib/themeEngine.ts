@@ -1019,7 +1019,15 @@ export async function composeTemplateData(invitationId: string) {
         setTimeout(() => {
           const nameInput = document.getElementById('rsvpName');
           const name = nameInput ? nameInput.value : "Tamu";
-          alert('Terima kasih, konfirmasi dan doa restu atas nama ' + name + ' telah terkirim!');
+          let statusBox = document.getElementById('luxRsvpStatusBox');
+          if (!statusBox) {
+            statusBox = document.createElement('div');
+            statusBox.id = 'luxRsvpStatusBox';
+            statusBox.style.cssText = 'margin-top:12px; padding:12px; border-radius:10px; background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.3); color:#6ee7b7; font-size:13px; font-weight:600; text-align:center;';
+            e.target.appendChild(statusBox);
+          }
+          statusBox.textContent = 'Terima kasih, konfirmasi dan doa restu atas nama ' + name + ' telah terkirim!';
+          statusBox.style.display = 'block';
           e.target.reset();
           if(btn) {
             btn.disabled = false;
@@ -1332,9 +1340,14 @@ export async function composeTemplateData(invitationId: string) {
               <input type="file" id="luxMemFileInput" accept="image/*" required onchange="luxHandleFileSelect(event)" style="display: none;">
               
               <div onclick="document.getElementById('luxMemFileInput').click()" style="border: 2px dashed rgba(255,255,255,0.25); border-radius: 14px; padding: 20px 14px; text-align: center; cursor: pointer; background: rgba(255,255,255,0.03); transition: all 0.2s;">
-                <div style="font-size: 28px; margin-bottom: 4px;">📷</div>
+                <div style="display:flex; justify-content:center; margin-bottom: 6px;">
+                  <svg style="width:28px; height:28px; color:#d4a373;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
                 <div style="font-size: 13px; font-weight: 600; color: #f5f5f4;">Klik untuk Memilih Foto Kenangan</div>
-                <div style="font-size: 11px; opacity: 0.6; margin-top: 2px;">Foto otomatis di-optimasi sebelum diunggah</div>
+                <div style="font-size: 11px; opacity: 0.6; margin-top: 2px;">Format JPG/PNG/WebP • Maksimal 15 MB</div>
               </div>
 
               <!-- Preview Box -->
@@ -1360,12 +1373,14 @@ export async function composeTemplateData(invitationId: string) {
               </div>
             </div>
 
+            <div id="luxMemErrorBox" style="display: none; padding: 12px 14px; border-radius: 12px; background: rgba(244,63,94,0.15); border: 1px solid rgba(244,63,94,0.35); color: #fecdd3; font-size: 13px; font-weight: 500; text-align: left; line-height: 1.4;"></div>
+
             <div id="luxMemSuccessBox" style="display: none; padding: 14px; border-radius: 12px; background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: #6ee7b7; font-size: 13px; font-weight: 600; text-align: center;">
               ✓ Foto kenangan Anda berhasil disimpan ke album pengantin!
             </div>
 
             <button type="submit" id="luxMemSubmitBtn" style="margin-top: 10px; width: 100%; padding: 14px; border-radius: 14px; border: none; background: #d4a373; color: #1c1917; font-weight: 700; font-size: 14px; letter-spacing: 0.05em; cursor: pointer; transition: all 0.2s;">
-              🚀 KIRIM KE ALBUM PENGANTIN
+              KIRIM KE ALBUM PENGANTIN
             </button>
           </form>
         </div>
@@ -1402,6 +1417,11 @@ export async function composeTemplateData(invitationId: string) {
         window.luxCloseMemoryModal = function(e) {
           const modal = document.getElementById('luxMemoryModal');
           if (!modal) return;
+          const errorBox = document.getElementById('luxMemErrorBox');
+          if (errorBox) {
+            errorBox.textContent = '';
+            errorBox.style.display = 'none';
+          }
           const box = modal.querySelector('.gallery-modal-container');
           if (box) box.style.transform = 'translateY(100%)';
           modal.style.opacity = '0';
@@ -1440,7 +1460,7 @@ export async function composeTemplateData(invitationId: string) {
 
                 canvas.toBlob((blob) => {
                   if (blob && blob.size < file.size) {
-                    resolve(new File([blob], file.name.replace(/\\.[^/.]+$/, "") + ".webp", { type: "image/webp" }));
+                    resolve(new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".webp", { type: "image/webp" }));
                   } else {
                     resolve(file);
                   }
@@ -1456,11 +1476,16 @@ export async function composeTemplateData(invitationId: string) {
           const file = e.target.files && e.target.files[0];
           if (!file) return;
 
+          const errorBox = document.getElementById('luxMemErrorBox');
           if (file.size > 15 * 1024 * 1024) {
-            alert('Ukuran foto maksimal adalah 15 MB.');
+            if (errorBox) {
+              errorBox.textContent = 'Ukuran foto (' + (file.size / (1024 * 1024)).toFixed(1) + ' MB) melebihi batas maksimal 15 MB. Silakan pilih foto dengan resolusi lebih ringkas.';
+              errorBox.style.display = 'block';
+            }
             e.target.value = '';
             return;
           }
+          if (errorBox) errorBox.style.display = 'none';
 
           window.luxSelectedMemoryFile = file;
           const previewBox = document.getElementById('luxMemPreviewBox');
@@ -1483,12 +1508,20 @@ export async function composeTemplateData(invitationId: string) {
           if (input) input.value = '';
           const previewBox = document.getElementById('luxMemPreviewBox');
           if (previewBox) previewBox.style.display = 'none';
+          const errorBox = document.getElementById('luxMemErrorBox');
+          if (errorBox) errorBox.style.display = 'none';
         };
 
         window.luxSubmitMemory = async function(e) {
           e.preventDefault();
+          const errorBox = document.getElementById('luxMemErrorBox');
+          if (errorBox) errorBox.style.display = 'none';
+
           if (!window.luxSelectedMemoryFile) {
-            alert('Silakan pilih foto terlebih dahulu.');
+            if (errorBox) {
+              errorBox.textContent = 'Silakan pilih foto kenangan terlebih dahulu sebelum mengirim.';
+              errorBox.style.display = 'block';
+            }
             return;
           }
 
@@ -1537,8 +1570,11 @@ export async function composeTemplateData(invitationId: string) {
             } else {
               throw new Error(data.error || 'Gagal mengunggah foto.');
             }
-          } catch (err) {
-            alert(err.message || 'Terjadi kesalahan saat mengunggah.');
+          } catch (err: any) {
+            if (errorBox) {
+              errorBox.textContent = err.message || 'Terjadi kesalahan saat mengunggah foto ke server.';
+              errorBox.style.display = 'block';
+            }
             if (submitBtn) { submitBtn.disabled = false; submitBtn.style.opacity = '1'; }
             if (progressBox) progressBox.style.display = 'none';
           }

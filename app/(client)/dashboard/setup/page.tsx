@@ -290,7 +290,16 @@ function SetupWizardContent() {
           <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium space-y-2">
             <div className="flex items-center justify-between">
               <span>{error}</span>
-              <button onClick={() => setError(null)} className="text-rose-600 hover:text-rose-900 font-bold ml-3 cursor-pointer">✕</button>
+              <button
+                type="button"
+                onClick={() => setError(null)}
+                className="p-1 text-rose-500 hover:text-rose-800 rounded-lg hover:bg-rose-100/50 transition cursor-pointer ml-3 shrink-0"
+                title="Tutup pesan"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
             <div className="pt-2 border-t border-rose-200/60 flex items-center justify-between">
               <span className="text-[11px] text-rose-700">Sudah memiliki draf atau pernah membuat undangan?</span>

@@ -35,10 +35,13 @@ export function AdminProfileSettings({ sessionUser }: { sessionUser: any }) {
       // Clear passwords fields
       setFormData(prev => ({ ...prev, currentPassword: "", newPassword: "" }));
 
-      // If they changed password, maybe force logout? Or just notify
+      // If they changed password, notify and redirect to login
       if (formData.newPassword) {
-        alert("Password berhasil diubah. Silakan login kembali.");
-        signOut({ callbackUrl: "/admin/login" });
+        setMessage({ type: "success", text: "Password berhasil diubah. Mengalihkan ke halaman login..." });
+        setTimeout(() => {
+          signOut({ callbackUrl: "/admin/login" });
+        }, 1200);
+        return;
       }
     } catch (err: any) {
       setMessage({ type: "error", text: err.message });

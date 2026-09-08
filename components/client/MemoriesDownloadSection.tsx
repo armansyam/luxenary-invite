@@ -52,10 +52,12 @@ export function MemoriesDownloadSection({
       if (data.success && data.orderId) {
         router.push(`/checkout?order=${data.orderId}`);
       } else {
-        alert(data.error || "Gagal membuat pesanan perpanjangan");
+        setErrorMsg(data.error || "Gagal membuat pesanan perpanjangan");
+        setPhase("error");
       }
     } catch (e: any) {
-      alert("Terjadi kesalahan: " + e.message);
+      setErrorMsg("Terjadi kesalahan: " + e.message);
+      setPhase("error");
     } finally {
       setExtending(false);
     }

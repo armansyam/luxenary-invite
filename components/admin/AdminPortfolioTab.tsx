@@ -20,6 +20,7 @@ export function AdminPortfolioTab({ invitations }: PortfolioTabProps) {
   const [elapsed, setElapsed] = useState(0);
   const [search, setSearch] = useState("");
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const toastId = useRef(0);
 
@@ -80,18 +81,20 @@ export function AdminPortfolioTab({ invitations }: PortfolioTabProps) {
   };
 
   const handleRemoveFromPortfolio = async (clientName: string) => {
-    if (!window.confirm(`Hapus "${clientName}" dari portofolio?\nIni akan menghapus file HTML dan semua aset fisiknya.`)) return;
     try {
       const res = await fetch(`/api/admin/portfolio?clientName=${encodeURIComponent(clientName)}`, { method: "DELETE" });
       if (res.ok) {
         showToast("success", `Portofolio "${clientName}" berhasil dihapus`);
+        setConfirmDelete(null);
         fetchPortfolios();
       } else {
         const data = await res.json();
         showToast("error", data.error || "Gagal menghapus portofolio");
+        setConfirmDelete(null);
       }
     } catch {
       showToast("error", "Terjadi kesalahan jaringan saat menghapus");
+      setConfirmDelete(null);
     }
   };
 
@@ -230,7 +233,7 @@ export function AdminPortfolioTab({ invitations }: PortfolioTabProps) {
                       </a>
                     </div>
                     <button
-                      onClick={() => handleRemoveFromPortfolio(slug)}
+                      onClick={() => setConfirmDelete(slug)}
                       className="p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
                       title="Hapus dari Portofolio"
                     >
@@ -294,6 +297,41 @@ export function AdminPortfolioTab({ invitations }: PortfolioTabProps) {
           </div>
         </div>
       </div>
+
+      {/* Delete Portfolio Confirmation Modal */}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-stone-200 space-y-4">
+            <div className="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </div>
+            <div className="text-center space-y-1.5">
+              <h3 className="text-sm font-bold text-stone-900">Hapus dari Portofolio?</h3>
+              <p className="text-xs text-stone-600 leading-relaxed">
+                Ini akan menghapus file HTML dan seluruh aset fisik portofolio <strong className="font-semibold text-stone-900">{confirmDelete}</strong> secara permanen.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(null)}
+                className="flex-1 py-2.5 px-4 text-xs font-semibold text-stone-600 bg-stone-100 hover:bg-stone-200 rounded-xl transition cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => handleRemoveFromPortfolio(confirmDelete)}
+                className="flex-1 py-2.5 px-4 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition cursor-pointer"
+              >
+                Hapus Permanen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

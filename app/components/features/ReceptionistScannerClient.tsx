@@ -62,6 +62,7 @@ export default function ReceptionistScannerClient({
   const [isCameraLoading, setIsCameraLoading] = useState(false);
   const [scanCooldown, setScanCooldown] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showLockConfirm, setShowLockConfirm] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
@@ -586,12 +587,14 @@ export default function ReceptionistScannerClient({
 
   const handleLockSession = () => {
     if (offlineQueue.length > 0) {
-      const confirmLock = window.confirm(
-        `Perhatian: Terdapat ${offlineQueue.length} data check-in offline yang belum tersinkronisasi ke server.\n\nData antrean offline tetap aman tersimpan di perangkat ini. Lanjutkan mengunci layar scanner?`
-      );
-      if (!confirmLock) return;
+      setShowLockConfirm(true);
+      return;
     }
+    doLockSession();
+  };
 
+  const doLockSession = () => {
+    setShowLockConfirm(false);
     localStorage.removeItem(`staff_auth_token_${invitationId}`);
     if (onLock) {
       onLock();
@@ -1163,6 +1166,41 @@ export default function ReceptionistScannerClient({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
               </svg>
               <span>Sentuh layar untuk mulai scan</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lock Session Confirm Modal */}
+      {showLockConfirm && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl max-w-xs w-full p-6 shadow-2xl border border-stone-200 space-y-4">
+            <div className="w-12 h-12 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mx-auto">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div className="text-center space-y-1.5">
+              <h3 className="text-sm font-bold text-stone-900">Kunci Layar Scanner?</h3>
+              <p className="text-xs text-stone-600 leading-relaxed">
+                Terdapat <strong className="text-amber-700">{offlineQueue.length} data check-in offline</strong> yang belum tersinkronisasi ke server. Data antrean tetap aman tersimpan di perangkat ini.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowLockConfirm(false)}
+                className="flex-1 py-2.5 px-4 text-xs font-semibold text-stone-600 bg-stone-100 hover:bg-stone-200 rounded-xl transition cursor-pointer"
+              >
+                Batalkan
+              </button>
+              <button
+                type="button"
+                onClick={doLockSession}
+                className="flex-1 py-2.5 px-4 text-xs font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded-xl transition cursor-pointer"
+              >
+                Kunci Sekarang
+              </button>
             </div>
           </div>
         </div>

@@ -69,6 +69,12 @@ export default function AdminCustomDomainsTab({
   const [activatingOrder, setActivatingOrder] = useState<Record<string, boolean>>({});
   const [actionMsg, setActionMsg] = useState<{ ok: boolean; msg: string } | null>(null);
 
+  const handleCopy = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    setActionMsg({ ok: true, msg: `${label} tersalin ke clipboard!` });
+    setTimeout(() => setActionMsg(null), 3000);
+  };
+
   // Subdomains Monitoring State
   const [subdomainsLoading, setSubdomainsLoading] = useState(false);
   const [subdomainsList, setSubdomainsList] = useState<SubdomainItem[]>([]);
@@ -127,7 +133,6 @@ export default function AdminCustomDomainsTab({
 
   // Recycle Expired Subdomains
   const handleRecycleSubdomains = async () => {
-    if (!confirm("Daur ulang seluruh subdomain yang telah melewati batas kedaluwarsa (H+7 hari acara)?")) return;
     setRecycling(true);
     try {
       const res = await fetch("/api/admin/subdomains/recycle", { method: "POST" });
@@ -159,10 +164,10 @@ export default function AdminCustomDomainsTab({
       if (data.success) {
         setDnsResults((prev) => ({ ...prev, [orderId]: data }));
       } else {
-        alert(data.error || "Gagal melakukan resolusi DNS");
+        setActionMsg({ ok: false, msg: data.error || "Gagal melakukan resolusi DNS" });
       }
     } catch (err: any) {
-      alert(err.message || "Gagal menghubungi DNS resolver");
+      setActionMsg({ ok: false, msg: err.message || "Gagal menghubungi DNS resolver" });
     } finally {
       setCheckingDns((prev) => ({ ...prev, [orderId]: false }));
     }
@@ -170,8 +175,6 @@ export default function AdminCustomDomainsTab({
 
   // Aktivasi domain ke projek undangan (Custom Domain)
   const handleActivateDomain = async (orderId: string, domain?: string | null) => {
-    if (!confirm(`Hubungkan domain ${domain} ke proyek undangan klien sekarang?`)) return;
-
     try {
       setActivatingOrder((prev) => ({ ...prev, [orderId]: true }));
       setActionMsg(null);
@@ -182,7 +185,7 @@ export default function AdminCustomDomainsTab({
       });
       const data = await res.json();
       if (data.success) {
-        setActionMsg({ ok: true, msg: data.message || "Custom domain berhasil dihubungkan." });
+        setActionMsg({ ok: true, msg: data.message || `Domain ${domain} berhasil dihubungkan ke undangan klien.` });
         onRefresh?.();
       } else {
         throw new Error(data.error || "Gagal mengaktifkan domain");
@@ -479,8 +482,7 @@ export default function AdminCustomDomainsTab({
                             <button
                               type="button"
                               onClick={() => {
-                                navigator.clipboard.writeText(`https://${item.subdomain}.luxvite.id`);
-                                alert(`Tautan https://${item.subdomain}.luxvite.id tersalin!`);
+                                handleCopy(`https://${item.subdomain}.luxvite.id`, `Tautan https://${item.subdomain}.luxvite.id`);
                               }}
                               title="Salin Tautan"
                               className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-gray-700 transition cursor-pointer"
@@ -655,8 +657,7 @@ export default function AdminCustomDomainsTab({
                                   type="button"
                                   title="Salin Domain"
                                   onClick={() => {
-                                    navigator.clipboard.writeText(reqDomain);
-                                    alert(`Domain ${reqDomain} tersalin!`);
+                                    handleCopy(reqDomain, `Domain ${reqDomain}`);
                                   }}
                                   className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-gray-600 transition cursor-pointer"
                                 >

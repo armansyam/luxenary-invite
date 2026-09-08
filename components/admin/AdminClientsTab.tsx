@@ -53,6 +53,7 @@ export default function AdminClientsTab() {
   const [impersonating, setImpersonating] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [actionMsg, setActionMsg] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -110,10 +111,6 @@ export default function AdminClientsTab() {
 
   // Handle Delete Client
   const handleDeleteClient = async (userId: string) => {
-    if (!confirm("Peringatan: Seluruh data undangan dan pesanan klien ini akan dihapus permanen. Lanjutkan?")) {
-      return;
-    }
-
     try {
       setDeleting(true);
       setActionMsg(null);
@@ -124,6 +121,7 @@ export default function AdminClientsTab() {
       if (data.success) {
         setActionMsg({ ok: true, msg: "Akun klien berhasil dihapus permanen." });
         setSelectedClient(null);
+        setConfirmDeleteId(null);
         fetchClients();
       } else {
         throw new Error(data.error || "Gagal menghapus klien");
@@ -132,6 +130,7 @@ export default function AdminClientsTab() {
       setActionMsg({ ok: false, msg: err.message || "Gagal menghapus klien" });
     } finally {
       setDeleting(false);
+      setConfirmDeleteId(null);
     }
   };
 
@@ -591,7 +590,7 @@ export default function AdminClientsTab() {
 
               <button
                 type="button"
-                onClick={() => handleDeleteClient(selectedClient.id)}
+                onClick={() => setConfirmDeleteId(selectedClient.id)}
                 disabled={deleting}
                 className="w-full py-2.5 bg-white hover:bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer"
               >
@@ -600,6 +599,43 @@ export default function AdminClientsTab() {
                 ) : (
                   <span>Hapus Akun Klien Permanen</span>
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Client Confirmation Modal */}
+      {confirmDeleteId && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-stone-200 space-y-4">
+            <div className="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div className="text-center space-y-1.5">
+              <h3 className="text-sm font-bold text-stone-900">Hapus Akun Klien Permanen?</h3>
+              <p className="text-xs text-stone-600 leading-relaxed">
+                Seluruh data undangan, pengaturan, aset media, dan histori transaksi klien ini akan dihapus secara permanen. Tindakan ini <strong className="text-rose-700">tidak dapat dibatalkan</strong>.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteId(null)}
+                disabled={deleting}
+                className="flex-1 py-2.5 px-4 text-xs font-semibold text-stone-600 bg-stone-100 hover:bg-stone-200 rounded-xl transition cursor-pointer disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDeleteClient(confirmDeleteId)}
+                disabled={deleting}
+                className="flex-1 py-2.5 px-4 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition cursor-pointer disabled:opacity-50"
+              >
+                {deleting ? "Menghapus..." : "Ya, Hapus Permanen"}
               </button>
             </div>
           </div>

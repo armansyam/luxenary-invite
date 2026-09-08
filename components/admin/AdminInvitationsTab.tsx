@@ -50,6 +50,7 @@ export default function AdminInvitationsTab({ onNavigateToThemes }: AdminInvitat
   // Action State
   const [actionLoading, setActionLoading] = useState(false);
   const [actionMsg, setActionMsg] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [confirmCloseToGallery, setConfirmCloseToGallery] = useState<InvitationItem | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -133,7 +134,6 @@ export default function AdminInvitationsTab({ onNavigateToThemes }: AdminInvitat
 
   // Handle Close to Gallery
   const handleCloseToGallery = async (inv: InvitationItem) => {
-    if (!confirm("Tutup masa sebar undangan dan alihkan pengunjung ke Galeri Momen (/memories)?")) return;
     try {
       setActionLoading(true);
       setActionMsg(null);
@@ -464,7 +464,7 @@ export default function AdminInvitationsTab({ onNavigateToThemes }: AdminInvitat
                           {inv.status === "PUBLISHED" && (
                             <button
                               type="button"
-                              onClick={() => handleCloseToGallery(inv)}
+                              onClick={() => setConfirmCloseToGallery(inv)}
                               disabled={actionLoading}
                               className="p-1.5 rounded-lg text-purple-600 hover:bg-purple-50 border border-transparent hover:border-purple-100 transition cursor-pointer"
                               title="Tutup ke Galeri Momen"
@@ -557,6 +557,43 @@ export default function AdminInvitationsTab({ onNavigateToThemes }: AdminInvitat
           </div>
         </div>
       </div>
+
+      {/* Close to Gallery Confirmation Modal */}
+      {confirmCloseToGallery && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-stone-200 space-y-4">
+            <div className="w-12 h-12 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center mx-auto">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div className="text-center space-y-1.5">
+              <h3 className="text-sm font-bold text-stone-900">Tutup Undangan & Alihkan ke Galeri?</h3>
+              <p className="text-xs text-stone-600 leading-relaxed">
+                Undangan <strong className="font-semibold text-stone-900">{confirmCloseToGallery.groomName} & {confirmCloseToGallery.brideName}</strong> akan ditutup dan pengunjung dialihkan ke Galeri Momen (<code className="bg-stone-100 px-1 rounded text-purple-700">/memories</code>).
+              </p>
+            </div>
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setConfirmCloseToGallery(null)}
+                disabled={actionLoading}
+                className="flex-1 py-2.5 px-4 text-xs font-semibold text-stone-600 bg-stone-100 hover:bg-stone-200 rounded-xl transition cursor-pointer disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => { handleCloseToGallery(confirmCloseToGallery); setConfirmCloseToGallery(null); }}
+                disabled={actionLoading}
+                className="flex-1 py-2.5 px-4 text-xs font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-xl transition cursor-pointer disabled:opacity-50"
+              >
+                {actionLoading ? "Mengalihkan..." : "Ya, Alihkan ke Galeri"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

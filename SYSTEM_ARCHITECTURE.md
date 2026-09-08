@@ -1,5 +1,5 @@
 # PLATFORM UNDANGAN (WHITE-LABEL) — DOKUMENTASI ARSITEKTUR SISTEM
-## Versi: 5.6.1 | Diperbarui: 09 September 2026
+## Versi: 5.7.0 | Diperbarui: 09 September 2026
 
 > **SUMBER KEBENARAN TUNGGAL** untuk semua developer dan AI Agent yang bekerja di repositori ini.  
 > Dokumen ini WAJIB dibaca sebelum melakukan perubahan apapun pada kode.  
@@ -1416,6 +1416,16 @@ Setiap inisialisasi tagihan ke payment gateway (Midtrans & Xendit) mengirimkan i
 - **Rekonsiliasi Status Real-Time:**
   - Endpoint `GET /api/client/orders/[id]/status` melakukan verifikasi langsung ke gateway vendor (`gw.verify()`) saat status order masih `PENDING`.
   - Memastikan pengujian pembayaran di lingkungan pengembangan lokal (`localhost`) yang tidak dapat menerima webhook internet langsung terdeteksi seketika saat tombol "Cek Status Pembayaran" diklik atau melalui polling SSE, mengubah status menjadi `PAID` dan mengarahkan klien ke setup undangan.
+
+### 15.12 — Clean SaaS UI Standard & Eliminasi Total Dialog Native Browser (Zero window.alert / window.confirm)
+- **Zero Native Browser Dialogs & In-Button Micro Feedback:**
+  - Seluruh pemanggilan `window.alert()` dan `window.confirm()` telah dieliminasi 100% dari seluruh codebase (Portal Admin, Dasbor Klien, Scanner Resepsionis, dan Tema Publik).
+  - Digantikan dengan komponen dialog konfirmasi kustom modern berlatar belakang gelap transparan (*backdrop blur*), kartu bersudut membulat (*rounded-2xl*), ikon vektor SVG minimalis tanpa emoji OS kaku, serta feedback interaktif saat memproses.
+  - **Prinsip Feedback Mandiri di Tombol (In-Button Feedback):** Aksi yang bersifat konfirmasi lokal atau salin tautan (misal "Salin Link", "Samakan Tema", simpan seksi) mempertahankan umpan balik langsung di dalam tombol itu sendiri (seperti label sementara *"✓ Tersalin!"*, *"✓ Tersimpan"*, atau indikator visual tersinkronisasi) tanpa memunculkan toast melayang yang berlebihan.
+  - **Minimalist Floating Toast:** Floating toast (`fixed bottom-6 right-6 z-[80]`) dirancang ringkas (dot indicator 2px, backdrop-blur, tanpa dekorasi berlebihan) dan hanya dipicu untuk notifikasi sistem penting, error server/koneksi, atau konfirmasi tingkat halaman dengan timer auto-dismiss 4 detik.
+- **Enhanced Multi-Layer Video Background Engine:**
+  - `lib/renderTemplate.ts` kini mendukung injeksi video penuh `<video autoplay loop muted playsinline>` untuk seksi pembuka (`homePhotoUrl` → `.lux-home-video`) dan seksi penutup (`closingPhotoUrl` → `.lux-closing-video`), melengkapi slot latar sampul (`coverVideoHtml`), panel desktop split (`sidebarVideoHtml`), dan latar global (`fixedBgVideoHtml`).
+  - Umpan balik RSVP dan formulir upload foto tamu pada tema undangan (`lib/themeEngine.ts`) kini menggunakan status box terintegrasi `#luxRsvpStatusBox` dan `#luxMemErrorBox` tanpa dialog popup browser.
 
 ---
 

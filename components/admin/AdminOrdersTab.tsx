@@ -160,7 +160,7 @@ export default function AdminOrdersTab() {
   // Handle Reject Order
   const handleReject = async (orderId: string) => {
     if (!rejectReason.trim()) {
-      alert("Harap masukkan alasan penolakan untuk klien.");
+      setActionMsg({ ok: false, msg: "Harap masukkan alasan penolakan untuk klien." });
       return;
     }
     try {
