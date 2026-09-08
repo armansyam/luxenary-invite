@@ -33,7 +33,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     metadataBase: new URL(siteUrl),
     title: {
-      default: brandName,
+      default: `${brandName} — ${tagline} | luxvite.id`,
       template: `%s | ${brandName}`,
     },
     description: tagline,
