@@ -77,16 +77,16 @@ export default function RsvpPage() {
   };
 
   return (
-    <div className="space-y-6 font-sans pb-20">
+    <div className="space-y-2.5 sm:space-y-3 font-sans pb-20">
       
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 sm:p-7 rounded-2xl sm:rounded-3xl border border-stone-200 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white px-4 py-3 sm:px-6 sm:py-3.5 rounded-2xl border border-stone-200 shadow-xs">
         <div>
-          <span className="text-[11px] font-bold tracking-widest text-amber-800 uppercase block">Konfirmasi Kehadiran</span>
-          <h1 className="text-xl sm:text-2xl font-serif font-bold text-stone-900 mt-0.5">
+          <span className="text-[10px] font-bold tracking-widest text-amber-800 uppercase block">Konfirmasi Kehadiran</span>
+          <h1 className="text-base sm:text-lg font-serif font-bold text-stone-900 mt-0.5 leading-snug">
             Rekap Konfirmasi Kehadiran &amp; Doa
           </h1>
-          <p className="text-xs text-stone-500 mt-1">
+          <p className="text-xs text-stone-500 mt-0.5">
             Data konfirmasi kehadiran (RSVP) dan doa restu tersinkronisasi otomatis secara live saat tamu mengisi di website undangan
           </p>
         </div>
@@ -96,7 +96,7 @@ export default function RsvpPage() {
           <button
             type="button"
             onClick={loadRsvps}
-            className="p-2.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl text-xs font-semibold transition cursor-pointer"
+            className="p-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg text-xs font-semibold transition cursor-pointer"
             title="Muat Ulang Data"
           >
             <svg className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -110,7 +110,7 @@ export default function RsvpPage() {
             onClick={handleExportCSV}
             disabled={rsvps.length === 0 || loading}
             title={rsvps.length === 0 ? "Belum ada data RSVP untuk diekspor" : "Unduh data RSVP ke format CSV"}
-            className="px-4 py-2.5 bg-stone-900 hover:bg-stone-800 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+            className="px-3.5 py-2 bg-stone-900 hover:bg-stone-800 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded-lg transition flex items-center justify-center gap-2 cursor-pointer shadow-xs"
           >
             <svg className="w-4 h-4 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />

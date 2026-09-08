@@ -201,7 +201,7 @@ function DashboardHomeContent() {
   const editorUrl = invitation ? `/dashboard/invitation/${invitation.id}` : "/dashboard/invitation";
 
   return (
-    <div className="space-y-6 sm:space-y-8 font-sans">
+    <div className="space-y-3 sm:space-y-4 font-sans">
       
       {/* Success Notification Banner for Gallery Extension */}
       {msgParam === "gallery_extended" && (
@@ -230,7 +230,7 @@ function DashboardHomeContent() {
       )}
 
       {/* 1. Hero Card (Mobile-First, Elegant Luxury) */}
-      <div className="bg-stone-900 text-white rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-xl border border-stone-800 relative overflow-hidden">
+      <div className="bg-stone-900 text-white rounded-2xl p-5 sm:p-6 shadow-xl border border-stone-800 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-72 h-72 bg-amber-600/10 rounded-full blur-3xl pointer-events-none" />
         
         <div className="relative z-10 space-y-5">

@@ -377,16 +377,16 @@ export default function GuestsPage() {
   const pendingCount = totalGuests - sentCount;
 
   return (
-    <div className="space-y-6 font-sans pb-20">
+    <div className="space-y-2.5 sm:space-y-3 font-sans pb-20">
       
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 sm:p-7 rounded-2xl sm:rounded-3xl border border-stone-200 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white px-4 py-3 sm:px-6 sm:py-3.5 rounded-2xl border border-stone-200 shadow-xs">
         <div>
-          <span className="text-[11px] font-bold tracking-widest text-amber-800 uppercase block">Manajemen Undangan</span>
-          <h1 className="text-xl sm:text-2xl font-serif font-bold text-stone-900 mt-0.5">
+          <span className="text-[10px] font-bold tracking-widest text-amber-800 uppercase block">Manajemen Undangan</span>
+          <h1 className="text-base sm:text-lg font-serif font-bold text-stone-900 mt-0.5 leading-snug">
             Buku Tamu &amp; Pengiriman WhatsApp
           </h1>
-          <p className="text-xs text-stone-500 mt-1">
+          <p className="text-xs text-stone-500 mt-0.5">
             Kelola nama penerima undangan, checklist status pengiriman, dan sesuaikan template pesan WhatsApp
           </p>
         </div>
@@ -396,7 +396,7 @@ export default function GuestsPage() {
           <button
             type="button"
             onClick={() => setShowTemplateModal(true)}
-            className="px-3.5 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300/80 text-xs font-bold rounded-xl transition flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+            className="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300/80 text-xs font-bold rounded-lg transition flex items-center justify-center gap-2 cursor-pointer shadow-xs"
           >
             <svg className="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -408,7 +408,7 @@ export default function GuestsPage() {
           <button
             type="button"
             onClick={() => setShowAddModal(true)}
-            className="px-4 py-2.5 bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold rounded-xl transition flex items-center justify-center gap-2 cursor-pointer shadow-xs shrink-0"
+            className="px-4 py-2 bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold rounded-lg transition flex items-center justify-center gap-2 cursor-pointer shadow-xs shrink-0"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
