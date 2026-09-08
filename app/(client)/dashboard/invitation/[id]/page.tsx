@@ -296,9 +296,21 @@ export default function EditInvitation() {
     }
   }, [invitationId]);
 
+  // Single-Expanded Exclusive Accordion: Membuka satu seksi otomatis menutup seksi lainnya
   const toggleSection = (secKey: string) => {
     setCollapsed((prev) => {
-      const next = { ...prev, [secKey]: !prev[secKey] };
+      const isCurrentlyCollapsed = Boolean(prev[secKey]);
+      let next: Record<string, boolean>;
+      if (isCurrentlyCollapsed) {
+        // Exclusive: Tutup semua seksi lain, buka hanya seksi yang diklik
+        next = Object.keys(defaultCollapsed).reduce((acc, key) => {
+          acc[key] = key !== secKey;
+          return acc;
+        }, {} as Record<string, boolean>);
+      } else {
+        // Jika sudah terbuka dan user mengklik untuk menutup, tutup seksi tersebut
+        next = { ...prev, [secKey]: true };
+      }
       if (typeof window !== "undefined" && invitationId) {
         try {
           localStorage.setItem(`lux_studio_collapsed_${invitationId}`, JSON.stringify(next));
@@ -1410,76 +1422,50 @@ export default function EditInvitation() {
         <div className="space-y-6">
 
       {/* 1. SEKSI TEMA & PALET WARNA (SEC1) */}
-      <section id="section-sec1" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
-        <div className="p-5 sm:p-6 border-b border-stone-100 flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-base font-bold text-stone-900">1. Pilihan Seri Desain &amp; Palet Warna</h2>
-            <p className="text-xs text-stone-500">Pilih tema utama dan nuansa warna undangan pernikahan Anda.</p>
+      <section id="section-sec1" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
+        <div
+          onClick={() => toggleSection("sec1")}
+          className={`flex items-center justify-between gap-3 transition cursor-pointer ${
+            collapsed.sec1
+              ? "px-5 py-3.5 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
+              : "p-5 sm:p-6 border-b border-stone-100 bg-white"
+          }`}
+        >
+          <div className="min-w-0">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h2 className="text-sm sm:text-base font-bold text-stone-900">1. Pilihan Seri Desain &amp; Palet Warna</h2>
+              {collapsed.sec1 && (
+                <span className="text-xs text-stone-500 font-normal truncate flex items-center gap-1.5">
+                  <span className="text-stone-300">•</span>
+                  {selectedThemeObj ? (
+                    <>
+                      <span className="font-medium text-stone-700">{selectedThemeObj.name}</span>
+                      <span className="inline-block w-2.5 h-2.5 rounded-full border border-black/10 shadow-2xs" style={{ backgroundColor: selectedPaletteObj.hex }}></span>
+                      <span className="text-stone-500">({selectedPaletteObj.name})</span>
+                    </>
+                  ) : (
+                    <span className="font-semibold text-rose-600">Belum memilih tema</span>
+                  )}
+                </span>
+              )}
+            </div>
+            {!collapsed.sec1 && (
+              <p className="text-xs text-stone-500 mt-0.5">Pilih tema utama dan nuansa warna undangan pernikahan Anda.</p>
+            )}
           </div>
-          <SectionHeaderActions
-            isDirty={Boolean(isDirty.sec1)}
-            isSaving={saving && savingSec === "sec1"}
-            onSave={() => saveSection("sec1")}
-            collapsed={Boolean(collapsed.sec1)}
-            onToggle={() => toggleSection("sec1")}
-            closedLabel={selectedThemeObj ? "Edit Tema & Warna" : "Pilih Tema"}
-          />
+          <div onClick={(e) => e.stopPropagation()}>
+            <SectionHeaderActions
+              isDirty={Boolean(isDirty.sec1)}
+              isSaving={saving && savingSec === "sec1"}
+              onSave={() => saveSection("sec1")}
+              collapsed={Boolean(collapsed.sec1)}
+              onToggle={() => toggleSection("sec1")}
+              closedLabel="Edit"
+            />
+          </div>
         </div>
 
-        {collapsed.sec1 ? (
-          selectedThemeObj ? (
-            <div className="p-5 bg-stone-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-3.5">
-                <img
-                  src={selectedThemeObj.coverUrl || selectedThemeObj.cover}
-                  alt={selectedThemeObj.name}
-                  className="w-14 h-14 rounded-xl object-cover border border-stone-200 shadow-xs flex-shrink-0"
-                />
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider bg-stone-200 text-stone-700 px-2 py-0.5 rounded">
-                    {selectedThemeObj.series || selectedThemeObj.tag}
-                  </span>
-                  <h3 className="text-sm font-bold text-stone-900 mt-1">{selectedThemeObj.name}</h3>
-                  <div className="flex items-center gap-2 text-xs text-stone-500 mt-0.5">
-                    <span className="w-3 h-3 rounded-full border border-black/10 inline-block shadow-2xs" style={{ backgroundColor: selectedPaletteObj.hex }}></span>
-                    <span>Nuansa: <strong>{selectedPaletteObj.name}</strong></span>
-                  </div>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => toggleSection("sec1")}
-                className="text-xs font-bold text-amber-800 hover:underline self-start sm:self-center"
-              >
-                Ubah Tema / Warna
-              </button>
-            </div>
-          ) : (
-            <div className="p-5 bg-rose-50/70 border-t border-rose-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-3.5">
-                <div className="w-12 h-12 rounded-xl bg-rose-100 border border-rose-200 flex items-center justify-center text-rose-700 flex-shrink-0">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                </div>
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider bg-rose-200 text-rose-800 px-2 py-0.5 rounded">
-                    Wajib Dipilih
-                  </span>
-                  <h3 className="text-sm font-bold text-stone-900 mt-1">Belum Memilih Tema Undangan</h3>
-                  <p className="text-xs text-rose-700 mt-0.5">Silakan pilih salah satu desain tema di bawah ini untuk menampilkan undangan Anda.</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => toggleSection("sec1")}
-                className="px-4 py-2 bg-rose-700 hover:bg-rose-800 text-white font-bold rounded-xl text-xs transition shadow-xs self-start sm:self-center cursor-pointer"
-              >
-                Pilih Tema Sekarang
-              </button>
-            </div>
-          )
-        ) : (
+        {!collapsed.sec1 && (
           <div className="p-5 sm:p-7 space-y-6">
             {/* Theme Mockups for this Category / Store */}
             {(() => {
@@ -1707,109 +1693,44 @@ export default function EditInvitation() {
       </section>
 
       {/* 2. SEKSI SAMPUL & VISUAL UTAMA (SEC2) */}
-      <section className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
-        <div className="p-5 sm:p-6 border-b border-stone-100 flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-base font-bold text-stone-900">2. Sampul, Visual &amp; Musik Latar</h2>
-            <p className="text-xs text-stone-500">Foto sampul pop-up, visual desktop widescreen, dan musik latar otomatis</p>
+      <section id="section-sec2" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
+        <div
+          onClick={() => toggleSection("sec2")}
+          className={`flex items-center justify-between gap-3 transition cursor-pointer ${
+            collapsed.sec2
+              ? "px-5 py-3.5 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
+              : "p-5 sm:p-6 border-b border-stone-100 bg-white"
+          }`}
+        >
+          <div className="min-w-0">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h2 className="text-sm sm:text-base font-bold text-stone-900">2. Sampul, Visual &amp; Musik Latar</h2>
+              {collapsed.sec2 && (
+                <span className="text-xs text-stone-500 font-normal truncate flex items-center gap-1.5">
+                  <span className="text-stone-300">•</span>
+                  <span>{media["LANDING_COVER"] ? "Sampul Kustom" : "Sampul Tema"}</span>
+                  <span className="text-stone-300">•</span>
+                  <span>Musik: <strong className="font-medium text-stone-700">{showMusic ? (invitation.musicUrl || musicPresets.length > 0 ? "Aktif" : "Bawaan Tema") : "Nonaktif"}</strong></span>
+                </span>
+              )}
+            </div>
+            {!collapsed.sec2 && (
+              <p className="text-xs text-stone-500 mt-0.5">Foto sampul pop-up, visual desktop widescreen, dan musik latar otomatis</p>
+            )}
           </div>
-          <SectionHeaderActions
-            isDirty={Boolean(isDirty.sec2)}
-            isSaving={saving && savingSec === "sec2"}
-            onSave={() => saveSection("sec2")}
-            collapsed={Boolean(collapsed.sec2)}
-            onToggle={() => toggleSection("sec2")}
-            closedLabel="Edit Visual & Musik"
-          />
+          <div onClick={(e) => e.stopPropagation()}>
+            <SectionHeaderActions
+              isDirty={Boolean(isDirty.sec2)}
+              isSaving={saving && savingSec === "sec2"}
+              onSave={() => saveSection("sec2")}
+              collapsed={Boolean(collapsed.sec2)}
+              onToggle={() => toggleSection("sec2")}
+              closedLabel="Edit"
+            />
+          </div>
         </div>
 
-        {collapsed.sec2 ? (() => {
-          const visualItems = [
-            {
-              id: "LANDING_COVER",
-              label: "Sampul Pop-Up",
-              isFilled: Boolean(media["LANDING_COVER"]),
-              statusText: media["LANDING_COVER"] ? "Terpasang" : "Bawaan Tema",
-            },
-            {
-              id: "DESKTOP_SIDEBAR",
-              label: "Sidebar Desktop",
-              isFilled: Boolean(media["DESKTOP_SIDEBAR"]),
-              statusText: media["DESKTOP_SIDEBAR"] ? "Terpasang" : "Bawaan Tema",
-            },
-            {
-              id: "MUSIC",
-              label: "Musik Latar",
-              isFilled: Boolean(showMusic && (invitation.musicUrl || musicPresets.length > 0)),
-              statusText: showMusic ? (invitation.musicUrl || musicPresets.length > 0 ? "Aktif" : "Bawaan Tema") : "Nonaktif",
-            },
-            {
-              id: "HOME_PHOTO",
-              label: "Latar Home",
-              isFilled: Boolean(media["HOME_PHOTO"]),
-              statusText: media["HOME_PHOTO"] ? "Terpasang" : "Bawaan Tema",
-            },
-            {
-              id: "CLOSING_COVER",
-              label: "Foto Penutup",
-              isFilled: Boolean(media["CLOSING_COVER"]),
-              statusText: media["CLOSING_COVER"] ? "Terpasang" : "Bawaan Tema",
-            },
-            {
-              id: "GLOBAL_FIXED_BG",
-              label: "Fixed Background",
-              isFilled: Boolean(media["GLOBAL_FIXED_BG"]),
-              statusText: media["GLOBAL_FIXED_BG"] ? "Terpasang" : "Bawaan Tema",
-            },
-          ];
-
-          const completedVisuals = visualItems.filter((v) => v.isFilled);
-          const uncompletedVisuals = visualItems.filter((v) => !v.isFilled);
-
-          return (
-            <div className="p-5 bg-stone-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="space-y-2">
-                {/* Baris 1: Media Kustom yang Sudah Terpasang (Indikator Hijau) */}
-                {completedVisuals.length > 0 ? (
-                  <div className="flex items-center gap-3 flex-wrap text-xs text-stone-600">
-                    {completedVisuals.map((item, idx) => (
-                      <span key={item.id} className="flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
-                        <span>{item.label}: <strong className="text-stone-800">{item.statusText}</strong></span>
-                        {idx < completedVisuals.length - 1 && <span className="text-stone-300 ml-1">•</span>}
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 text-xs text-stone-600">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
-                    <span>Format visual siap: <strong className="text-stone-800">Menggunakan Desain Asli Tema</strong></span>
-                  </div>
-                )}
-
-                {/* Baris 2: Keterangan Tenang untuk Slot Opsional / Bawaan Tema (Tanpa Titik Merah) */}
-                {uncompletedVisuals.length > 0 && (
-                  <div className="flex items-center gap-2 text-[11px] text-stone-500">
-                    <span className="w-1.5 h-1.5 rounded-full bg-stone-300 shrink-0"></span>
-                    <span>
-                      {completedVisuals.length > 0
-                        ? `Slot lainnya (${uncompletedVisuals.map((v) => v.label).join(", ")}): Bawaan Desain Tema (Opsional)`
-                        : "Semua slot visual menggunakan perpaduan estetika asli tema."}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              <button
-                type="button"
-                onClick={() => toggleSection("sec2")}
-                className="text-xs font-bold text-amber-800 hover:underline shrink-0 self-start sm:self-center cursor-pointer"
-              >
-                Ubah Visual &amp; Musik
-              </button>
-            </div>
-          );
-        })() : (
+        {!collapsed.sec2 && (
           <div className="p-5 sm:p-7 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <PhotoInput
@@ -2118,88 +2039,46 @@ export default function EditInvitation() {
       </section>
 
       {/* 3. SEKSI PROFIL MEMPELAI (SEC3) */}
-      <section className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
-        <div className="p-5 sm:p-6 border-b border-stone-100 flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-base font-bold text-stone-900">3. Profil Kedua Mempelai</h2>
-            <p className="text-xs text-stone-500">Data lengkap, akun sosial media, dan foto portrait pengantin</p>
+      <section id="section-sec3" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
+        <div
+          onClick={() => toggleSection("sec3")}
+          className={`flex items-center justify-between gap-3 transition cursor-pointer ${
+            collapsed.sec3
+              ? "px-5 py-3.5 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
+              : "p-5 sm:p-6 border-b border-stone-100 bg-white"
+          }`}
+        >
+          <div className="min-w-0">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h2 className="text-sm sm:text-base font-bold text-stone-900">3. Profil Kedua Mempelai</h2>
+              {collapsed.sec3 && (
+                <span className="text-xs text-stone-500 font-normal truncate flex items-center gap-1.5">
+                  <span className="text-stone-300">•</span>
+                  <span className="font-medium text-stone-700">
+                    {displayOrder === "BRIDE_FIRST"
+                      ? `${invitation.brideNickname || "Wanita"} & ${invitation.groomNickname || "Pria"}`
+                      : `${invitation.groomNickname || "Pria"} & ${invitation.brideNickname || "Wanita"}`}
+                  </span>
+                </span>
+              )}
+            </div>
+            {!collapsed.sec3 && (
+              <p className="text-xs text-stone-500 mt-0.5">Data lengkap, akun sosial media, dan foto portrait pengantin</p>
+            )}
           </div>
-          <SectionHeaderActions
-            isDirty={Boolean(isDirty.sec3)}
-            isSaving={saving && savingSec === "sec3"}
-            onSave={() => saveSection("sec3")}
-            collapsed={Boolean(collapsed.sec3)}
-            onToggle={() => toggleSection("sec3")}
-            closedLabel="Edit Profil"
-          />
+          <div onClick={(e) => e.stopPropagation()}>
+            <SectionHeaderActions
+              isDirty={Boolean(isDirty.sec3)}
+              isSaving={saving && savingSec === "sec3"}
+              onSave={() => saveSection("sec3")}
+              collapsed={Boolean(collapsed.sec3)}
+              onToggle={() => toggleSection("sec3")}
+              closedLabel="Edit"
+            />
+          </div>
         </div>
 
-        {collapsed.sec3 ? (() => {
-          const isBrideFirst = displayOrder === "BRIDE_FIRST";
-          const bridePhotoFilled = Boolean(media["BRIDE_PHOTO"]);
-          const groomPhotoFilled = Boolean(media["GROOM_PHOTO"]);
-
-          const photoItems = isBrideFirst
-            ? [
-                {
-                  id: "BRIDE_PHOTO",
-                  label: "Foto Mempelai Wanita",
-                  isFilled: bridePhotoFilled,
-                },
-                {
-                  id: "GROOM_PHOTO",
-                  label: "Foto Mempelai Pria",
-                  isFilled: groomPhotoFilled,
-                },
-              ]
-            : [
-                {
-                  id: "GROOM_PHOTO",
-                  label: "Foto Mempelai Pria",
-                  isFilled: groomPhotoFilled,
-                },
-                {
-                  id: "BRIDE_PHOTO",
-                  label: "Foto Mempelai Wanita",
-                  isFilled: bridePhotoFilled,
-                },
-              ];
-
-          return (
-            <div className="p-5 bg-stone-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="space-y-2 text-xs text-stone-600">
-                <div className="space-y-0.5">
-                  <p>Mempelai Wanita: <strong className="text-stone-900">{invitation.brideName || "-"}</strong> ({invitation.brideNickname || "-"})</p>
-                  <p>Mempelai Pria: <strong className="text-stone-900">{invitation.groomName || "-"}</strong> ({invitation.groomNickname || "-"})</p>
-                  <p className="text-[11px] text-stone-400">Urutan Tampil: {isBrideFirst ? "Pihak Wanita Dahulu" : "Pihak Pria Dahulu"}</p>
-                </div>
-
-                {/* Status Indikator Foto Portrait Kedua Mempelai */}
-                <div className="flex items-center gap-3 flex-wrap pt-1.5 border-t border-stone-200/60">
-                  {photoItems.map((item, idx) => (
-                    <span key={item.id} className="flex items-center gap-1.5">
-                      <span className={`w-2 h-2 rounded-full shrink-0 ${item.isFilled ? "bg-emerald-500" : "bg-amber-500"}`}></span>
-                      <span>
-                        {item.label}: <strong className={item.isFilled ? "text-stone-800" : "text-amber-700 font-semibold"}>
-                          {item.isFilled ? "Terpasang" : "Perlu Diunggah (Atau Monogram)"}
-                        </strong>
-                      </span>
-                      {idx < photoItems.length - 1 && <span className="text-stone-300 ml-1">•</span>}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => toggleSection("sec3")}
-                className="text-xs font-bold text-amber-800 hover:underline self-start sm:self-center cursor-pointer shrink-0"
-              >
-                Ubah Profil
-              </button>
-            </div>
-          );
-        })() : (
+        {!collapsed.sec3 && (
           <div className="p-5 sm:p-7 space-y-6">
             <div className="flex items-center p-1 bg-stone-100 rounded-xl border border-stone-200 self-start sm:self-auto w-fit">
               <button
@@ -2384,37 +2263,44 @@ export default function EditInvitation() {
       </section>
 
       {/* 4. SEKSI KUTIPAN PEMBUKA (SEC4) */}
-      <section className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
-        <div className="p-5 sm:p-6 border-b border-stone-100 flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-base font-bold text-stone-900">4. Kutipan Pembuka</h2>
-            <p className="text-xs text-stone-500">Kutipan indah, puisi cinta, kata mutiara, ayat suci, atau doa pembuka undangan</p>
+      <section id="section-sec4" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
+        <div
+          onClick={() => toggleSection("sec4")}
+          className={`flex items-center justify-between gap-3 transition cursor-pointer ${
+            collapsed.sec4
+              ? "px-5 py-3.5 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
+              : "p-5 sm:p-6 border-b border-stone-100 bg-white"
+          }`}
+        >
+          <div className="min-w-0">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h2 className="text-sm sm:text-base font-bold text-stone-900">4. Kutipan Pembuka</h2>
+              {collapsed.sec4 && (
+                <span className="text-xs text-stone-500 font-normal truncate flex items-center gap-1.5">
+                  <span className="text-stone-300">•</span>
+                  <span className="font-medium text-stone-700 truncate max-w-[240px] sm:max-w-md">
+                    {invitation.openingQuoteRef || (invitation.openingQuote ? `"${invitation.openingQuote.slice(0, 30)}..."` : "Kutipan / Doa Pembuka")}
+                  </span>
+                </span>
+              )}
+            </div>
+            {!collapsed.sec4 && (
+              <p className="text-xs text-stone-500 mt-0.5">Kutipan indah, puisi cinta, kata mutiara, ayat suci, atau doa pembuka undangan</p>
+            )}
           </div>
-          <SectionHeaderActions
-            isDirty={Boolean(isDirty.sec4)}
-            isSaving={saving && savingSec === "sec4"}
-            onSave={() => saveSection("sec4")}
-            collapsed={Boolean(collapsed.sec4)}
-            onToggle={() => toggleSection("sec4")}
-            closedLabel="Edit Kutipan"
-          />
+          <div onClick={(e) => e.stopPropagation()}>
+            <SectionHeaderActions
+              isDirty={Boolean(isDirty.sec4)}
+              isSaving={saving && savingSec === "sec4"}
+              onSave={() => saveSection("sec4")}
+              collapsed={Boolean(collapsed.sec4)}
+              onToggle={() => toggleSection("sec4")}
+              closedLabel="Edit"
+            />
+          </div>
         </div>
 
-        {collapsed.sec4 ? (
-          <div className="p-5 bg-stone-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="space-y-0.5 text-xs text-stone-600 max-w-2xl">
-              <p className="italic line-clamp-1">&ldquo;{invitation.openingQuote || "-"}&rdquo;</p>
-              <p className="font-bold text-amber-900">{invitation.openingQuoteRef || "-"}</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => toggleSection("sec4")}
-              className="text-xs font-bold text-amber-800 hover:underline self-start sm:self-center"
-            >
-              Ubah Kutipan
-            </button>
-          </div>
-        ) : (
+        {!collapsed.sec4 && (
           <div className="p-5 sm:p-7 space-y-4">
             {/* Quick Presets for Multi-Religious / Universal / Literary Quotes */}
             <div>
@@ -2532,43 +2418,45 @@ export default function EditInvitation() {
       </section>
 
       {/* 5. SEKSI RANGKAIAN ACARA (SEC5) */}
-      <section className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
-        <div className="p-5 sm:p-6 border-b border-stone-100 flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-base font-bold text-stone-900">5. Rangkaian Acara (Multi-Event)</h2>
-            <p className="text-xs text-stone-500">Atur seluruh agenda adat dan resepsi (Akad, Resepsi, Mappacci, dll.)</p>
+      <section id="section-sec5" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
+        <div
+          onClick={() => toggleSection("sec5")}
+          className={`flex items-center justify-between gap-3 transition cursor-pointer ${
+            collapsed.sec5
+              ? "px-5 py-3.5 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
+              : "p-5 sm:p-6 border-b border-stone-100 bg-white"
+          }`}
+        >
+          <div className="min-w-0">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h2 className="text-sm sm:text-base font-bold text-stone-900">5. Rangkaian Acara (Multi-Event)</h2>
+              {collapsed.sec5 && (
+                <span className="text-xs text-stone-500 font-normal truncate flex items-center gap-1.5">
+                  <span className="text-stone-300">•</span>
+                  <span className="font-medium text-stone-700">{events.length} Sesi Acara</span>
+                  {events[0]?.date && (
+                    <span className="text-stone-400">({events[0].date})</span>
+                  )}
+                </span>
+              )}
+            </div>
+            {!collapsed.sec5 && (
+              <p className="text-xs text-stone-500 mt-0.5">Atur seluruh agenda adat dan resepsi (Akad, Resepsi, Mappacci, dll.)</p>
+            )}
           </div>
-          <SectionHeaderActions
-            isDirty={Boolean(isDirty.sec5)}
-            isSaving={saving && savingSec === "sec5"}
-            onSave={() => saveSection("sec5")}
-            collapsed={Boolean(collapsed.sec5)}
-            onToggle={() => toggleSection("sec5")}
-            closedLabel="Edit Acara"
-          />
+          <div onClick={(e) => e.stopPropagation()}>
+            <SectionHeaderActions
+              isDirty={Boolean(isDirty.sec5)}
+              isSaving={saving && savingSec === "sec5"}
+              onSave={() => saveSection("sec5")}
+              collapsed={Boolean(collapsed.sec5)}
+              onToggle={() => toggleSection("sec5")}
+              closedLabel="Edit"
+            />
+          </div>
         </div>
 
-        {collapsed.sec5 ? (
-          <div className="p-5 bg-stone-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="space-y-1 text-xs text-stone-600">
-              <span className="font-bold text-stone-900">{events.length} Sesi Terdaftar:</span>
-              <div className="flex items-center gap-2 flex-wrap">
-                {events.map((ev, i) => (
-                  <span key={i} className="bg-white px-2 py-0.5 rounded border border-stone-200 text-stone-700 font-medium">
-                    {ev.title || `Sesi ${i + 1}`} ({ev.date || "-"})
-                  </span>
-                ))}
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => toggleSection("sec5")}
-              className="text-xs font-bold text-amber-800 hover:underline self-start sm:self-center"
-            >
-              Kelola Sesi
-            </button>
-          </div>
-        ) : (
+        {!collapsed.sec5 && (
           <div className="p-5 sm:p-7 space-y-4">
             <div className="flex items-center justify-between gap-2 flex-wrap pb-2 border-b border-stone-100">
               <div className="flex items-center gap-1.5 flex-wrap">
@@ -2666,36 +2554,44 @@ export default function EditInvitation() {
 
       {/* 6. SEKSI KARTU AKSES QR & CHECK-IN (SEC6) */}
       {hasCap("qr_checkin") && (
-      <section className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
-        <div className="p-5 sm:p-6 border-b border-stone-100 flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-base font-bold text-stone-900">6. Kartu Akses QR &amp; Check-In Tamu</h2>
-            <p className="text-xs text-stone-500">Tampilkan QR Code tiket dan tombol buka kartu akses untuk scanning buku tamu di lokasi acara</p>
+      <section id="section-sec6" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
+        <div
+          onClick={() => toggleSection("sec6")}
+          className={`flex items-center justify-between gap-3 transition cursor-pointer ${
+            collapsed.sec6
+              ? "px-5 py-3.5 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
+              : "p-5 sm:p-6 border-b border-stone-100 bg-white"
+          }`}
+        >
+          <div className="min-w-0">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h2 className="text-sm sm:text-base font-bold text-stone-900">6. Kartu Akses QR &amp; Check-In Tamu</h2>
+              {collapsed.sec6 && (
+                <span className="text-xs text-stone-500 font-normal truncate flex items-center gap-1.5">
+                  <span className="text-stone-300">•</span>
+                  <span className={showQrCheckin ? "text-emerald-700 font-medium" : "text-stone-500"}>
+                    {showQrCheckin ? "Aktif (QR Pass)" : "Nonaktif"}
+                  </span>
+                </span>
+              )}
+            </div>
+            {!collapsed.sec6 && (
+              <p className="text-xs text-stone-500 mt-0.5">Tampilkan QR Code tiket dan tombol buka kartu akses untuk scanning buku tamu di lokasi acara</p>
+            )}
           </div>
-          <SectionHeaderActions
-            isDirty={Boolean(isDirty.sec6)}
-            isSaving={saving && savingSec === "sec6"}
-            onSave={() => saveSection("sec6")}
-            collapsed={Boolean(collapsed.sec6)}
-            onToggle={() => toggleSection("sec6")}
-            closedLabel="Edit QR Pass"
-          />
+          <div onClick={(e) => e.stopPropagation()}>
+            <SectionHeaderActions
+              isDirty={Boolean(isDirty.sec6)}
+              isSaving={saving && savingSec === "sec6"}
+              onSave={() => saveSection("sec6")}
+              collapsed={Boolean(collapsed.sec6)}
+              onToggle={() => toggleSection("sec6")}
+              closedLabel="Edit"
+            />
+          </div>
         </div>
 
-        {collapsed.sec6 ? (
-          <div className="p-5 bg-stone-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="text-xs text-stone-600">
-              <span>Status: <strong>{showQrCheckin ? "Aktif (QR & Voucher Souvenir Ditampilkan)" : "Dinonaktifkan"}</strong></span>
-            </div>
-            <button
-              type="button"
-              onClick={() => toggleSection("sec6")}
-              className="text-xs font-bold text-amber-800 hover:underline"
-            >
-              Ubah Pengaturan
-            </button>
-          </div>
-        ) : (
+        {!collapsed.sec6 && (
           <div className="p-5 sm:p-7 space-y-4">
             <div className="flex items-center justify-between">
               <div>
@@ -2742,36 +2638,44 @@ export default function EditInvitation() {
       )}
 
       {/* 7. SEKSI KISAH CINTA (SEC7) */}
-      <section className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
-        <div className="p-5 sm:p-6 border-b border-stone-100 flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-base font-bold text-stone-900">7. Kisah Cinta (Journey of Love)</h2>
-            <p className="text-xs text-stone-500">Tuliskan babak perjalanan cinta dari awal bertemu hingga pernikahan</p>
+      <section id="section-sec7" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
+        <div
+          onClick={() => toggleSection("sec7")}
+          className={`flex items-center justify-between gap-3 transition cursor-pointer ${
+            collapsed.sec7
+              ? "px-5 py-3.5 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
+              : "p-5 sm:p-6 border-b border-stone-100 bg-white"
+          }`}
+        >
+          <div className="min-w-0">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h2 className="text-sm sm:text-base font-bold text-stone-900">7. Kisah Cinta (Journey of Love)</h2>
+              {collapsed.sec7 && (
+                <span className="text-xs text-stone-500 font-normal truncate flex items-center gap-1.5">
+                  <span className="text-stone-300">•</span>
+                  <span className={showStory ? "text-stone-700 font-medium" : "text-stone-500"}>
+                    {showStory ? `${stories.length} Babak Cerita` : "Nonaktif"}
+                  </span>
+                </span>
+              )}
+            </div>
+            {!collapsed.sec7 && (
+              <p className="text-xs text-stone-500 mt-0.5">Tuliskan babak perjalanan cinta dari awal bertemu hingga pernikahan</p>
+            )}
           </div>
-          <SectionHeaderActions
-            isDirty={Boolean(isDirty.sec7)}
-            isSaving={saving && savingSec === "sec7"}
-            onSave={() => saveSection("sec7")}
-            collapsed={Boolean(collapsed.sec7)}
-            onToggle={() => toggleSection("sec7")}
-            closedLabel="Edit Kisah"
-          />
+          <div onClick={(e) => e.stopPropagation()}>
+            <SectionHeaderActions
+              isDirty={Boolean(isDirty.sec7)}
+              isSaving={saving && savingSec === "sec7"}
+              onSave={() => saveSection("sec7")}
+              collapsed={Boolean(collapsed.sec7)}
+              onToggle={() => toggleSection("sec7")}
+              closedLabel="Edit"
+            />
+          </div>
         </div>
 
-        {collapsed.sec7 ? (
-          <div className="p-5 bg-stone-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="text-xs text-stone-600">
-              <span>Status: <strong>{showStory ? `${stories.length} Babak Kisah Terpasang` : "Seksi Dinonaktifkan"}</strong></span>
-            </div>
-            <button
-              type="button"
-              onClick={() => toggleSection("sec7")}
-              className="text-xs font-bold text-amber-800 hover:underline"
-            >
-              Ubah Kisah
-            </button>
-          </div>
-        ) : (
+        {!collapsed.sec7 && (
           <div className="p-5 sm:p-7 space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-stone-700">Tampilkan Seksi Kisah Cinta:</span>
@@ -2846,37 +2750,44 @@ export default function EditInvitation() {
       </section>
 
       {/* 8. SEKSI GALERI & VIDEO (SEC8) */}
-      <section className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
-        <div className="p-5 sm:p-6 border-b border-stone-100 flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-base font-bold text-stone-900">8. Galeri Foto Pre-Wedding &amp; Video Teaser</h2>
-            <p className="text-xs text-stone-500">Mendukung Folder Google Drive (CDN stream), Smart Puzzle Grid dinamis acak, dan modal galeri penuh</p>
+      <section id="section-sec8" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
+        <div
+          onClick={() => toggleSection("sec8")}
+          className={`flex items-center justify-between gap-3 transition cursor-pointer ${
+            collapsed.sec8
+              ? "px-5 py-3.5 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
+              : "p-5 sm:p-6 border-b border-stone-100 bg-white"
+          }`}
+        >
+          <div className="min-w-0">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h2 className="text-sm sm:text-base font-bold text-stone-900">8. Galeri Foto Pre-Wedding &amp; Video Teaser</h2>
+              {collapsed.sec8 && (
+                <span className="text-xs text-stone-500 font-normal truncate flex items-center gap-1.5">
+                  <span className="text-stone-300">•</span>
+                  <span className={showGallery ? "text-stone-700 font-medium" : "text-stone-500"}>
+                    {showGallery ? (getFeatureSetting("galleryDriveFolderUrl", "") ? "Drive Stream CDN" : "Grid Dinamis") : "Nonaktif"}
+                  </span>
+                </span>
+              )}
+            </div>
+            {!collapsed.sec8 && (
+              <p className="text-xs text-stone-500 mt-0.5">Mendukung Folder Google Drive (CDN stream), Smart Puzzle Grid dinamis acak, dan modal galeri penuh</p>
+            )}
           </div>
-          <SectionHeaderActions
-            isDirty={Boolean(isDirty.sec8)}
-            isSaving={saving && savingSec === "sec8"}
-            onSave={() => saveSection("sec8")}
-            collapsed={Boolean(collapsed.sec8)}
-            onToggle={() => toggleSection("sec8")}
-            closedLabel="Edit Galeri"
-          />
+          <div onClick={(e) => e.stopPropagation()}>
+            <SectionHeaderActions
+              isDirty={Boolean(isDirty.sec8)}
+              isSaving={saving && savingSec === "sec8"}
+              onSave={() => saveSection("sec8")}
+              collapsed={Boolean(collapsed.sec8)}
+              onToggle={() => toggleSection("sec8")}
+              closedLabel="Edit"
+            />
+          </div>
         </div>
 
-        {collapsed.sec8 ? (
-          <div className="p-5 bg-stone-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="text-xs text-stone-600 space-y-0.5">
-              <p>Status Galeri: <strong>{showGallery ? "Aktif (Smart Puzzle Grid)" : "Dinonaktifkan"}</strong></p>
-              <p>Google Drive: <span className="font-mono text-stone-500">{getFeatureSetting("galleryDriveFolderUrl", "") ? "Folder Terhubung" : "Preset Demo"}</span></p>
-            </div>
-            <button
-              type="button"
-              onClick={() => toggleSection("sec8")}
-              className="text-xs font-bold text-amber-800 hover:underline"
-            >
-              Ubah Galeri
-            </button>
-          </div>
-        ) : (
+        {!collapsed.sec8 && (
           <div className="p-5 sm:p-7 space-y-5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-stone-700">Tampilkan Galeri Pre-Wedding:</span>
@@ -2964,37 +2875,44 @@ export default function EditInvitation() {
       </section>
 
       {/* 9. SEKSI TANDA KASIH & AMPLOP (SEC9) */}
-      <section className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
-        <div className="p-5 sm:p-6 border-b border-stone-100 flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-base font-bold text-stone-900">9. Tanda Kasih &amp; Amplop Digital</h2>
-            <p className="text-xs text-stone-500">Kelola nomor rekening bank, QRIS statis, dan alamat pengiriman kado fisik</p>
+      <section id="section-sec9" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
+        <div
+          onClick={() => toggleSection("sec9")}
+          className={`flex items-center justify-between gap-3 transition cursor-pointer ${
+            collapsed.sec9
+              ? "px-5 py-3.5 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
+              : "p-5 sm:p-6 border-b border-stone-100 bg-white"
+          }`}
+        >
+          <div className="min-w-0">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h2 className="text-sm sm:text-base font-bold text-stone-900">9. Tanda Kasih &amp; Amplop Digital</h2>
+              {collapsed.sec9 && (
+                <span className="text-xs text-stone-500 font-normal truncate flex items-center gap-1.5">
+                  <span className="text-stone-300">•</span>
+                  <span className={showGift ? "text-stone-700 font-medium" : "text-stone-500"}>
+                    {showGift ? `${bankList.length} Rekening Terdaftar` : "Nonaktif"}
+                  </span>
+                </span>
+              )}
+            </div>
+            {!collapsed.sec9 && (
+              <p className="text-xs text-stone-500 mt-0.5">Kelola nomor rekening bank, QRIS statis, dan alamat pengiriman kado fisik</p>
+            )}
           </div>
-          <SectionHeaderActions
-            isDirty={Boolean(isDirty.sec9)}
-            isSaving={saving && savingSec === "sec9"}
-            onSave={() => saveSection("sec9")}
-            collapsed={Boolean(collapsed.sec9)}
-            onToggle={() => toggleSection("sec9")}
-            closedLabel="Edit Amplop"
-          />
+          <div onClick={(e) => e.stopPropagation()}>
+            <SectionHeaderActions
+              isDirty={Boolean(isDirty.sec9)}
+              isSaving={saving && savingSec === "sec9"}
+              onSave={() => saveSection("sec9")}
+              collapsed={Boolean(collapsed.sec9)}
+              onToggle={() => toggleSection("sec9")}
+              closedLabel="Edit"
+            />
+          </div>
         </div>
 
-        {collapsed.sec9 ? (
-          <div className="p-5 bg-stone-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="text-xs text-stone-600 space-y-0.5">
-              <p>Status: <strong>{showGift ? `${bankList.length} Rekening Terdaftar` : "Dinonaktifkan"}</strong></p>
-              <p>Alamat Kado: <span className="text-stone-500 line-clamp-1">{invitation.shippingAddress || "Belum diatur"}</span></p>
-            </div>
-            <button
-              type="button"
-              onClick={() => toggleSection("sec9")}
-              className="text-xs font-bold text-amber-800 hover:underline"
-            >
-              Ubah Rekening
-            </button>
-          </div>
-        ) : (
+        {!collapsed.sec9 && (
           <div className="p-5 sm:p-7 space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-stone-700">Tampilkan Amplop Digital:</span>
@@ -3113,36 +3031,44 @@ export default function EditInvitation() {
       </section>
 
       {/* 10. SEKSI DRESS CODE (SEC10) */}
-      <section className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
-        <div className="p-5 sm:p-6 border-b border-stone-100 flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-base font-bold text-stone-900">10. Panduan Busana (Dress Code Guide)</h2>
-            <p className="text-xs text-stone-500">Atur palet warna pakaian dan anjuran busana untuk para tamu undangan</p>
+      <section id="section-sec10" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
+        <div
+          onClick={() => toggleSection("sec10")}
+          className={`flex items-center justify-between gap-3 transition cursor-pointer ${
+            collapsed.sec10
+              ? "px-5 py-3.5 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
+              : "p-5 sm:p-6 border-b border-stone-100 bg-white"
+          }`}
+        >
+          <div className="min-w-0">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h2 className="text-sm sm:text-base font-bold text-stone-900">10. Panduan Busana (Dress Code Guide)</h2>
+              {collapsed.sec10 && (
+                <span className="text-xs text-stone-500 font-normal truncate flex items-center gap-1.5">
+                  <span className="text-stone-300">•</span>
+                  <span className={showDresscode ? "text-stone-700 font-medium" : "text-stone-500"}>
+                    {showDresscode ? (invitation.dresscode || "Aktif") : "Nonaktif"}
+                  </span>
+                </span>
+              )}
+            </div>
+            {!collapsed.sec10 && (
+              <p className="text-xs text-stone-500 mt-0.5">Atur palet warna pakaian dan anjuran busana untuk para tamu undangan</p>
+            )}
           </div>
-          <SectionHeaderActions
-            isDirty={Boolean(isDirty.sec10)}
-            isSaving={saving && savingSec === "sec10"}
-            onSave={() => saveSection("sec10")}
-            collapsed={Boolean(collapsed.sec10)}
-            onToggle={() => toggleSection("sec10")}
-            closedLabel="Edit Dress Code"
-          />
+          <div onClick={(e) => e.stopPropagation()}>
+            <SectionHeaderActions
+              isDirty={Boolean(isDirty.sec10)}
+              isSaving={saving && savingSec === "sec10"}
+              onSave={() => saveSection("sec10")}
+              collapsed={Boolean(collapsed.sec10)}
+              onToggle={() => toggleSection("sec10")}
+              closedLabel="Edit"
+            />
+          </div>
         </div>
 
-        {collapsed.sec10 ? (
-          <div className="p-5 bg-stone-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="text-xs text-stone-600">
-              <span>Status: <strong>{showDresscode ? (invitation.dresscode || "Aktif") : "Dinonaktifkan"}</strong></span>
-            </div>
-            <button
-              type="button"
-              onClick={() => toggleSection("sec10")}
-              className="text-xs font-bold text-amber-800 hover:underline"
-            >
-              Ubah Dress Code
-            </button>
-          </div>
-        ) : (
+        {!collapsed.sec10 && (
           <div className="p-5 sm:p-7 space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-stone-700">Tampilkan Panduan Dress Code:</span>
@@ -3425,36 +3351,44 @@ export default function EditInvitation() {
       </section>
 
       {/* 11. SEKSI LIVE STREAMING (SEC11) */}
-      <section className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
-        <div className="p-5 sm:p-6 border-b border-stone-100 flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-base font-bold text-stone-900">11. Siaran Langsung (Live Streaming)</h2>
-            <p className="text-xs text-stone-500">Tautkan link siaran virtual YouTube Live, Instagram Live, atau Zoom Meeting</p>
+      <section id="section-sec11" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
+        <div
+          onClick={() => toggleSection("sec11")}
+          className={`flex items-center justify-between gap-3 transition cursor-pointer ${
+            collapsed.sec11
+              ? "px-5 py-3.5 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
+              : "p-5 sm:p-6 border-b border-stone-100 bg-white"
+          }`}
+        >
+          <div className="min-w-0">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h2 className="text-sm sm:text-base font-bold text-stone-900">11. Siaran Langsung (Live Streaming)</h2>
+              {collapsed.sec11 && (
+                <span className="text-xs text-stone-500 font-normal truncate flex items-center gap-1.5">
+                  <span className="text-stone-300">•</span>
+                  <span className={showLiveStream ? "text-emerald-700 font-medium" : "text-stone-500"}>
+                    {showLiveStream ? "Aktif" : "Nonaktif"}
+                  </span>
+                </span>
+              )}
+            </div>
+            {!collapsed.sec11 && (
+              <p className="text-xs text-stone-500 mt-0.5">Tautkan link siaran virtual YouTube Live, Instagram Live, atau Zoom Meeting</p>
+            )}
           </div>
-          <SectionHeaderActions
-            isDirty={Boolean(isDirty.sec11)}
-            isSaving={saving && savingSec === "sec11"}
-            onSave={() => saveSection("sec11")}
-            collapsed={Boolean(collapsed.sec11)}
-            onToggle={() => toggleSection("sec11")}
-            closedLabel="Edit Live Stream"
-          />
+          <div onClick={(e) => e.stopPropagation()}>
+            <SectionHeaderActions
+              isDirty={Boolean(isDirty.sec11)}
+              isSaving={saving && savingSec === "sec11"}
+              onSave={() => saveSection("sec11")}
+              collapsed={Boolean(collapsed.sec11)}
+              onToggle={() => toggleSection("sec11")}
+              closedLabel="Edit"
+            />
+          </div>
         </div>
 
-        {collapsed.sec11 ? (
-          <div className="p-5 bg-stone-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="text-xs text-stone-600">
-              <span>Status: <strong>{showLiveStream ? "Aktif" : "Dinonaktifkan"}</strong></span>
-            </div>
-            <button
-              type="button"
-              onClick={() => toggleSection("sec11")}
-              className="text-xs font-bold text-amber-800 hover:underline"
-            >
-              Ubah Link Live
-            </button>
-          </div>
-        ) : (
+        {!collapsed.sec11 && (
           <div className="p-5 sm:p-7 space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-stone-700">Tampilkan Siaran Langsung:</span>
@@ -3510,36 +3444,44 @@ export default function EditInvitation() {
       </section>
 
       {/* 12. SEKSI FILTER INSTAGRAM (SEC12) */}
-      <section className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
-        <div className="p-5 sm:p-6 border-b border-stone-100 flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-base font-bold text-stone-900">12. Filter Instagram (Wedding Frame AR)</h2>
-            <p className="text-xs text-stone-500">Tautkan link effect / filter Instagram Story resmi pernikahan Anda</p>
+      <section id="section-sec12" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
+        <div
+          onClick={() => toggleSection("sec12")}
+          className={`flex items-center justify-between gap-3 transition cursor-pointer ${
+            collapsed.sec12
+              ? "px-5 py-3.5 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
+              : "p-5 sm:p-6 border-b border-stone-100 bg-white"
+          }`}
+        >
+          <div className="min-w-0">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h2 className="text-sm sm:text-base font-bold text-stone-900">12. Filter Instagram (Wedding Frame AR)</h2>
+              {collapsed.sec12 && (
+                <span className="text-xs text-stone-500 font-normal truncate flex items-center gap-1.5">
+                  <span className="text-stone-300">•</span>
+                  <span className={showFilter ? "text-emerald-700 font-medium" : "text-stone-500"}>
+                    {showFilter ? (getFeatureSetting("instagramFilterUrl", "") ? "Terhubung" : "Aktif") : "Nonaktif"}
+                  </span>
+                </span>
+              )}
+            </div>
+            {!collapsed.sec12 && (
+              <p className="text-xs text-stone-500 mt-0.5">Tautkan link effect / filter Instagram Story resmi pernikahan Anda</p>
+            )}
           </div>
-          <SectionHeaderActions
-            isDirty={Boolean(isDirty.sec12)}
-            isSaving={saving && savingSec === "sec12"}
-            onSave={() => saveSection("sec12")}
-            collapsed={Boolean(collapsed.sec12)}
-            onToggle={() => toggleSection("sec12")}
-            closedLabel="Edit Filter"
-          />
+          <div onClick={(e) => e.stopPropagation()}>
+            <SectionHeaderActions
+              isDirty={Boolean(isDirty.sec12)}
+              isSaving={saving && savingSec === "sec12"}
+              onSave={() => saveSection("sec12")}
+              collapsed={Boolean(collapsed.sec12)}
+              onToggle={() => toggleSection("sec12")}
+              closedLabel="Edit"
+            />
+          </div>
         </div>
 
-        {collapsed.sec12 ? (
-          <div className="p-5 bg-stone-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="text-xs text-stone-600">
-              <span>Status: <strong>{showFilter ? (getFeatureSetting("instagramFilterUrl", "") ? "Terhubung" : "Aktif") : "Dinonaktifkan"}</strong></span>
-            </div>
-            <button
-              type="button"
-              onClick={() => toggleSection("sec12")}
-              className="text-xs font-bold text-amber-800 hover:underline"
-            >
-              Ubah Filter
-            </button>
-          </div>
-        ) : (
+        {!collapsed.sec12 && (
           <div className="p-5 sm:p-7 space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-stone-700">Tampilkan Tombol Filter Instagram:</span>
@@ -3581,36 +3523,44 @@ export default function EditInvitation() {
       </section>
 
       {/* 13. SEKSI TURUT MENGUNDANG & HIMBAUAN (SEC13) */}
-      <section className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
-        <div className="p-5 sm:p-6 border-b border-stone-100 flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-base font-bold text-stone-900">13. Turut Mengundang &amp; Himbauan Tamu</h2>
-            <p className="text-xs text-stone-500">Daftar keluarga besar yang turut mengundang dan catatan kenyamanan tamu</p>
+      <section id="section-sec13" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
+        <div
+          onClick={() => toggleSection("sec13")}
+          className={`flex items-center justify-between gap-3 transition cursor-pointer ${
+            collapsed.sec13
+              ? "px-5 py-3.5 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
+              : "p-5 sm:p-6 border-b border-stone-100 bg-white"
+          }`}
+        >
+          <div className="min-w-0">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h2 className="text-sm sm:text-base font-bold text-stone-900">13. Turut Mengundang &amp; Himbauan Tamu</h2>
+              {collapsed.sec13 && (
+                <span className="text-xs text-stone-500 font-normal truncate flex items-center gap-1.5">
+                  <span className="text-stone-300">•</span>
+                  <span className={showTurutMengundang ? "text-stone-700 font-medium" : "text-stone-500"}>
+                    {showTurutMengundang ? "Aktif" : "Nonaktif"}
+                  </span>
+                </span>
+              )}
+            </div>
+            {!collapsed.sec13 && (
+              <p className="text-xs text-stone-500 mt-0.5">Daftar keluarga besar yang turut mengundang dan catatan kenyamanan tamu</p>
+            )}
           </div>
-          <SectionHeaderActions
-            isDirty={Boolean(isDirty.sec13)}
-            isSaving={saving && savingSec === "sec13"}
-            onSave={() => saveSection("sec13")}
-            collapsed={Boolean(collapsed.sec13)}
-            onToggle={() => toggleSection("sec13")}
-            closedLabel="Edit Keluarga"
-          />
+          <div onClick={(e) => e.stopPropagation()}>
+            <SectionHeaderActions
+              isDirty={Boolean(isDirty.sec13)}
+              isSaving={saving && savingSec === "sec13"}
+              onSave={() => saveSection("sec13")}
+              collapsed={Boolean(collapsed.sec13)}
+              onToggle={() => toggleSection("sec13")}
+              closedLabel="Edit"
+            />
+          </div>
         </div>
 
-        {collapsed.sec13 ? (
-          <div className="p-5 bg-stone-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="text-xs text-stone-600">
-              <span>Status: <strong>{showTurutMengundang ? "Aktif" : "Dinonaktifkan"}</strong></span>
-            </div>
-            <button
-              type="button"
-              onClick={() => toggleSection("sec13")}
-              className="text-xs font-bold text-amber-800 hover:underline"
-            >
-              Ubah Daftar
-            </button>
-          </div>
-        ) : (
+        {!collapsed.sec13 && (
           <div className="p-5 sm:p-7 space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-stone-700">Tampilkan Seksi Turut Mengundang:</span>
@@ -3667,42 +3617,47 @@ export default function EditInvitation() {
       </section>
       {/* 14. SEKSI GALERI KENANGAN TAMU (SEC14) */}
       {hasCap("guest_memories") && (
-      <section className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
-        <div className="p-5 sm:p-6 border-b border-stone-100 flex items-center justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-base font-bold text-stone-900">14. Galeri Kenangan Tamu (After-Event)</h2>
+      <section id="section-sec14" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
+        <div
+          onClick={() => toggleSection("sec14")}
+          className={`flex items-center justify-between gap-3 transition cursor-pointer ${
+            collapsed.sec14
+              ? "px-5 py-3.5 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
+              : "p-5 sm:p-6 border-b border-stone-100 bg-white"
+          }`}
+        >
+          <div className="min-w-0">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h2 className="text-sm sm:text-base font-bold text-stone-900">14. Galeri Kenangan Tamu (After-Event)</h2>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-200">
                 Live Photo Drop
               </span>
+              {collapsed.sec14 && (
+                <span className="text-xs text-stone-500 font-normal truncate flex items-center gap-1.5">
+                  <span className="text-stone-300">•</span>
+                  <span className={getFeatureSetting("showGuestMemories", true) ? "text-emerald-700 font-medium" : "text-stone-500"}>
+                    {getFeatureSetting("showGuestMemories", true) ? "Aktif" : "Nonaktif"}
+                  </span>
+                </span>
+              )}
             </div>
-            <p className="text-xs text-stone-500">Tampung foto candid yang dibagikan para tamu undangan pasca acara</p>
+            {!collapsed.sec14 && (
+              <p className="text-xs text-stone-500 mt-0.5">Tampung foto candid yang dibagikan para tamu undangan pasca acara</p>
+            )}
           </div>
-          <SectionHeaderActions
-            isDirty={Boolean(isDirty.sec14)}
-            isSaving={saving && savingSec === "sec14"}
-            onSave={() => saveSection("sec14")}
-            collapsed={Boolean(collapsed.sec14)}
-            onToggle={() => toggleSection("sec14")}
-            closedLabel="Kelola Kenangan"
-          />
+          <div onClick={(e) => e.stopPropagation()}>
+            <SectionHeaderActions
+              isDirty={Boolean(isDirty.sec14)}
+              isSaving={saving && savingSec === "sec14"}
+              onSave={() => saveSection("sec14")}
+              collapsed={Boolean(collapsed.sec14)}
+              onToggle={() => toggleSection("sec14")}
+              closedLabel="Edit"
+            />
+          </div>
         </div>
 
-        {collapsed.sec14 ? (
-          <div className="p-5 bg-stone-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="text-xs text-stone-600 flex items-center gap-3">
-              <span className={`w-2 h-2 rounded-full ${getFeatureSetting("showGuestMemories", true) ? "bg-emerald-500" : "bg-rose-500"}`}></span>
-              <span>Status: <strong className={getFeatureSetting("showGuestMemories", true) ? "text-stone-900" : "text-rose-700"}>{getFeatureSetting("showGuestMemories", true) ? "Aktif di Undangan" : "Dinonaktifkan"}</strong></span>
-            </div>
-            <button
-              type="button"
-              onClick={() => toggleSection("sec14")}
-              className="text-xs font-bold text-amber-800 hover:underline cursor-pointer"
-            >
-              Buka Pengaturan
-            </button>
-          </div>
-        ) : (
+        {!collapsed.sec14 && (
           <div className="p-5 sm:p-7 space-y-6">
             <div className="flex items-center justify-between">
               <div>
@@ -3794,41 +3749,44 @@ export default function EditInvitation() {
       )}
 
       {/* 15. SEKSI PENGATURAN TEKS UI & LABEL (SEC15) */}
-      <section className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden">
-        <div className="p-5 sm:p-6 border-b border-stone-100 flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-base font-bold text-stone-900">15. Pengaturan Teks UI &amp; Label</h2>
-            <p className="text-xs text-stone-500">Kustomisasi teks tombol RSVP, formulir, sampul, dan hitung mundur</p>
+      <section id="section-sec15" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
+        <div
+          onClick={() => toggleSection("sec15")}
+          className={`flex items-center justify-between gap-3 transition cursor-pointer ${
+            collapsed.sec15
+              ? "px-5 py-3.5 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
+              : "p-5 sm:p-6 border-b border-stone-100 bg-white"
+          }`}
+        >
+          <div className="min-w-0">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h2 className="text-sm sm:text-base font-bold text-stone-900">15. Pengaturan Teks UI &amp; Label</h2>
+              {collapsed.sec15 && (
+                <span className="text-xs text-stone-500 font-normal truncate flex items-center gap-1.5">
+                  <span className="text-stone-300">•</span>
+                  <span className="text-stone-600 font-medium truncate max-w-[220px] sm:max-w-xs">
+                    RSVP: &ldquo;{getCustomLabel("rsvpBtnText", "Kirim Konfirmasi & Doa")}&rdquo;
+                  </span>
+                </span>
+              )}
+            </div>
+            {!collapsed.sec15 && (
+              <p className="text-xs text-stone-500 mt-0.5">Kustomisasi teks tombol RSVP, formulir, sampul, dan hitung mundur</p>
+            )}
           </div>
-          <SectionHeaderActions
-            isDirty={Boolean(isDirty.sec15)}
-            isSaving={saving && savingSec === "sec15"}
-            onSave={() => saveSection("sec15")}
-            collapsed={Boolean(collapsed.sec15)}
-            onToggle={() => toggleSection("sec15")}
-            closedLabel="Edit Label"
-          />
+          <div onClick={(e) => e.stopPropagation()}>
+            <SectionHeaderActions
+              isDirty={Boolean(isDirty.sec15)}
+              isSaving={saving && savingSec === "sec15"}
+              onSave={() => saveSection("sec15")}
+              collapsed={Boolean(collapsed.sec15)}
+              onToggle={() => toggleSection("sec15")}
+              closedLabel="Edit"
+            />
+          </div>
         </div>
 
-        {collapsed.sec15 ? (
-          <div className="p-5 bg-stone-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="space-y-0.5 text-xs text-stone-600 max-w-2xl">
-              <p className="font-semibold text-stone-900">
-                Tombol RSVP: &ldquo;{getCustomLabel("rsvpBtnText", "Kirim Konfirmasi & Doa")}&rdquo;
-              </p>
-              <p className="text-stone-500 text-[11px]">
-                Tombol Buka: &ldquo;{getCustomLabel("openBtn", "Buka Undangan")}&rdquo; · Judul RSVP: &ldquo;{getCustomLabel("rsvpTitle", "RSVP & Doa Restu")}&rdquo;
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => toggleSection("sec15")}
-              className="text-xs font-bold text-amber-800 hover:underline self-start sm:self-center"
-            >
-              Ubah Label
-            </button>
-          </div>
-        ) : (
+        {!collapsed.sec15 && (
           <div className="p-5 sm:p-7 space-y-5">
             {/* Group 1: Formulir & Tombol RSVP */}
             <div className="space-y-3">

@@ -545,6 +545,19 @@ Khusus SUPER_ADMIN / ADMIN untuk intervensi operasional langsung dari dashboard:
    - Endpoint backend (`GET/PUT /api/client/invitations/{id}` dan `GET /api/client/invitations`) secara konsisten mendekripsi `staffPin` sebelum dikirimkan ke frontend klien, sehingga browser selalu menerima teks PIN asli yang bersih.
    - Proteksi *Anti Double-Encryption* (`isPinEncrypted`) dan mekanisme *Self-Healing* pada `decryptPin` mencegah PIN terenkripsi berulang kali saat form disimpan secara terpisah.
 
+### 6.8 — Ultra-Slim Exclusive Accordion & Clean Preview Architecture (Studio Editor 15 Seksi)
+1. **Single-Expanded Exclusive Accordion Pattern:**
+   - **Logika Otomatisasi Penutupan Seksi:** Membuka salah satu seksi formulir secara otomatis menutup seluruh seksi lainnya (`single-expanded exclusive accordion`). Klien tidak lagi mengalami *scroll fatigue* akibat tumpukan formulir terbuka panjang.
+   - **Penyimpanan State Sesi:** State seksi aktif disimpan ke `localStorage` (`lux_studio_collapsed_{invitationId}`) dengan isolasi aman per undangan.
+
+2. **Ultra-Slim Collapsed Headers (~48px) & Eliminasi Blok Redundan:**
+   - **Pemangkasan Ketinggian Vertikal Radikal:** Menghapus blok preview duplikat bawah (`p-5 bg-stone-50/60`) yang sebelumnya merender ringkasan besar berulang di setiap seksi. Ketinggian halaman tertutup berhasil dipangkas dari **4.101px** menjadi **~750px** (pas dalam 1 layar desktop penuh).
+   - **Muted Inline Summary Snippets:** Informasi ringkas seksi (tema & palet aktif, nama mempelai, jumlah sesi acara, status fitur) ditampilkan secara elegan sebagai cuplikan inline di samping judul seksi (`text-xs text-stone-500 font-normal`).
+   - **Full-Row Clickability:** Seluruh area header seksi dapat diklik (`onClick={() => toggleSection("secX")}`) dengan proteksi `e.stopPropagation()` pada tombol simpan/aksi agar interaksi tidak saling tumpang tindih.
+
+3. **Clean Preview Mode Routing (`mode=preview`):**
+   - Tombol *"Buka di Tab Baru"* di Studio Editor dan tombol navigasi layar proteksi *"Lihat Undangan Online"* diarahkan ke `mode=preview` (bukan `mode=edit`), menjamin evaluasi visual klien murni tanpa gangguan widget editor atau toolbar floating.
+
 ---
 
 ## 7. SISTEM SUBDOMAIN & MANAJEMEN ONBOARDING

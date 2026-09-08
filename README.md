@@ -77,8 +77,8 @@ Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model 
    - Kustomisasi seksi (Love Story, Gift, QR Check-in, Teks Galeri Kenangan Tamu)
    - Kelola tamu + generate WhatsApp link personal (Deteksi cerdas Custom Domain / Subdomain & proteksi draft)
    - RSVP & ucapan real-time
-   - **Studio Editor & Dual View (Form Data vs Live Visual):** 15 seksi terstruktur dengan dirty tracking per-seksi, isolasi warna swatch busana, dan Live Visual Editor Canvas.
-   - **Live View Real-Time Palette Synchronizer:** Panel palet 6 warna utama terpasang langsung di atas kanvas Live View, memungkinkan perubahan warna tema secara instan tanpa perlu berpindah tab dengan sinkronisasi dua arah (*two-way sync*) ke Seksi 1 formulir data.
+   - **Studio Editor & Dual View (Form Data vs Live Visual):** 15 seksi terstruktur dengan sistem **Ultra-Slim Exclusive Accordion** (membuka 1 seksi otomatis menutup seksi lainnya, mengeliminasi scroll fatigue, ketinggian tertutup terpangkas dari 4.101px ke ~750px pas dalam 1 layar desktop dengan cuplikan ringkas inline), dirty tracking per-seksi, isolasi warna swatch busana, dan Live Visual Editor Canvas.
+   - **Live View Real-Time Palette Synchronizer & Clean Preview:** Panel palet 6 warna utama terpasang langsung di atas kanvas Live View dengan *two-way sync* instan ke Seksi 1 formulir data. Tombol *"Buka di Tab Baru"* dan tombol navigasi layar proteksi terhubung ke `mode=preview` murni untuk evaluasi visual bersih tanpa gangguan widget editor.
    - **Proteksi Pasca Publish & Buka Kunci Darurat:** Begitu terbit, form editor terkunci otomatis demi melindungi integritas QR Code fisik dan data live. Admin dapat membuka izin edit darurat via panel `/admin` (24 jam). Pengeditan menerapkan *Staging Save* (tanpa beban rebake storm) dan diakhiri dengan tombol **"Perbarui Undangan & Kunci Kembali"** untuk 1x atomic bake ke Cloudflare R2 dan auto-lock instan.
      │
      ▼

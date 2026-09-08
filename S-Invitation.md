@@ -144,6 +144,10 @@ Sistem Studio Editor Klien (`/dashboard/invitation/[id]`) menyediakan kendali kr
    - **Panel 6 Palet Warna di Atas Kanvas Live View:** Klien dapat langsung mengganti nuansa tema utama di tab Live View tanpa harus bolak-balik ke tab form edit data.
    - **Injeksi CSS Seketika & PostMessage:** Perubahan warna diaplikasikan instan ke preview iframe melalui manipulasi token CSS (`--gold`, `--primary`, dll.) dan pesan `LUX_PALETTE_CHANGED`.
    - **Sinkronisasi Otomatis dengan Seksi 1:** Tetap mempertahankan pemilih palet warna di Seksi 1 formulir data dengan status aktif dan penyimpanan yang selalu sinkron.
+4.2. **Ultra-Slim Exclusive Accordion & Clean Preview Routing:**
+   - **Exclusive Single-Expanded Mode:** Membuka salah satu seksi formulir secara otomatis menutup seluruh seksi lainnya (`single-expanded exclusive accordion`), membebaskan klien dari kelelahan *scrolling* panjang pada 15 seksi formulir.
+   - **Header Ultra-Slim (~48px) & Eliminasi Blok Redundan:** Menghilangkan blok preview sekunder yang berulang di bawah kartu seksi, memangkas tinggi halaman formulir tertutup dari **4.101px** menjadi **~750px** (pas dalam 1 layar desktop penuh). Dilengkapi ringkasan *muted inline summary snippet* di samping judul seksi dan *full-row clickability*.
+   - **Clean Preview Mode Routing (`mode=preview`):** Tombol *"Buka di Tab Baru"* dan navigasi pratinjau layar proteksi mengarahkan ke `mode=preview` murni tanpa widget floating atau panel editor yang menghalangi pandangan.
 5. **Saklar Tampil/Sembunyikan (*Section Toggles*)**:
    - Klien dapat mengaktifkan/menonaktifkan seksi (*Love Story, Galeri Foto, Amplop Digital, Dresscode*) secara instan.
 6. **Video Teaser Player Pre-Wedding**:
