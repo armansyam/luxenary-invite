@@ -204,7 +204,7 @@ Pre-Flight Checklist & Smart Audit (/dashboard/settings):
 
 Sistem mendukung 3 kondisi transaksi dengan integrasi 2-arah eksklusif (Midtrans & Xendit) yang dilengkapi pembatalan seketika (*two-way cancel/expire*) dan payload lengkap:
 1. **Registrasi Paket Awal (`NEW`):** Aktivasi paket baru (Traditional / Modern / Premium). Setelah lunas, klien langsung diarahkan ke `/dashboard/setup`.
-2. **Upgrade Layanan (`UPGRADE`):** Klien menaikkan tier paket (misal Traditional ke Modern / Premium) dengan selisih harga dinamis. Tier induk diperbarui seketika.
+2. **Upgrade Layanan (`UPGRADE`):** Klien menaikkan tier paket (misal Traditional ke Modern / Premium) dengan selisih harga dinamis yang bersumber dari konfigurasi database (`AdminSetting`), disajikan via modal Obsidian Gold Luxury. Tier induk diperbarui seketika.
 3. **Add-on Layanan Tambahan:**
    - **Perpanjang Galeri Tamu (`GALLERY_EXTENSION`):** Menambah masa simpan foto momen tamu selama +30 hari dan membuka kunci form upload.
    - **Jasa Integrasi Custom Domain (`CUSTOM_DOMAIN_ADDON`):** Integrasi domain kustom klien (lengkap dengan sertifikat SSL/TLS & Cloudflare DNS) selama +365 hari / 1 tahun.

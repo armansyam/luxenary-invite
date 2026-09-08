@@ -15,6 +15,11 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       ...settings,
+      pricing: {
+        price_traditional: settings.packages?.find((p) => p.id === "TRADITIONAL")?.price ?? 0,
+        price_modern: settings.packages?.find((p) => p.id === "MODERN")?.price ?? 0,
+        price_premium: settings.packages?.find((p) => p.id === "PREMIUM")?.price ?? 0,
+      },
       addon_custom_domain_price: settings.addonCustomDomainPrice,
       addon_custom_domain_enabled: settings.addonCustomDomainEnabled,
       addon_subdomain_gallery_bundle_price: settings.addonSubdomainGalleryBundlePrice,

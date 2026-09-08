@@ -137,16 +137,23 @@ export default function EditInvitation() {
 
   const PLAN_HIERARCHY: Record<string, number> = { TRADITIONAL: 1, MODERN: 2, PREMIUM: 3 };
   const PLAN_PRICES: Record<string, number> = {
-    // Harga HANYA dari platformSettings (AdminSetting) — tidak ada fallback hardcode
-    // Jika belum dimuat, 0 agar kalkulasi selisih upgrade tidak salah
-    TRADITIONAL: Number(platformSettings?.pricing?.price_traditional ?? 0),
-    MODERN:      Number(platformSettings?.pricing?.price_modern      ?? 0),
-    PREMIUM:     Number(platformSettings?.pricing?.price_premium     ?? 0),
+    TRADITIONAL: Number(
+      platformSettings?.packages?.find((p: any) => p.id === "TRADITIONAL")?.price ??
+      platformSettings?.pricing?.price_traditional ?? 80000
+    ),
+    MODERN: Number(
+      platformSettings?.packages?.find((p: any) => p.id === "MODERN")?.price ??
+      platformSettings?.pricing?.price_modern ?? 100000
+    ),
+    PREMIUM: Number(
+      platformSettings?.packages?.find((p: any) => p.id === "PREMIUM")?.price ??
+      platformSettings?.pricing?.price_premium ?? 120000
+    ),
   };
   const PLAN_COLOR: Record<string, string> = {
     TRADITIONAL: "bg-amber-50 text-amber-800 border-amber-200",
-    MODERN: "bg-indigo-50 text-indigo-800 border-indigo-200",
-    PREMIUM: "bg-violet-50 text-violet-800 border-violet-200",
+    MODERN: "bg-stone-100 text-stone-800 border-stone-200",
+    PREMIUM: "bg-amber-100/70 text-amber-950 border-amber-300",
   };
   const PLAN_FEATURES: Record<string, string[]> = {
     MODERN: ["Akses semua tema Traditional & Modern", "Semua fitur paket Traditional"],
@@ -1111,9 +1118,9 @@ export default function EditInvitation() {
                       setUpgradeDomainInput("");
                       setUpgradeModal(true);
                     }}
-                    className="text-[10px] font-bold text-violet-700 hover:text-violet-900 border border-violet-200 hover:border-violet-400 bg-violet-50 hover:bg-violet-100 px-2 py-0.5 rounded-full transition flex items-center gap-1 cursor-pointer"
+                    className="text-[10px] font-bold text-amber-900 hover:text-stone-900 border border-amber-300 hover:border-amber-400 bg-amber-50/80 hover:bg-amber-100 px-2 py-0.5 rounded-full transition flex items-center gap-1 cursor-pointer"
                   >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                    <svg className="w-3 h-3 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
                     Upgrade
                   </button>
                 )}
@@ -3919,15 +3926,15 @@ export default function EditInvitation() {
         >
           <div className="w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden">
             {/* Header */}
-            <div className="bg-gradient-to-br from-violet-900 to-indigo-900 p-6 text-white">
+            <div className="bg-gradient-to-br from-stone-900 via-stone-850 to-stone-900 p-6 text-white border-b border-stone-800">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-[11px] font-bold tracking-widest uppercase text-violet-300">Upgrade Paket</span>
-                <button onClick={() => setUpgradeModal(false)} className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition">
+                <span className="text-[11px] font-bold tracking-widest uppercase text-amber-400">Upgrade Paket</span>
+                <button onClick={() => setUpgradeModal(false)} className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-stone-300 hover:text-white flex items-center justify-center transition cursor-pointer">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
               </div>
-              <h2 className="text-xl font-serif font-bold">Tingkatkan Akses Tema</h2>
-              <p className="text-violet-200 text-xs mt-1">Paket saat ini: <strong className="text-white">{planType}</strong></p>
+              <h2 className="text-xl font-serif font-bold text-stone-100">Tingkatkan Akses Tema</h2>
+              <p className="text-stone-300 text-xs mt-1">Paket saat ini: <strong className="text-amber-300 font-semibold">{planType}</strong></p>
             </div>
 
             {/* Tier Options */}
@@ -3942,31 +3949,31 @@ export default function EditInvitation() {
                       key={tier}
                       type="button"
                       onClick={() => setUpgradeTarget(tier)}
-                      className={`w-full text-left p-4 rounded-2xl border-2 transition ${
+                      className={`w-full text-left p-4 rounded-2xl border-2 transition cursor-pointer ${
                         isSelected
-                          ? "border-violet-600 bg-violet-50 shadow-sm"
-                          : "border-stone-200 bg-white hover:border-stone-300"
+                          ? "border-amber-700/80 bg-amber-50/50 shadow-xs ring-1 ring-amber-700/20"
+                          : "border-stone-200 bg-white hover:border-stone-300 hover:bg-stone-50/50"
                       }`}
                     >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                            isSelected ? "border-violet-600 bg-violet-600" : "border-stone-300"
+                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition ${
+                            isSelected ? "border-amber-800 bg-amber-800" : "border-stone-300"
                           }`}>
-                            {isSelected && <div className="w-2 h-2 rounded-full bg-white"/>}
+                            {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white"/>}
                           </div>
                           <span className="font-bold text-sm text-stone-900">{tier}</span>
                         </div>
                         <div className="text-right">
-                          <span className="text-xs text-stone-500">Tambah bayar</span>
-                          <p className="font-bold text-violet-700 text-sm">Rp {diff.toLocaleString("id-ID")}</p>
+                          <span className="text-[11px] text-stone-500 block">Tambah bayar</span>
+                          <p className="font-bold text-amber-900 text-sm">Rp {diff.toLocaleString("id-ID")}</p>
                         </div>
                       </div>
                       <ul className="space-y-1 pl-6">
                         {((platformSettings?.packages?.find((p: any) => p.id === tier)?.features) || PLAN_FEATURES[tier] || []).map((f: string, i: number) => (
                           <li key={i} className="text-xs text-stone-600 flex items-start gap-1.5">
-                            <svg className="w-3.5 h-3.5 text-violet-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7"/></svg>
-                            {f}
+                            <svg className="w-3.5 h-3.5 text-amber-700 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7"/></svg>
+                            <span>{f}</span>
                           </li>
                         ))}
                       </ul>
@@ -3982,32 +3989,32 @@ export default function EditInvitation() {
                   return null;
                 }
                 return (
-                  <div className="p-4 rounded-2xl border border-violet-200 bg-violet-50/70 space-y-2.5 transition">
+                  <div className="p-4 rounded-2xl border border-amber-200/80 bg-amber-50/40 space-y-2.5 transition">
                     <label className="flex items-start gap-3 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={includeCustomDomain}
                         onChange={(e) => setIncludeCustomDomain(e.target.checked)}
-                        className="mt-0.5 w-4 h-4 rounded text-violet-600 border-stone-300 focus:ring-violet-500 cursor-pointer"
+                        className="mt-0.5 w-4 h-4 rounded text-amber-800 border-stone-300 focus:ring-amber-700 cursor-pointer"
                       />
                       <div className="flex-1">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-bold text-stone-900">
                             Tambah Custom Domain Pribadi (.com / .id)
                           </span>
-                          <span className="text-xs font-bold text-violet-700">
+                          <span className="text-xs font-bold text-amber-900">
                             +Rp {Number(platformSettings?.addon_custom_domain_price ?? platformSettings?.addonCustomDomainPrice ?? 150000).toLocaleString("id-ID")}
                           </span>
                         </div>
-                        <p className="text-[11px] text-stone-500 mt-0.5 leading-relaxed">
+                        <p className="text-[11px] text-stone-600 mt-0.5 leading-relaxed">
                           Masa aktif 1 tahun penuh & simpan galeri foto kenangan hingga 365 hari pasca-acara (tidak wajib).
                         </p>
                       </div>
                     </label>
 
                     {includeCustomDomain && (
-                      <div className="pt-2 border-t border-violet-200/60 space-y-1">
-                        <label className="block text-[10px] font-bold uppercase tracking-wider text-violet-800">
+                      <div className="pt-2 border-t border-amber-200/60 space-y-1">
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-amber-950">
                           Nama Domain yang Diinginkan
                         </label>
                         <input
@@ -4015,7 +4022,7 @@ export default function EditInvitation() {
                           value={upgradeDomainInput}
                           onChange={(e) => setUpgradeDomainInput(e.target.value)}
                           placeholder="contoh: namakamu.com"
-                          className="w-full px-3 py-2 text-xs border border-violet-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 bg-white"
+                          className="w-full px-3 py-2 text-xs border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-700/30 bg-white text-stone-900"
                         />
                       </div>
                     )}
@@ -4034,7 +4041,7 @@ export default function EditInvitation() {
                   type="button"
                   onClick={handleUpgrade}
                   disabled={!upgradeTarget || upgrading}
-                  className="w-full py-3.5 rounded-2xl font-bold text-sm transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-r from-violet-700 to-indigo-700 hover:from-violet-800 hover:to-indigo-800 text-white shadow-lg shadow-violet-200"
+                  className="w-full py-3.5 rounded-2xl font-bold text-sm transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed bg-amber-800 hover:bg-amber-900 text-white shadow-xs cursor-pointer"
                 >
                   {upgrading ? (
                     <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/><span>Memproses...</span></>
