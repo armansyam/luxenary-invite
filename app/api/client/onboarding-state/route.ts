@@ -11,12 +11,25 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = (session.user as any).id;
-    const userEmail = session.user.email;
+    const userEmail = session.user.email?.toLowerCase().trim();
+    const currentUserId = (session.user as any).id;
 
-    // 1. Cek apakah user sudah memiliki undangan
+    // Resolve user dari database berdasarkan ID atau Email Google
+    const dbUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          ...(currentUserId ? [{ id: currentUserId }] : []),
+          ...(userEmail ? [{ email: userEmail }] : []),
+        ],
+      },
+      select: { id: true },
+    });
+
+    const targetUserId = dbUser?.id || currentUserId;
+
+    // 1. Cek apakah user sudah memiliki undangan yang terbuat
     const existingInvitation = await prisma.invitation.findFirst({
-      where: { userId },
+      where: { userId: targetUserId },
       orderBy: { createdAt: "desc" },
       select: {
         id: true,
@@ -30,21 +43,34 @@ export async function GET() {
     });
 
     if (existingInvitation) {
-      const hasPaid = existingInvitation.orderId 
-        ? await prisma.order.findFirst({ where: { id: existingInvitation.orderId, status: "PAID" } })
-        : null;
-      
       return NextResponse.json({
         step: "COMPLETED",
         invitation: existingInvitation,
         redirectUrl: "/dashboard",
-        hasPaidOrder: !!hasPaid,
+        hasPaidOrder: true,
       });
     }
 
-    // 2. Cek transaksi order terakhir user
+    // 2. Cek apakah user sudah bayar lunas (PAID) tapi belum setup undangan
+    // Sesuai aturan: Yang sudah bayar langsung masuk ke dashboard setup studio
+    const paidOrder = await prisma.order.findFirst({
+      where: { userId: targetUserId, status: "PAID" },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (paidOrder) {
+      return NextResponse.json({
+        step: "PAID_NEED_SETUP",
+        orderId: paidOrder.id,
+        planType: paidOrder.planType,
+        redirectUrl: `/dashboard/setup?order=${paidOrder.id}&plan=${paidOrder.planType}`,
+        hasPaidOrder: true,
+      });
+    }
+
+    // 3. Cek transaksi order terakhir user (misal masih PENDING)
     const latestOrder = await prisma.order.findFirst({
-      where: { userId },
+      where: { userId: targetUserId },
       orderBy: { createdAt: "desc" },
     });
 
@@ -56,18 +82,7 @@ export async function GET() {
       });
     }
 
-    // Kasus 1: Order sudah lunas tapi belum menyelesaikan setup undangan
-    if (latestOrder.status === "PAID") {
-      return NextResponse.json({
-        step: "PAID_NEED_SETUP",
-        orderId: latestOrder.id,
-        planType: latestOrder.planType,
-        redirectUrl: `/dashboard/setup?order=${latestOrder.id}&plan=${latestOrder.planType}`,
-        hasPaidOrder: true,
-      });
-    }
-
-    // Kasus 2: Order masih PENDING (Transfer manual maupun QRIS)
+    // Kasus: Order masih PENDING
     if (latestOrder.status === "PENDING") {
       return NextResponse.json({
         step: "ORDER_PENDING",
@@ -80,8 +95,7 @@ export async function GET() {
       });
     }
 
-    // Kasus 3: Order FAILED karena penolakan bukti transfer oleh admin (memiliki rejectReason)
-    // Tetap arahkan ke order ID yang sama agar klien melihat alasan penolakan dan dapat upload ulang
+    // Kasus: Order ditolak admin (FAILED/REJECTED)
     if (latestOrder.status === "FAILED" && latestOrder.rejectReason) {
       return NextResponse.json({
         step: "ORDER_REJECTED",

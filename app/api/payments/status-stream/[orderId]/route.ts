@@ -18,7 +18,13 @@ export async function GET(
 
   const order = await prisma.order.findUnique({
     where: { id: orderId },
-    select: { userId: true, status: true, planType: true, rejectReason: true },
+    select: {
+      userId: true,
+      status: true,
+      planType: true,
+      rejectReason: true,
+      user: { select: { email: true } },
+    },
   });
 
   if (!order) {
@@ -33,7 +39,9 @@ export async function GET(
   // Saat Admin sedang dalam sesi remote (isRemote=true), identitasnya sudah di-override ke CLIENT
   // Gunakan originalRole untuk deteksi isAdmin yang sesungguhnya
   const isRealAdmin = isAdmin && !(session.user as any)?.isRemote;
-  const isOwner = order.userId === (session.user as any)?.id;
+  const isOwner =
+    order.userId === (session.user as any)?.id ||
+    (!!session?.user?.email && !!order.user?.email && order.user.email.toLowerCase() === session.user.email.toLowerCase());
 
   if (!isRealAdmin && !isOwner) {
     return new Response("Forbidden", { status: 403 });

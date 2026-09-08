@@ -287,6 +287,7 @@ function CheckoutContent() {
             return;
           }
 
+          setError(null);
           setOrderId(orderStatusData.id);
           setInvoiceNumber(orderStatusData.invoiceNumber);
           setCurrentOrderType(orderStatusData.orderType || "NEW_INVITATION");

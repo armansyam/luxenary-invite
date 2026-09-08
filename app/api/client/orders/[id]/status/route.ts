@@ -60,7 +60,11 @@ export async function GET(
     }
 
     // Jika bukan admin dan bukan pemilik pesanan: Tolak akses (IDOR protection)
-    if (!isAdmin && order.userId !== currentUserId) {
+    const isOwner =
+      order.userId === currentUserId ||
+      (!!session?.user?.email && !!order.user?.email && order.user.email.toLowerCase() === session.user.email.toLowerCase());
+
+    if (!isAdmin && !isOwner) {
       return NextResponse.json({ error: "Forbidden: Anda tidak memiliki akses ke pesanan ini" }, { status: 403 });
     }
 

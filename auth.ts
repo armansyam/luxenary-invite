@@ -129,6 +129,42 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         (session.user as any).id = token.id || token.sub;
         (session.user as any).role = (token as any).role || "CLIENT";
         (session.user as any).isAdmin = (token as any).isAdmin || false;
+
+        // Untuk akun klien: Pastikan session.user.id selalu tersinkronisasi faktual dengan tabel User di database
+        if (!(token as any).isAdmin && session.user.email) {
+          try {
+            const { prisma } = await import("@/lib/prisma");
+            const cleanEmail = session.user.email.toLowerCase().trim();
+            let dbUser = await prisma.user.findFirst({
+              where: {
+                OR: [
+                  ...(token.id ? [{ id: token.id as string }] : []),
+                  { email: cleanEmail },
+                ],
+              },
+              select: { id: true, role: true, email: true },
+            });
+
+            if (!dbUser) {
+              dbUser = await prisma.user.create({
+                data: {
+                  email: cleanEmail,
+                  name: session.user.name || "Mempelai",
+                  avatarUrl: session.user.image || null,
+                  role: "CLIENT",
+                },
+                select: { id: true, role: true, email: true },
+              });
+            }
+
+            if (dbUser) {
+              (session.user as any).id = dbUser.id;
+              (session.user as any).role = dbUser.role || "CLIENT";
+            }
+          } catch (err) {
+            console.error("Gagal sinkronisasi session user dengan database:", err);
+          }
+        }
       }
 
       // Mode Remote Admin: Override workspace ke target klien jika cookie lux_remote_client_id aktif
