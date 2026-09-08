@@ -39,24 +39,40 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "PlanType tidak valid. Gunakan TRADITIONAL, MODERN, atau PREMIUM." }, { status: 400 });
     }
 
-    // 3. Verifikasi Single Source of Truth — User WAJIB akun Google OAuth yang terdaftar di database
-    const targetUser = await prisma.user.findFirst({
+    // 3. Verifikasi Single Source of Truth — User terdaftar di database
+    let targetUser = await prisma.user.findFirst({
       where: {
-        id: session.user.id,
+        OR: [
+          ...(session.user.id ? [{ id: session.user.id }] : []),
+          ...(session.user.email ? [{ email: session.user.email.toLowerCase() }] : []),
+        ],
       },
     });
 
-    if (!targetUser || !targetUser.googleId) {
+    // Self-healing: Jika user memiliki sesi OAuth Google resmi namun record DB belum ada
+    // (misal setelah database dibersihkan / di-reset), daftarkan ulang akun klien secara otomatis
+    if (!targetUser && session?.user?.email) {
+      targetUser = await prisma.user.create({
+        data: {
+          email: session.user.email.toLowerCase(),
+          name: session.user.name || "Mempelai",
+          avatarUrl: session.user.image || null,
+          role: "CLIENT",
+        },
+      });
+    }
+
+    if (!targetUser) {
       return NextResponse.json(
-        { error: "Hanya akun Google resmi yang terverifikasi yang dapat melakukan pemesanan." },
-        { status: 403 }
+        { error: "Sesi login Anda tidak valid atau telah berakhir. Silakan masuk kembali dengan akun Google Anda." },
+        { status: 401 }
       );
     }
 
     const validUserId = targetUser.id;
 
-    // Sinkronisasi data pembeli jika disediakan saat pembuatan pesanan
-    const phoneVal = (buyerPhone || phoneNumber || "").trim();
+    // Sinkronisasi data pembeli jika disediakan saat pembuatan pesanan (sanitasi digit murni)
+    const phoneVal = (buyerPhone || phoneNumber || "").replace(/\D/g, "");
     const nameVal = (buyerName || "").trim();
     if (phoneVal || (nameVal && !targetUser.name)) {
       await prisma.user.update({

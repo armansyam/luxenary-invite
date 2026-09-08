@@ -59,7 +59,10 @@ export async function POST(req: Request) {
         userUpdates.name = customerName.trim();
       }
       if (typeof customerPhone === "string" && customerPhone.trim().length > 0) {
-        userUpdates.phoneNumber = customerPhone.trim();
+        const cleanPhone = customerPhone.replace(/\D/g, "");
+        if (cleanPhone.length >= 9 && cleanPhone.length <= 15) {
+          userUpdates.phoneNumber = cleanPhone;
+        }
       }
       if (Object.keys(userUpdates).length > 0) {
         await prisma.user.update({

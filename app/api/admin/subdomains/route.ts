@@ -6,12 +6,16 @@ import { isSubdomainExpired, getLatestEventDate, isReservedSubdomain } from "@/l
 export const dynamic = "force-dynamic";
 
 async function verifyAdminSession() {
-  const session = await auth();
-  const isAdmin =
-    (session?.user as any)?.isAdmin === true ||
-    (session?.user as any)?.role === "SUPER_ADMIN" ||
-    (session?.user as any)?.role === "ADMIN";
-  return session?.user && isAdmin;
+  try {
+    const session = await auth();
+    const isAdmin =
+      (session?.user as any)?.isAdmin === true ||
+      (session?.user as any)?.role === "SUPER_ADMIN" ||
+      (session?.user as any)?.role === "ADMIN";
+    return session?.user && isAdmin;
+  } catch {
+    return false;
+  }
 }
 
 export async function GET(req: Request) {
