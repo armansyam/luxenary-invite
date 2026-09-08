@@ -362,7 +362,10 @@ function CheckoutContent() {
           }
 
           if (orderStatusData.status === "EXPIRED") {
-            handleRegenerateOrder();
+            setIsGatewayExpired(true);
+            setQrData(null);
+            setCountdownStr("");
+            setLoading(false);
             return;
           } else {
             setIsGatewayExpired(false);
@@ -376,7 +379,10 @@ function CheckoutContent() {
                   setQrisSessionId(parsed.sessionId);
                   setQrisExpiry(parsed.expiry);
                 } else if (parsed.expiry <= (syncedNow - 120000)) {
-                  handleRegenerateOrder();
+                  setIsGatewayExpired(true);
+                  setQrData(null);
+                  setCountdownStr("");
+                  setLoading(false);
                   return;
                 }
               } catch {
@@ -498,10 +504,12 @@ function CheckoutContent() {
       const syncedNow = Date.now() + serverTimeOffset;
       const diff = qrisExpiry - syncedNow;
       
-      // Jika waktu habis, langsung hilangkan QRIS dari UI untuk mencegah pembayaran ke QR kadaluwarsa
+      // Jika waktu habis, langsung hilangkan QRIS dari UI dan tandai expired
       if (diff <= 0) {
-        clearInterval(timerInterval);
-        handleRegenerateOrder();
+        cleanup();
+        setIsGatewayExpired(true);
+        setQrData(null);
+        setCountdownStr("");
       } else {
         const m = Math.floor(diff / 60000);
         const s = Math.floor((diff % 60000) / 1000);
@@ -532,8 +540,13 @@ function CheckoutContent() {
           triggerPaid(data.planType);
         } else if (data.status === "EXPIRED") {
           cleanup();
+          setIsGatewayExpired(true);
           setQrData(null);
-          handleRegenerateOrder();
+          setCountdownStr("");
+        } else if (data.status === "CANCELLED") {
+          cleanup();
+          setQrData(null);
+          router.replace("/packages");
         }
       } catch {}
     };
@@ -651,12 +664,40 @@ function CheckoutContent() {
     setPaying(true);
     setError(null);
     try {
+      let activeOrderId = orderId;
+
+      // Jika sebelumnya sudah kedaluwarsa, perbarui draf tagihan baru terlebih dahulu
+      if (isGatewayExpired) {
+        const targetPlan = currentPlanType || planParam || "TRADITIONAL";
+        const regenRes = await fetch("/api/orders/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            planType: targetPlan,
+            buyerName: buyerName || session?.user?.name || "",
+            buyerEmail: buyerEmail || session?.user?.email || "",
+            buyerPhone: buyerPhone.replace(/\D/g, ""),
+            regenerate: true,
+          }),
+        });
+        const regenData = await regenRes.json();
+        if (regenRes.ok && regenData.orderId) {
+          activeOrderId = regenData.orderId;
+          setOrderId(regenData.orderId);
+          setInvoiceNumber(regenData.invoiceNumber);
+          setIsGatewayExpired(false);
+          if (typeof window !== "undefined") {
+            window.history.replaceState(null, "", `/checkout?order=${regenData.orderId}`);
+          }
+        }
+      }
+
       const res = await fetch("/api/payments/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         // Tidak kirim `gateway` — biarkan server memilih gateway aktif dari AdminSetting
         body: JSON.stringify({
-          orderId,
+          orderId: activeOrderId,
           customerName: buyerName.trim() || undefined,
           customerPhone: buyerPhone.replace(/\D/g, "") || undefined,
         }),
@@ -664,7 +705,10 @@ function CheckoutContent() {
       const data = await res.json();
       if (!res.ok) {
         if (data.isExpired) {
-          handleRegenerateOrder();
+          setIsGatewayExpired(true);
+          setQrData(null);
+          setCountdownStr("");
+          setPaying(false);
           return;
         }
         throw new Error(data.error || "Gagal memulai pembayaran");
@@ -735,34 +779,9 @@ function CheckoutContent() {
         return;
       }
 
-      // Untuk order pendaftaran awal (NEW): buat order baru yang segar (regenerate: true)
-      const targetPlan = currentPlanType || planParam || "TRADITIONAL";
-      const newOrderRes = await fetch("/api/orders/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          planType: targetPlan,
-          regenerate: true,
-        }),
-      });
-
-      const newOrderData = await newOrderRes.json();
-      if (newOrderRes.ok && newOrderData.orderId) {
-        setOrderId(newOrderData.orderId);
-        setInvoiceNumber(newOrderData.invoiceNumber);
-        if (newOrderData.serverTime) {
-          setServerTimeOffset(newOrderData.serverTime - Date.now());
-        }
-        setStatusModal({
-          show: true,
-          title: "Tagihan Berhasil Dibatalkan",
-          message: "Tagihan QRIS sebelumnya telah dibatalkan di sistem. Tagihan baru dengan nomor invoice baru siap dibayar.",
-          isError: false,
-        });
-        router.replace(`/checkout?order=${newOrderData.orderId}`);
-      } else {
-        router.replace("/packages");
-      }
+      // Untuk order pendaftaran awal: langsung bawa klien kembali ke /packages agar bebas memilih paket baru
+      router.replace("/packages");
+      return;
     } catch (err: any) {
       setError(err.message || "Gagal membatalkan tagihan.");
     } finally {
@@ -893,6 +912,18 @@ function CheckoutContent() {
 
 
 
+          {isGatewayExpired && (
+            <div className="p-4 bg-amber-950/40 border border-amber-500/40 rounded-2xl flex items-center gap-3 text-amber-200 text-xs">
+              <svg className="w-5 h-5 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <p className="font-semibold text-amber-300">Waktu Pembayaran Kedaluwarsa</p>
+                <p className="text-[11px] text-amber-200/80 mt-0.5">Batas waktu pembayaran telah habis. Silakan tekan tombol Bayar di bawah untuk memperbarui tagihan.</p>
+              </div>
+            </div>
+          )}
+
           {error && (
             <div className="p-4 bg-rose-900/40 border border-rose-500/40 rounded-2xl text-rose-300 text-xs font-medium">
               {error}
@@ -971,6 +1002,14 @@ function CheckoutContent() {
                   <span className="text-stone-400">Nomor Invoice</span>
                   <span className="text-amber-300 font-mono text-[11px] font-bold">{invoiceNumber}</span>
                 </div>
+                {isGatewayExpired && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-stone-400">Status Tagihan</span>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                      Kedaluwarsa (Expired)
+                    </span>
+                  </div>
+                )}
                 {currentOrderType === "CUSTOM_DOMAIN_ADDON" ? (
                   <>
                     <div className="flex justify-between items-center">
