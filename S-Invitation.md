@@ -445,7 +445,7 @@ Sistem pengiriman email otomatis menggunakan **Nodemailer** yang membaca kredens
 1. **Tambah Tema Baru via UI Admin**:
    - Admin mengisi metadata dan mengunggah master file `.html` template langsung melalui modal.
    - Backend meletakkan file ke `themes/{kategori}/{id}.html`, mendaftarkannya ke database, dan langsung mengeksekusi `compileAndSaveStaticDemo(id)`.
-   - File HTML demo statis langsung tercipta di `public/demo/{id}/index.html` dan siap diuji di katalog `/demo`.
+   - File HTML demo statis langsung tercipta di `public/demo/{id}/index.html` dan siap diuji di katalog `/demo`. Berkas `index.html` kompilasi ini diperlakukan sebagai runtime cache murni yang dikecualikan dari Git (`.gitignore`) dan dipra-kompilasi secara mandiri via `deploy.sh` atau *on-the-fly* saat diakses, menjamin zero merge conflict di server VPS.
 2. **Sinkronisasi Otomatis & Anti-Zombie**:
    - Tombol *Sinkronisasi Tema & Cache* (`POST /api/admin/themes/sync`) memindai direktori fisik `themes/` dan otomatis menghapus record tema usang (*auto-purge*) yang tidak lagi memiliki file fisik master.
    - Menjamin prinsip *Single Source of Truth* terjaga 100%.

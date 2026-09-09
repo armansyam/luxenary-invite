@@ -8,9 +8,8 @@ echo "🚀 Memulai proses deployment otomatis..."
 
 # 1. Tarik pembaruan terbaru dari repository
 echo "📦 Menarik pembaruan terbaru dari Git (origin main)..."
-# Buang perubahan minor otomatis pada package-lock.json dan demo statis hasil kompilasi server runtime agar tidak memblokir git pull
+# Buang perubahan minor otomatis pada package-lock.json akibat beda arsitektur OS agar tidak memblokir git pull
 git checkout -- package-lock.json 2>/dev/null || true
-git checkout -- public/demo/ 2>/dev/null || true
 if ! git pull origin main; then
   echo "❌ Error: Gagal menarik perubahan terbaru dari Git origin main! Deployment dihentikan untuk mencegah corrupt build."
   exit 1
@@ -88,6 +87,10 @@ npm install --prefer-offline || npm install
 echo "🗄️ Sinkronisasi skema database (Prisma)..."
 npx prisma generate
 npx prisma migrate deploy || npx prisma db push
+
+# 5b. Kompilasi Cache Demo Tema Statis
+echo "🎨 Memastikan cache demo tema statis terkompilasi segar..."
+npx tsx -r dotenv/config -e "import { compileAllStaticDemos } from './lib/demoPublisher'; compileAllStaticDemos().then(n => console.log('✅ ' + n + ' demo tema berhasil dikompilasi.')).catch(e => console.warn('⚠️ Gagal pra-kompilasi demo (akan dikompilasi on-demand saat diakses):', e.message));" || true
 
 # 6. Build Aplikasi Next.js
 echo "🏗️ Membangun (Build) aplikasi Next.js... (Ini mungkin memakan waktu)"

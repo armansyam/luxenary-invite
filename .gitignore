@@ -54,3 +54,7 @@ data/
 /scratch/
 scratch/
 ChatGPT Image*.png
+
+# compiled static theme demos (generated runtime cache)
+/public/demo/*/index.html
+public/demo/*/index.html

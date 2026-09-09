@@ -1579,6 +1579,10 @@ Untuk memastikan showroom demo tema publik (`/demo/[themeId]`) tampil memukau da
 9. **Universal Preloader Monogram-Only Splash & Landing Footer 2-Tier:**
    - **Monogram-Only Preloader:** Preloader universal (`lib/renderTemplate.ts` dan 15 tema demo statis) mengeliminasi elemen nama lengkap panjang (`.lux-preloader-names`) yang rawan *line-wrapping* canggung, beralih murni ke inisial monogram serif elegan dengan margin vertikal proporsional (24px) di atas garis shimmer emas.
    - **2-Tier Landing Footer:** Struktur footer landing page ditata ulang secara semantik menjadi dua baris terpisah: baris atas untuk identitas brand dan navigasi utama, baris bawah untuk tautan legalitas (Syarat, Kebijakan, Pengembalian) dan hak cipta.
+10. **Arsitektur Cache Demo Statis Bebas Konflik Git (Untracked Runtime Cache):**
+    - Berkas kompilasi demo `public/demo/*/index.html` diklasifikasikan secara tegas sebagai *generated runtime artifact* dan dikecualikan dari pelacakan Git (`.gitignore`). Git hanya melacak aset mentah gambar/audio (`.webp`, `.mp4`) dan master template (`themes/**/*.html`).
+    - Skrip deployment otomatis (`deploy.sh`) menyertakan langkah pra-kompilasi mandiri via `compileAllStaticDemos()` pasca sinkronisasi skema database Prisma, membaca konfigurasi aktual dari database PostgreSQL server target.
+    - Pada rute publik `/demo/[theme]`, sistem didukung logika *on-the-fly compilation* otomatis jika berkas cache fisik belum ada di disk, menjamin zero-downtime dan mengeliminasi 100% potensi konflik merge Git di server VPS.
 
 ### 17.5 — Penghapusan Aset Bersih & Fallback Kanvas Transparan di Demo Studio
 1. **Pembersihan Fisik & Basis Data Terpadu:**
