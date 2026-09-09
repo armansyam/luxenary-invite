@@ -230,10 +230,10 @@ function DashboardHomeContent() {
       )}
 
       {/* 1. Hero Card (Mobile-First, Elegant Luxury) */}
-      <div className="bg-stone-900 text-white rounded-2xl p-5 sm:p-6 shadow-xl border border-stone-800 relative overflow-hidden">
+      <div className="bg-stone-900 text-white rounded-2xl p-4 sm:p-5 shadow-xl border border-stone-800 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-72 h-72 bg-amber-600/10 rounded-full blur-3xl pointer-events-none" />
         
-        <div className="relative z-10 space-y-5">
+        <div className="relative z-10 space-y-3.5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-1 bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] sm:text-[11px] font-bold rounded-full uppercase tracking-wider">
@@ -272,7 +272,7 @@ function DashboardHomeContent() {
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-stone-100 leading-tight">
               {invitation?.groomName || "Mempelai Pria"} &amp; {invitation?.brideName || "Mempelai Wanita"}
             </h1>
-            <p className="text-xs sm:text-sm text-stone-400 mt-1 max-w-xl">
+            <p className="text-xs sm:text-sm text-stone-400 mt-0.5">
               Kelola seluruh konten, galeri, susunan acara, dan tamu undangan Anda dari satu panel kontrol.
             </p>
           </div>
@@ -290,67 +290,55 @@ function DashboardHomeContent() {
             </div>
           )}
 
-          {/* Action Buttons */}
-          <div className="pt-2 flex flex-col sm:flex-row gap-2.5 sm:items-center flex-wrap">
-            <Link
-              href={editorUrl}
-              className="w-full sm:w-auto px-5 py-3 bg-amber-800 hover:bg-amber-700 text-white font-bold rounded-xl text-xs transition shadow-md flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
-              <span>Edit Undangan (Studio)</span>
-            </Link>
+          {/* Action Buttons & Status Notice */}
+          {(invitation?.status === 'PUBLISHED' || invitation?.status === 'EVENT_FINISHED') ? (
+            <div className="pt-1 flex flex-col sm:flex-row gap-2.5 sm:items-center flex-wrap">
+              {hasCap("guest_memories") && (
+                <a
+                  href={`${invUrl}/memories`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-stone-950 font-bold rounded-xl text-xs transition shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <svg className="w-4 h-4 text-stone-950" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <span>Galeri Momen Tamu</span>
+                </a>
+              )}
 
-            {invitation?.status === 'PUBLISHED' || invitation?.status === 'EVENT_FINISHED' ? (
-              <>
-                {hasCap("guest_memories") && (
-                  <a
-                    href={`${invUrl}/memories`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="w-full sm:w-auto px-4 py-3 bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-stone-950 font-bold rounded-xl text-xs transition shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
-                  >
-                    <svg className="w-4 h-4 text-stone-950" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    <span>Galeri Momen Tamu</span>
-                  </a>
-                )}
+              <div className="grid grid-cols-2 sm:flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleCopyLink}
+                  className="px-4 py-2.5 bg-stone-800 hover:bg-stone-700 text-stone-200 font-semibold rounded-xl text-xs transition border border-stone-700 flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <svg className="w-4 h-4 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                  </svg>
+                  <span>{copied ? "Tersalin!" : "Salin Link"}</span>
+                </button>
 
-                <div className="grid grid-cols-2 sm:flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={handleCopyLink}
-                    className="px-4 py-3 bg-stone-800 hover:bg-stone-700 text-stone-200 font-semibold rounded-xl text-xs transition border border-stone-700 flex items-center justify-center gap-1.5 cursor-pointer"
-                  >
-                    <svg className="w-4 h-4 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                    </svg>
-                    <span>{copied ? "Tersalin!" : "Salin Link"}</span>
-                  </button>
-
-                  <a
-                    href={invUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="px-4 py-3 bg-stone-800 hover:bg-stone-700 text-amber-400 font-semibold rounded-xl text-xs transition border border-stone-700 flex items-center justify-center gap-1.5 cursor-pointer"
-                  >
-                    <span>Buka Web</span>
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
-                  </a>
-                </div>
-              </>
-            ) : (
-              <div className="w-full mt-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-300 flex items-start gap-2">
-                <svg className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                <p><strong>Belum Terbit.</strong> URL Undangan akan tersedia dan bisa disalin setelah Anda menekan Publish di dalam Studio.</p>
+                <a
+                  href={invUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-4 py-2.5 bg-stone-800 hover:bg-stone-700 text-amber-400 font-semibold rounded-xl text-xs transition border border-stone-700 flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <span>Buka Web</span>
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
               </div>
-            )}
-          </div>
+            </div>
+          ) : (
+            <div className="w-full p-2.5 sm:p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-300 flex items-center gap-2">
+              <svg className="w-4 h-4 shrink-0 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              <p><strong>Belum Terbit.</strong> Tautan undangan akan aktif dan siap dibagikan setelah Anda menekan Publikasi di Studio Editor.</p>
+            </div>
+          )}
 
           {invitation?.status === 'EVENT_FINISHED' && hasCap("guest_memories") && (
             <div className="mt-3 p-3 bg-purple-500/15 border border-purple-500/30 rounded-xl text-xs text-purple-200 flex items-center justify-between gap-2 flex-wrap">
