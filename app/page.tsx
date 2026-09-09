@@ -69,14 +69,14 @@ export default async function Home() {
     <picture>
       <source
         media="(max-width: 1023px)"
-        srcSet="/assets/homepage/hero_mobile.webp"
+        srcSet="/assets/homepage/hero_mobile.webp?v=2"
       />
       <source
         media="(min-width: 1024px)"
-        srcSet="/assets/homepage/hero_desktop.webp"
+        srcSet="/assets/homepage/hero_desktop.webp?v=2"
       />
       <img
-        src="/assets/homepage/hero_desktop.webp"
+        src="/assets/homepage/hero_desktop.webp?v=2"
         alt="Pasangan pengantin adat berbusana mewah"
         fetchPriority="high"
       />
