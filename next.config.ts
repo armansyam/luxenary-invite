@@ -90,7 +90,17 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      // ── Aset homepage (hero, mockup, showcase) — bisa diganti kapan saja tanpa rename ──
+      // ── Aset sistem umum (brand logo, favicon, vector icons) ──
+      {
+        source: "/assets/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=604800, stale-while-revalidate=86400",
+          },
+        ],
+      },
+      // ── Aset homepage (hero, mockup, showcase) — override dengan no-cache must-revalidate ──
       // no-cache: browser wajib tanya server setiap kali (via ETag/304), tidak pernah serve stale
       {
         source: "/assets/homepage/:path*",
@@ -98,16 +108,6 @@ const nextConfig: NextConfig = {
           {
             key: "Cache-Control",
             value: "no-cache, must-revalidate",
-          },
-        ],
-      },
-      // ── Aset sistem lain (brand logo, favicon, vector icons) — tidak pernah berubah ──
-      {
-        source: "/assets/:path*",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=604800, stale-while-revalidate=86400",
           },
         ],
       },
