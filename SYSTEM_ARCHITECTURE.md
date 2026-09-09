@@ -1479,6 +1479,7 @@ Untuk memenuhi spesifikasi Google Search agar logo/favicon muncul pada SERP:
 - **URL Favicon Statis & Stabil:** Menghapuskan seluruh query timestamp acak (`?t=Date.now()`) pada `app/layout.tsx` agar bot perayap Google Favicon dapat melakukan caching canonical yang stabil.
 - **Standar Ukuran Kelipatan 48px:** Menyediakan aset favicon dalam kelipatan 48 piksel (`48x48`, `96x96`, `192x192`, `512x512`) serta Apple Touch Icon (`180x180`).
 - **Integrasi App Router & Web App Manifest:** Mendukung `app/icon.png`, `app/apple-icon.png`, deklarasi multi-size di `app/manifest.ts`, serta perizinan akses bot di `app/robots.ts`.
+- **Otomatisasi Upload Brand di Admin Setting (`/api/admin/upload-brand`):** Saat Admin mengunggah 1 master file favicon persegi di Portal Pengaturan, engine Sharp secara instan men-generate seluruh paket variasi Google Search (`48x48`, `96x96`, `192x192`, `512x512`, `apple-touch-icon.png`, `app/icon.png`, `app/apple-icon.png`, dan `public/favicon.ico`) tanpa perlu resize manual.
 
 ---
 

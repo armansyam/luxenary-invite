@@ -4667,7 +4667,7 @@ export default function AdminPage() {
                         <div className="space-y-3 p-4 bg-gray-50/70 rounded-xl border border-gray-200">
                           <div>
                             <p className="text-sm font-bold text-gray-800">Upload Favicon Baru</p>
-                            <p className="text-xs text-gray-400 mt-0.5">Format: PNG 64×64px. Menimpa favicon sebelumnya.</p>
+                            <p className="text-xs text-gray-400 mt-0.5">Format: PNG/SVG persegi (disarankan min. 192×192px). Sistem otomatis men-generate seluruh ukuran standar Google Search & PWA (48px, 96px, 192px, 512px).</p>
                           </div>
 
                           <div className="p-3 bg-white rounded-xl border border-gray-200 flex items-center gap-3">

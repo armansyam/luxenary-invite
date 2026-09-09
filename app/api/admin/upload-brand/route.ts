@@ -93,22 +93,36 @@ export async function POST(req: NextRequest) {
     }
 
     if (type === "favicon") {
-      // Favicon: simpan sebagai PNG 64x64 (override favicon.png)
-      const outputPng = path.join(BRAND_DIR, "favicon.png");
-      await sharp(buffer)
-        .resize(64, 64, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
-        .png({ compressionLevel: 9 })
-        .toFile(outputPng);
+      // Favicon Multi-Resolution: Otomatis generate seluruh paket resolusi Google Search Central (kelipatan 48px), Apple Touch, dan PWA
+      const targets = [
+        { dest: path.join(process.cwd(), "public", "favicon.ico"), size: 48 },
+        { dest: path.join(BRAND_DIR, "favicon.png"), size: 96 },
+        { dest: path.join(BRAND_DIR, "favicon-48x48.png"), size: 48 },
+        { dest: path.join(BRAND_DIR, "favicon-96x96.png"), size: 96 },
+        { dest: path.join(BRAND_DIR, "favicon-192x192.png"), size: 192 },
+        { dest: path.join(BRAND_DIR, "favicon-512x512.png"), size: 512 },
+        { dest: path.join(BRAND_DIR, "apple-touch-icon.png"), size: 180 },
+        { dest: path.join(process.cwd(), "public", "assets", "brand", "apple-touch-icon.png"), size: 180 },
+        { dest: path.join(process.cwd(), "app", "icon.png"), size: 96 },
+        { dest: path.join(process.cwd(), "app", "apple-icon.png"), size: 180 },
+      ];
 
-      // Juga simpan ke public/favicon.ico (sebagai PNG rename — browser modern support)
-      const favIconPath = path.join(process.cwd(), "public", "favicon.ico");
-      await fs.promises.copyFile(outputPng, favIconPath);
+      for (const t of targets) {
+        try {
+          await sharp(buffer)
+            .resize(t.size, t.size, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
+            .png({ compressionLevel: 9 })
+            .toFile(t.dest);
+        } catch (genErr) {
+          console.error(`[Upload Favicon Variant Error] ${t.dest}:`, genErr);
+        }
+      }
 
       return NextResponse.json({
         success: true,
         type: "favicon",
-        url: `/favicon.ico?t=${Date.now()}`,
-        message: "Favicon berhasil diupload dan diperbarui di seluruh platform",
+        url: "/favicon.ico",
+        message: "Favicon berhasil diupload dan otomatis di-generate ke seluruh ukuran standar Google Search (48px, 96px, 192px, 512px)",
       });
     }
 
