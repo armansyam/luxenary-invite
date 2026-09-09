@@ -112,7 +112,7 @@ Sistem mengimplementasikan proteksi pembuka dua tingkat (*Hybrid Preloader Archi
 1. **Prioritas Preloader Master (`id="themePreloader"`):**
    - Jika tema master memiliki elemen berkontrak `id="themePreloader"`, engine **TIDAK** menyuntikkan preloader bawaan, memberikan keleluasaan penuh bagi desainer untuk menciptakan animasi dan ornamen khas tema.
 2. **Injeksi Preloader Universal (Fallback Mewah Bawaan Engine):**
-   - Jika tema tidak memiliki `id="themePreloader"`, engine otomatis menyuntikkan Universal Preloader berlatar obsidian (`#0c0c0e`, z-index 999999) dengan inisial monogram tipografi minimalis (*Native Luxury Serif Didot/Georgia*) yang melekat sejak milidetik ke-0 (`{{firstInitial}} & {{secondInitial}}`), nama panggilan mempelai (`{{firstName}} & {{secondName}}`), dan bilah progres berkilau (*golden shimmer bar*) tanpa ornamen lingkaran yang ramai.
+   - Jika tema tidak memiliki `id="themePreloader"`, engine otomatis menyuntikkan Universal Preloader berlatar obsidian (`#0c0c0e`, z-index 999999) yang berfokus murni pada inisial monogram tipografi editorial mewah (*Native Luxury Serif Didot/Georgia*) yang melekat sejak milidetik ke-0 (`{{firstInitial}} & {{secondInitial}}`) dengan margin vertikal terkalibrasi (24px) di atas bilah progres berkilau (*golden shimmer bar*). Elemen nama lengkap panjang ditiadakan di fase splash ini guna menjamin zero-line-break pada nama panjang/gelar akademik serta memberikan ruang bernapas visual (*breathing room*) yang tenang.
 3. **Solid Backdrop Guard:**
    - Seluruh selektor cover pembuka diproteksi dengan `background-color: #0c0c0e !important;` sehingga peramban tidak pernah menampilkan latar tembus pandang ke seksi di bawahnya.
 4. **Universal Client Dismissal Driver (`initPreloaderGuard`):**

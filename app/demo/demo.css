@@ -1,0 +1,322 @@
+/* ===========================================
+   DEMO CATALOG — DEVICE PAIR SHOWCASE STYLES
+   Scoped under .demo-catalog-root
+   =========================================== */
+
+/* ── Grid layout ─────────────────────────── */
+.demo-catalog-root .catalog-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 3.5rem 2.5rem;
+}
+
+@media (min-width: 640px) {
+  .demo-catalog-root .catalog-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4rem 2.5rem;
+  }
+}
+
+@media (min-width: 1100px) {
+  .demo-catalog-root .catalog-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4rem 3rem;
+  }
+}
+
+/* ── Single catalog item (no card) ────────── */
+.demo-catalog-root .catalog-item {
+  position: relative;
+  cursor: pointer;
+}
+
+/* ── Device pair scene ────────────────────── */
+.demo-catalog-root .device-pair-scene {
+  position: relative;
+  width: 100%;
+  padding-bottom: 2.5rem;  /* space for phone overflow */
+  margin-bottom: 1.25rem;
+}
+
+/* ── Tablet / Desktop frame ───────────────── */
+.demo-catalog-root .dm-tablet {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  background: #141210;
+  border-radius: 16px;
+  box-shadow:
+    0 0 0 1.5px rgba(255,255,255,0.08),
+    0 0 0 7px #1f1c1a,
+    0 0 0 8.5px rgba(0,0,0,0.25),
+    0 28px 70px rgba(11,10,9,0.4);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.demo-catalog-root .catalog-item:hover .dm-tablet {
+  transform: translateY(-4px);
+}
+
+.demo-catalog-root .dm-tablet-topbar {
+  height: 22px;
+  background: #191716;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  flex-shrink: 0;
+  z-index: 2;
+  position: relative;
+}
+
+.demo-catalog-root .dm-tablet-traffic {
+  display: flex;
+  gap: 4px;
+}
+
+.demo-catalog-root .dm-tablet-traffic span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+}
+
+.demo-catalog-root .dm-tablet-url {
+  font-size: 0.42rem;
+  letter-spacing: 0.07em;
+  color: rgba(255,255,255,0.3);
+  background: rgba(0,0,0,0.3);
+  padding: 2px 10px;
+  border-radius: 8px;
+  max-width: 120px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.demo-catalog-root .dm-tablet-screen {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  background: #0d0c0b;
+}
+
+.demo-catalog-root .dm-tablet-screen img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
+  transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.demo-catalog-root .catalog-item:hover .dm-tablet-screen img {
+  transform: scale(1.04);
+}
+
+/* ── Phone / Mobile frame ─────────────────── */
+.demo-catalog-root .dm-phone {
+  position: absolute;
+  bottom: 0;
+  left: -10px;
+  width: 30%;
+  /* Intrinsic phone ratio: 9:19.5 ≈ aspect 0.46 */
+  aspect-ratio: 9 / 19;
+  background: #0d0c0b;
+  border-radius: 26px;
+  box-shadow:
+    0 0 0 1.5px rgba(255,255,255,0.12),
+    0 0 0 5px #1a1816,
+    0 0 0 6.5px rgba(0,0,0,0.35),
+    0 24px 60px rgba(0,0,0,0.65);
+  overflow: hidden;
+  z-index: 10;
+  transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.demo-catalog-root .catalog-item:hover .dm-phone {
+  transform: translateY(-8px);
+}
+
+.demo-catalog-root .dm-phone-notch {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 36px;
+  height: 9px;
+  background: #000;
+  border-radius: 6px;
+  z-index: 5;
+}
+
+.demo-catalog-root .dm-phone-screen {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  background: #111;
+}
+
+.demo-catalog-root .dm-phone-screen img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
+  transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.demo-catalog-root .catalog-item:hover .dm-phone-screen img {
+  transform: scale(1.04);
+}
+
+/* ── Screen glare ─────────────────────────── */
+.demo-catalog-root .dm-glare {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(255,255,255,0.07) 0%,
+    rgba(255,255,255,0) 45%
+  );
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* ── Hover overlay CTA ────────────────────── */
+.demo-catalog-root .dm-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(11,10,9,0.48);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+}
+
+.demo-catalog-root .catalog-item:hover .dm-overlay {
+  opacity: 1;
+}
+
+.demo-catalog-root .dm-overlay-btn {
+  padding: 8px 20px;
+  background: #fff;
+  color: #1c1917;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  border-radius: 999px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  transform: translateY(6px);
+  transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.demo-catalog-root .catalog-item:hover .dm-overlay-btn {
+  transform: translateY(0);
+}
+
+/* ── Theme info below device pair ─────────── */
+.demo-catalog-root .catalog-info {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.demo-catalog-root .catalog-info-meta {
+  flex: 1;
+}
+
+.demo-catalog-root .catalog-series {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #a8a29e;
+  margin-bottom: 2px;
+}
+
+.demo-catalog-root .catalog-name {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #1c1917;
+  line-clamp: 1;
+}
+
+.demo-catalog-root .catalog-desc {
+  font-size: 0.65rem;
+  color: #78716c;
+  margin-top: 2px;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.demo-catalog-root .catalog-badge {
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.demo-catalog-root .catalog-badge.premium {
+  background: #f5f0ff;
+  color: #6d28d9;
+  border: 1px solid #ddd6fe;
+}
+
+.demo-catalog-root .catalog-badge.modern {
+  background: #f0f9ff;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+.demo-catalog-root .catalog-badge.traditional {
+  background: #fefce8;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.demo-catalog-root .catalog-action {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.demo-catalog-root .catalog-btn-demo {
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #1c1917;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: gap 0.2s ease, opacity 0.2s ease;
+  opacity: 0.55;
+}
+
+.demo-catalog-root .catalog-btn-demo:hover {
+  opacity: 1;
+  gap: 8px;
+}
+
+/* ── Divider line between items (horizontal grid) */
+.demo-catalog-root .catalog-item-wrap {
+  position: relative;
+}

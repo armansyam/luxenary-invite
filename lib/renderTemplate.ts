@@ -1411,15 +1411,6 @@ export async function renderTemplateFile(
       )
     );
 
-    const coupleNames = escapeHtmlAttr(
-      String(
-        data.coupleNames ||
-        (data.firstName && data.secondName ? `${data.firstName} & ${data.secondName}` : "") ||
-        (data.groomName && data.brideName ? `${data.groomName} & ${data.brideName}` : "") ||
-        "Special Invitation"
-      )
-    );
-
     const preloaderTagline = escapeHtmlAttr(
       String(
         data.featureSettings?.customLabels?.theWedding ||
@@ -1471,16 +1462,7 @@ export async function renderTemplateFile(
     color: #f6e8cc;
     text-shadow: 0 2px 24px rgba(212, 175, 55, 0.28);
     line-height: 1;
-    margin: 6px 0 16px;
-  }
-  .lux-preloader-names {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    font-size: 11px;
-    letter-spacing: 0.22em;
-    text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.75);
-    margin-bottom: 24px;
-    font-weight: 400;
+    margin: 8px 0 24px;
   }
   .lux-preloader-track {
     width: 140px;
@@ -1514,7 +1496,6 @@ export async function renderTemplateFile(
   <div class="lux-preloader-inner">
     <div class="lux-preloader-badge">${preloaderTagline}</div>
     <div class="lux-preloader-monogram">${firstInitial} &amp; ${secondInitial}</div>
-    <div class="lux-preloader-names">${coupleNames}</div>
     <div class="lux-preloader-track" aria-hidden="true">
       <div class="lux-preloader-bar"></div>
     </div>

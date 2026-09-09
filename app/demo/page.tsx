@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { BrandLogo } from "@/components/BrandLogo";
+import "./demo.css";
 
 interface ThemeItem {
   id: string;
@@ -17,9 +18,10 @@ interface ThemeItem {
 export default function CatalogGridShowcase() {
   const [themes, setThemes] = useState<ThemeItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [viewMode, setViewMode] = useState<"mobile" | "desktop">("mobile");
+
   const [loading, setLoading] = useState(true);
   const [platformName, setPlatformName] = useState("Platform Undangan");
+  const [siteHost, setSiteHost] = useState("");
 
   const [mainTab, setMainTab] = useState<"themes" | "features">("themes");
 
@@ -29,6 +31,7 @@ export default function CatalogGridShowcase() {
       if (params.get("tab") === "features") {
         setMainTab("features");
       }
+      setSiteHost(window.location.hostname);
     }
   }, []);
 
@@ -65,7 +68,7 @@ export default function CatalogGridShowcase() {
     : themes.filter((t) => t.category.toLowerCase() === selectedCategory.toLowerCase());
 
   return (
-    <div className="min-h-screen bg-[#faf8f5] text-stone-900 font-sans pb-24" style={{ colorScheme: "only light", backgroundColor: "#faf8f5", color: "#1c1917" }}>
+    <div className="demo-catalog-root min-h-screen bg-[#faf8f5] text-stone-900 font-sans pb-24" style={{ colorScheme: "only light", backgroundColor: "#faf8f5", color: "#1c1917" }}>
       {/* Top Navigation & Brand Header */}
       <header className="bg-white/95 backdrop-blur-md border-b border-stone-200 sticky top-0 z-40" style={{ colorScheme: "only light", backgroundColor: "#ffffff" }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
@@ -157,26 +160,18 @@ export default function CatalogGridShowcase() {
               ))}
             </div>
 
-            {/* View Mode Toggle (Desktop / Mobile) */}
-            <div className="flex items-center justify-center mt-6">
-              <div className="bg-stone-100 p-1 rounded-full inline-flex border border-stone-200">
-                <button
-                  onClick={() => setViewMode("mobile")}
-                  className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${
-                    viewMode === "mobile" ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-700"
-                  }`}
-                >
-                  Mobile View
-                </button>
-                <button
-                  onClick={() => setViewMode("desktop")}
-                  className={`px-4 py-1.5 rounded-full text-xs font-bold transition ${
-                    viewMode === "desktop" ? "bg-white text-stone-900 shadow-sm" : "text-stone-500 hover:text-stone-700"
-                  }`}
-                >
-                  Desktop View
-                </button>
-              </div>
+            {/* Device pair indicator */}
+            <div className="flex items-center justify-center mt-5 gap-2">
+              <span className="inline-flex items-center gap-1.5 text-[11px] text-stone-500 font-medium">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2" strokeWidth="1.75"/><line x1="2" y1="9" x2="22" y2="9" strokeWidth="1.75"/></svg>
+                Desktop
+              </span>
+              <span className="w-1 h-1 rounded-full bg-stone-300"></span>
+              <span className="inline-flex items-center gap-1.5 text-[11px] text-stone-500 font-medium">
+                <svg className="w-2.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" strokeWidth="1.75"/><line x1="12" y1="18" x2="12" y2="18" strokeWidth="2.5" strokeLinecap="round"/></svg>
+                Mobile
+              </span>
+
             </div>
           </div>
         ) : (
@@ -207,92 +202,99 @@ export default function CatalogGridShowcase() {
               Tidak ada tema yang ditemukan pada kategori ini.
             </div>
           ) : (
-            <div className="flex flex-wrap justify-center gap-4 sm:gap-5">
+            <div className="catalog-grid">
               {filteredThemes.map((theme) => (
-                <div
-                  key={theme.id}
-                  className={`bg-white rounded-xl border border-stone-200 shadow-xs overflow-hidden flex flex-col justify-between hover:shadow-lg transition-shadow duration-300 group flex-grow-0 shrink-0 ${
-                    viewMode === "mobile"
-                      ? "w-[calc(50%-0.5rem)] sm:w-[210px] md:w-[230px] lg:w-[240px] xl:w-[245px]"
-                      : "w-full sm:w-[calc(50%-1rem)] lg:w-[320px] xl:w-[330px]"
-                  }`}
-                >
-                  {/* Fake Browser Top Bar (Mac Style - Compact) */}
-                  <div className="bg-[#181615] px-2.5 py-1.5 border-b border-stone-800 flex items-center justify-between select-none">
-                    <div className="flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-full bg-[#ff5f56] inline-block"></span>
-                      <span className="w-2 h-2 rounded-full bg-[#ffbd2e] inline-block"></span>
-                      <span className="w-2 h-2 rounded-full bg-[#27c93f] inline-block"></span>
+                <div key={theme.id} className="catalog-item">
+
+                  {/* ── Device Pair Scene ── */}
+                  <div className="device-pair-scene">
+                    {/* Tablet frame */}
+                    <div className="dm-tablet">
+                      <div className="dm-tablet-topbar">
+                        <div className="dm-tablet-traffic">
+                          <span></span>
+                          <span></span>
+                          <span></span>
+                        </div>
+                        <div className="dm-tablet-url">
+                          {siteHost}/{theme.id}
+                        </div>
+                        <div style={{ width: "24px" }}></div>
+                      </div>
+                      <div className="dm-tablet-screen">
+                        <img
+                          src={theme.thumbnailDesktop || `/demo/${theme.id}/thumbnail_desktop.webp`}
+                          alt={`${theme.name} Desktop`}
+                          onError={(e) => {
+                            const t = e.currentTarget;
+                            if (!t.src.includes("hero.webp") && !t.src.includes("cover.webp")) {
+                              t.src = `/demo/${theme.id}/hero.webp`;
+                            } else if (t.src.includes("hero.webp")) {
+                              t.src = `/demo/${theme.id}/cover.webp`;
+                            }
+                          }}
+                        />
+                        <div className="dm-glare"></div>
+                      </div>
+
+                      {/* Hover overlay — inside dm-tablet, covers tablet only */}
+                      <Link
+                        href={`/demo/${theme.id}`}
+                        target="_blank"
+                        className="dm-overlay"
+                        aria-label={`Preview ${theme.name}`}
+                      >
+                        <span className="dm-overlay-btn">BUKA PREVIEW</span>
+                      </Link>
                     </div>
-                    <span className="text-[9px] font-mono text-stone-400 truncate max-w-[85px]">
-                      {theme.id}
-                    </span>
-                    <span className={`text-[8px] font-bold px-1 py-0.2 rounded uppercase tracking-wider ${
-                      theme.category === "traditional" ? "bg-amber-900/60 text-amber-300 border border-amber-700/50" :
-                      theme.category === "modern" ? "bg-cyan-950/70 text-cyan-300 border border-cyan-800/50" :
-                      "bg-amber-500/20 text-amber-300 border border-amber-500/40"
-                    }`}>
+
+                    {/* Phone frame — overlap bottom-left */}
+                    <div className="dm-phone">
+                      <div className="dm-phone-notch"></div>
+                      <div className="dm-phone-screen">
+                        <img
+                          src={theme.thumbnailMobile || `/demo/${theme.id}/thumbnail_mobile.webp`}
+                          alt={`${theme.name} Mobile`}
+                          onError={(e) => {
+                            const t = e.currentTarget;
+                            if (!t.src.includes("cover.webp") && !t.src.includes("hero.webp")) {
+                              t.src = `/demo/${theme.id}/cover.webp`;
+                            } else if (t.src.includes("cover.webp")) {
+                              t.src = `/demo/${theme.id}/hero.webp`;
+                            }
+                          }}
+                        />
+                        <div className="dm-glare"></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ── Theme Info ── */}
+                  <div className="catalog-info">
+                    <div className="catalog-info-meta">
+                      <p className="catalog-series">{theme.series}</p>
+                      <h3 className="catalog-name">{theme.name}</h3>
+                      <p className="catalog-desc">{theme.desc}</p>
+                    </div>
+                    <span className={`catalog-badge ${theme.category}`}>
                       {theme.category}
                     </span>
                   </div>
 
-                  {/* Snapshot Theme View Frame */}
-                  <Link
-                    href={`/demo/${theme.id}`}
-                    target="_blank"
-                    className={`relative bg-stone-100 overflow-hidden block cursor-pointer group ${
-                      viewMode === "mobile" ? "aspect-[3/4]" : "aspect-[16/9]"
-                    }`}
-                  >
-                    <img
-                      src={theme.thumbnailMobile || `/demo/${theme.id}/thumbnail_mobile.webp`}
-                      alt={`${theme.name} Mobile Preview`}
-                      className={`absolute inset-0 w-full h-full object-cover object-top transition duration-300 ease-in-out group-hover:scale-105 ${
-                        viewMode === "mobile" ? "opacity-100 z-[1] pointer-events-auto" : "opacity-0 z-0 pointer-events-none"
-                      }`}
-                      onError={(e) => {
-                        const target = e.currentTarget;
-                        if (!target.src.includes("cover.webp") && !target.src.includes("hero.webp")) {
-                          target.src = `/demo/${theme.id}/cover.webp`;
-                        } else if (target.src.includes("cover.webp")) {
-                          target.src = `/demo/${theme.id}/hero.webp`;
-                        }
-                      }}
-                    />
-
-                    <img
-                      src={theme.thumbnailDesktop || `/demo/${theme.id}/thumbnail_desktop.webp`}
-                      alt={`${theme.name} Desktop Preview`}
-                      className={`absolute inset-0 w-full h-full object-cover object-top transition duration-300 ease-in-out group-hover:scale-105 ${
-                        viewMode === "desktop" ? "opacity-100 z-[1] pointer-events-auto" : "opacity-0 z-0 pointer-events-none"
-                      }`}
-                      onError={(e) => {
-                        const target = e.currentTarget;
-                        if (!target.src.includes("cover.webp") && !target.src.includes("hero.webp")) {
-                          target.src = `/demo/${theme.id}/cover.webp`;
-                        } else if (target.src.includes("cover.webp")) {
-                          target.src = `/demo/${theme.id}/hero.webp`;
-                        }
-                      }}
-                    />
-
-                    <div className="absolute inset-0 bg-stone-950/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center p-2 z-10">
-                      <span className="px-3.5 py-1.5 bg-white text-stone-900 font-bold text-[11px] rounded-full shadow-lg transform translate-y-1 group-hover:translate-y-0 transition-transform tracking-wider">
-                        Buka
-                      </span>
-                    </div>
-                  </Link>
-
-                  {/* Single Clean Action Button */}
-                  <div className="p-2 bg-white border-t border-stone-100">
+                  {/* ── CTA ── */}
+                  <div className="catalog-action">
                     <Link
                       href={`/demo/${theme.id}`}
                       target="_blank"
-                      className="w-full py-1.5 bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-lg text-[10px] text-center transition block shadow-2xs tracking-wider cursor-pointer"
+                      className="catalog-btn-demo"
                     >
-                      PREVIEW
+                      Lihat Demo
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                      </svg>
                     </Link>
                   </div>
+
                 </div>
               ))}
             </div>
