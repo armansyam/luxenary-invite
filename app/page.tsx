@@ -120,35 +120,26 @@ export default async function Home() {
         <span>RSVP &amp; Meja Resepsionis</span>
       </div>
 
-      {/* Left Companion Device (Artisan - Authentic Mobile Thumbnail) */}
+      {/* Left Companion Device (Mockup 1) */}
       <div className="phone-card-hero phone-left-hero">
         <div className="hero-companion-island"></div>
-        <img src="/assets/homepage/hero_mockup_artisan.webp" alt="Tema Artisan - Leo &amp; Dini" />
+        <img src="/assets/homepage/hero_mockup_1.webp" alt="Preview Mockup 1" />
         <div className="screen-glare"></div>
       </div>
 
-      {/* Center Realistic iPhone 16 Pro Mockup */}
+      {/* Center Realistic iPhone 16 Pro Mockup (Mockup 2) */}
       <div className="phone-card-hero phone-center-hero" id="hero-phone-center">
         {/* Dynamic Island */}
         <div className="hero-dynamic-island"></div>
-        <img src="/assets/homepage/hero_mockup_badrika.webp" alt="Tema Badrika - Syahril &amp; Elyana" />
+        <img src="/assets/homepage/hero_mockup_2.webp" alt="Preview Mockup 2" />
         {/* Specular Screen Glare */}
         <div className="screen-glare"></div>
       </div>
 
-      {/* Right Companion Device (Prameswari - Traditional Cultural Theme) */}
+      {/* Right Companion Device (Mockup 3) */}
       <div className="phone-card-hero phone-right-hero">
         <div className="hero-companion-island"></div>
-        <div className="hero-comp-card">
-          <img className="hero-comp-bg" src="/assets/homepage/hero_mockup_prameswari.webp" alt="Tema Prameswari - Danang &amp; Prameswari" />
-          <div className="hero-comp-scrim"></div>
-          <div className="hero-comp-content">
-            <span className="hero-comp-tag">THE WEDDING OF</span>
-            <h4 className="hero-comp-names">Danang &amp; Prameswari</h4>
-            <span className="hero-comp-cat">BUDAYA NUSANTARA</span>
-            <div className="hero-comp-btn">Buka Undangan</div>
-          </div>
-        </div>
+        <img src="/assets/homepage/hero_mockup_3.webp" alt="Preview Mockup 3" />
         <div className="screen-glare"></div>
       </div>
     </div>

@@ -638,11 +638,15 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
 ---
 
 ## 19. Homepage Hero Showcase & Standarisasi Aset Visual WebP (< 200 KB)
-1. **Full-Bleed iPhone 16 Pro Mockup Hero:**
-   - Mockup ponsel utama (`.phone-center-hero`) diselaraskan menjadi *full-bleed screenshot* murni berlayar penuh (`object-fit: cover; object-position: center top;`), menghilangkan kontainer kubah kaku (`.hero-inv-arch-box`) dan teks HTML duplikat.
+1. **Penyelarasan Tiga Mockup Ponsel & Eliminasi Total CSS Overlay (Zero-CSS-Text Card):**
+   - Ketiga mockup ponsel hero (Kiri, Tengah, Kanan) diselaraskan menjadi *full-bleed screenshot* murni berlayar penuh (`object-fit: cover; object-position: center top;`).
+   - Menghapus total kontainer kubah kaku (`.hero-inv-arch-box`), lapisan kartu overlay (`.hero-comp-card`), scrim gelap, serta tombol dan teks HTML duplikat ("Danang & Prameswari", "Buka Undangan").
+   - **Dekopling Netral Penamaan Mockup:** Aset gambar mockup hero didekopel sepenuhnya dari keterikatan nama tema master menjadi penamaan generik `hero_mockup_1.webp` (Ponsel Kiri), `hero_mockup_2.webp` (Ponsel Tengah), dan `hero_mockup_3.webp` (Ponsel Kanan). Pengguna bebas mengganti screenshot asli tanpa ada intervensi elemen CSS di atasnya.
    - Tetap mempertahankan bezel titanium mewah, Dynamic Island melayang di posisi atas (`z-index: 8`), serta lapisan kaca pantulan specular glare (`z-index: 3`).
 2. **Standarisasi Bobot Aset WebP (< 200 KB) & Algoritma Penajaman (*Sharpening*):**
    - Seluruh aset visual beresolusi tinggi dioptimasi ke format WebP dengan batas dimensi Retina 2048px dan unsharp mask sharpening (`sharp.sharpen()`) untuk menjaga kejernihan mikro-kontras foto mempelai dan ornamen tema.
    - Bobot gambar ditekan 100% di bawah 200 KB guna menjamin Largest Contentful Paint (LCP) Google Core Web Vitals < 2.5 detik pada jaringan seluler 4G/5G serta mencegah crash memori pada browser iOS Safari.
-3. **Sinkronisasi Otomatis Thumbnail Demo Showroom:**
-   - Aset thumbnail mode portrait (iPad Mini 3:4 Retina, 1536×2048 px) dan widescreen desktop (16:9 Retina, 2048×1152 px) disinkronkan langsung ke direktori publik `/demo/[theme]/` (`thumbnail_mobile.webp` dan `thumbnail_desktop.webp`).
+3. **Rasio Presisi Showcase & Penyelarasan Demo Studio:**
+   - **Mockup Showcase Mobile (HP):** Standar rasio **1 : 2** (ukuran pas: **390 × 780 px** / **800 × 1600 px**).
+   - **Mockup Showcase Desktop (Laptop):** Standar rasio **16 : 10** (ukuran pas: **1280 × 800 px** / **2560 × 1600 px**).
+   - Seluruh teks panduan formulir Demo Studio disederhanakan secara to-the-point tanpa referensi rancu ke iPad Mini, langsung menyajikan ukuran pas dan rasio yang dibutuhkan administrator.

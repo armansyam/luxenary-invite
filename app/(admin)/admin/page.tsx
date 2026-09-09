@@ -5813,17 +5813,17 @@ export default function AdminPage() {
                             { slot: "bride", label: "Mempelai Wanita", file: "bride.webp", allowVideo: false, desc: "Foto profil wanita" },
                             { 
                               slot: "thumbnail_mobile", 
-                              label: "Thumbnail Katalog (iPad Mini / Mobile)", 
+                              label: "Thumbnail Mobile (HP)", 
                               file: "thumbnail_mobile.webp", 
                               allowVideo: false, 
-                              desc: "Snapshot sampul untuk kartu katalog /demo. Ukuran: 768 × 1024 px (Rasio 3:4). Cara: Inspect -> Device 'iPad Mini' -> Titik 3 (⋮) -> Capture screenshot." 
+                              desc: "Ukuran pas: 390 × 780 px (Rasio 1:2)" 
                             },
                             { 
                               slot: "thumbnail_desktop", 
-                              label: "Thumbnail Katalog (Desktop)", 
+                              label: "Thumbnail Desktop (Laptop)", 
                               file: "thumbnail_desktop.webp", 
                               allowVideo: false, 
-                              desc: "Snapshot layar desktop untuk kartu /demo. Ukuran: 1280 × 720 px (Rasio 16:9). Cara: Inspect -> Device Responsive (1280×720) -> Titik 3 (⋮) -> Capture screenshot." 
+                              desc: "Ukuran pas: 1280 × 800 px (Rasio 16:10)" 
                             },
                           ].map((item) => {
                             const isDeleted = Boolean(stagedDeletedSlots[item.slot]);
