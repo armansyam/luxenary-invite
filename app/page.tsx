@@ -733,17 +733,11 @@ export default async function Home() {
                       {displayNum}
                       {isK && <span style={{ fontSize: "1.5rem" }}>K</span>}
                     </div>
-                    <div className="pricing-period">
-                      Rp {pkg.price.toLocaleString("id-ID")} / undangan
-                    </div>
                     <ul className="pricing-features" aria-label={`Fitur ${pkg.name}`}>
                       {pkg.features.map((f, fIdx) => (
                         <li key={fIdx}>{f}</li>
                       ))}
                     </ul>
-                    <Link href="/login" className="pricing-cta">
-                      Pilih Paket →
-                    </Link>
                   </div>
                 );
               })

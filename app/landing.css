@@ -1090,7 +1090,10 @@
        PENGALAMAN (3D PHONE + ICON DOCK)
     =========================== */
 .lux-landing-root #pengalaman {
-      background: #0e0c0b;
+      background-color: #0e0c0b;
+      background-image: url('/assets/homepage/pengalaman_bg.webp');
+      background-size: cover;
+      background-position: center;
       position: relative;
       padding: 7rem 3rem;
       overflow: hidden;
@@ -1100,7 +1103,7 @@
       content: '';
       position: absolute;
       inset: 0;
-      background: radial-gradient(ellipse at 30% 50%, rgba(58,14,24,0.25) 0%, rgba(14,12,11,0.92) 75%);
+      background: rgba(11,10,9,0.70);
       pointer-events: none;
       z-index: 0;
     }
@@ -3033,16 +3036,19 @@
     =========================== */
 .lux-landing-root #harga {
       background: var(--lux-charcoal);
-      padding: 8rem 3rem;
+      padding: 5rem 3rem;
     }
 
 .lux-landing-root .harga-inner {
-      display: grid;
-      grid-template-columns: 1fr 1.8fr;
-      gap: 5rem;
-      align-items: start;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
       max-width: 1200px;
       margin: 0 auto;
+    }
+
+.lux-landing-root .harga-text {
+      max-width: 640px;
     }
 
 .lux-landing-root .harga-text .section-label { color: var(--lux-gold); }
@@ -3086,7 +3092,7 @@
       background: rgba(255,255,255,0.04);
       border: 1px solid rgba(255,255,255,0.08);
       border-radius: 12px;
-      padding: 2.2rem 1.8rem;
+      padding: 1.6rem 1.5rem;
       display: flex;
       flex-direction: column;
       transition: border-color 0.3s, background 0.3s, transform 0.4s var(--ease-luxury);
@@ -3120,20 +3126,20 @@
 
 .lux-landing-root .pricing-name {
       font-family: 'Cormorant Garamond', serif;
-      font-size: 1.5rem;
+      font-size: 1.4rem;
       font-weight: 400;
       letter-spacing: 0.1em;
       color: var(--lux-ivory);
-      margin-bottom: 1.5rem;
+      margin-bottom: 0.6rem;
     }
 
 .lux-landing-root .pricing-price {
       font-family: 'Cormorant Garamond', serif;
-      font-size: 3rem;
+      font-size: 2.6rem;
       font-weight: 400;
       line-height: 1;
       color: var(--lux-warm-white);
-      margin-bottom: 0.3rem;
+      margin-bottom: 1rem;
     }
 
 .lux-landing-root .pricing-card.featured .pricing-price { color: var(--lux-gold); }
@@ -3147,18 +3153,21 @@
 
 .lux-landing-root .pricing-features {
       list-style: none;
-      flex: 1;
-      margin-bottom: 2rem;
+      margin-bottom: 0;
     }
 
 .lux-landing-root .pricing-features li {
       font-size: 0.82rem;
       color: rgba(245,240,232,0.6);
-      padding: 0.5rem 0;
+      padding: 0.45rem 0;
       border-bottom: 1px solid rgba(255,255,255,0.05);
       display: flex;
       align-items: center;
       gap: 0.6rem;
+      /* Clamp to 1 line — teks panjang dari admin dipotong elipsis */
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
 .lux-landing-root .pricing-features li::before {
@@ -3170,38 +3179,7 @@
       flex-shrink: 0;
     }
 
-.lux-landing-root .pricing-cta {
-      font-size: 0.8rem;
-      font-weight: 500;
-      letter-spacing: 0.1em;
-      padding: 0.85rem 1.5rem;
-      border-radius: 100px;
-      text-align: center;
-      cursor: pointer;
-      transition: background 0.3s, transform 0.3s, border-color 0.3s;
-      border: 1px solid rgba(245,240,232,0.25);
-      color: var(--lux-ivory);
-      background: transparent;
-      display: block;
-    }
-
-.lux-landing-root .pricing-cta:hover {
-      border-color: rgba(245,240,232,0.5);
-      background: rgba(255,255,255,0.06);
-      transform: translateY(-1px);
-    }
-
-.lux-landing-root .pricing-card.featured .pricing-cta {
-      background: var(--lux-gold);
-      border-color: var(--lux-gold);
-      color: var(--lux-black);
-    }
-
-.lux-landing-root .pricing-card.featured .pricing-cta:hover {
-      background: #d4a82a;
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(201,162,39,0.3);
-    }
+/* pricing-cta dihapus dari HTML — rules ini tidak lagi dipakai */
 /* ===========================
        FINAL CTA SECTION
     =========================== */
@@ -3254,10 +3232,10 @@
 
 .lux-landing-root .cta-heading {
       font-family: 'Cormorant Garamond', serif;
-      font-size: clamp(3rem, 5.5vw, 5.5rem);
+      font-size: clamp(2rem, 3vw, 3.2rem);
       font-weight: 400;
       font-style: italic;
-      line-height: 1.1;
+      line-height: 1.15;
       color: var(--lux-warm-white);
       margin-bottom: 1.5rem;
     }
@@ -3490,7 +3468,10 @@
         gap: 3rem;
       }
 
-.lux-landing-root #pengalaman { padding: 5rem 2rem; }
+.lux-landing-root #pengalaman {
+        padding: 5rem 2rem;
+        background-image: url('/assets/homepage/pengalaman_mobile.webp');
+      }
 
 .lux-landing-root .exp-scroll-indicator { display: none; }
 
@@ -3585,17 +3566,16 @@
       }
 
 .lux-landing-root .hero-cta-group {
-        flex-direction: column;
-        align-items: center;
-        gap: 0.8rem;
-        width: 100%;
+        display: none;
       }
 
 .lux-landing-root .hero-cta-group .btn-primary, .lux-landing-root .hero-cta-group .btn-secondary {
         width: 100%;
-        max-width: 280px;
+        max-width: 220px;
         justify-content: center;
         text-align: center;
+        font-size: 0.78rem;
+        padding: 0.78rem 1.4rem;
       }
 
 .lux-landing-root .hero-phones {
@@ -3617,7 +3597,10 @@
 
 .lux-landing-root .device-mockup-phone { width: 125px; height: 250px; left: -8px; bottom: -12px; border-radius: 24px; }
 
-.lux-landing-root #pengalaman { padding: 4rem 1.2rem; }
+.lux-landing-root #pengalaman {
+        padding: 4rem 1.2rem;
+        background-image: url('/assets/homepage/pengalaman_mobile.webp');
+      }
 
 .lux-landing-root .exp-stage {
         perspective: none;
@@ -3644,31 +3627,41 @@
           0 0 0 5px #1c1a18;
       }
 
+/* ── Mobile icon dock: grid auto-fit ─────────────────────────────────────
+         All buttons always stay in ONE row, shrinking proportionally.
+         auto-fit with minmax(0,1fr) divides the available width equally
+         across however many columns the HTML contains.                    */
 .lux-landing-root .exp-icon-dock {
-        gap: 1.2rem;
-        justify-content: center;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+        gap: clamp(0.4rem, 2vw, 1rem);
+        width: 100%;
       }
 
 .lux-landing-root .exp-icon-btn {
-        max-width: 75px;
+        /* remove fixed max-width so grid cell controls the width */
+        max-width: unset;
+        width: 100%;
       }
 
 .lux-landing-root .exp-icon-circle {
-        width: 50px;
-        height: 50px;
+        /* size relative to viewport so it always fits */
+        width: clamp(36px, 10vw, 50px);
+        height: clamp(36px, 10vw, 50px);
+        margin-bottom: 0.45rem;
       }
 
 .lux-landing-root .exp-icon-circle svg {
-        width: 19px;
-        height: 19px;
+        width: clamp(14px, 3.8vw, 19px);
+        height: clamp(14px, 3.8vw, 19px);
       }
 
 .lux-landing-root .exp-icon-title {
-        font-size: 0.78rem;
+        font-size: clamp(0.68rem, 2.2vw, 0.78rem);
       }
 
 .lux-landing-root .exp-icon-sub {
-        font-size: 0.6rem;
+        font-size: clamp(0.58rem, 1.8vw, 0.62rem);
       }
 
 .lux-landing-root #budaya { padding: 5rem 1.5rem; }
@@ -3681,9 +3674,27 @@
 
 .lux-landing-root .pricing-cards { gap: 1rem; }
 
-.lux-landing-root .cta-content { padding: 4rem 1.5rem; }
+/* Mobile: biarkan teks fitur wrap — nowrap menyebabkan overflow horizontal */
+.lux-landing-root .pricing-features li {
+        white-space: normal;
+        overflow: visible;
+        text-overflow: unset;
+      }
 
-.lux-landing-root .cta-heading { font-size: 2.8rem; }
+.lux-landing-root .cta-content {
+        padding: 3rem 1.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+.lux-landing-root .btn-cta {
+        align-self: flex-start;  /* jangan stretch full-width */
+        font-size: 0.76rem;
+        padding: 0.85rem 1.8rem;
+      }
+
+.lux-landing-root .cta-heading { font-size: 1.8rem; line-height: 1.2; }
 
 .lux-landing-root footer {
         padding: 2.5rem 1.5rem 1.5rem;
