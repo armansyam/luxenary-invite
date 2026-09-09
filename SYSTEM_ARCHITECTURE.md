@@ -1474,6 +1474,12 @@ Sistem membaca konfigurasi server email secara real-time:
   - **Perpanjangan Galeri (`GALLERY_EXTENSION`):** Rincian penambahan +30 hari masa aktif penyimpanan foto dengan tombol CTA ke Galeri Momen.
 - Pengiriman email dijalankan secara asynchronous non-blocking di dalam `applyUpgradePlan` setelah status order berubah menjadi `PAID`.
 
+### 16.3 — Arsitektur Favicon & SEO Standar Google Search Central
+Untuk memenuhi spesifikasi Google Search agar logo/favicon muncul pada SERP:
+- **URL Favicon Statis & Stabil:** Menghapuskan seluruh query timestamp acak (`?t=Date.now()`) pada `app/layout.tsx` agar bot perayap Google Favicon dapat melakukan caching canonical yang stabil.
+- **Standar Ukuran Kelipatan 48px:** Menyediakan aset favicon dalam kelipatan 48 piksel (`48x48`, `96x96`, `192x192`, `512x512`) serta Apple Touch Icon (`180x180`).
+- **Integrasi App Router & Web App Manifest:** Mendukung `app/icon.png`, `app/apple-icon.png`, deklarasi multi-size di `app/manifest.ts`, serta perizinan akses bot di `app/robots.ts`.
+
 ---
 
 ## 17. ARSITEKTUR INFRASTRUKTUR & DEPLOYMENT (VPS)

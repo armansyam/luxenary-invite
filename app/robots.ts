@@ -20,6 +20,9 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
           "/portfolio",
           "/portfolio/*",
           "/assets/*",
+          "/favicon.ico",
+          "/icon.png",
+          "/manifest.webmanifest",
         ],
         disallow: [
           "/admin",
