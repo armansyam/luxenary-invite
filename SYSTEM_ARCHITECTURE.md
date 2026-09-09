@@ -1789,8 +1789,7 @@ Untuk memberikan pengalaman interaktif penuh bagi calon klien sebelum memesan pa
 2. **Sliding Magnetic Thumb:**
    - Latar tombol aktif bergeser secara fisik (magnetic thumb) di bawah teks tombol dengan rumus offset deterministik:
      - **Mode Mobile:** `w-[calc(50%-4px)]` dengan titik pergeseran `left-1` (Tab Form Data) dan `left-1/2` (Tab Live Editor).
-     - **Mode Desktop:** Lebar tombol tetap `sm:w-[220px]` dengan posisi `left-1` (4px) vs `sm:left-[224px]` (4px + 220px).
+     - **Mode Desktop:** Lebar tombol ramping `sm:w-[125px]` dengan posisi `left-1` (4px) vs `sm:left-[129px]` (4px + 125px).
    - Indikator thumb bertransisi warna kontekstual: `bg-stone-900` saat di mode Form Data dan berubah hangat ke `bg-amber-800` saat di mode Live Editor Visual.
 3. **Penerapan Serupa pada Device Preview Switcher:**
    - Toggle preview perangkat (`Mobile` vs `Layar Penuh`) mengadopsi mekanisme sliding magnetic pill serupa berlatar putih halus `bg-white shadow-2xs` di atas rel `bg-stone-100`.
-

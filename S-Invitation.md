@@ -627,10 +627,10 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - Diterapkan pada filter status RSVP (`Semua`, `Hadir`, `Tidak Hadir`, `Ragu-ragu`) dan filter pengiriman Buku Tamu (`Semua Tamu`, `Sudah Terkirim`, `Belum Dikirim`).
    - Ditenagai pengukuran DOM reaktif (`useRef` + `offsetLeft` / `offsetWidth`) dan batang pendar emas 2.5px (`bg-gradient-to-r from-amber-700 via-amber-500 to-amber-600`) dengan pendaran amber halus (`shadow-[0_1px_8px_rgba(217,119,6,0.6)]`) serta transisi native hardware-accelerated 60 FPS `cubic-bezier(0.16,1,0.3,1)`.
 3. **Sliding Magnetic Pill Dual Switcher:**
-   - Diterapkan pada peralihan mode Studio Undangan (`/dashboard/invitation/[id]`): `Edit Undangan (Form Data)` vs `Live Editor (Visual Mode)` dan kontrol preview perangkat (`Mobile` vs `Layar Penuh`).
+   - Diterapkan pada peralihan mode Studio Undangan (`/dashboard/invitation/[id]`): `Form Data` vs `Live Editor` dan kontrol preview perangkat (`Mobile` vs `Layar Penuh`).
    - Track inset abu-abu lembut (`bg-stone-100/90`) dengan sliding thumb fisik di balik tombol yang meluncur dinamis:
-     - Lebar 50% di mobile dan 220px tetap di desktop.
-     - Perubahan warna kontekstual (`bg-stone-900` pada Form Mode vs `bg-amber-800` pada Live Visual Mode).
+     - Lebar 50% di mobile dan 125px ramping di desktop.
+     - Perubahan warna kontekstual (`bg-stone-900` pada Form Data vs `bg-amber-800` pada Live Editor).
      - Menghadirkan umpan balik taktil modern setara standar industri tanpa library eksternal berlebih.
 
 
