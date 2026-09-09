@@ -1823,4 +1823,8 @@ Untuk memberikan pengalaman interaktif penuh bagi calon klien sebelum memesan pa
    - Seluruh aset dikompresi dengan WebP effort 6 serta unsharp mask filter (`sharp.sharpen({ sigma: 1.0, m1: 0.75, m2: 2.0 })`) dengan bobot 100% di bawah 200 KB untuk menjamin metrik LCP < 2.5s.
 3. **Penyelarasan Teks Panduan Demo Studio:**
    - Menghapus referensi rancu "iPad Mini" pada form Demo Studio, menyajikan label dan ukuran presisi yang langsung pada intinya bagi administrator.
+4. **Hirarki Visual Katalog Tema Admin & Integrasi Thumbnail Mobile:**
+   - Menyematkan wadah thumbnail mobile (`aspect-[3/4]`, `object-cover object-top`) pada setiap kartu tema di panel admin (`/admin?tab=themes`).
+   - Menerapkan hirarki visual yang intuitif: (1) Showcase Visual Thumbnail Mobile di posisi teratas dilengkapi floating badge kategori & active toggle pill, (2) Identitas Nama Tema, slug `/{id}`, dan deskripsi di bagian tengah, serta (3) Tombol aksi (`Preview`, `Studio`, `Edit`, `Delete`) di bagian bawah.
+   - Endpoint `/api/admin/overview` secara dinamis memperkaya objek tema dengan `thumbnailMobile` dari konfigurasi Demo Studio (`adminSetting`) atau fallback disk fisik `/demo/[theme]/thumbnail_mobile.webp` beserta proteksi `onError`.
 

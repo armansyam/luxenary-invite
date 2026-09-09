@@ -57,8 +57,44 @@ export async function GET() {
     // ----------------------------------------
 
     // Load available themes from database
-    const themes = await prisma.theme.findMany({
+    const dbThemes = await prisma.theme.findMany({
       orderBy: { sortOrder: "asc" },
+    });
+
+    const themeSettingKeys = dbThemes.map((t) => `theme_demo_${t.id.toLowerCase()}`);
+    const themeSettings = await prisma.adminSetting.findMany({
+      where: { key: { in: themeSettingKeys } },
+      select: { key: true, value: true, updatedAt: true },
+    });
+
+    const themeCustomDataMap: Record<string, { data: any; updatedAt: number }> = {};
+    for (const s of themeSettings) {
+      const themeId = s.key.replace("theme_demo_", "");
+      try {
+        themeCustomDataMap[themeId] = {
+          data: JSON.parse(s.value),
+          updatedAt: s.updatedAt ? new Date(s.updatedAt).getTime() : 1,
+        };
+      } catch {}
+    }
+
+    const themes = dbThemes.map((t) => {
+      const themeKey = t.id.toLowerCase();
+      const customEntry = themeCustomDataMap[themeKey];
+      const customData = customEntry?.data;
+      const v = customEntry?.updatedAt || 1;
+
+      const demoThemeDir = path.join(process.cwd(), "public", "demo", themeKey);
+      const hasMobileThumb = fs.existsSync(path.join(demoThemeDir, "thumbnail_mobile.webp"));
+      const defaultCoverFallback = t.thumbnail || `/demo/${themeKey}/cover.webp`;
+
+      const rawThumbMobile = customData?.thumbnailMobileUrl || (hasMobileThumb ? `/demo/${themeKey}/thumbnail_mobile.webp` : defaultCoverFallback);
+      const thumbMobile = rawThumbMobile.includes("?") ? `${rawThumbMobile}&v=${v}` : `${rawThumbMobile}?v=${v}`;
+
+      return {
+        ...t,
+        thumbnailMobile: thumbMobile,
+      };
     });
 
     const [

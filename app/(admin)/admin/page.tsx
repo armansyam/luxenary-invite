@@ -2586,52 +2586,108 @@ export default function AdminPage() {
                             return (
                               <div
                                 key={theme.id}
-                                className={`bg-white rounded-2xl border p-5 flex flex-col justify-between space-y-3.5 transition shadow-2xs ${
+                                className={`group bg-white rounded-2xl border flex flex-col justify-between overflow-hidden transition-all duration-300 shadow-2xs hover:shadow-md ${
                                   theme.isActive === false
-                                    ? "opacity-60 border-dashed border-gray-300"
-                                    : "border-gray-200 hover:border-gray-300 hover:shadow-md"
+                                    ? "opacity-65 border-dashed border-stone-300"
+                                    : "border-stone-200 hover:border-stone-300"
                                 }`}
                               >
-                                <div className="space-y-2">
-                                  {/* Top Row: Name + Status Dot + Category Badge */}
-                                  <div className="flex items-start justify-between gap-3">
-                                    <div>
-                                      <div className="flex items-center gap-2">
-                                        <h3 className="font-bold text-gray-900 text-base">{theme.name}</h3>
-                                        <button
-                                          type="button"
-                                          onClick={() => handleToggleThemeStatus(theme)}
-                                          className={`w-2 h-2 rounded-full cursor-pointer transition ${
-                                            theme.isActive !== false
-                                              ? "bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]"
-                                              : "bg-gray-300"
-                                          }`}
-                                          title={theme.isActive !== false ? "Tema Aktif (Klik untuk non-aktifkan)" : "Tema Non-aktif (Klik untuk aktifkan)"}
-                                        />
-                                      </div>
-                                      <span className="text-[11px] font-mono text-gray-400">/{theme.id}</span>
+                                <div>
+                                  {/* 1. Visual Showcase: Thumbnail Mobile (Hirarki Teratas) */}
+                                  <div className="relative aspect-[3/4] w-full bg-gradient-to-b from-stone-100 to-stone-50 overflow-hidden border-b border-stone-100 group/thumb flex items-center justify-center">
+                                    <img
+                                      src={theme.thumbnailMobile || `/demo/${theme.id}/thumbnail_mobile.webp`}
+                                      alt={`${theme.name} Mobile Thumbnail`}
+                                      loading="lazy"
+                                      decoding="async"
+                                      className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                                      onError={(e) => {
+                                        const t = e.currentTarget;
+                                        if (!t.src.includes("cover.webp") && !t.src.includes("hero.webp")) {
+                                          t.src = `/demo/${theme.id}/cover.webp`;
+                                        } else if (t.src.includes("cover.webp")) {
+                                          t.src = `/demo/${theme.id}/hero.webp`;
+                                        }
+                                      }}
+                                    />
+                                    {/* Ambient hover shadow overlay */}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+
+                                    {/* Floating Category Badge Top-Right */}
+                                    <div className="absolute top-2.5 right-2.5 z-10 pointer-events-none">
+                                      <span
+                                        className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full border shadow-xs backdrop-blur-md ${
+                                          cat === "traditional"
+                                            ? "bg-amber-950/85 text-amber-200 border-amber-600/40"
+                                            : cat === "modern"
+                                            ? "bg-slate-950/85 text-slate-200 border-slate-600/40"
+                                            : "bg-purple-950/85 text-purple-200 border-purple-600/40"
+                                        }`}
+                                      >
+                                        {cat === "traditional" ? "Traditional" : cat === "modern" ? "Modern" : "Premium"}
+                                      </span>
                                     </div>
-                                    <span
-                                      className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full border shrink-0 ${
-                                        cat === "traditional"
-                                          ? "bg-amber-50 text-amber-800 border-amber-200"
-                                          : cat === "modern"
-                                          ? "bg-slate-50 text-slate-700 border-slate-200"
-                                          : "bg-purple-50 text-purple-800 border-purple-200"
-                                      }`}
+
+                                    {/* Floating Active Status Badge Top-Left */}
+                                    <div className="absolute top-2.5 left-2.5 z-10">
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleToggleThemeStatus(theme);
+                                        }}
+                                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1.5 shadow-xs backdrop-blur-md border cursor-pointer transition ${
+                                          theme.isActive !== false
+                                            ? "bg-emerald-950/85 text-emerald-300 border-emerald-600/50 hover:bg-emerald-900"
+                                            : "bg-stone-950/85 text-stone-300 border-stone-600/50 hover:bg-stone-900"
+                                        }`}
+                                        title={theme.isActive !== false ? "Tema Aktif (Klik untuk non-aktifkan)" : "Tema Non-aktif (Klik untuk aktifkan)"}
+                                      >
+                                        <span
+                                          className={`w-1.5 h-1.5 rounded-full ${
+                                            theme.isActive !== false
+                                              ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]"
+                                              : "bg-stone-400"
+                                          }`}
+                                        />
+                                        <span>{theme.isActive !== false ? "Aktif" : "Nonaktif"}</span>
+                                      </button>
+                                    </div>
+
+                                    {/* Hover Quick Action: "Lihat Live" */}
+                                    <a
+                                      href={`/demo/${theme.id}`}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20"
+                                      title={`Buka Demo ${theme.name}`}
                                     >
-                                      {cat === "traditional" ? "Traditional" : cat === "modern" ? "Modern" : "Premium"}
-                                    </span>
+                                      <span className="px-3.5 py-1.5 bg-stone-900/90 hover:bg-black text-white text-xs font-bold rounded-xl shadow-lg backdrop-blur-xs flex items-center gap-1.5 transition-transform group-hover:scale-105">
+                                        <svg className="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                        Lihat Live
+                                      </span>
+                                    </a>
                                   </div>
 
-                                  {/* Description / Tagline */}
-                                  <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">
-                                    {theme.description || (settingsMap["platform_name"] ? `Desain eksklusif ${settingsMap["platform_name"]}` : "Desain eksklusif")}
-                                  </p>
+                                  {/* 2. Theme Identity & Description (Hirarki Tengah) */}
+                                  <div className="p-4 space-y-1.5">
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div>
+                                        <h3 className="font-bold text-gray-900 text-base group-hover:text-amber-900 transition">{theme.name}</h3>
+                                        <span className="text-[11px] font-mono text-gray-400">/{theme.id}</span>
+                                      </div>
+                                    </div>
+                                    <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">
+                                      {theme.description || (settingsMap["platform_name"] ? `Desain eksklusif ${settingsMap["platform_name"]}` : "Desain eksklusif")}
+                                    </p>
+                                  </div>
                                 </div>
 
-                                {/* Bottom Action Row */}
-                                <div className="pt-3 border-t border-gray-100 flex items-center justify-between gap-2">
+                                {/* 3. Bottom Action Row (Hirarki Bawah) */}
+                                <div className="px-4 pb-4 pt-3 border-t border-gray-100 flex items-center justify-between gap-2 bg-stone-50/50">
                                   <div className="flex items-center gap-2">
                                     <a
                                       href={`/demo/${theme.id}`}

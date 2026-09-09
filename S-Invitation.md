@@ -650,3 +650,6 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - **Mockup Showcase Mobile (HP):** Standar rasio **1 : 2** (ukuran pas: **390 × 780 px** / **800 × 1600 px**).
    - **Mockup Showcase Desktop (Laptop):** Standar rasio **16 : 10** (ukuran pas: **1280 × 800 px** / **2560 × 1600 px**).
    - Seluruh teks panduan formulir Demo Studio disederhanakan secara to-the-point tanpa referensi rancu ke iPad Mini, langsung menyajikan ukuran pas dan rasio yang dibutuhkan administrator.
+4. **Visual Showcase Thumbnail Mobile pada Katalog Tema Admin:**
+   - Menambahkan preview visual thumbnail mobile (`aspect-[3/4]`, `object-cover object-top`) pada kartu tema di `/admin?tab=themes`.
+   - Mengusung hirarki visual profesional: (1) Pratinjau Visual Tema + status aktif toggle + kategori tier, (2) Nama Tema, slug, deskripsi, dan (3) Tombol aksi (`Preview`, `Studio`, `Edit`, `Delete`).
