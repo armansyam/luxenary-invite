@@ -1483,7 +1483,7 @@ Sistem membaca konfigurasi server email secara real-time:
 Sistem Luxenary Invite dirancang sebagai aplikasi *self-hosted* yang berjalan pada mesin Virtual Private Server (VPS) Ubuntu/Linux mandiri.
 
 ### 17.1 — PM2 Daemon & Deployment Engine
-- **Skrip Deployment Otomatis:** `deploy.sh` menangani pembaruan repositori, instalasi dependensi, inisialisasi kunci rahasia (*secret generator*), sinkronisasi Prisma, *build* Next.js, hingga proses *restart* peladen tanpa *downtime*.
+- **Skrip Deployment Otomatis:** `deploy.sh` menangani pembersihan drift `package-lock.json` lintas arsitektur, pembaruan repositori git (`origin main`) dengan abort protection, penyiapan direktori runtime (`logs`, `public/uploads`, `data/drafts`), inisialisasi kunci rahasia (*secret generator*), sinkronisasi Prisma, *build* Next.js (dengan alokasi 2GB RAM), proses *restart* peladen PM2 zero-downtime, persistensi konfigurasi `pm2 save`, serta health-check verifikasi port 3001.
 - **Manajemen Proses:** Node.js (Next.js) dijalankan menggunakan PM2 di belakang layar pada port internal (`localhost:3001` dengan mode `cluster` multi-core).
 
 ### 17.2 — Caddy Server & Otomatisasi SSL SaaS (On-Demand TLS)

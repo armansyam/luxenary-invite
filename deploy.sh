@@ -8,9 +8,18 @@ echo "🚀 Memulai proses deployment otomatis..."
 
 # 1. Tarik pembaruan terbaru dari repository
 echo "📦 Menarik pembaruan terbaru dari Git (origin main)..."
-git pull origin main || git pull || echo "⚠️ Git pull gagal atau ini bukan git repository. Melanjutkan proses..."
+# Buang perubahan minor otomatis pada package-lock.json akibat beda arsitektur OS agar tidak memblokir git pull
+git checkout -- package-lock.json 2>/dev/null || true
+if ! git pull origin main; then
+  echo "❌ Error: Gagal menarik perubahan terbaru dari Git origin main! Deployment dihentikan untuk mencegah corrupt build."
+  exit 1
+fi
 
-# 2. Setup Environment Variables
+# 2. Setup Direktori Runtime
+echo "📁 Menyiapkan direktori runtime..."
+mkdir -p logs public/uploads data/drafts
+
+# 3. Setup Environment Variables
 echo "⚙️ Memeriksa konfigurasi Environment Variables (.env)..."
 if [ ! -f .env ]; then
   echo "⚠️ File .env tidak ditemukan! Membuat otomatis dari .env.example..."
@@ -24,7 +33,6 @@ NEXTAUTH_SECRET=$(grep -E "^NEXTAUTH_SECRET=" .env | cut -d '=' -f2 | tr -d '"' 
 if [ -z "$AUTH_SECRET" ] || [ "$AUTH_SECRET" == '""' ]; then
   echo "🔐 Men-generate AUTH_SECRET baru yang aman..."
   NEW_SECRET=$(openssl rand -base64 32)
-  # Kompatibel untuk macOS dan Linux
   if [[ "$OSTYPE" == "darwin"* ]]; then
     sed -i '' "s|^AUTH_SECRET=.*|AUTH_SECRET=\"$NEW_SECRET\"|" .env
   else
@@ -71,31 +79,40 @@ if [ -z "$PIN_KEY" ] || [ "$PIN_KEY" == '""' ]; then
   fi
 fi
 
-# 3. Install Dependencies
+# 4. Install Dependencies
 echo "📦 Menginstal dependensi (npm install)..."
-npm install
+npm install --prefer-offline || npm install
 
-# 4. Database Setup
+# 5. Database Setup
 echo "🗄️ Sinkronisasi skema database (Prisma)..."
 npx prisma generate
 npx prisma migrate deploy || npx prisma db push
 
-# 5. Build Aplikasi Next.js
+# 6. Build Aplikasi Next.js
 echo "🏗️ Membangun (Build) aplikasi Next.js... (Ini mungkin memakan waktu)"
-NODE_OPTIONS="--max-old-space-size=1536" npm run build
+NODE_OPTIONS="--max-old-space-size=2048" npm run build
+if [ $? -ne 0 ]; then
+  echo "❌ Build Next.js gagal! PM2 tidak akan di-restart untuk menghindari down-time."
+  exit 1
+fi
 
-# 6. Restart Server
+# 7. Restart Server & Persist PM2
 echo "🔄 Merestart aplikasi..."
 if command -v pm2 &> /dev/null; then
   echo "✅ PM2 terdeteksi. Merestart aplikasi via ecosystem..."
+  pm2 reload ecosystem.config.js --update-env || pm2 start ecosystem.config.js
+  pm2 save
   
-  # Pastikan direktori logs untuk PM2 tersedia
-  mkdir -p logs
-  
-  # Jalankan atau reload zero-downtime berdasarkan ecosystem.config.js
-  pm2 reload ecosystem.config.js --update-env || pm2 start ecosystem.config.js || echo "⚠️ Gagal merestart PM2."
+  # Verifikasi port lokal 3001
+  echo "🩺 Melakukan health-check aplikasi lokal (port 3001)..."
+  sleep 3
+  if curl -s -f http://localhost:3001/api/public/themes > /dev/null 2>&1; then
+    echo "✅ Health check berhasil! Aplikasi merespons HTTP 200 di port 3001."
+  else
+    echo "⚠️ Peringatan: Health check lokal belum merespons instan. Cek logs dengan 'pm2 logs luxenary-invite'."
+  fi
 else
-  echo "⚠️ PM2 tidak terdeteksi di sistem ini. Jika server saat ini menyala, silakan restart manual (CTRL+C lalu 'npm run start')."
+  echo "⚠️ PM2 tidak terdeteksi di sistem ini. Silakan jalankan manual via 'npm run start'."
 fi
 
 echo "✨ Deployment selesai dengan sukses! Aplikasi Anda sudah yang paling mutakhir."

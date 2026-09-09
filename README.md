@@ -413,13 +413,18 @@ Admin Portal → Tab Tema → Klik "Sinkronisasi Tema"
 
 ---
 
-## Build Produksi
+## Build Produksi & Otomatisasi Deployment (VPS)
 
 ```bash
+# Opsi 1: Deployment Otomatis Lengkap (Direkomendasikan di VPS)
+chmod +x deploy.sh
+./deploy.sh
+
+# Opsi 2: Manual Build & Start
 npm run build
 npm run start
-# atau via PM2:
-pm2 start ecosystem.config.js
+# atau via PM2 cluster:
+pm2 reload ecosystem.config.js --update-env || pm2 start ecosystem.config.js
 ```
 
 ---
