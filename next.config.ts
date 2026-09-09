@@ -90,7 +90,18 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      // ── Aset sistem (brand logo, favicon, vector icons) ──
+      // ── Aset homepage (hero, mockup, showcase) — bisa diganti kapan saja tanpa rename ──
+      // no-cache: browser wajib tanya server setiap kali (via ETag/304), tidak pernah serve stale
+      {
+        source: "/assets/homepage/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "no-cache, must-revalidate",
+          },
+        ],
+      },
+      // ── Aset sistem lain (brand logo, favicon, vector icons) — tidak pernah berubah ──
       {
         source: "/assets/:path*",
         headers: [
