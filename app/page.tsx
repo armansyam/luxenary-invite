@@ -131,28 +131,7 @@ export default async function Home() {
       <div className="phone-card-hero phone-center-hero" id="hero-phone-center">
         {/* Dynamic Island */}
         <div className="hero-dynamic-island"></div>
-
-        {/* Authentic Digital Wedding Invitation UI */}
-        <div className="hero-inv-screen">
-          <div className="hero-inv-topbar">
-            <span className="hero-inv-eyebrow">THE WEDDING OF</span>
-            <div className="hero-inv-arch-box">
-              <img src="/assets/homepage/hero_mockup_badrika.webp" alt="Syahril &amp; Elyana" />
-            </div>
-          </div>
-          <div className="hero-inv-details">
-            <span className="hero-inv-initials">S &amp; E</span>
-            <h2 className="hero-inv-names">Syahril &amp; Elyana</h2>
-            <div className="hero-inv-rule"></div>
-            <span className="hero-inv-date">SABTU, 12 OKTOBER 2026</span>
-            <span className="hero-inv-loc">MAKASSAR · SULAWESI SELATAN</span>
-            <button className="hero-inv-btn" type="button" tabIndex={-1}>
-              <span>Buka Undangan</span>
-              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-            </button>
-          </div>
-        </div>
-
+        <img src="/assets/homepage/hero_mockup_badrika.webp" alt="Tema Badrika - Syahril &amp; Elyana" />
         {/* Specular Screen Glare */}
         <div className="screen-glare"></div>
       </div>

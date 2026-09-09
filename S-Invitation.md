@@ -634,3 +634,15 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
      - Menghadirkan umpan balik taktil modern setara standar industri tanpa library eksternal berlebih.
 4. **Direct Action Chips Terpadu (Anti-Card Clutter):**
    - Notifikasi foto yang belum lengkap diintegrasikan langsung ke dalam kartu switcher ini sebagai action chips ringkas (`⚠️ Perlu: [ + Sampul ] [ + Foto Mempelai ]`), mengeliminasi kartu bertingkat dan menghemat ruang vertikal secara signifikan.
+
+---
+
+## 19. Homepage Hero Showcase & Standarisasi Aset Visual WebP (< 200 KB)
+1. **Full-Bleed iPhone 16 Pro Mockup Hero:**
+   - Mockup ponsel utama (`.phone-center-hero`) diselaraskan menjadi *full-bleed screenshot* murni berlayar penuh (`object-fit: cover; object-position: center top;`), menghilangkan kontainer kubah kaku (`.hero-inv-arch-box`) dan teks HTML duplikat.
+   - Tetap mempertahankan bezel titanium mewah, Dynamic Island melayang di posisi atas (`z-index: 8`), serta lapisan kaca pantulan specular glare (`z-index: 3`).
+2. **Standarisasi Bobot Aset WebP (< 200 KB) & Algoritma Penajaman (*Sharpening*):**
+   - Seluruh aset visual beresolusi tinggi dioptimasi ke format WebP dengan batas dimensi Retina 2048px dan unsharp mask sharpening (`sharp.sharpen()`) untuk menjaga kejernihan mikro-kontras foto mempelai dan ornamen tema.
+   - Bobot gambar ditekan 100% di bawah 200 KB guna menjamin Largest Contentful Paint (LCP) Google Core Web Vitals < 2.5 detik pada jaringan seluler 4G/5G serta mencegah crash memori pada browser iOS Safari.
+3. **Sinkronisasi Otomatis Thumbnail Demo Showroom:**
+   - Aset thumbnail mode portrait (iPad Mini 3:4 Retina, 1536×2048 px) dan widescreen desktop (16:9 Retina, 2048×1152 px) disinkronkan langsung ke direktori publik `/demo/[theme]/` (`thumbnail_mobile.webp` dan `thumbnail_desktop.webp`).

@@ -1807,3 +1807,18 @@ Untuk memberikan pengalaman interaktif penuh bagi calon klien sebelum memesan pa
    - Notifikasi kelengkapan foto personal yang sebelumnya menjadi kartu amber mandiri bertumpuk telah dipindahkan ke dalam kartu switcher ini sebagai *Direct Action Chips* ringkas di sisi kanan.
    - Mengeliminasi kata pengantar panjang ("Foto belum lengkap: ...") menjadi format langsung aksi: `⚠️ Perlu: [ + Sampul ] [ + Foto Mempelai ]`.
    - Di desktop sejajar 1 baris di kanan switcher (`sm:justify-end`). Di mobile menjadi baris kedua ringkas di dalam kartu yang sama (`border-t border-stone-100 pt-2`), memangkas tinggi vertikal layar dan mengeliminasi tumpukan kartu yang berlebihan.
+
+---
+
+### 21.0 — Homepage Hero Device Mockup Architecture & WebP Asset Standardization (< 200 KB)
+
+1. **Full-Bleed Realistic Phone Mockup (`.phone-center-hero`):**
+   - Menggantikan implementasi hybrid kubah semi-HTML (`.hero-inv-arch-box`) dengan arsitektur *full-bleed screenshot* murni (`width: 100%; height: 100%; object-fit: cover; object-position: center top;`).
+   - Melindungi desain dari desinkronisasi tampilan saat pengguna memasukkan gambar tangkapan layar tema utuh, mengeliminasi teks ganda dan kubah di dalam kubah.
+   - Tetap mempertahankan arsitektur frame iPhone 16 Pro CSS: bodi Titanium, Dynamic Island (`z-index: 8`), dan lapisan kilau kaca Specular Glare (`z-index: 3`).
+2. **Standarisasi Aset Visual WebP (< 200 KB):**
+   - Resolusi aset gambar kamera mentah (hingga 6000×4000 px / 11 MB) di-downsample adaptif ke dimensi batas 2K/Retina (maksimal 2048 px) dan dikompresi dengan WebP effort 6 serta unsharp mask filter (`sharp.sharpen({ sigma: 1.0, m1: 0.75, m2: 2.0 })`).
+   - Ukuran seluruh file berada di bawah ambang batas aman 200 KB (sweet spot 40–195 KB) untuk menjamin metrik Largest Contentful Paint (LCP) < 2.5s dan mencegah memori render crash pada Safari iOS.
+3. **Sinkronisasi Otomatis Thumbnail Demo Showroom:**
+   - Aset thumbnail mode portrait (iPad Mini 3:4 Retina, 1536×2048 px) dan widescreen desktop (16:9 Retina, 2048×1152 px) disinkronkan langsung ke direktori publik `/demo/[theme]/` (`thumbnail_mobile.webp` dan `thumbnail_desktop.webp`).
+
