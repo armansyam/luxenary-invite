@@ -1689,6 +1689,7 @@ export async function composeTemplateData(invitationId: string) {
     landingCoverDesktopUrl: coverDesktopUrl,
     hasCustomCoverDesktop: Boolean(mediaMap.get("LANDING_COVER_DESKTOP")),
     homePhotoUrl: homePhotoUrl,
+    homePhotoCssUrl: customHomePhoto || "",
     hasCustomHomePhoto: Boolean(customHomePhoto),
     customHomePhoto: customHomePhoto,
     closingPhotoUrl: closingPhotoUrl,

@@ -27,7 +27,7 @@ Sistem template undangan menggunakan arsitektur HTML multi-layer mandiri dengan 
 4. **Artisan (`themes/premium/artisan.html`)**
    - Estetika tipografi atelier kontemporer dengan palet monokromatik hangat.
    - Transisi foto asimetris dan galeri grid editorial dinamis.
-   - Multi-Layer Visual Slots: Layar Sampul Fullscreen Global Desktop, Fixed Parallax Background Layer (`globalBgUrl`), Seksi Pembuka Khusus (`homePhotoUrl`), dan Penutup Adaptif Full-Height (`closingPhotoUrl`).
+   - Multi-Layer Visual Slots: Layar Sampul Fullscreen Global Desktop, Fixed Parallax Background Layer (`globalBgUrl`), Seksi Pembuka Khusus (`homePhotoCssUrl`), dan Penutup Adaptif Full-Height (`closingPhotoUrl`).
 
 ### B. Traditional Series (`themes/traditional/`)
 1. **Prameswari (`themes/traditional/prameswari.html`)**
@@ -50,7 +50,7 @@ Sistem template undangan menggunakan arsitektur HTML multi-layer mandiri dengan 
    - Mengusung keanggunan Pawikahan Ageng Keraton Jawi dengan dukungan penuh Dynamic Kraton Heritage Palette (`--jawa-gold`, `--jawa-gold-light`, `--jawa-dark`, `--jawa-card`, `--jawa-border`) berbasis `:root` tokens dan `color-mix(...)` selaras Candani.
    - Mengadopsi kanvas `.fixed-bg-layer` anti-lag iOS yang terkunci di dalam kolom layout wrapper 460px (tidak bocor ke background desktop).
    - Discrete Parents Architecture (`{{firstParentPrefix}}`, `{{firstFather}}`, `{{firstMother}}`, `{{secondParentPrefix}}`, `{{secondFather}}`, `{{secondMother}}`) lengkap dengan frame lengkung Jawa dan inisial monogram melayang.
-   - Identifikasi seksi pembuka menggunakan ID `#home` yang kompatibel penuh dengan injeksi template engine (`homePhotoUrl`).
+   - Identifikasi seksi pembuka menggunakan ID `#home` yang kompatibel penuh dengan injeksi template engine (`homePhotoCssUrl` untuk kanvas bersih tanpa fallback tekstur jika kosong).
    - Integrasi seksi kisah `#story` (`{{storyItemsHtml}}`), ornamen pembatas kraton SVG murni tanpa emoji OS, Smart Bottom Dock dengan audio toggle terintegrasi (`luxToggleAudio()`), serta modal voucher souvenir QR (`#modalBg`).
    - Terpasang atribut `data-lux-field` lengkap untuk mendukung pengalaman Live Visual Studio Click-to-Edit.
 
@@ -63,7 +63,7 @@ Sistem template undangan menggunakan arsitektur HTML multi-layer mandiri dengan 
 3. **Ameera (`themes/modern/ameera.html`)**
    - Tipografi minimalis modern dengan layout kartu bersih dan palet dusty rose.
 4. **Chronicle (`themes/modern/chronicle.html`)**
-   - Gaya jurnal editorial majalah eksklusif dengan tipografi Times-style masthead. Mengusung struktur slot visual presisi: Dynamic Desktop Sidebar (`{{sidebarPhotoUrl}}`), Cover Pop-up (`{{landingCoverUrl}}`), Slide Hero Pembuka Editorial `#home` (`{{homePhotoUrl}}`), dan Wallpaper Kanvas `.fixed-bg-layer` yang fokus presisi di kolom undangan 460px (`{{globalBgUrl}}`).
+   - Gaya jurnal editorial majalah eksklusif dengan tipografi Times-style masthead. Mengusung struktur slot visual presisi: Dynamic Desktop Sidebar (`{{sidebarPhotoUrl}}`), Cover Pop-up (`{{landingCoverUrl}}`), Slide Hero Pembuka Editorial `#home` (`{{homePhotoCssUrl}}`), dan Wallpaper Kanvas `.fixed-bg-layer` yang fokus presisi di kolom undangan 460px (`{{globalBgUrl}}`). Kanvas Home bersih tanpa menimpa foto tekstur demo saat slot dikosongkan.
 5. **Lumina (`themes/modern/lumina.html`)**
    - Pencahayaan prisma lembut (*soft glow lens flares*) dengan layout ultra-modern.
 6. **Solaria (`themes/modern/solaria.html`)**

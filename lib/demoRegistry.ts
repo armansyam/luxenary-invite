@@ -1962,11 +1962,13 @@ export function composeDemoTemplateData(
     ? customClosing 
     : (localFooterExists ? `/demo/${demo.themeId}/footer.webp` : "");
 
-  // Home Photo
+  // Home Photo: Prioritaskan foto spesifik tema atau kustom studio. Jika kosong, biarkan kosong tanpa fallback ke global background.
   const customHome = (customData as any)?.homePhotoUrl;
-  const effectiveHomePhoto = customHome !== undefined 
-    ? customHome 
-    : (localHomeExists ? `/demo/${demo.themeId}/home.webp` : demo.globalBgUrl);
+  const specificHomePhoto = customHome !== undefined 
+    ? (customHome || "") 
+    : (localHomeExists ? `/demo/${demo.themeId}/home.webp` : (demo.homePhotoUrl || ""));
+  const effectiveHomePhoto = specificHomePhoto || demo.globalBgUrl;
+  const homeCssPhoto = specificHomePhoto ? withV(specificHomePhoto) : "";
 
   const defaultCanonExists = fs.existsSync(path.join(process.cwd(), "public", "music", "canon-in-d.ogg"));
   const fallbackSong = defaultCanonExists ? "/music/canon-in-d.ogg" : (fs.existsSync(path.join(process.cwd(), "public", "music", "bermuara.mp3")) ? "/music/bermuara.mp3" : "");
@@ -2038,7 +2040,8 @@ export function composeDemoTemplateData(
     // Exact Standardized Local Assets
     globalBgUrl: effectiveGlobalBg,
     homePhotoUrl: effectiveHome,
-    hasCustomHomePhoto: Boolean(effectiveHomePhoto),
+    homePhotoCssUrl: homeCssPhoto,
+    hasCustomHomePhoto: Boolean(specificHomePhoto),
     footerPhotoUrl: effectiveFooter,
     groomPhotoUrl: effectiveGroom,
     bridePhotoUrl: effectiveBride,
