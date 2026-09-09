@@ -43,7 +43,8 @@ export async function POST(req: NextRequest) {
       snapshot: result,
     });
   } catch (error: any) {
-    return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal membuat snapshot database" : (error.message || "Gagal membuat snapshot database") }, { status: 500 });
+    console.error("[Database Backup Error]", error);
+    return NextResponse.json({ error: error.message || "Gagal membuat snapshot database" }, { status: 500 });
   }
 }
 

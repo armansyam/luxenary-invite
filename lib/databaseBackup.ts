@@ -1,10 +1,11 @@
 import path from "path";
 import fs from "fs";
 import { prisma } from "@/lib/prisma";
-import { exec } from "child_process";
+import { exec, execFile } from "child_process";
 import { promisify } from "util";
 
 const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 export interface SnapshotItem {
   filename: string;
@@ -57,6 +58,29 @@ export async function getActiveDbUrl(): Promise<string> {
   return url;
 }
 
+// Bersihkan URL database agar kompatibel dengan PostgreSQL CLI (pg_dump & pg_restore)
+// Prisma menambahkan parameter seperti ?schema=public&connection_limit=... yang ditolak oleh libpq
+export function getLibpqDbUrl(rawUrl: string): string {
+  try {
+    const parsed = new URL(rawUrl);
+    const NON_LIBPQ_PARAMS = [
+      "schema",
+      "connection_limit",
+      "pool_timeout",
+      "connect_timeout",
+      "socket_timeout",
+      "statement_cache_size",
+      "pgbouncer",
+    ];
+    for (const param of NON_LIBPQ_PARAMS) {
+      parsed.searchParams.delete(param);
+    }
+    return parsed.toString();
+  } catch {
+    return rawUrl;
+  }
+}
+
 // Buat snapshot database instan
 export async function createDatabaseSnapshot(customLabel?: string): Promise<{ filename: string; sizeBytes: number; sizeFormatted: string; path: string }> {
   let backupPathSetting: string | undefined;
@@ -66,7 +90,8 @@ export async function createDatabaseSnapshot(customLabel?: string): Promise<{ fi
   } catch {}
 
   const backupDir = await getBackupDirectory(backupPathSetting);
-  const activeDbUrl = await getActiveDbUrl();
+  const rawDbUrl = await getActiveDbUrl();
+  const libpqDbUrl = getLibpqDbUrl(rawDbUrl);
 
   // Format penamaan: snapshot_{YYYY-MM-DD_HH-mm-ss}_{label}.sql
   const now = new Date();
@@ -78,9 +103,10 @@ export async function createDatabaseSnapshot(customLabel?: string): Promise<{ fi
 
   // Jalankan pg_dump untuk membackup database
   try {
-    await execAsync(`pg_dump "${activeDbUrl}" -F c -f "${targetPath}"`);
+    await execFileAsync("pg_dump", [libpqDbUrl, "-F", "c", "-f", targetPath]);
   } catch (error: any) {
-    throw new Error(`Gagal membuat backup PostgreSQL: ${error.message}`);
+    const detail = error.stderr ? String(error.stderr).trim() : (error.message || String(error));
+    throw new Error(`Gagal membuat backup PostgreSQL: ${detail}`);
   }
 
   const stat = await fs.promises.stat(targetPath);
@@ -164,12 +190,14 @@ export async function restoreDatabaseSnapshot(filename: string): Promise<{ succe
   const safety = await createDatabaseSnapshot("pre_restore");
 
   // 2. Timpa database aktif dengan file snapshot menggunakan pg_restore
-  const activeDbUrl = await getActiveDbUrl();
+  const rawDbUrl = await getActiveDbUrl();
+  const libpqDbUrl = getLibpqDbUrl(rawDbUrl);
   try {
     // Kita hapus database dulu dan buat ulang (secara clean) atau timpa menggunakan pg_restore -c
-    await execAsync(`pg_restore --clean --if-exists -d "${activeDbUrl}" "${snapshotPath}"`);
+    await execFileAsync("pg_restore", ["--clean", "--if-exists", "-d", libpqDbUrl, snapshotPath]);
   } catch (error: any) {
-    throw new Error(`Gagal mengembalikan backup PostgreSQL: ${error.message}`);
+    const detail = error.stderr ? String(error.stderr).trim() : (error.message || String(error));
+    throw new Error(`Gagal mengembalikan backup PostgreSQL: ${detail}`);
   }
 
   return {
