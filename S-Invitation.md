@@ -219,7 +219,7 @@ Sistem Studio Editor Klien (`/dashboard/invitation/[id]`) menyediakan kendali kr
 2. **Optimasi Gambar Otomatis (`sharp`):**
    - Konversi otomatis ke WebP, kompresi cerdas, auto-rotate EXIF, dan sharpening mikro.
 3. **Pipeline Video Loop Sinematik (`FFmpeg`):**
-   - Dukungan video background loop untuk `LANDING_COVER` (Cover pembuka), `DESKTOP_SIDEBAR` (Hero desktop), dan `GLOBAL_FIXED_BG` (Latar kartu).
+   - Dukungan video background loop untuk `LANDING_COVER` (Cover HP portrait 9:16), `LANDING_COVER_DESKTOP` (Cover desktop landscape 16:9 fullscreen), `DESKTOP_SIDEBAR` (Hero desktop), dan `GLOBAL_FIXED_BG` (Latar kartu).
    - Format input: MP4, MOV (kamera iPhone), WebM.
    - Pemotongan otomatis maksimal 20 detik pertama (`-t 20`).
    - **True Seamless Crossfade Looping:** Menggunakan filter `xfade` (0.6s–1.2s) yang memadukan ekor video dengan kepala video secara transparan sehingga frame awal dan akhir 100% identik, menghasilkan pengulangan video mulus tanpa jump-cut patah.
@@ -227,24 +227,29 @@ Sistem Studio Editor Klien (`/dashboard/invitation/[id]`) menyediakan kendali kr
    - Pembatasan frame rate ke 30 fps (`-r 30`) untuk efisiensi GPU dan memberikan efek gerak sinematik filmis.
    - Proteksi ukuran file berlapis: maks. 30MB untuk video dan 15MB untuk foto.
    - Rendering engine otomatis menyuntikkan tag HTML5 `<video class="..." autoplay loop muted playsinline webkit-playsinline>` dengan overlay gradasi kontras tinggi.
-4. **Cloudflare Edge Caching & Wildcard Subdomain:**
+4. **Arsitektur Dual Cover Responsif (Mobile 9:16 vs Desktop 16:9 Fullscreen Override):**
+   - **Mobile (< 900px):** Selalu menggunakan `LANDING_COVER` (rasio portrait 9:16) sebagai pop-up sampul pembuka layar HP.
+   - **Desktop (≥ 900px):** Menggunakan `LANDING_COVER_DESKTOP` (rasio landscape 16:9). Jika slot desktop tidak diunggah, sistem otomatis beralih (*graceful fallback*) ke `LANDING_COVER` bawaan.
+   - **Universal Fullscreen Override:** Pada tema dengan layout panel-terbatas (seperti Badrika, Candani, Mayang, Solaria, Lumina, Chronicle) yang secara bawaan membatasi cover pada kartu fixed 460px, saat `LANDING_COVER_DESKTOP` aktif, sistem otomatis menyuntikkan CSS override `@media (min-width: 900px)` yang memposisikan cover menjadi fullscreen fixed 100vw/100vh di seluruh monitor tanpa mengubah kartu undangan di dalamnya.
+5. **Cloudflare Edge Caching & Wildcard Subdomain:**
    - Subdomain otomatis `*.luxenary.id` (contoh: `dimas-clarissa.luxenary.id`).
    - Cache statis dengan `Cache-Control: public, max-age=31536000, immutable`.
    - Beban server 0% dan loading instan di HP tamu.
-5. **Isolasi Seksi Home (`HOME_PHOTO`) & Container Flush Alignment:**
+6. **Isolasi Seksi Home (`HOME_PHOTO`) & Container Flush Alignment:**
    - Slot `HOME_PHOTO` ("Latar Belakang Home (Opsional)") terinjeksi mandiri pada Seksi 1 (`.slide-opening#home`) dengan gradient overlay pelindung teks judul dan kutipan.
    - Jika slot kosong, seksi Home tetap transparan memperlihatkan latar belakang fixed global (video loop atau foto kanvas).
    - Eliminasi total celah bawah (*gap*) 90px/110px di bawah footer `.site-footer` melalui `public/css/modules.css` dan `renderTemplate.ts`, serta pendaftaran `footer, .site-footer, .closing-sec` ke CSS Scroll Snap (`scroll-snap-align: start; scroll-snap-stop: always;`) di `fonts.css` & `modules.css` sehingga footer 100vh menutup rapat ke dasar layar (*flush to bottom*) dan mengunci (*snap*) presisi tanpa memantul balik ke atas.
-6. **Sinkronisasi Audio Otomatis & Gerbang Tombol Buka Undangan:**
+7. **Sinkronisasi Audio Otomatis & Gerbang Tombol Buka Undangan:**
    - Pemutaran musik latar disinkronkan langsung dengan tombol pembuka cover undangan (`.btn-buka`, `.btn-buka-undangan`, `.cover-btn-open`, dll.) sebagai *trusted user gesture* resmi browser.
    - Jembatan ID dinamis (`luxAudioPlayer`, `bgAudio`, `weddingAudio`) memastikan kompatibilitas penuh seluruh tema tanpa kegagalan audio null.
    - Dilengkapi fallback interaksi sentuhan pertama pasca cover terbuka dan isolasi otomatis untuk mencegah kebocoran audio pada pratinjau kartu katalog.
-7. **Penyimpanan Media Klien & Standarisasi Deterministik (Zero Disk Waste):**
+8. **Penyimpanan Media Klien & Standarisasi Deterministik (Zero Disk Waste):**
    - **Mode Draft 100% Fully Local:** Selama status undangan masih `DRAFT`, semua upload media (foto, video, musik) dipaksa disimpan di disk lokal VPS (`public/uploads/invitations/[id]/`) untuk menghemat biaya operasional API Write R2 dan mencegah akumulasi sampah dari draft coba-coba/batal.
    - **Dynamic Uploads Route Handler:** Seluruh aset `/uploads/*` disajikan secara dinamis via `app/uploads/[...path]/route.ts` dengan dukungan MIME types, cache-control, dan HTTP 206 Partial Content range streaming untuk video/audio sehingga tidak tertahan oleh freeze static manifest Next.js di mode produksi.
    - **Penamaan Deterministik Tanpa Date.now Fisik:** Seluruh slot memiliki nama file fisik tetap (misal `wedding-song.mp3`, `landing-cover.webp`, `home-photo.mp4`). Penggantian media kapan saja akan menimpa (*clean overwrite*) file lama secara otomatis tanpa penumpukan file yatim (*orphaned files*).
    - **Bust Cache via Query Parameter:** Cache browser diatasi pada level URL publik (`?t=${Date.now()}`), menjamin audio/video dan foto selalu ter-refresh seketika tanpa mengubah nama file fisik di storage.
    - **Migrasi ke R2 Saat Publish:** Fungsi `syncDraftToR2` memigrasikan seluruh media lokal ke Cloudflare R2 secara otomatis saat undangan diterbitkan.
+   - **Invarian Pembersihan Total (Full Cleanup Invariant):** Saat undangan dihapus (misal via penghapusan klien di `DELETE /api/admin/users`), sistem wajib melakukan pembersihan 3 lapis: (1) `deletePublishedHtml` menghapus file canonical `public/published/ids/[id].html`, (2) menghapus file draft lokal `data/drafts/[id].html` jika ada, dan (3) menghapus direktori fisik `public/uploads/invitations/[id]/` secara rekursif (`rm -rf`). Salinan portofolio tidak terganggu karena telah disalin mandiri (*full static clone*) ke foldernya sendiri.
 
 ---
 

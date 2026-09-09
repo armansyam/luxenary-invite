@@ -1191,9 +1191,11 @@ export async function renderTemplateFile(
     }
   }
 
-  // Video Background Support (Landing Cover, Desktop Sidebar, Global Fixed BG)
+  // Video Background Support (Landing Cover, Landing Cover Desktop, Desktop Sidebar, Global Fixed BG)
   let videoStyles = "";
   let coverVideoHtml = "";
+  let coverDesktopVideoHtml = "";
+  let coverDesktopCssStyle = "";
   let sidebarVideoHtml = "";
   let fixedBgVideoHtml = "";
 
@@ -1211,11 +1213,11 @@ export async function renderTemplateFile(
         z-index: 0;
         pointer-events: none;
       }
-      .cover-screen, #coverScreen {
+      .cover-screen, #coverScreen, .cover-overlay, #coverOverlay {
         background-image: none !important;
         overflow: hidden !important;
       }
-      .cover-screen::before, #coverScreen::before {
+      .cover-screen::before, #coverScreen::before, .cover-overlay::before, #coverOverlay::before {
         content: '';
         position: absolute;
         inset: 0;
@@ -1223,7 +1225,7 @@ export async function renderTemplateFile(
         z-index: 1;
         pointer-events: none;
       }
-      .cover-screen > *:not(.lux-cover-video), #coverScreen > *:not(.lux-cover-video) {
+      .cover-screen > *:not(.lux-cover-video), #coverScreen > *:not(.lux-cover-video), .cover-overlay > *:not(.lux-cover-video), #coverOverlay > *:not(.lux-cover-video) {
         position: relative;
         z-index: 2;
       }
@@ -1231,6 +1233,105 @@ export async function renderTemplateFile(
         text-shadow: 0 4px 20px rgba(0,0,0,0.85) !important;
       }
     `;
+  }
+
+  // Desktop Cover — diinjeksikan sebagai layer kedua via @media (min-width: 900px)
+  // Hanya muncul di layar desktop, TIDAK mengganggu tampilan mobile
+  const hasDesktopCover = data.hasCustomCoverDesktop
+    ? Boolean(data.landingCoverDesktopUrl)
+    : Boolean(data.landingCoverDesktopUrl && data.landingCoverDesktopUrl !== data.landingCoverUrl);
+
+  if (hasDesktopCover) {
+    if (isVideoMedia(data.landingCoverDesktopUrl)) {
+      const safeDesktopVideo = escapeHtmlAttr(String(data.landingCoverDesktopUrl));
+      coverDesktopVideoHtml = `<video class="lux-cover-desktop-video" autoplay loop muted playsinline webkit-playsinline preload="auto"><source src="${safeDesktopVideo}" type="video/mp4"></video>`;
+      videoStyles += `
+      /* Desktop Cover Video (Landscape 16:9) — hanya tampil di ≥900px */
+      .lux-cover-desktop-video {
+        display: none;
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center center;
+        z-index: 0;
+        pointer-events: none;
+      }
+      @media (min-width: 900px) {
+        /* FULLSCREEN OVERRIDE — override constraint 460px dari tema panel-terbatas */
+        .cover-screen, .cover-overlay, #coverScreen, #coverOverlay {
+          position: fixed !important;
+          inset: 0 !important;
+          width: 100vw !important;
+          left: 0 !important;
+          right: 0 !important;
+          max-width: none !important;
+        }
+        .lux-cover-desktop-video {
+          display: block;
+        }
+        /* Sembunyikan mobile cover video di desktop jika ada desktop video */
+        .lux-cover-video {
+          display: none;
+        }
+        .cover-screen, #coverScreen, .cover-overlay, #coverOverlay {
+          background-image: none !important;
+          overflow: hidden !important;
+        }
+        .cover-screen::before, #coverScreen::before, .cover-overlay::before, #coverOverlay::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(to bottom, rgba(7,7,9,0.22) 0%, rgba(7,7,9,0.04) 30%, rgba(7,7,9,0.20) 65%, rgba(7,7,9,0.60) 100%);
+          z-index: 1;
+          pointer-events: none;
+        }
+        .cover-screen > *:not(.lux-cover-desktop-video):not(.lux-cover-video), #coverScreen > *:not(.lux-cover-desktop-video):not(.lux-cover-video), .cover-overlay > *:not(.lux-cover-desktop-video):not(.lux-cover-video), #coverOverlay > *:not(.lux-cover-desktop-video):not(.lux-cover-video) {
+          position: relative;
+          z-index: 2;
+        }
+        .cover-names, .cover-title {
+          text-shadow: 0 4px 20px rgba(0,0,0,0.85) !important;
+        }
+      }
+    `;
+    } else {
+      // Desktop Cover Photo (Landscape) — override background-image via CSS @media
+      // + FULLSCREEN OVERRIDE untuk tema yang membatasi cover ke panel kanan 460px
+      const safeDesktopPhoto = sanitizeCssUrl(String(data.landingCoverDesktopUrl));
+      if (safeDesktopPhoto) {
+        coverDesktopCssStyle = `
+<style>
+  @media (min-width: 900px) {
+    /* FULLSCREEN OVERRIDE — override constraint 460px dari tema panel-terbatas */
+    .cover-screen, .cover-overlay, #coverScreen, #coverOverlay {
+      position: fixed !important;
+      inset: 0 !important;
+      width: 100vw !important;
+      left: 0 !important;
+      right: 0 !important;
+      max-width: none !important;
+    }
+    .cover-screen, #coverScreen {
+      background-image: linear-gradient(to bottom, rgba(7,7,9,0.2) 0%, rgba(7,7,9,0.0) 25%, rgba(7,7,9,0.55) 60%, rgba(7,7,9,0.92) 100%), url('${safeDesktopPhoto}') !important;
+      background-size: cover !important;
+      background-position: center center !important;
+      background-repeat: no-repeat !important;
+    }
+    .cover-overlay, #coverOverlay {
+      background-image: linear-gradient(to bottom, rgba(7,7,9,0.2) 0%, rgba(7,7,9,0.0) 25%, rgba(7,7,9,0.55) 60%, rgba(7,7,9,0.92) 100%), url('${safeDesktopPhoto}') !important;
+      background-size: cover !important;
+      background-position: center center !important;
+      background-repeat: no-repeat !important;
+    }
+    .cover-names, .cover-title {
+      text-shadow: 0 4px 20px rgba(0,0,0,0.85) !important;
+    }
+  }
+</style>`;
+      }
+    }
   }
 
   if (isVideoMedia(data.sidebarPhotoUrl)) {
@@ -1362,6 +1463,14 @@ export async function renderTemplateFile(
 
   if (coverVideoHtml) {
     tpl = tpl.replace(/(<div[^>]*class="[^"]*\b(cover-screen|cover-overlay)\b[^"]*"[^>]*>)/i, `$1\n    ${coverVideoHtml}`);
+  }
+  // Inject desktop cover video AFTER mobile cover video (layered inside cover-screen)
+  if (coverDesktopVideoHtml) {
+    tpl = tpl.replace(/(<div[^>]*class="[^"]*\b(cover-screen|cover-overlay)\b[^"]*"[^>]*>)/i, `$1\n    ${coverDesktopVideoHtml}`);
+  }
+  // Inject desktop cover CSS (foto landscape) sebelum closing </head>
+  if (coverDesktopCssStyle) {
+    tpl = tpl.replace(/(<\/head>)/i, `${coverDesktopCssStyle}\n$1`);
   }
   if (sidebarVideoHtml) {
     tpl = tpl.replace(/(<div[^>]*class="[^"]*\bleft-hero\b[^"]*"[^>]*>)/i, `$1\n    ${sidebarVideoHtml}`);

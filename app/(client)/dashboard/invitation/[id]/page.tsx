@@ -1783,11 +1783,11 @@ export default function EditInvitation() {
           <div className="p-5 sm:p-7 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <PhotoInput
-                label="Landing Cover (Pop-Up)"
-                desc="Foto atau Video vertikal pembuka saat tamu klik 'Buka Undangan'"
+                label="Cover Pembuka Mobile — Portrait 9:16"
+                desc="Foto/Video PORTRAIT (9:16) — Cover pop-up saat tamu buka undangan di HP. Idealnya foto kepala-kaki 9:16 atau 4:5."
                 value={media["LANDING_COVER"] || ""}
                 onChange={(url) => updateMedia("LANDING_COVER", url)}
-                placeholder="https://.../cover-popup.jpg atau .mp4"
+                placeholder="https://.../cover-mobile.jpg atau .mp4"
                 allowVideo={true}
                 invitationId={invitationId}
                 slot="LANDING_COVER"
@@ -1795,8 +1795,20 @@ export default function EditInvitation() {
                 onUploadEnd={handleUploadEnd}
               />
               <PhotoInput
-                label="Latar Belakang Home (Opsional)"
-                desc="Foto atau Video di seksi pembuka setelah sampul dibuka. Jika kosong, otomatis menggunakan kanvas atau warna latar bawaan tema."
+                label="Cover Pembuka Desktop — Landscape 16:9 (Opsional)"
+                desc="Foto/Video LANDSCAPE (16:9) — Cover pop-up khusus layar PC/Laptop fullscreen. Jika kosong, otomatis pakai Cover Mobile."
+                value={media["LANDING_COVER_DESKTOP"] || ""}
+                onChange={(url) => updateMedia("LANDING_COVER_DESKTOP", url)}
+                placeholder="https://.../cover-desktop.jpg atau .mp4"
+                allowVideo={true}
+                invitationId={invitationId}
+                slot="LANDING_COVER_DESKTOP"
+                onUploadStart={handleUploadStart}
+                onUploadEnd={handleUploadEnd}
+              />
+              <PhotoInput
+                label="Latar Home — Portrait/Square (Opsional)"
+                desc="Foto/Video PORTRAIT atau SQUARE — Background seksi pembuka setelah undangan dibuka. Jika kosong, pakai kanvas bawaan tema."
                 value={media["HOME_PHOTO"] || ""}
                 onChange={(url) => updateMedia("HOME_PHOTO", url)}
                 placeholder="https://.../home-bg.jpg atau .mp4"
@@ -1807,11 +1819,11 @@ export default function EditInvitation() {
                 onUploadEnd={handleUploadEnd}
               />
               <PhotoInput
-                label="Desktop Sidebar (70% Kiri)"
-                desc="Foto landscape atau Video vertikal layar lebar desktop (Opsional)"
+                label="Hero Kiri Desktop — Bebas (Opsional)"
+                desc="Foto/Video BEBAS (square, landscape, portrait) — Panel kiri layar lebar. Ukuran panel = sisa layar setelah 460px kartu undangan di kanan. Semua rasio foto otomatis menyesuaikan tanpa distorsi."
                 value={media["DESKTOP_SIDEBAR"] || ""}
                 onChange={(url) => updateMedia("DESKTOP_SIDEBAR", url)}
-                placeholder="https://.../sidebar-desktop.jpg atau .mp4"
+                placeholder="https://.../sidebar-hero.jpg atau .mp4"
                 allowVideo={true}
                 invitationId={invitationId}
                 slot="DESKTOP_SIDEBAR"
@@ -1819,8 +1831,8 @@ export default function EditInvitation() {
                 onUploadEnd={handleUploadEnd}
               />
               <PhotoInput
-                label="Media Penutup (Footer - Opsional)"
-                desc="Foto atau Video background di seksi penutup undangan. Jika kosong, otomatis menggunakan desain penutup asli tema."
+                label="Penutup / Footer — Portrait/Square (Opsional)"
+                desc="Foto/Video PORTRAIT atau SQUARE — Background seksi penutup undangan. Jika kosong, pakai desain penutup bawaan tema."
                 value={media["CLOSING_COVER"] || ""}
                 onChange={(url) => updateMedia("CLOSING_COVER", url)}
                 placeholder="https://.../closing.jpg atau .mp4"
@@ -1831,8 +1843,8 @@ export default function EditInvitation() {
                 onUploadEnd={handleUploadEnd}
               />
               <PhotoInput
-                label="Global Fixed Background (Opsional)"
-                desc="Foto atau Video latar belakang kanvas di balik kartu undangan. Jika kosong, otomatis menggunakan wallpaper atau warna asli tema."
+                label="Latar Belakang Global — Portrait/Bebas (Opsional)"
+                desc="Foto/Video PORTRAIT atau bebas — Fixed canvas di balik seluruh kartu undangan. Jika kosong, pakai wallpaper/warna bawaan tema."
                 value={media["GLOBAL_FIXED_BG"] || ""}
                 onChange={(url) => updateMedia("GLOBAL_FIXED_BG", url)}
                 placeholder="https://.../fixed-bg.jpg atau .mp4"
@@ -1843,26 +1855,34 @@ export default function EditInvitation() {
                 onUploadEnd={handleUploadEnd}
               />
 
-              {/* Panduan Media Visual & Rekomendasi Video Loop */}
+              {/* Panduan Orientasi & Format Media Visual */}
               <div className="md:col-span-3 p-4 rounded-xl border border-stone-200/90 bg-stone-50/80 text-stone-700 text-xs space-y-2">
                 <div className="flex items-center gap-2 text-stone-900 font-semibold">
                   <svg className="w-4 h-4 text-amber-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span>Panduan & Rekomendasi Media Visual Undangan</span>
+                  <span>Panduan Orientasi &amp; Format Media Visual</span>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-[11px] text-stone-600 pt-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-[11px] text-stone-600 pt-1">
                   <div className="p-2.5 bg-white rounded-lg border border-stone-200/70">
-                    <span className="font-bold text-stone-800 block mb-0.5">Format & Kompatibilitas</span>
-                    Foto: JPG, PNG, WebP (maks 15 MB). Video: MP4, MOV (iPhone), WebM (maks 30 MB).
+                    <span className="font-bold text-stone-800 block mb-1">Cover Mobile — Portrait 9:16</span>
+                    <span className="font-semibold text-amber-700">Cover Pembuka Mobile</span> — foto/video vertikal fullscreen layar ponsel. Idealnya foto prewedding portrait 9:16 atau 4:5.
                   </div>
                   <div className="p-2.5 bg-white rounded-lg border border-stone-200/70">
-                    <span className="font-bold text-stone-800 block mb-0.5">Rekomendasi Durasi Video</span>
-                    Ideal 10–20 detik (mode loop sinematik tanpa audio). Durasi di atas 20 detik dipotong otomatis oleh sistem.
+                    <span className="font-bold text-stone-800 block mb-1">Cover Desktop — Landscape 16:9</span>
+                    <span className="font-semibold text-amber-700">Cover Pembuka Desktop</span> — foto/video horizontal fullscreen monitor. Idealnya foto prewedding outdoor sinematik. Jika kosong, pakai Cover Mobile.
                   </div>
                   <div className="p-2.5 bg-white rounded-lg border border-stone-200/70">
-                    <span className="font-bold text-stone-800 block mb-0.5">Orientasi Tampilan</span>
-                    Gunakan video portrait (9:16) untuk Landing Cover, dan landscape (16:9) untuk Desktop Sidebar.
+                    <span className="font-bold text-stone-800 block mb-1">Hero Kiri Desktop — Bebas (Otomatis)</span>
+                    Panel kiri = sisa layar setelah <span className="font-semibold text-stone-800">kartu undangan 460px</span> di kanan. Foto apa pun (landscape, square, portrait) otomatis menyesuaikan via <code className="bg-stone-100 px-1 rounded">background-size: cover</code> tanpa distorsi.
+                  </div>
+                  <div className="p-2.5 bg-white rounded-lg border border-stone-200/70">
+                    <span className="font-bold text-stone-800 block mb-1">Kartu Undangan — Fixed 460px</span>
+                    Isi undangan di <span className="font-semibold text-stone-800">kanan selalu 460px</span> seperti mobile, tidak berubah seberapa pun lebar monitor. Semua slot lain (Home, Penutup, BG) portrait/bebas.
+                  </div>
+                  <div className="p-2.5 bg-white rounded-lg border border-stone-200/70 sm:col-span-2">
+                    <span className="font-bold text-stone-800 block mb-1">Format &amp; Video Loop</span>
+                    Foto: JPG/PNG/WebP maks 15 MB. Video: MP4/MOV maks 30 MB, durasi ideal 10–20 detik (dipotong otomatis &gt; 20 detik), tanpa audio (dihapus otomatis agar autoplay instan).
                   </div>
                 </div>
               </div>

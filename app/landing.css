@@ -268,20 +268,69 @@
 .lux-landing-root .hero-overlay {
       position: absolute;
       inset: 0;
+      isolation: isolate;
+      /* Gradasi utama — multi-stop oklab interpolation untuk anti-banding */
       background:
+        linear-gradient(
+          to bottom in oklab,
+          transparent 0%,
+          rgba(11, 10, 9, 0.02) 30%,
+          rgba(11, 10, 9, 0.08) 50%,
+          rgba(11, 10, 9, 0.22) 65%,
+          rgba(11, 10, 9, 0.50) 78%,
+          rgba(11, 10, 9, 0.80) 90%,
+          rgba(11, 10, 9, 0.96) 97%,
+          #0b0a09 100%
+        ),
         radial-gradient(
-          circle at 72% 38%,
-          rgba(11, 10, 9, 0.3) 0%,
-          rgba(11, 10, 9, 0.85) 60%,
-          rgba(11, 10, 9, 0.98) 100%
+          ellipse 80% 70% at 72% 38% in oklab,
+          rgba(11, 10, 9, 0.10) 0%,
+          rgba(11, 10, 9, 0.22) 20%,
+          rgba(11, 10, 9, 0.42) 40%,
+          rgba(11, 10, 9, 0.62) 58%,
+          rgba(11, 10, 9, 0.82) 75%,
+          rgba(11, 10, 9, 0.95) 88%,
+          rgba(11, 10, 9, 0.99) 100%
         ),
         linear-gradient(
-          90deg,
-          rgba(11, 10, 9, 0.98) 0%,
-          rgba(11, 10, 9, 0.9) 44%,
-          rgba(11, 10, 9, 0.45) 75%,
-          rgba(11, 10, 9, 0.8) 100%
+          to right in oklab,
+          rgba(11, 10, 9, 0.99) 0%,
+          rgba(11, 10, 9, 0.96) 12%,
+          rgba(11, 10, 9, 0.88) 24%,
+          rgba(11, 10, 9, 0.72) 36%,
+          rgba(11, 10, 9, 0.52) 50%,
+          rgba(11, 10, 9, 0.35) 62%,
+          rgba(11, 10, 9, 0.28) 72%,
+          rgba(11, 10, 9, 0.48) 84%,
+          rgba(11, 10, 9, 0.72) 92%,
+          rgba(11, 10, 9, 0.88) 100%
         );
+    }
+
+/* Noise grain layer — memecah kuantisasi warna 8-bit (anti color-banding) */
+.lux-landing-root .hero-overlay::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      /* SVG fractalNoise dengan opacity cukup tinggi agar efektif memecah banding */
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.18'/%3E%3C/svg%3E");
+      background-size: 300px 300px;
+      /* soft-light jauh lebih efektif dari overlay untuk area gelap — tidak memutihkan, hanya dithering */
+      mix-blend-mode: soft-light;
+      opacity: 0.9;
+    }
+
+/* Layer grain kedua — frekuensi berbeda untuk tekstur lebih organic */
+.lux-landing-root .hero-overlay::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n2'%3E%3CfeTurbulence type='turbulence' baseFrequency='0.95' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n2)' opacity='0.10'/%3E%3C/svg%3E");
+      background-size: 200px 200px;
+      mix-blend-mode: screen;
+      opacity: 0.25;
     }
 
 .lux-landing-root .hero-content {

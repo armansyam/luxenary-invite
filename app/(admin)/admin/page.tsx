@@ -1407,6 +1407,7 @@ export default function AdminPage() {
     setDemoStudioData((prev: any) => {
       const next = { ...prev };
       if (slot === "cover") next.landingCoverUrl = "";
+      else if (slot === "cover_desktop") next.landingCoverDesktopUrl = "";
       else if (slot === "hero") next.sidebarPhotoUrl = "";
       else if (slot === "background") next.globalBgUrl = "";
       else if (slot === "home") next.homePhotoUrl = "";
@@ -1439,6 +1440,7 @@ export default function AdminPage() {
     setDemoStudioData((prev: any) => {
       const next = { ...prev };
       if (slot === "cover") next.landingCoverUrl = initialDemoStudioData.landingCoverUrl;
+      else if (slot === "cover_desktop") next.landingCoverDesktopUrl = initialDemoStudioData.landingCoverDesktopUrl;
       else if (slot === "hero") next.sidebarPhotoUrl = initialDemoStudioData.sidebarPhotoUrl;
       else if (slot === "background") next.globalBgUrl = initialDemoStudioData.globalBgUrl;
       else if (slot === "home") next.homePhotoUrl = initialDemoStudioData.homePhotoUrl;
@@ -1487,6 +1489,29 @@ export default function AdminPage() {
       const slots = Object.keys(stagedDemoFiles);
       const nextDemoData = { ...demoStudioData };
 
+      delSlots.forEach((slot) => {
+        if (slot === "cover") nextDemoData.landingCoverUrl = "";
+        else if (slot === "cover_desktop") nextDemoData.landingCoverDesktopUrl = "";
+        else if (slot === "hero") nextDemoData.sidebarPhotoUrl = "";
+        else if (slot === "background") nextDemoData.globalBgUrl = "";
+        else if (slot === "home") nextDemoData.homePhotoUrl = "";
+        else if (slot === "footer") {
+          nextDemoData.footerPhotoUrl = "";
+          nextDemoData.closingPhotoUrl = "";
+        }
+        else if (slot === "groom") nextDemoData.groomPhotoUrl = "";
+        else if (slot === "bride") nextDemoData.bridePhotoUrl = "";
+        else if (slot === "thumbnail_mobile") nextDemoData.thumbnailMobileUrl = "";
+        else if (slot === "thumbnail_desktop") nextDemoData.thumbnailDesktopUrl = "";
+        else if (slot === "music") nextDemoData.audioUrl = "";
+        else if (slot.startsWith("gallery_")) {
+          const idx = parseInt(slot.replace("gallery_", ""), 10) - 1;
+          if (Array.isArray(nextDemoData.galleryPhotos)) {
+            nextDemoData.galleryPhotos[idx] = "";
+          }
+        }
+      });
+
       if (slots.length > 0) {
         for (const slot of slots) {
           setUploadingSlot(slot);
@@ -1507,6 +1532,7 @@ export default function AdminPage() {
           // Synchronize URL in nextDemoData so step 3 preserves the updated media/video/audio URLs
           const targetUrl = data.rawUrl || `/demo/${demoStudioTheme.id}/${data.fileName}`;
           if (slot === "cover") nextDemoData.landingCoverUrl = targetUrl;
+          else if (slot === "cover_desktop") nextDemoData.landingCoverDesktopUrl = targetUrl;
           else if (slot === "hero") nextDemoData.sidebarPhotoUrl = targetUrl;
           else if (slot === "background") nextDemoData.globalBgUrl = targetUrl;
           else if (slot === "home") nextDemoData.homePhotoUrl = targetUrl;
@@ -5860,8 +5886,9 @@ export default function AdminPage() {
                         </h4>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                           {[
-                            { slot: "cover", label: "Landing Cover", file: "cover.webp", allowVideo: true, desc: "Tampilan layar pembuka & sampul awal (Foto WebP/JPG atau Video Loop MP4)" },
-                            { slot: "hero", label: "Hero / Sidebar", file: "hero.webp", allowVideo: true, desc: "Foto portrait sidebar desktop & hero (Foto WebP/JPG atau Video Loop MP4)" },
+                            { slot: "cover", label: "Landing Cover Mobile (Portrait 9:16)", file: "cover.webp", allowVideo: true, desc: "Tampilan layar pembuka khusus HP (Portrait 9:16 — Foto WebP/JPG atau Video Loop MP4)" },
+                            { slot: "cover_desktop", label: "Landing Cover Desktop (Landscape 16:9)", file: "cover_desktop.webp", allowVideo: true, desc: "Tampilan layar pembuka khusus PC/Laptop (Landscape 16:9 — Foto WebP/JPG atau Video Loop MP4). Opsional, jika kosong pakai Cover Mobile." },
+                            { slot: "hero", label: "Hero / Sidebar Desktop", file: "hero.webp", allowVideo: true, desc: "Foto portrait sidebar kolom kiri layar lebar desktop (Foto WebP/JPG atau Video Loop MP4)" },
                             { slot: "background", label: "Background Global", file: "background.webp", allowVideo: true, desc: "Latar belakang fixed tema (Foto WebP/JPG atau Video Loop MP4)" },
                             { slot: "home", label: "Latar Home", file: "home.webp", allowVideo: false, desc: "Background khusus seksi Home (Opsional)" },
                             { slot: "footer", label: "Foto Footer", file: "footer.webp", allowVideo: false, desc: "Foto penutup di bagian akhir undangan (Opsional)" },
@@ -5891,6 +5918,7 @@ export default function AdminPage() {
 
                             const explicitUrl = (
                               item.slot === "cover" ? demoStudioData.landingCoverUrl :
+                              item.slot === "cover_desktop" ? demoStudioData.landingCoverDesktopUrl :
                               item.slot === "hero" ? demoStudioData.sidebarPhotoUrl :
                               item.slot === "background" ? demoStudioData.globalBgUrl :
                               item.slot === "home" ? demoStudioData.homePhotoUrl :

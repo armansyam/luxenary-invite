@@ -53,6 +53,7 @@ export interface DemoThemeData {
   bridePhotoUrl: string;
   sidebarPhotoUrl: string;
   landingCoverUrl: string;
+  landingCoverDesktopUrl?: string;
   galleryPhotos: string[];
   
   // Events
@@ -1972,6 +1973,7 @@ export function composeDemoTemplateData(
   const effectiveAudioUrl = withV((customData as any)?.audioUrl !== undefined ? (customData as any)?.audioUrl : ((demo as any)?.audioUrl || fallbackSong));
 
   const effectiveLandingCover = withV((customData as any)?.landingCoverUrl !== undefined ? (customData as any)?.landingCoverUrl : demo.landingCoverUrl);
+  const effectiveLandingCoverDesktop = withV((customData as any)?.landingCoverDesktopUrl !== undefined ? (customData as any)?.landingCoverDesktopUrl : (demo.landingCoverDesktopUrl || ""));
   const effectiveSidebarPhoto = withV((customData as any)?.sidebarPhotoUrl !== undefined ? (customData as any)?.sidebarPhotoUrl : demo.sidebarPhotoUrl);
   const effectiveGlobalBg = withV((customData as any)?.globalBgUrl !== undefined ? (customData as any)?.globalBgUrl : demo.globalBgUrl);
   const effectiveHome = withV(effectiveHomePhoto);
@@ -2044,6 +2046,8 @@ export function composeDemoTemplateData(
     secondPhotoUrl: effectiveBride,
     sidebarPhotoUrl: effectiveSidebarPhoto,
     landingCoverUrl: effectiveLandingCover,
+    landingCoverDesktopUrl: effectiveLandingCoverDesktop || effectiveLandingCover,
+    hasCustomCoverDesktop: Boolean(effectiveLandingCoverDesktop),
     coverHeroUrl: effectiveLandingCover,
     galleryPhoto1: versionedGallery[0] || effectiveLandingCover,
     galleryPhoto2: versionedGallery[1] || effectiveLandingCover,

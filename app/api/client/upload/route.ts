@@ -9,6 +9,7 @@ import { rateLimit } from "@/lib/rateLimit";
 
 const SLOT_FILE_NAMES: Record<string, string> = {
   LANDING_COVER: "landing-cover",
+  LANDING_COVER_DESKTOP: "landing-cover-desktop",
   HOME_PHOTO: "home-photo",
   DESKTOP_SIDEBAR: "sidebar-desktop",
   GLOBAL_FIXED_BG: "fixed-bg",

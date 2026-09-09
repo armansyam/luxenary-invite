@@ -474,7 +474,7 @@ export async function PUT(
 
     // Save media updates
     if (body.media && typeof body.media === "object" && !Array.isArray(body.media)) {
-      const VALID_ENUM_SLOTS = ["LANDING_COVER", "HOME_PHOTO", "DESKTOP_SIDEBAR", "GLOBAL_FIXED_BG", "GROOM_PHOTO", "BRIDE_PHOTO", "GALLERY", "CLOSING_COVER"];
+      const VALID_ENUM_SLOTS = ["LANDING_COVER", "LANDING_COVER_DESKTOP", "HOME_PHOTO", "DESKTOP_SIDEBAR", "GLOBAL_FIXED_BG", "GROOM_PHOTO", "BRIDE_PHOTO", "GALLERY", "CLOSING_COVER"];
       for (const [slot, url] of Object.entries(body.media)) {
         if (!VALID_ENUM_SLOTS.includes(slot)) continue;
         const urlStr = typeof url === "string" ? url.trim() : "";

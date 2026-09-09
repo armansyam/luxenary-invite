@@ -90,6 +90,8 @@ export async function POST(
 
       if (slot === "cover") {
         customData.landingCoverUrl = rawUrl;
+      } else if (slot === "cover_desktop") {
+        customData.landingCoverDesktopUrl = rawUrl;
       } else if (slot === "hero") {
         customData.sidebarPhotoUrl = rawUrl;
       } else if (slot === "background") {
@@ -209,6 +211,8 @@ export async function DELETE(
 
       if (slot === "cover") {
         customData.landingCoverUrl = "";
+      } else if (slot === "cover_desktop") {
+        customData.landingCoverDesktopUrl = "";
       } else if (slot === "hero") {
         customData.sidebarPhotoUrl = "";
       } else if (slot === "background") {

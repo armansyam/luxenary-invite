@@ -171,12 +171,9 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "ID Klien wajib disertakan." }, { status: 400 });
     }
 
-    // Check if user exists and prevent deleting other admins
     const targetUser = await prisma.user.findUnique({
       where: { id: userId },
-      include: {
-        invitations: true,
-      }
+      include: { invitations: true },
     });
 
     if (!targetUser) {
@@ -187,21 +184,43 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "Tidak dapat menghapus akun Admin melalui endpoint klien." }, { status: 403 });
     }
 
-    // Clean up published HTMLs before deleting invitations
-    // WE DELIBERATELY DO NOT PASS `true` to deletePublishedHtml so the portfolio is preserved.
-    // WE DELIBERATELY DO NOT CLEAN UP R2 ASSETS so the portfolio can still load them.
     if (targetUser.invitations && targetUser.invitations.length > 0) {
+      const fs = await import("fs");
+      const path = await import("path");
       const { deletePublishedHtml } = await import("@/lib/staticPublisher");
+
       for (const inv of targetUser.invitations) {
+        // 1. Hapus published HTML (public/published/ids/<id>.html)
         await deletePublishedHtml(inv.id);
+
+        // 2. Hapus draft HTML (data/drafts/<id>.html) jika ada
+        const draftPath = path.join(process.cwd(), "data", "drafts", `${inv.id}.html`);
+        try {
+          await fs.promises.access(draftPath);
+          await fs.promises.unlink(draftPath);
+        } catch {
+          // file tidak ada — skip
+        }
+
+        // 3. Hapus seluruh folder uploads fisik invitation (public/uploads/invitations/<id>/)
+        // Portfolio sudah menyalin aset ke folder tersendiri (public/portfolio/assets/ atau R2),
+        // sehingga menghapus uploads asli tidak merusak portfolio yang sudah dipublish.
+        const uploadsDir = path.join(process.cwd(), "public", "uploads", "invitations", inv.id);
+        try {
+          await fs.promises.access(uploadsDir);
+          await fs.promises.rm(uploadsDir, { recursive: true, force: true });
+        } catch {
+          // folder tidak ada — skip
+        }
       }
     }
 
-    await prisma.user.delete({
-      where: { id: userId }
-    });
+    await prisma.user.delete({ where: { id: userId } });
 
-    return NextResponse.json({ success: true, message: "Akun klien beserta semua data undangan dan transaksinya berhasil dihapus permanen." });
+    return NextResponse.json({
+      success: true,
+      message: "Akun klien beserta semua data undangan, media, dan transaksinya berhasil dihapus permanen.",
+    });
   } catch (err: any) {
     console.error("Delete client error:", err);
     return NextResponse.json({ error: err.message || "Gagal menghapus klien." }, { status: 500 });

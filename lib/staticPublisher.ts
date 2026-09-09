@@ -75,7 +75,7 @@ export async function buildAndSavePublishedHtml(invitationId: string): Promise<s
   const coverMedia = await prisma.invitationMedia.findFirst({
     where: { 
       invitationId: invitation.id, 
-      mediaSlot: { in: ["LANDING_COVER", "HOME_PHOTO", "DESKTOP_SIDEBAR", "GROOM_PHOTO", "BRIDE_PHOTO"] } 
+      mediaSlot: { in: ["LANDING_COVER", "LANDING_COVER_DESKTOP", "HOME_PHOTO", "DESKTOP_SIDEBAR", "GROOM_PHOTO", "BRIDE_PHOTO"] } 
     },
     orderBy: { createdAt: "desc" },
   });

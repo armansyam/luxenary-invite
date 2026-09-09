@@ -25,8 +25,8 @@
     <meta property="og:site_name" content="Luxenary">
     <meta property="og:title" content="The Wedding of Syahril & Elyana — BADRIKA">
     <meta property="og:description" content="Undangan pernikahan digital eksklusif tema BADRIKA. Desain elegan, split desktop view, RSVP real-time & galeri momen.">
-    <meta property="og:image" content="http://localhost:3000/demo/badrika/cover.webp?v=1788965302789">
-    <meta property="og:image:secure_url" content="http://localhost:3000/demo/badrika/cover.webp?v=1788965302789">
+    <meta property="og:image" content="http://localhost:3000/demo/badrika/cover.webp?v=1788970700914">
+    <meta property="og:image:secure_url" content="http://localhost:3000/demo/badrika/cover.webp?v=1788970700914">
     <meta property="og:image:type" content="image/webp">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
@@ -34,7 +34,7 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="The Wedding of Syahril & Elyana — BADRIKA">
     <meta name="twitter:description" content="Undangan pernikahan digital eksklusif tema BADRIKA. Desain elegan, split desktop view, RSVP real-time & galeri momen.">
-    <meta name="twitter:image" content="http://localhost:3000/demo/badrika/cover.webp?v=1788965302789">
+    <meta name="twitter:image" content="http://localhost:3000/demo/badrika/cover.webp?v=1788970700914">
   
 
 <script>
@@ -75,7 +75,7 @@
   </style>
 <style>
         .site-footer, footer, footer#footer {
-          background-image: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 38%, rgba(0,0,0,0.55) 65%, rgba(0,0,0,0.92) 100%), url('/demo/badrika/footer.webp?v=1788965302789') !important;
+          background-image: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 38%, rgba(0,0,0,0.55) 65%, rgba(0,0,0,0.92) 100%), url('/demo/badrika/footer.webp?v=1788970700914') !important;
           background-size: cover !important;
           background-position: center bottom !important;
           color: #fff !important;
@@ -92,7 +92,7 @@
 <style>
 
         .slide-opening#home, section#home.slide-opening, section#home, .sec-hero-slideshow#home {
-          background-image: linear-gradient(to bottom, rgba(7,7,9,0.55) 0%, rgba(7,7,9,0.35) 40%, rgba(7,7,9,0.80) 100%), url('/demo/badrika/background.webp?v=1788965302789') !important;
+          background-image: linear-gradient(to bottom, rgba(7,7,9,0.55) 0%, rgba(7,7,9,0.35) 40%, rgba(7,7,9,0.80) 100%), url('/demo/badrika/background.webp?v=1788970700914') !important;
           background-size: cover !important;
           background-position: center center !important;
           background-repeat: no-repeat !important;
@@ -230,7 +230,7 @@
         color-mix(in srgb, var(--primary, #0b221a) 60%, transparent) 35%,
         color-mix(in srgb, var(--bg-dark, #071712) 80%, transparent) 75%,
         color-mix(in srgb, var(--bg-dark, #071712) 95%, transparent) 100%
-      ), url('/demo/badrika/background.webp?v=1788965302789');
+      ), url('/demo/badrika/background.webp?v=1788970700914');
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
@@ -271,7 +271,7 @@
         color-mix(in srgb, var(--primary, #1b4332) 30%, transparent) 35%,
         color-mix(in srgb, var(--bg-dark, #071712) 80%, transparent) 70%,
         var(--bg-dark, #071712) 100%
-      ), url('/demo/badrika/cover.webp?v=1788965302789') center/cover no-repeat;
+      ), url('/demo/badrika/cover.webp?v=1788970700914') center/cover no-repeat;
       transition: transform 0.85s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.85s ease;
     }
     .cover-overlay.opened {
@@ -328,7 +328,7 @@
     
     .sidebar-desktop {
       display: none; position: fixed; left: 0; top: 0; width: 55%; height: 100vh;
-      background: url('/demo/badrika/hero.webp?v=1788965302789') center/cover no-repeat; z-index: 10;
+      background: url('/demo/badrika/hero.webp?v=1788970700914') center/cover no-repeat; z-index: 10;
     }
     .sidebar-desktop::after {
       content: ''; position: absolute; inset: 0;
@@ -591,6 +591,35 @@
     }
   </style>
 
+<style>
+  @media (min-width: 900px) {
+    /* FULLSCREEN OVERRIDE — override constraint 460px dari tema panel-terbatas */
+    .cover-screen, .cover-overlay, #coverScreen, #coverOverlay {
+      position: fixed !important;
+      inset: 0 !important;
+      width: 100vw !important;
+      left: 0 !important;
+      right: 0 !important;
+      max-width: none !important;
+    }
+    .cover-screen, #coverScreen {
+      background-image: linear-gradient(to bottom, rgba(7,7,9,0.2) 0%, rgba(7,7,9,0.0) 25%, rgba(7,7,9,0.55) 60%, rgba(7,7,9,0.92) 100%), url('/demo/badrika/cover_desktop.webp?v=1788970700914') !important;
+      background-size: cover !important;
+      background-position: center center !important;
+      background-repeat: no-repeat !important;
+    }
+    .cover-overlay, #coverOverlay {
+      background-image: linear-gradient(to bottom, rgba(7,7,9,0.2) 0%, rgba(7,7,9,0.0) 25%, rgba(7,7,9,0.55) 60%, rgba(7,7,9,0.92) 100%), url('/demo/badrika/cover_desktop.webp?v=1788970700914') !important;
+      background-size: cover !important;
+      background-position: center center !important;
+      background-repeat: no-repeat !important;
+    }
+    .cover-names, .cover-title {
+      text-shadow: 0 4px 20px rgba(0,0,0,0.85) !important;
+    }
+  }
+</style>
+
     <script>
       if (window.location.search.includes('mode=cover')) {
         document.documentElement.classList.add('mode-cover');
@@ -693,7 +722,7 @@
           <!-- GROOM -->
           <div class="couple-card">
             <div class="couple-photo-wrap">
-              <img src="/demo/badrika/groom.webp?v=1788965302789" alt="Andi Syahril Ramadhan, S.T.">
+              <img src="/demo/badrika/groom.webp?v=1788970700914" alt="Andi Syahril Ramadhan, S.T.">
             </div>
             <h3 class="couple-name">Andi Syahril Ramadhan, S.T.</h3>
             <p class="couple-parents">Putra dari Andi Ramadhan & Andi Rosmini</p>
@@ -703,7 +732,7 @@
           <!-- BRIDE -->
           <div class="couple-card">
             <div class="couple-photo-wrap">
-              <img src="/demo/badrika/bride.webp?v=1788965302789" alt="Andi Elyana Tenri, S.Ked.">
+              <img src="/demo/badrika/bride.webp?v=1788970700914" alt="Andi Elyana Tenri, S.Ked.">
             </div>
             <h3 class="couple-name">Andi Elyana Tenri, S.Ked.</h3>
             <p class="couple-parents">Putri dari Andi Tenri Tatta & Andi Sitti Nur</p>
@@ -810,35 +839,35 @@
       <div class="moments-grid-10">
         
     <div class="moment-photo-item" data-idx="0" onclick="luxOpenZoom(0)">
-      <img src="/demo/badrika/gallery_01.webp?v=1788965302789" alt="Our Moment 1" loading="lazy" decoding="async">
+      <img src="/demo/badrika/gallery_01.webp?v=1788970700914" alt="Our Moment 1" loading="lazy" decoding="async">
     </div>
   
     <div class="moment-photo-item" data-idx="1" onclick="luxOpenZoom(1)">
-      <img src="/demo/badrika/gallery_02.webp?v=1788965302789" alt="Our Moment 2" loading="lazy" decoding="async">
+      <img src="/demo/badrika/gallery_02.webp?v=1788970700914" alt="Our Moment 2" loading="lazy" decoding="async">
     </div>
   
     <div class="moment-photo-item" data-idx="2" onclick="luxOpenZoom(2)">
-      <img src="/demo/badrika/gallery_03.webp?v=1788965302789" alt="Our Moment 3" loading="lazy" decoding="async">
+      <img src="/demo/badrika/gallery_03.webp?v=1788970700914" alt="Our Moment 3" loading="lazy" decoding="async">
     </div>
   
     <div class="moment-photo-item" data-idx="3" onclick="luxOpenZoom(3)">
-      <img src="/demo/badrika/gallery_04.webp?v=1788965302789" alt="Our Moment 4" loading="lazy" decoding="async">
+      <img src="/demo/badrika/gallery_04.webp?v=1788970700914" alt="Our Moment 4" loading="lazy" decoding="async">
     </div>
   
     <div class="moment-photo-item" data-idx="4" onclick="luxOpenZoom(4)">
-      <img src="/demo/badrika/gallery_05.webp?v=1788965302789" alt="Our Moment 5" loading="lazy" decoding="async">
+      <img src="/demo/badrika/gallery_05.webp?v=1788970700914" alt="Our Moment 5" loading="lazy" decoding="async">
     </div>
   
     <div class="moment-photo-item" data-idx="5" onclick="luxOpenZoom(5)">
-      <img src="/demo/badrika/gallery_06.webp?v=1788965302789" alt="Our Moment 6" loading="lazy" decoding="async">
+      <img src="/demo/badrika/gallery_06.webp?v=1788970700914" alt="Our Moment 6" loading="lazy" decoding="async">
     </div>
   
     <div class="moment-photo-item" data-idx="6" onclick="luxOpenZoom(6)">
-      <img src="/demo/badrika/gallery_07.webp?v=1788965302789" alt="Our Moment 7" loading="lazy" decoding="async">
+      <img src="/demo/badrika/gallery_07.webp?v=1788970700914" alt="Our Moment 7" loading="lazy" decoding="async">
     </div>
   
     <div class="moment-photo-item" data-idx="7" onclick="luxOpenZoom(7)">
-      <img src="/demo/badrika/gallery_08.webp?v=1788965302789" alt="Our Moment 8" loading="lazy" decoding="async">
+      <img src="/demo/badrika/gallery_08.webp?v=1788970700914" alt="Our Moment 8" loading="lazy" decoding="async">
     </div>
   
       </div>
@@ -858,35 +887,35 @@
         <div class="gallery-modal-grid">
           
     <div class="full-gallery-item" onclick="luxOpenZoom(0)">
-      <img src="/demo/badrika/gallery_01.webp?v=1788965302789" alt="Photo 1" loading="lazy" decoding="async">
+      <img src="/demo/badrika/gallery_01.webp?v=1788970700914" alt="Photo 1" loading="lazy" decoding="async">
     </div>
   
     <div class="full-gallery-item" onclick="luxOpenZoom(1)">
-      <img src="/demo/badrika/gallery_02.webp?v=1788965302789" alt="Photo 2" loading="lazy" decoding="async">
+      <img src="/demo/badrika/gallery_02.webp?v=1788970700914" alt="Photo 2" loading="lazy" decoding="async">
     </div>
   
     <div class="full-gallery-item" onclick="luxOpenZoom(2)">
-      <img src="/demo/badrika/gallery_03.webp?v=1788965302789" alt="Photo 3" loading="lazy" decoding="async">
+      <img src="/demo/badrika/gallery_03.webp?v=1788970700914" alt="Photo 3" loading="lazy" decoding="async">
     </div>
   
     <div class="full-gallery-item" onclick="luxOpenZoom(3)">
-      <img src="/demo/badrika/gallery_04.webp?v=1788965302789" alt="Photo 4" loading="lazy" decoding="async">
+      <img src="/demo/badrika/gallery_04.webp?v=1788970700914" alt="Photo 4" loading="lazy" decoding="async">
     </div>
   
     <div class="full-gallery-item" onclick="luxOpenZoom(4)">
-      <img src="/demo/badrika/gallery_05.webp?v=1788965302789" alt="Photo 5" loading="lazy" decoding="async">
+      <img src="/demo/badrika/gallery_05.webp?v=1788970700914" alt="Photo 5" loading="lazy" decoding="async">
     </div>
   
     <div class="full-gallery-item" onclick="luxOpenZoom(5)">
-      <img src="/demo/badrika/gallery_06.webp?v=1788965302789" alt="Photo 6" loading="lazy" decoding="async">
+      <img src="/demo/badrika/gallery_06.webp?v=1788970700914" alt="Photo 6" loading="lazy" decoding="async">
     </div>
   
     <div class="full-gallery-item" onclick="luxOpenZoom(6)">
-      <img src="/demo/badrika/gallery_07.webp?v=1788965302789" alt="Photo 7" loading="lazy" decoding="async">
+      <img src="/demo/badrika/gallery_07.webp?v=1788970700914" alt="Photo 7" loading="lazy" decoding="async">
     </div>
   
     <div class="full-gallery-item" onclick="luxOpenZoom(7)">
-      <img src="/demo/badrika/gallery_08.webp?v=1788965302789" alt="Photo 8" loading="lazy" decoding="async">
+      <img src="/demo/badrika/gallery_08.webp?v=1788970700914" alt="Photo 8" loading="lazy" decoding="async">
     </div>
   
         </div>
@@ -898,14 +927,14 @@
       <button class="lux-zoom-close" onclick="luxCloseZoom()">✕</button>
       <button class="lux-zoom-nav prev" onclick="luxPrevZoom(event)">‹</button>
       <div class="lux-zoom-img-box" onclick="event.stopPropagation()">
-        <img id="luxZoomActiveImg" src="/demo/badrika/gallery_01.webp?v=1788965302789" alt="Zoom View">
+        <img id="luxZoomActiveImg" src="/demo/badrika/gallery_01.webp?v=1788970700914" alt="Zoom View">
         <div class="lux-zoom-counter" id="luxZoomCounter">1 / 8</div>
       </div>
       <button class="lux-zoom-nav next" onclick="luxNextZoom(event)">›</button>
     </div>
 
     <script>
-      window.LUX_ALL_PHOTOS = ["/demo/badrika/gallery_01.webp?v=1788965302789","/demo/badrika/gallery_02.webp?v=1788965302789","/demo/badrika/gallery_03.webp?v=1788965302789","/demo/badrika/gallery_04.webp?v=1788965302789","/demo/badrika/gallery_05.webp?v=1788965302789","/demo/badrika/gallery_06.webp?v=1788965302789","/demo/badrika/gallery_07.webp?v=1788965302789","/demo/badrika/gallery_08.webp?v=1788965302789"];
+      window.LUX_ALL_PHOTOS = ["/demo/badrika/gallery_01.webp?v=1788970700914","/demo/badrika/gallery_02.webp?v=1788970700914","/demo/badrika/gallery_03.webp?v=1788970700914","/demo/badrika/gallery_04.webp?v=1788970700914","/demo/badrika/gallery_05.webp?v=1788970700914","/demo/badrika/gallery_06.webp?v=1788970700914","/demo/badrika/gallery_07.webp?v=1788970700914","/demo/badrika/gallery_08.webp?v=1788970700914"];
       window.luxActivePhotoIdx = 0;
 
       function ensureModalsOnBody() {
@@ -1032,32 +1061,10 @@
           <div class="story-circles-track-wrapper" style="overflow: hidden; width: 100%; position: relative; mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent); -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);">
             <div class="story-circles-track" style="display: flex; gap: 14px; width: max-content; margin: 0 auto; animation: luxStoryLoop 24s linear infinite;">
               
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/memory_03.webp?v=1788965302789', 'Rina & Teman')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/gallery_06.webp?v=1788970700914', 'Keluarga Solo')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/badrika/memory_03.webp?v=1788965302789" onerror="this.onerror=null;this.src='/demo/badrika/gallery_03.webp?v=1788965302789';" alt="Rina & Teman" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Rina
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/memory_04.webp?v=1788965302789', 'Tante Maya')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/badrika/memory_04.webp?v=1788965302789" onerror="this.onerror=null;this.src='/demo/badrika/gallery_04.webp?v=1788965302789';" alt="Tante Maya" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Tante
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/gallery_06.webp?v=1788965302789', 'Keluarga Solo')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/badrika/gallery_06.webp?v=1788965302789" onerror="this.onerror=null;this.src='/demo/badrika/hero.webp?v=1788965302789';" alt="Keluarga Solo" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/badrika/gallery_06.webp?v=1788970700914" onerror="this.onerror=null;this.src='/demo/badrika/hero.webp?v=1788970700914';" alt="Keluarga Solo" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
@@ -1065,32 +1072,32 @@
       </span>
     </div>
   
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/gallery_08.webp?v=1788965302789', 'Eko & Nia')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/memory_01.webp?v=1788970700914', 'Budi Santoso')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/badrika/gallery_08.webp?v=1788965302789" onerror="this.onerror=null;this.src='/demo/badrika/bride.webp?v=1788965302789';" alt="Eko & Nia" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/badrika/memory_01.webp?v=1788970700914" onerror="this.onerror=null;this.src='/demo/badrika/gallery_01.webp?v=1788970700914';" alt="Budi Santoso" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Eko
+        Budi
       </span>
     </div>
   
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/gallery_07.webp?v=1788965302789', 'Alumni Teknik')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/memory_03.webp?v=1788970700914', 'Rina & Teman')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/badrika/gallery_07.webp?v=1788965302789" onerror="this.onerror=null;this.src='/demo/badrika/groom.webp?v=1788965302789';" alt="Alumni Teknik" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/badrika/memory_03.webp?v=1788970700914" onerror="this.onerror=null;this.src='/demo/badrika/gallery_03.webp?v=1788970700914';" alt="Rina & Teman" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Alumni
+        Rina
       </span>
     </div>
   
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/memory_02.webp?v=1788965302789', 'Sahabat SMA')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/memory_02.webp?v=1788970700914', 'Sahabat SMA')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/badrika/memory_02.webp?v=1788965302789" onerror="this.onerror=null;this.src='/demo/badrika/gallery_02.webp?v=1788965302789';" alt="Sahabat SMA" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/badrika/memory_02.webp?v=1788970700914" onerror="this.onerror=null;this.src='/demo/badrika/gallery_02.webp?v=1788970700914';" alt="Sahabat SMA" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
@@ -1098,10 +1105,32 @@
       </span>
     </div>
   
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/gallery_05.webp?v=1788965302789', 'Dimas Pratama')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/gallery_08.webp?v=1788970700914', 'Eko & Nia')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/badrika/gallery_05.webp?v=1788965302789" onerror="this.onerror=null;this.src='/demo/badrika/cover.webp?v=1788965302789';" alt="Dimas Pratama" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/badrika/gallery_08.webp?v=1788970700914" onerror="this.onerror=null;this.src='/demo/badrika/bride.webp?v=1788970700914';" alt="Eko & Nia" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Eko
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/memory_04.webp?v=1788970700914', 'Tante Maya')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/badrika/memory_04.webp?v=1788970700914" onerror="this.onerror=null;this.src='/demo/badrika/gallery_04.webp?v=1788970700914';" alt="Tante Maya" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Tante
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/gallery_05.webp?v=1788970700914', 'Dimas Pratama')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/badrika/gallery_05.webp?v=1788970700914" onerror="this.onerror=null;this.src='/demo/badrika/cover.webp?v=1788970700914';" alt="Dimas Pratama" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
@@ -1109,44 +1138,22 @@
       </span>
     </div>
   
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/memory_01.webp?v=1788965302789', 'Budi Santoso')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/gallery_07.webp?v=1788970700914', 'Alumni Teknik')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/badrika/memory_01.webp?v=1788965302789" onerror="this.onerror=null;this.src='/demo/badrika/gallery_01.webp?v=1788965302789';" alt="Budi Santoso" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/badrika/gallery_07.webp?v=1788970700914" onerror="this.onerror=null;this.src='/demo/badrika/groom.webp?v=1788970700914';" alt="Alumni Teknik" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Budi
+        Alumni
       </span>
     </div>
   
               
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/memory_03.webp?v=1788965302789', 'Rina & Teman')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/gallery_06.webp?v=1788970700914', 'Keluarga Solo')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/badrika/memory_03.webp?v=1788965302789" onerror="this.onerror=null;this.src='/demo/badrika/gallery_03.webp?v=1788965302789';" alt="Rina & Teman" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Rina
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/memory_04.webp?v=1788965302789', 'Tante Maya')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/badrika/memory_04.webp?v=1788965302789" onerror="this.onerror=null;this.src='/demo/badrika/gallery_04.webp?v=1788965302789';" alt="Tante Maya" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
-        </div>
-      </div>
-      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Tante
-      </span>
-    </div>
-  
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/gallery_06.webp?v=1788965302789', 'Keluarga Solo')">
-      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
-        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/badrika/gallery_06.webp?v=1788965302789" onerror="this.onerror=null;this.src='/demo/badrika/hero.webp?v=1788965302789';" alt="Keluarga Solo" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/badrika/gallery_06.webp?v=1788970700914" onerror="this.onerror=null;this.src='/demo/badrika/hero.webp?v=1788970700914';" alt="Keluarga Solo" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
@@ -1154,32 +1161,32 @@
       </span>
     </div>
   
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/gallery_08.webp?v=1788965302789', 'Eko & Nia')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/memory_01.webp?v=1788970700914', 'Budi Santoso')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/badrika/gallery_08.webp?v=1788965302789" onerror="this.onerror=null;this.src='/demo/badrika/bride.webp?v=1788965302789';" alt="Eko & Nia" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/badrika/memory_01.webp?v=1788970700914" onerror="this.onerror=null;this.src='/demo/badrika/gallery_01.webp?v=1788970700914';" alt="Budi Santoso" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Eko
+        Budi
       </span>
     </div>
   
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/gallery_07.webp?v=1788965302789', 'Alumni Teknik')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/memory_03.webp?v=1788970700914', 'Rina & Teman')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/badrika/gallery_07.webp?v=1788965302789" onerror="this.onerror=null;this.src='/demo/badrika/groom.webp?v=1788965302789';" alt="Alumni Teknik" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/badrika/memory_03.webp?v=1788970700914" onerror="this.onerror=null;this.src='/demo/badrika/gallery_03.webp?v=1788970700914';" alt="Rina & Teman" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Alumni
+        Rina
       </span>
     </div>
   
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/memory_02.webp?v=1788965302789', 'Sahabat SMA')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/memory_02.webp?v=1788970700914', 'Sahabat SMA')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/badrika/memory_02.webp?v=1788965302789" onerror="this.onerror=null;this.src='/demo/badrika/gallery_02.webp?v=1788965302789';" alt="Sahabat SMA" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/badrika/memory_02.webp?v=1788970700914" onerror="this.onerror=null;this.src='/demo/badrika/gallery_02.webp?v=1788970700914';" alt="Sahabat SMA" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
@@ -1187,10 +1194,32 @@
       </span>
     </div>
   
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/gallery_05.webp?v=1788965302789', 'Dimas Pratama')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/gallery_08.webp?v=1788970700914', 'Eko & Nia')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/badrika/gallery_05.webp?v=1788965302789" onerror="this.onerror=null;this.src='/demo/badrika/cover.webp?v=1788965302789';" alt="Dimas Pratama" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/badrika/gallery_08.webp?v=1788970700914" onerror="this.onerror=null;this.src='/demo/badrika/bride.webp?v=1788970700914';" alt="Eko & Nia" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Eko
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/memory_04.webp?v=1788970700914', 'Tante Maya')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/badrika/memory_04.webp?v=1788970700914" onerror="this.onerror=null;this.src='/demo/badrika/gallery_04.webp?v=1788970700914';" alt="Tante Maya" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+        </div>
+      </div>
+      <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
+        Tante
+      </span>
+    </div>
+  
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/gallery_05.webp?v=1788970700914', 'Dimas Pratama')">
+      <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
+        <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
+          <img src="/demo/badrika/gallery_05.webp?v=1788970700914" onerror="this.onerror=null;this.src='/demo/badrika/cover.webp?v=1788970700914';" alt="Dimas Pratama" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
@@ -1198,14 +1227,14 @@
       </span>
     </div>
   
-    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/memory_01.webp?v=1788965302789', 'Budi Santoso')">
+    <div class="lux-story-circle-item" style="display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; width: 68px;" onclick="luxOpenMemoryZoom('/demo/badrika/gallery_07.webp?v=1788970700914', 'Alumni Teknik')">
       <div style="width: 58px; height: 58px; border-radius: 9999px; padding: 2px; background: linear-gradient(135deg, #d4af37, #f59e0b, #eab308); box-shadow: 0 0 10px rgba(212,175,55,0.35);">
         <div style="width: 100%; height: 100%; border-radius: 9999px; overflow: hidden; background: #1c1917; border: 2px solid #0c0a09; display: flex; align-items: center; justify-content: center;">
-          <img src="/demo/badrika/memory_01.webp?v=1788965302789" onerror="this.onerror=null;this.src='/demo/badrika/gallery_01.webp?v=1788965302789';" alt="Budi Santoso" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
+          <img src="/demo/badrika/gallery_07.webp?v=1788970700914" onerror="this.onerror=null;this.src='/demo/badrika/groom.webp?v=1788970700914';" alt="Alumni Teknik" style="width: 100%; height: 100%; object-fit: cover;" loading="lazy" />
         </div>
       </div>
       <span style="font-size: 11px; max-width: 65px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; opacity: 0.85; text-align: center;">
-        Budi
+        Alumni
       </span>
     </div>
   
@@ -1505,7 +1534,7 @@
   
 
       <!-- FOOTER (Adaptive Full-Height 100vh) -->
-      <footer class="site-footer has-closing-photo" style="background-image: url('/demo/badrika/footer.webp?v=1788965302789');">
+      <footer class="site-footer has-closing-photo" style="background-image: url('/demo/badrika/footer.webp?v=1788970700914');">
         <div class="closing-content">
           <p style="font-size: 0.85rem; color: rgba(255,255,255,0.8); line-height: 1.7; margin-bottom: 1.5rem; max-width: 480px; margin-left: auto; margin-right: auto;">
             Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu bagi kami.

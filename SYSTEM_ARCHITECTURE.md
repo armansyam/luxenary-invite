@@ -346,7 +346,7 @@ Saat client menekan tombol "Publish", sistem memanggil `buildAndSavePublishedHtm
 6. Return HTML string
 ```
 
-**Saat Unpublish/Hapus**, `deletePublishedHtml(invitationId)` menghapus ketiganya.
+**Saat Unpublish/Hapus**, `deletePublishedHtml(invitationId)` menghapus file HTML publikasi canonical (`public/published/ids/{invitationId}.html`). Saat penghapusan akun/undangan permanen (misal via `DELETE /api/admin/users`), sistem juga secara otomatis menghapus file draft lokal (`data/drafts/{invitationId}.html`) serta membersihkan direktori media fisik (`public/uploads/invitations/{invitationId}/`) secara rekursif tanpa mengganggu klon portofolio statis yang tersimpan mandiri.
 
 **KRITIS:** File HTML ini adalah satu-satunya yang disajikan ke tamu. Tidak ada SSR/API aktif untuk tamu saat undangan sudah published.
 
@@ -764,6 +764,7 @@ ADMIN (auth required, role=ADMIN/SUPER_ADMIN):
   POST /api/admin/orders/{id}/approve → Konfirmasi lunas transfer bank manual & auto-audit log
   POST /api/admin/orders/{id}/reject  → Tolak bukti transfer dengan alasan penolakan & auto-audit log
   GET  /api/admin/users               → List akun klien terpaginasi server-side dengan totalSpent & histori transaksi
+  DELETE /api/admin/users             → Hapus permanen klien, relasi DB (undangan, transaksi) & pembersihan fisik file (published HTML, draft HTML, folder uploads rekursif)
   GET  /api/admin/invitations         → List projek undangan terpaginasi server-side dengan filter status & pencarian multi-field
   GET/POST/PUT/DELETE /api/admin/themes → Manajemen tema (Upload master .html, update metadata, auto-compile demo, hard-delete steril)
   POST /api/admin/themes/sync         → Sinkronisasi tema disk-to-DB, auto-discovery & auto-purge tema zombie
@@ -842,7 +843,7 @@ Model Utama:
   Rsvp           → Konfirmasi kehadiran tamu
   Wish           → Ucapan tamu
   GuestMemory    → Foto candid tamu (hari H & pasca-acara)
-  InvitationMedia → File media undangan (8 slot media)
+  InvitationMedia → File media undangan (9 slot media: LANDING_COVER, LANDING_COVER_DESKTOP, HOME_PHOTO, DESKTOP_SIDEBAR, GLOBAL_FIXED_BG, GROOM_PHOTO, BRIDE_PHOTO, GALLERY, CLOSING_COVER)
   AdminSetting   → Konfigurasi platform global (key-value dinamis)
   WebhookLog     → Log audit webhook payment (Midtrans, Xendit)
   AdminAuditLog  → Log audit aktivitas admin

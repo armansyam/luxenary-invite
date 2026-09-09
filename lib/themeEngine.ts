@@ -257,6 +257,7 @@ export async function composeTemplateData(invitationId: string) {
   // Background Canvas: Tekstur / kanvas bawaan tema yang aman dan tanpa foto wajah orang asing
   const fixedBgUrl = customFixedBg || `/demo/${themeFolder}/background.webp`;
   const coverUrl = customCover || fixedBgUrl;
+  const coverDesktopUrl = mediaMap.get("LANDING_COVER_DESKTOP") || coverUrl;
   const sidebarUrl = customSidebar || coverUrl;
   const homePhotoUrl = customHomePhoto || fixedBgUrl;
 
@@ -1685,6 +1686,8 @@ export async function composeTemplateData(invitationId: string) {
 
     // Media
     landingCoverUrl: coverUrl,
+    landingCoverDesktopUrl: coverDesktopUrl,
+    hasCustomCoverDesktop: Boolean(mediaMap.get("LANDING_COVER_DESKTOP")),
     homePhotoUrl: homePhotoUrl,
     hasCustomHomePhoto: Boolean(customHomePhoto),
     customHomePhoto: customHomePhoto,
