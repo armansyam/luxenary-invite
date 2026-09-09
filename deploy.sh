@@ -8,8 +8,9 @@ echo "🚀 Memulai proses deployment otomatis..."
 
 # 1. Tarik pembaruan terbaru dari repository
 echo "📦 Menarik pembaruan terbaru dari Git (origin main)..."
-# Buang perubahan minor otomatis pada package-lock.json akibat beda arsitektur OS agar tidak memblokir git pull
+# Buang perubahan minor otomatis pada package-lock.json dan demo statis hasil kompilasi server runtime agar tidak memblokir git pull
 git checkout -- package-lock.json 2>/dev/null || true
+git checkout -- public/demo/ 2>/dev/null || true
 if ! git pull origin main; then
   echo "❌ Error: Gagal menarik perubahan terbaru dari Git origin main! Deployment dihentikan untuk mencegah corrupt build."
   exit 1
