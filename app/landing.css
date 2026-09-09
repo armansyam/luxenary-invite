@@ -3395,6 +3395,28 @@
         text-align: center;
       }
 
+.lux-landing-root .hero-overlay {
+        background:
+          linear-gradient(
+            to bottom in oklab,
+            rgba(11, 10, 9, 0.75) 0%,
+            rgba(11, 10, 9, 0.58) 15%,
+            rgba(11, 10, 9, 0.28) 30%,
+            rgba(11, 10, 9, 0.10) 45%,
+            rgba(11, 10, 9, 0.20) 60%,
+            rgba(11, 10, 9, 0.55) 75%,
+            rgba(11, 10, 9, 0.85) 88%,
+            rgba(11, 10, 9, 0.98) 96%,
+            #0b0a09 100%
+          ),
+          radial-gradient(
+            ellipse 90% 70% at 50% 45% in oklab,
+            transparent 0%,
+            rgba(11, 10, 9, 0.15) 50%,
+            rgba(11, 10, 9, 0.55) 100%
+          );
+      }
+
 .lux-landing-root .hero-content {
         padding: 0 2rem;
         max-width: 680px;
