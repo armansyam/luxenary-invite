@@ -69,14 +69,14 @@ export default async function Home() {
     <picture>
       <source
         media="(max-width: 1023px)"
-        srcSet="/assets/homepage/hero_mobile.webp?v=2"
+        srcSet="/assets/homepage/hero_mobile.webp"
       />
       <source
         media="(min-width: 1024px)"
-        srcSet="/assets/homepage/hero_desktop.webp?v=2"
+        srcSet="/assets/homepage/hero_desktop.webp"
       />
       <img
-        src="/assets/homepage/hero_desktop.webp?v=2"
+        src="/assets/homepage/hero_desktop.webp"
         alt="Pasangan pengantin adat berbusana mewah"
         fetchPriority="high"
       />
@@ -117,7 +117,7 @@ export default async function Home() {
       {/* Floating Badge Kanan Bawah */}
       <div className="hero-float-pill float-pill-right">
         <span className="float-pill-dot"></span>
-        <span>RSVP &amp; Meja Resepsionis</span>
+        <span>RSVP &amp; Resepsionis Digital</span>
       </div>
 
       {/* Left Companion Device (Mockup 1) */}

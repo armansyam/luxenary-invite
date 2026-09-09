@@ -301,7 +301,7 @@ function FieldRow({ label, description, children }: { label: string; description
 
 const AVAILABLE_CAPABILITIES = [
   { id: "guest_memories", label: "Galeri Kenangan Tamu (Live Photo Drop)" },
-  { id: "qr_checkin", label: "QR Code Check-in Tamu & Meja Resepsionis" },
+  { id: "qr_checkin", label: "QR Code Check-in Tamu & Sistem Resepsionis" },
   { id: "custom_domain", label: "Integrasi Custom Domain Pribadi (.com / .id)" },
 ];
 

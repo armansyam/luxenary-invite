@@ -183,7 +183,7 @@ export default function CatalogGridShowcase() {
               Sistem Operasional Hari-H Pernikahan
             </h2>
             <p className="text-xs sm:text-sm text-stone-600 max-w-2xl mx-auto">
-              Lebih dari sekadar kartu undangan, nikmati ekosistem teknologi cerdas untuk meja resepsionis, buku tamu interaktif, dan galeri kenangan tamu real-time.
+              Lebih dari sekadar kartu undangan, nikmati ekosistem teknologi cerdas untuk sistem resepsionis, buku tamu interaktif, dan galeri kenangan tamu real-time.
             </p>
           </div>
         )}
@@ -320,7 +320,7 @@ export default function CatalogGridShowcase() {
                   </svg>
                 </div>
 
-                <h3 className="text-lg font-bold text-stone-900 mb-2">Meja Resepsionis & QR Scanner</h3>
+                <h3 className="text-lg font-bold text-stone-900 mb-2">Sistem Resepsionis & QR Scanner</h3>
                 <p className="text-xs text-stone-600 leading-relaxed mb-4">
                   Sistem pemindai QR E-ticket tamu untuk panitia penerima tamu di venue, dilengkapi pencatatan kehadiran, alokasi nomor meja, dan proteksi scan ganda.
                 </p>

@@ -1557,6 +1557,8 @@ Untuk memastikan showroom demo tema publik (`/demo/[themeId]`) tampil memukau da
      - `/music/:path*`: `public, max-age=31536000, immutable` (Cache permanen 1 tahun di browser dan CDN karena aset musik bawaan tidak pernah berubah).
      - `/demo/:path*`: `public, max-age=86400, s-maxage=604800, stale-while-revalidate=604800` (1 hari di browser, 7 hari di Edge Cloudflare CDN dengan background revalidation).
      - `/css/:path*`: `public, max-age=604800, stale-while-revalidate=86400` (Cache 7 hari untuk modul CSS sistem dengan background revalidasi).
+     - `/assets/homepage/:path*`: `no-cache, must-revalidate` (Browser selalu revalidasi ke server via ETag sehingga aset hero/mockup homepage yang diperbarui langsung tersaji seketika tanpa terhalang cache statis).
+     - `/assets/:path*`: `public, max-age=604800, stale-while-revalidate=86400` (Cache 7 hari untuk aset statis sistem seperti logo brand, favicon, dan icon vektor).
      - `/uploads/:path*`: `public, max-age=86400, stale-while-revalidate=86400` (Cache 1 hari untuk media draft dengan background revalidasi dan clean overwrite).
      - File baru yang diunggah dari Demo Studio maupun Client Dashboard disematkan query buster timestamp (`?t=...`) sehingga pembaruan aset tetap tampil seketika.
 5. **Showroom Color Palette Selector & Per-Theme Default Palette:**
@@ -1600,7 +1602,7 @@ Untuk memastikan showroom demo tema publik (`/demo/[themeId]`) tampil memukau da
 Untuk memberikan pengalaman interaktif penuh bagi calon klien sebelum memesan paket, platform menghadirkan rute demo mandiri non-rute tema (*zero-database client demo*):
 1. **Dual-Tab Hub di `/demo`:**
    - Menyediakan dua tab utama di bagian atas katalog showroom: *"Koleksi Desain Tema"* (menampilkan 15 desain undangan visual) dan *"Sistem & Fitur Acara"* (menampilkan kartu modul teknologi operasional Hari-H).
-2. **Demo Meja Resepsionis & QR Scanner (`/demo/receptionist`):**
+2. **Demo Sistem Resepsionis & QR Scanner (`/demo/receptionist`):**
    - Beroperasi 100% di memori browser tanpa mutasi basis data.
    - Dilengkapi **Generator Tiket QR Kustom** (input nama tamu, kategori VIP/Keluarga/Reguler, alokasi pax, dan nomor meja) dengan fitur unduh gambar QR PNG dan preview fullscreen untuk pengujian kamera.
    - Mode Scanner Kamera Live berbasis `html5-qrcode` dengan deteksi multi-kamera (laptop & tablet), laser viewfinder, feedback audio *beep chime* via Web Audio API, serta tombol *Simulasi Scan Cepat 1-Klik*.
@@ -1680,7 +1682,7 @@ Untuk memberikan pengalaman interaktif penuh bagi calon klien sebelum memesan pa
 5. **Garansi Kompatibilitas Mundur 100% (Zero-Breaking Policy):**
    - Seluruh 14 tema master lainnya tetap berfungsi normal tanpa regresi karena Engine tetap mengekspor fallback token lama (`storySectionHtml`, dll.).
 
-### 17.11 — Arsitektur Single-Screen Zero-Scroll Kiosk pada Meja Resepsionis Live & Demo
+### 17.11 — Arsitektur Single-Screen Zero-Scroll Kiosk pada Sistem Resepsionis Live & Demo
 1. **Pemberantasan Window Scrolling (`h-screen overflow-hidden`):**
    - Baik pada sistem resepsionis live (`app/components/features/ReceptionistScannerClient.tsx`) maupun showroom demo (`app/demo/receptionist/page.tsx`), viewport dikunci kokoh pada `h-screen overflow-hidden`.
    - Mengeliminasi distorsi *elastic bounce*, pergeseran layout, dan scrollbar vertikal browser saat panitia menyentuh layar tablet (iPad) atau mengarahkan barcode scanner tembak.

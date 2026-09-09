@@ -43,7 +43,7 @@ export default async function ReceptionistPage({ params }: PageProps) {
           </div>
           <h1 className="text-base font-bold text-stone-900">Fitur Tidak Tersedia</h1>
           <p className="text-sm text-stone-500 leading-relaxed">
-            Fitur Meja Resepsionis & QR Check-in Tamu hanya tersedia mulai dari <strong>Paket Modern</strong> dan <strong>Paket Premium</strong>.
+            Fitur Sistem Resepsionis & QR Check-in Tamu hanya tersedia mulai dari <strong>Paket Modern</strong> dan <strong>Paket Premium</strong>.
           </p>
         </div>
       </div>

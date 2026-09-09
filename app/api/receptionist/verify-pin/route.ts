@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
 
     if (invitation.order?.planType === "TRADITIONAL") {
       return NextResponse.json(
-        { error: "Fitur Meja Resepsionis & QR Check-in tidak tersedia pada Paket Traditional." },
+        { error: "Fitur Sistem Resepsionis & QR Check-in tidak tersedia pada Paket Traditional." },
         { status: 403 }
       );
     }

@@ -631,7 +631,7 @@ export default function SettingsPage() {
   if (hasQrCheckin) {
     reviewItems.push({
       id: "receptionist",
-      badge: "Meja Resepsionis & QR",
+      badge: "Sistem Resepsionis & QR",
       title: "Portal Scanner Petugas Resepsi",
       desc: `Portal check-in kehadiran tamu hari-H dengan autentikasi PIN Panitia (${formData.staffPin || invitation?.staffPin ? "PIN Telah Diatur" : "Memerlukan PIN"}).`,
       url: receptionistUrl,

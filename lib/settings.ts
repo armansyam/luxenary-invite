@@ -179,7 +179,7 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
     landingFeature2Title: map["landing_feature_2_title"] || "Manajemen Tamu & WhatsApp",
     landingFeature2Desc: map["landing_feature_2_desc"] || "Generator link pintar per tamu, form RSVP dengan QR Code terintegrasi, dan auto-redirect kirim undangan via WhatsApp.",
     landingFeature3Title: map["landing_feature_3_title"] || "Buku Tamu Digital (QR Code)",
-    landingFeature3Desc: map["landing_feature_3_desc"] || "Manajemen check-in tamu VIP secara real-time di meja resepsionis menggunakan scanner QR Code pintar.",
+    landingFeature3Desc: map["landing_feature_3_desc"] || "Manajemen check-in tamu VIP secara real-time di resepsionis menggunakan scanner QR Code pintar.",
     packages: [
       {
         id: "TRADITIONAL",

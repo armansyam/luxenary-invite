@@ -166,7 +166,7 @@ Sistem Studio Editor Klien (`/dashboard/invitation/[id]`) menyediakan kendali kr
 8. **Pre-Flight Gatekeeper Checklist (6 Instrumen URL)**:
    - Menyajikan 6 instrumen URL resmi terpisah: (1) Pintu Utama Canonical, (2) Subdomain Eksklusif, (3) Simulasi Personalisasi Tamu (`?to=...`), (4) Portal Resepsionis & QR (`/receptionist`), (5) Galeri Kenangan Tamu (`/memories`), dan (6) Form Kamera Tamu (`/sharemoment`).
    - Tombol *"Rilis Undangan Resmi"* terkunci sampai ke-6 instrumen URL terkonfirmasi 100% oleh klien. Seluruh tautan didukung mode `?preview=true` saat status DRAFT agar dapat diuji coba tanpa membuka akses publik prematur.
-9. **Portal Meja Resepsionis & QR Scanner (`/receptionist`)**:
+9. **Portal Resepsionis & QR Scanner (`/receptionist`)**:
    - Dilindungi PIN Panitia 4-10 digit (dienkripsi AES-256-GCM dua arah di database).
    - Menggunakan token sesi HMAC (`rcpt_${invitationId}_${hash}`) yang tersimpan di `localStorage`.
    - **Tampilan Hasil Check-in Informatif:** Menampilkan nama tamu, badge kategori (VIP/Keluarga/Umum), jumlah alokasi pax, serta **Kartu Lokasi Meja / Tempat Duduk** (e.g. `Meja 5`) secara mencolok untuk kemudahan panitia dan tamu.
@@ -506,7 +506,7 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - Pengalaman tamu, cover gate & audio autoplay policy (`02_PENGALAMAN_TAMU_UNDANGAN.md`)
    - Formulir RSVP publik, rate limiting & nested wish reply (`03_SISTEM_RSVP_DAN_BUKU_UCAPAN.md`)
    - Tanda kasih cashless, rekening copy button & QRIS (`04_AMPLOP_DIGITAL_DAN_HADIAH_PERNIKAHAN.md`)
-   - Portal meja resepsionis, HTML5 QR scanner & souvenir (`05_SISTEM_RESEPSIONIS_DAN_CHECKIN_QR.md`)
+   - Portal resepsionis digital, HTML5 QR scanner & souvenir (`05_SISTEM_RESEPSIONIS_DAN_CHECKIN_QR.md`)
    - Portal upload foto candid tamu & slideshow proyektor venue (`06_LIVE_MOMENT_DAN_CLOUD_MEMORIES.md`)
 4. **Engineering, Kamus Database & Keamanan (`docs/`):**
    - Kamus data, relasi ERD & lifecycle state machine (`DATABASE_SCHEMA_DAN_RELASI.md`)
@@ -591,7 +591,7 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - **Pilot Candani & Starter Blueprint:** Diterapkan langsung pada seksi Kisah Cinta (*Love Story*) Candani dengan estetika floral terakota anggun (`.candani-story-flow`), dan didokumentasikan di `themes/starter-blueprint.html` serta `public/downloads/starter-blueprint.html` sebagai standar emas pembuatan tema master baru.
 11. **Ekosistem Demo Publik Mandiri Fitur Hari-H (Day-of-Event Tech Demo):**
    - **Dual-Tab Hub di `/demo`:** Navigasi tab utama *"Koleksi Desain Tema"* (15 tema fisik) dan *"Sistem & Fitur Acara"* (3 modul teknologi operasional Hari-H).
-   - **Demo Meja Resepsionis & QR Scanner (`/demo/receptionist`):** Arsitektur *zero-database in-memory client demo*. Dilengkapi generator tiket QR kustom (Nama, Kategori VIP/Keluarga/Reguler, Pax, Nomor Meja), unduh QR PNG, modal preview layar HP untuk scan kamera, live camera scanner via `html5-qrcode`, audio beep chime, proteksi anti-double scan, daftar kehadiran tamu real-time, dan simulasi kunci layar PIN panitia (`1234`).
+   - **Demo Sistem Resepsionis & QR Scanner (`/demo/receptionist`):** Arsitektur *zero-database in-memory client demo*. Dilengkapi generator tiket QR kustom (Nama, Kategori VIP/Keluarga/Reguler, Pax, Nomor Meja), unduh QR PNG, modal preview layar HP untuk scan kamera, live camera scanner via `html5-qrcode`, audio beep chime, proteksi anti-double scan, daftar kehadiran tamu real-time, dan simulasi kunci layar PIN panitia (`1234`).
    - **Demo Buku Tamu Foto Digital (`/demo/sharemoment`):** Upload selfie & ucapan bertahap simulasi non-database, disimpan di `sessionStorage` lokal (`demo_guest_moments`) dan otomatis terpampang di posisi teratas pada galeri kenangan tamu.
    - **Demo Galeri Kenangan Tamu (`/demo/memories`):** Feed foto kenangan tamu berformat *Fluid Full-Width Masonry Grid* (`max-w-[1920px]`, 2 hingga 7 kolom adaptif), Instagram Story Highlights Rail di bagian atas feed, lencana khusus *"Momen Baru Diunggah (Anda)"* untuk foto hasil sesi user, Clean Modal Lightbox tanpa ikon panah mengambang (dukungan swipe sentuh di smartphone & tombol panah keyboard di desktop), serta tombol simulasi unduh ZIP resolusi asli.
 

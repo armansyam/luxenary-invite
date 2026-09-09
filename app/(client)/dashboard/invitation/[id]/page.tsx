@@ -2665,7 +2665,7 @@ export default function EditInvitation() {
             <div className="flex items-center justify-between">
               <div>
                 <span className="text-xs font-bold text-stone-900">Aktifkan Kartu Akses QR &amp; Check-In:</span>
-                <p className="text-[11px] text-stone-500">Tamu dapat menunjukkan QR Code saat tiba di meja resepsionis untuk check-in cepat</p>
+                <p className="text-[11px] text-stone-500">Tamu dapat menunjukkan QR Code saat tiba di resepsionis untuk check-in cepat</p>
               </div>
               <SectionHeaderToggle
                 label=""
