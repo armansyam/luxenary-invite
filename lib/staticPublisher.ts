@@ -80,7 +80,7 @@ export async function buildAndSavePublishedHtml(invitationId: string): Promise<s
     orderBy: { createdAt: "desc" },
   });
   
-  const siteOrigin = (process.env.NEXT_PUBLIC_APP_URL || "https://luxvite.id").replace(/\/$/, "");
+  const siteOrigin = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `http://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "http://localhost:3000")).replace(/\/$/, "");
   const rawImage = coverMedia?.localPath || (data as any).landingCoverUrl || (data as any).sidebarPhotoUrl || (data as any).heroPhotoUrl || "/assets/brand/og-banner.png";
   const absoluteImageUrl = rawImage.startsWith("http") ? rawImage : `${siteOrigin}${rawImage.startsWith("/") ? "" : "/"}${rawImage}`;
 

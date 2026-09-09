@@ -255,7 +255,7 @@ export default auth(async (req) => {
       // Sub-routes di bawah slug (memories, sharemoment, galery) ATAU SEO URL (couple-slug/invitation-slug)
       if (segments.length >= 2) {
         const subRoute = segments[1];
-        const allowedSubRoutes = ["memories", "sharemoment", "galery"];
+        const allowedSubRoutes = ["memories", "sharemoment", "gallery"];
         if (allowedSubRoutes.includes(subRoute)) {
           // Biarkan Next.js routing menangani → app/(public)/[slug]/[subRoute]/page.tsx
           return NextResponse.next();

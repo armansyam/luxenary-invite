@@ -19,21 +19,24 @@ const geistMono = Geist_Mono({
 });
 
 import { getPublicPlatformSettings } from "@/lib/settings";
+import { getDynamicServerAppUrl } from "@/lib/serverDomainUtils";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export async function generateMetadata(): Promise<Metadata> {
-  const settings = await getPublicPlatformSettings();
+  const [settings, siteUrl] = await Promise.all([
+    getPublicPlatformSettings(),
+    getDynamicServerAppUrl(),
+  ]);
   const brandName = settings.platformName || "Luxenary";
   const tagline = settings.heroTagline || "Undangan Pernikahan Digital Elegan, Hangat & Berkelas";
   const desc = settings.heroSubtitle || "Platform undangan pernikahan digital self-service dengan desain estetika mewah dan eksklusif.";
-  const siteUrl = "https://luxvite.id";
 
   return {
     metadataBase: new URL(siteUrl),
     title: {
-      default: `${brandName} — ${tagline} | luxvite.id`,
+      default: `${brandName} — ${tagline}`,
       template: `%s | ${brandName}`,
     },
     description: tagline,
@@ -62,8 +65,6 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     keywords: [
       brandName,
-      "Luxvite",
-      "luxvite.id",
       "Undangan Pernikahan Digital",
       "Undangan Digital",
       "Wedding Invitation Digital",
@@ -114,7 +115,14 @@ const LUXENARY_WATERMARK = `
 </script>
 `;
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const [settings, siteUrl] = await Promise.all([
+    getPublicPlatformSettings(),
+    getDynamicServerAppUrl(),
+  ]);
+  const brandName = settings.platformName || "Luxenary";
+  const tagline = settings.heroTagline || "Undangan Pernikahan Digital Elegan, Hangat & Berkelas";
+
   return (
     <html
       lang="id"
@@ -130,13 +138,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "WebSite",
-              "name": "Luxvite",
-              "alternateName": ["Luxvite Invite", "Luxvite.id", "Luxenary"],
-              "url": "https://luxvite.id",
-              "description": "Platform Undangan Pernikahan Digital Elegan, Hangat & Berkelas",
+              "name": brandName,
+              "alternateName": [brandName, "Luxenary"],
+              "url": siteUrl,
+              "description": tagline,
               "potentialAction": {
                 "@type": "SearchAction",
-                "target": "https://luxvite.id/demo?q={search_term_string}",
+                "target": `${siteUrl}/demo?q={search_term_string}`,
                 "query-input": "required name=search_term_string",
               },
             }),

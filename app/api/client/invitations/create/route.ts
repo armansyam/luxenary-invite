@@ -233,96 +233,98 @@ export async function POST(req: Request) {
   });
 
   try {
-    let invitation;
-    if (existingDraft) {
-      invitation = await prisma.invitation.update({
-        where: { id: existingDraft.id },
-        data: {
-          orderId: paidOrder?.id ?? existingDraft.orderId ?? undefined,
-          groomName: groomName?.trim() || finalGroomNick || existingDraft.groomName || "",
-          brideName: brideName?.trim() || finalBrideNick || existingDraft.brideName || "",
-          groomNickname: finalGroomNick || existingDraft.groomNickname || "",
-          brideNickname: finalBrideNick || existingDraft.brideNickname || "",
-          groomSlug: finalGroomNick ? groomSlug : existingDraft.groomSlug,
-          brideSlug: finalBrideNick ? brideSlug : existingDraft.brideSlug,
-          invitationSlug: (finalGroomNick || finalBrideNick) ? invitationSlug : existingDraft.invitationSlug,
-          subdomain: finalSubdomain !== null ? finalSubdomain : existingDraft.subdomain,
-          themeId: themeId?.trim() ? themeId.trim() : (existingDraft.themeId || ""),
-          openingQuote: blueprint.openingQuote || existingDraft.openingQuote,
-          openingQuoteRef: blueprint.openingQuoteRef || existingDraft.openingQuoteRef,
-          eventData: initialEvents.length > 0 ? JSON.stringify(initialEvents) : existingDraft.eventData,
-          status: "DRAFT",
-          publishedAt: publishedAt || existingDraft.publishedAt,
-        },
-      });
-    } else {
-      invitation = await prisma.invitation.create({
-        data: {
-          userId: userId,
-          orderId: paidOrder?.id ?? undefined,
-          groomName: groomName?.trim() || finalGroomNick || "",
-          brideName: brideName?.trim() || finalBrideNick || "",
-          groomNickname: finalGroomNick || "",
-          brideNickname: finalBrideNick || "",
-          groomSlug,
-          brideSlug,
-          invitationSlug,
-          subdomain: finalSubdomain,
-          themeId: themeId?.trim() || "", // Murni kosong tanpa default tema paksaan
-          openingQuote: blueprint.openingQuote,
-          openingQuoteRef: blueprint.openingQuoteRef,
-          // staffPin: Diisi secara mandiri oleh Klien sbg syarat Publish
-          eventData: JSON.stringify(initialEvents),
-          featureSettings: JSON.stringify({
-            weddingTagline: "THE WEDDING OF",
-            colorPalette: "champagne",
-            showStory: true,
-            showGallery: true,
-            showGift: true,
-            showDresscode: true,
-            showMusic: true,
-            customLabels: {
-              coverSubtitle: blueprint.coverSubtitle,
-              openBtn: blueprint.openBtn,
-              rsvpTitle: blueprint.rsvpTitle,
-              rsvpBtnText: blueprint.rsvpBtnText || "Kirim Konfirmasi & Doa",
-              quoteTitle: blueprint.quoteSectionTitle,
-              quoteEyebrow: blueprint.quoteSectionEyebrow,
-              coupleTitle: blueprint.coupleSectionTitle,
-              coupleEyebrow: blueprint.coupleSectionEyebrow || "THE COUPLE",
-              coupleSub: blueprint.coupleSectionSub,
-              eventsTitle: blueprint.eventsSectionTitle,
-              eventsSub: blueprint.eventsSectionSub,
-              storyTitle: blueprint.storySectionTitle,
-              storyEyebrow: blueprint.storySectionEyebrow || "OUR JOURNEY",
-              galleryTitle: blueprint.gallerySectionTitle,
-              galleryEyebrow: blueprint.gallerySectionEyebrow,
-              galleryQuote: blueprint.galleryQuote,
-              dressCodeTitle: blueprint.dressCodeTitle || "Dress Code",
-              dressCodeEyebrow: blueprint.dressCodeEyebrow || "A Guide To",
-              dressCodeSubtitle: blueprint.dressCodeSubtitle || "Kami mengundang tamu undangan untuk mengenakan palet warna berikut:",
-              streamingTitle: blueprint.streamingTitle || "Live Streaming",
-              streamingEyebrow: blueprint.streamingEyebrow || "Virtual Ceremony",
-              streamingSubtitle: blueprint.streamingSubtitle || "Bagi keluarga & sahabat yang menyaksikan dari jauh, bergabunglah melalui siaran daring:",
-              giftTitle: blueprint.giftSectionTitle,
-              giftEyebrow: blueprint.giftSectionEyebrow,
-              giftDesc: blueprint.giftSectionDesc,
-              turutMengundangTitle: blueprint.turutMengundangTitle || "Turut Mengundang",
-              turutMengundangEyebrow: blueprint.turutMengundangEyebrow || "Keluarga Besar",
-              turutMengundangSubtitle: blueprint.turutMengundangSubtitle || "Keluarga Besar & Kerabat yang turut berbahagia:",
-              wishesTitle: blueprint.wishesSectionTitle,
-              wishesSub: blueprint.wishesSectionSub,
-              rsvpNameLabel: "Nama Lengkap",
-              rsvpStatusLabel: "Konfirmasi Kehadiran",
-              rsvpCountLabel: "Jumlah Tamu",
-              rsvpMessageLabel: "Ucapan & Doa Restu"
-            }
-          }),
-          status: invitationStatus,
-          publishedAt: publishedAt,
-        },
-      });
-    }
+    let invitation: { id: string; subdomain: string | null; status: string };
+
+    invitation = await prisma.$transaction(async (tx) => {
+      if (existingDraft) {
+        return tx.invitation.update({
+          where: { id: existingDraft.id },
+          data: {
+            orderId: paidOrder?.id ?? existingDraft.orderId ?? undefined,
+            groomName: groomName?.trim() || finalGroomNick || existingDraft.groomName || "",
+            brideName: brideName?.trim() || finalBrideNick || existingDraft.brideName || "",
+            groomNickname: finalGroomNick || existingDraft.groomNickname || "",
+            brideNickname: finalBrideNick || existingDraft.brideNickname || "",
+            groomSlug: finalGroomNick ? groomSlug : existingDraft.groomSlug,
+            brideSlug: finalBrideNick ? brideSlug : existingDraft.brideSlug,
+            invitationSlug: (finalGroomNick || finalBrideNick) ? invitationSlug : existingDraft.invitationSlug,
+            subdomain: finalSubdomain !== null ? finalSubdomain : existingDraft.subdomain,
+            themeId: themeId?.trim() ? themeId.trim() : (existingDraft.themeId || ""),
+            openingQuote: blueprint.openingQuote || existingDraft.openingQuote,
+            openingQuoteRef: blueprint.openingQuoteRef || existingDraft.openingQuoteRef,
+            eventData: initialEvents.length > 0 ? JSON.stringify(initialEvents) : existingDraft.eventData,
+            status: "DRAFT",
+            publishedAt: publishedAt || existingDraft.publishedAt,
+          },
+        });
+      } else {
+        return tx.invitation.create({
+          data: {
+            userId: userId,
+            orderId: paidOrder?.id ?? undefined,
+            groomName: groomName?.trim() || finalGroomNick || "",
+            brideName: brideName?.trim() || finalBrideNick || "",
+            groomNickname: finalGroomNick || "",
+            brideNickname: finalBrideNick || "",
+            groomSlug,
+            brideSlug,
+            invitationSlug,
+            subdomain: finalSubdomain,
+            themeId: themeId?.trim() || "",
+            openingQuote: blueprint.openingQuote,
+            openingQuoteRef: blueprint.openingQuoteRef,
+            eventData: JSON.stringify(initialEvents),
+            featureSettings: JSON.stringify({
+              weddingTagline: "THE WEDDING OF",
+              colorPalette: "champagne",
+              showStory: true,
+              showGallery: true,
+              showGift: true,
+              showDresscode: true,
+              showMusic: true,
+              customLabels: {
+                coverSubtitle: blueprint.coverSubtitle,
+                openBtn: blueprint.openBtn,
+                rsvpTitle: blueprint.rsvpTitle,
+                rsvpBtnText: blueprint.rsvpBtnText || "Kirim Konfirmasi & Doa",
+                quoteTitle: blueprint.quoteSectionTitle,
+                quoteEyebrow: blueprint.quoteSectionEyebrow,
+                coupleTitle: blueprint.coupleSectionTitle,
+                coupleEyebrow: blueprint.coupleSectionEyebrow || "THE COUPLE",
+                coupleSub: blueprint.coupleSectionSub,
+                eventsTitle: blueprint.eventsSectionTitle,
+                eventsSub: blueprint.eventsSectionSub,
+                storyTitle: blueprint.storySectionTitle,
+                storyEyebrow: blueprint.storySectionEyebrow || "OUR JOURNEY",
+                galleryTitle: blueprint.gallerySectionTitle,
+                galleryEyebrow: blueprint.gallerySectionEyebrow,
+                galleryQuote: blueprint.galleryQuote,
+                dressCodeTitle: blueprint.dressCodeTitle || "Dress Code",
+                dressCodeEyebrow: blueprint.dressCodeEyebrow || "A Guide To",
+                dressCodeSubtitle: blueprint.dressCodeSubtitle || "Kami mengundang tamu undangan untuk mengenakan palet warna berikut:",
+                streamingTitle: blueprint.streamingTitle || "Live Streaming",
+                streamingEyebrow: blueprint.streamingEyebrow || "Virtual Ceremony",
+                streamingSubtitle: blueprint.streamingSubtitle || "Bagi keluarga & sahabat yang menyaksikan dari jauh, bergabunglah melalui siaran daring:",
+                giftTitle: blueprint.giftSectionTitle,
+                giftEyebrow: blueprint.giftSectionEyebrow,
+                giftDesc: blueprint.giftSectionDesc,
+                turutMengundangTitle: blueprint.turutMengundangTitle || "Turut Mengundang",
+                turutMengundangEyebrow: blueprint.turutMengundangEyebrow || "Keluarga Besar",
+                turutMengundangSubtitle: blueprint.turutMengundangSubtitle || "Keluarga Besar & Kerabat yang turut berbahagia:",
+                wishesTitle: blueprint.wishesSectionTitle,
+                wishesSub: blueprint.wishesSectionSub,
+                rsvpNameLabel: "Nama Lengkap",
+                rsvpStatusLabel: "Konfirmasi Kehadiran",
+                rsvpCountLabel: "Jumlah Tamu",
+                rsvpMessageLabel: "Ucapan & Doa Restu"
+              }
+            }),
+            status: invitationStatus,
+            publishedAt: publishedAt,
+          },
+        });
+      }
+    });
 
     return NextResponse.json({
       success: true,

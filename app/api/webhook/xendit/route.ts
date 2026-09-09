@@ -104,40 +104,36 @@ export async function POST(req: NextRequest) {
     } catch {}
 
     if (isPaid) {
-      // Atomic: cek idempotency + update dalam satu $transaction
-      let existingOrder: { status: string; planType: string } | null = null;
-
-      await prisma.$transaction(async (tx) => {
-        existingOrder = await tx.order.findUnique({
-          where: { id: orderId },
-          select: { status: true, planType: true },
-        });
-
-        if (!existingOrder) throw new Error("Order not found");
-        if (existingOrder.status === "PAID") return;
-
-        await tx.order.update({
-          where: { id: orderId },
-          data: {
-            status: "PAID",
-            paymentMethod: "GATEWAY",
-            paymentGatewayRef: body.id || null,
-            paidAt: new Date(),
-          },
-        });
-
-        if (webhookLogId) {
-          await tx.webhookLog.update({
-            where: { id: webhookLogId },
-            data: { status: "processed", processedAt: new Date() },
-          }).catch(() => {});
-        }
+      // Idempotency Guard: updateMany dengan filter status=PENDING — atomic check-and-set
+      // Mencegah double-processing jika Xendit kirim webhook duplikat bersamaan
+      const updated = await prisma.order.updateMany({
+        where: { id: orderId, status: "PENDING" },
+        data: {
+          status: "PAID",
+          paymentMethod: "GATEWAY",
+          paymentGatewayRef: body.id || null,
+          paidAt: new Date(),
+        },
       });
 
-      // Jika sudah PAID sebelumnya, return idempotent
-      if (!existingOrder || (existingOrder as { status: string }).status === "PAID") {
-        return NextResponse.json({ status: "ok", note: "already_paid" });
+      // Jika count=0, order sudah di-update sebelumnya — return idempotent
+      if (updated.count === 0) {
+        return NextResponse.json({ status: "ok", note: "already_processed" });
       }
+
+      // Update webhook log
+      if (webhookLogId) {
+        await prisma.webhookLog.update({
+          where: { id: webhookLogId },
+          data: { status: "processed", processedAt: new Date() },
+        }).catch(() => {});
+      }
+
+      // Ambil planType untuk SSE emit
+      const paidOrder = await prisma.order.findUnique({
+        where: { id: orderId },
+        select: { planType: true },
+      });
 
       // Proses upgrade jika ini order UPGRADE
       await applyUpgradePlan(orderId);
@@ -145,7 +141,7 @@ export async function POST(req: NextRequest) {
       // Push notifikasi real-time ke browser klien via SSE
       paymentEmitter.emit(orderId, {
         status: "PAID",
-        planType: (existingOrder as { planType: string }).planType,
+        planType: paidOrder?.planType ?? "TRADITIONAL",
       });
 
     } else if (isExpired) {

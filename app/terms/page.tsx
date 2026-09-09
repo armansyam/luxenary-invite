@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import Link from "next/link";
 import { BrandLogo } from "@/components/BrandLogo";
 import { getPublicPlatformSettings } from "@/lib/settings";
+import { getDynamicServerRootDomain } from "@/lib/serverDomainUtils";
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getPublicPlatformSettings();
@@ -18,6 +19,7 @@ export default async function TermsPage() {
   const supportWhatsapp = settings.supportWhatsapp || "";
   const graceDays = settings.retentionInvitationGraceDays || 7;
   const galleryDays = settings.retentionGalleryDefaultDays || 30;
+  const rootDomain = await getDynamicServerRootDomain();
 
   return (
     <div className="min-h-screen bg-[#faf8f5] font-sans flex flex-col text-stone-800" style={{ colorScheme: "only light", backgroundColor: "#faf8f5", color: "#292524" }}>
@@ -78,7 +80,7 @@ export default async function TermsPage() {
                   3. Masa Transisi Subdomain ({graceDays} Hari Pasca-Acara)
                 </h3>
                 <p className="text-xs text-stone-600 leading-relaxed">
-                  Tautan alamat subdomain ringkas Anda (misal: <em>namakamu.luxvite.id</em>) tetap aktif melayani tamu hingga {graceDays} hari setelah tanggal acara selesai sebagai masa tenggang transisi. Setelah {graceDays} hari, alamat subdomain akan dinonaktifkan secara anggun, sementara akses kenangan beralih ke galeri foto atau layar ucapan terima kasih resmi.
+                  Tautan alamat subdomain ringkas Anda (misal: <em>namakamu.{rootDomain}</em>) tetap aktif melayani tamu hingga {graceDays} hari setelah tanggal acara selesai sebagai masa tenggang transisi. Setelah {graceDays} hari, alamat subdomain akan dinonaktifkan secara anggun, sementara akses kenangan beralih ke galeri foto atau layar ucapan terima kasih resmi.
                 </p>
               </div>
 

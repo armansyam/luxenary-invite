@@ -8,10 +8,39 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export async function GET() {
   try {
-    const dbThemes = await prisma.theme.findMany({
+    let dbThemes = await prisma.theme.findMany({
       where: { isActive: true },
       orderBy: { sortOrder: "asc" },
     });
+
+    // Self-Healing Auto-Sync: Jika tabel theme di database kosong (misal sehabis reset DB / fresh migration),
+    // otomatis sinkronisasi secara dinamis dari DEMO_REGISTRY tanpa perlu jalankan seed manual
+    if (dbThemes.length === 0 && Object.keys(DEMO_REGISTRY).length > 0) {
+      const themesToInsert = Object.values(DEMO_REGISTRY).map((demo, idx) => ({
+        id: demo.themeId.toLowerCase(),
+        name: demo.themeName,
+        category: demo.category.toLowerCase(),
+        series: demo.series,
+        description: demo.tagline || `${demo.themeName} Series`,
+        previewUrl: `/demo/${demo.themeId.toLowerCase()}`,
+        isPremium: demo.category.toLowerCase() === "premium",
+        isActive: true,
+        sortOrder: idx + 1,
+      }));
+
+      for (const t of themesToInsert) {
+        await prisma.theme.upsert({
+          where: { id: t.id },
+          create: t,
+          update: {},
+        });
+      }
+
+      dbThemes = await prisma.theme.findMany({
+        where: { isActive: true },
+        orderBy: { sortOrder: "asc" },
+      });
+    }
 
     // Batch-load all custom demo settings from DB in one query
     const themeIds = dbThemes.map((t) => `theme_demo_${t.id.toLowerCase()}`);

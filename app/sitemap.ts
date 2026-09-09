@@ -1,11 +1,12 @@
 import { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
+import { getDynamicServerAppUrl } from "@/lib/serverDomainUtils";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = "https://luxvite.id";
+  const baseUrl = await getDynamicServerAppUrl();
   const now = new Date();
 
   // Static Public Routes

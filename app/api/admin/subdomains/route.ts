@@ -145,7 +145,7 @@ export async function GET(req: Request) {
           status: "AVAILABLE",
           available: true,
           badge: "Tersedia",
-          message: `Subdomain "${cleanSubdomain}.luxvite.id" masih bebas dan siap digunakan.`,
+          message: `Subdomain "${cleanSubdomain}" masih bebas dan siap digunakan.`,
         };
       }
     }

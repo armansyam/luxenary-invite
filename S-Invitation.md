@@ -287,7 +287,7 @@ Siklus hidup undangan diatur secara otomatis oleh cron job (`POST /api/cron/clea
    - **Staging Save (Anti Rebake Storm):** Penyimpanan seksi 1–15 selama masa darurat hanya memperbarui PostgreSQL database tanpa memicu kompilasi HTML dan sinkronisasi R2 berulang-ulang.
    - **Atomic Single Deploy & Auto-Lock (`DEPLOY_AND_LOCK`):** Di puncak formulir tersedia tombol aksi **"Perbarui Undangan & Kunci Kembali"** yang mengeksekusi 1 kali kompilasi HTML penuh, migrasi/sinkronisasi ke Cloudflare R2, dan seketika mengunci kembali studio secara otomatis.
    - **Pelepasan Subdomain Otomatis:** Jika subdomain diubah, subdomain lama langsung terlepas dari record database (`@unique`) dan kembali bebas ke pool publik secara otomatis.
-   - **Subdomain Monitor & Live Inspector Admin:** Dashboard Admin (`/admin?tab=custom_domains`) menyediakan sub-tab khusus Subdomain Sistem (*.luxvite.id) dengan 3 kartu KPI real-time (Total Aktif, Live, Kedaluwarsa), alat pencarian kepemilikan nama (*Live Subdomain Inspector*), dan aksi daur ulang 1-klik untuk melepaskan subdomain kedaluwarsa (H+7 hari acara) kembali ke pool namespace.
+   - **Subdomain Monitor & Live Inspector Admin:** Dashboard Admin (`/admin?tab=custom_domains`) menyediakan sub-tab khusus Subdomain Sistem (sesuai root domain aktif, misal `*.localhost:3000` di lokal atau `*.luxvite.id` di VPS) dengan 3 kartu KPI real-time (Total Aktif, Live, Kedaluwarsa), alat pencarian kepemilikan nama (*Live Subdomain Inspector*), dan aksi daur ulang 1-klik untuk melepaskan subdomain kedaluwarsa (H+7 hari acara) kembali ke pool namespace.
 7. **Proteksi Siklus Download Galeri Tamu (ZIP) & Panduan DNS Dinamis Klien:**
    - **Proteksi Unduh ZIP & Status Draft:** Tombol unduh ZIP di dashboard klien otomatis dinonaktifkan saat status masih `DRAFT` atau jika belum ada foto tamu (`guestMemoriesCount === 0`).
    - **Pencegahan Data Tercecer (Early Lock Warning):** Jika klien mengunduh ZIP saat acara masih berjalan (`PUBLISHED` & `!memoriesUploadLocked`), sistem memunculkan modal dialog peringatan bahwa pengunduhan akan langsung mengunci upload tamu secara permanen.
@@ -366,7 +366,7 @@ Platform mendukung arsitektur payment gateway 2-arah (*two-way handshake*) terin
     - Kartu global pusat kontrol tetap berada di posisi atas, sementara vendor cards diisolasi per tab sehingga antarmuka ringkas dan tidak memerlukan vertical scrolling panjang.
     - Indikator badge visual "Aktif" otomatis menandai vendor yang sedang dijadikan gateway default pembayaran klien.
 12. **Rekonsiliasi Real-Time & Deteksi Host Dinamis**:
-    - Sistem mendeteksi `appUrl` secara dinamis dari request headers (`x-forwarded-host`, `host`, `x-forwarded-proto`), kompatibel secara native di lingkungan pengembangan `localhost`, reverse proxy VPS, custom domain, maupun tunnel dev tanpa hardcode URL.
+    - Sistem mendeteksi `appUrl` dan `rootDomain` secara dinamis dari request headers (`x-forwarded-host`, `host`, `x-forwarded-proto`) via `lib/serverDomainUtils.ts`, kompatibel secara native di lingkungan pengembangan `localhost:3000`, IP lokal, reverse proxy VPS, custom domain, maupun tunnel dev tanpa hardcode URL.
     - Rekonsiliasi status real-time pada `GET /api/client/orders/[id]/status` memverifikasi status pembayaran langsung ke API gateway sehingga status terdeteksi responsif seketika.
 13. **Tiga Kondisi Pembayaran & Transmisi Data Lengkap (Rich Payload Delivery)**:
     - **Tiga Kondisi Pembayaran**:
@@ -632,6 +632,5 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
      - Lebar 50% di mobile dan 125px ramping di desktop.
      - Perubahan warna kontekstual (`bg-stone-900` pada Form Data vs `bg-amber-800` pada Live Editor).
      - Menghadirkan umpan balik taktil modern setara standar industri tanpa library eksternal berlebih.
-
-
-
+4. **Direct Action Chips Terpadu (Anti-Card Clutter):**
+   - Notifikasi foto yang belum lengkap diintegrasikan langsung ke dalam kartu switcher ini sebagai action chips ringkas (`⚠️ Perlu: [ + Sampul ] [ + Foto Mempelai ]`), mengeliminasi kartu bertingkat dan menghemat ruang vertikal secara signifikan.

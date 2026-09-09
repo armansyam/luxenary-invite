@@ -70,7 +70,7 @@ export function getApexRootDomain(): string {
   }
 
   // Server-side fallback from environment or default
-  const root = process.env.NEXT_PUBLIC_ROOT_DOMAIN || process.env.NEXT_PUBLIC_APP_URL || "";
+  const root = process.env.NEXT_PUBLIC_ROOT_DOMAIN || process.env.NEXT_PUBLIC_APP_URL || "localhost:3000";
   return root.replace(/^https?:\/\//, "").replace(/\/$/, "");
 }
 

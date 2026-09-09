@@ -1,7 +1,8 @@
 import { MetadataRoute } from "next";
+import { getDynamicServerAppUrl } from "@/lib/serverDomainUtils";
 
-export default function robots(): MetadataRoute.Robots {
-  const baseUrl = "https://luxvite.id";
+export default async function robots(): Promise<MetadataRoute.Robots> {
+  const baseUrl = await getDynamicServerAppUrl();
 
   return {
     rules: [

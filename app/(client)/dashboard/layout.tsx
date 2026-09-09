@@ -9,17 +9,19 @@ const navItems = [
   {
     href: "/dashboard",
     label: "Beranda",
+    shortLabel: "Beranda",
     icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
       </svg>
     ),
   },
   {
     href: "/dashboard/invitation",
-    label: "Edit Undangan",
+    label: "Studio Editor",
+    shortLabel: "Studio",
     icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
       </svg>
     ),
@@ -27,8 +29,9 @@ const navItems = [
   {
     href: "/dashboard/guests",
     label: "Buku Tamu",
+    shortLabel: "Tamu",
     icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
       </svg>
     ),
@@ -36,8 +39,9 @@ const navItems = [
   {
     href: "/dashboard/rsvp",
     label: "RSVP & Doa",
+    shortLabel: "RSVP",
     icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
     ),
@@ -45,8 +49,9 @@ const navItems = [
   {
     href: "/dashboard/settings",
     label: "Pengaturan",
+    shortLabel: "Setelan",
     icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
       </svg>
@@ -173,29 +178,6 @@ export default function ClientDashboardLayout({
             <BrandLogo size="sm" lightBg showName brandName="Dasbor Klien" />
           </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-1">
-            {navItems.map((item) => {
-              const isActive = pathname === item.href || (item.href === "/dashboard/invitation" && pathname.startsWith("/dashboard/invitation"));
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2 ${
-                    isActive
-                      ? "bg-amber-50 text-amber-900 border border-amber-200/80 font-bold shadow-xs"
-                      : "text-stone-600 hover:text-stone-900 hover:bg-stone-100/70"
-                  }`}
-                >
-                  <span className={isActive ? "text-amber-800" : "text-stone-400"}>
-                    {item.icon}
-                  </span>
-                  <span>{item.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
-
           {/* User Profile, Contact Admin & Logout */}
           <div className="flex items-center gap-2 sm:gap-3">
             <span className="text-xs font-semibold text-stone-700 hidden sm:block">
@@ -244,36 +226,43 @@ export default function ClientDashboardLayout({
       )}
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 pt-2 sm:pt-2.5 pb-24 md:pb-12">
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 pt-3 sm:pt-4 pb-28 sm:pb-24">
         {children}
       </main>
 
-      {/* Mobile Bottom Sticky Navigation (Super Ergonomic for Smartphones) */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-t border-stone-200/80 px-2 py-1.5 shadow-lg">
-        <div className="grid grid-cols-5 gap-1 max-w-md mx-auto">
+      {/* Creative Floating Glass Dock Navigation (Universal Mobile & Desktop) */}
+      <nav 
+        aria-label="Navigasi Utama"
+        className="fixed bottom-3 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-1.5rem)] sm:w-auto max-w-lg sm:max-w-none"
+      >
+        <div className="bg-white/90 backdrop-blur-xl border border-stone-200/90 shadow-lg shadow-stone-900/5 rounded-2xl sm:rounded-full p-1.5 sm:p-2 flex items-center justify-between sm:justify-center gap-1 sm:gap-1.5">
           {navItems.map((item) => {
             const isActive = pathname === item.href || (item.href === "/dashboard/invitation" && pathname.startsWith("/dashboard/invitation"));
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex flex-col items-center justify-center py-1 px-1 rounded-xl transition ${
+                className={`flex-1 sm:flex-initial flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-full transition-all duration-200 ease-out active:scale-95 ${
                   isActive
-                    ? "text-amber-800 font-bold"
-                    : "text-stone-400 hover:text-stone-700"
+                    ? "bg-amber-50 text-amber-900 border border-amber-200/80 shadow-xs font-bold"
+                    : "text-stone-500 hover:text-stone-900 hover:bg-stone-100/70 border border-transparent font-medium"
                 }`}
               >
-                <div className={`p-1 rounded-lg ${isActive ? "bg-amber-50 text-amber-800" : ""}`}>
+                <span className={`transition-transform duration-200 ${isActive ? "text-amber-800 scale-105" : "text-stone-400 group-hover:text-stone-600"}`}>
                   {item.icon}
-                </div>
-                <span className="text-[10px] tracking-tight leading-tight mt-0.5">
-                  {item.label === "Edit Undangan" ? "Editor" : item.label === "Buku Tamu" ? "Tamu" : item.label === "RSVP & Doa" ? "RSVP" : item.label}
                 </span>
+                <span className="text-[10px] sm:text-xs tracking-tight leading-tight whitespace-nowrap">
+                  <span className="sm:hidden">{item.shortLabel}</span>
+                  <span className="hidden sm:inline">{item.label}</span>
+                </span>
+                {isActive && (
+                  <span className="hidden sm:inline-block w-1.5 h-1.5 rounded-full bg-amber-700 ml-0.5 animate-pulse" />
+                )}
               </Link>
             );
           })}
         </div>
-      </div>
+      </nav>
     </div>
   );
 }

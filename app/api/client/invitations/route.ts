@@ -33,6 +33,7 @@ export async function GET() {
       eventData: true,
       staffPin: true,
       customDomain: true,
+      featureSettings: true,
       galleryExpiresAt: true,
       memoriesUploadLocked: true,
       createdAt: true,

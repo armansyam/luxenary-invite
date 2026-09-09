@@ -1,4 +1,5 @@
 import { prisma } from "./prisma";
+import { getDynamicServerRootDomain } from "./serverDomainUtils";
 
 export interface PricingPackageItem {
   id: "TRADITIONAL" | "MODERN" | "PREMIUM";
@@ -92,6 +93,8 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
     ? `${galleryRetentionDays / 30} bulan`
     : `${galleryRetentionDays} hari`;
 
+  const activeDomain = await getDynamicServerRootDomain();
+
   const parseFeatures = (key: string, defaultFirstLine: string, caps: string[]) => {
     let rawList: string[];
     if (map[key]) {
@@ -102,7 +105,7 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
         "Tamu undangan tanpa batas",
         "Manajemen RSVP & ucapan doa",
         "Galeri foto & musik latar",
-        "url : namakamu.luxvite.id",
+        `url : namakamu.${activeDomain}`,
       ];
       if (caps.includes("qr_checkin")) {
         rawList.push("QR Code Check-in Tamu");
@@ -119,12 +122,16 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
     }
 
     return rawList.map(item => {
-      if (/galeri\s+kenangan|guest\s+memories|guest\s*gal/i.test(item)) {
-        if (!/aktif|\d+\s*(hari|bulan)/i.test(item)) {
-          return `${item} (/memories — Aktif ${galleryDurationLabel} pasca-acara)`;
+      let resolvedItem = item;
+      if (activeDomain !== "luxvite.id" && resolvedItem.includes(".luxvite.id")) {
+        resolvedItem = resolvedItem.replace(/\.luxvite\.id/g, `.${activeDomain}`);
+      }
+      if (/galeri\s+kenangan|guest\s+memories|guest\s*gal/i.test(resolvedItem)) {
+        if (!/aktif|\d+\s*(hari|bulan)/i.test(resolvedItem)) {
+          return `${resolvedItem} (/memories — Aktif ${galleryDurationLabel} pasca-acara)`;
         }
       }
-      return item;
+      return resolvedItem;
     });
   };
 

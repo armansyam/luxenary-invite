@@ -1435,7 +1435,9 @@ Setiap inisialisasi tagihan ke payment gateway (Midtrans & Xendit) mengirimkan i
 
 ### 15.11 — Rekonsiliasi Real-Time & Deteksi Host Dinamis
 - **Deteksi Host & Protokol Dinamis (Zero Domain Hardcode):**
-  - Sistem mendeteksi `appUrl` secara dinamis dari request headers (`x-forwarded-host`, `host`, `x-forwarded-proto`), kompatibel secara native di lingkungan pengembangan `localhost`, reverse proxy VPS, custom domain, maupun tunnel dev tanpa modifikasi kode.
+  - Sistem mendeteksi `appUrl` dan `rootDomain` secara dinamis dari request headers (`x-forwarded-host`, `host`, `x-forwarded-proto`) melalui modul terpadu `lib/serverDomainUtils.ts` (`getDynamicServerAppUrl()` dan `getDynamicServerRootDomain()`).
+  - Digunakan secara menyeluruh di `app/layout.tsx` (Metadata & JSON-LD Schema.org), `app/sitemap.ts`, `app/robots.ts`, `app/terms/page.tsx`, `lib/settings.ts`, dan modul publishing, menjamin kompatibilitas native 100% otomatis di lingkungan pengembangan `localhost:3000`, IP lokal, tunnel, hingga production domain tanpa string hardcode.
+  - Pada antarmuka klien browser, fungsi `getApexRootDomain()` (`lib/domainUtils.ts`) membaca `window.location.host` secara reaktif sehingga seluruh preview dan tautan subdomain (`*.localhost:3000` vs `*.luxvite.id`) tersaji akurat sesuai host aktif.
 - **Rekonsiliasi Status Real-Time:**
   - Endpoint `GET /api/client/orders/[id]/status` melakukan verifikasi langsung ke gateway vendor (`gw.verify()`) saat status order masih `PENDING`.
   - Memastikan pengujian pembayaran di lingkungan pengembangan lokal (`localhost`) yang tidak dapat menerima webhook internet langsung terdeteksi seketika saat tombol "Cek Status Pembayaran" diklik atau melalui polling SSE, mengubah status menjadi `PAID` dan mengarahkan klien ke setup undangan.
@@ -1793,3 +1795,7 @@ Untuk memberikan pengalaman interaktif penuh bagi calon klien sebelum memesan pa
    - Indikator thumb bertransisi warna kontekstual: `bg-stone-900` saat di mode Form Data dan berubah hangat ke `bg-amber-800` saat di mode Live Editor Visual.
 3. **Penerapan Serupa pada Device Preview Switcher:**
    - Toggle preview perangkat (`Mobile` vs `Layar Penuh`) mengadopsi mekanisme sliding magnetic pill serupa berlatar putih halus `bg-white shadow-2xs` di atas rel `bg-stone-100`.
+4. **Direct Action Chips Terpadu (Anti-Card Clutter):**
+   - Notifikasi kelengkapan foto personal yang sebelumnya menjadi kartu amber mandiri bertumpuk telah dipindahkan ke dalam kartu switcher ini sebagai *Direct Action Chips* ringkas di sisi kanan.
+   - Mengeliminasi kata pengantar panjang ("Foto belum lengkap: ...") menjadi format langsung aksi: `⚠️ Perlu: [ + Sampul ] [ + Foto Mempelai ]`.
+   - Di desktop sejajar 1 baris di kanan switcher (`sm:justify-end`). Di mobile menjadi baris kedua ringkas di dalam kartu yang sama (`border-t border-stone-100 pt-2`), memangkas tinggi vertikal layar dan mengeliminasi tumpukan kartu yang berlebihan.

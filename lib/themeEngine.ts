@@ -1622,6 +1622,9 @@ export async function composeTemplateData(invitationId: string) {
     `;
   }
 
+  const appOrigin = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `http://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "http://localhost:3000")).replace(/\/$/, "");
+  const absoluteCover = coverUrl.startsWith("http") ? coverUrl : `${appOrigin}${coverUrl.startsWith("/") ? "" : "/"}${coverUrl}`;
+
   return {
     invitationId: inv.id,
     themeId: inv.themeId || "kalandra",
@@ -1780,8 +1783,8 @@ export async function composeTemplateData(invitationId: string) {
     <meta property="og:site_name" content="Luxenary">
     <meta property="og:title" content="${firstNickname} &amp; ${secondNickname} — Undangan Pernikahan">
     <meta property="og:description" content="Undangan pernikahan ${firstFullName} &amp; ${secondFullName}. Simak informasi rangkaian acara, lokasi, dan konfirmasi kehadiran.">
-    <meta property="og:image" content="${coverUrl.startsWith("http") ? coverUrl : `https://luxvite.id${coverUrl.startsWith("/") ? "" : "/"}${coverUrl}`}">
-    <meta property="og:image:secure_url" content="${coverUrl.startsWith("http") ? coverUrl : `https://luxvite.id${coverUrl.startsWith("/") ? "" : "/"}${coverUrl}`}">
+    <meta property="og:image" content="${absoluteCover}">
+    <meta property="og:image:secure_url" content="${absoluteCover}">
     <meta property="og:image:type" content="image/jpeg">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
@@ -1789,7 +1792,7 @@ export async function composeTemplateData(invitationId: string) {
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="${firstNickname} &amp; ${secondNickname} — Undangan Pernikahan">
     <meta name="twitter:description" content="Undangan pernikahan ${firstFullName} &amp; ${secondFullName}.">
-    <meta name="twitter:image" content="${coverUrl.startsWith("http") ? coverUrl : `https://luxvite.id${coverUrl.startsWith("/") ? "" : "/"}${coverUrl}`}">
+    <meta name="twitter:image" content="${absoluteCover}">
     `,
     
     // Feature Settings & Custom Labels for Rendering Engine

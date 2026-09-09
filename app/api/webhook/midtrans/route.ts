@@ -57,14 +57,15 @@ export async function POST(req: NextRequest) {
 
     const validServerKeys = Array.from(new Set(serverKeys.filter((k) => k && !k.includes("your_"))));
 
-    // Hard-block di production jika tidak ada key terkonfigurasi.
-    // Di dev/staging: webhook tetap bisa masuk tapi dengan warning (agar sandbox testing bisa jalan).
+    // Hard-block di production DAN staging jika tidak ada key terkonfigurasi.
+    // Bypass hanya diizinkan di mesin lokal (NODE_ENV=development) untuk sandbox testing.
     if (validServerKeys.length === 0) {
-      if (process.env.NODE_ENV === "production") {
+      const isLocalDev = process.env.NODE_ENV !== "production" && process.env.NEXT_PUBLIC_APP_ENV !== "staging";
+      if (!isLocalDev) {
         console.error("[Midtrans Webhook] KRITIS: MIDTRANS_SERVER_KEY tidak terkonfigurasi. Webhook ditolak.");
         return NextResponse.json({ error: "Gateway not configured" }, { status: 503 });
       }
-      console.warn("[Midtrans Webhook] ⚠️ Server key tidak terkonfigurasi — dev/sandbox bypass aktif.");
+      console.warn("[Midtrans Webhook] ⚠️ Server key tidak terkonfigurasi — dev/sandbox bypass aktif (lokal only).");
     }
 
     // Verifikasi Signature — WAJIB jika server key terkonfigurasi
@@ -130,24 +131,30 @@ export async function POST(req: NextRequest) {
       (trxStatus === "capture" && fraudStatus === "accept");
 
     if (isPaid) {
-      await prisma.$transaction(async (tx) => {
-        await tx.order.update({
-          where: { id: orderId },
-          data: {
-            status: "PAID",
-            paymentMethod: "GATEWAY",
-            paymentGatewayRef: body.transaction_id || null,
-            paidAt: new Date(),
-          },
-        });
-
-        if (webhookLogId) {
-          await tx.webhookLog.update({
-            where: { id: webhookLogId },
-            data: { status: "processed", processedAt: new Date() },
-          });
-        }
+      // Idempotency Guard: gunakan updateMany dengan filter status=PENDING untuk atomic check-and-set
+      // Mencegah double-processing jika Midtrans kirim webhook duplikat bersamaan
+      const updated = await prisma.order.updateMany({
+        where: { id: orderId, status: "PENDING" },
+        data: {
+          status: "PAID",
+          paymentMethod: "GATEWAY",
+          paymentGatewayRef: body.transaction_id || null,
+          paidAt: new Date(),
+        },
       });
+
+      // Jika count=0, order sudah di-update oleh webhook sebelumnya — return idempotent
+      if (updated.count === 0) {
+        return NextResponse.json({ status: "ok", note: "already_processed" });
+      }
+
+      // Update webhook log
+      if (webhookLogId) {
+        await prisma.webhookLog.update({
+          where: { id: webhookLogId },
+          data: { status: "processed", processedAt: new Date() },
+        }).catch(() => {});
+      }
 
       // If this is an UPGRADE order, update planType on the linked original order
       await applyUpgradePlan(orderId);

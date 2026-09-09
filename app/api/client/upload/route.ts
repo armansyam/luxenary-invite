@@ -5,6 +5,7 @@ import { uploadFile } from "@/lib/storage";
 import { optimizeWebVideo, optimizeWebAudio } from "@/lib/videoOptimizer";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { rateLimit } from "@/lib/rateLimit";
 
 const SLOT_FILE_NAMES: Record<string, string> = {
   LANDING_COVER: "landing-cover",
@@ -23,6 +24,15 @@ export async function POST(req: NextRequest) {
     const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized. Silakan login terlebih dahulu." }, { status: 401 });
+    }
+
+    // Rate limit: maks 10 upload/menit per IP — mencegah bandwidth & disk exhaustion
+    const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
+    if (!rateLimit(`upload:${ip}`, 10, 60_000)) {
+      return NextResponse.json(
+        { error: "Terlalu banyak upload. Silakan tunggu beberapa saat sebelum mencoba lagi." },
+        { status: 429 }
+      );
     }
 
     const formData = await req.formData();
@@ -65,16 +75,22 @@ export async function POST(req: NextRequest) {
     const isAudio = file.type.startsWith("audio/") || file.name.endsWith(".mp3") || file.name.endsWith(".wav") || file.name.endsWith(".m4a") || slotKey === "MUSIC";
     const isVideo = !isAudio && (file.type.startsWith("video/") || file.name.endsWith(".mp4") || file.name.endsWith(".webm") || file.name.endsWith(".mov"));
 
-    // File size safety guards (Client & Server protection)
+    // File size safety guards — baca maxUploadMb dari AdminSetting (fallback hardcoded)
+    let maxImageMb = 15;
+    try {
+      const setting = await prisma.adminSetting.findUnique({ where: { key: "max_upload_mb" } });
+      if (setting?.value) maxImageMb = Math.min(Number(setting.value) || 15, 50); // cap 50MB
+    } catch {}
+
     if (isVideo && file.size > 30 * 1024 * 1024) {
       return NextResponse.json(
         { error: "Ukuran video melebihi batas maksimal 30 MB. Silakan potong durasi (maks 20 detik) atau kompres video Anda." },
         { status: 400 }
       );
     }
-    if (!isVideo && !isAudio && file.size > 15 * 1024 * 1024) {
+    if (!isVideo && !isAudio && file.size > maxImageMb * 1024 * 1024) {
       return NextResponse.json(
-        { error: "Ukuran foto melebihi batas maksimal 15 MB." },
+        { error: `Ukuran foto melebihi batas maksimal ${maxImageMb} MB.` },
         { status: 400 }
       );
     }

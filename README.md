@@ -77,7 +77,7 @@ Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model 
    - Kustomisasi seksi (Love Story, Gift, QR Check-in, Teks Galeri Kenangan Tamu)
    - Kelola tamu + generate WhatsApp link personal (Deteksi cerdas Custom Domain / Subdomain & proteksi draft) dengan filter toolbar **Borderless Glowing Beam Tabs** (`Semua Tamu`, `Sudah Terkirim`, `Belum Dikirim`) dan badge kategori minimalis.
    - RSVP & ucapan real-time dengan tab navigasi **Borderless Glowing Beam** beranimasi sliding light beam 60 FPS (`Semua`, `Hadir`, `Tidak Hadir`, `Ragu-ragu`).
-   - **Studio Editor & Dual View (Form Data vs Live Visual):** Switcher mode ditenagai animasi **Sliding Magnetic Pill** (rel inset lembut dengan thumb fisik bergeser deterministik `Form Data` vs `Live Editor`), 15 seksi terstruktur dengan sistem **Ultra-Slim Exclusive Accordion** (membuka 1 seksi otomatis menutup seksi lainnya, mengeliminasi scroll fatigue, ketinggian terpangkas dari 4.101px ke ~750px pas dalam 1 layar desktop dengan cuplikan ringkas inline), dirty tracking per-seksi, isolasi warna swatch busana, dan Live Visual Editor Canvas.
+   - **Studio Editor & Dual View (Form Data vs Live Visual):** Switcher mode ditenagai animasi **Sliding Magnetic Pill** (rel inset lembut dengan thumb fisik bergeser deterministik `Form Data` vs `Live Editor`) yang mengintegrasikan **Direct Action Chips** (`⚠️ Perlu: [ + Sampul ] [ + Foto Mempelai ]`) di sisi kanan untuk menghemat ruang vertikal tanpa kartu bertumpuk, 15 seksi terstruktur dengan sistem **Ultra-Slim Exclusive Accordion** (membuka 1 seksi otomatis menutup seksi lainnya, mengeliminasi scroll fatigue, ketinggian terpangkas dari 4.101px ke ~750px pas dalam 1 layar desktop dengan cuplikan ringkas inline), dirty tracking per-seksi, isolasi warna swatch busana, dan Live Visual Editor Canvas.
    - **Live View Real-Time Palette Synchronizer, Clean Preview & Magnetic Device Switcher:** Panel palet 6 warna utama terpasang langsung di atas kanvas Live View dengan *two-way sync* instan ke Seksi 1 formulir data. Tombol *"Buka di Tab Baru"* dan tombol navigasi layar proteksi terhubung ke `mode=preview` murni untuk evaluasi visual bersih tanpa gangguan widget editor, serta kontrol pratinjau (`Mobile` vs `Layar Penuh`) mengusung animasi *Sliding Magnetic Pill*.
    - **Proteksi Pasca Publish & Buka Kunci Darurat:** Begitu terbit, form editor terkunci otomatis demi melindungi integritas QR Code fisik dan data live. Admin dapat membuka izin edit darurat via panel `/admin` (24 jam). Pengeditan menerapkan *Staging Save* (tanpa beban rebake storm) dan diakhiri dengan tombol **"Perbarui Undangan & Kunci Kembali"** untuk 1x atomic bake ke Cloudflare R2 dan auto-lock instan.
      │
@@ -277,7 +277,8 @@ Luxenary-Invite/
 │   ├── mailer.ts              # ⭐ Nodemailer transactional & invoice email generator
 │   ├── driveHelper.ts         # Fetch foto Google Drive API v3
 │   ├── settings.ts            # Single source of truth admin_settings dari DB
-│   ├── domainUtils.ts         # URL builder (subdomain, canonical)
+│   ├── domainUtils.ts         # URL builder (subdomain, canonical di browser & client)
+│   ├── serverDomainUtils.ts   # ⭐ Deteksi otomatis host dinamis & appUrl via request headers (Zero Hardcode)
 │   ├── gatewayRegistry.ts     # Registry payment gateway 2-arah (Midtrans & Xendit)
 │   ├── gateways/              # Implementasi gateway 2-arah: Midtrans, Xendit
 │   ├── upgradeHelper.ts       # Upgrade paket & perpanjangan galeri (+30 hari)

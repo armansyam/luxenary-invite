@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import { getApexRootDomain } from "@/lib/domainUtils";
 
 interface CustomDomainOrder {
   id: string;
@@ -88,6 +89,21 @@ export default function AdminCustomDomainsTab({
   const [inspectorResult, setInspectorResult] = useState<any>(null);
   const [isSearchingInspector, setIsSearchingInspector] = useState(false);
   const [recycling, setRecycling] = useState(false);
+  const [rootDomain, setRootDomain] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return getApexRootDomain();
+    }
+    return (process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost:3000").replace(/^https?:\/\//, "").replace(/\/$/, "");
+  });
+
+  useEffect(() => {
+    setRootDomain(getApexRootDomain());
+  }, []);
+
+  const getSubdomainUrl = (subdomain: string) => {
+    const proto = typeof window !== "undefined" ? window.location.protocol : "https:";
+    return `${proto}//${subdomain}.${rootDomain}`;
+  };
 
   // Fetch subdomains
   const fetchSubdomains = useCallback(async (query: string = "") => {
@@ -211,7 +227,7 @@ export default function AdminCustomDomainsTab({
           }`}
         >
           <span className="w-2 h-2 rounded-full bg-amber-600"></span>
-          <span>Subdomain Sistem (*.luxvite.id)</span>
+          <span>Subdomain Sistem (*.{rootDomain})</span>
           <span className="px-2 py-0.5 rounded-full bg-stone-100 text-[10px] font-mono font-bold text-stone-700 border border-stone-200">
             {kpis.totalActive}
           </span>
@@ -265,7 +281,7 @@ export default function AdminCustomDomainsTab({
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse" />
                 <span>Namespace &amp; Subdomain Controller</span>
               </div>
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Subdomain Sistem (*.luxvite.id)</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Subdomain Sistem (*.{rootDomain})</h2>
               <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
                 Monitor status subdomain aktif, cek kepemilikan nama secara langsung, dan kelola daur ulang domain kedaluwarsa.
               </p>
@@ -352,7 +368,7 @@ export default function AdminCustomDomainsTab({
                   placeholder="Ketik nama subdomain... (contoh: alanastory, dimas-clarissa)"
                   className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs font-mono font-medium text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/20"
                 />
-                <span className="absolute right-3 top-2.5 text-xs text-stone-400 font-mono">.luxvite.id</span>
+                <span className="absolute right-3 top-2.5 text-xs text-stone-400 font-mono">.{rootDomain}</span>
               </div>
               <button
                 type="submit"
@@ -398,7 +414,7 @@ export default function AdminCustomDomainsTab({
                           : "bg-amber-500"
                       }`}
                     />
-                    <strong className="font-mono text-sm">{inspectorResult.subdomain}.luxvite.id</strong>
+                    <strong className="font-mono text-sm">{inspectorResult.subdomain}.{rootDomain}</strong>
                   </div>
                   <span
                     className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
@@ -427,7 +443,7 @@ export default function AdminCustomDomainsTab({
                     </div>
                     <div className="flex items-center justify-start sm:justify-end">
                       <a
-                        href={`https://${inspectorResult.subdomain}.luxvite.id`}
+                        href={getSubdomainUrl(inspectorResult.subdomain)}
                         target="_blank"
                         rel="noreferrer"
                         className="px-3 py-1.5 bg-amber-800 text-white rounded-lg font-bold hover:bg-amber-900 transition inline-flex items-center gap-1 text-[11px]"
@@ -478,11 +494,11 @@ export default function AdminCustomDomainsTab({
                             <span className="font-mono font-bold text-amber-900 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
                               {item.subdomain}
                             </span>
-                            <span className="text-gray-400 font-mono">.luxvite.id</span>
+                            <span className="text-gray-400 font-mono">.{rootDomain}</span>
                             <button
                               type="button"
                               onClick={() => {
-                                handleCopy(`https://${item.subdomain}.luxvite.id`, `Tautan https://${item.subdomain}.luxvite.id`);
+                                handleCopy(getSubdomainUrl(item.subdomain), `Tautan ${getSubdomainUrl(item.subdomain)}`);
                               }}
                               title="Salin Tautan"
                               className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-gray-700 transition cursor-pointer"
@@ -541,7 +557,7 @@ export default function AdminCustomDomainsTab({
                         {/* Aksi */}
                         <td className="px-5 py-3.5 whitespace-nowrap">
                           <a
-                            href={`https://${item.subdomain}.luxvite.id`}
+                            href={getSubdomainUrl(item.subdomain)}
                             target="_blank"
                             rel="noreferrer"
                             className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-lg font-semibold text-[11px] transition inline-flex items-center gap-1"

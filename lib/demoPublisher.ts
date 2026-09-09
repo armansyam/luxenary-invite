@@ -36,7 +36,7 @@ export async function compileAndSaveStaticDemo(
   const data = composeDemoTemplateData(cleanId, chosenPalette, resolvedData, version);
 
   // Construct absolute OpenGraph meta tags for rich WhatsApp & social share previews
-  const demoHost = "https://luxvite.id";
+  const demoHost = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `http://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "http://localhost:3000")).replace(/\/$/, "");
   const rawCover = (data as any).landingCoverUrl || (data as any).sidebarPhotoUrl || `/demo/${cleanId}/cover.webp`;
   const absoluteCover = rawCover.startsWith("http") ? rawCover : `${demoHost}${rawCover.startsWith("/") ? "" : "/"}${rawCover}`;
   const groom = (data as any).groomName || "Groom";
