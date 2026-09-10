@@ -4510,11 +4510,13 @@ export default function AdminPage() {
                             const data = await res.json();
                             const cfOk = data.results?.cloudflare?.success;
                             const cfSkipped = data.results?.cloudflare?.skipped;
+                            const cfErrors = data.results?.cloudflare?.errors;
+                            const cfErrMsg = data.results?.cloudflare?.error || (cfErrors && cfErrors[0]?.message);
                             const cfMsg = cfSkipped
-                              ? " (Cloudflare dilewati — CF_API_TOKEN belum diset)"
+                              ? " (Cloudflare dilewati — kredensial belum diset)"
                               : cfOk
                               ? " + Cloudflare edge"
-                              : " (Cloudflare gagal)";
+                              : ` (Cloudflare: ${cfErrMsg || "gagal"})`;
                             setPurgeResult({
                               success: data.success,
                               msg: data.success
