@@ -3,6 +3,7 @@
 import { signIn } from "next-auth/react";
 import { useState, Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { BrandLogo } from "@/components/BrandLogo";
 
 interface ServiceStatus {
@@ -33,13 +34,21 @@ function LoginForm({ platformName, serviceStatus }: { platformName: string; serv
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-amber-700/8 rounded-full blur-[140px] pointer-events-none" />
 
       <div className="max-w-md w-full bg-white border border-amber-900/10 rounded-3xl p-8 sm:p-10 shadow-xl relative z-10 text-stone-900 space-y-6">
-        {/* Brand Header */}
+        {/* Brand Header — Klik untuk kembali ke beranda */}
         <div className="text-center space-y-2">
-          <div className="flex justify-center">
-            <BrandLogo size="lg" lightBg />
-          </div>
+          <Link
+            href="/"
+            title="Kembali ke Beranda"
+            className="inline-flex flex-col items-center group cursor-pointer transition select-none"
+          >
+            <div className="flex justify-center group-hover:scale-105 transition-transform duration-200">
+              <BrandLogo size="lg" lightBg />
+            </div>
 
-          <span className="text-[11px] font-bold uppercase tracking-widest text-amber-700 block">{platformName}</span>
+            <span className="text-[11px] font-bold uppercase tracking-widest text-amber-700 block mt-2 group-hover:text-amber-800 transition-colors">
+              {platformName}
+            </span>
+          </Link>
           <h1 className="text-2xl font-serif font-bold text-stone-900">Masuk Akun</h1>
           <p className="text-xs text-stone-400 leading-relaxed">
             Kelola undangan, buku tamu, galeri foto, dan pengiriman via WhatsApp dari satu tempat.
@@ -136,8 +145,13 @@ function LoginForm({ platformName, serviceStatus }: { platformName: string; serv
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-center text-[11px] text-stone-400 border-t border-stone-100 pt-4">
-          <a href="/demo" className="hover:text-stone-700 transition">← Lihat Demo Tema</a>
+        <div className="flex items-center justify-between text-[11px] text-stone-400 border-t border-stone-100 pt-4">
+          <Link href="/" className="hover:text-stone-700 transition">
+            ← Beranda
+          </Link>
+          <Link href="/demo" className="hover:text-stone-700 transition">
+            Lihat Demo Tema →
+          </Link>
         </div>
       </div>
     </div>
