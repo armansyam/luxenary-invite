@@ -106,8 +106,6 @@ export default async function Home() {
   </div>
   <div className="hero-overlay"></div>
 
-  <div className="hero-counter" aria-hidden="true">01 / 06</div>
-
   <div className="hero-content">
     <h1 className="hero-heading">Your story,<br /><em>beautifully invited.</em></h1>
     <p className="hero-desc">Undangan digital berstandar editorial mewah. Menceritakan keindahan kisah cinta Anda dengan pengalaman interaktif, RSVP cerdas, dan sistem resepsionis modern.</p>

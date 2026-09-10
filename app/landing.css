@@ -807,18 +807,6 @@
       letter-spacing: 0.05em;
     }
 
-.lux-landing-root .hero-counter {
-      position: absolute;
-      top: 2rem;
-      right: 3rem;
-      z-index: 3;
-      font-size: 0.75rem;
-      font-weight: 400;
-      letter-spacing: 0.15em;
-      color: var(--lux-gold);
-      opacity: 0;
-      animation: heroFadeUp 0.6s var(--ease-luxury) 1.5s forwards;
-    }
 /* ===========================
        KOLEKSI SECTION
     =========================== */
@@ -3416,10 +3404,6 @@
 
 .lux-landing-root .hero-cta-group {
         justify-content: center;
-      }
-
-.lux-landing-root .hero-counter {
-        display: none;
       }
 
 .lux-landing-root .scroll-hint {
