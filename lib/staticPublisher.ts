@@ -1,7 +1,6 @@
 import fs from "fs";
 import path from "path";
 import { prisma } from "@/lib/prisma";
-import { MediaSlot } from "@prisma/client";
 import { composeTemplateData } from "@/lib/themeEngine";
 import { renderTemplateFile } from "@/lib/renderTemplate";
 
@@ -76,7 +75,7 @@ export async function buildAndSavePublishedHtml(invitationId: string): Promise<s
   const coverMedia = await prisma.invitationMedia.findFirst({
     where: { 
       invitationId: invitation.id, 
-      mediaSlot: { in: [MediaSlot.LANDING_COVER, MediaSlot.LANDING_COVER_DESKTOP, MediaSlot.HOME_PHOTO, MediaSlot.DESKTOP_SIDEBAR, MediaSlot.GROOM_PHOTO, MediaSlot.BRIDE_PHOTO] } 
+      mediaSlot: { in: ["LANDING_COVER", "LANDING_COVER_DESKTOP", "HOME_PHOTO", "DESKTOP_SIDEBAR", "GROOM_PHOTO", "BRIDE_PHOTO"] as any } 
     },
     orderBy: { createdAt: "desc" },
   });
