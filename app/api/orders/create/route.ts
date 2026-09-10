@@ -28,6 +28,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // 2.1 Proteksi Status Ketersediaan Layanan (Tutup Order / Maintenance / Coming Soon)
+    const { getServiceAvailability } = await import("@/lib/settings");
+    const availability = await getServiceAvailability();
+    if (!availability.isOpen) {
+      return NextResponse.json(
+        {
+          error: availability.message || "Pemesanan undangan baru sedang ditutup sementara.",
+          code: availability.mode,
+        },
+        { status: 403 }
+      );
+    }
+
     const body = await req.json().catch(() => ({}));
     const { planType, regenerate, buyerName, buyerPhone, phoneNumber } = body;
 

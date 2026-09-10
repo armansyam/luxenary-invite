@@ -659,3 +659,25 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
 4. **Visual Showcase Thumbnail Mobile pada Katalog Tema Admin:**
    - Menambahkan preview visual thumbnail mobile (`aspect-[3/4]`, `object-cover object-top`) pada kartu tema di `/admin?tab=themes`.
    - Mengusung hirarki visual profesional: (1) Pratinjau Visual Tema + status aktif toggle + kategori tier, (2) Nama Tema, slug, deskripsi, dan (3) Tombol aksi (`Preview`, `Studio`, `Edit`, `Delete`).
+
+---
+
+## 20. Sistem Status Layanan & Pembatasan Registrasi / Order Dinamis (Service Availability)
+
+1. **Empat Mode Operasional Platform:**
+   - `OPEN` (Layanan Normal): Semua pendaftaran klien baru dan order paket aktif penuh.
+   - `CLOSED_ORDER` (Tutup Order / Kuota Penuh): Pendaftaran akun baru ditutup sementara waktu. Klien terdaftar tetap bebas login & mengelola undangannya.
+   - `MAINTENANCE` (Pemeliharaan Sistem): Pendaftaran akun baru dan pembuatan transaksi ditangguhkan sementara selama pemeliharaan teknis.
+   - `COMING_SOON` (Segera Hadir): Mode pre-launch untuk persiapan peluncuran atau rilis versi berikutnya.
+2. **Pengaturan Dinamis di Panel Admin (`/admin?tab=settings&sub=platform`):**
+   - Mengontrol kunci `service_status_mode`, `service_status_title`, `service_status_message`, `service_status_reopen_date`, dan `service_status_contact_wa`.
+   - Dilengkapi kartu Live Preview instan untuk mensimulasikan tampilan banner bagi pengunjung sebelum disimpan.
+3. **Pemisahan Klien Baru vs Klien Lama (Zero Locked-Out Invariant):**
+   - Klien yang telah memiliki akun di database tetap dapat masuk via Google OAuth kapan saja dan tidak terblokir.
+   - Calon klien baru yang belum terdaftar di database akan ditolak secara ramah di NextAuth `signIn` callback dan dialihkan ke `/login?error=RegistrationClosed&mode={mode}` dengan banner informasi yang jelas.
+4. **Proteksi Backend Anti-Bypass (`/api/orders/create`):**
+   - Endpoint order memvalidasi `getServiceAvailability()`. Jika ketersediaan bernilai `false`, permintaan dibatalkan dengan HTTP `403 Forbidden` dan respon JSON kustom.
+5. **Invarian Isolasi Tamu & Admin:**
+   - Undangan pernikahan publik (`/[slug]`), buku tamu, upload kenangan candid (`/memories`), dan meja resepsionis (`/receptionist`) 100% tetap beroperasi normal tanpa terpengaruh oleh penutupan order.
+   - Portal login admin (`/admin/login`) dan panel kontrol admin 100% tetap aktif.
+

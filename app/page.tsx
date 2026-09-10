@@ -14,6 +14,7 @@ export default async function Home() {
     packages: pricingPackages,
     retentionInvitationGraceDays,
     retentionGalleryDefaultDays,
+    serviceStatus,
   } = await getPublicPlatformSettings();
 
   const brand = platformName || "Luxvite";
@@ -27,6 +28,27 @@ export default async function Home() {
   return (
     <div className="lux-landing-root min-h-screen selection:bg-[#C9A227]/30 selection:text-[#FBF8F2]">
       <LandingInteractive />
+
+      {/* ===========================
+           SERVICE STATUS NOTICE
+      =========================== */}
+      {serviceStatus && !serviceStatus.isOpen && (
+        <aside aria-label="Pengumuman Status Layanan" className="w-full bg-[#18130e] border-b border-[#C9A227]/30 text-xs px-4 py-2.5 text-center text-[#e8ded1] flex items-center justify-center gap-2 z-[60] relative">
+          <span className="w-2 h-2 rounded-full bg-[#C9A227] animate-pulse shrink-0" />
+          <span className="font-semibold text-[#C9A227] uppercase tracking-wider text-[11px]">{serviceStatus.title}:</span>
+          <span className="text-[#c7baa7] text-[11px] line-clamp-1">{serviceStatus.message}</span>
+          {serviceStatus.contactWa && (
+            <a
+              href={`https://wa.me/${serviceStatus.contactWa.replace(/\D/g, "")}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#C9A227] hover:underline font-bold ml-1 shrink-0 text-[11px]"
+            >
+              Info Antrean →
+            </a>
+          )}
+        </aside>
+      )}
 
       {/* ===========================
            MOBILE MENU OVERLAY

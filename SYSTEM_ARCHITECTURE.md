@@ -1836,3 +1836,36 @@ Untuk memberikan pengalaman interaktif penuh bagi calon klien sebelum memesan pa
    - Menerapkan hirarki visual yang intuitif: (1) Showcase Visual Thumbnail Mobile di posisi teratas dilengkapi floating badge kategori & active toggle pill, (2) Identitas Nama Tema, slug `/{id}`, dan deskripsi di bagian tengah, serta (3) Tombol aksi (`Preview`, `Studio`, `Edit`, `Delete`) di bagian bawah.
    - Endpoint `/api/admin/overview` secara dinamis memperkaya objek tema dengan `thumbnailMobile` dari konfigurasi Demo Studio (`adminSetting`) atau fallback disk fisik `/demo/[theme]/thumbnail_mobile.webp` beserta proteksi `onError`.
 
+---
+
+### 22.0 — Arsitektur Status Layanan & Pembatasan Registrasi / Order (Service Availability)
+
+Fitur kontrol ketersediaan sistem terpusat yang dikelola secara dinamis oleh Administrator melalui panel pengaturan Platform (`/admin?tab=settings&sub=platform`):
+
+1. **Empat Mode Ketersediaan Sistem (`ServiceStatusMode`):**
+   - **`OPEN` (Buka Normal — Default):** Seluruh pendaftaran akun baru klien via Google OAuth dan pembuatan pesanan paket berjalan tanpa batasan.
+   - **`CLOSED_ORDER` (Tutup Order / Kuota Penuh):** Pendaftaran calon klien baru ditolak sementara waktu demi menjaga kualitas dan kapasitas pengerjaan. Klien terdaftar tetap bebas login & mengelola undangannya.
+   - **`MAINTENANCE` (Pemeliharaan Sistem):** Sistem dalam proses peningkatan atau pemeliharaan berkala. Transaksi dan registrasi baru ditangguhkan.
+   - **`COMING_SOON` (Segera Hadir):** Mode pra-peluncuran platform atau pembaruan besar versi berikutnya.
+2. **Kunci Konfigurasi Global (`prisma.adminSetting`):**
+   - `service_status_mode`: Nilai enum mode aktif (`OPEN`, `CLOSED_ORDER`, `MAINTENANCE`, `COMING_SOON`).
+   - `service_status_title`: Judul pengumuman notifikasi kustom.
+   - `service_status_message`: Pesan detail penjelasan yang ditampilkan kepada pengunjung.
+   - `service_status_reopen_date`: Teks estimasi tanggal dibuka kembali (misal: "15 Oktober 2026").
+   - `service_status_contact_wa`: Nomor WhatsApp kontak bantuan atau pendaftaran antrean (waiting list).
+3. **Prinsip Isolasi & Invarian Ketat (Zero Side-Effects):**
+   - **Tamu Undangan & Resepsionis:** Halaman undangan publik (`/[slug]`), buku tamu, upload kenangan (`/memories`), dan meja check-in resepsionis (`/receptionist`) **100% tetap aktif** dan tidak terpengaruh oleh penutupan pendaftaran.
+   - **Portal Administrator:** Admin login (`/admin/login`) dan seluruh manajemen panel admin **100% tetap aktif**.
+   - **Klien Lama (Existing Clients):** Pengguna yang sudah memiliki akun di database `User` (`googleId` atau `email`) **tetap diizinkan masuk** via Google OAuth untuk mengelola undangan mereka di `/dashboard`.
+4. **Pertahanan Multi-Lapisan (Defense-in-Depth):**
+   - **Lapisan UI/UX:**
+     - Landing Page (`/`): Top announcement notice bar luxury di atas navbar berlatar `#18130e` dengan aksen Lux Gold `#C9A227`.
+     - Halaman Login (`/login`): Dynamic notice card di atas form login dan alert penolakan spesifik jika calon klien baru mencoba masuk.
+     - Halaman Paket (`/packages`): Notice card penjelasan kuota dan tombol pemilihan paket dialihkan ke status nonaktif (disabled) atau konsultasi WhatsApp.
+     - Halaman Checkout (`/checkout`): Peringatan order ditutup dan pencegahan submit order baru.
+   - **Lapisan Autentikasi (`auth.ts` -> `signIn` Callback):**
+     - Memeriksa `getServiceAvailability()`. Jika `!isOpen`, query `prisma.user` untuk memeriksa keberadaan akun. Jika pengguna baru, NextAuth membatalkan registrasi dan meredirect ke `/login?error=RegistrationClosed&mode={mode}` tanpa membuat record di database.
+   - **Lapisan Backend API Guard (`/api/orders/create`):**
+     - Memvalidasi `getServiceAvailability()`. Jika status bukan `OPEN`, request langsung ditolak dengan HTTP `403 Forbidden` dan pesan JSON kustom, mencegah celah bypass via automated tools atau direct HTTP POST.
+
+

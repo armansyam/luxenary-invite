@@ -12,6 +12,7 @@ export default function PackageSelectionPage() {
   const [packages, setPackages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [platformName, setPlatformName] = useState("");
+  const [serviceStatus, setServiceStatus] = useState<any>(null);
 
   useEffect(() => {
     // 1. Cek status: HANYA redirect jika user SUDAH MEMILIKI UNDANGAN atau SUDAH BAYAR LUNAS (PAID)
@@ -27,7 +28,7 @@ export default function PackageSelectionPage() {
         .catch(() => {});
     }
 
-    // 2. Muat konfigurasi paket
+    // 2. Muat konfigurasi paket & status layanan
     fetch("/api/public/settings", { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
@@ -37,6 +38,9 @@ export default function PackageSelectionPage() {
           }
           if (data.platformName) {
             setPlatformName(data.platformName);
+          }
+          if (data.serviceStatus) {
+            setServiceStatus(data.serviceStatus);
           }
         }
         setLoading(false);
@@ -54,6 +58,8 @@ export default function PackageSelectionPage() {
       </div>
     );
   }
+
+  const isClosed = serviceStatus && !serviceStatus.isOpen;
 
   return (
     <div className="min-h-screen bg-[#faf8f5] font-sans flex flex-col">
@@ -74,6 +80,46 @@ export default function PackageSelectionPage() {
           </p>
         </div>
 
+        {/* Dynamic Service Status Notice */}
+        {isClosed && (
+          <div className={`mb-8 p-6 rounded-3xl border text-sm max-w-3xl mx-auto ${
+            serviceStatus.mode === "CLOSED_ORDER"
+              ? "bg-amber-50/90 border-amber-300/80 text-amber-950"
+              : serviceStatus.mode === "MAINTENANCE"
+              ? "bg-rose-50/90 border-rose-300/80 text-rose-950"
+              : "bg-stone-50 border-stone-200 text-stone-900"
+          }`}>
+            <div className="flex items-center gap-2 font-bold uppercase tracking-wider text-xs mb-1">
+              <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                serviceStatus.mode === "CLOSED_ORDER" ? "bg-amber-600" :
+                serviceStatus.mode === "MAINTENANCE" ? "bg-rose-600" : "bg-stone-700"
+              }`} />
+              <span>{serviceStatus.title}</span>
+            </div>
+            <p className="text-stone-700 leading-relaxed text-xs">
+              {serviceStatus.message}
+            </p>
+            {serviceStatus.reopenDate && (
+              <p className="text-xs font-semibold text-amber-900 mt-2">
+                Estimasi dibuka kembali: <span className="underline">{serviceStatus.reopenDate}</span>
+              </p>
+            )}
+            {serviceStatus.contactWa && (
+              <div className="mt-3 pt-3 border-t border-amber-900/10 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <span className="text-xs text-stone-500">Ingin konsultasi atau antrean pemesanan berikutnya?</span>
+                <a
+                  href={`https://wa.me/${serviceStatus.contactWa.replace(/\D/g, "")}?text=${encodeURIComponent("Halo Admin, saya ingin reservasi/antrean paket undangan digital.")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 bg-amber-800 text-white rounded-full text-xs font-bold hover:bg-amber-900 transition shrink-0"
+                >
+                  Tanya Kuota via WhatsApp →
+                </a>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {packages.map((pkg) => (
             <div
@@ -91,8 +137,6 @@ export default function PackageSelectionPage() {
               )}
 
               <div>
-
-
                 <h3 className="text-xl font-serif font-bold text-[#1e1c1a] mt-4">{pkg.name}</h3>
                 <p className="text-xs text-[#6e685f] mt-1 line-clamp-2">{pkg.desc}</p>
 
@@ -115,16 +159,26 @@ export default function PackageSelectionPage() {
                 </ul>
               </div>
 
-              <Link
-                href={`/checkout?plan=${pkg.id}`}
-                className={`w-full py-3 font-bold rounded-full text-center transition text-sm shadow-xs ${
-                  pkg.isFeatured
-                    ? "bg-amber-800 hover:bg-amber-900 text-white"
-                    : "bg-stone-900 hover:bg-stone-800 text-white"
-                }`}
-              >
-                Pilih Paket Ini
-              </Link>
+              {isClosed ? (
+                <button
+                  type="button"
+                  disabled
+                  className="w-full py-3 font-bold rounded-full text-center text-sm bg-stone-200 text-stone-500 cursor-not-allowed opacity-80"
+                >
+                  Pemesanan Ditutup
+                </button>
+              ) : (
+                <Link
+                  href={`/checkout?plan=${pkg.id}`}
+                  className={`w-full py-3 font-bold rounded-full text-center transition text-sm shadow-xs ${
+                    pkg.isFeatured
+                      ? "bg-amber-800 hover:bg-amber-900 text-white"
+                      : "bg-stone-900 hover:bg-stone-800 text-white"
+                  }`}
+                >
+                  Pilih Paket Ini
+                </Link>
+              )}
             </div>
           ))}
         </div>

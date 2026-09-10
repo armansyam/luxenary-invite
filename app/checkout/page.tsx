@@ -79,6 +79,7 @@ function CheckoutContent() {
   const [copiedAmount, setCopiedAmount] = useState(false);
   const [adminWa, setAdminWa] = useState<string>("");
   const [platformName, setPlatformName] = useState("");
+  const [serviceStatus, setServiceStatus] = useState<any>(null);
   // PlanType state — menyimpan ID paket aktif (ex: "PREMIUM", "TRADITIONAL") untuk regenerasi order yang benar
   const [currentPlanType, setCurrentPlanType] = useState<string>(planParam || "");
   const [currentOrderType, setCurrentOrderType] = useState<string>("NEW_INVITATION");
@@ -229,6 +230,10 @@ function CheckoutContent() {
 
       if (settings.platformName) {
         setPlatformName(settings.platformName);
+      }
+
+      if (settings.serviceStatus) {
+        setServiceStatus(settings.serviceStatus);
       }
 
       if (settings.paymentMode) {
@@ -921,6 +926,32 @@ function CheckoutContent() {
                 <p className="font-semibold text-amber-300">Waktu Pembayaran Kedaluwarsa</p>
                 <p className="text-[11px] text-amber-200/80 mt-0.5">Batas waktu pembayaran telah habis. Silakan tekan tombol Bayar di bawah untuk memperbarui tagihan.</p>
               </div>
+            </div>
+          )}
+
+          {serviceStatus && !serviceStatus.isOpen && (
+            <div className={`p-4 rounded-2xl border text-xs space-y-2 backdrop-blur-xs ${
+              serviceStatus.mode === "CLOSED_ORDER"
+                ? "bg-amber-950/60 border-amber-500/40 text-amber-200"
+                : serviceStatus.mode === "MAINTENANCE"
+                ? "bg-rose-950/60 border-rose-500/40 text-rose-200"
+                : "bg-white/10 border-white/20 text-stone-200"
+            }`}>
+              <div className="flex items-center gap-2 font-bold uppercase tracking-wider text-[11px] text-amber-300">
+                <span className={`w-2 h-2 rounded-full shrink-0 ${
+                  serviceStatus.mode === "CLOSED_ORDER" ? "bg-amber-400" :
+                  serviceStatus.mode === "MAINTENANCE" ? "bg-rose-400" : "bg-stone-300"
+                }`} />
+                <span>{serviceStatus.title}</span>
+              </div>
+              <p className="text-stone-300 leading-relaxed text-xs">
+                {serviceStatus.message}
+              </p>
+              {serviceStatus.reopenDate && (
+                <p className="text-[11px] text-amber-300/80 font-medium">
+                  Estimasi dibuka kembali: <span className="underline">{serviceStatus.reopenDate}</span>
+                </p>
+              )}
             </div>
           )}
 

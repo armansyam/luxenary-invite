@@ -14,6 +14,17 @@ export interface PricingPackageItem {
   isFeatured?: boolean;
 }
 
+export type ServiceStatusMode = "OPEN" | "CLOSED_ORDER" | "MAINTENANCE" | "COMING_SOON";
+
+export interface ServiceStatusSettings {
+  mode: ServiceStatusMode;
+  isOpen: boolean;
+  title: string;
+  message: string;
+  reopenDate?: string;
+  contactWa?: string;
+}
+
 export interface PublicPlatformSettings {
   platformName: string;
   heroTagline: string;
@@ -51,6 +62,7 @@ export interface PublicPlatformSettings {
   landingFeature2Desc: string;
   landingFeature3Title: string;
   landingFeature3Desc: string;
+  serviceStatus: ServiceStatusSettings;
 }
 
 export async function getAdminSetting(key: string, defaultValue = ""): Promise<string> {
@@ -60,6 +72,38 @@ export async function getAdminSetting(key: string, defaultValue = ""): Promise<s
   } catch {
     return defaultValue;
   }
+}
+
+export async function getServiceAvailability(): Promise<ServiceStatusSettings> {
+  const mode = ((await getAdminSetting("service_status_mode", "OPEN")) as ServiceStatusMode) || "OPEN";
+  const isOpen = mode === "OPEN";
+  const rawTitle = await getAdminSetting("service_status_title", "");
+  const rawMsg = await getAdminSetting("service_status_message", "");
+  const reopenDate = await getAdminSetting("service_status_reopen_date", "");
+  const contactWa = await getAdminSetting("service_status_contact_wa", "");
+
+  const fallbackTitles: Record<ServiceStatusMode, string> = {
+    OPEN: "Layanan Beroperasi Normal",
+    CLOSED_ORDER: "Pemesanan Ditutup Sementara",
+    MAINTENANCE: "Sistem Dalam Pemeliharaan",
+    COMING_SOON: "Segera Hadir",
+  };
+
+  const fallbackMessages: Record<ServiceStatusMode, string> = {
+    OPEN: "Pendaftaran akun baru dan pembuatan pesanan undangan dibuka normal.",
+    CLOSED_ORDER: "Mohon maaf, kuota pemesanan undangan baru saat ini telah penuh demi menjaga standar kualitas dan ketepatan pengerjaan. Klien terdaftar tetap dapat masuk dan mengelola undangan seperti biasa.",
+    MAINTENANCE: "Kami sedang melakukan pemeliharaan berkala untuk meningkatkan stabilitas sistem. Pendaftaran akun baru ditangguhkan sementara.",
+    COMING_SOON: "Platform undangan pernikahan digital mewah sedang mempersiapkan perilisan versi terbaru. Pantau terus pembaruan kami.",
+  };
+
+  return {
+    mode,
+    isOpen,
+    title: rawTitle.trim() || fallbackTitles[mode] || fallbackTitles.OPEN,
+    message: rawMsg.trim() || fallbackMessages[mode] || fallbackMessages.OPEN,
+    reopenDate: reopenDate.trim() || undefined,
+    contactWa: contactWa.trim() || undefined,
+  };
 }
 
 /**
@@ -216,6 +260,22 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
         isFeatured: true,
       },
     ],
+    serviceStatus: {
+      mode: ((map["service_status_mode"] as ServiceStatusMode) || "OPEN"),
+      isOpen: !map["service_status_mode"] || map["service_status_mode"] === "OPEN",
+      title: (map["service_status_title"] || "").trim() || (
+        map["service_status_mode"] === "CLOSED_ORDER" ? "Pemesanan Ditutup Sementara" :
+        map["service_status_mode"] === "MAINTENANCE" ? "Sistem Dalam Pemeliharaan" :
+        map["service_status_mode"] === "COMING_SOON" ? "Segera Hadir" : "Layanan Beroperasi Normal"
+      ),
+      message: (map["service_status_message"] || "").trim() || (
+        map["service_status_mode"] === "CLOSED_ORDER" ? "Mohon maaf, kuota pemesanan undangan baru saat ini telah penuh demi menjaga standar kualitas dan ketepatan pengerjaan. Klien terdaftar tetap dapat masuk dan mengelola undangan seperti biasa." :
+        map["service_status_mode"] === "MAINTENANCE" ? "Kami sedang melakukan pemeliharaan berkala untuk meningkatkan stabilitas sistem. Pendaftaran akun baru ditangguhkan sementara." :
+        map["service_status_mode"] === "COMING_SOON" ? "Platform undangan pernikahan digital mewah sedang mempersiapkan perilisan versi terbaru. Pantau terus pembaruan kami." : "Pendaftaran akun baru dan pembuatan pesanan undangan dibuka normal."
+      ),
+      reopenDate: (map["service_status_reopen_date"] || "").trim() || undefined,
+      contactWa: (map["service_status_contact_wa"] || "").trim() || undefined,
+    },
   };
 }
 

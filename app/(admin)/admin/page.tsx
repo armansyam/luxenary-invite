@@ -470,6 +470,7 @@ export default function AdminPage() {
   const [savingAddons, setSavingAddons] = useState(false);
   const [savingPlatform, setSavingPlatform] = useState(false);
   const [savingPlatformCustom, setSavingPlatformCustom] = useState(false);
+  const [savingServiceStatus, setSavingServiceStatus] = useState(false);
   const [savingSubdomainSettings, setSavingSubdomainSettings] = useState(false);
 
   const [savingActiveGateway, setSavingActiveGateway] = useState(false);
@@ -4569,6 +4570,320 @@ export default function AdminPage() {
                   {/* ══ TAB: PLATFORM & TAMPILAN ══ */}
                   {activeSettingsTab === "platform" && (
                   <>
+
+                  {/* ── Status Layanan & Pembatasan Registrasi (Service Availability / Close Order) ── */}
+                  <SettingsCard
+                    title="Status Layanan & Pembatasan Registrasi / Order"
+                    description="Kelola ketersediaan platform: Buka normal, Tutup order / kuota penuh, Pemeliharaan sistem, atau Segera hadir. Dilengkapi notifikasi dinamis untuk pengunjung."
+                    isEditing={Boolean(editSection["service_status"])}
+                    onEdit={() => toggleEditSection("service_status")}
+                    onCancel={() =>
+                      cancelEdit("service_status", [
+                        "service_status_mode",
+                        "service_status_title",
+                        "service_status_message",
+                        "service_status_reopen_date",
+                        "service_status_contact_wa",
+                      ])
+                    }
+                    onSave={() =>
+                      saveSettings(
+                        [
+                          "service_status_mode",
+                          "service_status_title",
+                          "service_status_message",
+                          "service_status_reopen_date",
+                          "service_status_contact_wa",
+                        ],
+                        setSavingServiceStatus,
+                        "service_status"
+                      )
+                    }
+                    saving={savingServiceStatus}
+                    isDirty={isSectionDirty([
+                      "service_status_mode",
+                      "service_status_title",
+                      "service_status_message",
+                      "service_status_reopen_date",
+                      "service_status_contact_wa",
+                    ])}
+                    saveSuccess={settingsSaved["service_status"]}
+                    saveSuccessMessage="Status ketersediaan layanan berhasil disimpan dan langsung aktif"
+                    viewContent={
+                      <div className="space-y-4">
+                        {/* Status Badge */}
+                        <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 bg-gray-50 rounded-xl border border-gray-200">
+                          <div className="flex items-center gap-2.5">
+                            <span className="text-xs font-semibold text-gray-500">Mode Saat Ini:</span>
+                            {(!settingsMap["service_status_mode"] || settingsMap["service_status_mode"] === "OPEN") && (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                Buka Normal (Layanan Penuh)
+                              </span>
+                            )}
+                            {settingsMap["service_status_mode"] === "CLOSED_ORDER" && (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                                <span className="w-2 h-2 rounded-full bg-amber-600" />
+                                Tutup Order / Kuota Penuh
+                              </span>
+                            )}
+                            {settingsMap["service_status_mode"] === "MAINTENANCE" && (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-900 border border-rose-300">
+                                <span className="w-2 h-2 rounded-full bg-rose-600" />
+                                Pemeliharaan Sistem
+                              </span>
+                            )}
+                            {settingsMap["service_status_mode"] === "COMING_SOON" && (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-900 border border-purple-300">
+                                <span className="w-2 h-2 rounded-full bg-purple-600" />
+                                Segera Hadir (Pre-Launch)
+                              </span>
+                            )}
+                          </div>
+
+                          <span className="text-[11px] text-gray-500">
+                            {(!settingsMap["service_status_mode"] || settingsMap["service_status_mode"] === "OPEN")
+                              ? "Pendaftaran akun baru & order terbuka"
+                              : "Klien terdaftar tetap dapat login & akses dashboard"}
+                          </span>
+                        </div>
+
+                        {/* Details when non-OPEN */}
+                        {settingsMap["service_status_mode"] && settingsMap["service_status_mode"] !== "OPEN" && (
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                              <span className="text-[11px] text-gray-500 block font-medium">Judul Pengumuman</span>
+                              <span className="text-xs font-bold text-gray-800 mt-0.5 block">
+                                {settingsMap["service_status_title"] || (
+                                  settingsMap["service_status_mode"] === "CLOSED_ORDER" ? "Pemesanan Ditutup Sementara" :
+                                  settingsMap["service_status_mode"] === "MAINTENANCE" ? "Sistem Dalam Pemeliharaan" : "Segera Hadir"
+                                )}
+                              </span>
+                            </div>
+                            <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                              <span className="text-[11px] text-gray-500 block font-medium">Estimasi Dibuka Kembali</span>
+                              <span className="text-xs font-bold text-gray-800 mt-0.5 block">
+                                {settingsMap["service_status_reopen_date"] || "Tidak ditentukan"}
+                              </span>
+                            </div>
+                            <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                              <span className="text-[11px] text-gray-500 block font-medium">WhatsApp Waiting List</span>
+                              <span className="text-xs font-bold text-emerald-700 mt-0.5 block">
+                                {settingsMap["service_status_contact_wa"] ? `+${settingsMap["service_status_contact_wa"]}` : "Belum diatur"}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
+                        {settingsMap["service_status_mode"] && settingsMap["service_status_mode"] !== "OPEN" && (
+                          <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200">
+                            <span className="text-[11px] text-gray-500 block font-medium mb-1">Isi Pesan Pengumuman Klien</span>
+                            <p className="text-xs text-gray-700 leading-relaxed whitespace-pre-wrap">
+                              {settingsMap["service_status_message"] || (
+                                settingsMap["service_status_mode"] === "CLOSED_ORDER" ? "Mohon maaf, kuota pemesanan undangan baru saat ini telah penuh demi menjaga standar kualitas dan ketepatan pengerjaan. Klien terdaftar tetap dapat masuk dan mengelola undangan seperti biasa." :
+                                settingsMap["service_status_mode"] === "MAINTENANCE" ? "Kami sedang melakukan pemeliharaan berkala untuk meningkatkan stabilitas sistem. Pendaftaran akun baru ditangguhkan sementara." :
+                                "Platform undangan pernikahan digital mewah sedang mempersiapkan perilisan versi terbaru. Pantau terus pembaruan kami."
+                              )}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    }
+                  >
+                    <div className="space-y-5">
+                      {/* Mode Selection Cards */}
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-2">Pilih Mode Status Layanan</label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                          {[
+                            {
+                              id: "OPEN",
+                              label: "Buka Normal",
+                              desc: "Pendaftaran akun baru dan order paket aktif tanpa batasan.",
+                              color: "emerald",
+                            },
+                            {
+                              id: "CLOSED_ORDER",
+                              label: "Tutup Order",
+                              desc: "Kuota penuh. Pendaftaran baru ditolak, klien lama tetap bisa login.",
+                              color: "amber",
+                            },
+                            {
+                              id: "MAINTENANCE",
+                              label: "Pemeliharaan",
+                              desc: "Perbaikan sistem. Pendaftaran & transaksi baru ditangguhkan.",
+                              color: "rose",
+                            },
+                            {
+                              id: "COMING_SOON",
+                              label: "Segera Hadir",
+                              desc: "Persiapan rilis versi baru. Registrasi publik belum dibuka.",
+                              color: "purple",
+                            },
+                          ].map((m) => {
+                            const isSelected = (settingsMap["service_status_mode"] || "OPEN") === m.id;
+                            return (
+                              <button
+                                key={m.id}
+                                type="button"
+                                onClick={() => {
+                                  setSetting("service_status_mode", m.id);
+                                  if (!settingsMap["service_status_title"]) {
+                                    if (m.id === "CLOSED_ORDER") setSetting("service_status_title", "Pemesanan Ditutup Sementara");
+                                    if (m.id === "MAINTENANCE") setSetting("service_status_title", "Sistem Dalam Pemeliharaan");
+                                    if (m.id === "COMING_SOON") setSetting("service_status_title", "Segera Hadir");
+                                  }
+                                }}
+                                className={`p-3.5 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between relative ${
+                                  isSelected
+                                    ? m.color === "emerald"
+                                      ? "bg-emerald-50/70 border-emerald-500 ring-2 ring-emerald-500/20"
+                                      : m.color === "amber"
+                                      ? "bg-amber-50/70 border-amber-500 ring-2 ring-amber-500/20"
+                                      : m.color === "rose"
+                                      ? "bg-rose-50/70 border-rose-500 ring-2 ring-rose-500/20"
+                                      : "bg-purple-50/70 border-purple-500 ring-2 ring-purple-500/20"
+                                    : "bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-50/50"
+                                }`}
+                              >
+                                <div>
+                                  <div className="flex items-center justify-between mb-1.5">
+                                    <span className="text-xs font-bold text-gray-900">{m.label}</span>
+                                    <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center border ${
+                                      isSelected
+                                        ? m.color === "emerald" ? "border-emerald-600 bg-emerald-600" :
+                                          m.color === "amber" ? "border-amber-600 bg-amber-600" :
+                                          m.color === "rose" ? "border-rose-600 bg-rose-600" : "border-purple-600 bg-purple-600"
+                                        : "border-gray-300 bg-white"
+                                    }`}>
+                                      {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] text-gray-500 leading-relaxed">{m.desc}</p>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Configuration Details (Relevant when not OPEN or custom) */}
+                      {(settingsMap["service_status_mode"] && settingsMap["service_status_mode"] !== "OPEN") && (
+                        <div className="p-4 bg-gray-50/80 rounded-2xl border border-gray-200 space-y-4">
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-gray-700">Formulir Pesan &amp; Notifikasi Pengunjung</h4>
+
+                          <FieldRow
+                            label="Judul Notifikasi"
+                            description="Teks judul yang ditampilkan di banner atas login, paket, dan landing page."
+                          >
+                            <input
+                              type="text"
+                              value={settingsMap["service_status_title"] ?? ""}
+                              placeholder={
+                                settingsMap["service_status_mode"] === "CLOSED_ORDER"
+                                  ? "Pemesanan Ditutup Sementara"
+                                  : settingsMap["service_status_mode"] === "MAINTENANCE"
+                                  ? "Sistem Dalam Pemeliharaan"
+                                  : "Segera Hadir"
+                              }
+                              onChange={(e) => setSetting("service_status_title", e.target.value)}
+                              className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
+                            />
+                          </FieldRow>
+
+                          <FieldRow
+                            label="Pesan Penjelasan untuk Klien"
+                            description="Jelaskan alasan penutupan, kuota pengerjaan, atau informasi pemeliharaan sistem."
+                          >
+                            <textarea
+                              rows={3}
+                              value={settingsMap["service_status_message"] ?? ""}
+                              placeholder={
+                                settingsMap["service_status_mode"] === "CLOSED_ORDER"
+                                  ? "Mohon maaf, kuota pemesanan undangan baru saat ini telah penuh demi menjaga standar kualitas dan ketepatan pengerjaan. Klien terdaftar tetap dapat masuk dan mengelola undangan seperti biasa."
+                                  : settingsMap["service_status_mode"] === "MAINTENANCE"
+                                  ? "Kami sedang melakukan pemeliharaan berkala untuk meningkatkan stabilitas sistem. Pendaftaran akun baru ditangguhkan sementara."
+                                  : "Platform undangan pernikahan digital mewah sedang mempersiapkan perilisan versi terbaru. Pantau terus pembaruan kami."
+                              }
+                              onChange={(e) => setSetting("service_status_message", e.target.value)}
+                              className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
+                            />
+                          </FieldRow>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FieldRow
+                              label="Estimasi Dibuka Kembali"
+                              description="Contoh: 15 Oktober 2026 atau Segera (kosongkan jika belum pasti)."
+                            >
+                              <input
+                                type="text"
+                                value={settingsMap["service_status_reopen_date"] ?? ""}
+                                placeholder="Contoh: 15 Oktober 2026"
+                                onChange={(e) => setSetting("service_status_reopen_date", e.target.value)}
+                                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
+                              />
+                            </FieldRow>
+
+                            <FieldRow
+                              label="WhatsApp Bantuan / Waiting List"
+                              description="Format internasional tanpa tanda plus, contoh: 6281234567890."
+                            >
+                              <input
+                                type="text"
+                                value={settingsMap["service_status_contact_wa"] ?? ""}
+                                placeholder="Contoh: 6281234567890"
+                                onChange={(e) => setSetting("service_status_contact_wa", e.target.value.replace(/\D/g, ""))}
+                                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
+                              />
+                            </FieldRow>
+                          </div>
+
+                          {/* Live Preview Box */}
+                          <div className="pt-2">
+                            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block mb-1.5">Simulasi Tampilan Banner di Halaman Login &amp; Paket:</span>
+                            <div className={`p-4 rounded-xl border text-xs space-y-1.5 ${
+                              settingsMap["service_status_mode"] === "CLOSED_ORDER"
+                                ? "bg-amber-50 border-amber-300 text-amber-950"
+                                : settingsMap["service_status_mode"] === "MAINTENANCE"
+                                ? "bg-rose-50 border-rose-300 text-rose-950"
+                                : "bg-stone-50 border-stone-200 text-stone-900"
+                            }`}>
+                              <div className="flex items-center gap-2 font-bold uppercase tracking-wider text-[10px]">
+                                <span className={`w-2 h-2 rounded-full shrink-0 ${
+                                  settingsMap["service_status_mode"] === "CLOSED_ORDER" ? "bg-amber-600" :
+                                  settingsMap["service_status_mode"] === "MAINTENANCE" ? "bg-rose-600" : "bg-stone-700"
+                                }`} />
+                                <span>
+                                  {settingsMap["service_status_title"] || (
+                                    settingsMap["service_status_mode"] === "CLOSED_ORDER" ? "Pemesanan Ditutup Sementara" :
+                                    settingsMap["service_status_mode"] === "MAINTENANCE" ? "Sistem Dalam Pemeliharaan" : "Segera Hadir"
+                                  )}
+                                </span>
+                              </div>
+                              <p className="text-gray-700 leading-relaxed text-xs">
+                                {settingsMap["service_status_message"] || (
+                                  settingsMap["service_status_mode"] === "CLOSED_ORDER" ? "Mohon maaf, kuota pemesanan undangan baru saat ini telah penuh demi menjaga standar kualitas dan ketepatan pengerjaan. Klien terdaftar tetap dapat masuk dan mengelola undangan seperti biasa." :
+                                  settingsMap["service_status_mode"] === "MAINTENANCE" ? "Kami sedang melakukan pemeliharaan berkala untuk meningkatkan stabilitas sistem. Pendaftaran akun baru ditangguhkan sementara." :
+                                  "Platform undangan pernikahan digital mewah sedang mempersiapkan perilisan versi terbaru. Pantau terus pembaruan kami."
+                                )}
+                              </p>
+                              {settingsMap["service_status_reopen_date"] && (
+                                <p className="text-[11px] font-semibold text-amber-900">
+                                  Estimasi dibuka kembali: <span className="underline">{settingsMap["service_status_reopen_date"]}</span>
+                                </p>
+                              )}
+                              <div className="pt-2 border-t border-black/5 text-[11px] text-gray-500 flex items-center justify-between">
+                                <span>Akun terdaftar tetap bisa login.</span>
+                                {settingsMap["service_status_contact_wa"] && (
+                                  <span className="font-bold text-amber-800">Tanya Kuota via WhatsApp →</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </SettingsCard>
 
                   {/* WhatsApp Template Settings */}
                   <SettingsCard

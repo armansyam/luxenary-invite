@@ -156,3 +156,27 @@ Untuk memastikan setiap pembaruan data di server atau perubahan aset tampilan la
      - `/api/public/themes` (Data JSON daftar tema)
   2. **Cloudflare Edge CDN:** Jika `CF_ZONE_ID` dan `CF_API_TOKEN` terkonfigurasi di `.env`, sistem secara otomatis mengirimkan instruksi `purge_everything: true` ke API Cloudflare Zone untuk membersihkan ribuan edge server Cloudflare di seluruh dunia secara instan.
 - **Kartu Hasil Respon:** Menampilkan status detail eksekusi Next.js revalidation (daftar path yang berhasil dibersihkan) dan status respons Cloudflare API (sukses atau alasan skip/error).
+
+---
+
+## 11. Status Layanan & Pembatasan Registrasi / Order Dinamis (`Tab: Platform & Tampilan`)
+
+Memungkinkan Administrator mengendalikan ketersediaan platform secara real-time tanpa downtime ataupun perubahan kode:
+
+- **Akses UI:** Admin Portal > Menu **Pengaturan (Settings)** > Sub-tab **Platform & Tampilan** > Kartu **Status Layanan & Pembatasan Registrasi / Order**.
+- **Pilihan 4 Mode Operasional:**
+  1. `OPEN` (Buka Normal): Seluruh calon klien baru bebas mendaftar dan membuat pesanan paket.
+  2. `CLOSED_ORDER` (Tutup Order / Kuota Penuh): Pendaftaran akun baru ditutup sementara waktu. Klien lama terdaftar tetap bebas login & mengelola undangannya. Sangat ideal saat kuota pengerjaan desain sedang penuh.
+  3. `MAINTENANCE` (Pemeliharaan Sistem): Pendaftaran akun baru dan transaksi ditangguhkan selama peningkatan infrastruktur.
+  4. `COMING_SOON` (Segera Hadir): Mode persiapan pra-peluncuran platform.
+- **Formulir Notifikasi Dinamis:**
+  - **Judul Notifikasi:** Teks judul pengumuman yang muncul di Landing Page, Login, dan Paket.
+  - **Pesan Penjelasan:** Penjelasan transparan mengenai alasan penutupan atau estimasi jadwal pembukaan kembali.
+  - **Estimasi Dibuka Kembali:** Tanggal target atau teks keterangan waktu (misal: "15 Oktober 2026").
+  - **Kontak WhatsApp Alternatif:** Nomor WhatsApp admin bagi calon klien yang ingin konsultasi atau mendaftar antrean khusus (waiting list).
+- **Live Preview:** Pratinjau visual langsung di panel admin untuk melihat bagaimana banner peringatan akan ditampilkan di layar klien sebelum perubahan disimpan.
+- **Pertahanan Multi-Lapisan (Defense-in-Depth):**
+  - **NextAuth Callback (`auth.ts`):** Memvalidasi akun baru vs akun lama. Klien terdaftar tetap diizinkan login. Akun baru ditolak dan dialihkan ke `/login?error=RegistrationClosed&mode={mode}` tanpa membuat data baru.
+  - **Backend API Guard (`/api/orders/create`):** Mengembalikan respon HTTP `403 Forbidden` jika mode bukan `OPEN`, mencegah submit order baru via tools/skrip.
+  - **Invarian Sistem:** Undangan publik tamu (`/[slug]`), buku tamu, RSVP, dan resepsionis (`/receptionist`) 100% tetap berjalan tanpa terpengaruh.
+

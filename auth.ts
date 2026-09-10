@@ -91,6 +91,29 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async signIn({ account, profile }) {
       if (account?.provider === "google" && profile) {
         try {
+          // Verifikasi ketersediaan layanan (Buka Normal / Tutup Order / Maintenance / Coming Soon)
+          const { getServiceAvailability } = await import("@/lib/settings");
+          const availability = await getServiceAvailability();
+
+          if (!availability.isOpen) {
+            const { prisma } = await import("@/lib/prisma");
+            const cleanEmail = profile.email ? profile.email.toLowerCase().trim() : "";
+            const existingUser = await prisma.user.findFirst({
+              where: {
+                OR: [
+                  ...(profile.sub ? [{ googleId: profile.sub }] : []),
+                  ...(cleanEmail ? [{ email: cleanEmail }] : []),
+                ],
+              },
+              select: { id: true },
+            });
+
+            // Calon klien baru ditolak jika registrasi/order sedang ditutup
+            if (!existingUser) {
+              return `/login?error=RegistrationClosed&mode=${encodeURIComponent(availability.mode)}`;
+            }
+          }
+
           const { upsertGoogleUser } = await import("@/lib/auth");
           await upsertGoogleUser({
             sub: profile.sub!,
@@ -146,6 +169,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             });
 
             if (!dbUser) {
+              const { getServiceAvailability } = await import("@/lib/settings");
+              const availability = await getServiceAvailability();
+              if (!availability.isOpen) {
+                // Batalkan pembuatan user otomatis jika status pendaftaran sedang ditutup
+                return session;
+              }
+
               dbUser = await prisma.user.create({
                 data: {
                   email: cleanEmail,

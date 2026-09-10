@@ -5,21 +5,34 @@ import { useState, Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { BrandLogo } from "@/components/BrandLogo";
 
-function LoginForm({ platformName }: { platformName: string }) {
+interface ServiceStatus {
+  mode: "OPEN" | "CLOSED_ORDER" | "MAINTENANCE" | "COMING_SOON";
+  isOpen: boolean;
+  title: string;
+  message: string;
+  reopenDate?: string;
+  contactWa?: string;
+}
+
+function LoginForm({ platformName, serviceStatus }: { platformName: string; serviceStatus: ServiceStatus | null }) {
   const [loading, setLoading] = useState(false);
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/onboarding";
+  const authError = searchParams.get("error");
+  const isRegistrationClosedError = authError === "RegistrationClosed";
 
   const handleGoogleLogin = () => {
     setLoading(true);
     signIn("google", { callbackUrl });
   };
 
+  const isClosed = serviceStatus && !serviceStatus.isOpen;
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#faf7f2] px-4 py-12 relative overflow-hidden font-sans">
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-amber-700/8 rounded-full blur-[140px] pointer-events-none" />
 
-      <div className="max-w-sm w-full bg-white border border-amber-900/10 rounded-3xl p-8 sm:p-10 shadow-xl relative z-10 text-stone-900 space-y-6">
+      <div className="max-w-md w-full bg-white border border-amber-900/10 rounded-3xl p-8 sm:p-10 shadow-xl relative z-10 text-stone-900 space-y-6">
         {/* Brand Header */}
         <div className="text-center space-y-2">
           <div className="flex justify-center">
@@ -27,11 +40,66 @@ function LoginForm({ platformName }: { platformName: string }) {
           </div>
 
           <span className="text-[11px] font-bold uppercase tracking-widest text-amber-700 block">{platformName}</span>
-          <h1 className="text-2xl font-serif font-bold text-stone-900">Masuk / Daftar Akun</h1>
+          <h1 className="text-2xl font-serif font-bold text-stone-900">Masuk Akun</h1>
           <p className="text-xs text-stone-400 leading-relaxed">
             Kelola undangan, buku tamu, galeri foto, dan pengiriman via WhatsApp dari satu tempat.
           </p>
         </div>
+
+        {/* Dynamic Service Status Notice (When not OPEN) */}
+        {isClosed && (
+          <div className={`p-4 rounded-2xl border text-xs space-y-2 ${
+            serviceStatus.mode === "CLOSED_ORDER"
+              ? "bg-amber-50/80 border-amber-200/80 text-amber-950"
+              : serviceStatus.mode === "MAINTENANCE"
+              ? "bg-rose-50/80 border-rose-200/80 text-rose-950"
+              : "bg-stone-50 border-stone-200 text-stone-900"
+          }`}>
+            <div className="flex items-center gap-2 font-bold uppercase tracking-wider text-[10px]">
+              <span className={`w-2 h-2 rounded-full shrink-0 ${
+                serviceStatus.mode === "CLOSED_ORDER" ? "bg-amber-600" :
+                serviceStatus.mode === "MAINTENANCE" ? "bg-rose-600" : "bg-stone-700"
+              }`} />
+              <span>{serviceStatus.title}</span>
+            </div>
+            <p className="text-stone-600 leading-relaxed font-normal">
+              {serviceStatus.message}
+            </p>
+            {serviceStatus.reopenDate && (
+              <p className="text-[11px] font-medium text-amber-900/80">
+                Estimasi dibuka kembali: <span className="font-bold">{serviceStatus.reopenDate}</span>
+              </p>
+            )}
+            <div className="pt-1.5 border-t border-amber-900/10 text-[11px] text-stone-500 flex items-center justify-between">
+              <span>Akun terdaftar tetap bisa login.</span>
+              {serviceStatus.contactWa && (
+                <a
+                  href={`https://wa.me/${serviceStatus.contactWa.replace(/\D/g, "")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-bold text-amber-800 hover:underline"
+                >
+                  Hubungi Admin →
+                </a>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Rejection Alert for New Users attempting to sign up while closed */}
+        {isRegistrationClosedError && (
+          <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 text-xs space-y-1.5">
+            <div className="flex items-center gap-1.5 font-bold">
+              <svg className="w-4 h-4 shrink-0 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <span>Pendaftaran Akun Baru Ditutup</span>
+            </div>
+            <p className="text-rose-800 leading-relaxed text-[11px]">
+              Email Google yang Anda gunakan belum terdaftar di sistem kami. Saat ini pendaftaran akun baru sedang ditutup sementara. Pastikan Anda masuk menggunakan akun Google yang telah didaftarkan sebelumnya.
+            </p>
+          </div>
+        )}
 
         {/* Google OAuth — Primary & Only Method */}
         <div className="space-y-3">
@@ -78,13 +146,17 @@ function LoginForm({ platformName }: { platformName: string }) {
 
 export default function ClientLoginPage() {
   const [platformName, setPlatformName] = useState("");
+  const [serviceStatus, setServiceStatus] = useState<ServiceStatus | null>(null);
   
   useEffect(() => {
-    fetch("/api/public/settings")
+    fetch("/api/public/settings", { cache: "no-store" })
       .then(res => res.json())
       .then(data => {
         const name = data.platformName || "Luxenary";
         setPlatformName(name);
+        if (data.serviceStatus) {
+          setServiceStatus(data.serviceStatus);
+        }
         document.title = `Masuk Akun | ${name}`;
       })
       .catch(() => {});
@@ -92,7 +164,7 @@ export default function ClientLoginPage() {
 
   return (
     <Suspense fallback={<div className="min-h-screen bg-[#faf7f2] flex items-center justify-center"><div className="w-8 h-8 border-2 border-amber-800 border-t-transparent rounded-full animate-spin"></div></div>}>
-      <LoginForm platformName={platformName} />
+      <LoginForm platformName={platformName} serviceStatus={serviceStatus} />
     </Suspense>
   );
 }
