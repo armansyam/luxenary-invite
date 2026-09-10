@@ -13,7 +13,7 @@ export default function AdminLoginPage() {
   const [showPass, setShowPass] = useState(false);
 
   useEffect(() => {
-    document.title = "Admin Login — Luxenary";
+    document.title = "Admin Login";
     fetch("/api/public/settings")
       .then((r) => r.json())
       .then((data) => {

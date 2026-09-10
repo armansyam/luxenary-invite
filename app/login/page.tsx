@@ -42,7 +42,7 @@ function LoginForm({ platformName, serviceStatus }: { platformName: string; serv
             className="inline-flex flex-col items-center group cursor-pointer transition select-none"
           >
             <div className="flex justify-center group-hover:scale-105 transition-transform duration-200">
-              <BrandLogo size="lg" lightBg />
+              <BrandLogo size="lg" lightBg brandName={platformName} />
             </div>
 
             <span className="text-[11px] font-bold uppercase tracking-widest text-amber-700 block mt-2 group-hover:text-amber-800 transition-colors">

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getGoogleDriveFolderPhotos } from "@/lib/driveHelper";
 import { escapeHtml } from "@/lib/escapeHtml";
 import { getThemeBlueprint } from "@/lib/themeDefaults";
+import { getAdminSetting } from "@/lib/settings";
 
 function nl2br(str: string): string {
   if (!str) return "";
@@ -1625,6 +1626,7 @@ export async function composeTemplateData(invitationId: string) {
 
   const appOrigin = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `http://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "http://localhost:3000")).replace(/\/$/, "");
   const absoluteCover = coverUrl.startsWith("http") ? coverUrl : `${appOrigin}${coverUrl.startsWith("/") ? "" : "/"}${coverUrl}`;
+  const platformName = await getAdminSetting("platform_name", "Platform Undangan");
 
   return {
     invitationId: inv.id,
@@ -1784,7 +1786,7 @@ export async function composeTemplateData(invitationId: string) {
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <title>${firstNickname} &amp; ${secondNickname} — Undangan Pernikahan</title>
     <meta name="description" content="Undangan pernikahan ${firstFullName} &amp; ${secondFullName}. Simak informasi rangkaian acara, lokasi, dan konfirmasi kehadiran.">
-    <meta property="og:site_name" content="Luxenary">
+    <meta property="og:site_name" content="${escapeHtml(platformName)}">
     <meta property="og:title" content="${firstNickname} &amp; ${secondNickname} — Undangan Pernikahan">
     <meta property="og:description" content="Undangan pernikahan ${firstFullName} &amp; ${secondFullName}. Simak informasi rangkaian acara, lokasi, dan konfirmasi kehadiran.">
     <meta property="og:image" content="${absoluteCover}">

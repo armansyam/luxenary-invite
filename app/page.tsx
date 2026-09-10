@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BrandLogo } from "@/components/BrandLogo";
 import { getPublicPlatformSettings } from "@/lib/settings";
+import { getDynamicServerRootDomain } from "@/lib/serverDomainUtils";
 import { LandingInteractive } from "@/components/landing/LandingInteractive";
 import "./landing.css";
 
@@ -17,7 +18,8 @@ export default async function Home() {
     serviceStatus,
   } = await getPublicPlatformSettings();
 
-  const brand = platformName || "Luxvite";
+  const activeDomain = await getDynamicServerRootDomain();
+  const brand = platformName || "Platform Undangan";
   const graceDays = retentionInvitationGraceDays || 7;
   const galleryRetention = retentionGalleryDefaultDays
     ? retentionGalleryDefaultDays >= 30 && retentionGalleryDefaultDays % 30 === 0
@@ -204,7 +206,7 @@ export default async function Home() {
           </div>
           <div className="tablet-url-bar">
             <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-            luxvite.id/demo
+            {activeDomain}/demo
           </div>
           <div style={{ width: "28px" }}></div>
         </div>

@@ -56,9 +56,19 @@ const INITIAL_DEMO_GUESTS: DemoGuest[] = [
 ];
 
 export default function DemoReceptionistPage() {
+  const [platformName, setPlatformName] = useState("");
   const [isLocked, setIsLocked] = useState(false);
   const [pinInput, setPinInput] = useState("");
   const [pinError, setPinError] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/public/settings")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.platformName) setPlatformName(data.platformName);
+      })
+      .catch(() => {});
+  }, []);
 
   // Guest State
   const [guests, setGuests] = useState<DemoGuest[]>(INITIAL_DEMO_GUESTS);
@@ -608,7 +618,7 @@ export default function DemoReceptionistPage() {
         {/* Left: Brand Logo & Platform Name */}
         <div className="flex items-center gap-3 z-10">
           <Link href="/demo" className="flex items-center gap-2 hover:opacity-80 transition cursor-pointer">
-            <BrandLogo size="sm" showName brandName="Luxenary" />
+            <BrandLogo size="sm" showName brandName={platformName || "Platform Undangan"} />
           </Link>
         </div>
 
@@ -1334,7 +1344,7 @@ export default function DemoReceptionistPage() {
               {currentTime}
             </div>
             <div className="text-stone-500 text-[11px] hidden sm:block">
-              Luxenary Invite System
+              {platformName ? `${platformName} System` : "Receptionist System"}
             </div>
           </div>
 
@@ -1345,12 +1355,12 @@ export default function DemoReceptionistPage() {
 
             {/* Logo Platform Watermark Besar */}
             <div className="mb-4 opacity-40 hover:opacity-60 transition-opacity transform hover:scale-105 duration-500">
-              <BrandLogo size="lg" showName={false} />
+              <BrandLogo size="lg" showName={false} brandName={platformName} />
             </div>
 
             {/* Tipografi Watermark Platform Mega */}
             <div className="font-sans text-3xl sm:text-5xl md:text-6xl font-black tracking-[0.25em] text-transparent bg-clip-text bg-gradient-to-b from-stone-100/40 via-stone-300/15 to-transparent drop-shadow-2xl leading-tight uppercase">
-              LUXENARY INVITE
+              {platformName ? `${platformName.toUpperCase()} RECEPTIONIST` : "RECEPTIONIST SYSTEM"}
             </div>
 
             {/* Garis Aksen Emas Halus */}

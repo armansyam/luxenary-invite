@@ -3,6 +3,7 @@ import path from "path";
 import { prisma } from "@/lib/prisma";
 import { composeTemplateData } from "@/lib/themeEngine";
 import { renderTemplateFile } from "@/lib/renderTemplate";
+import { getAdminSetting } from "@/lib/settings";
 
 const PUBLISHED_DIR = path.join(process.cwd(), "public", "published");
 
@@ -81,6 +82,7 @@ export async function buildAndSavePublishedHtml(invitationId: string): Promise<s
   });
   
   const siteOrigin = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `http://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "http://localhost:3000")).replace(/\/$/, "");
+  const platformName = await getAdminSetting("platform_name", "Platform Undangan");
   const rawImage = coverMedia?.localPath || (data as any).landingCoverUrl || (data as any).sidebarPhotoUrl || (data as any).heroPhotoUrl || "/assets/brand/og-banner.png";
   const absoluteImageUrl = rawImage.startsWith("http") ? rawImage : `${siteOrigin}${rawImage.startsWith("/") ? "" : "/"}${rawImage}`;
 
@@ -88,7 +90,7 @@ export async function buildAndSavePublishedHtml(invitationId: string): Promise<s
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <title>${title}</title>
     <meta name="description" content="${description}">
-    <meta property="og:site_name" content="Luxenary">
+    <meta property="og:site_name" content="${platformName}">
     <meta property="og:title" content="${title}">
     <meta property="og:description" content="${description}">
     <meta property="og:image" content="${absoluteImageUrl}">

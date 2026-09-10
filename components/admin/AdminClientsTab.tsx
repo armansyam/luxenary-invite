@@ -33,7 +33,7 @@ interface ClientUser {
   };
 }
 
-export default function AdminClientsTab() {
+export default function AdminClientsTab({ platformName }: { platformName?: string } = {}) {
   const [users, setUsers] = useState<ClientUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -139,7 +139,7 @@ export default function AdminClientsTab() {
     const cleanPhone = phone.replace(/[^0-9]/g, "").replace(/^0/, "62");
     if (cleanPhone.length < 9) return null;
     const text = encodeURIComponent(
-      `Halo Kak ${clientName || ""},\n\nKami dari Customer Support Luxenary Invite. Apakah ada hal terkait pembuatan undangan pernikahan Anda yang dapat kami bantu?`
+      `Halo Kak ${clientName || ""},\n\nKami dari Customer Support ${platformName || "Platform Undangan"}. Apakah ada hal terkait pembuatan undangan pernikahan Anda yang dapat kami bantu?`
     );
     return `https://wa.me/${cleanPhone}?text=${text}`;
   };

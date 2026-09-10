@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     await transporter.verify();
 
     const fromAddress = settings.smtpFromEmail || settings.smtpUser;
-    const fromName = settings.smtpFromName || settings.platformName || "Luxenary Invite";
+    const fromName = settings.smtpFromName || settings.platformName || "Platform Undangan";
     const timestamp = new Date().toLocaleString("id-ID", { dateStyle: "full", timeStyle: "medium" });
 
     // 2. Kirim email uji coba

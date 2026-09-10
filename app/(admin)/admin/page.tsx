@@ -2446,7 +2446,7 @@ export default function AdminPage() {
 
               {/* ── Users / Klien ── */}
               {activeTab === "users" && (
-                <AdminClientsTab />
+                <AdminClientsTab platformName={settingsMap["platform_name"]} />
               )}
 
               {/* ── Invitations / Projek Undangan ── */}

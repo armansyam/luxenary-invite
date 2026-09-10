@@ -3,6 +3,7 @@ import path from "path";
 import { renderTemplateFile } from "./renderTemplate";
 import { composeDemoTemplateData } from "./demoRegistry";
 import { prisma } from "./prisma";
+import { getAdminSetting } from "./settings";
 
 /**
  * Compiles a single theme demo into a standalone static HTML file in public/demo/[themeId]/index.html
@@ -43,12 +44,13 @@ export async function compileAndSaveStaticDemo(
   const bride = (data as any).brideName || "Bride";
   const demoTitle = `The Wedding of ${groom} & ${bride} — ${(data as any).themeName || cleanId.toUpperCase()}`;
   const demoDesc = `Undangan pernikahan digital eksklusif tema ${(data as any).themeName || cleanId.toUpperCase()}. Desain elegan, split desktop view, RSVP real-time & galeri momen.`;
+  const platformName = await getAdminSetting("platform_name", "Platform Undangan");
 
   (data as any).metaTagsHtml = `
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <title>${demoTitle}</title>
     <meta name="description" content="${demoDesc}">
-    <meta property="og:site_name" content="Luxenary">
+    <meta property="og:site_name" content="${platformName}">
     <meta property="og:title" content="${demoTitle}">
     <meta property="og:description" content="${demoDesc}">
     <meta property="og:image" content="${absoluteCover}">

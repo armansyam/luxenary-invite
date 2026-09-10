@@ -105,7 +105,7 @@ export async function GET(req: NextRequest) {
       return new Response("\uFEFF" + csvContent, {
         headers: {
           "Content-Type": "text/csv; charset=utf-8",
-          "Content-Disposition": `attachment; filename="transaksi_luxenary_${dateStr}.csv"`,
+          "Content-Disposition": `attachment; filename="transaksi_${dateStr}.csv"`,
         },
       });
     }
