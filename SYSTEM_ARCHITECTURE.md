@@ -643,7 +643,7 @@ HTML standalone lengkap (self-contained, inline CSS/JS)
     - `closingPhotoUrl`: URL foto dari slot media `CLOSING_COVER` (atau `null` jika kosong).
     - `hasClosingPhoto`: Boolean ketersediaan foto.
     - `closingPhotoClass`: `"has-closing-photo"` bila ada foto, atau `"no-closing-photo"` bila kosong.
-    - `closingBgStyle`: CSS inline `background-image: url(...)` dinamis saat foto ada, atau string kosong `""` saat mode kanvas.
+    - `closingBgStyle`: CSS inline `background-image: url(...)` dinamis (dipertahankan di runtime `themeEngine` untuk *backward compatibility*, sementara injeksi visual latar penutup utama dieksekusi secara aman via tag `<style>` di `<head>` oleh `renderTemplate.ts`). Tag `<footer>` di master template bersih dari atribut inline style untuk mencegah peringatan sintaks linter.
   - **Dua Mode Tampilan Outro 100vh:**
     1. *Mode Kanvas Kosong (`no-closing-photo`):* Layar penuh 100vh bersih dengan warna dasar tema (dilarang ada gambar dummy/Unsplash fallback). Blok ucapan terima kasih dan nama mempelai terpusat sempurna di tengah layar (`justify-content: center; align-items: center; text-align: center;`).
     2. *Mode Foto Penutup (`has-closing-photo`):* Foto penutup mengisi background layar penuh dengan overlay gradasi/scrim, dan blok teks berpindah secara elegan ke bagian bawah layar (`justify-content: flex-end;`).
