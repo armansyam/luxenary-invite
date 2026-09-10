@@ -102,3 +102,33 @@ Untuk menghemat biaya penyimpanan, Anda dapat mengaktifkan pembersihan otomatis 
    - **Action:** Delete object after **60 days**.
 4. Klik **Save rule**.
 5. Dengan aturan ini, seluruh foto tamu yang telah selesai dan diunduh oleh pengantin akan otomatis terhapus dari bucket setelah 60 hari secara cuma-cuma.
+
+---
+
+## 6. Konfigurasi 1-Klik Purge Edge Cache (Cloudflare Zone API)
+
+Agar Administrator dapat menghapus cache Edge CDN Cloudflare secara instan dari Web Admin tanpa perlu login ke dashboard Cloudflare:
+
+### A. Dapatkan Zone ID & Buat API Token
+1. **Zone ID**: Buka dashboard Cloudflare > Pilih domain Anda (contoh: `luxvite.id`) > Di halaman **Overview**, gulir ke bagian kanan bawah (**API** section) > Salin **Zone ID**.
+2. **API Token**:
+   - Di dashboard Cloudflare, buka profil pojok kanan atas > **My Profile** > **API Tokens**.
+   - Klik **Create Token** > Pilih template **Create Custom Token** (atau gunakan template *Purge Cache* jika ada).
+   - Beri nama token, contoh: `Luxenary Cache Purge`.
+   - Tetapkan permissions:
+     - **Zone** - **Cache Purge** - **Purge**
+     - **Zone** - **Zone** - **Read**
+   - **Zone Resources**: Include > Specific zone > Pilih domain Anda.
+   - Klik **Continue to summary** > **Create Token**.
+   - Salin token API yang ditampilkan (token ini hanya tampil satu kali).
+
+### B. Konfigurasi `.env` Server VPS
+Masukkan kedua nilai ke dalam berkas `.env` aplikasi:
+```env
+CF_ZONE_ID="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+CF_API_TOKEN="cfut_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+```
+
+### C. Operasional Pembersihan Cache
+- **Pembersihan Platform Global:** Buka Admin Portal > **Settings > Tab Setup & Integrasi** > Klik tombol **"Purge Cache"** untuk membersihkan cache homepage, sitemap, packages, katalog demo, dan CDN Cloudflare sekaligus.
+- **Pembersihan Khusus Tema:** Buka Admin Portal > **Tab Tema** > Klik tombol **"Sinkronisasi Tema & Cache"** untuk otomatis memindai tema fisik disk, mengompilasi ulang demo statis, dan mem-purge edge cache Cloudflare.

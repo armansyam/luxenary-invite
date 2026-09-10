@@ -5,7 +5,6 @@ import fs from "fs";
 import path from "path";
 
 export const dynamic = "force-dynamic";
-export const revalidate = 0;
 export async function GET() {
   try {
     let dbThemes = await prisma.theme.findMany({
@@ -116,7 +115,7 @@ export async function GET() {
 
     return NextResponse.json(themes, {
       headers: {
-        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        "Cache-Control": "public, max-age=60, s-maxage=86400, stale-while-revalidate=3600",
       },
     });
   } catch (error: unknown) {

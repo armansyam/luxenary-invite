@@ -42,7 +42,7 @@ export default function CatalogGridShowcase() {
   }, []);
 
   useEffect(() => {
-    fetch("/api/public/themes", { cache: "no-store" })
+    fetch("/api/public/themes")
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -433,7 +433,7 @@ export default function CatalogGridShowcase() {
 
                 <h3 className="text-lg font-bold text-stone-900 mb-2">Galeri Kenangan Tamu</h3>
                 <p className="text-xs text-stone-600 leading-relaxed mb-4">
-                  Feed foto kebersamaan tamu yang mengalir secara live, siap diproyeksikan pada layar proyektor atau TV LED panggung ballroom pernikahan.
+                  Feed foto kebersamaan tamu yang mengalir secara live dan diperbarui otomatis tanpa perlu refresh halaman.
                 </p>
 
                 <ul className="space-y-2 mb-6 text-xs text-stone-600 border-t border-stone-100 pt-4">

@@ -135,9 +135,11 @@ Bagaimana jika tema dihapus saat ada klien yang sedang dalam tahap penyusunan dr
 Tombol hijau **"Sinkronisasi Tema & Cache"** di bagian atas tab Manajemen Tema berfungsi sebagai sistem pemindaian menyeluruh (*full filesystem scan*):
 
 1. **Auto-Discovery:** Memindai subfolder `themes/premium`, `themes/modern`, dan `themes/traditional`. Setiap file `.html` baru yang diletakkan langsung via Git/filesystem akan otomatis didaftarkan ke database.
-2. **Auto-Purge Tema Zombie:** Memeriksa seluruh baris tema di tabel database. Jika ada record di database yang file fisiknya **tidak ditemukan** di disk, record tersebut otomatis dihapus dari database demi menjaga integritas data.
-3. **Mass Re-Compile:** Mengompilasi ulang seluruh file HTML demo statis di `public/demo/` untuk semua tema aktif.
-4. **Cache Invalidation:** Me-revalidate seluruh halaman `/demo` dan showroom publik.
+2. **Safety Guard Anti-Wipeout:** Memastikan jika 0 file terdeteksi di disk (misal saat proses deploy belum selesai), operasi langsung dibatalkan secara aman tanpa merusak database.
+3. **Auto-Purge Tema Zombie:** Memeriksa seluruh baris tema di tabel database. Jika ada record di database yang file fisiknya **tidak ditemukan** di disk, record tersebut otomatis dihapus dari database demi menjaga integritas data.
+4. **Preservasi Pengaturan Kustom:** Mempertahankan kustomisasi admin (`sortOrder`, thumbnail kustom, deskripsi, dan status aktif/nonaktif tema yang pernah diatur di dashboard).
+5. **Mass Re-Compile:** Mengompilasi ulang seluruh file HTML demo statis di `public/demo/` untuk semua tema aktif.
+6. **Multi-Layer Cache Invalidation:** Me-revalidate seluruh halaman Next.js (`/demo`, `/demo/[theme]`, `/demo/preview`, `/api/public/themes`, dan `/`), serta secara otomatis mengeksekusi purge cache ke **Cloudflare Edge CDN** (jika `CF_ZONE_ID` dan `CF_API_TOKEN` terkonfigurasi di `.env`).
 
 ---
 

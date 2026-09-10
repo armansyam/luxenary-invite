@@ -153,7 +153,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Pancarkan event real-time ke SSE stream proyektor/layar venue
+    // Pancarkan event real-time ke SSE stream galeri tamu
     try {
       sseEmitter.emit("new_memory", memory);
     } catch (sseErr) {

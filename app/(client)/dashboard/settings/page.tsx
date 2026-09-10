@@ -645,7 +645,7 @@ export default function SettingsPage() {
         id: "memories",
         badge: "Galeri Kenangan Tamu",
         title: "Album & Live Streaming Momen Tamu",
-        desc: "Portal galeri live untuk menampilkan seluruh foto candid dan ucapan hangat para tamu (dapat diproyeksikan di layar proyektor venue acara).",
+        desc: "Portal galeri live untuk menampilkan seluruh foto candid dan ucapan hangat para tamu.",
         url: memoriesUrl,
         checkLabel: "Saya telah memverifikasi portal album kenangan dan galeri momen tamu dapat dibuka.",
       },

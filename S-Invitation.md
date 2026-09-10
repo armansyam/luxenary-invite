@@ -446,8 +446,9 @@ Sistem pengiriman email otomatis menggunakan **Nodemailer** yang membaca kredens
    - Admin mengisi metadata dan mengunggah master file `.html` template langsung melalui modal.
    - Backend meletakkan file ke `themes/{kategori}/{id}.html`, mendaftarkannya ke database, dan langsung mengeksekusi `compileAndSaveStaticDemo(id)`.
    - File HTML demo statis langsung tercipta di `public/demo/{id}/index.html` dan siap diuji di katalog `/demo`. Berkas `index.html` kompilasi ini diperlakukan sebagai runtime cache murni yang dikecualikan dari Git (`.gitignore`) dan dipra-kompilasi secara mandiri via `deploy.sh` atau *on-the-fly* saat diakses, menjamin zero merge conflict di server VPS.
-2. **Sinkronisasi Otomatis & Anti-Zombie**:
-   - Tombol *Sinkronisasi Tema & Cache* (`POST /api/admin/themes/sync`) memindai direktori fisik `themes/` dan otomatis menghapus record tema usang (*auto-purge*) yang tidak lagi memiliki file fisik master.
+2. **Sinkronisasi Otomatis & Anti-Zombie (Next.js & Cloudflare Edge Purge)**:
+   - Tombol *Sinkronisasi Tema & Cache* (`POST /api/admin/themes/sync`) memindai direktori fisik `themes/`, otomatis menghapus record tema usang (*auto-purge*) yang tidak lagi memiliki file master fisik, merevalidasi cache Next.js (`/demo`, `/demo/[theme]`, `/api/public/themes`), serta secara otomatis mengeksekusi purge cache Cloudflare Edge CDN jika kredensial `CF_ZONE_ID` & `CF_API_TOKEN` terkonfigurasi.
+   - Tersedia pula tombol *Purge Cache* dedicated di menu **Settings > Setup & Integrasi** (`POST /api/admin/cache/purge`) untuk membersihkan seluruh lapisan cache server (Next.js ISR) dan Cloudflare Edge CDN sewaktu-waktu.
    - Menjamin prinsip *Single Source of Truth* terjaga 100%.
 3. **Studio Tema Admin & Kustomisasi Custom Labels Menyeluruh**:
    - **Formulir Interaktif Dinamis:** Admin dapat menambah dan menghapus rangkaian acara (`events`), bab kisah cinta (`stories`), dan rekening bank (`banks`) demo secara langsung tanpa batasan statis.
@@ -507,7 +508,7 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - Formulir RSVP publik, rate limiting & nested wish reply (`03_SISTEM_RSVP_DAN_BUKU_UCAPAN.md`)
    - Tanda kasih cashless, rekening copy button & QRIS (`04_AMPLOP_DIGITAL_DAN_HADIAH_PERNIKAHAN.md`)
    - Portal resepsionis digital, HTML5 QR scanner & souvenir (`05_SISTEM_RESEPSIONIS_DAN_CHECKIN_QR.md`)
-   - Portal upload foto candid tamu & slideshow proyektor venue (`06_LIVE_MOMENT_DAN_CLOUD_MEMORIES.md`)
+   - Portal upload foto candid tamu & galeri kenangan live real-time (`06_LIVE_MOMENT_DAN_CLOUD_MEMORIES.md`)
 4. **Engineering, Kamus Database & Keamanan (`docs/`):**
    - Kamus data, relasi ERD & lifecycle state machine (`DATABASE_SCHEMA_DAN_RELASI.md`)
    - Katalog lengkap 40+ REST API, SSE & Webhooks (`API_REFERENCE.md`)
@@ -575,7 +576,7 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - **Zero-404 Server Verification di `/api/public/themes`:** Memeriksa ketersediaan thumbnail fisik di VPS sebelum mengirimkan URL, langsung mengalihkan ke `cover.webp` jika belum ada sehingga kartu katalog bebas dari siklus 404 ganda. Frame wadah kartu diperbarui ke `bg-stone-100` untuk transisi loading yang lembut tanpa blank hitam.
 6. **Proteksi Anti-Download, Fluid Layout & Clean Lightbox Navigation Galeri Kenangan (`/memories`):**
    - Galeri kenangan tamu diproteksi secara menyeluruh dari unduhan tidak sah melalui pelarangan menu klik kanan (`onContextMenu` preventDefault), pencegahan touch-callout pada mobile (`-webkit-touch-callout: none`), larangan dragging gambar (`draggable={false}`), serta pointer containment pada preview lightbox modal.
-   - **Fluid Full-Width Layout:** Container galeri menggunakan `w-full max-w-[1920px] mx-auto` dengan kolom responsif (`columns-2` hingga `2xl:columns-7`) yang mengeliminasi ruang hitam kosong di monitor desktop dan layar proyektor venue pernikahan.
+   - **Fluid Full-Width Layout:** Container galeri menggunakan `w-full max-w-[1920px] mx-auto` dengan kolom responsif (`columns-2` hingga `2xl:columns-7`) yang responsif di seluruh ukuran layar dari mobile hingga desktop.
    - **Clean Lightbox Navigation:** Bebas dari ikon/tombol panah next-prev mengambang yang menutupi foto. Pengguna desktop dapat menekan tombol panah keyboard (`ArrowRight`/`ArrowLeft`/`Escape`), sedangkan pengguna mobile menggeser layar (*touch swipe gesture*). Dilengkapi indikator nomor foto yang elegan dan pembaruan real-time via `sseEmitter.emit("new_memory", memory)`.
 7. **Fitur Hapus Foto Bersih & Unlink Fisik di Demo Studio:**
    - Menyediakan tombol *Hapus* dan *Pulihkan* pada seluruh slot aset foto Demo Studio (sampul, background, foto mempelai, 8 galeri showroom, dan 4 kenangan tamu).

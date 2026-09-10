@@ -139,3 +139,20 @@ Sistem mengadopsi arsitektur hierarki URL yang bersih dan hemat sumber daya name
 ## 9. Diagnostik Langsung: SMTP & Cloud Storage
 - **Uji Coba Handshake Live Email SMTP (`POST /api/admin/test-smtp`):** Terintegrasi langsung (*inline*) pada kartu konfigurasi *Server Email (SMTP)* di Tab *Pengaturan* -> *Setup & Integrasi*. Menguji konektivitas server SMTP ke port 587/465 dan mengirim email uji coba HTML instan ke alamat administrator tanpa membuat card terpisah atau card bertumpuk.
 - **Uji Latensi, Detak Server & Cloudflare R2 (`GET /api/admin/monitoring/health`):** Terpusat di Tab *Monitoring* -> Sub-tab *Kesehatan & Storage*. Menguji konektivitas bucket cloud (write/delete handshake sementara), mengukur latensi round-trip (ms), memantau pemakaian kuota media R2, serta kapasitas partisi disk VPS Ubuntu dan status detak server secara terpadu.
+
+---
+
+## 10. Manajemen Pembersihan Cache Multi-Layer (`Tab: Setup & Integrasi`)
+
+Untuk memastikan setiap pembaruan data di server atau perubahan aset tampilan langsung tersaji ke pengunjung tanpa tertahan cache kadaluarsa, panel Admin menyediakan alat **Purge Cache** dedicated:
+
+- **Akses UI:** Admin Portal > Menu **Pengaturan (Settings)** > Sub-tab **Setup & Integrasi** > Kartu **Pembersihan Cache Server & CDN**.
+- **Tombol "Purge Cache" (`POST /api/admin/cache/purge`):**
+  1. **Next.js ISR Cache:** Menghapus cache HTML/data server pada rute-rute statis utama:
+     - `/` (Homepage / Landing Page)
+     - `/sitemap.xml` (Peta situs SEO)
+     - `/packages` (Daftar paket harga)
+     - `/demo` (Katalog tema)
+     - `/api/public/themes` (Data JSON daftar tema)
+  2. **Cloudflare Edge CDN:** Jika `CF_ZONE_ID` dan `CF_API_TOKEN` terkonfigurasi di `.env`, sistem secara otomatis mengirimkan instruksi `purge_everything: true` ke API Cloudflare Zone untuk membersihkan ribuan edge server Cloudflare di seluruh dunia secara instan.
+- **Kartu Hasil Respon:** Menampilkan status detail eksekusi Next.js revalidation (daftar path yang berhasil dibersihkan) dan status respons Cloudflare API (sukses atau alasan skip/error).

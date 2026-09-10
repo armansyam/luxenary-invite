@@ -4,6 +4,7 @@ import fs from "fs";
 import path from "path";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { purgeCloudflareCache } from "@/lib/cloudflare";
 
 export const dynamic = "force-dynamic";
 
@@ -87,6 +88,13 @@ export async function POST() {
       }
     }
 
+    if (discovered.length === 0) {
+      return NextResponse.json(
+        { success: false, error: "Peringatan Keamanan: Tidak ada berkas tema yang terdeteksi di direktori themes/. Sinkronisasi dibatalkan untuk mencegah penghapusan data secara tidak sengaja." },
+        { status: 400 }
+      );
+    }
+
     // Upsert into Database (Theme Table)
     let syncedCount = 0;
     const { DEMO_REGISTRY } = await import("@/lib/demoRegistry");
@@ -104,7 +112,7 @@ export async function POST() {
           name: d.name,
           category: cat,
           series: d.series,
-          sortOrder: i + 1,
+          sortOrder: existing?.sortOrder ?? (i + 1),
           description: existing?.description || defaultDesc,
           thumbnail: existing?.thumbnail || demoData?.sidebarPhotoUrl || demoData?.landingCoverUrl || null,
           isPremium: cat === "premium",
@@ -137,11 +145,15 @@ export async function POST() {
     const { compileAllStaticDemos } = await import("@/lib/demoPublisher");
     const precompiledCount = await compileAllStaticDemos();
 
-    // Purge / Invalidate Next.js cache for showroom and all demo pages
+    // Purge / Invalidate Next.js cache for showroom, public API, and all demo pages
     revalidatePath("/demo");
     revalidatePath("/demo/[theme]", "page");
     revalidatePath("/demo/preview");
+    revalidatePath("/api/public/themes");
     revalidatePath("/");
+
+    // Otomatis bersihkan Cloudflare Edge Cache jika kredensial terkonfigurasi
+    await purgeCloudflareCache({ purgeEverything: true });
 
     return NextResponse.json({
       success: true,

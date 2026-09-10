@@ -37,13 +37,13 @@ Endpoint berikut dapat diakses oleh publik (tamu undangan, browser pengunjung, d
 | Metode | Endpoint | Deskripsi & Kegunaan |
 |:---:|---|---|
 | `GET` | `/api/public/settings` | Mengambil data pengaturan publik platform (nama platform, logo, WhatsApp CS, limit upload). |
-| `GET` | `/api/public/themes` | Mengambil katalog tema aktif untuk galeri landing page & filter series. |
+| `GET` | `/api/public/themes` | Mengambil katalog tema aktif untuk galeri landing page & `/demo` (cached via Cloudflare `s-maxage=86400`, `max-age=60`). |
 | `GET` | `/api/public/music` | Mengambil daftar pustaka musik latar (*audio presets*) resmi. |
 | `POST` | `/api/public/rsvp` | Mengirim konfirmasi kehadiran tamu (dukungan rate limiting 15 req/menit per IP). |
 | `GET` | `/api/public/resolve-custom-domain` | Verifikasi kepemilikan domain untuk Caddy On-Demand TLS & Next.js middleware rewrite. |
 | `POST` | `/api/public/memories/upload` | Mengunggah foto kenangan candid dari tamu hari-H (murni foto: JPEG/PNG/WebP/GIF). |
 | `GET` | `/api/public/memories/{invitationId}` | Mengambil feed foto kenangan tamu untuk galeri publik. |
-| `GET` | `/api/sse/memories` | *Server-Sent Events* stream untuk slideshow proyektor live real-time di venue. |
+| `GET` | `/api/sse/memories` | *Server-Sent Events* stream untuk notifikasi real-time momen baru di galeri kenangan tamu. |
 | `GET` | `/api/public/version` | Mengambil versi sistem rilis aktif platform. |
 
 ---
@@ -114,8 +114,9 @@ Memerlukan autentikasi admin (`role: ADMIN` atau `SUPER_ADMIN`):
 | **Orders** | `POST` | `/api/admin/orders/{id}/approve` | Persetujuan 1-klik pembayaran transfer bank manual. |
 | | `POST` | `/api/admin/orders/{id}/reject` | Menolak transfer bank manual dengan alasan verifikasi. |
 | **Tema** | `GET` | `/api/admin/themes` | Daftar seluruh master tema di sistem. |
-| | `POST` | `/api/admin/themes/sync` | Sinkronisasi master tema fisik di disk ke database. |
+| | `POST` | `/api/admin/themes/sync` | Sinkronisasi master tema fisik di disk ke database, auto-compile static demo, dan auto-purge Cloudflare edge cache. |
 | | `POST` | `/api/admin/themes/{id}/demo-asset` | Mengunggah banner atau video demo tema resmi. |
+| **Cache** | `POST` | `/api/admin/cache/purge` | Membersihkan server cache Next.js ISR dan edge CDN Cloudflare secara serentak. |
 | **Database** | `POST` | `/api/admin/database/backup` | Memicu pembuatan snapshot basis data manual. |
 | | `GET` | `/api/admin/database/download` | Mengunduh file `.sql` snapshot database ke komputer lokal. |
 | | `POST` | `/api/admin/database/restore` | Mengembalikan (*restore*) database dari berkas snapshot. |

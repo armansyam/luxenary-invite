@@ -286,7 +286,7 @@ export default function DemoGuestMemoriesPage() {
           Kenangan Hangat Para Tamu
         </h1>
         <p className="text-xs sm:text-sm text-stone-400 max-w-lg mx-auto leading-relaxed">
-          Koleksi foto spontan dan ucapan doa yang dikirimkan langsung oleh para tamu dari meja acara ke layar proyektor pernikahan.
+          Koleksi foto spontan dan ucapan doa yang dikirimkan langsung oleh para tamu — tersimpan sebagai kenangan abadi di galeri digital undangan.
         </p>
 
         <div className="flex items-center justify-center gap-3 mt-4 text-xs text-stone-400">

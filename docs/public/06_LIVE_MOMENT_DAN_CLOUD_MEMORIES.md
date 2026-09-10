@@ -1,11 +1,11 @@
 # DOKUMENTASI RESMI: LIVE MOMENT & CLOUD MEMORIES GALERI
-**Luxenary Invite Platform — Portal Unggah Foto Tamu, Slideshow Proyektor Venue, & Cloud Memories**
+**Luxenary Invite Platform — Portal Unggah Foto Tamu & Cloud Memories**
 
-Dokumen ini membedah arsitektur teknis modul **Live Moments & Cloud Memories** (`/[slug]/memories` & `/[slug]/sharemoment`), fitur interaktif yang memungkinkan para tamu mengabadikan dan mengunggah foto candid selama acara pernikahan secara langsung ke Cloudflare R2, serta menayangkannya pada layar proyektor venue.
+Dokumen ini membedah arsitektur teknis modul **Live Moments & Cloud Memories** (`/[slug]/memories` & `/[slug]/sharemoment`), fitur interaktif yang memungkinkan para tamu mengabadikan dan mengunggah foto candid selama acara pernikahan secara langsung ke Cloudflare R2, lalu menikmatinya bersama di galeri kenangan digital yang hidup secara *real-time*.
 
 ---
 
-## 1. Arsitektur Unggah Momen & Tayangan Proyektor
+## 1. Arsitektur Unggah Momen & Galeri Real-Time
 
 ```mermaid
 flowchart TD
@@ -20,11 +20,11 @@ flowchart TD
         D --> F[Simpan Record ke Database: GuestMemory]
     end
     
-    subgraph LayarVenue [Layar Proyektor / TV Venue & Galeri Web]
+    subgraph GaleriWeb [Galeri Kenangan Web]
         F --> G[Portal Galeri: /[slug]/memories]
         G --> H[Story Highlights: 10 Lingkaran Momen Pilihan]
         G --> I[Grid Galeri Momen Seluruh Tamu]
-        G --> J[Mode Fullscreen Slideshow Proyektor LED]
+        F --> K[SSE Broadcast: Notifikasi Momen Baru ke Galeri]
     end
 ```
 
@@ -55,12 +55,12 @@ Seluruh foto yang diunggah dikurasi dalam halaman galeri yang estetis:
 
 ---
 
-## 4. Mode Live Slideshow untuk Proyektor / LED Screen
+## 4. Notifikasi Real-Time via SSE (Server-Sent Events)
 
-Di venue resepsi, panitia dapat membuka halaman galeri pada laptop yang terhubung ke proyektor atau videotron LED utama:
-- **Tombol Fullscreen Proyektor:** Menghilangkan navigasi browser dan menampilkan layar hitam sinematik.
-- **Auto-Cycle Animation:** Foto-foto berganti secara otomatis dengan efek transisi lembut (*fade transition*) setiap 5–7 detik.
-- **Polling Foto Baru:** Sistem secara berkala memeriksa foto baru yang diunggah para tamu sehingga suasana pernikahan menjadi interaktif dan hidup.
+Halaman galeri `/[slug]/memories` berlangganan ke endpoint `/api/sse/memories` secara otomatis:
+- **Toast Notifikasi:** Ketika ada foto baru yang diunggah tamu, sebuah notifikasi muncul di bagian bawah galeri: *"Ada X Momen Baru! Klik untuk memuat"*.
+- **Tanpa Refresh Manual:** Pengunjung galeri langsung mengetahui ada momen baru tanpa perlu me-refresh halaman.
+- **Satu SSE Stream per Undangan:** Setiap `invitationId` memiliki channel SSE-nya sendiri agar tidak ada silang data antar undangan.
 
 ---
 

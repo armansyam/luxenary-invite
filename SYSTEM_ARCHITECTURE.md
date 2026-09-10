@@ -212,7 +212,7 @@
 │       ├── 03_SISTEM_RSVP_DAN_BUKU_UCAPAN.md   # Form RSVP publik, rate limiting & nested wish reply
 │       ├── 04_AMPLOP_DIGITAL_DAN_HADIAH_PERNIKAHAN.md # Rekening bank copy button, QRIS & kado fisik
 │       ├── 05_SISTEM_RESEPSIONIS_DAN_CHECKIN_QR.md # Portal resepsionis, HTML5 QR scanner & souvenir
-│       └── 06_LIVE_MOMENT_DAN_CLOUD_MEMORIES.md # Upload foto candid tamu, live slideshow proyektor venue
+│       └── 06_LIVE_MOMENT_DAN_CLOUD_MEMORIES.md # Upload foto candid tamu, galeri kenangan live real-time & cloud memories
 │
 ├── middleware.ts             # ⭐ Edge routing utama (CRITICAL FILE)
 ├── auth.ts                   # NextAuth config entry
@@ -323,7 +323,7 @@ Sebelum undangan dapat dirilis (`PUBLISHED`), sistem menerapkan evaluasi sekuens
      2. **Subdomain Eksklusif:** `https://{subdomain}.luxenary.id` (atau Custom Domain klien)
      3. **Simulasi Tautan Tamu:** `https://{subdomain}.luxenary.id/?to=Nama+Tamu` (Uji coba personalisasi nama tamu)
      4. **Portal Resepsionis & QR:** `https://{subdomain}.luxenary.id/receptionist` (Validasi PIN Panitia)
-     5. **Galeri Kenangan Tamu:** `https://{subdomain}.luxenary.id/memories` (Live Album & Slideshow Kenangan)
+     5. **Galeri Kenangan Tamu:** `https://{subdomain}.luxenary.id/memories` (Live Album Kenangan Tamu)
      6. **Form Kamera Tamu:** `https://{subdomain}.luxenary.id/sharemoment` (Input foto momen tamu langsung)
    - **Mode Preview DRAFT:** Sebelum status `PUBLISHED`, seluruh tombol "Buka Web" menyertakan parameter `?preview=true` sehingga klien dan panitia dapat menguji coba seluruh tampilan dan fitur tanpa membuka akses publik prematur.
    - Tombol **"Rilis Undangan Resmi"** terkunci (*disabled*) hingga ke-6 checkbox konfirmasi dicentang oleh klien.
@@ -736,7 +736,7 @@ Fitur *Remote* memungkinkan Admin untuk masuk ke dasbor Klien dan mengendalikann
 ```
 PUBLIC (tanpa auth):
   GET  /api/public/settings           → Platform settings global
-  GET  /api/public/themes             → List tema aktif (force-dynamic, no-cache, instan tersinkron dengan toggle admin)
+  GET  /api/public/themes             → List tema aktif (cached via Cloudflare s-maxage=86400, max-age=60, auto-purged on admin sync)
   POST /api/public/rsvp               → Submit RSVP tamu
   GET  /api/public/memories/{id}      → List foto momen
   POST /api/public/memories/upload    → Upload foto tamu (rate-limited)
@@ -767,7 +767,8 @@ ADMIN (auth required, role=ADMIN/SUPER_ADMIN):
   DELETE /api/admin/users             → Hapus permanen klien, relasi DB (undangan, transaksi) & pembersihan fisik file (published HTML, draft HTML, folder uploads rekursif)
   GET  /api/admin/invitations         → List projek undangan terpaginasi server-side dengan filter status & pencarian multi-field
   GET/POST/PUT/DELETE /api/admin/themes → Manajemen tema (Upload master .html, update metadata, auto-compile demo, hard-delete steril)
-  POST /api/admin/themes/sync         → Sinkronisasi tema disk-to-DB, auto-discovery & auto-purge tema zombie
+  POST /api/admin/themes/sync         → Sinkronisasi tema disk-to-DB, auto-discovery, auto-compile static demo, revalidate cache & Cloudflare edge purge
+  POST /api/admin/cache/purge         → Purge Next.js ISR & Cloudflare Edge CDN Cache (homepage, sitemap, packages, demo, public themes)
   POST /api/admin/settings            → Update platform settings
   POST /api/admin/test-smtp           → Uji coba handshake live email SMTP & pengiriman pesan diagnostik
   POST /api/admin/test-storage        → Uji coba penulisan & pengukuran latensi cloud storage Cloudflare R2/S3

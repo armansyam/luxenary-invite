@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { DEMO_REGISTRY } from "@/lib/demoRegistry";
+import { purgeCloudflareCache } from "@/lib/cloudflare";
 
 export const dynamic = "force-dynamic";
 
@@ -142,11 +143,12 @@ export async function POST(
     const { compileAndSaveStaticDemo } = await import("@/lib/demoPublisher");
     await compileAndSaveStaticDemo(themeId, body, version);
 
-    // Invalidate Next.js cache
+    // Invalidate Next.js cache & Cloudflare Edge Cache
     try {
       revalidatePath("/demo");
       revalidatePath(`/demo/${themeId}`);
       revalidatePath("/api/public/themes");
+      await purgeCloudflareCache({ purgeEverything: true });
     } catch {}
 
     return NextResponse.json({

@@ -623,6 +623,8 @@ export default function AdminPage() {
   const [snapshots, setSnapshots] = useState<any[]>([]);
   const [loadingSnapshots, setLoadingSnapshots] = useState(false);
   const [creatingSnapshot, setCreatingSnapshot] = useState(false);
+  const [purgingCache, setPurgingCache] = useState(false);
+  const [purgeResult, setPurgeResult] = useState<{ success: boolean; msg: string } | null>(null);
   const [restoringSnapshot, setRestoringSnapshot] = useState<string | null>(null);
   const [deletingSnapshot, setDeletingSnapshot] = useState<string | null>(null);
   const [showUploadSnapshot, setShowUploadSnapshot] = useState(false);
@@ -4485,6 +4487,79 @@ export default function AdminPage() {
                         </div>
                       </div>
                     </div>
+                  </div>
+
+                  {/* ── Purge Cache (Server ISR + Cloudflare) ── */}
+                  <div className="p-5 bg-white rounded-2xl border border-gray-200 shadow-xs">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div>
+                        <h3 className="text-sm font-bold text-gray-900">Purge Cache Server & Cloudflare</h3>
+                        <p className="text-xs text-gray-500 mt-0.5 leading-relaxed max-w-xl">
+                          Paksa halaman publik (homepage, paket, sitemap) agar langsung menampilkan perubahan terbaru.
+                          Menjalankan Next.js ISR revalidation dan Cloudflare edge cache purge sekaligus.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={purgingCache}
+                        onClick={async () => {
+                          setPurgingCache(true);
+                          setPurgeResult(null);
+                          try {
+                            const res = await fetch("/api/admin/cache/purge", { method: "POST" });
+                            const data = await res.json();
+                            const cfOk = data.results?.cloudflare?.success;
+                            const cfSkipped = data.results?.cloudflare?.skipped;
+                            const cfMsg = cfSkipped
+                              ? " (Cloudflare dilewati — CF_API_TOKEN belum diset)"
+                              : cfOk
+                              ? " + Cloudflare edge"
+                              : " (Cloudflare gagal)";
+                            setPurgeResult({
+                              success: data.success,
+                              msg: data.success
+                                ? `Cache server berhasil dibersihkan${cfMsg}.`
+                                : "Gagal purge cache. Periksa log server.",
+                            });
+                          } catch {
+                            setPurgeResult({ success: false, msg: "Gagal menghubungi server." });
+                          } finally {
+                            setPurgingCache(false);
+                            setTimeout(() => setPurgeResult(null), 6000);
+                          }
+                        }}
+                        className="shrink-0 px-5 py-2.5 bg-stone-800 hover:bg-stone-900 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 cursor-pointer min-w-[140px]"
+                      >
+                        {purgingCache ? (
+                          <>
+                            <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            <span>Membersihkan...</span>
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            <span>Purge Cache</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    {purgeResult && (
+                      <div className={`mt-3 px-4 py-2.5 rounded-xl text-xs font-medium flex items-center gap-2 ${
+                        purgeResult.success
+                          ? "bg-emerald-50 border border-emerald-200 text-emerald-800"
+                          : "bg-rose-50 border border-rose-200 text-rose-700"
+                      }`}>
+                        <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          {purgeResult.success
+                            ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          }
+                        </svg>
+                        {purgeResult.msg}
+                      </div>
+                    )}
                   </div>
                   </>
                   )}

@@ -100,7 +100,7 @@ export default function GuestMomentClient({ invitationId, coupleName, coverUrl, 
       if (invitationId.startsWith("demo") || invitationId === "demo") {
         clearInterval(progressInterval);
         setUploadProgress(100);
-        setSuccessMsg("Simulasi Berhasil! Foto Anda terkirim (pada undangan resmi, foto langsung tampil di proyektor venue dan galeri).");
+        setSuccessMsg("Simulasi Berhasil! Foto Anda terkirim (pada undangan resmi, foto langsung tampil di galeri kenangan tamu).");
         form.reset();
         setTimeout(() => setSuccessMsg(""), 6000);
         return;

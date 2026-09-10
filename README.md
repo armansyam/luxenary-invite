@@ -178,7 +178,7 @@ Pre-Flight Checklist & Smart Audit (/dashboard/settings):
 - **Showroom Katalog Demo Ringan (`/demo`) & Unified Dual-Device Showcase:** Mengusung konsep *editorial magazine*, katalog tema menyajikan representasi simultan dual-device (tablet landscape dan smartphone portrait realistis) yang harmonis tanpa lag dan tanpa tag `<iframe>` berat. Dilengkapi URL bar dinamis yang mendeteksi hostname klien secara otomatis (`window.location.hostname`), *precision-scoped hover overlay* yang terkungkung rapi di layar tablet, serta eliminasi card border kaku untuk estetika SaaS luxury.
 - **Universal Preloader Monogram-Only & Footer Semantik 2-Baris:** Preloader universal pada mesin template (`lib/renderTemplate.ts`) dan seluruh 15 tema demo kini memusatkan fokus pada inisial monogram serif Didot/Cinzel dengan margin vertikal 24px di atas garis kilau emas shimmer (mengeliminasi teks nama panjang bergelar yang rawan patah baris). Footer landing page distrukturkan secara semantik menjadi 2 baris (baris atas untuk navigasi dan brand, baris bawah untuk legalitas dan copyright).
 - **Dynamic Asset Route Handler & Universal Cache-Busting (`/demo/[theme]/[file]`):** Mengatasi limitasi Next.js Standalone yang hanya melayani aset statis `public/` saat build-time. Route handler menyajikan file thumbnail, gambar, dan audio baru secara instan dengan proteksi path traversal dan Smart ETag Cache (`304 Not Modified`). Berkas HTML kompilasi demo (`public/demo/*/index.html`) diperlakukan sebagai runtime cache murni yang diabaikan dari Git (`.gitignore`) dan dipra-kompilasi secara mandiri saat deployment (`./deploy.sh`) atau *on-the-fly* pada kunjungan pertama, mengeliminasi 100% potensi konflik merge di server. Mesin kompilasi demo HTML secara otomatis menyematkan timestamp versi `?v=${updatedAt}` pada seluruh slot aset (cover, hero, bg, mempelai, galeri, musik) sehingga pembaruan media langsung menembus cache Cloudflare Edge CDN seketika.
-- **Proteksi Anti-Download, Fluid Layout & Clean Lightbox Navigation Galeri Kenangan (`/memories`):** Halaman kenangan tamu dirancang *View-Only* dengan proteksi browser bawaan (blokir klik kanan `contextmenu`, pencegahan menu pop-up tahan layar `touch-callout: none`, serta blokir drag-and-drop). Tampilan menggunakan format fluid edge-to-edge `max-w-[1920px]` (2-7 kolom) yang optimal di proyektor venue dan desktop, dilengkapi modal preview bersih tanpa ikon panah mengambang yang mendukung tombol keyboard panah (desktop) dan touch swipe (mobile), serta real-time SSE stream terintegrasi.
+- **Proteksi Anti-Download, Fluid Layout & Clean Lightbox Navigation Galeri Kenangan (`/memories`):** Halaman kenangan tamu dirancang *View-Only* dengan proteksi browser bawaan (blokir klik kanan `contextmenu`, pencegahan menu pop-up tahan layar `touch-callout: none`, serta blokir drag-and-drop). Tampilan menggunakan format fluid edge-to-edge `max-w-[1920px]` (2-7 kolom) yang responsif di seluruh ukuran layar dari mobile hingga desktop, dilengkapi modal preview bersih tanpa ikon panah mengambang yang mendukung tombol keyboard panah (desktop) dan touch swipe (mobile), serta real-time SSE stream terintegrasi.
 - **Pemisahan Terstruktur 4 Kolom Orang Tua (Discrete Parents Architecture) & Murni String Bebas:** Formulir profil klien dan demo studio memisahkan input nama Ayah dan Ibu secara diskret (`groomFather`, `groomMother`, `brideFather`, `brideMother`). Theme Engine secara otomatis mendeteksi awalan `{{firstParentPrefix}}` / `{{secondParentPrefix}}` ("Putra dari" untuk Groom, "Putri dari" untuk Bride) serta menyuplai token discrete `{{firstFather}}` dan `{{firstMother}}` secara bersih murni sebagai *raw string* tanpa paksaan sapaan Bpk/Ibu, sehingga klien bebas mencantumkan gelar akademik/adat, sapaan penghormatan, atau status almarhum/almarhumah (`Alm.`, `Almh.`), sekaligus mengeliminasi duplikasi label, membuang simbol `&` yang tidak diinginkan pada tata letak vertikal, dan mencegah kata menggantung (*orphan words*) pada tipografi kartu profil di seluruh 15 tema fisik master.
 - **Homepage Hero Mockup, Rasio Presisi Showcase (1:2 & 16:10) & Standarisasi Aset Visual (< 200 KB WebP):** Menyelaraskan 3 mockup ponsel iPhone 16 Pro pada landing page menjadi full-bleed screenshot murni berlayar penuh (`object-fit: cover; object-position: center top;`), terbebas dari bingkai kubah kaku (`.hero-inv-arch-box`), lapisan kartu overlay (`.hero-comp-card`), scrim gelap, maupun duplikasi teks dengan penamaan independen `hero_mockup_1.webp`, `hero_mockup_2.webp`, dan `hero_mockup_3.webp`. Standarisasi rasio presisi mockup showroom ditetapkan menjadi **1 : 2** untuk Mobile (HP: 390×780 px / 800×1600 px) dan **16 : 10** untuk Desktop (Laptop: 1280×800 px / 2560×1600 px). Seluruh aset visual dikompresi ke format WebP dengan batas Retina 2048px dan penajaman unsharp mask (`sharp.sharpen()`) dengan bobot 100% di bawah 200 KB untuk menjamin skor LCP Google Core Web Vitals < 2.5s.
 - **Visual Showcase Thumbnail Mobile pada Katalog Tema Admin (`/admin?tab=themes`):** Memasang wadah pratinjau visual thumbnail mobile (`aspect-[3/4]`, `object-cover object-top`) pada seluruh kartu tema di dashboard admin. Menerapkan hirarki visual yang jelas dan memudahkan administrator: (1) Visual preview mobile di posisi paling atas dengan floating badge kategori dan status toggle aktif, (2) Nama tema, slug `/{id}`, dan deskripsi di bagian tengah, serta (3) Tombol aksi (`Preview`, `Studio`, `Edit`, `Delete`) di bagian bawah kartu.
@@ -350,7 +350,7 @@ Luxenary-Invite/
 │       ├── 03_SISTEM_RSVP_DAN_BUKU_UCAPAN.md   # Form RSVP publik, rate limiting & nested wish reply
 │       ├── 04_AMPLOP_DIGITAL_DAN_HADIAH_PERNIKAHAN.md # Rekening bank copy button, QRIS & kado fisik
 │       ├── 05_SISTEM_RESEPSIONIS_DAN_CHECKIN_QR.md # Portal resepsionis, HTML5 QR scanner & souvenir
-│       └── 06_LIVE_MOMENT_DAN_CLOUD_MEMORIES.md # Upload foto candid tamu, live slideshow proyektor venue
+│       └── 06_LIVE_MOMENT_DAN_CLOUD_MEMORIES.md # Upload foto candid tamu, galeri kenangan live real-time & cloud memories
 ├── middleware.ts               # ⭐ Edge routing utama (CRITICAL)
 ├── SYSTEM_ARCHITECTURE.md      # ⭐ Dokumentasi arsitektur lengkap (WAJIB BACA)
 ├── AGENTS.md                   # Aturan perilaku AI Agent
@@ -393,6 +393,10 @@ R2_PUBLIC_URL="https://..."
 # Keamanan Cron Cleanup
 CRON_SECRET="your-secure-cron-token-here"
 
+# Cloudflare Cache Purge (Opsional - untuk 1-klik purge edge cache via Admin)
+CF_ZONE_ID="..."
+CF_API_TOKEN="..."
+
 # App URL
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 NEXT_PUBLIC_ROOT_DOMAIN="localhost:3000"
@@ -412,9 +416,10 @@ npx prisma db seed
 npm run dev
 ```
 
-### 5. Sinkronisasi Tema
+### 5. Sinkronisasi Tema & Purge Cache
 ```
-Admin Portal → Tab Tema → Klik "Sinkronisasi Tema"
+Admin Portal → Tab Tema → Klik "Sinkronisasi Tema & Cache"
+(Atau via Tab Settings > Setup & Integrasi → Klik "Purge Cache")
 ```
 
 ---
