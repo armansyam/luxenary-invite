@@ -1312,7 +1312,7 @@
       box-sizing: border-box;
       text-align: center;
       padding: 4rem 1.5rem 6.5rem;
-      background-color: #050507;
+      background: transparent;
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
@@ -1321,10 +1321,19 @@
     .site-footer.no-closing-photo {
       justify-content: center;
       align-items: center;
+      background: transparent;
     }
     .site-footer.has-closing-photo {
       justify-content: flex-end;
       align-items: center;
+    }
+    .site-footer.has-closing-photo::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.55) 50%, rgba(0,0,0,0.92) 100%);
+      pointer-events: none;
+      z-index: 1;
     }
     .site-footer .closing-content {
       position: relative;
@@ -1784,7 +1793,7 @@
     {{qrAccessSectionHtml}}
 
     <!-- 15. FOOTER / THANK YOU (Adaptive Full-Height 100vh) -->
-    <footer class="site-footer {{closingPhotoClass}}" id="footer">
+    <footer class="site-footer {{closingPhotoClass}}" id="footer" style="{{closingBgStyle}}">
       <div class="closing-content">
         <p style="font-size:0.85rem; color:rgba(255,255,255,0.75); line-height:1.7; margin-bottom:1.5rem;">
           Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu.

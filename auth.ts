@@ -4,6 +4,12 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { authConfig } from "./auth.config";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import dns from "node:dns";
+
+// Ensure IPv4 first to prevent IPv6 route-to-host timeouts (EHOSTUNREACH) on outbound OAuth discovery
+try {
+  dns.setDefaultResultOrder("ipv4first");
+} catch {}
 
 // Google OAuth credentials dibaca dari .env (bukan dari database)
 // Untuk mengubah credentials, update .env dan restart server.

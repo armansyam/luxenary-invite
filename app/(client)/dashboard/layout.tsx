@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { BrandLogo } from "@/components/BrandLogo";
 const navItems = [
   {
@@ -70,6 +70,35 @@ export default function ClientDashboardLayout({
   const [isRestoring, setIsRestoring] = useState(false);
   const [remoteInfo, setRemoteInfo] = useState<{ isRemote: boolean; clientName: string } | null>(null);
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isDockVisible, setIsDockVisible] = useState(true);
+  const lastScrollYRef = useRef(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+
+      // Puncak halaman (<= 40px): Selalu tampilkan dock
+      if (currentScrollY <= 40) {
+        setIsDockVisible(true);
+        lastScrollYRef.current = Math.max(0, currentScrollY);
+        return;
+      }
+
+      const delta = currentScrollY - lastScrollYRef.current;
+      // Batas toleransi 10px untuk cegah jitter pada micro-scroll
+      if (Math.abs(delta) > 10) {
+        if (delta > 0) {
+          setIsDockVisible(false); // Scroll ke bawah -> sembunyikan
+        } else {
+          setIsDockVisible(true);  // Scroll ke atas -> munculkan
+        }
+        lastScrollYRef.current = Math.max(0, currentScrollY);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // Cek apakah Admin sedang dalam mode Remote
   useEffect(() => {
@@ -171,7 +200,9 @@ export default function ClientDashboardLayout({
       
       {/* Top Header (Desktop & Mobile) */}
       <header className="bg-white border-b border-stone-200/80 sticky top-0 z-40 backdrop-blur-md bg-white/95">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
+        <div className={`mx-auto px-4 sm:px-6 py-3 flex items-center justify-between transition-all duration-300 ${
+          pathname.startsWith("/dashboard/invitation") ? "max-w-[1600px]" : "max-w-6xl"
+        }`}>
           
           {/* Brand */}
           <Link href="/dashboard" className="flex items-center gap-2.5 group">
@@ -226,38 +257,50 @@ export default function ClientDashboardLayout({
       )}
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 pt-3 sm:pt-4 pb-28 sm:pb-24">
+      <main className={`flex-1 w-full mx-auto px-4 sm:px-6 pt-3 sm:pt-4 pb-28 sm:pb-24 transition-all duration-300 ${
+        pathname.startsWith("/dashboard/invitation") ? "max-w-[1600px]" : "max-w-6xl"
+      }`}>
         {children}
       </main>
 
-      {/* Creative Floating Glass Dock Navigation (Universal Mobile & Desktop) */}
+      {/* Apple-Style Transparent Floating Liquid Glass Dock (Universal Mobile & Desktop) */}
       <nav 
         aria-label="Navigasi Utama"
-        className="fixed bottom-3 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-1.5rem)] sm:w-auto max-w-lg sm:max-w-none"
+        className={`fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          isDockVisible
+            ? "translate-y-0 opacity-100 pointer-events-auto"
+            : "translate-y-24 opacity-0 pointer-events-none"
+        }`}
       >
-        <div className="bg-white/90 backdrop-blur-xl border border-stone-200/90 shadow-lg shadow-stone-900/5 rounded-2xl sm:rounded-full p-1.5 sm:p-2 flex items-center justify-between sm:justify-center gap-1 sm:gap-1.5">
+        <div className="bg-white/30 backdrop-blur-2xl border border-white/50 shadow-xl shadow-stone-900/5 rounded-full p-1.5 flex items-center justify-center gap-1 sm:gap-2">
           {navItems.map((item) => {
             const isActive = pathname === item.href || (item.href === "/dashboard/invitation" && pathname.startsWith("/dashboard/invitation"));
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex-1 sm:flex-initial flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-full transition-all duration-200 ease-out active:scale-95 ${
+                aria-label={item.label}
+                title={item.label}
+                className={`relative group flex items-center justify-center w-11 h-11 sm:w-12 sm:h-12 rounded-full transition-all duration-200 ease-out active:scale-90 ${
                   isActive
-                    ? "bg-amber-50 text-amber-900 border border-amber-200/80 shadow-xs font-bold"
-                    : "text-stone-500 hover:text-stone-900 hover:bg-stone-100/70 border border-transparent font-medium"
+                    ? "bg-amber-800/15 text-amber-900 shadow-inner"
+                    : "text-stone-600 hover:text-stone-900 hover:bg-white/40 hover:scale-105"
                 }`}
               >
-                <span className={`transition-transform duration-200 ${isActive ? "text-amber-800 scale-105" : "text-stone-400 group-hover:text-stone-600"}`}>
+                <span className={`transition-transform duration-200 ${isActive ? "scale-105" : "group-hover:scale-110"}`}>
                   {item.icon}
                 </span>
-                <span className="text-[10px] sm:text-xs tracking-tight leading-tight whitespace-nowrap">
-                  <span className="sm:hidden">{item.shortLabel}</span>
-                  <span className="hidden sm:inline">{item.label}</span>
-                </span>
+
+                {/* macOS Active Dot Indicator */}
                 {isActive && (
-                  <span className="hidden sm:inline-block w-1.5 h-1.5 rounded-full bg-amber-700 ml-0.5 animate-pulse" />
+                  <span className="absolute bottom-1 w-1 h-1 rounded-full bg-amber-800 animate-pulse" />
                 )}
+
+                {/* Floating Micro-Tooltip (Desktop Only) */}
+                <span className="pointer-events-none absolute -top-9 left-1/2 -translate-x-1/2 px-2.5 py-1 bg-stone-900/90 backdrop-blur-md text-white text-[11px] font-medium rounded-lg shadow-md whitespace-nowrap opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all duration-150 hidden sm:block">
+                  {item.label}
+                  <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-stone-900/90" />
+                </span>
               </Link>
             );
           })}

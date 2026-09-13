@@ -1071,6 +1071,84 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     turutMengundang: ["Keluarga Besar Ir. Irawan Sadjojo", "Keluarga Besar Ir. Radja Rejaja"],
   },
 
+  lagaligo: {
+    themeId: "lagaligo",
+    themeName: "La Galigo",
+    series: "Traditional",
+    category: "traditional",
+    tagline: "KEMEGAHAN ADAT SUTERA BUGIS",
+    groomName: "Faisal",
+    brideName: "Tenri",
+    groomDisplayName: "Andi Faisal Wardhana, S.T.",
+    brideDisplayName: "Andi Tenri Bau Sumpala, S.H.",
+    groomRole: "Mempelai Pria",
+    brideRole: "Mempelai Wanita",
+    groomParents: "Putra dari Drs. H. Andi Wardhana & Hj. Andi Nurul Qalbi",
+    groomFather: "Drs. H. Andi Wardhana",
+    groomMother: "Hj. Andi Nurul Qalbi",
+    brideParents: "Putri dari Ir. H. Andi Sumpala & Hj. Andi Besse Tenri",
+    brideFather: "Ir. H. Andi Sumpala",
+    brideMother: "Hj. Andi Besse Tenri",
+    groomInstagram: "faisal.wardhana",
+    brideInstagram: "tenri.sumpala",
+    monogramInitial: "F & T",
+    targetDate: "2026-12-12T09:00:00",
+    weddingDateFormatted: "Sabtu, 12 Desember 2026",
+    weddingDateDay: "12",
+    weddingDateMonth: "12",
+    weddingDateYear: "2026",
+    openingQuote: "Maha Suci Allah yang telah menciptakan makhluk-Nya berpasang-pasangan. Perkenankanlah kami merangkai kasih sayang yang Kau ciptakan di antara putra-putri kami dalam ikatan suci pernikahan.",
+    openingQuoteRef: "QS. AR-RUM: 21",
+    city: "Makassar",
+    globalBgUrl: "/uploads/dummy/AMS06365.webp",
+    groomPhotoUrl: "/uploads/dummy/AMS06372.webp",
+    bridePhotoUrl: "/uploads/dummy/AMS06381.webp",
+    sidebarPhotoUrl: "/uploads/dummy/AMS06364.webp",
+    landingCoverUrl: "/uploads/dummy/AMS06353.webp",
+    galleryPhotos: [
+      "/uploads/dummy/AMS06328.webp",
+      "/uploads/dummy/AMS06353.webp",
+      "/uploads/dummy/AMS06364.webp",
+      "/uploads/dummy/AMS06365.webp",
+      "/uploads/dummy/AMS06372.webp",
+      "/uploads/dummy/AMS06388.webp",
+      "/uploads/dummy/AMS06410.webp",
+      "/uploads/dummy/AMS06430.webp",
+    ],
+    events: [
+      {
+        badge: "AKAD NIKAH",
+        title: "Akad Nikah & Mappasikarawa",
+        time: "09.00 – 11.30 WITA",
+        location: "Sandeq Ballroom Hotel Claro Makassar",
+        address: "Jl. A. P. Pettarani No. 03, Makassar",
+        mapsUrl: "https://maps.google.com",
+      },
+      {
+        badge: "RESEPSI ADAT",
+        title: "Resepsi Pernikahan Adat Bugis",
+        time: "19.00 – 22.00 WITA",
+        location: "Grand Sandeq Ballroom Hotel Claro Makassar",
+        address: "Jl. A. P. Pettarani No. 03, Makassar",
+        mapsUrl: "https://maps.google.com",
+      },
+    ],
+    stories: [
+      {
+        chapter: "Pertemuan",
+        title: "Mappatabe",
+        content: "Dua keluarga bangsawan yang dipersatukan dalam ikatan suci penuh berkah dan kehormatan.",
+      },
+    ],
+    banks: [
+      { bank: "BCA", number: "1982347610", name: "Andi Faisal Wardhana" },
+      { bank: "BSI", number: "7109283745", name: "Andi Tenri Bau Sumpala" },
+    ],
+    dressCodeColors: "#003f30, #f9e7bc, #059669",
+    dressCodeNote: "Baju Bodo / Busana Adat Nusantara / Formal Evening Attire",
+    turutMengundang: ["Keluarga Besar Drs. H. Andi Wardhana", "Keluarga Besar Ir. H. Andi Sumpala"],
+  },
+
   lumina: {
     themeId: "lumina",
     themeName: "Lumina",
@@ -1337,18 +1415,10 @@ export function getDemoThemeData(themeId: string): DemoThemeData {
   return demo;
 }
 
-// Helper to append dynamic cache version to local demo asset URLs
+// Helper to ensure clean canonical local demo asset URLs
 function appendDemoAssetVersion(url?: string | null, v?: number | string): string {
   if (!url) return "";
-  if (!v) return url;
-  if (!url.startsWith("/demo/")) return url;
-  if (url.includes("?")) {
-    const [base, qs] = url.split("?");
-    const sp = new URLSearchParams(qs);
-    sp.set("v", String(v));
-    return `${base}?${sp.toString()}`;
-  }
-  return `${url}?v=${v}`;
+  return url;
 }
 
 // Master composer to build ALL sections for the HTML templates
@@ -2061,7 +2131,12 @@ export function composeDemoTemplateData(
     
     openingQuote: (customData as any)?.openingQuote || blueprint.openingQuote || demo.openingQuote,
     openingQuoteRef: (customData as any)?.openingQuoteRef || blueprint.openingQuoteRef || demo.openingQuoteRef,
-    
+    openingGreeting: (customData as any)?.featureSettings?.customLabels?.openingGreeting !== undefined
+      ? (customData as any)?.featureSettings?.customLabels?.openingGreeting
+      : (blueprint.openingGreeting || ""),
+    coverBadge: (customData as any)?.featureSettings?.customLabels?.coverBadge !== undefined
+      ? (customData as any)?.featureSettings?.customLabels?.coverBadge
+      : (blueprint.coverBadge || (customData as any)?.featureSettings?.weddingTagline || "THE WEDDING OF"),
     quoteSectionTitle: blueprint.quoteSectionTitle,
     quoteSectionEyebrow: blueprint.quoteSectionEyebrow,
     quoteTitle: blueprint.quoteSectionTitle,
@@ -2167,5 +2242,8 @@ export function composeDemoTemplateData(
     hasClosingPhoto: Boolean(rawClosing),
     closingPhotoClass: rawClosing ? "has-closing-photo" : "no-closing-photo",
     closingBgStyle: effectiveFooter ? `background-image: url('${effectiveFooter}');` : "",
+
+    // Feature settings
+    featureSettings: (customData as any)?.featureSettings || {},
   };
 }

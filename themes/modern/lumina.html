@@ -173,7 +173,6 @@
       box-sizing: border-box;
       position: relative;
       text-align: center;
-      border-bottom: 1px solid var(--cinema-border);
     }
 
     .sec-content-box {
@@ -358,7 +357,7 @@
       box-sizing: border-box;
       text-align: center;
       padding: 4rem 1.5rem 6.5rem;
-      background: #0b0b0e;
+      background: transparent;
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
@@ -367,6 +366,7 @@
     .site-footer.no-closing-photo {
       justify-content: center;
       align-items: center;
+      background: transparent;
     }
     .site-footer.has-closing-photo {
       justify-content: flex-end;
@@ -376,7 +376,7 @@
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(11,11,14,0.6) 50%, rgba(11,11,14,0.95) 100%);
+      background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, color-mix(in srgb, var(--bg-dark, #0b0b0e) 60%, transparent) 50%, color-mix(in srgb, var(--bg-dark, #0b0b0e) 95%, transparent) 100%);
       pointer-events: none;
       z-index: 1;
     }
@@ -538,7 +538,7 @@
       {{qrAccessSectionHtml}}
 
       <!-- FOOTER (Adaptive Full-Height 100vh) -->
-      <footer class="site-footer {{closingPhotoClass}}">
+      <footer class="site-footer {{closingPhotoClass}}" style="{{closingBgStyle}}">
         <div class="closing-content">
           <p style="font-size: 0.85rem; color: rgba(255,255,255,0.8); line-height: 1.7; margin-bottom: 1.5rem; max-width: 480px; margin-left: auto; margin-right: auto;">
             Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu bagi kami.

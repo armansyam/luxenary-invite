@@ -181,6 +181,17 @@ const themes: Prisma.ThemeCreateInput[] = [
     isActive: true,
     sortOrder: 15,
   },
+  {
+    id: 'lagaligo',
+    name: 'La Galigo',
+    category: 'traditional',
+    series: 'Traditional',
+    description: 'Kemegahan Adat Bugis-Makassar Berbalut Hijau Zamrud & Kilau Benang Emas',
+    previewUrl: '/demo/lagaligo',
+    isPremium: false,
+    isActive: true,
+    sortOrder: 16,
+  },
 ]
 
 async function main() {

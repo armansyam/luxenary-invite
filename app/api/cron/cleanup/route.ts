@@ -217,8 +217,16 @@ export async function POST(req: NextRequest) {
           } catch {}
         }
         
-        // Hapus HTML
+        // 1. Hapus published HTML (public/published/ids/<id>.html)
         await deletePublishedHtml(inv.id);
+
+        // 2. Hapus draft HTML (data/drafts/<id>.html) jika ada
+        const draftPath = path.join(process.cwd(), "data", "drafts", `${inv.id}.html`);
+        try {
+          if (await fileExists(draftPath)) {
+            await fs.promises.unlink(draftPath);
+          }
+        } catch {}
       }
 
       // Hapus file fisik Order proofImageUrl dari R2 (sebelum user dihapus dan cascade)
@@ -232,6 +240,29 @@ export async function POST(req: NextRequest) {
       // Hapus User (Otomatis Cascade Delete Invitation ARCHIVED nya beserta Order nya)
       await prisma.user.delete({ where: { id: user.id } });
       totalDeletedUsers++;
+    }
+
+    // ── FASE 5: Pembersihan Mandiri Sampah File Draft (Orphaned Drafts) ──
+    const draftsDir = path.join(process.cwd(), "data", "drafts");
+    let cleanedOrphanedDraftsCount = 0;
+    if (await fileExists(draftsDir)) {
+      try {
+        const draftFiles = await fs.promises.readdir(draftsDir);
+        for (const file of draftFiles) {
+          if (!file.endsWith(".html")) continue;
+          const invId = file.replace(".html", "");
+          const invExists = await prisma.invitation.findUnique({
+            where: { id: invId },
+            select: { id: true },
+          });
+          if (!invExists) {
+            await fs.promises.unlink(path.join(draftsDir, file)).catch(() => {});
+            cleanedOrphanedDraftsCount++;
+          }
+        }
+      } catch (err) {
+        console.error("Gagal membersihkan orphaned drafts:", err);
+      }
     }
 
     // Bersihkan file Order (Sama seperti dulu)

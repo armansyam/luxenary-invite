@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
-import { applyUpgradePlan } from "@/lib/upgradeHelper";
 import { paymentEmitter } from "@/lib/paymentEvents";
+import { applyUpgradePlan } from "@/lib/upgradeHelper";
+import { processOrderPaidMarketing } from "@/lib/marketing";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,10 @@ export async function POST(
 ) {
   try {
     const session = await auth();
-    const isAdmin = (session?.user as any)?.isAdmin === true || (session?.user as any)?.role === "SUPER_ADMIN" || (session?.user as any)?.role === "ADMIN";
+    const isAdmin =
+      (session?.user as any)?.isAdmin === true ||
+      (session?.user as any)?.role === "SUPER_ADMIN" ||
+      (session?.user as any)?.role === "ADMIN";
     if (!session?.user || !isAdmin) {
       return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
     }
@@ -54,6 +58,9 @@ export async function POST(
         paymentGatewayRef: "MANUAL_ADMIN_APPROVAL",
       },
     });
+
+    // Konsumsi PromoHold dan catat komisi mitra jika ada
+    await processOrderPaidMarketing(orderId);
 
     // Log audit internal staf & webhook
     try {

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { compressImageToWebP } from "@/lib/clientImageCompressor";
+import { getThemeBlueprint } from "@/lib/themeDefaults";
 
 // Pilihan tema dimuat secara dinamis dari API /api/public/themes untuk menjamin sinkronisasi status aktif
 
@@ -72,6 +73,7 @@ const THEME_DRESSCODE_MAP: Record<string, { name: string; colors: string[] }> = 
   badrika: { name: "Saoraja Muted Earth Brown", colors: ["#6e5849", "#b08968", "#ede0d4"] },
   mayang: { name: "Heritage Bronze & Ivory", colors: ["#3d342d", "#8d7b68", "#f5efe6"] },
   prameswari: { name: "Keraton Green & Heritage Gold", colors: ["#4a5d4e", "#d4af37", "#fdfbf7"] },
+  lagaligo: { name: "Bugis Emerald & Royal Gold", colors: ["#003f30", "#f9e7bc", "#059669"] },
   dillalucky: { name: "Emerald Islamic Batik & Gold", colors: ["#0f2b23", "#c5a059", "#fbfaf7"] },
   lumina: { name: "Golden Glass & Modern Bronze", colors: ["#b5833c", "#261b11", "#faf6f0"] },
   chronicle: { name: "Vogue High-Fashion Monochrome", colors: ["#09090b", "#e5e7eb", "#ffffff"] },
@@ -192,9 +194,111 @@ export default function EditInvitation() {
 
   // Dual-Native Studio State: Form Mode vs Live Visual Editor
   const [activeStudioTab, setActiveStudioTab] = useState<"form" | "live">("form");
-  const [previewDevice, setPreviewDevice] = useState<"mobile" | "desktop">("mobile");
+  const [previewDevice, setPreviewDevice] = useState<"mobile" | "desktop" | "dual">("dual");
   const [selectedThemeCategory, setSelectedThemeCategory] = useState<string>("");
-  const liveIframeRef = useRef<HTMLIFrameElement>(null);
+  const liveMobileIframeRef = useRef<HTMLIFrameElement>(null);
+  const liveDesktopIframeRef = useRef<HTMLIFrameElement>(null);
+  const liveFallbackIframeRef = useRef<HTMLIFrameElement>(null);
+  const liveSingleIframeRef = useRef<HTMLIFrameElement>(null);
+  const [liveIframeKey, setLiveIframeKey] = useState<number>(0);
+  const [isCanvasFullscreen, setIsCanvasFullscreen] = useState<boolean>(false);
+  const liveCanvasRef = useRef<HTMLDivElement | null>(null);
+
+  const toggleCanvasFullscreen = useCallback(() => {
+    setIsCanvasFullscreen((prev) => {
+      const next = !prev;
+      if (next) {
+        if (liveCanvasRef.current && document.fullscreenEnabled && !document.fullscreenElement) {
+          liveCanvasRef.current.requestFullscreen().catch(() => {});
+        }
+      } else {
+        if (document.fullscreenElement) {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    const handleFsChange = () => {
+      if (!document.fullscreenElement) {
+        setIsCanvasFullscreen(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isCanvasFullscreen) {
+        setIsCanvasFullscreen(false);
+        if (document.fullscreenElement) {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
+    };
+    document.addEventListener("fullscreenchange", handleFsChange);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFsChange);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isCanvasFullscreen]);
+
+  const getAllLiveWindows = useCallback(() => {
+    return [
+      liveMobileIframeRef.current?.contentWindow,
+      liveDesktopIframeRef.current?.contentWindow,
+      liveFallbackIframeRef.current?.contentWindow,
+      liveSingleIframeRef.current?.contentWindow,
+    ].filter((w): w is Window => !!w);
+  }, []);
+
+  const broadcastToAllLiveIframes = useCallback((msg: any) => {
+    getAllLiveWindows().forEach((win) => {
+      try {
+        win.postMessage(msg, "*");
+      } catch {}
+    });
+  }, [getAllLiveWindows]);
+
+  const relayToSiblingLiveIframes = useCallback((sender: Window | MessageEventSource | null, senderRole: string | undefined, msg: any) => {
+    if (senderRole === "mobile" && liveDesktopIframeRef.current?.contentWindow) {
+      try {
+        liveDesktopIframeRef.current.contentWindow.postMessage(msg, "*");
+      } catch {}
+      return;
+    }
+    if (senderRole === "desktop" && liveMobileIframeRef.current?.contentWindow) {
+      try {
+        liveMobileIframeRef.current.contentWindow.postMessage(msg, "*");
+      } catch {}
+      return;
+    }
+
+    getAllLiveWindows().forEach((win) => {
+      if (win !== sender) {
+        try {
+          win.postMessage(msg, "*");
+        } catch {}
+      }
+    });
+  }, [getAllLiveWindows]);
+
+  const handleStudioTabClick = (tab: "form" | "live") => {
+    setActiveStudioTab(tab);
+  };
+
+  // Master-Detail Two-Column Studio State
+  const [activeSectionTab, setActiveSectionTab] = useState<string>("sec1");
+
+  const handleSelectSection = (secId: string) => {
+    setActiveSectionTab(secId);
+    setCollapsed((prev) => ({ ...prev, [secId]: false }));
+    if (typeof window !== "undefined" && window.innerWidth < 1024) {
+      setTimeout(() => {
+        const el = document.getElementById(`section-${secId}`);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 50);
+    }
+  };
 
   // Dress Code Color Studio State
   const [showManualHex, setShowManualHex] = useState(false);
@@ -426,13 +530,14 @@ export default function EditInvitation() {
   }, [invitationId]);
 
   // Unified Save Handler (Saves to DB and broadcasts sync to Live Preview)
-  const saveSection = async (secKey?: string) => {
-    if (!invitation || saving) return;
+  const saveSection = async (secKey?: string, overrideInvitation?: any) => {
+    const invToSave = overrideInvitation || invitation;
+    if (!invToSave || saving) return;
     setSaving(true);
     setSavingSec(secKey || null);
     try {
       const payload = {
-        ...invitation,
+        ...invToSave,
         eventData: events,
         loveStory: stories,
         bankAccounts: bankList,
@@ -451,7 +556,7 @@ export default function EditInvitation() {
 
       // Update saved snapshot to current state
       setSavedSnapshot({
-        invitation: JSON.parse(JSON.stringify(invitation)),
+        invitation: JSON.parse(JSON.stringify(invToSave)),
         media: JSON.parse(JSON.stringify(media)),
         events: JSON.parse(JSON.stringify(events)),
         stories: JSON.parse(JSON.stringify(stories)),
@@ -480,6 +585,9 @@ export default function EditInvitation() {
         bc.postMessage({ type: "INVITATION_SAVED", id: invitationId });
         bc.close();
       } catch {}
+
+      // Trigger hot reload preview di Live Editor
+      setLiveIframeKey((k) => k + 1);
     } catch (err: any) {
       console.error("Save failed:", err);
       setStudioNotification({
@@ -525,6 +633,7 @@ export default function EditInvitation() {
 
   const updateField = (field: string, value: any) => {
     setInvitation((prev: any) => ({ ...prev, [field]: value }));
+    broadcastToAllLiveIframes({ type: "LUX_REMOTE_EDIT_CHANGE", field, value });
   };
 
   const updateMedia = (slot: string, url: string) => {
@@ -547,6 +656,7 @@ export default function EditInvitation() {
         },
       };
     });
+    broadcastToAllLiveIframes({ type: "LUX_REMOTE_EDIT_CHANGE", field: key, value });
   };
 
   const applyPaletteToIframe = useCallback((paletteId: string) => {
@@ -560,35 +670,43 @@ export default function EditInvitation() {
     };
     const t = palTokens[paletteId] || palTokens.champagne;
 
-    try {
-      if (liveIframeRef.current?.contentDocument) {
-        const doc = liveIframeRef.current.contentDocument;
-        const targets = [doc.body, doc.documentElement].filter(Boolean);
-        targets.forEach((el) => {
-          el.style.setProperty("--gold", t.primary);
-          el.style.setProperty("--gold-dim", t.secondary);
-          el.style.setProperty("--gold-pale", t.bgLight);
-          el.style.setProperty("--primary", t.primary);
-          el.style.setProperty("--secondary", t.secondary);
-          el.style.setProperty("--accent", t.accent);
-          el.style.setProperty("--bg-light", t.bgLight);
-          el.style.setProperty("--bg-dark", t.bgDark);
-        });
-      }
-    } catch {}
+    const applyToDoc = (iframeEl: HTMLIFrameElement | null) => {
+      if (!iframeEl) return;
+      try {
+        if (iframeEl.contentDocument) {
+          const doc = iframeEl.contentDocument;
+          const targets = [doc.body, doc.documentElement].filter(Boolean);
+          targets.forEach((el) => {
+            el.style.setProperty("--gold", t.primary);
+            el.style.setProperty("--gold-dim", t.secondary);
+            el.style.setProperty("--gold-pale", t.bgLight);
+            el.style.setProperty("--primary", t.primary);
+            el.style.setProperty("--secondary", t.secondary);
+            el.style.setProperty("--accent", t.accent);
+            el.style.setProperty("--bg-light", t.bgLight);
+            el.style.setProperty("--bg-dark", t.bgDark);
+          });
+        }
+      } catch {}
 
-    try {
-      if (liveIframeRef.current?.contentWindow) {
-        liveIframeRef.current.contentWindow.postMessage(
-          {
-            type: "LUX_PALETTE_CHANGED",
-            paletteId,
-            palette: t,
-          },
-          "*"
-        );
-      }
-    } catch {}
+      try {
+        if (iframeEl.contentWindow) {
+          iframeEl.contentWindow.postMessage(
+            {
+              type: "LUX_PALETTE_CHANGED",
+              paletteId,
+              palette: t,
+            },
+            "*"
+          );
+        }
+      } catch {}
+    };
+
+    applyToDoc(liveMobileIframeRef.current);
+    applyToDoc(liveDesktopIframeRef.current);
+    applyToDoc(liveFallbackIframeRef.current);
+    applyToDoc(liveSingleIframeRef.current);
   }, []);
 
   const handleSelectPalette = useCallback((paletteId: string) => {
@@ -638,6 +756,7 @@ export default function EditInvitation() {
         },
       };
     });
+    broadcastToAllLiveIframes({ type: "LUX_REMOTE_EDIT_CHANGE", field: `customLabels.${key}`, value });
   };
 
   const getCustomLabel = (key: string, fallback: string = "") => {
@@ -650,20 +769,80 @@ export default function EditInvitation() {
     return fs && fs[key] !== undefined ? fs[key] : fallback;
   };
 
-  // Two-Way Sync: Listen to Live Visual Editor messages
+  // Two-Way Dual-View Sync: Listen to Live Visual Editor messages & relay to sibling iframe
   useEffect(() => {
     const handleMessage = (e: MessageEvent) => {
       if (!e.data || typeof e.data !== "object") return;
       if (e.data.type === "LUX_INLINE_EDIT_CHANGE") {
-        const { field, value } = e.data;
+        const { field, value, senderRole } = e.data;
         if (!field) return;
 
         if (field.startsWith("customLabels.")) {
           const labelKey = field.replace("customLabels.", "");
-          updateCustomLabel(labelKey, value);
+          setInvitation((prev: any) => {
+            let currentFs: any = {};
+            try {
+              currentFs = typeof prev.featureSettings === "object" ? prev.featureSettings : JSON.parse(prev.featureSettings || "{}");
+            } catch {
+              currentFs = {};
+            }
+            const customLabels = currentFs.customLabels || {};
+            return {
+              ...prev,
+              featureSettings: {
+                ...currentFs,
+                customLabels: {
+                  ...customLabels,
+                  [labelKey]: value,
+                },
+              },
+            };
+          });
+        } else if (field.startsWith("events.")) {
+          const parts = field.split(".");
+          const idx = parseInt(parts[1], 10);
+          const prop = parts[2];
+          if (!isNaN(idx) && prop) {
+            setEvents((prev) => {
+              const next = [...prev];
+              if (next[idx]) next[idx] = { ...next[idx], [prop]: value };
+              return next;
+            });
+          }
+        } else if (field.startsWith("stories.")) {
+          const parts = field.split(".");
+          const idx = parseInt(parts[1], 10);
+          const prop = parts[2];
+          if (!isNaN(idx) && prop) {
+            setStories((prev) => {
+              const next = [...prev];
+              if (next[idx]) next[idx] = { ...next[idx], [prop]: value };
+              return next;
+            });
+          }
+        } else if (field.startsWith("bankAccounts.")) {
+          const parts = field.split(".");
+          const idx = parseInt(parts[1], 10);
+          const prop = parts[2];
+          if (!isNaN(idx) && prop) {
+            setBankList((prev) => {
+              const next = [...prev];
+              if (next[idx]) next[idx] = { ...next[idx], [prop]: value };
+              return next;
+            });
+          }
         } else {
           setInvitation((prev: any) => ({ ...prev, [field]: value }));
         }
+
+        // Two-Way Dual-View Sync: Relay keystrokes to sibling iframes
+        relayToSiblingLiveIframes(e.source, senderRole, { type: "LUX_REMOTE_EDIT_CHANGE", field, value });
+      } else if (e.data.type === "LUX_INVITATION_OPENED") {
+        // Two-Way Dual-View Sync: Relay open envelope event to sibling iframes
+        relayToSiblingLiveIframes(e.source, e.data.senderRole, { type: "LUX_REMOTE_OPEN_INVITATION" });
+      } else if (e.data.type === "LUX_SCROLL_SYNC") {
+        // Two-Way Dual-View Sync: Relay scroll position ratio to sibling iframes
+        relayToSiblingLiveIframes(e.source, e.data.senderRole, { type: "LUX_SCROLL_SYNC", ratio: e.data.ratio });
       } else if (e.data.type === "LUX_INLINE_SAVE_REQUEST") {
         saveSection();
       }
@@ -672,7 +851,7 @@ export default function EditInvitation() {
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [invitation, events, stories, bankList, media]);
+  }, [invitation, events, stories, bankList, media, relayToSiblingLiveIframes]);
 
   // Precise Per-Section Dirty State Tracking
   const isDirty = useMemo(() => {
@@ -720,7 +899,10 @@ export default function EditInvitation() {
     // Sec 4: Kutipan Doa & Ayat
     const dirty4 = (
       (invitation.openingQuote || "") !== (savedSnapshot.invitation?.openingQuote || "") ||
-      (invitation.openingQuoteRef || "") !== (savedSnapshot.invitation?.openingQuoteRef || "")
+      (invitation.openingQuoteRef || "") !== (savedSnapshot.invitation?.openingQuoteRef || "") ||
+      getCustomLabel("quoteTitle", "") !== getSavedCustomLabel("quoteTitle", "") ||
+      getCustomLabel("quoteEyebrow", "") !== getSavedCustomLabel("quoteEyebrow", "") ||
+      getCustomLabel("openingGreeting", "") !== getSavedCustomLabel("openingGreeting", "")
     );
 
     // Sec 5: Rangkaian Acara
@@ -853,6 +1035,7 @@ export default function EditInvitation() {
       next[index] = { ...next[index], [field]: value };
       return next;
     });
+    broadcastToAllLiveIframes({ type: "LUX_REMOTE_EDIT_CHANGE", field: `events.${index}.${field}`, value });
   };
 
   // Story Handlers
@@ -877,6 +1060,7 @@ export default function EditInvitation() {
       next[index] = { ...next[index], [field]: value };
       return next;
     });
+    broadcastToAllLiveIframes({ type: "LUX_REMOTE_EDIT_CHANGE", field: `stories.${index}.${field}`, value });
   };
 
   // Bank Handlers
@@ -897,6 +1081,7 @@ export default function EditInvitation() {
       next[index] = { ...next[index], [field]: value };
       return next;
     });
+    broadcastToAllLiveIframes({ type: "LUX_REMOTE_EDIT_CHANGE", field: `bankAccounts.${index}.${field}`, value });
   };
 
   if (loading) {
@@ -918,6 +1103,7 @@ export default function EditInvitation() {
   const currentThemeId = invitation.themeId === "kila" ? "kalandra" : (invitation.themeId || "");
   const selectedThemeObj = currentThemeId ? (themesList.find((t) => t.id === currentThemeId) || null) : null;
   const selectedPaletteObj = COLOR_PALETTES.find((p) => p.id === currentPalette) || COLOR_PALETTES[0];
+  const activeBlueprint = getThemeBlueprint(currentThemeId || "kalandra");
 
   const planType = invitation.order?.planType || "";
   const packageConfig = platformSettings?.packages?.find((p: any) => p.id === planType);
@@ -1012,8 +1198,160 @@ export default function EditInvitation() {
     );
   }
 
+  const FORM_SECTIONS = [
+    {
+      id: "sec1",
+      num: "1",
+      title: "Pilihan Seri Desain & Palet Warna",
+      shortTitle: "Tema & Warna",
+      summary: selectedThemeObj ? `${selectedThemeObj.name} (${selectedPaletteObj.name})` : "Belum memilih tema",
+      isUrgent: !invitation?.themeId,
+    },
+    {
+      id: "sec2",
+      num: "2",
+      title: "Sampul, Visual & Musik Latar",
+      shortTitle: "Sampul & Musik",
+      summary: media["LANDING_COVER"] ? "Sampul Terpasang" : "Belum ada sampul kustom",
+      isUrgent: !media["LANDING_COVER"],
+    },
+    {
+      id: "sec3",
+      num: "3",
+      title: "Profil Kedua Mempelai",
+      shortTitle: "Profil Mempelai",
+      summary: (invitation?.groomNickname || invitation?.brideNickname) ? `${invitation?.groomNickname || "Pria"} & ${invitation?.brideNickname || "Wanita"}` : "Nama belum lengkap",
+      isUrgent: !media["GROOM_PHOTO"] || !media["BRIDE_PHOTO"],
+    },
+    {
+      id: "sec4",
+      num: "4",
+      title: "Kutipan Pembuka",
+      shortTitle: "Kutipan Pembuka",
+      summary: invitation?.openingQuote ? "Kutipan kustom aktif" : "Bawaan blueprint tema",
+    },
+    {
+      id: "sec5",
+      num: "5",
+      title: "Rangkaian Acara (Multi-Event)",
+      shortTitle: "Rangkaian Acara",
+      summary: events.length > 0 ? `${events.length} Sesi Acara` : "Belum ada acara",
+    },
+    {
+      id: "sec6",
+      num: "6",
+      title: "Kartu Akses QR & Check-In Tamu",
+      shortTitle: "Kartu Akses QR",
+      summary: showQrCheckin ? "Aktif (QR Pass)" : "Nonaktif",
+      hide: !hasCap("qr_checkin"),
+    },
+    {
+      id: "sec7",
+      num: "7",
+      title: "Kisah Cinta (Journey of Love)",
+      shortTitle: "Kisah Cinta",
+      summary: showStory ? `${stories.length} Babak Cerita` : "Nonaktif",
+    },
+    {
+      id: "sec8",
+      num: "8",
+      title: "Galeri Foto Pre-Wedding & Video Teaser",
+      shortTitle: "Galeri & Video",
+      summary: showGallery ? (getFeatureSetting("galleryDriveFolderUrl", "") ? "Drive Stream CDN" : "Grid Dinamis") : "Nonaktif",
+    },
+    {
+      id: "sec9",
+      num: "9",
+      title: "Tanda Kasih & Amplop Digital",
+      shortTitle: "Amplop Digital",
+      summary: showGift ? `${bankList.length} Rekening Terdaftar` : "Nonaktif",
+    },
+    {
+      id: "sec10",
+      num: "10",
+      title: "Panduan Busana (Dress Code Guide)",
+      shortTitle: "Panduan Busana",
+      summary: showDresscode ? (invitation.dresscode || "Aktif") : "Nonaktif",
+    },
+    {
+      id: "sec11",
+      num: "11",
+      title: "Siaran Langsung (Live Streaming)",
+      shortTitle: "Live Streaming",
+      summary: showLiveStream ? "Aktif" : "Nonaktif",
+    },
+    {
+      id: "sec12",
+      num: "12",
+      title: "Filter Instagram (Wedding Frame AR)",
+      shortTitle: "Filter Instagram",
+      summary: showFilter ? "Aktif" : "Nonaktif",
+    },
+    {
+      id: "sec13",
+      num: "13",
+      title: "Turut Mengundang & Himbauan Tamu",
+      shortTitle: "Turut Mengundang",
+      summary: showTurutMengundang ? "Aktif" : "Nonaktif",
+    },
+    {
+      id: "sec14",
+      num: "14",
+      title: "Galeri Kenangan Tamu (After-Event)",
+      shortTitle: "Kenangan Tamu",
+      summary: getFeatureSetting("showGuestMemories", true) ? "Live Photo Drop" : "Nonaktif",
+      hide: !hasCap("guest_memories"),
+    },
+    {
+      id: "sec15",
+      num: "15",
+      title: "Pengaturan Teks UI & Label",
+      shortTitle: "Pengaturan Label",
+      summary: "Hitung mundur & teks tombol",
+    },
+  ];
+
+  const visibleSections = FORM_SECTIONS.filter((s) => !s.hide);
+
+  const renderSectionNavFooter = (currentSecId: string) => {
+    const idx = visibleSections.findIndex((s) => s.id === currentSecId);
+    if (idx === -1) return null;
+    const prevSec = idx > 0 ? visibleSections[idx - 1] : null;
+    const nextSec = idx < visibleSections.length - 1 ? visibleSections[idx + 1] : null;
+
+    return (
+      <div className="flex items-center justify-between gap-3 pt-5 mt-6 border-t border-stone-100">
+        {prevSec ? (
+          <button
+            type="button"
+            onClick={() => handleSelectSection(prevSec.id)}
+            className="px-3.5 py-2 rounded-xl text-xs font-semibold text-stone-600 hover:text-stone-900 bg-stone-100 hover:bg-stone-200/80 border border-stone-200 transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+          >
+            <svg className="w-3.5 h-3.5 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            <span>{prevSec.num}. {prevSec.shortTitle}</span>
+          </button>
+        ) : <div />}
+
+        {nextSec ? (
+          <button
+            type="button"
+            onClick={() => handleSelectSection(nextSec.id)}
+            className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-amber-900 hover:bg-amber-950 transition flex items-center gap-1.5 cursor-pointer shadow-xs ml-auto"
+          >
+            <span>Lanjut ke Seksi {nextSec.num}: {nextSec.shortTitle}</span>
+            <svg className="w-3.5 h-3.5 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        ) : <div />}
+      </div>
+    );
+  };
+
   return (
-    <div className="max-w-5xl mx-auto space-y-2.5 sm:space-y-3 pb-24 font-sans">
+    <div className="w-full space-y-2.5 sm:space-y-3 pb-24 font-sans">
       
       {/* Emergency Unlock Banner with Atomic Single Deploy */}
       {invitation.isEmergencyUnlocked && (
@@ -1086,86 +1424,276 @@ export default function EditInvitation() {
         </div>
       )}
 
-      {/* Top Header Action Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white px-4 py-3 sm:px-6 sm:py-3.5 rounded-2xl shadow-xs border border-stone-200">
-        <div>
-          <span className="text-[10px] font-bold tracking-widest text-amber-800 uppercase block">Studio Editor Undangan</span>
-          <h1 className="text-base sm:text-lg font-serif font-bold text-stone-900 mt-0.5 leading-snug">
-            {displayOrder === "BRIDE_FIRST" ? `${invitation.brideNickname || "Mempelai Wanita"} & ${invitation.groomNickname || "Mempelai Pria"}` : `${invitation.groomNickname || "Mempelai Pria"} & ${invitation.brideNickname || "Mempelai Wanita"}`}
-          </h1>
-          <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 flex-wrap">
-            <span className="text-xs text-stone-500">
-              Tema: {selectedThemeObj ? (
-                <strong className="text-amber-900 font-bold capitalize">{selectedThemeObj.name}</strong>
-              ) : (
-                <strong className="text-rose-700 font-bold bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">Belum Memilih Tema</strong>
+      {/* Unified Studio Control & Header Card */}
+      <div className="bg-white rounded-2xl shadow-xs border border-stone-200 overflow-hidden">
+        {/* Tier 1: Title, Couple Info, Badges & Primary Actions */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-3.5">
+          <div>
+            <span className="text-[10px] font-bold tracking-widest text-amber-800 uppercase block">Studio Editor Undangan</span>
+            <h1 className="text-base sm:text-lg font-serif font-bold text-stone-900 mt-0.5 leading-snug">
+              {displayOrder === "BRIDE_FIRST" ? `${invitation.brideNickname || "Mempelai Wanita"} & ${invitation.groomNickname || "Mempelai Pria"}` : `${invitation.groomNickname || "Mempelai Pria"} & ${invitation.brideNickname || "Mempelai Wanita"}`}
+            </h1>
+            <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 flex-wrap">
+              <span className="text-xs text-stone-500">
+                Tema: {selectedThemeObj ? (
+                  <strong className="text-amber-900 font-bold capitalize">{selectedThemeObj.name}</strong>
+                ) : (
+                  <strong className="text-rose-700 font-bold bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">Belum Memilih Tema</strong>
+                )}
+              </span>
+              <span className="text-stone-300">•</span>
+              <span className="text-xs text-stone-500">
+                Nuansa: <strong className="text-stone-800 font-bold">{selectedPaletteObj.name}</strong>
+              </span>
+              {planType && (
+                <>
+                  <span className="text-stone-300">•</span>
+                  <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${PLAN_COLOR[planType] || "bg-stone-50 text-stone-700 border-stone-200"}`}>
+                    {planType}
+                  </span>
+                  {planType !== "PREMIUM" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUpgradeTarget(null);
+                        setUpgradeError(null);
+                        setIncludeCustomDomain(false);
+                        setUpgradeDomainInput("");
+                        setUpgradeModal(true);
+                      }}
+                      className="text-[10px] font-bold text-amber-900 hover:text-stone-900 border border-amber-300 hover:border-amber-400 bg-amber-50/80 hover:bg-amber-100 px-2 py-0.5 rounded-full transition flex items-center gap-1 cursor-pointer"
+                    >
+                      <svg className="w-3 h-3 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                      Upgrade
+                    </button>
+                  )}
+                </>
               )}
-            </span>
-            <span className="text-stone-300">•</span>
-            <span className="text-xs text-stone-500">
-              Nuansa: <strong className="text-stone-800 font-bold">{selectedPaletteObj.name}</strong>
-            </span>
-            {planType && (
-              <>
-                <span className="text-stone-300">•</span>
-                <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${PLAN_COLOR[planType] || "bg-stone-50 text-stone-700 border-stone-200"}`}>
-                  {planType}
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2 shrink-0 flex-wrap">
+            {/* Status Badge */}
+            <div className="px-3 py-1.5 bg-stone-50 border border-stone-200 rounded-xl flex items-center gap-1.5">
+              {saving ? (
+                <span className="flex items-center gap-1.5 text-xs text-amber-800 font-semibold">
+                  <span className="w-2 h-2 rounded-full bg-amber-600 animate-ping"></span>
+                  <span>Menyimpan...</span>
                 </span>
-                {planType !== "PREMIUM" && (
+              ) : isUploading ? (
+                <span className="flex items-center gap-1.5 text-xs text-blue-700 font-semibold">
+                  <span className="w-2 h-2 rounded-full bg-blue-600 animate-ping"></span>
+                  <span>Mengunggah media...</span>
+                </span>
+              ) : (
+                <span className="flex items-center gap-1.5 text-xs text-emerald-700 font-medium">
+                  <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>{lastSaved || "Siap diedit"}</span>
+                </span>
+              )}
+            </div>
+
+            <a
+              href={`/api/client/invitations/${invitationId}/preview?mode=preview`}
+              target="_blank"
+              rel="noreferrer"
+              className="px-3.5 py-1.5 bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-xl text-xs transition flex items-center gap-1.5 shadow-xs"
+            >
+              <span>Buka di Tab Baru</span>
+              <svg className="w-3.5 h-3.5 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </a>
+          </div>
+        </div>
+
+        {/* Tier 2: Dual Native Mode Switcher & Quick Action Toolbar */}
+        <div className="border-t border-stone-100 bg-stone-50/50 px-3 py-2 sm:px-5 sm:py-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3">
+          {/* Sliding Magnetic Pill Track (Dual-Native: Form Data vs Live Editor) */}
+          <div className="relative flex items-center bg-stone-200/70 p-1 rounded-xl border border-stone-200/80 w-full sm:w-auto shrink-0">
+            {/* Animated Magnetic Sliding Pill Thumb — 2 tabs */}
+            <div
+              className={`absolute top-1 bottom-1 w-[calc(50%-4px)] sm:w-[125px] rounded-lg shadow-sm transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                activeStudioTab === "form" ? "left-1 bg-stone-900" : "left-1/2 sm:left-[129px] bg-amber-800"
+              }`}
+            />
+
+            <button
+              type="button"
+              onClick={() => handleStudioTabClick("form")}
+              className={`relative z-10 flex-1 sm:w-[125px] py-1.5 px-3 rounded-lg font-bold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                activeStudioTab === "form" ? "text-white" : "text-stone-600 hover:text-stone-900"
+              }`}
+            >
+              <svg className={`w-3.5 h-3.5 transition-colors shrink-0 ${activeStudioTab === "form" ? "text-amber-400" : "text-stone-400"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              <span>Form Data</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleStudioTabClick("live")}
+              className={`relative z-10 flex-1 sm:w-[125px] py-1.5 px-3 rounded-lg font-bold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                activeStudioTab === "live" ? "text-white" : "text-stone-600 hover:text-stone-900"
+              }`}
+            >
+              <svg className={`w-3.5 h-3.5 transition-colors shrink-0 ${activeStudioTab === "live" ? "text-amber-300" : "text-stone-400"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+              </svg>
+              <span>Live Editor</span>
+            </button>
+          </div>
+
+          {/* Dynamic Action Chips (Pengingat Foto Ringkas & Terpadu) — Hanya di Tab Form Data */}
+          {activeStudioTab === "form" && Boolean(invitation.themeId) && (!media["GROOM_PHOTO"] || !media["BRIDE_PHOTO"] || !media["LANDING_COVER"]) && (
+            <div className="flex items-center justify-between sm:justify-end gap-2 border-t border-stone-200/60 sm:border-t-0 pt-2 sm:pt-0 w-full sm:w-auto px-1 sm:px-0">
+              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-800 bg-amber-50/90 border border-amber-200/70 px-2 py-1 rounded-lg shrink-0">
+                <svg className="w-3 h-3 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                Perlu:
+              </span>
+              <div className="flex items-center gap-1.5 shrink-0">
+                {!media["LANDING_COVER"] && (
                   <button
                     type="button"
                     onClick={() => {
-                      setUpgradeTarget(null);
-                      setUpgradeError(null);
-                      setIncludeCustomDomain(false);
-                      setUpgradeDomainInput("");
-                      setUpgradeModal(true);
+                      setActiveStudioTab("form");
+                      handleSelectSection("sec2");
                     }}
-                    className="text-[10px] font-bold text-amber-900 hover:text-stone-900 border border-amber-300 hover:border-amber-400 bg-amber-50/80 hover:bg-amber-100 px-2 py-0.5 rounded-full transition flex items-center gap-1 cursor-pointer"
+                    className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100/90 text-amber-900 border border-amber-300/80 font-semibold rounded-lg text-[11px] transition cursor-pointer shadow-2xs"
                   >
-                    <svg className="w-3 h-3 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
-                    Upgrade
+                    + Sampul
                   </button>
                 )}
-              </>
-            )}
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-2 shrink-0 flex-wrap">
-          {/* Status Badge */}
-          <div className="px-3 py-1.5 bg-stone-50 border border-stone-200 rounded-xl flex items-center gap-1.5">
-            {saving ? (
-              <span className="flex items-center gap-1.5 text-xs text-amber-800 font-semibold">
-                <span className="w-2 h-2 rounded-full bg-amber-600 animate-ping"></span>
-                <span>Menyimpan...</span>
-              </span>
-            ) : isUploading ? (
-              <span className="flex items-center gap-1.5 text-xs text-blue-700 font-semibold">
-                <span className="w-2 h-2 rounded-full bg-blue-600 animate-ping"></span>
-                <span>Mengunggah media...</span>
-              </span>
-            ) : (
-              <span className="flex items-center gap-1.5 text-xs text-emerald-700 font-medium">
-                <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span>{lastSaved || "Siap diedit"}</span>
-              </span>
-            )}
-          </div>
+                {(!media["GROOM_PHOTO"] || !media["BRIDE_PHOTO"]) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveStudioTab("form");
+                      handleSelectSection("sec3");
+                    }}
+                    className="px-2.5 py-1 bg-amber-800 hover:bg-amber-900 text-white font-semibold rounded-lg text-[11px] transition cursor-pointer shadow-2xs"
+                  >
+                    + Foto Mempelai
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
 
-          <a
-            href={`/api/client/invitations/${invitationId}/preview?mode=preview`}
-            target="_blank"
-            rel="noreferrer"
-            className="px-3.5 py-1.5 bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-xl text-xs transition flex items-center gap-1.5 shadow-xs"
-          >
-            <span>Buka di Tab Baru</span>
-            <svg className="w-3.5 h-3.5 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
-          </a>
+          {/* Controls di Tab Live Editor */}
+          {activeStudioTab === "live" && (
+            <div className="flex items-center justify-end gap-2 pr-1">
+              <button
+                type="button"
+                onClick={() => setShowLivePalette((prev) => !prev)}
+                className={`h-9 px-2.5 rounded-xl border text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer shadow-2xs ${
+                  showLivePalette
+                    ? "bg-stone-900 text-white border-stone-900"
+                    : "bg-white text-stone-700 border-stone-200 hover:border-stone-300 hover:bg-stone-50"
+                }`}
+                title={`Palet: ${selectedPaletteObj.name} (Klik untuk ${showLivePalette ? "menutup" : "mengubah"})`}
+                aria-label={`Palet: ${selectedPaletteObj.name}`}
+              >
+                <svg className="w-3.5 h-3.5 opacity-75 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 3a9 9 0 00-9 9c0 4.97 4.03 9 9 9 1.1 0 2-.9 2-2 0-.46-.17-.89-.46-1.22-.29-.33-.46-.76-.46-1.22 0-1.1.9-2 2-2h2.5c3.59 0 6.5-2.91 6.5-6.5C21 6.48 16.97 3 12 3z" />
+                  <circle cx="7.5" cy="10.5" r="1" fill="currentColor" />
+                  <circle cx="12" cy="7.5" r="1" fill="currentColor" />
+                  <circle cx="16.5" cy="10.5" r="1" fill="currentColor" />
+                </svg>
+                <span
+                  className="w-3 h-3 rounded-full border border-black/15 shadow-xs flex-shrink-0"
+                  style={{ backgroundColor: selectedPaletteObj.hex }}
+                />
+                <svg className={`w-3 h-3 transition-transform duration-200 ${showLivePalette ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              <div className="flex items-center bg-stone-100 p-0.5 rounded-xl border border-stone-200 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setPreviewDevice("mobile")}
+                  className={`px-3 py-1.5 rounded-lg font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${
+                    previewDevice === "mobile" ? "bg-white text-stone-900 shadow-2xs font-bold" : "text-stone-500 hover:text-stone-800"
+                  }`}
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                  <span>Mobile</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewDevice("desktop")}
+                  className={`px-3 py-1.5 rounded-lg font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${
+                    previewDevice === "desktop" ? "bg-white text-stone-900 shadow-2xs font-bold" : "text-stone-500 hover:text-stone-800"
+                  }`}
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  <span>Desktop</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPreviewDevice("dual")}
+                  className={`hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold transition-colors cursor-pointer ${
+                    previewDevice === "dual" ? "bg-white text-stone-900 shadow-2xs font-bold" : "text-stone-500 hover:text-stone-800"
+                  }`}
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+                  </svg>
+                  <span>Keduanya</span>
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setLiveIframeKey((k) => k + 1);
+                }}
+                title="Muat Ulang Canvas"
+                className="p-2 bg-stone-100 hover:bg-stone-200 border border-stone-200 rounded-xl text-stone-700 transition cursor-pointer"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
+
+              <button
+                type="button"
+                onClick={toggleCanvasFullscreen}
+                title={isCanvasFullscreen ? "Keluar Mode Layar Penuh (Esc)" : "Mode Layar Penuh (Fullscreen)"}
+                className={`p-2 rounded-xl border transition cursor-pointer flex items-center gap-1.5 text-xs font-semibold ${
+                  isCanvasFullscreen
+                    ? "bg-amber-100 text-amber-900 border-amber-300 shadow-2xs"
+                    : "bg-stone-100 hover:bg-stone-200 border-stone-200 text-stone-700"
+                }`}
+              >
+                {isCanvasFullscreen ? (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 14h6m0 0v6m0-6L3 21m17-7h-6m0 0v6m0-6l7 7m-7-17v6m0 0h6m-6 0L21 3M10 10V4m0 6H4m0 0l7-7" />
+                    </svg>
+                    <span className="hidden sm:inline">Keluar Penuh</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                    </svg>
+                    <span className="hidden sm:inline">Layar Penuh</span>
+                  </>
+                )}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1189,9 +1717,7 @@ export default function EditInvitation() {
             type="button"
             onClick={() => {
               setActiveStudioTab("form");
-              setCollapsed((prev) => ({ ...prev, sec1: false }));
-              const sec1El = document.getElementById("section-sec1");
-              if (sec1El) sec1El.scrollIntoView({ behavior: "smooth" });
+              handleSelectSection("sec1");
             }}
             className="px-4 py-2 bg-amber-900 hover:bg-amber-950 text-white font-bold rounded-xl text-xs transition shadow-xs flex-shrink-0 cursor-pointer"
           >
@@ -1200,162 +1726,10 @@ export default function EditInvitation() {
         </div>
       )}
 
-      {/* Dual Native Studio Mode Switcher & Dynamic Quick Action Chips */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between p-2 bg-white rounded-2xl border border-stone-200 shadow-xs gap-2 sm:gap-3">
-        {/* Sliding Magnetic Pill Track */}
-        <div className="relative flex items-center bg-stone-100/90 p-1 rounded-xl border border-stone-200/80 w-full sm:w-auto shrink-0">
-          {/* Animated Magnetic Sliding Pill Thumb */}
-          <div
-            className={`absolute top-1 bottom-1 w-[calc(50%-4px)] sm:w-[125px] rounded-lg shadow-sm transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-              activeStudioTab === "form" ? "left-1 bg-stone-900" : "left-1/2 sm:left-[129px] bg-amber-800"
-            }`}
-          />
-
-          <button
-            type="button"
-            onClick={() => setActiveStudioTab("form")}
-            className={`relative z-10 flex-1 sm:w-[125px] py-1.5 px-3 rounded-lg font-bold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
-              activeStudioTab === "form" ? "text-white" : "text-stone-600 hover:text-stone-900"
-            }`}
-          >
-            <svg className={`w-3.5 h-3.5 transition-colors shrink-0 ${activeStudioTab === "form" ? "text-amber-400" : "text-stone-400"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </svg>
-            <span>Form Data</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveStudioTab("live")}
-            className={`relative z-10 flex-1 sm:w-[125px] py-1.5 px-3 rounded-lg font-bold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
-              activeStudioTab === "live" ? "text-white" : "text-stone-600 hover:text-stone-900"
-            }`}
-          >
-            <svg className={`w-3.5 h-3.5 transition-colors shrink-0 ${activeStudioTab === "live" ? "text-amber-300" : "text-stone-400"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
-            </svg>
-            <span>Live Editor</span>
-          </button>
-        </div>
-
-        {/* Dynamic Action Chips (Pengingat Foto Ringkas & Terpadu) — Hanya di Tab Form Data */}
-        {activeStudioTab === "form" && Boolean(invitation.themeId) && (!media["GROOM_PHOTO"] || !media["BRIDE_PHOTO"] || !media["LANDING_COVER"]) && (
-          <div className="flex items-center justify-between sm:justify-end gap-2 border-t border-stone-100 sm:border-t-0 pt-2 sm:pt-0 w-full sm:w-auto px-1 sm:px-0">
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-800 bg-amber-50/90 border border-amber-200/70 px-2 py-1 rounded-lg shrink-0">
-              <svg className="w-3 h-3 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-              Perlu:
-            </span>
-            <div className="flex items-center gap-1.5 shrink-0">
-              {!media["LANDING_COVER"] && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveStudioTab("form");
-                    setCollapsed((prev) => ({ ...prev, sec2: false }));
-                    const el = document.getElementById("section-sec2");
-                    if (el) el.scrollIntoView({ behavior: "smooth" });
-                  }}
-                  className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100/90 text-amber-900 border border-amber-300/80 font-semibold rounded-lg text-[11px] transition cursor-pointer shadow-2xs"
-                >
-                  + Sampul
-                </button>
-              )}
-              {(!media["GROOM_PHOTO"] || !media["BRIDE_PHOTO"]) && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveStudioTab("form");
-                    setCollapsed((prev) => ({ ...prev, sec3: false }));
-                    const el = document.getElementById("section-sec3");
-                    if (el) el.scrollIntoView({ behavior: "smooth" });
-                  }}
-                  className="px-2.5 py-1 bg-amber-800 hover:bg-amber-900 text-white font-semibold rounded-lg text-[11px] transition cursor-pointer shadow-2xs"
-                >
-                  + Foto Mempelai
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Controls di Tab Live Editor */}
-        {activeStudioTab === "live" && (
-          <div className="flex items-center justify-end gap-2 pr-1">
-            <button
-              type="button"
-              onClick={() => setShowLivePalette((prev) => !prev)}
-              className={`h-9 px-2.5 rounded-xl border text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer shadow-2xs ${
-                showLivePalette
-                  ? "bg-stone-900 text-white border-stone-900"
-                  : "bg-white text-stone-700 border-stone-200 hover:border-stone-300 hover:bg-stone-50"
-              }`}
-              title={`Palet: ${selectedPaletteObj.name} (Klik untuk ${showLivePalette ? "menutup" : "mengubah"})`}
-              aria-label={`Palet: ${selectedPaletteObj.name}`}
-            >
-              <svg className="w-3.5 h-3.5 opacity-75 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 3a9 9 0 00-9 9c0 4.97 4.03 9 9 9 1.1 0 2-.9 2-2 0-.46-.17-.89-.46-1.22-.29-.33-.46-.76-.46-1.22 0-1.1.9-2 2-2h2.5c3.59 0 6.5-2.91 6.5-6.5C21 6.48 16.97 3 12 3z" />
-                <circle cx="7.5" cy="10.5" r="1" fill="currentColor" />
-                <circle cx="12" cy="7.5" r="1" fill="currentColor" />
-                <circle cx="16.5" cy="10.5" r="1" fill="currentColor" />
-              </svg>
-              <span
-                className="w-3 h-3 rounded-full border border-black/15 shadow-xs flex-shrink-0"
-                style={{ backgroundColor: selectedPaletteObj.hex }}
-              />
-              <svg className={`w-3 h-3 transition-transform duration-200 ${showLivePalette ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-
-            <div className="relative flex items-center bg-stone-100 p-0.5 rounded-xl border border-stone-200 text-xs">
-              <div
-                className={`absolute top-0.5 bottom-0.5 w-[calc(50%-2px)] rounded-lg bg-white shadow-2xs transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-                  previewDevice === "mobile" ? "left-0.5" : "left-1/2"
-                }`}
-              />
-              <button
-                type="button"
-                onClick={() => setPreviewDevice("mobile")}
-                className={`relative z-10 px-3 py-1.5 rounded-lg font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${previewDevice === "mobile" ? "text-stone-900 font-bold" : "text-stone-500 hover:text-stone-800"}`}
-              >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                </svg>
-                <span>Mobile</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setPreviewDevice("desktop")}
-                className={`relative z-10 px-3 py-1.5 rounded-lg font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${previewDevice === "desktop" ? "text-stone-900 font-bold" : "text-stone-500 hover:text-stone-800"}`}
-              >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-                <span>Layar Penuh</span>
-              </button>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                if (liveIframeRef.current) {
-                  liveIframeRef.current.src = liveIframeRef.current.src;
-                }
-              }}
-              title="Muat Ulang Canvas"
-              className="p-2 bg-stone-100 hover:bg-stone-200 border border-stone-200 rounded-xl text-stone-700 transition cursor-pointer"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </button>
-          </div>
-        )}
-      </div>
-
-      {activeStudioTab === "live" ? (
+      <div
+        className="space-y-2.5 sm:space-y-3"
+        style={{ display: activeStudioTab === "live" ? "" : "none" }}
+      >
         <div className="space-y-2.5 sm:space-y-3">
           {/* Palet Warna Sync Bar di Atas Live View (Collapsed by Default) */}
           {showLivePalette && (
@@ -1427,7 +1801,14 @@ export default function EditInvitation() {
           {/* ==========================================================================
              LIVE VISUAL INLINE EDITOR CANVAS (CANVA / NOTION STYLE)
              ========================================================================== */}
-          <div className="bg-stone-950 rounded-3xl p-4 sm:p-8 border border-stone-800 shadow-xl flex flex-col items-center min-h-[850px]">
+          <div
+            ref={liveCanvasRef}
+            className={`bg-stone-950 border border-stone-800 shadow-xl flex flex-col items-center transition-all duration-200 ${
+              isCanvasFullscreen
+                ? "fixed inset-0 z-50 rounded-none w-screen h-screen p-4 sm:p-6 overflow-y-auto"
+                : "rounded-3xl p-4 sm:p-8 min-h-[850px]"
+            }`}
+          >
             <div className="w-full flex items-center justify-between pb-4 border-b border-stone-800 mb-6 text-xs text-stone-400">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -1438,39 +1819,283 @@ export default function EditInvitation() {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
+                  onClick={() => setLiveIframeKey((k) => k + 1)}
+                  className="px-3 py-1.5 bg-stone-900 hover:bg-stone-800 text-stone-300 hover:text-white font-medium rounded-lg text-xs transition border border-stone-800 shadow-xs flex items-center gap-1.5 cursor-pointer"
+                  title="Muat ulang pratinjau dari server"
+                >
+                  <svg className="w-3.5 h-3.5 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  <span className="hidden sm:inline">Muat Ulang</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={toggleCanvasFullscreen}
+                  className="px-3 py-1.5 bg-stone-900 hover:bg-stone-800 text-stone-300 hover:text-white font-medium rounded-lg text-xs transition border border-stone-800 shadow-xs flex items-center gap-1.5 cursor-pointer"
+                  title={isCanvasFullscreen ? "Keluar Layar Penuh (Esc)" : "Mode Layar Penuh (Fullscreen)"}
+                >
+                  {isCanvasFullscreen ? (
+                    <>
+                      <svg className="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 14h6m0 0v6m0-6L3 21m17-7h-6m0 0v6m0-6l7 7m-7-17v6m0 0h6m-6 0L21 3M10 10V4m0 6H4m0 0l7-7" />
+                      </svg>
+                      <span className="hidden sm:inline">Keluar Penuh</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-3.5 h-3.5 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                      </svg>
+                      <span className="hidden sm:inline">Layar Penuh</span>
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    broadcastToAllLiveIframes({ type: "LUX_REMOTE_OPEN_INVITATION" });
+                  }}
+                  className="px-3.5 py-1.5 bg-stone-900 hover:bg-stone-800 text-stone-300 hover:text-white font-medium rounded-lg text-xs transition border border-stone-800 shadow-xs flex items-center gap-1.5 cursor-pointer"
+                  title="Buka amplop sampul pada layar pratinjau"
+                >
+                  <svg className="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  <span>Buka Amplop</span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => saveSection()}
                   disabled={saving}
-                  className="px-4 py-1.5 bg-gradient-to-r from-amber-700 to-amber-600 hover:from-amber-600 hover:to-amber-500 text-white font-bold rounded-lg text-xs transition shadow-sm"
+                  className="px-4 py-1.5 bg-gradient-to-r from-amber-700 to-amber-600 hover:from-amber-600 hover:to-amber-500 text-white font-bold rounded-lg text-xs transition shadow-sm cursor-pointer"
                 >
                   {saving ? "Menyimpan..." : "Simpan Semua"}
                 </button>
               </div>
             </div>
 
-            <div
-              className={`transition-all duration-300 rounded-2xl overflow-hidden border border-stone-700/60 shadow-2xl bg-black flex justify-center ${
-                previewDevice === "mobile"
-                  ? "w-[390px] h-[780px] max-w-full"
-                  : "w-full h-[850px]"
-              }`}
-            >
-              <iframe
-                ref={liveIframeRef}
-                src={`/api/client/invitations/${invitationId}/preview?mode=edit`}
-                onLoad={() => applyPaletteToIframe(currentPalette)}
-                className="w-full h-full border-0 bg-stone-900"
-                title="Live Visual Editor"
-              />
-            </div>
+            {previewDevice === "dual" ? (
+              <>
+                {/* Desktop Split Dual View (>= lg) */}
+                <div className={`hidden lg:flex items-start gap-6 w-full ${isCanvasFullscreen ? "flex-1 min-h-0" : ""}`}>
+                  {/* Left Pane: Mobile Phone Mockup */}
+                  <div className={`w-[380px] shrink-0 flex flex-col ${isCanvasFullscreen ? "h-full" : ""}`}>
+                    <div className="flex items-center justify-between text-xs text-stone-400 font-medium mb-2.5 px-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                        <span className="text-white font-semibold">Tampilan Ponsel</span>
+                        <span className="text-stone-500 text-[11px]">(380px)</span>
+                      </div>
+                      <span className="text-[10px] text-stone-400 bg-stone-900 border border-stone-800 px-2 py-0.5 rounded-md">
+                        Mute
+                      </span>
+                    </div>
+                    <div className={`w-full rounded-2xl overflow-hidden border border-stone-800 shadow-2xl bg-black ${
+                      isCanvasFullscreen ? "h-[calc(100vh-140px)]" : "h-[780px]"
+                    }`}>
+                      <iframe
+                        key={`m-${liveIframeKey}`}
+                        ref={liveMobileIframeRef}
+                        src={`/api/client/invitations/${invitationId}/preview?mode=edit&audio=0&view=mobile&v=${liveIframeKey}`}
+                        onLoad={() => applyPaletteToIframe(currentPalette)}
+                        className="w-full h-full border-0 bg-stone-900"
+                        title="Live Visual Editor Mobile"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Right Pane: Desktop Widescreen Mockup */}
+                  <div className={`flex-1 min-w-0 flex flex-col ${isCanvasFullscreen ? "h-full" : ""}`}>
+                    <div className="flex items-center justify-between text-xs text-stone-400 font-medium mb-2.5 px-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-blue-400"></span>
+                        <span className="text-white font-semibold">Tampilan Komputer (Layar Lebar)</span>
+                      </div>
+                      <span className="text-[11px] text-emerald-400 font-medium bg-emerald-950/60 border border-emerald-800/40 px-2 py-0.5 rounded-md">
+                        Audio Utama
+                      </span>
+                    </div>
+                    <div className={`w-full rounded-2xl overflow-hidden border border-stone-800 shadow-2xl bg-black ${
+                      isCanvasFullscreen ? "h-[calc(100vh-140px)]" : "h-[780px]"
+                    }`}>
+                      <iframe
+                        key={`d-${liveIframeKey}`}
+                        ref={liveDesktopIframeRef}
+                        src={`/api/client/invitations/${invitationId}/preview?mode=edit&view=desktop&v=${liveIframeKey}`}
+                        onLoad={() => applyPaletteToIframe(currentPalette)}
+                        className="w-full h-full border-0 bg-stone-900"
+                        title="Live Visual Editor Desktop"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mobile & Tablet Fallback (< lg): Single Mobile Frame */}
+                <div className="lg:hidden w-full flex justify-center">
+                  <div className={`w-[390px] max-w-full rounded-2xl overflow-hidden border border-stone-800 shadow-2xl bg-black ${
+                    isCanvasFullscreen ? "h-[calc(100vh-140px)]" : "h-[780px]"
+                  }`}>
+                    <iframe
+                      key={`fallback-${liveIframeKey}`}
+                      ref={liveFallbackIframeRef}
+                      src={`/api/client/invitations/${invitationId}/preview?mode=edit&view=mobile&v=${liveIframeKey}`}
+                      onLoad={() => applyPaletteToIframe(currentPalette)}
+                      className="w-full h-full border-0 bg-stone-900"
+                      title="Live Visual Editor Fallback"
+                    />
+                  </div>
+                </div>
+              </>
+            ) : (
+              /* Single Mode (Mobile or Desktop Fullscreen) */
+              <div
+                className={`transition-all duration-300 rounded-2xl overflow-hidden border border-stone-700/60 shadow-2xl bg-black flex justify-center ${
+                  isCanvasFullscreen
+                    ? previewDevice === "mobile"
+                      ? "w-[390px] h-[calc(100vh-140px)] max-w-full"
+                      : "w-full h-[calc(100vh-140px)]"
+                    : previewDevice === "mobile"
+                    ? "w-[390px] h-[780px] max-w-full"
+                    : "w-full h-[850px]"
+                }`}
+              >
+                <iframe
+                  key={`single-${liveIframeKey}`}
+                  ref={liveSingleIframeRef}
+                  src={`/api/client/invitations/${invitationId}/preview?mode=edit&view=${previewDevice}&v=${liveIframeKey}`}
+                  onLoad={() => applyPaletteToIframe(currentPalette)}
+                  className="w-full h-full border-0 bg-stone-900"
+                  title="Live Visual Editor"
+                />
+              </div>
+            )}
           </div>
         </div>
-      ) : (
-        /* ==========================================================================
-           STRUCTURED FORM EDITOR (13 SECTIONS)
-           ========================================================================== */
-        <div className="space-y-6">
+      </div>
+
+      {/* ==========================================================================
+         TWO-COLUMN MASTER-DETAIL STUDIO (FORM EDITOR)
+         ========================================================================== */}
+      <div
+        className="flex flex-col lg:flex-row items-start gap-5 lg:gap-6 w-full"
+        style={{ display: activeStudioTab === "form" ? "" : "none" }}
+      >
+          
+          {/* ── LEFT COLUMN: SECTION NAVIGATOR (STICKY ON DESKTOP) ── */}
+          <aside className="w-full lg:w-80 lg:shrink-0 lg:sticky lg:top-20 z-10">
+            {/* Mobile / Tablet Horizontal Scrollable Pills (< lg) */}
+            <div className="lg:hidden bg-white p-2.5 rounded-2xl border border-stone-200 shadow-xs mb-3">
+              <div className="flex items-center justify-between mb-2 px-1">
+                <span className="text-[11px] font-bold text-stone-500 uppercase tracking-wider">Navigasi Seksi Form</span>
+                <span className="text-[11px] text-amber-900 font-semibold truncate max-w-[200px]">
+                  {visibleSections.find(s => s.id === activeSectionTab)?.num}. {visibleSections.find(s => s.id === activeSectionTab)?.shortTitle}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                {visibleSections.map((sec) => {
+                  const isActive = activeSectionTab === sec.id;
+                  const isSecDirty = Boolean((isDirty as Record<string, boolean>)[sec.id]);
+                  return (
+                    <button
+                      key={sec.id}
+                      type="button"
+                      onClick={() => handleSelectSection(sec.id)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                        isActive
+                          ? "bg-amber-900 text-white shadow-xs"
+                          : "bg-stone-100 text-stone-600 hover:bg-stone-200/70"
+                      }`}
+                    >
+                      <span className={`w-4 h-4 rounded-full text-[10px] flex items-center justify-center font-bold ${
+                        isActive ? "bg-amber-800 text-amber-100" : "bg-stone-200 text-stone-700"
+                      }`}>
+                        {sec.num}
+                      </span>
+                      <span>{sec.shortTitle}</span>
+                      {isSecDirty && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Desktop Vertical Sidebar Navigator (>= lg) */}
+            <div className="hidden lg:flex flex-col bg-white rounded-2xl border border-stone-200 shadow-xs overflow-hidden max-h-[calc(100vh-6.5rem)]">
+              {/* Sidebar Header */}
+              <div className="p-3.5 border-b border-stone-100 bg-stone-50/70 flex items-center justify-between">
+                <div>
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-stone-800">Daftar Seksi Form</h2>
+                  <p className="text-[11px] text-stone-500 mt-0.5">{visibleSections.length} modul kustomisasi</p>
+                </div>
+                <div className="text-[11px] font-semibold text-amber-900 bg-amber-50 border border-amber-200/70 px-2 py-0.5 rounded-md">
+                  {visibleSections.findIndex(s => s.id === activeSectionTab) + 1} / {visibleSections.length}
+                </div>
+              </div>
+
+              {/* Scrollable Section Item List */}
+              <nav aria-label="Seksi Undangan" className="p-2 space-y-1 overflow-y-auto flex-1 divide-y divide-stone-50">
+                {visibleSections.map((sec) => {
+                  const isActive = activeSectionTab === sec.id;
+                  const isSecDirty = Boolean((isDirty as Record<string, boolean>)[sec.id]);
+                  return (
+                    <button
+                      key={sec.id}
+                      type="button"
+                      onClick={() => handleSelectSection(sec.id)}
+                      className={`w-full text-left p-2.5 rounded-xl transition flex items-start gap-2.5 cursor-pointer group ${
+                        isActive
+                          ? "bg-amber-50/90 text-amber-950 border border-amber-300/80 shadow-2xs font-semibold"
+                          : "hover:bg-stone-50 text-stone-600 border border-transparent"
+                      }`}
+                    >
+                      {/* Section Number Badge */}
+                      <span className={`w-5 h-5 rounded-lg text-xs font-bold flex items-center justify-center shrink-0 mt-0.5 transition ${
+                        isActive
+                          ? "bg-amber-900 text-white shadow-2xs"
+                          : "bg-stone-100 text-stone-600 group-hover:bg-stone-200"
+                      }`}>
+                        {sec.num}
+                      </span>
+
+                      {/* Title & Dynamic Summary */}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-1">
+                          <p className={`text-xs font-bold leading-tight truncate ${
+                            isActive ? "text-amber-950" : "text-stone-800 group-hover:text-stone-900"
+                          }`}>
+                            {sec.shortTitle}
+                          </p>
+                          {isSecDirty ? (
+                            <span className="w-2 h-2 rounded-full bg-amber-600 animate-pulse shrink-0" title="Ada perubahan belum disimpan" />
+                          ) : sec.isUrgent ? (
+                            <span className="text-[9px] font-bold text-amber-700 bg-amber-100/80 px-1 py-0.2 rounded shrink-0">Perlu</span>
+                          ) : null}
+                        </div>
+                        <p className={`text-[11px] leading-tight truncate mt-0.5 ${
+                          isActive ? "text-amber-800/80" : "text-stone-400 group-hover:text-stone-500"
+                        }`}>
+                          {sec.summary}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </nav>
+
+              {/* Sidebar Footer Hint */}
+              <div className="p-2.5 border-t border-stone-100 bg-stone-50/50 text-center">
+                <span className="text-[10px] text-stone-400">Pilih seksi di atas untuk mengedit isian di kanan</span>
+              </div>
+            </div>
+          </aside>
+
+          {/* ── RIGHT COLUMN: ACTIVE SECTION DETAIL FORM ── */}
+          <main className="w-full flex-1 min-w-0 space-y-4">
 
       {/* 1. SEKSI TEMA & PALET WARNA (SEC1) */}
+      {(activeSectionTab === "sec1") && (
       <section id="section-sec1" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
         <div
           onClick={() => toggleSection("sec1")}
@@ -1616,7 +2241,13 @@ export default function EditInvitation() {
                         <div
                           key={th.id}
                           onClick={() => {
-                            if (!isThemeLocked) updateField("themeId", th.id);
+                            if (!isThemeLocked) {
+                              setInvitation((prev: any) => ({
+                                ...prev,
+                                themeId: th.id,
+                              }));
+                              setLiveIframeKey((k) => k + 1);
+                            }
                           }}
                           className={`rounded-2xl border overflow-hidden transition flex flex-col ${
                             isThemeLocked ? "cursor-default opacity-90" : "cursor-pointer"
@@ -1737,11 +2368,14 @@ export default function EditInvitation() {
                 <span>{!isDirty.sec1 ? "Tersimpan" : "Simpan Tema & Warna"}</span>
               </button>
             </div>
+            {renderSectionNavFooter("sec1")}
           </div>
         )}
       </section>
+      )}
 
       {/* 2. SEKSI SAMPUL & VISUAL UTAMA (SEC2) */}
+      {(activeSectionTab === "sec2") && (
       <section id="section-sec2" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
         <div
           onClick={() => toggleSection("sec2")}
@@ -2103,11 +2737,14 @@ export default function EditInvitation() {
                 <span>{saving ? "Menyimpan..." : isUploading || uploadingAudio ? "Sedang Mengunggah..." : !isDirty.sec2 ? "Tersimpan" : "Simpan Sampul & Musik"}</span>
               </button>
             </div>
+            {renderSectionNavFooter("sec2")}
           </div>
         )}
       </section>
+      )}
 
       {/* 3. SEKSI PROFIL MEMPELAI (SEC3) */}
+      {(activeSectionTab === "sec3") && (
       <section id="section-sec3" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
         <div
           onClick={() => toggleSection("sec3")}
@@ -2327,11 +2964,14 @@ export default function EditInvitation() {
                 <span>{saving ? "Menyimpan..." : isUploading ? "Sedang Mengunggah Foto..." : !isDirty.sec3 ? "Tersimpan" : "Simpan Profil Mempelai"}</span>
               </button>
             </div>
+            {renderSectionNavFooter("sec3")}
           </div>
         )}
       </section>
+      )}
 
       {/* 4. SEKSI KUTIPAN PEMBUKA (SEC4) */}
+      {(activeSectionTab === "sec4") && (
       <section id="section-sec4" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
         <div
           onClick={() => toggleSection("sec4")}
@@ -2441,18 +3081,86 @@ export default function EditInvitation() {
               </div>
             </div>
 
+            {/* Salam Pembuka / Doa Awal (Dinamis / Netral Agama) */}
+            <div className="pt-3 border-t border-stone-100 space-y-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                <div>
+                  <label className="block text-xs font-bold text-stone-700">Salam Pembuka / Doa Awal (Greeting)</label>
+                  <p className="text-[11px] text-stone-500">Tampil di atas kutipan doa. Bebas dipilih sesuai agama/adat atau dikosongkan.</p>
+                </div>
+                <span className="text-[11px] text-amber-800 font-medium bg-amber-50 px-2 py-0.5 rounded border border-amber-200/60 self-start sm:self-auto">
+                  Opsional
+                </span>
+              </div>
+              
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                <button
+                  type="button"
+                  onClick={() => updateCustomLabel("openingGreeting", "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ")}
+                  className="px-2.5 py-1 text-[11px] font-semibold bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg transition cursor-pointer"
+                >
+                  بِسْمِ اللَّهِ (Arab)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateCustomLabel("openingGreeting", "Bismillahir Rahmanir Rahim")}
+                  className="px-2.5 py-1 text-[11px] font-semibold bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg transition cursor-pointer"
+                >
+                  Bismillah (Latin)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateCustomLabel("openingGreeting", "Salam Sejahtera & Penuh Berkat")}
+                  className="px-2.5 py-1 text-[11px] font-semibold bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg transition cursor-pointer"
+                >
+                  Salam Sejahtera
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateCustomLabel("openingGreeting", "Om Swastiastu")}
+                  className="px-2.5 py-1 text-[11px] font-semibold bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg transition cursor-pointer"
+                >
+                  Om Swastiastu
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateCustomLabel("openingGreeting", "")}
+                  className="px-2.5 py-1 text-[11px] font-semibold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg transition cursor-pointer"
+                  title="Kosongkan salam pembuka (tidak menampilkan tulisan Arab atau salam apapun)"
+                >
+                  Hapus / Tanpa Salam
+                </button>
+              </div>
+
+              <Input
+                label="Teks Salam Pembuka Kustom"
+                value={getCustomLabel("openingGreeting", activeBlueprint?.openingGreeting || "")}
+                onChange={(v) => updateCustomLabel("openingGreeting", v)}
+                placeholder="بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ / Salam Sejahtera / Kosongkan jika tidak diinginkan"
+              />
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-stone-100">
               <Input
-                label="Judul Seksi (Bebas Kustom)"
-                value={getCustomLabel("quoteTitle", "Kutipan & Doa")}
-                onChange={(v) => updateCustomLabel("quoteTitle", v)}
-                placeholder="Kutipan Cinta / Kata Mutiara / Pappaseng / Ayat Suci"
+                label="Subjudul / Eyebrow Seksi"
+                value={getCustomLabel("quoteEyebrow", activeBlueprint?.quoteSectionEyebrow || "")}
+                onChange={(v) => updateCustomLabel("quoteEyebrow", v)}
+                placeholder={activeBlueprint?.quoteSectionEyebrow || "WALIMATUL 'URSY / THE SACRED UNION"}
               />
+              <Input
+                label="Judul Seksi (Bebas Kustom)"
+                value={getCustomLabel("quoteTitle", activeBlueprint?.quoteSectionTitle || "Kutipan & Doa")}
+                onChange={(v) => updateCustomLabel("quoteTitle", v)}
+                placeholder={activeBlueprint?.quoteSectionTitle || "Kutipan Cinta / Kata Mutiara / Pappaseng / Ayat Suci"}
+              />
+            </div>
+
+            <div className="pt-2">
               <Input
                 label="Referensi Sumber Kutipan"
                 value={invitation.openingQuoteRef || ""}
                 onChange={(v) => updateField("openingQuoteRef", v)}
-                placeholder="QS. AR-RUM : 21 / SAPARDI DJOKO DAMONO / OUR SACRED PROMISE"
+                placeholder={activeBlueprint?.openingQuoteRef || "QS. AR-RUM : 21 / SAPARDI DJOKO DAMONO / OUR SACRED PROMISE"}
               />
             </div>
 
@@ -2482,11 +3190,14 @@ export default function EditInvitation() {
                 <span>{!isDirty.sec4 ? "Tersimpan" : "Simpan Kutipan"}</span>
               </button>
             </div>
+            {renderSectionNavFooter("sec4")}
           </div>
         )}
       </section>
+      )}
 
       {/* 5. SEKSI RANGKAIAN ACARA (SEC5) */}
+      {(activeSectionTab === "sec5") && (
       <section id="section-sec5" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
         <div
           onClick={() => toggleSection("sec5")}
@@ -2617,12 +3328,14 @@ export default function EditInvitation() {
                 <span>{!isDirty.sec5 ? "Tersimpan" : "Simpan Rangkaian Acara"}</span>
               </button>
             </div>
+            {renderSectionNavFooter("sec5")}
           </div>
         )}
       </section>
+      )}
 
       {/* 6. SEKSI KARTU AKSES QR & CHECK-IN (SEC6) */}
-      {hasCap("qr_checkin") && (
+      {hasCap("qr_checkin") && (activeSectionTab === "sec6") && (
       <section id="section-sec6" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
         <div
           onClick={() => toggleSection("sec6")}
@@ -2701,12 +3414,14 @@ export default function EditInvitation() {
                 <span>{!isDirty.sec6 ? "Tersimpan" : "Simpan Pengaturan QR"}</span>
               </button>
             </div>
+            {renderSectionNavFooter("sec6")}
           </div>
         )}
       </section>
       )}
 
       {/* 7. SEKSI KISAH CINTA (SEC7) */}
+      {(activeSectionTab === "sec7") && (
       <section id="section-sec7" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
         <div
           onClick={() => toggleSection("sec7")}
@@ -2814,11 +3529,14 @@ export default function EditInvitation() {
                 <span>{!isDirty.sec7 ? "Tersimpan" : "Simpan Kisah Cinta"}</span>
               </button>
             </div>
+            {renderSectionNavFooter("sec7")}
           </div>
         )}
       </section>
+      )}
 
       {/* 8. SEKSI GALERI & VIDEO (SEC8) */}
+      {(activeSectionTab === "sec8") && (
       <section id="section-sec8" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
         <div
           onClick={() => toggleSection("sec8")}
@@ -2939,11 +3657,14 @@ export default function EditInvitation() {
                 <span>{!isDirty.sec8 ? "Tersimpan" : "Simpan Pengaturan Galeri"}</span>
               </button>
             </div>
+            {renderSectionNavFooter("sec8")}
           </div>
         )}
       </section>
+      )}
 
       {/* 9. SEKSI TANDA KASIH & AMPLOP (SEC9) */}
+      {(activeSectionTab === "sec9") && (
       <section id="section-sec9" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
         <div
           onClick={() => toggleSection("sec9")}
@@ -3095,11 +3816,14 @@ export default function EditInvitation() {
                 <span>{saving ? "Menyimpan..." : isUploading ? "Sedang Mengunggah QRIS..." : !isDirty.sec9 ? "Tersimpan" : "Simpan Rekening & Hadiah"}</span>
               </button>
             </div>
+            {renderSectionNavFooter("sec9")}
           </div>
         )}
       </section>
+      )}
 
       {/* 10. SEKSI DRESS CODE (SEC10) */}
+      {(activeSectionTab === "sec10") && (
       <section id="section-sec10" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
         <div
           onClick={() => toggleSection("sec10")}
@@ -3148,257 +3872,18 @@ export default function EditInvitation() {
               />
             </div>
 
-            {showDresscode && (() => {
-              const rawColors = getFeatureSetting("dressCodeColors", "#a67c52, #2b2725, #faf7f2");
-              const currentColorList: string[] = typeof rawColors === "string"
-                ? rawColors.split(",").map((c: string) => c.trim()).filter((c: string) => c.length > 0)
-                : ["#a67c52", "#2b2725", "#faf7f2"];
-              const safeColorList = currentColorList.length > 0 ? currentColorList : ["#a67c52", "#2b2725", "#faf7f2"];
-
-              const updateColors = (list: string[]) => {
-                updateFeatureSetting("dressCodeColors", list.join(", "));
-              };
-
-              const handleSwatchColorChange = (index: number, newHex: string) => {
-                const updated = [...safeColorList];
-                updated[index] = newHex;
-                updateColors(updated);
-              };
-
-              const handleRemoveSwatch = (index: number) => {
-                if (safeColorList.length <= 1) return;
-                const updated = safeColorList.filter((_, i) => i !== index);
-                updateColors(updated);
-              };
-
-              const handleAddSwatch = () => {
-                if (safeColorList.length >= 6) return;
-                const updated = [...safeColorList, "#d4af37"];
-                updateColors(updated);
-              };
-
-              const handleApplyPreset = (preset: { name: string; colors: string[] }) => {
-                updateColors(preset.colors);
-                if (!invitation.dresscode) {
-                  updateField("dresscode", preset.name);
-                }
-              };
-
-              const activeTheme = invitation?.themeId || "solaria";
-              const themePreset = THEME_DRESSCODE_MAP[activeTheme] || THEME_DRESSCODE_MAP["solaria"];
-
-              const handleSyncTheme = () => {
-                if (themePreset) {
-                  updateColors(themePreset.colors);
-                  if (!invitation.dresscode) {
-                    updateField("dresscode", themePreset.name);
-                  }
-                  setThemeSyncSuccess(true);
-                  setTimeout(() => setThemeSyncSuccess(false), 2500);
-                }
-              };
-
-              return (
-                <div className="space-y-5 mt-2">
-                  {/* Nuansa / Aturan Dress Code */}
-                  <Input
-                    label="Nuansa / Aturan Dress Code"
-                    value={invitation.dresscode || ""}
-                    onChange={(v) => updateField("dresscode", v)}
-                    placeholder="Contoh: Earthy Terracotta, Formal Batik, Modern Pastel"
-                  />
-
-                  {/* Studio Palet Warna Visual */}
-                  <div className="p-4 sm:p-5 bg-stone-50/80 rounded-2xl border border-stone-200 space-y-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                      <div>
-                        <label className="text-xs font-bold text-stone-800 flex items-center gap-2">
-                          <svg className="w-4 h-4 text-amber-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4 5 5 0 0110 0 4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" /></svg>
-                          <span>Palet Warna Busana Tamu (Visual Swatches)</span>
-                        </label>
-                        <p className="text-[11px] text-stone-500 mt-0.5">
-                          Klik bulatan warna untuk memilih warna secara visual. Tanpa perlu menghafal kode heksadesimal.
-                        </p>
-                      </div>
-
-                      {/* Tombol Pintas Cerdas: Samakan dengan Tema */}
-                      <button
-                        type="button"
-                        onClick={handleSyncTheme}
-                        className={`text-xs px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 cursor-pointer shrink-0 self-start sm:self-auto ${
-                          themeSyncSuccess
-                            ? "bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-xs"
-                            : "bg-white hover:bg-amber-50 text-amber-900 border border-amber-300/80 shadow-xs"
-                        }`}
-                        title="Samakan warna dress code dengan palet bawaan tema undangan Anda"
-                      >
-                        {themeSyncSuccess ? (
-                          <>
-                            <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                            <span>Tersinkron dengan Tema!</span>
-                          </>
-                        ) : (
-                          <>
-                            <svg className="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                            </svg>
-                            <span>Samakan Tema ({activeTheme.toUpperCase()})</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-
-                    {/* Bulatan Swatch Warna Interaktif (Isolasi Visual 0ms Delay) */}
-                    <div className="flex flex-wrap items-center gap-4 pt-1">
-                      {safeColorList.map((hex: string, idx: number) => (
-                        <ColorSwatchPicker
-                          key={idx}
-                          initialColor={hex}
-                          index={idx}
-                          totalColors={safeColorList.length}
-                          onCommit={handleSwatchColorChange}
-                          onRemove={handleRemoveSwatch}
-                        />
-                      ))}
-
-                      {/* Tombol Tambah Warna (+) */}
-                      {safeColorList.length < 6 && (
-                        <button
-                          type="button"
-                          onClick={handleAddSwatch}
-                          className="w-12 h-12 rounded-full border-2 border-dashed border-stone-300 hover:border-amber-700 text-stone-400 hover:text-amber-800 flex flex-col items-center justify-center transition-all cursor-pointer group bg-white hover:bg-amber-50/40 shadow-2xs"
-                          title="Tambah bulatan warna baru (Maksimal 6 warna)"
-                        >
-                          <svg className="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                          </svg>
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Pilihan Cepat: Palet Tren Pernikahan 1-Klik */}
-                    <div className="space-y-2 pt-3 border-t border-stone-200/80">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold text-stone-700 uppercase tracking-wider">
-                          Pilihan Cepat: Palet Tren Pernikahan
-                        </span>
-                        <span className="text-[10px] text-stone-400">1-Klik Terapkan</span>
-                      </div>
-
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                        {WEDDING_DRESSCODE_PRESETS.map((p, pIdx) => {
-                          const isSelected = p.colors.join(", ").toLowerCase() === safeColorList.join(", ").toLowerCase();
-                          return (
-                            <button
-                              key={pIdx}
-                              type="button"
-                              onClick={() => handleApplyPreset(p)}
-                              className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-1.5 ${
-                                isSelected
-                                  ? "bg-amber-50/80 border-amber-600 ring-2 ring-amber-500/20 shadow-xs"
-                                  : "bg-white hover:bg-stone-50/80 border-stone-200 hover:border-stone-300 shadow-2xs"
-                              }`}
-                            >
-                              <div className="flex items-center gap-1">
-                                {p.colors.map((c, cIdx) => (
-                                  <span
-                                    key={cIdx}
-                                    className="w-3.5 h-3.5 rounded-full border border-white shadow-2xs inline-block"
-                                    style={{ backgroundColor: c }}
-                                  />
-                                ))}
-                              </div>
-                              <div>
-                                <span className="text-xs font-bold text-stone-900 block truncate">{p.name}</span>
-                                <span className="text-[10px] text-stone-400 block truncate">{p.category}</span>
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Pratinjau Tampilan Undangan Tamu (Live Preview) */}
-                  <div className="p-4 sm:p-5 bg-gradient-to-br from-stone-50 to-amber-50/30 border border-amber-200/70 rounded-2xl space-y-2.5 shadow-2xs">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold tracking-widest text-amber-900 uppercase flex items-center gap-1.5">
-                        <svg className="w-3.5 h-3.5 text-amber-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                        <span>Pratinjau Tampilan Tamu (Live Preview)</span>
-                      </span>
-                      <span className="text-[10px] text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                        Sesuai Tampilan Website
-                      </span>
-                    </div>
-
-                    <div className="bg-white p-4 rounded-xl border border-stone-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      <div className="space-y-1">
-                        <span className="text-[9px] font-bold tracking-widest text-stone-400 uppercase block">
-                          Panduan Busana Undangan
-                        </span>
-                        <h4 className="text-sm sm:text-base font-serif font-bold text-stone-900">
-                          {invitation.dresscode || "Panduan Busana"}
-                        </h4>
-                        <p className="text-xs text-stone-500 max-w-md leading-relaxed">
-                          {getFeatureSetting("dressCodeNote", "") || "Para tamu kehormatan dianjurkan mengenakan busana bernuansa senada."}
-                        </p>
-                      </div>
-
-                      {/* Swatches Tamu */}
-                      <div className="flex items-center gap-2 shrink-0">
-                        {safeColorList.map((c: string, i: number) => (
-                          <span
-                            key={i}
-                            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 border-white shadow-md inline-block transition-transform hover:scale-110 ring-1 ring-stone-200"
-                            style={{ backgroundColor: c }}
-                            title={c}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Catatan Tambahan Busana */}
-                  <div>
-                    <label className="block text-xs font-bold text-stone-700 mb-1">Catatan Tambahan Busana (Opsional)</label>
-                    <textarea
-                      rows={2}
-                      value={getFeatureSetting("dressCodeNote", "")}
-                      onChange={(e) => updateFeatureSetting("dressCodeNote", e.target.value)}
-                      placeholder="Contoh: Kami memohon agar para tamu menghindari warna putih atau pakaian kasual."
-                      className="w-full p-2.5 bg-white border border-stone-200 rounded-xl text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700/30"
-                    />
-                  </div>
-
-                  {/* Mode Lanjutan: Input Manual Kode Hex */}
-                  <div className="pt-1">
-                    <button
-                      type="button"
-                      onClick={() => setShowManualHex(!showManualHex)}
-                      className="text-[11px] font-semibold text-stone-500 hover:text-stone-800 transition flex items-center gap-1 cursor-pointer"
-                    >
-                      <svg className={`w-3.5 h-3.5 transition-transform ${showManualHex ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                      <span>{showManualHex ? "Sembunyikan Pengaturan Kode Hex Manual" : "Pengaturan Lanjutan: Edit Kode Hex Manual"}</span>
-                    </button>
-
-                    {showManualHex && (
-                      <div className="mt-2.5 p-3.5 bg-stone-50 rounded-xl border border-stone-200 animate-in fade-in duration-200 space-y-1.5">
-                        <Input
-                          label="Palet Warna Hex (Pisahkan dengan koma)"
-                          value={rawColors}
-                          onChange={(v) => updateFeatureSetting("dressCodeColors", v)}
-                          placeholder="#a67c52, #2b2725, #faf7f2"
-                        />
-                        <p className="text-[10px] text-stone-400 leading-normal">
-                          Perubahan pada teks kode hex di atas akan otomatis memperbarui bulatan warna visual di atas secara dua arah (*two-way sync*).
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })()}
+            {showDresscode && (
+              <DresscodeStudioBlock
+                invitation={invitation}
+                updateField={updateField}
+                updateFeatureSetting={updateFeatureSetting}
+                getFeatureSetting={getFeatureSetting}
+                themeSyncSuccess={themeSyncSuccess}
+                setThemeSyncSuccess={setThemeSyncSuccess}
+                showManualHex={showManualHex}
+                setShowManualHex={setShowManualHex}
+              />
+            )}
 
             <div className="pt-4 border-t border-stone-100 flex justify-end">
               <button
@@ -3415,11 +3900,14 @@ export default function EditInvitation() {
                 <span>{!isDirty.sec10 ? "Tersimpan" : "Simpan Dress Code"}</span>
               </button>
             </div>
+            {renderSectionNavFooter("sec10")}
           </div>
         )}
       </section>
+      )}
 
       {/* 11. SEKSI LIVE STREAMING (SEC11) */}
+      {(activeSectionTab === "sec11") && (
       <section id="section-sec11" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
         <div
           onClick={() => toggleSection("sec11")}
@@ -3508,11 +3996,14 @@ export default function EditInvitation() {
                 <span>{!isDirty.sec11 ? "Tersimpan" : "Simpan Live Streaming"}</span>
               </button>
             </div>
+            {renderSectionNavFooter("sec11")}
           </div>
         )}
       </section>
+      )}
 
       {/* 12. SEKSI FILTER INSTAGRAM (SEC12) */}
+      {(activeSectionTab === "sec12") && (
       <section id="section-sec12" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
         <div
           onClick={() => toggleSection("sec12")}
@@ -3587,11 +4078,14 @@ export default function EditInvitation() {
                 <span>{!isDirty.sec12 ? "Tersimpan" : "Simpan Filter Instagram"}</span>
               </button>
             </div>
+            {renderSectionNavFooter("sec12")}
           </div>
         )}
       </section>
+      )}
 
       {/* 13. SEKSI TURUT MENGUNDANG & HIMBAUAN (SEC13) */}
+      {(activeSectionTab === "sec13") && (
       <section id="section-sec13" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
         <div
           onClick={() => toggleSection("sec13")}
@@ -3681,11 +4175,14 @@ export default function EditInvitation() {
                 <span>{!isDirty.sec13 ? "Tersimpan" : "Simpan Turut Mengundang"}</span>
               </button>
             </div>
+            {renderSectionNavFooter("sec13")}
           </div>
         )}
       </section>
+      )}
+
       {/* 14. SEKSI GALERI KENANGAN TAMU (SEC14) */}
-      {hasCap("guest_memories") && (
+      {hasCap("guest_memories") && (activeSectionTab === "sec14") && (
       <section id="section-sec14" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
         <div
           onClick={() => toggleSection("sec14")}
@@ -3812,12 +4309,14 @@ export default function EditInvitation() {
                 <span>{!isDirty.sec14 ? "Tersimpan" : "Simpan Galeri Kenangan"}</span>
               </button>
             </div>
+            {renderSectionNavFooter("sec14")}
           </div>
         )}
       </section>
       )}
 
       {/* 15. SEKSI PENGATURAN TEKS UI & LABEL (SEC15) */}
+      {(activeSectionTab === "sec15") && (
       <section id="section-sec15" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
         <div
           onClick={() => toggleSection("sec15")}
@@ -3974,12 +4473,17 @@ export default function EditInvitation() {
                 <span>{!isDirty.sec15 ? "Tersimpan" : "Simpan Pengaturan Label"}</span>
               </button>
             </div>
+            {renderSectionNavFooter("sec15")}
           </div>
         )}
       </section>
-
-        </div>
       )}
+
+          </main>
+        </div>
+
+
+
       {/* ── UPGRADE PAKET MODAL ────────────────────────────────────── */}
       {upgradeModal && (
         <div
@@ -4062,14 +4566,14 @@ export default function EditInvitation() {
                       <div className="flex-1">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-bold text-stone-900">
-                            Tambah Custom Domain Pribadi (.com / .id)
+                            Hubungkan Custom Domain Pribadi (.com / .id)
                           </span>
                           <span className="text-xs font-bold text-amber-900">
                             +Rp {Number(platformSettings?.addon_custom_domain_price ?? platformSettings?.addonCustomDomainPrice ?? 150000).toLocaleString("id-ID")}
                           </span>
                         </div>
                         <p className="text-[11px] text-stone-600 mt-0.5 leading-relaxed">
-                          Masa aktif 1 tahun penuh & simpan galeri foto kenangan hingga 365 hari pasca-acara (tidak wajib).
+                          Integrasikan domain yang sudah Anda miliki & simpan galeri foto kenangan hingga 365 hari pasca-acara (tidak wajib).
                         </p>
                       </div>
                     </label>
@@ -4077,7 +4581,7 @@ export default function EditInvitation() {
                     {includeCustomDomain && (
                       <div className="pt-2 border-t border-amber-200/60 space-y-1">
                         <label className="block text-[10px] font-bold uppercase tracking-wider text-amber-950">
-                          Nama Domain yang Diinginkan
+                          Masukkan Domain yang Anda Miliki
                         </label>
                         <input
                           type="text"
@@ -4561,6 +5065,278 @@ function SectionHeaderActions({
       >
         {collapsed ? closedLabel : openLabel}
       </button>
+    </div>
+  );
+}
+
+interface DresscodeStudioProps {
+  invitation: any;
+  updateField: (field: string, value: any) => void;
+  updateFeatureSetting: (key: string, value: any) => void;
+  getFeatureSetting: (key: string, defaultVal: any) => any;
+  themeSyncSuccess: boolean;
+  setThemeSyncSuccess: (val: boolean) => void;
+  showManualHex: boolean;
+  setShowManualHex: (val: boolean) => void;
+}
+
+function DresscodeStudioBlock({
+  invitation,
+  updateField,
+  updateFeatureSetting,
+  getFeatureSetting,
+  themeSyncSuccess,
+  setThemeSyncSuccess,
+  showManualHex,
+  setShowManualHex,
+}: DresscodeStudioProps) {
+  const rawColors = getFeatureSetting("dressCodeColors", "#a67c52, #2b2725, #faf7f2");
+  const currentColorList: string[] = typeof rawColors === "string"
+    ? rawColors.split(",").map((c: string) => c.trim()).filter((c: string) => c.length > 0)
+    : ["#a67c52", "#2b2725", "#faf7f2"];
+  const safeColorList = currentColorList.length > 0 ? currentColorList : ["#a67c52", "#2b2725", "#faf7f2"];
+
+  const updateColors = (list: string[]) => {
+    updateFeatureSetting("dressCodeColors", list.join(", "));
+  };
+
+  const handleSwatchColorChange = (index: number, newHex: string) => {
+    const updated = [...safeColorList];
+    updated[index] = newHex;
+    updateColors(updated);
+  };
+
+  const handleRemoveSwatch = (index: number) => {
+    if (safeColorList.length <= 1) return;
+    const updated = safeColorList.filter((_, i) => i !== index);
+    updateColors(updated);
+  };
+
+  const handleAddSwatch = () => {
+    if (safeColorList.length >= 6) return;
+    const updated = [...safeColorList, "#d4af37"];
+    updateColors(updated);
+  };
+
+  const handleApplyPreset = (preset: { name: string; colors: string[] }) => {
+    updateColors(preset.colors);
+    if (!invitation.dresscode) {
+      updateField("dresscode", preset.name);
+    }
+  };
+
+  const activeTheme = invitation?.themeId || "solaria";
+  const themePreset = THEME_DRESSCODE_MAP[activeTheme] || THEME_DRESSCODE_MAP["solaria"];
+
+  const handleSyncTheme = () => {
+    if (themePreset) {
+      updateColors(themePreset.colors);
+      if (!invitation.dresscode) {
+        updateField("dresscode", themePreset.name);
+      }
+      setThemeSyncSuccess(true);
+      setTimeout(() => setThemeSyncSuccess(false), 2500);
+    }
+  };
+
+  return (
+    <div className="space-y-5 mt-2">
+      {/* Nuansa / Aturan Dress Code */}
+      <Input
+        label="Nuansa / Aturan Dress Code"
+        value={invitation.dresscode || ""}
+        onChange={(v) => updateField("dresscode", v)}
+        placeholder="Contoh: Earthy Terracotta, Formal Batik, Modern Pastel"
+      />
+
+      {/* Studio Palet Warna Visual */}
+      <div className="p-4 sm:p-5 bg-stone-50/80 rounded-2xl border border-stone-200 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <div>
+            <label className="text-xs font-bold text-stone-800 flex items-center gap-2">
+              <svg className="w-4 h-4 text-amber-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4 5 5 0 0110 0 4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" /></svg>
+              <span>Palet Warna Busana Tamu (Visual Swatches)</span>
+            </label>
+            <p className="text-[11px] text-stone-500 mt-0.5">
+              Klik bulatan warna untuk memilih warna secara visual. Tanpa perlu menghafal kode heksadesimal.
+            </p>
+          </div>
+
+          {/* Tombol Pintas Cerdas: Samakan dengan Tema */}
+          <button
+            type="button"
+            onClick={handleSyncTheme}
+            className={`text-xs px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 cursor-pointer shrink-0 self-start sm:self-auto ${
+              themeSyncSuccess
+                ? "bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-xs"
+                : "bg-white hover:bg-amber-50 text-amber-900 border border-amber-300/80 shadow-xs"
+            }`}
+            title="Samakan warna dress code dengan palet bawaan tema undangan Anda"
+          >
+            {themeSyncSuccess ? (
+              <>
+                <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                <span>Tersinkron dengan Tema!</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                </svg>
+                <span>Samakan Tema ({activeTheme.toUpperCase()})</span>
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* Bulatan Swatch Warna Interaktif (Isolasi Visual 0ms Delay) */}
+        <div className="flex flex-wrap items-center gap-4 pt-1">
+          {safeColorList.map((hex: string, idx: number) => (
+            <ColorSwatchPicker
+              key={idx}
+              initialColor={hex}
+              index={idx}
+              totalColors={safeColorList.length}
+              onCommit={handleSwatchColorChange}
+              onRemove={handleRemoveSwatch}
+            />
+          ))}
+
+          {/* Tombol Tambah Warna (+) */}
+          {safeColorList.length < 6 && (
+            <button
+              type="button"
+              onClick={handleAddSwatch}
+              className="w-12 h-12 rounded-full border-2 border-dashed border-stone-300 hover:border-amber-700 text-stone-400 hover:text-amber-800 flex flex-col items-center justify-center transition-all cursor-pointer group bg-white hover:bg-amber-50/40 shadow-2xs"
+              title="Tambah bulatan warna baru (Maksimal 6 warna)"
+            >
+              <svg className="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
+          )}
+        </div>
+
+        {/* Pilihan Cepat: Palet Tren Pernikahan 1-Klik */}
+        <div className="space-y-2 pt-3 border-t border-stone-200/80">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-stone-700 uppercase tracking-wider">
+              Pilihan Cepat: Palet Tren Pernikahan
+            </span>
+            <span className="text-[10px] text-stone-400">1-Klik Terapkan</span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {WEDDING_DRESSCODE_PRESETS.map((p, pIdx) => {
+              const isSelected = p.colors.join(", ").toLowerCase() === safeColorList.join(", ").toLowerCase();
+              return (
+                <button
+                  key={pIdx}
+                  type="button"
+                  onClick={() => handleApplyPreset(p)}
+                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-1.5 ${
+                    isSelected
+                      ? "bg-amber-50/80 border-amber-600 ring-2 ring-amber-500/20 shadow-xs"
+                      : "bg-white hover:bg-stone-50/80 border-stone-200 hover:border-stone-300 shadow-2xs"
+                  }`}
+                >
+                  <div className="flex items-center gap-1">
+                    {p.colors.map((c, cIdx) => (
+                      <span
+                        key={cIdx}
+                        className="w-3.5 h-3.5 rounded-full border border-white shadow-2xs inline-block"
+                        style={{ backgroundColor: c }}
+                      />
+                    ))}
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-stone-900 block truncate">{p.name}</span>
+                    <span className="text-[10px] text-stone-400 block truncate">{p.category}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Pratinjau Tampilan Undangan Tamu (Live Preview) */}
+      <div className="p-4 sm:p-5 bg-gradient-to-br from-stone-50 to-amber-50/30 border border-amber-200/70 rounded-2xl space-y-2.5 shadow-2xs">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] font-bold tracking-widest text-amber-900 uppercase flex items-center gap-1.5">
+            <svg className="w-3.5 h-3.5 text-amber-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+            <span>Pratinjau Tampilan Tamu (Live Preview)</span>
+          </span>
+          <span className="text-[10px] text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full font-medium flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            Sesuai Tampilan Website
+          </span>
+        </div>
+
+        <div className="bg-white p-4 rounded-xl border border-stone-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <span className="text-[9px] font-bold tracking-widest text-stone-400 uppercase block">
+              Panduan Busana Undangan
+            </span>
+            <h4 className="text-sm sm:text-base font-serif font-bold text-stone-900">
+              {invitation.dresscode || "Panduan Busana"}
+            </h4>
+            <p className="text-xs text-stone-500 max-w-md leading-relaxed">
+              {getFeatureSetting("dressCodeNote", "") || "Para tamu kehormatan dianjurkan mengenakan busana bernuansa senada."}
+            </p>
+          </div>
+
+          {/* Swatches Tamu */}
+          <div className="flex items-center gap-2 shrink-0">
+            {safeColorList.map((c: string, i: number) => (
+              <span
+                key={i}
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 border-white shadow-md inline-block transition-transform hover:scale-110 ring-1 ring-stone-200"
+                style={{ backgroundColor: c }}
+                title={c}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Catatan Tambahan Busana */}
+      <div>
+        <label className="block text-xs font-bold text-stone-700 mb-1">Catatan Tambahan Busana (Opsional)</label>
+        <textarea
+          rows={2}
+          value={getFeatureSetting("dressCodeNote", "")}
+          onChange={(e) => updateFeatureSetting("dressCodeNote", e.target.value)}
+          placeholder="Contoh: Kami memohon agar para tamu menghindari warna putih atau pakaian kasual."
+          className="w-full p-2.5 bg-white border border-stone-200 rounded-xl text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700/30"
+        />
+      </div>
+
+      {/* Mode Lanjutan: Input Manual Kode Hex */}
+      <div className="pt-1">
+        <button
+          type="button"
+          onClick={() => setShowManualHex(!showManualHex)}
+          className="text-[11px] font-semibold text-stone-500 hover:text-stone-800 transition flex items-center gap-1 cursor-pointer"
+        >
+          <svg className={`w-3.5 h-3.5 transition-transform ${showManualHex ? "rotate-90" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+          <span>{showManualHex ? "Sembunyikan Pengaturan Kode Hex Manual" : "Pengaturan Lanjutan: Edit Kode Hex Manual"}</span>
+        </button>
+
+        {showManualHex && (
+          <div className="mt-2.5 p-3.5 bg-stone-50 rounded-xl border border-stone-200 animate-in fade-in duration-200 space-y-1.5">
+            <Input
+              label="Palet Warna Hex (Pisahkan dengan koma)"
+              value={rawColors}
+              onChange={(v) => updateFeatureSetting("dressCodeColors", v)}
+              placeholder="#a67c52, #2b2725, #faf7f2"
+            />
+            <p className="text-[10px] text-stone-400 leading-normal">
+              Perubahan pada teks kode hex di atas akan otomatis memperbarui bulatan warna visual di atas secara dua arah (*two-way sync*).
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

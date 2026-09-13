@@ -20,6 +20,7 @@ Dokumen ini adalah buku panduan operasional (*runbook*) langkah demi langkah unt
 8. [Tahap 8: Setup Cron Job Pemeliharaan Otomatis](#tahap-8-setup-cron-job-pemeliharaan-otomatis)
 9. [Tahap 9: Checklist Verifikasi Pasca-Deploy](#tahap-9-checklist-verifikasi-pasca-deploy)
 10. [Panduan Pembaruan Kode Selanjutnya (Update/Maintenance)](#panduan-pembaruan-kode-selanjutnya-updatemaintenance)
+11. [Tahap 10: Panduan Skalabilitas Multi-Server (Shared Storage NFS & Symlink Blueprint)](#tahap-10-panduan-skalabilitas-multi-server-shared-storage-nfs--symlink-blueprint)
 
 ---
 
@@ -309,4 +310,109 @@ cd ~/luxenary-invite
 ./deploy.sh
 ```
 *Skrip akan otomatis menarik kode terbaru dari GitHub (`git pull origin main`), memperbarui dependensi, migrasi database, me-rebuild Next.js, dan me-reload PM2 secara zero-downtime!*
+
+---
+
+## Tahap 10: Panduan Skalabilitas Multi-Server (Shared Storage NFS & Symlink Blueprint)
+
+Ketika lalu lintas platform melonjak tinggi dan Anda memutuskan menambah node komputasi menjadi **2 Server VPS atau lebih (Multi-Server Cluster)** di belakang Load Balancer (misal Cloudflare Load Balancing, HAProxy, atau Caddy Load Balancer), ada aturan fundamental terkait persistensi berkas (*stateful assets*):
+
+```
+                       [ Pengunjung / Calon Pengantin / Tamu ]
+                                        │
+                                        ▼
+                   [ Cloudflare DNS / Load Balancer (HTTPS) ]
+                                   ┌────┴────┐
+                                   ▼         ▼
+                            [ Node VPS 1 ] [ Node VPS 2 ]
+                                   │         │
+                   ┌───────────────┼─────────┴───────────────┐
+                   ▼               ▼                         ▼
+         [ Central PostgreSQL ]  [ Cloudflare R2 ]   [ Shared Storage (NFS) ]
+         (Tabel, Order, Relasi)  (Foto, Musik, WebP) (Mounted ke /mnt/shared_luxenary)
+                                                             │
+                                         ┌───────────────────┴───────────────────┐
+                                         ▼                                       ▼
+                                [ themes/ & demo/ ]                    [ drafts/ & published/ ]
+                                (Master HTML & Showroom)               (Preview & Undangan Live)
+```
+
+### 10.1 Prinsip Desain: Portabilitas Kode vs Abstraksi OS
+> [!IMPORTANT]
+> **DILARANG MENGUBAH KODE APLIKASI NEXT.JS MENJADI PATH `/mnt/...`!**  
+> Di dalam kode TypeScript/Node.js, semua pembacaan file tetap wajib menggunakan standar portabel:
+> `path.join(process.cwd(), "themes")`, `path.join(process.cwd(), "public/demo")`, `path.join(process.cwd(), "data/drafts")`, dan `path.join(process.cwd(), "public/published")`.  
+> Tujuannya: Kode tetap 100% konsisten dan dapat dijalankan di laptop developer (macOS/Windows) tanpa butuh konfigurasi path aneh, sedangkan di server produksi Linux kita menggunakan abstraksi filesystem kernel via **Symbolic Links (`ln -s`)**.
+
+### 10.2 Identifikasi Folder Stateful yang Wajib Disinkronkan
+Di arsitektur Luxenary Invite, aset terbagi 3 jenis:
+1. **Stateless / Build-time:** Kode Next.js (`app/`, `lib/`, `components/`, `.next/`). Cukup disinkronkan via `git pull` & `npm run build` di tiap server.
+2. **Centralized Object Storage:** Foto mempelai, cover, galeri kenangan, audio musik latar (`public/uploads/` saat di cloud dialihkan ke Cloudflare R2 via `STORAGE_PROVIDER=r2`). Ini otomatis tersimpan di cloud R2, jadi tidak membutuhkan harddisk lokal bersama.
+3. **Stateful Filesystem yang Wajib Disinkronkan (Shared Directory):**
+   - `themes/`: Tempat Admin mengunggah template master `.html` baru via UI (`themes/premium/`, `themes/modern/`, dll.).
+   - `public/demo/`: Berkas demo statis hasil kompilasi master tema.
+   - `data/drafts/`: Piring draft mandiri HTML klien yang sedang diedit di Studio Editor.
+   - `public/published/`: Berkas HTML undangan final yang telah diterbitkan (*baked standalone HTML*).
+
+### 10.3 Langkah Pemasangan Shared Storage (NFS) & Symlink di Server
+
+Misalkan Anda menyiapkan 1 dedicated Shared Volume / NFS Server dengan alamat IP internal: `10.0.0.100` (atau private IP antar-VPS Anda).
+
+#### A. Di Server Penyimpan Data (NFS Host / Storage Server):
+1. Install NFS Server:
+   ```bash
+   sudo apt install -y nfs-kernel-server
+   sudo mkdir -p /mnt/shared_luxenary/{themes,demo,drafts,published}
+   sudo chown -R www-data:www-data /mnt/shared_luxenary
+   sudo chmod -R 775 /mnt/shared_luxenary
+   ```
+2. Ekspor direktori ke subnet private VPS Anda di `/etc/exports`:
+   ```bash
+   echo '/mnt/shared_luxenary 10.0.0.0/24(rw,sync,no_subtree_check,no_root_squash)' | sudo tee -a /etc/exports
+   sudo exportfs -a
+   sudo systemctl restart nfs-kernel-server
+   ```
+
+#### B. Di Setiap Node Aplikasi (VPS 1, VPS 2, dst):
+1. Install NFS Client:
+   ```bash
+   sudo apt install -y nfs-common
+   sudo mkdir -p /mnt/shared_luxenary
+   ```
+2. Pasang mounting otomatis di `/etc/fstab`:
+   ```bash
+   echo '10.0.0.100:/mnt/shared_luxenary /mnt/shared_luxenary nfs auto,nofail,noatime,nolock,intr,tcp,actimeo=1800 0 0' | sudo tee -a /etc/fstab
+   sudo mount -a
+   ```
+3. Hubungkan ke folder project menggunakan **Symlink Linux**:
+   ```bash
+   cd ~/luxenary-invite
+
+   # 1. Pastikan folder data dan public sudah ada
+   mkdir -p data public
+
+   # 2. Pindahkan aset awal (jika belum ada di storage bersama)
+   cp -rn themes/* /mnt/shared_luxenary/themes/ 2>/dev/null || true
+   cp -rn public/demo/* /mnt/shared_luxenary/demo/ 2>/dev/null || true
+
+   # 3. Hapus folder lokal lama dan gantikan dengan Symlink transparan
+   rm -rf themes public/demo data/drafts public/published
+   ln -s /mnt/shared_luxenary/themes ~/luxenary-invite/themes
+   ln -s /mnt/shared_luxenary/demo ~/luxenary-invite/public/demo
+   ln -s /mnt/shared_luxenary/drafts ~/luxenary-invite/data/drafts
+   ln -s /mnt/shared_luxenary/published ~/luxenary-invite/public/published
+   ```
+4. Verifikasi symlink:
+   ```bash
+   ls -la ~/luxenary-invite/themes
+   ls -la ~/luxenary-invite/public/demo
+   # Hasilnya harus menampilkan pointer panah: themes -> /mnt/shared_luxenary/themes
+   ```
+
+### 10.4 Mengapa Pola Symlink Ini Jauh Lebih Aman?
+1. **Zero Code Changes:** Anda tidak perlu menambahkan variabel lingkungan `THEMES_DIR=/mnt/...` atau mengubah puluhan file TypeScript.
+2. **Kinerja Maksimal:** Node.js dan kernel Linux membaca symlink secara native di level filesystem tanpa latensi overhead library pihak ketiga.
+3. **Konsistensi Dua Arah:** Saat Admin mengunggah tema baru di VPS 1, file langsung tersimpan di `/mnt/shared_luxenary/themes/`. Detik itu juga, VPS 2 langsung dapat membaca dan menyajikan tema tersebut ke pengunjung tanpa proses replikasi manual!
+4. **Sentralisasi Database & R2:** Seluruh order, user, dan token login tersimpan di database PostgreSQL terpusat, dan semua gambar tersimpan di Cloudflare R2. Sistem menjadi murni *stateless compute with shared asset volume*.
+
 

@@ -43,6 +43,14 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - ONLY modify files explicitly requested or strictly required to solve the target bug.
 - NEVER make unsolicited refactorings, style overhauls, or changes to unrelated modules.
 
+## 5. DILARANG GENERATED DEFAULT / CODE PATTERN BAWAAN AI (ZERO DEFAULT-GENERATED POLICY)
+- **Dilarang Keras Menggunakan Template/Snippet Bawaan Generik AI:**
+  - JANGAN PERNAH menyalin atau menginjeksi snippet boilerplate generik AI tanpa meneliti konteks cascading CSS, spesifisitas kelas, dan elemen eksisting.
+  - JANGAN PERNAH menerapkan kelas animasi/styling umum (misal: selector massal `.active { opacity: 1 }` atau `.reveal-fade`) yang berisiko merusak styling khusus (seperti watermark atau elemen latar dengan opacity rendah 4-5%).
+  - DILARANG membiarkan perilaku default peramban yang merusak estetika antarmuka pengguna (seperti blok hitam kursor seleksi `::selection`, layout bergeser, atau default tap highlight). Setiap gaya seleksi dan interaksi kursor wajib dikustomisasi secara presisi agar harmonis dengan palet desain aktif.
+  - Seluruh komponen, animasi, dan interaksi WAJIB dikembangkan secara *tailor-made* (kustom, spesifik, dan presisi) sesuai desain yang telah disepakati pengguna.
+  - WAJIB verifikasi visual dan cascading CSS menyeluruh (hierarki layer z-index, seleksi mouse/kursor, hover state, mobile drag) sebelum menyatakan pekerjaan selesai.
+
 # 🎯 Expert Critic & Anti-Yes-Man Protocol (Kritikus Ahli Objektif & Ilmiah)
 - **Bertindak sebagai Kritikus Ahli yang Objektif dan Jujur:**
   - Gunakan seluruh keilmuan rekayasa perangkat lunak, arsitektur sistem, dan logika untuk menguji setiap ide, asumsi, atau instruksi.
@@ -63,8 +71,30 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 3. **Clean SaaS Design System:**
    - Use subtle indicators (such as 1.5px dot indicators) with muted modern color palettes rather than heavy emoji badges.
 
-# dilarang keras menggunakan hardcode jika itu seharusnya dinamis
-- jangan pernah membuat hardcode jika seharusnya bersifat dinamis, harus cek sebelum melakukan perubahan
+# 🔒 PROTOKOL GEMBOK EKSEKUSI & AUDIT KEPATUHAN MUTLAK (ZERO TOLERANCE)
+
+## 1. Gembok Eksekusi Dua Fase (Discussion Mode vs Execution Mode)
+- **STATUS DEFAULT = READ-ONLY (TERKUNCI):** Tool pengubah file (`replace_file_content`, `multi_replace_file_content`, `write_to_file`) **BERSTATUS TERKUNCI SECARA MUTLAK**.
+- **DILARANG KERAS MENGUBAH KODE SAAT DISKUSI:** Ketika pengguna sedang bertanya (*"kenapa..."*, *"apakah..."*, *"bagaimana..."*), memberi masukan, atau mengkritik desain, Agent HANYA BERHAK membaca file (`view_file`, `grep_search`) dan menjawab di teks.
+- **HANYA BISA DIBUKA DENGAN IZIN EKSPLISIT:** Tool edit HANYA BOLEH dipanggil jika pengguna secara tegas memberikan instruksi persetujuan eksekusi: *"eksekusi"*, *"terapkan"*, atau *"jalankan"* setelah proposal baris kode disajikan secara transparan.
+
+## 2. Larangan Mutlak Nilai Hardcode (Zero Hardcode Policy)
+- **DILARANG KERAS MENGGUNAKAN HARDCODE JIKA SEHARUSNYA DINAMIS:** Jangan pernah membuat nilai statis (`#hex` mati, `rgba(r, g, b, a)` mati) pada komponen yang seharusnya terikat ke palet tema atau database.
+- **WAJIB TOKEN PALET DINAMIS:** Seluruh warna kanvas, overlay gradient, kartu, tombol, dan border WAJIB menggunakan CSS tokens:
+  - `var(--bg-dark)`
+  - `var(--primary)`
+  - `var(--accent)`
+  - `color-mix(in srgb, var(--bg-dark) X%, transparent)`
+- **AUDIT ANTI-HARDCODE SEBELUM USUL:** Sebelum mengusulkan atau menerapkan perubahan kode CSS/HTML, Agent WAJIB memindai apakah ada nilai warna statis yang tertinggal. Jika ada, usulan tersebut batal dan wajib diperbaiki menjadi token dinamis.
+
+## 3. Kotak Status Kepatuhan Wajib (Visible Audit Block)
+Setiap kali Agent memberikan jawaban teknis yang berpotensi memodifikasi kode, Agent WAJIB menyertakan blok verifikasi kepatuhan:
+```
+[STATUS KEPATUHAN .AGENT]
+• Mode          : DISKUSI (Read-Only) / EKSEKUSI (Atas Izin Pengguna)
+• Anti-Hardcode : LOLOS (Token dinamis terverifikasi / Tidak ada hex mati)
+• Status Izin   : Menunggu arahan / Mendapat izin eksplisit
+```
 
 # Protokol Wajib: Sinkronisasi & Pembaruan Dokumentasi Otomatis (Auto-Update on Edit/Push)
 - **WAJIB SINKRONISASI 3 DOKUMEN MASTER:** Setiap kali selesai melakukan pengeditan kode (fitur baru, bugfix, refactor, skema database, atau endpoint baru), dan **SEBELUM/SAAT melakukan push ke Git remote (GitHub)**, Agent **WAJIB SECARA OTOMATIS** memeriksa seluruh kode faktual dan memperbarui ketiga dokumen master:

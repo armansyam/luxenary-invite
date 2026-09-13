@@ -40,6 +40,7 @@ const THEME_MAP: Record<string, { file: string; folder: "premium" | "traditional
   "badrika": { file: "badrika.html", folder: "traditional" },
   "mayang": { file: "mayang.html", folder: "traditional" },
   "candani": { file: "candani.html", folder: "traditional" },
+  "lagaligo": { file: "lagaligo.html", folder: "traditional" },
 
   // Modern Series
   "wave": { file: "wave.html", folder: "modern" },
@@ -326,22 +327,21 @@ const INLINE_LIVE_EDITOR_SCRIPT = `
   }
   .lux-live-editor-dock {
     position: fixed;
-    top: 16px;
-    left: 50%;
-    transform: translateX(-50%);
+    top: 14px;
+    right: 14px;
     z-index: 999999;
-    background: rgba(15, 23, 42, 0.96);
+    background: rgba(15, 23, 42, 0.92);
     border: 1px solid rgba(212, 175, 55, 0.4);
-    padding: 8px 18px;
+    padding: 6px 14px;
     border-radius: 50px;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.8), 0 0 20px rgba(212, 175, 55, 0.2);
     backdrop-filter: blur(16px);
     color: #ffffff;
     font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    font-size: 12px;
+    font-size: 11px;
     user-select: none;
   }
   .lux-dock-btn {
@@ -384,8 +384,164 @@ const INLINE_LIVE_EDITOR_SCRIPT = `
   if (!isEditMode) return;
 
   const pendingChanges = {};
+  const viewRole = new URLSearchParams(window.location.search).get('view') || (window.innerWidth < 600 ? 'mobile' : 'desktop');
+
+  // Universal open invitation with cross-iframe synchronization
+  function executeUniversalOpenInvitation(isRemote) {
+    try {
+      if (typeof window.__luxOriginalOpenInvitation === 'function') {
+        window.__luxOriginalOpenInvitation();
+      } else if (typeof window.openInvitation === 'function' && window.openInvitation !== executeUniversalOpenInvitation) {
+        window.openInvitation();
+      }
+    } catch(err) {
+      console.warn("Original openInvitation execution error:", err);
+    }
+    // Universal cover removal for all themes (Candani, Aurelia, Badrika, etc.)
+    const covers = document.querySelectorAll('#coverScreen, #coverOverlay, .cover-screen, .cover-overlay, .envelope-overlay, .cover-container');
+    covers.forEach(function(c) {
+      c.classList.add('opened', 'slide-up-hidden', 'hidden');
+      c.style.transition = 'opacity 0.5s ease, transform 0.6s ease';
+      c.style.opacity = '0';
+      c.style.pointerEvents = 'none';
+      setTimeout(function() { c.style.display = 'none'; }, 600);
+    });
+    const dock = document.querySelector('.bottom-dock');
+    if (dock) dock.classList.remove('dock-hidden');
+    const musicFab = document.querySelector('.music-fab');
+    if (musicFab) musicFab.classList.remove('fab-hidden');
+
+    // Trigger reveal animations
+    document.querySelectorAll('.lux-reveal, .lux-reveal-top').forEach(function(el) {
+      el.classList.add('revealed');
+    });
+
+    // Notify parent dashboard so sibling iframe also opens
+    if (!isRemote && window.parent && window.parent !== window) {
+      window.parent.postMessage({
+        type: 'LUX_INVITATION_OPENED',
+        senderRole: viewRole
+      }, '*');
+    }
+  }
+
+  function setupOpenInvitationSync() {
+    function hook() {
+      if (typeof window.openInvitation === 'function' && window.openInvitation !== executeUniversalOpenInvitation && !window.__luxOriginalOpenInvitation) {
+        window.__luxOriginalOpenInvitation = window.openInvitation;
+        window.openInvitation = function(isRemote) {
+          executeUniversalOpenInvitation(isRemote);
+        };
+      }
+      document.querySelectorAll('.btn-buka, .btn-buka-undangan, .btn-open-issue, .cover-btn-open, .envelope-text-btn, [onclick*="openInvitation"], #coverOpenBtn').forEach(function(btn) {
+        if (!btn.__luxBoundOpen) {
+          btn.__luxBoundOpen = true;
+          btn.addEventListener('click', function() {
+            executeUniversalOpenInvitation(false);
+          });
+        }
+      });
+    }
+    hook();
+    window.addEventListener('load', hook);
+    setTimeout(hook, 300);
+    setTimeout(hook, 1000);
+  }
+
+  // ==========================================
+  // TWO-WAY DUAL-VIEW SCROLL SYNCHRONIZATION
+  // ==========================================
+  let isProgrammaticScroll = false;
+  let programmaticScrollTimer = null;
+  let lastReportedRatio = -1;
+  let scrollTicking = false;
+
+  function findScrollContainer() {
+    const candidate = document.querySelector('#rightPanel, .right-panel, .main-scroll-panel, .scroll-container');
+    if (candidate && candidate.scrollHeight > candidate.clientHeight + 60) {
+      return candidate;
+    }
+    return window;
+  }
+
+  function getScrollMetrics() {
+    const container = findScrollContainer();
+    if (container === window) {
+      const doc = document.documentElement || document.body;
+      const current = window.scrollY || doc.scrollTop || 0;
+      const max = Math.max(1, (doc.scrollHeight || document.body.scrollHeight) - window.innerHeight);
+      return {
+        container: window,
+        current: current,
+        max: max,
+        ratio: Math.max(0, Math.min(1, current / max))
+      };
+    } else {
+      const current = container.scrollTop;
+      const max = Math.max(1, container.scrollHeight - container.clientHeight);
+      return {
+        container: container,
+        current: current,
+        max: max,
+        ratio: Math.max(0, Math.min(1, current / max))
+      };
+    }
+  }
+
+  function applyScrollRatio(ratio) {
+    if (typeof ratio !== 'number' || isNaN(ratio)) return;
+    const clampedRatio = Math.max(0, Math.min(1, ratio));
+    const metrics = getScrollMetrics();
+    const targetScroll = Math.round(clampedRatio * metrics.max);
+
+    isProgrammaticScroll = true;
+    if (metrics.container === window) {
+      window.scrollTo({ top: targetScroll, behavior: 'auto' });
+    } else {
+      metrics.container.scrollTop = targetScroll;
+    }
+
+    if (programmaticScrollTimer) clearTimeout(programmaticScrollTimer);
+    programmaticScrollTimer = setTimeout(function() {
+      isProgrammaticScroll = false;
+    }, 150);
+  }
+
+  function onLocalScroll() {
+    if (isProgrammaticScroll) return;
+    if (!scrollTicking) {
+      window.requestAnimationFrame(function() {
+        scrollTicking = false;
+        if (isProgrammaticScroll) return;
+        const metrics = getScrollMetrics();
+        const ratio = metrics.ratio;
+        if (Math.abs(ratio - lastReportedRatio) < 0.002) return;
+        lastReportedRatio = ratio;
+
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({
+            type: 'LUX_SCROLL_SYNC',
+            senderRole: viewRole,
+            ratio: ratio
+          }, '*');
+        }
+      });
+      scrollTicking = true;
+    }
+  }
+
+  function setupScrollSync() {
+    window.addEventListener('scroll', onLocalScroll, { passive: true });
+    document.addEventListener('scroll', onLocalScroll, { passive: true });
+    const splitContainer = document.querySelector('#rightPanel, .right-panel, .main-scroll-panel, .scroll-container');
+    if (splitContainer) {
+      splitContainer.addEventListener('scroll', onLocalScroll, { passive: true });
+    }
+  }
 
   function createEditorDock() {
+    // Sembunyikan dock mengambang jika berada di dalam iframe dasbor agar kanvas undangan 100% bersih
+    if (window !== window.top) return;
     if (document.getElementById('luxLiveEditorDock')) return;
     const dock = document.createElement('div');
     dock.id = 'luxLiveEditorDock';
@@ -399,41 +555,37 @@ const INLINE_LIVE_EDITOR_SCRIPT = `
       <span id="luxChangeCounter" style="font-size: 11px; opacity: 0.85;">Klik teks mana saja untuk mengedit</span>
       <button id="luxSaveBtn" class="lux-dock-btn lux-dock-btn-save" style="display:none;" onclick="window.luxSaveInlineChanges()">Simpan</button>
       <span style="opacity: 0.35; margin: 0 8px;">|</span>
-      <button onclick="if(window.__luxOriginalOpenInvitation) window.__luxOriginalOpenInvitation();" style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fff; padding:4px 10px; border-radius:20px; font-size:10px; cursor:pointer;">Buka Amplop</button>
+      <button onclick="if(typeof window.openInvitation === 'function') { window.openInvitation(); } else if(window.__luxOriginalOpenInvitation) { window.__luxOriginalOpenInvitation(); }" style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fff; padding:4px 10px; border-radius:20px; font-size:10px; cursor:pointer;">Buka Amplop</button>
     \`;
     document.body.appendChild(dock);
-
-    // Override openInvitation to prevent accidental opening when clicking text to edit
-    if (typeof window.openInvitation === 'function' && !window.__luxOriginalOpenInvitation) {
-      window.__luxOriginalOpenInvitation = window.openInvitation;
-      window.openInvitation = function() {
-        const e = window.event;
-        if (e && e.target && (e.target.hasAttribute('contenteditable') || e.target.closest('[contenteditable="true"]'))) {
-          console.log("Click intercepted for editing.");
-          return;
-        }
-        window.__luxOriginalOpenInvitation();
-      };
-    }
   }
 
   function initEditableFields() {
+    setupOpenInvitationSync();
+    setupScrollSync();
     createEditorDock();
 
     // Map common text tags if data-lux-field not explicitly set
     const fallbackMappings = [
       { sel: '#section-quote p.font-royal-quote, #section-quote p:not(.sec-eyebrow)', field: 'openingQuote' },
       { sel: '#section-quote span:last-of-type', field: 'openingQuoteRef' },
-      { sel: '#section-quote .sec-heading', field: 'customLabels.quoteTitle' },
-      { sel: '#section-couple .sec-heading', field: 'customLabels.coupleTitle' },
-      { sel: '#section-events .sec-heading', field: 'customLabels.eventsTitle' },
+      { sel: '#section-quote .opening-greeting, #section-quote span[style*="font-size: 2rem"], .opening-greeting, .opening-bismillah', field: 'customLabels.openingGreeting' },
+      { sel: '#section-quote .sec-eyebrow, #section-quote .quote-eyebrow, .opening-sub-title', field: 'customLabels.quoteEyebrow' },
+      { sel: '#section-quote .sec-heading, #home .sec-heading', field: 'customLabels.quoteTitle' },
+      { sel: '.cover-badge, .cover-top p, .envelope-badge, .cover-tagline', field: 'customLabels.coverBadge' },
+      { sel: '#section-couple .sec-heading, #couple .sec-main-title', field: 'customLabels.coupleTitle' },
+      { sel: '#section-couple .sec-subheading, #couple .sec-sub', field: 'customLabels.coupleSub' },
+      { sel: '#section-events .sec-heading, #events .sec-main-title', field: 'customLabels.eventsTitle' },
+      { sel: '#section-events .sec-subheading, #events .sec-sub', field: 'customLabels.eventsSub' },
       { sel: '#moments .sec-main-title', field: 'customLabels.galleryTitle' },
-      { sel: '#story .journey-title', field: 'customLabels.storyTitle' },
+      { sel: '#story .journey-title, #story .sec-main-title', field: 'customLabels.storyTitle' },
       { sel: '#gift .sec-main-title', field: 'customLabels.giftTitle' },
-      { sel: '#section-wishes .sec-heading', field: 'customLabels.wishesTitle' },
-      { sel: '.btn-buka-undangan, .cover-btn-open', field: 'customLabels.openBtn' },
-      { sel: '#btnSubmit, .btn-rsvp-submit, .btn-submit-rsvp', field: 'customLabels.rsvpBtnText' },
-      { sel: '#section-wishes .sec-main-title, #section-rsvp .sec-main-title', field: 'customLabels.rsvpTitle' }
+      { sel: '#section-wishes .sec-heading, #rsvp .sec-main-title', field: 'customLabels.wishesTitle' },
+      { sel: '#section-wishes .sec-subheading, #rsvp .sec-sub', field: 'customLabels.wishesSub' },
+      { sel: '#section-wishes .sec-main-title, #section-rsvp .sec-main-title', field: 'customLabels.rsvpTitle' },
+      { sel: '.groom-name, .groom-title, #groomName', field: 'groomName' },
+      { sel: '.bride-name, .bride-title, #brideName', field: 'brideName' },
+      { sel: '.wedding-tagline, .hero-tagline', field: 'weddingTagline' }
     ];
 
     fallbackMappings.forEach(m => {
@@ -455,6 +607,18 @@ const INLINE_LIVE_EDITOR_SCRIPT = `
     });
 
     document.querySelectorAll('[data-lux-field]').forEach(el => {
+      const isOpenBtn = el.classList.contains('btn-buka') ||
+                        el.classList.contains('btn-buka-undangan') ||
+                        el.classList.contains('btn-open-issue') ||
+                        el.classList.contains('cover-btn-open') ||
+                        el.classList.contains('envelope-text-btn') ||
+                        el.closest('.btn-buka, .btn-buka-undangan, .btn-open-issue, .cover-btn-open, .envelope-text-btn, [onclick*="openInvitation"]');
+
+      // Do not hijack the open invitation button; allow it to open the invitation on click
+      if (isOpenBtn) {
+        return;
+      }
+
       el.setAttribute('contenteditable', 'true');
       el.setAttribute('spellcheck', 'false');
 
@@ -509,6 +673,7 @@ const INLINE_LIVE_EDITOR_SCRIPT = `
         if (window.parent && window.parent !== window) {
           window.parent.postMessage({
             type: 'LUX_INLINE_EDIT_CHANGE',
+            senderRole: viewRole,
             field: fieldKey,
             value: newVal,
             allChanges: pendingChanges
@@ -552,7 +717,7 @@ const INLINE_LIVE_EDITOR_SCRIPT = `
     }
   };
 
-  // Live Palette Synchronization Listener
+  // Live Palette & Remote Dual-View Synchronization Listener
   window.addEventListener('message', function(e) {
     if (!e.data || typeof e.data !== 'object') return;
     if (e.data.type === 'LUX_PALETTE_CHANGED' && e.data.palette) {
@@ -568,6 +733,43 @@ const INLINE_LIVE_EDITOR_SCRIPT = `
         if (p.bgLight) el.style.setProperty('--bg-light', p.bgLight);
         if (p.bgDark) el.style.setProperty('--bg-dark', p.bgDark);
       });
+    } else if (e.data.type === 'LUX_REMOTE_OPEN_INVITATION') {
+      executeUniversalOpenInvitation(true);
+    } else if (e.data.type === 'LUX_SCROLL_SYNC') {
+      if (typeof e.data.ratio === 'number') {
+        applyScrollRatio(e.data.ratio);
+      }
+    } else if (e.data.type === 'LUX_REMOTE_EDIT_CHANGE') {
+      const fieldKey = e.data.field;
+      const val = e.data.value;
+      if (!fieldKey) return;
+      pendingChanges[fieldKey] = val;
+      const matching = document.querySelectorAll('[data-lux-field="' + fieldKey + '"]');
+      matching.forEach(function(el) {
+        if (document.activeElement !== el) {
+          const svg = el.querySelector('svg');
+          if (svg) {
+            let textFound = false;
+            for (let i = 0; i < el.childNodes.length; i++) {
+              if (el.childNodes[i].nodeType === Node.TEXT_NODE) {
+                el.childNodes[i].nodeValue = ' ' + val;
+                textFound = true;
+                break;
+              }
+            }
+            if (!textFound) {
+              el.appendChild(document.createTextNode(' ' + val));
+            }
+          } else {
+            el.innerText = val;
+          }
+        }
+      });
+      const counter = document.getElementById('luxChangeCounter');
+      const saveBtn = document.getElementById('luxSaveBtn');
+      const changeCount = Object.keys(pendingChanges).length;
+      if (counter && changeCount > 0) counter.innerText = changeCount + ' teks diubah (belum tersimpan)';
+      if (saveBtn && changeCount > 0) saveBtn.style.display = 'inline-block';
     }
   });
 
@@ -1008,6 +1210,51 @@ const UNIFIED_CLIENT_RUNTIME_SCRIPT = `
     syncActiveTogglesUI();
     initHomeDockGuard();
   });
+
+  // Universal PostMessage Dispatcher (Live Palette Sync & Section Smooth Scroll)
+  window.addEventListener('message', function(e) {
+    if (!e.data || typeof e.data !== 'object') return;
+    if (e.data.type === 'LUX_PALETTE_CHANGED' && e.data.palette) {
+      var p = e.data.palette;
+      var targets = [document.body, document.documentElement].filter(Boolean);
+      targets.forEach(function(el) {
+        if (p.primary) el.style.setProperty('--gold', p.primary);
+        if (p.secondary) el.style.setProperty('--gold-dim', p.secondary);
+        if (p.bgLight) el.style.setProperty('--gold-pale', p.bgLight);
+        if (p.primary) el.style.setProperty('--primary', p.primary);
+        if (p.secondary) el.style.setProperty('--secondary', p.secondary);
+        if (p.accent) el.style.setProperty('--accent', p.accent);
+        if (p.bgLight) el.style.setProperty('--bg-light', p.bgLight);
+        if (p.bgDark) el.style.setProperty('--bg-dark', p.bgDark);
+      });
+    }
+    if (e.data.type === 'LUX_SCROLL_TO_SECTION' && e.data.sectionId) {
+      var sid = e.data.sectionId;
+      if (sid === 'cover' || sid === 'coverOverlay') {
+        var cov = document.getElementById('coverOverlay');
+        if (cov) {
+          cov.classList.remove('opened');
+          cov.style.display = '';
+        }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        var covEl = document.getElementById('coverOverlay');
+        if (covEl && !covEl.classList.contains('opened')) {
+          covEl.classList.add('opened');
+        }
+        var sidAlias = sid === 'event' ? 'events' : (sid === 'events' ? 'event' : (sid === 'gallery' ? 'moments' : (sid === 'moments' ? 'gallery' : sid)));
+        var target = document.getElementById(sid) ||
+                     document.getElementById(sidAlias) ||
+                     document.getElementById('section-' + sid) ||
+                     document.getElementById('section-' + sidAlias) ||
+                     document.querySelector('[data-section="' + sid + '"]') ||
+                     document.querySelector('.' + sid + '-section');
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+    }
+  });
 })();
 </script>
 `;
@@ -1021,6 +1268,8 @@ export async function renderTemplateFile(
   data: Record<string, any>,
   options?: { editMode?: boolean; invitationId?: string }
 ): Promise<string> {
+
+
   const info = THEME_MAP[templateName] || { file: `${templateName}.html`, folder: "premium" };
 
   let tplPath = path.join(process.cwd(), "themes", info.folder, info.file);
@@ -1046,9 +1295,22 @@ export async function renderTemplateFile(
     }
 
     if (await fileExists(draftPath)) {
-      // Piring sudah ada, gunakan piring draft
-      tplPath = draftPath;
-      draftFound = true;
+      // Periksa apakah piring draft cocok dengan templateName yang diminta
+      try {
+        const draftContentHead = await fs.promises.readFile(draftPath, "utf-8");
+        const themeMatch = draftContentHead.slice(0, 300).match(/<!--\s*lux-theme:\s*([a-zA-Z0-9_-]+)\s*-->/);
+        if (themeMatch && themeMatch[1].toLowerCase() !== templateName.toLowerCase()) {
+          // Tema telah berganti! Hapus draft usang agar draft baru disalin dari master tema baru
+          await fs.promises.unlink(draftPath).catch(() => {});
+          draftFound = false;
+        } else {
+          // Piring cocok atau legacy draft, gunakan piring draft
+          tplPath = draftPath;
+          draftFound = true;
+        }
+      } catch {
+        draftFound = false;
+      }
     }
   }
 
@@ -1058,6 +1320,7 @@ export async function renderTemplateFile(
       const premiumCheck = path.join(process.cwd(), "themes", "premium", `${templateName}.html`);
       const traditionalCheck = path.join(process.cwd(), "themes", "traditional", `${templateName}.html`);
       const modernLegacyCheck = path.join(process.cwd(), "themes", "modern", `${templateName}.html`);
+      const rootThemesCheck = path.join(process.cwd(), "themes", `${templateName}.html`);
       
       if (await fileExists(premiumCheck)) {
         tplPath = premiumCheck;
@@ -1065,6 +1328,8 @@ export async function renderTemplateFile(
         tplPath = traditionalCheck;
       } else if (await fileExists(modernLegacyCheck)) {
         tplPath = modernLegacyCheck;
+      } else if (await fileExists(rootThemesCheck)) {
+        tplPath = rootThemesCheck;
       } else {
         // Tidak menggunakan fallback (Sesuai instruksi: Wajib memilih tema)
         return `
@@ -1077,11 +1342,15 @@ export async function renderTemplateFile(
       }
     }
 
-    // Karena draft belum ada dan master file tersedia, copy dari master ke draft
+    // Karena draft belum ada dan master file tersedia, beri tag tema dan simpan ke draft
     if (options?.invitationId) {
       const draftPath = path.join(process.cwd(), "data", "drafts", `${options.invitationId}.html`);
       try {
-        await fs.promises.copyFile(tplPath, draftPath);
+        const masterContent = await fs.promises.readFile(tplPath, "utf-8");
+        const taggedContent = masterContent.startsWith("<!-- lux-theme:")
+          ? masterContent
+          : `<!-- lux-theme:${templateName} -->\n${masterContent}`;
+        await fs.promises.writeFile(draftPath, taggedContent, "utf-8");
         tplPath = draftPath;
       } catch (err) {
         console.error("Failed to copy master theme to draft:", err);
@@ -1652,7 +1921,10 @@ export async function renderTemplateFile(
     /<([a-zA-Z0-9]+)\b([^>]*data-lux-field="customLabels\.([^"]+)"[^>]*)>([\s\S]*?)<\/\1>/gi,
     (match, tagName, attrs, labelKey, innerContent) => {
       const val = customLabels[labelKey];
-      if (val !== undefined && val !== null && val !== "") {
+      if (val !== undefined && val !== null) {
+        if (val === "") {
+          return `<${tagName}${attrs}></${tagName}>`;
+        }
         const svgMatch = innerContent.match(/<svg[\s\S]*?<\/svg>/i);
         const svgPrefix = svgMatch ? `${svgMatch[0]} ` : "";
         return `<${tagName}${attrs}>${svgPrefix}${escapeHtmlAttr(String(val))}</${tagName}>`;

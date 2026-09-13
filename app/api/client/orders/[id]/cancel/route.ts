@@ -67,7 +67,15 @@ export async function POST(
       },
     });
 
-    // 4. Emit SSE ke browser klien agar antarmuka kasir langsung reset secara real-time
+    // 4. Lepaskan PromoHold agar kupon promo kembali tersedia (RELEASED) jika order menggunakan kupon
+    try {
+      const { releaseOrderPromoHold } = await import("@/lib/marketing");
+      await releaseOrderPromoHold(orderId);
+    } catch (promoErr) {
+      console.error("[Cancel Order] Gagal melepaskan promo hold:", promoErr);
+    }
+
+    // 5. Emit SSE ke browser klien agar antarmuka kasir langsung reset secara real-time
     try {
       const { paymentEmitter } = await import("@/lib/paymentEvents");
       paymentEmitter.emit(orderId, { status: "EXPIRED", planType: order.planType });

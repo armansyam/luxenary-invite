@@ -68,10 +68,10 @@ export async function POST() {
           .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
           .join(" ");
 
-        const hasStory = htmlContent.includes("{{storySectionHtml}}") || htmlContent.includes("{{storyHtml}}");
-        const hasGallery = htmlContent.includes("{{gallerySectionHtml}}") || htmlContent.includes("{{galleryHtml}}");
-        const hasGift = htmlContent.includes("{{giftSectionHtml}}") || htmlContent.includes("{{giftHtml}}");
-        const hasQr = htmlContent.includes("{{qrAccessSectionHtml}}") || htmlContent.includes("{{qrDockButtonHtml}}");
+        const hasStory = htmlContent.includes("{{storySectionHtml}}") || htmlContent.includes("{{storyHtml}}") || htmlContent.includes("{{storyItemsHtml}}");
+        const hasGallery = htmlContent.includes("{{gallerySectionHtml}}") || htmlContent.includes("{{galleryHtml}}") || htmlContent.includes("{{galleryPhotosHtml}}") || htmlContent.includes("{{galleryItemsHtml}}");
+        const hasGift = htmlContent.includes("{{giftSectionHtml}}") || htmlContent.includes("{{giftHtml}}") || htmlContent.includes("{{giftCardsHtml}}") || htmlContent.includes("{{bankListHtml}}");
+        const hasQr = htmlContent.includes("{{qrAccessSectionHtml}}") || htmlContent.includes("{{qrDockButtonHtml}}") || htmlContent.includes("{{qrAccessCardHtml}}") || htmlContent.includes("{{qrCoverButtonHtml}}");
 
         discovered.push({
           id,

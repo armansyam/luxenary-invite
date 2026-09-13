@@ -276,7 +276,7 @@
       box-sizing: border-box;
       text-align: center;
       padding: 4rem 1.5rem 6.5rem;
-      background: #050507;
+      background: transparent;
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
@@ -285,6 +285,7 @@
     .site-footer.no-closing-photo {
       justify-content: center;
       align-items: center;
+      background: transparent;
     }
     .site-footer.has-closing-photo {
       justify-content: flex-end;
@@ -538,7 +539,7 @@
     {{qrAccessSectionHtml}}
 
     <!-- 15. FOOTER / THANK YOU (Adaptive Full-Height 100vh) -->
-    <footer class="site-footer {{closingPhotoClass}}" id="footer">
+    <footer class="site-footer {{closingPhotoClass}}" id="footer" style="{{closingBgStyle}}">
       <div class="closing-content">
         <p style="font-size:0.85rem; color:rgba(255,255,255,0.75); line-height:1.7; margin-bottom:1.5rem;">
           Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu.

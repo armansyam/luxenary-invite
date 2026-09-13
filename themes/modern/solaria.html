@@ -317,7 +317,6 @@
       box-sizing: border-box;
       position: relative;
       text-align: center;
-      border-bottom: 1px solid rgba(229, 152, 102, 0.18);
     }
 
     .sec-content-box {
@@ -950,7 +949,7 @@
       box-sizing: border-box;
       text-align: center;
       padding: 4rem 1.5rem 6.5rem;
-      background: #190f0a;
+      background: transparent;
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
@@ -960,6 +959,7 @@
     .site-footer.no-closing-photo {
       justify-content: center;
       align-items: center;
+      background: transparent;
     }
 
     .site-footer.has-closing-photo {
@@ -971,7 +971,7 @@
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.2) 0%, rgba(25, 15, 10, 0.6) 50%, rgba(25, 15, 10, 0.95) 100%);
+      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.2) 0%, color-mix(in srgb, var(--bg-dark, #190f0a) 60%, transparent) 50%, color-mix(in srgb, var(--bg-dark, #190f0a) 95%, transparent) 100%);
       pointer-events: none;
       z-index: 1;
     }
@@ -998,7 +998,7 @@
       <circle cx="32" cy="15" r="3" fill="#e59866" />
     </svg>
 
-    <p class="cover-badge">WALIMATUL 'URSY &bull; MODERN SUNSET</p>
+    <p class="cover-badge" data-lux-field="customLabels.coverBadge">{{coverBadge}}</p>
     <h1 class="cover-names">{{firstName}} &amp; {{secondName}}</h1>
 
     <div class="cover-guest-card">
@@ -1036,10 +1036,9 @@
       <!-- SEKSI 1: KUTIPAN & COUNTDOWN (100VH STANDALONE) -->
       <section id="section-quote" class="slide-section">
         <div class="sec-content-box reveal-on-scroll">
-          <span style="font-size: 2rem; color: var(--sunset-amber); display: block; margin-bottom: 0.4rem;">بِسْمِ
-            اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</span>
-          <span class="sec-eyebrow">WALIMATUL 'URSY</span>
-          <h2 class="sec-heading" style="margin-bottom: 0.8rem;">Doa &amp; Harapan</h2>
+          <span class="opening-greeting" data-lux-field="customLabels.openingGreeting" style="font-size: 2rem; color: var(--sunset-amber); display: block; margin-bottom: 0.4rem;">{{openingGreeting}}</span>
+          <span class="sec-eyebrow" data-lux-field="customLabels.quoteEyebrow">{{quoteSectionEyebrow}}</span>
+          <h2 class="sec-heading" data-lux-field="customLabels.quoteTitle" style="margin-bottom: 0.8rem;">{{quoteSectionTitle}}</h2>
           <p
             style="font-size: 0.94rem; line-height: 1.9; color: rgba(251,238,230,0.9); max-width: 420px; margin: 0 auto; font-style: italic; font-family: 'Playfair Display', serif;">
             "{{openingQuote}}"
@@ -1080,8 +1079,8 @@
       <!-- SEKSI 2: MEMPELAI (100VH STANDALONE) -->
       <section id="section-couple" class="slide-section">
         <div class="sec-content-box reveal-on-scroll">
-          <h2 class="sec-heading">Mempelai</h2>
-          <p class="sec-subheading">Dua Jiwa Menjalin Janji Suci</p>
+          <h2 class="sec-heading" data-lux-field="customLabels.coupleTitle">{{coupleSectionTitle}}</h2>
+          <p class="sec-subheading" data-lux-field="customLabels.coupleSub">{{coupleSectionSub}}</p>
 
           <!-- GROOM -->
           <div class="couple-card">
@@ -1108,8 +1107,8 @@
       <!-- SEKSI 3: RANGKAIAN ACARA (100VH STANDALONE) -->
       <section id="section-events" class="slide-section">
         <div class="sec-content-box reveal-on-scroll">
-          <h2 class="sec-heading">Rangkaian Acara</h2>
-          <p class="sec-subheading">Waktu &amp; Lokasi Acara</p>
+          <h2 class="sec-heading" data-lux-field="customLabels.eventsTitle">{{eventsSectionTitle}}</h2>
+          <p class="sec-subheading" data-lux-field="customLabels.eventsSub">{{eventsSectionSub}}</p>
           {{eventDataHtml}}
         </div>
       </section>
@@ -1127,8 +1126,8 @@
       <!-- SEKSI 5: BUKU TAMU & UCAPAN (100VH STANDALONE) -->
       <section id="section-wishes" class="slide-section">
         <div class="sec-content-box reveal-on-scroll">
-          <h2 class="sec-heading">Ucapan &amp; Doa Restu</h2>
-          <p class="sec-subheading">Kirimkan Pesan Manis Untuk Mempelai</p>
+          <h2 class="sec-heading" data-lux-field="customLabels.wishesTitle">{{wishesSectionTitle}}</h2>
+          <p class="sec-subheading" data-lux-field="customLabels.wishesSub">{{wishesSectionSub}}</p>
         <div class="rsvp-form-wrap">
           <form id="rsvpForm" onsubmit="luxSubmitRsvp(event)">
             <div class="form-row">
@@ -1163,7 +1162,7 @@
       {{qrAccessSectionHtml}}
 
       <!-- FOOTER (Adaptive Full-Height 100vh) -->
-      <footer class="site-footer {{closingPhotoClass}}">
+      <footer class="site-footer {{closingPhotoClass}}" style="{{closingBgStyle}}">
         <div class="closing-content">
           <p
             style="font-size: 0.85rem; color: rgba(255,255,255,0.8); line-height: 1.7; margin-bottom: 1.5rem; max-width: 480px; margin-left: auto; margin-right: auto;">

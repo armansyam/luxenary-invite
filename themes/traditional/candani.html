@@ -195,7 +195,6 @@
       box-sizing: border-box;
       position: relative;
       text-align: center;
-      border-bottom: 1px solid var(--floral-border-dim);
     }
 
     .sec-content-box {
@@ -611,7 +610,7 @@
       box-sizing: border-box;
       text-align: center;
       padding: 4rem 1.5rem 6.5rem;
-      background: var(--bg-dark, #140c08);
+      background: transparent;
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
@@ -620,6 +619,7 @@
     .site-footer.no-closing-photo {
       justify-content: center;
       align-items: center;
+      background: transparent;
     }
     .site-footer.has-closing-photo {
       justify-content: flex-end;
@@ -653,7 +653,7 @@
       <path d="M32 46V58" stroke="var(--floral-terracotta-light)" stroke-width="2.5" stroke-linecap="round"/>
     </svg>
 
-    <p class="cover-badge" data-lux-field="customLabels.theWedding">{{weddingTagline}}</p>
+    <p class="cover-badge" data-lux-field="customLabels.coverBadge">{{coverBadge}}</p>
     <h1 class="cover-names">{{firstName}} &amp; {{secondName}}</h1>
     
     <div class="cover-guest-card">
@@ -687,9 +687,9 @@
       <!-- SEKSI 1: DOA & COUNTDOWN (100VH STANDALONE) -->
       <section id="home" class="slide-section sec-home">
         <div class="sec-content-box reveal-on-scroll">
-          <span style="font-size: 1.8rem; color: var(--floral-terracotta-light); display: block; margin-bottom: 0.2rem; text-shadow: 0 2px 10px rgba(0,0,0,0.85);">﷽</span>
+          <span class="opening-greeting" data-lux-field="customLabels.openingGreeting" style="font-size: 1.8rem; color: var(--floral-terracotta-light); display: block; margin-bottom: 0.2rem; text-shadow: 0 2px 10px rgba(0,0,0,0.85);">{{openingGreeting}}</span>
           <span class="sec-eyebrow" data-lux-field="customLabels.theWedding" style="font-size: 0.68rem; letter-spacing: 0.25em; margin-bottom: 0.2rem; text-shadow: 0 2px 10px rgba(0,0,0,0.85);">{{weddingTagline}}</span>
-          <h2 class="sec-heading" style="font-size: clamp(2.1rem, 7vw, 2.8rem); margin-bottom: 0.15rem; text-shadow: 0 2px 16px rgba(0,0,0,0.9);">Doa &amp; Harapan</h2>
+          <h2 class="sec-heading" data-lux-field="customLabels.quoteTitle" style="font-size: clamp(2.1rem, 7vw, 2.8rem); margin-bottom: 0.15rem; text-shadow: 0 2px 16px rgba(0,0,0,0.9);">{{quoteSectionTitle}}</h2>
           <svg class="floral-divider-ornament" viewBox="0 0 160 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 110px; height: 14px; margin: 0.2rem auto 0.6rem;">
             <path d="M10 12h50M100 12h50" stroke="var(--floral-border)" stroke-width="1.2" stroke-linecap="round"/>
             <circle cx="80" cy="12" r="3" fill="var(--floral-terracotta-light)"/>
@@ -886,7 +886,7 @@
       {{qrAccessSectionHtml}}
 
       <!-- FOOTER (Adaptive Full-Height 100vh) -->
-      <footer class="site-footer {{closingPhotoClass}}">
+      <footer class="site-footer {{closingPhotoClass}}" style="{{closingBgStyle}}">
         <div class="closing-content">
           <p class="font-floral-sans" style="font-size: 0.85rem; color: rgba(251,247,244,0.8); line-height: 1.7; margin-bottom: 1.5rem; max-width: 480px; margin-left: auto; margin-right: auto;">
             Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu bagi kami.

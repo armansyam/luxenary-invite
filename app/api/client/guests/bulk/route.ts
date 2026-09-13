@@ -55,6 +55,7 @@ export async function POST(req: NextRequest) {
         category: g.category || "UMUM",
         sessionInfo: g.sessionInfo || "Akad & Resepsi",
         guestQuota: Number(g.guestQuota) || 2,
+        tableNumber: g.tableNumber ? String(g.tableNumber).trim() : null,
         qrToken,
       };
     });

@@ -145,6 +145,7 @@ export async function POST(
 
     // Invalidate Next.js cache & Cloudflare Edge Cache
     try {
+      revalidatePath("/");
       revalidatePath("/demo");
       revalidatePath(`/demo/${themeId}`);
       revalidatePath("/api/public/themes");

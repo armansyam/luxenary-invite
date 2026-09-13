@@ -2,6 +2,7 @@ import { MidtransGateway } from "@/lib/gateways/midtrans";
 import { prisma } from "@/lib/prisma";
 import { applyUpgradePlan } from "@/lib/upgradeHelper";
 import { paymentEmitter } from "@/lib/paymentEvents";
+import { processOrderPaidMarketing, releaseOrderPromoHold } from "@/lib/marketing";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
@@ -148,6 +149,9 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ status: "ok", note: "already_processed" });
       }
 
+      // Konsumsi PromoHold dan catat komisi mitra jika ada
+      await processOrderPaidMarketing(orderId);
+
       // Update webhook log
       if (webhookLogId) {
         await prisma.webhookLog.update({
@@ -167,6 +171,9 @@ export async function POST(req: NextRequest) {
         where: { id: orderId, status: "PENDING" },
         data: { status: "EXPIRED" },
       });
+
+      // Lepaskan hold promo jika order kedaluwarsa
+      await releaseOrderPromoHold(orderId);
 
       // Push notifikasi real-time ke browser klien via SSE
       paymentEmitter.emit(orderId, { status: "EXPIRED", planType: order.planType });

@@ -40,44 +40,38 @@ function CheckoutContent() {
   const planParam = searchParams.get("plan");
   const orderIdParam = searchParams.get("order");
   const msgParam = searchParams.get("msg");
+  const editParam = searchParams.get("edit");
   const initializedRef = useRef<string | null>(null);
 
   const [planData, setPlanData] = useState<{ name: string; price: number; desc: string } | null>(null);
   const [orderId, setOrderId] = useState<string | null>(orderIdParam || null);
   const [invoiceNumber, setInvoiceNumber] = useState<string>("");
   const [loading, setLoading] = useState(true);
-  const [paying, setPaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Expiry State (Only applicable if gateway QRIS expired)
+  // Expiry State (Hanya jika order expired)
   const [isGatewayExpired, setIsGatewayExpired] = useState(false);
 
-  // Native QRIS State
-  const [qrData, setQrData] = useState<string | null>(null);
-  const [qrisSessionId, setQrisSessionId] = useState<string | null>(null);
-  const [countdownStr, setCountdownStr] = useState<string>("");
-  const [qrisExpiry, setQrisExpiry] = useState<number | null>(null);
+  // Payment Mode
+  const [paymentMode, setPaymentMode] = useState<"GATEWAY" | "MANUAL">("GATEWAY");
 
-  // Payment Mode & Bank Details
-  const [paymentMode, setPaymentMode] = useState<"BOTH" | "GATEWAY" | "MANUAL">("BOTH");
-  const [selectedMethod, setSelectedMethod] = useState<"GATEWAY" | "MANUAL">("GATEWAY");
-  const [bankInfo, setBankInfo] = useState({
-    name: "",
-    accountNumber: "",
-    accountHolder: "",
-    instructions: "",
-  });
+  // Promo Code & Marketing States
+  const [promoEnabled, setPromoEnabled] = useState(false);
+  const [promoOpen, setPromoOpen] = useState(false);
+  const [promoCodeInput, setPromoCodeInput] = useState("");
+  const [promoValidating, setPromoValidating] = useState(false);
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [appliedPromo, setAppliedPromo] = useState<{
+    code: string;
+    discountAmount: number;
+    discountType: string;
+    discountValue: number;
+    validUntil?: number | null;
+  } | null>(null);
+  const [promoCountdownStr, setPromoCountdownStr] = useState<string>("");
+  const [confirmingOrder, setConfirmingOrder] = useState(false);
 
-  // Proof of Transfer Upload State
-  const [proofFile, setProofFile] = useState<File | null>(null);
-  const [proofPreview, setProofPreview] = useState<string | null>(null);
-  const [uploadedProofUrl, setUploadedProofUrl] = useState<string | null>(null);
-  const [uploadingProof, setUploadingProof] = useState(false);
-  const [uploadSuccessMsg, setUploadSuccessMsg] = useState<string | null>(null);
-  const [rejectReason, setRejectReason] = useState<string | null>(null);
-  const [copiedBank, setCopiedBank] = useState(false);
   const [copiedAmount, setCopiedAmount] = useState(false);
-  const [adminWa, setAdminWa] = useState<string>("");
   const [platformName, setPlatformName] = useState("");
   const [serviceStatus, setServiceStatus] = useState<any>(null);
   // PlanType state — menyimpan ID paket aktif (ex: "PREMIUM", "TRADITIONAL") untuk regenerasi order yang benar
@@ -88,14 +82,7 @@ function CheckoutContent() {
   // Waktu offset untuk sinkronisasi timer klien dan server
   const [serverTimeOffset, setServerTimeOffset] = useState<number>(0);
   const [reloadKey, setReloadKey] = useState<number>(0);
-  // Durasi total QRIS saat pertama kali diterima (ms) — dari server, bukan hardcode
-  const [qrisTotalDuration, setQrisTotalDuration] = useState<number>(0);
-  const [isCheckingStatus, setIsCheckingStatus] = useState(false);
   const [retentionDays, setRetentionDays] = useState<number>(30);
-  const [statusModal, setStatusModal] = useState<{ show: boolean; title?: string; message: string; isError?: boolean }>({ show: false, message: "" });
-  // SSE connection error state — tampil saat koneksi realtime terputus (network blip / server restart)
-  const [sseError, setSseError] = useState(false);
-  const [iframeUrl, setIframeUrl] = useState<string | null>(null);
   const [cancellingOrder, setCancellingOrder] = useState(false);
   const [requestedDomain, setRequestedDomain] = useState<string | null>(null);
 
@@ -118,29 +105,6 @@ function CheckoutContent() {
     return `/dashboard/setup?order=${id}&plan=${plan}`;
   }, []);
 
-  // Transisi halus saat pembayaran terverifikasi lunas (PAID)
-  const [paidTransition, setPaidTransition] = useState<{
-    active: boolean;
-    redirectUrl: string;
-    planType?: string;
-  }>({ active: false, redirectUrl: "" });
-
-  const handlePaymentSuccess = useCallback((targetUrl: string, plan?: string) => {
-    setPaidTransition({ active: true, redirectUrl: targetUrl, planType: plan });
-    setTimeout(() => {
-      router.replace(targetUrl);
-    }, 1800);
-  }, [router]);
-
-  // Auto close status modal after 5 seconds
-  useEffect(() => {
-    if (statusModal.show) {
-      const timer = setTimeout(() => {
-        setStatusModal({ show: false, message: "" });
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [statusModal.show]);
 
   const isAdmin =
     (session?.user as any)?.isAdmin === true ||
@@ -169,14 +133,7 @@ function CheckoutContent() {
   const handleRegenerateOrder = useCallback(async () => {
     setLoading(true);
     setIsGatewayExpired(false);
-    setQrData(null);
-    setQrisSessionId(null);
-    setQrisExpiry(null);
     setError(null);
-    setProofFile(null);
-    setProofPreview(null);
-    setUploadedProofUrl(null);
-    setUploadSuccessMsg(null);
 
     // Untuk pesanan add-on atau upgrade, jangan buat order paket baru
     if (currentOrderType === "GALLERY_EXTENSION" || currentOrderType === "CUSTOM_DOMAIN_ADDON" || currentOrderType === "UPGRADE") {
@@ -236,27 +193,20 @@ function CheckoutContent() {
         setServiceStatus(settings.serviceStatus);
       }
 
-      if (settings.paymentMode) {
-        const mode = settings.paymentMode === "BOTH" ? "GATEWAY" : settings.paymentMode;
-        setPaymentMode(mode);
-        setSelectedMethod(mode);
+      if (typeof settings.promoEnabled === "boolean") {
+        setPromoEnabled(settings.promoEnabled);
       }
 
-      setBankInfo({
-        name: settings.bankName || "",
-        // Tidak ada fallback nomor rekening — jika kosong, UI akan tampilkan pesan belum dikonfigurasi
-        accountNumber: settings.bankAccountNumber || "",
-        accountHolder: settings.bankAccountHolder || "",
-        instructions: settings.bankInstructions || "Silakan transfer tepat sesuai total tagihan invoice. Setelah transfer, unggah foto bukti transfer di bawah ini untuk diverifikasi admin.",
-      });
+      if (settings.paymentMode) {
+        const mode = (settings.paymentMode === "BOTH" ? "GATEWAY" : settings.paymentMode) as "GATEWAY" | "MANUAL";
+        setPaymentMode(mode);
+      }
+
       if (typeof settings.paymentGatewayFeePercent === "number") {
         setFeePercent(settings.paymentGatewayFeePercent);
       }
       if (settings.paymentGatewayFeePayer) {
         setFeePayer(settings.paymentGatewayFeePayer);
-      }
-      if (settings.supportWhatsapp) {
-        setAdminWa(settings.supportWhatsapp);
       }
       if (settings.retentionInvitationDays) {
         setRetentionDays(settings.retentionInvitationDays);
@@ -290,6 +240,21 @@ function CheckoutContent() {
           if (orderStatusData.status === "PAID") {
             router.replace(getPostPaymentRedirect(orderStatusData.orderType, orderStatusData.id, orderStatusData.planType));
             return;
+          }
+
+          // Jika pesanan sudah pernah dikonfirmasi dan tidak sedang dalam mode edit rincian (?edit=true), langsung bawa ke halaman pembayaran /payment
+          if (orderStatusData.checkoutConfirmedAt && orderStatusData.status === "PENDING" && editParam !== "true") {
+            router.replace(`/payment?order=${orderStatusData.id}`);
+            return;
+          }
+
+          if (orderStatusData.promoCodeApplied && orderStatusData.discountAmount) {
+            setAppliedPromo({
+              code: orderStatusData.promoCodeApplied,
+              discountAmount: Number(orderStatusData.discountAmount),
+              discountType: "NOMINAL",
+              discountValue: Number(orderStatusData.discountAmount),
+            });
           }
 
           setError(null);
@@ -347,53 +312,16 @@ function CheckoutContent() {
           }
 
           // ORDER-LEVEL PAYMENT METHOD LOCK:
-          // Jika order sudah memiliki bukti transfer atau tercatat MANUAL_TRANSFER, kunci mode ke MANUAL
-          // Mencegah switch setting global admin merusak tampilan verifikasi klien yang sudah transfer
           if (orderStatusData.paymentMethod === "MANUAL_TRANSFER" || Boolean(orderStatusData.proofImageUrl)) {
             setPaymentMode("MANUAL");
-            setSelectedMethod("MANUAL");
-          } else if (orderStatusData.paymentMethod === "GATEWAY" && orderStatusData.snapToken) {
+          } else if (orderStatusData.paymentMethod === "GATEWAY") {
             setPaymentMode("GATEWAY");
-            setSelectedMethod("GATEWAY");
-          }
-
-          if (orderStatusData.proofImageUrl && orderStatusData.status !== "FAILED" && orderStatusData.status !== "REJECTED") {
-            setUploadedProofUrl(orderStatusData.proofImageUrl);
-          } else if (orderStatusData.status === "FAILED" || orderStatusData.status === "REJECTED") {
-            setUploadedProofUrl(null);
-            if (orderStatusData.rejectReason) {
-              setRejectReason(orderStatusData.rejectReason);
-            }
           }
 
           if (orderStatusData.status === "EXPIRED") {
             setIsGatewayExpired(true);
-            setQrData(null);
-            setCountdownStr("");
-            setLoading(false);
-            return;
           } else {
             setIsGatewayExpired(false);
-            if (orderStatusData.snapToken) {
-              try {
-                const parsed = JSON.parse(orderStatusData.snapToken);
-                const syncedNow = Date.now() + currentOffset;
-                // Tambahkan Grace Period 2 Menit (120000 ms) sebelum benar-benar dihilangkan
-                if (parsed.qrString && parsed.expiry > (syncedNow - 120000)) {
-                  setQrData(parsed.qrString);
-                  setQrisSessionId(parsed.sessionId);
-                  setQrisExpiry(parsed.expiry);
-                } else if (parsed.expiry <= (syncedNow - 120000)) {
-                  setIsGatewayExpired(true);
-                  setQrData(null);
-                  setCountdownStr("");
-                  setLoading(false);
-                  return;
-                }
-              } catch {
-                // Not JSON, ignore
-              }
-            }
           }
 
           setLoading(false);
@@ -458,27 +386,6 @@ function CheckoutContent() {
         setServerTimeOffset(orderData.serverTime - Date.now());
       }
       setIsGatewayExpired(false);
-      
-      if (orderData.snapToken) {
-        try {
-          const parsed = JSON.parse(orderData.snapToken);
-          const syncedNow = Date.now() + (orderData.serverTime ? (orderData.serverTime - Date.now()) : 0);
-          if (parsed.qrString && parsed.expiry > syncedNow) {
-            setQrData(parsed.qrString);
-            setQrisSessionId(parsed.sessionId || null);
-            setQrisExpiry(parsed.expiry);
-            if (parsed.expiry && orderData.serverTime) {
-              setQrisTotalDuration(parsed.expiry - orderData.serverTime);
-            }
-          }
-        } catch {}
-      }
-
-      if (orderData.proofImageUrl && orderData.status !== "FAILED" && orderData.status !== "REJECTED") {
-        setUploadedProofUrl(orderData.proofImageUrl);
-      } else if (orderData.rejectReason) {
-        setRejectReason(orderData.rejectReason);
-      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -497,265 +404,122 @@ function CheckoutContent() {
     }
   }, [status, sessionUserId, isAdmin, planParam, orderIdParam, reloadKey, initializeCheckout]);
 
-  // --- REALTIME SSE PAYMENT STATUS (Server-Sent Events Murni Tanpa Polling) ---
+  // Countdown Timer untuk Masa Berlaku Kupon Promo (Sinkron dengan Server Time Offset)
   useEffect(() => {
-    if (!qrData || !orderId) return;
+    if (!appliedPromo?.validUntil) {
+      setPromoCountdownStr("");
+      return;
+    }
 
-    let isDisposed = false;
+    const interval = setInterval(() => {
+      const nowSynced = Date.now() + serverTimeOffset;
+      const remainingMs = appliedPromo.validUntil! - nowSynced;
 
-    // Countdown Timer — Sinkron dengan waktu server untuk mencegah drift
-    const timerInterval = setInterval(() => {
-      if (!qrisExpiry) return;
-      const syncedNow = Date.now() + serverTimeOffset;
-      const diff = qrisExpiry - syncedNow;
-      
-      // Jika waktu habis, langsung hilangkan QRIS dari UI dan tandai expired
-      if (diff <= 0) {
-        cleanup();
-        setIsGatewayExpired(true);
-        setQrData(null);
-        setCountdownStr("");
+      if (remainingMs <= 0) {
+        setPromoCountdownStr("Kedaluwarsa");
+        setAppliedPromo(null);
+        setPromoError("Masa berlaku kode promo telah berakhir.");
+        clearInterval(interval);
+        return;
+      }
+
+      // Tampilkan countdown live jika sisa waktu <= 60 menit
+      if (remainingMs <= 3600000) {
+        const totalSec = Math.floor(remainingMs / 1000);
+        const m = Math.floor(totalSec / 60);
+        const s = totalSec % 60;
+        setPromoCountdownStr(`${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`);
       } else {
-        const m = Math.floor(diff / 60000);
-        const s = Math.floor((diff % 60000) / 1000);
-        setCountdownStr(`${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`);
+        const d = new Date(appliedPromo.validUntil!);
+        setPromoCountdownStr(`Berlaku s/d ${d.toLocaleDateString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} WIB`);
       }
     }, 1000);
 
-    const cleanup = () => {
-      isDisposed = true;
-      clearInterval(timerInterval);
-      try { eventSource.close(); } catch {}
-    };
+    return () => clearInterval(interval);
+  }, [appliedPromo, serverTimeOffset]);
 
-    const triggerPaid = (planType?: string) => {
-      if (isDisposed) return;
-      cleanup();
-      const targetUrl = getPostPaymentRedirect(currentOrderType, orderId, planType || currentPlanType);
-      handlePaymentSuccess(targetUrl, planType);
-    };
-
-    // Jalur Murni: SSE (Server-Sent Events untuk instant push langsung dari Webhook Midtrans)
-    const eventSource = new EventSource(`/api/payments/status-stream/${orderId}`);
-
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.status === "PAID") {
-          triggerPaid(data.planType);
-        } else if (data.status === "EXPIRED") {
-          cleanup();
-          setIsGatewayExpired(true);
-          setQrData(null);
-          setCountdownStr("");
-        } else if (data.status === "CANCELLED") {
-          cleanup();
-          setQrData(null);
-          router.replace("/packages");
-        }
-      } catch {}
-    };
-
-    eventSource.onerror = () => {
-      // SSE terputus (network blip / proxy timeout / server restart)
-      // Jangan retry otomatis — tampilkan CTA manual ke user agar tidak terjadi glitch
-      setSseError(true);
-      try { eventSource.close(); } catch {}
-    };
-
-    return () => {
-      setSseError(false);
-      cleanup();
-    };
-  }, [qrData, orderId, qrisExpiry, currentPlanType, serverTimeOffset, handleRegenerateOrder, currentOrderType, getPostPaymentRedirect, handlePaymentSuccess]);
-
-  // SSE untuk Manual Transfer — Mendengarkan Approval / Rejection dari Admin secara Real-time
-  // Dibuka saat proof diunggah, ditutup otomatis saat menerima event atau klien tutup tab
-  useEffect(() => {
-    // Hanya aktif untuk jalur manual transfer (tidak ada QRIS) dan ada bukti yang sedang diverifikasi
-    if (!orderId || !uploadedProofUrl || qrData) return;
-
-    let isDisposed = false;
-
-    const manualEventSource = new EventSource(`/api/payments/status-stream/${orderId}`);
-
-    manualEventSource.onmessage = (event) => {
-      if (isDisposed) return;
-      try {
-        const data = JSON.parse(event.data);
-
-        if (data.status === "PAID") {
-          isDisposed = true;
-          manualEventSource.close();
-          const targetUrl = getPostPaymentRedirect(data.orderType || currentOrderType, orderId, data.planType);
-          handlePaymentSuccess(targetUrl, data.planType);
-
-        } else if (data.status === "REJECTED" || data.status === "FAILED") {
-          isDisposed = true;
-          manualEventSource.close();
-          const rejectMsg = data.rejectReason || "Bukti transfer tidak valid atau dana belum masuk.";
-          setUploadedProofUrl(null);
-          setUploadSuccessMsg(null);
-          setProofFile(null);
-          setProofPreview(null);
-          setRejectReason(rejectMsg);
-          setStatusModal({
-            show: true,
-            title: "Bukti Transfer Ditolak",
-            message: `Alasan Admin: ${rejectMsg}\nSilakan periksa dan unggah ulang bukti yang benar pada formulir yang tersedia.`,
-            isError: true,
-          });
-        }
-      } catch {}
-    };
-
-    manualEventSource.onerror = () => {
-      // SSE terputus — tutup koneksi, biarkan user klik manual jika perlu
-      try { manualEventSource.close(); } catch {}
-    };
-
-    return () => {
-      isDisposed = true;
-      try { manualEventSource.close(); } catch {}
-    };
-  }, [orderId, uploadedProofUrl, qrData, currentOrderType, getPostPaymentRedirect, handlePaymentSuccess]);
-
-  // Manual Check Status Handler
-  const handleCheckStatus = async () => {
-    if (!orderId) return;
-    setIsCheckingStatus(true);
+  // Validasi & Terapkan Kode Promo / Referral (Titik 1)
+  const handleApplyPromo = async () => {
+    if (!promoCodeInput.trim() || !orderId) return;
+    setPromoValidating(true);
+    setPromoError(null);
     try {
-      const res = await fetch(`/api/client/orders/${orderId}/status`, { cache: "no-store" });
-      const data = await res.json();
-      setIsCheckingStatus(false);
-      
-      if (data.status === "PAID") {
-        const targetUrl = getPostPaymentRedirect(data.orderType || currentOrderType, orderId, data.planType);
-        handlePaymentSuccess(targetUrl, data.planType);
-      } else if (data.status === "FAILED" || data.status === "REJECTED") {
-        setUploadedProofUrl(null);
-        setUploadSuccessMsg(null);
-        setProofFile(null);
-        setProofPreview(null);
-        setRejectReason(data.rejectReason || "Bukti transfer tidak valid atau dana belum masuk.");
-        setStatusModal({
-          show: true,
-          title: "Bukti Transfer Perlu Diperbaiki",
-          message: `Alasan Admin: ${data.rejectReason || "Tidak valid"}.\nSilakan periksa dan unggah ulang bukti yang benar pada formulir yang tersedia.`,
-          isError: true
-        });
-      } else {
-        setStatusModal({
-          show: true,
-          title: "Pembayaran Pending",
-          message: "Status pembayaran masih pending. Silakan tunggu admin memverifikasi bukti transfer Anda atau kembali lagi nanti.",
-          isError: false
-        });
-      }
-    } catch {
-      setIsCheckingStatus(false);
-      setStatusModal({
-        show: true,
-        title: "Kesalahan Jaringan",
-        message: "Gagal mengecek status pembayaran. Silakan coba lagi nanti.",
-        isError: true
+      const res = await fetch("/api/public/promo/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: promoCodeInput.trim(),
+          orderId,
+        }),
       });
+      const data = await res.json();
+      if (!res.ok || !data.valid) {
+        setPromoError(data.error || "Kode promo tidak valid atau kuota telah habis.");
+        return;
+      }
+      setAppliedPromo({
+        code: data.code,
+        discountAmount: data.discountAmount,
+        discountType: data.discountType,
+        discountValue: data.discountValue,
+        validUntil: data.validUntil,
+      });
+      setPromoCodeInput("");
+      setPromoOpen(false);
+    } catch (err: any) {
+      setPromoError(err.message || "Gagal menerapkan kode promo");
+    } finally {
+      setPromoValidating(false);
     }
   };
 
-  // Handle Pay via Gateway
-  const handlePayGateway = async () => {
-    if (!orderId || paying) return;
-    setPaying(true);
+  // Lepaskan Kode Promo / Referral
+  const handleRemovePromo = async () => {
+    if (!orderId) return;
+    try {
+      await fetch(`/api/public/promo/validate?orderId=${orderId}`, {
+        method: "DELETE",
+      });
+    } catch {}
+    setAppliedPromo(null);
+    setPromoCountdownStr("");
+    setPromoError(null);
+  };
+
+  // Konfirmasi Pesanan & Lanjut ke Halaman Pembayaran (Titik 2)
+  const handleConfirmAndProceed = async () => {
+    if (!orderId) return;
+    setConfirmingOrder(true);
     setError(null);
     try {
-      let activeOrderId = orderId;
-
-      // Jika sebelumnya sudah kedaluwarsa, perbarui draf tagihan baru terlebih dahulu
-      if (isGatewayExpired) {
-        const targetPlan = currentPlanType || planParam || "TRADITIONAL";
-        const regenRes = await fetch("/api/orders/create", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            planType: targetPlan,
-            buyerName: buyerName || session?.user?.name || "",
-            buyerEmail: buyerEmail || session?.user?.email || "",
-            buyerPhone: buyerPhone.replace(/\D/g, ""),
-            regenerate: true,
-          }),
-        });
-        const regenData = await regenRes.json();
-        if (regenRes.ok && regenData.orderId) {
-          activeOrderId = regenData.orderId;
-          setOrderId(regenData.orderId);
-          setInvoiceNumber(regenData.invoiceNumber);
-          setIsGatewayExpired(false);
-          if (typeof window !== "undefined") {
-            window.history.replaceState(null, "", `/checkout?order=${regenData.orderId}`);
-          }
-        }
-      }
-
-      const res = await fetch("/api/payments/checkout", {
+      const cleanPhone = buyerPhone.replace(/\D/g, "");
+      const res = await fetch("/api/payments/checkout/confirm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // Tidak kirim `gateway` — biarkan server memilih gateway aktif dari AdminSetting
         body: JSON.stringify({
-          orderId: activeOrderId,
-          customerName: buyerName.trim() || undefined,
-          customerPhone: buyerPhone.replace(/\D/g, "") || undefined,
+          orderId,
+          buyerName: buyerName || session?.user?.name,
+          buyerPhone: cleanPhone,
         }),
       });
       const data = await res.json();
       if (!res.ok) {
-        if (data.isExpired) {
-          setIsGatewayExpired(true);
-          setQrData(null);
-          setCountdownStr("");
-          setPaying(false);
-          return;
-        }
-        throw new Error(data.error || "Gagal memulai pembayaran");
+        throw new Error(data.error || "Gagal mengonfirmasi pesanan.");
       }
-      
-      if (data.serverTime) {
-        setServerTimeOffset(data.serverTime - Date.now());
-      }
-      
-      if (data.qrString) {
-        setQrData(data.qrString);
-        setQrisSessionId(data.sessionId || null);
-        // expiryTimestamp selalu tersedia dari server (bersumber dari gateway atau AdminSetting)
-        // JANGAN gunakan Date.now() browser sebagai fallback — bisa tidak sinkron dengan gateway
-        setQrisExpiry(data.expiryTimestamp);
-        // Hitung durasi total dari server time — dipakai progress bar, bukan 15 menit hardcode
-        if (data.expiryTimestamp && data.serverTime) {
-          setQrisTotalDuration(data.expiryTimestamp - data.serverTime);
-        }
-        if (typeof window !== "undefined" && orderId) {
-          window.history.replaceState(null, "", `/checkout?order=${orderId}`);
-        }
-      } else if (data.checkoutUrl) {
-        // Tampilkan modal iframe in-app (Zero External Redirect)
-        setIframeUrl(data.checkoutUrl);
-      } else {
-        throw new Error("Respons gateway tidak valid: Tidak ada QR String");
-      }
+      // Arahkan ke halaman pembayaran mandiri /payment
+      router.push(data.redirectUrl || `/payment?order=${orderId}`);
     } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setPaying(false);
+      setError(err.message || "Terjadi kesalahan saat konfirmasi pesanan.");
+      setConfirmingOrder(false);
     }
   };
 
-  // Handle Cancel Order secara Dinamis ke Gateway (Midtrans /v2/{order_id}/cancel)
+  // Handle Cancel Order (Bawa kembali user ke pilihan paket)
   const handleCancelOrder = async () => {
     if (!orderId || cancellingOrder) return;
     setCancellingOrder(true);
     setError(null);
     try {
-      // 1. Hubungi endpoint cancel di server (yang akan cancel ke gateway, misal Midtrans /v2/{order_id}/cancel)
       const res = await fetch(`/api/client/orders/${orderId}/cancel`, {
         method: "POST",
       });
@@ -764,13 +528,6 @@ function CheckoutContent() {
         throw new Error(data.error || "Gagal membatalkan tagihan.");
       }
 
-      // 2. Bersihkan state QRIS
-      setQrData(null);
-      setQrisSessionId(null);
-      setQrisExpiry(null);
-      setCountdownStr("");
-
-      // 3. Batalkan sesuai jenis pesanan
       if (currentOrderType === "GALLERY_EXTENSION") {
         router.replace("/dashboard?msg=extension_cancelled");
         return;
@@ -784,9 +541,7 @@ function CheckoutContent() {
         return;
       }
 
-      // Untuk order pendaftaran awal: langsung bawa klien kembali ke /packages agar bebas memilih paket baru
       router.replace("/packages");
-      return;
     } catch (err: any) {
       setError(err.message || "Gagal membatalkan tagihan.");
     } finally {
@@ -794,62 +549,13 @@ function CheckoutContent() {
     }
   };
 
-  // Handle Upload Proof of Manual Transfer
-  const handleUploadProof = async () => {
-    if (!orderId || !proofFile) return;
-
-    setUploadingProof(true);
-    setError(null);
-    setUploadSuccessMsg(null);
-
-    try {
-      const formData = new FormData();
-      formData.append("file", proofFile);
-
-      const res = await fetch(`/api/client/orders/${orderId}/upload-proof`, {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Gagal mengunggah bukti transfer");
-
-      setUploadedProofUrl(data.proofImageUrl);
-      setRejectReason(null);
-
-      if (data.order?.status === "PAID") {
-        setUploadSuccessMsg("Bukti transfer berhasil diverifikasi! Pembayaran Anda telah lunas.");
-        setStatusModal({
-          show: true,
-          title: "Pembayaran Berhasil!",
-          message: "Pembayaran Anda berhasil diverifikasi. Mengalihkan...",
-          isError: false,
-        });
-        setTimeout(() => {
-          router.replace(getPostPaymentRedirect(currentOrderType, orderId, currentPlanType));
-        }, 1500);
-      } else {
-        setUploadSuccessMsg("Bukti transfer berhasil dikirim! Tim Admin sedang memverifikasi pembayaran Anda.");
-      }
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setUploadingProof(false);
-    }
-  };
-
 
 
   // Copy helper
-  const handleCopy = (text: string, type: "bank" | "amount") => {
+  const handleCopy = (text: string, type: "amount") => {
     navigator.clipboard.writeText(text);
-    if (type === "bank") {
-      setCopiedBank(true);
-      setTimeout(() => setCopiedBank(false), 2000);
-    } else {
-      setCopiedAmount(true);
-      setTimeout(() => setCopiedAmount(false), 2000);
-    }
+    setCopiedAmount(true);
+    setTimeout(() => setCopiedAmount(false), 2000);
   };
 
   if (status === "authenticated" && isAdmin) {
@@ -892,9 +598,11 @@ function CheckoutContent() {
   }
 
   const subtotal = planData?.price || 0;
+  const discountAmount = appliedPromo?.discountAmount || 0;
+  const netSubtotal = Math.max(0, subtotal - discountAmount);
   // Biaya layanan HANYA diterapkan jika menggunakan Gateway (QRIS)
-  const appFee = (feePayer === "BUYER" && paymentMode === "GATEWAY") ? Math.round(subtotal * (feePercent / 100)) : 0;
-  const totalAmount = subtotal + appFee;
+  const appFee = (feePayer === "BUYER" && paymentMode === "GATEWAY") ? Math.round(netSubtotal * (feePercent / 100)) : 0;
+  const totalAmount = netSubtotal + appFee;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-stone-950 via-stone-900 to-amber-950 flex flex-col font-sans">
@@ -981,33 +689,23 @@ function CheckoutContent() {
                 </div>
 
                 {/* Input Kontak WhatsApp */}
-                {!qrData && !uploadedProofUrl && (
-                  <div className="pt-2 border-t border-white/5 space-y-2">
-                    <label htmlFor="buyerPhone" className="text-[11px] font-medium text-stone-300 flex items-center gap-1.5">
-                      <svg className="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                      </svg>
-                      <span>Nomor WhatsApp Aktif</span>
-                    </label>
-                    <input
-                      id="buyerPhone"
-                      type="tel"
-                      value={buyerPhone}
-                      onChange={(e) => setBuyerPhone(formatWhatsAppNumber(e.target.value))}
-                      placeholder="Contoh: 0812-3456-7890"
-                      maxLength={19}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-stone-900/60 border border-white/10 text-white placeholder-stone-500 text-xs focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 transition font-mono"
-                    />
-                  </div>
-                )}
-
-                {/* Tampilan Kontak Terkonfirmasi saat QRIS Sudah Terbit */}
-                {(qrData || uploadedProofUrl) && buyerPhone && (
-                  <div className="pt-2 border-t border-white/5 flex items-center justify-between text-xs">
-                    <span className="text-stone-400 text-[11px]">WhatsApp Terdaftar:</span>
-                    <span className="text-amber-300 font-mono text-[11px] font-semibold">{buyerPhone}</span>
-                  </div>
-                )}
+                <div className="pt-2 border-t border-white/5 space-y-2">
+                  <label htmlFor="buyerPhone" className="text-[11px] font-medium text-stone-300 flex items-center gap-1.5">
+                    <svg className="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                    </svg>
+                    <span>Nomor WhatsApp Aktif</span>
+                  </label>
+                  <input
+                    id="buyerPhone"
+                    type="tel"
+                    value={buyerPhone}
+                    onChange={(e) => setBuyerPhone(formatWhatsAppNumber(e.target.value))}
+                    placeholder="Contoh: 0812-3456-7890"
+                    maxLength={19}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-stone-900/60 border border-white/10 text-white placeholder-stone-500 text-xs focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 transition font-mono"
+                  />
+                </div>
               </div>
 
               {/* Plan detail */}
@@ -1024,7 +722,7 @@ function CheckoutContent() {
                   </span>
                   <div className="flex items-center gap-3">
                     <span className="text-white font-bold">{planData.name}</span>
-                    {!uploadedProofUrl && !qrData && (!currentOrderType || currentOrderType === "NEW" || currentOrderType === "NEW_INVITATION") && (
+                    {(!currentOrderType || currentOrderType === "NEW" || currentOrderType === "NEW_INVITATION") && (
                       <Link href="/packages" className="text-[10px] bg-white/10 hover:bg-white/20 text-stone-300 px-2 py-0.5 rounded-full transition">Ubah</Link>
                     )}
                   </div>
@@ -1065,12 +763,110 @@ function CheckoutContent() {
                 )}
               </div>
 
-              {/* Rincian Fee Gateway Dinamis (%) */}
+              {/* Promo Code Collapsible (Hanya jika Master Switch ON) */}
+              {promoEnabled && (
+                <div className="pt-3 border-t border-white/10 space-y-2.5">
+                  {!appliedPromo ? (
+                    <div>
+                      {!promoOpen ? (
+                        <button
+                          type="button"
+                          onClick={() => { setPromoOpen(true); setPromoError(null); }}
+                          className="text-xs text-amber-400 hover:text-amber-300 font-medium flex items-center gap-1.5 transition cursor-pointer"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                          </svg>
+                          <span>Punya kode promo atau referral?</span>
+                        </button>
+                      ) : (
+                        <div className="space-y-2 bg-stone-900/50 p-3 rounded-2xl border border-white/5 animate-in fade-in duration-200">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-stone-300 font-medium text-[11px]">Kupon Promo / Referral</span>
+                            <button
+                              type="button"
+                              onClick={() => { setPromoOpen(false); setPromoError(null); }}
+                              className="text-stone-500 hover:text-stone-300 text-[11px]"
+                            >
+                              Batal
+                            </button>
+                          </div>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={promoCodeInput}
+                              onChange={(e) => setPromoCodeInput(e.target.value.toUpperCase())}
+                              placeholder="Ketik kode kupon..."
+                              className="flex-1 px-3 py-2 bg-stone-950/80 border border-white/10 rounded-xl text-xs font-mono uppercase text-white placeholder-stone-600 focus:outline-none focus:border-amber-500/50"
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  handleApplyPromo();
+                                }
+                              }}
+                            />
+                            <button
+                              type="button"
+                              onClick={handleApplyPromo}
+                              disabled={promoValidating || !promoCodeInput.trim()}
+                              className="px-4 py-2 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-stone-950 font-bold text-xs rounded-xl transition cursor-pointer shrink-0"
+                            >
+                              {promoValidating ? "Mengecek..." : "Terapkan"}
+                            </button>
+                          </div>
+                          {promoError && (
+                            <p className="text-[11px] text-rose-400 font-medium">{promoError}</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="p-3 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-emerald-300 truncate">
+                            Kode &ldquo;{appliedPromo.code}&rdquo; Aktif
+                          </p>
+                          <p className="text-[10px] text-emerald-400/80">
+                            Hemat Rp {appliedPromo.discountAmount.toLocaleString("id-ID")}
+                            {promoCountdownStr && (
+                              <span className="ml-1.5 text-amber-300 font-mono font-medium">
+                                ({promoCountdownStr})
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleRemovePromo}
+                        className="text-[11px] text-stone-400 hover:text-rose-400 font-medium px-2 py-1 rounded-lg hover:bg-white/5 transition cursor-pointer shrink-0"
+                        title="Hapus Kupon"
+                      >
+                        Hapus
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Rincian Fee Gateway Dinamis (%) & Diskon */}
               <div className="space-y-2 pt-3 border-t border-white/10 text-xs">
                 <div className="flex justify-between items-center text-stone-400">
                   <span>Subtotal Layanan</span>
                   <span className="text-stone-200 font-medium font-mono">Rp {subtotal.toLocaleString("id-ID")}</span>
                 </div>
+                {appliedPromo && discountAmount > 0 && (
+                  <div className="flex justify-between items-center text-emerald-400">
+                    <span>Diskon Kupon ({appliedPromo.code})</span>
+                    <span className="font-medium font-mono">- Rp {discountAmount.toLocaleString("id-ID")}</span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center text-stone-400">
                   <span>Biaya Layanan Aplikasi ({paymentMode === "GATEWAY" ? feePercent + "%" : "Manual"})</span>
                   <span className={`font-mono font-medium ${feePayer === "BUYER" && paymentMode === "GATEWAY" ? "text-amber-300" : "text-emerald-400"}`}>
@@ -1105,322 +901,46 @@ function CheckoutContent() {
             </div>
           )}
 
-          {/* Warning Message from Previous Session (if any) */}
-          {msgParam === "qris_expired" && !qrData && (
-            <div className="text-center px-4">
-              <span className="text-rose-400 text-xs font-medium">QRIS sebelumnya sudah kedaluwarsa. Silakan bayar tagihan baru.</span>
-            </div>
-          )}
-          {msgParam === "transfer_rejected" && !uploadedProofUrl && (
-            <div className="text-center px-4">
-              <span className="text-rose-400 text-xs font-medium">Bukti transfer sebelumnya ditolak. Silakan unggah bukti yang benar.</span>
-            </div>
-          )}
-
-          
-
-          {/* ── TAB 1: AUTOMATIC GATEWAY (QRIS / E-WALLET) ── */}
-          {paymentMode === "GATEWAY" && (
-            <div className="space-y-3">
-              {qrData ? (
-                <div className="bg-white/5 border border-amber-500/20 rounded-3xl p-6 space-y-5 backdrop-blur-xs text-center relative overflow-hidden">
-                  <div className="absolute top-0 inset-x-0 h-1 bg-amber-500/20">
-                    <div className="h-full bg-amber-500 rounded-r-full" style={{ width: `${qrisTotalDuration > 0 ? Math.max(0, Math.min(100, ((qrisExpiry ? qrisExpiry - (Date.now() + serverTimeOffset) : 0) / qrisTotalDuration) * 100)) : 0}%`, transition: 'width 1s linear' }}></div>
-                  </div>
-                  <div className="space-y-1 pt-2">
-                    <h3 className="text-white font-bold text-sm">Scan QRIS untuk Membayar</h3>
-                    <div className="text-amber-400 font-serif font-bold text-xl">
-                      Rp {totalAmount.toLocaleString("id-ID")}
-                    </div>
-                    <p className="text-stone-400 text-xs">Sisa Waktu: <span className="text-amber-400 font-mono font-bold">{countdownStr}</span></p>
-                  </div>
-                  <div className="p-3 bg-white inline-block rounded-2xl mx-auto shadow-xl border-4 border-amber-500/20">
-                    <img src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}`} alt="QRIS Code" className="w-48 h-48 sm:w-56 sm:h-56 object-contain" />
-                  </div>
-                  <div className="space-y-2">
-                    {sseError ? (
-                      /* Banner SSE Terputus — tampil saat koneksi realtime gagal */
-                      <div className="px-4 py-3 bg-amber-950/60 border border-amber-500/40 rounded-2xl text-center space-y-2">
-                        <div className="flex items-center justify-center gap-2 text-amber-400 font-semibold text-xs">
-                          <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                          </svg>
-                          <span>Koneksi realtime terputus</span>
-                        </div>
-                        <p className="text-[11px] text-stone-400 leading-relaxed">
-                          Pemantauan otomatis tidak aktif. Jika Anda sudah membayar, klik tombol di bawah untuk memeriksa status secara manual.
-                        </p>
-                        <button
-                          type="button"
-                          onClick={handleCheckStatus}
-                          disabled={isCheckingStatus}
-                          className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs rounded-xl transition cursor-pointer disabled:opacity-60"
-                        >
-                          {isCheckingStatus ? (
-                            <><span className="w-3 h-3 border-2 border-stone-950 border-t-transparent rounded-full animate-spin" /><span>Memeriksa...</span></>
-                          ) : (
-                            <><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg><span>Cek Status Pembayaran</span></>
-                          )}
-                        </button>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="flex items-center justify-center gap-2 text-amber-400 font-bold text-xs">
-                          <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-                          <span>Menunggu Pembayaran Otomatis...</span>
-                        </div>
-                        <p className="text-[11px] text-stone-400 max-w-xs mx-auto leading-relaxed">
-                          Buka aplikasi m-Banking atau e-Wallet Anda (BCA, Mandiri, GoPay, OVO, Dana, dll) dan scan QRIS di atas. Layar otomatis berpindah jika sukses.
-                        </p>
-                      </>
-                    )}
-                  </div>
-
-                  {/* Tombol Batalkan Tagihan Ini (Kirim signal Cancel ke Gateway & Buat Order Baru) */}
-                  <div className="pt-1">
-                    <button
-                      id="btn-cancel-qris"
-                      type="button"
-                      onClick={handleCancelOrder}
-                      disabled={cancellingOrder}
-                      className="inline-flex items-center gap-1.5 text-xs text-stone-400 hover:text-rose-400 transition py-1.5 px-3 rounded-xl hover:bg-rose-500/10 border border-white/5 hover:border-rose-500/20 cursor-pointer disabled:opacity-50"
-                    >
-                      {cancellingOrder ? (
-                        <>
-                          <span className="w-3 h-3 border-2 border-stone-400 border-t-transparent rounded-full animate-spin"></span>
-                          <span>Membatalkan Tagihan...</span>
-                        </>
-                      ) : (
-                        <>
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                          <span>Batalkan Tagihan Ini</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
+          {/* Action: Konfirmasi & Lanjut Pembayaran */}
+          <div className="space-y-3 pt-2">
+            <button
+              id="btn-confirm-checkout"
+              type="button"
+              onClick={handleConfirmAndProceed}
+              disabled={confirmingOrder || !orderId}
+              className="w-full py-4 rounded-2xl font-bold text-xs sm:text-sm bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 shadow-lg shadow-amber-950/40 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            >
+              {confirmingOrder ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-stone-950 border-t-transparent rounded-full animate-spin" />
+                  <span>Mengonfirmasi Tagihan...</span>
+                </>
               ) : (
-                <button
-                  id="btn-pay-now"
-                  type="button"
-                  onClick={handlePayGateway}
-                  disabled={!orderId || paying}
-                  className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-bold text-sm transition shadow-lg shadow-amber-900/40 disabled:opacity-60 cursor-pointer flex items-center justify-center gap-2"
-                >
-                  {paying ? (
-                    <>
-                      <span className="w-4 h-4 border-2 border-stone-950 border-t-transparent rounded-full animate-spin"></span>
-                      <span>Membuat Kode QRIS...</span>
-                    </>
-                  ) : (
-                    <span>Bayar via QRIS / E-Wallet</span>
-                  )}
-                </button>
+                <>
+                  <span>Konfirmasi &amp; Lanjut Pembayaran</span>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  </svg>
+                </>
               )}
-            </div>
-          )}
+            </button>
 
-          {/* ── TAB 2: MANUAL BANK TRANSFER (NO EXPIRY, TRANSFER KAPAN SAJA) ── */}
-          {paymentMode === "MANUAL" && (
-            <div className="bg-white/5 border border-white/10 rounded-3xl p-6 space-y-5 backdrop-blur-xs">
-              {/* Bank Account Details */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-amber-500 text-stone-950 text-[10px] font-black flex items-center justify-center flex-shrink-0">1</span>
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-amber-400 font-bold">Transfer ke Rekening Berikut</span>
-                </div>
-
-                {!bankInfo.name || !bankInfo.accountNumber ? (
-                  <div className="p-4 bg-amber-950/40 border border-amber-500/30 rounded-2xl text-center space-y-2">
-                    <p className="text-amber-300 font-bold text-xs">Informasi Rekening Belum Dikonfigurasi</p>
-                    <p className="text-stone-400 text-[11px] leading-relaxed">
-                      Administrator belum melengkapi nama bank dan nomor rekening untuk transfer manual. Silakan hubungi admin melalui WhatsApp untuk konfirmasi pembayaran.
-                    </p>
-                    {adminWa && (
-                      <a
-                        href={`https://wa.me/${adminWa.replace(/^0/, "62")}?text=${encodeURIComponent(`Halo Admin, saya ingin membayar pesanan invoice ${invoiceNumber} via transfer manual, mohon info rekening pembayaran. Terima kasih.`)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition mt-1"
-                      >
-                        Hubungi Admin via WhatsApp
-                      </a>
-                    )}
-                  </div>
+            {/* Tombol Batalkan Tagihan Ini */}
+            <div className="text-center pt-1">
+              <button
+                type="button"
+                onClick={handleCancelOrder}
+                disabled={cancellingOrder}
+                className="text-[11px] text-stone-500 hover:text-rose-400 transition cursor-pointer inline-flex items-center gap-1.5"
+              >
+                {cancellingOrder ? (
+                  <span>Membatalkan pesanan...</span>
                 ) : (
-                  <div className="p-4 bg-white/5 border border-amber-500/20 rounded-2xl space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-stone-400">Nama Bank:</span>
-                      <span className="text-xs font-bold text-white">{bankInfo.name}</span>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-1 border-t border-white/5">
-                      <span className="text-xs text-stone-400">Nomor Rekening:</span>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-sm font-bold text-amber-300">{bankInfo.accountNumber}</span>
-                        <button
-                          type="button"
-                          onClick={() => handleCopy(bankInfo.accountNumber, "bank")}
-                          className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white rounded-lg text-[10px] font-bold transition flex items-center gap-1 cursor-pointer"
-                        >
-                          <span>{copiedBank ? "Tersalin!" : "Salin"}</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-1 border-t border-white/5">
-                      <span className="text-xs text-stone-400">Atas Nama:</span>
-                      <span className="text-xs font-bold text-white">{bankInfo.accountHolder || "-"}</span>
-                    </div>
-                  </div>
+                  <span>Batalkan pesanan ini &amp; pilih paket lain</span>
                 )}
-
-                <p className="text-[11px] text-stone-400 leading-relaxed">
-                  {bankInfo.instructions}
-                </p>
-              </div>
-
-              {/* Upload Proof Form */}
-              <div className="pt-3 border-t border-white/10 space-y-3">
-                <div className="flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-amber-500 text-stone-950 text-[10px] font-black flex items-center justify-center flex-shrink-0">2</span>
-                  <span className="text-xs font-bold text-white">Unggah Bukti Transfer / Struk Bank</span>
-                </div>
-
-                {uploadedProofUrl || uploadSuccessMsg ? (
-                  <div className="p-4 border rounded-2xl space-y-3 text-center" style={{ background: "rgba(6,78,59,0.3)", borderColor: "rgba(52,211,153,0.4)" }}>
-                    <div className="flex items-center justify-center gap-2 text-emerald-300 font-bold text-xs">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                      <span>Menunggu Verifikasi Admin</span>
-                    </div>
-                    <p className="text-[11px] text-emerald-300/80 leading-relaxed">
-                      Bukti transfer Anda telah diterima dan sedang menunggu konfirmasi admin. Anda dapat mengecek status persetujuan secara manual.
-                    </p>
-                        <div className="flex flex-col sm:flex-row items-center justify-center gap-2 mt-2">
-                          <button
-                            type="button"
-                            onClick={handleCheckStatus}
-                            disabled={isCheckingStatus}
-                            className="w-full sm:w-auto px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-stone-950 font-bold rounded-xl text-[11px] transition shadow-lg cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                          >
-                            {isCheckingStatus ? (
-                              <>
-                                <svg className="animate-spin h-3.5 w-3.5 text-stone-950" fill="none" viewBox="0 0 24 24">
-                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                <span>Mengecek...</span>
-                              </>
-                            ) : (
-                              <span>Cek Status Pembayaran ⟳</span>
-                            )}
-                          </button>
-                          <a
-                            href={`https://wa.me/${adminWa.replace(/^0/, "62")}?text=${encodeURIComponent(`Halo Admin, saya sudah melakukan pembayaran manual untuk Invoice: *${invoiceNumber}*. Mohon dicek dan dikonfirmasi ya. Terima kasih.`)}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="w-full sm:w-auto px-4 py-2 bg-stone-800 hover:bg-stone-700 text-emerald-400 border border-emerald-500/30 font-bold rounded-xl text-[11px] transition shadow-lg flex items-center justify-center gap-1.5 cursor-pointer"
-                          >
-                            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 00-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                            </svg>
-                            <span>Konfirmasi via WA</span>
-                          </a>
-                        </div>
-                        {uploadedProofUrl && (
-                          <div className="mt-3">
-                            <img src={uploadedProofUrl} alt="Bukti Transfer" className="max-h-36 rounded-xl mx-auto border border-emerald-500/30 object-cover" />
-                          </div>
-                        )}
-                  </div>
-                ) : (
-                  <>
-                    {/* Persistent Warning Card: Bukti Pembayaran Ditolak Admin */}
-                    {(rejectReason || (msgParam === "transfer_rejected" && !uploadedProofUrl)) && (
-                      <div className="p-4 bg-rose-950/40 border border-rose-500/30 rounded-2xl space-y-2 text-left animate-in fade-in duration-300">
-                        <div className="flex items-center gap-2 text-rose-400 font-semibold text-xs">
-                          <svg className="w-4 h-4 text-rose-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                          </svg>
-                          <span>Bukti Pembayaran Perlu Diperbaiki</span>
-                        </div>
-                        <div className="bg-black/30 rounded-xl p-3 border border-rose-500/20">
-                          <span className="text-[10px] text-stone-400 block mb-0.5 font-medium">Catatan / Alasan Admin:</span>
-                          <p className="text-xs text-rose-200 font-medium italic">
-                            &ldquo;{rejectReason || "Bukti transfer tidak valid atau dana belum masuk ke rekening."}&rdquo;
-                          </p>
-                        </div>
-                        <p className="text-[11px] text-stone-400 leading-relaxed">
-                          Silakan periksa kembali nominal dan rekening tujuan Anda, lalu unggah ulang struk/bukti transfer yang benar di bawah ini.
-                        </p>
-                      </div>
-                    )}
-
-                    <div className="relative border-2 border-dashed border-white/20 hover:border-amber-500/50 rounded-2xl p-4 text-center cursor-pointer transition bg-white/5">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          if (e.target.files && e.target.files[0]) {
-                            const f = e.target.files[0];
-                            setProofFile(f);
-                            setProofPreview(URL.createObjectURL(f));
-                          }
-                        }}
-                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                      />
-                      {proofPreview ? (
-                        <div className="space-y-2">
-                          <img src={proofPreview} alt="Preview" className="max-h-32 rounded-xl mx-auto object-cover" />
-                          <span className="text-[11px] text-amber-300 font-medium block">Klik untuk ganti foto</span>
-                        </div>
-                      ) : (
-                        <div className="space-y-1 py-3">
-                          <svg className="w-8 h-8 text-stone-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                          </svg>
-                          <p className="text-xs text-stone-300 font-semibold">Pilih Foto Struk / Screenshot Transfer</p>
-                          <p className="text-[10px] text-stone-500">Format JPG, PNG, WebP · Maks 10MB</p>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Helper text: tampil jika foto belum dipilih */}
-                    {!proofFile && (
-                      <p className="text-[11px] text-amber-400/80 text-center font-medium">
-                        Pilih foto bukti transfer terlebih dahulu untuk mengaktifkan tombol kirim
-                      </p>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={handleUploadProof}
-                      disabled={!proofFile || uploadingProof}
-                      title={!proofFile ? "Pilih foto bukti transfer dahulu" : "Kirim bukti pembayaran"}
-                      className={`w-full py-3.5 rounded-2xl font-bold text-xs transition shadow-lg flex items-center justify-center gap-2 ${
-                        proofFile && !uploadingProof
-                          ? "bg-amber-500 hover:bg-amber-400 text-stone-950 shadow-amber-900/30 cursor-pointer"
-                          : "bg-stone-700 text-stone-400 cursor-not-allowed opacity-60"
-                      }`}
-                    >
-                      {uploadingProof ? (
-                        <>
-                          <span className="w-4 h-4 border-2 border-stone-950 border-t-transparent rounded-full animate-spin"></span>
-                          <span>Mengirim Bukti Transfer...</span>
-                        </>
-                      ) : proofFile ? (
-                        <span>Kirim Bukti Pembayaran</span>
-                      ) : (
-                        <span>Pilih Foto Dahulu</span>
-                      )}
-                    </button>
-                  </>
-                )}
-              </div>
+              </button>
             </div>
-          )}
+          </div>
 
           <div className="flex items-center justify-center gap-3 pt-2">
             <div className="flex items-center gap-1.5 text-stone-500 text-[11px]">
@@ -1447,106 +967,6 @@ function CheckoutContent() {
           </div>
         </div>
       </div>
-      {/* ── Transition Modal / Overlay Saat Pembayaran Berhasil (PAID) ── */}
-      {paidTransition.active && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-stone-900 border border-emerald-500/30 rounded-3xl p-8 max-w-md w-full shadow-2xl flex flex-col items-center text-center space-y-5 animate-in zoom-in-95 duration-300">
-            {/* Animated Success Badge */}
-            <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30 shadow-inner">
-              <svg className="w-9 h-9" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-
-            <div className="space-y-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                Pembayaran Terverifikasi
-              </span>
-              <h3 className="text-xl font-bold text-white pt-1">
-                Selamat, Pembayaran Berhasil!
-              </h3>
-              <p className="text-xs text-stone-400 leading-relaxed max-w-xs mx-auto">
-                {invoiceNumber ? `Invoice #${invoiceNumber} telah lunas.` : "Transaksi Anda telah berhasil diverifikasi."}
-                <br />
-                Menyiapkan ruang kerja undangan digital Anda...
-              </p>
-            </div>
-
-            {/* Loading progress bar */}
-            <div className="w-full space-y-2 pt-2">
-              <div className="w-full h-1.5 bg-stone-800 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-emerald-500 to-amber-500 rounded-full animate-[pulse_1s_ease-in-out_infinite] w-full" />
-              </div>
-              <p className="text-[11px] text-stone-500 font-mono">
-                Mengalihkan ke Dasbor Ruang Kerja...
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Custom Status Modal */}
-      {statusModal.show && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-stone-900 border border-white/10 rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl transform scale-100 animate-in fade-in zoom-in-95 duration-200">
-            <div className={`mx-auto flex items-center justify-center h-12 w-12 rounded-full mb-4 ${statusModal.isError ? 'bg-rose-500/20 text-rose-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
-              {statusModal.isError ? (
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              ) : (
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              )}
-            </div>
-            <h3 className="text-lg font-bold text-white mb-2">{statusModal.title}</h3>
-            <p className="text-stone-300 text-sm whitespace-pre-line mb-6">{statusModal.message}</p>
-            <button
-              onClick={() => setStatusModal({ show: false, message: "" })}
-              className="w-full py-2.5 bg-white hover:bg-stone-200 text-stone-900 font-bold rounded-xl text-sm transition cursor-pointer"
-            >
-              Tutup
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* In-App Payment Modal (Zero External Window Redirection) */}
-      {iframeUrl && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-2 sm:p-4">
-          <div className="bg-stone-900 border border-white/10 rounded-2xl w-full max-w-2xl h-[88vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-stone-950/80">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-xs font-semibold text-stone-200 uppercase tracking-wider">Pembayaran Aman (In-App)</span>
-              </div>
-              <button
-                onClick={() => setIframeUrl(null)}
-                className="px-3 py-1 text-stone-400 hover:text-white rounded-lg hover:bg-white/10 transition text-xs flex items-center gap-1.5 cursor-pointer"
-                title="Tutup Halaman Pembayaran"
-              >
-                <span>Tutup</span>
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Iframe Body */}
-            <div className="flex-1 w-full relative bg-white">
-              <iframe
-                src={iframeUrl}
-                className="w-full h-full border-0"
-                allow="payment; camera; microphone"
-                title="Halaman Pembayaran Gateway"
-              />
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

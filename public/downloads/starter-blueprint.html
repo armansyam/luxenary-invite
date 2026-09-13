@@ -17,6 +17,7 @@
 -->
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -63,7 +64,12 @@
     }
 
     /* Serif Headings */
-    .serif, h1, h2, h3, h4, .font-serif {
+    .serif,
+    h1,
+    h2,
+    h3,
+    h4,
+    .font-serif {
       font-family: 'Cinzel', 'Marcellus', Georgia, serif;
       letter-spacing: 0.02em;
     }
@@ -91,12 +97,14 @@
       background: url('{{sidebarPhotoUrl}}') center/cover no-repeat;
       z-index: 10;
     }
+
     .sidebar-desktop::after {
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 50%, transparent 100%);
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.3) 50%, transparent 100%);
     }
+
     .sidebar-desktop-content {
       position: absolute;
       bottom: 4rem;
@@ -113,7 +121,7 @@
       max-width: 640px;
       margin: 0 auto;
       min-height: 100vh;
-      background: #ffffff;
+      background: transparent;
       position: relative;
       z-index: 20;
       box-shadow: 0 0 50px rgba(0, 0, 0, 0.25);
@@ -139,6 +147,7 @@
         display: block;
         width: calc(100% - 460px);
       }
+
       .app-container,
       .main-scroll-panel {
         width: 460px;
@@ -147,14 +156,20 @@
         margin-right: 0;
         min-width: 0;
         box-shadow: -10px 0 35px rgba(0, 0, 0, 0.25);
+        position: relative;
+        z-index: 2;
+        background: transparent;
       }
+
       .cover-overlay {
         width: 460px;
         left: calc(100% - 460px);
       }
+
       .bottom-dock {
         left: calc(100% - 230px) !important;
       }
+
       .fixed-bg-layer {
         left: calc(100% - 460px);
         width: 460px;
@@ -171,15 +186,136 @@
         font-size: clamp(2.2rem, 2.8rem, 3.2rem) !important;
         overflow-wrap: break-word !important;
       }
+
       .sec-main-title,
       .sec-heading {
         font-size: clamp(1.75rem, 2.1rem, 2.3rem) !important;
         overflow-wrap: break-word !important;
         word-break: break-word !important;
       }
+
       .sec-flow {
         padding: 4.5rem 1.8rem;
       }
+    }
+
+    /* =================================================================== */
+    /* 3.1 OPENING HERO (100VH FULL VIEWPORT SLIDE)                        */
+    /* =================================================================== */
+    .slide-opening {
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4.5rem 1.8rem 2.8rem;
+      text-align: center;
+      position: relative;
+      background-position: center;
+      background-size: cover;
+      background-repeat: no-repeat;
+      box-sizing: border-box;
+    }
+
+    .opening-top {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .opening-bismillah {
+      font-size: 2.2rem;
+      color: var(--primary, #b5833c);
+      line-height: 1.2;
+    }
+
+    .opening-date-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 14px;
+      border-radius: var(--radius-full);
+      background: rgba(255, 255, 255, 0.85);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      color: var(--text-main, #2b2725);
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      margin-top: 8px;
+    }
+
+    .opening-center {
+      margin: auto 0;
+      padding: 1.5rem 0;
+    }
+
+    .opening-sub-title {
+      display: block;
+      font-size: 11px;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--text-muted, #736b63);
+      margin-bottom: 8px;
+    }
+
+    .opening-names {
+      font-size: clamp(2.6rem, 9.5vw, 3.8rem);
+      color: var(--text-main, #1a1614);
+      line-height: 1.1;
+      font-weight: 400;
+    }
+
+    .opening-names em {
+      font-size: 0.8em;
+      font-style: italic;
+      color: var(--primary, #b5833c);
+    }
+
+    .opening-bottom {
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .opening-quote-card {
+      padding: 16px 20px;
+      background: rgba(255, 255, 255, 0.90);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-subtle);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+    }
+
+    .opening-quote-text {
+      font-size: 13px;
+      font-style: italic;
+      line-height: 1.75;
+      color: var(--text-main, #2b2725);
+    }
+
+    .opening-quote-ref {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--primary, #b5833c);
+      margin-top: 8px;
+    }
+
+    .scroll-indicator {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary, #b5833c);
+      animation: bounceDown 2.2s ease-in-out infinite;
+      margin-top: 14px;
+    }
+
+    @keyframes bounceDown {
+      0%, 100% { transform: translateY(0); opacity: 0.8; }
+      50% { transform: translateY(8px); opacity: 1; }
     }
 
     /* Section Flow Standard */
@@ -231,7 +367,7 @@
       inset: 0;
       z-index: 9999;
       background: linear-gradient(180deg, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 0.75) 100%),
-                  url('{{landingCoverUrl}}') center/cover no-repeat;
+      url('{{landingCoverUrl}}') center/cover no-repeat;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -347,6 +483,18 @@
       left: 50%;
       transform: translate3d(-50%, 0, 0);
       z-index: 900;
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: var(--radius-full);
+      padding: 0.5rem 1rem;
+      display: flex;
+      gap: 1.2rem;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: var(--shadow-elevated);
+      max-width: 440px;
+      width: calc(100% - 32px);
+      justify-content: space-around;
       transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.42s cubic-bezier(0.16, 1, 0.3, 1);
       will-change: transform, opacity;
     }
@@ -357,13 +505,45 @@
       pointer-events: none;
     }
 
+    .dock-btn {
+      color: var(--text-muted, #736b63);
+      font-family: sans-serif;
+      font-size: 0.65rem;
+      text-decoration: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.2rem;
+      transition: color 0.2s ease, transform 0.2s ease;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .dock-btn:hover, .dock-btn.active {
+      color: var(--primary, #b5833c);
+      transform: translateY(-2px);
+    }
+
+    .dock-btn svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+    }
+
     .audio-fab.playing {
       animation: rotateDisc 8s linear infinite;
     }
 
     @keyframes rotateDisc {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
     }
 
     /* =================================================================== */
@@ -492,7 +672,9 @@
       transition: opacity 0.2s;
     }
 
-    .btn-cal:hover { opacity: 0.92; }
+    .btn-cal:hover {
+      opacity: 0.92;
+    }
 
     /* =================================================================== */
     /* 8. RSVP & WISHES (BUKU TAMU)                                        */
@@ -518,7 +700,9 @@
       margin-bottom: 6px;
     }
 
-    .form-input, .form-select, .form-textarea {
+    .form-input,
+    .form-select,
+    .form-textarea {
       width: 100%;
       padding: 12px 16px;
       border: 1px solid #dcd4c7;
@@ -531,7 +715,9 @@
       transition: border-color 0.2s;
     }
 
-    .form-input:focus, .form-select:focus, .form-textarea:focus {
+    .form-input:focus,
+    .form-select:focus,
+    .form-textarea:focus {
       border-color: var(--primary, #b5833c);
     }
 
@@ -549,7 +735,9 @@
       transition: background 0.2s;
     }
 
-    .btn-submit-rsvp:hover { background: #332d2a; }
+    .btn-submit-rsvp:hover {
+      background: #332d2a;
+    }
 
     .wishes-feed-list {
       margin-top: 24px;
@@ -593,37 +781,45 @@
       box-sizing: border-box;
       text-align: center;
       padding: 40px 24px 100px;
-      background: #fbf9f5;
+      background: transparent;
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
-      border-top: 1px solid #eee5d8;
+      border-top: none;
     }
+
     .closing-sec.no-closing-photo {
       justify-content: center;
       align-items: center;
+      background: transparent;
     }
+
     .closing-sec.has-closing-photo {
       justify-content: flex-end;
       align-items: center;
     }
+
     .closing-sec.has-closing-photo::before {
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.55) 50%, rgba(0,0,0,0.92) 100%);
+      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.55) 50%, rgba(0, 0, 0, 0.92) 100%);
       pointer-events: none;
       z-index: 1;
     }
+
     .closing-sec.has-closing-photo .closing-content {
       color: #ffffff;
     }
+
     .closing-sec.has-closing-photo .closing-content p {
-      color: rgba(255,255,255,0.85) !important;
+      color: rgba(255, 255, 255, 0.85) !important;
     }
+
     .closing-sec.has-closing-photo .closing-content h3 {
       color: #ffffff !important;
     }
+
     .closing-content {
       position: relative;
       z-index: 2;
@@ -632,6 +828,7 @@
     }
   </style>
 </head>
+
 <body>
 
   <!-- =================================================================== -->
@@ -640,7 +837,7 @@
   <div id="coverOverlay" class="cover-overlay">
     <div class="cover-top">
       <div class="cover-monogram serif">{{coupleMonogram}}</div>
-      <p class="cover-tagline">{{weddingTagline}}</p>
+      <p class="cover-tagline" data-lux-field="customLabels.coverBadge">{{coverBadge}}</p>
     </div>
 
     <div class="cover-center">
@@ -650,13 +847,17 @@
 
     <div class="cover-bottom" style="width:100%; display:flex; flex-direction:column; align-items:center;">
       <div class="cover-guest-card">
-        <p style="font-size:11px; letter-spacing:0.1em; text-transform:uppercase; opacity:0.8; margin-bottom:4px;">Kepada Yth. Tamu Undangan</p>
+        <p style="font-size:11px; letter-spacing:0.1em; text-transform:uppercase; opacity:0.8; margin-bottom:4px;" data-lux-field="customLabels.coverGuestLabel">
+          Kepada Yth. Tamu Undangan</p>
         <p style="font-size:16px; font-weight:700;">Bapak / Ibu / Sahabat</p>
       </div>
 
-      <button type="button" class="cover-btn-open" onclick="openInvitation()">
-        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-        Buka Undangan
+      <button type="button" class="cover-btn-open" data-lux-field="customLabels.openBtn" onclick="openInvitation()">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path
+            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+        {{openBtn}}
       </button>
 
       <!-- Tombol Trigger Akses QR Pass (Jika Diaktifkan) -->
@@ -669,11 +870,16 @@
   <!-- =================================================================== -->
   <div class="layout-wrapper">
 
+    <!-- FIXED PARALLAX BACKGROUND CANVAS (FOKUS DI PANEL UNDANGAN) -->
+    <div class="fixed-bg-layer" style="background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.70) 0%, rgba(255, 255, 255, 0.45) 40%, rgba(255, 255, 255, 0.95) 100%), url('{{globalBgUrl}}');"></div>
+
     <!-- DESKTOP FIXED SIDEBAR (Hanya tampil di layar desktop >= 900px) -->
     <aside class="sidebar-desktop">
       <div class="sidebar-desktop-content">
-        <span class="sidebar-eyebrow" style="font-size: 11px; letter-spacing: 0.25em; text-transform: uppercase; opacity: 0.8; display: block; margin-bottom: 8px;">{{weddingTagline}}</span>
-        <h1 class="sidebar-names serif" style="font-size: 2.8rem; line-height: 1.1; margin-bottom: 8px;">{{firstName}} &amp; {{secondName}}</h1>
+        <span class="sidebar-eyebrow"
+          style="font-size: 11px; letter-spacing: 0.25em; text-transform: uppercase; opacity: 0.8; display: block; margin-bottom: 8px;">{{weddingTagline}}</span>
+        <h1 class="sidebar-names serif" style="font-size: 2.8rem; line-height: 1.1; margin-bottom: 8px;">{{firstName}}
+          &amp; {{secondName}}</h1>
         <p class="sidebar-date" style="font-size: 13px; opacity: 0.85;">{{weddingDate}}</p>
       </div>
     </aside>
@@ -681,197 +887,261 @@
     <!-- PANEL KONTEN UTAMA (EMULASI MOBILE 460PX PADA DESKTOP SPLIT) -->
     <main class="main-scroll-panel app-container">
 
-    <!-- SEKSI 1: KUTIPAN PEMBUKA & AYAT -->
-    <section class="sec-flow" id="quote">
-      <span class="sec-eyebrow">HOLY MATRIMONY</span>
-      <p style="font-size:14px; font-style:italic; line-height:1.8; color:#3a3532; max-width:500px; margin:0 auto;">
-        "{{openingQuote}}"
-      </p>
-      <div class="sec-divider"></div>
-      <p style="font-size:12px; font-weight:700; letter-spacing:0.1em; color:var(--primary, #b5833c);">
-        {{openingQuoteRef}}
-      </p>
-    </section>
-
-    <!-- SEKSI 2: PROFIL KEDUA MEMPELAI -->
-    <section class="sec-flow" id="couple">
-      <span class="sec-eyebrow">THE BRIDE &amp; GROOM</span>
-      <h2 class="sec-main-title serif">Mempelai Bahagia</h2>
-      <p class="sec-sub">Maha Suci Allah yang telah menciptakan makhluk-Nya berpasang-pasangan untuk membina mahligai rumah tangga yang sakinah, mawaddah, warahmah.</p>
-
-      <div class="couple-grid">
-        <!-- Mempelai Pria -->
-        <div class="couple-card">
-          <div class="couple-photo-wrap">
-            <img src="{{firstPhotoUrl}}" alt="{{firstFullName}}" loading="lazy" />
+      <!-- SEKSI 1: OPENING HERO (100VH STANDALONE - KANVAS BERSIH / TRANSPARAN) -->
+      <section class="slide-opening" id="home" style="background: transparent;">
+        <div class="opening-top reveal-on-scroll">
+          <span class="opening-bismillah serif" data-lux-field="customLabels.openingGreeting">{{openingGreeting}}</span>
+          <span class="sec-eyebrow" data-lux-field="weddingTagline" style="letter-spacing:0.32em; margin-top:6px;">{{weddingTagline}}</span>
+          <div class="opening-date-pill">
+            <span>{{weddingDateDay}}</span>/<span>{{weddingDateMonth}}</span> • <span>{{weddingDateYear}}</span>
           </div>
-          <span class="couple-role">{{groomRole}}</span>
-          <h3 class="couple-name serif">{{firstDisplayName}}</h3>
-          <p class="couple-parents">{{firstParents}}</p>
-          <a href="https://instagram.com/{{firstInstagram}}" target="_blank" class="couple-ig">
-            <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-            @{{firstInstagram}}
-          </a>
         </div>
 
-        <div style="font-size:28px; color:var(--primary, #b5833c); font-family:serif;">&amp;</div>
-
-        <!-- Mempelai Wanita -->
-        <div class="couple-card">
-          <div class="couple-photo-wrap">
-            <img src="{{secondPhotoUrl}}" alt="{{secondFullName}}" loading="lazy" />
-          </div>
-          <span class="couple-role">{{brideRole}}</span>
-          <h3 class="couple-name serif">{{secondDisplayName}}</h3>
-          <p class="couple-parents">{{secondParents}}</p>
-          <a href="https://instagram.com/{{secondInstagram}}" target="_blank" class="couple-ig">
-            <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-            @{{secondInstagram}}
-          </a>
+        <div class="opening-center reveal-on-scroll">
+          <span class="opening-sub-title" data-lux-field="customLabels.quoteEyebrow">{{quoteSectionEyebrow}}</span>
+          <h1 class="opening-names serif">{{firstName}} <em>&amp;</em> {{secondName}}</h1>
+          <div class="sec-divider" style="margin: 12px auto 0;"></div>
         </div>
-      </div>
-    </section>
 
-    <!-- SEKSI 3: HITUNG MUNDUR (COUNTDOWN TIMER) -->
-    <section class="sec-flow" id="countdown" style="background:#fdfbf7;">
-      <span class="sec-eyebrow">SAVE THE DATE</span>
-      <h2 class="sec-main-title serif">Menghitung Hari Bahagia</h2>
-      <p class="sec-sub">Kami sangat menantikan kehadiran Bapak/Ibu/Sahabat sekalian untuk merayakan momen sakral ini bersama kami.</p>
+        <div class="opening-bottom reveal-on-scroll">
+          <div class="opening-quote-card">
+            <p class="opening-quote-text" data-lux-field="openingQuote">
+              "{{openingQuote}}"
+            </p>
+            <p class="opening-quote-ref" data-lux-field="openingQuoteRef">
+              {{openingQuoteRef}}
+            </p>
+          </div>
+          <div class="scroll-indicator">
+            <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path d="M12 5v14M5 12l7 7 7-7" />
+            </svg>
+          </div>
+        </div>
+      </section>
 
-      <div class="countdown-grid" id="countdownTimer">
-        <div class="countdown-box"><span class="countdown-num" id="cdDays">00</span><span class="countdown-lbl" data-lux-field="customLabels.cdDays">Hari</span></div>
-        <div class="countdown-box"><span class="countdown-num" id="cdHours">00</span><span class="countdown-lbl" data-lux-field="customLabels.cdHours">Jam</span></div>
-        <div class="countdown-box"><span class="countdown-num" id="cdMins">00</span><span class="countdown-lbl" data-lux-field="customLabels.cdMins">Menit</span></div>
-        <div class="countdown-box"><span class="countdown-num" id="cdSecs">00</span><span class="countdown-lbl" data-lux-field="customLabels.cdSecs">Detik</span></div>
-      </div>
+      <!-- SEKSI 2: PROFIL KEDUA MEMPELAI -->
+      <section class="sec-flow" id="couple">
+        <span class="sec-eyebrow" data-lux-field="customLabels.coupleEyebrow">{{coupleSectionEyebrow}}</span>
+        <h2 class="sec-main-title serif" data-lux-field="customLabels.coupleTitle">{{coupleSectionTitle}}</h2>
+        <p class="sec-sub" data-lux-field="customLabels.coupleSub">{{coupleSectionSub}}</p>
 
-      <!-- Tombol Simpan ke Kalender -->
-      <a href="{{googleCalendarUrl}}" target="_blank" class="btn-cal">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-        Simpan ke Google Calendar
-      </a>
-    </section>
-
-    <!-- SEKSI 4: SUSUNAN ACARA & LOKASI -->
-    <section class="sec-flow" id="events">
-      <span class="sec-eyebrow">SCHEDULE &amp; VENUE</span>
-      <h2 class="sec-main-title serif">Rangkaian Acara</h2>
-      {{eventDataHtml}}
-    </section>
-
-    <!-- =================================================================== -->
-    <!-- SEKSI 5: KISAH CINTA (LOVE STORY)                                    -->
-    <!-- Theme Builder memiliki 2 opsi:                                      -->
-    <!-- Opsi A (Bawaan Engine): Gunakan {{storySectionHtml}}                 -->
-    <!-- Opsi B (Native Master Theme): Gunakan {{#if showStory}} ... {{/if}} -->
-    <!--   dengan tata letak bebas khas tema Anda + {{storyItemsHtml}}        -->
-    <!-- =================================================================== -->
-    {{#if showStory}}
-    <section class="sec-flow" id="story">
-      <span class="sec-eyebrow">{{storySectionEyebrow}}</span>
-      <h2 class="sec-main-title serif">{{storySectionTitle}}</h2>
-      <div class="custom-story-container">
-        {{storyItemsHtml}}
-      </div>
-    </section>
-    {{/if}}
-
-    <!-- SEKSI 6: GALERI FOTO & VIDEO -->
-    {{gallerySectionHtml}}
-
-    <!-- SEKSI 7: PANDUAN BUSANA (DRESS CODE) -->
-    {{dressCodeHtml}}
-
-    <!-- SEKSI 8: SIARAN LANGSUNG (LIVE STREAMING) -->
-    {{liveStreamingHtml}}
-
-    <!-- SEKSI 9: FILTER INSTAGRAM STORY -->
-    {{weddingFilterHtml}}
-
-    <!-- SEKSI 10: TANDA KASIH (AMPLOP DIGITAL & KADO) -->
-    {{giftSectionHtml}}
-
-    <!-- SEKSI 11: TURUT MENGUNDANG -->
-    {{turutMengundangHtml}}
-
-    <!-- SEKSI 12: KENANGAN TAMU (GUEST MEMORIES BOOTH) -->
-    {{memoriesSectionHtml}}
-
-    <!-- SEKSI 13: KARTU AKSES QR CHECK-IN TAMU -->
-    {{qrAccessSectionHtml}}
-
-    <!-- SEKSI 14: FORM RSVP & BUKU TAMU UCAPAN REAL-TIME -->
-    <section class="sec-flow" id="rsvp" style="background:#fdfbf7;">
-      <span class="sec-eyebrow">WISHES &amp; RSVP</span>
-      <h2 class="sec-main-title serif">Buku Tamu &amp; Kehadiran</h2>
-      <p class="sec-sub">Untaian doa dan konfirmasi kehadiran Anda merupakan kado terindah bagi kami.</p>
-
-      <div class="rsvp-form-box">
-        <form onsubmit="luxSubmitRsvp(event)">
-          <div class="form-group">
-            <label class="form-label" data-lux-field="customLabels.rsvpNameLabel">Nama Lengkap</label>
-            <input type="text" id="rsvpName" class="form-input" placeholder="Masukkan nama Anda" required />
+        <div class="couple-grid">
+          <!-- Mempelai Pria -->
+          <div class="couple-card">
+            <div class="couple-photo-wrap">
+              <img src="{{firstPhotoUrl}}" alt="{{firstFullName}}" loading="lazy" />
+            </div>
+            <span class="couple-role">{{groomRole}}</span>
+            <h3 class="couple-name serif">{{firstDisplayName}}</h3>
+            <p class="couple-parents">{{firstParents}}</p>
+            <a href="https://instagram.com/{{firstInstagram}}" target="_blank" class="couple-ig">
+              <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
+                <path
+                  d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+              </svg>
+              @{{firstInstagram}}
+            </a>
           </div>
 
-          <div class="form-group">
-            <label class="form-label" data-lux-field="customLabels.rsvpStatusLabel">Konfirmasi Kehadiran</label>
-            <select id="rsvpStatus" class="form-select">
-              <option value="HADIR">Hadir dengan Senang Hati</option>
-              <option value="TIDAK_HADIR">Mohon Maaf, Berhalangan Hadir</option>
-              <option value="RAGU">Masih Ragu</option>
-            </select>
+          <div style="font-size:28px; color:var(--primary, #b5833c); font-family:serif;">&amp;</div>
+
+          <!-- Mempelai Wanita -->
+          <div class="couple-card">
+            <div class="couple-photo-wrap">
+              <img src="{{secondPhotoUrl}}" alt="{{secondFullName}}" loading="lazy" />
+            </div>
+            <span class="couple-role">{{brideRole}}</span>
+            <h3 class="couple-name serif">{{secondDisplayName}}</h3>
+            <p class="couple-parents">{{secondParents}}</p>
+            <a href="https://instagram.com/{{secondInstagram}}" target="_blank" class="couple-ig">
+              <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
+                <path
+                  d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+              </svg>
+              @{{secondInstagram}}
+            </a>
           </div>
+        </div>
+      </section>
 
-          <div class="form-group">
-            <label class="form-label" data-lux-field="customLabels.rsvpCountLabel">Jumlah Tamu</label>
-            <select id="rsvpGuests" class="form-select">
-              <option value="1">1 Orang</option>
-              <option value="2">2 Orang</option>
-              <option value="3">3 Orang</option>
-            </select>
-          </div>
+      <!-- SEKSI 3: HITUNG MUNDUR (COUNTDOWN TIMER) -->
+      <section class="sec-flow" id="countdown" style="background:#fdfbf7;">
+        <span class="sec-eyebrow">SAVE THE DATE</span>
+        <h2 class="sec-main-title serif">Menghitung Hari Bahagia</h2>
+        <p class="sec-sub">Kami sangat menantikan kehadiran Bapak/Ibu/Sahabat sekalian untuk merayakan momen sakral ini
+          bersama kami.</p>
 
-          <div class="form-group">
-            <label class="form-label" data-lux-field="customLabels.rsvpMessageLabel">Ucapan &amp; Doa Restu</label>
-            <textarea id="rsvpMessage" class="form-textarea" rows="3" placeholder="Tuliskan ucapan dan doa terbaik Anda..." required></textarea>
-          </div>
+        <div class="countdown-grid" id="countdownTimer">
+          <div class="countdown-box"><span class="countdown-num" id="cdDays">00</span><span class="countdown-lbl"
+              data-lux-field="customLabels.cdDays">Hari</span></div>
+          <div class="countdown-box"><span class="countdown-num" id="cdHours">00</span><span class="countdown-lbl"
+              data-lux-field="customLabels.cdHours">Jam</span></div>
+          <div class="countdown-box"><span class="countdown-num" id="cdMins">00</span><span class="countdown-lbl"
+              data-lux-field="customLabels.cdMins">Menit</span></div>
+          <div class="countdown-box"><span class="countdown-num" id="cdSecs">00</span><span class="countdown-lbl"
+              data-lux-field="customLabels.cdSecs">Detik</span></div>
+        </div>
 
-          <button type="submit" class="btn-submit-rsvp" data-lux-field="customLabels.rsvpBtnText">KIRIM UCAPAN &amp; KONFIRMASI</button>
-        </form>
-      </div>
+        <!-- Tombol Simpan ke Kalender -->
+        <a href="{{googleCalendarUrl}}" target="_blank" class="btn-cal">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          Simpan ke Google Calendar
+        </a>
+      </section>
 
-      <!-- Feed Doa Ucapan Tamu Real-Time -->
-      <div class="wishes-feed-list" id="wishesFeed">
-        {{wishesHtml}}
-      </div>
-    </section>
+      <!-- SEKSI 4: SUSUNAN ACARA & LOKASI -->
+      <section class="sec-flow" id="events">
+        <span class="sec-eyebrow" data-lux-field="customLabels.eventsEyebrow">SCHEDULE &amp; VENUE</span>
+        <h2 class="sec-main-title serif" data-lux-field="customLabels.eventsTitle">{{eventsSectionTitle}}</h2>
+        {{eventDataHtml}}
+      </section>
 
-    <!-- SEKSI 15: SALAM PENUTUP (Adaptive Full-Height 100vh) -->
-    <footer class="closing-sec {{closingPhotoClass}}">
-      <div class="closing-content">
-        <p style="font-size:13px; color:var(--text-muted, #736b63); max-width:480px; margin:0 auto 16px; line-height:1.7;">
-          Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Sahabat berkenan hadir dan memberikan doa restu bagi kami.
-        </p>
-        <p style="font-size:11px; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; color:var(--primary, #b5833c);">
-          Kami Yang Berbahagia,
-        </p>
-        <h3 class="serif" style="font-size:24px; margin-top:8px; color:#1a1614;">
-          {{firstName}} &amp; {{secondName}}
-        </h3>
-        <p style="font-size:12px; color:var(--text-muted, #736b63); margin-top:4px;">Beserta Keluarga Besar Kedua Mempelai</p>
-      </div>
-    </footer>
+      <!-- =================================================================== -->
+      <!-- SEKSI 5: KISAH CINTA (LOVE STORY)                                    -->
+      <!-- Theme Builder memiliki 2 opsi:                                      -->
+      <!-- Opsi A (Bawaan Engine): Gunakan {{storySectionHtml}}                 -->
+      <!-- Opsi B (Native Master Theme): Gunakan {{#if showStory}} ... {{/if}} -->
+      <!--   dengan tata letak bebas khas tema Anda + {{storyItemsHtml}}        -->
+      <!-- =================================================================== -->
+      {{#if showStory}}
+      <section class="sec-flow" id="story">
+        <span class="sec-eyebrow" data-lux-field="customLabels.storyEyebrow">{{storySectionEyebrow}}</span>
+        <h2 class="sec-main-title serif" data-lux-field="customLabels.storyTitle">{{storySectionTitle}}</h2>
+        <div class="custom-story-container">
+          {{storyItemsHtml}}
+        </div>
+      </section>
+      {{/if}}
+
+      <!-- SEKSI 6: GALERI FOTO & VIDEO -->
+      {{gallerySectionHtml}}
+
+      <!-- SEKSI 7: PANDUAN BUSANA (DRESS CODE) -->
+      {{dressCodeHtml}}
+
+      <!-- SEKSI 8: SIARAN LANGSUNG (LIVE STREAMING) -->
+      {{liveStreamingHtml}}
+
+      <!-- SEKSI 9: FILTER INSTAGRAM STORY -->
+      {{weddingFilterHtml}}
+
+      <!-- SEKSI 10: TANDA KASIH (AMPLOP DIGITAL & KADO) -->
+      {{giftSectionHtml}}
+
+      <!-- SEKSI 11: TURUT MENGUNDANG -->
+      {{turutMengundangHtml}}
+
+      <!-- SEKSI 12: KENANGAN TAMU (GUEST MEMORIES BOOTH) -->
+      {{memoriesSectionHtml}}
+
+      <!-- SEKSI 13: KARTU AKSES QR CHECK-IN TAMU -->
+      {{qrAccessSectionHtml}}
+
+      <!-- SEKSI 14: FORM RSVP & BUKU TAMU UCAPAN REAL-TIME -->
+      <section class="sec-flow" id="rsvp" style="background:#fdfbf7;">
+        <span class="sec-eyebrow" data-lux-field="customLabels.wishesEyebrow">WISHES &amp; RSVP</span>
+        <h2 class="sec-main-title serif" data-lux-field="customLabels.wishesTitle">{{wishesSectionTitle}}</h2>
+        <p class="sec-sub" data-lux-field="customLabels.wishesSub">{{wishesSectionSub}}</p>
+
+        <div class="rsvp-form-box">
+          <form onsubmit="luxSubmitRsvp(event)">
+            <div class="form-group">
+              <label class="form-label" data-lux-field="customLabels.rsvpNameLabel">Nama Lengkap</label>
+              <input type="text" id="rsvpName" class="form-input" placeholder="Masukkan nama Anda" required />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" data-lux-field="customLabels.rsvpStatusLabel">Konfirmasi Kehadiran</label>
+              <select id="rsvpStatus" class="form-select">
+                <option value="HADIR">Hadir dengan Senang Hati</option>
+                <option value="TIDAK_HADIR">Mohon Maaf, Berhalangan Hadir</option>
+                <option value="RAGU">Masih Ragu</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" data-lux-field="customLabels.rsvpCountLabel">Jumlah Tamu</label>
+              <select id="rsvpGuests" class="form-select">
+                <option value="1">1 Orang</option>
+                <option value="2">2 Orang</option>
+                <option value="3">3 Orang</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" data-lux-field="customLabels.rsvpMessageLabel">Ucapan &amp; Doa Restu</label>
+              <textarea id="rsvpMessage" class="form-textarea" rows="3"
+                placeholder="Tuliskan ucapan dan doa terbaik Anda..." required></textarea>
+            </div>
+
+            <button type="submit" class="btn-submit-rsvp" data-lux-field="customLabels.rsvpBtnText">KIRIM UCAPAN &amp;
+              KONFIRMASI</button>
+          </form>
+        </div>
+
+        <!-- Feed Doa Ucapan Tamu Real-Time -->
+        <div class="wishes-feed-list" id="wishesFeed">
+          {{wishesHtml}}
+        </div>
+      </section>
+
+      <!-- SEKSI 15: SALAM PENUTUP (Adaptive Full-Height 100vh) -->
+      <footer class="closing-sec {{closingPhotoClass}}" style="{{closingBgStyle}}">
+        <div class="closing-content">
+          <p
+            style="font-size:13px; color:var(--text-muted, #736b63); max-width:480px; margin:0 auto 16px; line-height:1.7;">
+            Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Sahabat berkenan hadir dan memberikan
+            doa restu bagi kami.
+          </p>
+          <p
+            style="font-size:11px; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; color:var(--primary, #b5833c);">
+            Kami Yang Berbahagia,
+          </p>
+          <h3 class="serif" style="font-size:24px; margin-top:8px; color:#1a1614;">
+            {{firstName}} &amp; {{secondName}}
+          </h3>
+          <p style="font-size:12px; color:var(--text-muted, #736b63); margin-top:4px;">Beserta Keluarga Besar Kedua
+            Mempelai</p>
+        </div>
+      </footer>
 
     </main>
   </div>
 
   <!-- =================================================================== -->
-  <!-- 3. PEMUTAR MUSIK LATAR                                              -->
+  <!-- 3. FLOATING NAVIGATION DOCK & AUDIO                                 -->
   <!-- =================================================================== -->
-  
+  <nav class="bottom-dock dock-hidden">
+    <a href="#home" class="dock-btn active">
+      <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      <span>Home</span>
+    </a>
+    <a href="#couple" class="dock-btn">
+      <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+      <span>Couple</span>
+    </a>
+    <a href="#events" class="dock-btn">
+      <svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
+      <span>Acara</span>
+    </a>
+    <a href="#story" class="dock-btn">
+      <svg viewBox="0 0 24 24"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg>
+      <span>Kisah</span>
+    </a>
+    <a href="#rsvp" class="dock-btn">
+      <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+      <span>Ucapan</span>
+    </a>
+  </nav>
 
+  <!-- TOMBOL AUDIO FAB -->
   <button id="musicToggle" class="audio-fab" onclick="luxToggleAudio()" title="Putar / Hentikan Musik">
-    <svg id="musicIconPlay" width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+    <svg id="musicIconPlay" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
+    </svg>
   </button>
 
   <!-- =================================================================== -->
@@ -888,16 +1158,16 @@
       if (dock) dock.classList.remove('dock-hidden');
       const audio = document.getElementById('luxAudioPlayer');
       if (audio) {
-        audio.play().then(function() {
+        audio.play().then(function () {
           if (fab) fab.classList.add('playing');
-        }).catch(function() {
+        }).catch(function () {
           console.log('Autoplay ditahan oleh kebijakan peramban');
         });
       }
     }
 
     // B. Toggle Play/Pause Musik
-    
+
 
     // C. Salin Teks Rekening / Alamat
     function copyText(text) {
@@ -936,7 +1206,7 @@
     function switchGiftTab(tab, btn) {
       const tabAmplop = document.getElementById('giftTabAmplop');
       const tabKado = document.getElementById('giftTabKado');
-      document.querySelectorAll('.gift-tab-btn').forEach(function(b) { b.classList.remove('active'); });
+      document.querySelectorAll('.gift-tab-btn').forEach(function (b) { b.classList.remove('active'); });
       if (btn) btn.classList.add('active');
       if (tab === 'amplop') {
         if (tabAmplop) tabAmplop.style.display = 'block';
@@ -948,9 +1218,41 @@
     }
 
     // E. Hitung Mundur Otomatis
-    
+    (function initCountdown() {
+      const rawTarget = "{{targetDate}}" || "";
+      const parsed = rawTarget ? new Date(rawTarget).getTime() : NaN;
+      const targetTime = !isNaN(parsed) && parsed > 0 ? parsed : (Date.now() + 30 * 24 * 60 * 60 * 1000);
 
-    // SMART AUTO-HIDE DOCK & MUSIC PLAYER ON SCROLL DOWN, REVEAL ON SCROLL UP
+      function updateTicker() {
+        const now = Date.now();
+        const diff = targetTime - now;
+
+        const elD = document.getElementById('cdDays');
+        const elH = document.getElementById('cdHours');
+        const elM = document.getElementById('cdMins');
+        const elS = document.getElementById('cdSecs');
+
+        if (diff > 0) {
+          const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+          const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          const secs = Math.floor((diff % (1000 * 60)) / 1000);
+
+          if (elD) elD.textContent = String(days).padStart(2, '0');
+          if (elH) elH.textContent = String(hours).padStart(2, '0');
+          if (elM) elM.textContent = String(mins).padStart(2, '0');
+          if (elS) elS.textContent = String(secs).padStart(2, '0');
+        } else {
+          if (elD) elD.textContent = '00';
+          if (elH) elH.textContent = '00';
+          if (elM) elM.textContent = '00';
+          if (elS) elS.textContent = '00';
+        }
+      }
+
+      updateTicker();
+      setInterval(updateTicker, 1000);
+    })();
     (function initSmartControls() {
       const dock = document.querySelector('.bottom-dock');
       const fab = document.getElementById('musicToggle');
@@ -1020,18 +1322,19 @@
     })();
   </script>
 
-<!-- LUXENARY PROTECTION SCRIPT -->
-<script>
-  (function() {
-    try {
-      if (window.console && console.log) {
-        console.log("%cSTOP!", "color: #ef4444; font-size: 50px; font-weight: 900; text-shadow: 2px 2px 0 #000; font-family: sans-serif;");
-        console.log("%cIni adalah properti eksklusif Luxenary.", "color: #b5833c; font-size: 20px; font-weight: bold;");
-        console.log("%cSegala bentuk pencurian kode, scraping, atau modifikasi ilegal akan direkam. Domain saat ini: " + window.location.hostname, "font-size: 14px; color: #a8a29e;");
-      }
-    } catch(e) {}
-  })();
-</script>
+  <!-- LUXENARY PROTECTION SCRIPT -->
+  <script>
+    (function () {
+      try {
+        if (window.console && console.log) {
+          console.log("%cSTOP!", "color: #ef4444; font-size: 50px; font-weight: 900; text-shadow: 2px 2px 0 #000; font-family: sans-serif;");
+          console.log("%cIni adalah properti eksklusif Luxenary.", "color: #b5833c; font-size: 20px; font-weight: bold;");
+          console.log("%cSegala bentuk pencurian kode, scraping, atau modifikasi ilegal akan direkam. Domain saat ini: " + window.location.hostname, "font-size: 14px; color: #a8a29e;");
+        }
+      } catch (e) { }
+    })();
+  </script>
   {{musicPlayerHtml}}
 </body>
+
 </html>

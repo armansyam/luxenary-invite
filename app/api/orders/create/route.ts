@@ -254,7 +254,7 @@ export async function POST(req: NextRequest) {
             proofUploadedAt: isResetProof ? null : existingPending.proofUploadedAt,
             rejectReason: isResetProof ? null : existingPending.rejectReason,
             snapToken: isPlanChanged ? null : existingPending.snapToken,
-            expiredAt: isPlanChanged ? null : existingPending.expiredAt,
+            expiredAt: isPlanChanged ? new Date(Date.now() + 24 * 60 * 60 * 1000) : (existingPending.expiredAt || new Date(Date.now() + 24 * 60 * 60 * 1000)),
           },
         });
 
@@ -290,6 +290,7 @@ export async function POST(req: NextRequest) {
         planType: planType as "TRADITIONAL" | "MODERN" | "PREMIUM",
         amount,
         status: "PENDING",
+        expiredAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
       },
     });
 

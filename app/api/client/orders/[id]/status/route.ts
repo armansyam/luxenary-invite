@@ -36,6 +36,9 @@ export async function GET(
         rejectReason: true,
         paidAt: true,
         expiredAt: true,
+        checkoutConfirmedAt: true,
+        promoCodeApplied: true,
+        discountAmount: true,
         createdAt: true,
         snapToken: true,
         orderType: true,
@@ -68,39 +71,39 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden: Anda tidak memiliki akses ke pesanan ini" }, { status: 403 });
     }
 
-    // --- AUTO EXPIRE LOGIC FOR GATEWAY / QRIS ---
-    // Jika order masih PENDING dan batas waktu kedaluwarsa sudah lewat,
-    // tandai EXPIRED di database (self-healing saat webhook tidak sampai, misal di localhost Mac)
+    // --- AUTO EXPIRE LOGIC ---
+    // Batas hidup order adalah 24 jam (order.expiredAt).
+    // Kedaluwarsa sesi QRIS (tokenData.expiry 15-60 menit) TIDAK mematikan order,
+    // melainkan hanya menandai isQrisSessionExpired agar frontend menampilkan tombol regenerasi QRIS.
     let finalStatus = order.status;
-    
-    if (order.status === "PENDING" && order.paymentMethod === "GATEWAY") {
-      const nowMs = Date.now();
-      let isExpired = false;
+    let isQrisSessionExpired = false;
+    const nowMs = Date.now();
 
-      // 1. Cek dari order.expiredAt di database
-      if (order.expiredAt && nowMs > order.expiredAt.getTime()) {
-        isExpired = true;
-      }
-
-      // 2. Cek dari tokenData.expiry di snapToken (jika format JSON)
-      if (!isExpired && order.snapToken) {
+    if (order.status === "PENDING") {
+      // 1. Cek sesi QRIS
+      if (order.snapToken) {
         try {
           const tokenData = JSON.parse(order.snapToken);
           if (tokenData && tokenData.expiry && nowMs > tokenData.expiry) {
-            isExpired = true;
+            isQrisSessionExpired = true;
           }
         } catch {}
       }
 
-      if (isExpired) {
+      // 2. Cek batas hidup keseluruhan order (24 jam)
+      if (order.expiredAt && nowMs > order.expiredAt.getTime()) {
         await prisma.order.update({
           where: { id: order.id },
           data: { status: "EXPIRED" },
         });
+
+        // Release promo hold jika ada
+        const { releaseOrderPromoHold } = await import("@/lib/marketing");
+        await releaseOrderPromoHold(order.id);
+
         finalStatus = "EXPIRED";
-      } else {
+      } else if (order.paymentMethod === "GATEWAY" && !isQrisSessionExpired) {
         // Realtime Reconciliation via Gateway (Midtrans / Xendit)
-        // Memastikan status tagihan realtime terverifikasi langsung ke gateway saat status dicek
         try {
           const { getActiveGatewayId, getGatewayById } = await import("@/lib/gatewayRegistry");
           const activeGwId = (order as any).gatewayId || (await getActiveGatewayId());
@@ -119,20 +122,15 @@ export async function GET(
               const { applyUpgradePlan } = await import("@/lib/upgradeHelper");
               await applyUpgradePlan(order.id);
 
+              const { processOrderPaidMarketing } = await import("@/lib/marketing");
+              await processOrderPaidMarketing(order.id);
+
               const { paymentEmitter } = await import("@/lib/paymentEvents");
               paymentEmitter.emit(order.id, { status: "PAID", planType: order.planType });
               finalStatus = "PAID";
-            } else if (checkRes.status === "FAILED") {
-              await prisma.order.update({
-                where: { id: order.id },
-                data: { status: "FAILED" },
-              });
-              finalStatus = "FAILED";
             }
           }
-        } catch {
-          // Abaikan kegagalan jaringan sementara
-        }
+        } catch {}
       }
     }
 
@@ -210,6 +208,10 @@ export async function GET(
       rejectReason: isAuthorizedOwner ? order.rejectReason : null,
       paidAt: order.paidAt,
       expiredAt: order.expiredAt,
+      checkoutConfirmedAt: order.checkoutConfirmedAt,
+      promoCodeApplied: order.promoCodeApplied,
+      discountAmount: order.discountAmount ? Number(order.discountAmount) : 0,
+      isQrisSessionExpired,
       snapToken: isAuthorizedOwner ? order.snapToken : null,
       serverTime: Date.now(),
     });

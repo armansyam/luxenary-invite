@@ -255,12 +255,13 @@ export async function composeTemplateData(invitationId: string) {
   const customFixedBg = mediaMap.get("GLOBAL_FIXED_BG");
   const closingPhotoUrl = mediaMap.get("CLOSING_COVER") || null;
 
-  // Background Canvas: Tekstur / kanvas bawaan tema yang aman dan tanpa foto wajah orang asing
-  const fixedBgUrl = customFixedBg || `/demo/${themeFolder}/background.webp`;
-  const coverUrl = customCover || fixedBgUrl;
+  // Background Canvas: Zero-Fake Fallback (Tanpa Memaksa Foto Demo / Foto Model Asing)
+  // Jika klien tidak mengunggah GLOBAL_FIXED_BG, biarkan kosong agar kanvas murni mengekspos warna palet tema
+  const fixedBgUrl = customFixedBg || "";
+  const coverUrl = customCover || fixedBgUrl || "";
   const coverDesktopUrl = mediaMap.get("LANDING_COVER_DESKTOP") || coverUrl;
   const sidebarUrl = customSidebar || coverUrl;
-  const homePhotoUrl = customHomePhoto || fixedBgUrl;
+  const homePhotoUrl = customHomePhoto || "";
 
   // Foto Personal Mempelai: Jika tidak diunggah, gunakan Monogram Inisial Artistik (Anti-Foto Model Orang Asing)
   const groomPhoto = customGroom || generateInitialAvatarSvg(groomNickname || groomName, "The Groom");
@@ -343,8 +344,8 @@ export async function composeTemplateData(invitationId: string) {
       const sessionsListHtml = rawEventsList.map((ev: any, idx: number) => `
         <div class="event-block-item unified-session">
           <span class="ev-cat">${(ev.badge || (idx === 0 ? "SAKRAMEN / AKAD" : "RESEPSI")).toUpperCase()}</span>
-          <h3 class="ev-name serif">${(ev.title || (idx === 0 ? "Akad Nikah" : "Resepsi Pernikahan")).toUpperCase()}</h3>
-          ${ev.time ? `<p class="ev-time">${ev.time}</p>` : ""}
+          <h3 class="ev-name serif" data-lux-field="events.${idx}.title">${(ev.title || (idx === 0 ? "Akad Nikah" : "Resepsi Pernikahan")).toUpperCase()}</h3>
+          ${ev.time ? `<p class="ev-time" data-lux-field="events.${idx}.time">${ev.time}</p>` : ""}
           ${ev.notes ? `<p class="ev-notes" style="font-size:0.75rem; font-style:italic; margin-top:0.3rem; color:rgba(255,255,255,0.7);">${nl2br(ev.notes)}</p>` : ""}
         </div>
       `).join("");
@@ -361,8 +362,8 @@ export async function composeTemplateData(invitationId: string) {
           ${(unifiedVenue || unifiedAddress || unifiedMapUrl) ? `
           <div class="event-unified-venue-card">
             <span class="venue-card-lbl">LOKASI ACARA</span>
-            ${unifiedVenue ? `<h4 class="ev-venue-unified serif">${unifiedVenue}</h4>` : ""}
-            ${unifiedAddress ? `<p class="ev-addr-unified">${unifiedAddress}</p>` : ""}
+            ${unifiedVenue ? `<h4 class="ev-venue-unified serif" data-lux-field="events.0.location">${unifiedVenue}</h4>` : ""}
+            ${unifiedAddress ? `<p class="ev-addr-unified" data-lux-field="events.0.address">${unifiedAddress}</p>` : ""}
             ${unifiedMapUrl ? `
               <a href="${unifiedMapUrl}" target="_blank" rel="noreferrer" class="btn-map-outline">
                 BUKA PETUNJUK ARAH (MAPS)
@@ -377,10 +378,10 @@ export async function composeTemplateData(invitationId: string) {
       eventsHtml = rawEventsList.map((ev: any, idx: number) => `
         <div class="event-block-item">
           <span class="ev-cat">${(ev.badge || (idx === 0 ? "SAKRAMEN / AKAD" : "RESEPSI")).toUpperCase()}</span>
-          <h3 class="ev-name serif">${(ev.title || (idx === 0 ? "Akad Nikah" : "Resepsi Pernikahan")).toUpperCase()}</h3>
-          ${ev.time ? `<p class="ev-time">${ev.time}</p>` : ""}
-          ${ev.location ? `<h4 class="ev-venue">${ev.location}</h4>` : ""}
-          ${ev.address ? `<p class="ev-addr">${ev.address}</p>` : ""}
+          <h3 class="ev-name serif" data-lux-field="events.${idx}.title">${(ev.title || (idx === 0 ? "Akad Nikah" : "Resepsi Pernikahan")).toUpperCase()}</h3>
+          ${ev.time ? `<p class="ev-time" data-lux-field="events.${idx}.time">${ev.time}</p>` : ""}
+          ${ev.location ? `<h4 class="ev-venue" data-lux-field="events.${idx}.location">${ev.location}</h4>` : ""}
+          ${ev.address ? `<p class="ev-addr" data-lux-field="events.${idx}.address">${ev.address}</p>` : ""}
           ${ev.notes ? `<p class="ev-notes" style="font-size:0.75rem; font-style:italic; margin-top:0.3rem; color:rgba(255,255,255,0.7);">${nl2br(ev.notes)}</p>` : ""}
           ${ev.mapsUrl ? `
             <a href="${ev.mapsUrl}" target="_blank" rel="noreferrer" class="btn-map-outline">
@@ -402,6 +403,8 @@ export async function composeTemplateData(invitationId: string) {
     rsvpTitle: blueprint.rsvpTitle,
     quoteTitle: blueprint.quoteSectionTitle,
     quoteEyebrow: blueprint.quoteSectionEyebrow,
+    openingGreeting: blueprint.openingGreeting || "",
+    coverBadge: blueprint.coverBadge || featureSettings.weddingTagline || "THE WEDDING OF",
     coupleTitle: blueprint.coupleSectionTitle,
     coupleEyebrow: blueprint.coupleSectionEyebrow || "THE COUPLE",
     coupleSub: blueprint.coupleSectionSub,
@@ -431,6 +434,8 @@ export async function composeTemplateData(invitationId: string) {
   };
   const quoteSectionTitle = customLabels.quoteTitle || featureSettings.quoteTitle || blueprint.quoteSectionTitle;
   const quoteSectionEyebrow = customLabels.quoteEyebrow || blueprint.quoteSectionEyebrow;
+  const openingGreeting = customLabels.openingGreeting !== undefined ? customLabels.openingGreeting : (blueprint.openingGreeting || "");
+  const coverBadge = customLabels.coverBadge !== undefined ? customLabels.coverBadge : (blueprint.coverBadge || featureSettings.weddingTagline || "THE WEDDING OF");
   const coupleSectionEyebrow = customLabels.coupleEyebrow || blueprint.coupleSectionEyebrow || "THE COUPLE";
   const coupleSectionTitle = customLabels.coupleTitle || blueprint.coupleSectionTitle;
   const coupleSectionSub = customLabels.coupleSub || blueprint.coupleSectionSub;
@@ -476,8 +481,8 @@ export async function composeTemplateData(invitationId: string) {
       return `
         <div class="story-chapter-block journey-chapter-item">
           <span class="sc-label chapter-eyebrow">CHAPTER ${numWord}</span>
-          <h4 class="sc-title chapter-heading serif">${st.title || heading}</h4>
-          <p class="sc-desc chapter-desc">${nl2br(st.content || st.description || "")}</p>
+          <h4 class="sc-title chapter-heading serif" data-lux-field="stories.${idx}.title">${st.title || heading}</h4>
+          <p class="sc-desc chapter-desc" data-lux-field="stories.${idx}.content">${nl2br(st.content || st.description || "")}</p>
         </div>
       `;
     }).join("");
@@ -1121,12 +1126,12 @@ export async function composeTemplateData(invitationId: string) {
       ? bankAccounts
       : [{ bank: "BCA", number: "7330497518", name: isGroomFirst ? groomName : brideName }];
 
-    const bankCardsHtml = rawBanks.map((b: any) => `
+    const bankCardsHtml = rawBanks.map((b: any, idx: number) => `
       <div class="bank-card">
-        <span class="bank-label">${b.bank || "BCA"}</span>
-        <span class="bank-owner">a.n ${b.name || (isGroomFirst ? groomName : brideName)}</span>
+        <span class="bank-label" data-lux-field="bankAccounts.${idx}.bank">${b.bank || "BCA"}</span>
+        <span class="bank-owner" data-lux-field="bankAccounts.${idx}.name">a.n ${b.name || (isGroomFirst ? groomName : brideName)}</span>
         <div class="bank-row">
-          <span class="bank-number">${b.number}</span>
+          <span class="bank-number" data-lux-field="bankAccounts.${idx}.number">${b.number}</span>
           <button class="btn-copy" onclick="copyText('${b.number}')">Salin</button>
         </div>
       </div>
@@ -1625,7 +1630,9 @@ export async function composeTemplateData(invitationId: string) {
   }
 
   const appOrigin = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `http://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "http://localhost:3000")).replace(/\/$/, "");
-  const absoluteCover = coverUrl.startsWith("http") ? coverUrl : `${appOrigin}${coverUrl.startsWith("/") ? "" : "/"}${coverUrl}`;
+  const fallbackOgImage = `/demo/${inv.themeId || "kalandra"}/cover.webp`;
+  const resolvedCover = coverUrl || fallbackOgImage;
+  const absoluteCover = resolvedCover.startsWith("http") ? resolvedCover : `${appOrigin}${resolvedCover.startsWith("/") ? "" : "/"}${resolvedCover}`;
   const platformName = await getAdminSetting("platform_name", "Platform Undangan");
 
   return {
@@ -1748,6 +1755,8 @@ export async function composeTemplateData(invitationId: string) {
     showTurutMengundang,
 
     // Custom Section Titles & Labels
+    openingGreeting,
+    coverBadge,
     quoteSectionTitle,
     quoteSectionEyebrow,
     coupleSectionEyebrow,

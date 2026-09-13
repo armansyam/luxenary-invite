@@ -145,7 +145,7 @@ export default auth(async (req) => {
         rewriteUrl.search = req.nextUrl.search;
         return NextResponse.rewrite(rewriteUrl);
       }
-      if (pathname === "/memories") {
+      if (pathname === "/memories" || pathname === "/galery" || pathname === "/gallery") {
         const rewriteUrl = new URL(`/s/${subdomain}/memories`, req.url);
         rewriteUrl.search = req.nextUrl.search;
         return NextResponse.rewrite(rewriteUrl);
@@ -195,7 +195,7 @@ export default auth(async (req) => {
           rewriteUrl.search = req.nextUrl.search;
           return NextResponse.rewrite(rewriteUrl);
         }
-        if (pathname === "/memories") {
+        if (pathname === "/memories" || pathname === "/galery" || pathname === "/gallery") {
           return NextResponse.rewrite(new URL(`/${slug}/memories${req.nextUrl.search}`, req.url));
         }
         if (pathname === "/receptionist") {
@@ -232,6 +232,7 @@ export default auth(async (req) => {
     "/onboarding",
     "/packages",
     "/checkout",
+    "/payment",
     "/demo",
     "/portfolio",
     "/contact",
@@ -255,8 +256,14 @@ export default auth(async (req) => {
       // Sub-routes di bawah slug (memories, sharemoment, galery) ATAU SEO URL (couple-slug/invitation-slug)
       if (segments.length >= 2) {
         const subRoute = segments[1];
-        const allowedSubRoutes = ["memories", "sharemoment", "gallery"];
+        const allowedSubRoutes = ["memories", "sharemoment", "galery", "gallery", "receptionist"];
         if (allowedSubRoutes.includes(subRoute)) {
+          // Normalisasi rute /gallery (2 'l') ke /galery jika diakses pada kanonikal
+          if (subRoute === "gallery") {
+            const rewriteUrl = new URL(`/${slug}/galery`, req.url);
+            rewriteUrl.search = req.nextUrl.search;
+            return NextResponse.rewrite(rewriteUrl);
+          }
           // Biarkan Next.js routing menangani → app/(public)/[slug]/[subRoute]/page.tsx
           return NextResponse.next();
         } else {

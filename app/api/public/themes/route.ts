@@ -88,10 +88,10 @@ export async function GET() {
       const rawThumbMobile = customData?.thumbnailMobileUrl || (hasMobileThumb ? `/demo/${themeKey}/thumbnail_mobile.webp` : defaultCoverFallback);
       const rawThumbDesktop = customData?.thumbnailDesktopUrl || (hasDesktopThumb ? `/demo/${themeKey}/thumbnail_desktop.webp` : defaultCoverFallback);
 
-      const thumbMobile = rawThumbMobile.includes("?") ? `${rawThumbMobile}&v=${v}` : `${rawThumbMobile}?v=${v}`;
-      const thumbDesktop = rawThumbDesktop.includes("?") ? `${rawThumbDesktop}&v=${v}` : `${rawThumbDesktop}?v=${v}`;
+      const thumbMobile = rawThumbMobile;
+      const thumbDesktop = rawThumbDesktop;
       const rawCoverUrl = source?.landingCoverUrl || `/demo/${themeKey}/cover.webp`;
-      const coverUrl = rawCoverUrl.includes("?") ? `${rawCoverUrl}&v=${v}` : `${rawCoverUrl}?v=${v}`;
+      const coverUrl = rawCoverUrl;
 
       return {
         id: t.id,

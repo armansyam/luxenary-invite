@@ -158,6 +158,13 @@ export default function SettingsPage() {
     }
   };
 
+  const checkHasQrCheckin = (inv: any): boolean => {
+    const plan = (inv?.order?.planType || inv?.planType || "TRADITIONAL").toUpperCase();
+    const pkg = platformPackages.find((p: any) => p.id === plan);
+    const caps: string[] = pkg?.capabilities || (plan === "PREMIUM" ? ["music", "gallery", "qr_checkin", "guest_memories", "custom_domain"] : ["music", "gallery"]);
+    return caps.includes("qr_checkin");
+  };
+
   const AUDIT_RULES = [
     {
       id: "subdomain",
@@ -274,8 +281,8 @@ export default function SettingsPage() {
       id: "pin",
       title: "PIN Keamanan Meja Tamu",
       desc: "Sandi petugas resepsionis & check-in QR",
-      hasToggle: false,
-      isToggledOn: () => true,
+      hasToggle: true,
+      isToggledOn: (inv: any) => checkHasQrCheckin(inv),
       hasData: (inv: any, form: any) =>
         Boolean((form.staffPin || inv?.staffPin) && (form.staffPin || inv?.staffPin).length >= 4),
       missingMessage: "PIN Keamanan Panitia minimal 4 digit belum diatur. Harap atur PIN pada kartu pengaturan di bawah.",
@@ -596,7 +603,7 @@ export default function SettingsPage() {
   const shareMomentUrl = subdomainUrl ? `${subdomainUrl.replace(/\/$/, "")}/sharemoment` : "";
   const planType = (invitation?.order?.planType || invitation?.planType || "TRADITIONAL").toUpperCase();
   const currentPkg = platformPackages.find((p: any) => p.id === planType);
-  const allowedCaps: string[] = currentPkg?.capabilities || (planType === "PREMIUM" ? ["music", "gallery", "qr_checkin", "guest_memories", "custom_domain"] : planType === "MODERN" ? ["music", "gallery", "qr_checkin"] : ["music", "gallery"]);
+  const allowedCaps: string[] = currentPkg?.capabilities || (planType === "PREMIUM" ? ["music", "gallery", "qr_checkin", "guest_memories", "custom_domain"] : ["music", "gallery"]);
   const hasQrCheckin = allowedCaps.includes("qr_checkin");
   const hasGuestMemories = allowedCaps.includes("guest_memories");
   const canUseCustomDomain = allowedCaps.includes("custom_domain");
@@ -1682,75 +1689,77 @@ export default function SettingsPage() {
           )}
         </div>
 
-      {/* CARD 3: SECURITY PIN */}
-      <div className="bg-white p-5 sm:p-7 rounded-2xl sm:rounded-3xl border border-stone-200 shadow-xs space-y-4">
-        <div className="flex items-center justify-between gap-3 border-b border-stone-100 pb-3">
-          <div>
-            <h3 className="text-sm font-bold text-stone-900">PIN Keamanan Panitia</h3>
-            <p className="text-xs text-stone-500">Sandi rahasia (6 karakter) untuk mengakses Resepsionis, Booth, dan Proyektor</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => toggleEdit("staffPin")}
-            className="px-3 py-1 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold rounded-lg text-xs transition cursor-pointer"
-          >
-            {editMode.staffPin ? "Tutup" : "Edit"}
-          </button>
-        </div>
-
-        {!editMode.staffPin ? (
-          /* Summary Mode */
-          <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      {/* CARD 3: SECURITY PIN (Hanya tampil untuk paket dengan fitur Resepsionis / QR Check-in) */}
+      {hasQrCheckin && (
+        <div className="bg-white p-5 sm:p-7 rounded-2xl sm:rounded-3xl border border-stone-200 shadow-xs space-y-4">
+          <div className="flex items-center justify-between gap-3 border-b border-stone-100 pb-3">
             <div>
-              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block">PIN Saat Ini:</span>
-              <span className="inline-block mt-1 text-lg font-mono font-black tracking-widest text-amber-900">
-                {formData.staffPin}
-              </span>
+              <h3 className="text-sm font-bold text-stone-900">PIN Keamanan Panitia</h3>
+              <p className="text-xs text-stone-500">Sandi rahasia (6 karakter) untuk mengakses Resepsionis, Booth, dan Proyektor</p>
             </div>
             <button
               type="button"
               onClick={() => toggleEdit("staffPin")}
-              className="text-xs font-bold text-stone-600 hover:text-stone-900 underline cursor-pointer self-start sm:self-auto"
+              className="px-3 py-1 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold rounded-lg text-xs transition cursor-pointer"
             >
-              Ubah PIN
+              {editMode.staffPin ? "Tutup" : "Edit"}
             </button>
           </div>
-        ) : (
-          /* Form Edit Mode */
-          <div className="space-y-4 pt-1">
-            <div>
-              <label className="block text-[11px] font-bold text-stone-700 mb-1">Masukkan PIN Baru</label>
-              <input
-                type="text"
-                maxLength={10}
-                value={formData.staffPin}
-                onChange={(e) => setFormData({ ...formData, staffPin: e.target.value })}
-                placeholder="Contoh: 123456"
-                className="w-full py-3 px-4 rounded-xl border border-stone-200 bg-stone-50 text-sm font-mono font-bold focus:outline-none focus:border-amber-700 focus:ring-2 focus:ring-amber-700/20 transition"
-              />
-              <p className="text-[10px] mt-1.5 text-stone-500">
-                Bisa berupa angka atau huruf. Akan diminta saat membuka link fitur operasional.
-              </p>
-            </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-stone-100">
-              {saveSuccess.staffPin && (
-                <span className="text-xs text-emerald-700 font-semibold flex items-center gap-1">
-                  Tersimpan
+          {!editMode.staffPin ? (
+            /* Summary Mode */
+            <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block">PIN Saat Ini:</span>
+                <span className="inline-block mt-1 text-lg font-mono font-black tracking-widest text-amber-900">
+                  {formData.staffPin}
                 </span>
-              )}
+              </div>
               <button
                 type="button"
-                onClick={() => handleSaveSection("staffPin")}
-                disabled={savingSec === "staffPin" || !formData.staffPin}
-                className="px-5 py-2 bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-xl text-xs transition cursor-pointer disabled:opacity-50"
+                onClick={() => toggleEdit("staffPin")}
+                className="text-xs font-bold text-stone-600 hover:text-stone-900 underline cursor-pointer self-start sm:self-auto"
               >
-                {savingSec === "staffPin" ? "Menyimpan..." : "Simpan PIN"}
+                Ubah PIN
               </button>
             </div>
-          </div>
-        )}
-      </div>
+          ) : (
+            /* Form Edit Mode */
+            <div className="space-y-4 pt-1">
+              <div>
+                <label className="block text-[11px] font-bold text-stone-700 mb-1">Masukkan PIN Baru</label>
+                <input
+                  type="text"
+                  maxLength={10}
+                  value={formData.staffPin}
+                  onChange={(e) => setFormData({ ...formData, staffPin: e.target.value })}
+                  placeholder="Contoh: 123456"
+                  className="w-full py-3 px-4 rounded-xl border border-stone-200 bg-stone-50 text-sm font-mono font-bold focus:outline-none focus:border-amber-700 focus:ring-2 focus:ring-amber-700/20 transition"
+                />
+                <p className="text-[10px] mt-1.5 text-stone-500">
+                  Bisa berupa angka atau huruf. Akan diminta saat membuka link fitur operasional.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-stone-100">
+                {saveSuccess.staffPin && (
+                  <span className="text-xs text-emerald-700 font-semibold flex items-center gap-1">
+                    Tersimpan
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => handleSaveSection("staffPin")}
+                  disabled={savingSec === "staffPin" || !formData.staffPin}
+                  className="px-5 py-2 bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-xl text-xs transition cursor-pointer disabled:opacity-50"
+                >
+                  {savingSec === "staffPin" ? "Menyimpan..." : "Simpan PIN"}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ──────── CUSTOM DOMAIN ──────── */}
       <div className="bg-white rounded-2xl shadow-sm border border-stone-200/80 p-5 sm:p-6 space-y-4">

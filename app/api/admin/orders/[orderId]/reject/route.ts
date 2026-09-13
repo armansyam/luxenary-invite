@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { paymentEmitter } from "@/lib/paymentEvents";
+import { deleteFile } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
 
@@ -38,11 +39,22 @@ export async function POST(
       }
     } catch {}
 
-    // Update order status ke FAILED / REJECTED
+    // Hapus file bukti transfer fisik lama yang ditolak
+    if (order.proofImageUrl) {
+      try {
+        await deleteFile(order.proofImageUrl);
+      } catch (e) {
+        console.error("[Reject Order] Gagal menghapus file bukti lama:", e);
+      }
+    }
+
+    // Update order: status tetap PENDING agar order tidak mati, hapus proof agar user bisa upload ulang
     await prisma.order.update({
       where: { id: orderId },
       data: {
-        status: "FAILED",
+        status: "PENDING",
+        proofImageUrl: null,
+        proofUploadedAt: null,
         rejectReason: reason,
       },
     });

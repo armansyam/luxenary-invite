@@ -23,6 +23,7 @@ const ROLE_DEFINITIONS: Record<string, {
       { id: "orders", label: "Transaksi" },
       { id: "themes", label: "Tema" },
       { id: "portfolio", label: "Portofolio" },
+      { id: "marketing", label: "Pemasaran" },
       { id: "finance", label: "Keuangan" },
       { id: "settings", label: "Pengaturan" },
       { id: "database", label: "Database" },
@@ -45,6 +46,7 @@ const ROLE_DEFINITIONS: Record<string, {
       { id: "custom_domains", label: "Custom Domain" },
       { id: "themes", label: "Tema & Musik" },
       { id: "portfolio", label: "Portofolio" },
+      { id: "marketing", label: "Pemasaran & Afiliasi" },
       { id: "settings", label: "Pengaturan" },
       { id: "database", label: "Database" },
       { id: "logs", label: "Monitoring" },
@@ -65,6 +67,7 @@ const ROLE_DEFINITIONS: Record<string, {
       { id: "themes", label: "Tema & Musik" },
     ],
     restrictedTabs: [
+      { id: "marketing", label: "Pemasaran & Afiliasi" },
       { id: "finance", label: "Finance & Pembukuan" },
       { id: "settings", label: "Pengaturan Platform" },
       { id: "database", label: "Database & Backup" },
@@ -75,9 +78,9 @@ const ROLE_DEFINITIONS: Record<string, {
   SUPER_ADMIN: {
     name: "SUPER ADMIN (Owner / Akses Penuh)",
     badgeClass: "bg-purple-50 text-purple-700 border-purple-200",
-    description: "Akses mutlak ke seluruh 12 modul sistem, termasuk konfigurasi platform, database snapshot, finance, dan manajemen tim.",
+    description: "Akses mutlak ke seluruh 13 modul sistem, termasuk konfigurasi platform, database snapshot, pemasaran & afiliasi, finance, dan manajemen tim.",
     allowedTabs: [
-      { id: "all", label: "Semua 12 Modul Sistem (Akses Penuh)" },
+      { id: "all", label: "Semua 13 Modul Sistem (Akses Penuh)" },
     ],
     restrictedTabs: [],
   },

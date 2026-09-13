@@ -32,7 +32,8 @@ export interface PublicPlatformSettings {
   supportEmail: string;
   supportWhatsapp: string;
   packages: PricingPackageItem[];
-  paymentMode: "BOTH" | "GATEWAY" | "MANUAL";
+  paymentMode: "GATEWAY" | "MANUAL";
+  promoEnabled: boolean;
   bankName: string;
   bankAccountNumber: string;
   bankAccountHolder: string;
@@ -191,7 +192,8 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
       "Didesain khusus dengan sentuhan estetika mewah dan eksklusif. Hadirkan pengalaman berkesan dengan layout split desktop, custom subdomain, buku tamu real-time, dan video booth ucapan.",
     supportEmail: map["support_email"] || "",
     supportWhatsapp: map["support_whatsapp"] || "",
-    paymentMode: (map["payment_mode"] as any) || "BOTH",
+    paymentMode: ((map["payment_mode"] === "MANUAL" ? "MANUAL" : "GATEWAY") as "GATEWAY" | "MANUAL"),
+    promoEnabled: map["promo_enabled"] === "true",
     bankName: map["bank_name"] || "",
     // JANGAN hardcode nomor rekening — jika kosong, UI wajib tampilkan pesan konfigurasi belum lengkap
     bankAccountNumber: map["bank_account_number"] || "",

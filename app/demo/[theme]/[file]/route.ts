@@ -68,7 +68,7 @@ export async function GET(
         headers: {
           "ETag": etag,
           "Last-Modified": lastModified,
-          "Cache-Control": "public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400",
+          "Cache-Control": "public, max-age=0, s-maxage=604800, must-revalidate",
         },
       });
     }
@@ -82,7 +82,7 @@ export async function GET(
         "Content-Length": stat.size.toString(),
         "ETag": etag,
         "Last-Modified": lastModified,
-        "Cache-Control": "public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400",
+        "Cache-Control": "public, max-age=0, s-maxage=604800, must-revalidate",
       },
     });
   } catch (err) {

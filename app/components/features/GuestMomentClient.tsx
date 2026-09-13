@@ -79,6 +79,7 @@ export default function GuestMomentClient({ invitationId, coupleName, coverUrl, 
     const fileInput = form.querySelector('input[type="file"]') as HTMLInputElement;
     const file = fileInput.files?.[0];
     const senderName = (form.querySelector('input[name="senderName"]') as HTMLInputElement).value;
+    const message = (form.querySelector('textarea[name="message"]') as HTMLTextAreaElement)?.value || "";
     
     if (!file) {
       setErrorMsg("Pilih foto terlebih dahulu.");
@@ -111,6 +112,8 @@ export default function GuestMomentClient({ invitationId, coupleName, coverUrl, 
         invitationId,
         senderName,
         senderEmail: "guest@moment.com",
+        caption: message,
+        message,
         base64File,
         mimeType: "image/jpeg",
         fileName: file.name.replace(/\.[^/.]+$/, "") + ".jpg"
@@ -293,6 +296,19 @@ export default function GuestMomentClient({ invitationId, coupleName, coverUrl, 
                   required
                   accept="image/*"
                   className="w-full text-sm text-stone-300 file:mr-4 file:py-3 file:px-6 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-amber-500 file:text-stone-950 hover:file:bg-amber-400 cursor-pointer transition-colors border border-dashed border-stone-600 rounded-2xl p-2 bg-stone-950/30"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-stone-400 uppercase tracking-wider mb-2">
+                  Pesan / Ucapan Singkat <span className="text-stone-500 font-normal normal-case">(Opsional)</span>
+                </label>
+                <textarea
+                  name="message"
+                  rows={2}
+                  maxLength={300}
+                  placeholder="Tuliskan ucapan atau cerita singkat di balik momen ini..."
+                  className="w-full px-4 py-3 rounded-xl bg-stone-950/50 border border-stone-700 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors resize-none placeholder:text-stone-600"
                 />
               </div>
 

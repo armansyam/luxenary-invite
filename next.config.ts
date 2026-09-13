@@ -111,6 +111,16 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      // ── Aset showroom tema demo (thumbnail, cover, background, foto) ──
+      {
+        source: "/demo/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=0, s-maxage=604800, must-revalidate",
+          },
+        ],
+      },
     ];
   },
 };

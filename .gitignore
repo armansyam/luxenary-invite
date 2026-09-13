@@ -62,3 +62,6 @@ public/demo/*/index.html
 # server runtime logs
 logs/
 /logs/
+
+# archive zip files
+*.zip

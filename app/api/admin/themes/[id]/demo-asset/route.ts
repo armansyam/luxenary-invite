@@ -136,9 +136,12 @@ export async function POST(
       await compileAndSaveStaticDemo(themeId, customData, version);
 
       try {
+        revalidatePath("/");
         revalidatePath("/demo");
         revalidatePath(`/demo/${themeId}`);
         revalidatePath("/api/public/themes");
+        const { purgeCloudflareCache } = await import("@/lib/cloudflare");
+        await purgeCloudflareCache({ purgeEverything: true });
       } catch {}
     } catch (publishErr) {
       console.error("[DemoAsset-Publish-Error]:", publishErr);
@@ -257,9 +260,12 @@ export async function DELETE(
       await compileAndSaveStaticDemo(themeId, customData, version);
 
       try {
+        revalidatePath("/");
         revalidatePath("/demo");
         revalidatePath(`/demo/${themeId}`);
         revalidatePath("/api/public/themes");
+        const { purgeCloudflareCache } = await import("@/lib/cloudflare");
+        await purgeCloudflareCache({ purgeEverything: true });
       } catch {}
     } catch (publishErr) {
       console.error("[DemoAsset-Delete-Publish-Error]:", publishErr);

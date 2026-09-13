@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <!-- Sulapa Eppa (Kosmologi Empat Sisi Bugis-Makassar) - Minimalist Line Art -->
+  <g fill="none" stroke="#f5f2eb" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Outer Diamond Frame -->
+    <path d="M 250 30 L 470 250 L 250 470 L 30 250 Z" stroke-width="2.5" opacity="0.9" />
+    
+    <!-- Secondary Offset Diamond -->
+    <path d="M 250 55 L 445 250 L 250 445 L 55 250 Z" stroke-width="1" opacity="0.5" />
+    
+    <!-- 4 Cardinal Corner Corner-Brackets (Karakter: Macca, Malempu, Warani, Getteng) -->
+    <!-- Top -->
+    <path d="M 225 70 L 250 45 L 275 70" stroke-width="1.8" opacity="0.8" />
+    <circle cx="250" cy="85" r="3.5" fill="#f5f2eb" opacity="0.7" />
+    
+    <!-- Right -->
+    <path d="M 430 225 L 455 250 L 430 275" stroke-width="1.8" opacity="0.8" />
+    <circle cx="415" cy="250" r="3.5" fill="#f5f2eb" opacity="0.7" />
+    
+    <!-- Bottom -->
+    <path d="M 225 430 L 250 455 L 275 430" stroke-width="1.8" opacity="0.8" />
+    <circle cx="250" cy="415" r="3.5" fill="#f5f2eb" opacity="0.7" />
+    
+    <!-- Left -->
+    <path d="M 70 225 L 45 250 L 70 275" stroke-width="1.8" opacity="0.8" />
+    <circle cx="85" cy="250" r="3.5" fill="#f5f2eb" opacity="0.7" />
+
+    <!-- Concentric Inner Diamond Interlocking -->
+    <path d="M 250 110 L 390 250 L 250 390 L 110 250 Z" stroke-width="1.8" opacity="0.8" />
+    <path d="M 250 135 L 365 250 L 250 365 L 135 250 Z" stroke-width="1" stroke-dasharray="4,4" opacity="0.45" />
+
+    <!-- Center Axis Cross (Harmoni Alam: Api, Air, Angin, Tanah) -->
+    <line x1="250" y1="150" x2="250" y2="350" stroke-width="1.2" opacity="0.6" />
+    <line x1="150" y1="250" x2="350" y2="250" stroke-width="1.2" opacity="0.6" />
+
+    <!-- Central Microcosmos Rhombus Nucleus -->
+    <path d="M 250 190 L 310 250 L 250 310 L 190 250 Z" stroke-width="2" opacity="0.95" />
+    <path d="M 250 215 L 285 250 L 250 285 L 215 250 Z" stroke-width="1" opacity="0.7" />
+    <circle cx="250" cy="250" r="4.5" fill="#f5f2eb" opacity="0.9" />
+
+    <!-- 4 Diagonal Accent Lines -->
+    <line x1="200" y1="200" x2="160" y2="160" stroke-width="1" opacity="0.4" />
+    <line x1="300" y1="200" x2="340" y2="160" stroke-width="1" opacity="0.4" />
+    <line x1="300" y1="300" x2="340" y2="340" stroke-width="1" opacity="0.4" />
+    <line x1="200" y1="300" x2="160" y2="340" stroke-width="1" opacity="0.4" />
+  </g>
+</svg>

@@ -32,6 +32,7 @@ export const DEFAULT_THEMES = [
   { id: "dillalucky", name: "Dilla Lucky", category: "traditional", series: "Traditional", description: "Kehangatan Adat Melayu & Padang Modern", isPremium: false, sortOrder: 13, isActive: true },
   { id: "mayang", name: "Mayang", category: "traditional", series: "Traditional", description: "Kemegahan Adat Sunda Silih Wangi yang Anggun", isPremium: false, sortOrder: 14, isActive: true },
   { id: "prameswari", name: "Prameswari", category: "traditional", series: "Traditional", description: "Royal Heritage Tradisional Agung Nan Sarat Makna", isPremium: false, sortOrder: 15, isActive: true },
+  { id: "lagaligo", name: "La Galigo", category: "traditional", series: "Traditional", description: "Kemegahan Adat Bugis-Makassar Berbalut Hijau Zamrud & Kilau Benang Emas", isPremium: false, sortOrder: 16, isActive: true },
 ];
 
 export async function GET() {

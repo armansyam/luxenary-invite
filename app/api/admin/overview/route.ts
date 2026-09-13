@@ -89,7 +89,7 @@ export async function GET() {
       const defaultCoverFallback = t.thumbnail || `/demo/${themeKey}/cover.webp`;
 
       const rawThumbMobile = customData?.thumbnailMobileUrl || (hasMobileThumb ? `/demo/${themeKey}/thumbnail_mobile.webp` : defaultCoverFallback);
-      const thumbMobile = rawThumbMobile.includes("?") ? `${rawThumbMobile}&v=${v}` : `${rawThumbMobile}?v=${v}`;
+      const thumbMobile = rawThumbMobile;
 
       return {
         ...t,

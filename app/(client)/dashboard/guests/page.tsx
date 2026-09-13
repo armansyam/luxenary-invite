@@ -80,6 +80,28 @@ export default function GuestsPage() {
   const [filterStatus, setFilterStatus] = useState<"all" | "SENT" | "PENDING">("all");
   const [copiedGuestId, setCopiedGuestId] = useState<string | null>(null);
 
+  // Bulk Import CSV States
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [bulkFileName, setBulkFileName] = useState("");
+  const [parsedGuests, setParsedGuests] = useState<{
+    name: string;
+    phone?: string | null;
+    category: string;
+    sessionInfo: string;
+    guestQuota: number;
+    tableNumber?: string | null;
+  }[]>([]);
+  const [isBulkUploading, setIsBulkUploading] = useState(false);
+  const [bulkError, setBulkError] = useState<string | null>(null);
+  const [bulkSuccess, setBulkSuccess] = useState<string | null>(null);
+  const [hasContactPicker, setHasContactPicker] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && "contacts" in navigator && "ContactsManager" in window) {
+      setHasContactPicker(true);
+    }
+  }, []);
+
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const [beamStyle, setBeamStyle] = useState({ left: 0, width: 0 });
 
@@ -97,6 +119,236 @@ export default function GuestsPage() {
     guestLimit: 2,
     tableNumber: "",
   });
+
+  const downloadCsvTemplate = () => {
+    const csvContent =
+      "Nama,Nomor WhatsApp,Kategori,Sesi,Kuota,Nomor Meja\n" +
+      "Bapak Budi Santoso,081234567890,VIP,Akad & Resepsi,2,Meja VIP 1\n" +
+      "Ibu Siti Rahma,081987654321,KELUARGA,Akad & Resepsi,2,Meja Keluarga\n" +
+      "Andi Pratama,085611223344,TEMAN,Resepsi Sesi 2,1,Meja 5\n" +
+      "Dewi Anggraini,,UMUM,Resepsi Sesi 1,2,";
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "template_buku_tamu_luxenary.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const parseCsvText = (text: string) => {
+    const lines = text
+      .split(/\r\n|\n|\r/)
+      .map((l) => l.trim())
+      .filter(Boolean);
+
+    if (lines.length < 2) {
+      setBulkError("Berkas CSV kosong atau hanya berisi baris judul.");
+      setParsedGuests([]);
+      return;
+    }
+
+    const firstLine = lines[0];
+    const delimiter = firstLine.includes(";") && !firstLine.includes(",") ? ";" : ",";
+
+    const splitRow = (row: string) => {
+      const regex = new RegExp(`(?:^|${delimiter})(?:"([^"]*(?:""[^"]*)*)"|([^"${delimiter}]*))`, "g");
+      const result: string[] = [];
+      let match;
+      while ((match = regex.exec(row)) !== null) {
+        const val = match[1] !== undefined ? match[1].replace(/""/g, '"') : match[2];
+        result.push((val || "").trim());
+        if (regex.lastIndex === row.length && row.endsWith(delimiter)) {
+          result.push("");
+          break;
+        }
+      }
+      return result;
+    };
+
+    const rawHeaders = splitRow(lines[0]).map((h) => h.toLowerCase());
+
+    let nameIdx = rawHeaders.findIndex((h) => h.includes("nama") || h.includes("name") || h.includes("tamu") || h.includes("guest"));
+    let phoneIdx = rawHeaders.findIndex((h) => h.includes("hp") || h.includes("wa") || h.includes("telepon") || h.includes("phone") || h.includes("kontak"));
+    let catIdx = rawHeaders.findIndex((h) => h.includes("kategori") || h.includes("category") || h.includes("tipe"));
+    let sessionIdx = rawHeaders.findIndex((h) => h.includes("sesi") || h.includes("session") || h.includes("waktu"));
+    let quotaIdx = rawHeaders.findIndex((h) => h.includes("kuota") || h.includes("quota") || h.includes("limit") || h.includes("pax") || h.includes("jumlah"));
+    let tableIdx = rawHeaders.findIndex((h) => h.includes("meja") || h.includes("table"));
+
+    if (nameIdx === -1) nameIdx = 0;
+
+    const parsed: any[] = [];
+    for (let i = 1; i < lines.length; i++) {
+      const cols = splitRow(lines[i]);
+      const name = cols[nameIdx]?.trim();
+      if (!name) continue;
+
+      let phone = phoneIdx !== -1 && cols[phoneIdx] ? cols[phoneIdx].trim() : "";
+      if (phone) {
+        phone = phone.replace(/\D/g, "");
+        if (phone.startsWith("0")) phone = "62" + phone.slice(1);
+      }
+
+      let category = catIdx !== -1 && cols[catIdx] ? cols[catIdx].trim().toUpperCase() : "UMUM";
+      if (!["VIP", "KELUARGA", "TEMAN", "UMUM"].includes(category)) {
+        category = "UMUM";
+      }
+
+      const sessionInfo = sessionIdx !== -1 && cols[sessionIdx] ? cols[sessionIdx].trim() : "Akad & Resepsi";
+      const guestQuota = quotaIdx !== -1 && cols[quotaIdx] ? parseInt(cols[quotaIdx], 10) || 2 : 2;
+      const tableNumber = tableIdx !== -1 && cols[tableIdx] ? cols[tableIdx].trim() : "";
+
+      parsed.push({
+        name,
+        phone: phone || null,
+        category,
+        sessionInfo,
+        guestQuota,
+        tableNumber: tableNumber || null,
+      });
+    }
+
+    if (parsed.length === 0) {
+      setBulkError("Tidak ditemukan data nama tamu yang valid dalam berkas CSV ini.");
+      setParsedGuests([]);
+      return;
+    }
+
+    if (parsed.length > 500) {
+      setBulkError(`Maksimal import adalah 500 tamu sekaligus. Berkas Anda memiliki ${parsed.length} tamu.`);
+      setParsedGuests([]);
+      return;
+    }
+
+    setParsedGuests(parsed);
+    setBulkError(null);
+  };
+
+  const handleFileSelect = (file: File) => {
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith(".csv") && file.type !== "text/csv" && file.type !== "application/vnd.ms-excel") {
+      setBulkError("Format berkas harus berekstensi .csv. Silakan simpan Excel Anda dalam format CSV (Comma Delimited).");
+      return;
+    }
+    setBulkFileName(file.name);
+    setBulkError(null);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      parseCsvText(content);
+    };
+    reader.onerror = () => {
+      setBulkError("Gagal membaca isi berkas CSV.");
+    };
+    reader.readAsText(file);
+  };
+
+  const handleExecuteBulkImport = async () => {
+    if (!invitationId || parsedGuests.length === 0) return;
+    setIsBulkUploading(true);
+    setBulkError(null);
+
+    try {
+      const res = await fetch("/api/client/guests/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          invitationId,
+          guests: parsedGuests,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setBulkSuccess(data.message || `Berhasil mengimpor ${parsedGuests.length} tamu.`);
+        loadGuests(invitationId);
+        setTimeout(() => {
+          setShowBulkModal(false);
+          setBulkSuccess(null);
+          setParsedGuests([]);
+          setBulkFileName("");
+        }, 1500);
+      } else {
+        setBulkError(data.error || "Gagal mengimpor daftar tamu.");
+      }
+    } catch {
+      setBulkError("Terjadi kesalahan jaringan saat mengimpor.");
+    } finally {
+      setIsBulkUploading(false);
+    }
+  };
+
+  const handlePickSingleContact = async () => {
+    try {
+      const props = ["name", "tel"];
+      const opts = { multiple: false };
+      const contacts = await (navigator as any).contacts.select(props, opts);
+      if (contacts && contacts.length > 0) {
+        const c = contacts[0];
+        const rawName = Array.isArray(c.name) ? c.name[0] : c.name;
+        const cleanName = (rawName || "").trim();
+
+        let rawTel = Array.isArray(c.tel) ? c.tel[0] : c.tel;
+        let phone = "";
+        if (rawTel) {
+          phone = String(rawTel).replace(/\D/g, "");
+          if (phone.startsWith("0")) phone = "62" + phone.slice(1);
+        }
+
+        setNewGuest((prev) => ({
+          ...prev,
+          name: cleanName || prev.name,
+          phone: phone || prev.phone,
+        }));
+      }
+    } catch {
+      // User cancelled contact selection
+    }
+  };
+
+  const handlePickMultipleContacts = async () => {
+    try {
+      const props = ["name", "tel"];
+      const opts = { multiple: true };
+      const contacts = await (navigator as any).contacts.select(props, opts);
+      if (contacts && contacts.length > 0) {
+        const mapped = contacts
+          .map((c: any) => {
+            const rawName = Array.isArray(c.name) ? c.name[0] : c.name;
+            const cleanName = (rawName || "Tamu Undangan").trim();
+
+            let rawTel = Array.isArray(c.tel) ? c.tel[0] : c.tel;
+            let phone = "";
+            if (rawTel) {
+              phone = String(rawTel).replace(/\D/g, "");
+              if (phone.startsWith("0")) phone = "62" + phone.slice(1);
+            }
+
+            return {
+              name: cleanName,
+              phone: phone || null,
+              category: "UMUM",
+              sessionInfo: "Akad & Resepsi",
+              guestQuota: 2,
+              tableNumber: null,
+            };
+          })
+          .filter((g: any) => Boolean(g.name));
+
+        if (mapped.length > 0) {
+          setParsedGuests(mapped);
+          setBulkFileName(`Buku Kontak HP (${mapped.length} Kontak Terpilih)`);
+          setBulkError(null);
+          setBulkSuccess(null);
+          setShowBulkModal(true);
+        }
+      }
+    } catch {
+      // User cancelled contact selection
+    }
+  };
 
   const loadGuests = (invId: string) => {
     setLoading(true);
@@ -420,6 +672,38 @@ export default function GuestsPage() {
             </svg>
             <span>Edit Template WA</span>
           </button>
+
+          {/* Import CSV Button */}
+          <button
+            type="button"
+            onClick={() => {
+              setBulkError(null);
+              setBulkSuccess(null);
+              setParsedGuests([]);
+              setBulkFileName("");
+              setShowBulkModal(true);
+            }}
+            className="px-3.5 py-2 bg-stone-50 hover:bg-stone-100 text-stone-700 border border-stone-300 text-xs font-bold rounded-lg transition flex items-center justify-center gap-2 cursor-pointer shadow-xs shrink-0"
+          >
+            <svg className="w-4 h-4 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            <span>Import CSV</span>
+          </button>
+
+          {/* Native Android Contact Picker Button (Progressive Enhancement) */}
+          {hasContactPicker && (
+            <button
+              type="button"
+              onClick={handlePickMultipleContacts}
+              className="px-3.5 py-2 bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-300/80 text-xs font-bold rounded-lg transition flex items-center justify-center gap-2 cursor-pointer shadow-xs shrink-0"
+            >
+              <svg className="w-4 h-4 text-purple-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <span>Kontak HP</span>
+            </button>
+          )}
 
           {/* Add Guest Button */}
           <button
@@ -1036,6 +1320,224 @@ export default function GuestsPage() {
         </div>
       )}
 
+      {/* Bulk CSV Import Modal */}
+      {showBulkModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-xl w-full shadow-2xl border border-stone-200 space-y-4 max-h-[90vh] overflow-y-auto">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+              <div>
+                <span className="text-[10px] font-bold tracking-widest text-amber-800 uppercase block">Import Massal</span>
+                <h3 className="text-base font-bold text-stone-900 mt-0.5">Import Daftar Tamu via CSV</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isBulkUploading) {
+                    setShowBulkModal(false);
+                    setBulkError(null);
+                    setBulkSuccess(null);
+                    setParsedGuests([]);
+                    setBulkFileName("");
+                  }
+                }}
+                disabled={isBulkUploading}
+                className="p-1.5 text-stone-400 hover:text-stone-700 rounded-lg cursor-pointer disabled:opacity-50"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Template Download Card */}
+            <div className="bg-stone-50 border border-stone-200/80 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="space-y-0.5 text-xs text-stone-600">
+                <span className="font-bold text-stone-900 block">Belum memiliki format CSV yang sesuai?</span>
+                <p className="text-[11px] text-stone-500">
+                  Unduh berkas template contoh lalu buka menggunakan Microsoft Excel atau Google Sheets.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={downloadCsvTemplate}
+                className="px-3.5 py-2 bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer shrink-0 shadow-2xs"
+              >
+                <svg className="w-4 h-4 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                <span>Unduh Template CSV</span>
+              </button>
+            </div>
+
+            {/* Native Android Contact Picker Card (Jika Didukung) */}
+            {hasContactPicker && (
+              <div className="bg-purple-50/70 border border-purple-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="space-y-0.5 text-xs text-purple-900">
+                  <span className="font-bold text-purple-950 block">Atau Pilih Langsung dari Kontak HP</span>
+                  <p className="text-[11px] text-purple-800/80">
+                    Pilih kontak teman &amp; keluarga dari buku telepon Android tanpa perlu membuat file Excel.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handlePickMultipleContacts}
+                  className="px-3.5 py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer shrink-0 shadow-xs"
+                >
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  <span>Pilih dari Kontak HP</span>
+                </button>
+              </div>
+            )}
+
+            {/* Drag & Drop File Zone */}
+            <div>
+              <label className="block text-[11px] font-bold text-stone-700 uppercase tracking-wider mb-2">Pilih Berkas CSV</label>
+              <div
+                onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    handleFileSelect(e.dataTransfer.files[0]);
+                  }
+                }}
+                className="border-2 border-dashed border-stone-300 hover:border-amber-600/70 bg-stone-50/50 hover:bg-amber-50/20 rounded-2xl p-6 text-center transition-colors cursor-pointer relative"
+              >
+                <input
+                  type="file"
+                  accept=".csv,text/csv,application/vnd.ms-excel"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      handleFileSelect(e.target.files[0]);
+                    }
+                  }}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                />
+                <div className="flex flex-col items-center gap-2 pointer-events-none">
+                  <div className="w-10 h-10 rounded-full bg-stone-100 text-stone-500 flex items-center justify-center">
+                    <svg className="w-5 h-5 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                  </div>
+                  <div className="text-xs">
+                    {bulkFileName ? (
+                      <span className="font-bold text-stone-900">{bulkFileName}</span>
+                    ) : (
+                      <>
+                        <span className="font-bold text-amber-800">Klik untuk memilih</span>
+                        <span className="text-stone-500"> atau seret berkas .csv ke sini</span>
+                      </>
+                    )}
+                  </div>
+                  <span className="text-[10px] text-stone-400">Maksimal 500 baris tamu per import</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Error Message */}
+            {bulkError && (
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+                <svg className="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <span>{bulkError}</span>
+              </div>
+            )}
+
+            {/* Success Message */}
+            {bulkSuccess && (
+              <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
+                <svg className="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span>{bulkSuccess}</span>
+              </div>
+            )}
+
+            {/* Preview Table */}
+            {parsedGuests.length > 0 && (
+              <div className="space-y-2 pt-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-stone-900 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span>Pratinjau Data ({parsedGuests.length} Tamu Terdeteksi)</span>
+                  </span>
+                  <span className="text-[10px] text-stone-400">Menampilkan hingga 5 baris pertama</span>
+                </div>
+
+                <div className="border border-stone-200 rounded-xl overflow-hidden text-[11px]">
+                  <table className="w-full text-left divide-y divide-stone-200">
+                    <thead className="bg-stone-50 text-stone-600 font-bold">
+                      <tr>
+                        <th className="px-3 py-2">Nama</th>
+                        <th className="px-3 py-2">WhatsApp</th>
+                        <th className="px-3 py-2">Kategori</th>
+                        <th className="px-3 py-2 text-center">Kuota</th>
+                        <th className="px-3 py-2">Meja</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-stone-100 text-stone-700 bg-white">
+                      {parsedGuests.slice(0, 5).map((g, idx) => (
+                        <tr key={idx} className="hover:bg-stone-50/50">
+                          <td className="px-3 py-2 font-medium text-stone-900">{g.name}</td>
+                          <td className="px-3 py-2 font-mono text-[10px]">{g.phone || "-"}</td>
+                          <td className="px-3 py-2">
+                            <span className="px-1.5 py-0.5 rounded bg-stone-100 text-[10px] font-semibold">{g.category}</span>
+                          </td>
+                          <td className="px-3 py-2 text-center font-mono">{g.guestQuota}</td>
+                          <td className="px-3 py-2 text-stone-500">{g.tableNumber || "-"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="pt-3 border-t border-stone-100 flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowBulkModal(false);
+                  setBulkError(null);
+                  setBulkSuccess(null);
+                  setParsedGuests([]);
+                  setBulkFileName("");
+                }}
+                disabled={isBulkUploading}
+                className="px-4 py-2.5 text-xs font-semibold text-stone-600 hover:bg-stone-100 rounded-xl transition cursor-pointer disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleExecuteBulkImport}
+                disabled={isBulkUploading || parsedGuests.length === 0}
+                className="px-5 py-2.5 bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold rounded-xl transition shadow-xs disabled:opacity-50 cursor-pointer flex items-center gap-2"
+              >
+                {isBulkUploading ? (
+                  <>
+                    <svg className="w-3.5 h-3.5 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Mengimpor Tamu...</span>
+                  </>
+                ) : (
+                  <span>Mulai Import ({parsedGuests.length} Tamu)</span>
+                )}
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
       {/* Add Guest Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
@@ -1056,7 +1558,21 @@ export default function GuestsPage() {
 
             <form onSubmit={handleAddGuest} className="space-y-3.5">
               <div>
-                <label className="block text-[11px] font-bold text-stone-700 mb-1">Nama Tamu *</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-[11px] font-bold text-stone-700">Nama Tamu *</label>
+                  {hasContactPicker && (
+                    <button
+                      type="button"
+                      onClick={handlePickSingleContact}
+                      className="text-[10px] font-bold text-purple-700 hover:text-purple-900 flex items-center gap-1 cursor-pointer transition bg-purple-50 hover:bg-purple-100 px-2 py-0.5 rounded-md border border-purple-200"
+                    >
+                      <svg className="w-3 h-3 text-purple-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      <span>Pilih dari Kontak HP</span>
+                    </button>
+                  )}
+                </div>
                 <input
                   type="text"
                   required

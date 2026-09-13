@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Katalog Ornamen Minimalis Bugis - Luxenary</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #021712;
+      --card-bg: rgba(255, 255, 255, 0.04);
+      --border: rgba(245, 242, 235, 0.15);
+      --accent: #f5f2eb;
+      --text-muted: #a3a099;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background-color: var(--bg-dark);
+      color: #f5f2eb;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      padding: 40px 20px 80px;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .eyebrow {
+      font-size: 11px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      display: block;
+    }
+    h1 {
+      font-size: clamp(24px, 4vw, 36px);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #ffffff;
+      margin-bottom: 12px;
+    }
+    p.desc {
+      font-size: 14px;
+      color: var(--text-muted);
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 24px;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(245, 242, 235, 0.4);
+    }
+    .preview-box {
+      background: radial-gradient(circle at center, rgba(4, 90, 68, 0.25) 0%, rgba(2, 23, 18, 0.8) 70%);
+      height: 240px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+    }
+    .preview-box img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.5));
+    }
+    .badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      background: rgba(245, 242, 235, 0.1);
+      border-radius: 999px;
+      border: 1px solid rgba(245, 242, 235, 0.2);
+    }
+    .info {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+    }
+    .title {
+      font-size: 17px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 4px;
+    }
+    .subtitle {
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .meaning {
+      font-size: 12.5px;
+      color: rgba(245, 242, 235, 0.8);
+      line-height: 1.6;
+      margin-bottom: 16px;
+      flex-grow: 1;
+    }
+    .links {
+      display: flex;
+      gap: 10px;
+    }
+    .btn-link {
+      font-size: 11px;
+      font-weight: 600;
+      color: #ffffff;
+      text-decoration: none;
+      padding: 8px 14px;
+      background: rgba(245, 242, 235, 0.08);
+      border: 1px solid rgba(245, 242, 235, 0.2);
+      border-radius: 8px;
+      transition: background 0.2s;
+    }
+    .btn-link:hover {
+      background: rgba(245, 242, 235, 0.2);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <span class="eyebrow">Ragam Hias Kultural Bugis-Makassar</span>
+      <h1>Koleksi Ornamen Minimalis (Bone-White)</h1>
+      <p class="desc">Didesain dengan garis presisi minimalis monokrom tanpa warna emas pekat. Tersedia dalam format SVG vektor murni dan PNG transparan resolusi tinggi (800x800).</p>
+    </header>
+
+    <div class="grid">
+      <!-- 1. Sulapa Eppa -->
+      <div class="card">
+        <div class="preview-box">
+          <span class="badge">SVG &amp; PNG</span>
+          <img src="sulapa-eppa.svg" alt="Sulapa Eppa" />
+        </div>
+        <div class="info">
+          <h3 class="title">Sulapa Eppa</h3>
+          <span class="subtitle">Belah Ketupat Kosmik Bugis</span>
+          <p class="meaning">Simbol 4 elemen semesta (api, air, angin, tanah) dan 4 karakter ideal ksatria Bugis: Macca (cerdas), Malempu (jujur), Warani (berani), dan Getteng (teguh).</p>
+          <div class="links">
+            <a href="sulapa-eppa.svg" target="_blank" class="btn-link">Buka SVG</a>
+            <a href="sulapa-eppa.png" target="_blank" class="btn-link">Buka PNG</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Cobo Rebung -->
+      <div class="card">
+        <div class="preview-box">
+          <span class="badge">SVG &amp; PNG</span>
+          <img src="cobo-rebung.svg" alt="Cobo Rebung" />
+        </div>
+        <div class="info">
+          <h3 class="title">Cobo'-Cobo'</h3>
+          <span class="subtitle">Pucuk Rebung / Chevron Bugis</span>
+          <p class="meaning">Simbol tunas bambu muda yang meruncing menembus tanah. Melambangkan pertumbuhan tanpa batas, keteguhan hati, dan doa masa depan yang terus menanjak.</p>
+          <div class="links">
+            <a href="cobo-rebung.svg" target="_blank" class="btn-link">Buka SVG</a>
+            <a href="cobo-rebung.png" target="_blank" class="btn-link">Buka PNG</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Walasoji Lattice -->
+      <div class="card">
+        <div class="preview-box">
+          <span class="badge">SVG &amp; PNG</span>
+          <img src="walasoji-lattice.svg" alt="Anyaman Walasoji" />
+        </div>
+        <div class="info">
+          <h3 class="title">Anyaman Walasoji</h3>
+          <span class="subtitle">Kisi Pagar Kehormatan Adat</span>
+          <p class="meaning">Anyaman bambu berongga belah ketupat yang biasa dipasang pada gerbang penyambutan tamu bangsawan (*saoraja*), simbol perlindungan dan kehormatan rumah tangga.</p>
+          <div class="links">
+            <a href="walasoji-lattice.svg" target="_blank" class="btn-link">Buka SVG</a>
+            <a href="walasoji-lattice.png" target="_blank" class="btn-link">Buka PNG</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Balo Tettong -->
+      <div class="card">
+        <div class="preview-box">
+          <span class="badge">SVG &amp; PNG</span>
+          <img src="balo-tettong.svg" alt="Balo Tettong" />
+        </div>
+        <div class="info">
+          <h3 class="title">Balo Tettong &amp; Renni</h3>
+          <span class="subtitle">Pinstripe Tenun Sutera Sengkang</span>
+          <p class="meaning">Motif garis vertikal presisi sarung tenun sutera Wajo-Sengkang (*Lipa' Sabbe*). Melambangkan keteguhan prinsip lurus dan keharmonisan keluarga.</p>
+          <div class="links">
+            <a href="balo-tettong.svg" target="_blank" class="btn-link">Buka SVG</a>
+            <a href="balo-tettong.png" target="_blank" class="btn-link">Buka PNG</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. Parenreng Sulur -->
+      <div class="card">
+        <div class="preview-box">
+          <span class="badge">SVG &amp; PNG</span>
+          <img src="parenreng-sulur.svg" alt="Sulur Parenreng" />
+        </div>
+        <div class="info">
+          <h3 class="title">Sulur Parenreng</h3>
+          <span class="subtitle">Botanical Line Art Daun Menjalar</span>
+          <p class="meaning">Ukiran sulur daun flora Bugis yang meliuk anggun (*taro ada taro gau*), melambangkan rezeki dan berkah cinta kasih yang tidak pernah terputus.</p>
+          <div class="links">
+            <a href="parenreng-sulur.svg" target="_blank" class="btn-link">Buka SVG</a>
+            <a href="parenreng-sulur.png" target="_blank" class="btn-link">Buka PNG</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. Rumah Bugis (Existing Asset) -->
+      <div class="card">
+        <div class="preview-box">
+          <span class="badge">Existing PNG</span>
+          <img src="rumah-bugis.png" alt="Rumah Adat Bugis" />
+        </div>
+        <div class="info">
+          <h3 class="title">Bola / Saoraja Bugis</h3>
+          <span class="subtitle">Rumah Panggung Tradisional</span>
+          <p class="meaning">Arsitektur rumah panggung Bugis dengan atap bersusun timpa laja dan tangga depan penyambut tamu.</p>
+          <div class="links">
+            <a href="rumah-bugis.png" target="_blank" class="btn-link">Buka PNG</a>
+            <a href="rumah-bugis.webp" target="_blank" class="btn-link">Buka WEBP</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

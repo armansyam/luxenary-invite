@@ -67,7 +67,7 @@ export async function GET(
             </div>
             <h2 class="text-xl font-bold text-stone-900 font-serif">Tema Belum Dipilih</h2>
             <p class="text-sm text-stone-600 leading-relaxed">
-              Undangan ini belum memiliki desain tema. Silakan kembali ke Studio Editor dan pilih salah satu tema yang tersedia di <strong>Seksi 1 (Tema Desain &amp; Palet Warna)</strong> untuk melihat pratinjau.
+              Undangan ini belum memiliki desain tema. Silakan kembali ke Studio Editor dan pilih salah satu tema katalog.
             </p>
           </div>
         </body>
@@ -93,3 +93,4 @@ export async function GET(
     return new NextResponse(`Error rendering preview: ${err?.message || "Internal server error"}`, { status: 500 });
   }
 }
+

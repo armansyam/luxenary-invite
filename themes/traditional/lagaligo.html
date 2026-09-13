@@ -1,0 +1,1983 @@
+<!--
+ _      _   _  __  __  _____   _   _      _     ____   __   __
+| |    | | | | \ \/ / | ____| | \ | |    / \   |  _ \  \ \ / /
+| |    | | | |  \  /  |  _|   |  \| |   / _ \  | |_) |  \ V / 
+| |___ | |_| |  /  \  | |___  | |\  |  / ___ \ |  _ <    | |  
+|_____| \___/  /_/\_\ |_____| |_| \_| /_/   \_\|_| \_\   |_|  
+
+  ==============================================================
+  STOP! PERHATIAN!
+  --------------------------------------------------------------
+  Sistem dan desain tema ini adalah milik eksklusif Luxenary.
+  Dilarang keras menyalin, menduplikasi, atau menjual ulang 
+  tanpa izin resmi dari pihak Luxenary (luxenary.id).
+  
+  Hak cipta dilindungi undang-undang.
+  ==============================================================
+-->
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>The Wedding of {{firstName}} &amp; {{secondName}} — La Galigo Bugis Emerald</title>
+
+  <!-- =================================================================== -->
+  <!-- 1. TYPOGRAPHY (Self-Hosted + Google Fonts Fallback)                 -->
+  <!-- =================================================================== -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Italianno&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/fonts/fonts.css" />
+
+  <style>
+    /* =================================================================== */
+    /* 2. DESIGN SYSTEM & BUGIS EMERALD PALETTE                            */
+    /* =================================================================== */
+    :root {
+      --primary: {{colorPrimary}};
+      --secondary: {{colorSecondary}};
+      --accent: {{colorAccent}};
+      --bg-light: {{colorBgLight}};
+      --bg-dark: {{colorBgDark}};
+      --text-main: #fbf8f1;
+      --text-muted: #c9c2b3;
+      --text-dim: #8e887a;
+
+      /* PALET ETNIK BUGIS (DYNAMIC PALETTE BRIDGE) */
+      --bugis-emerald-deep: var(--bg-dark, #021712);
+      --bugis-emerald-dark: color-mix(in srgb, var(--bg-dark, #021712) 80%, black);
+      --bugis-emerald-rich: var(--primary, #045a44);
+      --bugis-emerald-glow: color-mix(in srgb, var(--primary, #045a44) 60%, white);
+      --bugis-gold-antique: var(--accent, #f9e7bc);
+      --bugis-gold-warm: color-mix(in srgb, var(--accent, #f9e7bc) 85%, var(--primary, #045a44) 15%);
+      --bugis-gold-dim: color-mix(in srgb, var(--accent, #f9e7bc) 35%, transparent);
+      --bugis-card-bg: color-mix(in srgb, var(--primary, #045a44) 14%, color-mix(in srgb, var(--bg-dark, #021712) 68%, transparent));
+      --bugis-card-deep: color-mix(in srgb, var(--bg-dark, #021712) 95%, black);
+      --bugis-border: color-mix(in srgb, var(--accent, #f9e7bc) 25%, transparent);
+      --bugis-border-bright: color-mix(in srgb, var(--accent, #f9e7bc) 65%, transparent);
+
+      --radius-sm: 6px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --radius-full: 9999px;
+      --shadow-subtle: 0 4px 20px rgba(0, 0, 0, 0.3);
+      --shadow-elevated: 0 12px 36px rgba(0, 0, 0, 0.45);
+      --gold-glow: 0 0 20px rgba(249, 231, 188, 0.2);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    ::selection {
+      background: color-mix(in srgb, var(--accent, #f9e7bc) 35%, transparent);
+      color: #ffffff;
+    }
+
+    ::-moz-selection {
+      background: color-mix(in srgb, var(--accent, #f9e7bc) 35%, transparent);
+      color: #ffffff;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      background: var(--bugis-emerald-deep);
+      color: var(--text-main);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* Tipografi Sastra Klasik Bugis */
+    @font-face {
+      font-family: 'Lontara';
+      src: url('/fonts/Lontara.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    .font-lontara {
+      font-family: 'Lontara', 'Cormorant Garamond', Georgia, serif;
+      letter-spacing: 0.12em;
+      line-height: 1.2;
+    }
+
+    .font-serif,
+    h1, h2, h3, h4,
+    .sec-main-title {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      letter-spacing: 0.03em;
+    }
+
+    .font-script,
+    .cover-names,
+    .sidebar-names {
+      font-family: 'Italianno', 'Parisienne', cursive;
+    }
+
+    /* Pola Tenun Geometris Adat Bugis (Bugis Geometric Lattice Pattern) */
+    .bugis-pattern-bg {
+      background-image:
+        repeating-linear-gradient(45deg, transparent, transparent 12px, rgba(249, 231, 188, 0.04) 12px, rgba(249, 231, 188, 0.04) 24px),
+        repeating-linear-gradient(-45deg, transparent, transparent 12px, rgba(249, 231, 188, 0.04) 12px, rgba(249, 231, 188, 0.04) 24px);
+    }
+
+    /* =================================================================== */
+    /* 3. ARSITEKTUR DESKTOP SPLIT & EMULASI MOBILE (GOLDEN STANDARD)      */
+    /* =================================================================== */
+    .layout-wrapper {
+      display: flex;
+      width: 100%;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    /* Fixed Left Hero untuk Layar Desktop (>= 900px) */
+    .sidebar-desktop {
+      display: none;
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: calc(100% - 460px);
+      height: 100vh;
+      background: url('{{sidebarPhotoUrl}}') center/cover no-repeat;
+      z-index: 10;
+    }
+
+    .sidebar-desktop::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to top,
+        var(--bg-dark, #021712) 0%,
+        color-mix(in srgb, var(--bg-dark, #021712) 50%, transparent) 50%,
+        color-mix(in srgb, var(--bg-dark, #021712) 20%, transparent) 100%
+      );
+    }
+
+    .sidebar-desktop-content {
+      position: absolute;
+      bottom: 4.5rem;
+      left: 3.5rem;
+      right: 3.5rem;
+      z-index: 20;
+      color: #fff;
+    }
+
+    .sidebar-names {
+      font-size: 3.8rem;
+      line-height: 1.05;
+      margin-bottom: 8px;
+      color: var(--bugis-gold-antique);
+      text-shadow: 0 4px 25px rgba(0, 0, 0, 0.6);
+    }
+
+    /* Main Scroll Panel (Konten Undangan Utama) */
+    .app-container,
+    .main-scroll-panel {
+      width: 100%;
+      max-width: 640px;
+      margin: 0 auto;
+      min-height: 100vh;
+      background: transparent;
+      position: relative;
+      z-index: 20;
+      box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+    }
+
+    /* =================================================================== */
+    /* SILKY SCROLL REVEAL ANIMATIONS (LUXENARY STUDIO SYSTEM)             */
+    /* =================================================================== */
+    .reveal,
+    .reveal-up,
+    .reveal-on-scroll {
+      opacity: 0;
+      transform: translate3d(0, 32px, 0);
+      transition: opacity 0.95s cubic-bezier(0.16, 1, 0.3, 1), transform 0.95s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: opacity, transform;
+    }
+
+    .reveal.active,
+    .reveal.is-visible,
+    .reveal-up.active,
+    .reveal-up.is-visible,
+    .reveal-on-scroll.active,
+    .reveal-on-scroll.is-visible {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+
+    .reveal-zoom {
+      opacity: 0;
+      transform: scale3d(0.92, 0.92, 0.92) translate3d(0, 20px, 0);
+      transition: opacity 1.05s cubic-bezier(0.16, 1, 0.3, 1), transform 1.05s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: opacity, transform;
+    }
+
+    .reveal-zoom.active,
+    .reveal-zoom.is-visible {
+      opacity: 1;
+      transform: scale3d(1, 1, 1) translate3d(0, 0, 0);
+    }
+
+    .reveal-fade {
+      opacity: 0;
+      transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: opacity;
+    }
+
+    .reveal-fade.active,
+    .reveal-fade.is-visible {
+      opacity: 1;
+    }
+
+    .delay-1 { transition-delay: 0.15s; }
+    .delay-2 { transition-delay: 0.30s; }
+    .delay-3 { transition-delay: 0.45s; }
+    .delay-4 { transition-delay: 0.60s; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .reveal,
+      .reveal-up,
+      .reveal-zoom,
+      .reveal-fade,
+      .reveal-on-scroll {
+        opacity: 1 !important;
+        transform: none !important;
+        transition: none !important;
+      }
+    }
+
+    /* =================================================================== */
+    /* 4. COVER POP-UP (PINTU GERBANG PEMBUKA)                             */
+    /* =================================================================== */
+    .cover-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--bg-dark, #021712) 45%, transparent) 0%,
+        color-mix(in srgb, var(--bg-dark, #021712) 85%, transparent) 60%,
+        color-mix(in srgb, var(--bg-dark, #021712) 98%, transparent) 100%
+      ),
+      url('{{landingCoverUrl}}') center/cover no-repeat;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      color: #ffffff;
+      text-align: center;
+      padding: 60px 24px 44px;
+      transition: transform 0.95s cubic-bezier(0.85, 0, 0.15, 1), opacity 0.85s ease;
+      will-change: transform, opacity;
+      box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+    }
+
+    .cover-overlay.opened {
+      transform: translateY(-100%);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* =================================================================== */
+    /* 4.1 FIXED PARALLAX BACKGROUND CANVAS (FOTO 2 / GLOBAL BG)           */
+    /* =================================================================== */
+    .fixed-bg-layer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      height: 100vh;
+      height: 100dvh;
+      z-index: 1;
+      background-position: center;
+      background-size: cover;
+      background-repeat: no-repeat;
+      pointer-events: none;
+    }
+
+    /* DESKTOP SPLIT RULES (>= 900px) */
+    @media (min-width: 900px) {
+      .sidebar-desktop {
+        display: block;
+        width: calc(100% - 460px);
+      }
+
+      .app-container,
+      .main-scroll-panel {
+        width: 460px;
+        max-width: 460px;
+        margin-left: calc(100% - 460px);
+        margin-right: 0;
+        min-width: 0;
+        box-shadow: -12px 0 40px rgba(0, 0, 0, 0.6);
+        border-left: 1px solid var(--bugis-border);
+        position: relative;
+        z-index: 2;
+        background: transparent;
+      }
+
+      .fixed-bg-layer {
+        left: calc(100% - 460px);
+        width: 460px;
+      }
+
+      /* Desktop: Cover undangan diposisikan persis di atas panel undangan kanan 460px (jika belum ada cover desktop fullscreen) */
+      .cover-overlay {
+        width: 460px !important;
+        left: calc(100% - 460px) !important;
+        right: 0 !important;
+        padding: 4.5rem 1.8rem 4rem !important;
+      }
+
+      .bottom-dock {
+        left: calc(100% - 230px) !important;
+      }
+
+      .cover-names {
+        font-size: clamp(2.8rem, 3.4rem, 4.2rem) !important;
+        overflow-wrap: break-word !important;
+      }
+
+      .sec-main-title,
+      .sec-heading {
+        font-size: clamp(1.85rem, 2.2rem, 2.4rem) !important;
+        overflow-wrap: break-word !important;
+        word-break: break-word !important;
+      }
+
+      .sec-flow {
+        padding: 5rem 1.8rem;
+      }
+    }
+
+    /* =================================================================== */
+    /* 3.1 OPENING HERO (100VH FULL VIEWPORT SLIDE)                        */
+    /* =================================================================== */
+    .slide-opening {
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4.5rem 1.8rem 2.8rem;
+      text-align: center;
+      position: relative;
+      background-position: center;
+      background-size: cover;
+      background-repeat: no-repeat;
+      box-sizing: border-box;
+    }
+
+    .opening-top {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .opening-bismillah {
+      font-size: 2.2rem;
+      color: var(--bugis-gold-warm);
+      text-shadow: 0 2px 14px rgba(0, 0, 0, 0.9);
+      line-height: 1.2;
+    }
+
+    .opening-date-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 14px;
+      border-radius: var(--radius-full);
+      background: var(--bugis-card-bg);
+      border: 1px solid var(--bugis-border);
+      color: var(--bugis-gold-antique);
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      margin-top: 8px;
+    }
+
+    .opening-center {
+      margin: auto 0;
+      padding: 1.5rem 0;
+    }
+
+    .opening-sub-title {
+      display: block;
+      font-size: 11px;
+      letter-spacing: 0.35em;
+      color: rgba(255, 255, 255, 0.75);
+      margin-bottom: 8px;
+    }
+
+    .opening-names {
+      font-size: clamp(2.6rem, 9.5vw, 3.8rem);
+      color: #ffffff;
+      line-height: 1.1;
+      text-shadow: 0 4px 24px rgba(0, 0, 0, 0.95);
+      font-weight: 400;
+    }
+
+    .opening-names em {
+      font-size: 0.8em;
+      font-style: italic;
+    }
+
+    .opening-bottom {
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .opening-quote-card {
+      padding: 14px 18px;
+      background: var(--bugis-card-bg);
+      border: 1px solid var(--bugis-border);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.45);
+    }
+
+    .opening-quote-text {
+      font-size: 12.5px;
+      font-style: italic;
+      line-height: 1.7;
+      color: var(--text-main);
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
+    }
+
+    .opening-quote-ref {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      color: var(--bugis-gold-antique);
+      margin-top: 8px;
+    }
+
+    .scroll-indicator {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--bugis-gold-antique);
+      animation: bounceDown 2.2s ease-in-out infinite;
+    }
+
+    @keyframes bounceDown {
+      0%, 100% { transform: translateY(0); opacity: 0.8; }
+      50% { transform: translateY(8px); opacity: 1; }
+    }
+
+    /* Section Flow Standard */
+    .sec-flow {
+      padding: 56px 24px;
+      position: relative;
+      text-align: center;
+    }
+
+    .sec-eyebrow {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--bugis-gold-warm);
+      margin-bottom: 8px;
+    }
+
+    .sec-main-title {
+      font-size: 28px;
+      font-weight: 600;
+      color: var(--bugis-gold-antique);
+      margin-bottom: 14px;
+      letter-spacing: 0.04em;
+    }
+
+    .sec-sub {
+      font-size: 13px;
+      color: var(--text-muted);
+      max-width: 460px;
+      margin: 0 auto 24px;
+      line-height: 1.7;
+    }
+
+    /* Divider Etnik Bugis (Motif Belah Ketupat Emas) */
+    .sec-divider {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin: 20px auto;
+      max-width: 140px;
+    }
+
+    .sec-divider::before,
+    .sec-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--bugis-gold-antique), transparent);
+    }
+
+    .sec-divider span {
+      font-size: 14px;
+      color: var(--bugis-gold-antique);
+      line-height: 1;
+    }
+
+    /* Traditional Corner Frame Ornaments */
+    .corner-frame {
+      position: relative;
+      border: 1px solid var(--bugis-border);
+      background: var(--bugis-card-bg);
+      border-radius: var(--radius-md);
+      padding: 24px 20px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: var(--shadow-subtle);
+    }
+
+    .corner-frame::before,
+    .corner-frame::after {
+      content: '';
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--bugis-gold-antique);
+      pointer-events: none;
+    }
+
+    .corner-frame::before {
+      top: -1px;
+      left: -1px;
+      border-right: none;
+      border-bottom: none;
+      border-top-left-radius: var(--radius-md);
+    }
+
+    .corner-frame::after {
+      bottom: -1px;
+      right: -1px;
+      border-left: none;
+      border-top: none;
+      border-bottom-right-radius: var(--radius-md);
+    }
+
+    /* =================================================================== */
+    /* 5. ELEMEN DEKORATIF COVER                                           */
+    /* =================================================================== */
+
+    .cover-watermark {
+      position: absolute;
+      bottom: -15px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: clamp(180px, 52vw, 360px);
+      line-height: 0.8;
+      letter-spacing: 0.04em;
+      pointer-events: none;
+      user-select: none;
+      white-space: nowrap;
+      z-index: 1;
+      background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.08) 0%,
+        rgba(255, 255, 255, 0.03) 60%,
+        transparent 100%
+      );
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: blur(2px) drop-shadow(0 4px 15px rgba(0, 0, 0, 0.25));
+    }
+
+    .cover-top,
+    .cover-center,
+    .cover-bottom {
+      position: relative;
+      z-index: 2;
+    }
+
+    .cover-tagline {
+      font-size: 11px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--bugis-gold-warm);
+      opacity: 0.9;
+    }
+
+    .cover-names {
+      font-size: 46px;
+      font-weight: 400;
+      line-height: 1.1;
+      margin: 12px 0 6px;
+      color: var(--bugis-gold-antique);
+      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
+    }
+
+    /* =================================================================== */
+    /* 5. WADAH AMPLOP COVER INTERAKTIF (COMPACT 220PX & PRESISI)          */
+    /* =================================================================== */
+    .envelope-box {
+      position: relative;
+      width: 100%;
+      max-width: 220px;
+      height: 110px;
+      margin-bottom: 18px;
+      perspective: 900px;
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      background: color-mix(in srgb, var(--primary, #045a44) 20%, var(--bg-dark, #021712) 88%);
+      border: 1px solid color-mix(in srgb, var(--accent, #f9e7bc) 30%, transparent);
+      border-radius: 6px;
+      box-shadow: 0 12px 26px rgba(0, 0, 0, 0.65);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .envelope-box:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 32px rgba(0, 0, 0, 0.75), 0 0 16px color-mix(in srgb, var(--accent, #f9e7bc) 15%, transparent);
+    }
+
+    /* KARTU UNDANGAN: 100% TERSEMBUNYI SAAT TERTUTUP, MENYEMBUL SAAT DIBUKA */
+    .envelope-card-letter {
+      position: absolute;
+      left: 10px;
+      right: 10px;
+      bottom: 6px;
+      min-height: 85px;
+      background: color-mix(in srgb, var(--primary, #045a44) 18%, var(--bg-dark, #021712) 90%);
+      border: 1px solid color-mix(in srgb, var(--accent, #f9e7bc) 38%, transparent);
+      border-radius: var(--radius-sm);
+      padding: 8px 10px 10px;
+      text-align: center;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+      z-index: 2;
+      transform: translateY(30px);
+      opacity: 0;
+      visibility: hidden;
+      transition: transform 0.75s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.45s ease;
+      will-change: transform, opacity;
+    }
+
+    .envelope-box.is-opened .envelope-card-letter {
+      transform: translateY(-38px);
+      opacity: 1;
+      visibility: visible;
+      /* z-index tetap 2 agar bagian bawah kartu tertanam di dalam saku amplop */
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.5), 0 0 12px color-mix(in srgb, var(--accent, #f9e7bc) 20%, transparent);
+      transition-delay: 0.25s;
+    }
+
+    .envelope-badge {
+      display: block;
+      font-size: 6.5px;
+      letter-spacing: 0.18em;
+      font-weight: 700;
+      color: var(--bugis-gold-warm);
+      margin-bottom: 2px;
+      text-transform: uppercase;
+    }
+
+    .envelope-guest-label {
+      font-size: 8px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+
+    .envelope-guest-name {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #ffffff;
+      line-height: 1.25;
+    }
+
+    .envelope-location {
+      font-size: 7.5px;
+      color: var(--bugis-gold-warm);
+      opacity: 0.8;
+      font-style: italic;
+      display: block;
+      margin-top: 2px;
+    }
+
+    /* KANTUNG DEPAN AMPLOP (SIMETRIS PRESISI TANPA GARIS BELAH TENGAH) */
+    .envelope-pocket {
+      position: absolute;
+      inset: 0;
+      background: color-mix(in srgb, var(--primary, #045a44) 18%, var(--bg-dark, #021712) 94%);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-top: 1px solid color-mix(in srgb, var(--accent, #f9e7bc) 28%, transparent);
+      border-radius: 0 0 6px 6px;
+      clip-path: polygon(0 0, 50% 52px, 100% 0, 100% 100%, 0 100%);
+      box-shadow: 0 12px 26px rgba(0, 0, 0, 0.6), inset 0 4px 10px rgba(0, 0, 0, 0.35);
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    /* FLAP SEGITIGA ATAS (PRESISI SEJAJAR DENGAN KANTUNG) */
+    .envelope-flap-top {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 64px;
+      background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--primary, #045a44) 30%, var(--bg-dark, #021712) 80%) 0%,
+        color-mix(in srgb, var(--primary, #045a44) 18%, var(--bg-dark, #021712) 84%) 100%
+      );
+      border-bottom: 1px solid color-mix(in srgb, var(--accent, #f9e7bc) 45%, transparent);
+      border-radius: 6px 6px 0 0;
+      clip-path: polygon(0 0, 100% 0, 50% 100%);
+      transform-origin: top center;
+      transform: rotateX(0deg);
+      transition: transform 0.65s cubic-bezier(0.25, 1, 0.5, 1), z-index 0.15s 0.25s;
+      z-index: 5;
+      filter: drop-shadow(0 5px 10px rgba(0, 0, 0, 0.6));
+    }
+
+    .envelope-box.is-opened .envelope-flap-top {
+      transform: rotateX(180deg);
+      z-index: 1;
+      filter: none;
+    }
+
+    /* SEGEL LILIN EMAS (WAX SEAL COMPACT 24PX) */
+    .envelope-wax-seal {
+      position: absolute;
+      bottom: 2px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 24px;
+      height: 24px;
+      border-radius: var(--radius-full);
+      background: radial-gradient(circle at 35% 30%, #fff1cf 0%, #deb974 45%, #9a7638 85%, #694e1e 100%);
+      border: 1.5px solid color-mix(in srgb, var(--accent, #f9e7bc) 65%, transparent);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6), var(--gold-glow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 6;
+      transition: transform 0.3s ease;
+    }
+
+    .envelope-box:hover:not(.is-opened) .envelope-wax-seal {
+      transform: translateX(-50%) scale(1.08);
+    }
+
+    .envelope-wax-seal span {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 8.5px;
+      font-weight: 700;
+      color: #302008;
+      letter-spacing: 0.08em;
+    }
+
+    /* TEKS MURNI BUKA UNDANGAN DI PERMUKAAN DEPAN AMPLOP */
+    .envelope-text-btn {
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%) translateY(6px);
+      background: transparent;
+      border: none;
+      outline: none;
+      padding: 4px 8px;
+      color: var(--bugis-gold-warm);
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      cursor: pointer;
+      z-index: 5;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease 0.3s, transform 0.4s ease 0.3s, color 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .envelope-box.is-opened .envelope-text-btn {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .envelope-text-btn:hover {
+      color: #ffffff;
+    }
+
+    /* =================================================================== */
+    /* 5. FLOATING AUDIO & NAVIGATION DOCK                                 */
+    /* =================================================================== */
+    .audio-fab {
+      display: none;
+    }
+
+    @keyframes rotateDisc {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .bottom-dock {
+      position: fixed;
+      bottom: 18px;
+      left: 50%;
+      transform: translate3d(-50%, 0, 0);
+      z-index: 900;
+      background: color-mix(in srgb, var(--bg-dark, #021712) 36%, transparent);
+      border: 1px solid color-mix(in srgb, var(--accent, #f9e7bc) 22%, transparent);
+      border-radius: var(--radius-full);
+      padding: 0.5rem 0.8rem;
+      display: flex;
+      gap: 0.5rem;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+      max-width: 440px;
+      width: calc(100% - 28px);
+      justify-content: space-around;
+      transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: transform, opacity;
+    }
+
+    .bottom-dock.dock-hidden {
+      transform: translate3d(-50%, calc(100% + 32px), 0);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .dock-btn {
+      color: rgba(255, 255, 255, 0.7);
+      font-family: var(--font-sans);
+      font-size: 0.65rem;
+      text-decoration: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.2rem;
+      transition: color 0.2s ease, transform 0.2s ease;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .dock-btn:hover, .dock-btn.active {
+      color: var(--bugis-gold-warm);
+      transform: translateY(-2px);
+    }
+
+    .dock-btn svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+    }
+
+    .dock-music-btn {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+    }
+
+    .dock-music-btn.playing svg {
+      animation: rotateDisc 6s linear infinite;
+      color: var(--bugis-gold-antique);
+    }
+
+    /* =================================================================== */
+    /* 6. COUPLE PROFILE SECTION                                           */
+    /* =================================================================== */
+    #couple {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .couple-watermark {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: clamp(160px, 48vw, 320px);
+      line-height: 0.85;
+      letter-spacing: 0.08em;
+      pointer-events: none !important;
+      user-select: none !important;
+      -webkit-user-select: none !important;
+      white-space: nowrap;
+      z-index: 0;
+      opacity: 0.04 !important;
+      background: linear-gradient(
+        180deg,
+        var(--bugis-gold-warm, #f9e7bc) 0%,
+        var(--bugis-gold-antique, #deb974) 60%,
+        transparent 100%
+      );
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: blur(2.5px) drop-shadow(0 4px 15px rgba(0, 0, 0, 0.4));
+    }
+
+    .couple-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 40px;
+      margin-top: 24px;
+      position: relative;
+    }
+
+    .couple-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      position: relative;
+      z-index: 2;
+    }
+
+    .couple-photo-wrap {
+      width: 140px;
+      height: 185px;
+      margin-bottom: 18px;
+      background: transparent !important;
+      box-shadow: none !important;
+      overflow: visible !important;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .couple-photo-wrap:hover {
+      transform: translateY(-3px) scale(1.02);
+    }
+
+    .couple-photo-wrap img {
+      width: 100%;
+      height: 100%;
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      display: block;
+      border-radius: 14px;
+      filter: drop-shadow(0 14px 26px rgba(0, 0, 0, 0.75));
+      transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), filter 0.4s ease;
+    }
+
+    .couple-photo-wrap:hover img {
+      transform: scale(1.04);
+      filter: drop-shadow(0 20px 36px rgba(0, 0, 0, 0.9));
+    }
+
+    .couple-name {
+      font-size: 26px;
+      font-weight: 600;
+      color: var(--bugis-gold-antique);
+      margin-bottom: 4px;
+      letter-spacing: 0.02em;
+    }
+
+    .couple-role {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--bugis-gold-warm);
+      margin-bottom: 8px;
+    }
+
+    .couple-parents {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      max-width: 290px;
+      line-height: 1.6;
+    }
+
+    .couple-ig {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--bugis-gold-antique);
+      margin-top: 10px;
+      text-decoration: none;
+      border-bottom: 1px dashed var(--bugis-border);
+      padding-bottom: 2px;
+      transition: color 0.2s;
+    }
+
+    .couple-ig:hover {
+      color: #ffffff;
+      border-color: #ffffff;
+    }
+
+    /* =================================================================== */
+    /* 7. COUNTDOWN TIMER                                                  */
+    /* =================================================================== */
+    .countdown-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      max-width: 420px;
+      margin: 24px auto 0;
+    }
+
+    .countdown-box {
+      background: var(--bugis-card-bg);
+      border: 1px solid var(--bugis-border);
+      border-radius: var(--radius-md);
+      padding: 16px 8px;
+      text-align: center;
+      box-shadow: var(--shadow-subtle);
+      position: relative;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+
+    .countdown-box::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 24px;
+      height: 2px;
+      background: var(--bugis-gold-antique);
+      border-radius: var(--radius-full);
+    }
+
+    .countdown-num {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--bugis-gold-antique);
+      display: block;
+      line-height: 1;
+      margin-bottom: 6px;
+      font-family: 'Cormorant Garamond', serif;
+    }
+
+    .countdown-lbl {
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .btn-cal {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 26px;
+      border-radius: var(--radius-full);
+      background: transparent;
+      border: 1px solid var(--bugis-gold-antique);
+      color: var(--bugis-gold-antique);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-decoration: none;
+      margin-top: 22px;
+      transition: all 0.25s;
+    }
+
+    .btn-cal:hover {
+      background: var(--bugis-gold-antique);
+      color: var(--bg-dark, #021712);
+      box-shadow: var(--gold-glow);
+    }
+
+    /* DIGITAL GIFT & LOVE STORY EXTENSIONS */
+    .gift-tabs {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 22px;
+      border: none !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      opacity: 1 !important;
+      overflow: visible !important;
+      max-width: 100% !important;
+      padding: 0 !important;
+    }
+
+    .gift-tab-btn {
+      padding: 8px 18px;
+      border-radius: var(--radius-full);
+      border: 1px solid var(--bugis-border);
+      background: var(--bugis-card-bg);
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: all 0.25s;
+    }
+
+    .gift-tab-btn.active {
+      background: var(--bugis-gold-antique);
+      color: var(--bg-dark, #021712);
+      border-color: var(--bugis-gold-antique);
+      box-shadow: var(--gold-glow);
+    }
+
+    .bank-card {
+      background: var(--bugis-card-bg);
+      border: 1px solid var(--bugis-border);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      margin-bottom: 14px;
+      text-align: left;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: var(--shadow-subtle);
+    }
+
+    .bank-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--bugis-gold-antique);
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .bank-owner {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 10px;
+      font-style: italic;
+    }
+
+    .bank-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: color-mix(in srgb, var(--bg-dark, #021712) 65%, transparent);
+      border: 1px solid var(--bugis-border);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+
+    .bank-number {
+      font-family: monospace;
+      font-size: 14px;
+      color: #ffffff;
+      letter-spacing: 0.06em;
+    }
+
+    .btn-copy {
+      background: var(--bugis-gold-antique);
+      color: var(--bg-dark, #021712);
+      border: none;
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      font-weight: 700;
+      font-size: 11px;
+      cursor: pointer;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .btn-copy:hover {
+      transform: scale(1.03);
+      box-shadow: var(--gold-glow);
+    }
+
+    .story-chapter-block {
+      background: var(--bugis-card-bg);
+      border: 1px solid var(--bugis-border);
+      border-radius: var(--radius-md);
+      padding: 18px;
+      margin-bottom: 14px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: var(--shadow-subtle);
+      text-align: left;
+    }
+
+    .sc-label {
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      font-weight: 700;
+      color: var(--bugis-gold-antique);
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .sc-title {
+      font-size: 18px;
+      color: var(--text-main);
+      margin-bottom: 8px;
+    }
+
+    .sc-desc {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .access-pass-card {
+      background: var(--bugis-card-bg);
+      border: 1px solid var(--bugis-border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: var(--shadow-elevated);
+    }
+
+    /* =================================================================== */
+    /* 8. RSVP & WISHES (BUKU TAMU)                                        */
+    /* =================================================================== */
+    .rsvp-form-box {
+      background: var(--bugis-card-bg);
+      border: 1px solid var(--bugis-border);
+      border-radius: var(--radius-lg);
+      padding: 26px 20px;
+      text-align: left;
+      margin-top: 20px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: var(--shadow-elevated);
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--bugis-gold-antique);
+      margin-bottom: 6px;
+      letter-spacing: 0.05em;
+    }
+
+    .form-input,
+    .form-select,
+    .form-textarea {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid var(--bugis-border);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-family: inherit;
+      background: color-mix(in srgb, var(--bg-dark, #021712) 65%, transparent);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      color: #ffffff;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .form-input:focus,
+    .form-select:focus,
+    .form-textarea:focus {
+      border-color: var(--bugis-gold-antique);
+      box-shadow: 0 0 10px rgba(249, 231, 188, 0.2);
+    }
+
+    .btn-submit-rsvp {
+      width: 100%;
+      padding: 14px;
+      border-radius: var(--radius-sm);
+      background: linear-gradient(135deg, #f9e7bc 0%, #e2cb98 50%, #c4aa6f 100%);
+      color: #032119;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .btn-submit-rsvp:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5), 0 0 15px rgba(249, 231, 188, 0.3);
+    }
+
+    .wishes-feed-list {
+      margin-top: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      text-align: left;
+    }
+
+    .wish-item {
+      background: var(--bugis-card-bg);
+      border: 1px solid var(--bugis-border);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow: var(--shadow-subtle);
+    }
+
+    .wish-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--bugis-gold-antique);
+    }
+
+    .wish-msg {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      margin-top: 6px;
+      line-height: 1.55;
+    }
+
+    /* =================================================================== */
+    /* 9. FOOTER & CLOSING (Adaptive Full-Height 100vh)                    */
+    /* =================================================================== */
+    .closing-sec {
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      box-sizing: border-box;
+      text-align: center;
+      padding: 40px 24px 100px;
+      background: transparent;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      border-top: none;
+    }
+
+    .closing-sec.no-closing-photo {
+      justify-content: center;
+      align-items: center;
+      background: transparent;
+    }
+
+    .closing-sec.has-closing-photo {
+      justify-content: flex-end;
+      align-items: center;
+    }
+
+    .closing-sec.has-closing-photo::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to bottom,
+        color-mix(in srgb, var(--bg-dark, #021712) 30%, transparent) 0%,
+        color-mix(in srgb, var(--bg-dark, #021712) 70%, transparent) 50%,
+        color-mix(in srgb, var(--bg-dark, #021712) 96%, transparent) 100%
+      );
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .closing-content {
+      position: relative;
+      z-index: 2;
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    .closing-names {
+      font-size: 42px;
+      margin-top: 10px;
+      color: var(--bugis-gold-antique);
+      font-weight: 400;
+    }
+  </style>
+</head>
+
+<body class="bugis-pattern-bg">
+
+  <!-- =================================================================== -->
+  <!-- 1. COVER PEMBUKA (PINTU GERBANG UTAMA)                              -->
+  <!-- =================================================================== -->
+  <div id="coverOverlay" class="cover-overlay">
+    <!-- WATERMARK INISIAL LONTARA RAKSASA (SILUET TENGAH COVER) -->
+    <div class="cover-watermark font-lontara" aria-hidden="true">{{firstInitial}}{{secondInitial}}</div>
+
+    <div class="cover-top">
+      <p class="cover-tagline font-lontara" style="letter-spacing: 0.24em; font-size: 13px; color: var(--bugis-gold-warm);">{{weddingTagline}}</p>
+    </div>
+
+    <div class="cover-center">
+      <h1 class="cover-names">{{firstName}} &amp; {{secondName}}</h1>
+      <p style="font-size:13px; color:var(--bugis-gold-warm); opacity:0.9; margin-top:4px;">{{weddingDate}}</p>
+    </div>
+
+    <div class="cover-bottom" style="width:100%; display:flex; flex-direction:column; align-items:center;">
+      <!-- WADAH AMPLOP COMPACT DENGAN TEKS BUKA UNDANGAN DI PERMUKAAN DEPAN -->
+      <div class="envelope-box" id="envelopeBox" onclick="luxToggleEnvelope()" role="button" aria-label="Buka amplop undangan" tabindex="0">
+        <!-- Flap Segitiga Penutup Lipatan 3D Atas -->
+        <div class="envelope-flap-top">
+          <!-- Segel Lilin Emas Tradisional Menempel Di Ujung Flap -->
+          <div class="envelope-wax-seal">
+            <span>{{firstInitial}}{{secondInitial}}</span>
+          </div>
+        </div>
+
+        <!-- Kartu Undangan Isi (Tersembunyi Saat Tertutup, Menyembul Saat Dibuka) -->
+        <div class="envelope-card-letter" id="envelopeCard">
+          <span class="envelope-badge" data-lux-field="customLabels.coverBadge">{{coverBadge}}</span>
+          <p class="envelope-guest-label" data-lux-field="customLabels.coverGuestLabel">Kepada Yth. Tamu Undangan</p>
+          <h3 class="envelope-guest-name" id="coverGuestName">Bapak / Ibu / Sahabat</h3>
+          <span class="envelope-location">Di Tempat</span>
+        </div>
+
+        <!-- Kantung Badan Depan Amplop (V-Cut Pocket) -->
+        <!-- Kantung Badan Depan Amplop (V-Cut Pocket Simetris) -->
+        <div class="envelope-pocket"></div>
+
+        <!-- Teks Murni 'BUKA UNDANGAN' di Permukaan Kantung Depan Amplop (Tanpa Border / Background / SVG) -->
+        <button type="button" class="envelope-text-btn" id="coverOpenBtn" data-lux-field="customLabels.openBtn" onclick="event.stopPropagation(); openInvitation();">
+          {{openBtn}}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- 2. KONTEN UTAMA UNDANGAN & DESKTOP SPLIT LAYOUT                     -->
+  <!-- =================================================================== -->
+  <div class="layout-wrapper">
+
+    <div class="fixed-bg-layer" style="background-image: linear-gradient(180deg, color-mix(in srgb, var(--bg-dark, #021712) 75%, transparent) 0%, color-mix(in srgb, var(--bg-dark, #021712) 52%, transparent) 45%, var(--bg-dark, #021712) 100%), url('{{globalBgUrl}}');"></div>
+
+    <!-- DESKTOP FIXED SIDEBAR (Hanya tampil di layar desktop >= 900px) -->
+    <aside class="sidebar-desktop">
+      <div class="sidebar-desktop-content">
+        <span class="sidebar-eyebrow font-lontara" style="font-size: 12px; letter-spacing: 0.25em; text-transform: uppercase; color: var(--bugis-gold-warm); display: block; margin-bottom: 8px;">{{weddingTagline}}</span>
+        <h1 class="sidebar-names">{{firstName}} &amp; {{secondName}}</h1>
+        <p class="sidebar-date" style="font-size: 13px; color: rgba(255, 255, 255, 0.85);">{{weddingDate}}</p>
+      </div>
+    </aside>
+
+    <!-- PANEL KONTEN UTAMA (EMULASI MOBILE 460PX PADA DESKTOP SPLIT) -->
+    <main class="main-scroll-panel app-container">
+
+      <!-- SEKSI 1: OPENING HERO (100VH STANDALONE - KANVAS BERSIH / TRANSPARAN) -->
+      <section class="slide-opening" id="home" style="background: transparent;">
+        <div class="opening-top reveal-up">
+          <span class="opening-bismillah font-serif" data-lux-field="customLabels.openingGreeting">{{openingGreeting}}</span>
+          <span class="sec-eyebrow font-lontara" style="letter-spacing:0.25em; font-size:12px; margin-top:6px; color:var(--bugis-gold-warm);">{{weddingTagline}}</span>
+          <div class="opening-date-pill font-mono">
+            <span>{{weddingDateDay}}</span>/<span>{{weddingDateMonth}}</span> • <span>{{weddingDateYear}}</span>
+          </div>
+        </div>
+
+        <div class="opening-center reveal-up delay-1">
+          <span class="opening-sub-title font-lontara" data-lux-field="customLabels.quoteEyebrow" style="font-size: 18px; letter-spacing: 0.22em; color: var(--bugis-gold-warm); display: block; margin-bottom: 6px;">{{quoteSectionEyebrow}}</span>
+          <h1 class="opening-names font-serif">{{firstName}} <em class="font-script" style="color:var(--bugis-gold-warm);">&amp;</em> {{secondName}}</h1>
+          <div class="sec-divider" style="margin: 12px auto 0;"><span>✤</span></div>
+        </div>
+
+        <div class="opening-bottom reveal-up delay-2">
+          <div class="corner-frame opening-quote-card">
+            <div class="font-lontara" style="font-size: clamp(9.5px, 2.4vw, 12px); color: var(--bugis-gold-antique); margin-bottom: 8px; letter-spacing: 0.08em; white-space: nowrap; display: flex; align-items: center; justify-content: center; gap: 6px;">
+              <span>SIPAKATAU</span> <span style="font-size:8px; opacity:0.7;">✤</span> <span>SIPAKALEBBI</span> <span style="font-size:8px; opacity:0.7;">✤</span> <span>SIPAKAINGE</span>
+            </div>
+            <p style="font-size: 10.5px; font-style: italic; color: var(--bugis-gold-warm); opacity: 0.85; margin-bottom: 12px; letter-spacing: 0.02em; line-height: 1.5;">
+              "Saling Memanusiakan, Saling Menghormati, Saling Mengingatkan"
+            </p>
+            <p class="opening-quote-text">
+              "{{openingQuote}}"
+            </p>
+            <p class="opening-quote-ref">
+              {{openingQuoteRef}}
+            </p>
+          </div>
+          <div class="scroll-indicator" style="margin-top: 18px;">
+            <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path d="M12 5v14M5 12l7 7 7-7" />
+            </svg>
+          </div>
+        </div>
+      </section>
+
+      <!-- SEKSI 2: PROFIL KEDUA MEMPELAI -->
+      <section class="sec-flow" id="couple">
+        <div class="reveal-up">
+          <span class="sec-eyebrow font-lontara" data-lux-field="customLabels.coupleEyebrow" style="letter-spacing: 0.22em; font-size: 12px;">{{coupleSectionEyebrow}}</span>
+          <h2 class="sec-main-title font-serif" data-lux-field="customLabels.coupleTitle">{{coupleSectionTitle}}</h2>
+          <p class="sec-sub" data-lux-field="customLabels.coupleSub">{{coupleSectionSub}}</p>
+        </div>
+
+        <div class="couple-grid">
+          <!-- WATERMARK INISIAL LONTARA DI TENGAH PERANTARA KEDUA MEMPELAI -->
+          <div class="couple-watermark font-lontara" aria-hidden="true">{{firstInitial}}{{secondInitial}}</div>
+
+          <!-- Mempelai Pria -->
+          <div class="couple-card reveal-zoom delay-1">
+            <div class="couple-photo-wrap">
+              <img src="{{firstPhotoUrl}}" alt="{{firstFullName}}" loading="lazy" />
+            </div>
+            <span class="couple-role">{{groomRole}}</span>
+            <h3 class="couple-name font-serif">{{firstDisplayName}}</h3>
+            <p class="couple-parents">{{firstParents}}</p>
+            <a href="https://instagram.com/{{firstInstagram}}" target="_blank" class="couple-ig">
+              <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+              </svg>
+              @{{firstInstagram}}
+            </a>
+          </div>
+
+          <!-- Mempelai Wanita -->
+          <div class="couple-card reveal-zoom delay-2">
+            <div class="couple-photo-wrap">
+              <img src="{{secondPhotoUrl}}" alt="{{secondFullName}}" loading="lazy" />
+            </div>
+            <span class="couple-role">{{brideRole}}</span>
+            <h3 class="couple-name font-serif">{{secondDisplayName}}</h3>
+            <p class="couple-parents">{{secondParents}}</p>
+            <a href="https://instagram.com/{{secondInstagram}}" target="_blank" class="couple-ig">
+              <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+              </svg>
+              @{{secondInstagram}}
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- SEKSI 3: HITUNG MUNDUR (COUNTDOWN TIMER) -->
+      <section class="sec-flow" id="countdown">
+        <div class="reveal-up">
+          <span class="sec-eyebrow">SAVE THE DATE</span>
+          <h2 class="sec-main-title font-serif">Menghitung Hari Bahagia</h2>
+          <p class="sec-sub">Kami sangat menantikan kehadiran Bapak/Ibu/Sahabat sekalian untuk merayakan momen sakral ini bersama kami.</p>
+        </div>
+
+        <div class="countdown-grid" id="countdownTimer">
+          <div class="countdown-box reveal-zoom"><span class="countdown-num" id="cdDays">00</span><span class="countdown-lbl" data-lux-field="customLabels.cdDays">Hari</span></div>
+          <div class="countdown-box reveal-zoom delay-1"><span class="countdown-num" id="cdHours">00</span><span class="countdown-lbl" data-lux-field="customLabels.cdHours">Jam</span></div>
+          <div class="countdown-box reveal-zoom delay-2"><span class="countdown-num" id="cdMins">00</span><span class="countdown-lbl" data-lux-field="customLabels.cdMins">Menit</span></div>
+          <div class="countdown-box reveal-zoom delay-3"><span class="countdown-num" id="cdSecs">00</span><span class="countdown-lbl" data-lux-field="customLabels.cdSecs">Detik</span></div>
+        </div>
+
+        <!-- Tombol Simpan ke Kalender -->
+        <a href="{{googleCalendarUrl}}" target="_blank" class="btn-cal reveal-up delay-2">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          Simpan ke Google Calendar
+        </a>
+      </section>
+
+      <!-- SEKSI 4: SUSUNAN ACARA & LOKASI -->
+      <section class="sec-flow" id="events">
+        <div class="reveal-up">
+          <span class="sec-eyebrow" data-lux-field="customLabels.eventsEyebrow">SCHEDULE &amp; VENUE</span>
+          <h2 class="sec-main-title font-serif" data-lux-field="customLabels.eventsTitle">{{eventsSectionTitle}}</h2>
+        </div>
+        {{eventDataHtml}}
+      </section>
+
+      <!-- SEKSI 5: KISAH CINTA (LOVE STORY) -->
+      {{#if showStory}}
+      <section class="sec-flow" id="story">
+        <div class="reveal-up">
+          <span class="sec-eyebrow">{{storySectionEyebrow}}</span>
+          <h2 class="sec-main-title font-serif">{{storySectionTitle}}</h2>
+        </div>
+        <div class="custom-story-container">
+          {{storyItemsHtml}}
+        </div>
+      </section>
+      {{/if}}
+
+      <!-- SEKSI 6: GALERI FOTO & VIDEO -->
+      {{gallerySectionHtml}}
+
+      <!-- SEKSI 7: PANDUAN BUSANA (DRESS CODE) -->
+      {{dressCodeHtml}}
+
+      <!-- SEKSI 8: SIARAN LANGSUNG (LIVE STREAMING) -->
+      {{liveStreamingHtml}}
+
+      <!-- SEKSI 9: FILTER INSTAGRAM STORY -->
+      {{weddingFilterHtml}}
+
+      <!-- SEKSI 10: TANDA KASIH (AMPLOP DIGITAL & KADO) -->
+      {{giftSectionHtml}}
+
+      <!-- SEKSI 11: TURUT MENGUNDANG -->
+      {{turutMengundangHtml}}
+
+      <!-- SEKSI 12: KENANGAN TAMU (GUEST MEMORIES BOOTH) -->
+      {{memoriesSectionHtml}}
+
+      <!-- SEKSI 13: KARTU AKSES QR CHECK-IN TAMU -->
+      {{qrAccessSectionHtml}}
+
+      <!-- SEKSI 14: FORM RSVP & BUKU TAMU UCAPAN REAL-TIME -->
+      <section class="sec-flow" id="rsvp">
+        <div class="reveal-up">
+          <span class="sec-eyebrow" data-lux-field="customLabels.wishesEyebrow">WISHES &amp; RSVP</span>
+          <h2 class="sec-main-title font-serif" data-lux-field="customLabels.wishesTitle">{{wishesSectionTitle}}</h2>
+          <p class="sec-sub" data-lux-field="customLabels.wishesSub">{{wishesSectionSub}}</p>
+        </div>
+
+        <div class="rsvp-form-box reveal-up delay-1">
+          <form onsubmit="luxSubmitRsvp(event)">
+            <div class="form-group">
+              <label class="form-label" data-lux-field="customLabels.rsvpNameLabel">Nama Lengkap</label>
+              <input type="text" id="rsvpName" class="form-input" placeholder="Masukkan nama Anda" required />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" data-lux-field="customLabels.rsvpStatusLabel">Konfirmasi Kehadiran</label>
+              <select id="rsvpStatus" class="form-select">
+                <option value="HADIR">Hadir dengan Senang Hati</option>
+                <option value="TIDAK_HADIR">Mohon Maaf, Berhalangan Hadir</option>
+                <option value="RAGU">Masih Ragu</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" data-lux-field="customLabels.rsvpCountLabel">Jumlah Tamu</label>
+              <select id="rsvpGuests" class="form-select">
+                <option value="1">1 Orang</option>
+                <option value="2">2 Orang</option>
+                <option value="3">3 Orang</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" data-lux-field="customLabels.rsvpMessageLabel">Ucapan &amp; Doa Restu</label>
+              <textarea id="rsvpMessage" class="form-textarea" rows="3" placeholder="Tuliskan ucapan dan doa terbaik Anda..." required></textarea>
+            </div>
+
+            <button type="submit" class="btn-submit-rsvp" data-lux-field="customLabels.rsvpBtnText">KIRIM UCAPAN &amp; KONFIRMASI</button>
+          </form>
+        </div>
+
+        <!-- Feed Doa Ucapan Tamu Real-Time -->
+        <div class="wishes-feed-list" id="wishesFeed">
+          {{wishesHtml}}
+        </div>
+      </section>
+
+      <!-- SEKSI 15: SALAM PENUTUP (Adaptive Full-Height 100vh) -->
+      <footer class="closing-sec {{closingPhotoClass}}" style="{{closingBgStyle}}">
+        <div class="closing-content">
+          <div class="font-lontara" style="font-size: 18px; color: var(--bugis-gold-warm); letter-spacing: 0.22em; margin-bottom: 10px;">
+            TABE' &amp; SALAMA'
+          </div>
+          <p style="font-size:13.5px; color:var(--text-muted); max-width:480px; margin:0 auto 16px; line-height:1.7;">
+            Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Sahabat berkenan hadir dan memberikan doa restu bagi kami.
+          </p>
+          <p style="font-size:11px; font-weight:700; letter-spacing:0.22em; text-transform:uppercase; color:var(--bugis-gold-warm);">
+            Kami Yang Berbahagia,
+          </p>
+          <h3 class="closing-names font-script">
+            {{firstName}} &amp; {{secondName}}
+          </h3>
+          <p style="font-size:12.5px; color:var(--text-muted); margin-top:4px;">Beserta Keluarga Besar Kedua Mempelai</p>
+        </div>
+      </footer>
+
+    </main>
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- 3. FLOATING NAVIGATION DOCK & AUDIO                                 -->
+  <!-- =================================================================== -->
+  <nav class="bottom-dock dock-hidden">
+    <a href="#home" class="dock-btn active">
+      <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      <span>Home</span>
+    </a>
+    <a href="#couple" class="dock-btn">
+      <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+      <span>Couple</span>
+    </a>
+    <a href="#events" class="dock-btn">
+      <svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
+      <span>Acara</span>
+    </a>
+    <a href="#story" class="dock-btn">
+      <svg viewBox="0 0 24 24"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg>
+      <span>Kisah</span>
+    </a>
+    <a href="#rsvp" class="dock-btn">
+      <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+      <span>Ucapan</span>
+    </a>
+    <button type="button" class="dock-btn dock-music-btn" id="musicToggle" onclick="luxToggleAudio()" title="Musik" aria-label="Putar / Jeda Musik">
+      <svg id="musicIconPlay" viewBox="0 0 24 24">
+        <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
+      </svg>
+      <span class="dock-music-lbl">Musik</span>
+    </button>
+  </nav>
+
+  <!-- =================================================================== -->
+  <!-- 4. JAVASCRIPT LOGIC (STANDAR LUXENARY PRODUCTION READY)             -->
+  <!-- =================================================================== -->
+  <script>
+    // A0. Interaktivitas Amplop Cover (Click-to-Open 3D Envelope)
+    function luxToggleEnvelope() {
+      const box = document.getElementById('envelopeBox');
+      const btn = document.getElementById('coverOpenBtn');
+      if (!box) return;
+      if (!box.classList.contains('is-opened')) {
+        box.classList.add('is-opened');
+        setTimeout(function () {
+          if (btn) btn.classList.add('btn-visible');
+        }, 450);
+      }
+    }
+
+    // Keyboard accessibility untuk amplop cover
+    (function () {
+      const box = document.getElementById('envelopeBox');
+      if (box) {
+        box.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            luxToggleEnvelope();
+          }
+        });
+      }
+    })();
+
+    // A. Buka Undangan & Autoplay Audio
+    function openInvitation() {
+      const cover = document.getElementById('coverOverlay');
+      if (cover) cover.classList.add('opened');
+      const dock = document.querySelector('.bottom-dock');
+      if (dock) dock.classList.remove('dock-hidden');
+      const fab = document.getElementById('musicToggle');
+      const audio = document.getElementById('luxAudioPlayer');
+      if (audio) {
+        audio.play().then(function () {
+          if (fab) fab.classList.add('playing');
+        }).catch(function () {
+          console.log('Autoplay ditahan oleh peramban');
+        });
+      }
+      setTimeout(function () {
+        const home = document.getElementById('home');
+        if (home) {
+          home.querySelectorAll('.reveal, .reveal-up, .reveal-zoom, .reveal-fade, .reveal-on-scroll').forEach(function (el) {
+            el.classList.add('active');
+            el.classList.add('is-visible');
+          });
+        }
+      }, 350);
+    }
+
+    // SILKY SCROLL REVEAL OBSERVER
+    function initScrollAnimations() {
+      // Auto-tag dynamic modular components
+      const autoRevealSelectors = [
+        '.session-card-unified',
+        '.event-unified-venue-card',
+        '.story-chapter-block',
+        '.gallery-item',
+        '.bank-card',
+        '.rsvp-form-box',
+        '.wish-item',
+        '.turut-card',
+        '.access-pass-card'
+      ];
+      document.querySelectorAll(autoRevealSelectors.join(', ')).forEach(function (el) {
+        if (!el.classList.contains('reveal') && !el.classList.contains('reveal-up') && !el.classList.contains('reveal-zoom') && !el.classList.contains('reveal-fade') && !el.classList.contains('reveal-on-scroll')) {
+          el.classList.add('reveal-up');
+        }
+      });
+
+      const allTargets = document.querySelectorAll('.reveal, .reveal-up, .reveal-zoom, .reveal-fade, .reveal-on-scroll');
+
+      if (!('IntersectionObserver' in window)) {
+        allTargets.forEach(function (el) {
+          el.classList.add('active');
+          el.classList.add('is-visible');
+        });
+        return;
+      }
+
+      const observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('active');
+            entry.target.classList.add('is-visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { rootMargin: '0px 0px -40px 0px', threshold: 0.12 });
+
+      allTargets.forEach(function (el) {
+        observer.observe(el);
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initScrollAnimations);
+    } else {
+      initScrollAnimations();
+    }
+
+    // B. Salin Teks Rekening / Alamat
+    function copyText(text) {
+      if (!navigator.clipboard) {
+        const input = document.createElement('input');
+        input.value = text;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+      } else {
+        navigator.clipboard.writeText(text);
+      }
+      showCopyToast('Berhasil disalin: ' + text);
+    }
+
+    function showCopyToast(msg) {
+      let toast = document.getElementById('luxCopyToast');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'luxCopyToast';
+        toast.style.cssText = 'position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--bg-dark, #021712); color:var(--accent, #f9e7bc); padding:10px 22px; border-radius:999px; font-size:13px; font-weight:600; box-shadow:0 10px 30px rgba(0,0,0,0.6); z-index:99999; border:1px solid color-mix(in srgb, var(--accent, #f9e7bc) 35%, transparent); transition:all 0.3s ease; opacity:0; pointer-events:none;';
+        document.body.appendChild(toast);
+      }
+      toast.textContent = msg;
+      toast.style.opacity = '1';
+      toast.style.transform = 'translateX(-50%) translateY(0)';
+      clearTimeout(window._luxCopyToastTimer);
+      window._luxCopyToastTimer = setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(-50%) translateY(10px)';
+      }, 2000);
+    }
+
+    // C. Switch Tab Amplop / Kado
+    function switchGiftTab(tab, btn) {
+      const tabAmplop = document.getElementById('giftTabAmplop');
+      const tabKado = document.getElementById('giftTabKado');
+      document.querySelectorAll('.gift-tab-btn').forEach(function (b) { b.classList.remove('active'); });
+      if (btn) btn.classList.add('active');
+      if (tab === 'amplop') {
+        if (tabAmplop) tabAmplop.style.display = 'block';
+        if (tabKado) tabKado.style.display = 'none';
+      } else {
+        if (tabAmplop) tabAmplop.style.display = 'none';
+        if (tabKado) tabKado.style.display = 'block';
+      }
+    }
+
+    // D. SMART AUTO-HIDE DOCK & MUSIC PLAYER ON SCROLL
+    (function initSmartControls() {
+      const dock = document.querySelector('.bottom-dock');
+      const fab = document.getElementById('musicToggle');
+      if (!dock && !fab) return;
+
+      let lastScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+      let ticking = false;
+      const SCROLL_THRESHOLD = 12;
+      const TOP_REVEAL_ZONE = 70;
+
+      function setVisible(visible) {
+        if (visible) {
+          if (dock) dock.classList.remove('dock-hidden');
+        } else {
+          if (dock) dock.classList.add('dock-hidden');
+        }
+      }
+
+      function updateControls() {
+        const currentScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+        const windowHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+        const docHeight = Math.max(
+          document.body.scrollHeight,
+          document.documentElement.scrollHeight,
+          document.body.offsetHeight,
+          document.documentElement.offsetHeight
+        );
+        const isNearBottom = (currentScrollY + windowHeight) >= (docHeight - 60);
+
+        if (currentScrollY <= TOP_REVEAL_ZONE || isNearBottom) {
+          setVisible(true);
+          lastScrollY = currentScrollY;
+          ticking = false;
+          return;
+        }
+
+        const delta = currentScrollY - lastScrollY;
+
+        if (Math.abs(delta) >= SCROLL_THRESHOLD) {
+          if (delta > 0) {
+            setVisible(false);
+          } else {
+            setVisible(true);
+          }
+          lastScrollY = currentScrollY;
+        }
+
+        ticking = false;
+      }
+
+      window.addEventListener('scroll', () => {
+        if (!ticking) {
+          window.requestAnimationFrame(updateControls);
+          ticking = true;
+        }
+      }, { passive: true });
+
+      if (dock) {
+        dock.querySelectorAll('a, .dock-btn').forEach(link => {
+          link.addEventListener('click', () => {
+            setVisible(true);
+          });
+        });
+      }
+    })();
+  </script>
+
+  <!-- LUXENARY PROTECTION SCRIPT -->
+  <script>
+    (function () {
+      try {
+        if (window.console && console.log) {
+          console.log("%cSTOP!", "color: #ef4444; font-size: 50px; font-weight: 900; text-shadow: 2px 2px 0 #000; font-family: sans-serif;");
+          console.log("%cIni adalah properti eksklusif Luxenary.", "color: #f9e7bc; font-size: 20px; font-weight: bold;");
+          console.log("%cSegala bentuk pencurian kode, scraping, atau modifikasi ilegal akan direkam. Domain saat ini: " + window.location.hostname, "font-size: 14px; color: #a8a29e;");
+        }
+      } catch (e) { }
+    })();
+  </script>
+  {{musicPlayerHtml}}
+</body>
+
+</html>
