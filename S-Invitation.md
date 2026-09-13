@@ -299,10 +299,10 @@ Siklus hidup undangan diatur secara otomatis oleh cron job (`POST /api/cron/clea
    - Kunjungan ke URL subdomain/slug otomatis dialihkan (*redirect 307*) langsung ke **Galeri Momen Tamu (`/memories`)**. Saat subdomain dilepas, URL Asli (`/[invitationSlug]`) otomatis menjadi rujukan permanen.
 2. **Fase 2: Retensi Galeri Momen (H + `retention_gallery_default_days` atau `galleryExpiresAt`)**:
    - Paket yang mencakup fitur `guest_memories` (`/memories`) mengadopsi durasi retensi dinamis dari pengaturan admin (`retention_gallery_default_days`, default 30 hari / 1 bulan) pada seluruh paket publik dan dashboard klien.
-   - Tamu dan pengantin dapat mengunduh seluruh koleksi foto kenangan dalam format ZIP via `streamMemoriesToZip`.
+   - Tamu dan pengantin dapat mengunduh seluruh koleksi foto kenangan dalam format ZIP via `streamMemoriesToZip` yang membaca prefix terisolasi `guest-memories/{invitationId}/` (Cloudflare R2 & lokal) dengan fallback legacy otomatis.
    - Klien dapat memperpanjang masa aktif galeri sebesar **+30 Hari** via pembayaran QRIS mandiri (`POST /api/client/memories/extend`).
    - Jika masa aktif habis dan tidak diperpanjang:
-     - Seluruh foto kenangan tamu (`GuestMemory`) di R2 dan disk lokal dihapus permanen.
+     - Seluruh foto kenangan tamu (`GuestMemory`) di R2 (`deleteFile`) dan folder direktori lokal `public/uploads/guest-memories/{id}/` dihapus permanen.
      - Subdomain dilepaskan kembali ke pool umum (`subdomain = null`) agar dapat digunakan kembali oleh pasangan lain.
      - Status undangan menjadi `ARCHIVED`.
 3. **Smart Fallback ke Portofolio / Beranda**:

@@ -158,10 +158,14 @@ export async function POST(req: NextRequest) {
         await prisma.guestMemory.deleteMany({ where: { invitationId: inv.id } });
 
         // Hapus folder fisik lokal jika ada
-        const memoriesDir = path.join(process.cwd(), "public", "uploads", "invitations", inv.id, "memories");
+        const memoriesDir = path.join(process.cwd(), "public", "uploads", "guest-memories", inv.id);
+        const legacyMemoriesDir = path.join(process.cwd(), "public", "uploads", "invitations", inv.id, "memories");
         try {
           if (await fileExists(memoriesDir)) {
             await fs.promises.rm(memoriesDir, { recursive: true, force: true });
+          }
+          if (await fileExists(legacyMemoriesDir)) {
+            await fs.promises.rm(legacyMemoriesDir, { recursive: true, force: true });
           }
         } catch {}
 

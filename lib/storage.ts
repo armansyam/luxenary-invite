@@ -123,7 +123,8 @@ export async function deleteFile(publicUrl: string | null): Promise<boolean> {
  * @param invitationId - The invitation ID
  */
 export async function streamMemoriesToZip(archive: any, invitationId: string): Promise<void> {
-  const relativePrefix = `invitations/${invitationId}/memories/`;
+  const relativePrefix = `guest-memories/${invitationId}/`;
+  const legacyPrefix = `invitations/${invitationId}/memories/`;
 
   if (STORAGE_PROVIDER === "r2" || STORAGE_PROVIDER === "s3") {
     const bucketName = process.env.S3_BUCKET_NAME;
@@ -131,13 +132,22 @@ export async function streamMemoriesToZip(archive: any, invitationId: string): P
       throw new Error("S3 Credentials not configured properly in .env");
     }
 
-    const listCommand = new ListObjectsV2Command({
+    let listCommand = new ListObjectsV2Command({
       Bucket: bucketName,
       Prefix: relativePrefix,
     });
 
-    const listData = await s3Client.send(listCommand);
+    let listData = await s3Client.send(listCommand);
     
+    // Fallback: periksa folder legacy jika prefix baru kosong
+    if (!listData.Contents || listData.Contents.length === 0) {
+      listCommand = new ListObjectsV2Command({
+        Bucket: bucketName,
+        Prefix: legacyPrefix,
+      });
+      listData = await s3Client.send(listCommand);
+    }
+
     if (!listData.Contents || listData.Contents.length === 0) {
       throw new Error("EMPTY");
     }
@@ -160,10 +170,22 @@ export async function streamMemoriesToZip(archive: any, invitationId: string): P
     }
   } else {
     // Local directory streaming
-    const memoriesDir = path.join(process.cwd(), "public", "uploads", "invitations", invitationId, "memories");
+    let memoriesDir = path.join(process.cwd(), "public", "uploads", "guest-memories", invitationId);
+    let dirExists = false;
     try {
       await fs.promises.access(memoriesDir);
+      dirExists = true;
     } catch {
+      // Fallback: periksa legacy directory
+      const legacyDir = path.join(process.cwd(), "public", "uploads", "invitations", invitationId, "memories");
+      try {
+        await fs.promises.access(legacyDir);
+        memoriesDir = legacyDir;
+        dirExists = true;
+      } catch {}
+    }
+
+    if (!dirExists) {
       throw new Error("EMPTY");
     }
     

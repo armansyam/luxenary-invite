@@ -544,6 +544,9 @@ Khusus SUPER_ADMIN / ADMIN untuk intervensi operasional langsung dari dashboard:
         - `-webkit-touch-callout: none` & `user-select: none`: Mencegah menu pop-up tahan layar (*long-press* *"Simpan Gambar"*) pada perangkat iOS Safari dan Android Chrome.
         - `draggable={false}` dan `pointer-events-none` pada tag `img`: Mencegah penarikan gambar (*drag-and-drop*) ke luar browser.
         - Lightbox modal memblokir event contextmenu pada level modal pembungkus.
+     - **Isolasi Folder Penyimpanan & Sinkronisasi Unduh ZIP (`guest-memories/`):**
+       - Foto kenangan tamu diisolasi secara khusus ke prefix `guest-memories/{invitationId}/` (Cloudflare R2) dan `public/uploads/guest-memories/{invitationId}/` (Lokal), terpisah dari media inti mempelai.
+       - Mesin pembuatan arsip ZIP (`lib/storage.ts: streamMemoriesToZip`) dan cron pembersihan otomatis (`/api/cron/cleanup`) disinkronkan menunjuk ke `guest-memories/` dengan *fallback* pencarian ke direktori legacy, menjamin pengunduhan ZIP foto kenangan tamu oleh pengantin selalu berhasil tanpa error `EMPTY`.
 2. **Standarisasi Fitur Musik Latar Pernikahan (Audio Background):**
    - Musik latar merupakan fitur esensial dari setiap paket undangan (Bebas dari pembungkus capability semu).
    - Klien dapat mengatur lagu otomatis berputar saat tamu klik "Buka Undangan", memilih dari preset kurasi klasik sakral, mengunggah berkas MP3/M4A sendiri (hingga 15 MB), atau memasukkan URL audio kustom/YouTube.
@@ -551,6 +554,8 @@ Khusus SUPER_ADMIN / ADMIN untuk intervensi operasional langsung dari dashboard:
    - PIN panitia dienkripsi dengan AES-256-GCM (`lib/pinEncryption.ts`).
    - Endpoint backend (`GET/PUT /api/client/invitations/{id}` dan `GET /api/client/invitations`) secara konsisten mendekripsi `staffPin` sebelum dikirimkan ke frontend klien, sehingga browser selalu menerima teks PIN asli yang bersih.
    - Proteksi *Anti Double-Encryption* (`isPinEncrypted`) dan mekanisme *Self-Healing* pada `decryptPin` mencegah PIN terenkripsi berulang kali saat form disimpan secara terpisah.
+4. **Pembersihan Total Media & Memori Tamu Saat Hapus Klien (`DELETE /api/admin/users`):**
+   - Mengeliminasi berkas yatim piatu (*orphaned files*) di Cloudflare R2: Sistem secara otomatis mengiterasi dan menghapus seluruh media (`localPath`) dan memori tamu (`mediaUrl`) dari storage R2/lokal via `deleteFile()`, serta membersihkan folder direktori lokal `guest-memories/{id}/` dan `invitations/{id}/`.
 
 ### 6.8 — Ultra-Slim Exclusive Accordion & Clean Preview Architecture (Studio Editor 15 Seksi)
 1. **Single-Expanded Exclusive Accordion Pattern:**

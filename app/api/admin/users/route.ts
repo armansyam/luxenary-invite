@@ -173,7 +173,14 @@ export async function DELETE(req: Request) {
 
     const targetUser = await prisma.user.findUnique({
       where: { id: userId },
-      include: { invitations: true },
+      include: {
+        invitations: {
+          include: {
+            guestMemories: true,
+            media: true,
+          },
+        },
+      },
     });
 
     if (!targetUser) {
@@ -188,6 +195,7 @@ export async function DELETE(req: Request) {
       const fs = await import("fs");
       const path = await import("path");
       const { deletePublishedHtml } = await import("@/lib/staticPublisher");
+      const { deleteFile } = await import("@/lib/storage");
 
       for (const inv of targetUser.invitations) {
         // 1. Hapus published HTML (public/published/ids/<id>.html)
@@ -202,16 +210,27 @@ export async function DELETE(req: Request) {
           // file tidak ada — skip
         }
 
-        // 3. Hapus seluruh folder uploads fisik invitation (public/uploads/invitations/<id>/)
+        // 3. Hapus file media & guest memories dari R2/Local
+        if (inv.media && inv.media.length > 0) {
+          await Promise.all(inv.media.map(m => m.localPath ? deleteFile(m.localPath) : Promise.resolve())).catch(() => {});
+        }
+        if (inv.guestMemories && inv.guestMemories.length > 0) {
+          await Promise.all(inv.guestMemories.map(mem => mem.mediaUrl ? deleteFile(mem.mediaUrl) : Promise.resolve())).catch(() => {});
+        }
+
+        // 4. Hapus folder uploads fisik invitation & guest-memories lokal
         // Portfolio sudah menyalin aset ke folder tersendiri (public/portfolio/assets/ atau R2),
         // sehingga menghapus uploads asli tidak merusak portfolio yang sudah dipublish.
         const uploadsDir = path.join(process.cwd(), "public", "uploads", "invitations", inv.id);
+        const guestMemoriesDir = path.join(process.cwd(), "public", "uploads", "guest-memories", inv.id);
         try {
           await fs.promises.access(uploadsDir);
           await fs.promises.rm(uploadsDir, { recursive: true, force: true });
-        } catch {
-          // folder tidak ada — skip
-        }
+        } catch {}
+        try {
+          await fs.promises.access(guestMemoriesDir);
+          await fs.promises.rm(guestMemoriesDir, { recursive: true, force: true });
+        } catch {}
       }
     }
 
