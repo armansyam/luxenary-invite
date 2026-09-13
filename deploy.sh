@@ -94,7 +94,7 @@ npx tsx -r dotenv/config -e "import { compileAllStaticDemos } from './lib/demoPu
 
 # 6. Build Aplikasi Next.js
 echo "🏗️ Membangun (Build) aplikasi Next.js... (Ini mungkin memakan waktu)"
-NODE_OPTIONS="--max-old-space-size=2048" npm run build
+NODE_OPTIONS="--max-old-space-size=1536" npm run build
 if [ $? -ne 0 ]; then
   echo "❌ Build Next.js gagal! PM2 tidak akan di-restart untuk menghindari down-time."
   exit 1
