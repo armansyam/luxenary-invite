@@ -963,6 +963,12 @@ Media di InvitationMedia:
 - `all_texts.txt`, `all_hardcoded_texts.txt` — Hasil ekstraksi teks
 - `ref.md` — Catatan sementara
 - `app/(public)/[groom]-[bride]/[invitationSlug]/` — Route lama (diganti `[slug]`)
+- `public/uploads/dummy/*.jpg` & `public/uploads/themes-builder/example-assets/*.jpg` — 26 file mentah JPG (~237 MB) dihapus karena sistem murni menggunakan format `.webp`
+- `public/assets/ornaments/*.zip` — 3 file arsip mentah grafis (~31.6 MB) dibersihkan dari disk lokal
+- `ChatGPT Image Sep 9, 2026, 05_58_23 PM.png` — Screenshot referensi mockup AI di root dihapus (~1.8 MB)
+- `public/assets/thumbnile/` — Direktori kosong akibat salah ketik (*typo*) dihapus
+- `scratch/test_all_toggles.ts` — Skrip tes sakelar ad-hoc lama dihapus
+- `AUDIT_REPORT.md` & `Luxvite_Landing_Page_Redesign_Spec.md` — Dipindahkan rapi ke `docs/archive/` agar folder root bersih
 
 ---
 
