@@ -38,8 +38,9 @@ Tamu dapat berkontribusi membagikan foto momen pernikahan dari sudut pandang mer
 2. **Kompresi Gambar Sisi Klien (*Client-Side Image Compression*):**
    - Foto dari kamera ponsel beresolusi tinggi (5–20 MB) dikompresi otomatis di browser tamu menjadi format WebP berbobot ringan (~300–500 KB).
    - Menghemat kuota internet tamu dan memastikan proses unggah selesai dalam waktu 1–2 detik di tengah jaringan venue yang padat.
-3. **Pemberian Catatan / Pesan Momen:**
-   Tamu dapat menyertakan nama pengirim dan caption singkat (contoh: *"Selamat menempuh hidup baru sahabatku!"*).
+3. **Pemberian Catatan, Ucapan & Cerita Momen (`story`):**
+   - Tamu dapat menyertakan nama pengirim dan nomor telepon (opsional).
+   - Dilengkapi bidang input *textarea* cerita/ucapan doa di balik foto momen (contoh: *"Momen haru saat sungkeman, bahagia selalu sahabatku!"*). Cerita ini disimpan ke database dan ditampilkan di bawah foto pada tampilan lightbox galeri.
 
 ---
 
@@ -48,10 +49,14 @@ Tamu dapat berkontribusi membagikan foto momen pernikahan dari sudut pandang mer
 Seluruh foto yang diunggah dikurasi dalam halaman galeri yang estetis:
 - **Top Story Circles (Gaya Instagram Story):**
   Menampilkan 10 foto acak paling menarik dalam lingkaran interaktif di bagian atas halaman.
-- **Masonry Grid Layout:**
-  Foto-foto ditampilkan dalam susunan kisi bertingkat (*masonry*) modern dengan efek lightbox saat gambar diklik.
-- **Informasi Pengirim:**
-  Setiap kartu foto menampilkan nama tamu yang mengunggah dan waktu foto diambil.
+- **Fluid Masonry Grid (`max-w-[1920px]`):**
+  Foto-foto ditampilkan dalam susunan kisi bertingkat (*masonry*) modern yang mengisi layar secara proporsional.
+- **Clean Touch-Swipe & Keyboard Lightbox Navigation:**
+  Saat foto diklik, modal lightbox layar penuh terbuka tanpa dialog native browser:
+  - Di perangkat layar sentuh (smartphone): Mendukung navigasi geser jari (*touch-swipe left/right*) 60 FPS.
+  - Di komputer/laptop: Mendukung tombol panah keyboard (`ArrowLeft`, `ArrowRight`, dan `Escape` untuk menutup).
+- **Informasi Pengirim & Cerita:**
+  Setiap kartu foto menampilkan nama tamu yang mengunggah, tanggal/jam pengambilan, serta cerita/pesan doa yang dituliskan.
 
 ---
 

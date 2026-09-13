@@ -45,6 +45,7 @@ Endpoint berikut dapat diakses oleh publik (tamu undangan, browser pengunjung, d
 | `GET` | `/api/public/memories/{invitationId}` | Mengambil feed foto kenangan tamu untuk galeri publik. |
 | `GET` | `/api/sse/memories` | *Server-Sent Events* stream untuk notifikasi real-time momen baru di galeri kenangan tamu. |
 | `GET` | `/api/public/version` | Mengambil versi sistem rilis aktif platform. |
+| `POST` | `/api/public/promo/validate` | Validasi kode promo secara real-time di kasir, pengecekan kuota, masa berlaku, dan kalkulasi diskon. |
 
 ---
 
@@ -75,7 +76,7 @@ Memerlukan sesi aktif klien (`role: CLIENT` atau Admin Remote Session):
 | | `DELETE` | `/api/client/media/{id}` | Menghapus aset media dari galeri undangan. |
 | **Buku Tamu** | `GET` | `/api/client/guests` | Mengambil daftar tamu undangan pengantin. |
 | | `POST` | `/api/client/guests` | Menambahkan satu tamu baru secara manual. |
-| | `POST` | `/api/client/guests/bulk` | Mengimpor puluhan/ratusan tamu sekaligus via berkas CSV. |
+| | `POST` | `/api/client/guests/bulk` | Mengimpor puluhan/ratusan tamu sekaligus via berkas CSV (dengan parser koma/titik-koma cerdas). |
 | | `DELETE` | `/api/client/guests/{id}` | Menghapus tamu dari daftar buku tamu. |
 | **RSVP** | `GET` | `/api/client/rsvps` | Mengambil data kehadiran dan ucapan dari tamu untuk dimoderasi. |
 | **Domain** | `GET` | `/api/client/subdomain/check` | Memeriksa ketersediaan nama subdomain secara instan. |
@@ -91,8 +92,10 @@ Memerlukan sesi aktif klien (`role: CLIENT` atau Admin Remote Session):
 | Metode | Endpoint | Deskripsi |
 |:---:|---|---|
 | `POST` | `/api/payments/checkout` | Membuat tagihan baru (Snap Token Midtrans, QRIS iPaymu, Duitku, TriPay, Xendit, atau transfer manual). |
+| `POST` | `/api/payments/checkout/confirm` | Mengonfirmasi pesanan dan mengunci diskon kupon promo (reservasi PromoHold 15 menit). |
+| `POST` | `/api/payments/qris/regenerate` | Me-regenerasi sesi invoice QRIS baru jika 15 menit kedaluwarsa tanpa mereset pesanan atau diskon. |
 | `POST` | `/api/payments/upgrade` | Menghitung selisih harga dan membuat invoice kenaikan paket langganan. |
-| `GET` | `/api/payments/status-stream/{orderId}` | Long-polling / stream status lunas invoice di kasir. |
+| `GET` | `/api/payments/status-stream/{orderId}` | Long-polling / SSE stream status lunas invoice di kasir ditenagai PostgreSQL LISTEN/NOTIFY. |
 | `POST` | `/api/client/orders/{id}/upload-proof` | Klien mengunggah gambar slip bukti transfer bank manual. |
 | `POST` | `/api/webhook/midtrans` | Webhook HTTP callback notifikasi pembayaran resmi Midtrans. |
 | `POST` | `/api/webhook/duitku` | Webhook callback IPN resmi Duitku. |
@@ -113,6 +116,13 @@ Memerlukan autentikasi admin (`role: ADMIN` atau `SUPER_ADMIN`):
 | | `POST` | `/api/admin/remote-session` | Membuka sesi kendali jarak jauh (*Remote Session*) ke dashboard klien. |
 | **Orders** | `POST` | `/api/admin/orders/{id}/approve` | Persetujuan 1-klik pembayaran transfer bank manual. |
 | | `POST` | `/api/admin/orders/{id}/reject` | Menolak transfer bank manual dengan alasan verifikasi. |
+| **Marketing** | `GET` | `/api/admin/marketing` | Mengambil data performa kupon diskon, daftar mitra afiliasi, dan log komisi. |
+| | `POST` | `/api/admin/marketing` | Membuat kupon baru, mendaftarkan mitra referral, dan mencairkan (*payout*) komisi ke buku kas. |
+| **Finance** | `GET` | `/api/admin/finance/overview` | Ringkasan laba/rugi, pendapatan kotor, beban operasional, dan grafik arus kas SVG. |
+| | `POST` | `/api/admin/finance/expenses` | Mencatat beban pengeluaran operasional baru (server, gaji, marketing, dll). |
+| | `POST` | `/api/admin/finance/closing` | Mengunci pembukuan bulanan (*financial closing snapshot*) yang tidak dapat diubah lagi. |
+| | `POST` | `/api/admin/finance/recurring/{id}/pay` | Melakukan pelunasan tagihan server/software berkala dalam 1-klik. |
+| | `GET` | `/api/admin/finance/tax` | Menghitung dan merekapitulasi setoran PPh Final 0,5% UMKM (PP 55/2022). |
 | **Tema** | `GET` | `/api/admin/themes` | Daftar seluruh master tema di sistem. |
 | | `POST` | `/api/admin/themes/sync` | Sinkronisasi master tema fisik di disk ke database, auto-compile static demo, dan auto-purge Cloudflare edge cache. |
 | | `POST` | `/api/admin/themes/{id}/demo-asset` | Mengunggah banner atau video demo tema resmi. |
@@ -130,3 +140,4 @@ Memerlukan autentikasi admin (`role: ADMIN` atau `SUPER_ADMIN`):
 Endpoint otomatis yang dipanggil oleh Crontab Linux dengan proteksi `CRON_SECRET`:
 - `POST /api/cron/cleanup`: Pembersihan data kadaluarsa, foto tamu expired, dan daur ulang subdomain.
 - `GET /api/cron/backup`: Pencadangan database PostgreSQL harian otomatis.
+

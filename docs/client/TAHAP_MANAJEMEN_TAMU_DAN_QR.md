@@ -114,11 +114,37 @@ Setelah diklik, status tamu di tabel otomatis berubah menjadi `SENT` untuk memud
 
 ---
 
-## 6. Fitur Import & Export CSV Massal
+## 6. Fitur Import & Export CSV Massal Cerdas
 
-- **Import Massal CSV:**
-  - Mengunggah file `.csv` berisi ratusan data tamu sekaligus.
-  - Mendukung header standar: `Nama`, `Nomor WhatsApp`, `Kategori`, `Sesi`, `Jumlah Kuota`, `Nomor Meja`.
-  - Sistem melakukan pembersihan otomatis terhadap format nomor HP (mengubah `08...` menjadi `628...`).
-- **Export Data ke Spreadsheet:**
-  - 1-klik unduh seluruh daftar tamu ke file CSV lengkap dengan status RSVP terkini, kuota, nomor meja, dan riwayat kehadiran check-in.
+Modul tamu dilengkapi sistem import CSV canggih yang dirancang tahan terhadap kebiasaan format regional:
+
+- **Parser CSV Cerdas (Koma & Titik-Koma):**
+  - Microsoft Excel pada locale Indonesia sering kali mengekspor CSV dengan delimiter titik-koma (`;`), sementara Google Sheets mengekspor dengan koma (`,`).
+  - Sistem secara otomatis mendeteksi karakter pemisah di baris pertama dan membedah kolom secara akurat tanpa error.
+- **Generator Template CSV Terpadu:**
+  - Tombol *"Unduh Template CSV"* di dalam modal import langsung men-generate file CSV siap isi dari browser dengan header:
+    `name,phoneNumber,category,guestCount,tableNumber`
+  - Dilengkapi 3 baris data contoh realistis (VIP, Rekan Kantor, Keluarga).
+- **Mini-Preview Validasi Sebelum Submit:**
+  - Sebelum data dikirim ke endpoint `/api/client/guests/bulk`, modal menampilkan tabel tinjauan instan berisi nama, nomor HP, kategori, pax, dan nomor meja yang berhasil dibaca.
+- **Sanitasi Nomor Kontak Otomatis:**
+  - Menghapus karakter spasi, tanda strip (`-`), dan tanda kurung.
+  - Mengonversi awalan lokal `08...` menjadi format internasional `628...` untuk kompatibilitas WhatsApp Web / App.
+- **Export Data Lengkap ke Spreadsheet:**
+  - 1-klik unduh seluruh daftar tamu ke format CSV lengkap dengan status pengiriman WA (`SENT`/`PENDING`), status kehadiran check-in resepsionis, dan nomor meja.
+
+---
+
+## 7. Integrasi Web Contact Picker API (Pilih dari Kontak HP)
+
+Untuk kenyamanan pengantin yang menggunakan smartphone (khususnya Android Chrome), sistem mengintegrasikan **Web Contact Picker API** (`navigator.contacts.select`):
+
+1. **Progressive Feature Detection:**
+   - Sistem secara otomatis memeriksa apakah browser dan perangkat keras mendukung API Kontak:
+     `"contacts" in navigator && "ContactsManager" in window`
+   - Jika didukung, tombol *"Kontak HP"* aktif dan tampil di bilah alat (*toolbar*) serta di dalam modal *"Tambah Tamu"*. Jika tidak didukung (misal desktop browser), antarmuka tetap menyediakan form manual tanpa error.
+2. **Pemilihan Kontak 1-Sentuhan:**
+   - Klien cukup mengetuk tombol *"Pilih dari Kontak HP"* untuk membuka buku kontak native perangkat.
+   - Klien memilih teman/keluarga, dan sistem otomatis mengisi bidang `Nama` serta `Nomor WhatsApp` secara instan.
+3. **Pembersihan Data Kontak Native:**
+   - Mengambil nama pertama & nama keluarga dari array data kontak, serta memformat nomor ponsel ke standar internasional yang siap kirim tautan WhatsApp.

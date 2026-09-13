@@ -11,7 +11,13 @@ Dokumen ini membedah arsitektur basis data relasional PostgreSQL pada platform L
 erDiagram
     User ||--o{ Order : "places"
     User ||--o{ Invitation : "owns"
+    User ||--o{ PromoHold : "holds"
     Order ||--o| Invitation : "unlocks / activates"
+    Order ||--o| PromoHold : "applies"
+    Order ||--o| AffiliateCommission : "yields"
+    PartnerAffiliate ||--o{ PromoCoupon : "owns"
+    PartnerAffiliate ||--o{ AffiliateCommission : "earns"
+    PromoCoupon ||--o{ Order : "discounted_in"
     Invitation ||--o{ Guest : "contains"
     Invitation ||--o{ InvitationMedia : "has_media"
     Invitation ||--o{ Rsvp : "receives"
@@ -37,6 +43,9 @@ erDiagram
         enum status
         enum orderType
         string paymentMethod
+        string promoCodeApplied
+        decimal discountAmount
+        string promoCouponId FK
         datetime paidAt
     }
 
@@ -148,6 +157,10 @@ Menyimpan lembar penagihan dan riwayat transaksi:
   - `CUSTOM_DOMAIN_ADDON`: Pembelian lisensi custom domain.
 - `paymentMethod` (String): Kanal pembayaran (`GATEWAY` atau `MANUAL_TRANSFER`).
 - `proofImageUrl` (String, Nullable): URL slip transfer jika menggunakan transfer manual.
+- `promoCodeApplied` (String, Nullable): Kode kupon diskon yang diaplikasikan saat checkout.
+- `discountAmount` (Decimal, Nullable): Nominal potongan harga dari kupon promo.
+- `promoCouponId` (UUID, Foreign Key, Nullable): Referensi ke kupon yang digunakan.
+- `checkoutConfirmedAt` (DateTime, Nullable): Waktu penguncian pesanan dan reservasi diskon promo hold.
 
 #### 2. Tabel `webhook_logs`
 Menyimpan riwayat callback / IPN dari payment gateway untuk idempotency dan debugging:
@@ -198,6 +211,8 @@ Menyimpan daftar aset visual mempelai:
 Buku tamu undangan klien:
 - `name` (String): Nama tamu undangan (contoh: "Bapak H. Syamsuddin & Keluarga").
 - `slug` (String): Slug nama untuk parameter `?to=...`.
+- `phoneNumber` (String, Nullable): Nomor kontak WhatsApp tamu untuk broadcast undangan.
+- `tableNumber` (String, Nullable): Alokasi nomor / nama meja VIP tamu di venue.
 - `qrToken` (String, Unique): Token acak terenkripsi untuk verifikasi check-in QR di resepsionis.
 - `paxAllocated` (Int): Kuota porsi katering yang dialokasikan.
 - `isCheckedIn` (Boolean): Status kehadiran fisik di venue.
@@ -215,9 +230,82 @@ Buku tamu doa dan ucapan selamat dari tamu undangan.
 #### 4. Tabel `guest_memories`
 Album foto momen candid yang diunggah oleh tamu di hari pernikahan:
 - `senderName` (String): Nama tamu pengunggah.
+- `senderPhone` (String, Nullable): Nomor telepon tamu pengunggah.
 - `mediaType` (String): Nilai tetap `PHOTO` / `IMAGE`.
 - `mediaUrl` (String): Tautan file foto terkompresi di Cloudflare R2.
 - `message` (String, Nullable): Caption ucapan momen.
+- `story` (String, Nullable): Cerita atau ucapan doa panjang dari tamu.
+
+---
+
+### E. Entitas Pemasaran, Kupon Promo & Afiliasi (`promo_coupons`, `partner_affiliates`, `affiliate_commissions`, `promo_holds`)
+
+#### 1. Tabel `promo_coupons`
+Katalog kupon diskon dan voucher promo promosi:
+- `code` (String, Unique): Kode kupon unik (contoh: `DISCOUNT50`, `WO-SEJAHTERA`).
+- `discountType` (Enum `DiscountType`): `PERCENT` atau `NOMINAL`.
+- `discountValue` (Decimal): Besaran diskon (persen atau rupiah).
+- `minOrderAmount` (Decimal): Batas minimum nominal pesanan.
+- `maxDiscountAmount` (Decimal, Nullable): Plafon batas diskon maksimal untuk tipe persen.
+- `quotaLimit` (Int, Nullable): Kuota total pemakaian kupon.
+- `usageCount` (Int): Jumlah pemakaian kupon yang berhasil dibayar.
+- `isSingleUse` (Boolean): Flag sekali pakai langsung hangus.
+- `perUserLimit` (Int): Batas klaim per akun user.
+- `applicablePlans` (Array `PlanType`): Daftar paket yang memenuhi syarat.
+- `validFrom` & `validUntil` (DateTime, Nullable): Periode masa berlaku kupon.
+- `partnerId` (UUID, Foreign Key, Nullable): Relasi ke mitra afiliasi pemilik kupon.
+
+#### 2. Tabel `partner_affiliates`
+Data mitra referral (Wedding Organizer, Venue, Vendor MUA):
+- `name` (String): Nama mitra atau agensi rekanan.
+- `commissionType` (Enum `CommissionType`): `PERCENT` atau `FLAT`.
+- `commissionValue` (Decimal): Besaran bagi hasil komisi per transaksi lunas.
+- `pendingBalance` (Decimal): Akumulasi saldo komisi yang belum dicairkan.
+- `totalPaidOut` (Decimal): Total riwayat komisi yang telah ditransfer ke mitra.
+- `bankName`, `accountNumber`, `accountName` (String, Nullable): Rekening pencairan komisi.
+
+#### 3. Tabel `affiliate_commissions`
+Catatan komisi per transaksi pesanan klien:
+- `orderId` (UUID, Unique, Foreign Key): Transaksi pesanan sumber komisi.
+- `partnerId` (UUID, Foreign Key): Mitra yang berhak menerima komisi.
+- `orderAmount` (Decimal): Nilai nominal pesanan.
+- `commissionAmount` (Decimal): Nominal hak bagi hasil mitra.
+- `status` (Enum `CommissionStatus`): `PENDING` atau `PAID`.
+- `paidAt` (DateTime, Nullable): Tanggal pencairan dana.
+
+#### 4. Tabel `promo_holds`
+Mekanisme penguncian kupon 15 menit (*Anti-Race Condition & Anti-Double Claim*):
+- `promoCode` (String): Kode kupon yang dikunci.
+- `orderId` (UUID, Unique, Foreign Key): ID pesanan kasir yang mengunci kupon.
+- `userId` (UUID, Foreign Key): User yang sedang melakukan reservasi diskon.
+- `status` (Enum `HoldStatus`): `HELD` (sedang dikunci), `CONSUMED` (lunas), `RELEASED` (batal).
+- `expiresAt` (DateTime): Waktu kedaluwarsa reservasi kunci (15 menit).
+
+---
+
+### F. Entitas Keuangan & Pembukuan Kas (`expenses`, `recurring_expenses`, `financial_closings`)
+
+#### 1. Tabel `expenses`
+Buku kas pengeluaran operasional (*OPEX*) dan pencairan komisi mitra:
+- `title` (String): Judul pengeluaran.
+- `category` (Enum `ExpenseCategory`): `SERVER`, `MARKETING`, `SALARY`, `LEGAL`, `OFFICE`, `MISC`.
+- `amount` (Decimal): Nominal uang keluar.
+- `expenseDate` (DateTime): Tanggal realisasi pembayaran.
+- `receiptUrl` (String, Nullable): URL bukti bayar / struk transfer di R2.
+
+#### 2. Tabel `recurring_expenses`
+Jadwal tagihan rutin berkala (sewa server VPS, domain, lisensi software):
+- `billingCycle` (Enum `BillingCycle`): `MONTHLY` atau `YEARLY`.
+- `dueDate` (Int): Tanggal jatuh tempo kalender.
+
+#### 3. Tabel `financial_closings`
+Laporan audit tutup buku keuangan bulanan yang terkunci (*immutable snapshot*):
+- `period` (String, Unique): Periode format `YYYY-MM`.
+- `grossRevenue` (Decimal): Total pendapatan kotor lunas.
+- `totalExpenses` (Decimal): Total beban operasional.
+- `netProfit` (Decimal): Laba bersih operasional.
+- `taxAmount` (Decimal): Kewajiban PPh Final UMKM 0,5% (PP 55/2022).
+- `closedAt` (DateTime): Waktu penguncian pembukuan oleh Administrator.
 
 ---
 
