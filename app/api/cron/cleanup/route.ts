@@ -207,8 +207,9 @@ export async function POST(req: NextRequest) {
         // Hapus file fisik InvitationMedia dari R2 (sebelum user dihapus dan cascade)
         const medias = await prisma.invitationMedia.findMany({ where: { invitationId: inv.id } });
         if (medias.length > 0) {
-          import("@/lib/storage").then(({ deleteFile }) => {
-            Promise.all(medias.map(m => m.localPath ? deleteFile(m.localPath) : Promise.resolve())).catch(() => {});
+          const { deleteFile } = await import("@/lib/storage");
+          await Promise.all(medias.map(m => m.localPath ? deleteFile(m.localPath) : Promise.resolve())).catch((err) => {
+            console.error("[Cron Cleanup Error] Gagal menghapus file media R2:", err);
           });
         }
 
@@ -236,8 +237,9 @@ export async function POST(req: NextRequest) {
       // Hapus file fisik Order proofImageUrl dari R2 (sebelum user dihapus dan cascade)
       const userOrders = await prisma.order.findMany({ where: { userId: user.id } });
       if (userOrders.length > 0) {
-        import("@/lib/storage").then(({ deleteFile }) => {
-          Promise.all(userOrders.map(ord => ord.proofImageUrl ? deleteFile(ord.proofImageUrl) : Promise.resolve())).catch(() => {});
+        const { deleteFile } = await import("@/lib/storage");
+        await Promise.all(userOrders.map(ord => ord.proofImageUrl ? deleteFile(ord.proofImageUrl) : Promise.resolve())).catch((err) => {
+          console.error("[Cron Cleanup Error] Gagal menghapus proofImageUrl R2:", err);
         });
       }
 

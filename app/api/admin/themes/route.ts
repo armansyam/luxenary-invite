@@ -26,7 +26,7 @@ export const DEFAULT_THEMES = [
   { id: "papercut", name: "Papercut", category: "modern", series: "Modern", description: "TEXTURED CRAFT & MINIMALIST — Keanggunan Tekstur Kertas Alami", isPremium: false, sortOrder: 8, isActive: true },
   { id: "solaria", name: "Solaria", category: "modern", series: "Modern", description: "WARM SUNSET BOTANICAL — Kehangatan Golden Hour & Botani Segar", isPremium: false, sortOrder: 9, isActive: true },
   { id: "wave", name: "Wave", category: "modern", series: "Modern", description: "DYNAMIC FLUID OCEAN — Aliran Gelombang Modern Dinamis & Segar", isPremium: false, sortOrder: 10, isActive: true },
-  // Traditional Series (5)
+  // Traditional Series (6)
   { id: "badrika", name: "Badrika", category: "traditional", series: "Traditional", description: "Klasik Jawa Ningrat dengan Ornamen Khas Keraton", isPremium: false, sortOrder: 11, isActive: true },
   { id: "candani", name: "Candani", category: "traditional", series: "Traditional", description: "Tradisi Nusantara Elegan dengan Siluet Padi & Nuansa Tanah", isPremium: false, sortOrder: 12, isActive: true },
   { id: "dillalucky", name: "Dilla Lucky", category: "traditional", series: "Traditional", description: "Kehangatan Adat Melayu & Padang Modern", isPremium: false, sortOrder: 13, isActive: true },

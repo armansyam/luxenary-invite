@@ -96,7 +96,7 @@ model Invitation {
   id                   String            @id @default(uuid())
   orderId              String?           @unique
   userId               String
-  themeId              String            @default("kila")
+  themeId              String            @default("kalandra")
   subdomain            String?           @unique
   customDomain         String?           @unique
   invitationSlug       String            @unique

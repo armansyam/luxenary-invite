@@ -1809,8 +1809,11 @@ export default function AdminPage() {
             onClick={async () => {
               try {
                 await fetch("/api/admin/remote-session", { method: "DELETE" });
-              } catch {}
-              window.location.href = "/admin";
+              } catch (err) {
+                console.warn("Gagal menghapus remote session:", err);
+              }
+              router.push("/admin");
+              router.refresh();
             }}
             className="px-3 py-1 bg-white text-amber-900 rounded-lg text-xs font-bold hover:bg-amber-50 transition cursor-pointer shadow-2xs shrink-0"
           >

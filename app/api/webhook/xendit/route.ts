@@ -102,7 +102,10 @@ export async function POST(req: NextRequest) {
         console.warn(`[Xendit Webhook] Order ${orderId} gatewayId=${gwId}, bukan xendit — diabaikan.`);
         return NextResponse.json({ status: "ignored", reason: "gateway_mismatch" }, { status: 200 });
       }
-    } catch {}
+    } catch (err) {
+      console.error("[Xendit Webhook] Gagal memverifikasi gateway kepemilikan order:", err);
+      return NextResponse.json({ error: "Database error during gateway verification" }, { status: 500 });
+    }
 
     if (isPaid) {
       // Idempotency Guard: updateMany dengan filter status=PENDING — atomic check-and-set

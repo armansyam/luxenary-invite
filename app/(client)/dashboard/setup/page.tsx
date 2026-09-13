@@ -88,7 +88,7 @@ function SetupWizardContent() {
       .then((state) => {
         if (state.step === "COMPLETED" && state.invitation?.id) {
           setIsBypassing(true);
-          window.location.href = `/dashboard/invitation/${state.invitation.id}`;
+          router.push(`/dashboard/invitation/${state.invitation.id}`);
           return;
         }
         if (state.planType) {
@@ -135,7 +135,7 @@ function SetupWizardContent() {
         })
         .catch(() => {});
     }
-  }, [queryOrder]);
+  }, [queryOrder, router]);
 
   // Filter themes based on the user's purchased package tier (Waterfall / All-Access Mapping)
   const filteredThemes = themesList.filter((t) => {
@@ -204,7 +204,7 @@ function SetupWizardContent() {
 
       // Success Redirect directly to the invitation editor
       localStorage.removeItem("luxenary_setup_draft");
-      window.location.href = `/dashboard/invitation/${data.invitationId}`;
+      router.push(`/dashboard/invitation/${data.invitationId}`);
     } catch (err: any) {
       setError(err.message || "Terjadi kesalahan. Silakan coba lagi.");
       setLoading(false);
@@ -237,7 +237,7 @@ function SetupWizardContent() {
       }
 
       localStorage.removeItem("luxenary_setup_draft");
-      window.location.href = `/dashboard/invitation/${data.invitationId}`;
+      router.push(`/dashboard/invitation/${data.invitationId}`);
     } catch (err: any) {
       setError(err.message || "Terjadi kesalahan. Silakan coba lagi.");
       setLoading(false);
@@ -305,7 +305,7 @@ function SetupWizardContent() {
               <span className="text-[11px] text-rose-700">Sudah memiliki draf atau pernah membuat undangan?</span>
               <button
                 type="button"
-                onClick={() => { window.location.href = "/dashboard"; }}
+                onClick={() => { router.push("/dashboard"); }}
                 className="text-[11px] font-bold text-rose-900 underline hover:text-black cursor-pointer"
               >
                 Masuk Langsung ke Studio Undangan &rarr;

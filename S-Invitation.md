@@ -734,3 +734,20 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - Setelah tagihan dikonfirmasi, pembeli diarahkan ke `/payment?order=ID`.
    - `/payment` menyajikan antarmuka pembayaran murni (QRIS dengan SSE realtime listening dan transfer bank manual). Jika sesi QRIS 15 menit habis, pembeli dapat memperbarui QRIS seketika melalui tombol regenerasi tanpa kehilangan diskon promo yang sudah dikunci pada pesanan 24 jam.
 
+---
+
+## 22. Purifikasi Sistem, Eliminasi Stale Logic & Dynamic Background Token (September 2026)
+
+1. **Dynamic Dark Canvas Injection:**
+   - Seluruh 8 template tema fisik (`dillalucky.html`, `kalandra.html`, `ameera.html`, `wave.html`, `prameswari.html`, `papercut.html`, `artisan.html`, `aurelia.html`) telah dikalibrasi untuk menyuntikkan `--bg-dark: {{colorBgDark}};` pada inline style tag `<body>`. Kanvas latar gelap kini 100% responsif terhadap perubahan palet tema di Studio Editor (seperti Burgundy, Emerald, Midnight).
+
+2. **Daur Ulang Subdomain Selaras (Subdomain Recycling Invariant):**
+   - Jalur pembaruan subdomain di Studio Editor (`app/api/client/invitations/[id]/route.ts`) kini 100% selaras dengan endpoint validasi `subdomain/check` dan pembuatan awal `invitations/create`. Jika masa aktif acara pemilik subdomain lama telah lewat 7 hari (`isSubdomainExpired(..., 7)`), subdomain lama secara otomatis di-recycle (`subdomain: null`) sehingga klien baru dapat menyimpannya tanpa tabrakan validasi.
+
+3. **Pembersihan Berkas Usang & Query Redundan:**
+   - Menghapus 2 file CSS usang/mati (`app/landing.scoped.css` dan `public/css/landing.css`, total ~195 KB).
+   - Menghapus folder kosong `components/ui/`.
+   - Mengganti pemanggilan `prisma.wish` yang mati pada endpoint `/api/client/rsvps` dan `/api/admin/overview` dengan relasi aktif `rsvps.message` dan `guest.videoWishUrl`.
+   - Memutakhirkan default `themeId` Prisma model `Invitation` menjadi `"kalandra"`.
+
+

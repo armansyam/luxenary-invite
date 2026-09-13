@@ -2001,3 +2001,29 @@ Sistem pemasaran terpusat yang dirancang untuk mengelola kupon diskon publik, ko
      - `PartnerAffiliate.pendingBalance` dikurangi dan `totalPaidOut` ditambah sebesar total nominal pencairan.
      - Secara otomatis dibuatkan entri pengeluaran kas di tabel `expenses` dengan kategori `MARKETING`, judul `"Payout Komisi Mitra: {name}"`, dan catatan detail nomor rekening tujuan. Pengeluaran ini langsung tersinkronisasi ke laporan laba rugi dan pembukuan eksekutif di `/admin?tab=finance`.
 
+---
+
+## 24. Audit Kode Menyeluruh, Eliminasi Stale Logic & Standar Dynamic Token (September 2026)
+
+Sistem telah melalui audit mendalam berbasis bukti empiris (*Empirical Verification Loop*) dengan pembersihan menyeluruh pada 4 pilar utama:
+
+1. **Pembersihan Dead Code & Dead Assets (~195 KB Dieliminasi):**
+   - Menghapus file CSS duplikat/mati: `app/landing.scoped.css` (98 KB) dan `public/css/landing.css` (96 KB) yang tidak pernah diimpor oleh sistem (sistem murni mengimpor `app/landing.css`).
+   - Menghapus direktori kosong `components/ui/`.
+   - Standardisasi default skema Prisma: Mengubah default `themeId` pada model `Invitation` dari alias warisan `"kila"` menjadi `"kalandra"`.
+   - Eliminasi query model mati: Mengeliminasi pemanggilan `prisma.wish` yang redundan pada endpoint `/api/client/rsvps` dan `/api/admin/overview`. Seluruh doa dan ucapan tamu dikelola tunggal (*Single Source of Truth*) melalui kolom `rsvps.message`, sedangkan `videoWishCount` dihitung faktual dari `prisma.guest.count({ where: { videoWishUrl: { not: null } } })`.
+
+2. **Sinkronisasi Daur Ulang Subdomain (Subdomain Recycling):**
+   - Menyelaraskan logika pada `app/api/client/invitations/[id]/route.ts` dengan `invitations/create` dan `/api/client/subdomain/check`.
+   - Jika klien memperbarui subdomain di Studio Editor dan subdomain tujuan pernah digunakan oleh undangan lama yang telah kedaluwarsa (> 7 hari pasca acara), sistem secara otomatis mengosongkan subdomain pemilik lama (`subdomain: null`) dan menetapkannya ke klien baru tanpa melempar error penolakan 400.
+
+3. **Eliminasi Race Condition & Penelanan Error (Storage & Concurrency):**
+   - Pada `app/api/cron/cleanup/route.ts`: Mengganti pola fire-and-forget `import().then()` dengan `await Promise.all(...)` yang terjamin selesai sebelum mengeksekusi `prisma.user.delete`, mencegah file media tertinggal sebagai *orphaned objects* di Cloudflare R2.
+   - Pada `app/api/payments/checkout/route.ts`: Pengiriman invoice tagihan via `sendInvoiceEmail` kini di-`await` dengan pembungkus `try-catch` terisolasi dan logging jelas, mencegah pemutusan proses di runtime serverless.
+   - Pada handler webhook Xendit & Midtrans: Memperbaiki penanganan error query database agar tidak ditelan diam-diam (`catch {}` kosong).
+
+4. **Harmonisasi Palet Warna Dinamis & UX Zero FOUC:**
+   - Master template tema (`dillalucky.html`, `kalandra.html`, `ameera.html`, `wave.html`, `prameswari.html`, `papercut.html`, `artisan.html`, `aurelia.html`) kini secara eksplisit menyuntikkan `--bg-dark: {{colorBgDark}};` pada inline style tag `<body>`. Latar kanvas gelap undangan kini otomatis beradaptasi secara harmonis dengan palet warna pilihan klien (seperti Burgundy, Emerald, Midnight).
+   - Mengganti seluruh navigasi internal `window.location.href` pada formulir penyiapan (`setup/page.tsx`) dan dasbor admin menjadi `router.push()`, meniadakan kedipan layar putih (*Flash of Unstyled Content*) dan melenyapkan seluruh ESLint route warnings.
+   - Memperbarui `app/globals.css` agar memprioritaskan font modern `Geist` (`var(--font-geist-sans)`).
+

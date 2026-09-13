@@ -54,7 +54,9 @@ export async function POST(req: NextRequest) {
       if (dbClientKey && (dbClientKey.startsWith("Mid-server-") || dbClientKey.startsWith("SB-Mid-server-"))) {
         serverKeys.push(dbClientKey);
       }
-    } catch {}
+    } catch (err) {
+      console.warn("[Midtrans Webhook] Gagal memuat server key dari AdminSettings DB:", err);
+    }
 
     const validServerKeys = Array.from(new Set(serverKeys.filter((k) => k && !k.includes("your_"))));
 
@@ -106,7 +108,9 @@ export async function POST(req: NextRequest) {
         },
       });
       webhookLogId = log.id;
-    } catch {}
+    } catch (err) {
+      console.error("[Midtrans Webhook] Gagal merekam webhookLog ke database:", err);
+    }
 
     const order = await prisma.order.findUnique({ where: { id: orderId } });
     if (!order) {

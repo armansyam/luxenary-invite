@@ -119,7 +119,7 @@ export async function GET() {
       prisma.order.count(),
       prisma.guest.count(),
       prisma.rsvp.count().catch(() => 0),
-      prisma.wish.count().catch(() => 0),
+      prisma.guest.count({ where: { videoWishUrl: { not: null } } }).catch(() => 0),
       // Hanya hitung klien yang SUDAH LUNAS (PAID) atau memiliki undangan
       prisma.user.count({
         where: {

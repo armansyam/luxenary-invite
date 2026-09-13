@@ -510,6 +510,7 @@ Setiap developer atau AI Agent yang melakukan modifikasi pada codebase **WAJIB**
 6. **Standar Watermark Monogram & Wording Universal:** Tema desktop sidebar mendukung watermark monogram inisial (`{{coupleMonogram}}`, `{{firstInitial}}`, `{{secondInitial}}`) dan salam pembuka universal non-sektarian (`{{coupleSectionSub}}`) untuk fleksibilitas multikultural.
 7. **Standar UI Bersih & Purifikasi Tipografi Tombol:** Dilarang keras menyisipkan emoji default sistem operasi maupun simbol panah AI (`↗`) ke dalam label tombol atau badge (seperti Google Maps, Live Streaming, Instagram Filter, atau Galeri Momen). Seluruh tombol aksi wajib menggunakan tipografi bersih, elegan, atau ikon vektor SVG murni.
 8. **Standar Theme Freedom & Conditional Blocks (`{{#if}}`):** Tema master memiliki kebebasan penuh merancang struktur DOM, ornamen, dan seninya sendiri tanpa dipaksa memakai kartu seragam dari Engine. Template renderer (`lib/renderTemplate.ts`) mendukung blok `{{#if <key>}} ... {{/if}}` sehingga sakelar tampil/sembunyi klien di dashboard tetap 100% dinamis dan bersih dari elemen hantu saat dinonaktifkan.
+9. **Standar Dynamic Palette Tokens & Pembersihan Dead Assets:** Seluruh template tema menyuntikkan `--bg-dark: {{colorBgDark}}` pada tag `<body>` agar kanvas adaptif 100% terhadap palet warna pilihan pengguna (Burgundy, Emerald, Midnight). Seluruh file CSS usang/mati (`app/landing.scoped.css`, `public/css/landing.css`), query relasi mati (`prisma.wish`), dan navigasi FOUC (`window.location.href`) telah dibersihkan secara bedah.
 
 ---
 

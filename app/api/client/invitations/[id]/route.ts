@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { encryptPin, decryptPin, isPinEncrypted } from "@/lib/pinEncryption";
-import { isReservedSubdomain } from "@/lib/domainUtils";
+import { isReservedSubdomain, isSubdomainExpired } from "@/lib/domainUtils";
 
 
 export function getInvitationLockStatus(inv: any) {
@@ -280,10 +280,27 @@ export async function PUT(
       }
       const existingSub = await prisma.invitation.findUnique({ where: { subdomain: newSubdomain } });
       if (existingSub && existingSub.id !== id) {
-        return NextResponse.json(
-          { error: `Tautan/Subdomain "${newSubdomain}" sudah digunakan oleh orang lain. Silakan ubah nama panggilan.` },
-          { status: 400 }
-        );
+        let eventDateToTest: string | null = null;
+        try {
+          if (existingSub.eventData) {
+            const parsed = JSON.parse(existingSub.eventData);
+            if (Array.isArray(parsed) && parsed[0]?.date) {
+              eventDateToTest = parsed[0].date;
+            }
+          }
+        } catch {}
+
+        if (isSubdomainExpired(eventDateToTest, 7)) {
+          await prisma.invitation.update({
+            where: { id: existingSub.id },
+            data: { subdomain: null },
+          });
+        } else {
+          return NextResponse.json(
+            { error: `Tautan/Subdomain "${newSubdomain}" sudah digunakan oleh orang lain. Silakan ubah nama panggilan.` },
+            { status: 400 }
+          );
+        }
       }
     }
 

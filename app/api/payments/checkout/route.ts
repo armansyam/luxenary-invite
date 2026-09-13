@@ -183,7 +183,9 @@ export async function POST(req: Request) {
       if (expirySetting && !isNaN(Number(expirySetting.value))) {
         expiryMinutes = Math.max(5, Math.min(1440, Number(expirySetting.value)));
       }
-    } catch {}
+    } catch (err) {
+      console.warn("[Payments Checkout] Gagal memuat setting biaya admin / expiry:", err);
+    }
 
     const { checkoutUrl, qrString, sessionId, expiryTimestamp, gatewayTxId } = await gw.init(orderId, finalAmount, appUrl);
 
@@ -211,10 +213,11 @@ export async function POST(req: Request) {
       },
     });
 
-    // Kirim email instruksi tagihan (UNPAID) secara asynchronous non-blocking
+    // Kirim email instruksi tagihan (UNPAID) secara terjamin
     if (order.user?.email) {
-      import("@/lib/mailer").then(({ sendInvoiceEmail }) => {
-        sendInvoiceEmail({
+      try {
+        const { sendInvoiceEmail } = await import("@/lib/mailer");
+        await sendInvoiceEmail({
           orderId: order.id,
           orderType: order.orderType,
           plan: order.planType,
@@ -224,8 +227,10 @@ export async function POST(req: Request) {
           recipientName: (order.user as any)?.name || undefined,
           type: "UNPAID",
           appUrl,
-        }).catch(err => console.error("[Checkout] Kirim email UNPAID gagal:", err));
-      });
+        });
+      } catch (mailErr) {
+        console.warn("[Payments Checkout] Gagal mengirim email invoice UNPAID:", mailErr);
+      }
     }
 
     return NextResponse.json({

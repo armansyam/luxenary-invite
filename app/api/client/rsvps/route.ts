@@ -26,31 +26,25 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    const [rsvps, wishes] = await Promise.all([
-      prisma.rsvp.findMany({
-        where: whereClause,
-        orderBy: { respondedAt: "desc" },
-        include: { guest: { select: { name: true, category: true, phone: true } } },
-      }),
-      prisma.wish.findMany({
-        where: whereClause,
-        orderBy: { createdAt: "desc" },
-      }),
-    ]);
+    const rsvps = await prisma.rsvp.findMany({
+      where: whereClause,
+      orderBy: { respondedAt: "desc" },
+      include: { guest: { select: { name: true, category: true, phone: true } } },
+    });
 
     const stats = {
       totalResponses: rsvps.length,
       attending: rsvps.filter((r) => r.status.toLowerCase() === "hadir").reduce((sum, r) => sum + (r.guestCount || 1), 0),
       declined: rsvps.filter((r) => r.status.toLowerCase() === "tidak").length,
       uncertain: rsvps.filter((r) => r.status.toLowerCase() === "ragu").length,
-      totalWishes: wishes.length + rsvps.filter((r) => r.message).length,
+      totalWishes: rsvps.filter((r) => r.message && r.message.trim().length > 0).length,
     };
 
     return NextResponse.json({
       success: true,
       stats,
       rsvps,
-      wishes,
+      wishes: [],
     });
   } catch (error: any) {
     return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal memuat data RSVP" : (error.message || "Gagal memuat data RSVP") }, { status: 500 });
