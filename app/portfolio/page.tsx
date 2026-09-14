@@ -69,12 +69,12 @@ export default async function PortfolioPage() {
     <div className="min-h-screen bg-[#faf8f5] text-stone-900 font-sans flex flex-col selection:bg-amber-200 selection:text-amber-900" style={{ colorScheme: "only light", backgroundColor: "#faf8f5", color: "#1c1917" }}>
       {/* Top Header Navbar */}
       <header className="border-b border-[#eadecf]/70 bg-[#faf8f5]/85 backdrop-blur-md sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-3">
+          <Link href="/" className="flex items-center gap-2.5 sm:gap-3 min-w-0">
             <BrandLogo size="sm" lightBg showName brandName={platformName} />
           </Link>
 
-          <div className="flex items-center gap-4 sm:gap-6">
+          <div className="flex items-center gap-2.5 sm:gap-6 shrink-0">
             <Link
               href="/demo"
               className="text-xs sm:text-sm font-medium text-stone-600 hover:text-amber-900 transition hidden sm:inline-block"
@@ -83,13 +83,13 @@ export default async function PortfolioPage() {
             </Link>
             <Link
               href="/portfolio"
-              className="text-xs sm:text-sm font-bold text-amber-900 border-b-2 border-amber-900 pb-0.5"
+              className="text-xs sm:text-sm font-bold text-amber-900 border-b-2 border-amber-900 pb-0.5 hidden sm:inline-block"
             >
               Portofolio
             </Link>
             <Link
               href="/login"
-              className="px-4 py-2 bg-stone-950 hover:bg-amber-950 text-white text-xs font-bold rounded-full transition shadow-xs"
+              className="px-3.5 sm:px-4 py-2 bg-stone-950 hover:bg-amber-950 text-white text-xs font-bold rounded-full transition shadow-xs whitespace-nowrap"
             >
               Buat Undangan
             </Link>

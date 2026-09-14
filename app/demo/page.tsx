@@ -71,42 +71,43 @@ export default function CatalogGridShowcase() {
     <div className="demo-catalog-root min-h-screen bg-[#faf8f5] text-stone-900 font-sans pb-24" style={{ colorScheme: "only light", backgroundColor: "#faf8f5", color: "#1c1917" }}>
       {/* Top Navigation & Brand Header */}
       <header className="bg-white/95 backdrop-blur-md border-b border-stone-200 sticky top-0 z-40" style={{ colorScheme: "only light", backgroundColor: "#ffffff" }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3 group cursor-pointer">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 sm:py-4 flex items-center justify-between gap-3">
+          <Link href="/" className="flex items-center gap-2.5 sm:gap-3 group cursor-pointer min-w-0">
             <BrandLogo size="sm" lightBg />
-            <div>
-              <h1 className="text-base font-bold text-stone-900 tracking-tight group-hover:text-amber-900 transition">KATALOG TEMA</h1>
-              <p className="text-[11px] text-stone-500 font-medium">Koleksi Desain & Ekosistem Teknologi Undangan</p>
+            <div className="min-w-0">
+              <h1 className="text-sm sm:text-base font-bold text-stone-900 tracking-tight group-hover:text-amber-900 transition truncate">KATALOG TEMA</h1>
+              <p className="text-[11px] text-stone-500 font-medium hidden sm:block truncate">Koleksi Desain & Ekosistem Teknologi Undangan</p>
             </div>
           </Link>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <Link
               href="/portfolio"
-              className="text-xs font-bold text-stone-600 hover:text-amber-900 transition mr-2"
+              className="text-xs font-bold text-stone-600 hover:text-amber-900 transition hidden md:inline-block"
             >
               Portofolio
             </Link>
             <Link
               href="/login"
-              className="px-4 py-2 bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold rounded-full transition shadow-sm cursor-pointer"
+              className="px-3.5 sm:px-4 py-2 bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold rounded-full transition shadow-xs whitespace-nowrap cursor-pointer"
             >
-              Pilih Paket Undangan
+              <span className="sm:hidden">Pilih Paket</span>
+              <span className="hidden sm:inline">Pilih Paket Undangan</span>
             </Link>
           </div>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 pt-10 pb-6 text-center">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 pt-8 sm:pt-10 pb-6 text-center">
         {/* Main Tab Switcher: Tema vs Fitur */}
         <div className="flex items-center justify-center gap-2 mb-6">
-          <div className="bg-stone-200/80 p-1 rounded-full inline-flex border border-stone-300/60 shadow-2xs">
+          <div className="bg-stone-200/80 p-1 rounded-full inline-flex border border-stone-300/60 shadow-2xs max-w-full overflow-x-auto scrollbar-none">
             <button
               onClick={() => setMainTab("themes")}
-              className={`px-5 sm:px-6 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
+              className={`px-3.5 sm:px-6 py-1.5 sm:py-2 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                 mainTab === "themes"
-                  ? "bg-stone-900 text-white shadow-sm"
+                  ? "bg-stone-900 text-white shadow-xs"
                   : "text-stone-600 hover:text-stone-900"
               }`}
             >
@@ -114,9 +115,9 @@ export default function CatalogGridShowcase() {
             </button>
             <button
               onClick={() => setMainTab("features")}
-              className={`px-5 sm:px-6 py-2 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`px-3.5 sm:px-6 py-1.5 sm:py-2 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
                 mainTab === "features"
-                  ? "bg-stone-900 text-white shadow-sm"
+                  ? "bg-stone-900 text-white shadow-xs"
                   : "text-stone-600 hover:text-stone-900"
               }`}
             >
@@ -131,15 +132,15 @@ export default function CatalogGridShowcase() {
             <span className="text-[11px] font-bold uppercase tracking-widest text-amber-800 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full">
               Official Design Catalog
             </span>
-            <h2 className="text-3xl sm:text-4xl font-serif font-normal text-stone-900 mt-3 mb-2">
+            <h2 className="text-2xl sm:text-4xl font-serif font-normal text-stone-900 mt-3 mb-2">
               Pilih Desain Tema Eksklusif Anda
             </h2>
             <p className="text-xs sm:text-sm text-stone-600 max-w-2xl mx-auto">
               Setiap tema dibangun dengan struktur visual unik, tata letak asli, dan dapat disesuaikan penuh dengan foto dan konsep pernikahan Anda.
             </p>
 
-            {/* Category Filter Tabs */}
-            <div className="flex items-center justify-center gap-2 mt-6 flex-wrap">
+            {/* Category Filter Tabs — Horizontal Swipe Rail on Mobile, Centered on Desktop */}
+            <div className="flex items-center gap-2 mt-6 overflow-x-auto scrollbar-none px-4 -mx-4 sm:mx-0 sm:px-0 justify-start sm:justify-center flex-nowrap py-1">
               {[
                 { id: "all", label: "Semua Tema" },
                 { id: "premium", label: "Premium" },
@@ -149,9 +150,9 @@ export default function CatalogGridShowcase() {
                 <button
                   key={cat.id}
                   onClick={() => setSelectedCategory(cat.id)}
-                  className={`px-5 py-2 rounded-full text-xs font-bold transition cursor-pointer ${
+                  className={`px-4 sm:px-5 py-2 rounded-full text-xs font-bold transition cursor-pointer whitespace-nowrap shrink-0 ${
                     selectedCategory === cat.id
-                      ? "bg-stone-900 text-white shadow-sm"
+                      ? "bg-stone-900 text-white shadow-xs"
                       : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-50"
                   }`}
                 >
@@ -305,7 +306,7 @@ export default function CatalogGridShowcase() {
         <section className="max-w-7xl mx-auto px-4 sm:px-6 mt-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Card 1: Meja Resepsionis & QR Scanner */}
-            <div className="bg-white rounded-3xl border border-stone-200 shadow-sm p-6 flex flex-col justify-between hover:shadow-xl hover:border-amber-400/50 transition-all duration-300">
+            <div className="bg-white rounded-2xl sm:rounded-3xl border border-stone-200 shadow-sm p-5 sm:p-6 flex flex-col justify-between hover:shadow-xl hover:border-amber-400/50 transition-all duration-300">
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full">
@@ -360,7 +361,7 @@ export default function CatalogGridShowcase() {
             </div>
 
             {/* Card 2: Buku Tamu Foto Digital (Share Moment) */}
-            <div className="bg-white rounded-3xl border border-stone-200 shadow-sm p-6 flex flex-col justify-between hover:shadow-xl hover:border-amber-400/50 transition-all duration-300">
+            <div className="bg-white rounded-2xl sm:rounded-3xl border border-stone-200 shadow-sm p-5 sm:p-6 flex flex-col justify-between hover:shadow-xl hover:border-amber-400/50 transition-all duration-300">
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full">
@@ -416,7 +417,7 @@ export default function CatalogGridShowcase() {
             </div>
 
             {/* Card 3: Galeri Kenangan Tamu (Memories Live Feed) */}
-            <div className="bg-white rounded-3xl border border-stone-200 shadow-sm p-6 flex flex-col justify-between hover:shadow-xl hover:border-amber-400/50 transition-all duration-300">
+            <div className="bg-white rounded-2xl sm:rounded-3xl border border-stone-200 shadow-sm p-5 sm:p-6 flex flex-col justify-between hover:shadow-xl hover:border-amber-400/50 transition-all duration-300">
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full">

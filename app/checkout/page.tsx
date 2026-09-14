@@ -606,16 +606,16 @@ function CheckoutContent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-stone-950 via-stone-900 to-amber-950 flex flex-col font-sans">
-      <header className="px-6 py-5 flex items-center justify-between">
+      <header className="px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between">
         <a href="/" className="flex items-center gap-2.5">
           <BrandLogo size="sm" showName brandName={platformName || "Platform Undangan"} />
         </a>
       </header>
 
-      <div className="flex-1 flex items-center justify-center px-4 py-8 sm:py-12">
-        <div className="w-full max-w-lg space-y-5">
-          <div className="text-center space-y-1.5">
-            <h1 className="text-2xl sm:text-3xl font-serif font-bold text-white tracking-tight">
+      <div className="flex-1 flex items-center justify-center px-3.5 sm:px-4 py-6 sm:py-12">
+        <div className="w-full max-w-lg space-y-4 sm:space-y-5">
+          <div className="text-center space-y-1.5 px-2">
+            <h1 className="text-xl sm:text-3xl font-serif font-bold text-white tracking-tight">
               Konfirmasi Pembelian
             </h1>
             <p className="text-stone-400 text-xs sm:text-sm">
@@ -671,7 +671,7 @@ function CheckoutContent() {
 
           {/* Invoice Summary Card */}
           {planData && (
-            <div className="bg-white/5 border border-white/10 rounded-3xl p-6 space-y-4 backdrop-blur-xs">
+            <div className="bg-white/5 border border-white/10 rounded-2xl sm:rounded-3xl p-4 sm:p-6 space-y-4 backdrop-blur-xs">
               {/* Buyer info & Contact Details */}
               <div className="pb-4 border-b border-white/10 space-y-3">
                 <div className="flex items-center gap-3">
@@ -703,7 +703,7 @@ function CheckoutContent() {
                     onChange={(e) => setBuyerPhone(formatWhatsAppNumber(e.target.value))}
                     placeholder="Contoh: 0812-3456-7890"
                     maxLength={19}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-stone-900/60 border border-white/10 text-white placeholder-stone-500 text-xs focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 transition font-mono"
+                    className="w-full px-3.5 py-3 rounded-xl bg-stone-900/60 border border-white/10 text-white placeholder-stone-500 text-xs sm:text-sm focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 transition font-mono min-h-[44px]"
                   />
                 </div>
               </div>
@@ -879,23 +879,24 @@ function CheckoutContent() {
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-white/10 flex justify-between items-center">
+              <div className="pt-3 border-t border-white/10 flex flex-wrap justify-between items-center gap-2">
                 <span className="text-stone-300 font-semibold text-xs">Total Pembayaran</span>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   <span className="text-xl sm:text-2xl font-bold text-amber-400 font-serif">
                     Rp {totalAmount.toLocaleString("id-ID")}
                   </span>
                   <button
                     type="button"
                     onClick={() => handleCopy(totalAmount.toString(), "amount")}
-                    className="p-1 text-stone-400 hover:text-white transition cursor-pointer"
+                    className="p-1.5 text-stone-400 hover:text-white transition cursor-pointer"
                     title="Salin Nominal"
+                    aria-label="Salin Nominal"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
                     </svg>
                   </button>
-                  {copiedAmount && <span className="text-[10px] text-emerald-400">Tersalin!</span>}
+                  {copiedAmount && <span className="text-[10px] text-emerald-400 font-semibold">Tersalin!</span>}
                 </div>
               </div>
             </div>
@@ -908,7 +909,7 @@ function CheckoutContent() {
               type="button"
               onClick={handleConfirmAndProceed}
               disabled={confirmingOrder || !orderId}
-              className="w-full py-4 rounded-2xl font-bold text-xs sm:text-sm bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 shadow-lg shadow-amber-950/40 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              className="w-full py-3.5 sm:py-4 rounded-2xl font-bold text-xs sm:text-sm bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 shadow-lg shadow-amber-950/40 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 min-h-[48px]"
             >
               {confirmingOrder ? (
                 <>

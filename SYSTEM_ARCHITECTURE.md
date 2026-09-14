@@ -2043,3 +2043,10 @@ Sistem telah melalui audit mendalam berbasis bukti empiris (*Empirical Verificat
    - Mengganti seluruh navigasi internal `window.location.href` pada formulir penyiapan (`setup/page.tsx`) dan dasbor admin menjadi `router.push()`, meniadakan kedipan layar putih (*Flash of Unstyled Content*) dan melenyapkan seluruh ESLint route warnings.
    - Memperbarui `app/globals.css` agar memprioritaskan font modern `Geist` (`var(--font-geist-sans)`).
 
+5. **Standarisasi Ergonomi Mobile Mode Halaman Publik (/demo, /portfolio, /checkout, /payment, /packages):**
+   - **Eliminasi Anjlok 3+1 Kategori:** Mengganti layout `flex-wrap` desktop-first pada pill kategori di `/demo` dan `/portfolio` menjadi **Horizontal Touch Rail** (`overflow-x-auto scrollbar-none flex-nowrap`). Kategori berjejer rapi pada satu baris swipeable tanpa tombol terisolasi sendirian di baris baru.
+   - **Responsive Header Triage & Anti-3-Line Wrap:** Menyembunyikan subtitle panjang pada `< 640px`, menyembunyikan tautan sekunder "Portofolio" di header sempit, dan mengunci tombol CTA menjadi `"Pilih Paket"` dengan `whitespace-nowrap px-3.5 py-2 text-xs font-bold`. Menghilangkan distorsi tombol gepeng/lonjong di mobile.
+   - **Normalisasi Padding Mobile:** Mengurangi padding boros dari `p-6 / p-8` menjadi `p-4 sm:p-6 rounded-2xl sm:rounded-3xl` pada kartu ringkasan `/checkout`, `/payment`, dan `p-5 sm:p-8` pada `/packages` untuk memperluas ruang baca di layar 360px – 390px.
+   - **Adaptive QRIS Sizing:** Menormalkan ukuran QR Code di mobile menjadi `w-44 h-44 sm:w-56 sm:h-56` agar countdown timer dan tombol verifikasi tetap berada di area atas layar (*above the fold*).
+   - **Media Query Mobile Mockup:** Menambahkan breakpoint `@media (max-width: 639px)` pada `app/demo/demo.css` untuk proporsi tablet dan ponsel yang seimbang tanpa menutup fokus visual.
+

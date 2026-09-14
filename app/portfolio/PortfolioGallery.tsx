@@ -75,12 +75,12 @@ export function PortfolioGallery({ items }: PortfolioGalleryProps) {
 
   return (
     <div className="space-y-8">
-      {/* Category Filter Pills */}
-      <div className="flex items-center justify-center gap-2 flex-wrap">
+      {/* Category Filter Pills — Horizontal Swipe Rail on Mobile, Centered on Desktop */}
+      <div className="flex items-center gap-2 overflow-x-auto scrollbar-none px-4 -mx-4 sm:mx-0 sm:px-0 justify-start sm:justify-center flex-nowrap py-1">
         <button
           type="button"
           onClick={() => handleCategoryChange("all")}
-          className={`px-4 py-1.5 rounded-full text-xs font-bold transition cursor-pointer ${
+          className={`px-4 py-1.5 rounded-full text-xs font-bold transition cursor-pointer whitespace-nowrap shrink-0 ${
             selectedCategory === "all"
               ? "bg-stone-900 text-white shadow-xs"
               : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-50"
@@ -91,7 +91,7 @@ export function PortfolioGallery({ items }: PortfolioGalleryProps) {
         <button
           type="button"
           onClick={() => handleCategoryChange("premium")}
-          className={`px-4 py-1.5 rounded-full text-xs font-bold transition cursor-pointer ${
+          className={`px-4 py-1.5 rounded-full text-xs font-bold transition cursor-pointer whitespace-nowrap shrink-0 ${
             selectedCategory === "premium"
               ? "bg-stone-900 text-white shadow-xs"
               : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-50"
@@ -102,7 +102,7 @@ export function PortfolioGallery({ items }: PortfolioGalleryProps) {
         <button
           type="button"
           onClick={() => handleCategoryChange("traditional")}
-          className={`px-4 py-1.5 rounded-full text-xs font-bold transition cursor-pointer ${
+          className={`px-4 py-1.5 rounded-full text-xs font-bold transition cursor-pointer whitespace-nowrap shrink-0 ${
             selectedCategory === "traditional"
               ? "bg-stone-900 text-white shadow-xs"
               : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-50"
@@ -113,7 +113,7 @@ export function PortfolioGallery({ items }: PortfolioGalleryProps) {
         <button
           type="button"
           onClick={() => handleCategoryChange("modern")}
-          className={`px-4 py-1.5 rounded-full text-xs font-bold transition cursor-pointer ${
+          className={`px-4 py-1.5 rounded-full text-xs font-bold transition cursor-pointer whitespace-nowrap shrink-0 ${
             selectedCategory === "modern"
               ? "bg-stone-900 text-white shadow-xs"
               : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-50"

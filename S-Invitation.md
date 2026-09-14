@@ -759,4 +759,10 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - Mengganti pemanggilan `prisma.wish` yang mati pada endpoint `/api/client/rsvps` dan `/api/admin/overview` dengan relasi aktif `rsvps.message` dan `guest.videoWishUrl`.
    - Memutakhirkan default `themeId` Prisma model `Invitation` menjadi `"kalandra"`.
 
+4. **Standarisasi Ergonomi Antarmuka Mobile Halaman Publik:**
+   - Katalog Tema (`/demo`): Mengganti sistem pill `flex-wrap` anjlok 3+1 menjadi *Horizontal Touch Rail* satu baris mulus (`overflow-x-auto scrollbar-none flex-nowrap`). Menerapkan *Responsive Header Triage* dengan proteksi `whitespace-nowrap` pada tombol *"Pilih Paket"* dan menyembunyikan subtitle panjang di mobile untuk mengeliminasi tombol gepeng 3 baris.
+   - Portofolio (`/portfolio`): Mengonversi filter kategori ke horizontal rail swipeable dan menstandarisasi tombol CTA *"Buat Undangan"*.
+   - Kasir & Pembayaran (`/checkout` & `/payment`): Normalisasi padding kartu mobile ke `p-4 sm:p-6 rounded-2xl sm:rounded-3xl`, input WhatsApp minimum 44px, QRIS adaptive sizing `w-44 h-44 sm:w-56 sm:h-56` di atas lipatan layar (*above the fold*), dan navigasi bawah mobile yang ergonomis.
+   - Pilihan Paket (`/packages`): Penyesuaian padding kartu menjadi `p-5 sm:p-8` sehingga seluruh rincian fitur dan harga terbaca leluasa di layar 360px – 390px.
+
 

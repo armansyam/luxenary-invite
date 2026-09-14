@@ -70,19 +70,19 @@ export default function PackageSelectionPage() {
         </div>
       </header>
 
-      <main className="flex-1 max-w-6xl mx-auto px-4 sm:px-6 py-12 w-full">
-        <div className="text-center mb-10">
+      <main className="flex-1 max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 w-full">
+        <div className="text-center mb-8 sm:mb-10">
           <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#1e1c1a]">
             Selamat Datang{session?.user?.name ? `, ${session.user.name}` : session?.user?.email ? `, ${session.user.email.split("@")[0]}` : ""}!
           </h1>
-          <p className="text-sm text-stone-500 mt-2 max-w-lg mx-auto">
+          <p className="text-xs sm:text-sm text-stone-500 mt-2 max-w-lg mx-auto">
             Akun Anda telah berhasil terdaftar. Silakan pilih paket undangan digital yang paling sesuai dengan kebutuhan pernikahan Anda untuk melanjutkan.
           </p>
         </div>
 
         {/* Dynamic Service Status Notice */}
         {isClosed && (
-          <div className={`mb-8 p-6 rounded-3xl border text-sm max-w-3xl mx-auto ${
+          <div className={`mb-8 p-4 sm:p-6 rounded-2xl sm:rounded-3xl border text-sm max-w-3xl mx-auto ${
             serviceStatus.mode === "CLOSED_ORDER"
               ? "bg-amber-50/90 border-amber-300/80 text-amber-950"
               : serviceStatus.mode === "MAINTENANCE"
@@ -124,20 +124,20 @@ export default function PackageSelectionPage() {
           {packages.map((pkg) => (
             <div
               key={pkg.id}
-              className={`rounded-3xl p-8 flex flex-col justify-between transition-all duration-200 relative ${
+              className={`rounded-2xl sm:rounded-3xl p-5 sm:p-8 flex flex-col justify-between transition-all duration-200 relative ${
                 pkg.isFeatured
-                  ? "bg-[#fffdfa] border-2 border-amber-800/40 shadow-lg scale-[1.02]"
+                  ? "bg-[#fffdfa] border-2 border-amber-800/40 shadow-lg sm:scale-[1.02]"
                   : "bg-white border border-[#eadecf] shadow-sm hover:shadow-md"
               }`}
             >
               {pkg.badge && (
-                <div className="absolute -top-3 right-6 bg-gradient-to-r from-amber-700 to-amber-900 text-white text-xs font-bold px-3 py-0.5 rounded-full uppercase tracking-wider shadow-sm">
+                <div className="absolute -top-3 right-6 bg-gradient-to-r from-amber-700 to-amber-900 text-white text-[11px] sm:text-xs font-bold px-3 py-0.5 rounded-full uppercase tracking-wider shadow-sm">
                   {pkg.badge}
                 </div>
               )}
 
               <div>
-                <h3 className="text-xl font-serif font-bold text-[#1e1c1a] mt-4">{pkg.name}</h3>
+                <h3 className="text-xl font-serif font-bold text-[#1e1c1a] mt-2 sm:mt-4">{pkg.name}</h3>
                 <p className="text-xs text-[#6e685f] mt-1 line-clamp-2">{pkg.desc}</p>
 
                 <div className="my-5">

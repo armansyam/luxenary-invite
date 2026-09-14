@@ -423,9 +423,9 @@ function PaymentContent() {
       </header>
 
       {/* ── MAIN CONTENT ── */}
-      <main className="max-w-xl mx-auto px-4 py-8 w-full space-y-6">
+      <main className="max-w-xl mx-auto px-3.5 sm:px-4 py-6 sm:py-8 w-full space-y-4 sm:space-y-6">
         {/* Rincian Singkat Tagihan */}
-        <div className="bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-xs space-y-4">
+        <div className="bg-white/5 border border-white/10 rounded-2xl sm:rounded-3xl p-4 sm:p-6 backdrop-blur-xs space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <span className="text-[11px] text-stone-400 block">Paket Undangan</span>
@@ -460,7 +460,7 @@ function PaymentContent() {
           <div className="space-y-4">
             {isGatewayExpired ? (
               /* Banner Sesi QRIS Habis */
-              <div className="bg-white/5 border border-amber-500/30 rounded-3xl p-6 text-center space-y-4 backdrop-blur-xs">
+              <div className="bg-white/5 border border-amber-500/30 rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-center space-y-4 backdrop-blur-xs">
                 <div className="w-12 h-12 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center mx-auto">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -483,7 +483,7 @@ function PaymentContent() {
               </div>
             ) : qrData ? (
               /* Tampilan QRIS Aktif */
-              <div className="bg-white/5 border border-amber-500/20 rounded-3xl p-6 space-y-5 backdrop-blur-xs text-center relative overflow-hidden">
+              <div className="bg-white/5 border border-amber-500/20 rounded-2xl sm:rounded-3xl p-4 sm:p-6 space-y-4 sm:space-y-5 backdrop-blur-xs text-center relative overflow-hidden">
                 {/* Progress Bar */}
                 <div className="absolute top-0 inset-x-0 h-1 bg-amber-500/20">
                   <div
@@ -496,7 +496,7 @@ function PaymentContent() {
                               Math.min(
                                 100,
                                 ((qrisExpiry ? qrisExpiry - (Date.now() + serverTimeOffset) : 0) /
-                                  qrisTotalDuration) *
+                                   qrisTotalDuration) *
                                   100
                               )
                             )
@@ -517,11 +517,11 @@ function PaymentContent() {
                   </p>
                 </div>
 
-                <div className="p-3 bg-white inline-block rounded-2xl mx-auto shadow-xl border-4 border-amber-500/20">
+                <div className="p-2.5 sm:p-3 bg-white inline-block rounded-2xl mx-auto shadow-xl border-4 border-amber-500/20">
                   <img
                     src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}`}
                     alt="Kode QRIS"
-                    className="w-48 h-48 sm:w-56 sm:h-56 object-contain"
+                    className="w-44 h-44 sm:w-56 sm:h-56 object-contain"
                   />
                 </div>
 
@@ -563,7 +563,7 @@ function PaymentContent() {
 
         {/* ── METODE 2: MANUAL TRANSFER ── */}
         {paymentMode === "MANUAL" && (
-          <div className="bg-white/5 border border-white/10 rounded-3xl p-6 space-y-5 backdrop-blur-xs">
+          <div className="bg-white/5 border border-white/10 rounded-2xl sm:rounded-3xl p-4 sm:p-6 space-y-4 sm:space-y-5 backdrop-blur-xs">
             {/* Detail Rekening Bank */}
             <div className="space-y-3">
               <div className="flex items-center gap-2">
@@ -706,10 +706,10 @@ function PaymentContent() {
 
         {/* Navigasi Rincian / Batalkan / Ganti Akun */}
         <div className="pt-2 space-y-3 text-center">
-          <div className="flex flex-wrap items-center justify-center gap-4 text-xs">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 text-xs">
             <Link
               href={`/checkout?order=${orderId}&edit=true`}
-              className="text-amber-400/90 hover:text-amber-300 font-medium transition inline-flex items-center gap-1.5 cursor-pointer"
+              className="text-amber-400/90 hover:text-amber-300 font-medium transition inline-flex items-center gap-1.5 cursor-pointer py-1"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -717,13 +717,13 @@ function PaymentContent() {
               <span>Ubah Rincian &amp; Kupon Promo</span>
             </Link>
 
-            <span className="text-stone-700">•</span>
+            <span className="hidden sm:inline text-stone-700">•</span>
 
             <button
               type="button"
               onClick={() => setShowCancelConfirm(true)}
               disabled={cancellingOrder}
-              className="text-stone-500 hover:text-rose-400 transition cursor-pointer disabled:opacity-50"
+              className="text-stone-500 hover:text-rose-400 transition cursor-pointer disabled:opacity-50 py-1"
             >
               {cancellingOrder ? "Membatalkan pesanan..." : "Batalkan Pesanan Ini"}
             </button>
@@ -733,7 +733,7 @@ function PaymentContent() {
             <button
               type="button"
               onClick={() => signOut({ callbackUrl: "/login" })}
-              className="text-stone-500 hover:text-stone-300 text-[11px] transition cursor-pointer"
+              className="text-stone-500 hover:text-stone-300 text-[11px] transition cursor-pointer py-1"
             >
               Bukan akun Anda? <span className="underline">Ganti Akun / Keluar</span>
             </button>
