@@ -281,7 +281,7 @@ Extreme  : + random 4char → dimas-clarissa-030326-jakarta-x7k
 ```
 
 ### 3.4 — Platform Exclusions & Anti-Rewrite Loop di `middleware.ts`
-Seluruh rute sistem platform dikelompokkan dalam array `PLATFORM_EXCLUSIONS` (`/contact`, `/privacy`, `/terms`, `/refund`, `/demo`, `/portfolio`, `/packages`, `/checkout`, `/login`, `/onboarding`, `/dashboard`, `/admin`, `/api`, `/_next`, `/static`, `/s/`, `/sharemoment`, `/memories`). Rute-rute ini dilewati langsung (`NextResponse.next()`) tanpa di-intercept oleh *Flat Slug Routing* untuk mencegah siklus rekursif (*infinite rewrite loop*) dan error 403/1000 pada reverse proxy/CDN.
+Seluruh rute sistem platform dikelompokkan dalam array `PLATFORM_EXCLUSIONS` (`/contact`, `/privacy`, `/terms`, `/refund`, `/how-it-works`, `/demo`, `/portfolio`, `/packages`, `/checkout`, `/login`, `/onboarding`, `/dashboard`, `/admin`, `/api`, `/_next`, `/static`, `/s/`, `/sharemoment`, `/memories`). Rute-rute ini dilewati langsung (`NextResponse.next()`) tanpa di-intercept oleh *Flat Slug Routing* untuk mencegah siklus rekursif (*infinite rewrite loop*) dan error 403/1000 pada reverse proxy/CDN.
 
 ### 3.5 — Middleware Logic Flowchart
 
@@ -2049,4 +2049,14 @@ Sistem telah melalui audit mendalam berbasis bukti empiris (*Empirical Verificat
    - **Normalisasi Padding Mobile:** Mengurangi padding boros dari `p-6 / p-8` menjadi `p-4 sm:p-6 rounded-2xl sm:rounded-3xl` pada kartu ringkasan `/checkout`, `/payment`, dan `p-5 sm:p-8` pada `/packages` untuk memperluas ruang baca di layar 360px – 390px.
    - **Adaptive QRIS Sizing:** Menormalkan ukuran QR Code di mobile menjadi `w-44 h-44 sm:w-56 sm:h-56` agar countdown timer dan tombol verifikasi tetap berada di area atas layar (*above the fold*).
    - **Media Query Mobile Mockup:** Menambahkan breakpoint `@media (max-width: 639px)` pada `app/demo/demo.css` untuk proporsi tablet dan ponsel yang seimbang tanpa menutup fokus visual.
+
+6. **Studio Mandiri Dual-Device Showcase & Dedicated Guide (/how-it-works):**
+   - **Simulator Interaktif Studio Mandiri (`HowItWorksInteractive.tsx`):** Menghadirkan simulasi faktual dasbor klien 5 tab terintegrasi dengan kursor animasi otomatis (*autonomous showcase loop* tanpa gangguan interaksi manual):
+     - Tab 0 (Live Canvas): Mode click-to-edit nama mempelai langsung di viewport mobile.
+     - Tab 1 (Tema & Nuansa): Pemilihan seri tema Nusantara (Dillalucky, Candani, Badrika) dan palet warna Royal Gold/Emerald Green.
+     - Tab 2 (Buku Tamu VIP): Manajemen kuota tamu dan tautan WhatsApp personal.
+     - Tab 3 (RSVP & Doa): Statistik konfirmasi kehadiran real-time dan aliran ucapan selamat.
+     - Tab 4 (Audit & Publikasi): Simulasi faktual **Hero Launchpad & Jendela Sliding Ticker 3 Baris** (sinkron 1:1 dengan `app/(client)/dashboard/settings/page.tsx`) yang memverifikasi 10 komponen kesiapan data secara sekuensial sebelum status publikasi resmi mengudara (`PUBLISHED`).
+   - **Rute Panduan Berdedikasi (`/how-it-works`):** Menyajikan edukasi mandiri dengan bahasa santun & intuitif, anti-jargon, bebas perbandingan vendor konvensional, serta dilengkapi FAQ praktis dan navigasi bersih ke `/demo`. Rute didaftarkan di `PLATFORM_EXCLUSIONS` pada `middleware.ts`.
+
 

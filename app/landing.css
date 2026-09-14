@@ -1072,6 +1072,1064 @@
       border-radius: 3px;
       background: var(--lux-muted-gold);
     }
+
+/* ===========================
+   STUDIO MANDIRI SECTION
+=========================== */
+.lux-landing-root #studio {
+      background-color: #0b0a09;
+      background-image: radial-gradient(circle at 25% 45%, rgba(201,162,39,0.06) 0%, rgba(11,10,9,1) 75%);
+      position: relative;
+      padding: 7rem 3rem;
+      overflow: hidden;
+      border-top: 1px solid rgba(255,255,255,0.05);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+.lux-landing-root .studio-container {
+      position: relative;
+      z-index: 1;
+      max-width: 1260px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 560px 1fr;
+      gap: 4rem;
+      align-items: center;
+    }
+
+/* Dual Device Showcase Stage */
+.lux-landing-root .studio-stage {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      gap: 1.5rem;
+    }
+
+.lux-landing-root .studio-stage-wrap {
+      position: relative;
+      width: 100%;
+      max-width: 530px;
+      padding-bottom: 25px;
+    }
+
+/* Laptop / Desktop Editor Frame */
+.lux-landing-root .studio-laptop-frame {
+      width: 100%;
+      max-width: 480px;
+      height: 325px;
+      background: #0e0d0c;
+      border-radius: 18px 18px 8px 8px;
+      border: 1.5px solid rgba(255,255,255,0.12);
+      box-shadow:
+        0 25px 60px rgba(0,0,0,0.75),
+        0 0 0 5px #181716,
+        0 0 0 6.5px rgba(0,0,0,0.3);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+      transition: transform 0.4s var(--ease-luxury);
+    }
+
+.lux-landing-root .studio-stage-wrap:hover .studio-laptop-frame {
+      transform: translateY(-3px);
+    }
+
+/* Laptop Topbar */
+.lux-landing-root .laptop-topbar {
+      height: 32px;
+      background: #141312;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      flex-shrink: 0;
+      gap: 12px;
+    }
+
+.lux-landing-root .laptop-traffic {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+.lux-landing-root .laptop-traffic span {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+.lux-landing-root .laptop-traffic span:nth-child(1) { background: rgba(255,95,87,0.75); }
+.lux-landing-root .laptop-traffic span:nth-child(2) { background: rgba(254,188,46,0.75); }
+.lux-landing-root .laptop-traffic span:nth-child(3) { background: rgba(40,200,64,0.75); }
+
+.lux-landing-root .laptop-url-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,0.04);
+      padding: 3px 12px;
+      border-radius: 6px;
+      font-size: 0.62rem;
+      letter-spacing: 0.04em;
+      color: rgba(245,240,232,0.55);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+.lux-landing-root .laptop-url-bar svg {
+      opacity: 0.6;
+    }
+
+.lux-landing-root .laptop-status-chip {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.55rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      color: #34d399;
+      background: rgba(52,211,153,0.1);
+      padding: 2px 7px;
+      border-radius: 10px;
+      border: 1px solid rgba(52,211,153,0.25);
+    }
+
+.lux-landing-root .laptop-status-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #34d399;
+      box-shadow: 0 0 6px #34d399;
+      animation: studioPulse 2s infinite ease-in-out;
+    }
+
+@keyframes studioPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+/* Laptop Screen Content */
+.lux-landing-root .laptop-screen {
+      flex: 1;
+      position: relative;
+      background: #0d0c0b;
+      overflow: hidden;
+    }
+
+.lux-landing-root .studio-screen-layer {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s var(--ease-luxury), transform 0.4s var(--ease-luxury);
+      transform: scale(0.98);
+      display: flex;
+      flex-direction: column;
+      padding: 14px 16px;
+      box-sizing: border-box;
+    }
+
+.lux-landing-root .studio-screen-layer.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: scale(1);
+    }
+
+/* =======================================================
+   STUDIO FACTUAL UI (TEMA SELECTOR & LIVE CANVAS)
+======================================================= */
+
+/* --- Layer 0: Theme Selector UI (Dasbor Klien Seksi 1 Asli) --- */
+.lux-landing-root .studio-theme-selector-ui {
+      display: flex;
+      height: 100%;
+      background: #0e0d0c;
+      overflow: hidden;
+    }
+
+.lux-landing-root .studio-mini-sidebar {
+      width: 130px;
+      background: #131211;
+      border-right: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      flex-direction: column;
+      padding: 10px 8px;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+.lux-landing-root .mini-sidebar-header {
+      font-size: 0.52rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: rgba(245,240,232,0.4);
+      margin-bottom: 4px;
+    }
+
+.lux-landing-root .mini-sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 6px;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid transparent;
+      color: rgba(245,240,232,0.6);
+    }
+
+.lux-landing-root .mini-sidebar-item.active {
+      background: rgba(201,162,39,0.1);
+      border-color: rgba(201,162,39,0.35);
+      color: var(--lux-gold);
+    }
+
+.lux-landing-root .mini-num {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.08);
+      font-size: 0.52rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+.lux-landing-root .mini-sidebar-item.active .mini-num {
+      background: var(--lux-gold);
+      color: #0b0a09;
+    }
+
+.lux-landing-root .mini-info {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+.lux-landing-root .mini-title {
+      font-size: 0.58rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+.lux-landing-root .mini-sub {
+      font-size: 0.48rem;
+      color: rgba(245,240,232,0.4);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+.lux-landing-root .studio-theme-grid-area {
+      flex: 1;
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow: hidden;
+    }
+
+.lux-landing-root .studio-grid-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      padding-bottom: 6px;
+    }
+
+.lux-landing-root .grid-header-title {
+      font-size: 0.62rem;
+      font-weight: 600;
+      color: var(--lux-cream);
+    }
+
+.lux-landing-root .mini-cat-pills {
+      display: flex;
+      gap: 4px;
+    }
+
+.lux-landing-root .mini-cat {
+      font-size: 0.5rem;
+      padding: 2px 7px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.04);
+      color: rgba(245,240,232,0.5);
+    }
+
+.lux-landing-root .mini-cat.active {
+      background: rgba(201,162,39,0.2);
+      color: var(--lux-gold);
+      font-weight: 600;
+    }
+
+.lux-landing-root .studio-cards-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+.lux-landing-root .studio-theme-card {
+      position: relative;
+      background: #151413;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+.lux-landing-root .studio-theme-card.selected {
+      border-color: #f97316;
+      box-shadow: 0 0 0 1px #f97316;
+    }
+
+.lux-landing-root .theme-card-badge {
+      position: absolute;
+      top: 5px;
+      left: 5px;
+      background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(4px);
+      font-size: 0.42rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      padding: 2px 5px;
+      border-radius: 3px;
+      color: #fff;
+      z-index: 2;
+    }
+
+.lux-landing-root .theme-card-check {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #f97316;
+      color: #fff;
+      font-size: 0.55rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2;
+    }
+
+.lux-landing-root .studio-theme-card img {
+      width: 100%;
+      height: 85px;
+      object-fit: cover;
+      display: block;
+    }
+
+.lux-landing-root .theme-card-body {
+      padding: 5px 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #141312;
+    }
+
+.lux-landing-root .theme-card-name {
+      font-size: 0.58rem;
+      font-weight: 600;
+      color: var(--lux-cream);
+    }
+
+.lux-landing-root .theme-card-tag {
+      font-size: 0.5rem;
+      color: #f97316;
+      font-weight: 600;
+    }
+
+.lux-landing-root .studio-palette-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: auto;
+      padding-top: 4px;
+      border-top: 1px solid rgba(255,255,255,0.05);
+    }
+
+.lux-landing-root .palette-label {
+      font-size: 0.5rem;
+      color: rgba(245,240,232,0.4);
+      letter-spacing: 0.04em;
+    }
+
+.lux-landing-root .palette-chip {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 12px;
+      padding: 2px 7px;
+      font-size: 0.52rem;
+      color: rgba(245,240,232,0.6);
+    }
+
+.lux-landing-root .palette-chip.active {
+      border-color: var(--lux-gold);
+      color: var(--lux-gold);
+      background: rgba(201,162,39,0.08);
+    }
+
+.lux-landing-root .palette-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+.lux-landing-root .dot-gold { background: #d4af37; }
+.lux-landing-root .dot-emerald { background: #059669; }
+
+/* --- Layer 1: Live Canvas Click-to-Edit (Screenshot 1 Asli) --- */
+.lux-landing-root .studio-live-canvas-ui {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      background: #0a0908;
+    }
+
+.lux-landing-root .live-canvas-instruction {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(5,150,105,0.12);
+      border-bottom: 1px solid rgba(5,150,105,0.25);
+      padding: 5px 12px;
+      font-size: 0.54rem;
+      color: #34d399;
+      font-weight: 500;
+    }
+
+.lux-landing-root .inst-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #34d399;
+      animation: studioPulse 1.8s infinite;
+    }
+
+.lux-landing-root .live-canvas-viewport {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      padding: 10px;
+    }
+
+.lux-landing-root .canvas-simulated-phone {
+      width: 145px;
+      background: #11100f;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 16px;
+      padding: 16px 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+    }
+
+.lux-landing-root .sim-inv-date {
+      font-size: 0.48rem;
+      letter-spacing: 0.12em;
+      color: rgba(245,240,232,0.5);
+      margin-bottom: 4px;
+    }
+
+.lux-landing-root .sim-inv-eyebrow {
+      font-size: 0.44rem;
+      letter-spacing: 0.14em;
+      color: var(--lux-muted-gold);
+      margin-bottom: 2px;
+    }
+
+.lux-landing-root .sim-inv-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.1rem;
+      font-weight: 400;
+      color: var(--lux-cream);
+      margin: 0 0 6px;
+    }
+
+.lux-landing-root .sim-inv-quote {
+      font-size: 0.46rem;
+      line-height: 1.4;
+      color: rgba(245,240,232,0.45);
+      border: 1px dashed rgba(201,162,39,0.4);
+      padding: 4px;
+      border-radius: 4px;
+      margin-bottom: 8px;
+    }
+
+.lux-landing-root .sim-inv-btn {
+      font-size: 0.5rem;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+      border: 1px solid rgba(245,240,232,0.3);
+      padding: 3px 10px;
+      border-radius: 4px;
+      color: var(--lux-cream);
+      margin-bottom: 6px;
+    }
+
+.lux-landing-root .sim-inv-qr {
+      font-size: 0.44rem;
+      color: rgba(245,240,232,0.4);
+      letter-spacing: 0.06em;
+    }
+
+/* --- Layer 2: Guest Table --- */
+.lux-landing-root .editor-guest-table {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+.lux-landing-root .guest-row-mockup {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255,255,255,0.025);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+
+.lux-landing-root .guest-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(201,162,39,0.15);
+      color: var(--lux-gold);
+      font-size: 0.62rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+.lux-landing-root .guest-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      flex: 1;
+      overflow: hidden;
+    }
+
+.lux-landing-root .guest-name {
+      font-size: 0.68rem;
+      font-weight: 500;
+      color: rgba(245,240,232,0.9);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+.lux-landing-root .guest-tag {
+      font-size: 0.54rem;
+      color: rgba(245,240,232,0.45);
+    }
+
+.lux-landing-root .guest-btn-wa {
+      background: #128c7e;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      font-size: 0.58rem;
+      font-weight: 500;
+      padding: 4px 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      transition: background 0.2s;
+    }
+
+.lux-landing-root .guest-btn-wa:hover {
+      background: #075e54;
+    }
+
+/* Mobile Phone Frame di Depan (Desktop View) */
+.lux-landing-root .studio-phone-frame {
+      position: absolute;
+      right: -12px;
+      bottom: 0px;
+      width: 165px;
+      height: 330px;
+      border-radius: 28px;
+      background: #000;
+      border: 2.5px solid rgba(255, 255, 255, 0.16);
+      box-shadow: 
+        0 25px 60px rgba(0, 0, 0, 0.85),
+        0 0 0 4px #1a1816,
+        0 0 0 5.5px rgba(0, 0, 0, 0.4);
+      overflow: hidden;
+      z-index: 10;
+      transition: transform 0.4s var(--ease-luxury);
+    }
+
+.lux-landing-root .studio-stage-wrap:hover .studio-phone-frame {
+      transform: translateY(-5px);
+    }
+
+.lux-landing-root .studio-phone-layer {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.45s var(--ease-luxury);
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+.lux-landing-root .studio-phone-layer.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+.lux-landing-root .studio-phone-layer img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+/* Mobile Phone Frame: Dasbor Klien Versi Ponsel */
+.lux-landing-root .phone-dashboard-header {
+      background: #181715;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding: 18px 8px 6px 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      z-index: 5;
+    }
+
+.lux-landing-root .phone-db-brand {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+.lux-landing-root .phone-db-logo {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 700;
+      color: var(--lux-gold);
+      font-size: 0.65rem;
+    }
+
+.lux-landing-root .phone-db-title {
+      font-size: 0.52rem;
+      font-weight: 600;
+      color: #fff;
+    }
+
+.lux-landing-root .phone-db-user {
+      font-size: 0.46rem;
+      color: rgba(245,240,232,0.6);
+      background: rgba(255,255,255,0.06);
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+
+.lux-landing-root .phone-db-content {
+      padding: 8px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      box-sizing: border-box;
+      background: #0d0c0b;
+    }
+
+.lux-landing-root .phone-section-chip {
+      font-size: 0.48rem;
+      font-weight: 600;
+      color: var(--lux-gold);
+      background: rgba(201,162,39,0.12);
+      border: 1px solid rgba(201,162,39,0.3);
+      padding: 2px 6px;
+      border-radius: 4px;
+      display: inline-block;
+      align-self: flex-start;
+    }
+
+.lux-landing-root .phone-theme-preview {
+      position: relative;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1.5px solid var(--lux-gold);
+      background: #141312;
+      height: 140px;
+    }
+
+.lux-landing-root .phone-theme-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+.lux-landing-root .phone-theme-badge {
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      background: rgba(0,0,0,0.75);
+      border: 1px solid rgba(201,162,39,0.4);
+      color: var(--lux-gold);
+      font-size: 0.42rem;
+      font-weight: 700;
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+
+.lux-landing-root .phone-theme-check {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--lux-gold);
+      color: #0b0a09;
+      font-size: 0.5rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+.lux-landing-root .phone-theme-info {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+      padding: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+.lux-landing-root .phone-theme-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #fff;
+    }
+
+.lux-landing-root .phone-theme-status {
+      font-size: 0.44rem;
+      color: var(--lux-gold);
+      font-weight: 600;
+    }
+
+.lux-landing-root .phone-palette-pill {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 2px 6px;
+      font-size: 0.44rem;
+      color: rgba(245,240,232,0.8);
+      align-self: flex-start;
+    }
+
+.lux-landing-root .phone-palette-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+    }
+
+/* Phone Live Canvas */
+.lux-landing-root .phone-edit-instruction {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.44rem;
+      color: #34d399;
+      background: rgba(52,211,153,0.1);
+      border: 1px solid rgba(52,211,153,0.25);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+.lux-landing-root .phone-edit-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #34d399;
+    }
+
+.lux-landing-root .phone-canvas-box {
+      border: 1px dashed rgba(201,162,39,0.5);
+      border-radius: 8px;
+      padding: 10px 6px;
+      text-align: center;
+      background: rgba(255,255,255,0.02);
+      margin-top: 4px;
+    }
+
+.lux-landing-root .phone-canvas-date {
+      font-size: 0.4rem;
+      letter-spacing: 0.1em;
+      color: rgba(245,240,232,0.5);
+      display: block;
+    }
+
+.lux-landing-root .phone-canvas-eyebrow {
+      font-size: 0.4rem;
+      color: var(--lux-gold);
+      letter-spacing: 0.12em;
+      margin-top: 2px;
+      display: block;
+    }
+
+.lux-landing-root .phone-canvas-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 0.95rem;
+      color: #fff;
+      margin: 3px 0;
+    }
+
+.lux-landing-root .phone-canvas-btn {
+      display: inline-block;
+      background: rgba(201,162,39,0.2);
+      border: 1px solid var(--lux-gold);
+      border-radius: 8px;
+      color: var(--lux-gold);
+      font-size: 0.42rem;
+      padding: 2px 8px;
+      margin-top: 4px;
+    }
+
+.lux-landing-root .phone-save-chip {
+      font-size: 0.42rem;
+      color: #34d399;
+      align-self: center;
+      margin-top: 4px;
+    }
+
+/* Phone Guest Cards */
+.lux-landing-root .phone-guest-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 6px;
+      padding: 5px 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+.lux-landing-root .phone-guest-top {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+.lux-landing-root .phone-guest-avatar {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: rgba(201,162,39,0.2);
+      color: var(--lux-gold);
+      font-size: 0.44rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+.lux-landing-root .phone-guest-details {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+.lux-landing-root .phone-guest-name {
+      font-size: 0.5rem;
+      font-weight: 600;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+.lux-landing-root .phone-guest-badge {
+      font-size: 0.42rem;
+      color: rgba(245,240,232,0.45);
+    }
+
+.lux-landing-root .phone-guest-btn {
+      background: #128c7e;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      font-size: 0.44rem;
+      font-weight: 600;
+      padding: 2px 6px;
+      align-self: flex-end;
+      cursor: pointer;
+    }
+
+/* Mini Dock at Bottom of Phone Screen */
+.lux-landing-root .phone-mini-dock {
+      position: absolute;
+      bottom: 6px;
+      left: 8px;
+      right: 8px;
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 20px;
+      padding: 3px 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      z-index: 6;
+    }
+
+.lux-landing-root .phone-dock-icon {
+      font-size: 0.58rem;
+      opacity: 0.6;
+      transition: opacity 0.2s;
+    }
+
+.lux-landing-root .phone-dock-icon.active {
+      opacity: 1;
+      transform: scale(1.15);
+    }
+
+/* =======================================================
+   APPLE-STYLE FLOATING LIQUID GLASS DOCK
+======================================================= */
+.lux-landing-root .studio-floating-dock-wrap {
+      display: flex;
+      justify-content: center;
+      margin-top: 1rem;
+      width: 100%;
+    }
+
+.lux-landing-root .studio-liquid-dock {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 50px;
+      padding: 6px 14px;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55);
+    }
+
+.lux-landing-root .studio-dock-btn {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: transparent;
+      border: none;
+      color: rgba(245,240,232,0.55);
+      cursor: pointer;
+      transition: all 0.25s var(--ease-luxury);
+      padding: 0;
+    }
+
+.lux-landing-root .studio-dock-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateY(-2px) scale(1.08);
+    }
+
+.lux-landing-root .studio-dock-btn.active {
+      background: rgba(201, 162, 39, 0.2);
+      color: var(--lux-gold);
+      transform: translateY(-2px);
+    }
+
+.lux-landing-root .dock-active-dot {
+      position: absolute;
+      bottom: 4px;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--lux-gold);
+      opacity: 0;
+      transition: opacity 0.25s;
+    }
+
+.lux-landing-root .studio-dock-btn.active .dock-active-dot {
+      opacity: 1;
+    }
+
+.lux-landing-root .dock-tooltip {
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%) scale(0.9);
+      background: rgba(15, 14, 13, 0.95);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: #fff;
+      font-size: 0.62rem;
+      font-weight: 500;
+      padding: 3px 8px;
+      border-radius: 6px;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+
+.lux-landing-root .studio-dock-btn:hover .dock-tooltip {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+    }
+
+/* Ramping Inline Badges */
+.lux-landing-root .studio-pill-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 0.2rem;
+    }
+
+.lux-landing-root .studio-badge-pill {
+      font-size: 0.76rem;
+      font-weight: 500;
+      color: rgba(245,240,232,0.85);
+      background: rgba(255,255,255,0.035);
+      border: 1px solid rgba(255,255,255,0.09);
+      padding: 5px 12px;
+      border-radius: 20px;
+    }
+
+.lux-landing-root .studio-cta-wrap {
+      margin-top: 1.25rem;
+    }
+
 /* ===========================
        PENGALAMAN / FEATURE SECTION
     =========================== *//* ===========================
@@ -3452,6 +4510,33 @@
         gap: 3rem;
       }
 
+.lux-landing-root #studio {
+        padding: 5rem 2rem;
+      }
+
+.lux-landing-root .studio-container {
+        grid-template-columns: 1fr;
+        gap: 3.5rem;
+        text-align: center;
+      }
+
+.lux-landing-root .studio-stage-wrap {
+        margin: 0 auto;
+      }
+
+.lux-landing-root .studio-content {
+        align-items: center;
+      }
+
+.lux-landing-root .studio-desc {
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+.lux-landing-root .studio-pill-row {
+        justify-content: center;
+      }
+
 .lux-landing-root #pengalaman {
         padding: 5rem 2rem;
         background-image: url('/assets/homepage/pengalaman_mobile.webp');
@@ -3588,6 +4673,218 @@
 .lux-landing-root .device-pair-showcase { max-width: 100%; padding: 0.5rem 0.5rem 2.5rem 1.2rem; }
 
 .lux-landing-root .device-mockup-phone { width: 125px; height: 250px; left: -8px; bottom: -12px; border-radius: 24px; }
+
+.lux-landing-root #studio {
+        padding: 4rem 1.2rem;
+      }
+
+.lux-landing-root .studio-container {
+        gap: 2rem;
+      }
+
+.lux-landing-root .studio-stage-wrap {
+        width: 100%;
+        max-width: 340px;
+        margin: 0 auto;
+        padding-bottom: 12px;
+        position: relative;
+      }
+
+.lux-landing-root .studio-laptop-frame {
+        width: 100%;
+        max-width: 290px;
+        height: 205px;
+        border-radius: 12px;
+        margin: 0 auto 0 0;
+      }
+
+.lux-landing-root .laptop-topbar {
+        height: 26px;
+        padding: 0 8px;
+        gap: 6px;
+      }
+
+.lux-landing-root .laptop-url-bar {
+        max-width: 130px;
+        font-size: 0.52rem;
+        padding: 2px 6px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+.lux-landing-root .laptop-status-chip {
+        display: none;
+      }
+
+.lux-landing-root .studio-mini-sidebar {
+        display: none;
+      }
+
+.lux-landing-root .studio-theme-grid-area {
+        padding: 6px 8px;
+        gap: 4px;
+      }
+
+.lux-landing-root .studio-cards-row {
+        gap: 4px;
+      }
+
+.lux-landing-root .studio-theme-card {
+        height: 100px;
+        border-radius: 6px;
+      }
+
+.lux-landing-root .studio-theme-card img {
+        height: 70px;
+      }
+
+.lux-landing-root .studio-phone-frame {
+        width: 110px;
+        height: 220px;
+        border-radius: 20px;
+        right: 0px;
+        bottom: -8px;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.9), 0 0 0 3px #1a1816;
+      }
+
+.lux-landing-root .phone-dashboard-header {
+        padding: 14px 6px 4px 6px;
+      }
+
+.lux-landing-root .phone-db-title {
+        font-size: 0.44rem;
+      }
+
+.lux-landing-root .phone-db-user {
+        font-size: 0.4rem;
+      }
+
+.lux-landing-root .phone-theme-preview {
+        height: 90px;
+      }
+
+.lux-landing-root .phone-theme-title {
+        font-size: 0.6rem;
+      }
+
+.lux-landing-root .phone-theme-badge {
+        font-size: 0.38rem;
+      }
+
+.lux-landing-root .phone-palette-pill {
+        font-size: 0.38rem;
+        padding: 1px 4px;
+      }
+
+.lux-landing-root .phone-canvas-box {
+        padding: 6px 4px;
+      }
+
+.lux-landing-root .phone-canvas-title {
+        font-size: 0.78rem;
+      }
+
+.lux-landing-root .phone-canvas-btn {
+        font-size: 0.38rem;
+        padding: 2px 5px;
+      }
+
+.lux-landing-root .phone-guest-card {
+        padding: 3px 4px;
+      }
+
+.lux-landing-root .phone-guest-name {
+        font-size: 0.44rem;
+      }
+
+.lux-landing-root .phone-guest-btn {
+        font-size: 0.38rem;
+        padding: 1px 4px;
+      }
+
+.lux-landing-root .phone-mini-dock {
+        padding: 2px 4px;
+        bottom: 4px;
+      }
+
+.lux-landing-root .phone-dock-icon {
+        font-size: 0.48rem;
+      }
+
+.lux-landing-root .studio-liquid-dock {
+        padding: 4px 10px;
+        gap: 6px;
+      }
+
+.lux-landing-root .studio-dock-btn {
+        width: 36px;
+        height: 36px;
+      }
+
+.lux-landing-root .studio-dock-btn svg {
+        width: 15px;
+        height: 15px;
+      }
+
+.lux-landing-root .studio-heading {
+        font-size: 1.65rem;
+        line-height: 1.25;
+      }
+
+.lux-landing-root .studio-desc {
+        font-size: 0.84rem;
+        line-height: 1.5;
+      }
+
+.lux-landing-root .studio-pill-row {
+        justify-content: center;
+        gap: 5px;
+      }
+
+.lux-landing-root .studio-badge-pill {
+        font-size: 0.62rem;
+        padding: 3px 8px;
+      }
+
+.lux-landing-root .mini-sub {
+        display: none;
+      }
+
+.lux-landing-root .theme-card-name {
+        font-size: 0.5rem;
+      }
+
+.lux-landing-root .theme-card-tag {
+        font-size: 0.44rem;
+      }
+
+.lux-landing-root .studio-liquid-dock {
+        padding: 4px 10px;
+        gap: 6px;
+      }
+
+.lux-landing-root .studio-dock-btn {
+        width: 36px;
+        height: 36px;
+      }
+
+.lux-landing-root .studio-dock-btn svg {
+        width: 15px;
+        height: 15px;
+      }
+
+.lux-landing-root .studio-cta-wrap {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+      }
+
+.lux-landing-root .studio-cta-wrap .btn-primary {
+        width: 100%;
+        max-width: 280px;
+        justify-content: center;
+      }
 
 .lux-landing-root #pengalaman {
         padding: 4rem 1.2rem;

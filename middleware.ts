@@ -239,6 +239,7 @@ export default auth(async (req) => {
     "/privacy",
     "/terms",
     "/refund",
+    "/how-it-works",
     "/sharemoment",
     "/memories",
     "/s/",

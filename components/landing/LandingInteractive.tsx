@@ -354,6 +354,56 @@ export function LandingInteractive() {
     });
 
     // ----------------------------
+    // 6B. STUDIO MANDIRI (DUAL DEVICE LIVE SYNC)
+    // ----------------------------
+    const studioBtns = document.querySelectorAll<HTMLElement>("[data-studio]");
+    const studioScreens = document.querySelectorAll<HTMLElement>(".studio-screen-layer");
+    const studioPhones = document.querySelectorAll<HTMLElement>(".studio-phone-layer");
+    const studioSection = document.getElementById("studio");
+
+    let activeStudio = 0;
+    const totalStudio = studioBtns.length;
+
+    const setStudio = (idx: number) => {
+      if (!totalStudio) return;
+      activeStudio = ((idx % totalStudio) + totalStudio) % totalStudio;
+
+      studioBtns.forEach((btn, i) => {
+        const isActive = i === activeStudio;
+        btn.classList.toggle("active", isActive);
+        btn.setAttribute("aria-selected", String(isActive));
+      });
+
+      studioScreens.forEach((screen, i) => {
+        screen.classList.toggle("active", i === activeStudio);
+      });
+
+      studioPhones.forEach((phone, i) => {
+        phone.classList.toggle("active", i === activeStudio);
+      });
+    };
+
+    const studioBtnHandlers: Array<{ el: HTMLElement; fn: () => void }> = [];
+    studioBtns.forEach((btn) => {
+      const fn = () => {
+        const idx = parseInt(btn.dataset.studio || "", 10);
+        if (!isNaN(idx)) setStudio(idx);
+      };
+      btn.addEventListener("click", fn);
+      studioBtnHandlers.push({ el: btn, fn });
+    });
+
+    let studioAutoplay = setInterval(() => setStudio(activeStudio + 1), 5000);
+    const pauseStudio = () => clearInterval(studioAutoplay);
+    const resumeStudio = () => {
+      clearInterval(studioAutoplay);
+      studioAutoplay = setInterval(() => setStudio(activeStudio + 1), 5000);
+    };
+
+    studioSection?.addEventListener("mouseenter", pauseStudio);
+    studioSection?.addEventListener("mouseleave", resumeStudio);
+
+    // ----------------------------
     // 7. INTERSECTION OBSERVER (REVEAL)
     // ----------------------------
     const observer = new IntersectionObserver(
@@ -463,6 +513,11 @@ export function LandingInteractive() {
       expSection?.removeEventListener("mousemove", onExpMove as any);
       expSection?.removeEventListener("mouseleave", onExpLeave);
       window.removeEventListener("resize", onExpResize);
+
+      studioBtnHandlers.forEach(({ el, fn }) => el.removeEventListener("click", fn));
+      studioSection?.removeEventListener("mouseenter", pauseStudio);
+      studioSection?.removeEventListener("mouseleave", resumeStudio);
+      clearInterval(studioAutoplay);
 
       observer.disconnect();
       counterObserver.disconnect();

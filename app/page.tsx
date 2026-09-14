@@ -250,6 +250,338 @@ export default async function Home() {
 </section>
 
 {/* ===========================
+     STUDIO MANDIRI (LIVE EDITING & LIVE PREVIEW SHOWCASE)
+=========================== */}
+<section id="studio" aria-labelledby="studio-heading">
+  <div className="studio-container">
+    {/* KIRI: Panggung Visual Dual-Device (Laptop Editor + Mobile Phone Preview Bersanding) */}
+    <div className="studio-stage reveal">
+      <div className="studio-stage-wrap">
+        {/* Laptop / Desktop Frame di Belakang */}
+        <div className="studio-laptop-frame">
+          <div className="laptop-topbar">
+            <div className="laptop-traffic">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+            <div className="laptop-url-bar">
+              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+              studio.luxvite.id/dashboard/invitation
+            </div>
+            <div className="laptop-status-chip">
+              <span className="laptop-status-dot"></span>
+              <span>LIVE SYNC</span>
+            </div>
+          </div>
+
+          <div className="laptop-screen">
+            {/* Screen Layer 0: Pilihan Tema & Palet Warna (Screenshot Asli Dasbor Klien) */}
+            <div className="studio-screen-layer active" id="studio-screen-0">
+              <div className="studio-theme-selector-ui">
+                {/* Mini Sidebar Seksi Form */}
+                <div className="studio-mini-sidebar">
+                  <div className="mini-sidebar-header">DAFTAR SEKSI (1/13)</div>
+                  <div className="mini-sidebar-item active">
+                    <span className="mini-num">1</span>
+                    <div className="mini-info">
+                      <span className="mini-title">Tema &amp; Warna</span>
+                      <span className="mini-sub">Dillalucky (Gold)</span>
+                    </div>
+                  </div>
+                  <div className="mini-sidebar-item">
+                    <span className="mini-num">2</span>
+                    <div className="mini-info">
+                      <span className="mini-title">Sampul &amp; Musik</span>
+                    </div>
+                  </div>
+                  <div className="mini-sidebar-item">
+                    <span className="mini-num">3</span>
+                    <div className="mini-info">
+                      <span className="mini-title">Profil Mempelai</span>
+                      <span className="mini-sub">Eka &amp; Putri</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Main Theme Grid Area */}
+                <div className="studio-theme-grid-area">
+                  <div className="studio-grid-header">
+                    <span className="grid-header-title">1. Pilihan Seri Desain &amp; Palet Warna</span>
+                    <div className="mini-cat-pills">
+                      <span className="mini-cat">Modern 6</span>
+                      <span className="mini-cat active">Traditional 6</span>
+                    </div>
+                  </div>
+
+                  <div className="studio-cards-row">
+                    {/* Card 1: Dillalucky (Terpilih dengan Centang) */}
+                    <div className="studio-theme-card selected">
+                      <div className="theme-card-badge">TRADITIONAL</div>
+                      <div className="theme-card-check">✓</div>
+                      <img src="/assets/homepage/studio_theme_dillalucky.webp" alt="Tema Dillalucky" />
+                      <div className="theme-card-body">
+                        <span className="theme-card-name">Dillalucky</span>
+                        <span className="theme-card-tag">Terpilih</span>
+                      </div>
+                    </div>
+
+                    {/* Card 2: Candani */}
+                    <div className="studio-theme-card">
+                      <div className="theme-card-badge">TRADITIONAL</div>
+                      <img src="/assets/homepage/studio_theme_candani.webp" alt="Tema Candani" />
+                      <div className="theme-card-body">
+                        <span className="theme-card-name">Candani</span>
+                        <span className="theme-card-tag">Pilih</span>
+                      </div>
+                    </div>
+
+                    {/* Card 3: Badrika */}
+                    <div className="studio-theme-card">
+                      <div className="theme-card-badge">TRADITIONAL</div>
+                      <img src="/assets/homepage/studio_theme_badrika.webp" alt="Tema Badrika" />
+                      <div className="theme-card-body">
+                        <span className="theme-card-name">Badrika</span>
+                        <span className="theme-card-tag">Pilih</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Palette Selector Bar */}
+                  <div className="studio-palette-row">
+                    <span className="palette-label">NUANSA WARNA:</span>
+                    <div className="palette-chip active">
+                      <span className="palette-dot dot-gold"></span>
+                      <span>Royal Champagne Gold</span>
+                    </div>
+                    <div className="palette-chip">
+                      <span className="palette-dot dot-emerald"></span>
+                      <span>Emerald Green</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Screen Layer 1: Mode Visual Click-to-Edit (Screenshot Asli Live Editor Canvas) */}
+            <div className="studio-screen-layer" id="studio-screen-1">
+              <div className="studio-live-canvas-ui">
+                {/* Instruction Banner Hijau Asli */}
+                <div className="live-canvas-instruction">
+                  <span className="inst-dot"></span>
+                  <span>Mode Visual Click-to-Edit: Klik langsung teks/sampul di atas kanvas untuk mengubah</span>
+                </div>
+
+                {/* Canvas Area with Phone Simulator inside */}
+                <div className="live-canvas-viewport">
+                  <div className="canvas-simulated-phone">
+                    <div className="sim-inv-date">20 / 10 · 2026</div>
+                    <div className="sim-inv-eyebrow">THE WEDDING OF</div>
+                    <h4 className="sim-inv-title">Eka &amp; Putri</h4>
+                    <div className="sim-inv-quote">
+                      Dengan penuh rasa syukur dan sukacita kami mengundang Anda
+                    </div>
+                    <div className="sim-inv-btn">BUKA</div>
+                    <div className="sim-inv-qr">QR CHECK-IN →</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Screen Layer 2: Manajemen Buku Tamu & WhatsApp Link */}
+            <div className="studio-screen-layer" id="studio-screen-2">
+              <div className="studio-editor-mockup">
+                <div className="editor-header">
+                  <span className="editor-tab-badge">DAFTAR TAMU &amp; WHATSAPP</span>
+                  <span className="editor-save-state">300 Tamu Terdaftar</span>
+                </div>
+                <div className="editor-guest-table">
+                  <div className="guest-row-mockup">
+                    <div className="guest-avatar">AF</div>
+                    <div className="guest-meta">
+                      <span className="guest-name">Bpk. Ahmad Fauzan &amp; Istri</span>
+                      <span className="guest-tag">VIP · Meja 04 · Kuota 2 Tamu</span>
+                    </div>
+                    <button className="guest-btn-wa">Kirim WA →</button>
+                  </div>
+                  <div className="guest-row-mockup">
+                    <div className="guest-avatar">RP</div>
+                    <div className="guest-meta">
+                      <span className="guest-name">dr. Rina Puspita</span>
+                      <span className="guest-tag">Sahabat · Kuota 1 Tamu</span>
+                    </div>
+                    <button className="guest-btn-wa">Kirim WA →</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="screen-glare"></div>
+          </div>
+        </div>
+
+        {/* Mobile Phone Frame di Depan (Dasbor Klien Versi Mobile Faktual) */}
+        <div className="studio-phone-frame">
+          <div className="phone-notch-bar"></div>
+          
+          {/* Mini Header Dasbor Klien di Mobile */}
+          <div className="phone-dashboard-header">
+            <div className="phone-db-brand">
+              <span className="phone-db-logo">LK</span>
+              <span className="phone-db-title">Dasbor Klien</span>
+            </div>
+            <span className="phone-db-user">Nama Akun</span>
+          </div>
+
+          <div className="phone-screen">
+            {/* Mobile Dashboard Layer 0: Tema & Warna */}
+            <div className="studio-phone-layer active" id="studio-phone-0">
+              <div className="phone-db-content">
+                <div className="phone-section-chip">1. Tema &amp; Nuansa (1/13)</div>
+                <div className="phone-theme-preview">
+                  <span className="phone-theme-badge">TRADITIONAL</span>
+                  <span className="phone-theme-check">✓</span>
+                  <img src="/assets/homepage/studio_theme_dillalucky.webp" alt="Tema Dillalucky" />
+                  <div className="phone-theme-info">
+                    <span className="phone-theme-title">Dillalucky</span>
+                    <span className="phone-theme-status">Terpilih</span>
+                  </div>
+                </div>
+                <div className="phone-palette-pill">
+                  <span className="phone-palette-dot dot-gold" style={{ background: "#d4af37" }}></span>
+                  <span>Royal Champagne Gold</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Mobile Dashboard Layer 1: Live Click-to-Edit Canvas */}
+            <div className="studio-phone-layer" id="studio-phone-1">
+              <div className="phone-db-content">
+                <div className="phone-edit-instruction">
+                  <span className="phone-edit-dot"></span>
+                  <span>Sentuh teks untuk ubah</span>
+                </div>
+                <div className="phone-canvas-box">
+                  <span className="phone-canvas-date">20 / 10 · 2026</span>
+                  <span className="phone-canvas-eyebrow">THE WEDDING OF</span>
+                  <h4 className="phone-canvas-title">Eka &amp; Putri</h4>
+                  <div className="phone-canvas-btn">BUKA UNDANGAN</div>
+                </div>
+                <div className="phone-save-chip">✓ Tersimpan Otomatis</div>
+              </div>
+            </div>
+
+            {/* Mobile Dashboard Layer 2: Buku Tamu & WhatsApp */}
+            <div className="studio-phone-layer" id="studio-phone-2">
+              <div className="phone-db-content">
+                <div className="phone-section-chip">Buku Tamu (300 Tamu)</div>
+                <div className="phone-guest-card">
+                  <div className="phone-guest-top">
+                    <span className="phone-guest-avatar">AF</span>
+                    <div className="phone-guest-details">
+                      <span className="phone-guest-name">Bpk. Ahmad Fauzan</span>
+                      <span className="phone-guest-badge">VIP · Meja 04</span>
+                    </div>
+                  </div>
+                  <button className="phone-guest-btn">Kirim WA →</button>
+                </div>
+                <div className="phone-guest-card">
+                  <div className="phone-guest-top">
+                    <span className="phone-guest-avatar">RP</span>
+                    <div className="phone-guest-details">
+                      <span className="phone-guest-name">dr. Rina Puspita</span>
+                      <span className="phone-guest-badge">Sahabat</span>
+                    </div>
+                  </div>
+                  <button className="phone-guest-btn">Kirim WA →</button>
+                </div>
+              </div>
+            </div>
+
+            {/* Mini Floating Dock di Bagian Bawah Layar HP */}
+            <div className="phone-mini-dock">
+              <span className="phone-dock-icon">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+              </span>
+              <span className="phone-dock-icon active">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+              </span>
+              <span className="phone-dock-icon">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+              </span>
+              <span className="phone-dock-icon">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              </span>
+            </div>
+
+            <div className="screen-glare"></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Apple-Style Floating Liquid Glass Dock Pengontrol Interaktif */}
+      <div className="studio-floating-dock-wrap">
+        <div className="studio-liquid-dock" role="tablist" aria-label="Navigasi Fitur Studio">
+          {/* Dock 0: Tema */}
+          <button className="studio-dock-btn active" role="tab" id="studio-tab-0" aria-selected="true" data-studio="0" title="Pilihan Tema & Palet">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+            <span className="dock-active-dot"></span>
+            <span className="dock-tooltip">Pilihan Tema</span>
+          </button>
+
+          {/* Dock 1: Live Studio Editor */}
+          <button className="studio-dock-btn" role="tab" id="studio-tab-1" aria-selected="false" data-studio="1" title="Studio Live Editor">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            <span className="dock-active-dot"></span>
+            <span className="dock-tooltip">Live Editor</span>
+          </button>
+
+          {/* Dock 2: Buku Tamu & WhatsApp */}
+          <button className="studio-dock-btn" role="tab" id="studio-tab-2" aria-selected="false" data-studio="2" title="Buku Tamu & WhatsApp">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+            <span className="dock-active-dot"></span>
+            <span className="dock-tooltip">Buku Tamu</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    {/* KANAN: Text Narrative Bersih & Lapang (Tanpa Kotak-Kotak Bertumpuk) */}
+    <div className="studio-content reveal reveal-delay-1">
+      <p className="section-label" style={{ color: "var(--lux-muted-gold)" }}>STUDIO MANDIRI</p>
+      <h2 className="studio-heading" id="studio-heading">
+        Rancang Sendiri Undangan Anda,<br />Langsung Jadi Tanpa Nunggu Admin
+      </h2>
+      <p className="studio-desc">
+        Ubah foto prewedding, susunan acara, hingga alunan musik orkestra semudah mengetik pesan di ponsel. Setiap sentuhan langsung tampak nyata detik itu juga di layar smartphone tamu Anda.
+      </p>
+
+      {/* Ramping Inline Badges (Bebas dari Kotak Hitam Ramai) */}
+      <div className="studio-pill-row">
+        <span className="studio-badge-pill">✦ Live Editing Seketika</span>
+        <span className="studio-badge-pill">✦ Bebas Ubah Kapan Saja</span>
+        <span className="studio-badge-pill">✦ Nama Tamu Otomatis</span>
+      </div>
+
+      <div className="studio-cta-wrap">
+        <Link href="/how-it-works" className="btn-primary" id="studio-cta-guide">
+          <span>Pelajari Cara Kerja Lengkap</span>
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path d="M2 7h10M7 2l5 5-5 5" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </Link>
+      </div>
+    </div>
+  </div>
+</section>
+
+{/* ===========================
      PENGALAMAN / FEATURE SECTION
 =========================== */}
 <section id="pengalaman" aria-labelledby="pengalaman-heading">

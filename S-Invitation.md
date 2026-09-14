@@ -765,4 +765,10 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - Kasir & Pembayaran (`/checkout` & `/payment`): Normalisasi padding kartu mobile ke `p-4 sm:p-6 rounded-2xl sm:rounded-3xl`, input WhatsApp minimum 44px, QRIS adaptive sizing `w-44 h-44 sm:w-56 sm:h-56` di atas lipatan layar (*above the fold*), dan navigasi bawah mobile yang ergonomis.
    - Pilihan Paket (`/packages`): Penyesuaian padding kartu menjadi `p-5 sm:p-8` sehingga seluruh rincian fitur dan harga terbaca leluasa di layar 360px – 390px.
 
+5. **Studio Mandiri Dual-Device Showcase & Dedicated Guide (`/how-it-works`):**
+   - **Showcase Simulasi Realistis 5 Tab Mandiri (`HowItWorksInteractive.tsx`):** Menampilkan perbandingan sinkron dan simulator dasbor klien 5 tab interaktif berbasis tema Nusantara (Dillalucky, Candani, Badrika) dan palet Royal Gold/Emerald Green, dilengkapi autonomous loop fake cursor.
+   - **Audit Data & Pre-Publish Launchpad (Tab 4):** Meniru persis arsitektur `app/(client)/dashboard/settings/page.tsx` dengan Hero Launchpad dan Jendela Sliding Ticker 3 Baris (`mask-image` linier) yang memverifikasi 10 komponen kesiapan data sekuensial sebelum status publikasi resmi mengudara (`PUBLISHED`).
+   - **Konsistensi Penamaan File Bahasa Inggris:** Seluruh modul kode dan rute terstandarisasi penuh dalam Bahasa Inggris (`app/how-it-works/page.tsx`, `app/how-it-works/HowItWorksInteractive.tsx`), serta terdaftar dalam `PLATFORM_EXCLUSIONS` pada `middleware.ts`.
+
+
 
