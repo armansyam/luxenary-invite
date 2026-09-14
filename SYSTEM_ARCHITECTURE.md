@@ -661,8 +661,24 @@ HTML standalone lengkap (self-contained, inline CSS/JS)
   - **Standarisasi Tipografi Anti-Overflow Split Desktop (Mobile-Emulation Scale):**
     - **Akar Masalah Tipografi `vw`:** Unit CSS `vw` mengevaluasi lebar seluruh layar peramban (1440px - 1920px), bukan lebar kontainer 460px. Hal ini membuat judul besar berhuruf kapital (misal "LIVE STREAMING") atau font kaligrafi (seperti *Parisienne* / *Cinzel*) membengkak hingga >54px dan meluap keluar dari panel split kanan.
     - **Pemberian Cap Maksimal:** Pada media query `@media (min-width: 900px)`, seluruh judul seksi `.sec-main-title, .sec-heading` dikunci maksimal pada `font-size: clamp(1.75rem, 2.1rem, 2.3rem) !important;` dengan proteksi `overflow-wrap: break-word !important; word-break: break-word !important;`.
-    - **Normalisasi Padding Horizontal:** Padding horizontal pada seksi di desktop dinormalisasi dari nilai warisan `3.5rem` (112px) menjadi `1.8rem` (~57px), mempertahankan ruang efektif konten ~404px yang identik dengan viewport mobile asli.
     - **Penerapan pada Starter Blueprint (`themes/starter-blueprint.html` & `public/downloads/starter-blueprint.html`):** Arsitektur `.layout-wrapper`, `.sidebar-desktop`, `.main-scroll-panel` (460px), seksi pembuka 100vh `#home`, dan aturan tipografi anti-overflow telah diintegrasikan langsung ke dalam master starter blueprint sebagai standar emas bagi para Theme Builder.
+  - **Standarisasi Ergonomi & Dimensi Mobile UI-UX (Golden Mobile Standard):**
+    - **Aksesibilitas Viewport & iOS Dynamic Island / Home Bar Insets:**
+      - Seluruh tema master wajib mengadopsi `<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">` tanpa atribut `user-scalable=no` (sesuai WCAG 1.4.4 Text Resizing). Parameter `viewport-fit=cover` memastikan WebKit Safari mengaktifkan variabel lingkungan `env(safe-area-inset-*)`.
+      - Komponen navigasi mengambang (`.bottom-dock`) wajib menggunakan `bottom: calc(18px + env(safe-area-inset-bottom, 0px))` untuk mencegah tabrakan dengan garis gestur *Home Indicator* 34px iOS.
+      - Kontrol musik mengambang (`.music-fab`) wajib menggunakan `top: calc(18px + env(safe-area-inset-top, 0px))` dan `right: calc(18px + env(safe-area-inset-right, 0px))` untuk menghindari tabrakan dengan *Dynamic Island* / Notch kamera depan iPhone.
+    - **Proteksi Anti-Zoom Liar Safari iOS pada Form Input:**
+      - Seluruh elemen kontrol formulir (`.form-in, .form-sel, .form-ta`) dikunci pada ukuran font minimum **`16px`** (`font-size: 16px;`). Hal ini mencegah Safari iOS melakukan pembesaran paksa (*auto-zoom jarring*) saat tamu memfokuskan input RSVP atau ucapan.
+    - **Standar Ukuran Area Sentuh (Apple HIG & Google Material Compliance):**
+      - Tombol menu dock navigasi (`.dock-a` / `.dock-btn`) memiliki dimensi sentuhan minimum **44 × 44 px** dengan deklarasi `touch-action: manipulation;`.
+      - Tombol salin rekening (`.btn-copy`) dinormalisasi dengan tinggi sentuhan $\ge 38\text{px}$ dan padding nyaman ($0.55\text{rem } 1.1\text{rem}$) demi kenyamanan tamu lansia.
+    - **Rasio Masonry Galeri Responsif Mobile:**
+      - Engine universal `lib/themeEngine.ts` menerapkan breakpoint otomatis `@media (max-width: 640px)` dengan tata letak **2 kolom** (`columns: 2 !important; column-gap: 8px;`) pada modal galeri penuh, menggantikan tata letak kaku 4 kolom agar foto tampil proporsional tanpa tertekan menjadi ukuran perangko.
+    - **Standarisasi Dasbor Klien pada Layar Ponsel (`/dashboard`):**
+      - Dock navigasi bawah mengambang (`layout.tsx`) diperbarui menggunakan `bottom-[calc(1rem+env(safe-area-inset-bottom,0px))]` guna mencegah interferensi gestur Home Indicator iOS 34px.
+      - Grid metrik lisensi akun (`page.tsx`) dioptimalkan menjadi flex wrap responsif (`flex-col sm:flex-row gap-1.5`) agar teks paket dan tombol upgrade tidak saling bertubrukan pada perangkat sempit 360px.
+      - Menghilangkan redundansi jarak kosong bawah di halaman RSVP (`pb-20` dihapus, mengandalkan proteksi padding dock terpusat `pb-28` di layout).
+      - Tombol salin link tamu pada buku tamu (`guests/page.tsx`) ditingkatkan ke ukuran ergonomis minimum 36px (`touch-manipulation`), dan tabel pratinjau CSV dibungkus kontainer `overflow-x-auto min-w-[340px]`.
   - **Arsitektur Lapisan Zero-Fake Fallback & Infinite Seamless Flow:**
     - **Prinsip Zero-Fake Fallback:** Jika klien tidak mengunggah foto background global (`GLOBAL_FIXED_BG`), engine `lib/themeEngine.ts` meneruskan string kosong (`""`) alih-alih memaksa aset demo (`/demo/...`). Kanvas undangan murni mengekspos warna dasar palet tema (`body { background: var(--bg-dark); }` / `--bg-light`) dan gradasi perlindungan kontras bawaan tema tanpa patahan (*broken image*).
     - **Pencegahan Duplikasi Foto ke Seksi Home:** Jika klien tidak mengunggah foto khusus `HOME_PHOTO`, seksi `#home` berstatus transparan (`background: transparent;`) tanpa memaksa duplikasi dari foto latar, menjaga tampilan bersih dengan tipografi, kaligrafi, dan monogram artistik.

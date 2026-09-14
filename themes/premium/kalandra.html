@@ -19,7 +19,7 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>{{firstName}} &amp; {{secondName}} — The Wedding</title>
   <!-- 100% Self-Hosted Local Google Fonts (Zero External Latency) -->
   <link rel="stylesheet" href="/fonts/fonts.css">
@@ -86,8 +86,10 @@
       position: fixed; inset: 0; z-index: 200;
       display: flex; flex-direction: column;
       align-items: center; justify-content: space-between;
-      padding: 3.5rem 2rem 4rem; text-align: center;
+      padding: calc(3.5rem + env(safe-area-inset-top, 0px)) 1.5rem calc(3.5rem + env(safe-area-inset-bottom, 0px));
+      text-align: center;
       background-position: center; background-size: cover; background-repeat: no-repeat;
+      overflow-y: auto; overscroll-behavior: contain;
       transition: transform 1.25s cubic-bezier(0.76, 0, 0.24, 1), opacity 1.2s cubic-bezier(0.76, 0, 0.24, 1), visibility 1.25s;
       box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95);
       will-change: transform, opacity;
@@ -100,9 +102,13 @@
     }
     .cover-top { width: 100%; display: flex; justify-content: space-between; align-items: center; }
     .cover-date-part { font-size: 0.78rem; letter-spacing: 0.25em; color: rgba(255,255,255,0.85); text-transform: uppercase; }
-    .cover-center { display: flex; flex-direction: column; align-items: center; margin: auto 0; }
+    .cover-center { display: flex; flex-direction: column; align-items: center; margin: auto 0; max-width: 100%; }
     .cover-tagline { font-size: 0.68rem; letter-spacing: 0.38em; text-transform: uppercase; color: rgba(255,255,255,0.7); margin-bottom: 0.8rem; display: block; }
-    .cover-names { font-size: clamp(3.2rem, 13vw, 5.8rem); line-height: 1.0; color: #ffffff; text-shadow: 0 4px 30px rgba(0,0,0,0.5); font-weight: 300; }
+    .cover-names {
+      font-size: clamp(2.2rem, 8.5vw, 3.4rem); line-height: 1.05; color: #ffffff;
+      text-shadow: 0 4px 30px rgba(0,0,0,0.5); font-weight: 300;
+      overflow-wrap: break-word; word-break: break-word;
+    }
     .cover-names em { font-style: italic; font-size: 0.65em; display: inline-block; margin: 0 0.1em; color: rgba(255,255,255,0.8); }
     .cover-bottom { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 0.8rem; }
     .cover-kepada { font-size: 0.62rem; letter-spacing: 0.32em; text-transform: uppercase; color: rgba(255,255,255,0.6); }
@@ -406,7 +412,12 @@
     .bank-owner { color: var(--text-muted); font-size: 0.75rem; display: block; margin-bottom: 0.6rem; }
     .bank-row { display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.3); padding: 0.55rem 0.8rem; border: 1px solid var(--border); }
     .bank-number { font-family: monospace; font-size: 0.95rem; color: #ffffff; }
-    .btn-copy { background: #ffffff; color: #070709; border: none; padding: 0.35rem 0.8rem; font-size: 0.65rem; font-weight: 700; cursor: pointer; letter-spacing: 0.05em; }
+    .btn-copy {
+      background: #ffffff; color: #070709; border: none; padding: 0.55rem 1.1rem;
+      min-height: 38px; font-size: 0.72rem; font-weight: 700; cursor: pointer; letter-spacing: 0.05em;
+      border-radius: 4px; display: inline-flex; align-items: center; justify-content: center;
+      touch-action: manipulation;
+    }
 
     /* RSVP */
     .rsvp-form-wrap { text-align: left; margin-top: 1.5rem; }
@@ -414,7 +425,8 @@
     .form-lbl { display: block; font-size: 0.62rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.15em; color: var(--text-muted); margin-bottom: 0.4rem; }
     .form-in, .form-sel, .form-ta {
       width: 100%; padding: 0.75rem 0.9rem; background: rgba(255,255,255,0.04);
-      border: 1px solid var(--border); color: #ffffff; font-size: 0.85rem; outline: none; font-family: 'Jost', sans-serif; transition: border-color 0.2s;
+      border: 1px solid var(--border); color: #ffffff; font-size: 16px; /* 16px wajib untuk cegah auto-zoom liar Safari iOS */
+      outline: none; font-family: 'Jost', sans-serif; transition: border-color 0.2s;
     }
     .form-in:focus, .form-sel:focus, .form-ta:focus { border-color: #ffffff; }
     .btn-rsvp-submit {
@@ -471,7 +483,7 @@
     .footer-sub { font-size: 0.65rem; letter-spacing: 0.25em; text-transform: uppercase; color: rgba(255,255,255,0.5); }
 
     .bottom-dock {
-      position: fixed; bottom: 18px; left: 50%; transform: translate3d(-50%, 0, 0);
+      position: fixed; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translate3d(-50%, 0, 0);
       background: rgba(15, 15, 18, 0.92); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
       border: 1px solid rgba(255,255,255,0.15); border-radius: 50px;
       padding: 6px 14px; display: flex; align-items: center; gap: 6px;
@@ -480,24 +492,27 @@
       will-change: transform, opacity;
     }
     .bottom-dock.dock-hidden {
-      transform: translate3d(-50%, calc(100% + 32px), 0);
+      transform: translate3d(-50%, calc(100% + 32px + env(safe-area-inset-bottom, 0px)), 0);
       opacity: 0;
       pointer-events: none;
     }
     .dock-a {
-      display: flex; flex-direction: column; align-items: center; text-decoration: none;
-      color: rgba(255,255,255,0.6); font-size: 0.5rem; font-weight: 500; text-transform: uppercase; padding: 3px 8px; transition: color 0.2s;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-width: 44px; min-height: 44px; text-decoration: none;
+      color: rgba(255,255,255,0.6); font-size: 0.52rem; font-weight: 500; text-transform: uppercase;
+      padding: 4px 6px; transition: color 0.2s; touch-action: manipulation;
     }
     .dock-a:hover { color: #ffffff; }
-    .dock-ico { width: 17px; height: 17px; stroke-width: 1.8; margin-bottom: 2px; }
+    .dock-ico { width: 18px; height: 18px; stroke-width: 1.8; margin-bottom: 2px; }
 
     .music-fab {
-      position: fixed; top: 18px; right: 18px; width: 40px; height: 40px;
+      position: fixed; top: calc(18px + env(safe-area-inset-top, 0px)); right: calc(18px + env(safe-area-inset-right, 0px));
+      width: 44px; height: 44px;
       border-radius: 50%; background: rgba(15, 15, 18, 0.85); border: 1px solid rgba(255,255,255,0.2);
       color: rgba(255,255,255,0.8); display: flex; align-items: center; justify-content: center;
       z-index: 100; cursor: pointer; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
       transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.42s cubic-bezier(0.16, 1, 0.3, 1);
-      will-change: transform, opacity;
+      will-change: transform, opacity; touch-action: manipulation;
     }
     .music-fab.fab-hidden {
       transform: translateY(-80px);

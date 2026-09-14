@@ -567,6 +567,15 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - Seksi 1 (*Pilihan Seri Desain & Palet Warna*) memfilter tema menggunakan bilah tab kategori adaptif sesuai hierarki paket order:
      - Paket Traditional (1 Kategori): Tampil langsung tanpa tab.
      - Paket Modern / Premium (>1 Kategori): Menampilkan tab per kategori (`[Premium]`, `[Modern]`, `[Traditional]`) dengan badge counter dan auto-focus pada tema aktif, menjaga tinggi halaman tetap ringkas.
+4. **Standarisasi Viewport & Safe-Area Mobile iOS/Android (`viewport-fit=cover`):**
+   - Meta viewport wajib menggunakan `width=device-width, initial-scale=1.0, viewport-fit=cover` tanpa mematikan zoom (`user-scalable=no` dilarang demi kepatuhan WCAG 1.4.4).
+   - Seluruh floating bar wajib menghitung safe-area:
+     - `.bottom-dock`: `bottom: calc(18px + env(safe-area-inset-bottom, 0px))`
+     - `.music-fab`: `top: calc(18px + env(safe-area-inset-top, 0px)); right: calc(18px + env(safe-area-inset-right, 0px))`
+   - Target sentuhan menu navigasi minimal $44\times 44\text{px}$ dengan `touch-action: manipulation`.
+5. **Proteksi Anti Auto-Zoom Form Safari iOS & Grid Galeri Responsif:**
+   - Seluruh elemen form (`.form-in`, `.form-sel`, `.form-ta`) dikunci pada ukuran font minimum **`16px`** untuk menonaktifkan auto-zoom peramban WebKit Safari saat input difokuskan.
+   - Modal galeri foto universal (`themeEngine.ts`) menerapkan breakpoint responsif 2 kolom (`columns: 2 !important;`) pada mobile ($\le 640\text{px}$) agar foto kenangan tetap tampil artistik dan proporsional.
 
 ---
 

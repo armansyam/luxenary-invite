@@ -1879,12 +1879,12 @@ export default function EditInvitation() {
                 {/* Desktop Split Dual View (>= lg) */}
                 <div className={`hidden lg:flex items-start gap-6 w-full ${isCanvasFullscreen ? "flex-1 min-h-0" : ""}`}>
                   {/* Left Pane: Mobile Phone Mockup */}
-                  <div className={`w-[380px] shrink-0 flex flex-col ${isCanvasFullscreen ? "h-full" : ""}`}>
+                  <div className={`w-[390px] shrink-0 flex flex-col ${isCanvasFullscreen ? "h-full" : ""}`}>
                     <div className="flex items-center justify-between text-xs text-stone-400 font-medium mb-2.5 px-1">
                       <div className="flex items-center gap-1.5">
                         <span className="w-2 h-2 rounded-full bg-amber-500"></span>
                         <span className="text-white font-semibold">Tampilan Ponsel</span>
-                        <span className="text-stone-500 text-[11px]">(380px)</span>
+                        <span className="text-stone-500 text-[11px]">(390px)</span>
                       </div>
                       <span className="text-[10px] text-stone-400 bg-stone-900 border border-stone-800 px-2 py-0.5 rounded-md">
                         Mute

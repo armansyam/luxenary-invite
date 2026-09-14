@@ -95,7 +95,7 @@ export default function RsvpPage() {
   };
 
   return (
-    <div className="space-y-2.5 sm:space-y-3 font-sans pb-20">
+    <div className="space-y-2.5 sm:space-y-3 font-sans">
       
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white px-4 py-3 sm:px-6 sm:py-3.5 rounded-2xl border border-stone-200 shadow-xs">

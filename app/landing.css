@@ -3550,16 +3550,24 @@
       }
 
 .lux-landing-root .hero-cta-group {
-        display: none;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+        margin-top: 1.4rem;
+        width: 100%;
       }
 
 .lux-landing-root .hero-cta-group .btn-primary, .lux-landing-root .hero-cta-group .btn-secondary {
         width: 100%;
-        max-width: 220px;
+        max-width: 260px;
         justify-content: center;
         text-align: center;
-        font-size: 0.78rem;
-        padding: 0.78rem 1.4rem;
+        font-size: 0.85rem;
+        padding: 0.85rem 1.4rem;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
       }
 
 .lux-landing-root .hero-phones {

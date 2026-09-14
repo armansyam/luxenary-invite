@@ -437,8 +437,8 @@ function DashboardHomeContent() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
             </svg>
           </div>
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-bold text-stone-900">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+            <p className="text-sm font-bold text-stone-900 truncate">
               {invitation?.order?.planType
                 ? `Paket ${invitation.order.planType.charAt(0) + invitation.order.planType.slice(1).toLowerCase()}`
                 : "—"}
@@ -446,7 +446,7 @@ function DashboardHomeContent() {
             {invitation?.order?.planType && invitation.order.planType !== "PREMIUM" && (
               <a
                 href={invitation?.id ? `/dashboard/invitation/${invitation.id}` : "#"}
-                className="text-[10px] font-bold text-violet-700 hover:text-violet-900 border border-violet-200 hover:border-violet-300 bg-violet-50 hover:bg-violet-100 px-2.5 py-1 rounded-full transition flex items-center gap-1 cursor-pointer"
+                className="w-fit text-[10px] font-bold text-violet-700 hover:text-violet-900 border border-violet-200 hover:border-violet-300 bg-violet-50 hover:bg-violet-100 px-2.5 py-1 rounded-full transition flex items-center gap-1 cursor-pointer"
               >
                 <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
                 <span>Upgrade</span>

@@ -1000,9 +1000,9 @@ export default function GuestsPage() {
                         type="button"
                         onClick={() => handleCopyGuestLink(guest)}
                         disabled={!isPublished}
-                        className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1 ${
+                        className={`px-3 py-2 min-h-[36px] sm:min-h-[32px] sm:px-2.5 sm:py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1 touch-manipulation ${
                           isPublished
-                            ? "bg-stone-100 hover:bg-stone-200 text-stone-700 cursor-pointer"
+                            ? "bg-stone-100 hover:bg-stone-200 text-stone-700 cursor-pointer active:scale-95"
                             : "bg-stone-100/60 text-stone-400 border border-stone-200/50 select-none pointer-events-none"
                         }`}
                       >
@@ -1469,8 +1469,8 @@ export default function GuestsPage() {
                   <span className="text-[10px] text-stone-400">Menampilkan hingga 5 baris pertama</span>
                 </div>
 
-                <div className="border border-stone-200 rounded-xl overflow-hidden text-[11px]">
-                  <table className="w-full text-left divide-y divide-stone-200">
+                <div className="border border-stone-200 rounded-xl overflow-x-auto text-[11px]">
+                  <table className="w-full min-w-[340px] text-left divide-y divide-stone-200">
                     <thead className="bg-stone-50 text-stone-600 font-bold">
                       <tr>
                         <th className="px-3 py-2">Nama</th>

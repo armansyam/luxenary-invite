@@ -645,9 +645,13 @@ export async function composeTemplateData(invitationId: string) {
             width: 34px !important; height: 34px !important; border-radius: 50% !important; font-size: 1rem !important; cursor: pointer !important;
             display: flex !important; align-items: center !important; justify-content: center !important;
           }
-          .gallery-modal-grid { columns: 4 !important; column-gap: 5px !important; }
+          .gallery-modal-grid { columns: 4 !important; column-gap: 8px !important; }
+          @media (max-width: 640px) {
+            .gallery-modal-backdrop { padding: calc(1.5rem + env(safe-area-inset-top, 0px)) 1rem calc(2rem + env(safe-area-inset-bottom, 0px)) !important; }
+            .gallery-modal-grid { columns: 2 !important; column-gap: 8px !important; }
+          }
           .full-gallery-item {
-            break-inside: avoid !important; margin-bottom: 5px !important; overflow: hidden !important; border-radius: 6px !important; cursor: pointer !important;
+            break-inside: avoid !important; margin-bottom: 8px !important; overflow: hidden !important; border-radius: 6px !important; cursor: pointer !important;
             border: 1px solid rgba(255,255,255,0.12) !important;
           }
           .full-gallery-item img { width: 100% !important; height: auto !important; display: block !important; transition: transform 0.35s !important; }
@@ -657,14 +661,15 @@ export async function composeTemplateData(invitationId: string) {
           .lux-zoom-backdrop {
             position: fixed !important; inset: 0 !important; z-index: 99999 !important; background: rgba(0,0,0,0.96) !important; backdrop-filter: blur(16px) !important;
             display: flex !important; align-items: center !important; justify-content: center !important; opacity: 0 !important; visibility: hidden !important; transition: all 0.3s ease !important;
-            padding: 1.5rem 1rem !important; touch-action: none !important; overscroll-behavior: contain !important;
+            padding: calc(1.5rem + env(safe-area-inset-top, 0px)) 1rem calc(1.5rem + env(safe-area-inset-bottom, 0px)) !important; touch-action: none !important; overscroll-behavior: contain !important;
           }
           .lux-zoom-backdrop.open { opacity: 1 !important; visibility: visible !important; }
           .lux-zoom-close {
-            position: fixed !important; top: 18px !important; right: 18px !important; background: rgba(35,35,38,0.85) !important; backdrop-filter: blur(10px) !important;
-            border: 1px solid rgba(255,255,255,0.1) !important; color: #fff !important; width: 42px !important; height: 42px !important; border-radius: 50% !important;
+            position: fixed !important; top: calc(18px + env(safe-area-inset-top, 0px)) !important; right: calc(18px + env(safe-area-inset-right, 0px)) !important; background: rgba(35,35,38,0.85) !important; backdrop-filter: blur(10px) !important;
+            border: 1px solid rgba(255,255,255,0.1) !important; color: #fff !important; width: 44px !important; height: 44px !important; border-radius: 50% !important;
             font-size: 1.2rem !important; cursor: pointer !important; z-index: 100000 !important; display: flex !important; align-items: center !important; justify-content: center !important;
             box-shadow: 0 4px 20px rgba(0,0,0,0.6) !important; transition: transform 0.2s !important;
+            touch-action: manipulation !important;
           }
           .lux-zoom-close:hover { transform: scale(1.08) !important; background: #ffffff !important; color: #070709 !important; }
           .lux-zoom-nav {

@@ -266,7 +266,7 @@ export default function ClientDashboardLayout({
       {/* Apple-Style Transparent Floating Liquid Glass Dock (Universal Mobile & Desktop) */}
       <nav 
         aria-label="Navigasi Utama"
-        className={`fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+        className={`fixed bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:bottom-6 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
           isDockVisible
             ? "translate-y-0 opacity-100 pointer-events-auto"
             : "translate-y-24 opacity-0 pointer-events-none"
