@@ -106,22 +106,39 @@ export async function POST(req: Request) {
       }
     }
 
-    // 4. Cek tidak ada upgrade order yang masih PENDING untuk invitation ini
-    const pendingUpgrade = await prisma.order.findFirst({
+    // 4. Cegah spam / duplikasi jika ada permintaan upgrade yang sedang menunggu verifikasi admin
+    const pendingWithProof = await prisma.order.findFirst({
       where: {
         userId,
         orderType: "UPGRADE",
         linkedOrderId: currentOrder.id,
         status: "PENDING",
+        proofImageUrl: { not: null },
       },
     });
 
-    if (pendingUpgrade) {
+    if (pendingWithProof) {
       return NextResponse.json({
-        error: "Anda sudah memiliki permintaan upgrade yang sedang menunggu pembayaran.",
-        pendingOrderId: pendingUpgrade.id,
-      }, { status: 400 });
+        error: "Anda memiliki tagihan upgrade yang sedang menunggu verifikasi admin.",
+        pendingOrderId: pendingWithProof.id,
+        paymentUrl: `/payment?order=${pendingWithProof.id}`,
+      }, { status: 409 });
     }
+
+    // Tandai expired pesanan upgrade PENDING lama yang belum dibayar dan tanpa bukti transfer
+    await prisma.order.updateMany({
+      where: {
+        userId,
+        orderType: "UPGRADE",
+        linkedOrderId: currentOrder.id,
+        status: "PENDING",
+        proofImageUrl: null,
+      },
+      data: {
+        status: "EXPIRED",
+        rejectReason: "Digantikan oleh pesanan upgrade baru",
+      },
+    });
 
     // 5. Buat order UPGRADE baru
     const invoiceNumber = `UPG-${Date.now().toString(36).toUpperCase()}-${userId.slice(0, 6).toUpperCase()}`;
@@ -139,6 +156,7 @@ export async function POST(req: Request) {
         status: "PENDING",
         paymentMethod: resolvedPaymentMethod, // Dinamis dari AdminSetting payment_mode
         requestedDomain: cleanDomain || undefined,
+        checkoutConfirmedAt: new Date(),
       },
     });
 
@@ -150,7 +168,7 @@ export async function POST(req: Request) {
       targetPlan: targetPlanUpper,
       amount: upgradeAmount,
       requestedDomain: cleanDomain,
-      paymentUrl: `/checkout?order=${upgradeOrder.id}`,
+      paymentUrl: `/payment?order=${upgradeOrder.id}`,
       message: `Upgrade dari ${currentPlan} ke ${targetPlanUpper}${cleanDomain ? ` + Custom Domain (${cleanDomain})` : ""}. Nominal: Rp ${upgradeAmount.toLocaleString("id-ID")}`,
     });
 

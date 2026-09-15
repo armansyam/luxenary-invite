@@ -280,7 +280,22 @@ function CheckoutContent() {
             setServerTimeOffset(currentOffset);
           }
 
-          if (orderStatusData.orderType === "GALLERY_EXTENSION") {
+          let parsedItems: any[] = [];
+          if (orderStatusData.itemsJson) {
+            try {
+              parsedItems = JSON.parse(orderStatusData.itemsJson);
+            } catch {}
+          }
+
+          if (Array.isArray(parsedItems) && parsedItems.length > 0) {
+            const itemLabels = parsedItems.map((it: any) => it.label).join(" • ");
+            setCurrentPlanType(orderStatusData.planType || "BUNDLE");
+            setPlanData({
+              name: parsedItems.length === 1 ? parsedItems[0].label : "Paket Layanan Terpadu (Bundle)",
+              price: Number(orderStatusData.amount),
+              desc: itemLabels,
+            });
+          } else if (orderStatusData.orderType === "GALLERY_EXTENSION") {
             setCurrentPlanType("EXTEND_GALLERY");
             setPlanData({
               name: "Perpanjang Galeri Tamu (+30 Hari)",

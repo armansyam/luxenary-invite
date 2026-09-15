@@ -308,9 +308,19 @@ export async function applyUpgradePlan(paidOrderId: string): Promise<void> {
   if (order.orderType !== "UPGRADE") return;
   if (!order.linkedOrderId || !order.targetPlanType) return;
 
+  // Resolusi ID order lama: linkedOrderId bisa berupa ID Order atau ID Invitation
+  let targetOrderIdToUpdate = order.linkedOrderId;
+  const possibleInv = await prisma.invitation.findUnique({
+    where: { id: order.linkedOrderId },
+    select: { orderId: true },
+  });
+  if (possibleInv?.orderId) {
+    targetOrderIdToUpdate = possibleInv.orderId;
+  }
+
   // Update planType di order LAMA → tier baru aktif
   await prisma.order.update({
-    where: { id: order.linkedOrderId },
+    where: { id: targetOrderIdToUpdate },
     data: { planType: order.targetPlanType },
   });
 

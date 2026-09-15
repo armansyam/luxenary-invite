@@ -23,6 +23,9 @@ interface Props {
   pendingOrder?: PendingGalleryOrderInfo | null;
   onRefresh?: () => void;
   onOpenAddonModal?: () => void;
+  eventDate?: string | Date | null;
+  planType?: string | null;
+  extraGalleryDays?: number;
 }
 
 type Phase = "idle" | "confirming" | "fetching" | "downloading" | "zipping" | "locking" | "done" | "error";
@@ -38,6 +41,9 @@ export function MemoriesDownloadSection({
   pendingOrder = null,
   onRefresh,
   onOpenAddonModal,
+  eventDate,
+  planType,
+  extraGalleryDays = 0,
 }: Props) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>("idle");
@@ -282,15 +288,67 @@ export function MemoriesDownloadSection({
           <span className="text-[11px] font-bold text-stone-700 block font-mono uppercase tracking-wider">
             Status Masa Simpan Foto Galeri Tamu
           </span>
-          <p className="text-xs text-stone-600 mt-1 leading-relaxed">
-            {galleryExpiresAt ? (
-              <>Foto tamu aman disimpan hingga: <strong className="text-purple-700 font-bold">{new Date(galleryExpiresAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</strong> <span className="text-[10px] text-purple-600 font-semibold px-2 py-0.5 rounded-full bg-purple-50 border border-purple-200 ml-1">Extended</span></>
-            ) : normalizedStatus === "DRAFT" ? (
-              <>Standar retensi terpadu: <strong>{retentionDays} hari</strong> (otomatis aktif setelah acara selesai, foto &amp; domain dibersihkan bersamaan).</>
-            ) : (
-              <>Standar retensi terpadu: <strong>{retentionDays} hari</strong> pasca acara (foto, subdomain &amp; domain dibersihkan bersamaan).</>
-            )}
-          </p>
+          {(() => {
+            if (!galleryExpiresAt) {
+              return (
+                <p className="text-xs text-stone-600 mt-1 leading-relaxed">
+                  {normalizedStatus === "DRAFT" ? (
+                    <>Standar retensi terpadu: <strong>{retentionDays} hari</strong> (otomatis aktif setelah acara selesai, foto &amp; domain dibersihkan bersamaan).</>
+                  ) : (
+                    <>Standar retensi terpadu: <strong>{retentionDays} hari</strong> pasca acara (foto, subdomain &amp; domain dibersihkan bersamaan).</>
+                  )}
+                </p>
+              );
+            }
+
+            const currentPlanUpper = (planType || "TRADITIONAL").toUpperCase();
+            const baseDays = currentPlanUpper === "PREMIUM" ? 365 : (currentPlanUpper === "MODERN" ? 90 : 30);
+            const extraDays = Number(extraGalleryDays) > 0
+              ? Number(extraGalleryDays)
+              : (eventDate && galleryExpiresAt
+                  ? Math.max(0, Math.round((new Date(galleryExpiresAt).getTime() - new Date(eventDate).getTime()) / (24 * 60 * 60 * 1000)) - baseDays)
+                  : 0);
+
+            const startDateObj = eventDate
+              ? new Date(eventDate)
+              : new Date(new Date(galleryExpiresAt).getTime() - (baseDays + extraDays) * 24 * 60 * 60 * 1000);
+            const expiryDateObj = new Date(galleryExpiresAt);
+
+            const formatD = (d: Date) => {
+              if (isNaN(d.getTime())) return "-";
+              return d.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+            };
+
+            return (
+              <div className="mt-1 space-y-1">
+                <div className="flex flex-wrap items-center gap-1.5 text-xs text-stone-800">
+                  <span className="font-semibold text-stone-700">Masa Aktif:</span>
+                  <span className="px-2 py-0.5 rounded-md bg-stone-100 border border-stone-200 font-mono text-[11px] text-stone-700 font-bold">
+                    {baseDays} Hari (Default)
+                  </span>
+                  {extraDays > 0 ? (
+                    <>
+                      <span className="text-stone-400 font-bold">+</span>
+                      <span className="px-2 py-0.5 rounded-md bg-purple-50 border border-purple-200 font-mono text-[11px] text-purple-800 font-bold">
+                        Perpanjangan ({extraDays}H)
+                      </span>
+                      <span className="text-[10px] text-purple-700 font-bold px-2 py-0.5 rounded-full bg-purple-100/80 border border-purple-200 ml-0.5">
+                        Extended
+                      </span>
+                    </>
+                  ) : null}
+                </div>
+                <p className="text-[11px] font-mono text-stone-600 flex flex-wrap items-center gap-1">
+                  <span className="text-stone-500">Periode:</span>{" "}
+                  <strong className="text-stone-900">{formatD(startDateObj)}</strong>
+                  <span className="mx-0.5 text-stone-400 font-sans">s.d.</span>
+                  <strong className={extraDays > 0 ? "text-purple-800 font-bold" : "text-stone-900 font-bold"}>
+                    {formatD(expiryDateObj)}
+                  </strong>
+                </p>
+              </div>
+            );
+          })()}
         </div>
         
         {/* State 1: Ada order PENDING dan sudah upload bukti transfer (Menunggu Verifikasi Admin) */}

@@ -265,6 +265,7 @@ export async function POST(req: NextRequest) {
         status: "PENDING",
         paymentMethod: resolvedPaymentMethod,
         expiredAt,
+        checkoutConfirmedAt: new Date(),
         itemsJson: JSON.stringify(items),
       },
     });
@@ -280,6 +281,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: any) {
     console.error("[POST /api/client/orders/checkout-bundle error]:", error);
-    return NextResponse.json({ error: "Terjadi kesalahan saat memproses checkout terpadu." }, { status: 500 });
+    return NextResponse.json({ error: `Terjadi kesalahan saat memproses checkout terpadu: ${error?.message || error}` }, { status: 500 });
   }
 }

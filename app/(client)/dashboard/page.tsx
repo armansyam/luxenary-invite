@@ -461,6 +461,10 @@ function DashboardHomeContent() {
     ? Math.ceil((effectiveExpiry.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null;
 
+  const currentPlan = (invitation?.order?.planType || "TRADITIONAL").toUpperCase();
+  const baseRetentionDays = currentPlan === "PREMIUM" ? 365 : (currentPlan === "MODERN" ? 90 : 30);
+  const extraGalleryDays = Number(featureSettings?.extraGalleryDays) || 0;
+
   const addonPricingSettings = platformSettings ? {
     priceTraditional: platformSettings.packages?.find((p: any) => p.id === "TRADITIONAL")?.price ?? 50000,
     priceModern: platformSettings.packages?.find((p: any) => p.id === "MODERN")?.price ?? 150000,
@@ -559,18 +563,26 @@ function DashboardHomeContent() {
 
           {/* Retention Timer Countdown */}
           {(invitation?.status === 'PUBLISHED' || invitation?.status === 'EVENT_FINISHED') && effectiveExpiry && (
-            <div className="flex items-center gap-2 text-[11px] text-stone-500 font-medium pt-0.5">
+            <div className="flex items-center gap-2 text-[11px] text-stone-600 font-medium pt-0.5">
               <svg className="w-3.5 h-3.5 text-stone-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span>
-                Masa Simpan Sistem (Retensi 14 Hari Pasca Acara):{" "}
-                {daysRemaining !== null && daysRemaining > 0 ? (
-                  <strong className="text-stone-800 font-bold">{daysRemaining} hari lagi</strong>
+                {extraGalleryDays > 0 ? (
+                  <>
+                    Masa Simpan: <strong className="text-stone-800">{baseRetentionDays} Hari (Default)</strong> + <strong className="text-purple-800 font-bold">Perpanjangan ({extraGalleryDays}H)</strong> : {latestEventDate ? latestEventDate.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : "-"} s.d. {effectiveExpiry.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })} <span className="text-stone-500 font-mono">({daysRemaining !== null && daysRemaining > 0 ? `${daysRemaining} hari lagi` : "Menunggu jadwal pembersihan"})</span>
+                  </>
                 ) : (
-                  <strong className="text-amber-800 font-bold">Menunggu jadwal pembersihan</strong>
+                  <>
+                    Masa Simpan Sistem (Retensi {baseRetentionDays} Hari Pasca Acara):{" "}
+                    {daysRemaining !== null && daysRemaining > 0 ? (
+                      <strong className="text-stone-800 font-bold">{daysRemaining} hari lagi</strong>
+                    ) : (
+                      <strong className="text-amber-800 font-bold">Menunggu jadwal pembersihan</strong>
+                    )}
+                    {effectiveExpiry ? ` (hingga ${effectiveExpiry.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })})` : ""}
+                  </>
                 )}
-                {effectiveExpiry ? ` (hingga ${effectiveExpiry.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })})` : ""}
               </span>
             </div>
           )}
@@ -942,6 +954,14 @@ function DashboardHomeContent() {
                   Kapasitas: Jatah {memoriesQuota.shotsQuota} Foto/Tamu • Estimasi: ~{Math.floor(memoriesQuota.remainingPhotos / (memoriesQuota.shotsQuota || 5))} Tamu dapat berpartisipasi (Sisa Kuota: {memoriesQuota.remainingPhotos} foto)
                 </span>
               )}
+              {invitation?.galleryExpiresAt && (
+                <span className="block mt-0.5 text-[11px] font-mono text-stone-700">
+                  Masa Aktif: <strong className="text-stone-800">{baseRetentionDays} Hari (Default)</strong>
+                  {extraGalleryDays > 0 && (
+                    <> + <strong className="text-purple-800 font-bold">Perpanjangan ({extraGalleryDays}H)</strong></>
+                  )} : {latestEventDate ? latestEventDate.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : "-"} s.d. {new Date(invitation.galleryExpiresAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
+                </span>
+              )}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 shrink-0">
@@ -1039,6 +1059,9 @@ function DashboardHomeContent() {
             pendingOrder={pendingGalleryOrder}
             onRefresh={() => fetchGuestMemories()}
             onOpenAddonModal={() => setIsAddonModalOpen(true)}
+            eventDate={latestEventDate ? latestEventDate.toISOString() : null}
+            planType={currentPlan}
+            extraGalleryDays={extraGalleryDays}
           />
         )}
 

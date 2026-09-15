@@ -212,6 +212,7 @@ export async function GET(
       checkoutConfirmedAt: order.checkoutConfirmedAt,
       promoCodeApplied: order.promoCodeApplied,
       discountAmount: order.discountAmount ? Number(order.discountAmount) : 0,
+      itemsJson: order.itemsJson || null,
       isQrisSessionExpired,
       snapToken: isAuthorizedOwner ? order.snapToken : null,
       serverTime: Date.now(),

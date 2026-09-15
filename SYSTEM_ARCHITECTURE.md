@@ -1,5 +1,5 @@
 # PLATFORM UNDANGAN (WHITE-LABEL) — DOKUMENTASI ARSITEKTUR SISTEM
-## Versi: 5.7.1 | Diperbarui: 09 September 2026
+## Versi: 5.7.2 | Diperbarui: 15 September 2026
 
 > **SUMBER KEBENARAN TUNGGAL** untuk semua developer dan AI Agent yang bekerja di repositori ini.  
 > Dokumen ini WAJIB dibaca sebelum melakukan perubahan apapun pada kode.  
@@ -836,9 +836,11 @@ CLIENT (auth required, role=USER):
   POST      /api/client/guests/bulk         → Import tamu massal (CSV/JSON, max 500 baris, auto slug, qrToken, tableNumber; didukung modal UI client Drag & Drop CSV + generator template + integrasi Web Contact Picker API untuk ponsel Android)
   GET       /api/client/subdomain/check     → Cek ketersediaan subdomain
   POST      /api/client/upload             → Upload media undangan (WebP Sharp, MP4 H.264 FFmpeg Loop maks 20s & 30MB, MP3 Audio wedding-song.mp3 maks 20MB via storage.ts; penamaan slot deterministik & clean overwrite otomatis)
-  GET       /api/client/rsvps             → Statistik RSVP
   GET       /api/client/orders            → List order client
+  POST      /api/client/orders/checkout-bundle → Penerbitan tagihan terpadu 1-Invoice multi-layanan (Upgrade Paket, Perpanjangan Galeri, dan Top-Up Kuota Foto Acara) dengan itemsJson terstruktur & auto-supersede order lama
+  GET       /api/client/orders/{id}/status → Cek status tagihan terpadu (menyertakan itemsJson rincian layanan)
   POST      /api/client/memories/extend   → Buat order perpanjangan galeri (+30 hari via QRIS)
+  POST      /api/payments/upgrade         → Upgrade paket undangan mandiri dengan auto-supersede & checkoutConfirmedAt
   POST      /api/client/custom-domain/buy → Beli add-on Jasa Integrasi Custom Domain
   (Catatan WA: Route wa-link dihapus; digantikan client-side wa.me direct linking + auto-format +62)
 
@@ -948,6 +950,8 @@ Field Kritis di Order:
   gatewayTxId     String?   ← ID transaksi di sisi gateway (untuk cancel API saat switch gateway)
   linkedOrderId   String?   ← Referensi ID order lama (saat UPGRADE) atau ID invitation (saat GALLERY_EXTENSION / CUSTOM_DOMAIN)
   requestedDomain String?   ← Nama domain yang direquest oleh klien saat memesan add-on Custom Domain
+  itemsJson       String?   ← JSON array rincian layanan multi-item (UPGRADE, GALLERY_EXTENSION, MEMORIES_TOPUP) pada tagihan terpadu
+  checkoutConfirmedAt DateTime? ← Timestamp konfirmasi checkout klien untuk validasi proteksi anti-bounce di /payment
 
 Field Kritis di Invitation:
   invitationSlug  @unique   ← Flat slug canonical: dimas-clarissa-030326

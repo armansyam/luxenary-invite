@@ -121,6 +121,14 @@ function PaymentContent() {
       setOrder(data);
       setUploadedProofUrl(data.proofImageUrl || null);
 
+      // ORDER-LEVEL PAYMENT METHOD LOCK:
+      // Selaraskan tampilan kasir pembayaran dengan metode yang tertera pada order
+      if (data.paymentMethod === "MANUAL_TRANSFER" || Boolean(data.proofImageUrl)) {
+        setPaymentMode("MANUAL");
+      } else if (data.paymentMethod === "GATEWAY") {
+        setPaymentMode("GATEWAY");
+      }
+
       // Parse Snap Token jika QRIS
       if (data.snapToken) {
         try {
@@ -153,7 +161,7 @@ function PaymentContent() {
 
   // Inisialisasi QRIS jika belum ada snapToken
   const initQrisGateway = useCallback(async () => {
-    if (!orderId || qrData || paymentMode !== "GATEWAY" || !order) return;
+    if (!orderId || qrData || paymentMode !== "GATEWAY" || !order || order.paymentMethod === "MANUAL_TRANSFER") return;
     try {
       const res = await fetch("/api/payments/checkout", {
         method: "POST",

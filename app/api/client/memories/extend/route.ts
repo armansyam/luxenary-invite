@@ -142,6 +142,7 @@ export async function POST(req: NextRequest) {
         paymentMethod: resolvedPaymentMethod,
         linkedOrderId: invitation.id,
         expiredAt,
+        checkoutConfirmedAt: new Date(),
       },
     });
 
@@ -150,8 +151,8 @@ export async function POST(req: NextRequest) {
       orderId: newOrder.id,
       invoiceNumber: newOrder.invoiceNumber,
       amount: extensionPrice,
-      paymentUrl: `/checkout?order=${newOrder.id}`,
-      message: "Order perpanjangan galeri berhasil dibuat. Silakan lanjutkan ke pembayaran QRIS.",
+      paymentUrl: `/payment?order=${newOrder.id}`,
+      message: "Order perpanjangan galeri berhasil dibuat. Silakan lanjutkan ke pembayaran.",
     });
   } catch (error: any) {
     console.error("[Extend Memories Order Error]", error);
