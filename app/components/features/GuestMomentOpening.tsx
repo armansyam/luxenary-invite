@@ -334,12 +334,12 @@ export default function GuestMomentOpening({
       }}
     >
       {/* Top Bar Minimalis */}
-      <header className="w-full max-w-sm flex items-center justify-between py-2 text-stone-500 text-xs">
+      <header className="w-full max-w-sm flex items-center justify-between py-1 text-stone-400 text-xs">
         <Link
           href={backUrl}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-stone-200/50 hover:bg-stone-200 text-stone-700 font-medium transition cursor-pointer"
+          className="inline-flex items-center gap-1 text-stone-500 hover:text-stone-900 transition text-xs font-medium"
         >
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
           <span>Undangan</span>
@@ -347,19 +347,19 @@ export default function GuestMomentOpening({
 
         <Link
           href={galleryUrl}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-stone-200/50 hover:bg-stone-200 text-stone-700 font-medium transition cursor-pointer"
+          className="inline-flex items-center gap-1 text-stone-500 hover:text-stone-900 transition text-xs font-medium"
         >
           <span>Galeri Tamu</span>
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         </Link>
       </header>
 
       {/* Main Content Showcase */}
-      <main className="w-full max-w-sm flex flex-col items-center my-auto py-4 space-y-5">
-        {/* Frame Foto Mempelai Utama */}
-        <div className="relative w-full aspect-[4/5] rounded-[28px] overflow-hidden shadow-2xl border-4 border-white/80 bg-stone-100 group transition-transform duration-500 hover:scale-[1.01]">
+      <main className="w-full max-w-sm flex flex-col items-center my-auto py-2 space-y-5">
+        {/* Foto Mempelai Murni (Tanpa Frame Card / Tanpa Border Putih) */}
+        <div className="relative w-full aspect-[4/5] rounded-[24px] overflow-hidden shadow-md">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={activeCover}
@@ -369,19 +369,10 @@ export default function GuestMomentOpening({
               (e.currentTarget as HTMLImageElement).src = defaultCoverFallback;
             }}
           />
-          {/* Subtle vignette border gradient */}
-          <div className="absolute inset-0 ring-1 ring-black/5 rounded-[24px] pointer-events-none" />
-
-          {/* Badge Mode Uji Coba Klien jika aktif */}
-          {isTestMode && (
-            <div className="absolute top-3 left-3 bg-amber-500/90 backdrop-blur-md text-stone-950 text-[10px] font-bold px-2.5 py-1 rounded-full shadow-md uppercase tracking-wider">
-              Mode Uji Coba Klien
-            </div>
-          )}
         </div>
 
         {/* Typographic Header & Retro Date */}
-        <div className="text-center space-y-1 px-2">
+        <div className="text-center space-y-1.5 px-2">
           <h1 className="text-2xl sm:text-3xl font-serif font-bold tracking-tight text-stone-900 leading-tight">
             {coupleName}
             <span className="block text-base sm:text-lg font-normal font-sans text-stone-600 mt-0.5">
@@ -390,11 +381,20 @@ export default function GuestMomentOpening({
           </h1>
 
           {/* Retro Analog Date Stamp */}
-          <div className="pt-2 flex items-center justify-center gap-2">
-            <span className="inline-block px-3 py-1 bg-stone-200/60 rounded-md font-mono text-xs font-bold text-stone-700 tracking-[0.25em]">
+          <div className="pt-1.5 flex items-center justify-center gap-2">
+            <span className="inline-block px-3 py-1 bg-stone-200/70 rounded-md font-mono text-xs font-bold text-stone-700 tracking-[0.25em]">
               {getRetroDateStamp()}
             </span>
           </div>
+
+          {/* Badge Mode Uji Coba Klien jika aktif (di bawah tanggal, tidak menutupi foto) */}
+          {isTestMode && (
+            <div className="pt-1">
+              <span className="inline-block px-2.5 py-0.5 bg-amber-100 border border-amber-300 text-amber-900 text-[10px] font-mono uppercase tracking-wider rounded-full font-bold">
+                Mode Uji Coba Klien
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Interactive Action Area */}
