@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 interface UnifiedAddonModalProps {
@@ -60,7 +60,16 @@ export default function UnifiedAddonModal({
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
 
-  if (!isOpen) return null;
+  // Reset form state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setTargetPlan("");
+      setExtensionMonths(0);
+      setTopupBatches(0);
+      setErrorMessage("");
+      setIsSubmitting(false);
+    }
+  }, [isOpen]);
 
   // Kalkulasi Harga Upgrade
   const upgradeCost = useMemo(() => {
@@ -119,6 +128,8 @@ export default function UnifiedAddonModal({
       setIsSubmitting(false);
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-stone-950/80 backdrop-blur-md animate-in fade-in duration-200">
