@@ -424,15 +424,33 @@ Cron job dilindungi oleh header `Authorization: Bearer <CRON_SECRET>` atau sesi 
   - **Mode AUTO (Default):** Otomatis beralih ke `/memories` pada H+1 pasca tanggal acara paling akhir (`getLatestEventDate(eventData)`).
   - **Mode MANUAL:** Dapat di-switch seketika oleh klien melalui tombol toggle di Studio Editor Seksi 14.
 
-### 6.3.2 — Siklus Jadwal Buka Kamera Momen Tamu (`/sharemoment`) & Anti-Redundansi Dasbor
-1. **Penyelarasan Waktu Aktif Kamera (`getMemoriesActiveSchedule`):**
-   - **Mode Auto-Sync (Default):** Kamera momen candid tamu aktif otomatis mengikuti tanggal & jam acara pernikahan pada `eventData`.
-   - **Mode Kustom Jam Mandiri (`memoriesCustomSchedule`):** Mempelai dapat menentukan secara spesifik jam buka kamera (`memoriesStartTime`) dan jam penutupan sesi (`memoriesEndTime`).
-2. **Layar Jadwal Pra-Acara (Pre-Event Scheduled Card):**
-   - Jika tamu publik mengakses `/[slug]/sharemoment` sebelum waktu pembukaan (`now < startTime`), sistem menyajikan Card Jadwal Pembukaan yang elegan dengan informasi waktu resmi dan tombol kembali ke undangan.
-   - Pengecualian Simulasi Klien (`?test=true`): Mempelai tetap dapat menguji coba kamera secara bebas sebelum hari H dengan indikator penanda *Mode Simulasi Klien*.
+### 6.3.2 — Siklus Jadwal Buka Kamera Momen Tamu (`/sharemoment`), Layar Pembuka Editorial, & Studio Cetak QR
+
+1. **Layar Pembuka Editorial (Editorial Pre-Camera Opening Screen — `GuestMomentOpening.tsx`):**
+   - **Anti-Aggressive Permission Guard:** Tamu yang membuka link atau memindai QR code tidak langsung ditembak oleh browser request kamera `getUserMedia()`. Halaman menyambut tamu terlebih dahulu dengan tampilan sambutan editorial yang estetik. Sensor kamera hanya diaktifkan setelah tamu menekan tombol **"Mulai motret →"**.
+   - **3 Model Pilihan Layar Opening:**
+     1. `editorial_showcase`: Frame foto lengkung 4:5 di tengah, tipografi bold editorial serif, cap tanggal retro, dan tombol kapsul gelap (Desain Morements).
+     2. `cinematic_hero`: Foto mempelai fullscreen dengan gradient vignette dramatis dan floating glassmorphism action card.
+     3. `polaroid_nostalgia`: Frame foto polaroid instan miring dengan stempel tanggal analog di sudut bawah foto.
+   - **Sinkronisasi Jadwal Hari H & Countdown:** Jika diakses sebelum jam acara (`now < startTime`), layar menampilkan *live countdown* pembukaan kamera dan info jadwal resmi (dapat di-bypass dengan `?test=true` untuk simulasi klien).
+
+2. **Studio Desain Kartu Meja & Standing Banner Barcode (`PrintableQRCardModal.tsx`):**
+   - **4 Format Ukuran Standar Percetakan:**
+     1. **A3 (29.7 × 42.0 cm):** Standing Easel Banner / Welcome Sign di samping meja resepsionis atau gerbang masuk ballroom.
+     2. **A4 (21.0 × 29.7 cm):** Table Standee Akrilik di meja buffet, meja kado, atau meja photobooth.
+     3. **A5 (14.8 × 21.0 cm):** Tent Card Meja Lipat Segitiga di atas masing-masing meja tamu VIP.
+     4. **4R (10.2 × 15.2 cm):** Mini Akrilik untuk meja bundar (*round table*).
+   - **4 Model Desain Kartu Cetak:**
+     1. `warm_editorial`: Palet warm ivory, bingkai rounded, QR vector tajam, tipografi serif bold.
+     2. `modern_minimalist`: Monokrom studio putih bersih, garis pemisah hairline, crosshair presisi.
+     3. `royal_heritage`: Bingkai kubah emas (gold arch), palet champagne, tipografi roman klasik.
+     4. `retro_polaroid`: Frame foto instan vintage dengan stempel stiker dan cap tanggal retro.
+   - **Kustomisasi Foto Opening & Teks Mandiri:** Klien dapat mengunggah foto vertikal khusus untuk layar opening (`featureSettings.memoriesCoverPhoto`), serta menyesuaikan eyebrow header dan petunjuk tamu.
+   - **Ekspor Resolusi Tinggi 300 DPI:** Generator merender layout kartu ke Canvas beresolusi cetak tinggi (2480×3508px) untuk hasil print yang tajam tanpa pecah, serta integrasi `@media print` untuk cetak langsung via browser.
+
 3. **Penyelarasan Kartu Dasbor Klien:**
    - Menghapus kartu duplikat Galeri Kenangan di grid navigasi cepat atas dan memfokuskan grid menjadi **3 kolom bersih (`md:grid-cols-3`)**: Studio Editor, Buku Tamu, dan RSVP.
+   - Tombol **"Studio Cetak Kartu & Banner"** tersedia langsung pada kartu *QR Guest Moment* di dasbor klien untuk memudahkan klien merancang dan mencetak materi dekorasi meja kapan saja (baik status DRAFT maupun PUBLISHED).
    - Seluruh instrumen pemantauan, tautan album publik, masa simpan, dan unduh ZIP terpusat penuh di Seksi 5 Dasbor Klien.
 
 ### 6.4 — Dasbor Klien 1 Halaman Rangkuman & Arsip Digital (`/dashboard` saat `ARCHIVED`)

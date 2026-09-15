@@ -4306,6 +4306,45 @@ export default function EditInvitation() {
                         />
                       </div>
                     </div>
+
+                    {/* Foto Khusus Opening Kamera Tamu */}
+                    <div className="pt-2 flex flex-wrap items-center justify-between gap-3 bg-stone-50/60 p-3.5 rounded-xl border border-stone-200/60">
+                      <div>
+                        <span className="text-xs font-bold text-stone-800 block">Foto Khusus Layar Opening (/sharemoment):</span>
+                        <span className="text-[11px] text-stone-500">Tampilkan foto potret khusus untuk layar pembuka tamu (opsional, default memakai foto cover)</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {Boolean(getFeatureSetting("memoriesCoverPhoto", "")) && (
+                          <div className="w-8 h-10 rounded-lg overflow-hidden border border-stone-300 shadow-xs relative">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={getFeatureSetting("memoriesCoverPhoto", "")} alt="Cover Preview" className="w-full h-full object-cover" />
+                          </div>
+                        )}
+                        <label className="cursor-pointer px-3 py-1.5 bg-white border border-stone-200 hover:border-amber-500 rounded-lg text-xs font-bold text-stone-700 hover:text-amber-800 transition">
+                          <span>{getFeatureSetting("memoriesCoverPhoto", "") ? "Ganti Foto Opening" : "Unggah Foto Opening"}</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file || !invitation?.id) return;
+                              const fd = new FormData();
+                              fd.append("file", file);
+                              fd.append("invitationId", invitation.id);
+                              fd.append("slot", "MEMORIES_COVER");
+                              try {
+                                const res = await fetch("/api/client/upload", { method: "POST", body: fd });
+                                if (res.ok) {
+                                  const d = await res.json();
+                                  updateFeatureSetting("memoriesCoverPhoto", d.localPath || d.mediaUrl);
+                                }
+                              } catch {}
+                            }}
+                          />
+                        </label>
+                      </div>
+                    </div>
                   </div>
 
                 {/* ── B. PENGATURAN KUOTA DINAMIS: TAMU KONTRIBUTOR × ROLL LIMIT ── */}

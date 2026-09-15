@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
+import GuestMomentOpening from "./GuestMomentOpening";
 
 export interface DisposableCameraViewfinderProps {
   invitationId: string;
@@ -21,6 +22,7 @@ export interface DisposableCameraViewfinderProps {
   startTime?: string | null;
   endTime?: string | null;
   isTestMode?: boolean;
+  openingLayout?: "editorial_showcase" | "cinematic_hero" | "polaroid_nostalgia";
   onPhotoUploaded?: (newMemory: any) => void;
 }
 
@@ -108,6 +110,7 @@ function playShutterSound() {
 export default function DisposableCameraViewfinder({
   invitationId,
   coupleName,
+  coverUrl,
   galleryUrl,
   backUrl,
   filterId = "aura_90s",
@@ -121,6 +124,7 @@ export default function DisposableCameraViewfinder({
   startTime = null,
   endTime = null,
   isTestMode = false,
+  openingLayout = "editorial_showcase",
   onPhotoUploaded,
 }: DisposableCameraViewfinderProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -129,6 +133,7 @@ export default function DisposableCameraViewfinder({
   const fallbackInputRef = useRef<HTMLInputElement>(null);
 
   // States
+  const [hasStartedCamera, setHasStartedCamera] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
@@ -235,13 +240,16 @@ export default function DisposableCameraViewfinder({
   }, [facingMode]);
 
   useEffect(() => {
-    startCamera();
+    if (hasStartedCamera) {
+      startCamera();
+    }
     return () => {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
       }
     };
-  }, [startCamera]);
+  }, [hasStartedCamera, startCamera]);
 
   // Toggle Torch
   const toggleTorch = async () => {
@@ -533,71 +541,21 @@ export default function DisposableCameraViewfinder({
   const parsedEndTime = endTime ? new Date(endTime) : null;
   const isAfterEvent = !isTestMode && parsedEndTime !== null && !isNaN(parsedEndTime.getTime()) && now > new Date(parsedEndTime.getTime() + 15 * 60 * 1000);
 
-  // ── RENDER LAYAR SEBELUM ACARA (BELUM DIBUKA) ──
-  if (isBeforeEvent) {
+  // ── RENDER LAYAR PEMBUKA EDITORIAL (JIKA BELUM MENEKAN MULAI MOTRET) ──
+  if (!hasStartedCamera) {
     return (
-      <div className="min-h-screen bg-stone-950 text-stone-100 flex flex-col items-center justify-center p-6 text-center">
-        <div className="max-w-md w-full bg-stone-900/90 border border-amber-500/20 rounded-3xl p-8 shadow-2xl space-y-5">
-          <div className="w-16 h-16 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center mx-auto shadow-inner">
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-          </div>
-          <div>
-            <span className="inline-block px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] font-mono uppercase tracking-widest rounded-full font-bold mb-3">
-              Jadwal Kamera Momen
-            </span>
-            <h2 className="text-xl font-bold font-serif text-white">Kamera Momen Belum Dibuka</h2>
-            <p className="text-xs text-stone-400 leading-relaxed mt-2">
-              Sesi foto kenangan candid untuk pernikahan {coupleName || "mempelai"} akan dibuka otomatis pada hari H acara. Silakan kembali mengakses halaman ini saat acara dimulai.
-            </p>
-          </div>
-
-          <div className="bg-stone-950/70 border border-white/10 rounded-2xl p-4 text-center space-y-1">
-            <span className="text-[10px] uppercase font-mono tracking-wider text-amber-400 block font-bold">Waktu Pembukaan Akses</span>
-            <p className="text-sm font-bold text-white">
-              {parsedStartTime?.toLocaleDateString("id-ID", {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })}
-            </p>
-            <p className="text-xs text-stone-400 font-mono">
-              Pukul {parsedStartTime?.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} WIB
-            </p>
-          </div>
-
-          <div className="space-y-2 pt-2">
-            <Link href={backUrl} className="block w-full py-3 bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold rounded-xl text-xs transition">
-              Kembali ke Undangan
-            </Link>
-            <Link href={galleryUrl} className="block w-full py-2.5 bg-stone-800/80 hover:bg-stone-800 text-stone-300 font-bold rounded-xl text-xs transition">
-              Lihat Galeri Kenangan
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ── RENDER LAYAR TERKUNCI / SELESAI (JIKA STATUS LOCKED ATAU MELEBIHI JADWAL) ──
-  if (isUploadLocked || isAfterEvent) {
-    return (
-      <div className="min-h-screen bg-stone-950 text-stone-100 flex flex-col items-center justify-center p-6 text-center">
-        <div className="max-w-md w-full bg-stone-900/90 border border-white/10 rounded-3xl p-8 shadow-2xl space-y-4">
-          <div className="w-16 h-16 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto">
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-          </div>
-          <h2 className="text-xl font-bold font-serif text-white">Sesi Kamera Selesai</h2>
-          <p className="text-xs text-stone-400 leading-relaxed">
-            Waktu memotret telah ditutup oleh penyelenggara. Seluruh foto momen candid dari para tamu telah dikumpulkan di galeri.
-          </p>
-          <Link href={galleryUrl} className="block w-full py-3 bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold rounded-xl text-xs transition">
-            Lihat Galeri Kenangan
-          </Link>
-        </div>
-      </div>
+      <GuestMomentOpening
+        coupleName={coupleName}
+        coverUrl={coverUrl}
+        startTime={startTime}
+        endTime={endTime}
+        isTestMode={isTestMode}
+        isUploadLocked={isUploadLocked}
+        layoutId={openingLayout}
+        backUrl={backUrl}
+        galleryUrl={galleryUrl}
+        onStartCamera={() => setHasStartedCamera(true)}
+      />
     );
   }
 
@@ -622,9 +580,19 @@ export default function DisposableCameraViewfinder({
             <Link href={galleryUrl} className="block w-full py-3 bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold rounded-xl text-xs transition">
               Lihat Galeri Kenangan
             </Link>
-            <Link href={backUrl} className="block w-full py-2.5 bg-stone-800/80 hover:bg-stone-800 text-stone-300 font-bold rounded-xl text-xs transition">
-              Kembali ke Undangan
-            </Link>
+            <button
+              type="button"
+              onClick={() => {
+                if (streamRef.current) {
+                  streamRef.current.getTracks().forEach((track) => track.stop());
+                  streamRef.current = null;
+                }
+                setHasStartedCamera(false);
+              }}
+              className="block w-full py-2.5 bg-stone-800/80 hover:bg-stone-800 text-stone-300 font-bold rounded-xl text-xs transition cursor-pointer"
+            >
+              Kembali ke Layar Pembuka
+            </button>
           </div>
         </div>
       </div>
@@ -656,13 +624,21 @@ export default function DisposableCameraViewfinder({
 
       {/* ── 1. HEADER ATAS KAMERA ── */}
       <header className="relative z-20 flex items-center justify-between px-4 py-3 bg-stone-950/80 backdrop-blur-md border-b border-white/5">
-        <Link
-          href={backUrl}
-          className="w-9 h-9 rounded-full bg-stone-900 border border-white/10 flex items-center justify-center text-stone-300 hover:text-white transition"
-          aria-label="Kembali"
+        <button
+          type="button"
+          onClick={() => {
+            if (streamRef.current) {
+              streamRef.current.getTracks().forEach((track) => track.stop());
+              streamRef.current = null;
+            }
+            setHasStartedCamera(false);
+          }}
+          className="w-9 h-9 rounded-full bg-stone-900 border border-white/10 flex items-center justify-center text-stone-300 hover:text-white transition cursor-pointer"
+          aria-label="Tutup Kamera"
+          title="Kembali ke Layar Pembuka"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-        </Link>
+        </button>
 
         <div className="text-center">
           <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-amber-400 font-bold">

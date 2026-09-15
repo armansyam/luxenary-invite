@@ -41,8 +41,8 @@ export default async function GuestMemoriesStandalonePage({ params, searchParams
         orderBy: { createdAt: "desc" },
       },
       media: {
-        where: { mediaSlot: "LANDING_COVER" },
-        take: 1
+        where: { mediaSlot: { in: ["LANDING_COVER", "HOME_PHOTO", "GROOM_PHOTO", "BRIDE_PHOTO", "GALLERY"] } },
+        take: 5,
       }
     },
   });
@@ -54,13 +54,7 @@ export default async function GuestMemoriesStandalonePage({ params, searchParams
   const memories: any[] = invitation.guestMemories || [];
   const coupleName = `${invitation.groomNickname || "Mempelai Pria"} & ${invitation.brideNickname || "Mempelai Wanita"}`;
   
-  const coverMedia = invitation.media && invitation.media.length > 0 ? invitation.media[0] : null;
-  const coverUrl = coverMedia?.localPath || undefined;
-
-  const backUrl = `/s/${invitation.subdomain!}`;
-  const galleryUrl = `/s/${invitation.subdomain!}/memories`;
-
-  // Parse featureSettings
+  // Parse featureSettings terlebih dahulu untuk membaca custom memoriesCoverPhoto
   const fs = (() => {
     try {
       return typeof invitation.featureSettings === "object"
@@ -70,6 +64,12 @@ export default async function GuestMemoriesStandalonePage({ params, searchParams
       return {};
     }
   })();
+
+  const coverMedia = invitation.media && invitation.media.length > 0 ? invitation.media[0] : null;
+  const coverUrl = fs.memoriesCoverPhoto || coverMedia?.localPath || undefined;
+
+  const backUrl = `/s/${invitation.subdomain!}`;
+  const galleryUrl = `/s/${invitation.subdomain!}/memories`;
 
   const distinctContributors = await prisma.guestMemory.findMany({
     where: { invitationId: invitation.id },
@@ -120,6 +120,7 @@ export default async function GuestMemoriesStandalonePage({ params, searchParams
       dateStampEnabled={dateStampEnabled}
       dateFormat={dateFormat}
       isTestMode={isTestMode}
+      openingLayout={fs.memoriesOpeningLayout || "editorial_showcase"}
     />
   );
 }

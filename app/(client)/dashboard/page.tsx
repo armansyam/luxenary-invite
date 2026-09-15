@@ -9,6 +9,7 @@ import QRCode from "react-qr-code";
 import { getInvitationPublicUrl, resolveEffectiveInvitationUrl, shouldDisplayMemoriesGallery, getLatestEventDate } from "@/lib/domainUtils";
 import { MemoriesDownloadSection } from "@/components/client/MemoriesDownloadSection";
 import UnifiedAddonModal from "@/components/client/UnifiedAddonModal";
+import PrintableQRCardModal from "@/components/client/PrintableQRCardModal";
 
 function DashboardHomeContent() {
   const { data: session } = useSession();
@@ -21,6 +22,7 @@ function DashboardHomeContent() {
   const [loadingMemories, setLoadingMemories] = useState(false);
   const [deletingMemoryId, setDeletingMemoryId] = useState<string | null>(null);
   const [copiedGallery, setCopiedGallery] = useState(false);
+  const [isQRModalOpen, setIsQRModalOpen] = useState(false);
   const qrRef = useRef<HTMLDivElement>(null);
   const [stats, setStats] = useState({
     guestCount: 0,
@@ -892,7 +894,7 @@ function DashboardHomeContent() {
                   </div>
                   <p className="text-[11px] text-stone-500 leading-relaxed mb-4">Cetak URL ini sebagai Standing Banner di meja agar tamu bisa kirim foto.</p>
                   
-                  {invitation?.status === 'PUBLISHED' ? (
+                  {invUrl ? (
                     <div className="flex justify-center mb-2 bg-white p-2 rounded-xl border border-amber-100 shadow-inner max-w-[120px] mx-auto" ref={qrRef}>
                       <QRCode
                         value={`${invUrl}/sharemoment`}
@@ -904,31 +906,42 @@ function DashboardHomeContent() {
                     </div>
                   ) : (
                     <div className="flex items-center justify-center h-[120px] mb-2 bg-stone-50 rounded-xl border border-stone-200 border-dashed text-stone-400 text-[10px] text-center p-2 mx-auto max-w-[120px]">
-                      QR Code tersedia setelah Publish
+                      Menyiapkan tautan...
                     </div>
                   )}
                 </div>
                 
-                <div className="flex gap-2">
-                  <button 
-                    onClick={invitation?.status === 'PUBLISHED' ? handleDownloadQR : undefined} 
-                    className={`flex-1 py-2 border-2 border-dashed font-bold rounded-xl text-[10px] transition text-center flex flex-col items-center justify-center gap-1 ${invitation?.status === 'PUBLISHED' ? 'border-amber-500 text-amber-700 hover:bg-amber-50' : 'border-stone-200 text-stone-300 cursor-not-allowed'}`}
-                    disabled={invitation?.status !== 'PUBLISHED'}
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsQRModalOpen(true)}
+                    className="w-full py-2.5 font-bold rounded-xl text-xs transition text-center flex items-center justify-center gap-2 shadow-xs cursor-pointer bg-stone-900 hover:bg-stone-800 text-white"
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                    Unduh PNG
+                    <svg className="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span>Studio Cetak Kartu & Banner</span>
                   </button>
-                  {invitation?.status === 'PUBLISHED' || invitation?.status === 'EVENT_FINISHED' ? (
-                    <a href={`${invUrl}/sharemoment`} target="_blank" rel="noreferrer" className="flex-1 py-2 bg-amber-600 text-white font-bold rounded-xl text-[10px] transition text-center hover:bg-amber-700 flex flex-col items-center justify-center gap-1 shadow-xs">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                      Buka Link
+
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={handleDownloadQR} 
+                      className="flex-1 py-1.5 border border-dashed font-bold rounded-xl text-[10px] transition text-center flex items-center justify-center gap-1 border-amber-500 text-amber-800 hover:bg-amber-50 cursor-pointer"
+                      title="Unduh QR Saja"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                      Unduh QR
+                    </button>
+                    <a 
+                      href={`${invUrl}/sharemoment${invitation?.status !== 'PUBLISHED' ? '?test=true' : ''}`} 
+                      target="_blank" 
+                      rel="noreferrer" 
+                      className="flex-1 py-1.5 bg-amber-600 text-white font-bold rounded-xl text-[10px] transition text-center hover:bg-amber-700 flex items-center justify-center gap-1 shadow-xs"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                      {invitation?.status === 'PUBLISHED' ? 'Buka Link' : 'Simulasi'}
                     </a>
-                  ) : (
-                    <div className="flex-1 py-2 bg-stone-100 text-stone-300 font-bold rounded-xl text-[10px] transition text-center flex flex-col items-center justify-center gap-1 cursor-not-allowed">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                      Buka Link
-                    </div>
-                  )}
+                  </div>
                 </div>
               </div>
             )}
@@ -1166,6 +1179,17 @@ function DashboardHomeContent() {
           currentQuota={memoriesQuota?.maxTotalPhotos || 250}
           galleryExpiresAt={invitation.galleryExpiresAt ? new Date(invitation.galleryExpiresAt).toISOString() : null}
           pricingSettings={addonPricingSettings}
+        />
+      )}
+
+      {/* Modal Studio Desain Kartu Cetak & Standing Banner QR */}
+      {invitation && (
+        <PrintableQRCardModal
+          isOpen={isQRModalOpen}
+          onClose={() => setIsQRModalOpen(false)}
+          invitation={invitation}
+          shareMomentUrl={`${invUrl}/sharemoment`}
+          onInvitationUpdated={(updated) => setInvitation(updated)}
         />
       )}
 

@@ -17,6 +17,7 @@ const SLOT_FILE_NAMES: Record<string, string> = {
   GROOM_PHOTO: "groom-photo",
   QRIS: "qris",
   CLOSING_COVER: "closing-cover",
+  MEMORIES_COVER: "memories-cover",
   MUSIC: "wedding-song",
 };
 
