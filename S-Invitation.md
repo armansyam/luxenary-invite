@@ -287,31 +287,45 @@ Sistem Studio Editor Klien (`/dashboard/invitation/[id]`) menyediakan kendali kr
 
 ---
 
-## 6. Siklus Hidup Undangan & Mesin Retensi Otomatis (Cron Cleanup)
+## 6. Siklus Hidup Undangan & Mesin Retensi Terpadu (Cron Cleanup)
 
 Siklus hidup undangan diatur secara otomatis oleh cron job (`POST /api/cron/cleanup`) yang dilindungi `CRON_SECRET`:
 
-1. **Fase 1: Transisi Pasca Acara (H + `retention_invitation_grace_days`, default 7 hari)**:
-   - Perhitungan batas waktu pasca-acara dihitung otomatis dari **Tanggal Acara Paling Akhir (`getLatestEventDate`)** untuk melindungi pernikahan multi-sesi (misal Akad Hari-1 dan Resepsi Hari-3).
-   - Undangan fisik ditutup dan status undangan diperbarui menjadi `EVENT_FINISHED`.
-   - Upload momen tamu dikunci secara otomatis (`memoriesUploadLocked = true`) agar aman dari race condition upload detik-detik terakhir.
-   - Data formulir RSVP dibersihkan otomatis untuk melindungi privasi.
-   - Kunjungan ke URL subdomain/slug otomatis dialihkan (*redirect 307*) langsung ke **Galeri Momen Tamu (`/memories`)**. Saat subdomain dilepas, URL Asli (`/[invitationSlug]`) otomatis menjadi rujukan permanen.
-2. **Fase 2: Retensi Galeri Momen (H + `retention_gallery_default_days` atau `galleryExpiresAt`)**:
-   - Paket yang mencakup fitur `guest_memories` (`/memories`) mengadopsi durasi retensi dinamis dari pengaturan admin (`retention_gallery_default_days`, default 30 hari / 1 bulan) pada seluruh paket publik dan dashboard klien.
-   - Tamu dan pengantin dapat mengunduh seluruh koleksi foto kenangan dalam format ZIP via `streamMemoriesToZip` yang membaca prefix terisolasi `guest-memories/{invitationId}/` (Cloudflare R2 & lokal) dengan fallback legacy otomatis.
-   - Klien dapat memperpanjang masa aktif galeri sebesar **+30 Hari** via pembayaran QRIS mandiri (`POST /api/client/memories/extend`).
-   - Jika masa aktif habis dan tidak diperpanjang:
-     - Seluruh foto kenangan tamu (`GuestMemory`) di R2 (`deleteFile`) dan folder direktori lokal `public/uploads/guest-memories/{id}/` dihapus permanen.
-     - Subdomain dilepaskan kembali ke pool umum (`subdomain = null`) agar dapat digunakan kembali oleh pasangan lain.
-     - Status undangan menjadi `ARCHIVED`.
-3. **Smart Fallback ke Portofolio / Beranda**:
+1. **Dual-Mode Route Switcher (Peralihan ke Galeri Momen `/memories`)**:
+   - Sistem secara cerdas mengalihkan URL publik (baik subdomain maupun custom domain) ke `/memories` berdasarkan dua mode:
+     - **Mode AUTO (Default):** Otomatis beralih ke galeri momen pada H+1 pasca tanggal acara pernikahan paling akhir (`getLatestEventDate(eventData)`).
+     - **Mode MANUAL:** Klien dapat menyalakan atau mematikan peralihan rute seketika melalui tombol toggle di Studio Editor Seksi 14 (`memoriesForceGallery`).
+2. **Satu Jadwal Retensi Terpadu (Single Unified 14-Day Post-Event Lifecycle)**:
+   - Seluruh komponen (Subdomain platform, Custom domain, Foto momen tamu di R2/lokal, dan RSVP) memiliki masa aktif yang sama dan dihitung dari tanggal acara paling akhir + `retention_cleanup_days` (default 14 hari).
+   - Tamu dan pengantin dapat mengunduh seluruh koleksi foto kenangan dalam format ZIP via JSZip client-side tanpa membebani bandwidth VPS.
+   - Klien dapat memperpanjang masa simpan sebelum kedaluwarsa melalui Add-on QRIS: **+30 Hari (Rp50.000)** atau **+1 Tahun (Rp150.000)**.
+3. **Pembersihan Terpadu Sekali Jalan (Single Unified Cleanup Phase saat `now > effectiveExpiry`)**:
+   - Seluruh foto kenangan tamu (`GuestMemory`) di Cloudflare R2 (`deleteFile`) dan direktori lokal `public/uploads/guest-memories/{id}/` dihapus permanen.
+   - Subdomain dilepaskan kembali ke pool umum (`subdomain = null`) agar dapat digunakan kembali oleh pasangan lain.
+   - Custom domain dinonaktifkan/dilepas.
+   - Data formulir RSVP dibersihkan demi privasi tamu.
+   - Status undangan diperbarui menjadi `ARCHIVED`.
+4. **Kebijakan Nol Penghapusan Akun & Portofolio Abadi**:
+   - **Zero Account Deletion:** Akun klien (`User`) di PostgreSQL tidak pernah dihapus (<1 KB). Klien dapat login kapan saja ke dasbor.
+   - **Zero Portfolio Deletion:** Portofolio admin (`public/portfolio/`) adalah aset abadi yang tidak tersentuh oleh siklus retensi klien.
+5. **Dasbor Klien 1 Halaman Rangkuman & Arsip Digital (`/dashboard` saat `ARCHIVED`)**:
+   - Ketika undangan telah berstatus `ARCHIVED`, tampilan dasbor klien otomatis beralih menjadi 1 halaman memorial eksklusif:
+     - Surat Penutup Hangat dan apresiasi kepada kedua mempelai.
+     - 4 Kartu Metrik Ringkasan Eksekutif: Doa Restu Masuk, Tamu Hadir (Pax), Total Buku Tamu, dan Tanggal Acara.
+     - Pusat Unduhan Arsip Digital: Unduh Rekapan Doa (.CSV) dan Unduh Rekapitulasi Kehadiran & RSVP (.CSV).
+     - Bersih tanpa tombol "Buat Undangan Baru" dan tanpa tombol "Reaktivasi".
+6. **Smart Fallback ke Portofolio / Beranda**:
    - Jika slug diakses saat undangan berstatus `ARCHIVED`, sistem memeriksa apakah salinan portofolio ada di `/portfolio/[slug]`.
    - Jika ada portofolio, otomatis dialihkan (*HTTP 307*) ke halaman portofolio sebagai arsip kenangan abadi.
    - Jika tidak ada, sistem langsung mengalihkan (*HTTP 302/307*) pengunjung kembali ke Halaman Utama (`/`) secara elegan tanpa memunculkan error 404.
 4. **Pemisahan Desain & Operasional Galeri Kenangan Tamu**:
-   - **Formulir Studio Editor (`/dashboard/invitation/[id]` Seksi 14):** Khusus styling & konfigurasi teks seksi (Toggle aktif, judul seksi, eyebrow, subjudul/deskripsi ajakan berbagi momen).
-   - **Dashboard Klien (`/dashboard` Seksi 5 & Card 4):** Pusat operasional & monitoring momen tamu yang menyajikan tautan publik album kenangan, widget unduh arsip ZIP client-side, info retensi/perpanjangan masa simpan +30 hari via QRIS, dan monitoring/moderasi foto masuk secara real-time.
+   - **Formulir Studio Editor (`/dashboard/invitation/[id]` Seksi 14):** Styling & konfigurasi seksi: Toggle aktif (`showGuestMemories`), Judul Seksi, Eyebrow, Deskripsi, Mode Pengambilan (Disposable Camera vs Standard Form), Pilihan 5 Filter Analog (`aura_90s`, `heritage_romance`, `botanical_mist`, `cinema_noir`, `pure_daylight`), Toggle & Format LED Date Stamp (`#e8875a`), Kuota Dinamis Tamu Pengunggah (`memoriesMaxContributors`), Jatah Roll per Tamu (`memoriesShotsQuota`), Jadwal Kamera Aktif Mandiri, dan Toggle Kamar Gelap Digital (*Delayed Reveal*).
+   - **Dashboard Klien (`/dashboard` Seksi 5 & Card 4):** Pusat operasional & monitoring momen tamu: tautan album kenangan, widget unduh arsip ZIP client-side, status kuota, info retensi/perpanjangan masa simpan +30 hari via QRIS, dan monitoring foto masuk real-time.
+   - **Fitur Kamera Disposable Retro & Galeri Masonry Roll Stack (Opsi B):**
+     - Layar bidik WebRTC live dengan tombol zoom digital (1x, 2x), flash/torch hardware, pembalik kamera, dan synthesized mechanical shutter audio via Web Audio API.
+     - Foto dikompresi client-side Canvas menjadi WebP/JPEG ringan (~300KB) dengan filter analog terpilih dan cap tanggal oranye retro analog.
+     - Formula kuota terukur: $\text{Kapasitas Acara} = \text{Batas Tamu Pengunggah} \times \text{Jatah Roll per Tamu}$. Saat kuota kontributor penuh, tamu baru disajikan kartu status elegan bertema dark luxury *"Kuota Roll Kenangan Telah Penuh"*, sementara tamu terdaftar tetap dapat menyelesaikan sisa roll mereka.
+     - Galeri publik mengadopsi Masonry Roll Stack (1 card bertumpuk per tamu dengan badge jumlah foto dan ucapan doa tunggal), membuka modal popup lightbox interaktif untuk menelusuri seluruh foto dalam roll tersebut.
 5. **Manajemen Domain Undangan & Hero Launchpad Publikasi (Buku Tamu / WhatsApp Broadcast)**:
    - **Hero Launchpad Publikasi (/dashboard/settings):** Bagian peluncuran ditingkatkan menjadi Hero Launchpad mandiri di bagian teratas panel pengaturan. Dilengkapi mode fokus penuh dengan animasi pemindai radar dan jendela *sliding ticker* vertikal (maksimal 3 baris tampak). Item yang selesai diverifikasi otomatis bergulir naik ke atas secara sekuensial memeriksa 12 komponen data: Subdomain, Tema, Visual Sampul & Latar Belakang (Landing Cover, Desktop Sidebar, Fixed BG, Foto Penutup), Nama Kedua Mempelai, Foto Profil Kedua Mempelai (The Groom & The Bride), Tanggal Acara Utama (sebagai referensi masa berlaku website), Waktu & Lokasi, Galeri Foto, Cerita Cinta, Rekening/Hadiah, Musik Latar, dan PIN Keamanan Tamu.
    - **Resolusi Hierarkis Domain (`resolveEffectiveInvitationUrl`):** Sistem otomatis mendeteksi dan memprioritaskan domain tautan undangan dengan urutan jujur: (1) Custom Domain Klien (`customDomain`), (2) Subdomain Platform (`subdomain`). Menghilangkan total tebakan slug palsu/halusinasi saat domain belum disetel.
@@ -327,10 +341,13 @@ Siklus hidup undangan diatur secara otomatis oleh cron job (`POST /api/cron/clea
    - **Atomic Single Deploy & Auto-Lock (`DEPLOY_AND_LOCK`):** Di puncak formulir tersedia tombol aksi **"Perbarui Undangan & Kunci Kembali"** yang mengeksekusi 1 kali kompilasi HTML penuh, migrasi/sinkronisasi ke Cloudflare R2, dan seketika mengunci kembali studio secara otomatis.
    - **Pelepasan Subdomain Otomatis:** Jika subdomain diubah, subdomain lama langsung terlepas dari record database (`@unique`) dan kembali bebas ke pool publik secara otomatis.
    - **Subdomain Monitor & Live Inspector Admin:** Dashboard Admin (`/admin?tab=custom_domains`) menyediakan sub-tab khusus Subdomain Sistem (sesuai root domain aktif, misal `*.localhost:3000` di lokal atau `*.luxvite.id` di VPS) dengan 3 kartu KPI real-time (Total Aktif, Live, Kedaluwarsa), alat pencarian kepemilikan nama (*Live Subdomain Inspector*), dan aksi daur ulang 1-klik untuk melepaskan subdomain kedaluwarsa (H+7 hari acara) kembali ke pool namespace.
-7. **Proteksi Siklus Download Galeri Tamu (ZIP) & Panduan DNS Dinamis Klien:**
+7. **Proteksi Siklus Download Galeri Tamu (ZIP), Jadwal Pra-Acara (`/sharemoment`), & Panduan DNS:**
+   - **Sinkronisasi Jadwal Hari H (`getMemoriesActiveSchedule`):** Kamera momen tamu (`/sharemoment`) otomatis dibuka mengikuti tanggal & jam acara resepsi (atau jadwal kustom di Studio). Jika diakses sebelum waktu mulai, tamu disajikan *Pre-Event Scheduled Card* elegan lengkap dengan informasi tanggal buka dan tombol kembali ke undangan.
+   - **Mode Simulasi Pengantin (`?test=true`):** Mempelai dapat menguji coba viewfinder kamera sebelum hari H tanpa diblokir layar jadwal pembukaan.
    - **Proteksi Unduh ZIP & Status Draft:** Tombol unduh ZIP di dashboard klien otomatis dinonaktifkan saat status masih `DRAFT` atau jika belum ada foto tamu (`guestMemoriesCount === 0`).
    - **Pencegahan Data Tercecer (Early Lock Warning):** Jika klien mengunduh ZIP saat acara masih berjalan (`PUBLISHED` & `!memoriesUploadLocked`), sistem memunculkan modal dialog peringatan bahwa pengunduhan akan langsung mengunci upload tamu secara permanen.
    - **Kondisi Aman Pasca Acara (`EVENT_FINISHED`):** Saat acara selesai, upload dikunci otomatis sehingga tombol download berada pada status aman (*safe state*) siap unduh tanpa peringatan menakutkan.
+   - **Penyelarasan Kartu Dasbor:** Menghapus kartu duplikat Galeri Kenangan di baris navigasi cepat atas dasbor klien, menjadikannya 3 kolom bersih (`md:grid-cols-3`): Studio Editor, Buku Tamu, dan RSVP.
    - **Integrasi Domain & DNS Dinamis (RFC 1912):** Menghapus seluruh string konfigurasi DNS *hardcoded*. IP Publik VPS (`server_public_ip`) dan target CNAME (`cname_target`) dikonfigurasi melalui tab terdedikasi `Setup & Integrasi` di admin dengan auto-detect IP publik VPS (`/api/admin/server-ip`). Panduan di dashboard klien menyajikan tabel 2 baris (Record A untuk Root Apex `@` dan CNAME untuk Subdomain `www`) dilengkapi tombol 1-klik salin.
 8. **Standar Arsitektur Seksi Penutup Adaptif 100vh & Fallback Tombol Buka Undangan**:
    - **Tombol Buka Undangan Selalu Berteks:** Tag `<button data-lux-field="customLabels.openBtn">` di seluruh 15 master template dan starter blueprint wajib memiliki teks fisik default `"Buka Undangan"`. Engine komposer (`lib/themeEngine.ts` dan `lib/demoRegistry.ts`) menjamin penyediaan fallback default `customLabels.openBtn = "Buka Undangan"`, sehingga tombol cover gate tidak pernah kosong/transparan dalam kondisi apapun.
@@ -407,13 +424,15 @@ Platform mendukung arsitektur payment gateway 2-arah (*two-way handshake*) terin
 12. **Rekonsiliasi Real-Time & Deteksi Host Dinamis**:
     - Sistem mendeteksi `appUrl` dan `rootDomain` secara dinamis dari request headers (`x-forwarded-host`, `host`, `x-forwarded-proto`) via `lib/serverDomainUtils.ts`, kompatibel secara native di lingkungan pengembangan `localhost:3000`, IP lokal, reverse proxy VPS, custom domain, maupun tunnel dev tanpa hardcode URL.
     - Rekonsiliasi status real-time pada `GET /api/client/orders/[id]/status` memverifikasi status pembayaran langsung ke API gateway sehingga status terdeteksi responsif seketika.
-13. **Tiga Kondisi Pembayaran & Transmisi Data Lengkap (Rich Payload Delivery)**:
-    - **Tiga Kondisi Pembayaran**:
+13. **Empat Kondisi Pembayaran & Transmisi Data Lengkap (Rich Payload Delivery)**:
+    - **Empat Kondisi Pembayaran**:
       1. *Registrasi Paket Awal (`NEW`)*: Pemilihan tier paket via `/packages` -> in-app QRIS checkout -> pasca lunas dialihkan ke `/dashboard/setup`.
       2. *Upgrade Layanan (`UPGRADE`)*: Menaikkan tier paket langsung dari studio undangan `/dashboard/invitation/[id]` dengan kalkulasi selisih harga dinamis -> pasca lunas tier induk diperbarui seketika.
-      3. *Add-on Layanan Tambahan*:
-         - *Perpanjang Galeri Tamu (`GALLERY_EXTENSION`)*: Menambah masa aktif penyimpanan galeri foto momen tamu selama +30 hari dan membuka kembali kunci formulir upload.
-         - *Jasa Integrasi Custom Domain (`CUSTOM_DOMAIN_ADDON`)*: Integrasi domain kustom klien (lengkap dengan SSL/TLS & Cloudflare DNS) selama +365 hari / 1 tahun via `/dashboard/settings`.
+      3. *Dua Add-On Layanan Tambahan Murni*:
+         - *Perpanjang Galeri Tamu (`GALLERY_EXTENSION`)*: Menambah masa aktif penyimpanan galeri foto momen tamu (+1 s.d. 12 bulan) dan membuka kembali kunci formulir upload.
+         - *Top-Up Kuota Foto Momen Tamu (`MEMORIES_TOPUP`)*: Menambah plafon kapasitas foto candid tamu di album kenangan (kelipatan 100 foto).
+         *(Catatan: Custom domain merupakan fitur inklusif bawaan paket Eternity tanpa biaya jasa add-on).*
+      4. *Checkout Terpadu Multi-Layanan (`Unified Add-on & Upgrade Hub`)*: Menggabungkan upgrade tier paket, perpanjangan masa aktif galeri multi-bulan, dan top-up kuota foto tamu ke dalam 1 kasir / 1 invoice (`itemsJson`) dengan pemenuhan atomik berurutan (`applyBundleFulfillment`).
     - **Transmisi Detail Lengkap ke Payment Gateway**:
       - *Profil Pembeli*: Nama depan & nama belakang (`first_name`, `last_name` / `given_names`, `surname`), alamat email resmi akun, dan nomor kontak WhatsApp aktif klien (`phoneNumber` terformat E.164).
       - *Alamat*: Alamat penagihan & pengiriman digital terstandarisasi ISO `IDN`, terhubung ke alamat pengiriman fisik jika tersedia di data undangan.
@@ -458,18 +477,15 @@ Sistem pengiriman email otomatis menggunakan **Nodemailer** yang membaca kredens
    - Fitur khusus Super Admin untuk mengkloning undangan pilihan menjadi file statis 100% mandiri di `public/portfolio/[slug].html`.
    - Semua aset gambar dikompresi WebP tajam dan disimpan terisolasi di `public/portfolio/assets/[slug]/`.
 2. **Custom Domain Klien (`dimas-clarissa.com`) & 2 Layanan Tambahan Resmi**:
-   - **SaaS Add-on Workflow**: Custom domain merupakan layanan jasa teknis integrasi berbayar terpisah dari paket undangan (orderType: `CUSTOM_DOMAIN_ADDON`, dibaca dari `addon_custom_domain_price`), dan dikendalikan secara dinamis via kapabilitas paket (`custom_domain`) yang dikonfigurasi admin di Admin Setting (Tab Paket & Harga).
-   - **Fitur Toggle Admin & State Coming Soon**:
-     - Super Admin dapat menyalakan/mematikan layanan penawaran custom domain via toggle `addon_custom_domain_enabled` di Pengaturan Admin (Paket & Harga).
-     - Jika dinonaktifkan (`false`), Dasbor Klien (`/dashboard/settings`) yang belum memiliki domain pribadi akan menampilkan kartu status *Segera Hadir / Belum Tersedia* (non-aktif) tanpa opsi pemesanan.
-     - Klien yang paketnya tidak memiliki kapabilitas `custom_domain` ditampilkan kartu status fitur belum aktif dengan opsi upgrade.
-     - Klien yang sudah memiliki domain aktif (`invitation.customDomain`) terlindungi secara penuh (Zero-Regression) dan tetap dapat melihat konfigurasi DNS mereka tanpa gangguan.
-     - Endpoint checkout `POST /api/client/custom-domain/buy` dijaga ketat di tingkat backend dengan verifikasi `hasPlanCapability(invitation.order.planType, "custom_domain")`.
-   - **Bundling Add-on Saat Upgrade Paket**: Klien yang upgrade ke paket dengan kapabilitas `custom_domain` dapat mencentang add-on custom domain secara opsional dalam satu invoice tagihan, yang otomatis mengaktifkan domain dan retensi 365 hari saat pelunasan. Modal upgrade berdesain Obsidian Gold Luxury yang secara dinamis menghitung selisih harga antar paket (`PLAN_PRICES`) langsung dari konfigurasi basis data (`packages` & `pricing`).
-   - Klien memesan & menginput domain pribadi mereka via Dashboard (Settings) lalu membayar melalui Payment Gateway.
-   - Setelah lunas (PAID), fungsi `applyCustomDomainAddon` otomatis memasang custom domain dan menggaransi masa aktif URL Asli serta galeri kenangan selama **1 Tahun Penuh (+365 hari)**.
-   - Integrasi berjalan mulus melalui **Caddy Server on-demand TLS** dengan Record A ke IP server VPS dan CNAME target dinamis, di mana middleware Next.js secara internal me-rewrite request domain ke endpoint **URL Asli** (`/[slug]` atau `/[slug]/memories`).
-   - **Add-on Perpanjangan Masa Aktif URL Asli / Galeri (`orderType: GALLERY_EXTENSION`)**: Layanan bulanan via QRIS dinamis (`gallery_extension_price_per_month`, default Rp50.000 / 30 Hari) untuk mempertahankan eksistensi URL Asli undangan (yang pasca acara beralih fungsi menjadi galeri kenangan tamu) dan penyimpanan foto di Cloudflare R2 setelah masa retensi default pasca acara habis.
+   - **Inklusif Dalam Paket (Bebas Biaya Tambahan)**: Custom domain merupakan fitur bawaan yang sudah **termasuk bebas biaya (gratis)** pada paket yang memiliki kapabilitas `custom_domain` (seperti tier Eternity / Premium). Klien tidak perlu membayar biaya add-on tambahan.
+   - **Tautan Langsung Mandiri**:
+     - Klien yang paketnya mendukung `custom_domain` dapat langsung memasukkan nama domain pribadi dan menyimpannya secara instan via Dasbor Pengaturan (`/dashboard/settings` -> `POST /api/client/custom-domain`).
+     - Klien yang paketnya belum mendukung dapat melakukan upgrade paket melalui Kasir Upgrade, di mana fitur Custom Domain langsung terbuka begitu tier aktif.
+     - Klien yang sudah memiliki domain aktif (`invitation.customDomain`) dapat melepaskan (unlink) atau mengganti domain kapan saja tanpa biaya.
+   - Integrasi domain berjalan mulus melalui **Caddy Server on-demand TLS** dengan Record A ke IP server VPS dan CNAME target dinamis, di mana middleware Next.js secara internal me-rewrite request domain ke endpoint **URL Asli** (`/[slug]` atau `/[slug]/memories`).
+   - **2 Add-On Layanan Tambahan Murni**:
+     1. **Perpanjang Masa Aktif Galeri Tamu (`orderType: GALLERY_EXTENSION`)**: Layanan bulanan via QRIS dinamis (`gallery_extension_price_per_month`, default Rp50.000 / 30 Hari) untuk menambah masa simpan foto candid tamu dan membuka kembali form upload pasca-acara.
+     2. **Top-Up Kuota Foto Momen Tamu (`orderType: MEMORIES_TOPUP`)**: Penambahan kapasitas foto candid tamu di album kenangan (kelipatan 100 foto via `addon_memories_topup_price`).
    - Keamanan terjamin tanpa kendala CORS karena semua request diteruskan secara *Same-Origin*.
 
 ---
@@ -563,10 +579,10 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - Konten grid modal (`.gallery-modal-container`) diposisikan persis di tengah layar (`margin: 0 auto !important; max-width: 600px !important;`) baik di smartphone maupun peramban desktop.
 2. **Skalabilitas Tipografi Split Desktop (Panel Kanan 460px):**
    - Seluruh elemen judul utama (`.sec-heading`, `.sec-main-title`) dibatasi maksimal `2.1rem !important` dengan `overflow-wrap: break-word` untuk mencegah teks meluap (*overflow*) saat dibuka di layar lebar.
-3. **Tab Kategori Tema Dinamis Dasbor Klien:**
-   - Seksi 1 (*Pilihan Seri Desain & Palet Warna*) memfilter tema menggunakan bilah tab kategori adaptif sesuai hierarki paket order:
-     - Paket Traditional (1 Kategori): Tampil langsung tanpa tab.
-     - Paket Modern / Premium (>1 Kategori): Menampilkan tab per kategori (`[Premium]`, `[Modern]`, `[Traditional]`) dengan badge counter dan auto-focus pada tema aktif, menjaga tinggi halaman tetap ringkas.
+3. **All-Access Themes & Tab Kategori Navigasi Dasbor Klien:**
+   - Seksi 1 (*Pilihan Seri Desain & Palet Warna*) mengadopsi arsitektur **All-Access Themes**: seluruh 16 tema fisik aktif bebas dipilih oleh klien di seluruh tier paket (**Serenade**, **Symphony**, maupun **Eternity**).
+   - Menampilkan bilah tab kategori estetika (`[Semua]`, `[Modern]`, `[Traditional]`, `[Premium]`) dengan badge counter dan auto-focus pada tema aktif, memudahkan calon pengantin mengeksplorasi nuansa desain tanpa membatasi hak pilih mereka.
+   - Seksi 14 (*Galeri Kenangan Tamu & Virtual Disposable Camera*) menerapkan lencana total kuota foto acara dari Admin Setting (`Kapasitas Acara: X / Y Foto Terkumpul`) dan membebaskan pengantin membagi alokasi roll per tamu dengan hard-clamping otomatis di level server.
 4. **Standarisasi Viewport & Safe-Area Mobile iOS/Android (`viewport-fit=cover`):**
    - Meta viewport wajib menggunakan `width=device-width, initial-scale=1.0, viewport-fit=cover` tanpa mematikan zoom (`user-scalable=no` dilarang demi kepatuhan WCAG 1.4.4).
    - Seluruh floating bar wajib menghitung safe-area:

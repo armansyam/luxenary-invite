@@ -55,10 +55,9 @@ export default function SettingsPage() {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [showBuyModal, setShowBuyModal] = useState(false);
   const [isDomainOwned, setIsDomainOwned] = useState(false);
-  const [customDomainPrice, setCustomDomainPrice] = useState(150000);
   const [isCustomDomainEnabled, setIsCustomDomainEnabled] = useState(true);
-  const [retentionGraceDays, setRetentionGraceDays] = useState(7);
-  const [retentionGalleryDays, setRetentionGalleryDays] = useState(30);
+  const [retentionGraceDays, setRetentionGraceDays] = useState(14);
+  const [retentionGalleryDays, setRetentionGalleryDays] = useState(14);
   const [platformPackages, setPlatformPackages] = useState<any[]>([]);
 
   const handleCopyDns = async (val: string, key: string) => {
@@ -401,18 +400,12 @@ export default function SettingsPage() {
         if (d?.platformName) setPlatformName(d.platformName);
         if (d?.cnameTarget || d?.cname_target) setCnameTarget(d.cnameTarget || d.cname_target);
         if (d?.serverPublicIp || d?.server_public_ip) setServerPublicIp(d.serverPublicIp || d.server_public_ip);
-        if (d?.addon_custom_domain_price !== undefined || d?.addonCustomDomainPrice !== undefined) {
-          setCustomDomainPrice(Number(d.addon_custom_domain_price ?? d.addonCustomDomainPrice) || 150000);
-        }
         if (d?.addon_custom_domain_enabled !== undefined) {
           setIsCustomDomainEnabled(d.addon_custom_domain_enabled !== false);
         }
-        if (d?.retentionInvitationGraceDays !== undefined || d?.retention_invitation_grace_days !== undefined) {
-          setRetentionGraceDays(Number(d.retentionInvitationGraceDays ?? d.retention_invitation_grace_days) || 7);
-        }
-        if (d?.retentionGalleryDefaultDays !== undefined || d?.retention_gallery_default_days !== undefined) {
-          setRetentionGalleryDays(Number(d.retentionGalleryDefaultDays ?? d.retention_gallery_default_days) || 30);
-        }
+        const cleanupDays = Number(d?.retentionCleanupDays ?? d?.retention_cleanup_days ?? d?.retentionInvitationGraceDays ?? 14);
+        setRetentionGraceDays(cleanupDays);
+        setRetentionGalleryDays(cleanupDays);
         if (Array.isArray(d?.packages)) {
           setPlatformPackages(d.packages);
         }
@@ -723,14 +716,22 @@ export default function SettingsPage() {
   };
 
   const getValidityDate = () => {
-    const hasCustomDomain = Boolean(invitation?.customDomain && String(invitation.customDomain).trim());
-    const daysToAdd = hasCustomDomain ? 365 : retentionGraceDays;
     try {
+      if (invitation?.galleryExpiresAt) {
+        const exp = new Date(invitation.galleryExpiresAt);
+        if (!isNaN(exp.getTime())) {
+          return exp.toLocaleDateString("id-ID", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          });
+        }
+      }
       const ev = typeof invitation?.eventData === "string" ? JSON.parse(invitation.eventData) : invitation?.eventData;
       if (Array.isArray(ev) && ev[0]?.date) {
         const evDate = new Date(ev[0].date);
         if (!isNaN(evDate.getTime())) {
-          const expiry = new Date(evDate.getTime() + daysToAdd * 24 * 60 * 60 * 1000);
+          const expiry = new Date(evDate.getTime() + retentionGraceDays * 24 * 60 * 60 * 1000);
           return expiry.toLocaleDateString("id-ID", {
             day: "numeric",
             month: "long",
@@ -739,7 +740,7 @@ export default function SettingsPage() {
         }
       }
     } catch {}
-    return hasCustomDomain ? "1 Tahun Pasca Hari H" : `${retentionGraceDays} Hari Pasca Hari H`;
+    return `${retentionGraceDays} Hari Pasca Hari H`;
   };
 
   if (loading) {
@@ -860,20 +861,15 @@ export default function SettingsPage() {
             {/* Informasi Detail Masa Aktif & Tanggal Acara */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               <div className="p-3.5 rounded-xl bg-stone-800/50 border border-stone-800 text-xs space-y-1">
-                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block">Masa Berlaku Website:</span>
+                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block">Masa Berlaku Sistem Terpadu:</span>
                 <p className="text-stone-200 font-medium">
                   Aktif hingga <strong className="text-amber-300">{getValidityDate()}</strong>
                 </p>
                 <p className="text-[10px] text-stone-400 leading-normal">
-                  {invitation?.customDomain
-                    ? "Dihitung otomatis 1 tahun pasca tanggal acara (Layanan Custom Domain Aktif)."
-                    : `Dihitung otomatis ${retentionGraceDays} hari pasca tanggal acara pernikahan Anda (Masa Aktif Subdomain).`}
+                  {invitation?.galleryExpiresAt
+                    ? "Masa simpan telah diperpanjang melalui paket add-on."
+                    : `Dihitung otomatis ${retentionGraceDays} hari pasca tanggal acara pernikahan Anda (Subdomain, Custom Domain, & Galeri Momen).`}
                 </p>
-                {hasGuestMemories && (
-                  <p className="text-[10px] text-purple-300/90 pt-1 border-t border-stone-700/60 leading-normal">
-                    Galeri Kenangan Tamu (/memories) aktif {retentionGalleryDays >= 30 && retentionGalleryDays % 30 === 0 ? `${retentionGalleryDays / 30} bulan (${retentionGalleryDays} hari)` : `${retentionGalleryDays} hari`} pasca-acara.
-                  </p>
-                )}
               </div>
 
               <div className="p-3.5 rounded-xl bg-stone-800/50 border border-stone-800 text-xs space-y-1">
@@ -1958,29 +1954,15 @@ export default function SettingsPage() {
         <div className="space-y-2">
           <label className="block text-[11px] font-bold text-stone-700">Domain Anda</label>
           <div className="space-y-3">
-            {!showBuyModal ? (
-              <div className="p-4 rounded-xl border border-amber-200 bg-amber-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <h4 className="text-xs font-bold text-amber-900">Integrasikan Domain Pribadi Anda</h4>
-                  <p className="text-[11px] text-amber-700/80 mt-1">Punya domain sendiri dari Niagahoster/lainnya? Kami bantu pasangkan ke undangan ini (Gratis SSL & Perpanjangan Aktif 1 Tahun). Biaya Jasa Integrasi: {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(customDomainPrice)}.</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowBuyModal(true)}
-                  className="px-4 py-2 bg-amber-800 hover:bg-amber-900 text-white font-bold rounded-xl text-xs transition whitespace-nowrap"
-                >
-                  Pesan Jasa Integrasi
-                </button>
-              </div>
-            ) : (
+            {canUseCustomDomain ? (
               <div className="p-4 rounded-xl border border-stone-200 bg-stone-50 space-y-3">
-                <div className="bg-red-50 p-3 rounded-lg border border-red-200 mb-2">
-                  <h5 className="text-red-800 font-bold text-xs mb-1 flex items-center gap-1">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                    PENTING: BUKAN PENDAFTARAN DOMAIN BARU
+                <div className="bg-amber-50/80 p-3 rounded-xl border border-amber-200/70">
+                  <h5 className="text-amber-950 font-bold text-xs mb-1 flex items-center gap-1.5">
+                    <svg className="w-4 h-4 text-amber-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span>Fitur Termasuk Bebas Biaya (Gratis)</span>
                   </h5>
-                  <p className="text-red-700 text-[11px] leading-relaxed">
-                    Sistem <b>TIDAK</b> akan mendaftarkan domain baru untuk Anda. Kami hanya menyambungkan domain yang <b>SUDAH ANDA BELI SENDIRI</b> dari registrar (Niagahoster, Rumahweb, dll) ke server undangan ini. Jangan memesan layanan ini jika Anda belum memiliki domain.
+                  <p className="text-amber-900/80 text-[11px] leading-relaxed">
+                    Sistem akan menyambungkan nama domain yang <b>SUDAH ANDA BELI SENDIRI</b> dari registrar (Niagahoster, Cloudflare, Rumahweb, dll) ke server undangan ini tanpa biaya integrasi tambahan.
                   </p>
                 </div>
                 
@@ -1992,9 +1974,10 @@ export default function SettingsPage() {
                     onChange={(e) => {
                       setCustomDomain(e.target.value.toLowerCase().replace(/\s/g, ""));
                       setCustomDomainError(null);
+                      setCustomDomainSuccess(false);
                     }}
-                    placeholder="contoh: undangan-kami.com"
-                    className="flex-1 py-2.5 px-4 rounded-xl border border-stone-200 bg-white text-sm font-mono focus:outline-none focus:border-amber-700 focus:ring-2 focus:ring-amber-700/20 transition"
+                    placeholder="contoh: budi-ani.com"
+                    className="flex-1 py-2.5 px-4 rounded-xl border border-stone-200 bg-white text-sm font-mono focus:outline-none focus:border-amber-700 focus:ring-2 focus:ring-amber-700/20 transition text-stone-900"
                   />
                 </div>
                 
@@ -2007,55 +1990,107 @@ export default function SettingsPage() {
                     onChange={(e) => setIsDomainOwned(e.target.checked)}
                   />
                   <label htmlFor="confirm-domain" className="text-[11px] text-stone-600 leading-snug cursor-pointer select-none">
-                    Saya menyatakan bahwa saya <b>TELAH MEMBELI & MEMILIKI</b> nama domain di atas secara sah. Saya memahami bahwa dana yang telah dibayarkan untuk Jasa Integrasi ini tidak dapat di-refund jika ternyata domain belum dibeli.
+                    Saya menyatakan bahwa saya <b>TELAH MEMBELI &amp; MEMILIKI</b> nama domain di atas secara sah serta telah mengatur DNS sesuai tabel di atas.
                   </label>
                 </div>
 
-                <div className="flex justify-end pt-2">
+                <div className="flex items-center justify-between pt-2">
+                  {invitation?.customDomain ? (
+                    <button
+                      type="button"
+                      disabled={savingCustomDomain}
+                      onClick={async () => {
+                        if (!confirm("Apakah Anda yakin ingin melepaskan domain kustom dari undangan ini?")) return;
+                        setSavingCustomDomain(true);
+                        setCustomDomainError(null);
+                        try {
+                          const res = await fetch("/api/client/custom-domain", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ invitationId: invitation.id, customDomain: "" }),
+                          });
+                          const data = await res.json();
+                          if (res.ok) {
+                            setCustomDomain("");
+                            if (invitation) invitation.customDomain = null;
+                            setCustomDomainSuccess(true);
+                          } else {
+                            setCustomDomainError(data.error || "Gagal melepaskan domain");
+                          }
+                        } catch (e: any) {
+                          setCustomDomainError(e.message || "Gagal melepaskan domain");
+                        } finally {
+                          setSavingCustomDomain(false);
+                        }
+                      }}
+                      className="text-xs text-rose-600 hover:text-rose-700 font-bold underline cursor-pointer"
+                    >
+                      Lepaskan Domain
+                    </button>
+                  ) : <div />}
+
                   <button
                     type="button"
-                    disabled={savingCustomDomain || !customDomain || !invitation?.id || !isDomainOwned}
+                    disabled={savingCustomDomain || !customDomain || !invitation?.id || (!invitation?.customDomain && !isDomainOwned)}
                     onClick={async () => {
-                      if (!isDomainOwned) {
+                      if (!isDomainOwned && !invitation?.customDomain) {
                         setCustomDomainError("Anda harus mencentang persetujuan kepemilikan domain.");
                         return;
                       }
                       setSavingCustomDomain(true);
                       setCustomDomainError(null);
+                      setCustomDomainSuccess(false);
                       try {
-                        const response = await fetch("/api/client/custom-domain/buy", {
+                        const response = await fetch("/api/client/custom-domain", {
                           method: "POST",
                           headers: { "Content-Type": "application/json" },
                           body: JSON.stringify({
                             invitationId: invitation.id,
-                            requestedDomain: customDomain
-                          })
+                            customDomain: customDomain,
+                          }),
                         });
                         const resData = await response.json();
-                        if (response.ok && (resData.paymentUrl || resData.orderId)) {
-                          router.push(resData.paymentUrl || `/checkout?order=${resData.orderId}`);
+                        if (response.ok) {
+                          setCustomDomainSuccess(true);
+                          if (invitation) {
+                            invitation.customDomain = resData.customDomain;
+                          }
                         } else {
-                          setCustomDomainError(resData.error || "Gagal membuat invoice");
+                          setCustomDomainError(resData.error || "Gagal menyimpan domain");
                         }
                       } catch (err: any) {
                         setCustomDomainError(err.message || "Terjadi kesalahan jaringan");
                       }
                       setSavingCustomDomain(false);
                     }}
-                    className={`px-4 py-2 bg-amber-800 text-white font-bold rounded-xl text-xs whitespace-nowrap transition flex items-center justify-center min-w-[120px] ${(!customDomain || !isDomainOwned) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-amber-900'}`}
+                    className={`px-4 py-2 bg-amber-800 text-white font-bold rounded-xl text-xs whitespace-nowrap transition flex items-center justify-center min-w-[120px] ${(!customDomain || (!invitation?.customDomain && !isDomainOwned)) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-amber-900 cursor-pointer'}`}
                   >
                     {savingCustomDomain ? (
                       <span className="flex items-center gap-1.5">
                         <svg className="w-3.5 h-3.5 animate-spin text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                         </svg>
-                        <span>Memproses...</span>
+                        <span>Menyimpan...</span>
                       </span>
                     ) : (
-                      "Bayar Jasa"
+                      "Simpan Domain"
                     )}
                   </button>
                 </div>
+              </div>
+            ) : (
+              <div className="p-4 rounded-xl border border-purple-200 bg-purple-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h4 className="text-xs font-bold text-purple-950">Fitur Custom Domain (.com / .id)</h4>
+                  <p className="text-[11px] text-purple-800/80 mt-1">Gunakan domain Anda sendiri untuk alamat website undangan. Fitur ini tersedia eksklusif pada Paket Premium (bebas biaya jasa integrasi).</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => router.push("/dashboard?upgrade=true")}
+                  className="px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white font-bold rounded-xl text-xs transition whitespace-nowrap shadow-xs cursor-pointer"
+                >
+                  Upgrade ke Premium
+                </button>
               </div>
             )}
           </div>

@@ -122,8 +122,6 @@ export default function EditInvitation() {
   // Upgrade Paket State
   const [upgradeModal, setUpgradeModal] = useState(false);
   const [upgradeTarget, setUpgradeTarget] = useState<"MODERN" | "PREMIUM" | null>(null);
-  const [includeCustomDomain, setIncludeCustomDomain] = useState(false);
-  const [upgradeDomainInput, setUpgradeDomainInput] = useState("");
   const [upgrading, setUpgrading] = useState(false);
   const [upgradeError, setUpgradeError] = useState<string | null>(null);
   const [isDeploying, setIsDeploying] = useState(false);
@@ -160,7 +158,7 @@ export default function EditInvitation() {
   };
   const PLAN_FEATURES: Record<string, string[]> = {
     MODERN: ["Akses semua tema Traditional & Modern", "Semua fitur paket Traditional"],
-    PREMIUM: ["Akses semua tema (Traditional, Modern & Premium)", "Tema eksklusif editorial & luxury", "Semua fitur paket Modern"],
+    PREMIUM: ["Akses semua tema (Traditional, Modern & Premium)", "Tema eksklusif editorial & luxury", "Semua fitur paket Modern", "Termasuk Custom Domain Pribadi"],
   };
 
   const handleUpgrade = async () => {
@@ -168,17 +166,12 @@ export default function EditInvitation() {
     setUpgrading(true);
     setUpgradeError(null);
     try {
-      const targetPkg = platformSettings?.packages?.find((p: any) => p.id === upgradeTarget);
-      const targetHasCustomDomain = targetPkg ? targetPkg.capabilities?.includes("custom_domain") : upgradeTarget === "PREMIUM";
-
       const res = await fetch("/api/payments/upgrade", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           invitationId,
           targetPlan: upgradeTarget,
-          includeCustomDomain: targetHasCustomDomain && includeCustomDomain,
-          requestedDomain: targetHasCustomDomain && includeCustomDomain ? upgradeDomainInput : undefined,
         }),
       });
       const data = await res.json();
@@ -980,6 +973,15 @@ export default function EditInvitation() {
 
     const dirty14 = (
       Boolean(getFeatureSetting("showGuestMemories", true)) !== Boolean(getSavedFeatureSetting("showGuestMemories", true)) ||
+      getFeatureSetting("memoriesFilter", "aura_90s") !== getSavedFeatureSetting("memoriesFilter", "aura_90s") ||
+      Boolean(getFeatureSetting("memoriesDateStamp", true)) !== Boolean(getSavedFeatureSetting("memoriesDateStamp", true)) ||
+      getFeatureSetting("memoriesDateFormat", "DD MM 'YY") !== getSavedFeatureSetting("memoriesDateFormat", "DD MM 'YY") ||
+      Number(getFeatureSetting("memoriesShotsQuota", 5)) !== Number(getSavedFeatureSetting("memoriesShotsQuota", 5)) ||
+      Number(getFeatureSetting("memoriesMaxContributors", 100)) !== Number(getSavedFeatureSetting("memoriesMaxContributors", 100)) ||
+      Boolean(getFeatureSetting("memoriesDelayedReveal", false)) !== Boolean(getSavedFeatureSetting("memoriesDelayedReveal", false)) ||
+      Boolean(getFeatureSetting("memoriesCustomSchedule", false)) !== Boolean(getSavedFeatureSetting("memoriesCustomSchedule", false)) ||
+      getFeatureSetting("memoriesStartTime", "") !== getSavedFeatureSetting("memoriesStartTime", "") ||
+      getFeatureSetting("memoriesEndTime", "") !== getSavedFeatureSetting("memoriesEndTime", "") ||
       getFeatureSetting("guestMemoriesDriveFolderUrl", "") !== getSavedFeatureSetting("guestMemoriesDriveFolderUrl", "") ||
       getCustomLabel("memoriesTitle", "Abadikan Momen Indah") !== getSavedCustomLabel("memoriesTitle", "Abadikan Momen Indah") ||
       getCustomLabel("memoriesEyebrow", "AFTER-EVENT MEMORIES") !== getSavedCustomLabel("memoriesEyebrow", "AFTER-EVENT MEMORIES") ||
@@ -1457,8 +1459,6 @@ export default function EditInvitation() {
                       onClick={() => {
                         setUpgradeTarget(null);
                         setUpgradeError(null);
-                        setIncludeCustomDomain(false);
-                        setUpgradeDomainInput("");
                         setUpgradeModal(true);
                       }}
                       className="text-[10px] font-bold text-amber-900 hover:text-stone-900 border border-amber-300 hover:border-amber-400 bg-amber-50/80 hover:bg-amber-100 px-2 py-0.5 rounded-full transition flex items-center gap-1 cursor-pointer"
@@ -2143,14 +2143,8 @@ export default function EditInvitation() {
           <div className="p-5 sm:p-7 space-y-6">
             {/* Theme Mockups for this Category / Store */}
             {(() => {
-              const availableThemes = themesList.filter((t) => {
-                const cat = (t.category || "").toUpperCase();
-                const plan = planType.toUpperCase();
-                if (plan === "PREMIUM") return true; 
-                if (plan === "MODERN") return cat === "MODERN" || cat === "TRADITIONAL";
-                if (plan === "TRADITIONAL") return cat === "TRADITIONAL"; 
-                return true;
-              });
+              // Seluruh tema desain bebas dipilih di semua paket (All-Access Themes)
+              const availableThemes = themesList;
 
               // Dapatkan daftar kategori unik sesuai paket klien
               const CATEGORY_ORDER = ["PREMIUM", "MODERN", "TRADITIONAL"];
@@ -4238,7 +4232,296 @@ export default function EditInvitation() {
             </div>
 
             {getFeatureSetting("showGuestMemories", true) && (
-              <div className="space-y-5">
+              <div className="space-y-6">
+                {/* ── A. PRESET FILTER ANALOG ACARA ── */}
+                <div className="space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                    <div>
+                      <span className="text-xs font-bold text-stone-800 block">Preset Filter Analog Acara:</span>
+                      <span className="text-[11px] text-stone-500">Filter ini seragam diterapkan ke kamera virtual seluruh tamu undangan Anda</span>
+                    </div>
+                    <span className="self-start sm:self-auto text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 font-bold uppercase tracking-wider">
+                      Virtual Disposable Camera
+                    </span>
+                  </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+                      {[
+                        { id: "aura_90s", name: "Aura '90s", desc: "Hangat, kulit merona, vignette lembut (Morements Recipe)", badge: "Populer", previewBg: "from-amber-700/80 via-orange-600/70 to-stone-900" },
+                        { id: "heritage_romance", name: "Heritage Romance", desc: "Sepia pudar, champagne lembut, romantis klasik", badge: "Klasik", previewBg: "from-amber-900/80 via-stone-800 to-amber-950" },
+                        { id: "botanical_mist", name: "Botanical Mist", desc: "Pastel green teduh, cocok untuk pesta outdoor/garden", badge: "Garden", previewBg: "from-emerald-900/80 via-teal-900 to-stone-900" },
+                        { id: "cinema_noir", name: "Cinema Noir", desc: "Monokrom kontras tegas, mewah & dramatis (B&W)", badge: "Monokrom", previewBg: "from-stone-950 via-stone-800 to-stone-900" },
+                        { id: "pure_daylight", name: "Pure Daylight", desc: "Warna asli alami tanpa distorsi, jernih & presisi", badge: "Natural", previewBg: "from-sky-900/60 via-stone-800 to-stone-900" },
+                      ].map((flt) => {
+                        const isSelected = getFeatureSetting("memoriesFilter", "aura_90s") === flt.id;
+                        return (
+                          <button
+                            key={flt.id}
+                            type="button"
+                            onClick={() => updateFeatureSetting("memoriesFilter", flt.id)}
+                            className={`p-2.5 rounded-xl border text-left transition flex flex-col justify-between cursor-pointer ${
+                              isSelected
+                                ? "bg-amber-50/90 border-amber-600 ring-2 ring-amber-600 shadow-xs"
+                                : "bg-white border-stone-200 hover:border-stone-300"
+                            }`}
+                          >
+                            <div className={`h-14 w-full rounded-lg bg-gradient-to-tr ${flt.previewBg} mb-2 relative overflow-hidden flex items-end p-1.5 shadow-inner`}>
+                              <span className="text-[8px] font-mono text-amber-300 font-bold bg-stone-950/70 px-1 py-0.5 rounded">15 09 &apos;26</span>
+                            </div>
+                            <div>
+                              <div className="flex items-center justify-between gap-1 mb-0.5">
+                                <span className={`text-[11px] font-bold truncate ${isSelected ? "text-amber-950" : "text-stone-800"}`}>
+                                  {flt.name}
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-stone-500 leading-snug line-clamp-2">
+                                {flt.desc}
+                              </p>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Stempel Tanggal LED */}
+                    <div className="pt-2 flex flex-wrap items-center justify-between gap-3 bg-stone-50/60 p-3.5 rounded-xl border border-stone-200/60">
+                      <div>
+                        <span className="text-xs font-bold text-stone-800 block">Stempel Tanggal Retro (Date Imprint):</span>
+                        <span className="text-[11px] text-stone-500">Cetak teks tanggal oranye menyala di pojok kanan bawah foto</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <select
+                          value={getFeatureSetting("memoriesDateFormat", "DD MM 'YY")}
+                          onChange={(e) => updateFeatureSetting("memoriesDateFormat", e.target.value)}
+                          disabled={!getFeatureSetting("memoriesDateStamp", true)}
+                          className="p-1.5 bg-white border border-stone-200 rounded-lg text-xs font-mono text-stone-800 disabled:opacity-40"
+                        >
+                          <option value="DD MM 'YY">Format: 15 09 &apos;26</option>
+                          <option value="DD · MMM · YYYY">Format: 15 · SEP · 2026</option>
+                        </select>
+                        <SectionHeaderToggle
+                          label=""
+                          checked={Boolean(getFeatureSetting("memoriesDateStamp", true))}
+                          onChange={(v) => updateFeatureSetting("memoriesDateStamp", v)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                {/* ── B. PENGATURAN KUOTA DINAMIS: TAMU KONTRIBUTOR × ROLL LIMIT ── */}
+                {(() => {
+                  const planMemoriesQuota = (invitation as any)?.planMemoriesQuota || {
+                    maxContributors: planType === "PREMIUM" ? 100 : (planType === "MODERN" ? 50 : 30),
+                    shotsQuota: planType === "PREMIUM" ? 5 : (planType === "MODERN" ? 3 : 3),
+                    hasAccess: planType === "PREMIUM" || planType === "MODERN",
+                  };
+                  const maxContribLimit = planMemoriesQuota.maxContributors || 100;
+                  const shotsQuotaLimit = planMemoriesQuota.shotsQuota || 5;
+                  const currentMaxContrib = Math.min(maxContribLimit, Number(getFeatureSetting("memoriesMaxContributors", maxContribLimit)) || maxContribLimit);
+                  const currentShotsQuota = Math.min(shotsQuotaLimit, Number(getFeatureSetting("memoriesShotsQuota", shotsQuotaLimit)) || shotsQuotaLimit);
+
+                  return (
+                    <div className="space-y-3 bg-stone-50/80 p-4 rounded-2xl border border-stone-200/80">
+                      <div className="flex flex-wrap items-center justify-between gap-2 pb-1 border-b border-stone-200/60">
+                        <span className="text-xs font-bold text-stone-800">Plafon Paket Anda ({planType}):</span>
+                        <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-200">
+                          Maks. {maxContribLimit} Tamu × {shotsQuotaLimit} Roll ({maxContribLimit * shotsQuotaLimit} Foto)
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-stone-800 mb-1">
+                            Jatah Jepretan per Tamu (Roll Limit):
+                          </label>
+                          <p className="text-[11px] text-stone-500 mb-2">Berapa foto per tamu (Plafon paket: {shotsQuotaLimit} Roll)</p>
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="number"
+                              min={1}
+                              max={shotsQuotaLimit}
+                              value={currentShotsQuota}
+                              onChange={(e) => updateFeatureSetting("memoriesShotsQuota", Math.min(shotsQuotaLimit, Math.max(1, parseInt(e.target.value) || 1)))}
+                              className="w-24 p-2 bg-white border border-stone-200 rounded-xl text-xs font-bold font-mono text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700/30 text-center"
+                            />
+                            <span className="text-xs text-stone-600 font-medium">Foto / Tamu</span>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-stone-800 mb-1">
+                            Batas Kuota Tamu Pengunggah:
+                          </label>
+                          <p className="text-[11px] text-stone-500 mb-2">Maksimal tamu kontributor (Plafon paket: {maxContribLimit} Tamu)</p>
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="number"
+                              min={5}
+                              max={maxContribLimit}
+                              step={5}
+                              value={currentMaxContrib}
+                              onChange={(e) => updateFeatureSetting("memoriesMaxContributors", Math.min(maxContribLimit, Math.max(5, parseInt(e.target.value) || 5)))}
+                              className="w-24 p-2 bg-white border border-stone-200 rounded-xl text-xs font-bold font-mono text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700/30 text-center"
+                            />
+                            <span className="text-xs text-stone-600 font-medium">Tamu Kontributor</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Kalkulasi Kapasitas Otomatis */}
+                      <div className="p-3 bg-amber-500/10 border border-amber-600/20 rounded-xl flex items-center justify-between text-xs text-amber-900">
+                        <span className="font-medium">
+                          Estimasi Kapasitas Acara:{" "}
+                          <strong>
+                            {`${currentMaxContrib} Tamu × ${currentShotsQuota} Roll = ${currentMaxContrib * currentShotsQuota} Maks. Foto`}
+                          </strong>
+                        </span>
+                        <span className="text-[11px] text-amber-800/80 font-mono hidden sm:inline">
+                          Otomatis menutup tamu baru saat kuota penuh
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* ── D. JADWAL WAKTU & DELAYED REVEAL ── */}
+                <div className="space-y-3 bg-stone-50/80 p-4 rounded-2xl border border-stone-200/80">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-xs font-bold text-stone-800 block">Jadwal Kamera Aktif:</span>
+                      <span className="text-[11px] text-stone-500">Kapan tamu diizinkan mulai memotret dan kapan sesi ditutup</span>
+                    </div>
+                    <label className="flex items-center gap-2 text-xs font-bold text-stone-700 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(getFeatureSetting("memoriesCustomSchedule", false))}
+                        onChange={(e) => updateFeatureSetting("memoriesCustomSchedule", e.target.checked)}
+                        className="rounded border-stone-300 text-amber-700 focus:ring-amber-700"
+                      />
+                      <span>Kustom Jam Mandiri</span>
+                    </label>
+                  </div>
+
+                  {Boolean(getFeatureSetting("memoriesCustomSchedule", false)) ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                      <div>
+                        <label className="block text-[11px] font-bold text-stone-600 mb-1">Jam Kamera Mulai Dibuka:</label>
+                        <input
+                          type="datetime-local"
+                          value={getFeatureSetting("memoriesStartTime", "")}
+                          onChange={(e) => updateFeatureSetting("memoriesStartTime", e.target.value)}
+                          className="w-full p-2 bg-white border border-stone-200 rounded-xl text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700/30 font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-stone-600 mb-1">Jam Sesi Ditutup (Tutup Kamera):</label>
+                        <input
+                          type="datetime-local"
+                          value={getFeatureSetting("memoriesEndTime", "")}
+                          onChange={(e) => updateFeatureSetting("memoriesEndTime", e.target.value)}
+                          className="w-full p-2 bg-white border border-stone-200 rounded-xl text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700/30 font-mono"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-2.5 bg-white rounded-xl border border-stone-200/70 text-[11px] text-stone-600 flex items-center gap-2">
+                      <span className="text-amber-800 font-bold font-mono">Auto-Sync:</span>
+                      <span>Kamera otomatis aktif mengikuti tanggal &amp; jam acara resepsi yang tertera di data undangan.</span>
+                    </div>
+                  )}
+
+                  {/* Delayed Reveal Switcher */}
+                  <div className="pt-2 border-t border-stone-200/60 flex items-center justify-between">
+                    <div>
+                      <span className="text-xs font-bold text-stone-800 block">Delayed Reveal (Kunci Galeri Bersama):</span>
+                      <span className="text-[11px] text-stone-500">Tamu tidak bisa melihat hasil foto siapa pun sampai jam acara selesai (kejutan serentak)</span>
+                    </div>
+                    <SectionHeaderToggle
+                      label=""
+                      checked={Boolean(getFeatureSetting("memoriesDelayedReveal", false))}
+                      onChange={(v) => updateFeatureSetting("memoriesDelayedReveal", v)}
+                    />
+                  </div>
+
+                  {/* ── D.2 PERALIHAN RUTE KE GALERI MOMEN (DUAL-MODE) ── */}
+                  <div className="pt-3 border-t border-stone-200/60 space-y-3">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div>
+                        <span className="text-xs font-bold text-stone-800 block">Peralihan Rute ke Galeri Momen:</span>
+                        <span className="text-[11px] text-stone-500">Tentukan kapan tautan undangan otomatis beralih menampilkan Galeri Foto Tamu.</span>
+                      </div>
+                      <div className="flex items-center gap-1 p-1 bg-stone-100 rounded-xl border border-stone-200 text-xs">
+                        <button
+                          type="button"
+                          onClick={() => updateFeatureSetting("memoriesTransitionMode", "AUTO")}
+                          className={`px-3 py-1 rounded-lg font-semibold transition cursor-pointer ${
+                            getFeatureSetting("memoriesTransitionMode", "AUTO") === "AUTO"
+                              ? "bg-white text-stone-900 shadow-xs"
+                              : "text-stone-500 hover:text-stone-800"
+                          }`}
+                        >
+                          Otomatis
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updateFeatureSetting("memoriesTransitionMode", "MANUAL")}
+                          className={`px-3 py-1 rounded-lg font-semibold transition cursor-pointer ${
+                            getFeatureSetting("memoriesTransitionMode", "AUTO") === "MANUAL"
+                              ? "bg-white text-stone-900 shadow-xs"
+                              : "text-stone-500 hover:text-stone-800"
+                          }`}
+                        >
+                          Manual
+                        </button>
+                      </div>
+                    </div>
+
+                    {getFeatureSetting("memoriesTransitionMode", "AUTO") === "AUTO" ? (
+                      <div className="p-3 bg-white rounded-xl border border-stone-200/70 space-y-2">
+                        <div className="flex items-center justify-between gap-3 flex-wrap">
+                          <label className="text-xs font-medium text-stone-700">Waktu Beralih Otomatis:</label>
+                          <select
+                            value={String(getFeatureSetting("memoriesTransitionDays", 1))}
+                            onChange={(e) => updateFeatureSetting("memoriesTransitionDays", Number(e.target.value))}
+                            className="p-1.5 px-3 bg-stone-50 border border-stone-200 rounded-lg text-xs text-stone-800 font-semibold focus:outline-none focus:ring-2 focus:ring-amber-700/30 cursor-pointer"
+                          >
+                            <option value="1">1 Hari Pasca-Acara (Keesokan Harinya — Rekomendasi)</option>
+                            <option value="2">2 Hari Pasca-Acara</option>
+                            <option value="3">3 Hari Pasca-Acara</option>
+                            <option value="7">7 Hari Pasca-Acara</option>
+                          </select>
+                        </div>
+                        <p className="text-[11px] text-stone-500">
+                          ✦ Begitu waktu tercapai, link yang sudah Anda sebar di WhatsApp otomatis langsung menyajikan Galeri Foto Tamu tanpa mengubah alamat URL.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="p-3 bg-amber-50/70 rounded-xl border border-amber-200/80 flex items-center justify-between gap-3 flex-wrap">
+                        <div>
+                          <span className="text-xs font-bold text-amber-950 block">Status Tampilan Saat Ini:</span>
+                          <span className="text-[11px] text-amber-800">
+                            {Boolean(getFeatureSetting("memoriesForceGallery", false))
+                              ? "Link publik saat ini diarahkan langsung ke Galeri Momen Tamu."
+                              : "Link publik saat ini tetap menampilkan Undangan Penuh (RSVP & Peta)."}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => updateFeatureSetting("memoriesForceGallery", !getFeatureSetting("memoriesForceGallery", false))}
+                          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
+                            getFeatureSetting("memoriesForceGallery", false)
+                              ? "bg-amber-800 text-white hover:bg-amber-900 shadow-xs"
+                              : "bg-white text-amber-900 border border-amber-300 hover:bg-amber-100/50"
+                          }`}
+                        >
+                          {getFeatureSetting("memoriesForceGallery", false) ? "Kembalikan ke Undangan" : "Alihkan ke Galeri Sekarang"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* ── E. TEKS JUDUL & MONITORING ── */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-stone-700 mb-1">Judul Seksi di Undangan:</label>
@@ -4272,22 +4555,35 @@ export default function EditInvitation() {
                   />
                 </div>
 
-                <div className="p-4 bg-amber-50/60 rounded-2xl border border-amber-200/70 flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-xl bg-amber-100/80 border border-amber-300/60 flex items-center justify-center text-amber-800 shrink-0 mt-0.5">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+                {/* Monitoring Link & Test Button */}
+                <div className="p-4 bg-amber-50/60 rounded-2xl border border-amber-200/70 flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-amber-100/80 border border-amber-300/60 flex items-center justify-center text-amber-800 shrink-0 mt-0.5">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div className="text-xs text-stone-600 space-y-0.5">
+                      <span className="font-bold text-stone-900 block">Monitoring &amp; Unduh Arsip Foto Tamu</span>
+                      <p className="leading-relaxed text-[11px]">
+                        Seluruh kiriman foto tamu dapat Anda pantau secara live, moderasi, dan unduh ZIP di Dashboard Utama.
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-xs text-stone-600 space-y-1">
-                    <span className="font-bold text-stone-900 block">Monitoring &amp; Unduh Arsip Foto Tamu</span>
-                    <p className="leading-relaxed text-[11px]">
-                      Daftar kiriman foto tamu, unduhan arsip ZIP, dan tautan publik album kenangan dapat Anda kelola langsung di halaman <strong>Dashboard Utama</strong>.
-                    </p>
+                  <div className="flex items-center gap-2">
+                    <Link
+                      href={`/${invitation?.invitationSlug || "demo"}/sharemoment?test=true`}
+                      target="_blank"
+                      className="px-3 py-1.5 rounded-lg border border-amber-300 bg-white hover:bg-amber-50 text-amber-900 font-bold text-xs flex items-center gap-1.5 transition"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                      <span>Tes Kamera</span>
+                    </Link>
                     <Link
                       href="/dashboard#section-galeri-kenangan"
-                      className="inline-flex items-center gap-1 font-bold text-amber-800 hover:underline text-[11px] pt-0.5"
+                      className="px-3 py-1.5 rounded-lg bg-amber-800 hover:bg-amber-900 text-white font-bold text-xs flex items-center gap-1 transition"
                     >
-                      <span>Buka Galeri Kenangan di Dashboard &rarr;</span>
+                      <span>Dashboard Momen &rarr;</span>
                     </Link>
                   </div>
                 </div>
@@ -4547,55 +4843,6 @@ export default function EditInvitation() {
                   );
                 })}
 
-              {/* Add-on Custom Domain Opsional (Hanya muncul jika paket tujuan memiliki kemampuan custom_domain & fitur diaktifkan admin) */}
-              {(() => {
-                const targetPkg = platformSettings?.packages?.find((p: any) => p.id === upgradeTarget);
-                const targetHasCustomDomain = targetPkg ? targetPkg.capabilities?.includes("custom_domain") : upgradeTarget === "PREMIUM";
-                if (!targetHasCustomDomain || !(platformSettings?.addon_custom_domain_enabled ?? platformSettings?.addonCustomDomainEnabled ?? true)) {
-                  return null;
-                }
-                return (
-                  <div className="p-4 rounded-2xl border border-amber-200/80 bg-amber-50/40 space-y-2.5 transition">
-                    <label className="flex items-start gap-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={includeCustomDomain}
-                        onChange={(e) => setIncludeCustomDomain(e.target.checked)}
-                        className="mt-0.5 w-4 h-4 rounded text-amber-800 border-stone-300 focus:ring-amber-700 cursor-pointer"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-stone-900">
-                            Hubungkan Custom Domain Pribadi (.com / .id)
-                          </span>
-                          <span className="text-xs font-bold text-amber-900">
-                            +Rp {Number(platformSettings?.addon_custom_domain_price ?? platformSettings?.addonCustomDomainPrice ?? 150000).toLocaleString("id-ID")}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-stone-600 mt-0.5 leading-relaxed">
-                          Integrasikan domain yang sudah Anda miliki & simpan galeri foto kenangan hingga 365 hari pasca-acara (tidak wajib).
-                        </p>
-                      </div>
-                    </label>
-
-                    {includeCustomDomain && (
-                      <div className="pt-2 border-t border-amber-200/60 space-y-1">
-                        <label className="block text-[10px] font-bold uppercase tracking-wider text-amber-950">
-                          Masukkan Domain yang Anda Miliki
-                        </label>
-                        <input
-                          type="text"
-                          value={upgradeDomainInput}
-                          onChange={(e) => setUpgradeDomainInput(e.target.value)}
-                          placeholder="contoh: namakamu.com"
-                          className="w-full px-3 py-2 text-xs border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-700/30 bg-white text-stone-900"
-                        />
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
-
               {upgradeError && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
                   <p className="text-xs text-red-700 font-medium">{upgradeError}</p>
@@ -4619,11 +4866,7 @@ export default function EditInvitation() {
                         {(() => {
                           if (!upgradeTarget) return "";
                           const diff = (PLAN_PRICES[upgradeTarget] ?? 0) - (PLAN_PRICES[planType] ?? 0);
-                          const domainPrice = Number(platformSettings?.addon_custom_domain_price ?? platformSettings?.addonCustomDomainPrice ?? 150000);
-                          const targetPkg = platformSettings?.packages?.find((p: any) => p.id === upgradeTarget);
-                          const targetHasCustomDomain = targetPkg ? targetPkg.capabilities?.includes("custom_domain") : upgradeTarget === "PREMIUM";
-                          const total = diff + (targetHasCustomDomain && includeCustomDomain ? domainPrice : 0);
-                          return ` (Rp ${total.toLocaleString("id-ID")})`;
+                          return ` (Rp ${diff.toLocaleString("id-ID")})`;
                         })()}
                       </span>
                     </>

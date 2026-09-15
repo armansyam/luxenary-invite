@@ -1,13 +1,14 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
 import { useState, useEffect, useRef, Suspense, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import QRCode from "react-qr-code";
 
-import { getInvitationPublicUrl, resolveEffectiveInvitationUrl } from "@/lib/domainUtils";
+import { getInvitationPublicUrl, resolveEffectiveInvitationUrl, shouldDisplayMemoriesGallery, getLatestEventDate } from "@/lib/domainUtils";
 import { MemoriesDownloadSection } from "@/components/client/MemoriesDownloadSection";
+import UnifiedAddonModal from "@/components/client/UnifiedAddonModal";
 
 function DashboardHomeContent() {
   const { data: session } = useSession();
@@ -29,6 +30,9 @@ function DashboardHomeContent() {
   });
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [pendingGalleryOrder, setPendingGalleryOrder] = useState<any>(null);
+  const [memoriesQuota, setMemoriesQuota] = useState<any>(null);
+  const [isAddonModalOpen, setIsAddonModalOpen] = useState(false);
 
   const fetchGuestMemories = useCallback(async (invId?: string) => {
     const targetId = invId || invitation?.id;
@@ -39,6 +43,12 @@ function DashboardHomeContent() {
       const data = await res.json();
       if (data.success) {
         setGuestMemoriesList(data.memories || []);
+        if (data.pendingOrder !== undefined) {
+          setPendingGalleryOrder(data.pendingOrder);
+        }
+        if (data.quota) {
+          setMemoriesQuota(data.quota);
+        }
       }
     } catch (e) {
       console.error("Failed to fetch guest memories:", e);
@@ -209,7 +219,229 @@ function DashboardHomeContent() {
     );
   }
 
+  // === 1-PAGE EVENT CLOSING STATEMENT & FINAL SUMMARY (ARCHIVED STATUS) ===
+  if (invitation?.status === "ARCHIVED") {
+    const latestDate = getLatestEventDate(invitation.eventData);
+    const formattedEventDate = latestDate
+      ? latestDate.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
+      : new Date(invitation.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
+
+    return (
+      <div className="max-w-4xl mx-auto space-y-6 font-sans animate-in fade-in duration-300 pb-12">
+        {/* Luxury Memorial Card */}
+        <div className="bg-white rounded-3xl p-6 sm:p-10 shadow-xs border border-stone-200/80 relative overflow-hidden bg-gradient-to-br from-white via-[#fcfbf9] to-amber-50/20">
+          <div className="absolute -top-16 -right-16 w-80 h-80 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
+          
+          <div className="relative z-10 text-center space-y-4 max-w-2xl mx-auto">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-stone-100 border border-stone-200 text-stone-600 rounded-full text-[11px] font-bold uppercase tracking-wider">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-700" />
+              <span>Acara Selesai &amp; Berkas Diarsipkan</span>
+            </div>
+
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-stone-900 tracking-tight">
+              Momen Bahagia Telah Terukir Sempurna
+            </h1>
+
+            <p className="text-base sm:text-lg font-serif italic text-amber-900 font-medium">
+              {coupleDisplayName || "Mempelai Pria & Mempelai Wanita"}
+            </p>
+
+            <div className="h-px w-24 bg-gradient-to-r from-transparent via-amber-300 to-transparent mx-auto my-2" />
+
+            <p className="text-xs sm:text-sm text-stone-600 leading-relaxed">
+              Terima kasih telah mempercayakan perayaan momen sakral perjalanan cinta Anda kepada platform kami. Rangkaian acara pernikahan Anda telah terlaksana dengan indah dan penuh berkah.
+            </p>
+            <p className="text-xs text-stone-500 leading-relaxed">
+              Sesuai standar retensi privasi sistem terpadu (14 hari pasca acara), file foto candid tamu serta tautan subdomain dan custom domain telah didaur ulang secara aman. Seluruh catatan doa restu serta rekapitulasi kehadiran tamu tetap tersimpan abadi dan dapat Anda unduh kapan saja.
+            </p>
+          </div>
+        </div>
+
+        {/* 4 Summary Metric Cards */}
+        <div>
+          <h2 className="text-xs font-bold uppercase tracking-wider text-stone-500 mb-3 px-1">
+            Ringkasan Eksekutif &amp; Statistik Acara
+          </h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            {/* Wishes */}
+            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-stone-200/80 shadow-xs space-y-1">
+              <div className="flex items-center justify-between text-stone-500">
+                <span className="text-[11px] font-bold uppercase tracking-wider">Doa &amp; Ucapan</span>
+                <svg className="w-4 h-4 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                </svg>
+              </div>
+              <p className="text-2xl sm:text-3xl font-bold text-stone-900">{stats.wishesCount}</p>
+              <span className="text-[10px] text-stone-400 block">Pesan doa restu</span>
+            </div>
+
+            {/* Attendance */}
+            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-stone-200/80 shadow-xs space-y-1">
+              <div className="flex items-center justify-between text-stone-500">
+                <span className="text-[11px] font-bold uppercase tracking-wider">Konfirmasi Hadir</span>
+                <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <p className="text-2xl sm:text-3xl font-bold text-emerald-700">{stats.attendingCount}</p>
+              <span className="text-[10px] text-stone-400 block">Pax tamu hadir</span>
+            </div>
+
+            {/* Total Guests */}
+            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-stone-200/80 shadow-xs space-y-1">
+              <div className="flex items-center justify-between text-stone-500">
+                <span className="text-[11px] font-bold uppercase tracking-wider">Buku Tamu</span>
+                <svg className="w-4 h-4 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+              <p className="text-2xl sm:text-3xl font-bold text-stone-900">{stats.guestCount}</p>
+              <span className="text-[10px] text-stone-400 block">Total tamu terdata</span>
+            </div>
+
+            {/* Event Date */}
+            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-stone-200/80 shadow-xs space-y-1">
+              <div className="flex items-center justify-between text-stone-500">
+                <span className="text-[11px] font-bold uppercase tracking-wider">Tanggal Acara</span>
+                <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <p className="text-sm sm:text-base font-bold text-stone-900 truncate mt-1.5">{formattedEventDate}</p>
+              <span className="text-[10px] text-stone-400 block">Pelaksanaan acara</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Download Center */}
+        <div className="bg-white rounded-2xl p-5 sm:p-6 border border-stone-200/80 shadow-xs space-y-4">
+          <div>
+            <h2 className="text-sm font-bold text-stone-900 flex items-center gap-2">
+              <svg className="w-4 h-4 text-amber-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              <span>Pusat Unduhan Arsip Digital</span>
+            </h2>
+            <p className="text-xs text-stone-500 mt-0.5">
+              Simpan rekapitulasi data pernikahan Anda dalam format spreadsheet (.CSV) yang kompatibel dengan Microsoft Excel dan Google Sheets.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            {/* Download Wishes */}
+            <div className="p-4 rounded-xl border border-amber-200/80 bg-amber-50/30 flex flex-col justify-between space-y-3">
+              <div className="space-y-1">
+                <h3 className="text-xs font-bold text-stone-900">Rekapan Doa &amp; Ucapan Tamu</h3>
+                <p className="text-[11px] text-stone-500 leading-relaxed">
+                  Seluruh pesan doa restu, ucapan selamat, dan harapan hangat dari para tamu beserta waktu kirim.
+                </p>
+              </div>
+              <a
+                href={`/api/client/invitations/${invitation.id}/export?type=wishes`}
+                download
+                className="w-full py-2.5 px-4 bg-amber-800 hover:bg-amber-900 text-white font-bold rounded-xl text-xs transition text-center shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                <span>Unduh Doa Tamu (.CSV)</span>
+              </a>
+            </div>
+
+            {/* Download Guests & RSVP */}
+            <div className="p-4 rounded-xl border border-stone-200 bg-stone-50/50 flex flex-col justify-between space-y-3">
+              <div className="space-y-1">
+                <h3 className="text-xs font-bold text-stone-900">Rekapitulasi Kehadiran &amp; RSVP</h3>
+                <p className="text-[11px] text-stone-500 leading-relaxed">
+                  Daftar nama tamu undangan, kategori, nomor kontak WhatsApp, kuota pax, dan status check-in acara.
+                </p>
+              </div>
+              <a
+                href={`/api/client/invitations/${invitation.id}/export?type=guests`}
+                download
+                className="w-full py-2.5 px-4 bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-xl text-xs transition text-center shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                <span>Unduh Data Tamu &amp; Kehadiran (.CSV)</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {/* Security & Retention Notice */}
+        <div className="p-4 rounded-2xl bg-stone-100/70 border border-stone-200 text-xs text-stone-500 flex items-start gap-3">
+          <svg className="w-4 h-4 text-stone-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div className="space-y-1">
+            <p className="font-semibold text-stone-700">Privasi &amp; Keamanan Data Klien Terjamin</p>
+            <p className="leading-relaxed">
+              Akun klien Anda disimpan permanen di sistem. Anda dapat masuk kembali kapan saja untuk mengakses riwayat dan mengunduh rekapan doa restu ini. Sesuai kebijakan retensi terpadu 14 hari pasca acara, file foto dan alamat domain telah dilepaskan secara aman.
+            </p>
+          </div>
+        </div>
+
+        {/* Action Options */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+          <button
+            type="button"
+            onClick={() => {
+              if (typeof window !== "undefined") {
+                navigator.clipboard.writeText(window.location.origin);
+                alert("Tautan website disalin! Terima kasih telah merekomendasikan layanan kami kepada teman dan keluarga.");
+              }
+            }}
+            className="w-full sm:w-auto px-4 py-2.5 bg-stone-100 hover:bg-stone-200/80 text-stone-700 font-semibold rounded-xl text-xs transition border border-stone-200 flex items-center justify-center gap-1.5 cursor-pointer"
+          >
+            <svg className="w-4 h-4 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+            </svg>
+            <span>Rekomendasikan ke Teman / Keluarga</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            className="w-full sm:w-auto px-4 py-2.5 bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-xl text-xs transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            <span>Keluar dari Dasbor</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const editorUrl = invitation ? `/dashboard/invitation/${invitation.id}` : "/dashboard/invitation";
+  const isGalleryRoute = shouldDisplayMemoriesGallery(invitation);
+  const retentionDays = platformSettings?.retentionCleanupDays || 14;
+  const latestEventDate = getLatestEventDate(invitation?.eventData);
+  const effectiveExpiry = invitation?.galleryExpiresAt
+    ? new Date(invitation.galleryExpiresAt)
+    : latestEventDate
+    ? new Date(latestEventDate.getTime() + retentionDays * 24 * 60 * 60 * 1000)
+    : null;
+
+  const daysRemaining = effectiveExpiry
+    ? Math.ceil((effectiveExpiry.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : null;
+
+  const addonPricingSettings = platformSettings ? {
+    priceTraditional: platformSettings.packages?.find((p: any) => p.id === "TRADITIONAL")?.price ?? 50000,
+    priceModern: platformSettings.packages?.find((p: any) => p.id === "MODERN")?.price ?? 150000,
+    pricePremium: platformSettings.packages?.find((p: any) => p.id === "PREMIUM")?.price ?? 250000,
+    nameTraditional: platformSettings.packages?.find((p: any) => p.id === "TRADITIONAL")?.name || "Serenade",
+    nameModern: platformSettings.packages?.find((p: any) => p.id === "MODERN")?.name || "Symphony",
+    namePremium: platformSettings.packages?.find((p: any) => p.id === "PREMIUM")?.name || "Eternity",
+    galleryExtensionPricePerMonth: platformSettings.galleryExtensionPricePerMonth ?? 50000,
+    addonMemoriesTopupPrice: platformSettings.addonMemoriesTopupPrice ?? 35000,
+    addonMemoriesTopupPhotos: platformSettings.addonMemoriesTopupPhotos ?? 100,
+    addonMemoriesTopupEnabled: platformSettings.addonMemoriesTopupEnabled !== false,
+  } : undefined;
 
   return (
     <div className="space-y-3 sm:space-y-4 font-sans">
@@ -258,13 +490,28 @@ function DashboardHomeContent() {
               ) : invitation?.status === 'EVENT_FINISHED' ? (
                 <span className="px-2.5 py-0.5 bg-purple-50 border border-purple-200 text-purple-800 text-[10px] sm:text-[11px] font-bold rounded-full uppercase tracking-wider flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-purple-600"></span>
-                  GALERI MOMEN AKTIF
+                  SELESAI
                 </span>
               ) : (
                 <span className="px-2.5 py-0.5 bg-amber-50 border border-amber-200 text-amber-800 text-[10px] sm:text-[11px] font-bold rounded-full uppercase tracking-wider flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
                   DRAFT
                 </span>
+              )}
+
+              {/* Dynamic Route Switcher Badge */}
+              {(invitation?.status === 'PUBLISHED' || invitation?.status === 'EVENT_FINISHED') && (
+                isGalleryRoute ? (
+                  <span className="px-2.5 py-0.5 bg-purple-50 border border-purple-200 text-purple-800 text-[10px] sm:text-[11px] font-bold rounded-full uppercase tracking-wider flex items-center gap-1.5" title="URL utama otomatis menampilkan Galeri Momen Tamu">
+                    <span className="w-1.5 h-1.5 rounded-full bg-purple-600"></span>
+                    Rute: Galeri Momen
+                  </span>
+                ) : (
+                  <span className="px-2.5 py-0.5 bg-blue-50 border border-blue-200 text-blue-800 text-[10px] sm:text-[11px] font-bold rounded-full uppercase tracking-wider flex items-center gap-1.5" title="URL utama menampilkan Halaman Undangan Lengkap">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                    Rute: Undangan Penuh
+                  </span>
+                )
               )}
             </div>
             
@@ -278,6 +525,24 @@ function DashboardHomeContent() {
               )}
             </span>
           </div>
+
+          {/* Retention Timer Countdown */}
+          {(invitation?.status === 'PUBLISHED' || invitation?.status === 'EVENT_FINISHED') && effectiveExpiry && (
+            <div className="flex items-center gap-2 text-[11px] text-stone-500 font-medium pt-0.5">
+              <svg className="w-3.5 h-3.5 text-stone-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>
+                Masa Simpan Sistem (Retensi 14 Hari Pasca Acara):{" "}
+                {daysRemaining !== null && daysRemaining > 0 ? (
+                  <strong className="text-stone-800 font-bold">{daysRemaining} hari lagi</strong>
+                ) : (
+                  <strong className="text-amber-800 font-bold">Menunggu jadwal pembersihan</strong>
+                )}
+                {effectiveExpiry ? ` (hingga ${effectiveExpiry.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })})` : ""}
+              </span>
+            </div>
+          )}
 
           <div className="space-y-1">
             <h1 className="text-base sm:text-lg md:text-xl lg:text-2xl font-serif font-bold text-stone-900 leading-snug tracking-tight">
@@ -443,14 +708,16 @@ function DashboardHomeContent() {
                 ? `Paket ${invitation.order.planType.charAt(0) + invitation.order.planType.slice(1).toLowerCase()}`
                 : "—"}
             </p>
-            {invitation?.order?.planType && invitation.order.planType !== "PREMIUM" && (
-              <a
-                href={invitation?.id ? `/dashboard/invitation/${invitation.id}` : "#"}
+            {invitation?.id && (
+              <button
+                type="button"
+                onClick={() => setIsAddonModalOpen(true)}
                 className="w-fit text-[10px] font-bold text-violet-700 hover:text-violet-900 border border-violet-200 hover:border-violet-300 bg-violet-50 hover:bg-violet-100 px-2.5 py-1 rounded-full transition flex items-center gap-1 cursor-pointer"
+                title="Buka Pusat Checkout Terpadu Layanan & Upgrade"
               >
                 <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
-                <span>Upgrade</span>
-              </a>
+                <span>{invitation?.order?.planType !== "PREMIUM" ? "Upgrade & Add-On" : "Kelola Add-On"}</span>
+              </button>
             )}
           </div>
           <span className="text-[10px] text-stone-400 block">
@@ -466,7 +733,7 @@ function DashboardHomeContent() {
       </div>
 
       {/* 3. Core Quick Action Cards */}
-      <div className={`grid grid-cols-1 sm:grid-cols-2 ${hasCap("guest_memories") ? "lg:grid-cols-4" : "lg:grid-cols-3"} gap-4 sm:gap-5`}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
         
         {/* Card 1: Studio Editor */}
         <div className="bg-white p-5 rounded-2xl border border-stone-200/80 shadow-xs flex flex-col justify-between space-y-4 hover:border-amber-700/40 transition">
@@ -530,50 +797,6 @@ function DashboardHomeContent() {
             Lihat Rekap RSVP
           </Link>
         </div>
-
-        {/* Card 4: Galeri Kenangan Tamu (Memory Vault) */}
-        {hasCap("guest_memories") && (
-          <div className="bg-white p-5 rounded-2xl border border-amber-200 shadow-xs flex flex-col justify-between space-y-4 hover:border-amber-500 transition bg-gradient-to-b from-amber-50/30 to-white">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-900 font-bold text-sm">
-                  <svg className="w-5 h-5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                </div>
-                <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-amber-100/80 text-amber-900 font-bold border border-amber-200/60">
-                  {guestMemoriesList.length} Foto
-                </span>
-              </div>
-              <h3 className="text-sm font-bold text-stone-900">Galeri Kenangan Tamu</h3>
-              <p className="text-xs text-stone-500 leading-relaxed">
-                Album foto candid dari para tamu undangan yang dibagikan pasca acara.
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <a
-                href="#section-galeri-kenangan"
-                className="flex-1 py-2.5 bg-amber-800 hover:bg-amber-900 text-white font-bold rounded-xl text-xs transition text-center shadow-xs cursor-pointer block"
-              >
-                Kelola &amp; Unduh ZIP
-              </a>
-              {invitation?.status === 'PUBLISHED' || invitation?.status === 'EVENT_FINISHED' ? (
-                <a
-                  href={`${invUrl}/memories`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-3 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-800 font-bold rounded-xl text-xs transition text-center inline-flex items-center justify-center border border-stone-200"
-                  title="Buka Album Publik"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                </a>
-              ) : null}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* 4. Fitur Operasional Hari H */}
@@ -683,12 +906,28 @@ function DashboardHomeContent() {
             </h2>
             <p className="text-xs text-stone-500 mt-0.5">
               Pantau foto candid yang diunggah tamu, bagikan tautan album publik, dan unduh arsip foto (ZIP).
+              {memoriesQuota && (
+                <span className="block mt-1 text-[11px] text-amber-900 font-medium">
+                  Kapasitas Paket: Maks. {memoriesQuota.maxContributors} Tamu ({memoriesQuota.shotsQuota} foto roll/tamu) • Sisa Kuota: {memoriesQuota.remainingPhotos} foto
+                </span>
+              )}
             </p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="text-xs font-mono font-bold text-stone-700 bg-stone-100 border border-stone-200 px-3 py-1.5 rounded-xl">
-              {guestMemoriesList.length} Foto Masuk
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <span className="text-xs font-mono font-bold text-stone-800 bg-stone-100 border border-stone-200 px-3 py-1.5 rounded-xl">
+              {memoriesQuota ? `${memoriesQuota.usedPhotos} / ${memoriesQuota.maxTotalPhotos} Foto` : `${guestMemoriesList.length} Foto Masuk`}
             </span>
+            <button
+              type="button"
+              onClick={() => setIsAddonModalOpen(true)}
+              className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+              title="Tambah Kuota Foto atau Perpanjang Masa Aktif Galeri"
+            >
+              <svg className="w-3.5 h-3.5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              <span>Tambah Kuota / Durasi</span>
+            </button>
             <button
               type="button"
               onClick={() => fetchGuestMemories()}
@@ -744,12 +983,15 @@ function DashboardHomeContent() {
         {invitation && (
           <MemoriesDownloadSection
             invitationId={invitation.id}
-            retentionDays={platformSettings?.retentionGalleryDefaultDays || 30}
+            retentionDays={platformSettings?.retentionCleanupDays || 14}
             isUploadLocked={invitation.memoriesUploadLocked ?? false}
             galleryExpiresAt={invitation.galleryExpiresAt ? new Date(invitation.galleryExpiresAt).toISOString() : null}
             extensionPrice={platformSettings?.galleryExtensionPricePerMonth || 50000}
             invitationStatus={invitation.status}
             guestMemoriesCount={guestMemoriesList.length}
+            pendingOrder={pendingGalleryOrder}
+            onRefresh={() => fetchGuestMemories()}
+            onOpenAddonModal={() => setIsAddonModalOpen(true)}
           />
         )}
 
@@ -842,6 +1084,19 @@ function DashboardHomeContent() {
           )}
         </div>
       </div>
+      )}
+
+      {/* Pusat Layanan Tambahan & Upgrade Terpadu */}
+      {invitation && (
+        <UnifiedAddonModal
+          isOpen={isAddonModalOpen}
+          onClose={() => setIsAddonModalOpen(false)}
+          invitationId={invitation.id}
+          currentPlan={invitation.order?.planType || "TRADITIONAL"}
+          currentQuota={memoriesQuota?.maxTotalPhotos || 250}
+          galleryExpiresAt={invitation.galleryExpiresAt ? new Date(invitation.galleryExpiresAt).toISOString() : null}
+          pricingSettings={addonPricingSettings}
+        />
       )}
     </div>
   );

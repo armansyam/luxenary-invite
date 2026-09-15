@@ -41,10 +41,13 @@ export interface PublicPlatformSettings {
   retentionInvitationDays: number;
   retentionInvitationGraceDays: number;
   retentionGalleryDefaultDays: number;
+  retentionCleanupDays: number;
+  retentionCustomDomainDays: number;
   galleryExtensionPricePerMonth: number;
-  addonSubdomainGalleryBundlePrice: number;
-  addonCustomDomainPrice: number;
   addonCustomDomainEnabled: boolean;
+  addonMemoriesTopupEnabled: boolean;
+  addonMemoriesTopupPhotos: number;
+  addonMemoriesTopupPrice: number;
   paymentGatewayFeePercent: number;
   paymentGatewayFeePayer: "BUYER" | "MERCHANT";
   smtpHost: string;
@@ -140,30 +143,38 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
 
   const activeDomain = await getDynamicServerRootDomain();
 
-  const parseFeatures = (key: string, defaultFirstLine: string, caps: string[]) => {
+  const parseFeatures = (key: string, defaultFirstLine: string, caps: string[], planId: string) => {
     let rawList: string[];
     if (map[key]) {
       rawList = map[key].split("\n").map(s => s.trim()).filter(s => s.length > 0);
     } else {
       rawList = [
         defaultFirstLine,
-        "Tamu undangan tanpa batas",
-        "Manajemen RSVP & ucapan doa",
-        "Galeri foto & musik latar",
-        `url : namakamu.${activeDomain}`,
+        "Pengiriman undangan & buku tamu WhatsApp tanpa batas",
+        "Formulir konfirmasi kehadiran (RSVP) & ucapan doa",
+        "Galeri foto, cerita cinta & pemutar musik latar",
+        `Alamat tautan khusus (namakamu.${activeDomain})`,
       ];
       if (caps.includes("qr_checkin")) {
-        rawList.push("QR Code Check-in Tamu");
-        rawList.push("Resepsionis");
+        rawList.push("Sistem Resepsionis & Check-In Tamu dengan QR Code");
       }
       if (caps.includes("guest_memories")) {
-        rawList.push(`Galeri Kenangan Tamu (/memories — Aktif ${galleryDurationLabel} pasca-acara)`);
+        const totalQ = Number(map[`memories_total_quota_${planId}`]);
+        const defaultTotal = planId === "premium" ? 1000 : (planId === "modern" ? 250 : 100);
+        const totalPhotos = !isNaN(totalQ) && totalQ > 0 ? totalQ : defaultTotal;
+        rawList.push(`Kamera Digital Tamu bergaya analog (Kapasitas Total ${totalPhotos} Foto)`);
+      }
+      if (caps.includes("custom_domain")) {
+        rawList.push("Dukungan integrasi domain website pribadi (.com / .id)");
       }
     }
 
-    const hasGalleryItem = rawList.some(item => /galeri\s+kenangan|guest\s+memories|guest\s*gal/i.test(item));
+    const hasGalleryItem = rawList.some(item => /galeri\s+kenangan|guest\s+memories|guest\s*gal|disposable\s*camera|kamera/i.test(item));
     if (caps.includes("guest_memories") && !hasGalleryItem) {
-      rawList.push(`Galeri Kenangan Tamu (/memories — Aktif ${galleryDurationLabel} pasca-acara)`);
+      const totalQ = Number(map[`memories_total_quota_${planId}`]);
+      const defaultTotal = planId === "premium" ? 1000 : (planId === "modern" ? 250 : 100);
+      const totalPhotos = !isNaN(totalQ) && totalQ > 0 ? totalQ : defaultTotal;
+      rawList.push(`Kamera Digital Tamu bergaya analog (Kapasitas Total ${totalPhotos} Foto — Aktif ${galleryDurationLabel} setelah acara)`);
     }
 
     return rawList.map(item => {
@@ -171,18 +182,15 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
       if (activeDomain !== "luxvite.id" && resolvedItem.includes(".luxvite.id")) {
         resolvedItem = resolvedItem.replace(/\.luxvite\.id/g, `.${activeDomain}`);
       }
-      if (/galeri\s+kenangan|guest\s+memories|guest\s*gal/i.test(resolvedItem)) {
-        if (!/aktif|\d+\s*(hari|bulan)/i.test(resolvedItem)) {
-          return `${resolvedItem} (/memories — Aktif ${galleryDurationLabel} pasca-acara)`;
-        }
-      }
       return resolvedItem;
     });
   };
 
   const capsTraditional: string[] = map["capabilities_traditional"] ? JSON.parse(map["capabilities_traditional"]) : ["music", "gallery"];
-  const capsModern: string[] = map["capabilities_modern"] ? JSON.parse(map["capabilities_modern"]) : ["music", "gallery"];
+  const capsModern: string[] = map["capabilities_modern"] ? JSON.parse(map["capabilities_modern"]) : ["music", "gallery", "qr_checkin", "guest_memories"];
   const capsPremium: string[] = map["capabilities_premium"] ? JSON.parse(map["capabilities_premium"]) : ["music", "gallery", "qr_checkin", "guest_memories", "custom_domain"];
+
+  const allActiveThemeNames = themes.map(t => t.name);
 
   return {
     platformName: map["platform_name"] || "Luxenary",
@@ -203,11 +211,14 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
       "Silakan transfer tepat sesuai total tagihan invoice. Setelah transfer, unggah foto bukti transfer di bawah ini untuk diverifikasi admin.",
     retentionInvitationDays: Number(map["retention_invitation_days"] || 30),
     retentionInvitationGraceDays: Number(map["retention_invitation_grace_days"] || 7),
-    retentionGalleryDefaultDays: galleryRetentionDays,
+    retentionGalleryDefaultDays: Number(map["retention_cleanup_days"] || galleryRetentionDays || 14),
+    retentionCleanupDays: Number(map["retention_cleanup_days"] || 14),
+    retentionCustomDomainDays: Number(map["retention_custom_domain_days"] || 30),
     galleryExtensionPricePerMonth: Number(map["gallery_extension_price_per_month"] || 50000),
-    addonSubdomainGalleryBundlePrice: Number(map["addon_subdomain_gallery_bundle_price"] || 175000),
-    addonCustomDomainPrice: Number(map["addon_custom_domain_price"] || 150000),
     addonCustomDomainEnabled: map["addon_custom_domain_enabled"] !== "false",
+    addonMemoriesTopupEnabled: map["addon_memories_topup_enabled"] !== "false",
+    addonMemoriesTopupPhotos: Number(map["addon_memories_topup_photos"] || 100),
+    addonMemoriesTopupPrice: Number(map["addon_memories_topup_price"] || 35000),
     paymentGatewayFeePercent: Number(map["payment_gateway_fee_percent"] || (map["payment_fee_rate"] ? Number(map["payment_fee_rate"]) * 100 : 0.7)),
     paymentGatewayFeePayer: ((map["payment_fee_payer"] || map["payment_gateway_fee_payer"] || "MERCHANT") === "BUYER" ? "BUYER" : "MERCHANT"),
     smtpHost: map["smtp_host"] || "",
@@ -229,33 +240,33 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
     packages: [
       {
         id: "TRADITIONAL",
-        name: map["name_traditional"] || "Traditional",
+        name: map["name_traditional"] || "Serenade",
         price: Number(map["price_traditional"] || 0),
-        desc: map["desc_traditional"] || "Tema Standart — Elegan, Sakral & Bernuansa Tradisional",
-        themes: traditionalThemes,
-        features: parseFeatures("features_traditional", `Pilihan ${traditionalThemes.length} tema Standart Traditional`, capsTraditional),
+        desc: map["desc_traditional"] || "Paket Intim & Esensial — Undangan Digital Berkelas, Musik & RSVP Online",
+        themes: allActiveThemeNames,
+        features: parseFeatures("features_traditional", `Bebas pilih seluruh koleksi tema desain (${allActiveThemeNames.length} Tema)`, capsTraditional, "traditional"),
         capabilities: capsTraditional,
         color: "amber",
         isFeatured: false,
       },
       {
         id: "MODERN",
-        name: map["name_modern"] || "Modern",
+        name: map["name_modern"] || "Symphony",
         price: Number(map["price_modern"] || 0),
-        desc: map["desc_modern"] || "Tema Premium — Sinematik, Editorial & Kontemporer",
-        themes: modernThemes,
-        features: parseFeatures("features_modern", `Akses ${modernThemes.length} tema Modern + Semua tema Traditional (${traditionalThemes.length + modernThemes.length} Tema)`, capsModern),
+        desc: map["desc_modern"] || "Paket Harmoni Pesta — Dilengkapi Resepsionis QR Check-In & Kamera Momen Tamu",
+        themes: allActiveThemeNames,
+        features: parseFeatures("features_modern", `Bebas pilih seluruh koleksi tema desain (${allActiveThemeNames.length} Tema)`, capsModern, "modern"),
         capabilities: capsModern,
         color: "slate",
         isFeatured: false,
       },
       {
         id: "PREMIUM",
-        name: map["name_premium"] || "Premium",
+        name: map["name_premium"] || "Eternity",
         price: Number(map["price_premium"] || 0),
-        desc: map["desc_premium"] || "Tema Luxury — Editorial, Full-Text & Luxury Visual Motion",
-        themes: premiumThemes,
-        features: parseFeatures("features_premium", `All-Access ${totalThemesCount} Tema Lengkap (Traditional + Modern + Luxury Premium)`, capsPremium),
+        desc: map["desc_premium"] || "Paket Mahakarya Abadi — All-Inclusive dengan Custom Domain Pribadi & Kuota Maksimal",
+        themes: allActiveThemeNames,
+        features: parseFeatures("features_premium", `Bebas pilih seluruh koleksi tema desain (${allActiveThemeNames.length} Tema)`, capsPremium, "premium"),
         capabilities: capsPremium,
         badge: "Terpopuler",
         color: "purple",
@@ -305,5 +316,61 @@ export async function hasPlanCapability(planType: string | null | undefined, cap
     PREMIUM: ["music", "gallery", "qr_checkin", "guest_memories", "custom_domain"],
   };
   return (defaultCaps[normPlan] || []).includes(capability);
+}
+
+export interface PlanMemoriesQuota {
+  totalQuota: number;
+  maxContributors: number;
+  shotsQuota: number;
+  hasAccess: boolean;
+}
+
+/**
+ * Mengambil total kuota foto kamera tamu per paket secara dinamis dari database admin_settings.
+ * Single Source of Truth untuk pembatasan resource server & quota tier.
+ */
+export async function getPlanMemoriesQuota(planType: string | null | undefined): Promise<PlanMemoriesQuota> {
+  const normPlan = (planType || "TRADITIONAL").toUpperCase();
+  const hasAccess = await hasPlanCapability(normPlan, "guest_memories");
+  if (!hasAccess) {
+    return { totalQuota: 0, maxContributors: 0, shotsQuota: 0, hasAccess: false };
+  }
+
+  try {
+    const planKey = normPlan.toLowerCase();
+    const [totalQuotaSetting, maxContribSetting, shotsQuotaSetting] = await Promise.all([
+      prisma.adminSetting.findUnique({ where: { key: `memories_total_quota_${planKey}` } }),
+      prisma.adminSetting.findUnique({ where: { key: `memories_max_contributors_${planKey}` } }),
+      prisma.adminSetting.findUnique({ where: { key: `memories_shots_quota_${planKey}` } }),
+    ]);
+
+    const defaultQuotas: Record<string, { totalQuota: number; maxContributors: number; shotsQuota: number }> = {
+      TRADITIONAL: { totalQuota: 0, maxContributors: 0, shotsQuota: 0 },
+      MODERN: { totalQuota: 250, maxContributors: 50, shotsQuota: 5 },
+      PREMIUM: { totalQuota: 1000, maxContributors: 200, shotsQuota: 5 },
+    };
+
+    const fallback = defaultQuotas[normPlan] || { totalQuota: 250, maxContributors: 50, shotsQuota: 5 };
+
+    const shotsQuota = shotsQuotaSetting?.value
+      ? Math.max(1, parseInt(shotsQuotaSetting.value, 10) || fallback.shotsQuota)
+      : fallback.shotsQuota;
+
+    const maxContributors = maxContribSetting?.value
+      ? Math.max(1, parseInt(maxContribSetting.value, 10) || fallback.maxContributors)
+      : fallback.maxContributors;
+
+    // Prioritaskan memories_total_quota jika ada; jika tidak, gunakan perkalian maxContributors * shotsQuota
+    let totalQuota = fallback.totalQuota;
+    if (totalQuotaSetting?.value && !isNaN(Number(totalQuotaSetting.value))) {
+      totalQuota = Math.max(0, parseInt(totalQuotaSetting.value, 10));
+    } else if (maxContributors > 0 && shotsQuota > 0) {
+      totalQuota = maxContributors * shotsQuota;
+    }
+
+    return { totalQuota, maxContributors, shotsQuota, hasAccess: true };
+  } catch {
+    return { totalQuota: 250, maxContributors: 50, shotsQuota: 5, hasAccess: true };
+  }
 }
 

@@ -71,7 +71,7 @@ const DEFAULT_SETTINGS: Array<{ key: string; value: string; label: string; group
   { key: "subdomain_grace_days", value: "7", label: "Masa Tenggang Subdomain (Hari Pasca Acara)", group: "subdomain" },
   { key: "subdomain_auto_recycle", value: "true", label: "Otomatis Lepas Subdomain ke Pool", group: "subdomain" },
   { key: "retention_invitation_days", value: "30", label: "Retensi Undangan Aktif & Recycle Subdomain (Hari)", group: "subdomain" },
-  { key: "retention_account_days", value: "365", label: "Pembersihan Total Akun & Portofolio (Hari)", group: "subdomain" },
+  { key: "retention_account_days", value: "365", label: "Pembersihan Akun Klien Nonaktif (Hari)", group: "subdomain" },
   // Retensi order — terpisah dari retensi undangan
   { key: "retention_order_days", value: "90", label: "Pembersihan Order Lama EXPIRED/FAILED/PENDING (Hari)", group: "subdomain" },
 ];

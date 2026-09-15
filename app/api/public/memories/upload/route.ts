@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getPublicPlatformSettings, hasPlanCapability } from "@/lib/settings";
+import { getPublicPlatformSettings, hasPlanCapability, getPlanMemoriesQuota } from "@/lib/settings";
 import crypto from "crypto";
 import { uploadFile } from "@/lib/storage";
 import { rateLimit } from "@/lib/rateLimit";
 import { sseEmitter } from "@/lib/sseEmitter";
+import { getMemoriesActiveSchedule } from "@/lib/domainUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -83,8 +84,11 @@ export async function POST(req: NextRequest) {
     const invitation = await prisma.invitation.findUnique({
       where: { id: invitationId },
       select: {
+        id: true,
         memoriesUploadLocked: true,
         invitationSlug: true,
+        featureSettings: true,
+        eventData: true,
         order: { select: { planType: true } },
       },
     });
@@ -101,13 +105,118 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Cek apakah upload sudah dikunci oleh klien (setelah download ZIP)
+    // Cek apakah upload sudah dikunci oleh klien (setelah download ZIP atau saklar darurat)
     if (invitation.memoriesUploadLocked) {
       const galleryUrl = `/${invitation.invitationSlug}/memories`;
       return NextResponse.json(
         { locked: true, galleryUrl, message: "Upload momen telah ditutup oleh penyelenggara." },
         { status: 423 } // 423 Locked — HTTP status yang tepat untuk resource terkunci
       );
+    }
+
+    // ── VALIDASI KONFIGURASI DINAMIS (featureSettings) ──
+    const fs = (() => {
+      try {
+        return typeof invitation.featureSettings === "object"
+          ? invitation.featureSettings
+          : JSON.parse(invitation.featureSettings || "{}");
+      } catch {
+        return {};
+      }
+    })();
+
+    // Cek apakah fitur memori tamu dinonaktifkan di level undangan
+    if (fs.showGuestMemories === false) {
+      return NextResponse.json(
+        { error: "Pengiriman momen sedang dinonaktifkan oleh penyelenggara." },
+        { status: 403 }
+      );
+    }
+
+    // ── VALIDASI JADWAL WAKTU AKTIF KAMERA ──
+    const now = new Date();
+    const { startTime, endTime } = getMemoriesActiveSchedule(invitation.featureSettings, invitation.eventData);
+
+    if (startTime && now < startTime) {
+      return NextResponse.json(
+        {
+          notStarted: true,
+          startTime: startTime.toISOString(),
+          message: "Kamera momen belum dibuka. Silakan kembali saat acara dimulai.",
+        },
+        { status: 403 }
+      );
+    }
+
+    // Berikan toleransi grace period 15 menit pasca-acara selesai
+    if (endTime) {
+      const graceEndTime = new Date(endTime.getTime() + 15 * 60 * 1000);
+      if (now > graceEndTime) {
+        return NextResponse.json(
+          {
+            expired: true,
+            endTime: endTime.toISOString(),
+            message: "Waktu pengiriman momen telah berakhir.",
+          },
+          { status: 423 }
+        );
+      }
+    }
+
+    // ── VALIDASI KUOTA TAMU PENGUNGGAH & PLAFON PAKET ADMIN ──
+    const planQuota = await getPlanMemoriesQuota(invitation.order?.planType);
+    if (!planQuota.hasAccess) {
+      return NextResponse.json(
+        { error: "Fitur kamera kenangan tamu tidak termasuk dalam kapabilitas paket Anda." },
+        { status: 403 }
+      );
+    }
+
+    // ── 1. VALIDASI TOTAL KUOTA FOTO ACARA (Total Event Capacity) ──
+    const totalEventQuota = planQuota.totalQuota > 0 ? planQuota.totalQuota : (planQuota.maxContributors * planQuota.shotsQuota);
+    if (totalEventQuota > 0) {
+      const currentTotalPhotos = await prisma.guestMemory.count({
+        where: { invitationId },
+      });
+
+      if (currentTotalPhotos >= totalEventQuota) {
+        return NextResponse.json(
+          {
+            quotaExceeded: true,
+            totalQuota: totalEventQuota,
+            currentTotalPhotos,
+            message: `Kapasitas kuota foto kenangan untuk acara ini telah terisi penuh (${totalEventQuota}/${totalEventQuota} foto). Terima kasih atas partisipasi Anda!`,
+          },
+          { status: 403 }
+        );
+      }
+    }
+
+    // ── 2. VALIDASI JATAH ROLL PER TAMU (Guest Roll Limit) ──
+    // Klien (pengantin) bebas mengatur berapa roll per tamu di pengaturan undangannya
+    const clientShotsQuota = typeof fs.memoriesShotsQuota === "number" ? fs.memoriesShotsQuota : planQuota.shotsQuota;
+    const shotsQuota = clientShotsQuota > 0 ? clientShotsQuota : (planQuota.shotsQuota || 5);
+
+    let guestUploadedCount = 0;
+    if (senderEmail) {
+      guestUploadedCount = await prisma.guestMemory.count({
+        where: {
+          invitationId,
+          senderEmail,
+        },
+      });
+
+      if (shotsQuota > 0 && guestUploadedCount >= shotsQuota) {
+        return NextResponse.json(
+          {
+            quotaExceeded: true,
+            shotsQuota,
+            guestUploadedCount,
+            message: `Roll film Anda telah terisi penuh (${shotsQuota}/${shotsQuota} foto). Terima kasih atas partisipasi Anda!`,
+          },
+          { status: 403 }
+        );
+      }
     }
 
 
@@ -160,10 +269,15 @@ export async function POST(req: NextRequest) {
       console.error("[SSE Emitter Error]", sseErr);
     }
 
+    const remainingShots = shotsQuota > 0 ? Math.max(0, shotsQuota - (guestUploadedCount + 1)) : 999;
+
     return NextResponse.json({ 
       success: true, 
       memory,
-      viewUrl: mediaUrl
+      viewUrl: mediaUrl,
+      shotsTaken: guestUploadedCount + 1,
+      shotsQuota,
+      remainingShots,
     });
 
   } catch (error: any) {

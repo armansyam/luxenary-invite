@@ -92,6 +92,7 @@ export default async function DemoGuestMemoriesStandalonePage({ params }: PagePr
       memories={memories}
       galleryUrl={galleryUrl}
       backUrl={backUrl}
+      isTestMode={true}
     />
   );
 }

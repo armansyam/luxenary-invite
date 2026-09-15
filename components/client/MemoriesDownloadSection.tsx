@@ -3,6 +3,15 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
+export interface PendingGalleryOrderInfo {
+  id: string;
+  invoiceNumber: string;
+  amount: number;
+  status: string;
+  hasProof: boolean;
+  expiredAt: string | null;
+}
+
 interface Props {
   invitationId: string;
   retentionDays: number;
@@ -11,6 +20,9 @@ interface Props {
   extensionPrice?: number;
   invitationStatus?: string;
   guestMemoriesCount?: number;
+  pendingOrder?: PendingGalleryOrderInfo | null;
+  onRefresh?: () => void;
+  onOpenAddonModal?: () => void;
 }
 
 type Phase = "idle" | "confirming" | "fetching" | "downloading" | "zipping" | "locking" | "done" | "error";
@@ -23,6 +35,9 @@ export function MemoriesDownloadSection({
   extensionPrice = 50000,
   invitationStatus = "PUBLISHED",
   guestMemoriesCount = 0,
+  pendingOrder = null,
+  onRefresh,
+  onOpenAddonModal,
 }: Props) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>("idle");
@@ -49,7 +64,9 @@ export function MemoriesDownloadSection({
         body: JSON.stringify({ invitationId }),
       });
       const data = await res.json();
-      if (data.success && data.orderId) {
+      if (data.paymentUrl) {
+        router.push(data.paymentUrl);
+      } else if (data.orderId) {
         router.push(`/checkout?order=${data.orderId}`);
       } else {
         setErrorMsg(data.error || "Gagal membuat pesanan perpanjangan");
@@ -173,7 +190,7 @@ export function MemoriesDownloadSection({
           <svg className="w-4 h-4 text-amber-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
-          <span>Undangan masih berstatus <strong>Draft</strong>. Formulir upload tamu dan unduh ZIP akan aktif otomatis setelah undangan dipublikasikan.</span>
+          <span>Undangan masih berstatus <strong>Draft</strong>. Kamera momen tamu dibuka otomatis pada hari H acara (atau sesuai jadwal Studio), dan tombol unduh ZIP aktif setelah foto tamu mulai terkumpul.</span>
         </div>
       ) : uploadLocked || normalizedStatus === "EVENT_FINISHED" ? (
         <div className="flex items-center gap-2 text-[11px] text-emerald-800 font-medium bg-emerald-100/70 border border-emerald-200 rounded-xl px-3.5 py-2.5">
@@ -259,31 +276,70 @@ export function MemoriesDownloadSection({
         <p className="text-[11px] text-rose-600 font-medium">{errorMsg}</p>
       )}
 
-      {/* Status Masa Simpan & Perpanjangan QRIS */}
-      <div className="p-3.5 bg-stone-50 rounded-xl border border-stone-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      {/* Status Masa Simpan & Perpanjangan Smart State Machine */}
+      <div className="p-4 bg-stone-50/80 rounded-2xl border border-stone-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <span className="text-[11px] font-bold text-stone-700 block">Status Masa Simpan Foto Galeri Tamu:</span>
-          <p className="text-xs text-stone-600 mt-0.5">
+          <span className="text-[11px] font-bold text-stone-700 block font-mono uppercase tracking-wider">
+            Status Masa Simpan Foto Galeri Tamu
+          </span>
+          <p className="text-xs text-stone-600 mt-1 leading-relaxed">
             {galleryExpiresAt ? (
-              <>Foto tamu aman disimpan hingga: <strong className="text-purple-700 font-semibold">{new Date(galleryExpiresAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</strong> <span className="text-[10px] text-purple-600 font-medium">(Extended)</span></>
+              <>Foto tamu aman disimpan hingga: <strong className="text-purple-700 font-bold">{new Date(galleryExpiresAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}</strong> <span className="text-[10px] text-purple-600 font-semibold px-2 py-0.5 rounded-full bg-purple-50 border border-purple-200 ml-1">Extended</span></>
+            ) : normalizedStatus === "DRAFT" ? (
+              <>Standar retensi terpadu: <strong>{retentionDays} hari</strong> (otomatis aktif setelah acara selesai, foto &amp; domain dibersihkan bersamaan).</>
             ) : (
-              <>Standar simpan: <strong>{retentionDays} hari</strong> pasca acara (URL website undangan Anda tetap aktif 1 tahun).</>
+              <>Standar retensi terpadu: <strong>{retentionDays} hari</strong> pasca acara (foto, subdomain &amp; domain dibersihkan bersamaan).</>
             )}
           </p>
         </div>
         
-        <button
-          type="button"
-          onClick={handleExtendGallery}
-          disabled={extending}
-          className="inline-flex items-center justify-center px-3.5 py-2 bg-purple-700 hover:bg-purple-800 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition shadow-2xs cursor-pointer shrink-0"
-          title="Perpanjang penyimpanan foto momen para tamu di server selama +30 hari via QRIS"
-        >
-          <svg className="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          {extending ? "Menyiapkan QRIS..." : `+30 Hari Galeri (Rp ${Number(extensionPrice).toLocaleString("id-ID")})`}
-        </button>
+        {/* State 1: Ada order PENDING dan sudah upload bukti transfer (Menunggu Verifikasi Admin) */}
+        {pendingOrder && pendingOrder.hasProof ? (
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs font-bold">
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
+              <span>Verifikasi Admin ({pendingOrder.invoiceNumber})</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => router.push(`/payment?order=${pendingOrder.id}`)}
+              className="px-3.5 py-2 bg-amber-700 hover:bg-amber-800 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer inline-flex items-center gap-1.5"
+            >
+              <span>Pantau Status</span>
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+              </svg>
+            </button>
+          </div>
+        ) : pendingOrder && !pendingOrder.hasProof ? (
+          /* State 2: Ada order PENDING tapi belum bayar / belum upload bukti */
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => router.push(`/payment?order=${pendingOrder.id}`)}
+              className="inline-flex items-center justify-center px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition shadow-xs cursor-pointer"
+            >
+              <svg className="w-3.5 h-3.5 mr-1.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              </svg>
+              <span>Lanjutkan Tagihan ({pendingOrder.invoiceNumber})</span>
+            </button>
+          </div>
+        ) : (
+          /* State 3: Normal — Tombol Beli Add-On (+30 Hari Galeri / Kelola Kapasitas) */
+          <button
+            type="button"
+            onClick={onOpenAddonModal || handleExtendGallery}
+            disabled={extending}
+            className="inline-flex items-center justify-center px-4 py-2 bg-purple-700 hover:bg-purple-800 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition shadow-xs cursor-pointer shrink-0"
+            title="Kelola kapasitas foto & masa aktif galeri tamu"
+          >
+            <svg className="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            {extending ? "Memproses..." : (onOpenAddonModal ? "Perpanjang & Tambah Kuota" : `+30 Hari Galeri (Rp ${Number(extensionPrice).toLocaleString("id-ID")})`)}
+          </button>
+        )}
       </div>
 
       {!isProcessing && phase !== "confirming" && (

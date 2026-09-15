@@ -267,3 +267,101 @@ export function isSubdomainExpired(eventDateInput?: string | Date | null, graceP
     return false;
   }
 }
+
+/**
+ * Evaluator deterministik apakah rute publik harus dialihkan ke Galeri Momen (/memories)
+ * Berdasarkan kapabilitas paket, status undangan, dan setting transisi klien (Auto H+1 vs Manual Switch).
+ */
+export function shouldDisplayMemoriesGallery(invitation: {
+  status: string;
+  eventData?: any;
+  featureSettings?: string | null;
+  order?: { planType?: string | null } | null;
+}): boolean {
+  // Jika sudah berstatus ARCHIVED, file galeri sudah dibersihkan, jangan alihkan ke memories
+  if (invitation.status === "ARCHIVED") return false;
+
+  const planType = invitation.order?.planType || "TRADITIONAL";
+  // Hanya paket MODERN dan PREMIUM yang memiliki kapabilitas galeri kenangan tamu
+  const canAccessMemories = planType === "MODERN" || planType === "PREMIUM";
+  if (!canAccessMemories) return false;
+
+  // Jika status sistem sudah EVENT_FINISHED
+  if (invitation.status === "EVENT_FINISHED") return true;
+
+  const featureSettings = (() => {
+    try {
+      return JSON.parse(invitation.featureSettings || "{}");
+    } catch {
+      return {};
+    }
+  })();
+
+  // Mode MANUAL: Ditentukan langsung oleh toggle 'memoriesForceGallery'
+  if (featureSettings.memoriesTransitionMode === "MANUAL") {
+    return Boolean(featureSettings.memoriesForceGallery);
+  }
+
+  // Mode AUTO (Default: H+1 pasca acara)
+  const transitionDays = Number(featureSettings.memoriesTransitionDays ?? 1);
+  const latestEventDate = getLatestEventDate(invitation.eventData);
+  if (!latestEventDate) return false;
+
+  const targetTransitionTime = new Date(latestEventDate.getTime() + (transitionDays * 24 * 60 * 60 * 1000));
+  return new Date() >= targetTransitionTime;
+}
+
+/**
+ * Menghitung jadwal aktif kamera momen tamu (kapan mulai dibuka dan kapan ditutup).
+ * Mendukung mode kustom mandiri (memoriesCustomSchedule) dan auto-sync jadwal acara (eventData).
+ */
+export function getMemoriesActiveSchedule(featureSettingsInput: any, eventDataInput: any): {
+  startTime: Date | null;
+  endTime: Date | null;
+  isCustom: boolean;
+} {
+  const fs = (() => {
+    if (typeof featureSettingsInput === "string") {
+      try {
+        return JSON.parse(featureSettingsInput);
+      } catch {
+        return {};
+      }
+    }
+    return featureSettingsInput || {};
+  })();
+
+  if (fs.memoriesCustomSchedule) {
+    const s = fs.memoriesStartTime ? new Date(fs.memoriesStartTime) : null;
+    const e = fs.memoriesEndTime ? new Date(fs.memoriesEndTime) : null;
+    return {
+      startTime: s && !isNaN(s.getTime()) ? s : null,
+      endTime: e && !isNaN(e.getTime()) ? e : null,
+      isCustom: true,
+    };
+  }
+
+  let startTime: Date | null = null;
+  let endTime: Date | null = null;
+  try {
+    const events = typeof eventDataInput === "string" ? JSON.parse(eventDataInput) : eventDataInput || [];
+    const list = Array.isArray(events) ? events : events?.events;
+    if (Array.isArray(list) && list.length > 0) {
+      for (const ev of list) {
+        if (ev?.date) {
+          const startStr = `${ev.date}T${ev.startTime || "00:00"}:00`;
+          const endStr = `${ev.date}T${ev.endTime || "23:59"}:00`;
+          const s = new Date(startStr);
+          const e = new Date(endStr);
+          if (!isNaN(s.getTime()) && (!startTime || s < startTime)) startTime = s;
+          if (!isNaN(e.getTime()) && (!endTime || e > endTime)) endTime = e;
+        }
+      }
+    }
+  } catch {
+    // fallback safe
+  }
+
+  return { startTime, endTime, isCustom: false };
+}
+

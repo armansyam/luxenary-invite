@@ -120,7 +120,6 @@ export default async function DemoGuestMemoriesGalleryPage({ params }: PageProps
             >
               <div
                 className="w-16 h-16 rounded-full p-[2.5px] bg-gradient-to-tr from-amber-500 via-amber-300 to-yellow-500 group-hover:scale-105 transition-transform shadow-md shadow-amber-500/20 select-none"
-                onContextMenu={(e) => e.preventDefault()}
               >
                 <div className="w-full h-full rounded-full overflow-hidden bg-stone-900 border-2 border-stone-950 flex items-center justify-center pointer-events-none select-none">
                   <img
@@ -154,7 +153,6 @@ export default async function DemoGuestMemoriesGalleryPage({ params }: PageProps
             >
               <div
                 className="relative overflow-hidden bg-stone-950 select-none"
-                onContextMenu={(e) => e.preventDefault()}
               >
                 <img
                   src={m.mediaUrl}

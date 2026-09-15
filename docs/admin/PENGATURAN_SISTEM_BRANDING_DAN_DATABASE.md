@@ -118,14 +118,13 @@ Sistem mengadopsi arsitektur hierarki URL yang bersih dan hemat sumber daya name
    - Subdomain dan Custom Domain sejatinya hanyalah jembatan *rewrite* internal yang bermuara pada URL Asli ini.
 
 3. **Transisi Otomatis Undangan ke Galeri Kenangan (`EVENT_FINISHED`):**
-   - Ketika tanggal acara telah berlalu melampaui `retention_invitation_grace_days` (default: 7 hari), cron cleanup mengubah status undangan menjadi `EVENT_FINISHED`.
-   - Undangan fisik (formulir RSVP dan countdown) ditutup secara permanen, dan upload foto tamu dikunci (`memoriesUploadLocked = true`) untuk keamanan unduhan arsip ZIP.
-   - **URL Asli secara otomatis beralih fungsi menyajikan Galeri Kenangan Tamu (`/[invitationSlug]/memories`)**. Siapa pun yang membuka link lama di WhatsApp atau media sosial akan langsung disuguhi dokumentasi momen bahagia.
+   - Rute publik beralih secara cerdas ke Galeri Kenangan Tamu (`/memories`) via mode AUTO (H+1 pasca acara) atau tombol toggle MANUAL di Studio Editor Seksi 14.
+   - Undangan utama ditutup, dan pengunjung langsung disuguhi dokumentasi momen candid para tamu.
 
-4. **Pembersihan Galeri & Arsip Total (`ARCHIVED`):**
-   - Foto kenangan tamu dipertahankan selama `retention_gallery_default_days` (default: 30 hari) atau sesuai perpanjangan `galleryExpiresAt`.
-   - Jika klien tidak memperpanjang via add-on bulanan, cron cleanup membersihkan foto-foto dari Cloudflare R2 / lokal dan menandai undangan sebagai `ARCHIVED`.
-   - Akun klien lama yang tidak memiliki undangan aktif akan dibersihkan secara menyeluruh setelah `retention_account_days` (default: 365 hari).
+4. **Pembersihan Terpadu & Dasbor Memorial 1 Halaman (`ARCHIVED`):**
+   - Subdomain, custom domain, foto kenangan tamu di R2/lokal, dan RSVP dibersihkan secara bersamaan dalam 1 jadwal retensi terpadu (H+14 pasca acara `retention_cleanup_days` atau sesuai perpanjangan `galleryExpiresAt`).
+   - Ketika berstatus `ARCHIVED`, dasbor klien bertransformasi menjadi 1 halaman memorial eksklusif berisi surat apresiasi, ringkasan 4 metrik acara, serta Pusat Unduhan Arsip Digital (.CSV Doa Restu & .CSV Tamu/Kehadiran).
+   - Akun klien (`User`) di PostgreSQL tidak pernah dihapus (Zero Account Deletion) agar klien dapat login kembali sewaktu-waktu.
 
 ---
 

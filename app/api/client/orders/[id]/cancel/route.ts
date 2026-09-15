@@ -33,6 +33,13 @@ export async function POST(
       return NextResponse.json({ error: "Hanya pesanan pending yang dapat dibatalkan" }, { status: 400 });
     }
 
+    // Dilarang membatalkan pesanan jika bukti transfer sudah diunggah dan sedang dalam proses verifikasi admin
+    if (order.proofImageUrl) {
+      return NextResponse.json({
+        error: "Pesanan tidak dapat dibatalkan karena bukti transfer telah diunggah dan sedang dalam proses verifikasi tim admin.",
+      }, { status: 400 });
+    }
+
     // 1. Dilarang melakukan Hard Delete!
     // Hard delete akan memutuskan rantai relasi webhook dari Midtrans. Jika webhook masuk setelah di-delete,
     // Midtrans akan menerima error 404/500 dan menganggap integrasi kita rusak (bisa gagal verifikasi production).

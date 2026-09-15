@@ -51,23 +51,18 @@ Endpoint ini bertugas menjaga performa database dan kapasitas storage agar tetap
 - Endpoint menolak seluruh akses tanpa token rahasia yang sah (mencegah eksploitasi Denial of Service).
 
 ### B. Tahapan Pembersihan yang Dilakukan:
-1. **Peralihan Siklus Hidup Undangan (`EVENT_FINISHED`):**
-   - Mencari undangan berstatus `PUBLISHED` yang tanggal acaranya sudah lewat lebih dari nilai konfigurasi `retention_invitation_grace_days` (default: 7 hari).
-   - Mengubah status undangan menjadi `EVENT_FINISHED`.
-   - Mengunci unggahan momen tamu (`memoriesUploadLocked = true`) agar berkas tidak berubah saat diunduh menjadi ZIP.
-   - Menghapus file HTML subdomain statis di `public/published/` sehingga akses subdomain otomatis dialihkan (*internal rewrite*) ke galeri kenangan tamu (`/s/[subdomain]/memories`).
-2. **Daur Ulang Subdomain (*Subdomain Recycling*):**
-   - Jika pengaturan `subdomain_auto_recycle` bernilai `true`, subdomain dari undangan yang sudah kadaluarsa lebih dari `subdomain_grace_days` akan dilepaskan (`subdomain = null`).
-   - Subdomain yang terlepas dapat kembali digunakan oleh calon pengantin baru.
-3. **Pembersihan Foto Tamu Sesuai Retensi (`Guest Memories Retention`):**
-   - Foto tamu memiliki masa simpan default 30 hari pasca-acara (`retention_gallery_default_days`).
-   - Jika klien tidak membeli Add-on perpanjangan galeri (+30 hari) dan batas `galleryExpiresAt` telah lewat, sistem akan:
-     - Menghapus record `GuestMemory` dari database PostgreSQL.
-     - Menghapus objek file foto terkait dari bucket **Cloudflare R2**.
-4. **Pembersihan Invoice Kadaluarsa:**
+1. **Pembersihan Siklus Hidup Terpadu (Single Unified Lifecycle Cleanup):**
+   - Mencari undangan yang telah melewati masa simpan pasca acara berdasarkan `retention_cleanup_days` (default 14 hari) atau `galleryExpiresAt` (jika diperpanjang via add-on).
+   - Menghapus seluruh foto kenangan tamu (`GuestMemory`) dari database dan Cloudflare R2 / penyimpanan lokal.
+   - Mengunci izin upload foto tamu (`memoriesUploadLocked = true`).
+   - Melepaskan subdomain kembali ke pool namespace (`subdomain = null`) jika fitur auto-recycle aktif.
+   - Melepaskan/menonaktifkan custom domain.
+   - Membersihkan data RSVP kedaluwarsa demi privasi tamu.
+   - Memperbarui status undangan menjadi `ARCHIVED`.
+2. **Kebijakan Nol Penghapusan Akun Klien (Zero Account Deletion):**
+   - Akun pengguna (`User`) di basis data disimpan abadi (<1 KB) agar klien dapat login kembali untuk melihat dasbor memorial dan mengunduh rekapan doa (.CSV).
+3. **Pembersihan Invoice Kedaluwarsa:**
    - Pesanan berstatus `PENDING` yang berusia lebih dari `retention_order_days` (default: 30 hari) otomatis diubah menjadi `CANCELLED`.
-5. **Pembersihan Akun Nonaktif:**
-   - Akun pengguna yang tidak pernah melakukan transaksi atau tidak memiliki undangan aktif selama lebih dari `retention_account_days` (default: 365 hari) ditandai untuk dihapus.
 
 ---
 

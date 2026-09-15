@@ -3540,55 +3540,82 @@ export default function AdminPage() {
                   {activeSettingsTab === "paket" && (
                   <>
                   {/* Pricing Settings */}
-                  <SettingsCard
-                    title="Manajemen Harga & Paket"
-                    description="Atur nama paket, harga, dan deskripsi untuk 3 kategori paket undangan."
-                    isEditing={Boolean(editSection["pricing"])}
-                    onEdit={() => toggleEditSection("pricing")}
-                    onCancel={() => cancelEdit("pricing", ["name_traditional", "name_modern", "name_premium", "price_traditional", "price_modern", "price_premium", "desc_traditional", "desc_modern", "desc_premium", "features_traditional", "features_modern", "features_premium", "capabilities_traditional", "capabilities_modern", "capabilities_premium"])}
-                    onSave={() => saveSettings(["name_traditional", "name_modern", "name_premium", "price_traditional", "price_modern", "price_premium", "desc_traditional", "desc_modern", "desc_premium", "features_traditional", "features_modern", "features_premium", "capabilities_traditional", "capabilities_modern", "capabilities_premium"], setSavingPricing, "pricing")}
-                    saving={savingPricing}
-                    isDirty={isSectionDirty(["name_traditional", "name_modern", "name_premium", "price_traditional", "price_modern", "price_premium", "desc_traditional", "desc_modern", "desc_premium", "features_traditional", "features_modern", "features_premium", "capabilities_traditional", "capabilities_modern", "capabilities_premium"])}
-                    saveSuccess={settingsSaved["pricing"]}
-                    saveSuccessMessage="Harga dan nama paket berhasil diperbarui"
-                    viewContent={
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-                        <div className="p-4 bg-stone-50 rounded-xl border border-stone-200">
-                          <div className="flex items-center justify-between mb-1.5">
-                            <span className="text-xs font-bold text-amber-800 uppercase tracking-wider">
-                              {settingsMap["name_traditional"] || "Traditional"}
-                            </span>
-                            <span className="text-sm font-bold text-gray-900 font-mono">
-                              Rp {Number(settingsMap["price_traditional"] || 299000).toLocaleString("id-ID")}
-                            </span>
+                  {(() => {
+                    const PRICING_KEYS = [
+                      "name_traditional", "name_modern", "name_premium",
+                      "price_traditional", "price_modern", "price_premium",
+                      "desc_traditional", "desc_modern", "desc_premium",
+                      "features_traditional", "features_modern", "features_premium",
+                      "capabilities_traditional", "capabilities_modern", "capabilities_premium",
+                      "memories_total_quota_traditional", "memories_max_contributors_traditional", "memories_shots_quota_traditional",
+                      "memories_total_quota_modern", "memories_max_contributors_modern", "memories_shots_quota_modern",
+                      "memories_total_quota_premium", "memories_max_contributors_premium", "memories_shots_quota_premium",
+                    ];
+                    return (
+                      <SettingsCard
+                        title="Manajemen Harga & Paket"
+                        description="Atur nama paket, harga, deskripsi, kapabilitas, dan plafon kuota kamera tamu untuk 3 tingkatan paket undangan."
+                        isEditing={Boolean(editSection["pricing"])}
+                        onEdit={() => toggleEditSection("pricing")}
+                        onCancel={() => cancelEdit("pricing", PRICING_KEYS)}
+                        onSave={() => saveSettings(PRICING_KEYS, setSavingPricing, "pricing")}
+                        saving={savingPricing}
+                        isDirty={isSectionDirty(PRICING_KEYS)}
+                        saveSuccess={settingsSaved["pricing"]}
+                        saveSuccessMessage="Harga, kapabilitas, dan kuota paket berhasil diperbarui"
+                        viewContent={
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                            <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 space-y-2">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-xs font-bold text-amber-800 uppercase tracking-wider">
+                                  {settingsMap["name_traditional"] || "Traditional"}
+                                </span>
+                                <span className="text-sm font-bold text-gray-900 font-mono">
+                                  Rp {Number(settingsMap["price_traditional"] || 299000).toLocaleString("id-ID")}
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-600 leading-relaxed">{settingsMap["desc_traditional"] || "Tema Traditional — Sakral, Megah & Bernuansa Tradisional"}</p>
+                              <div className="text-[11px] font-mono px-2.5 py-1 rounded-lg border text-stone-700 bg-white border-stone-200">
+                                {getCaps("capabilities_traditional").includes("guest_memories")
+                                  ? `Kamera: ${settingsMap["memories_total_quota_traditional"] || 0} Foto Acara`
+                                  : "Kamera Tamu: Nonaktif"}
+                              </div>
+                            </div>
+                            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                                  {settingsMap["name_modern"] || "Modern"}
+                                </span>
+                                <span className="text-sm font-bold text-gray-900 font-mono">
+                                  Rp {Number(settingsMap["price_modern"] || 499000).toLocaleString("id-ID")}
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-600 leading-relaxed">{settingsMap["desc_modern"] || "Tema Modern — Minimalis, Kontemporer & Sinematik"}</p>
+                              <div className="text-[11px] font-mono px-2.5 py-1 rounded-lg border text-slate-700 bg-white border-slate-200">
+                                {getCaps("capabilities_modern").includes("guest_memories")
+                                  ? `Kamera: ${settingsMap["memories_total_quota_modern"] || 250} Foto Acara`
+                                  : "Kamera Tamu: Nonaktif"}
+                              </div>
+                            </div>
+                            <div className="p-4 bg-purple-50/70 rounded-xl border border-purple-200 space-y-2">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-xs font-bold text-purple-800 uppercase tracking-wider">
+                                  {settingsMap["name_premium"] || "Premium"}
+                                </span>
+                                <span className="text-sm font-bold text-gray-900 font-mono">
+                                  Rp {Number(settingsMap["price_premium"] || 699000).toLocaleString("id-ID")}
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-600 leading-relaxed">{settingsMap["desc_premium"] || "Tema Premium — Editorial, Full-Text & Luxury Visual Motion"}</p>
+                              <div className="text-[11px] font-mono px-2.5 py-1 rounded-lg border text-purple-700 bg-white border-purple-200">
+                                {getCaps("capabilities_premium").includes("guest_memories")
+                                  ? `Kamera: ${settingsMap["memories_total_quota_premium"] || 1000} Foto Acara`
+                                  : "Kamera Tamu: Nonaktif"}
+                              </div>
+                            </div>
                           </div>
-                          <p className="text-xs text-gray-600 leading-relaxed">{settingsMap["desc_traditional"] || "Tema Traditional — Sakral, Megah & Bernuansa Tradisional"}</p>
-                        </div>
-                        <div className="p-4 bg-slate-50 rounded-xl border border-slate-200">
-                          <div className="flex items-center justify-between mb-1.5">
-                            <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                              {settingsMap["name_modern"] || "Modern"}
-                            </span>
-                            <span className="text-sm font-bold text-gray-900 font-mono">
-                              Rp {Number(settingsMap["price_modern"] || 499000).toLocaleString("id-ID")}
-                            </span>
-                          </div>
-                          <p className="text-xs text-gray-600 leading-relaxed">{settingsMap["desc_modern"] || "Tema Modern — Minimalis, Kontemporer & Sinematik"}</p>
-                        </div>
-                        <div className="p-4 bg-purple-50/70 rounded-xl border border-purple-200">
-                          <div className="flex items-center justify-between mb-1.5">
-                            <span className="text-xs font-bold text-purple-800 uppercase tracking-wider">
-                              {settingsMap["name_premium"] || "Premium"}
-                            </span>
-                            <span className="text-sm font-bold text-gray-900 font-mono">
-                              Rp {Number(settingsMap["price_premium"] || 699000).toLocaleString("id-ID")}
-                            </span>
-                          </div>
-                          <p className="text-xs text-gray-600 leading-relaxed">{settingsMap["desc_premium"] || "Tema Premium — Editorial, Full-Text & Luxury Visual Motion"}</p>
-                        </div>
-                      </div>
-                    }
-                  >
+                        }
+                      >
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
                       <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 space-y-3">
                         <div className="flex items-center gap-2">
@@ -3645,6 +3672,26 @@ export default function AdminPage() {
                             ))}
                           </div>
                         </div>
+                        {getCaps("capabilities_traditional").includes("guest_memories") && (
+                          <div className="mt-2.5 p-3 bg-amber-500/10 rounded-xl border border-amber-300/60 space-y-2">
+                            <span className="block text-[11px] font-bold text-amber-900 uppercase tracking-wide">Total Kuota Foto Acara</span>
+                            <div>
+                              <label className="block text-[10px] font-semibold text-gray-600 mb-0.5">Batas Maksimal Foto Tamu (Plafon Cloud)</label>
+                              <input
+                                type="number"
+                                min={0}
+                                max={2000}
+                                step={25}
+                                value={settingsMap["memories_total_quota_traditional"] || "0"}
+                                onChange={(e) => setSetting("memories_total_quota_traditional", e.target.value)}
+                                className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs font-mono font-bold text-gray-900 bg-white focus:outline-none focus:border-amber-500"
+                              />
+                            </div>
+                            <p className="text-[10px] text-amber-800 leading-tight">
+                              Pengantin bebas mengatur jatah roll per tamu di studionya selama total foto tidak melampaui kuota ini.
+                            </p>
+                          </div>
+                        )}
                       </div>
 
                       <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
@@ -3702,6 +3749,26 @@ export default function AdminPage() {
                             ))}
                           </div>
                         </div>
+                        {getCaps("capabilities_modern").includes("guest_memories") && (
+                          <div className="mt-2.5 p-3 bg-slate-100 rounded-xl border border-slate-300/80 space-y-2">
+                            <span className="block text-[11px] font-bold text-slate-800 uppercase tracking-wide">Total Kuota Foto Acara</span>
+                            <div>
+                              <label className="block text-[10px] font-semibold text-gray-600 mb-0.5">Batas Maksimal Foto Tamu (Plafon Cloud)</label>
+                              <input
+                                type="number"
+                                min={50}
+                                max={5000}
+                                step={50}
+                                value={settingsMap["memories_total_quota_modern"] || "250"}
+                                onChange={(e) => setSetting("memories_total_quota_modern", e.target.value)}
+                                className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs font-mono font-bold text-gray-900 bg-white focus:outline-none focus:border-slate-500"
+                              />
+                            </div>
+                            <p className="text-[10px] text-slate-600 leading-tight">
+                              Pengantin bebas mengatur jatah roll per tamu di studionya selama total foto tidak melampaui kuota ini.
+                            </p>
+                          </div>
+                        )}
                       </div>
 
                       <div className="p-4 bg-purple-50/70 rounded-xl border border-purple-200 space-y-3">
@@ -3759,118 +3826,150 @@ export default function AdminPage() {
                             ))}
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  </SettingsCard>
-
-                  {/* Add-ons & Extension Pricing Settings */}
-                  <SettingsCard
-                    title="Layanan Tambahan (Add-Ons) & Perpanjangan"
-                    description="Atur tarif dinamis untuk layanan integrasi custom domain (1 tahun) dan perpanjangan masa aktif URL asli pasca acara (bulanan via QRIS)."
-                    isEditing={Boolean(editSection["addons"])}
-                    onEdit={() => toggleEditSection("addons")}
-                    onCancel={() => cancelEdit("addons", ["gallery_extension_price_per_month", "addon_custom_domain_price", "addon_custom_domain_enabled"])}
-                    onSave={() => saveSettings(["gallery_extension_price_per_month", "addon_custom_domain_price", "addon_custom_domain_enabled"], setSavingAddons, "addons")}
-                    saving={savingAddons}
-                    isDirty={isSectionDirty(["gallery_extension_price_per_month", "addon_custom_domain_price", "addon_custom_domain_enabled"])}
-                    saveSuccess={settingsSaved["addons"]}
-                    saveSuccessMessage="Pengaturan layanan add-on berhasil diperbarui"
-                    viewContent={
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="p-4 bg-amber-50/60 rounded-xl border border-amber-200 flex flex-col justify-between">
-                          <div>
-                            <div className="flex items-center justify-between gap-2 mb-1">
-                              <span className="text-xs font-bold text-amber-900 block">Jasa Integrasi Custom Domain (1 Thn)</span>
-                              <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                                settingsMap["addon_custom_domain_enabled"] !== "false"
-                                  ? "bg-emerald-100 text-emerald-800 border border-emerald-300/60"
-                                  : "bg-amber-100 text-amber-800 border border-amber-300/60"
-                              }`}>
-                                <span className={`w-1.5 h-1.5 rounded-full ${
-                                  settingsMap["addon_custom_domain_enabled"] !== "false" ? "bg-emerald-500" : "bg-amber-500"
-                                }`}></span>
-                                {settingsMap["addon_custom_domain_enabled"] !== "false" ? "Aktif Ditawarkan" : "Coming Soon"}
-                              </span>
+                        {getCaps("capabilities_premium").includes("guest_memories") && (
+                          <div className="mt-2.5 p-3 bg-purple-50 rounded-xl border border-purple-200 space-y-2">
+                            <span className="block text-[11px] font-bold text-purple-900 uppercase tracking-wide">Total Kuota Foto Acara</span>
+                            <div>
+                              <label className="block text-[10px] font-semibold text-gray-600 mb-0.5">Batas Maksimal Foto Tamu (Plafon Cloud)</label>
+                              <input
+                                type="number"
+                                min={100}
+                                max={10000}
+                                step={100}
+                                value={settingsMap["memories_total_quota_premium"] || "1000"}
+                                onChange={(e) => setSetting("memories_total_quota_premium", e.target.value)}
+                                className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs font-mono font-bold text-gray-900 bg-white focus:outline-none focus:border-purple-500"
+                              />
                             </div>
-                            <div className="flex items-baseline gap-1.5">
-                              <span className="text-xl font-mono font-bold text-amber-950">
-                                Rp {Number(settingsMap["addon_custom_domain_price"] || 150000).toLocaleString("id-ID")}
-                              </span>
-                              <span className="text-xs text-amber-800 font-medium">/ 1 Tahun</span>
-                            </div>
-                            <p className="text-xs text-stone-600 mt-2 leading-relaxed">
-                              Jasa integrasi domain pribadi milik klien (DNS &amp; Auto-SSL) dan otomatis mengaktifkan masa tayang URL asli serta galeri kenangan undangan selama 1 tahun penuh.
+                            <p className="text-[10px] text-purple-700 leading-tight">
+                              Pengantin bebas mengatur jatah roll per tamu di studionya selama total foto tidak melampaui kuota ini.
                             </p>
                           </div>
-                        </div>
-
-                        <div className="p-4 bg-purple-50/60 rounded-xl border border-purple-200">
-                          <span className="text-xs font-bold text-purple-900 block mb-1">Perpanjang Masa Aktif URL Asli / Galeri (Bulanan)</span>
-                          <div className="flex items-baseline gap-1.5">
-                            <span className="text-xl font-mono font-bold text-purple-950">
-                              Rp {Number(settingsMap["gallery_extension_price_per_month"] || 50000).toLocaleString("id-ID")}
-                            </span>
-                            <span className="text-xs text-purple-800 font-medium">/ 30 Hari</span>
-                          </div>
-                          <p className="text-xs text-stone-600 mt-2 leading-relaxed">
-                            Biaya perpanjangan masa aktif URL asli undangan (yang pasca acara beralih ke galeri momen) dan penyimpanan foto tamu di cloud per 30 hari via QRIS dinamis.
-                          </p>
-                        </div>
+                        )}
                       </div>
-                    }
-                  >
-                    <div className="space-y-4">
-                      <FieldRow
-                        label="Status Fitur Custom Domain (Dasbor Klien)"
-                        description="Aktifkan untuk membuka pemesanan domain pribadi bagi klien, atau nonaktifkan untuk menampilkan mode 'Segera Hadir / Belum Tersedia' di dasbor klien."
-                      >
-                        <div className="flex items-center gap-3 p-3 bg-stone-50 rounded-xl border border-stone-200">
-                          <label className="relative inline-flex items-center cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={settingsMap["addon_custom_domain_enabled"] !== "false"}
-                              onChange={(e) => setSetting("addon_custom_domain_enabled", e.target.checked ? "true" : "false")}
-                              className="sr-only peer"
-                            />
-                            <div className="w-11 h-6 bg-stone-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
-                          </label>
-                          <span className="text-xs font-bold text-stone-800">
-                            {settingsMap["addon_custom_domain_enabled"] !== "false"
-                              ? "Aktif — Klien dapat memesan custom domain pribadi"
-                              : "Nonaktif — Mode Coming Soon / Belum Tersedia di klien"}
-                          </span>
-                        </div>
-                      </FieldRow>
-
-                      <FieldRow
-                        label="Tarif Jasa Custom Domain &amp; Perpanjangan URL Asli (1 Tahun)"
-                        description="Biaya jasa integrasi domain pribadi milik klien (DNS &amp; SSL) serta garansi masa aktif URL asli &amp; galeri kenangan selama 1 tahun penuh (Rupiah)."
-                      >
-                        <input
-                          type="number"
-                          min="10000"
-                          step="5000"
-                          value={settingsMap["addon_custom_domain_price"] || "150000"}
-                          onChange={(e) => setSetting("addon_custom_domain_price", e.target.value)}
-                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition font-mono"
-                        />
-                      </FieldRow>
-
-                      <FieldRow
-                        label="Tarif Perpanjangan Masa Aktif URL Asli / Galeri (Rupiah / 30 Hari)"
-                        description="Nominal tagihan QRIS dinamis per bulan untuk mempertahankan eksistensi URL asli undangan (galeri momen) dan file foto tamu di server R2."
-                      >
-                        <input
-                          type="number"
-                          min="10000"
-                          step="5000"
-                          value={settingsMap["gallery_extension_price_per_month"] || "50000"}
-                          onChange={(e) => setSetting("gallery_extension_price_per_month", e.target.value)}
-                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition font-mono"
-                        />
-                      </FieldRow>
                     </div>
                   </SettingsCard>
+                    );
+                  })()}
+
+                  {/* Add-ons & Extension Pricing Settings */}
+                  {(() => {
+                    const ADDONS_KEYS = [
+                      "gallery_extension_price_per_month",
+                      "addon_memories_topup_photos",
+                      "addon_memories_topup_price",
+                      "addon_memories_topup_enabled",
+                    ];
+                    return (
+                      <SettingsCard
+                        title="Pengaturan Layanan Tambahan (Add-Ons)"
+                        description="Atur tarif dinamis untuk layanan perpanjangan masa aktif galeri momen tamu serta add-on kapasitas kuota foto tambahan (top-up)."
+                        isEditing={Boolean(editSection["addons"])}
+                        onEdit={() => toggleEditSection("addons")}
+                        onCancel={() => cancelEdit("addons", ADDONS_KEYS)}
+                        onSave={() => saveSettings(ADDONS_KEYS, setSavingAddons, "addons")}
+                        saving={savingAddons}
+                        isDirty={isSectionDirty(ADDONS_KEYS)}
+                        saveSuccess={settingsSaved["addons"]}
+                        saveSuccessMessage="Pengaturan layanan tambahan (Add-Ons) berhasil diperbarui"
+                        viewContent={
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="p-4 bg-purple-50/60 rounded-xl border border-purple-200 flex flex-col justify-between">
+                              <div>
+                                <span className="text-xs font-bold text-purple-900 block mb-1">Perpanjangan Masa Aktif Galeri Tamu</span>
+                                <div className="flex items-baseline gap-1.5">
+                                  <span className="text-xl font-mono font-bold text-purple-950">
+                                    Rp {Number(settingsMap["gallery_extension_price_per_month"] || 50000).toLocaleString("id-ID")}
+                                  </span>
+                                  <span className="text-xs text-purple-800 font-medium">/ 30 Hari (Bulan)</span>
+                                </div>
+                                <p className="text-xs text-stone-600 mt-2 leading-relaxed">
+                                  Tarif perpanjangan penyimpanan foto candid tamu di server cloud per 30 hari via kasir terpadu.
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="p-4 bg-indigo-50/60 rounded-xl border border-indigo-200 flex flex-col justify-between">
+                              <div>
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-xs font-bold text-indigo-900">Top-Up Kuota Foto Tamu</span>
+                                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${settingsMap["addon_memories_topup_enabled"] !== "false" ? "bg-emerald-100 text-emerald-800" : "bg-gray-100 text-gray-500"}`}>
+                                    {settingsMap["addon_memories_topup_enabled"] !== "false" ? "Aktif" : "Nonaktif"}
+                                  </span>
+                                </div>
+                                <div className="flex items-baseline gap-1.5">
+                                  <span className="text-xl font-mono font-bold text-indigo-950">
+                                    Rp {Number(settingsMap["addon_memories_topup_price"] || 35000).toLocaleString("id-ID")}
+                                  </span>
+                                  <span className="text-xs text-indigo-800 font-medium">/ +{settingsMap["addon_memories_topup_photos"] || 100} Foto</span>
+                                </div>
+                                <p className="text-xs text-stone-600 mt-2 leading-relaxed">
+                                  Ekstra kapasitas foto tamu yang dapat dibeli pengantin secara fleksibel di dashboard tanpa harus upgrade tier paket.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        }
+                      >
+                        <div className="space-y-4">
+                          <FieldRow
+                            label="Tarif Perpanjangan Masa Aktif Galeri (Bulanan / 30 Hari)"
+                            description="Nominal tagihan dinamis per bulan untuk mempertahankan masa simpan galeri foto kenangan tamu di cloud (Rupiah)."
+                          >
+                            <input
+                              type="number"
+                              min="10000"
+                              step="5000"
+                              value={settingsMap["gallery_extension_price_per_month"] || "50000"}
+                              onChange={(e) => setSetting("gallery_extension_price_per_month", e.target.value)}
+                              className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition font-mono"
+                            />
+                          </FieldRow>
+
+                          <FieldRow
+                            label="Top-Up Kuota Foto Kamera Tamu"
+                            description="Atur kapasitas tambahan foto dan tarif add-on top-up per batch jika pengantin membutuhkan kuota foto lebih banyak tanpa upgrade paket."
+                          >
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                              <div>
+                                <label className="block text-xs font-semibold text-gray-700 mb-1">Status Add-On</label>
+                                <select
+                                  value={settingsMap["addon_memories_topup_enabled"] ?? "true"}
+                                  onChange={(e) => setSetting("addon_memories_topup_enabled", e.target.value)}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 font-medium"
+                                >
+                                  <option value="true">Aktif (Dapat Dipesan)</option>
+                                  <option value="false">Nonaktif</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block text-xs font-semibold text-gray-700 mb-1">Tambah Kuota (Foto)</label>
+                                <input
+                                  type="number"
+                                  min="25"
+                                  step="25"
+                                  value={settingsMap["addon_memories_topup_photos"] || "100"}
+                                  onChange={(e) => setSetting("addon_memories_topup_photos", e.target.value)}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 font-mono"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-semibold text-gray-700 mb-1">Harga Add-On (IDR)</label>
+                                <input
+                                  type="number"
+                                  min="10000"
+                                  step="5000"
+                                  value={settingsMap["addon_memories_topup_price"] || "35000"}
+                                  onChange={(e) => setSetting("addon_memories_topup_price", e.target.value)}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 font-mono"
+                                />
+                              </div>
+                            </div>
+                          </FieldRow>
+                        </div>
+                      </SettingsCard>
+                    );
+                  })()}
                   </>
                   )}
 
@@ -4257,47 +4356,34 @@ export default function AdminPage() {
 
                   {/* Subdomain Lifecycle & Archiving Settings */}
                   <SettingsCard
-                    title="Siklus Hidup & Daur Ulang Subdomain"
-                    description="Atur masa tenggang (grace period) keaktifan subdomain setelah acara selesai, dan otomatisasi pelepasan subdomain ke pool agar dapat digunakan kembali oleh pasangan baru."
+                    title="Siklus Hidup &amp; Retensi Sistem"
+                    description="Atur masa simpan terpadu website (subdomain &amp; custom domain), foto candid tamu di cloud, dan otomatisasi pelepasan subdomain ke pool pasca acara."
                     isEditing={Boolean(editSection["subdomain"])}
                     onEdit={() => toggleEditSection("subdomain")}
-                    onCancel={() => cancelEdit("subdomain", ["subdomain_grace_days", "subdomain_auto_recycle", "retention_invitation_days", "retention_account_days", "retention_invitation_grace_days", "retention_gallery_default_days"])}
-                    onSave={() => saveSettings(["subdomain_grace_days", "subdomain_auto_recycle", "retention_invitation_days", "retention_account_days", "retention_invitation_grace_days", "retention_gallery_default_days"], setSavingSubdomainSettings, "subdomain")}
+                    onCancel={() => cancelEdit("subdomain", ["retention_cleanup_days", "subdomain_auto_recycle"])}
+                    onSave={() => saveSettings(["retention_cleanup_days", "subdomain_auto_recycle"], setSavingSubdomainSettings, "subdomain")}
                     saving={savingSubdomainSettings}
-                    isDirty={isSectionDirty(["subdomain_grace_days", "subdomain_auto_recycle", "retention_invitation_days", "retention_account_days", "retention_invitation_grace_days", "retention_gallery_default_days"])}
+                    isDirty={isSectionDirty(["retention_cleanup_days", "subdomain_auto_recycle"])}
                     saveSuccess={settingsSaved["subdomain"]}
-                    saveSuccessMessage="Pengaturan siklus hidup subdomain berhasil disimpan"
+                    saveSuccessMessage="Pengaturan siklus hidup &amp; retensi berhasil disimpan"
                     viewContent={
                       <div className="space-y-4">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                           <div className="p-4 bg-amber-50/50 rounded-xl border border-amber-200">
-                            <span className="text-xs text-amber-950 font-bold block mb-1">Transisi Undangan ke Galeri</span>
+                            <span className="text-xs text-amber-950 font-bold block mb-1">Masa Aktif &amp; Retensi Pasca-Acara</span>
                             <div className="flex items-baseline gap-1.5">
                               <span className="text-2xl font-mono font-bold text-amber-900">
-                                {settingsMap["retention_invitation_grace_days"] || "7"}
+                                {settingsMap["retention_cleanup_days"] || "14"}
                               </span>
                               <span className="text-xs text-amber-800 font-medium">Hari pasca acara</span>
                             </div>
                             <p className="text-[11px] text-stone-500 mt-2">
-                              Undangan utama ditutup dan URL otomatis beralih menjadi Galeri Momen Tamu (Event Summary).
-                            </p>
-                          </div>
-
-                          <div className="p-4 bg-purple-50/50 rounded-xl border border-purple-200">
-                            <span className="text-xs text-purple-950 font-bold block mb-1">Masa Simpan Galeri Default</span>
-                            <div className="flex items-baseline gap-1.5">
-                              <span className="text-2xl font-mono font-bold text-purple-900">
-                                {settingsMap["retention_gallery_default_days"] || "30"}
-                              </span>
-                              <span className="text-xs text-purple-800 font-medium">Hari</span>
-                            </div>
-                            <p className="text-[11px] text-stone-500 mt-2">
-                              Foto tamu disimpan sebelum dibersihkan dari R2 jika klien tidak memperpanjang.
+                              Subdomain platform, custom domain, dan galeri foto candid tamu aktif bersamaan selama {settingsMap["retention_cleanup_days"] || "14"} hari pasca-acara sebelum dibersihkan dan dilepas serentak.
                             </p>
                           </div>
 
                           <div className="p-4 bg-stone-50 rounded-xl border border-stone-200">
-                            <span className="text-xs text-stone-900 font-bold block mb-1">Status Auto-Recycle ke Pool</span>
+                            <span className="text-xs text-stone-900 font-bold block mb-1">Status Auto-Recycle Subdomain</span>
                             <div className="mt-1">
                               {(settingsMap["subdomain_auto_recycle"] || "true") === "true" ? (
                                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -4312,20 +4398,7 @@ export default function AdminPage() {
                               )}
                             </div>
                             <p className="text-[11px] text-stone-500 mt-2">
-                              Undangan lama tetap dapat diakses seumur hidup via link path.
-                            </p>
-                          </div>
-
-                          <div className="p-4 bg-rose-50/50 rounded-xl border border-rose-200">
-                            <span className="text-xs text-rose-950 font-bold block mb-1">Pembersihan Total Akun</span>
-                            <div className="flex items-baseline gap-1.5">
-                              <span className="text-2xl font-mono font-bold text-rose-900">
-                                {settingsMap["retention_account_days"] || "365"}
-                              </span>
-                              <span className="text-xs text-rose-800 font-medium">Hari</span>
-                            </div>
-                            <p className="text-[11px] text-stone-500 mt-2">
-                              Akun klien lama tanpa undangan aktif dibersihkan setelah {settingsMap["retention_account_days"] || "365"} hari.
+                              Subdomain dilepaskan kembali ke pool saat pembersihan tiba agar dapat digunakan oleh pasangan baru berikutnya.
                             </p>
                           </div>
                         </div>
@@ -4338,7 +4411,7 @@ export default function AdminPage() {
                               <span>Pembersihan Subdomain Kedaluwarsa</span>
                             </h4>
                             <p className="text-[11px] text-stone-300 mt-0.5">
-                              Eksekusi manual untuk melepaskan semua subdomain yang telah lewat masa tenggang (&gt; {settingsMap["subdomain_grace_days"] || "7"} hari).
+                              Eksekusi manual untuk melepaskan semua subdomain yang telah lewat masa simpan (&gt; {settingsMap["retention_cleanup_days"] || "14"} hari).
                             </p>
                           </div>
                           <button
@@ -4377,57 +4450,17 @@ export default function AdminPage() {
                     }
                   >
                     <div className="space-y-4">
-                      <FieldRow label="Masa Tenggang Subdomain (Hari)" description="Jumlah hari subdomain tetap aktif setelah tanggal acara pernikahan selesai sebelum dilepas kembali ke pool (contoh: 7, 14, 30 hari).">
+                      <FieldRow label="Masa Aktif &amp; Retensi Pasca-Acara (Hari)" description="Jumlah hari website (subdomain &amp; custom domain), formulir RSVP, dan foto candid tamu di cloud tetap aktif bersama sebelum dibersihkan dan dilepas serentak (Default: 14 hari pasca-acara).">
                         <input
                           type="number"
                           min="1"
                           max="90"
-                          value={settingsMap["subdomain_grace_days"] || "7"}
-                          onChange={(e) => setSetting("subdomain_grace_days", e.target.value)}
-                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition font-mono"
-                        />
-                      </FieldRow>
-                      
-                      <FieldRow label="Jeda Transisi Undangan ke Galeri (Hari)" description="Jumlah hari setelah tanggal acara pernikahan selesai sebelum undangan utama ditutup dan URL otomatis dialihkan menjadi Galeri Momen Acara.">
-                        <input
-                          type="number"
-                          min="1"
-                          max="90"
-                          value={settingsMap["retention_invitation_grace_days"] || "7"}
-                          onChange={(e) => setSetting("retention_invitation_grace_days", e.target.value)}
-                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition font-mono"
-                        />
-                      </FieldRow>
-
-                      <FieldRow label="Masa Simpan Default Galeri Tamu (Hari)" description="Jeda hari pasca-acara sebelum cronjob membersihkan file foto tamu mentah dari Cloudflare R2 / Server (jika klien tidak memperpanjang).">
-                        <input
-                          type="number"
-                          min="1"
-                          max="365"
-                          value={settingsMap["retention_gallery_default_days"] || "30"}
-                          onChange={(e) => setSetting("retention_gallery_default_days", e.target.value)}
-                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition font-mono"
-                        />
-                      </FieldRow>
-
-                      <FieldRow label="Retensi Pembersihan Interaktif (Hari)" description="Jeda hari pasca-acara sebelum sistem menghapus data tamu & RSVP untuk membebaskan storage database (Tahap 1).">
-                        <input
-                          type="number"
-                          min="1"
-                          max="365"
-                          value={settingsMap["retention_invitation_days"] || "30"}
-                          onChange={(e) => setSetting("retention_invitation_days", e.target.value)}
-                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition font-mono"
-                        />
-                      </FieldRow>
-
-                      <FieldRow label="Pembersihan Total Akun & Portofolio (Hari)" description="Jeda waktu (berdasarkan umur akun) sebelum sistem menghapus klien dan seluruh media fisiknya secara permanen (Tahap 2).">
-                        <input
-                          type="number"
-                          min="30"
-                          max="1825"
-                          value={settingsMap["retention_account_days"] || "365"}
-                          onChange={(e) => setSetting("retention_account_days", e.target.value)}
+                          value={settingsMap["retention_cleanup_days"] || "14"}
+                          onChange={(e) => {
+                            setSetting("retention_cleanup_days", e.target.value);
+                            setSetting("subdomain_grace_days", e.target.value);
+                            setSetting("retention_gallery_default_days", e.target.value);
+                          }}
                           className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition font-mono"
                         />
                       </FieldRow>

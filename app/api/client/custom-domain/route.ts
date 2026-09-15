@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
-import { randomUUID } from "crypto";
 import { hasPlanCapability } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
 /**
- * POST /api/client/custom-domain/buy
- * Membuat order untuk pembelian Add-on Custom Domain (Jasa Integrasi)
+ * POST /api/client/custom-domain
+ * Menyimpan atau memperbarui nama Custom Domain pribadi klien (Gratis / Termasuk dalam paket).
  */
 export async function POST(req: NextRequest) {
   try {
@@ -18,26 +17,10 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => ({}));
-    const { invitationId, requestedDomain } = body;
+    const { invitationId, customDomain } = body;
 
     if (!invitationId) {
       return NextResponse.json({ error: "invitationId wajib disertakan." }, { status: 400 });
-    }
-
-    if (!requestedDomain || typeof requestedDomain !== "string") {
-      return NextResponse.json({ error: "Domain yang diminta (requestedDomain) wajib disertakan." }, { status: 400 });
-    }
-
-    const cleanDomain = requestedDomain.toLowerCase().replace(/^https?:\/\//, "").replace(/\/$/, "").replace(/\s/g, "").trim();
-
-    if (!cleanDomain.includes(".") || cleanDomain.length < 4) {
-      return NextResponse.json({ error: "Format domain tidak valid." }, { status: 400 });
-    }
-
-    // Proteksi domain sistem
-    const reservedPlatformHosts = ["luxvite.id", "luxenary.com", "localhost", "amsdev.my.id"];
-    if (reservedPlatformHosts.some((h) => cleanDomain === h || cleanDomain.endsWith(`.${h}`))) {
-      return NextResponse.json({ error: "Domain tersebut merupakan domain platform sistem dan tidak dapat digunakan." }, { status: 400 });
     }
 
     // 1. Verifikasi kepemilikan undangan
@@ -59,7 +42,46 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Anda tidak memiliki akses ke undangan ini." }, { status: 403 });
     }
 
-    // Cek apakah domain sudah dipakai undangan lain
+    // 2. Verifikasi kapabilitas paket
+    const canUseCustomDomain = await hasPlanCapability(invitation.order?.planType, "custom_domain");
+    if (!canUseCustomDomain && !isAdmin) {
+      return NextResponse.json(
+        { error: "Fitur Custom Domain tidak termasuk dalam paket Anda. Silakan upgrade ke Paket Premium untuk menggunakan domain sendiri." },
+        { status: 403 }
+      );
+    }
+
+    // 3. Penanganan pelepasan domain (unlink) jika customDomain dikirim kosong/null
+    if (!customDomain || typeof customDomain !== "string" || !customDomain.trim()) {
+      await prisma.invitation.update({
+        where: { id: invitationId },
+        data: { customDomain: null },
+      });
+      return NextResponse.json({
+        success: true,
+        customDomain: null,
+        message: "Custom domain berhasil dilepaskan dari undangan Anda.",
+      });
+    }
+
+    const cleanDomain = customDomain
+      .toLowerCase()
+      .replace(/^https?:\/\//, "")
+      .replace(/\/$/, "")
+      .replace(/\s/g, "")
+      .trim();
+
+    if (!cleanDomain.includes(".") || cleanDomain.length < 4) {
+      return NextResponse.json({ error: "Format domain tidak valid. Contoh: namakamu.com" }, { status: 400 });
+    }
+
+    // Proteksi domain sistem
+    const reservedPlatformHosts = ["luxvite.id", "luxenary.com", "localhost", "amsdev.my.id"];
+    if (reservedPlatformHosts.some((h) => cleanDomain === h || cleanDomain.endsWith(`.${h}`))) {
+      return NextResponse.json({ error: "Domain tersebut merupakan domain platform sistem dan tidak dapat digunakan." }, { status: 400 });
+    }
+
+    // 4. Cek keunikan domain
     const existingDomain = await prisma.invitation.findFirst({
       where: {
         customDomain: cleanDomain,
@@ -67,23 +89,12 @@ export async function POST(req: NextRequest) {
       },
       select: { id: true },
     });
+
     if (existingDomain) {
       return NextResponse.json({ error: "Domain tersebut sudah digunakan oleh undangan lain di sistem." }, { status: 400 });
     }
 
-    // 2. Cek status aktivasi fitur Custom Domain
-    const enabledSetting = await prisma.adminSetting.findUnique({
-      where: { key: "addon_custom_domain_enabled" },
-    });
-    const isCustomDomainEnabled = enabledSetting ? enabledSetting.value !== "false" : true;
-    if (!isCustomDomainEnabled) {
-      return NextResponse.json(
-        { error: "Layanan integrasi custom domain saat ini sedang dinonaktifkan atau belum tersedia (Coming Soon)." },
-        { status: 403 }
-      );
-    }
-
-    // Simpan domain langsung ke undangan (Gratis / Included dalam paket)
+    // 5. Simpan domain langsung ke undangan (Gratis tanpa invoice/pembayaran)
     await prisma.invitation.update({
       where: { id: invitationId },
       data: { customDomain: cleanDomain },
@@ -95,7 +106,7 @@ export async function POST(req: NextRequest) {
       message: "Custom domain berhasil disimpan dan ditautkan ke undangan Anda.",
     });
   } catch (error: any) {
-    console.error("[Custom Domain Order Error]", error);
+    console.error("[Custom Domain Save Error]", error);
     return NextResponse.json(
       { error: process.env.NODE_ENV === "production" ? "Terjadi kesalahan server" : error.message },
       { status: 500 }

@@ -84,13 +84,23 @@ export async function GET(req: NextRequest) {
       ];
 
       for (const ord of exportOrders) {
+        let itemLabel: string = ord.planType || "";
+        if (ord.itemsJson) {
+          try {
+            const bItems = JSON.parse(ord.itemsJson);
+            if (Array.isArray(bItems) && bItems.length > 0) {
+              itemLabel = bItems.map((b: any) => b.label).join(" + ");
+            }
+          } catch {}
+        }
+
         const row = [
           `"${ord.invoiceNumber || ""}"`,
           `"${new Date(ord.createdAt).toLocaleString("id-ID")}"`,
           `"${(ord.user?.name || "").replace(/"/g, '""')}"`,
           `"${ord.user?.email || ""}"`,
           `"${ord.user?.phoneNumber || ""}"`,
-          `"${ord.planType || ""}"`,
+          `"${itemLabel.replace(/"/g, '""')}"`,
           `"${ord.paymentMethod === "MANUAL_TRANSFER" ? "Transfer Bank" : "QRIS / Gateway"}"`,
           Number(ord.amount || 0),
           `"${ord.status}"`,

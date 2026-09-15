@@ -137,28 +137,8 @@ function SetupWizardContent() {
     }
   }, [queryOrder, router]);
 
-  // Filter themes based on the user's purchased package tier (Waterfall / All-Access Mapping)
-  const filteredThemes = themesList.filter((t) => {
-    const cat = (t.category || "").toUpperCase();
-    const plan = currentPlan.toUpperCase();
-    
-    if (plan === "PREMIUM") return true; // Premium gets everything
-    if (plan === "MODERN") return cat === "MODERN" || cat === "TRADITIONAL"; // Modern gets Modern + Traditional
-    if (plan === "TRADITIONAL") return cat === "TRADITIONAL"; // Traditional gets only Traditional
-    
-    return true;
-  });
-  const availableThemes = filteredThemes.length > 0 ? filteredThemes : themesList;
-
-  // Reset themeId jika tema yang sebelumnya dipilih tidak tersedia pada tier ini
-  useEffect(() => {
-    if (themeId && availableThemes.length > 0) {
-      const currentSelectedExists = availableThemes.some((t) => t.id === themeId);
-      if (!currentSelectedExists) {
-        setThemeId("");
-      }
-    }
-  }, [currentPlan, availableThemes, themeId]);
+  // Seluruh tema desain bebas dipilih di semua paket (All-Access Themes)
+  const availableThemes = themesList;
 
 
 

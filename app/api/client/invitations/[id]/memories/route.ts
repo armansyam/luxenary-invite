@@ -13,6 +13,9 @@ async function verifyClientAccess(invitationId: string) {
 
   const invitation = await prisma.invitation.findUnique({
     where: { id: invitationId },
+    include: {
+      order: { select: { planType: true } },
+    },
   });
 
   if (!invitation) return null;
@@ -25,7 +28,7 @@ async function verifyClientAccess(invitationId: string) {
 
   if (!isOwner && !isAdmin) return null;
 
-  return invitation;
+  return { invitation, userId: session.user.id };
 }
 
 export async function GET(
@@ -37,20 +40,107 @@ export async function GET(
     const id = resolvedParams?.id;
     if (!id) return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
 
-    const invitation = await verifyClientAccess(id);
-    if (!invitation) {
+    const access = await verifyClientAccess(id);
+    if (!access) {
       return NextResponse.json({ error: "Unauthorized / Not Found" }, { status: 403 });
     }
 
+    const { invitation, userId } = access;
+
+    // 1. Ambil daftar foto
     const memories = await prisma.guestMemory.findMany({
       where: { invitationId: id },
       orderBy: { createdAt: "desc" },
     });
 
+    // 2. Cek apakah ada pesanan perpanjangan galeri PENDING untuk undangan ini
+    const now = new Date();
+    const pendingOrder = await prisma.order.findFirst({
+      where: {
+        userId,
+        linkedOrderId: id,
+        orderType: { in: ["GALLERY_EXTENSION", "UPGRADE", "CUSTOM_DOMAIN_ADDON"] },
+        status: "PENDING",
+      },
+      select: {
+        id: true,
+        invoiceNumber: true,
+        amount: true,
+        status: true,
+        proofImageUrl: true,
+        expiredAt: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    let activePendingOrder: any = null;
+    if (pendingOrder) {
+      // Auto-expire jika batas waktu sudah lewat dan belum ada bukti transfer
+      if (pendingOrder.expiredAt && now > pendingOrder.expiredAt && !pendingOrder.proofImageUrl) {
+        await prisma.order.update({
+          where: { id: pendingOrder.id },
+          data: { status: "EXPIRED", rejectReason: "Batas waktu pembayaran habis" },
+        });
+      } else {
+        activePendingOrder = {
+          id: pendingOrder.id,
+          invoiceNumber: pendingOrder.invoiceNumber,
+          amount: Number(pendingOrder.amount),
+          status: pendingOrder.status,
+          hasProof: Boolean(pendingOrder.proofImageUrl),
+          expiredAt: pendingOrder.expiredAt ? pendingOrder.expiredAt.toISOString() : null,
+        };
+      }
+    }
+
+    // 3. Kalkulasi kuota dinamis sesuai paket & featureSettings (Zero Hardcode)
+    const { getPlanMemoriesQuota } = await import("@/lib/settings");
+    const planQuota = await getPlanMemoriesQuota(invitation.order?.planType);
+
+    const fs = (() => {
+      try {
+        return typeof invitation.featureSettings === "object"
+          ? invitation.featureSettings
+          : JSON.parse((invitation.featureSettings as string) || "{}");
+      } catch {
+        return {};
+      }
+    })();
+
+    const maxContributors = typeof fs.memoriesMaxContributors === "number" ? fs.memoriesMaxContributors : planQuota.maxContributors;
+    const shotsQuota = typeof fs.memoriesShotsQuota === "number" ? fs.memoriesShotsQuota : planQuota.shotsQuota;
+    const extraPhotos = typeof fs.extraMemoriesQuota === "number" ? Math.max(0, fs.extraMemoriesQuota) : 0;
+    const baseTotalPhotos = planQuota.totalQuota > 0 ? planQuota.totalQuota : (maxContributors * shotsQuota);
+    const maxTotalPhotos = baseTotalPhotos + extraPhotos;
+
+    const distinctContributors = await prisma.guestMemory.findMany({
+      where: { invitationId: id },
+      select: { senderEmail: true },
+      distinct: ["senderEmail"],
+    });
+
+    const usedPhotos = memories.length;
+    const usedContributors = distinctContributors.length;
+    const remainingPhotos = Math.max(0, maxTotalPhotos - usedPhotos);
+
     return NextResponse.json({
       success: true,
       total: memories.length,
       memories,
+      pendingOrder: activePendingOrder,
+      quota: {
+        planType: invitation.order?.planType || "MODERN",
+        maxContributors,
+        shotsQuota,
+        baseTotalPhotos,
+        extraMemoriesQuota: extraPhotos,
+        maxTotalPhotos,
+        usedPhotos,
+        remainingPhotos,
+        usedContributors,
+        hasAccess: planQuota.hasAccess,
+      },
     });
   } catch (err: any) {
     return NextResponse.json({ error: err?.message || "Internal Server Error" }, { status: 500 });
@@ -66,10 +156,11 @@ export async function DELETE(
     const id = resolvedParams?.id;
     if (!id) return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
 
-    const invitation = await verifyClientAccess(id);
-    if (!invitation) {
+    const access = await verifyClientAccess(id);
+    if (!access) {
       return NextResponse.json({ error: "Unauthorized / Not Found" }, { status: 403 });
     }
+    const { invitation } = access;
 
     const { searchParams } = new URL(req.url);
     const memoryId = searchParams.get("memoryId");

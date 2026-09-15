@@ -79,6 +79,7 @@ model Order {
   gatewayId           String?
   gatewayTxId         String?
   requestedDomain     String?
+  itemsJson           String?
   invitation          Invitation?
   user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   promoCoupon         PromoCoupon?         @relation(fields: [promoCouponId], references: [id], onDelete: SetNull)

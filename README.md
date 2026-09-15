@@ -103,10 +103,13 @@ Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model 
      ▼
 7. HARI H & PASCA ACARA (DASHBOARD OPERASIONAL BERDASARKAN TIER)
    - Tamu scan QR → Receptionist check-in (PIN-protected, khusus Modern & Premium)
-   - Tamu bagikan foto → /sharemoment (upload ke R2/Local, khusus Premium)
-   - Monitoring & moderasi kiriman foto tamu langsung di Dashboard Utama (/dashboard, khusus Premium)
-   - Klien beli Add-on Jasa Custom Domain via Settings atau bundling saat Upgrade Paket → /api/client/custom-domain/buy (Eksklusif Premium, otomatis include masa aktif URL Asli & Galeri 1 tahun)
-   - Pasca Acara (H+7 / `retention_invitation_grace_days` dari tanggal acara terakhir `getLatestEventDate`): Undangan fisik ditutup. Pada paket Premium diarahkan ke Galeri Momen (/memories) dengan retensi default 30 hari. Pada paket Traditional & Modern, sistem menampilkan Graceful Event Closed Page resmi tanpa diarahkan ke galeri kosong.
+   - Virtual Disposable Camera Retro (/sharemoment) → Live WebRTC viewfinder dengan sinkronisasi jadwal acara Hari H (Auto-Sync tanggal/jam acara dari eventData atau Kustom Studio), Layar Card Jadwal Pembukaan Elegan untuk tamu sebelum hari H, Mode Simulasi Klien (?test=true), 5 filter film analog branded (Aura '90s, Heritage Romance, Botanical Mist, Cinema Noir, Pure Daylight), stempel tanggal oranye retro LED (#e8875a), formula kuota dinamis (Batas Tamu Kontributor × Jatah Roll per Tamu), dan layar Kamar Gelap Digital (Delayed Reveal).
+   - Monitoring & moderasi kiriman foto tamu langsung di Dashboard Utama (/dashboard, khusus Premium & Modern) dengan grid navigasi cepat 3-kolom bersih (Studio Editor, Buku Tamu, RSVP) tanpa kartu duplikat.
+   - Custom Domain Pribadi: Tersedia gratis dan opsional khusus Paket Premium (diatur langsung lewat Dasbor Pengaturan Klien tanpa biaya tambahan).
+   - Dual-Mode Route Switcher: Akses URL utama otomatis beralih ke Galeri Momen (/memories) pasca H+1 acara (Mode AUTO) atau dapat di-switch seketika oleh klien via toggle Studio Seksi 14 (Mode MANUAL).
+   - Siklus Hidup Terpadu (H+14 Pasca-Acara): Subdomain, custom domain, foto candid tamu R2/lokal, dan RSVP dibersihkan secara bersamaan dalam 1 fase cron cleanup tunggal.
+   - Dasbor Memorial 1 Halaman (Saat ARCHIVED): Klien disajikan surat apresiasi penutup, 4 metrik ringkasan eksekutif, dan Pusat Unduhan Arsip Digital (.CSV Doa Restu & .CSV Kehadiran Tamu). Akun klien disimpan abadi tanpa penghapusan.
+   - Layanan Perpanjangan Masa Simpan: Add-on perpanjangan masa aktif sebelum kedaluwarsa (+30 Hari Rp50.000 / +1 Tahun Rp150.000 via QRIS).
    - Subdomain otomatis didaur ulang ke pool namespace pasca `subdomain_grace_days` jika `subdomain_auto_recycle = "true"`, sementara URL Asli (`/[slug]`) tetap aktif sebagai arsip kenangan abadi.
    - Download koleksi foto ZIP (Client-side JSZip dengan proteksi status DRAFT & peringatan unduh dini) + Perpanjang Masa Aktif URL Asli / Galeri (+30 Hari via QRIS)
 
@@ -121,9 +124,9 @@ ADMIN PORTAL (/admin)
    - Tema & Musik (Themes & Music): Manajemen katalog tema, Demo Studio (kustomisasi 6 seksi narasi & label tema, dynamic timeline acara, dynamic bab cerita, dynamic rekening bank, harmonisasi casing font skrip vs uppercase, dan pewarisan otomatis ke undangan klien), serta Pustaka Musik Sistem dinamis (auto-sync file fisik audio di disk `public/music/` ke database, tambah audio dengan auto-kompresi FFmpeg MP3 128kbps, preview, edit, dan toggle aktif/nonaktif untuk klien)
    - Portofolio (Portfolio): Kurasi & kloning undangan pilihan → /portfolio
    - Pengaturan (Settings): 
-     - **Tab Setup & Integrasi:** Konfigurasi DNS & IP Server (auto-detect IP publik VPS, CNAME target dinamis), SMTP Email Server, Batas Upload Galeri Tamu (MB), dan Siklus Hidup Subdomain & Retensi.
+     - **Tab Setup & Integrasi:** Konfigurasi DNS & IP Server (auto-detect IP publik VPS, CNAME target dinamis), SMTP Email Server, Batas Upload Galeri Tamu (MB), dan Siklus Hidup & Retensi Sistem (parameter tunggal 14 hari pasca acara).
      - **Tab Platform:** Branding & Identitas Platform, CS Support, Hero Tagline, Fitur Landing Page, Template WhatsApp.
-     - **Tab Paket & Harga:** Konfigurasi harga paket undangan (Traditional, Modern, Premium) serta 2 Layanan Tambahan (Add-Ons) resmi: Jasa Custom Domain (1 Thn — dilengkapi toggle aktif/nonaktif & mode Coming Soon untuk klien) dan Perpanjang Masa Aktif URL Asli / Galeri (Bulanan).
+     - **Tab Paket & Harga:** Konfigurasi harga paket undangan (Traditional, Modern, Premium) serta Layanan Tambahan (Add-Ons) resmi: Perpanjang Masa Aktif Bulanan (30 Hari - Rp50.000) dan Tahunan (1 Tahun - Rp150.000). Fitur custom domain sudah melekat gratis dan opsional pada Paket Premium.
      - **Tab Gateway QRIS:** Pusat kontrol global dan sub-tabs terisolasi per vendor gateway 2-arah (Midtrans dan Xendit) dengan kredensial terpadu dan resolusi endpoint otomatis.
    - Database (Database): Snapshot backup & restore PostgreSQL
    - Monitoring (Monitoring & Status Server): Pemantauan kestabilan sistem 60-hari interaktif (Interactive Uptime Status Bar), pemantauan memori fisik Host RAM VPS (`os.totalmem()`), Host OS Uptime, beban partisi root Linux (/), latensi & metrik ukuran terpakai Cloudflare R2 Media Storage (kapasitas terpakai, sisa kuota bebas biaya 10 GB), serta audit aktivitas staf & webhook gateway.
@@ -167,15 +170,17 @@ Pre-Flight Checklist & Smart Audit (/dashboard/settings):
 
 ---
 
-## Paket & Tema (16 Tema Fisik + 1 Blueprint)
+## Paket & Tema (All-Access 16 Tema Fisik + Diferensiasi Kapabilitas)
 
-| Paket | Tema Tersedia |
-|:--|:--|
-| **Traditional** | Prameswari, Badrika, Candani, Dillalucky, Mayang, La Galigo |
-| **Modern** | Wave, Papercut, Ameera, Chronicle, Lumina, Solaria |
-| **Premium** | Kalandra, Valente, Aurelia, Artisan *(Legacy Alias: Kila)* |
+> **All-Access Themes Model:** Seluruh 16 tema fisik aktif (kategori Traditional, Modern, maupun Premium) **bebas dipilih oleh calon pengantin di semua paket**. Diferensiasi paket difokuskan murni pada kapasitas tamu, fitur sistem (QR check-in / custom domain), plafon kuota kamera disposable kenangan tamu, dan masa retensi.
 
-> Harga dapat diubah di Admin → tab Pengaturan tanpa deploy ulang.
+| Paket | Kapasitas & Fitur Utama | Plafon Kamera Disposable (Admin Setting) | Pilihan Tema |
+|:--|:--|:--|:--|
+| **Serenade** *(Dasar / Traditional)* | Hingga 300 Tamu, Subdomain Platform, RSVP & Ucapan Realtime, Musik Latar Bebas, Retensi 1 Bulan | Kamera Tamu: **Nonaktif** *(Dapat diaktifkan via Admin)* | **Bebas Semua 16 Tema** *(Traditional, Modern, Premium)* |
+| **Symphony** *(Menengah / Modern)* | Hingga 1.000 Tamu, Seluruh Fitur Serenade + **Sistem Resepsionis QR Check-In & PIN Staf Panitia**, Retensi 3 Bulan | Total Kuota: **250 Foto Acara** *(Pengantin bebas atur roll per tamu)* | **Bebas Semua 16 Tema** *(Traditional, Modern, Premium)* |
+| **Eternity** *(Tertinggi / Premium)* | **Tamu Tanpa Batas (Unlimited)**, Seluruh Fitur Symphony + **Hak Integrasi Custom Domain**, Dashboard Monitoring Momen Tamu, Retensi 1 Tahun | Total Kuota: **1.000 Foto Acara** *(Pengantin bebas atur roll per tamu)* | **Bebas Semua 16 Tema** *(Traditional, Modern, Premium)* |
+
+> Harga dan kuota plafon kamera per paket serta add-on top-up foto (+100 Foto - Rp35.000) dan perpanjangan (+30 Hari - Rp50.000) dapat diatur mandiri oleh Administrator di Admin Portal → tab Paket & Harga tanpa perlu deploy ulang.
 
 ### Standar Arsitektur Template Undangan
 - **Cover Gate:** Tombol buka undangan (`data-lux-field="customLabels.openBtn"`) wajib memiliki teks fisik default `"Buka Undangan"` dan didukung fallback engine agar tidak pernah kosong/transparan.
@@ -227,14 +232,16 @@ Pre-Flight Checklist & Smart Audit (/dashboard/settings):
 
 ---
 
-## 3 Kondisi Pembayaran & Transmisi Data Lengkap Gateway (Rich Payload)
+## 4 Kondisi Pembayaran & Transmisi Data Lengkap Gateway (Rich Payload)
 
-Sistem mendukung 3 kondisi transaksi dengan integrasi 2-arah eksklusif (Midtrans & Xendit) yang dilengkapi pembatalan seketika (*two-way cancel/expire*) dan payload lengkap:
+Sistem mendukung 4 kondisi transaksi dengan integrasi 2-arah eksklusif (Midtrans & Xendit) yang dilengkapi pembatalan seketika (*two-way cancel/expire*) dan payload lengkap:
 1. **Registrasi Paket Awal (`NEW`):** Aktivasi paket baru (Traditional / Modern / Premium). Setelah lunas, klien langsung diarahkan ke `/dashboard/setup`.
 2. **Upgrade Layanan (`UPGRADE`):** Klien menaikkan tier paket (misal Traditional ke Modern / Premium) dengan selisih harga dinamis yang bersumber dari konfigurasi database (`AdminSetting`), disajikan via modal Obsidian Gold Luxury. Tier induk diperbarui seketika.
-3. **Add-on Layanan Tambahan:**
-   - **Perpanjang Galeri Tamu (`GALLERY_EXTENSION`):** Menambah masa simpan foto momen tamu selama +30 hari dan membuka kunci form upload.
-   - **Jasa Integrasi Custom Domain (`CUSTOM_DOMAIN_ADDON`):** Integrasi domain kustom klien (lengkap dengan sertifikat SSL/TLS & Cloudflare DNS) selama +365 hari / 1 tahun.
+3. **2 Add-On Layanan Tambahan Murni:**
+   - **Perpanjang Galeri Tamu (`GALLERY_EXTENSION`):** Menambah masa simpan foto momen tamu (+1 s.d. 12 bulan) dan membuka kunci form upload.
+   - **Top-Up Kuota Foto Momen (`MEMORIES_TOPUP`):** Menambah plafon kapasitas foto candid tamu di album kenangan (kelipatan 100 foto).
+   *(Catatan: Custom domain merupakan fitur inklusif bawaan paket Eternity tanpa biaya jasa add-on).*
+4. **Checkout Terpadu Multi-Layanan (`Unified Add-on & Upgrade Hub`):** Klien dapat menggabungkan upgrade tier paket, perpanjangan galeri multi-bulan, dan top-up kuota foto tamu ke dalam **1 checkout / 1 invoice tunggal** (`itemsJson`), dengan pemenuhan atomik berurutan (`applyBundleFulfillment`).
 
 **Data Lengkap yang Ditransmisikan ke Payment Gateway:**
 - **Profil Klien:** Nama depan & belakang (`first_name`, `last_name` / `given_names`, `surname`), email resmi, dan nomor kontak WhatsApp aktif (`phoneNumber` E.164).

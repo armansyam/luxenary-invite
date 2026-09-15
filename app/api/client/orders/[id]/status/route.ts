@@ -43,6 +43,7 @@ export async function GET(
         snapToken: true,
         orderType: true,
         requestedDomain: true,
+        itemsJson: true,
         linkedOrderId: true,
         user: {
           select: {

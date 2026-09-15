@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
-import { hasPlanCapability } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +25,7 @@ export async function POST(req: Request) {
     }
 
     const userId = (session.user as any).id;
-    const { invitationId, targetPlan, includeCustomDomain, requestedDomain } = await req.json();
+    const { invitationId, targetPlan, requestedDomain } = await req.json();
 
     if (!invitationId || !targetPlan) {
       return NextResponse.json({ error: "invitationId dan targetPlan wajib diisi." }, { status: 400 });
@@ -97,30 +96,13 @@ export async function POST(req: Request) {
       }, { status: 400 });
     }
 
-    let upgradeAmount = priceTo - priceFrom;
+    const upgradeAmount = priceTo - priceFrom;
     let cleanDomain: string | null = null;
 
-    // Tambahan Add-on Custom Domain opsional jika targetPlan memiliki kapabilitas custom_domain
-    const targetHasCustomDomain = await hasPlanCapability(targetPlanUpper, "custom_domain");
-    if (includeCustomDomain && targetHasCustomDomain) {
-      const enabledSetting = await prisma.adminSetting.findUnique({
-        where: { key: "addon_custom_domain_enabled" },
-      });
-      const isCustomDomainEnabled = enabledSetting ? enabledSetting.value !== "false" : true;
-
-      if (isCustomDomainEnabled) {
-        const priceSetting = await prisma.adminSetting.findUnique({
-          where: { key: "addon_custom_domain_price" },
-        });
-        const domainPrice = Number(priceSetting?.value) || 150000;
-        upgradeAmount += domainPrice;
-
-        if (requestedDomain && typeof requestedDomain === "string") {
-          const sanitized = requestedDomain.toLowerCase().replace(/^https?:\/\//, "").replace(/\/$/, "").replace(/\s/g, "").trim();
-          if (sanitized.includes(".")) {
-            cleanDomain = sanitized;
-          }
-        }
+    if (requestedDomain && typeof requestedDomain === "string") {
+      const sanitized = requestedDomain.toLowerCase().replace(/^https?:\/\//, "").replace(/\/$/, "").replace(/\s/g, "").trim();
+      if (sanitized.includes(".")) {
+        cleanDomain = sanitized;
       }
     }
 

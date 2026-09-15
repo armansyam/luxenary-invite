@@ -6,6 +6,9 @@ interface OrderItem {
   id: string;
   invoiceNumber: string;
   planType: string;
+  orderType?: "NEW" | "UPGRADE" | "CUSTOM_DOMAIN_ADDON" | "GALLERY_EXTENSION" | string;
+  targetPlanType?: string | null;
+  requestedDomain?: string | null;
   amount: number | string;
   status: "PENDING" | "PAID" | "FAILED" | "EXPIRED" | string;
   paymentMethod?: string | null;
@@ -13,6 +16,7 @@ interface OrderItem {
   rejectReason?: string | null;
   paidAt?: string | null;
   createdAt: string;
+  itemsJson?: string | null;
   user?: {
     name?: string | null;
     email?: string | null;
@@ -348,7 +352,7 @@ export default function AdminOrdersTab() {
           <table className="min-w-full divide-y divide-gray-100 text-left">
             <thead className="bg-gray-50/80">
               <tr>
-                {["Invoice", "Klien", "Paket", "Metode", "Jumlah", "Bukti Transfer", "Status", "Waktu", "Aksi"].map((h) => (
+                {["Invoice", "Klien", "Item / Layanan", "Metode", "Jumlah", "Bukti Transfer", "Status", "Waktu", "Aksi"].map((h) => (
                   <th key={h} className="px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                     {h}
                   </th>
@@ -368,14 +372,14 @@ export default function AdminOrdersTab() {
               ) : orders.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="py-16 text-center text-gray-400 italic">
-                    Tidak ada transaksi yang cocok dengan kriteria filter.
+                    Belum ada riwayat transaksi.
                   </td>
                 </tr>
               ) : (
                 orders.map((ord) => {
                   const waLink = getWhatsAppLink(ord.user?.phoneNumber, ord.user?.name, ord.invoiceNumber);
                   return (
-                    <tr key={ord.id} className="hover:bg-gray-50/80 transition">
+                    <tr key={ord.id} className="hover:bg-gray-50/60 transition">
                       {/* Invoice No */}
                       <td className="px-4 py-3 font-mono font-bold text-gray-900 whitespace-nowrap">
                         {ord.invoiceNumber}
@@ -404,9 +408,60 @@ export default function AdminOrdersTab() {
                         </div>
                       </td>
 
-                      {/* Paket */}
+                      {/* Item / Layanan */}
                       <td className="px-4 py-3 font-semibold text-gray-800 whitespace-nowrap">
-                        {ord.planType}
+                        {(() => {
+                          let bundleItems: any[] = [];
+                          if (ord.itemsJson) {
+                            try {
+                              bundleItems = JSON.parse(ord.itemsJson);
+                            } catch {}
+                          }
+
+                          if (Array.isArray(bundleItems) && bundleItems.length > 1) {
+                            return (
+                              <div className="flex flex-col gap-1 items-start">
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-900 border border-amber-300">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                  <span>Tagihan Terpadu ({bundleItems.length} Item)</span>
+                                </span>
+                                <span
+                                  className="text-[10px] text-gray-500 max-w-[220px] truncate"
+                                  title={bundleItems.map((b: any) => b.label).join(" + ")}
+                                >
+                                  {bundleItems.map((b: any) => b.label).join(" + ")}
+                                </span>
+                              </div>
+                            );
+                          }
+
+                          if (ord.orderType === "GALLERY_EXTENSION") {
+                            return (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-800 border border-purple-200">
+                                <span>Perpanjang Galeri (+30 Hari)</span>
+                              </span>
+                            );
+                          }
+                          if (ord.orderType === "CUSTOM_DOMAIN_ADDON") {
+                            return (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-800 border border-indigo-200">
+                                <span>Custom Domain {ord.requestedDomain ? `(${ord.requestedDomain})` : ""}</span>
+                              </span>
+                            );
+                          }
+                          if (ord.orderType === "UPGRADE") {
+                            return (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-sky-800 border border-sky-200">
+                                <span>Upgrade ➔ {ord.targetPlanType || ord.planType}</span>
+                              </span>
+                            );
+                          }
+                          return (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                              <span>Paket {ord.planType === "TRADITIONAL" ? "Serenade" : (ord.planType === "MODERN" ? "Symphony" : "Eternity")}</span>
+                            </span>
+                          );
+                        })()}
                       </td>
 
                       {/* Metode Pembayaran */}
@@ -584,6 +639,33 @@ export default function AdminOrdersTab() {
                 <span className="text-gray-500">Paket:</span>
                 <span className="font-semibold text-gray-900">{inspectOrder.planType}</span>
               </div>
+
+              {/* Rincian Multi-Item Bundle */}
+              {(() => {
+                let bundleItems: any[] = [];
+                if (inspectOrder.itemsJson) {
+                  try { bundleItems = JSON.parse(inspectOrder.itemsJson); } catch {}
+                }
+                if (Array.isArray(bundleItems) && bundleItems.length > 0) {
+                  return (
+                    <div className="pt-2 mt-2 border-t border-gray-200 space-y-1.5">
+                      <span className="text-[11px] font-bold text-gray-700 block">Item Layanan Terpadu:</span>
+                      <div className="space-y-1 bg-white p-2 rounded-xl border border-gray-200/80">
+                        {bundleItems.map((it: any, idx: number) => (
+                          <div key={idx} className="flex items-center justify-between text-[11px]">
+                            <span className="text-gray-700 truncate pr-2">• {it.label}</span>
+                            <span className="font-mono font-semibold text-gray-900 shrink-0">
+                              Rp {Number(it.price || 0).toLocaleString("id-ID")}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+
               <div className="flex justify-between pt-1 border-t border-gray-200">
                 <span className="text-gray-900 font-bold">Total Tagihan:</span>
                 <span className="font-mono font-bold text-emerald-700 text-sm">

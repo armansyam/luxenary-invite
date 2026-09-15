@@ -4,6 +4,7 @@ import { getPublishedHtml, buildAndSavePublishedHtml } from "@/lib/staticPublish
 import { composeTemplateData } from "@/lib/themeEngine";
 import { renderTemplateFile } from "@/lib/renderTemplate";
 import { getPublicPlatformSettings, hasPlanCapability } from "@/lib/settings";
+import { shouldDisplayMemoriesGallery } from "@/lib/domainUtils";
 import { STORAGE_PROVIDER, s3Client } from "@/lib/storage";
 import { HeadObjectCommand } from "@aws-sdk/client-s3";
 import fs from "fs";
@@ -44,17 +45,17 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
     return new NextResponse("Not Found", { status: 404 });
   }
 
-  // Jika acara sudah selesai
-  if (invitation.status === "EVENT_FINISHED") {
-    // Jika paket memiliki kapabilitas galeri kenangan tamu, alihkan ke /memories
-    const canAccessMemories = await hasPlanCapability(invitation.order?.planType, "guest_memories");
-    if (canAccessMemories) {
-      const memoriesUrl = new URL(`/${slug}/memories`, req.url);
-      memoriesUrl.search = req.nextUrl.search;
-      return NextResponse.redirect(memoriesUrl);
-    }
+  // Evaluasi cerdas peralihan rute ke Galeri Momen (/memories)
+  // Mendukung mode AUTO (Default: H+1) maupun MANUAL toggle seketika dari dashboard klien
+  if (shouldDisplayMemoriesGallery(invitation)) {
+    const memoriesUrl = new URL(`/${slug}/memories`, req.url);
+    memoriesUrl.search = req.nextUrl.search;
+    return NextResponse.redirect(memoriesUrl);
+  }
 
-    // Untuk Traditional & Modern (tanpa galeri kenangan tamu): Tampilkan layar penutup resmi yang anggun
+  // Jika acara sudah selesai dan paket tidak memiliki kapabilitas galeri (Traditional):
+  if (invitation.status === "EVENT_FINISHED") {
+    // Tampilkan layar penutup resmi yang anggun
     const coupleName = `${invitation.groomNickname || "Mempelai"} & ${invitation.brideNickname || "Mempelai"}`;
     const finishedHtml = `<!DOCTYPE html>
 <html lang="id">

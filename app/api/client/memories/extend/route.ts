@@ -48,26 +48,63 @@ export async function POST(req: NextRequest) {
     });
     const extensionPrice = Number(priceSetting?.value) || 50000;
 
-    // 3. Buat Invoice Number unik untuk order perpanjangan
-    const invoiceNumber = `EXT-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    // 3. Cek apakah ada order perpanjangan yang sedang menunggu verifikasi admin (sudah ada bukti transfer)
+    const existingPendingWithProof = await prisma.order.findFirst({
+      where: {
+        userId: session.user.id,
+        linkedOrderId: invitation.id,
+        orderType: "GALLERY_EXTENSION",
+        status: "PENDING",
+        proofImageUrl: { not: null },
+      },
+    });
 
-    if (!invitation.order?.planType) {
-      return NextResponse.json({ error: "Paket undangan tidak valid atau belum terdaftar pada pesanan." }, { status: 400 });
+    if (existingPendingWithProof) {
+      return NextResponse.json({
+        error: "Anda memiliki tagihan perpanjangan galeri yang sedang menunggu verifikasi admin.",
+        orderId: existingPendingWithProof.id,
+        invoiceNumber: existingPendingWithProof.invoiceNumber,
+        paymentUrl: `/payment?order=${existingPendingWithProof.id}`,
+        isPendingVerification: true,
+      }, { status: 409 });
     }
 
-    // Baca paymentMode dari AdminSetting (GATEWAY, MANUAL, atau BOTH → default ke GATEWAY)
-    // Agar mode pembayaran addon mengikuti konfigurasi platform secara dinamis
-    const paymentModeSetting = await prisma.adminSetting.findUnique({ where: { key: "payment_mode" } });
-    const activePaymentMode = paymentModeSetting?.value || "GATEWAY";
-    const resolvedPaymentMethod = activePaymentMode === "MANUAL" ? "MANUAL_TRANSFER" : "GATEWAY";
+    // Cek apakah ada order perpanjangan PENDING aktif yang belum kedaluwarsa (hindari duplikasi)
+    const now = new Date();
+    const existingPendingUnpaid = await prisma.order.findFirst({
+      where: {
+        userId: session.user.id,
+        linkedOrderId: invitation.id,
+        orderType: "GALLERY_EXTENSION",
+        status: "PENDING",
+        proofImageUrl: null,
+        OR: [
+          { expiredAt: null },
+          { expiredAt: { gt: now } },
+        ],
+      },
+      orderBy: { createdAt: "desc" },
+    });
 
-    // Bersihkan / tandai usang order perpanjangan galeri PENDING sebelumnya untuk undangan ini
+    if (existingPendingUnpaid) {
+      return NextResponse.json({
+        success: true,
+        orderId: existingPendingUnpaid.id,
+        invoiceNumber: existingPendingUnpaid.invoiceNumber,
+        amount: Number(existingPendingUnpaid.amount),
+        paymentUrl: `/checkout?order=${existingPendingUnpaid.id}`,
+        message: "Melanjutkan tagihan perpanjangan aktif Anda.",
+      });
+    }
+
+    // Bersihkan / tandai usang order perpanjangan galeri PENDING yang sudah usang tanpa bukti transfer
     await prisma.order.updateMany({
       where: {
         userId: session.user.id,
         linkedOrderId: invitation.id,
         orderType: "GALLERY_EXTENSION",
         status: "PENDING",
+        proofImageUrl: null,
       },
       data: {
         status: "EXPIRED",
@@ -75,7 +112,24 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 4. Buat Order baru dengan orderType = GALLERY_EXTENSION
+    // Buat Invoice Number unik untuk order perpanjangan
+    const invoiceNumber = `EXT-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+
+    if (!invitation.order?.planType) {
+      return NextResponse.json({ error: "Paket undangan tidak valid atau belum terdaftar pada pesanan." }, { status: 400 });
+    }
+
+    // Baca paymentMode dari AdminSetting (GATEWAY, MANUAL, atau BOTH → default ke GATEWAY)
+    const paymentModeSetting = await prisma.adminSetting.findUnique({ where: { key: "payment_mode" } });
+    const activePaymentMode = paymentModeSetting?.value || "GATEWAY";
+    const resolvedPaymentMethod = activePaymentMode === "MANUAL" ? "MANUAL_TRANSFER" : "GATEWAY";
+
+    // Hitung batas waktu kadaluarsa order secara dinamis dari setting platform (default 24 jam / 1440 menit)
+    const expirySetting = await prisma.adminSetting.findUnique({ where: { key: "payment_expiry_minutes" } });
+    const expiryMinutes = Number(expirySetting?.value) || 1440;
+    const expiredAt = new Date(Date.now() + expiryMinutes * 60 * 1000);
+
+    // 4. Buat Order baru dengan orderType = GALLERY_EXTENSION & expiredAt otomatis
     const newOrder = await prisma.order.create({
       data: {
         id: randomUUID(),
@@ -85,8 +139,9 @@ export async function POST(req: NextRequest) {
         orderType: "GALLERY_EXTENSION",
         amount: extensionPrice,
         status: "PENDING",
-        paymentMethod: resolvedPaymentMethod, // Dinamis dari AdminSetting payment_mode
-        linkedOrderId: invitation.id, // Menyimpan referensi ID invitation
+        paymentMethod: resolvedPaymentMethod,
+        linkedOrderId: invitation.id,
+        expiredAt,
       },
     });
 

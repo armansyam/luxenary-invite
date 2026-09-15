@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { encryptPin, decryptPin, isPinEncrypted } from "@/lib/pinEncryption";
 import { isReservedSubdomain, isSubdomainExpired } from "@/lib/domainUtils";
+import { getPlanMemoriesQuota } from "@/lib/settings";
 
 
 export function getInvitationLockStatus(inv: any) {
@@ -139,6 +140,7 @@ export async function GET(
       staffPin: displayPin, // Tampilkan PIN plain-text (sudah di-decrypt) ke owner yang login
       mediaMap,
       ...lockStatus,
+      planMemoriesQuota: await getPlanMemoriesQuota(invitation.order?.planType),
     });
   } catch (err: any) {
     const msg = process.env.NODE_ENV === "production" ? "Terjadi kesalahan server" : (err.message || "Terjadi kesalahan server");

@@ -70,12 +70,22 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 2. Ambil harga dasar paket resmi dari AdminSetting
-    const priceKey = `price_${order.planType.toLowerCase()}`;
-    const priceSetting = await prisma.adminSetting.findUnique({ where: { key: priceKey } });
-    const basePrice = priceSetting && !isNaN(Number(priceSetting.value))
-      ? Number(priceSetting.value)
-      : Number(order.amount);
+    // 2. Ambil harga dasar resmi dari AdminSetting secara dinamis sesuai jenis order (Zero Hardcode)
+    let basePrice = Number(order.amount);
+
+    if (order.itemsJson) {
+      // Untuk pesanan terpadu (bundle add-on / upgrade), gunakan nominal order.amount yang telah dihitung server
+      basePrice = Number(order.amount);
+    } else if (order.orderType === "NEW") {
+      const priceKey = `price_${order.planType.toLowerCase()}`;
+      const priceSetting = await prisma.adminSetting.findUnique({ where: { key: priceKey } });
+      if (priceSetting && !isNaN(Number(priceSetting.value))) {
+        basePrice = Number(priceSetting.value);
+      }
+    } else {
+      // Untuk UPGRADE, GALLERY_EXTENSION, dan CUSTOM_DOMAIN_ADDON, gunakan nominal order.amount
+      basePrice = Number(order.amount);
+    }
 
     const now = new Date();
     let appliedDiscount = 0;
