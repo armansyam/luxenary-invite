@@ -130,11 +130,6 @@ export default function GuestMomentOpening({
 
         {/* Main Center Floating Card */}
         <main className="relative z-10 w-full max-w-sm my-auto py-6 flex flex-col items-center text-center space-y-4">
-          {isTestMode && (
-            <div className="bg-amber-500/90 text-stone-950 text-[10px] font-bold px-3 py-1 rounded-full shadow-lg uppercase tracking-wider">
-              Mode Uji Coba Klien
-            </div>
-          )}
 
           <div className="space-y-1">
             <span className="text-[10px] font-mono tracking-[0.3em] uppercase text-amber-300 font-bold">
@@ -386,15 +381,6 @@ export default function GuestMomentOpening({
               {getRetroDateStamp()}
             </span>
           </div>
-
-          {/* Badge Mode Uji Coba Klien jika aktif (di bawah tanggal, tidak menutupi foto) */}
-          {isTestMode && (
-            <div className="pt-1">
-              <span className="inline-block px-2.5 py-0.5 bg-amber-100 border border-amber-300 text-amber-900 text-[10px] font-mono uppercase tracking-wider rounded-full font-bold">
-                Mode Uji Coba Klien
-              </span>
-            </div>
-          )}
         </div>
 
         {/* Interactive Action Area */}
