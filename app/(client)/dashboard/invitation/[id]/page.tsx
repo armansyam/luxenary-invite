@@ -4334,14 +4334,14 @@ export default function EditInvitation() {
                           <label className="block text-xs font-bold text-stone-800 mb-1">
                             Jatah Jepretan per Tamu (Roll Limit):
                           </label>
-                          <p className="text-[11px] text-stone-500 mb-2">Berapa foto per tamu (Plafon paket: {shotsQuotaLimit} Roll)</p>
+                          <p className="text-[11px] text-stone-500 mb-2">Berapa foto per tamu (Pilihan fleksibel: 1 - 30 Roll)</p>
                           <div className="flex items-center gap-3">
                             <input
                               type="number"
                               min={1}
-                              max={shotsQuotaLimit}
+                              max={30}
                               value={currentShotsQuota}
-                              onChange={(e) => updateFeatureSetting("memoriesShotsQuota", Math.min(shotsQuotaLimit, Math.max(1, parseInt(e.target.value) || 1)))}
+                              onChange={(e) => updateFeatureSetting("memoriesShotsQuota", Math.min(30, Math.max(1, parseInt(e.target.value) || 1)))}
                               className="w-24 p-2 bg-white border border-stone-200 rounded-xl text-xs font-bold font-mono text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700/30 text-center"
                             />
                             <span className="text-xs text-stone-600 font-medium">Foto / Tamu</span>

@@ -615,7 +615,7 @@ export default function DisposableCameraViewfinder({
             </span>
             <h2 className="text-xl font-bold font-serif text-white">Seluruh Roll Kenangan Telah Terisi</h2>
             <p className="text-xs text-stone-400 leading-relaxed mt-2">
-              Terima kasih atas antusiasme luar biasa dari seluruh tamu undangan! Kuota pengunggah ({maxContributors} tamu) untuk momen pernikahan ini telah terpenuhi. Anda tetap dapat menikmati seluruh koleksi momen yang telah diabadikan bersama di Galeri Kenangan.
+              Terima kasih atas antusiasme luar biasa dari seluruh tamu undangan! Kuota foto kenangan untuk momen pernikahan ini telah terpenuhi. Anda tetap dapat menikmati seluruh koleksi momen yang telah diabadikan bersama di Galeri Kenangan.
             </p>
           </div>
           <div className="space-y-2 pt-2">

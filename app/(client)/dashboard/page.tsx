@@ -33,6 +33,37 @@ function DashboardHomeContent() {
   const [pendingGalleryOrder, setPendingGalleryOrder] = useState<any>(null);
   const [memoriesQuota, setMemoriesQuota] = useState<any>(null);
   const [isAddonModalOpen, setIsAddonModalOpen] = useState(false);
+  const [isRollModalOpen, setIsRollModalOpen] = useState(false);
+  const [rollModalInput, setRollModalInput] = useState<number>(5);
+  const [isSavingRoll, setIsSavingRoll] = useState(false);
+  const [rollModalMsg, setRollModalMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  const handleSaveRollQuota = async () => {
+    if (!invitation?.id || isSavingRoll) return;
+    setIsSavingRoll(true);
+    setRollModalMsg(null);
+    try {
+      const res = await fetch(`/api/client/invitations/${invitation.id}/memories`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ shotsQuota: rollModalInput }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Gagal menyimpan jatah roll.");
+      }
+      setRollModalMsg({ type: "success", text: `Jatah roll berhasil disimpan: ${rollModalInput} foto per tamu.` });
+      await fetchGuestMemories(invitation.id);
+      setTimeout(() => {
+        setIsRollModalOpen(false);
+        setRollModalMsg(null);
+      }, 1000);
+    } catch (err: any) {
+      setRollModalMsg({ type: "error", text: err.message || "Gagal menyimpan pengaturan." });
+    } finally {
+      setIsSavingRoll(false);
+    }
+  };
 
   const fetchGuestMemories = useCallback(async (invId?: string) => {
     const targetId = invId || invitation?.id;
@@ -908,7 +939,7 @@ function DashboardHomeContent() {
               Pantau foto candid yang diunggah tamu, bagikan tautan album publik, dan unduh arsip foto (ZIP).
               {memoriesQuota && (
                 <span className="block mt-1 text-[11px] text-amber-900 font-medium">
-                  Kapasitas Paket: Maks. {memoriesQuota.maxContributors} Tamu ({memoriesQuota.shotsQuota} foto roll/tamu) • Sisa Kuota: {memoriesQuota.remainingPhotos} foto
+                  Kapasitas: Jatah {memoriesQuota.shotsQuota} Foto/Tamu • Estimasi: ~{Math.floor(memoriesQuota.remainingPhotos / (memoriesQuota.shotsQuota || 5))} Tamu dapat berpartisipasi (Sisa Kuota: {memoriesQuota.remainingPhotos} foto)
                 </span>
               )}
             </p>
@@ -917,6 +948,22 @@ function DashboardHomeContent() {
             <span className="text-xs font-mono font-bold text-stone-800 bg-stone-100 border border-stone-200 px-3 py-1.5 rounded-xl">
               {memoriesQuota ? `${memoriesQuota.usedPhotos} / ${memoriesQuota.maxTotalPhotos} Foto` : `${guestMemoriesList.length} Foto Masuk`}
             </span>
+            <button
+              type="button"
+              onClick={() => {
+                setRollModalInput(memoriesQuota?.shotsQuota || 5);
+                setRollModalMsg(null);
+                setIsRollModalOpen(true);
+              }}
+              className="px-3 py-1.5 bg-white hover:bg-stone-100 text-stone-700 border border-stone-300 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+              title="Atur Jatah Roll Kamera per Tamu"
+            >
+              <svg className="w-3.5 h-3.5 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span>Atur Roll Tamu</span>
+            </button>
             <button
               type="button"
               onClick={() => setIsAddonModalOpen(true)}
@@ -1097,6 +1144,178 @@ function DashboardHomeContent() {
           galleryExpiresAt={invitation.galleryExpiresAt ? new Date(invitation.galleryExpiresAt).toISOString() : null}
           pricingSettings={addonPricingSettings}
         />
+      )}
+
+      {/* Modal Atur Jatah Roll Kamera Tamu */}
+      {isRollModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-stone-200 overflow-hidden flex flex-col max-h-[90vh]">
+            {/* Header */}
+            <div className="px-6 py-5 border-b border-stone-200 bg-stone-50/70 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-amber-100/80 border border-amber-300/60 flex items-center justify-center text-amber-800">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-stone-900">Atur Jatah Roll Kamera Tamu</h3>
+                  <p className="text-xs text-stone-500">Sesuaikan kuota jepretan kamera Disposable per tamu</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsRollModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-500 flex items-center justify-center transition cursor-pointer"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 space-y-5 overflow-y-auto">
+              {/* Pool Status & Dynamic Calculation Card */}
+              <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 space-y-3">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-semibold text-stone-700">Total Kuota Foto Pool:</span>
+                  <span className="font-mono font-bold text-stone-900">{memoriesQuota?.maxTotalPhotos || 0} Foto</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-semibold text-stone-700">Foto Sudah Terpakai:</span>
+                  <span className="font-mono font-bold text-stone-900">{memoriesQuota?.usedPhotos || 0} Foto</span>
+                </div>
+                <div className="flex items-center justify-between text-xs border-t border-amber-200/60 pt-2">
+                  <span className="font-bold text-amber-950">Sisa Kuota Tersedia:</span>
+                  <span className="font-mono font-bold text-amber-900 text-sm">{memoriesQuota?.remainingPhotos || 0} Foto</span>
+                </div>
+
+                {/* Dynamic Capacity Estimation */}
+                <div className="p-3 bg-white/90 rounded-xl border border-amber-200/80 text-xs space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-stone-600 font-medium">Estimasi Tamu Aktif:</span>
+                    <span className="font-mono font-bold text-amber-900 text-sm">
+                      ~{rollModalInput > 0 ? Math.floor((memoriesQuota?.remainingPhotos || 0) / rollModalInput) : 0} Tamu
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-stone-500 leading-relaxed">
+                    Dengan jatah <strong className="text-stone-800">{rollModalInput} foto/tamu</strong>, sisa kuota pool dapat mengakomodasi sekitar <strong className="text-amber-800">~{rollModalInput > 0 ? Math.floor((memoriesQuota?.remainingPhotos || 0) / rollModalInput) : 0} tamu</strong> lagi.
+                  </p>
+                </div>
+              </div>
+
+              {/* Selector & Stepper */}
+              <div className="space-y-3">
+                <label className="block text-xs font-bold text-stone-800">
+                  Pilih atau Masukkan Jatah Roll per Tamu (1 - 30 Foto):
+                </label>
+
+                {/* Quick Presets */}
+                <div className="grid grid-cols-5 gap-2">
+                  {[3, 5, 10, 15, 20].map((val) => (
+                    <button
+                      key={val}
+                      type="button"
+                      onClick={() => setRollModalInput(val)}
+                      className={`py-2 text-xs font-bold rounded-xl border transition cursor-pointer font-mono ${
+                        rollModalInput === val
+                          ? "bg-amber-800 text-white border-amber-800 shadow-xs"
+                          : "bg-stone-50 hover:bg-stone-100 text-stone-700 border-stone-200"
+                      }`}
+                    >
+                      {val} Roll
+                    </button>
+                  ))}
+                </div>
+
+                {/* Stepper + Input */}
+                <div className="flex items-center gap-3 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setRollModalInput((prev) => Math.max(1, prev - 1))}
+                    disabled={rollModalInput <= 1}
+                    className="w-11 h-11 rounded-xl bg-stone-100 hover:bg-stone-200 disabled:opacity-40 text-stone-800 font-bold flex items-center justify-center transition cursor-pointer text-lg"
+                  >
+                    -
+                  </button>
+                  <div className="flex-1 relative">
+                    <input
+                      type="number"
+                      min={1}
+                      max={30}
+                      value={rollModalInput}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value, 10);
+                        if (!isNaN(val)) {
+                          setRollModalInput(Math.min(30, Math.max(1, val)));
+                        }
+                      }}
+                      className="w-full text-center py-2.5 text-base font-bold font-mono text-stone-900 bg-stone-50 border border-stone-300 rounded-xl focus:ring-2 focus:ring-amber-700/20 focus:border-amber-700 transition"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-stone-400 font-medium">Foto</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setRollModalInput((prev) => Math.min(30, prev + 1))}
+                    disabled={rollModalInput >= 30}
+                    className="w-11 h-11 rounded-xl bg-stone-100 hover:bg-stone-200 disabled:opacity-40 text-stone-800 font-bold flex items-center justify-center transition cursor-pointer text-lg"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              {/* Information Cards (Anti-Hangus & Boundary) */}
+              <div className="p-3.5 rounded-xl bg-stone-50 border border-stone-200/90 text-xs text-stone-600 space-y-1.5 leading-relaxed">
+                <div className="flex items-start gap-2">
+                  <span className="text-amber-700 font-bold shrink-0">✓</span>
+                  <span><strong>Jatah Roll Anti-Hangus:</strong> Tamu yang hanya mengambil 1 atau 2 foto dan selesai, sisa jatah roll-nya <strong>tetap utuh di pool</strong> dan tidak terbuang.</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-amber-700 font-bold shrink-0">✓</span>
+                  <span><strong>Penyesuaian Tamu Terakhir:</strong> Jika sisa foto di pool tersisa lebih sedikit dari jatah roll (misal sisa 8 foto), kamera tamu otomatis disesuaikan dengan sisa foto tersebut.</span>
+                </div>
+              </div>
+
+              {/* Status Message */}
+              {rollModalMsg && (
+                <div className={`p-3 rounded-xl text-xs font-semibold ${
+                  rollModalMsg.type === "success"
+                    ? "bg-emerald-50 text-emerald-900 border border-emerald-200"
+                    : "bg-rose-50 text-rose-900 border border-rose-200"
+                }`}>
+                  {rollModalMsg.text}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-stone-200 bg-stone-50/70 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setIsRollModalOpen(false)}
+                className="px-4 py-2 text-xs font-semibold text-stone-600 hover:text-stone-900 hover:bg-stone-100 rounded-xl transition cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveRollQuota}
+                disabled={isSavingRoll}
+                className="px-5 py-2 bg-amber-800 hover:bg-amber-900 disabled:opacity-60 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer shadow-sm"
+              >
+                {isSavingRoll ? (
+                  <>
+                    <svg className="w-3.5 h-3.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                    <span>Menyimpan...</span>
+                  </>
+                ) : (
+                  <span>Simpan Pengaturan Roll</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import GuestMomentClient from "@/app/components/features/GuestMomentClient";
-import { getAdminSetting } from "@/lib/settings";
+import { getAdminSetting, getPlanMemoriesQuota } from "@/lib/settings";
 import { getMemoriesActiveSchedule } from "@/lib/domainUtils";
 
 export const dynamic = "force-dynamic";
@@ -36,6 +36,7 @@ export default async function GuestMemoriesStandalonePage({ params, searchParams
   const invitation = await prisma.invitation.findUnique({
     where: { subdomain },
     include: {
+      order: { select: { planType: true } },
       guestMemories: {
         orderBy: { createdAt: "desc" },
       },
@@ -80,9 +81,24 @@ export default async function GuestMemoriesStandalonePage({ params, searchParams
   const filterId: string = fs.memoriesFilter || "aura_90s";
   const dateStampEnabled: boolean = fs.memoriesDateStamp !== false;
   const dateFormat: string = fs.memoriesDateFormat || "DD MM 'YY";
-  const shotsQuota: number = typeof fs.memoriesShotsQuota === "number" ? fs.memoriesShotsQuota : 5;
+  const configuredShotsQuota: number = typeof fs.memoriesShotsQuota === "number" ? fs.memoriesShotsQuota : 5;
   const maxContributors: number = typeof fs.memoriesMaxContributors === "number" ? fs.memoriesMaxContributors : 100;
-  const isContributorLimitReached = maxContributors > 0 && currentContributorsCount >= maxContributors;
+
+  // Hitung Kuota Total Acara & Sisa Pool Riil
+  const planQuota = await getPlanMemoriesQuota(invitation.order?.planType);
+  const extraPhotos = typeof fs.extraMemoriesQuota === "number" ? Math.max(0, fs.extraMemoriesQuota) : 0;
+  const baseTotalPhotos = planQuota.totalQuota > 0 ? planQuota.totalQuota : (maxContributors * configuredShotsQuota);
+  const maxTotalPhotos = baseTotalPhotos + extraPhotos;
+
+  const totalUploaded = await prisma.guestMemory.count({
+    where: { invitationId: invitation.id },
+  });
+  const remainingPool = Math.max(0, maxTotalPhotos - totalUploaded);
+  const isPoolExhausted = maxTotalPhotos > 0 && remainingPool <= 0;
+  const isContributorLimitReached = (maxContributors > 0 && currentContributorsCount >= maxContributors) || isPoolExhausted;
+
+  // Jatah efektif tamu: tidak boleh melampaui sisa pool yang tersedia
+  const effectiveShotsQuota = remainingPool > 0 ? Math.min(configuredShotsQuota, remainingPool) : configuredShotsQuota;
   const { startTime, endTime } = getMemoriesActiveSchedule(invitation.featureSettings, invitation.eventData);
 
   return (
@@ -97,7 +113,7 @@ export default async function GuestMemoriesStandalonePage({ params, searchParams
       startTime={startTime ? startTime.toISOString() : null}
       endTime={endTime ? endTime.toISOString() : null}
       filterId={filterId}
-      shotsQuota={shotsQuota}
+      shotsQuota={effectiveShotsQuota}
       maxContributors={maxContributors}
       currentContributorsCount={currentContributorsCount}
       isContributorLimitReached={isContributorLimitReached}

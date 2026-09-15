@@ -206,3 +206,61 @@ export async function DELETE(
     return NextResponse.json({ error: err?.message || "Gagal menghapus memori." }, { status: 500 });
   }
 }
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> | { id: string } }
+) {
+  try {
+    const resolvedParams = await Promise.resolve(params);
+    const id = resolvedParams?.id;
+    if (!id) return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
+
+    const access = await verifyClientAccess(id);
+    if (!access) {
+      return NextResponse.json({ error: "Unauthorized / Not Found" }, { status: 403 });
+    }
+    const { invitation } = access;
+
+    const body = await req.json().catch(() => ({}));
+    const rawQuota = body.shotsQuota ?? body.memoriesShotsQuota;
+    const shotsQuota = Number(rawQuota);
+
+    if (isNaN(shotsQuota) || shotsQuota < 1 || shotsQuota > 30) {
+      return NextResponse.json(
+        { error: "Jatah roll per tamu harus berupa angka antara 1 sampai 30." },
+        { status: 400 }
+      );
+    }
+
+    const currentFs = (() => {
+      try {
+        return typeof invitation.featureSettings === "object"
+          ? (invitation.featureSettings || {})
+          : JSON.parse((invitation.featureSettings as string) || "{}");
+      } catch {
+        return {};
+      }
+    })();
+
+    const updatedFs = {
+      ...currentFs,
+      memoriesShotsQuota: shotsQuota,
+    };
+
+    await prisma.invitation.update({
+      where: { id },
+      data: {
+        featureSettings: JSON.stringify(updatedFs),
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      shotsQuota,
+      message: `Jatah roll kamera berhasil diatur menjadi ${shotsQuota} foto per tamu.`,
+    });
+  } catch (err: any) {
+    return NextResponse.json({ error: err?.message || "Gagal memperbarui jatah roll." }, { status: 500 });
+  }
+}

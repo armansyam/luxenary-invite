@@ -563,3 +563,71 @@ export async function PUT(
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
+
+export async function PATCH(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> | { id: string } }
+) {
+  try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized. Silakan login terlebih dahulu." }, { status: 401 });
+    }
+
+    const resolvedParams = await Promise.resolve(params);
+    const id = resolvedParams?.id;
+    if (!id) {
+      return NextResponse.json({ error: "ID Undangan wajib disertakan." }, { status: 400 });
+    }
+
+    const body = await req.json();
+    const currentInv = await prisma.invitation.findUnique({ where: { id } });
+    if (!currentInv) {
+      return NextResponse.json({ error: "Undangan tidak ditemukan" }, { status: 404 });
+    }
+
+    const isOwner = currentInv.userId === session.user.id;
+    const isAdmin = (session.user as any).isAdmin === true || (session.user as any).role === "SUPER_ADMIN" || (session.user as any).role === "ADMIN";
+
+    if (!isOwner && !isAdmin) {
+      return NextResponse.json({ error: "Forbidden. Anda tidak memiliki hak mengedit undangan ini." }, { status: 403 });
+    }
+
+    let updateData: any = {};
+
+    if (body.featureSettings !== undefined) {
+      const existingObj = currentInv?.featureSettings
+        ? (typeof currentInv.featureSettings === "object" ? currentInv.featureSettings : JSON.parse(currentInv.featureSettings || "{}"))
+        : {};
+      const incomingObj = typeof body.featureSettings === "object"
+        ? body.featureSettings
+        : JSON.parse(body.featureSettings || "{}");
+
+      let parsedFeatures = { ...existingObj, ...incomingObj };
+
+      if (parsedFeatures.memoriesShotsQuota !== undefined) {
+        const sq = Number(parsedFeatures.memoriesShotsQuota);
+        if (!isNaN(sq) && sq >= 1 && sq <= 30) {
+          parsedFeatures.memoriesShotsQuota = sq;
+        }
+      }
+
+      updateData.featureSettings = JSON.stringify(parsedFeatures);
+    }
+
+    const updated = await prisma.invitation.update({
+      where: { id },
+      data: updateData,
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: "Pengaturan berhasil diperbarui.",
+      ...updated,
+    });
+  } catch (err: any) {
+    console.error("Error patching invitation:", err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
