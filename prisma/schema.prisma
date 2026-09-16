@@ -141,7 +141,6 @@ model Invitation {
   user                 User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   media                InvitationMedia[]
   rsvps                Rsvp[]
-  wishes               Wish[]
 
   @@index([userId])
   @@index([status])
@@ -201,18 +200,6 @@ model Rsvp {
 
   @@index([invitationId])
   @@map("rsvps")
-}
-
-model Wish {
-  id           String     @id @default(uuid())
-  invitationId String
-  senderName   String
-  message      String
-  createdAt    DateTime   @default(now())
-  invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
-
-  @@index([invitationId])
-  @@map("wishes")
 }
 
 model GuestMemory {

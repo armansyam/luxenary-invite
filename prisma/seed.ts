@@ -4,6 +4,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import bcrypt from "bcryptjs";
 import path from "path";
 import * as dotenv from "dotenv";
+import { defaultAdminSettings, defaultMusicPresets } from "./defaultSettings";
 
 dotenv.config({ path: path.join(__dirname, "../.env") });
 
@@ -220,25 +221,85 @@ async function main() {
       },
     })
   }
+  console.log(`✅ Themes seeded: ${themes.length} themes.`);
 
-  // Create initial Super Admin (if not exists)
-  const adminEmail = 'admin@luxenary.com'
-  const existingAdmin = await prisma.admin.findUnique({ where: { email: adminEmail } })
-  if (!existingAdmin) {
-    // Generate bcrypt hash for 'admin123'
-    const passwordHash = await bcrypt.hash('admin123', 10);
-    await prisma.admin.create({
-      data: {
-        username: 'admin',
-        email: adminEmail,
-        name: 'Super Admin',
-        role: 'SUPER_ADMIN',
-        passwordHash,
+  // Seed default admin settings (84 items)
+  for (const s of defaultAdminSettings) {
+    await prisma.adminSetting.upsert({
+      where: { key: s.key },
+      create: {
+        key: s.key,
+        value: s.value,
+        label: s.label,
       },
-    })
+      update: {
+        value: s.value,
+        label: s.label,
+      },
+    });
   }
+  console.log(`✅ Admin settings seeded: ${defaultAdminSettings.length} settings.`);
 
-  console.log('Seed data created successfully')
+  // Seed default music presets
+  for (const m of defaultMusicPresets) {
+    await prisma.musicPreset.upsert({
+      where: { url: m.url },
+      create: {
+        id: m.id,
+        title: m.title,
+        composer: m.composer,
+        genre: m.genre,
+        url: m.url,
+        durationSec: m.durationSec,
+        isActive: m.isActive,
+        sortOrder: m.sortOrder,
+      },
+      update: {
+        title: m.title,
+        composer: m.composer,
+        genre: m.genre,
+        durationSec: m.durationSec,
+        isActive: m.isActive,
+        sortOrder: m.sortOrder,
+      },
+    });
+  }
+  console.log(`✅ Music presets seeded: ${defaultMusicPresets.length} presets.`);
+
+  // Seed Admins (Super Admin & Admin)
+  const defaultPasswordHash = await bcrypt.hash('admin123', 10);
+  const defaultAdmins = [
+    {
+      username: 'admin',
+      email: 'admin@luxenary.com',
+      name: 'Super Admin',
+      role: 'SUPER_ADMIN' as const,
+    },
+    {
+      username: 'zulham',
+      email: 'zulhamikor@gmail.com',
+      name: 'Admin Zulham',
+      role: 'ADMIN' as const,
+    },
+  ];
+
+  for (const adm of defaultAdmins) {
+    const existing = await prisma.admin.findUnique({ where: { email: adm.email } });
+    if (!existing) {
+      await prisma.admin.create({
+        data: {
+          username: adm.username,
+          email: adm.email,
+          name: adm.name,
+          role: adm.role,
+          passwordHash: defaultPasswordHash,
+        },
+      });
+    }
+  }
+  console.log(`✅ Admins verified & seeded: ${defaultAdmins.length} admins.`);
+
+  console.log('✨ Master database seed executed successfully!')
 }
 
 main()
