@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Terlalu banyak permintaan. Silakan tunggu sebentar." }, { status: 429 });
     }
 
-    const { qrToken, invitationId, isCheckIn, token } = await req.json();
+    const { qrToken, invitationId, isCheckIn, token, forceReCheckIn } = await req.json();
 
     if (!qrToken || !invitationId || !token) {
       return NextResponse.json({ error: "Data tidak lengkap" }, { status: 400 });
@@ -91,12 +91,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "QR Code ini bukan untuk acara pernikahan ini." }, { status: 400 });
     }
 
-    if (guest.isTokenRedeemed && !isCheckIn) {
+    if (guest.isTokenRedeemed && !forceReCheckIn) {
       return NextResponse.json({
-        error: "QR Code ini sudah pernah digunakan.",
+        error: `Tamu ${guest.name} sudah pernah melakukan Check-in sebelumnya!`,
         guest: {
+          id: guest.id,
           name: guest.name,
           category: guest.category,
+          sessionInfo: guest.sessionInfo,
         },
         alreadyRedeemed: true,
       }, { status: 400 });

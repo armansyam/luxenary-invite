@@ -60,6 +60,25 @@ export async function GET(req: NextRequest) {
   }
 }
 
+// KeyLock in-memory untuk serialisasi request RSVP identik (Anti-Race Condition Double-Tap)
+const rsvpLocks = new Map<string, Promise<void>>();
+
+async function withRsvpLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
+  while (rsvpLocks.has(key)) {
+    await rsvpLocks.get(key);
+  }
+  let unlock!: () => void;
+  const promise = new Promise<void>((resolve) => {
+    unlock = resolve;
+  });
+  rsvpLocks.set(key, promise);
+  try {
+    return await fn();
+  } finally {
+    rsvpLocks.delete(key);
+    unlock();
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -110,51 +129,54 @@ export async function POST(req: NextRequest) {
     }
 
     const cleanGuestName = String(guestName).trim();
+    const lockKey = `${invitationId}:${cleanGuestName.toLowerCase()}`;
 
-    // Atomic transaction untuk mencegah race condition double-submit dan menjamin batas pax katering
-    const rsvp = await prisma.$transaction(async (tx) => {
-      // 1. Cari data tamu terdaftar jika ada
-      const matchingGuest = await tx.guest.findFirst({
-        where: {
-          invitationId,
-          name: { equals: cleanGuestName, mode: "insensitive" },
-        },
-      });
+    // Atomic transaction dengan in-memory key lock untuk mencegah race condition double-submit dan menjamin batas pax katering
+    const rsvp = await withRsvpLock(lockKey, async () => {
+      return await prisma.$transaction(async (tx) => {
+        // 1. Cari data tamu terdaftar jika ada
+        const matchingGuest = await tx.guest.findFirst({
+          where: {
+            invitationId,
+            name: { equals: cleanGuestName, mode: "insensitive" },
+          },
+        });
 
-      // 2. Tentukan batas kuota pax yang sah
-      // - Tamu terdaftar: maksimal sesuai guestQuota yang diatur pengantin di buku tamu
-      // - Tamu umum (URL langsung): maksimal 2 orang sesuai kebijakan platform
-      const maxAllowedPax = matchingGuest && matchingGuest.guestQuota > 0 ? matchingGuest.guestQuota : 2;
-      const requestedPax = Math.max(1, parseInt(String(guestCount), 10) || 1);
-      const isAttending = String(status).toLowerCase() === "hadir";
-      const finalGuestCount = isAttending ? Math.min(requestedPax, maxAllowedPax) : 0;
+        // 2. Tentukan batas kuota pax yang sah
+        // - Tamu terdaftar: maksimal sesuai guestQuota yang diatur pengantin di buku tamu
+        // - Tamu umum (URL langsung): maksimal 2 orang sesuai kebijakan platform
+        const maxAllowedPax = matchingGuest && matchingGuest.guestQuota > 0 ? matchingGuest.guestQuota : 2;
+        const requestedPax = Math.max(1, parseInt(String(guestCount), 10) || 1);
+        const isAttending = String(status).toLowerCase() === "hadir";
+        const finalGuestCount = isAttending ? Math.min(requestedPax, maxAllowedPax) : 0;
 
-      // 3. Cari entri RSVP eksisting untuk mencegah duplikasi (idempotent)
-      const existingRsvp = matchingGuest
-        ? await tx.rsvp.findFirst({ where: { invitationId, guestId: matchingGuest.id } })
-        : await tx.rsvp.findFirst({ where: { invitationId, guestName: { equals: cleanGuestName, mode: "insensitive" } } });
+        // 3. Cari entri RSVP eksisting untuk mencegah duplikasi (idempotent)
+        const existingRsvp = matchingGuest
+          ? await tx.rsvp.findFirst({ where: { invitationId, guestId: matchingGuest.id } })
+          : await tx.rsvp.findFirst({ where: { invitationId, guestName: { equals: cleanGuestName, mode: "insensitive" } } });
 
-      if (existingRsvp) {
-        return await tx.rsvp.update({
-          where: { id: existingRsvp.id },
+        if (existingRsvp) {
+          return await tx.rsvp.update({
+            where: { id: existingRsvp.id },
+            data: {
+              status,
+              guestCount: finalGuestCount,
+              message: message || null,
+              respondedAt: new Date(),
+            },
+          });
+        }
+
+        return await tx.rsvp.create({
           data: {
+            invitationId,
+            guestId: matchingGuest ? matchingGuest.id : null,
+            guestName: cleanGuestName,
             status,
             guestCount: finalGuestCount,
             message: message || null,
-            respondedAt: new Date(),
           },
         });
-      }
-
-      return await tx.rsvp.create({
-        data: {
-          invitationId,
-          guestId: matchingGuest ? matchingGuest.id : null,
-          guestName: cleanGuestName,
-          status,
-          guestCount: finalGuestCount,
-          message: message || null,
-        },
       });
     });
 
