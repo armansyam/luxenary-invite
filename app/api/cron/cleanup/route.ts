@@ -110,7 +110,16 @@ export async function POST(req: NextRequest) {
       const effectiveExpiry = inv.galleryExpiresAt || (latestDate ? new Date(latestDate.getTime() + (cleanupDays * 24 * 60 * 60 * 1000)) : null);
 
       if (effectiveExpiry && now > effectiveExpiry) {
-        // 1. Hapus foto candid tamu dari R2 & local
+        // 1. Hapus published HTML & draft lokal agar tidak ada disk leak di VPS
+        await deletePublishedHtml(inv.id);
+        const draftPath = path.join(process.cwd(), "data", "drafts", `${inv.id}.html`);
+        try {
+          if (await fileExists(draftPath)) {
+            await fs.promises.unlink(draftPath);
+          }
+        } catch {}
+
+        // 2. Hapus foto candid tamu dari R2 & local
         const memories = await prisma.guestMemory.findMany({ where: { invitationId: inv.id } });
         if (memories.length > 0) {
           const { deleteFile } = await import("@/lib/storage");
@@ -125,7 +134,7 @@ export async function POST(req: NextRequest) {
           if (await fileExists(legacyMemoriesDir)) await fs.promises.rm(legacyMemoriesDir, { recursive: true, force: true });
         } catch {}
 
-        // 2. Bersihkan formulir RSVP kedaluwarsa
+        // 3. Bersihkan formulir RSVP kedaluwarsa
         await prisma.rsvp.deleteMany({ where: { invitationId: inv.id } });
 
         // 3. Daur ulang subdomain ke pool dan tandai ARCHIVED

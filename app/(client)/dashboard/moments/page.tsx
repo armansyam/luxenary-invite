@@ -242,7 +242,11 @@ export default function MomentsSetupPage() {
         const currentFs = typeof prev.featureSettings === "object" ? prev.featureSettings : JSON.parse(prev.featureSettings || "{}");
         return {
           ...prev,
-          featureSettings: JSON.stringify({ ...currentFs, shotsQuota: rollModalInput }),
+          featureSettings: JSON.stringify({
+            ...currentFs,
+            memoriesShotsQuota: rollModalInput,
+            shotsQuota: rollModalInput,
+          }),
         };
       });
       await fetchGuestMemories(invitation.id);

@@ -111,42 +111,52 @@ export async function POST(req: NextRequest) {
 
     const cleanGuestName = String(guestName).trim();
 
-    // Find matching guest record if already invited, but DO NOT auto-create new guest
-    const matchingGuest = await prisma.guest.findFirst({
-      where: {
-        invitationId,
-        name: { equals: cleanGuestName, mode: "insensitive" },
-      },
-    });
-
-    // Find existing RSVP or create new to prevent duplication
-    const existingRsvp = matchingGuest
-      ? await prisma.rsvp.findFirst({ where: { invitationId, guestId: matchingGuest.id } })
-      : await prisma.rsvp.findFirst({ where: { invitationId, guestName: { equals: cleanGuestName, mode: "insensitive" } } });
-
-    let rsvp;
-    if (existingRsvp) {
-      rsvp = await prisma.rsvp.update({
-        where: { id: existingRsvp.id },
-        data: {
-          status,
-          guestCount: Number(guestCount) || 1,
-          message: message || null,
-          respondedAt: new Date(),
+    // Atomic transaction untuk mencegah race condition double-submit dan menjamin batas pax katering
+    const rsvp = await prisma.$transaction(async (tx) => {
+      // 1. Cari data tamu terdaftar jika ada
+      const matchingGuest = await tx.guest.findFirst({
+        where: {
+          invitationId,
+          name: { equals: cleanGuestName, mode: "insensitive" },
         },
       });
-    } else {
-      rsvp = await prisma.rsvp.create({
+
+      // 2. Tentukan batas kuota pax yang sah
+      // - Tamu terdaftar: maksimal sesuai guestQuota yang diatur pengantin di buku tamu
+      // - Tamu umum (URL langsung): maksimal 2 orang sesuai kebijakan platform
+      const maxAllowedPax = matchingGuest && matchingGuest.guestQuota > 0 ? matchingGuest.guestQuota : 2;
+      const requestedPax = Math.max(1, parseInt(String(guestCount), 10) || 1);
+      const isAttending = String(status).toLowerCase() === "hadir";
+      const finalGuestCount = isAttending ? Math.min(requestedPax, maxAllowedPax) : 0;
+
+      // 3. Cari entri RSVP eksisting untuk mencegah duplikasi (idempotent)
+      const existingRsvp = matchingGuest
+        ? await tx.rsvp.findFirst({ where: { invitationId, guestId: matchingGuest.id } })
+        : await tx.rsvp.findFirst({ where: { invitationId, guestName: { equals: cleanGuestName, mode: "insensitive" } } });
+
+      if (existingRsvp) {
+        return await tx.rsvp.update({
+          where: { id: existingRsvp.id },
+          data: {
+            status,
+            guestCount: finalGuestCount,
+            message: message || null,
+            respondedAt: new Date(),
+          },
+        });
+      }
+
+      return await tx.rsvp.create({
         data: {
           invitationId,
           guestId: matchingGuest ? matchingGuest.id : null,
-          guestName,
+          guestName: cleanGuestName,
           status,
-          guestCount: Number(guestCount) || 1,
+          guestCount: finalGuestCount,
           message: message || null,
         },
       });
-    }
+    });
 
     return NextResponse.json({
       success: true,

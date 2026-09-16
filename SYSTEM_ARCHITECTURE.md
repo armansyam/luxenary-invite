@@ -415,6 +415,7 @@ Cron job dilindungi oleh header `Authorization: Bearer <CRON_SECRET>` atau sesi 
    - Menggunakan parameter tunggal `retention_cleanup_days` (default 14 hari pasca acara paling akhir `getLatestEventDate`).
    - Seluruh komponen (Subdomain, Custom Domain, Foto Tamu R2/Lokal, dan RSVP) memiliki masa hidup yang sama dan dibersihkan bersamaan dalam 1 fase eksekusi saat `now > effectiveExpiry`.
    - Menghapus seluruh foto kenangan tamu dari Cloudflare R2 (`deleteFile`) dan disk lokal.
+   - Menghapus file HTML publikasi canonical (`deletePublishedHtml`) dan draft lokal (`data/drafts/{id}.html`) untuk mencegah akumulasi file usang di disk VPS.
    - Mengunci izin upload foto (`memoriesUploadLocked = true`).
    - Mengubah status undangan menjadi `ARCHIVED`.
    - Melepaskan subdomain kembali ke pool (`subdomain = null`).
