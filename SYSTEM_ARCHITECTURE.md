@@ -1,5 +1,5 @@
 # PLATFORM UNDANGAN (WHITE-LABEL) — DOKUMENTASI ARSITEKTUR SISTEM
-## Versi: 5.7.2 | Diperbarui: 15 September 2026
+## Versi: 5.7.5 | Diperbarui: 16 September 2026
 
 > **SUMBER KEBENARAN TUNGGAL** untuk semua developer dan AI Agent yang bekerja di repositori ini.  
 > Dokumen ini WAJIB dibaca sebelum melakukan perubahan apapun pada kode.  
@@ -864,9 +864,9 @@ Fitur *Remote* memungkinkan Admin untuk masuk ke dasbor Klien dan mengendalikann
 PUBLIC (tanpa auth):
   GET  /api/public/settings           → Platform settings global
   GET  /api/public/themes             → List tema aktif (cached via Cloudflare s-maxage=86400, max-age=60, auto-purged on admin sync)
-  POST /api/public/rsvp               → Submit RSVP tamu
+  POST /api/public/rsvp               → Submit RSVP tamu (in-memory key-lock withRsvpLock & atomic transaction prisma.$transaction, proteksi double-tap & kalkulasi pax katering cerdas)
   GET  /api/public/memories/{id}      → List foto momen
-  POST /api/public/memories/upload    → Upload foto tamu (rate-limited)
+  POST /api/public/memories/upload    → Upload foto tamu (rate-limited, kalkulasi kuota total acara totalEventQuota + extraMemoriesQuota top-up & batas per-sesi)
   GET  /api/public/resolve-custom-domain → Resolve custom domain ke subdomain
   GET  /api/public/version            → Versi sistem
   GET  /api/sse/memories              → SSE stream momen real-time
@@ -930,7 +930,7 @@ PUBLIC:
 RECEPTIONIST (public + PIN-protected di client side):
   POST /api/receptionist/verify-pin   → Verifikasi PIN panitia (AES-256-GCM 32-byte key) & penerbitan token sesi HMAC
   GET  /api/receptionist/guests       → List tamu untuk scanner offline-first
-  POST /api/receptionist/scan         → Tandai tamu hadir (validasi token sesi panitia)
+  POST /api/receptionist/scan         → Tandai tamu hadir (validasi token sesi panitia, idempotent offline queue flush dengan alreadyRedeemed: true & success: true)
   StaffLockScreen & ReceptionistClient:
     - Context & Hook: StaffAuthContext & useStaffAuth()
     - Mekanisme Kunci Layar / Logout: Revokasi token staff_auth_token_${id} di localStorage, transisi instan ke layar PIN Akses Terkunci, peringatan keamanan antrean offline.
@@ -2209,3 +2209,30 @@ Sistem telah melalui audit mendalam berbasis bukti empiris (*Empirical Verificat
 
 7. **Transparansi Error Surfacing di Studio Editor:**
    - Fungsi `saveSection` mem-parse pesan error asli dari respons HTTP JSON (`errData.error`) backend dan menampilkannya secara transparan pada toast notifikasi, meniadakan penyamaran kegagalan menjadi pesan palsu "masalah jaringan / koneksi internet".
+
+## 26. Penguatan Hari-H: Proteksi Konkurensi RSVP, Resepsionis Offline-First Idempoten, & Pencegahan Kebocoran Disk VPS
+
+1. **Proteksi Konkurensi & Double-Tap RSVP (`/api/public/rsvp`):**
+   - **In-Memory Mutex Key-Lock (`withRsvpLock`):** Mengisolasi pemrosesan submit RSVP berdasarkan kunci deterministik `lockKey = ${invitationId}:${cleanName}`. Menjamin dua atau lebih request paralel dari tamu yang sama (misalnya akibat tombol submit ditekan berulang kali di jaringan lambat) diproses secara serial.
+   - **Transaksi Atomik Database (`prisma.$transaction`):** Mengecek entri RSVP eksisting dan melakukan `create` dalam 1 transaksi terisolasi PostgreSQL. Jika sudah ada entri, data di-update tanpa menciptakan duplikasi row.
+   - **Kalkulasi Pax Katering Cerdas:**
+     * Tamu personal terdaftar dalam Buku Tamu: kuota kehadiran maksimum dibatasi sesuai jatah `guestQuota` pengantin.
+     * Tamu umum (tanpa undangan personal): dibatasi maksimum 2 orang (tamu + 1 pendamping).
+     * Tamu tidak hadir (`ATTENDING = false`): jatah pax otomatis dinormalkan ke 0 pax agar estimasi katering akurat.
+
+2. **Idempotensi Antrean Sinkronisasi Offline Resepsionis (`/api/receptionist/scan`):**
+   - **Tantangan Meja Resepsionis Hari-H:** Laptop panitia resepsionis sering mengalami fluktuasi sinyal atau bekerja dalam mode offline (`navigator.onLine === false`), menampung antrean tamu di `localStorage.offlineQueue`.
+   - **Idempotent Queue Flushing:** Saat koneksi pulih dan antrean offline disinkronkan massal ke backend dengan bendera `isCheckIn: true`:
+     * Jika tamu ternyata sudah berstatus `isRedeemed = true` di database server (misalnya telah dipindai dari laptop penerima tamu lain di pintu berbeda), endpoint merespons `success: true` dengan penanda `alreadyRedeemed: true`.
+     * Hal ini memungkinkan browser panitia melepaskan dan membersihkan item tersebut dari antrean offline tanpa error 400/kemacetan antrean (deadlock), sementara status di layar tetap menginformasikan panitia dengan tepat bahwa tamu sudah masuk sebelumnya.
+
+3. **Pencegahan Kebocoran Disk VPS pada Siklus Cron Cleanup (`/api/cron/cleanup`):**
+   - Saat masa retensi undangan klien berakhir (H+14 pasca acara) dan status beralih menjadi `ARCHIVED`:
+     * Server mengeksekusi `deletePublishedHtml(inv.id)` untuk membuang berkas publikasi statis `public/published/ids/<id>.html`.
+     * Server memverifikasi dan menghapus berkas draft lokal jika tersisa di `data/drafts/<id>.html`.
+     * Mencegah penumpukan file HTML lama di filesystem VPS pada penggunaan jangka panjang.
+
+4. **Kalkulasi Kuota Momen Foto Tamu & Add-On Top-Up Terintegrasi:**
+   - Plafon foto momen acara (`totalEventQuota`) di endpoint `/api/public/memories/upload` mengagregasikan jatah paket (`memories_total_quota_{plan}`) dengan saldo top-up (`extraMemoriesQuota`).
+   - Penambahan paket top-up foto diproses secara mandiri via `/checkout` (`MEMORIES_TOPUP`) dan dieksekusi otomatis oleh webhook / helper `applyMemoriesTopup` di `lib/upgradeHelper.ts`.
+

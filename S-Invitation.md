@@ -1,5 +1,5 @@
 # S-Invitation: Luxenary Invite System Architecture & Master Specification
-> **Versi: 5.7.2 | Diperbarui: 15 September 2026**
+> **Versi: 5.7.5 | Diperbarui: 16 September 2026**
 
 ## 1. Executive Summary & Core Philosophy
 **Luxenary Invite** adalah platform ekosistem undangan pernikahan digital modern berbasis Next.js 16 (App Router + Turbopack) yang menghadirkan pengalaman visual mewah (*haute couture*), kecepatan muat instan (<0.8 detik), self-service dashboard mandiri bagi klien, dan integrasi cloud edge caching.
@@ -857,3 +857,23 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - **Buku Tamu (`/dashboard/guests`):** Menampung Portal Resepsionis Hari H (`/[slug]/receptionist`) untuk scanner tiket QR tamu di meja penerima tamu pintu masuk beserta PIN akses panitia dan tombol salin info WO.
    - **Pusat Komando Dedicated Moments (`/dashboard/moments`):** Pusat operasional kamera virtual lengkap dengan 3D Tri-Device Mockup Showcase (iPhone 16 Pro + Media Fisik Standing Banner & Kartu QR), pemilihan 5 filter film analog kurasi, stempel LED, formulir multi-sesi jadwal & kuota, pengatur roll, studio cetak standing banner akrilik 300 DPI, dan download center ZIP.
    - **Studio Editor (`/dashboard/invitation/[id]` Seksi 14):** Khusus pengaturan estetika tampilan web undangan (*Circle Stories*, *Modern Masonry*, *Clean Minimalist*) dan teks judul tanpa instrumen operasional berat.
+
+---
+
+## 19. Penguatan Hari-H: Proteksi Konkurensi RSVP, Resepsionis Offline-First Idempoten, & Pencegahan Kebocoran Disk VPS
+
+1. **Proteksi Konkurensi & Double-Tap RSVP (`/api/public/rsvp`):**
+   - **In-Memory Mutex Key-Lock (`withRsvpLock`):** Mengunci antrean secara deterministik per `invitationId:namaTamu` untuk mencegah eksekusi ganda saat tombol submit ditekan berulang kali di koneksi lambat.
+   - **Transaksi Atomik Database (`prisma.$transaction`):** Menjamin pencarian dan pembuatan data RSVP berlangsung dalam 1 siklus atomik terisolasi, mengeliminasi duplikasi data dan race condition.
+   - **Kalkulasi Pax Katering Cerdas:** Kuota kehadiran dibatasi sesuai alokasi `guestQuota` pengantin untuk tamu terdaftar, maksimal 2 orang untuk tamu umum, dan dinormalkan ke 0 pax bagi tamu yang berhalangan hadir.
+
+2. **Idempotensi Antrean Sinkronisasi Offline Resepsionis (`/api/receptionist/scan`):**
+   - **Offline-First Resilience:** Menangani skenario meja resepsionis tanpa internet yang menampung antrean tamu di `localStorage.offlineQueue`.
+   - **Idempotent Queue Flushing:** Ketika koneksi kembali dan antrean disinkronkan ke server dengan `isCheckIn: true`, tamu yang sudah terverifikasi hadir di server langsung direspons `success: true` dengan penanda `alreadyRedeemed: true`. Ini mencegah error 400 atau antrean macet (*queue deadlock*), sekaligus memberikan notifikasi akurat pada layar petugas.
+
+3. **Mitigasi Kebocoran Disk VPS pada Siklus Cron Cleanup (`/api/cron/cleanup`):**
+   - Pada masa retensi selesai (H+14 pasca acara utama) saat undangan dialihkan ke status `ARCHIVED`, cron job secara otomatis membuang HTML terbitan canonical (`deletePublishedHtml`) dan membersihkan draft lokal di `data/drafts/<id>.html`.
+
+4. **Integrasi Add-On Top-Up Kuota Momen Tamu (`MEMORIES_TOPUP`):**
+   - Mendukung pembelian tambahan kuota roll foto tamu via kasir mandiri (`/checkout`).
+   - Akumulasi instan ke plafon acara (`totalEventQuota`) di endpoint `/api/public/memories/upload` yang dieksekusi otomatis pasca pembayaran oleh helper `applyMemoriesTopup`.

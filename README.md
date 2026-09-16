@@ -2,7 +2,7 @@
 
 > **Platform Undangan Pernikahan Digital B2C Self-Service**  
 > Next.js 16.3.2 · Prisma 7.9 (PostgreSQL) · NextAuth v5 · Multi-Gateway (5 Gateway) · Nodemailer SMTP · Cloudflare R2  
-> **Versi Dokumen: 5.7.4 | Diperbarui: 15 September 2026**
+> **Versi Dokumen: 5.7.5 | Diperbarui: 16 September 2026**
 
 > [!IMPORTANT]
 > **PROTOKOL SINKRONISASI DOKUMENTASI OTOMATIS (MANDATORY POST-EDIT & PRE-PUSH PROTOCOL):**  
@@ -550,3 +550,9 @@ Setiap developer atau AI Agent yang melakukan modifikasi pada codebase **WAJIB**
 - **All-Access Themes**: Bebas pilih seluruh koleksi 16 tema desain untuk semua paket (Traditional, Modern, Premium). Perbedaan paket murni pada hak kapabilitas fitur (Kamera Moments, QR Pass, Buku Tamu VIP, dsb).
 - **Sesi Acara Utama (Primary Anchor)**: Tepat 1 sesi acara inti (Akad/Resepsi) sebagai basis hitungan kedaluwarsa layanan. Tanggal sesi utama terkunci permanen pasca publikasi (hanya admin yang dapat mengubah). Sesi lain bebas diatur kapan saja.
 - **Deduplikasi Modul Moments & Dasbor Bersih**: Dasbor utama (`/dashboard`) terfokus sebagai pusat informasi & metrik eksekutif cepat tanpa instrumen operasional tumpang tindih. Portal Resepsionis Check-In tamu dipusatkan di dalam tab Buku Tamu (`/dashboard/guests`), sementara operasional disposable camera (Dual Mockup iPhone 16 Pro + Standing Banner Kartu QR, filter grading analog, multi-sesi, dan feed foto candid) terpusat penuh di Dedicated Command Center (`/dashboard/moments`), dan Studio Editor (`/dashboard/invitation/[id]` Seksi 14) khusus menangani styling web undangan.
+- **Penguatan Konkurensi Hari-H & Anti-Kebocoran VPS (v5.7.5)**:
+  * **In-Memory Mutex Key-Lock RSVP (`withRsvpLock`) & Transaksi Atomik**: Mengisolasi submit RSVP paralel tamu di koneksi lambat, mencegah record ganda, dan menghitung pax katering secara deterministik.
+  * **Resepsionis Offline-First Idempoten**: Sinkronisasi antrean check-in offline panitia (`/api/receptionist/scan`) merespons `success: true` (`alreadyRedeemed: true`) saat data sudah terverifikasi di server, mencegah antrean macet (*deadlock*).
+  * **Pembersihan Berkas VPS Otomatis**: Siklus cron cleanup saat status berubah ke `ARCHIVED` otomatis membuang HTML terbitan canonical (`deletePublishedHtml`) dan berkas draft lokal (`data/drafts/<id>.html`).
+  * **Top-Up Kuota Momen Tamu Terpadu**: Integrasi checkout add-on `MEMORIES_TOPUP`, aktivasi otomatis melalui helper `applyMemoriesTopup`, dan akumulasi langsung ke `totalEventQuota` di upload endpoint.
+
