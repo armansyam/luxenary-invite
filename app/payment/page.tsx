@@ -6,6 +6,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { compressImageToWebP } from "@/lib/clientImageCompressor";
+import { getPlanDisplayName } from "@/lib/planUtils";
 
 function PaymentContent() {
   const { data: session, status } = useSession();
@@ -544,14 +545,15 @@ function PaymentContent() {
                 );
               }
               if (order.orderType === "UPGRADE") {
+                const targetName = getPlanDisplayName(order.targetPlanType || order.planType);
                 return (
                   <div>
                     <span className="text-[11px] text-sky-400 font-mono font-semibold block uppercase tracking-wider">Upgrade Paket</span>
-                    <span className="text-base font-bold text-white">Upgrade ke Paket {order.targetPlanType || order.planType}</span>
+                    <span className="text-base font-bold text-white">Upgrade ke Paket {targetName}</span>
                   </div>
                 );
               }
-              const displayPlanName = order.planType === "TRADITIONAL" ? "Serenade" : (order.planType === "MODERN" ? "Symphony" : "Eternity");
+              const displayPlanName = getPlanDisplayName(order.planType);
               return (
                 <div>
                   <span className="text-[11px] text-stone-400 block font-mono uppercase tracking-wider">Paket Undangan</span>

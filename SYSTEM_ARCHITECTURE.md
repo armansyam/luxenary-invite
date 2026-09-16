@@ -134,6 +134,7 @@
 │   ├── storage.ts            # Upload/delete file (R2, S3, atau Local switch env)
 │   ├── mailer.ts             # ⭐ Nodemailer invoice & transactional email generator
 │   ├── settings.ts           # Single source of truth admin_settings dari DB
+│   ├── planUtils.ts          # ⭐ Single source of truth pemetaan nama komersial paket (Serenade, Symphony, Eternity)
 │   ├── domainUtils.ts        # URL builder (subdomain, canonical, dll)
 │   ├── prisma.ts             # Prisma client singleton
 │   ├── colorPalettes.ts      # Palet warna tema undangan

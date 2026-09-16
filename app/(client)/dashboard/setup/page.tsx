@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { BrandLogo } from "@/components/BrandLogo";
+import { DEFAULT_PLAN_NAMES } from "@/lib/planUtils";
 
 function SetupWizardContent() {
   const router = useRouter();
@@ -15,9 +16,7 @@ function SetupWizardContent() {
 
   const [currentPlan, setCurrentPlan] = useState<string>(queryPlan?.toUpperCase() || "");
   const [planNames, setPlanNames] = useState<Record<string, string>>({
-    TRADITIONAL: "Traditional",
-    MODERN: "Modern",
-    PREMIUM: "Premium",
+    ...DEFAULT_PLAN_NAMES,
   });
   const [platformName, setPlatformName] = useState("");
   const [themesList, setThemesList] = useState<any[]>([]);

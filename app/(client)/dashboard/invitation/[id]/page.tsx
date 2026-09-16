@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { compressImageToWebP } from "@/lib/clientImageCompressor";
 import { getThemeBlueprint } from "@/lib/themeDefaults";
+import { getPlanDisplayName } from "@/lib/planUtils";
 
 // Pilihan tema dimuat secara dinamis dari API /api/public/themes untuk menjamin sinkronisasi status aktif
 
@@ -4823,7 +4824,7 @@ export default function EditInvitation() {
                 </button>
               </div>
               <h2 className="text-xl font-serif font-bold text-stone-100">Tingkatkan Akses Tema</h2>
-              <p className="text-stone-300 text-xs mt-1">Paket saat ini: <strong className="text-amber-300 font-semibold">{planType}</strong></p>
+              <p className="text-stone-300 text-xs mt-1">Paket saat ini: <strong className="text-amber-300 font-semibold">{getPlanDisplayName(planType, platformSettings?.packages)}</strong></p>
             </div>
 
             {/* Tier Options */}
@@ -4851,7 +4852,7 @@ export default function EditInvitation() {
                           }`}>
                             {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white"/>}
                           </div>
-                          <span className="font-bold text-sm text-stone-900">{tier}</span>
+                          <span className="font-bold text-sm text-stone-900">{getPlanDisplayName(tier, platformSettings?.packages)}</span>
                         </div>
                         <div className="text-right">
                           <span className="text-[11px] text-stone-500 block">Tambah bayar</span>

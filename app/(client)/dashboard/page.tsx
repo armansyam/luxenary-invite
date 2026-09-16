@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { getInvitationPublicUrl, resolveEffectiveInvitationUrl, getLatestEventDate } from "@/lib/domainUtils";
 import UnifiedAddonModal from "@/components/client/UnifiedAddonModal";
+import { getPlanDisplayName, getPlanDisplayDescription } from "@/lib/planUtils";
 
 function DashboardHomeContent() {
   const { data: session } = useSession();
@@ -689,7 +690,7 @@ function DashboardHomeContent() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
             <p className="text-sm font-bold text-stone-900 truncate">
               {invitation?.order?.planType
-                ? `Paket ${invitation.order.planType.charAt(0) + invitation.order.planType.slice(1).toLowerCase()}`
+                ? `Paket ${getPlanDisplayName(invitation.order.planType, platformSettings?.packages)}`
                 : "—"}
             </p>
             {invitation?.id && (
@@ -705,13 +706,7 @@ function DashboardHomeContent() {
             )}
           </div>
           <span className="text-[10px] text-stone-400 block">
-            {packageConfig?.desc || (invitation?.order?.planType === "PREMIUM"
-              ? "Akses semua tema Premium, Modern & Traditional"
-              : invitation?.order?.planType === "MODERN"
-              ? "Akses tema Modern & Traditional"
-              : invitation?.order?.planType === "TRADITIONAL"
-              ? "Akses tema Traditional"
-              : "Belum ada paket aktif")}
+            {packageConfig?.desc || getPlanDisplayDescription(invitation?.order?.planType, platformSettings?.packages) || "Belum ada paket aktif"}
           </span>
         </div>
       </div>

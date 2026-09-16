@@ -5,6 +5,7 @@ import { useState, useEffect, Suspense, useCallback, useRef } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { getPlanDisplayName } from "@/lib/planUtils";
 
 function formatWhatsAppNumber(val: string): string {
   const digits = val.replace(/\D/g, "").slice(0, 15);
@@ -321,17 +322,19 @@ function CheckoutContent() {
               desc: `Aktivasi domain ${orderStatusData.requestedDomain || "kustom"} lengkap dengan SSL/TLS & Cloudflare DNS selama 1 tahun.`,
             });
           } else if (orderStatusData.orderType === "UPGRADE") {
+            const targetTier = orderStatusData.targetPlanType || orderStatusData.planType || "";
+            const targetName = getPlanDisplayName(targetTier, packages);
             setCurrentPlanType(orderStatusData.planType || "");
             setPlanData({
-              name: `Upgrade Paket ${orderStatusData.planType || ""}`,
+              name: `Upgrade ke Paket ${targetName}`,
               price: Number(orderStatusData.amount),
-              desc: `Peningkatan fitur undangan digital ke tier ${orderStatusData.planType || ""}.`,
+              desc: `Peningkatan fitur undangan digital ke paket ${targetName}.`,
             });
           } else {
             const currentPkg = packages.find((p) => p.id === orderStatusData.planType);
             setCurrentPlanType(orderStatusData.planType || "");
             setPlanData({
-              name: currentPkg?.name || orderStatusData.planType || "Paket Undangan",
+              name: getPlanDisplayName(orderStatusData.planType, packages),
               price: Number(orderStatusData.amount),
               desc: currentPkg?.desc || "",
             });
@@ -378,7 +381,7 @@ function CheckoutContent() {
       }
 
       const currentPkg = packages.find((p) => p.id === targetPlan);
-      const name = currentPkg?.name || targetPlan;
+      const name = getPlanDisplayName(targetPlan, packages);
       // Harga HANYA dari AdminSetting (via /api/public/settings → packages).
       // Tidak ada fallback hardcode — jika settings belum dimuat, tampilkan 0
       // agar UI tidak menampilkan harga yang salah kepada user.

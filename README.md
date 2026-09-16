@@ -319,6 +319,7 @@ Luxenary-Invite/
 │   ├── mailer.ts              # ⭐ Nodemailer transactional & invoice email generator
 │   ├── driveHelper.ts         # Fetch foto Google Drive API v3
 │   ├── settings.ts            # Single source of truth admin_settings dari DB
+│   ├── planUtils.ts           # ⭐ Single source of truth nama komersial paket (Serenade, Symphony, Eternity)
 │   ├── domainUtils.ts         # URL builder (subdomain, canonical di browser & client)
 │   ├── serverDomainUtils.ts   # ⭐ Deteksi otomatis host dinamis & appUrl via request headers (Zero Hardcode)
 │   ├── gatewayRegistry.ts     # Registry payment gateway 2-arah (Midtrans & Xendit)
