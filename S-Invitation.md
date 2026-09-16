@@ -877,3 +877,9 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
 4. **Integrasi Add-On Top-Up Kuota Momen Tamu (`MEMORIES_TOPUP`):**
    - Mendukung pembelian tambahan kuota roll foto tamu via kasir mandiri (`/checkout`).
    - Akumulasi instan ke plafon acara (`totalEventQuota`) di endpoint `/api/public/memories/upload` yang dieksekusi otomatis pasca pembayaran oleh helper `applyMemoriesTopup`.
+
+5. **Purifikasi Skema Murni & Master Seed Terpadu (`prisma/seed.ts`):**
+   - Menghapus model mati `Wish` dan tabel `wishes` dari skema.
+   - Menstandarkan tabel `guests` ke kolom `phone` murni dan enum `WaStatus` (`PENDING`, `SENT`).
+   - Menanamkan seluruh 84 parameter platform (nama paket dinamis `Serenade`, `Symphony`, `Eternity`), 16 tema master, 2 preset musik, dan akun admin default ke dalam seed otomatis terpadu.
+

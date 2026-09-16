@@ -555,4 +555,6 @@ Setiap developer atau AI Agent yang melakukan modifikasi pada codebase **WAJIB**
   * **Resepsionis Offline-First Idempoten**: Sinkronisasi antrean check-in offline panitia (`/api/receptionist/scan`) merespons `success: true` (`alreadyRedeemed: true`) saat data sudah terverifikasi di server, mencegah antrean macet (*deadlock*).
   * **Pembersihan Berkas VPS Otomatis**: Siklus cron cleanup saat status berubah ke `ARCHIVED` otomatis membuang HTML terbitan canonical (`deletePublishedHtml`) dan berkas draft lokal (`data/drafts/<id>.html`).
   * **Top-Up Kuota Momen Tamu Terpadu**: Integrasi checkout add-on `MEMORIES_TOPUP`, aktivasi otomatis melalui helper `applyMemoriesTopup`, dan akumulasi langsung ke `totalEventQuota` di upload endpoint.
+  * **Purifikasi Skema & Master Seed Mandiri**: Menghapus model mati `Wish`, menormalisasi enum & kolom sisa ke 0-drift, serta membukukan seluruh 84 parameter platform (nama paket dinamis `Serenade`, `Symphony`, `Eternity`), 16 tema master, 2 preset musik, dan admin default ke dalam `prisma/seed.ts`.
+
 

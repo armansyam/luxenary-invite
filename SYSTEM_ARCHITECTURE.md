@@ -971,8 +971,7 @@ Model Utama:
   Order          → Pesanan paket undangan & perpanjangan galeri
   Invitation     → Inti undangan (DRAFT | PUBLISHED | EVENT_FINISHED | TAKEN_DOWN | ARCHIVED)
   Guest          → Daftar tamu per undangan (phone, waStatus: PENDING | SENT, qrToken)
-  Rsvp           → Konfirmasi kehadiran tamu
-  Wish           → Ucapan tamu
+  Rsvp           → Konfirmasi kehadiran & untaian doa ucapan tamu (Single Source of Truth di kolom message)
   GuestMemory    → Foto candid tamu (hari H & pasca-acara)
   InvitationMedia → File media undangan (9 slot media: LANDING_COVER, LANDING_COVER_DESKTOP, HOME_PHOTO, DESKTOP_SIDEBAR, GLOBAL_FIXED_BG, GROOM_PHOTO, BRIDE_PHOTO, GALLERY, CLOSING_COVER)
   AdminSetting   → Konfigurasi platform global (key-value dinamis)
@@ -2235,4 +2234,10 @@ Sistem telah melalui audit mendalam berbasis bukti empiris (*Empirical Verificat
 4. **Kalkulasi Kuota Momen Foto Tamu & Add-On Top-Up Terintegrasi:**
    - Plafon foto momen acara (`totalEventQuota`) di endpoint `/api/public/memories/upload` mengagregasikan jatah paket (`memories_total_quota_{plan}`) dengan saldo top-up (`extraMemoriesQuota`).
    - Penambahan paket top-up foto diproses secara mandiri via `/checkout` (`MEMORIES_TOPUP`) dan dieksekusi otomatis oleh webhook / helper `applyMemoriesTopup` di `lib/upgradeHelper.ts`.
+
+5. **Purifikasi Skema Murni & Master Seed Terpadu (`prisma/seed.ts`):**
+   - **Eliminasi Model Mati:** Model `Wish` dan tabel `wishes` resmi dihapus dari skema (migrasi `20260916143000`). Seluruh ucapan doa dikelola tunggal pada `rsvps.message`.
+   - **Skema Bersih 0-Drift:** Kolom lama `phoneNumber` pada tabel `guests` dibersihkan, menyisakan `phone` murni. Nilai enum `WaStatus` distandarisasi murni ke `PENDING` dan `SENT`.
+   - **Master Seed Terpadu:** Seluruh 84 parameter platform (nama paket dinamis `Serenade`, `Symphony`, `Eternity`, kuota foto roll, aturan retensi), 16 tema master, 2 preset musik, dan 2 akun admin default ditanamkan permanen di `prisma/defaultSettings.ts` dan `prisma/seed.ts`.
+
 
