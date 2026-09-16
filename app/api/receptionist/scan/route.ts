@@ -91,9 +91,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "QR Code ini bukan untuk acara pernikahan ini." }, { status: 400 });
     }
 
-    if (guest.isTokenRedeemed && !forceReCheckIn) {
+    if (guest.isTokenRedeemed && !isCheckIn) {
       return NextResponse.json({
-        error: `Tamu ${guest.name} sudah pernah melakukan Check-in sebelumnya!`,
+        error: "QR Code ini sudah pernah digunakan.",
         guest: {
           id: guest.id,
           name: guest.name,
@@ -105,18 +105,37 @@ export async function POST(req: NextRequest) {
     }
 
     if (isCheckIn) {
-      // Mark as redeemed in database
-      await prisma.guest.update({
-        where: { id: guest.id },
-        data: { isTokenRedeemed: true },
-      });
+      // Idempotent Sync: Jika tamu sudah berstatus redeemed (misal hasil sync antrean offline berulang),
+      // tetap kembalikan success agar antrean offline di browser klien berhasil di-flush.
+      const wasAlreadyRedeemed = guest.isTokenRedeemed;
 
-      // Emit Server-Sent Event for real-time dashboard updates
-      sseEmitter.emit("new_guest_checkin", {
-        invitationId: guest.invitationId,
-        guestId: guest.id,
-        guestName: guest.name,
-        timestamp: new Date().toISOString()
+      if (!wasAlreadyRedeemed) {
+        // Mark as redeemed in database
+        await prisma.guest.update({
+          where: { id: guest.id },
+          data: { isTokenRedeemed: true },
+        });
+
+        // Emit Server-Sent Event for real-time dashboard updates
+        sseEmitter.emit("new_guest_checkin", {
+          invitationId: guest.invitationId,
+          guestId: guest.id,
+          guestName: guest.name,
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      return NextResponse.json({
+        success: true,
+        alreadyRedeemed: wasAlreadyRedeemed,
+        message: wasAlreadyRedeemed ? "Tamu sudah pernah check-in sebelumnya (Sinkronisasi Idempoten)." : "Check-in berhasil disimpan ke server!",
+        guest: {
+          id: guest.id,
+          name: guest.name,
+          category: guest.category,
+          sessionInfo: guest.sessionInfo,
+          invitation: guest.invitation,
+        },
       });
     }
 
