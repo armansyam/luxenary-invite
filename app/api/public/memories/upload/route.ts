@@ -192,7 +192,9 @@ export async function POST(req: NextRequest) {
     }
 
     // ── 1. VALIDASI TOTAL KUOTA FOTO ACARA (Total Event Capacity) ──
-    const totalEventQuota = planQuota.totalQuota > 0 ? planQuota.totalQuota : (planQuota.maxContributors * planQuota.shotsQuota);
+    const extraPhotos = typeof fs.extraMemoriesQuota === "number" ? Math.max(0, fs.extraMemoriesQuota) : 0;
+    const baseEventQuota = planQuota.totalQuota > 0 ? planQuota.totalQuota : (planQuota.maxContributors * planQuota.shotsQuota);
+    const totalEventQuota = baseEventQuota + extraPhotos;
     const currentTotalPhotos = await prisma.guestMemory.count({
       where: { invitationId },
     });

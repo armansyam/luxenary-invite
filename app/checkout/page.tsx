@@ -96,6 +96,9 @@ function CheckoutContent() {
     if (type === "GALLERY_EXTENSION") {
       return "/dashboard?msg=gallery_extended";
     }
+    if (type === "MEMORIES_TOPUP") {
+      return "/dashboard/moments?msg=quota_added";
+    }
     if (type === "CUSTOM_DOMAIN_ADDON") {
       return "/dashboard/settings?msg=custom_domain_activated";
     }
@@ -136,8 +139,8 @@ function CheckoutContent() {
     setError(null);
 
     // Untuk pesanan add-on atau upgrade, jangan buat order paket baru
-    if (currentOrderType === "GALLERY_EXTENSION" || currentOrderType === "CUSTOM_DOMAIN_ADDON" || currentOrderType === "UPGRADE") {
-      const returnUrl = currentOrderType === "CUSTOM_DOMAIN_ADDON" ? "/dashboard/settings?msg=order_expired" : "/dashboard?msg=order_expired";
+    if (currentOrderType === "GALLERY_EXTENSION" || currentOrderType === "MEMORIES_TOPUP" || currentOrderType === "CUSTOM_DOMAIN_ADDON" || currentOrderType === "UPGRADE") {
+      const returnUrl = currentOrderType === "MEMORIES_TOPUP" ? "/dashboard/moments?msg=order_expired" : currentOrderType === "CUSTOM_DOMAIN_ADDON" ? "/dashboard/settings?msg=order_expired" : "/dashboard?msg=order_expired";
       router.replace(returnUrl);
       return;
     }
@@ -219,9 +222,10 @@ function CheckoutContent() {
 
         if (orderStatusRes.ok && orderStatusData.id) {
           // SINGLE STATE GUARD: Hanya berlaku untuk pendaftaran paket baru (NEW)
-          // Add-on (GALLERY_EXTENSION, CUSTOM_DOMAIN_ADDON) dan UPGRADE tidak boleh memicu pengalihan
+          // Add-on (GALLERY_EXTENSION, MEMORIES_TOPUP, CUSTOM_DOMAIN_ADDON) dan UPGRADE tidak boleh memicu pengalihan
           const isAddonOrder =
             orderStatusData.orderType === "GALLERY_EXTENSION" ||
+            orderStatusData.orderType === "MEMORIES_TOPUP" ||
             orderStatusData.orderType === "CUSTOM_DOMAIN_ADDON" ||
             orderStatusData.orderType === "UPGRADE";
 
@@ -301,6 +305,13 @@ function CheckoutContent() {
               name: "Perpanjang Galeri Tamu (+30 Hari)",
               price: Number(orderStatusData.amount),
               desc: "Perpanjangan penyimpanan foto momen para tamu di server selama +30 hari tambahan.",
+            });
+          } else if (orderStatusData.orderType === "MEMORIES_TOPUP") {
+            setCurrentPlanType("MEMORIES_TOPUP");
+            setPlanData({
+              name: "Top-Up Kuota Momen Foto",
+              price: Number(orderStatusData.amount),
+              desc: "Penambahan kuota penyimpanan foto kenangan para tamu di album acara.",
             });
           } else if (orderStatusData.orderType === "CUSTOM_DOMAIN_ADDON") {
             setCurrentPlanType("CUSTOM_DOMAIN_ADDON");
@@ -547,6 +558,10 @@ function CheckoutContent() {
         router.replace("/dashboard?msg=extension_cancelled");
         return;
       }
+      if (currentOrderType === "MEMORIES_TOPUP") {
+        router.replace("/dashboard/moments?msg=topup_cancelled");
+        return;
+      }
       if (currentOrderType === "CUSTOM_DOMAIN_ADDON") {
         router.replace("/dashboard/settings?msg=domain_addon_cancelled");
         return;
@@ -729,6 +744,8 @@ function CheckoutContent() {
                   <span className="text-stone-400 font-medium text-xs">
                     {currentOrderType === "GALLERY_EXTENSION"
                       ? "Item Perpanjangan"
+                      : currentOrderType === "MEMORIES_TOPUP"
+                      ? "Top-Up Kuota Foto"
                       : currentOrderType === "CUSTOM_DOMAIN_ADDON"
                       ? "Add-on Kustom"
                       : currentOrderType === "UPGRADE"

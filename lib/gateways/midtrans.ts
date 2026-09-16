@@ -209,6 +209,10 @@ export class MidtransGateway implements PaymentGateway {
       itemId = "EXT_GALLERY";
       itemName = "Perpanjang Galeri Tamu (+30 Hari)";
       itemCategory = "Add-on Galeri";
+    } else if (orderType === "MEMORIES_TOPUP") {
+      itemId = "TOPUP_MEMORIES";
+      itemName = "Top-Up Kuota Momen Foto";
+      itemCategory = "Add-on Kuota";
     } else if (orderType === "CUSTOM_DOMAIN_ADDON") {
       itemId = "CUSTOM_DOMAIN";
       itemName = `Jasa Integrasi Domain ${requestedDomain || ""}`.trim().slice(0, 50);
@@ -289,6 +293,8 @@ export class MidtransGateway implements PaymentGateway {
         ? `Domain: ${requestedDomain || "-"}`
         : orderType === "UPGRADE"
         ? `Upgrade: ${upgradedFromPlan || "Tier"} ke ${targetPlanType || packageType}`
+        : orderType === "MEMORIES_TOPUP"
+        ? "Top-Up Kuota Momen Foto"
         : orderType === "GALLERY_EXTENSION"
         ? "Galeri Tamu (+30 Hari)"
         : `Paket: ${packageType}`

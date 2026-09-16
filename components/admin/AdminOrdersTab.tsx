@@ -468,6 +468,13 @@ export default function AdminOrdersTab() {
                             }
                           }
 
+                          if (ord.orderType === "MEMORIES_TOPUP") {
+                            return (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                                <span>Top-Up Kuota Momen Foto</span>
+                              </span>
+                            );
+                          }
                           if (ord.orderType === "GALLERY_EXTENSION") {
                             return (
                               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-800 border border-purple-200">

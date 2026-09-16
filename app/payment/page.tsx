@@ -59,6 +59,7 @@ function PaymentContent() {
   // Routing helper
   const getPostPaymentRedirect = useCallback((type: string, id: string, plan: string) => {
     if (type === "GALLERY_EXTENSION") return "/dashboard?msg=gallery_extended";
+    if (type === "MEMORIES_TOPUP") return "/dashboard/moments?msg=quota_added";
     if (type === "CUSTOM_DOMAIN_ADDON") return "/dashboard/settings?msg=custom_domain_activated";
     if (type === "UPGRADE") return "/dashboard?msg=plan_upgraded";
     return `/dashboard/setup?order=${id}&plan=${plan}`;
@@ -352,6 +353,10 @@ function PaymentContent() {
         router.replace("/dashboard?msg=extension_cancelled");
         return;
       }
+      if (order?.orderType === "MEMORIES_TOPUP") {
+        router.replace("/dashboard/moments?msg=topup_cancelled");
+        return;
+      }
       if (order?.orderType === "CUSTOM_DOMAIN_ADDON") {
         router.replace("/dashboard/settings?msg=domain_addon_cancelled");
         return;
@@ -519,6 +524,14 @@ function PaymentContent() {
                   <div>
                     <span className="text-[11px] text-purple-400 font-mono font-semibold block uppercase tracking-wider">Layanan Tambahan (Add-On)</span>
                     <span className="text-base font-bold text-white">Perpanjang Galeri Tamu</span>
+                  </div>
+                );
+              }
+              if (order.orderType === "MEMORIES_TOPUP") {
+                return (
+                  <div>
+                    <span className="text-[11px] text-amber-400 font-mono font-semibold block uppercase tracking-wider">Layanan Tambahan (Add-On)</span>
+                    <span className="text-base font-bold text-white">Top-Up Kuota Momen Foto</span>
                   </div>
                 );
               }

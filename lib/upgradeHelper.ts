@@ -172,6 +172,59 @@ export async function applyGalleryExtension(extensionOrderId: string): Promise<v
 }
 
 /**
+ * applyMemoriesTopup
+ * Dipanggil setelah order MEMORIES_TOPUP berhasil PAID (fallback jika tanpa itemsJson).
+ * Menambahkan kuota foto ke invitation.featureSettings.extraMemoriesQuota.
+ */
+export async function applyMemoriesTopup(topupOrderId: string): Promise<void> {
+  const order = await prisma.order.findUnique({
+    where: { id: topupOrderId },
+    select: {
+      orderType: true,
+      linkedOrderId: true,
+      userId: true,
+    },
+  });
+
+  if (!order || order.orderType !== "MEMORIES_TOPUP" || !order.linkedOrderId) return;
+
+  const invitation = await prisma.invitation.findFirst({
+    where: {
+      OR: [
+        { id: order.linkedOrderId },
+        { orderId: order.linkedOrderId },
+      ],
+    },
+    select: { id: true, featureSettings: true },
+  });
+
+  if (!invitation) return;
+
+  let curFs: Record<string, any> = {};
+  try {
+    curFs = typeof invitation.featureSettings === "object"
+      ? (invitation.featureSettings || {})
+      : JSON.parse((invitation.featureSettings as string) || "{}");
+  } catch {
+    curFs = {};
+  }
+
+  const topupSetting = await prisma.adminSetting.findUnique({
+    where: { key: "addon_memories_topup_photos" },
+  });
+  const photosToAdd = Number(topupSetting?.value) || 100;
+
+  curFs.extraMemoriesQuota = (curFs.extraMemoriesQuota || 0) + photosToAdd;
+
+  await prisma.invitation.update({
+    where: { id: invitation.id },
+    data: {
+      featureSettings: JSON.stringify(curFs),
+    },
+  });
+}
+
+/**
  * applyCustomDomainAddon
  * Dipanggil setelah order CUSTOM_DOMAIN_ADDON berhasil PAID.
  * Memasang custom domain dan menambahkan 365 hari (1 tahun) ke galleryExpiresAt.
@@ -299,6 +352,11 @@ export async function applyUpgradePlan(paidOrderId: string): Promise<void> {
 
   if (order.orderType === "GALLERY_EXTENSION") {
     await applyGalleryExtension(paidOrderId);
+    return;
+  }
+
+  if (order.orderType === "MEMORIES_TOPUP") {
+    await applyMemoriesTopup(paidOrderId);
     return;
   }
 

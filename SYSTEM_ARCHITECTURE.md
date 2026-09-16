@@ -988,7 +988,7 @@ Model Utama:
   ExpenseCategory (Enum) → INFRASTRUCTURE | UTILITIES | MARKETING | SOFTWARE_LICENSES | OPERATIONAL | OTHER
 
 Field Kritis di Order:
-  orderType       NEW | UPGRADE | GALLERY_EXTENSION | CUSTOM_DOMAIN_ADDON
+  orderType       NEW | UPGRADE | GALLERY_EXTENSION | MEMORIES_TOPUP
   gatewayId       String?   ← "midtrans" | "xendit" (Gateway 2-Arah)
   gatewayTxId     String?   ← ID transaksi di sisi gateway (untuk cancel API saat switch gateway)
   linkedOrderId   String?   ← Referensi ID order lama (saat UPGRADE) atau ID invitation (saat GALLERY_EXTENSION / CUSTOM_DOMAIN)
