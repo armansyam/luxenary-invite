@@ -3982,14 +3982,37 @@ export default function AdminPage() {
                     description="Konfigurasikan IP Publik VPS dan host CNAME target platform. Nilai ini menjadi sumber data dinamis bagi panduan setup DNS di dashboard klien."
                     isEditing={Boolean(editSection["domain_dns"])}
                     onEdit={() => toggleEditSection("domain_dns")}
-                    onCancel={() => cancelEdit("domain_dns", ["server_public_ip", "cname_target"])}
-                    onSave={() => saveSettings(["server_public_ip", "cname_target"], setSavingDomainDns, "domain_dns")}
+                    onCancel={() => cancelEdit("domain_dns", ["server_public_ip", "cname_target", "addon_custom_domain_enabled"])}
+                    onSave={() => saveSettings(["server_public_ip", "cname_target", "addon_custom_domain_enabled"], setSavingDomainDns, "domain_dns")}
                     saving={savingDomainDns}
-                    isDirty={isSectionDirty(["server_public_ip", "cname_target"])}
+                    isDirty={isSectionDirty(["server_public_ip", "cname_target", "addon_custom_domain_enabled"])}
                     saveSuccess={settingsSaved["domain_dns"]}
                     saveSuccessMessage="Pengaturan Integrasi Domain & DNS berhasil disimpan"
                     viewContent={
                       <div className="space-y-4">
+                        {/* Status Master Fitur Custom Domain */}
+                        <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div>
+                            <span className="text-xs text-stone-500 font-bold uppercase tracking-wider block mb-0.5">Status Fitur Custom Domain Klien</span>
+                            <p className="text-xs text-stone-600">
+                              Mengontrol visibilitas kartu &quot;Domain Sendiri&quot; di dashboard pengaturan klien dan hak pendaftaran domain.
+                            </p>
+                          </div>
+                          <div className="shrink-0">
+                            {settingsMap["addon_custom_domain_enabled"] !== "false" ? (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-300">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                Aktif (Tampil di Klien)
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-stone-200/80 text-stone-700 border border-stone-300">
+                                <span className="w-1.5 h-1.5 rounded-full bg-stone-500"></span>
+                                Nonaktif (Disembunyikan)
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                           <div className="p-4 bg-gray-50 rounded-xl border border-gray-200">
                             <div className="flex items-center justify-between mb-1">
@@ -4058,6 +4081,20 @@ export default function AdminPage() {
                       <div className="p-3.5 bg-sky-50/70 border border-sky-200 rounded-xl text-xs text-sky-900 leading-relaxed">
                         <strong>Mengapa perlu IP Server &amp; CNAME?</strong> Sebagian besar registrar domain lokal (Niagahoster, Domainesia, IDWebhost, Namecheap) melarang CNAME pada root domain (<strong>@</strong>). Oleh karena itu, root domain diarahkan via <strong>Record A</strong> ke IP server, sedangkan <strong>www</strong> diarahkan via <strong>Record CNAME</strong>.
                       </div>
+
+                      <FieldRow
+                        label="Status Fitur Custom Domain Klien"
+                        description="Aktifkan atau nonaktifkan integrasi domain pribadi platform. Jika dinonaktifkan, kartu 'Domain Sendiri' di dashboard klien akan disembunyikan sepenuhnya dan endpoint penyimpanan domain diblokir."
+                      >
+                        <select
+                          value={settingsMap["addon_custom_domain_enabled"] ?? "true"}
+                          onChange={(e) => setSetting("addon_custom_domain_enabled", e.target.value)}
+                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 font-medium"
+                        >
+                          <option value="true">Aktif (Tampilkan menu Domain Sendiri di dashboard klien)</option>
+                          <option value="false">Nonaktif (Sembunyikan menu dari dashboard klien &amp; kunci API)</option>
+                        </select>
+                      </FieldRow>
 
                       <FieldRow
                         label="IP Public Server (Record A)"

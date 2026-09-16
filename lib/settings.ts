@@ -169,17 +169,19 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
       }
     }
 
-    const hasGalleryItem = rawList.some(item => /galeri\s+kenangan|guest\s+memories|guest\s*gal|disposable\s*camera|kamera/i.test(item));
+    const hasGalleryItem = rawList.some(item => /galeri\s+kenangan|guest\s+memories|guest\s*gal|guest\s*camera|disposable\s*camera|kamera/i.test(item));
     if (caps.includes("guest_memories") && !hasGalleryItem) {
       const totalQ = Number(map[`memories_total_quota_${planId}`]);
       const defaultTotal = planId === "premium" ? 1000 : (planId === "modern" ? 250 : 100);
       const totalPhotos = !isNaN(totalQ) && totalQ > 0 ? totalQ : defaultTotal;
-      rawList.push(`Kamera Digital Tamu bergaya analog (Kapasitas Total ${totalPhotos} Foto — Aktif ${galleryDurationLabel} setelah acara)`);
+      rawList.push(`Guest Camera — Kamera Saku Tamu (Kapasitas Total ${totalPhotos} Foto — Aktif 1 bulan setelah acara)`);
     }
+
+    const isLocalDevDomain = !activeDomain || activeDomain.includes("localhost") || activeDomain.includes("127.0.0.1") || activeDomain.includes("192.168.") || activeDomain.includes(":");
 
     return rawList.map(item => {
       let resolvedItem = item;
-      if (activeDomain !== "luxvite.id" && resolvedItem.includes(".luxvite.id")) {
+      if (!isLocalDevDomain && activeDomain !== "luxvite.id" && resolvedItem.includes(".luxvite.id")) {
         resolvedItem = resolvedItem.replace(/\.luxvite\.id/g, `.${activeDomain}`);
       }
       return resolvedItem;
@@ -312,7 +314,7 @@ export async function hasPlanCapability(planType: string | null | undefined, cap
   // Default fallback if not set in DB
   const defaultCaps: Record<string, string[]> = {
     TRADITIONAL: ["music", "gallery"],
-    MODERN: ["music", "gallery"],
+    MODERN: ["music", "gallery", "qr_checkin", "guest_memories"],
     PREMIUM: ["music", "gallery", "qr_checkin", "guest_memories", "custom_domain"],
   };
   return (defaultCaps[normPlan] || []).includes(capability);

@@ -269,57 +269,47 @@ export function isSubdomainExpired(eventDateInput?: string | Date | null, graceP
 }
 
 /**
- * Evaluator deterministik apakah rute publik harus dialihkan ke Galeri Momen (/memories)
- * Berdasarkan kapabilitas paket, status undangan, dan setting transisi klien (Auto H+1 vs Manual Switch).
+ * Evaluator rute Galeri Momen (/memories) - DEPRECATED
+ * Sesuai arsitektur unhijacked URL: URL utama (/[slug] atau /s/[subdomain]) selalu menyajikan
+ * halaman web undangan penuh. Galeri Momen dan Kamera Tamu masing-masing memiliki rute tersendiri
+ * (/[slug]/memories dan /[slug]/sharemoment) dengan navigasi kembali ke undangan yang jelas.
  */
-export function shouldDisplayMemoriesGallery(invitation: {
+export function shouldDisplayMemoriesGallery(_invitation?: {
   status: string;
   eventData?: any;
   featureSettings?: string | null;
   order?: { planType?: string | null } | null;
 }): boolean {
-  // Jika sudah berstatus ARCHIVED, file galeri sudah dibersihkan, jangan alihkan ke memories
-  if (invitation.status === "ARCHIVED") return false;
+  return false;
+}
 
-  const planType = invitation.order?.planType || "TRADITIONAL";
-  // Hanya paket MODERN dan PREMIUM yang memiliki kapabilitas galeri kenangan tamu
-  const canAccessMemories = planType === "MODERN" || planType === "PREMIUM";
-  if (!canAccessMemories) return false;
+export interface MemoriesSession {
+  id: string;
+  name: string;
+  date: string; // "YYYY-MM-DD"
+  startTime: string; // "HH:mm"
+  endTime: string; // "HH:mm"
+  timezone?: string; // "WIB" | "WITA" | "WIT"
+  allocatedQuota?: number; // Plafon kuota foto untuk sesi ini
+}
 
-  // Jika status sistem sudah EVENT_FINISHED
-  if (invitation.status === "EVENT_FINISHED") return true;
-
-  const featureSettings = (() => {
-    try {
-      return JSON.parse(invitation.featureSettings || "{}");
-    } catch {
-      return {};
-    }
-  })();
-
-  // Mode MANUAL: Ditentukan langsung oleh toggle 'memoriesForceGallery'
-  if (featureSettings.memoriesTransitionMode === "MANUAL") {
-    return Boolean(featureSettings.memoriesForceGallery);
-  }
-
-  // Mode AUTO (Default: H+1 pasca acara)
-  const transitionDays = Number(featureSettings.memoriesTransitionDays ?? 1);
-  const latestEventDate = getLatestEventDate(invitation.eventData);
-  if (!latestEventDate) return false;
-
-  const targetTransitionTime = new Date(latestEventDate.getTime() + (transitionDays * 24 * 60 * 60 * 1000));
-  return new Date() >= targetTransitionTime;
+export interface MemoriesScheduleResult {
+  startTime: Date | null;
+  endTime: Date | null;
+  isCustom: boolean;
+  isSessionActive: boolean;
+  currentSession: MemoriesSession | null;
+  nextSession: MemoriesSession | null;
+  isAllFinished: boolean;
+  sessions: MemoriesSession[];
+  activeSessionIndex: number;
 }
 
 /**
  * Menghitung jadwal aktif kamera momen tamu (kapan mulai dibuka dan kapan ditutup).
- * Mendukung mode kustom mandiri (memoriesCustomSchedule) dan auto-sync jadwal acara (eventData).
+ * Mendukung Multi-Session Camera Windows (misal: Sesi Akad & Sesi Resepsi) serta Auto-Sync dari eventData.
  */
-export function getMemoriesActiveSchedule(featureSettingsInput: any, eventDataInput: any): {
-  startTime: Date | null;
-  endTime: Date | null;
-  isCustom: boolean;
-} {
+export function getMemoriesActiveSchedule(featureSettingsInput: any, eventDataInput: any): MemoriesScheduleResult {
   const fs = (() => {
     if (typeof featureSettingsInput === "string") {
       try {
@@ -331,37 +321,185 @@ export function getMemoriesActiveSchedule(featureSettingsInput: any, eventDataIn
     return featureSettingsInput || {};
   })();
 
-  if (fs.memoriesCustomSchedule) {
-    const s = fs.memoriesStartTime ? new Date(fs.memoriesStartTime) : null;
-    const e = fs.memoriesEndTime ? new Date(fs.memoriesEndTime) : null;
-    return {
-      startTime: s && !isNaN(s.getTime()) ? s : null,
-      endTime: e && !isNaN(e.getTime()) ? e : null,
-      isCustom: true,
-    };
-  }
+  const rawSessions: MemoriesSession[] = [];
 
-  let startTime: Date | null = null;
-  let endTime: Date | null = null;
-  try {
-    const events = typeof eventDataInput === "string" ? JSON.parse(eventDataInput) : eventDataInput || [];
-    const list = Array.isArray(events) ? events : events?.events;
-    if (Array.isArray(list) && list.length > 0) {
-      for (const ev of list) {
-        if (ev?.date) {
-          const startStr = `${ev.date}T${ev.startTime || "00:00"}:00`;
-          const endStr = `${ev.date}T${ev.endTime || "23:59"}:00`;
-          const s = new Date(startStr);
-          const e = new Date(endStr);
-          if (!isNaN(s.getTime()) && (!startTime || s < startTime)) startTime = s;
-          if (!isNaN(e.getTime()) && (!endTime || e > endTime)) endTime = e;
-        }
+  // 1. Prioritaskan konfigurasi multi-session eksplisit jika ada
+  if (Array.isArray(fs.memoriesSessions) && fs.memoriesSessions.length > 0) {
+    for (const s of fs.memoriesSessions) {
+      if (s && s.date) {
+        rawSessions.push({
+          id: s.id || `sess_${Math.random().toString(36).substring(2, 7)}`,
+          name: s.name || "Sesi Acara",
+          date: s.date,
+          startTime: s.startTime || "08:00",
+          endTime: s.endTime || "22:00",
+          allocatedQuota: Number(s.allocatedQuota) || 0,
+        });
       }
     }
-  } catch {
-    // fallback safe
+  } else if (fs.memoriesCustomSchedule && fs.memoriesStartTime && fs.memoriesEndTime) {
+    // Mode kustom mandiri rentang tunggal
+    const sDate = new Date(fs.memoriesStartTime);
+    const eDate = new Date(fs.memoriesEndTime);
+    if (!isNaN(sDate.getTime()) && !isNaN(eDate.getTime())) {
+      const pad = (n: number) => String(n).padStart(2, "0");
+      rawSessions.push({
+        id: "custom_single",
+        name: "Sesi Kamera Kustom",
+        date: `${sDate.getFullYear()}-${pad(sDate.getMonth() + 1)}-${pad(sDate.getDate())}`,
+        startTime: `${pad(sDate.getHours())}:${pad(sDate.getMinutes())}`,
+        endTime: `${pad(eDate.getHours())}:${pad(eDate.getMinutes())}`,
+        allocatedQuota: 0,
+      });
+    }
+  } else {
+    // 2. Auto-sintesis sesi dari susunan acara undangan (eventData)
+    try {
+      const events = typeof eventDataInput === "string" ? JSON.parse(eventDataInput) : eventDataInput || [];
+      const list = Array.isArray(events) ? events : events?.events;
+      if (Array.isArray(list) && list.length > 0) {
+        list.forEach((ev: any, idx: number) => {
+          if (ev?.date) {
+            let sTime = ev.startTime;
+            let eTime = ev.endTime;
+            let tz = ev.timezone;
+            if (!tz && ev.time) {
+              if (/WITA/i.test(ev.time)) tz = "WITA";
+              else if (/WIT/i.test(ev.time)) tz = "WIT";
+              else if (/WIB/i.test(ev.time)) tz = "WIB";
+            }
+            if ((!sTime || !eTime) && ev.time) {
+              const match = String(ev.time).match(/(\d{1,2}[:.]\d{2})\s*[-–—]\s*(\d{1,2}[:.]\d{2}|selesai)/i);
+              if (match) {
+                if (!sTime) sTime = match[1].replace(".", ":").padStart(5, "0");
+                if (!eTime) {
+                  eTime = /selesai/i.test(match[2]) ? "23:59" : match[2].replace(".", ":").padStart(5, "0");
+                }
+              }
+            }
+            rawSessions.push({
+              id: ev.id || `ev_${idx}`,
+              name: ev.title || (idx === 0 ? "Akad Nikah" : "Resepsi Pernikahan"),
+              date: ev.date,
+              startTime: sTime || "08:00",
+              endTime: eTime || "22:00",
+              timezone: tz || "WIB",
+              allocatedQuota: 0,
+            });
+          }
+        });
+      }
+    } catch {
+      // fallback safe
+    }
   }
 
-  return { startTime, endTime, isCustom: false };
+  const now = new Date();
+  const parsed = rawSessions.map((s, index) => {
+    const cleanDate = s.date.includes("T") ? s.date.split("T")[0] : s.date;
+    const tz = (s as any).timezone || "WIB";
+    const offset = tz === "WITA" ? "+08:00" : tz === "WIT" ? "+09:00" : "+07:00";
+    const sTime = (s.startTime || "00:00").slice(0, 5);
+    const eTime = (s.endTime || "23:59").slice(0, 5);
+    const startDate = new Date(`${cleanDate}T${sTime}:00${offset}`);
+    const endDate = new Date(`${cleanDate}T${eTime}:00${offset}`);
+    const graceEndDate = new Date(endDate.getTime() + 15 * 60 * 1000); // 15 menit toleransi pasca-sesi
+    return {
+      ...s,
+      index,
+      startDate,
+      endDate,
+      graceEndDate,
+    };
+  }).filter(s => !isNaN(s.startDate.getTime()) && !isNaN(s.endDate.getTime()));
+
+  // Urutkan secara kronologis
+  parsed.sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
+
+  let startTime: Date | null = parsed.length > 0 ? parsed[0].startDate : null;
+  let endTime: Date | null = parsed.length > 0 ? parsed[parsed.length - 1].endDate : null;
+  let currentSession: MemoriesSession | null = null;
+  let nextSession: MemoriesSession | null = null;
+  let activeSessionIndex = -1;
+  let isSessionActive = parsed.length === 0;
+
+  // Evaluasi status sesi saat ini terhadap waktu faktual
+  for (const s of parsed) {
+    if (now >= s.startDate && now <= s.graceEndDate) {
+      currentSession = {
+        id: s.id,
+        name: s.name,
+        date: s.date,
+        startTime: s.startTime,
+        endTime: s.endTime,
+        timezone: (s as any).timezone || "WIB",
+        allocatedQuota: s.allocatedQuota,
+      };
+      activeSessionIndex = s.index;
+      isSessionActive = true;
+      break;
+    }
+  }
+
+  // Jika tidak ada sesi yang sedang berjalan, cari sesi berikutnya
+  if (!isSessionActive) {
+    for (const s of parsed) {
+      if (now < s.startDate) {
+        nextSession = {
+          id: s.id,
+          name: s.name,
+          date: s.date,
+          startTime: s.startTime,
+          endTime: s.endTime,
+          timezone: (s as any).timezone || "WIB",
+          allocatedQuota: s.allocatedQuota,
+        };
+        break;
+      }
+    }
+  }
+
+  const isAllFinished = parsed.length > 0 && !isSessionActive && !nextSession && now > (parsed[parsed.length - 1].graceEndDate);
+
+  return {
+    startTime,
+    endTime,
+    isCustom: Boolean(fs.memoriesCustomSchedule || (Array.isArray(fs.memoriesSessions) && fs.memoriesSessions.length > 0)),
+    isSessionActive,
+    currentSession,
+    nextSession,
+    isAllFinished,
+    sessions: rawSessions,
+    activeSessionIndex,
+  };
+}
+
+/**
+ * Menghitung kuota kumulatif foto yang diizinkan untuk sesi saat ini (dengan Smart Rollover).
+ */
+export function calculateSessionCumulativeQuota(
+  sessions: MemoriesSession[],
+  activeIndex: number,
+  totalEventQuota: number,
+  totalPhotosBeforeCurrentSession: number = 0
+): number {
+  if (!sessions || sessions.length === 0 || activeIndex < 0 || activeIndex >= sessions.length) {
+    return totalEventQuota;
+  }
+
+  const current = sessions[activeIndex];
+  if (!current.allocatedQuota || current.allocatedQuota <= 0) {
+    return totalEventQuota;
+  }
+
+  let pastAllocated = 0;
+  for (let i = 0; i < activeIndex; i++) {
+    pastAllocated += (sessions[i].allocatedQuota || 0);
+  }
+
+  const rolloverSurplus = Math.max(0, pastAllocated - totalPhotosBeforeCurrentSession);
+  const allowedUntilThisSession = totalPhotosBeforeCurrentSession + current.allocatedQuota + rolloverSurplus;
+
+  return Math.min(totalEventQuota, allowedUntilThisSession);
 }
 

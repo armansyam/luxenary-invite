@@ -5,24 +5,27 @@ Dokumen ini membedah arsitektur teknis, alur data, komponen UI, serta mekanisme 
 
 ---
 
-## 1. Arsitektur Dual-Native Studio
+## 1. Arsitektur Dual-Native Studio & Master-Detail Navigator
 
 Halaman Studio Editor menerapkan pola **Dual-Native Mode**:
-1. **Form Mode (Panel Kustomisasi Terstruktur):** Akordion 14 seksi modular dengan validasi ketat, input dinamis, upload direct-to-cloud (Cloudflare R2), dan pemilih palet warna interaktif.
+1. **Form Mode (Panel Kustomisasi Master-Detail):** 
+   - **Sidebar Navigator (Desktop $\ge$ lg):** Panel navigasi sticky vertikal di sebelah kiri dengan indikator progress `(X / 15)`, badge status revisi belum tersimpan (*dirty pulse indicator*), dan status modul.
+   - **Horizontal Pills (Mobile / Tablet < lg):** Baris tombol pill horizontal yang dapat digeser (*scrollable*) di bagian atas layar.
+   - **Detail Form Seksi Aktif (Panel Kanan):** Seksi yang dipilih langsung tersaji terbuka penuh (*always expanded*) tanpa akordion tersembunyi. Saat tombol "Simpan" ditekan, formulir tetap terbuka lebar dan tidak menutup sendiri (*zero auto-collapse*).
 2. **Live Visual Editor (Interactive Canvas Mode):** Tampilan kanvas WYSIWYG berbasis `iframe` yang merender pratinjau langsung secara real-time dengan tombol toggle *Viewport Switcher* (Mobile 390px vs Desktop Responsive).
 
 ```mermaid
 flowchart TD
     subgraph ClientWorkspace [Studio Editor: /dashboard/invitation/:id]
         A[Inisialisasi Data Undangan] --> B{Pilih Mode Studio}
-        B -->|Form Mode| C[Akordion 14 Seksi Kustomisasi]
+        B -->|Form Mode| C[Master-Detail: Sidebar Navigator + Detail Form Aktif]
         B -->|Live Mode| D[Live Canvas Iframe & Viewport Switcher]
         
-        C --> E[Upload Media: Cloudflare R2 Direct]
+        C --> E[Upload Media: Cloudflare R2 Direct / Local]
         C --> F[Pilihan Tema & Custom Color Palette]
-        C --> G[Auto-Save Snapshot & Dirty State Tracker]
+        C --> G[Snapshot State & Dirty State Tracker]
         
-        G --> H[Tombol: Simpan Perubahan]
+        G --> H[Tombol: Simpan Perubahan Seksi]
         H --> I[PUT /api/client/invitations/:id]
         I --> J[(Database PostgreSQL - Prisma)]
         
@@ -34,9 +37,9 @@ flowchart TD
 
 ---
 
-## 2. Rincian 14 Seksi Modular Form Editor
+## 2. Rincian 15 Seksi Modular Form Editor
 
-Studio Editor membagi form input menjadi 14 seksi terorganisir untuk kenyamanan pengantin:
+Studio Editor membagi form input menjadi 15 seksi terorganisir untuk kenyamanan pengantin:
 
 ### Seksi 1: Tema Desain & Palet Warna (`SEC1`)
 - **Filter Tema Berdasarkan Tier Paket:**
@@ -57,7 +60,7 @@ Studio Editor membagi form input menjadi 14 seksi terorganisir untuk kenyamanan 
 
 ### Seksi 3: Profil Pasangan Mempelai (`SEC3`)
 - **Mempelai Pria:**
-  - Foto profil pria (Upload R2 dengan crop ratio 1:1 / 3:4).
+  - Foto profil pria (Upload R2/Local dengan crop ratio 1:1 / 3:4).
   - Nama panggilan & nama lengkap beserta gelar akademik/adat.
   - Urutan anak dalam keluarga (misal: "Putra pertama dari...").
   - Nama lengkap kedua orang tua / wali.
@@ -104,9 +107,21 @@ Studio Editor membagi form input menjadi 14 seksi terorganisir untuk kenyamanan 
 - Galeri foto grid interaktif dengan lightbox full-screen.
 - Integrasi video prewedding dari YouTube / Vimeo atau video storage R2.
 
-### Seksi 9: Rekening Bank & Hadiah Digital (`SEC9`)
-- Nomor rekening bank dan e-wallet mempelai untuk amplop digital.
-- Fitur salin nomor rekening instan 1-klik.
+### Seksi 9: Tanda Kasih & Amplop Digital (`SEC9`)
+- **Saklar Fitur Amplop:** Menghidupkan/mematikan seksi tanda kasih secara global.
+- **Multi-Rekening Bank & E-Wallet:**
+  - Pilihan bank tujuan (BCA, Mandiri, BNI, BRI, BSI, Bank Jago, CIMB, dll) dan e-wallet (GoPay, OVO, Dana, ShopeePay).
+  - Nomor rekening & nama pemilik rekening dengan tombol 1-klik salin rekening instan.
+- **Unggah QRIS Statis Pembayaran (`slot: QRIS`):**
+  - Pengantin dapat mengunggah gambar QRIS statis untuk scan pembayaran langsung dari mobile banking / dompet digital tamu.
+  - File fisik otomatis dikompresi ke WebP 800×800 px dan disimpan pada `public/uploads/invitations/[id]/qris.webp`.
+- **Alamat Pengiriman Kado Fisik:**
+  - Alamat rumah/kantor untuk penerimaan bingkisan kado fisik dari tamu undangan.
+- **Aturan Cerdas Penayangan Tab Undangan (*Smart Dynamic Gift Section*):**
+  - **Hanya Digital (Rekening / QRIS):** Jika alamat pengiriman kado dikosongkan, tab *"Kirim Kado"* otomatis disembunyikan 100% dan tidak ada teks fallback dummy Makassar yang muncul. Tamu langsung disajikan kartu rekening / scan QRIS tanpa tombol tab.
+  - **Hanya QRIS (Tanpa Rekening Bank):** Jika pengantin hanya mengunggah QRIS tanpa mendaftarkan rekening bank, sistem hanya menampilkan kartu QRIS murni tanpa menyisipkan kartu bank tiruan.
+  - **Hanya Kado Fisik (Alamat Saja):** Jika pengantin hanya mengisi alamat kado, kartu alamat langsung tampil tanpa tab transfer.
+  - **Keduanya Ada (Digital + Fisik):** Jika nomor rekening/QRIS dan alamat kado sama-sama diisi, kedua tab (*Transfer Bank / QRIS* dan *Kirim Kado*) otomatis aktif berdampingan.
 
 ### Seksi 10: Panduan Busana / Dress Code (`SEC10`)
 - **Dress Code Visual Color Studio**:
@@ -128,8 +143,15 @@ Studio Editor membagi form input menjadi 14 seksi terorganisir untuk kenyamanan 
 - Daftar nama keluarga besar, tokoh adat, kerabat, atau kolega terhormat yang turut mengundang.
 
 ### Seksi 14: Galeri Kenangan Tamu / Live Moments (`SEC14`)
-- Konfigurasi portal upload foto bagi tamu undangan di venue acara.
-- Pengaturan hak moderasi (apakah foto tamu langsung tampil atau butuh persetujuan pengantin).
+- **Pusat Komando Kamera Tamu:**
+  - Pengaturan preset filter analog (*Aura '90s*, *Heritage Romance*, *Botanical Mist*, *Cinema Noir*, *Pure Daylight*).
+  - Pilihan gaya layar pembuka HP tamu (`memoriesOpeningLayout`): *Editorial Showcase*, *Cinematic Hero*, *Polaroid Nostalgia*.
+  - Stempel tanggal retro LED analog (`memoriesDateStamp`) & mode Delayed Reveal kamar gelap.
+- **Jadwal Multi-Sesi & Pembatas Kuota Otomatis (*Smart Quota Boundary Guard*):**
+  - Klien dapat mengatur multi-sesi kamera (Akad Nikah, Resepsi, After Party) dengan pembagian kuota foto per sesi.
+  - **Pembatas Ketikan Real-Time:** Input kuota per sesi secara otomatis dibatasi (*clamped*) maksimal ke sisa kuota yang belum dialokasikan ke sesi lain, sehingga total alokasi tidak akan pernah bisa melebihi kuota total acara.
+  - **Tombol Pintasan:** Tombol *"Bagi Rata Kuota"* untuk membagi rata total kuota acara ke seluruh sesi dalam 1 klik, serta tombol *"Pakai Sisa (X)"* di tiap baris sesi.
+  - **Validasi Sisi Server (Backend):** Endpoint `/api/client/invitations/[id]/memories` menjamin validasi kuota server-side agar total alokasi sesi tidak pernah melampaui `maxTotalPhotos`.
 
 ### Seksi 15: Pengaturan Teks UI & Label (`SEC15`)
 - **Kustomisasi Formulir RSVP:**
@@ -140,40 +162,6 @@ Studio Editor membagi form input menjadi 14 seksi terorganisir untuk kenyamanan 
   - Subtitle sampul pembuka (`coverSubtitle`) — Contoh: *"UNDANGAN PERNIKAHAN"*.
 - **Kustomisasi Label Hitung Mundur (Countdown Timer):**
   - Penamaan unit waktu: Hari (`cdDays`), Jam (`cdHours`), Menit (`cdMins`), Detik (`cdSecs`).
-- **Galeri Foto:**
-  - Multi-upload gambar (maksimum sesuai kuota paket) langsung ke Cloudflare R2 Storage.
-  - Pengurutan foto (drag & drop urutan tampilan).
-- **Video Prewedding / Teaser:**
-  - Dukungan URL video YouTube, Vimeo, atau direct MP4 Cloudflare Stream / R2.
-
-### Seksi 9: Tanda Kasih & Amplop Digital (`SEC9`)
-- Saklar aktifkan/nonaktifkan fitur amplop.
-- **Multi-Rekening Bank & E-Wallet:**
-  - Bank tujuan (BCA, Mandiri, BNI, BRI, BSI, Bank Jago, CIMB, dll).
-  - E-Wallet (GoPay, OVO, Dana, ShopeePay).
-  - Nomor rekening & nama pemilik rekening.
-- **QRIS Statis:** Upload gambar QRIS pengantin untuk memudahkan transfer instan tanpa input nomor rekening.
-- **Alamat Kirim Hadiah Fisik:**
-  - Nama penerima, nomor WhatsApp kurir, dan alamat pengiriman kado lengkap.
-
-### Seksi 10: Dress Code & Protokol (`SEC10`)
-- Penjelasan anjuran busana (Pakaian adat, warna busana yang dianjurkan / dihindari).
-- Palet warna dress code visual (lingkaran warna swatch).
-- Poin-poin himbauan kenyamanan acara.
-
-### Seksi 11: Live Streaming Pernikahan (`SEC11`)
-- Penayangan siaran langsung bagi tamu yang berhalangan hadir.
-- URL streaming (YouTube Live, Instagram Live, Zoom Meeting).
-
-### Seksi 12: Filter Instagram Pengantin (`SEC12`)
-- Tautan filter AR Instagram kustom milik pengantin agar tamu dapat merekam momen dengan filter bertuliskan nama mempelai.
-
-### Seksi 13: Turut Mengundang (`SEC13`)
-- Daftar nama keluarga besar, tokoh adat, kerabat, atau kolega terhormat yang turut mengundang.
-
-### Seksi 14: Galeri Kenangan Tamu / Live Moments (`SEC14`)
-- Konfigurasi portal upload foto bagi tamu undangan di venue acara.
-- Pengaturan hak moderasi (apakah foto tamu langsung tampil atau butuh persetujuan pengantin).
 
 ---
 

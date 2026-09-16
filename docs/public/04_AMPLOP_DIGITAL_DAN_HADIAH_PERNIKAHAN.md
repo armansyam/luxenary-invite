@@ -51,6 +51,20 @@ Bagi tamu yang terbiasa menggunakan aplikasi m-banking atau e-wallet (BCA Mobile
 ## 4. Pengiriman Hadiah Fisik (Kado Pernikahan)
 
 Bagi tamu yang ingin mengirimkan kado fisik (peralatan rumah tangga, cinderamata, dll):
-- Tertera alamat tujuan pengiriman lengkap beserta kode pos.
-- Nama penerima dan nomor kontak WhatsApp kurir/penerima.
+- Tertera alamat tujuan pengiriman lengkap beserta petunjuk penerimaan.
 - Tombol aksi **"Salin Alamat Lengkap"** untuk memudahkan tamu menempelkan (*paste*) alamat tersebut ke aplikasi e-commerce atau ekspedisi pengiriman (JNE, SiCepat, GoSend, GrabExpress).
+
+---
+
+## 5. Mekanisme Penayangan Cerdas (*Smart Dynamic Tab Visibility*)
+
+Engine komposer tema (`lib/themeEngine.ts`) menerapkan aturan penayangan dinamis tanpa fallback dummy:
+
+1. **Penyimpanan Berkas QRIS:**
+   - Berkas fisik QRIS disimpan di server pada direktori `public/uploads/invitations/[id]/qris.webp` dengan resolusi maksimal 800×800 px dan format WebP berbobot ringan.
+   - Path URL dicatat pada kolom `featureSettings.qrisImageUrl` di basis data.
+2. **Kondisi Penayangan Tab & Kartu:**
+   - **Hanya Digital (Rekening Bank / QRIS Saja):** Jika pengantin tidak mengisi alamat pengiriman kado fisik, tab tombol pemilih dan kartu "Kirim Kado" otomatis dihilangkan total dari undangan. Tamu langsung disajikan kartu rekening / scan QRIS tanpa tombol tab yang membingungkan, dan tidak ada teks fallback fiktif Makassar.
+   - **Hanya QRIS (Tanpa Rekening Bank):** Jika pengantin hanya mengunggah QRIS tanpa mendaftarkan rekening bank, sistem hanya merender kartu scan QRIS murni tanpa menyisipkan kartu rekening BCA tiruan.
+   - **Hanya Kado Fisik (Alamat Saja):** Jika pengantin hanya mengisi alamat kado, kartu alamat langsung tampil tanpa tombol tab transfer.
+   - **Keduanya Ada (Digital + Kado Fisik):** Barulah tombol tab (*Transfer Bank / QRIS* dan *Kirim Kado*) dimunculkan berdampingan.

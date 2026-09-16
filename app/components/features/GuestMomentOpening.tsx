@@ -16,6 +16,11 @@ export interface GuestMomentOpeningProps {
   backUrl: string;
   galleryUrl: string;
   onStartCamera: () => void;
+  currentSessionName?: string | null;
+  nextSessionName?: string | null;
+  nextSessionStartTime?: string | null;
+  isSessionActive?: boolean;
+  isAllFinished?: boolean;
 }
 
 export default function GuestMomentOpening({
@@ -29,6 +34,11 @@ export default function GuestMomentOpening({
   backUrl,
   galleryUrl,
   onStartCamera,
+  currentSessionName = null,
+  nextSessionName = null,
+  nextSessionStartTime = null,
+  isSessionActive = true,
+  isAllFinished = false,
 }: GuestMomentOpeningProps) {
   const [timeLeft, setTimeLeft] = useState<{
     days: number;
@@ -40,18 +50,25 @@ export default function GuestMomentOpening({
 
   const parsedStartTime = startTime ? new Date(startTime) : null;
   const parsedEndTime = endTime ? new Date(endTime) : null;
+  const targetCountdownIso = nextSessionStartTime || startTime;
+  const parsedTargetTime = targetCountdownIso ? new Date(targetCountdownIso) : null;
 
-  // Real-time countdown timer untuk jadwal pembukaan
+  // Real-time countdown timer untuk jadwal pembukaan / sesi berikutnya
   useEffect(() => {
-    if (!parsedStartTime || isNaN(parsedStartTime.getTime())) {
+    if (!targetCountdownIso) {
+      setTimeLeft(null);
+      return;
+    }
+    const targetDate = new Date(targetCountdownIso);
+    if (isNaN(targetDate.getTime())) {
       setTimeLeft(null);
       return;
     }
 
     const calculateTime = () => {
-      const now = new Date().getTime();
-      const target = parsedStartTime.getTime();
-      const diff = target - now;
+      const nowMs = new Date().getTime();
+      const targetMs = targetDate.getTime();
+      const diff = targetMs - nowMs;
 
       if (diff <= 0) {
         setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0, isPast: true });
@@ -67,11 +84,12 @@ export default function GuestMomentOpening({
     calculateTime();
     const interval = setInterval(calculateTime, 1000);
     return () => clearInterval(interval);
-  }, [startTime]);
+  }, [targetCountdownIso]);
 
   const now = new Date();
-  const isBeforeEvent = !isTestMode && parsedStartTime !== null && !isNaN(parsedStartTime.getTime()) && now < parsedStartTime;
-  const isAfterEvent = !isTestMode && parsedEndTime !== null && !isNaN(parsedEndTime.getTime()) && now > new Date(parsedEndTime.getTime() + 15 * 60 * 1000);
+  const isFinished = Boolean(isUploadLocked || isAllFinished || (!isTestMode && parsedEndTime && now > new Date(parsedEndTime.getTime() + 15 * 60 * 1000) && !nextSessionStartTime));
+  const isActive = Boolean(!isFinished && (isSessionActive || isTestMode));
+  const isPending = Boolean(!isFinished && !isActive && (nextSessionStartTime || (parsedStartTime && now < parsedStartTime)));
 
   // Format Retro Date Stamp: "02  09  '26"
   const getRetroDateStamp = () => {
@@ -93,7 +111,6 @@ export default function GuestMomentOpening({
       <div className="relative min-h-screen flex flex-col justify-between items-center px-4 sm:px-6 py-6 sm:py-10 select-none overflow-x-hidden text-white">
         {/* Background Fullscreen Image with Overlay */}
         <div className="fixed inset-0 z-0">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={activeCover}
             alt={coupleName}
@@ -145,58 +162,72 @@ export default function GuestMomentOpening({
 
           {/* Action Box */}
           <div className="w-full pt-4">
-            {isBeforeEvent && !isUploadLocked && !isAfterEvent && (
+            {isFinished && (
               <div className="bg-stone-900/80 backdrop-blur-xl border border-white/15 rounded-3xl p-5 text-center space-y-3 shadow-2xl">
-                <span className="text-xs font-bold text-amber-400 block uppercase tracking-wider">
-                  Kamera Belum Dibuka
+                <span className="text-xs font-bold text-stone-300 block uppercase tracking-wider">
+                  Sesi Foto Tamu Telah Berakhir
                 </span>
-                {timeLeft && !timeLeft.isPast && (
-                  <div className="grid grid-cols-4 gap-1.5 max-w-[240px] mx-auto">
-                    <div className="bg-black/50 rounded-xl p-2 border border-white/10">
-                      <span className="block text-base font-bold text-white font-mono">{timeLeft.days}</span>
-                      <span className="block text-[8px] uppercase text-stone-400">Hari</span>
-                    </div>
-                    <div className="bg-black/50 rounded-xl p-2 border border-white/10">
-                      <span className="block text-base font-bold text-white font-mono">{String(timeLeft.hours).padStart(2, "0")}</span>
-                      <span className="block text-[8px] uppercase text-stone-400">Jam</span>
-                    </div>
-                    <div className="bg-black/50 rounded-xl p-2 border border-white/10">
-                      <span className="block text-base font-bold text-white font-mono">{String(timeLeft.minutes).padStart(2, "0")}</span>
-                      <span className="block text-[8px] uppercase text-stone-400">Menit</span>
-                    </div>
-                    <div className="bg-black/50 rounded-xl p-2 border border-white/10">
-                      <span className="block text-base font-bold text-white font-mono">{String(timeLeft.seconds).padStart(2, "0")}</span>
-                      <span className="block text-[8px] uppercase text-stone-400">Detik</span>
-                    </div>
+                <p className="text-[11px] text-stone-400 leading-relaxed">
+                  Seluruh momen kebersamaan telah terkumpul di galeri kenangan digital.
+                </p>
+                <Link
+                  href={galleryUrl}
+                  className="block w-full py-3 bg-white hover:bg-stone-100 text-stone-950 font-bold text-xs rounded-full shadow-lg transition"
+                >
+                  Lihat Semua Foto di Galeri →
+                </Link>
+              </div>
+            )}
+
+            {isPending && (
+              <div className="w-full bg-stone-900/90 backdrop-blur-xl border border-white/20 rounded-full px-4 py-2.5 flex items-center justify-between shadow-2xl">
+                <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
+                  <div className="text-left min-w-0">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-amber-300 truncate">
+                      {nextSessionName ? `Sesi ${nextSessionName}` : "Kamera Belum Dibuka"}
+                    </p>
+                    {timeLeft && !timeLeft.isPast && (
+                      <p className="text-xs font-mono font-bold text-white tracking-wider">
+                        {timeLeft.days > 0 ? `${timeLeft.days}d ` : ""}
+                        {String(timeLeft.hours).padStart(2, "0")}:{String(timeLeft.minutes).padStart(2, "0")}:{String(timeLeft.seconds).padStart(2, "0")}
+                      </p>
+                    )}
                   </div>
-                )}
+                </div>
                 {isTestMode ? (
                   <button
                     type="button"
                     onClick={onStartCamera}
-                    className="w-full py-3.5 bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs rounded-full shadow-lg transition cursor-pointer"
+                    className="px-3.5 py-1.5 bg-amber-400 hover:bg-amber-300 active:scale-95 text-stone-950 font-bold text-[11px] rounded-full transition shrink-0 cursor-pointer shadow"
                   >
-                    Mulai Motret (Mode Simulasi) →
+                    Simulasi →
                   </button>
                 ) : (
                   <Link
                     href={backUrl}
-                    className="block w-full py-2.5 bg-white/10 hover:bg-white/20 text-white font-medium text-xs rounded-full transition"
+                    className="px-3 py-1 bg-white/10 hover:bg-white/20 text-stone-200 font-medium text-[11px] rounded-full transition shrink-0"
                   >
-                    Kembali ke Undangan
+                    Undangan
                   </Link>
                 )}
               </div>
             )}
 
-            {!isBeforeEvent && !isUploadLocked && !isAfterEvent && (
+            {isActive && (
               <div className="space-y-3">
+                {currentSessionName && (
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 rounded-full text-[10px] font-bold uppercase tracking-wider mb-1 backdrop-blur-md">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    Sesi Aktif: {currentSessionName}
+                  </div>
+                )}
                 <button
                   type="button"
                   onClick={onStartCamera}
                   className="w-full py-4 bg-white hover:bg-stone-100 text-stone-950 font-bold text-sm rounded-full shadow-2xl transition-transform active:scale-[0.98] flex items-center justify-center gap-2 group cursor-pointer"
                 >
-                  <span>Mulai motret</span>
+                  <span>Mulai Abadikan Momen</span>
                   <span className="transition-transform group-hover:translate-x-1 duration-200">→</span>
                 </button>
                 <p className="text-[11px] text-stone-300">
@@ -250,7 +281,6 @@ export default function GuestMomentOpening({
           <div className="w-full bg-white p-4 pb-6 rounded-2xl shadow-2xl border border-stone-300/80 -rotate-1 hover:rotate-0 transition-transform duration-300">
             {/* Foto Polaroid */}
             <div className="relative w-full aspect-square rounded-lg overflow-hidden bg-stone-100 shadow-inner">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={activeCover}
                 alt={coupleName}
@@ -278,31 +308,73 @@ export default function GuestMomentOpening({
 
           {/* Action Button */}
           <div className="w-full pt-6">
-            {isBeforeEvent && !isUploadLocked && !isAfterEvent ? (
+            {isFinished && (
               <div className="bg-stone-200/80 border border-stone-300 rounded-2xl p-4 text-center space-y-2">
-                <span className="text-xs font-bold text-stone-800 block">Kamera Dibuka Pada Hari H</span>
+                <span className="text-xs font-bold text-stone-800 block">Sesi Foto Tamu Telah Berakhir</span>
                 <p className="text-[11px] text-stone-600">
-                  Kembali akses saat jam acara dimulai untuk mengabadikan momen berharga.
+                  Seluruh momen kebersamaan telah terkumpul di galeri kenangan digital.
                 </p>
-                {isTestMode && (
+                <Link
+                  href={galleryUrl}
+                  className="inline-block w-full py-2.5 bg-stone-900 hover:bg-stone-800 text-white font-medium text-xs rounded-full shadow transition"
+                >
+                  Lihat Semua Foto di Galeri →
+                </Link>
+              </div>
+            )}
+
+            {isPending && (
+              <div className="w-full bg-stone-900/90 backdrop-blur-md text-white rounded-full px-4 py-2.5 flex items-center justify-between shadow-xl">
+                <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
+                  <div className="text-left min-w-0">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-amber-300 truncate">
+                      {nextSessionName ? `Sesi ${nextSessionName}` : "Kamera Belum Dibuka"}
+                    </p>
+                    {timeLeft && !timeLeft.isPast && (
+                      <p className="text-xs font-mono font-bold text-white tracking-wider">
+                        {timeLeft.days > 0 ? `${timeLeft.days}d ` : ""}
+                        {String(timeLeft.hours).padStart(2, "0")}:{String(timeLeft.minutes).padStart(2, "0")}:{String(timeLeft.seconds).padStart(2, "0")}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                {isTestMode ? (
                   <button
                     type="button"
                     onClick={onStartCamera}
-                    className="w-full py-3 bg-stone-900 hover:bg-stone-800 text-white font-bold text-xs rounded-full shadow transition cursor-pointer"
+                    className="px-3.5 py-1.5 bg-amber-400 hover:bg-amber-300 active:scale-95 text-stone-950 font-bold text-[11px] rounded-full transition shrink-0 cursor-pointer shadow"
                   >
-                    Mulai Motret (Mode Simulasi) →
+                    Simulasi →
                   </button>
+                ) : (
+                  <Link
+                    href={backUrl}
+                    className="px-3 py-1 bg-white/10 hover:bg-white/20 text-stone-200 font-medium text-[11px] rounded-full transition shrink-0"
+                  >
+                    Undangan
+                  </Link>
                 )}
               </div>
-            ) : (
-              <button
-                type="button"
-                onClick={onStartCamera}
-                className="w-full py-4 bg-stone-900 hover:bg-stone-800 active:scale-[0.98] text-white font-bold text-sm rounded-full shadow-xl transition-all flex items-center justify-center gap-2 group cursor-pointer"
-              >
-                <span>Buka Kamera Retro</span>
-                <span className="group-hover:translate-x-1 transition-transform">→</span>
-              </button>
+            )}
+
+            {isActive && (
+              <div className="space-y-2">
+                {currentSessionName && (
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-stone-300/80 border border-stone-400/50 text-stone-800 rounded-full text-[10px] font-bold uppercase tracking-wider mb-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                    Sesi Aktif: {currentSessionName}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={onStartCamera}
+                  className="w-full py-4 bg-stone-900 hover:bg-stone-800 active:scale-[0.98] text-white font-bold text-sm rounded-full shadow-xl transition-all flex items-center justify-center gap-2 group cursor-pointer"
+                >
+                  <span>Buka Kamera Retro</span>
+                  <span className="group-hover:translate-x-1 transition-transform">→</span>
+                </button>
+              </div>
             )}
           </div>
         </main>
@@ -355,7 +427,6 @@ export default function GuestMomentOpening({
       <main className="w-full max-w-sm flex flex-col items-center my-auto py-2 space-y-5">
         {/* Foto Mempelai Murni (Tanpa Frame Card / Tanpa Border Putih) */}
         <div className="relative w-full aspect-[4/5] rounded-[24px] overflow-hidden shadow-md">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={activeCover}
             alt={coupleName}
@@ -386,7 +457,7 @@ export default function GuestMomentOpening({
         {/* Interactive Action Area */}
         <div className="w-full pt-2 flex flex-col items-center space-y-3">
           {/* Kondisi 1: Acara Selesai / Dikunci */}
-          {(isUploadLocked || isAfterEvent) && (
+          {isFinished && (
             <div className="w-full bg-stone-100 border border-stone-200 rounded-2xl p-4 text-center space-y-2">
               <span className="text-xs font-bold text-stone-800 block">Sesi Foto Tamu Telah Berakhir</span>
               <p className="text-[11px] text-stone-500 leading-relaxed">
@@ -401,88 +472,62 @@ export default function GuestMomentOpening({
             </div>
           )}
 
-          {/* Kondisi 2: Sebelum Acara (Pra-Acara & Belum Dibuka) */}
-          {isBeforeEvent && !isUploadLocked && !isAfterEvent && (
-            <div className="w-full bg-stone-100/90 border border-stone-200 rounded-2xl p-4 text-center space-y-3">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-100 text-amber-900 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
-                Kamera Segera Dibuka
-              </div>
-
-              {/* Countdown Display */}
-              {timeLeft && !timeLeft.isPast && (
-                <div className="grid grid-cols-4 gap-1.5 max-w-[260px] mx-auto pt-1">
-                  <div className="bg-white rounded-xl p-2 border border-stone-200/80 shadow-xs">
-                    <span className="block text-base font-bold text-stone-900 font-mono">{timeLeft.days}</span>
-                    <span className="block text-[9px] uppercase tracking-wider text-stone-400">Hari</span>
-                  </div>
-                  <div className="bg-white rounded-xl p-2 border border-stone-200/80 shadow-xs">
-                    <span className="block text-base font-bold text-stone-900 font-mono">{String(timeLeft.hours).padStart(2, "0")}</span>
-                    <span className="block text-[9px] uppercase tracking-wider text-stone-400">Jam</span>
-                  </div>
-                  <div className="bg-white rounded-xl p-2 border border-stone-200/80 shadow-xs">
-                    <span className="block text-base font-bold text-stone-900 font-mono">{String(timeLeft.minutes).padStart(2, "0")}</span>
-                    <span className="block text-[9px] uppercase tracking-wider text-stone-400">Menit</span>
-                  </div>
-                  <div className="bg-white rounded-xl p-2 border border-stone-200/80 shadow-xs">
-                    <span className="block text-base font-bold text-stone-900 font-mono">{String(timeLeft.seconds).padStart(2, "0")}</span>
-                    <span className="block text-[9px] uppercase tracking-wider text-stone-400">Detik</span>
-                  </div>
+          {/* Kondisi 2: Sebelum Acara / Jeda Antar-Sesi */}
+          {isPending && (
+            <div className="w-full bg-stone-900 text-white rounded-full px-4 py-2.5 flex items-center justify-between shadow-lg">
+              <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
+                <div className="text-left min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-amber-300 truncate">
+                    {nextSessionName ? `Sesi ${nextSessionName}` : "Kamera Belum Dibuka"}
+                  </p>
+                  {timeLeft && !timeLeft.isPast && (
+                    <p className="text-xs font-mono font-bold text-stone-200 tracking-wider">
+                      {timeLeft.days > 0 ? `${timeLeft.days}d ` : ""}
+                      {String(timeLeft.hours).padStart(2, "0")}:{String(timeLeft.minutes).padStart(2, "0")}:{String(timeLeft.seconds).padStart(2, "0")}
+                    </p>
+                  )}
                 </div>
-              )}
-
-              <p className="text-[11px] text-stone-500 leading-relaxed px-2">
-                Kamera dibuka otomatis pada{" "}
-                <span className="font-semibold text-stone-700">
-                  {parsedStartTime?.toLocaleDateString("id-ID", {
-                    weekday: "long",
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  })}
-                </span>{" "}
-                pukul{" "}
-                <span className="font-semibold text-stone-700">
-                  {parsedStartTime?.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} WIB
-                </span>
-                .
-              </p>
-
-              {/* Tombol Uji Coba jika sedang mode test */}
+              </div>
               {isTestMode ? (
                 <button
                   type="button"
                   onClick={onStartCamera}
-                  className="w-full py-3.5 bg-stone-900 hover:bg-stone-800 text-white font-semibold text-xs rounded-full shadow-lg transition flex items-center justify-center gap-2 cursor-pointer"
+                  className="px-3.5 py-1.5 bg-amber-400 hover:bg-amber-300 active:scale-95 text-stone-950 font-bold text-[11px] rounded-full transition shrink-0 cursor-pointer shadow"
                 >
-                  <span>Mulai Motret (Mode Simulasi)</span>
-                  <span>→</span>
+                  Simulasi →
                 </button>
               ) : (
                 <Link
                   href={backUrl}
-                  className="block w-full py-2.5 bg-stone-200 hover:bg-stone-300 text-stone-800 font-medium text-xs rounded-full transition"
+                  className="px-3 py-1 bg-white/15 hover:bg-white/25 text-stone-200 font-medium text-[11px] rounded-full transition shrink-0"
                 >
-                  Kembali ke Undangan
+                  Undangan
                 </Link>
               )}
             </div>
           )}
 
           {/* Kondisi 3: Acara Aktif & Siap Motret (Hari H) */}
-          {!isBeforeEvent && !isUploadLocked && !isAfterEvent && (
+          {isActive && (
             <>
+              {currentSessionName && (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-stone-200 border border-stone-300 text-stone-800 rounded-full text-[10px] font-bold uppercase tracking-wider mb-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                  Sesi Aktif: {currentSessionName}
+                </div>
+              )}
               <button
                 type="button"
                 onClick={onStartCamera}
                 className="w-full py-4 bg-stone-900 hover:bg-stone-800 active:scale-[0.98] text-white font-bold text-sm rounded-full shadow-xl hover:shadow-2xl transition-all duration-200 flex items-center justify-center gap-2 group cursor-pointer"
               >
-                <span>Mulai motret</span>
+                <span>Mulai Abadikan Momen</span>
                 <span className="transition-transform group-hover:translate-x-1 duration-200">→</span>
               </button>
 
               <p className="text-[11px] text-stone-400 text-center">
-                Scan QR-nya, jepret momenmu versi kamu.
+                Pindai kode QR untuk mengabadikan momen istimewa dari sudut pandang Anda.
               </p>
             </>
           )}

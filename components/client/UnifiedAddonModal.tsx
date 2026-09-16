@@ -22,6 +22,8 @@ interface UnifiedAddonModalProps {
     addonMemoriesTopupPhotos: number;
     addonMemoriesTopupEnabled: boolean;
   };
+  hasExtended?: boolean;
+  daysRemaining?: number | null;
 }
 
 export default function UnifiedAddonModal({
@@ -32,6 +34,8 @@ export default function UnifiedAddonModal({
   currentQuota = 250,
   galleryExpiresAt,
   pricingSettings,
+  hasExtended = false,
+  daysRemaining = null,
 }: UnifiedAddonModalProps) {
   const router = useRouter();
 
@@ -243,35 +247,65 @@ export default function UnifiedAddonModal({
               <span className="text-[10px] text-amber-800 font-medium">Dihitung pasca acara</span>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {[
-                { months: 0, label: "Tidak Tambah", price: 0 },
-                { months: 1, label: "+1 Bulan (30 Hari)", price: monthlyExtPrice },
-                { months: 2, label: "+2 Bulan (60 Hari)", price: monthlyExtPrice * 2 },
-                { months: 3, label: "+3 Bulan (90 Hari)", price: monthlyExtPrice * 3 },
-                { months: 6, label: "+6 Bulan (180 Hari)", price: monthlyExtPrice * 6 },
-                { months: 12, label: "+1 Tahun (365 Hari)", price: monthlyExtPrice * 12 },
-              ].map((opt) => (
-                <button
-                  key={opt.months}
-                  type="button"
-                  onClick={() => setExtensionMonths(opt.months)}
-                  className={`p-3 rounded-xl border text-left transition relative cursor-pointer ${
-                    extensionMonths === opt.months
-                      ? "bg-amber-50/80 border-2 border-amber-700 text-amber-950 font-bold shadow-xs"
-                      : "bg-stone-50/50 border-stone-200 hover:border-stone-300 hover:bg-stone-50 text-stone-700"
-                  }`}
-                >
-                  <span className="block font-semibold text-[11px]">{opt.label}</span>
-                  <span className="block font-mono text-[10px] text-amber-900 font-bold mt-0.5">
-                    {opt.price === 0 ? "Rp 0" : `+Rp ${opt.price.toLocaleString("id-ID")}`}
-                  </span>
-                </button>
-              ))}
-            </div>
-            <p className="text-[10px] text-stone-500">
-              * Perpanjangan diakumulasikan ke masa aktif dasar paket setelah acara resepsi selesai, tanpa memotong masa aktif saat ini.
-            </p>
+            {hasExtended ? (
+              <div className="p-3.5 bg-stone-100 border border-stone-200 rounded-2xl text-stone-600 text-xs flex items-start gap-2.5">
+                <span className="w-2 h-2 rounded-full bg-stone-400 mt-1.5 shrink-0" />
+                <div>
+                  <strong className="block font-semibold text-stone-800">Perpanjangan Maksimal Telah Digunakan</strong>
+                  <p className="text-[11px] text-stone-500 mt-0.5 leading-relaxed">
+                    Masa simpan telah diperpanjang maksimal (+30 hari). Tidak dapat ditambah lagi guna mencegah penumpukan data permanen. Pastikan Anda mengunduh seluruh foto kenangan (ZIP) sebelum masa aktif berakhir.
+                  </p>
+                </div>
+              </div>
+            ) : daysRemaining !== null && daysRemaining > 7 ? (
+              <div className="p-3.5 bg-emerald-50/70 border border-emerald-200/80 rounded-2xl text-emerald-900 text-xs flex items-start gap-2.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
+                <div>
+                  <strong className="block font-semibold text-emerald-800">Masa Aktif Masih Aman ({daysRemaining} Hari Tersisa)</strong>
+                  <p className="text-[11px] text-emerald-700/90 mt-0.5 leading-relaxed">
+                    Opsi perpanjangan +30 hari (Rp {monthlyExtPrice.toLocaleString("id-ID")}) akan terbuka otomatis pada H-7 sebelum masa aktif berakhir agar waktu simpan efektif dan tepat sasaran.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setExtensionMonths(0)}
+                    className={`p-3 rounded-xl border text-left transition relative cursor-pointer ${
+                      extensionMonths === 0
+                        ? "bg-amber-50/80 border-2 border-amber-700 text-amber-950 font-bold shadow-xs"
+                        : "bg-stone-50/50 border-stone-200 hover:border-stone-300 hover:bg-stone-50 text-stone-700"
+                    }`}
+                  >
+                    <span className="block font-semibold text-[11px]">Tidak Tambah</span>
+                    <span className="block font-mono text-[10px] text-stone-500 mt-0.5">Rp 0</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setExtensionMonths(1)}
+                    className={`p-3 rounded-xl border text-left transition relative cursor-pointer ${
+                      extensionMonths === 1
+                        ? "bg-amber-50/80 border-2 border-amber-700 text-amber-950 font-bold shadow-xs"
+                        : "bg-stone-50/50 border-stone-200 hover:border-stone-300 hover:bg-stone-50 text-stone-700"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="block font-semibold text-[11px]">+30 Hari</span>
+                      <span className="px-1.5 py-0.2 bg-amber-200/80 text-amber-950 text-[9px] font-bold rounded font-mono">Maks. 1x</span>
+                    </div>
+                    <span className="block font-mono text-[10px] text-amber-900 font-bold mt-0.5">
+                      +Rp {monthlyExtPrice.toLocaleString("id-ID")}
+                    </span>
+                  </button>
+                </div>
+                <p className="text-[10px] text-stone-500">
+                  * Perpanjangan hanya dapat dilakukan 1 kali (+30 hari) pasca acara resepsi selesai.
+                </p>
+              </>
+            )}
           </div>
 
           {/* SEKSI 3: TOP-UP KUOTA FOTO ACARA */}

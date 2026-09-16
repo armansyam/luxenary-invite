@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { isSubdomainExpired, shouldDisplayMemoriesGallery } from "@/lib/domainUtils";
+import { isSubdomainExpired } from "@/lib/domainUtils";
 import { getPublishedHtml, buildAndSavePublishedHtml } from "@/lib/staticPublisher";
 import { composeTemplateData } from "@/lib/themeEngine";
 import { renderTemplateFile } from "@/lib/renderTemplate";
@@ -25,13 +25,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ subd
     return NextResponse.redirect(new URL("/?notice=subdomain-available", req.url));
   }
 
-  // Evaluasi cerdas peralihan rute ke Galeri Momen (/s/[subdomain]/memories)
-  // Mendukung mode AUTO (Default: H+1) maupun MANUAL toggle seketika dari dashboard klien
-  if (shouldDisplayMemoriesGallery(invitation)) {
-    const memoriesUrl = new URL(`/s/${subdomain}/memories`, req.url);
-    memoriesUrl.search = req.nextUrl.search;
-    return NextResponse.redirect(memoriesUrl);
-  }
+
 
   // Jika undangan masih berstatus DRAFT (belum dipublikasikan)
   if (invitation.status === "DRAFT") {

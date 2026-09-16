@@ -2406,91 +2406,429 @@
     }
 
 .lux-landing-root .exp-rsvp-submit-btn:hover { opacity: 0.9; }
-/* Screen 1: Buku Tamu Landscape Split */
-.lux-landing-root .exp-gb-split {
-      display: grid;
-      grid-template-columns: 1fr 1.35fr;
+/* Screen 1: Guest Moment Camera (Virtual Disposable Camera UI) */
+.lux-landing-root .exp-cam-kiosk {
+      display: flex;
+      flex-direction: column;
       height: 100%;
-      background: #11100f;
-      padding-bottom: 38px;
+      background: #0d0c0a;
+      padding: 10px 14px 42px;
       box-sizing: border-box;
     }
 
-.lux-landing-root .exp-gb-side {
-      padding: 16px 14px;
-      background: #161413;
-      border-right: 1px solid rgba(255,255,255,0.06);
+.lux-landing-root .exp-cam-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 6px 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      margin-bottom: 8px;
+    }
+
+.lux-landing-root .exp-cam-brand {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+.lux-landing-root .exp-cam-lens-icon {
+      width: 18px;
+      height: 18px;
+      border-radius: 5px;
+      background: linear-gradient(135deg, var(--lux-gold), #967015);
+      color: #0b0c0d;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+.lux-landing-root .exp-cam-title {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      color: var(--lux-warm-white);
+      display: block;
+      line-height: 1.1;
+    }
+
+.lux-landing-root .exp-cam-sub {
+      font-size: 0.44rem;
+      color: rgba(245,240,232,0.4);
+      letter-spacing: 0.04em;
+    }
+
+.lux-landing-root .exp-cam-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+.lux-landing-root .exp-cam-live {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.48rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: #fbbf24;
+      text-transform: uppercase;
+    }
+
+.lux-landing-root .exp-cam-pulse-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #fbbf24;
+      box-shadow: 0 0 8px #fbbf24;
+      animation: livePulse 1.6s infinite ease-in-out;
+    }
+
+.lux-landing-root .exp-cam-roll-pill {
+      font-size: 0.46rem;
+      font-weight: 700;
+      font-family: 'Space Mono', monospace;
+      padding: 2px 7px;
+      background: rgba(251,191,36,0.12);
+      border: 1px solid rgba(251,191,36,0.3);
+      border-radius: 6px;
+      color: var(--lux-gold);
+    }
+
+/* 2-Column Camera Grid */
+.lux-landing-root .exp-cam-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 10px;
+      flex: 1;
+      min-height: 0;
+    }
+
+/* Left: Viewfinder Card */
+.lux-landing-root .exp-cam-view-card {
+      background: #141210;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 8px;
       display: flex;
       flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+.lux-landing-root .exp-cam-view-header {
+      display: flex;
+      align-items: center;
       justify-content: space-between;
+      margin-bottom: 6px;
     }
 
-.lux-landing-root .exp-gb-names {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 1.25rem;
-      color: var(--lux-warm-white);
-      margin-top: 2px;
-    }
-
-.lux-landing-root .exp-gb-badge {
-      font-size: 0.52rem;
+.lux-landing-root .exp-cam-preset-badge {
+      font-size: 0.48rem;
+      font-family: 'Space Mono', monospace;
+      font-weight: 700;
+      letter-spacing: 0.12em;
       color: var(--lux-gold);
-      margin-top: 3px;
-      letter-spacing: 0.05em;
+      text-transform: uppercase;
     }
 
-.lux-landing-root .exp-gb-input-wrap {
-      background: rgba(255,255,255,0.04);
+.lux-landing-root .exp-cam-hud-pills {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+.lux-landing-root .exp-cam-flash-tag {
+      font-size: 0.44rem;
+      font-weight: 700;
+      color: #fef08a;
+      background: rgba(250,204,21,0.15);
+      border: 1px solid rgba(250,204,21,0.3);
+      padding: 1px 5px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+.lux-landing-root .exp-cam-zoom-tag {
+      font-size: 0.44rem;
+      font-weight: 700;
+      font-family: 'Space Mono', monospace;
+      color: var(--lux-warm-white);
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      padding: 1px 4px;
+      border-radius: 4px;
+    }
+
+.lux-landing-root .exp-cam-view-frame {
+      position: relative;
+      background: #000;
       border: 1px solid rgba(255,255,255,0.08);
       border-radius: 8px;
-      padding: 8px;
-      font-size: 0.52rem;
-      color: rgba(245,240,232,0.45);
-      line-height: 1.35;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      min-height: 155px;
     }
 
-.lux-landing-root .exp-gb-feed-side {
-      padding: 12px 14px;
+.lux-landing-root .exp-cam-view-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: contrast(1.15) saturate(1.2) sepia(0.18) brightness(0.96);
+      transition: filter 0.35s ease;
+    }
+
+.lux-landing-root .exp-cam-vignette {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, transparent 40%, rgba(0,0,0,0.55) 100%);
+      pointer-events: none;
+    }
+
+.lux-landing-root .exp-cam-crosshair {
+      position: absolute;
+      width: 26px;
+      height: 26px;
+      border: 1px dashed rgba(251,191,36,0.6);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--lux-gold);
+      font-size: 11px;
+      pointer-events: none;
+    }
+
+.lux-landing-root .exp-cam-led-stamp {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: rgb(232, 135, 90);
+      text-shadow: 0 0 6px rgba(232, 135, 90, 0.95), 0 0 12px rgba(232, 135, 90, 0.6);
+      pointer-events: none;
+      z-index: 4;
+    }
+
+.lux-landing-root .exp-cam-flash-overlay {
+      position: absolute;
+      inset: 0;
+      background: #ffffff;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 10;
+      transition: opacity 0.08s ease-out;
+    }
+
+.lux-landing-root .exp-cam-flash-overlay.active {
+      opacity: 0.95;
+    }
+
+.lux-landing-root .exp-cam-view-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 5px;
+      font-size: 0.44rem;
+      color: rgba(245,240,232,0.45);
+    }
+
+/* Right: Controls & Deck */
+.lux-landing-root .exp-cam-controls-col {
       display: flex;
       flex-direction: column;
       gap: 7px;
-      overflow-y: auto;
     }
 
-.lux-landing-root .exp-gb-card {
-      background: rgba(255,255,255,0.03);
-      border: 1px solid rgba(255,255,255,0.06);
-      border-radius: 10px;
-      padding: 7px 9px;
-    }
-
-.lux-landing-root .exp-gb-top {
+.lux-landing-root .exp-cam-roll-card {
+      background: #151311;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 8px 10px;
       display: flex;
-      justify-content: space-between;
-      margin-bottom: 2px;
+      flex-direction: column;
+      gap: 4px;
     }
 
-.lux-landing-root .exp-gb-author {
+.lux-landing-root .exp-cam-guest-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+.lux-landing-root .exp-cam-guest-title {
       font-size: 0.58rem;
-      font-weight: 600;
+      font-weight: 700;
+      color: var(--lux-warm-white);
+    }
+
+.lux-landing-root .exp-cam-roll-badge {
+      display: flex;
+      align-items: baseline;
+      gap: 2px;
+      background: rgba(251,191,36,0.12);
+      border: 1px solid rgba(251,191,36,0.25);
+      padding: 1px 6px;
+      border-radius: 6px;
+    }
+
+.lux-landing-root .exp-cam-roll-num {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.68rem;
+      font-weight: 800;
       color: var(--lux-gold);
     }
 
-.lux-landing-root .exp-gb-time {
-      font-size: 0.48rem;
-      color: rgba(245,240,232,0.35);
+.lux-landing-root .exp-cam-roll-total {
+      font-size: 0.44rem;
+      color: rgba(245,240,232,0.45);
+      font-family: 'Space Mono', monospace;
     }
 
-.lux-landing-root .exp-gb-text {
-      font-size: 0.55rem;
+.lux-landing-root .exp-cam-guest-msg {
+      font-size: 0.52rem;
+      color: rgba(245,240,232,0.7);
       line-height: 1.35;
-      color: rgba(245,240,232,0.75);
+      font-style: italic;
+      background: rgba(255,255,255,0.03);
+      border-left: 2px solid var(--lux-gold);
+      padding: 3px 6px;
+      border-radius: 0 4px 4px 0;
     }
 
-.lux-landing-root .exp-gb-love {
-      font-size: 0.5rem;
-      color: #f43f5e;
-      margin-top: 3px;
+.lux-landing-root .exp-cam-filter-card {
+      background: #151311;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 7px 9px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+.lux-landing-root .exp-cam-filter-header {
+      font-size: 0.46rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: rgba(245,240,232,0.5);
+      text-transform: uppercase;
+    }
+
+.lux-landing-root .exp-cam-filter-list {
+      display: flex;
+      gap: 4px;
+      overflow-x: auto;
+    }
+
+.lux-landing-root .exp-cam-filter-item {
+      font-size: 0.44rem;
+      padding: 2px 6px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.04);
+      color: rgba(245,240,232,0.65);
+      white-space: nowrap;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+.lux-landing-root .exp-cam-filter-item:hover {
+      background: rgba(255,255,255,0.08);
+      color: var(--lux-warm-white);
+    }
+
+.lux-landing-root .exp-cam-filter-item.active {
+      border-color: var(--lux-gold);
+      background: rgba(201,162,39,0.18);
+      color: var(--lux-gold);
+      font-weight: 700;
+    }
+
+.lux-landing-root .exp-cam-action-card {
+      background: #151311;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+.lux-landing-root .exp-cam-shutter-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+.lux-landing-root .exp-cam-shutter-circle {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #e5e7eb 0%, #9ca3af 50%, #4b5563 100%);
+      padding: 2px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.12s ease;
+    }
+
+.lux-landing-root .exp-cam-shutter-circle:hover {
+      transform: scale(1.06);
+    }
+
+.lux-landing-root .exp-cam-shutter-circle:active {
+      transform: scale(0.94);
+    }
+
+.lux-landing-root .exp-cam-shutter-inner {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #fbbf24, #b45309);
+      border: 2px solid rgba(0,0,0,0.4);
+      box-shadow: inset 0 2px 4px rgba(255,255,255,0.4), 0 2px 4px rgba(0,0,0,0.4);
+    }
+
+.lux-landing-root .exp-cam-shutter-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+.lux-landing-root .exp-cam-shutter-label {
+      font-size: 0.55rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: var(--lux-warm-white);
+    }
+
+.lux-landing-root .exp-cam-shutter-sub {
+      font-size: 0.44rem;
+      color: rgba(245,240,232,0.45);
+    }
+
+.lux-landing-root .exp-cam-winder {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.44rem;
+      color: var(--lux-gold);
+      background: rgba(201,162,39,0.1);
+      border: 1px solid rgba(201,162,39,0.25);
+      padding: 3px 6px;
+      border-radius: 6px;
+      font-weight: 600;
     }
 /* Screen 2: Authentic Receptionist Kiosk UI */
 .lux-landing-root .exp-rec-kiosk {

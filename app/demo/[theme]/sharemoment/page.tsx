@@ -41,7 +41,7 @@ export default async function DemoGuestMemoriesStandalonePage({ params }: PagePr
   const coverUrl = `/demo/${demo.themeId}/cover.webp`;
 
   const backUrl = `/demo/${demo.themeId}`;
-  const galleryUrl = `/demo/${demo.themeId}/memories`;
+  const galleryUrl = `/demo/memories?theme=${demo.themeId}`;
 
   // Local theme highlight resolution (use memory_0X if exists, otherwise fallback to gallery_0X)
   const demoDir = path.join(process.cwd(), "public", "demo", demo.themeId);

@@ -33,10 +33,11 @@ Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model 
    - Katalog paket + demo tema interaktif (16 tema fisik master)
    - **Studio Mandiri Showcase (Dual-Device Live Sync):** Simulasi visual panggung Laptop Editor bersanding dengan Mobile Phone Preview 1:1, live typing, gallery & audio player, serta sebar link WhatsApp instan.
    - **Panduan Terdedikasi (`/how-it-works`):** Edukasi alur mandiri dengan bahasa santun & intuitif, anti-jargon, simulasi interaktif dasbor klien 5 tab (Live Canvas, Tema Nusantara, Buku Tamu VIP, RSVP, serta Pre-Publish Audit Launchpad & Sliding Ticker sekuensial), dan FAQ lengkap.
-   - Tab "Sistem & Fitur Acara" (Demo Interaktif Hari-H):
+   - Tab "Sistem & Fitur Acara" (Zero-Setup Unified Demo Sandbox):
       - `/demo/receptionist` (Sistem Resepsionis Digital, Generator Tiket QR & Pemindai Live)
-      - `/demo/sharemoment` (Buku Tamu Foto Digital & Simulasi Upload Kamera)
-      - `/demo/memories` (Galeri Kenangan Tamu Live Feed Fluid Masonry `max-w-[1920px]`, Clean Touch-Swipe & Keyboard Lightbox Navigation, dan Unduh ZIP)
+      - `/demo/sharemoment` (Guest Moment Camera: Kamera Analog Retro, 5 Preset Filter Film, Date Stamp & Opening Showcase)
+      - `/demo/memories` (Galeri Kenangan Tamu Roll Stack 1 Card / Tamu, Touch-Swipe Multi-Foto Lightbox & Simulasi Unduh ZIP)
+      - *Otomasi Demo:* Seluruh tema showroom (`/demo/[theme]`) otomatis mengarahkan tombol fitur ke rute demo terpadu tanpa perlu setup manual.
    - Halaman Pendukung Dinamis:
      - `/terms` (Syarat & Ketentuan Layanan)
      - `/privacy` (Kebijakan Privasi Data)
@@ -78,15 +79,16 @@ Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model 
      │
      ▼
 5. STUDIO UNDANGAN (/dashboard/invitation/[id])
-   - Pilih & ganti tema (16 tema fisik aktif)
-   - Isi data pengantin & keluarga (4 kolom terpisah: Ayah & Ibu dengan deteksi otomatis awalan "Putra dari" / "Putri dari" tanpa dropdown anak ke-n), jadwal acara multi-event
+   - Pilih & ganti tema: Bebas memilih dari seluruh **16 tema fisik aktif** (Traditional, Modern, Premium) tanpa batasan tingkatan paket.
+   - Sesi Acara Utama (`isPrimary: true`) sebagai patokan mutlak (*single source of truth*) masa aktif sistem (`expiresAt`), batas retensi galeri foto tamu (`galleryExpiresAt`), Countdown Timer, dan header tanggal tema.
+   - Isi data pengantin & keluarga (4 kolom terpisah: Ayah & Ibu dengan deteksi otomatis awalan "Putra dari" / "Putri dari" tanpa dropdown anak ke-n), jadwal acara multi-event (auto-sort kronologis: Tanggal -> Jam).
    - Pengaturan Musik Latar Pernikahan (Audio background, preset sakral, unggah MP3/M4A, sinkronisasi otomatis tombol Buka Undangan & fallback interaksi)
    - Upload foto (cover, groom, bride, gallery, dll)
    - Kustomisasi seksi (Love Story, Gift, QR Check-in, Teks Galeri Kenangan Tamu)
    - Kelola tamu + generate WhatsApp link personal (Deteksi cerdas Custom Domain / Subdomain & proteksi draft) dengan filter toolbar **Borderless Glowing Beam Tabs** (`Semua Tamu`, `Sudah Terkirim`, `Belum Dikirim`) dan badge kategori minimalis.
    - RSVP & ucapan real-time dengan tab navigasi **Borderless Glowing Beam** beranimasi sliding light beam 60 FPS (`Semua`, `Hadir`, `Tidak Hadir`, `Ragu-ragu`).
    - **Studio Editor & Triple Native Tabs (Form Data vs Live Visual vs Build Custom):** Switcher mode ditenagai animasi **Sliding Magnetic Pill** (rel inset lembut dengan thumb fisik bergeser deterministik `Form Data`, `Live Editor`, dan `Build Custom`) yang mengintegrasikan **Direct Action Chips** (`⚠️ Perlu: [ + Sampul ] [ + Foto Mempelai ]`) di sisi kanan untuk menghemat ruang vertikal tanpa kartu bertumpuk.
-      - **Mode Form Data:** 15 seksi terstruktur dengan sistem **Ultra-Slim Exclusive Accordion** (membuka 1 seksi otomatis menutup seksi lainnya, mengeliminasi scroll fatigue, ketinggian terpangkas dari 4.101px ke ~750px pas dalam 1 layar desktop dengan cuplikan ringkas inline), dirty tracking per-seksi, isolasi warna swatch busana.
+      - **Mode Form Data (Master-Detail Navigator):** 15 seksi terstruktur dengan navigasi sidebar kiri (desktop) & horizontal pills (mobile). Seksi yang dipilih selalu terbuka penuh (*always expanded, zero auto-collapse on save*), eliminasi tombol toggle akordion buka/tutup yang redundan, dirty tracking per-seksi, isolasi warna swatch busana, dan smart dynamic gift section (hanya tampilkan kartu rekening/QRIS tanpa tab jika alamat kado kosong, serta simpan berkas QRIS di `public/uploads/invitations/[id]/qris.webp`).
       - **Mode Live Visual:** Kanvas pengeditan langsung dengan Real-Time Palette Synchronizer dan kontrol pratinjau responsif.
       - **Mode Build Custom Studio:** Kebebasan penuh meracik sendiri desain per-seksi secara modular (8 seksi: Cover, Home, Pasangan + 5 Bingkai Foto Card-less tanpa kotak kartu ekstra di belakang foto, Acara, Kisah, Galeri, Hadiah, Penutup) dengan arsitektur split 2-kolom (kontrol kiri + sticky live preview kanan berpenghubung postMessage & endpoint instan), dual-mode segmented switcher (`[Fokus Seksi]` untuk inspeksi instan tanpa cover vs `[Undangan Utuh]`), isolasi CSS ketat BEM namespaces (`lux-{section}-{model}--{elem}`), serta dialog konfirmasi transisi anti-kehilangan draft.
    - **Live View Real-Time Palette Synchronizer, Clean Preview & Magnetic Device Switcher:** Panel palet 6 warna utama terpasang langsung di atas kanvas Live View dengan *two-way sync* instan ke Seksi 1 formulir data. Tombol *"Buka di Tab Baru"* dan tombol navigasi layar proteksi terhubung ke `mode=preview` murni untuk evaluasi visual bersih tanpa gangguan widget editor, serta kontrol pratinjau (`Mobile` vs `Layar Penuh`) mengusung animasi *Sliding Magnetic Pill*.
@@ -103,11 +105,11 @@ Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model 
      ▼
 7. HARI H & PASCA ACARA (DASHBOARD OPERASIONAL BERDASARKAN TIER)
    - Tamu scan QR → Receptionist check-in (PIN-protected, khusus Modern & Premium)
-   - Virtual Disposable Camera Retro (/sharemoment) → Didahului **Layar Pembuka Editorial (Editorial Pre-Camera Opening)** dengan 3 pilihan model layout (*Editorial Showcase*, *Cinematic Hero*, *Polaroid Nostalgia*), foto potret mempelai dinamis/kustom, cap tanggal analog, live countdown jadwal pra-acara, dan tombol pembuka sensor kamera non-agresif (*"Mulai motret →"*). Dilengkapi 5 filter film analog branded (Aura '90s, Heritage Romance, Botanical Mist, Cinema Noir, Pure Daylight), stempel tanggal oranye retro LED (#e8875a), formula kuota dinamis, dan kamar gelap digital.
-   - **Studio Desain Kartu Cetak QR & Standing Banner (A3, A4, A5, 4R):** Generator kartu cetak interaktif siap pakai di Dasbor Klien dengan 4 model desain (*Warm Editorial*, *Modern Minimalist*, *Royal Arch Heritage*, *Retro Film Polaroid*), kustomisasi foto opening dan petunjuk tamu mandiri, serta ekspor resolusi tinggi 300 DPI (PNG) dan dialog cetak browser langsung.
-   - Monitoring & moderasi kiriman foto tamu langsung di Dashboard Utama (/dashboard, khusus Premium & Modern) dengan grid navigasi cepat 3-kolom bersih (Studio Editor, Buku Tamu, RSVP) tanpa kartu duplikat.
+   - Virtual Disposable Camera Retro (/sharemoment) → Didahului **Layar Pembuka Ramah Tamu (Guest Moment Opening Screen)** dengan 3 pilihan model layout (`POLAROID_MINIMAL`, `VINTAGE_FILM`, `MODERN_ELEGANT`), kustomisasi teks instruksi kartu (`memoriesCardInstruction`), cap tanggal analog, live countdown jadwal pra-acara, dan tombol pembuka sensor kamera non-agresif (*"Buka Kamera"*). Dilengkapi 5 filter film analog branded (Aura '90s, Heritage Romance, Botanical Mist, Cinema Noir, Pure Daylight), stempel tanggal oranye retro LED (#e8875a), jadwal multi-sesi dengan **Smart Quota Boundary Guard** (`Math.min` real-time clamping, tombol bagi rata kuota, dan validasi sisi server), serta antrean offline.
+   - **Studio Desain Kartu Cetak QR & Standing Banner (A3, A4, A5, 4R):** Generator kartu cetak interaktif siap pakai di Dasbor Klien dengan 4 model format standar percetakan, kustomisasi judul dan petunjuk tamu mandiri, serta ekspor resolusi tinggi 300 DPI (PNG) siap cetak.
+   - Monitoring & moderasi kiriman foto tamu di Pusat Komando Moments (`/dashboard/moments`) & dasbor utama dengan grid navigasi cepat 3-kolom bersih (Studio Editor, Buku Tamu, RSVP) tanpa kartu duplikat.
    - Custom Domain Pribadi: Tersedia gratis dan opsional khusus Paket Premium (diatur langsung lewat Dasbor Pengaturan Klien tanpa biaya tambahan).
-   - Dual-Mode Route Switcher: Akses URL utama otomatis beralih ke Galeri Momen (/memories) pasca H+1 acara (Mode AUTO) atau dapat di-switch seketika oleh klien via toggle Studio Seksi 14 (Mode MANUAL).
+   - Arsitektur URL Bersih & Mandiri: Halaman web undangan (`/[slug]` atau `/s/[subdomain]`) selalu dapat diakses penuh secara konsisten sepanjang masa aktif layanan; Galeri Momen (`/memories`) dan Kamera Disposable (`/sharemoment`) memiliki rute terdedikasi dengan navigasi kembali ke undangan yang jelas.
    - Siklus Hidup Terpadu (H+14 Pasca-Acara): Subdomain, custom domain, foto candid tamu R2/lokal, dan RSVP dibersihkan secara bersamaan dalam 1 fase cron cleanup tunggal.
    - Dasbor Memorial 1 Halaman (Saat ARCHIVED): Klien disajikan surat apresiasi penutup, 4 metrik ringkasan eksekutif, dan Pusat Unduhan Arsip Digital (.CSV Doa Restu & .CSV Kehadiran Tamu). Akun klien disimpan abadi tanpa penghapusan.
    - Layanan Perpanjangan Masa Simpan: Add-on perpanjangan masa aktif sebelum kedaluwarsa (+30 Hari Rp50.000 / +1 Tahun Rp150.000 via QRIS).
@@ -177,9 +179,9 @@ Pre-Flight Checklist & Smart Audit (/dashboard/settings):
 
 | Paket | Kapasitas & Fitur Utama | Plafon Kamera Disposable (Admin Setting) | Pilihan Tema |
 |:--|:--|:--|:--|
-| **Serenade** *(Dasar / Traditional)* | Hingga 300 Tamu, Subdomain Platform, RSVP & Ucapan Realtime, Musik Latar Bebas, Retensi 1 Bulan | Kamera Tamu: **Nonaktif** *(Dapat diaktifkan via Admin)* | **Bebas Semua 16 Tema** *(Traditional, Modern, Premium)* |
-| **Symphony** *(Menengah / Modern)* | Hingga 1.000 Tamu, Seluruh Fitur Serenade + **Sistem Resepsionis QR Check-In & PIN Staf Panitia**, Retensi 3 Bulan | Total Kuota: **250 Foto Acara** *(Pengantin bebas atur roll per tamu)* | **Bebas Semua 16 Tema** *(Traditional, Modern, Premium)* |
-| **Eternity** *(Tertinggi / Premium)* | **Tamu Tanpa Batas (Unlimited)**, Seluruh Fitur Symphony + **Hak Integrasi Custom Domain**, Dashboard Monitoring Momen Tamu, Retensi 1 Tahun | Total Kuota: **1.000 Foto Acara** *(Pengantin bebas atur roll per tamu)* | **Bebas Semua 16 Tema** *(Traditional, Modern, Premium)* |
+| **Serenade** *(Dasar / Traditional)* | Hingga 300 Tamu, Subdomain Platform, RSVP & Ucapan Realtime, Musik Latar Bebas, Retensi 1 Bulan (30 Hari) | Kamera Tamu: **Nonaktif** *(Dapat diaktifkan via Admin)* | **Bebas Semua 16 Tema** *(Traditional, Modern, Premium)* |
+| **Symphony** *(Menengah / Modern)* | Hingga 1.000 Tamu, Seluruh Fitur Serenade + **Sistem Resepsionis QR Check-In & PIN Staf Panitia**, Retensi 1 Bulan (30 Hari) | Total Kuota: **250 Foto Acara** *(Pengantin bebas atur roll per tamu)* | **Bebas Semua 16 Tema** *(Traditional, Modern, Premium)* |
+| **Eternity** *(Tertinggi / Premium)* | **Tamu Tanpa Batas (Unlimited)**, Seluruh Fitur Symphony + **Hak Integrasi Custom Domain**, Dashboard Monitoring Momen Tamu, Retensi 1 Bulan (30 Hari) | Total Kuota: **1.000 Foto Acara** *(Pengantin bebas atur roll per tamu)* | **Bebas Semua 16 Tema** *(Traditional, Modern, Premium)* |
 
 > Harga dan kuota plafon kamera per paket serta add-on top-up foto (+100 Foto - Rp35.000) dan perpanjangan (+30 Hari - Rp50.000) dapat diatur mandiri oleh Administrator di Admin Portal → tab Paket & Harga tanpa perlu deploy ulang.
 
@@ -264,7 +266,7 @@ Sistem mendukung 4 kondisi transaksi dengan integrasi 2-arah eksklusif (Midtrans
 |:--|:--|
 | `User` | Akun klien (Google OAuth, role: CLIENT / ADMIN, nomor WhatsApp `phoneNumber`) |
 | `Admin` | Akun tim admin (SUPER_ADMIN, FINANCE, SUPPORT) |
-| `Order` | Invoice pembelian paket & add-on (`NEW`, `UPGRADE`, `GALLERY_EXTENSION`, `CUSTOM_DOMAIN_ADDON`) |
+| `Order` | Invoice pembelian paket & add-on (`NEW`, `UPGRADE`, `GALLERY_EXTENSION`, `MEMORIES_TOPUP`) |
 | `Invitation` | Inti undangan (`DRAFT`, `PUBLISHED`, `EVENT_FINISHED`, `TAKEN_DOWN`, `ARCHIVED`) |
 | `InvitationMedia` | Media per slot (9 slot: LANDING_COVER, LANDING_COVER_DESKTOP, HOME_PHOTO, GROOM_PHOTO, dll) |
 | `Guest` | Daftar tamu + nomor kontak `phone` + QR token |
@@ -333,7 +335,9 @@ Luxenary-Invite/
 ├── components/
 │   ├── BrandLogo.tsx
 │   ├── client/
-│   │   └── MemoriesDownloadSection.tsx # Download ZIP & perpanjangan galeri
+│   │   ├── UnifiedAddonModal.tsx       # Tambah kuota & perpanjangan masa aktif galeri
+│   │   ├── PrintableQRCardModal.tsx    # Cetak standing banner & kartu QR
+│   │   └── GuestOpeningSetupModal.tsx  # Kustomisasi layar pembuka tamu smartphone
 │   └── admin/
 │       ├── AdminPortfolioTab.tsx
 │       ├── AdminProfileSettings.tsx
@@ -540,3 +544,9 @@ Setiap developer atau AI Agent yang melakukan modifikasi pada codebase **WAJIB**
 ---
 
 > Untuk detail teknis lengkap, baca [`SYSTEM_ARCHITECTURE.md`](./SYSTEM_ARCHITECTURE.md)
+
+
+### Kebijakan Akses Tema & Sesi Acara Utama (Update September 2026)
+- **All-Access Themes**: Bebas pilih seluruh koleksi 16 tema desain untuk semua paket (Traditional, Modern, Premium). Perbedaan paket murni pada hak kapabilitas fitur (Kamera Moments, QR Pass, Buku Tamu VIP, dsb).
+- **Sesi Acara Utama (Primary Anchor)**: Tepat 1 sesi acara inti (Akad/Resepsi) sebagai basis hitungan kedaluwarsa layanan. Tanggal sesi utama terkunci permanen pasca publikasi (hanya admin yang dapat mengubah). Sesi lain bebas diatur kapan saja.
+- **Deduplikasi Modul Moments & Dasbor Bersih**: Dasbor utama (`/dashboard`) terfokus sebagai pusat informasi & metrik eksekutif cepat tanpa instrumen operasional tumpang tindih. Portal Resepsionis Check-In tamu dipusatkan di dalam tab Buku Tamu (`/dashboard/guests`), sementara operasional disposable camera (Dual Mockup iPhone 16 Pro + Standing Banner Kartu QR, filter grading analog, multi-sesi, dan feed foto candid) terpusat penuh di Dedicated Command Center (`/dashboard/moments`), dan Studio Editor (`/dashboard/invitation/[id]` Seksi 14) khusus menangani styling web undangan.

@@ -435,6 +435,39 @@ export default function AdminOrdersTab() {
                             );
                           }
 
+                          // Jika order tunggal dari Tagihan Terpadu / Add-on
+                          if (Array.isArray(bundleItems) && bundleItems.length === 1) {
+                            const singleItem = bundleItems[0];
+                            if (singleItem.type === "MEMORIES_TOPUP") {
+                              return (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                  <span>Top-Up Kuota (+{singleItem.photos || 100} Foto)</span>
+                                </span>
+                              );
+                            }
+                            if (singleItem.type === "GALLERY_EXTENSION") {
+                              return (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-800 border border-purple-200">
+                                  <span>Perpanjang Galeri (+30 Hari)</span>
+                                </span>
+                              );
+                            }
+                            if (singleItem.type === "CUSTOM_DOMAIN_ADDON") {
+                              return (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-800 border border-indigo-200">
+                                  <span>Custom Domain {singleItem.domain ? `(${singleItem.domain})` : ""}</span>
+                                </span>
+                              );
+                            }
+                            if (singleItem.type === "UPGRADE") {
+                              return (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-sky-800 border border-sky-200">
+                                  <span>Upgrade ➔ {singleItem.targetPlan}</span>
+                                </span>
+                              );
+                            }
+                          }
+
                           if (ord.orderType === "GALLERY_EXTENSION") {
                             return (
                               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-800 border border-purple-200">

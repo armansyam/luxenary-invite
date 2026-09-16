@@ -78,9 +78,21 @@ export async function PUT(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
+    const allowedData: Record<string, any> = {};
+    if (typeof body.name === "string" && body.name.trim()) {
+      allowedData.name = body.name.trim();
+    }
+    if (body.phone !== undefined) allowedData.phone = body.phone || null;
+    if (body.category !== undefined) allowedData.category = body.category || null;
+    if (body.sessionInfo !== undefined) allowedData.sessionInfo = body.sessionInfo || null;
+    if (body.tableNumber !== undefined) allowedData.tableNumber = body.tableNumber || null;
+    if (body.guestQuota !== undefined) allowedData.guestQuota = Number(body.guestQuota) || 1;
+    if (body.waStatus !== undefined) allowedData.waStatus = body.waStatus;
+    if (body.waSentAt !== undefined) allowedData.waSentAt = body.waSentAt ? new Date(body.waSentAt) : null;
+
     const guest = await prisma.guest.update({
       where: { id },
-      data: body,
+      data: allowedData,
     });
 
     return NextResponse.json(guest);

@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import ReceptionistScannerClient from "@/app/components/features/ReceptionistScannerClient";
 import StaffLockScreen from "@/app/components/features/StaffLockScreen";
-import { getAdminSetting } from "@/lib/settings";
+import { getAdminSetting, hasPlanCapability } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -38,8 +38,9 @@ export default async function SlugReceptionistPage({ params }: PageProps) {
 
   if (!invitation) notFound();
 
-  // Fitur Meja Resepsionis hanya aktif untuk Modern dan Premium
-  if (invitation.order?.planType === "TRADITIONAL") {
+  // Fitur Meja Resepsionis dinamis sesuai kapabilitas paket di Admin Settings
+  const hasQrCheckin = await hasPlanCapability(invitation.order?.planType, "qr_checkin");
+  if (!hasQrCheckin) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-stone-50 p-6">
         <div className="max-w-sm w-full bg-white rounded-2xl border border-stone-200 shadow-lg p-8 text-center space-y-4">
@@ -50,7 +51,7 @@ export default async function SlugReceptionistPage({ params }: PageProps) {
           </div>
           <h1 className="text-base font-bold text-stone-900">Fitur Tidak Tersedia</h1>
           <p className="text-sm text-stone-500 leading-relaxed">
-            Fitur Sistem Resepsionis &amp; QR Check-in Tamu hanya tersedia mulai dari <strong>Paket Modern</strong> dan <strong>Paket Premium</strong>.
+            Fitur Sistem Resepsionis &amp; QR Check-in Tamu tidak termasuk dalam kapabilitas paket undangan ini.
           </p>
         </div>
       </div>

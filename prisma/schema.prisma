@@ -316,7 +316,7 @@ enum OrderType {
   NEW
   UPGRADE
   GALLERY_EXTENSION
-  CUSTOM_DOMAIN_ADDON
+  MEMORIES_TOPUP
 }
 
 enum InvitationStatus {

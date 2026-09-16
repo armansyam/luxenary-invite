@@ -9,7 +9,7 @@ export default async function RootMemoriesRedirectPage() {
   const session = await auth();
 
   if (!session?.user?.email) {
-    redirect("/login?callbackUrl=/memories");
+    redirect("/demo/memories");
   }
 
   const user = await prisma.user.findUnique({
@@ -32,7 +32,7 @@ export default async function RootMemoriesRedirectPage() {
   });
 
   if (!user || user.invitations.length === 0) {
-    redirect("/dashboard");
+    redirect("/demo/memories");
   }
 
   const inv = user.invitations[0];

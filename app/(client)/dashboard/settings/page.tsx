@@ -1758,6 +1758,7 @@ export default function SettingsPage() {
       )}
 
       {/* ──────── CUSTOM DOMAIN ──────── */}
+      {(isCustomDomainEnabled || Boolean(invitation?.customDomain)) && (
       <div className="bg-white rounded-2xl shadow-sm border border-stone-200/80 p-5 sm:p-6 space-y-4">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -2012,7 +2013,7 @@ export default function SettingsPage() {
                           const data = await res.json();
                           if (res.ok) {
                             setCustomDomain("");
-                            if (invitation) invitation.customDomain = null;
+                            setInvitation((prev: any) => prev ? { ...prev, customDomain: null } : null);
                             setCustomDomainSuccess(true);
                           } else {
                             setCustomDomainError(data.error || "Gagal melepaskan domain");
@@ -2052,9 +2053,7 @@ export default function SettingsPage() {
                         const resData = await response.json();
                         if (response.ok) {
                           setCustomDomainSuccess(true);
-                          if (invitation) {
-                            invitation.customDomain = resData.customDomain;
-                          }
+                          setInvitation((prev: any) => prev ? { ...prev, customDomain: resData.customDomain } : null);
                         } else {
                           setCustomDomainError(resData.error || "Gagal menyimpan domain");
                         }
@@ -2110,6 +2109,7 @@ export default function SettingsPage() {
       </>
     )}
   </div>
+      )}
       </div>
 
     </div>

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { randomUUID } from "crypto";
+import { getLatestEventDate } from "@/lib/domainUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +48,43 @@ export async function POST(req: NextRequest) {
       where: { key: "gallery_extension_price_per_month" },
     });
     const extensionPrice = Number(priceSetting?.value) || 50000;
+
+    // 2.b Validasi batas maksimal 1x perpanjangan & jendela H-7
+    if (!isAdmin) {
+      let curFs: any = {};
+      try {
+        curFs = typeof invitation.featureSettings === "object"
+          ? (invitation.featureSettings || {})
+          : JSON.parse((invitation.featureSettings as string) || "{}");
+      } catch {}
+
+      const extraGalleryDays = Number(curFs.extraGalleryDays) || 0;
+      if (extraGalleryDays >= 30) {
+        return NextResponse.json({
+          error: "Batas maksimal perpanjangan masa aktif (+30 hari) telah tercapai untuk undangan ini.",
+        }, { status: 400 });
+      }
+
+      const cleanupSetting = await prisma.adminSetting.findUnique({
+        where: { key: "retention_cleanup_days" },
+      });
+      const retentionDays = Number(cleanupSetting?.value) || 30;
+      const latestEventDate = getLatestEventDate(invitation.eventData);
+      const effectiveExpiry = invitation.galleryExpiresAt
+        ? new Date(invitation.galleryExpiresAt)
+        : latestEventDate
+        ? new Date(latestEventDate.getTime() + retentionDays * 24 * 60 * 60 * 1000)
+        : null;
+
+      if (effectiveExpiry) {
+        const daysRemaining = Math.ceil((effectiveExpiry.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+        if (daysRemaining > 7) {
+          return NextResponse.json({
+            error: `Perpanjangan hanya dapat dilakukan pada H-7 sebelum masa aktif berakhir (sisa ${daysRemaining} hari).`,
+          }, { status: 400 });
+        }
+      }
+    }
 
     // 3. Cek apakah ada order perpanjangan yang sedang menunggu verifikasi admin (sudah ada bukti transfer)
     const existingPendingWithProof = await prisma.order.findFirst({

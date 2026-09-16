@@ -26,12 +26,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Undangan tidak ditemukan" }, { status: 404 });
     }
 
-    // D-Day Lock Backend Validation
+    // 1. Verifikasi Kepemilikan & Hak Akses Terlebih Dahulu
+    const isOwner = invitation.userId === session.user.id;
+    const isAdmin = (session.user as any).isAdmin === true || (session.user as any).role === "SUPER_ADMIN" || (session.user as any).role === "ADMIN";
+
+    if (!isOwner && !isAdmin) {
+      return NextResponse.json({ error: "Forbidden. Anda tidak memiliki akses ke undangan ini." }, { status: 403 });
+    }
+
+    // 2. D-Day Lock Backend Validation berdasarkan Sesi Acara Utama
     if (invitation.eventData) {
       try {
         const ev = typeof invitation.eventData === "string" ? JSON.parse(invitation.eventData) : invitation.eventData;
         if (ev && ev.length > 0) {
-          const eventDateStr = ev[0].date;
+          const primaryEv = ev.find((e: any) => e.isPrimary) || ev[0];
+          const eventDateStr = primaryEv?.date;
           if (eventDateStr) {
             const eventDate = new Date(eventDateStr);
             const today = new Date();
@@ -45,14 +54,9 @@ export async function POST(req: Request) {
             }
           }
         }
-      } catch (e) {}
-    }
-
-    const isOwner = invitation.userId === session.user.id;
-    const isAdmin = (session.user as any).isAdmin === true || (session.user as any).role === "SUPER_ADMIN" || (session.user as any).role === "ADMIN";
-
-    if (!isOwner && !isAdmin) {
-      return NextResponse.json({ error: "Forbidden. Anda tidak memiliki akses ke undangan ini." }, { status: 403 });
+      } catch (e) {
+        console.error("[guests POST] Error parsing eventData:", e);
+      }
     }
 
     // Duplicate Name Validation

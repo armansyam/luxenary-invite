@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 
 export default function RsvpPage() {
   const [loading, setLoading] = useState(true);
@@ -19,12 +19,12 @@ export default function RsvpPage() {
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const [beamStyle, setBeamStyle] = useState({ left: 0, width: 0 });
 
-  const RSVP_TABS = [
+  const RSVP_TABS = useMemo(() => [
     { id: "all", label: "Semua", count: stats.totalResponses },
     { id: "hadir", label: "Hadir", count: `${stats.attending} Pax` },
     { id: "tidak", label: "Tidak Hadir", count: stats.declined },
     { id: "ragu", label: "Ragu-ragu", count: stats.uncertain },
-  ];
+  ], [stats]);
 
   useEffect(() => {
     const idx = RSVP_TABS.findIndex((t) => t.id === filterStatus);
@@ -32,7 +32,7 @@ export default function RsvpPage() {
     if (el) {
       setBeamStyle({ left: el.offsetLeft, width: el.offsetWidth });
     }
-  }, [filterStatus, stats]);
+  }, [filterStatus, RSVP_TABS]);
 
   useEffect(() => {
     fetch("/api/public/settings").then(r => r.json()).then(d => {

@@ -24,6 +24,11 @@ export interface DisposableCameraViewfinderProps {
   isTestMode?: boolean;
   openingLayout?: "editorial_showcase" | "cinematic_hero" | "polaroid_nostalgia";
   onPhotoUploaded?: (newMemory: any) => void;
+  currentSessionName?: string | null;
+  nextSessionName?: string | null;
+  nextSessionStartTime?: string | null;
+  isSessionActive?: boolean;
+  isAllFinished?: boolean;
 }
 
 // ── DEFINISI PRESET FILTER ANALOG ──
@@ -126,6 +131,11 @@ export default function DisposableCameraViewfinder({
   isTestMode = false,
   openingLayout = "editorial_showcase",
   onPhotoUploaded,
+  currentSessionName = null,
+  nextSessionName = null,
+  nextSessionStartTime = null,
+  isSessionActive = true,
+  isAllFinished = false,
 }: DisposableCameraViewfinderProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -138,7 +148,7 @@ export default function DisposableCameraViewfinder({
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
   const [zoomLevel, setZoomLevel] = useState<number>(1);
-  const [torchOn, setTorchOn] = useState(false);
+  const [flashOn, setFlashOn] = useState(true);
   const [hasTorch, setHasTorch] = useState(false);
 
   // Identity & Quota
@@ -238,7 +248,13 @@ export default function DisposableCameraViewfinder({
       const track = stream.getVideoTracks()[0];
       if (track) {
         const capabilities = (track.getCapabilities && track.getCapabilities()) as any;
-        setHasTorch(Boolean(capabilities && capabilities.torch));
+        const torchCapable = Boolean(capabilities && capabilities.torch);
+        setHasTorch(torchCapable);
+        if (flashOn && torchCapable) {
+          try {
+            await (track as any).applyConstraints({ advanced: [{ torch: true }] });
+          } catch {}
+        }
       }
 
       setCameraReady(true);
@@ -252,7 +268,7 @@ export default function DisposableCameraViewfinder({
       }
       setCameraError(msg);
     }
-  }, [facingMode]);
+  }, [facingMode, flashOn]);
 
   useEffect(() => {
     if (hasStartedCamera) {
@@ -266,23 +282,33 @@ export default function DisposableCameraViewfinder({
     };
   }, [hasStartedCamera, startCamera]);
 
-  // Toggle Torch
-  const toggleTorch = async () => {
-    if (!streamRef.current) return;
-    const track = streamRef.current.getVideoTracks()[0];
-    if (!track) return;
-    try {
-      const nextTorch = !torchOn;
-      await (track as any).applyConstraints({ advanced: [{ torch: nextTorch }] });
-      setTorchOn(nextTorch);
-    } catch {
-      setTorchOn(false);
+  // Toggle Flash (Universal: Hardware Torch + Screen Flash + Exposure Boost)
+  const toggleFlash = async () => {
+    const nextFlash = !flashOn;
+    setFlashOn(nextFlash);
+
+    if (streamRef.current) {
+      const track = streamRef.current.getVideoTracks()[0];
+      if (track) {
+        try {
+          await (track as any).applyConstraints({ advanced: [{ torch: nextFlash }] });
+        } catch {
+          // Hardware torch tidak didukung di peramban ini (fallback screen flash tetap aktif)
+        }
+      }
     }
   };
 
   // Flip Kamera
   const flipCamera = () => {
-    setTorchOn(false);
+    if (streamRef.current) {
+      const track = streamRef.current.getVideoTracks()[0];
+      if (track) {
+        try {
+          (track as any).applyConstraints({ advanced: [{ torch: false }] });
+        } catch {}
+      }
+    }
     setFacingMode((prev) => (prev === "environment" ? "user" : "environment"));
   };
 
@@ -304,6 +330,21 @@ export default function DisposableCameraViewfinder({
   const triggerSnap = async () => {
     if (isSnapping || !cameraReady || !videoRef.current || !canvasRef.current) return;
 
+    // Cek batas sesi waktu aktif (time-gate overrides roll quota)
+    if (!isTestMode && isSessionActive === false) {
+      if (nextSessionName) {
+        setToastMessage(`Kamera sedang jeda. Sesi ${nextSessionName} akan dibuka segera.`);
+      } else {
+        setToastMessage("Sesi foto saat ini sedang tidak aktif.");
+      }
+      return;
+    }
+
+    if (!isTestMode && (isAllFinished || isUploadLocked)) {
+      setToastMessage("Sesi foto tamu telah selesai.");
+      return;
+    }
+
     // Cek jatah roll jika ada batasan
     const isUnlimited = shotsQuota <= 0;
     if (!isUnlimited && shotsTaken >= shotsQuota) {
@@ -318,9 +359,11 @@ export default function DisposableCameraViewfinder({
       navigator.vibrate(45);
     }
 
-    // Efek flash visual di layar
-    setScreenFlash(true);
-    setTimeout(() => setScreenFlash(false), 120);
+    // Efek flash visual di layar jika flashOn aktif
+    if (flashOn) {
+      setScreenFlash(true);
+      setTimeout(() => setScreenFlash(false), 120);
+    }
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -387,10 +430,14 @@ export default function DisposableCameraViewfinder({
     );
     ctx.restore();
 
-    // 2. Bakar Filter Color Grading
-    if (activePreset.canvasFilter) {
+    // 2. Bakar Filter Color Grading (+ Xenon Flash Boost jika flashOn aktif)
+    const combinedFilter = flashOn
+      ? `${activePreset.canvasFilter || ""} brightness(1.14) contrast(1.08)`.trim()
+      : activePreset.canvasFilter;
+
+    if (combinedFilter) {
       ctx.save();
-      ctx.filter = activePreset.canvasFilter;
+      ctx.filter = combinedFilter;
       ctx.globalCompositeOperation = "copy";
       ctx.drawImage(canvas, 0, 0);
       ctx.restore();
@@ -470,6 +517,16 @@ export default function DisposableCameraViewfinder({
       setTimeout(() => {
         setPendingUploads((p) => Math.max(0, p - 1));
         setToastMessage("Foto tersimpan ke galeri roll!");
+        if (onPhotoUploaded) {
+          onPhotoUploaded({
+            id: `demo-${Date.now()}`,
+            senderName: senderName || "Tamu Undangan",
+            caption: guestMessage || "",
+            message: guestMessage || "",
+            mediaUrl: base64File,
+            createdAt: new Date().toISOString(),
+          });
+        }
         setTimeout(() => setToastMessage(null), 2000);
       }, 500);
       return;
@@ -500,11 +557,11 @@ export default function DisposableCameraViewfinder({
         setToastMessage("Foto tersimpan ke galeri roll!");
         if (onPhotoUploaded) onPhotoUploaded(data.memory);
       } else if (res.status === 403 && data.quotaExceeded) {
-        setToastMessage(`Roll film Anda telah penuh (${shotsQuota} foto).`);
+        setToastMessage(data.message || `Roll film Anda telah penuh (${shotsQuota} foto).`);
       } else if (res.status === 423) {
         setToastMessage(data.message || "Pengiriman momen telah ditutup.");
       } else {
-        setToastMessage(data.error || "Gagal mengunggah foto.");
+        setToastMessage(data.message || data.error || "Gagal mengunggah foto.");
       }
     } catch {
       setPendingUploads((p) => Math.max(0, p - 1));
@@ -518,6 +575,21 @@ export default function DisposableCameraViewfinder({
   const handleNativeCameraFallback = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Cek batas sesi waktu aktif (time-gate overrides roll quota)
+    if (!isTestMode && isSessionActive === false) {
+      if (nextSessionName) {
+        setToastMessage(`Kamera sedang jeda. Sesi ${nextSessionName} akan dibuka segera.`);
+      } else {
+        setToastMessage("Sesi foto saat ini sedang tidak aktif.");
+      }
+      return;
+    }
+
+    if (!isTestMode && (isAllFinished || isUploadLocked)) {
+      setToastMessage("Sesi foto tamu telah selesai.");
+      return;
+    }
 
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -658,6 +730,11 @@ export default function DisposableCameraViewfinder({
           layoutId={openingLayout}
           backUrl={backUrl}
           galleryUrl={galleryUrl}
+          currentSessionName={currentSessionName}
+          nextSessionName={nextSessionName}
+          nextSessionStartTime={nextSessionStartTime}
+          isSessionActive={isSessionActive}
+          isAllFinished={isAllFinished}
           onStartCamera={() => {
             if (!senderName) {
               setShowIdentityModal(true);
@@ -746,7 +823,7 @@ export default function DisposableCameraViewfinder({
 
         <div className="text-center">
           <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-amber-600 dark:text-amber-400 font-bold">
-            {activePreset.name}
+            {activePreset.name} {currentSessionName ? `• ${currentSessionName}` : ""}
           </p>
           <h1 className="text-xs font-serif font-bold truncate max-w-[180px]">{coupleName}</h1>
         </div>
@@ -840,18 +917,22 @@ export default function DisposableCameraViewfinder({
         <div className="flex items-center justify-between max-w-sm mx-auto w-full px-4">
           <button
             type="button"
-            onClick={toggleTorch}
-            disabled={!hasTorch}
-            className={`w-10 h-10 rounded-full border flex items-center justify-center transition ${
-              torchOn ? themeStyles.toolBtnActive : themeStyles.toolBtn
-            } disabled:opacity-30`}
-            aria-label="Flash"
+            onClick={toggleFlash}
+            className={`w-10 h-10 rounded-full border flex items-center justify-center transition cursor-pointer shadow-xs ${
+              flashOn
+                ? "bg-white text-stone-950 border-white shadow-md scale-105"
+                : "bg-stone-800/50 border-stone-600/50 text-stone-400 hover:text-stone-200"
+            }`}
+            aria-label={flashOn ? "Matikan Flash" : "Nyalakan Flash"}
+            title={flashOn ? "Flash ON" : "Flash OFF"}
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+            <svg className="w-4 h-4" fill={flashOn ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
           </button>
 
           <span className="text-[10px] font-mono opacity-60 uppercase tracking-widest font-medium">
-            {isUnlimited ? "Unlimited Roll" : `Sisa ${remainingShots} Jepretan`}
+            {isUnlimited ? "Unlimited Roll" : `Sisa ${remainingShots} Foto`}
           </span>
 
           <button
@@ -878,13 +959,13 @@ export default function DisposableCameraViewfinder({
               </Link>
             </div>
           ) : (
-            <span className="text-[9px] font-mono opacity-40 uppercase tracking-widest">Kamera Siap Jepret</span>
+            <span className="text-[9px] font-mono opacity-40 uppercase tracking-widest">Kamera Siap Digunakan</span>
           )}
         </div>
 
         {/* Shutter Bar */}
         <div className="grid grid-cols-3 items-center max-w-sm mx-auto w-full">
-          {/* Sisa Jepretan Badge */}
+          {/* Sisa Foto Badge */}
           <div className={`flex flex-col items-center justify-center justify-self-start w-14 h-12 rounded-2xl ${themeStyles.sideBtn}`}>
             <span className="font-mono text-lg font-bold leading-none">
               {isUnlimited ? "∞" : remainingShots}
@@ -899,7 +980,7 @@ export default function DisposableCameraViewfinder({
               onClick={triggerSnap}
               disabled={isSnapping || (!isUnlimited && remainingShots <= 0)}
               className={`w-18 h-18 rounded-full p-1 shadow-xl active:scale-95 transition disabled:opacity-40 cursor-pointer ${themeStyles.shutterRing}`}
-              aria-label="Jepret Foto"
+              aria-label="Ambil Foto"
             >
               <div className={`w-full h-full rounded-full bg-amber-500 hover:bg-amber-400 border-4 ${themeStyles.shutterInnerBorder} flex items-center justify-center shadow-inner`} />
             </button>

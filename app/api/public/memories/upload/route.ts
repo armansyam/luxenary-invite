@@ -5,7 +5,7 @@ import crypto from "crypto";
 import { uploadFile } from "@/lib/storage";
 import { rateLimit } from "@/lib/rateLimit";
 import { sseEmitter } from "@/lib/sseEmitter";
-import { getMemoriesActiveSchedule } from "@/lib/domainUtils";
+import { getMemoriesActiveSchedule, calculateSessionCumulativeQuota } from "@/lib/domainUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -85,6 +85,7 @@ export async function POST(req: NextRequest) {
       where: { id: invitationId },
       select: {
         id: true,
+        status: true,
         memoriesUploadLocked: true,
         invitationSlug: true,
         featureSettings: true,
@@ -105,11 +106,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Cek apakah upload sudah dikunci oleh klien (setelah download ZIP atau saklar darurat)
-    if (invitation.memoriesUploadLocked) {
+    // Cek apakah status undangan sudah EVENT_FINISHED, ARCHIVED, atau upload dikunci oleh klien
+    if (invitation.memoriesUploadLocked || invitation.status === "EVENT_FINISHED" || invitation.status === "ARCHIVED" || invitation.status === "TAKEN_DOWN") {
       const galleryUrl = `/${invitation.invitationSlug}/memories`;
       return NextResponse.json(
-        { locked: true, galleryUrl, message: "Upload momen telah ditutup oleh penyelenggara." },
+        { locked: true, galleryUrl, message: "Rangkaian acara telah selesai dan periode pengiriman momen telah ditutup oleh penyelenggara." },
         { status: 423 } // 423 Locked — HTTP status yang tepat untuk resource terkunci
       );
     }
@@ -133,34 +134,52 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ── VALIDASI JADWAL WAKTU AKTIF KAMERA ──
+    // ── VALIDASI JADWAL WAKTU & MULTI-SESSION AKTIF ──
     const now = new Date();
-    const { startTime, endTime } = getMemoriesActiveSchedule(invitation.featureSettings, invitation.eventData);
+    const schedule = getMemoriesActiveSchedule(invitation.featureSettings, invitation.eventData);
 
-    if (startTime && now < startTime) {
+    if (schedule.isAllFinished) {
       return NextResponse.json(
         {
-          notStarted: true,
-          startTime: startTime.toISOString(),
-          message: "Kamera momen belum dibuka. Silakan kembali saat acara dimulai.",
+          expired: true,
+          endTime: schedule.endTime ? schedule.endTime.toISOString() : undefined,
+          message: "Seluruh rangkaian acara telah selesai. Pengiriman momen telah ditutup.",
         },
-        { status: 403 }
+        { status: 423 }
       );
     }
 
-    // Berikan toleransi grace period 15 menit pasca-acara selesai
-    if (endTime) {
-      const graceEndTime = new Date(endTime.getTime() + 15 * 60 * 1000);
-      if (now > graceEndTime) {
+    if (!schedule.isSessionActive) {
+      if (schedule.nextSession) {
         return NextResponse.json(
           {
-            expired: true,
-            endTime: endTime.toISOString(),
-            message: "Waktu pengiriman momen telah berakhir.",
+            notStarted: true,
+            sessionName: schedule.nextSession.name,
+            startTime: `${schedule.nextSession.date}T${schedule.nextSession.startTime}:00`,
+            message: `Kamera momen sedang ditutup sementara. Sesi ${schedule.nextSession.name} akan dibuka pada ${schedule.nextSession.date} pukul ${schedule.nextSession.startTime} WIB.`,
           },
-          { status: 423 }
+          { status: 403 }
         );
       }
+
+      if (schedule.startTime && now < schedule.startTime) {
+        return NextResponse.json(
+          {
+            notStarted: true,
+            startTime: schedule.startTime.toISOString(),
+            message: "Kamera momen belum dibuka. Silakan kembali saat acara dimulai.",
+          },
+          { status: 403 }
+        );
+      }
+
+      return NextResponse.json(
+        {
+          expired: true,
+          message: "Waktu pengiriman momen untuk sesi ini telah berakhir.",
+        },
+        { status: 423 }
+      );
     }
 
     // ── VALIDASI KUOTA TAMU PENGUNGGAH & PLAFON PAKET ADMIN ──
@@ -174,18 +193,46 @@ export async function POST(req: NextRequest) {
 
     // ── 1. VALIDASI TOTAL KUOTA FOTO ACARA (Total Event Capacity) ──
     const totalEventQuota = planQuota.totalQuota > 0 ? planQuota.totalQuota : (planQuota.maxContributors * planQuota.shotsQuota);
-    if (totalEventQuota > 0) {
-      const currentTotalPhotos = await prisma.guestMemory.count({
-        where: { invitationId },
+    const currentTotalPhotos = await prisma.guestMemory.count({
+      where: { invitationId },
+    });
+
+    if (totalEventQuota > 0 && currentTotalPhotos >= totalEventQuota) {
+      return NextResponse.json(
+        {
+          quotaExceeded: true,
+          totalQuota: totalEventQuota,
+          currentTotalPhotos,
+          message: `Kapasitas kuota foto kenangan untuk acara ini telah terisi penuh (${totalEventQuota}/${totalEventQuota} foto). Terima kasih atas partisipasi Anda!`,
+        },
+        { status: 403 }
+      );
+    }
+
+    // ── 1.b VALIDASI ALOKASI KUOTA SESI (dengan Smart Rollover) ──
+    if (schedule.currentSession && schedule.currentSession.allocatedQuota && schedule.currentSession.allocatedQuota > 0) {
+      const sessionStartDate = new Date(`${schedule.currentSession.date}T${schedule.currentSession.startTime || "00:00"}:00`);
+      const photosBeforeThisSession = await prisma.guestMemory.count({
+        where: {
+          invitationId,
+          createdAt: { lt: sessionStartDate },
+        },
       });
 
-      if (currentTotalPhotos >= totalEventQuota) {
+      const allowedCumulativeQuota = calculateSessionCumulativeQuota(
+        schedule.sessions,
+        schedule.activeSessionIndex,
+        totalEventQuota,
+        photosBeforeThisSession
+      );
+
+      if (currentTotalPhotos >= allowedCumulativeQuota) {
         return NextResponse.json(
           {
             quotaExceeded: true,
-            totalQuota: totalEventQuota,
-            currentTotalPhotos,
-            message: `Kapasitas kuota foto kenangan untuk acara ini telah terisi penuh (${totalEventQuota}/${totalEventQuota} foto). Terima kasih atas partisipasi Anda!`,
+            sessionName: schedule.currentSession.name,
+            sessionQuota: schedule.currentSession.allocatedQuota,
+            message: `Kuota foto untuk ${schedule.currentSession.name} telah terisi penuh (${schedule.currentSession.allocatedQuota} foto). Kamera akan dibuka kembali pada sesi berikutnya!`,
           },
           { status: 403 }
         );

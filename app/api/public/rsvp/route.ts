@@ -17,6 +17,28 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "invitationId is required" }, { status: 400 });
     }
 
+    if (invitationId.startsWith("demo-") || invitationId === "demo") {
+      const sampleDemos = [
+        {
+          id: "demo-rsvp-1",
+          guestName: "Budi Santoso",
+          status: "hadir",
+          guestCount: 2,
+          message: "Selamat menempuh hidup baru! Semoga rukun dan bahagia selalu.",
+          respondedAt: new Date(Date.now() - 3600000).toISOString(),
+        },
+        {
+          id: "demo-rsvp-2",
+          guestName: "Sahabat SMA (Dimas)",
+          status: "hadir",
+          guestCount: 2,
+          message: "Happy wedding brother! Lancar dan berkah acaranya sampai selesai 🎉",
+          respondedAt: new Date(Date.now() - 7200000).toISOString(),
+        },
+      ];
+      return NextResponse.json({ success: true, rsvps: sampleDemos, isDemo: true });
+    }
+
     const rsvps = await prisma.rsvp.findMany({
       where: { invitationId },
       orderBy: { respondedAt: "desc" },
@@ -57,6 +79,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Demo mode: Return instant simulated success for showroom/sandbox invitations without DB entry
+    if (invitationId.startsWith("demo-") || invitationId === "demo") {
+      return NextResponse.json({
+        success: true,
+        isDemo: true,
+        message: "Konfirmasi kehadiran & doa restu berhasil dikirim! (Mode Demo)",
+        rsvp: {
+          id: `demo-rsvp-${Date.now()}`,
+          guestName,
+          status,
+          guestCount: Number(guestCount) || 1,
+          message: message || "",
+          respondedAt: new Date().toISOString(),
+        },
+      });
+    }
+
     // Find invitation
     const invitation = await prisma.invitation.findUnique({
       where: { id: invitationId },
@@ -70,18 +109,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Masa pengisian buku tamu / RSVP untuk acara ini telah ditutup." }, { status: 410 });
     }
 
+    const cleanGuestName = String(guestName).trim();
+
     // Find matching guest record if already invited, but DO NOT auto-create new guest
     const matchingGuest = await prisma.guest.findFirst({
       where: {
         invitationId,
-        name: { equals: guestName },
+        name: { equals: cleanGuestName, mode: "insensitive" },
       },
     });
 
     // Find existing RSVP or create new to prevent duplication
     const existingRsvp = matchingGuest
       ? await prisma.rsvp.findFirst({ where: { invitationId, guestId: matchingGuest.id } })
-      : await prisma.rsvp.findFirst({ where: { invitationId, guestName: { equals: guestName } } });
+      : await prisma.rsvp.findFirst({ where: { invitationId, guestName: { equals: cleanGuestName, mode: "insensitive" } } });
 
     let rsvp;
     if (existingRsvp) {

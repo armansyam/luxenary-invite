@@ -806,7 +806,7 @@ export function HowItWorksInteractive({ activeDomain }: { activeDomain: string }
                       <span className="text-[10px] text-emerald-400 font-semibold">✓ Konfirmasi 2 Orang</span>
                     </div>
                     <p className="text-xs text-stone-300 italic">
-                      "Selamat menempuh hidup baru Eka &amp; Putri, semoga menjadi keluarga sakinah mawaddah warahmah."
+                      &ldquo;Selamat menempuh hidup baru Eka &amp; Putri, semoga menjadi keluarga sakinah mawaddah warahmah.&rdquo;
                     </p>
                   </div>
                   <div className="p-3.5 rounded-xl bg-stone-900/90 border border-stone-800">
@@ -815,7 +815,7 @@ export function HowItWorksInteractive({ activeDomain }: { activeDomain: string }
                       <span className="text-[10px] text-emerald-400 font-semibold">✓ Konfirmasi 1 Orang</span>
                     </div>
                     <p className="text-xs text-stone-300 italic">
-                      "Insya Allah hadir merayakan hari bahagia kalian berdua! Cantik dan gagah sekali."
+                      &ldquo;Insya Allah hadir merayakan hari bahagia kalian berdua! Cantik dan gagah sekali.&rdquo;
                     </p>
                   </div>
                 </div>

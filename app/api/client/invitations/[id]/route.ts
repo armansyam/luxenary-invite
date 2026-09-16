@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { encryptPin, decryptPin, isPinEncrypted } from "@/lib/pinEncryption";
-import { isReservedSubdomain, isSubdomainExpired } from "@/lib/domainUtils";
+import { isReservedSubdomain, isSubdomainExpired, getLatestEventDate } from "@/lib/domainUtils";
 import { getPlanMemoriesQuota } from "@/lib/settings";
 
 
@@ -29,24 +29,30 @@ export function getInvitationLockStatus(inv: any) {
     };
   }
 
-  // 3. Check if wedding event date has passed (Hari H + 1 day grace period)
+  // 3. Check if wedding event date has passed (Hari H Sesi Utama + 1 day grace period)
   let hasPassed = false;
   if (inv.eventData) {
     try {
       const parsed = typeof inv.eventData === "string" ? JSON.parse(inv.eventData) : inv.eventData;
-      if (Array.isArray(parsed)) {
-        for (const ev of parsed) {
-          if (ev.date) {
-            const evDate = new Date(ev.date).getTime();
-            // 24 hours grace period after event day
-            if (Date.now() > evDate + 24 * 3600 * 1000) {
-              hasPassed = true;
-              break;
-            }
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // Patokan kedaluwarsa utama adalah Sesi Acara Utama (isPrimary); fallback ke tanggal paling akhir
+        const primaryEvent = parsed.find((e: any) => e.isPrimary);
+        const refDateStr = primaryEvent?.date;
+        if (refDateStr) {
+          const refDate = new Date(refDateStr).getTime();
+          if (!isNaN(refDate) && Date.now() > refDate + 24 * 3600 * 1000) {
+            hasPassed = true;
+          }
+        } else {
+          const latest = getLatestEventDate(parsed);
+          if (latest && Date.now() > latest.getTime() + 24 * 3600 * 1000) {
+            hasPassed = true;
           }
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error("[getInvitationLockStatus] Error parsing eventData:", e);
+    }
   }
 
   if (hasPassed) {
@@ -350,7 +356,7 @@ export async function PUT(
       }
     }
 
-    // --- THEME TIER GATING & PUBLISH LOCK: Server-side validation ---
+    // --- THEME VALIDATION & PUBLISH LOCK: Server-side validation ---
     if (body.themeId !== undefined && body.themeId !== currentInv.themeId && !isAdmin) {
       // 1. Publish Lock Check
       if (currentInv.status === "PUBLISHED") {
@@ -360,48 +366,20 @@ export async function PUT(
         );
       }
 
-      // 2. Fetch the order's planType via the orderId stored on the invitation
-      const order = currentInv.orderId
-        ? await prisma.order.findUnique({
-            where: { id: currentInv.orderId },
-            select: { planType: true },
-          })
-        : null;
+      // 2. All-Access Themes: Seluruh paket berhak memilih seluruh tema aktif
+      const requestedTheme = await prisma.theme.findUnique({
+        where: { id: body.themeId },
+        select: { id: true, name: true, isActive: true },
+      });
 
-      if (order) {
-        // Fetch the requested theme's category from DB
-        const requestedTheme = await prisma.theme.findUnique({
-          where: { id: body.themeId },
-          select: { category: true, isActive: true },
-        });
-
-        if (!requestedTheme || !requestedTheme.isActive) {
-          return NextResponse.json(
-            { error: "Tema yang dipilih tidak tersedia." },
-            { status: 400 }
-          );
-        }
-
-        const themeCat = requestedTheme.category.toUpperCase();
-        const plan = order.planType?.toUpperCase();
-
-        // Tier rules: TRADITIONAL → only TRADITIONAL, MODERN → TRADITIONAL+MODERN, PREMIUM → all
-        const isAllowed =
-          plan === "PREMIUM" ||
-          (plan === "MODERN" && (themeCat === "MODERN" || themeCat === "TRADITIONAL")) ||
-          (plan === "TRADITIONAL" && themeCat === "TRADITIONAL");
-
-        if (!isAllowed) {
-          return NextResponse.json(
-            {
-              error: `Tema "${body.themeId}" tidak tersedia di paket Anda (${plan}). Silakan upgrade paket untuk mengakses tema ini.`,
-            },
-            { status: 403 }
-          );
-        }
+      if (!requestedTheme || !requestedTheme.isActive) {
+        return NextResponse.json(
+          { error: "Tema yang dipilih tidak tersedia atau sedang nonaktif." },
+          { status: 400 }
+        );
       }
     }
-    // --- END THEME TIER GATING ---
+    // --- END THEME VALIDATION ---
 
     const newStatus = body.status !== undefined ? body.status : currentInv.status;
     const isStatusChangedToUnpublished = currentInv.status === "PUBLISHED" && newStatus !== "PUBLISHED";
@@ -416,23 +394,82 @@ export async function PUT(
       }
     }
 
-    // --- EVENT DATE LOCK: Pertahankan tanggal acara pasca publish untuk klien non-admin ---
+    // --- EVENT DATA VALIDATION: Sesi Utama, Kunci Tanggal Pasca Publikasi, & Auto-Sort Kronologis ---
     let eventDataToSave = undefined;
     if (body.eventData !== undefined) {
-      if (!isAdmin && (currentInv?.status === "PUBLISHED" || currentInv?.status === "EVENT_FINISHED")) {
-        try {
-          const incomingEvents = Array.isArray(body.eventData) ? body.eventData : JSON.parse(toStr(body.eventData) || "[]");
-          const currentEvents = currentInv.eventData ? (Array.isArray(currentInv.eventData) ? currentInv.eventData : JSON.parse(toStr(currentInv.eventData) || "[]")) : [];
-          
-          const mergedEvents = incomingEvents.map((ev: any, idx: number) => ({
-            ...ev,
-            date: currentEvents[idx]?.date || ev.date, // Kunci tanggal pernikahan asli
-          }));
-          eventDataToSave = JSON.stringify(mergedEvents);
-        } catch {
-          eventDataToSave = toStr(body.eventData);
+      try {
+        const incomingEvents = Array.isArray(body.eventData) ? body.eventData : JSON.parse(toStr(body.eventData) || "[]");
+        let validatedEvents = incomingEvents.map((ev: any) => ({
+          ...ev,
+          title: typeof ev.title === "string" ? ev.title.trim() : (ev.title || ""),
+          date: typeof ev.date === "string" ? ev.date.trim() : (ev.date || ""),
+          time: typeof ev.time === "string" ? ev.time.trim() : (ev.time || ""),
+          startTime: typeof ev.startTime === "string" ? ev.startTime.trim() : (ev.startTime || ""),
+          endTime: typeof ev.endTime === "string" ? ev.endTime.trim() : (ev.endTime || ""),
+          timezone: typeof ev.timezone === "string" ? ev.timezone.trim() : (ev.timezone || "WIB"),
+          location: typeof ev.location === "string" ? ev.location.trim() : (ev.location || ""),
+          address: typeof ev.address === "string" ? ev.address.trim() : (ev.address || ""),
+          mapsUrl: typeof ev.mapsUrl === "string" ? ev.mapsUrl.trim() : (ev.mapsUrl || ""),
+          badge: typeof ev.badge === "string" ? ev.badge.trim() : (ev.badge || ""),
+          notes: typeof ev.notes === "string" ? ev.notes.trim() : (ev.notes || ""),
+          isUntilDone: Boolean(ev.isUntilDone),
+          isPrimary: Boolean(ev.isPrimary),
+        }));
+
+        // Pastikan tepat satu sesi utama (isPrimary: true) jika list tidak kosong
+        if (validatedEvents.length > 0) {
+          const primaryCount = validatedEvents.filter((e: any) => e.isPrimary).length;
+          if (primaryCount === 0) {
+            validatedEvents[0].isPrimary = true;
+          } else if (primaryCount > 1) {
+            let foundFirst = false;
+            validatedEvents.forEach((e: any) => {
+              if (e.isPrimary) {
+                if (!foundFirst) {
+                  foundFirst = true;
+                } else {
+                  e.isPrimary = false;
+                }
+              }
+            });
+          }
         }
-      } else {
+
+        // Kunci Tanggal Sesi Utama Pasca Publikasi (Hanya Admin yang dapat mengubah):
+        if (currentInv.status === "PUBLISHED" && !isAdmin) {
+          let savedEvents: any[] = [];
+          try {
+            savedEvents = typeof currentInv.eventData === "string"
+              ? JSON.parse(currentInv.eventData || "[]")
+              : (Array.isArray(currentInv.eventData) ? currentInv.eventData : []);
+          } catch {}
+
+          const savedPrimary = savedEvents.find((e: any) => e.isPrimary) || savedEvents[0];
+          const newPrimary = validatedEvents.find((e: any) => e.isPrimary);
+
+          if (savedPrimary?.date && newPrimary && newPrimary.date !== savedPrimary.date) {
+            return NextResponse.json(
+              {
+                error: "Tanggal sesi acara utama telah dikunci pasca publikasi sebagai patokan masa aktif layanan. Hubungi Admin jika perlu penyesuaian tanggal acara utama.",
+              },
+              { status: 403 }
+            );
+          }
+        }
+
+        // Auto-Sort Kronologis: Tanggal (Ascending) -> Jam Mulai (Ascending)
+        validatedEvents.sort((a: any, b: any) => {
+          const dateA = a.date || "";
+          const dateB = b.date || "";
+          const cmp = dateA.localeCompare(dateB);
+          if (cmp !== 0) return cmp;
+          const timeA = a.startTime || a.time || "";
+          const timeB = b.startTime || b.time || "";
+          return timeA.localeCompare(timeB);
+        });
+
+        eventDataToSave = JSON.stringify(validatedEvents);
+      } catch {
         eventDataToSave = toStr(body.eventData);
       }
     }
@@ -618,11 +655,16 @@ export async function PATCH(
     const updated = await prisma.invitation.update({
       where: { id },
       data: updateData,
+      include: {
+        order: { select: { planType: true } },
+        media: true,
+      },
     });
 
     return NextResponse.json({
       success: true,
       message: "Pengaturan berhasil diperbarui.",
+      invitation: updated,
       ...updated,
     });
   } catch (err: any) {

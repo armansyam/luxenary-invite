@@ -27,6 +27,17 @@ const navItems = [
     ),
   },
   {
+    href: "/dashboard/moments",
+    label: "Moments",
+    shortLabel: "Moments",
+    icon: (
+      <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+      </svg>
+    ),
+  },
+  {
     href: "/dashboard/guests",
     label: "Buku Tamu",
     shortLabel: "Tamu",
@@ -200,17 +211,38 @@ export default function ClientDashboardLayout({
       
       {/* Top Header (Desktop & Mobile) */}
       <header className="bg-white border-b border-stone-200/80 sticky top-0 z-40 backdrop-blur-md bg-white/95">
-        <div className={`mx-auto px-4 sm:px-6 py-3 flex items-center justify-between transition-all duration-300 ${
-          pathname.startsWith("/dashboard/invitation") ? "max-w-[1600px]" : "max-w-6xl"
-        }`}>
+        <div className="w-full px-4 sm:px-6 py-2.5 flex items-center justify-between relative">
           
           {/* Brand */}
-          <Link href="/dashboard" className="flex items-center gap-2.5 group">
+          <Link href="/dashboard" className="flex items-center gap-2.5 group shrink-0">
             <BrandLogo size="sm" lightBg showName brandName="Dasbor Klien" />
           </Link>
 
+          {/* Desktop Center Navigation Bar (Visible only on md: and above) */}
+          <nav aria-label="Navigasi Utama Desktop" className="hidden md:flex items-center gap-1 bg-stone-100/90 p-1 rounded-full border border-stone-200/80 shadow-2xs absolute left-1/2 -translate-x-1/2">
+            {navItems.map((item) => {
+              const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
+                    isActive
+                      ? "bg-white text-stone-900 shadow-xs border border-stone-200/60"
+                      : "text-stone-600 hover:text-stone-900 hover:bg-white/50"
+                  }`}
+                >
+                  <span className={`w-4 h-4 flex items-center justify-center shrink-0 ${isActive ? "text-amber-800" : "text-stone-500"}`}>
+                    {item.icon}
+                  </span>
+                  <span>{item.shortLabel}</span>
+                </Link>
+              );
+            })}
+          </nav>
+
           {/* User Profile, Contact Admin & Logout */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <span className="text-xs font-semibold text-stone-700 hidden sm:block">
               {session?.user?.name || "Mempelai"}
             </span>
@@ -257,16 +289,16 @@ export default function ClientDashboardLayout({
       )}
 
       {/* Main Content Area */}
-      <main className={`flex-1 w-full mx-auto px-4 sm:px-6 pt-3 sm:pt-4 pb-28 sm:pb-24 transition-all duration-300 ${
+      <main className={`flex-1 w-full mx-auto px-4 sm:px-6 pt-3 sm:pt-4 pb-28 md:pb-12 transition-all duration-300 ${
         pathname.startsWith("/dashboard/invitation") ? "max-w-[1600px]" : "max-w-6xl"
       }`}>
         {children}
       </main>
 
-      {/* Apple-Style Transparent Floating Liquid Glass Dock (Universal Mobile & Desktop) */}
+      {/* Apple-Style Transparent Floating Liquid Glass Dock (Mobile Only) */}
       <nav 
-        aria-label="Navigasi Utama"
-        className={`fixed bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:bottom-6 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+        aria-label="Navigasi Utama Mobile"
+        className={`md:hidden fixed bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
           isDockVisible
             ? "translate-y-0 opacity-100 pointer-events-auto"
             : "translate-y-24 opacity-0 pointer-events-none"
@@ -274,7 +306,7 @@ export default function ClientDashboardLayout({
       >
         <div className="bg-white/30 backdrop-blur-2xl border border-white/50 shadow-xl shadow-stone-900/5 rounded-full p-1.5 flex items-center justify-center gap-1 sm:gap-2">
           {navItems.map((item) => {
-            const isActive = pathname === item.href || (item.href === "/dashboard/invitation" && pathname.startsWith("/dashboard/invitation"));
+            const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
             return (
               <Link
                 key={item.href}

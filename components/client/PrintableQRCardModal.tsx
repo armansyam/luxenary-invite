@@ -13,7 +13,6 @@ export interface PrintableQRCardModalProps {
 
 export type CardSize = "A3" | "A4" | "A5" | "4R";
 export type CardLayoutStyle = "warm_editorial" | "modern_minimalist" | "royal_heritage" | "retro_polaroid";
-export type OpeningLayoutStyle = "editorial_showcase" | "cinematic_hero" | "polaroid_nostalgia";
 
 interface SizeConfig {
   id: CardSize;
@@ -91,27 +90,6 @@ const CARD_LAYOUTS: { id: CardLayoutStyle; name: string; tag: string; desc: stri
   },
 ];
 
-const OPENING_LAYOUTS: { id: OpeningLayoutStyle; name: string; tag: string; desc: string }[] = [
-  {
-    id: "editorial_showcase",
-    name: "Editorial Showcase",
-    tag: "Default",
-    desc: "Layar bersih dengan foto potret lengkung 4:5, judul serif, dan tombol kapsul gelap.",
-  },
-  {
-    id: "cinematic_hero",
-    name: "Cinematic Hero",
-    tag: "Mewah",
-    desc: "Foto pasangan fullscreen dengan gradient dramatis dan floating glassmorphism card.",
-  },
-  {
-    id: "polaroid_nostalgia",
-    name: "Polaroid Nostalgia",
-    tag: "Analog",
-    desc: "Frame kartu foto polaroid miring dengan stempel tanggal oranye retro.",
-  },
-];
-
 export default function PrintableQRCardModal({
   isOpen,
   onClose,
@@ -120,7 +98,6 @@ export default function PrintableQRCardModal({
   onInvitationUpdated,
 }: PrintableQRCardModalProps) {
   const cardRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Parse Feature Settings
   const initialFs = (() => {
@@ -137,25 +114,21 @@ export default function PrintableQRCardModal({
   const [selectedCardLayout, setSelectedCardLayout] = useState<CardLayoutStyle>(
     initialFs?.memoriesCardLayout || "warm_editorial"
   );
-  const [selectedOpeningLayout, setSelectedOpeningLayout] = useState<OpeningLayoutStyle>(
-    initialFs?.memoriesOpeningLayout || "editorial_showcase"
-  );
-  const [activeTab, setActiveTab] = useState<"card_model" | "opening_model" | "text_photo">("card_model");
 
-  const [eyebrowText, setEyebrowText] = useState(initialFs?.memoriesCardEyebrow || "SCAN & JEPRET");
+  const [eyebrowText, setEyebrowText] = useState(initialFs?.memoriesCardEyebrow || "KAMERA KENANGAN TAMU");
   const [instructionText, setInstructionText] = useState(
-    initialFs?.memoriesCardInstruction || "Scan QR-nya, jepret momenmu versi kamu."
-  );
-  const [coverPhoto, setCoverPhoto] = useState<string>(
-    initialFs?.memoriesCoverPhoto || invitation?.media?.find((m: any) => m.mediaSlot === "LANDING_COVER")?.localPath || ""
+    initialFs?.memoriesCardInstruction || "Pindai kode QR untuk mengabadikan momen istimewa dari sudut pandang Anda."
   );
 
-  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [isGeneratingPng, setIsGeneratingPng] = useState(false);
   const [statusNotice, setStatusNotice] = useState<string | null>(null);
 
   if (!isOpen) return null;
+
+  const hasValidDomain = !!(invitation?.subdomain?.trim() || invitation?.customDomain?.trim());
+  const isPublished = invitation?.status === "PUBLISHED";
+  const canGenerateQr = hasValidDomain && isPublished && Boolean(shareMomentUrl && shareMomentUrl.trim());
 
   const coupleTitle = `${invitation?.groomNickname || "Mempelai Pria"} & ${invitation?.brideNickname || "Mempelai Wanita"}`;
 
@@ -189,10 +162,8 @@ export default function PrintableQRCardModal({
       const nextFs = {
         ...initialFs,
         memoriesCardLayout: selectedCardLayout,
-        memoriesOpeningLayout: selectedOpeningLayout,
         memoriesCardEyebrow: eyebrowText,
         memoriesCardInstruction: instructionText,
-        memoriesCoverPhoto: coverPhoto,
         ...overrides,
       };
 
@@ -205,50 +176,13 @@ export default function PrintableQRCardModal({
       if (res.ok) {
         const updated = await res.json();
         if (onInvitationUpdated) onInvitationUpdated(updated);
-        setStatusNotice("Pengaturan berhasil disimpan!");
+        setStatusNotice("Pengaturan kartu berhasil disimpan!");
         setTimeout(() => setStatusNotice(null), 3000);
       }
     } catch {
-      alert("Gagal menyimpan pengaturan.");
+      alert("Gagal menyimpan pengaturan kartu.");
     } finally {
       setIsSavingSettings(false);
-    }
-  };
-
-  // Upload Foto Khusus Opening & Kartu
-  const handleUploadCoverPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !invitation?.id) return;
-
-    setIsUploadingPhoto(true);
-    setStatusNotice(null);
-
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("invitationId", invitation.id);
-      formData.append("slot", "MEMORIES_COVER");
-
-      const uploadRes = await fetch("/api/client/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!uploadRes.ok) {
-        const errJson = await uploadRes.json();
-        throw new Error(errJson.error || "Gagal mengunggah foto.");
-      }
-
-      const uploadData = await uploadRes.json();
-      const newPhotoUrl = uploadData.localPath || uploadData.mediaUrl;
-
-      setCoverPhoto(newPhotoUrl);
-      await persistFeatureSettings({ memoriesCoverPhoto: newPhotoUrl });
-      setStatusNotice("Foto pembuka & kartu cetak berhasil diperbarui!");
-    } catch (err: any) {
-      alert(err.message || "Gagal mengunggah foto.");
-    } finally {
-      setIsUploadingPhoto(false);
     }
   };
 
@@ -258,14 +192,9 @@ export default function PrintableQRCardModal({
     persistFeatureSettings({ memoriesCardLayout: layoutId });
   };
 
-  // Pilih Model Layar Opening
-  const handleSelectOpeningLayout = (layoutId: OpeningLayoutStyle) => {
-    setSelectedOpeningLayout(layoutId);
-    persistFeatureSettings({ memoriesOpeningLayout: layoutId });
-  };
-
   // Ekspor Resolusi Tinggi 300 DPI Canvas
   const handleDownloadHighResPng = async () => {
+    if (!canGenerateQr) return;
     setIsGeneratingPng(true);
     try {
       const preset = SIZE_PRESETS[selectedSize];
@@ -399,11 +328,11 @@ export default function PrintableQRCardModal({
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
               <h2 className="text-base sm:text-lg font-bold text-stone-900 font-serif">
-                Studio Desain Kartu Cetak & Layar Opening
+                Studio Desain Kartu Cetak & Standing Banner QR
               </h2>
             </div>
             <p className="text-xs text-stone-500 mt-0.5">
-              Pilihan model kartu cetak barcode (A3, A4, A5, 4R) dan layout pembuka tamu.
+              Pilihan model kartu cetak barcode (A3, A4, A5, 4R) siap cetak 300 DPI untuk standing easel dan kartu tamu.
             </p>
           </div>
 
@@ -455,19 +384,38 @@ export default function PrintableQRCardModal({
               {/* QR Container in Card */}
               <div className="w-full pt-4 flex flex-col items-center">
                 <div
-                  className={`p-4 rounded-2xl shadow-sm max-w-[190px] w-full aspect-square flex items-center justify-center ${
+                  className={`p-4 rounded-2xl shadow-sm max-w-[190px] w-full aspect-square flex flex-col items-center justify-center text-center ${
                     selectedCardLayout === "royal_heritage"
                       ? "bg-white border-2 border-[#c5a880]/40 rounded-t-[50px]"
                       : "bg-white border border-stone-200/80"
                   }`}
                 >
-                  <QRCode
-                    value={shareMomentUrl}
-                    size={160}
-                    style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                    viewBox="0 0 160 160"
-                    fgColor="#26211d"
-                  />
+                  {canGenerateQr ? (
+                    <QRCode
+                      value={shareMomentUrl}
+                      size={160}
+                      style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                      viewBox="0 0 160 160"
+                      fgColor="#26211d"
+                    />
+                  ) : (
+                    <div className="w-full h-full border-2 border-dashed border-stone-300 rounded-xl p-3 flex flex-col items-center justify-center bg-stone-50/60 select-none">
+                      <div className="w-8 h-8 rounded-full bg-amber-500/10 text-amber-600 flex items-center justify-center mb-1.5 shrink-0">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" strokeWidth="2" />
+                          <path d="M7 11V7a5 5 0 0110 0v4" strokeWidth="2" />
+                        </svg>
+                      </div>
+                      <span className="font-mono text-[9px] font-bold text-stone-700 tracking-wider uppercase block">
+                        {!hasValidDomain ? "SUBDOMAIN KOSONG" : "QR BELUM TERBIT"}
+                      </span>
+                      <span className="text-[8px] text-stone-500 leading-tight mt-1">
+                        {!hasValidDomain
+                          ? "Atur subdomain di Pengaturan"
+                          : "Otomatis terbit setelah undangan dipublikasikan"}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -510,285 +458,168 @@ export default function PrintableQRCardModal({
             </p>
           </div>
 
-          {/* Right Column: Multi-Model Selectors & Customization (5 cols) */}
+          {/* Right Column: Single Focused Print Controls (5 cols) */}
           <div className="lg:col-span-5 space-y-4">
-            {/* Navigation Tabs */}
-            <div className="flex border-b border-stone-200 pb-1 gap-3 overflow-x-auto text-xs font-bold">
-              <button
-                type="button"
-                onClick={() => setActiveTab("card_model")}
-                className={`pb-2 whitespace-nowrap transition cursor-pointer border-b-2 ${
-                  activeTab === "card_model"
-                    ? "border-amber-600 text-amber-900"
-                    : "border-transparent text-stone-500 hover:text-stone-800"
-                }`}
-              >
-                1. Model Kartu Cetak
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("opening_model")}
-                className={`pb-2 whitespace-nowrap transition cursor-pointer border-b-2 ${
-                  activeTab === "opening_model"
-                    ? "border-amber-600 text-amber-900"
-                    : "border-transparent text-stone-500 hover:text-stone-800"
-                }`}
-              >
-                2. Model Layar Opening
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("text_photo")}
-                className={`pb-2 whitespace-nowrap transition cursor-pointer border-b-2 ${
-                  activeTab === "text_photo"
-                    ? "border-amber-600 text-amber-900"
-                    : "border-transparent text-stone-500 hover:text-stone-800"
-                }`}
-              >
-                3. Foto & Teks
-              </button>
+            {/* 1. Model Layout Kartu */}
+            <div>
+              <label className="text-xs font-bold text-stone-800 block mb-1.5">
+                1. Pilih Desain / Model Layout Kartu:
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {CARD_LAYOUTS.map((layout) => {
+                  const isSelected = selectedCardLayout === layout.id;
+                  return (
+                    <button
+                      key={layout.id}
+                      type="button"
+                      onClick={() => handleSelectCardLayout(layout.id)}
+                      className={`p-2.5 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
+                        isSelected
+                          ? "border-amber-600 bg-amber-50/70 ring-2 ring-amber-500/20 shadow-xs"
+                          : "border-stone-200 hover:border-stone-300 bg-white"
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center justify-between gap-1 mb-1">
+                          <span className="text-xs font-bold text-stone-900 leading-tight">
+                            {layout.name}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-stone-500 leading-snug line-clamp-2">
+                          {layout.desc}
+                        </p>
+                      </div>
+                      {isSelected && (
+                        <span className="text-[10px] font-bold text-amber-700 mt-1">✓ Terpilih</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            {/* ── TAB 1: MODEL & UKURAN KARTU CETAK ── */}
-            {activeTab === "card_model" && (
-              <div className="space-y-4">
-                <div>
-                  <label className="text-xs font-bold text-stone-800 block mb-1.5">
-                    Pilih Desain / Model Layout Kartu:
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {CARD_LAYOUTS.map((layout) => {
-                      const isSelected = selectedCardLayout === layout.id;
-                      return (
-                        <button
-                          key={layout.id}
-                          type="button"
-                          onClick={() => handleSelectCardLayout(layout.id)}
-                          className={`p-2.5 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
-                            isSelected
-                              ? "border-amber-600 bg-amber-50/70 ring-2 ring-amber-500/20 shadow-xs"
-                              : "border-stone-200 hover:border-stone-300 bg-white"
-                          }`}
-                        >
-                          <div>
-                            <div className="flex items-center justify-between gap-1 mb-1">
-                              <span className="text-xs font-bold text-stone-900 leading-tight">
-                                {layout.name}
-                              </span>
-                            </div>
-                            <p className="text-[10px] text-stone-500 leading-snug line-clamp-2">
-                              {layout.desc}
-                            </p>
-                          </div>
-                          {isSelected && (
-                            <span className="text-[10px] font-bold text-amber-700 mt-1">✓ Terpilih</span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
+            {/* 2. Ukuran Kertas */}
+            <div>
+              <label className="text-xs font-bold text-stone-800 block mb-1.5">
+                2. Pilih Ukuran Format Cetak:
+              </label>
+              <div className="space-y-1.5">
+                {(Object.keys(SIZE_PRESETS) as CardSize[]).map((sizeKey) => {
+                  const preset = SIZE_PRESETS[sizeKey];
+                  const isSelected = selectedSize === sizeKey;
+                  return (
+                    <button
+                      key={sizeKey}
+                      type="button"
+                      onClick={() => setSelectedSize(sizeKey)}
+                      className={`w-full p-2.5 rounded-xl border text-left transition flex items-center justify-between cursor-pointer ${
+                        isSelected
+                          ? "border-amber-600 bg-amber-50/60 ring-2 ring-amber-500/20"
+                          : "border-stone-200 hover:border-stone-300 bg-white"
+                      }`}
+                    >
+                      <div>
+                        <span className="text-xs font-bold text-stone-900">{preset.name}</span>
+                        <span className="text-[10px] font-mono text-stone-500 ml-1.5">
+                          {preset.dimensions}
+                        </span>
+                      </div>
+                      {isSelected && <span className="text-amber-600 text-xs font-bold">✓</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
-                {/* Ukuran Kertas */}
-                <div>
-                  <label className="text-xs font-bold text-stone-800 block mb-1.5">
-                    Pilih Ukuran Format Cetak:
-                  </label>
-                  <div className="space-y-1.5">
-                    {(Object.keys(SIZE_PRESETS) as CardSize[]).map((sizeKey) => {
-                      const preset = SIZE_PRESETS[sizeKey];
-                      const isSelected = selectedSize === sizeKey;
-                      return (
-                        <button
-                          key={sizeKey}
-                          type="button"
-                          onClick={() => setSelectedSize(sizeKey)}
-                          className={`w-full p-2.5 rounded-xl border text-left transition flex items-center justify-between cursor-pointer ${
-                            isSelected
-                              ? "border-amber-600 bg-amber-50/60 ring-2 ring-amber-500/20"
-                              : "border-stone-200 hover:border-stone-300 bg-white"
-                          }`}
-                        >
-                          <div>
-                            <span className="text-xs font-bold text-stone-900">{preset.name}</span>
-                            <span className="text-[10px] font-mono text-stone-500 ml-1.5">
-                              {preset.dimensions}
-                            </span>
-                          </div>
-                          {isSelected && <span className="text-amber-600 text-xs font-bold">✓</span>}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
+            {/* 3. Teks Kartu & Standing Banner Kustom */}
+            <div className="space-y-2 pt-1 border-t border-stone-100">
+              <label className="text-xs font-bold text-stone-800 block">
+                3. Kustomisasi Teks Kartu &amp; Standing Banner:
+              </label>
+              <div>
+                <span className="text-[10px] font-bold text-stone-600 block mb-0.5">Teks Header / Eyebrow:</span>
+                <input
+                  type="text"
+                  value={eyebrowText}
+                  onChange={(e) => setEyebrowText(e.target.value)}
+                  onBlur={() => persistFeatureSettings({ memoriesCardEyebrow: eyebrowText })}
+                  placeholder="KAMERA KENANGAN TAMU"
+                  className="w-full px-3 py-1.5 border border-stone-300 rounded-lg text-xs font-bold text-stone-900 uppercase focus:outline-none focus:border-amber-600"
+                />
+              </div>
 
-                {/* Tombol Export */}
-                <div className="pt-2 space-y-2">
-                  <button
-                    type="button"
-                    onClick={handleDownloadHighResPng}
-                    disabled={isGeneratingPng}
-                    className="w-full py-3.5 bg-amber-600 hover:bg-amber-700 active:scale-[0.99] text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                  >
-                    {isGeneratingPng ? (
-                      <span>Menyiapkan Berkas 300 DPI...</span>
+              <div>
+                <span className="text-[10px] font-bold text-stone-600 block mb-0.5">Kalimat Petunjuk Tamu:</span>
+                <input
+                  type="text"
+                  value={instructionText}
+                  onChange={(e) => setInstructionText(e.target.value)}
+                  onBlur={() => persistFeatureSettings({ memoriesCardInstruction: instructionText })}
+                  placeholder="Pindai kode QR untuk mengabadikan momen istimewa dari sudut pandang Anda."
+                  className="w-full px-3 py-1.5 border border-stone-300 rounded-lg text-xs text-stone-900 focus:outline-none focus:border-amber-600"
+                />
+              </div>
+            </div>
+
+            {/* 4. Tombol Export */}
+            <div className="pt-2 space-y-2.5">
+              {!canGenerateQr && (
+                <div className="p-3 bg-amber-50/90 border border-amber-200/80 rounded-xl flex items-start gap-2.5">
+                  <div className="w-5 h-5 rounded-full bg-amber-500/20 text-amber-800 flex items-center justify-center shrink-0 mt-0.5">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" strokeWidth="2" />
+                      <path d="M7 11V7a5 5 0 0110 0v4" strokeWidth="2" />
+                    </svg>
+                  </div>
+                  <div className="text-[11px] text-amber-900 leading-snug">
+                    {!hasValidDomain ? (
+                      <>
+                        <strong>Subdomain Belum Ditentukan:</strong> Harap tentukan subdomain undangan Anda terlebih dahulu di menu <em>Pengaturan</em> agar barcode resmi dapat diterbitkan.
+                      </>
                     ) : (
                       <>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                        </svg>
-                        <span>Unduh Desain Siap Cetak (300 DPI)</span>
+                        <strong>Undangan Masih DRAFT:</strong> Barcode resmi siap cetak otomatis diterbitkan setelah Anda mempublikasikan undangan di Studio Editor.
                       </>
                     )}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => window.print()}
-                    className="w-full py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer"
-                  >
-                    <span>Cetak via Print Dialog Browser</span>
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* ── TAB 2: MODEL LAYAR OPENING TAMU (/sharemoment) ── */}
-            {activeTab === "opening_model" && (
-              <div className="space-y-4">
-                <div>
-                  <label className="text-xs font-bold text-stone-800 block mb-1">
-                    Pilih Tampilan Layar Pembuka Tamu:
-                  </label>
-                  <p className="text-[11px] text-stone-500 mb-2 leading-relaxed">
-                    Saat tamu membuka link atau memindai QR, halaman opening akan menyambut mereka dengan gaya visual ini sebelum kamera dibuka.
-                  </p>
-
-                  <div className="space-y-2">
-                    {OPENING_LAYOUTS.map((op) => {
-                      const isSelected = selectedOpeningLayout === op.id;
-                      return (
-                        <button
-                          key={op.id}
-                          type="button"
-                          onClick={() => handleSelectOpeningLayout(op.id)}
-                          className={`w-full p-3 rounded-xl border text-left transition flex items-start justify-between cursor-pointer ${
-                            isSelected
-                              ? "border-amber-600 bg-amber-50/70 ring-2 ring-amber-500/20 shadow-xs"
-                              : "border-stone-200 hover:border-stone-300 bg-white"
-                          }`}
-                        >
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-bold text-stone-900">{op.name}</span>
-                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 uppercase">
-                                {op.tag}
-                              </span>
-                            </div>
-                            <p className="text-[11px] text-stone-500 mt-1 leading-snug">
-                              {op.desc}
-                            </p>
-                          </div>
-                          {isSelected && (
-                            <span className="text-amber-700 font-bold text-xs">✓ Aktif</span>
-                          )}
-                        </button>
-                      );
-                    })}
                   </div>
                 </div>
+              )}
 
-                <div className="pt-2">
-                  <a
-                    href={`${shareMomentUrl}?test=true`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="block w-full py-2.5 bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold text-center rounded-xl transition cursor-pointer"
-                  >
-                    Pratinjau Layar Opening Tamu (Mode Simulasi) →
-                  </a>
-                </div>
-              </div>
-            )}
+              <button
+                type="button"
+                onClick={handleDownloadHighResPng}
+                disabled={isGeneratingPng || !canGenerateQr}
+                className={`w-full py-3 font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 ${
+                  canGenerateQr && !isGeneratingPng
+                    ? "bg-amber-600 hover:bg-amber-700 active:scale-[0.99] text-white cursor-pointer"
+                    : "bg-stone-200 text-stone-400 cursor-not-allowed border border-stone-300/60 shadow-none"
+                }`}
+              >
+                {isGeneratingPng ? (
+                  <span>Menyiapkan Berkas 300 DPI...</span>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    <span>Unduh Desain Siap Cetak (300 DPI)</span>
+                  </>
+                )}
+              </button>
 
-            {/* ── TAB 3: FOTO KHUSUS & TEKS PETUNJUK ── */}
-            {activeTab === "text_photo" && (
-              <div className="space-y-4">
-                {/* Upload Foto Khusus Opening */}
-                <div className="bg-stone-50 p-4 rounded-xl border border-stone-200 space-y-3">
-                  <div>
-                    <span className="text-xs font-bold text-stone-800 block">
-                      Foto Khusus Layar Opening:
-                    </span>
-                    <span className="text-[10px] text-stone-500">
-                      Foto potret vertikal mempelai yang ditampilkan di kartu pembuka tamu
-                    </span>
-                  </div>
-
-                  {coverPhoto && (
-                    <div className="w-20 h-24 rounded-lg overflow-hidden border border-stone-300 relative shadow-inner">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={coverPhoto} alt="Cover Preview" className="w-full h-full object-cover" />
-                    </div>
-                  )}
-
-                  <div>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleUploadCoverPhoto}
-                      className="hidden"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={isUploadingPhoto}
-                      className="py-2 px-3 bg-white border border-stone-300 hover:bg-stone-100 rounded-lg text-xs font-bold text-stone-800 transition cursor-pointer flex items-center gap-1.5"
-                    >
-                      {isUploadingPhoto ? "Mengunggah..." : "Unggah / Ganti Foto Opening"}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Eyebrow Header */}
-                <div>
-                  <label className="text-xs font-bold text-stone-800 block mb-1">
-                    Teks Eyebrow Header:
-                  </label>
-                  <input
-                    type="text"
-                    value={eyebrowText}
-                    onChange={(e) => setEyebrowText(e.target.value)}
-                    placeholder="SCAN & JEPRET"
-                    className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-xs font-bold text-stone-800 focus:bg-white transition uppercase"
-                  />
-                </div>
-
-                {/* Petunjuk Tamu */}
-                <div>
-                  <label className="text-xs font-bold text-stone-800 block mb-1">
-                    Petunjuk Tamu:
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={instructionText}
-                    onChange={(e) => setInstructionText(e.target.value)}
-                    placeholder="Scan QR-nya, jepret momenmu versi kamu."
-                    className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-800 focus:bg-white transition"
-                  />
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => persistFeatureSettings({})}
-                  disabled={isSavingSettings}
-                  className="w-full py-2.5 bg-stone-900 hover:bg-stone-800 text-white font-bold text-xs rounded-xl shadow transition cursor-pointer disabled:opacity-50"
-                >
-                  {isSavingSettings ? "Menyimpan..." : "Simpan Perubahan Teks"}
-                </button>
-              </div>
-            )}
+              <button
+                type="button"
+                onClick={() => canGenerateQr && window.print()}
+                disabled={!canGenerateQr}
+                className={`w-full py-2 font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5 ${
+                  canGenerateQr
+                    ? "bg-stone-100 hover:bg-stone-200 text-stone-700 cursor-pointer"
+                    : "bg-stone-100 text-stone-400 cursor-not-allowed"
+                }`}
+              >
+                <span>Cetak via Print Dialog Browser</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>

@@ -84,13 +84,17 @@ export async function GET() {
 
     // Kasus: Order masih PENDING
     if (latestOrder.status === "PENDING") {
+      const redirectUrl = latestOrder.checkoutConfirmedAt
+        ? `/payment?order=${latestOrder.id}`
+        : `/checkout?order=${latestOrder.id}`;
+
       return NextResponse.json({
         step: "ORDER_PENDING",
         orderId: latestOrder.id,
         invoiceNumber: latestOrder.invoiceNumber,
         planType: latestOrder.planType,
         amount: Number(latestOrder.amount),
-        redirectUrl: `/checkout?order=${latestOrder.id}`,
+        redirectUrl,
         hasPaidOrder: false,
       });
     }

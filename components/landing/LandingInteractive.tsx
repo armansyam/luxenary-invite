@@ -252,7 +252,7 @@ export function LandingInteractive() {
     const expPhone = document.getElementById("exp-phone");
     const expSection = document.getElementById("pengalaman");
 
-    let activeExp = 2; // Default to QR Check-in Receptionist Kiosk
+    let activeExp = 1; // Default to Guest Moment Camera (Screen 1)
     const totalExp = expBtns.length;
 
     const setExp = (idx: number) => {
@@ -352,6 +352,68 @@ export function LandingInteractive() {
         btn.style.borderColor = "var(--lux-gold)";
       });
     });
+
+    // Interactive Guest Moment Camera inside iPad mockup
+    const camPreviewImg = document.getElementById("exp-cam-preview-img") as HTMLImageElement | null;
+    const camPresetBadge = document.querySelector<HTMLElement>(".exp-cam-preset-badge");
+    const camFilterBtns = document.querySelectorAll<HTMLElement>(".exp-cam-filter-item");
+    const camShutterBtn = document.getElementById("exp-cam-shutter");
+    const camFlashOverlay = document.getElementById("exp-cam-flash");
+    const camRollCount = document.getElementById("exp-cam-count");
+
+    const filterPresets: Record<string, { filter: string; label: string }> = {
+      aura_90s: {
+        filter: "contrast(1.15) saturate(1.2) sepia(0.18) brightness(0.96)",
+        label: "AURA '90S • VINTAGE WARM",
+      },
+      heritage: {
+        filter: "sepia(0.42) contrast(1.1) brightness(0.95) saturate(0.85)",
+        label: "HERITAGE • SEPIA NOSTALGIC",
+      },
+      botanical: {
+        filter: "saturate(1.28) hue-rotate(-12deg) contrast(1.12) brightness(0.98)",
+        label: "BOTANICAL • MOODY GREEN",
+      },
+      cinema_noir: {
+        filter: "grayscale(1) contrast(1.35) brightness(0.92)",
+        label: "NOIR • CLASSIC MONOCHROME",
+      },
+      daylight: {
+        filter: "brightness(1.08) contrast(1.06) saturate(1.18)",
+        label: "DAYLIGHT • CRISP & CLEAN",
+      },
+    };
+
+    const camFilterHandlers: Array<{ el: HTMLElement; fn: () => void }> = [];
+    camFilterBtns.forEach((btn) => {
+      const fn = () => {
+        const filterKey = btn.dataset.filter || "aura_90s";
+        camFilterBtns.forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        const preset = filterPresets[filterKey];
+        if (preset) {
+          if (camPreviewImg) camPreviewImg.style.filter = preset.filter;
+          if (camPresetBadge) camPresetBadge.textContent = preset.label;
+        }
+      };
+      btn.addEventListener("click", fn);
+      camFilterHandlers.push({ el: btn, fn });
+    });
+
+    let currentRoll = 8;
+    const onCamShutter = () => {
+      if (!camFlashOverlay) return;
+      camFlashOverlay.classList.add("active");
+      setTimeout(() => {
+        camFlashOverlay.classList.remove("active");
+      }, 120);
+
+      if (camRollCount && currentRoll > 1) {
+        currentRoll -= 1;
+        camRollCount.textContent = currentRoll < 10 ? `0${currentRoll}` : String(currentRoll);
+      }
+    };
+    camShutterBtn?.addEventListener("click", onCamShutter);
 
     // ----------------------------
     // 6B. STUDIO MANDIRI (DUAL DEVICE LIVE SYNC)
@@ -513,6 +575,8 @@ export function LandingInteractive() {
       expSection?.removeEventListener("mousemove", onExpMove as any);
       expSection?.removeEventListener("mouseleave", onExpLeave);
       window.removeEventListener("resize", onExpResize);
+      camFilterHandlers.forEach(({ el, fn }) => el.removeEventListener("click", fn));
+      camShutterBtn?.removeEventListener("click", onCamShutter);
 
       studioBtnHandlers.forEach(({ el, fn }) => el.removeEventListener("click", fn));
       studioSection?.removeEventListener("mouseenter", pauseStudio);

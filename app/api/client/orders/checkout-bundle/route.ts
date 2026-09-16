@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { randomUUID } from "crypto";
 import { hasPlanCapability } from "@/lib/settings";
+import { getLatestEventDate } from "@/lib/domainUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,7 @@ interface BundleItem {
   type: "UPGRADE" | "GALLERY_EXTENSION" | "MEMORIES_TOPUP";
   label: string;
   price: number;
+  domain?: string;
   targetPlan?: string;
   fromPlan?: string;
   months?: number;
@@ -173,25 +175,59 @@ export async function POST(req: NextRequest) {
       effectiveTargetPlan = targetPlanUpper;
     }
 
-    // 5. Kalkulasi Item 2: Perpanjangan Masa Aktif Galeri (kelipatan bulan)
+    // 5. Kalkulasi Item 2: Perpanjangan Masa Aktif Galeri (maksimal 1x 30 hari di H-7)
     const extMonths = Number(extensionMonths);
     if (!isNaN(extMonths) && extMonths > 0) {
-      let extPrice = 0;
-      let days = extMonths * 30;
+      if (!isAdmin) {
+        let curFs: any = {};
+        try {
+          curFs = typeof invitation.featureSettings === "object"
+            ? (invitation.featureSettings || {})
+            : JSON.parse((invitation.featureSettings as string) || "{}");
+        } catch {}
 
-      if (extMonths === 12) {
-        extPrice = monthlyExtPrice * 12;
-        days = 365;
-      } else {
-        extPrice = extMonths * monthlyExtPrice;
+        const extraGalleryDays = Number(curFs.extraGalleryDays) || 0;
+        if (extraGalleryDays >= 30) {
+          return NextResponse.json({
+            error: "Batas maksimal perpanjangan masa aktif (+30 hari) telah tercapai untuk undangan ini.",
+          }, { status: 400 });
+        }
+
+        if (extMonths > 1) {
+          return NextResponse.json({
+            error: "Perpanjangan hanya dapat dilakukan maksimal 1 kali (+30 hari).",
+          }, { status: 400 });
+        }
+
+        // Cek apakah masih > 7 hari
+        const cleanupSetting = settings.find(s => s.key === "retention_cleanup_days");
+        const retentionDays = Number(cleanupSetting?.value) || 30;
+        const latestEventDate = getLatestEventDate(invitation.eventData);
+        const effectiveExpiry = invitation.galleryExpiresAt
+          ? new Date(invitation.galleryExpiresAt)
+          : latestEventDate
+          ? new Date(latestEventDate.getTime() + retentionDays * 24 * 60 * 60 * 1000)
+          : null;
+
+        if (effectiveExpiry) {
+          const daysRemaining = Math.ceil((effectiveExpiry.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+          if (daysRemaining > 7) {
+            return NextResponse.json({
+              error: `Perpanjangan hanya dapat dilakukan pada H-7 sebelum masa aktif berakhir (sisa ${daysRemaining} hari).`,
+            }, { status: 400 });
+          }
+        }
       }
+
+      const days = 30;
+      const extPrice = monthlyExtPrice;
 
       items.push({
         type: "GALLERY_EXTENSION",
-        label: `Perpanjangan Masa Aktif Galeri (+${extMonths} Bulan / ${days} Hari)`,
+        label: `Perpanjangan Masa Aktif Galeri (+30 Hari)`,
         price: extPrice,
-        months: extMonths,
-        days,
+        months: 1,
+        days: 30,
       });
     }
 
@@ -247,8 +283,12 @@ export async function POST(req: NextRequest) {
     const expiryMinutes = Number(settingsMap["payment_expiry_minutes"]) || 1440;
     const expiredAt = new Date(Date.now() + expiryMinutes * 60 * 1000);
 
-    // Tentukan orderType utama (harus cocok dengan enum OrderType: NEW, UPGRADE, GALLERY_EXTENSION)
-    const primaryOrderType = effectiveTargetPlan ? "UPGRADE" : "GALLERY_EXTENSION";
+    // Tentukan orderType utama (harus cocok dengan enum OrderType: NEW, UPGRADE, GALLERY_EXTENSION, MEMORIES_TOPUP)
+    const primaryOrderType = effectiveTargetPlan
+      ? "UPGRADE"
+      : items.some((i) => i.type === "GALLERY_EXTENSION")
+      ? "GALLERY_EXTENSION"
+      : "MEMORIES_TOPUP";
 
     // 11. Buat Order baru dengan itemsJson terstruktur
     const newOrder = await prisma.order.create({

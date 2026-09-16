@@ -286,23 +286,22 @@ export function MemoriesDownloadSection({
       <div className="p-4 bg-stone-50/80 rounded-2xl border border-stone-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <span className="text-[11px] font-bold text-stone-700 block font-mono uppercase tracking-wider">
-            Status Masa Simpan Foto Galeri Tamu
+            Masa Aktif Layanan Terpadu &amp; Kapasitas Cloud
           </span>
           {(() => {
             if (!galleryExpiresAt) {
               return (
                 <p className="text-xs text-stone-600 mt-1 leading-relaxed">
                   {normalizedStatus === "DRAFT" ? (
-                    <>Standar retensi terpadu: <strong>{retentionDays} hari</strong> (otomatis aktif setelah acara selesai, foto &amp; domain dibersihkan bersamaan).</>
+                    <>Standar retensi terpadu: <strong>{retentionDays} hari</strong> pasca acara (otomatis aktif setelah resepsi selesai, berlaku serentak untuk website undangan, kamera tamu, dan arsip galeri).</>
                   ) : (
-                    <>Standar retensi terpadu: <strong>{retentionDays} hari</strong> pasca acara (foto, subdomain &amp; domain dibersihkan bersamaan).</>
+                    <>Standar retensi terpadu: <strong>{retentionDays} hari</strong> pasca acara (berlaku serentak untuk website undangan, subdomain, kamera tamu, dan arsip galeri).</>
                   )}
                 </p>
               );
             }
 
-            const currentPlanUpper = (planType || "TRADITIONAL").toUpperCase();
-            const baseDays = currentPlanUpper === "PREMIUM" ? 365 : (currentPlanUpper === "MODERN" ? 90 : 30);
+            const baseDays = Number(retentionDays) > 0 ? Number(retentionDays) : 30;
             const extraDays = Number(extraGalleryDays) > 0
               ? Number(extraGalleryDays)
               : (eventDate && galleryExpiresAt
@@ -322,7 +321,7 @@ export function MemoriesDownloadSection({
             return (
               <div className="mt-1 space-y-1">
                 <div className="flex flex-wrap items-center gap-1.5 text-xs text-stone-800">
-                  <span className="font-semibold text-stone-700">Masa Aktif:</span>
+                  <span className="font-semibold text-stone-700">Masa Aktif Layanan:</span>
                   <span className="px-2 py-0.5 rounded-md bg-stone-100 border border-stone-200 font-mono text-[11px] text-stone-700 font-bold">
                     {baseDays} Hari (Default)
                   </span>

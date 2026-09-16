@@ -101,8 +101,10 @@ export async function applyBundleFulfillment(paidOrderId: string): Promise<boole
         // Cek tanggal acara resepsi
         const latestEventDate = getLatestEventDate(invitation.eventData);
         if (latestEventDate) {
-          const effectivePlan = (targetPlan || invitation.order?.planType || "TRADITIONAL").toUpperCase();
-          const baseRetentionDays = effectivePlan === "PREMIUM" ? 365 : (effectivePlan === "MODERN" ? 90 : 30);
+          const cleanupSetting = await tx.adminSetting.findUnique({
+            where: { key: "retention_cleanup_days" },
+          });
+          const baseRetentionDays = Number(cleanupSetting?.value) || 30;
           newExpiry = new Date(latestEventDate.getTime() + (baseRetentionDays + curFs.extraGalleryDays) * 24 * 60 * 60 * 1000);
         } else {
           // Jika draft belum ada tanggal acara, set sementara dari now
@@ -184,7 +186,7 @@ export async function applyCustomDomainAddon(addonOrderId: string): Promise<void
     },
   });
 
-  if (!order || order.orderType !== "CUSTOM_DOMAIN_ADDON" || !order.linkedOrderId || !order.requestedDomain) return;
+  if (!order || (order.orderType as any) !== "CUSTOM_DOMAIN_ADDON" || !order.linkedOrderId || !order.requestedDomain) return;
 
   const invitation = await prisma.invitation.findUnique({
     where: { id: order.linkedOrderId },
@@ -300,7 +302,7 @@ export async function applyUpgradePlan(paidOrderId: string): Promise<void> {
     return;
   }
 
-  if (order.orderType === "CUSTOM_DOMAIN_ADDON") {
+  if ((order.orderType as any) === "CUSTOM_DOMAIN_ADDON") {
     await applyCustomDomainAddon(paidOrderId);
     return;
   }

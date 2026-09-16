@@ -59,7 +59,7 @@ export async function GET(
       where: {
         userId,
         linkedOrderId: id,
-        orderType: { in: ["GALLERY_EXTENSION", "UPGRADE", "CUSTOM_DOMAIN_ADDON"] },
+        orderType: { in: ["GALLERY_EXTENSION", "UPGRADE", "MEMORIES_TOPUP"] },
         status: "PENDING",
       },
       select: {
@@ -224,13 +224,22 @@ export async function PATCH(
 
     const body = await req.json().catch(() => ({}));
     const rawQuota = body.shotsQuota ?? body.memoriesShotsQuota;
-    const shotsQuota = Number(rawQuota);
+    const filterId = body.filterId ?? body.memoriesFilter;
 
-    if (isNaN(shotsQuota) || shotsQuota < 1 || shotsQuota > 30) {
-      return NextResponse.json(
-        { error: "Jatah roll per tamu harus berupa angka antara 1 sampai 30." },
-        { status: 400 }
-      );
+    const VALID_FILTERS = ["aura_90s", "heritage_romance", "botanical_mist", "cinema_noir", "pure_daylight"];
+    let validatedFilter: string | undefined = undefined;
+    if (filterId !== undefined) {
+      if (typeof filterId === "string" && VALID_FILTERS.includes(filterId)) {
+        validatedFilter = filterId;
+      }
+    }
+
+    let shotsQuota: number | undefined = undefined;
+    if (rawQuota !== undefined) {
+      const parsed = Number(rawQuota);
+      if (!isNaN(parsed) && parsed >= 1 && parsed <= 30) {
+        shotsQuota = parsed;
+      }
     }
 
     const currentFs = (() => {
@@ -243,9 +252,71 @@ export async function PATCH(
       }
     })();
 
+    // Ambil semua field konfigurasi moments yang diizinkan
+    const incomingSettings = body.settings && typeof body.settings === "object" ? body.settings : body;
+    const allowedFields = [
+      "showGuestMemories",
+      "memoriesFilter",
+      "memoriesDateStamp",
+      "memoriesDateFormat",
+      "memoriesCoverPhoto",
+      "memoriesShotsQuota",
+      "memoriesMaxContributors",
+      "memoriesDelayedReveal",
+      "memoriesCustomSchedule",
+      "memoriesStartTime",
+      "memoriesEndTime",
+      "memoriesSessions",
+      "memoriesSmartRollover",
+      "memoriesOpeningLayout",
+      "memoriesCardInstruction",
+      "openingLayout",
+      "openingTheme",
+      "openingTitle",
+      "openingSubtitle",
+      "openingCoverPhoto",
+    ];
+
+    const fieldsToUpdate: Record<string, any> = {};
+    for (const key of allowedFields) {
+      if (incomingSettings[key] !== undefined) {
+        fieldsToUpdate[key] = incomingSettings[key];
+      }
+    }
+
+    // Pastikan sinkronisasi dua arah antara memoriesOpeningLayout dan openingLayout
+    if (incomingSettings.memoriesOpeningLayout !== undefined) {
+      fieldsToUpdate.openingLayout = incomingSettings.memoriesOpeningLayout;
+    } else if (incomingSettings.openingLayout !== undefined) {
+      fieldsToUpdate.memoriesOpeningLayout = incomingSettings.openingLayout;
+    }
+
+    // Validasi Pembatas Otomatis: Pastikan total kuota sesi tidak melebihi kuota total acara
+    if (Array.isArray(incomingSettings.memoriesSessions)) {
+      const { getPlanMemoriesQuota } = await import("@/lib/settings");
+      const planQuota = await getPlanMemoriesQuota(invitation.order?.planType);
+      const extraPhotos = typeof currentFs.extraMemoriesQuota === "number" ? Math.max(0, currentFs.extraMemoriesQuota) : 0;
+      const baseTotalPhotos = planQuota.totalQuota > 0 ? planQuota.totalQuota : (planQuota.maxContributors * planQuota.shotsQuota);
+      const maxTotalPhotos = baseTotalPhotos + extraPhotos;
+
+      let remainingQuota = maxTotalPhotos;
+      const validatedSessions = incomingSettings.memoriesSessions.map((sess: any) => {
+        const rawAllocated = Math.max(0, parseInt(sess.allocatedQuota) || 0);
+        const allocatedQuota = Math.min(rawAllocated, remainingQuota);
+        remainingQuota = Math.max(0, remainingQuota - allocatedQuota);
+        return {
+          ...sess,
+          allocatedQuota,
+        };
+      });
+      fieldsToUpdate.memoriesSessions = validatedSessions;
+    }
+
     const updatedFs = {
       ...currentFs,
-      memoriesShotsQuota: shotsQuota,
+      ...fieldsToUpdate,
+      ...(shotsQuota !== undefined ? { memoriesShotsQuota: shotsQuota } : {}),
+      ...(validatedFilter !== undefined ? { memoriesFilter: validatedFilter } : {}),
     };
 
     await prisma.invitation.update({
@@ -257,10 +328,12 @@ export async function PATCH(
 
     return NextResponse.json({
       success: true,
-      shotsQuota,
-      message: `Jatah roll kamera berhasil diatur menjadi ${shotsQuota} foto per tamu.`,
+      featureSettings: updatedFs,
+      shotsQuota: updatedFs.memoriesShotsQuota,
+      filterId: updatedFs.memoriesFilter,
+      message: "Pengaturan kamera kenangan tamu berhasil diperbarui.",
     });
   } catch (err: any) {
-    return NextResponse.json({ error: err?.message || "Gagal memperbarui jatah roll." }, { status: 500 });
+    return NextResponse.json({ error: err?.message || "Gagal memperbarui pengaturan kenangan tamu." }, { status: 500 });
   }
 }

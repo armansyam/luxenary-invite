@@ -9,7 +9,7 @@ export default async function RootSharemomentRedirectPage() {
   const session = await auth();
 
   if (!session?.user?.email) {
-    redirect("/login?callbackUrl=/sharemoment");
+    redirect("/demo/sharemoment");
   }
 
   const user = await prisma.user.findUnique({
@@ -32,7 +32,7 @@ export default async function RootSharemomentRedirectPage() {
   });
 
   if (!user || user.invitations.length === 0) {
-    redirect("/dashboard");
+    redirect("/demo/sharemoment");
   }
 
   const inv = user.invitations[0];

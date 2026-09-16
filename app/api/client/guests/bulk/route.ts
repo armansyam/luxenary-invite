@@ -19,16 +19,41 @@ export async function POST(req: NextRequest) {
 
     const invitation = await prisma.invitation.findUnique({
       where: { id: invitationId },
-      select: { userId: true },
+      select: { userId: true, eventData: true },
     });
 
     if (!invitation) {
       return NextResponse.json({ error: "Undangan tidak ditemukan" }, { status: 404 });
     }
 
-    const isAdmin = (session.user as any).role === "SUPER_ADMIN" || (session.user as any).isAdmin;
+    const isAdmin = (session.user as any).role === "SUPER_ADMIN" || (session.user as any).isAdmin || (session.user as any).role === "ADMIN";
     if (invitation.userId !== session.user.id && !isAdmin) {
       return NextResponse.json({ error: "Forbidden. Anda bukan pemilik undangan ini." }, { status: 403 });
+    }
+
+    // D-Day Lock Backend Validation berdasarkan Sesi Acara Utama
+    if (invitation.eventData) {
+      try {
+        const ev = typeof invitation.eventData === "string" ? JSON.parse(invitation.eventData) : invitation.eventData;
+        if (ev && ev.length > 0) {
+          const primaryEv = ev.find((e: any) => e.isPrimary) || ev[0];
+          const eventDateStr = primaryEv?.date;
+          if (eventDateStr) {
+            const eventDate = new Date(eventDateStr);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            eventDate.setHours(0, 0, 0, 0);
+            if (today >= eventDate) {
+              return NextResponse.json(
+                { error: "Daftar tamu sudah dikunci karena acara sedang/telah berlangsung. Tamu tambahan hanya dapat diinput oleh Resepsionis di lokasi." },
+                { status: 403 }
+              );
+            }
+          }
+        }
+      } catch (e) {
+        console.error("[guests bulk POST] Error parsing eventData:", e);
+      }
     }
 
     // Limit bulk insert to prevent abuse

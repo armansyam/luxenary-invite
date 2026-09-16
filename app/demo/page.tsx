@@ -308,14 +308,7 @@ export default function CatalogGridShowcase() {
             {/* Card 1: Meja Resepsionis & QR Scanner */}
             <div className="bg-white rounded-2xl sm:rounded-3xl border border-stone-200 shadow-sm p-5 sm:p-6 flex flex-col justify-between hover:shadow-xl hover:border-amber-400/50 transition-all duration-300">
               <div>
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full">
-                    Day-of-Event Tech
-                  </span>
-                  <span className="text-xs text-stone-400 font-medium">Kamera / Scanner</span>
-                </div>
-
-                <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-800 mb-4 border border-amber-100">
+                <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-800 mb-5 border border-amber-100">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
                   </svg>
@@ -360,26 +353,19 @@ export default function CatalogGridShowcase() {
               </Link>
             </div>
 
-            {/* Card 2: Buku Tamu Foto Digital (Share Moment) */}
+            {/* Card 2: Guest Moment Camera */}
             <div className="bg-white rounded-2xl sm:rounded-3xl border border-stone-200 shadow-sm p-5 sm:p-6 flex flex-col justify-between hover:shadow-xl hover:border-amber-400/50 transition-all duration-300">
               <div>
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full">
-                    Guest Interaction
-                  </span>
-                  <span className="text-xs text-stone-400 font-medium">Mobile Camera</span>
-                </div>
-
-                <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-800 mb-4 border border-amber-100">
+                <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-800 mb-5 border border-amber-100">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
                 </div>
 
-                <h3 className="text-lg font-bold text-stone-900 mb-2">Buku Tamu Foto Digital</h3>
+                <h3 className="text-lg font-bold text-stone-900 mb-2">Guest Moment Camera</h3>
                 <p className="text-xs text-stone-600 leading-relaxed mb-4">
-                  Portal kamera mandiri bagi tamu di venue untuk mengambil foto selfie dan mengirimkan ucapan doa secara langsung dari smartphone mereka tanpa download aplikasi.
+                  Portal kamera mandiri bagi tamu di venue untuk mengabadikan sudut pandang jujur dan momen candid pesta pernikahan langsung dari smartphone mereka tanpa unduh aplikasi.
                 </p>
 
                 <ul className="space-y-2 mb-6 text-xs text-stone-600 border-t border-stone-100 pt-4">
@@ -387,19 +373,19 @@ export default function CatalogGridShowcase() {
                     <svg className="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    <span>Simulasi Upload Momen Instan & Cepat</span>
+                    <span>5 Preset Filter Film Analog & Cap Tanggal Oranye Retro</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <svg className="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    <span>Terhubung Otomatis ke Galeri Kenangan</span>
+                    <span>Kamera Cepat dengan Shutter Sound Tanpa Install Aplikasi</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <svg className="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    <span>Dukungan Kamera Ponsel & Galeri Gambar</span>
+                    <span>Otomatis Terhubung & Mengisi Roll Galeri Kenangan</span>
                   </li>
                 </ul>
               </div>
@@ -419,14 +405,7 @@ export default function CatalogGridShowcase() {
             {/* Card 3: Galeri Kenangan Tamu (Memories Live Feed) */}
             <div className="bg-white rounded-2xl sm:rounded-3xl border border-stone-200 shadow-sm p-5 sm:p-6 flex flex-col justify-between hover:shadow-xl hover:border-amber-400/50 transition-all duration-300">
               <div>
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full">
-                    Display & Archive
-                  </span>
-                  <span className="text-xs text-stone-400 font-medium">Live Feed</span>
-                </div>
-
-                <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-800 mb-4 border border-amber-100">
+                <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-800 mb-5 border border-amber-100">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
@@ -442,19 +421,19 @@ export default function CatalogGridShowcase() {
                     <svg className="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    <span>Tampilan Masonry Card Elegan & Responsif</span>
+                    <span>Tampilan Roll Stack (1 Card / Tamu) Elegan & Bersih</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <svg className="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    <span>Simulasi Unduh Arsip ZIP Resolusi Tinggi</span>
+                    <span>Touch-Swipe & Keyboard Multi-Foto Modal Lightbox</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <svg className="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    <span>Sinkronisasi Instan dari Sesi Kamera Tamu</span>
+                    <span>Simulasi Unduh Arsip ZIP Resolusi Asli</span>
                   </li>
                 </ul>
               </div>

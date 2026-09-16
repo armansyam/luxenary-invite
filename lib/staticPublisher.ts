@@ -87,7 +87,7 @@ export async function buildAndSavePublishedHtml(invitationId: string): Promise<s
   const absoluteImageUrl = rawImage.startsWith("http") ? rawImage : `${siteOrigin}${rawImage.startsWith("/") ? "" : "/"}${rawImage}`;
 
   const metaTagsHtml = `
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>${title}</title>
     <meta name="description" content="${description}">
     <meta property="og:site_name" content="${platformName}">

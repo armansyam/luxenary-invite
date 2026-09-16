@@ -298,16 +298,21 @@ export async function composeTemplateData(invitationId: string) {
   const firstPhotoUrl = isGroomFirst ? groomPhoto : bridePhoto;
   const secondPhotoUrl = isGroomFirst ? bridePhoto : groomPhoto;
 
-  // Date Resolution
-  const firstEventDate = events && events[0]?.date ? events[0].date : "2026-10-05";
-  let targetDate = `${firstEventDate}T08:00:00`;
+  // Date Resolution: Prioritaskan Sesi Acara Utama (isPrimary: true) sebagai patokan tunggal
+  const rawEventsList = Array.isArray(events) ? events : [];
+  const primaryEvent = rawEventsList.find((e: any) => e.isPrimary) || rawEventsList[0] || null;
+  const primaryEventDate = primaryEvent?.date || "2026-10-05";
+  const primaryStartTime = primaryEvent?.startTime || (primaryEvent?.time ? primaryEvent.time.split(/[-–]/)[0].trim() : "08:00");
+  const formattedTime = primaryStartTime.length === 5 ? `${primaryStartTime}:00` : "08:00:00";
+
+  let targetDate = `${primaryEventDate}T${formattedTime}`;
   let weddingDateDay = "05";
   let weddingDateMonth = "10";
   let weddingDateYear = "2026";
   let weddingDate = "Senin, 05 Oktober 2026";
 
   try {
-    const d = new Date(firstEventDate);
+    const d = new Date(primaryEventDate);
     if (!isNaN(d.getTime())) {
       weddingDateDay = String(d.getDate()).padStart(2, "0");
       weddingDateMonth = String(d.getMonth() + 1).padStart(2, "0");
@@ -317,8 +322,6 @@ export async function composeTemplateData(invitationId: string) {
   } catch {}
 
   // 1. Dynamic Events HTML with Smart Location & Maps Deduplication
-  const rawEventsList = Array.isArray(events) ? events : [];
-
   // Detect whether all events share the exact same location and mapsUrl
   const normalizeLoc = (s: string) => (s || "").trim().toLowerCase();
   const firstDate = (rawEventsList[0]?.date || "").trim();
@@ -1127,9 +1130,14 @@ export async function composeTemplateData(invitationId: string) {
   let giftSectionHtml = "";
   const qrisImageUrl = featureSettings.qrisImageUrl || "";
   if (showGift) {
-    const rawBanks = Array.isArray(bankAccounts) && bankAccounts.length > 0
+    const hasExplicitBanks = Array.isArray(bankAccounts) && bankAccounts.length > 0;
+    const hasQris = Boolean(qrisImageUrl);
+    const hasAddress = Boolean(inv.shippingAddress && String(inv.shippingAddress).trim() !== "");
+
+    // Fallback rekening demo hanya jika SEMUA data kosong (tidak ada bank, tidak ada QRIS, dan tidak ada alamat)
+    const rawBanks = hasExplicitBanks
       ? bankAccounts
-      : [{ bank: "BCA", number: "7330497518", name: isGroomFirst ? groomName : brideName }];
+      : (!hasQris && !hasAddress ? [{ bank: "BCA", number: "7330497518", name: isGroomFirst ? groomName : brideName }] : []);
 
     const bankCardsHtml = rawBanks.map((b: any, idx: number) => `
       <div class="bank-card">
@@ -1142,6 +1150,39 @@ export async function composeTemplateData(invitationId: string) {
       </div>
     `).join("");
 
+    const hasDigitalGift = rawBanks.length > 0 || hasQris;
+    const showBothTabs = hasDigitalGift && hasAddress;
+
+    // Tabs hanya ditampilkan jika kedua metode (digital & kado fisik) sama-sama tersedia
+    const tabsHtml = showBothTabs ? `
+      <div class="gift-tabs">
+        <button class="gift-tab-btn active" onclick="switchGiftTab('amplop', this)">Transfer Bank / QRIS</button>
+        <button class="gift-tab-btn" onclick="switchGiftTab('kado', this)">Kirim Kado</button>
+      </div>
+    ` : "";
+
+    const amplopHtml = hasDigitalGift ? `
+      <div id="giftTabAmplop">
+        ${bankCardsHtml}
+        ${hasQris ? `
+          <div class="bank-card" style="text-align:center;">
+            <span class="bank-label" style="margin-bottom:0.6rem;">Scan QRIS Tanda Kasih</span>
+            <img src="${qrisImageUrl}" alt="QRIS" style="width:160px; height:160px; object-fit:contain; margin:0 auto; background:#fff; padding:6px; border-radius:8px;">
+          </div>
+        ` : ""}
+      </div>
+    ` : "";
+
+    const kadoHtml = hasAddress ? `
+      <div id="giftTabKado" style="${showBothTabs ? 'display:none;' : 'display:block;'}" class="bank-card">
+        <span class="bank-label">Alamat Pengiriman Kado</span>
+        <p style="font-size:0.8rem; color:rgba(255,255,255,0.7); line-height:1.5; margin:0.4rem 0 0.8rem;">
+          ${nl2br(String(inv.shippingAddress).trim())}
+        </p>
+        <button class="btn-copy" onclick="copyText('${escapeHtml(String(inv.shippingAddress).trim())}')">Salin Alamat</button>
+      </div>
+    ` : "";
+
     giftSectionHtml = `
       <section class="sec-flow" id="gift">
         <span class="sec-eyebrow" data-lux-field="customLabels.giftEyebrow">${giftSectionEyebrow}</span>
@@ -1150,28 +1191,9 @@ export async function composeTemplateData(invitationId: string) {
           ${giftSectionDesc}
         </p>
 
-        <div class="gift-tabs">
-          <button class="gift-tab-btn active" onclick="switchGiftTab('amplop', this)">Transfer Bank / QRIS</button>
-          <button class="gift-tab-btn" onclick="switchGiftTab('kado', this)">Kirim Kado</button>
-        </div>
-
-        <div id="giftTabAmplop">
-          ${bankCardsHtml}
-          ${qrisImageUrl ? `
-            <div class="bank-card" style="text-align:center;">
-              <span class="bank-label" style="margin-bottom:0.6rem;">Scan QRIS Tanda Kasih</span>
-              <img src="${qrisImageUrl}" alt="QRIS" style="width:160px; height:160px; object-fit:contain; margin:0 auto; background:#fff; padding:6px; border-radius:8px;">
-            </div>
-          ` : ""}
-        </div>
-
-        <div id="giftTabKado" style="display:none;" class="bank-card">
-          <span class="bank-label">Alamat Pengiriman Kado</span>
-          <p style="font-size:0.8rem; color:rgba(255,255,255,0.7); line-height:1.5; margin:0.4rem 0 0.8rem;">
-            ${nl2br(inv.shippingAddress || "Jl. Pengantin No. 12, Makassar")}
-          </p>
-          <button class="btn-copy" onclick="copyText('${escapeHtml(inv.shippingAddress || "Jl. Pengantin No. 12, Makassar")}')">Salin Alamat</button>
-        </div>
+        ${tabsHtml}
+        ${amplopHtml}
+        ${kadoHtml}
       </section>
     `;
   }
@@ -1243,12 +1265,12 @@ export async function composeTemplateData(invitationId: string) {
     } else if (inv.invitationSlug) {
       shareMomentUrl = `/${inv.invitationSlug}/sharemoment`;
     } else {
-      shareMomentUrl = `/demo/${themeFolder}/sharemoment`;
+      shareMomentUrl = `/demo/sharemoment?theme=${themeFolder}`;
     }
 
     const fullGalleryUrl = inv.subdomain && inv.subdomain !== "demo"
       ? `/s/${inv.subdomain}/memories`
-      : `/${inv.invitationSlug}/memories`;
+      : (inv.invitationSlug ? `/${inv.invitationSlug}/memories` : `/demo/memories?theme=${themeFolder}`);
 
     memoriesSectionHtml = `
       <section class="sec-flow slide-section" id="section-memories" data-section-alias="guest-memories" style="position: relative; padding: 3rem 1rem;">

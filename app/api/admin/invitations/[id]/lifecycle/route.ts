@@ -90,9 +90,11 @@ export async function POST(
       }
 
       if (events.length > 0) {
-        events[0].date = String(newDate).trim();
+        const target = events.find((e: any) => e.isPrimary) || events[0];
+        target.date = String(newDate).trim();
+        target.isPrimary = true;
       } else {
-        events = [{ title: "Acara Utama", date: String(newDate).trim() }];
+        events = [{ title: "Acara Utama", date: String(newDate).trim(), isPrimary: true }];
       }
 
       await prisma.invitation.update({

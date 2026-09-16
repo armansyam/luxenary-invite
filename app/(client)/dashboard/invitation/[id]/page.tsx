@@ -93,6 +93,30 @@ const EVENT_PRESETS = [
   "Custom Sesi Khusus",
 ];
 
+function formatIndonesianDatePreview(dateStr?: string): string {
+  if (!dateStr) return "";
+  try {
+    const clean = dateStr.includes("T") ? dateStr.split("T")[0] : dateStr;
+    const parts = clean.split("-");
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      const d = new Date(year, month, day);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+      }
+    }
+    const d = new Date(clean);
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    }
+    return dateStr;
+  } catch {
+    return dateStr || "";
+  }
+}
+
 export default function EditInvitation() {
   const params = useParams();
   const router = useRouter();
@@ -185,7 +209,7 @@ export default function EditInvitation() {
     }
   };
 
-  // Dual-Native Studio State: Form Mode vs Live Visual Editor
+  // Dual-Native Studio State: Form Mode vs Live Visual Editor vs Guest Memories
   const [activeStudioTab, setActiveStudioTab] = useState<"form" | "live">("form");
   const [previewDevice, setPreviewDevice] = useState<"mobile" | "desktop" | "dual">("dual");
   const [selectedThemeCategory, setSelectedThemeCategory] = useState<string>("");
@@ -275,9 +299,37 @@ export default function EditInvitation() {
     });
   }, [getAllLiveWindows]);
 
+  const pauseAllLiveIframesAudio = useCallback(() => {
+    getAllLiveWindows().forEach((win) => {
+      try {
+        win.postMessage({ type: "LUX_PAUSE_AUDIO" }, "*");
+        if (win.document) {
+          win.document.querySelectorAll("audio, video").forEach((el: any) => {
+            try { el.pause(); } catch {}
+          });
+          win.document.querySelectorAll(".audio-fab, .music-fab, .btn-music, .btn-audio-fab, #music-control, #musicFab").forEach((fab: any) => {
+            fab.classList.remove("playing", "spin", "rotate");
+          });
+        }
+      } catch {}
+    });
+  }, [getAllLiveWindows]);
+
   const handleStudioTabClick = (tab: "form" | "live") => {
     setActiveStudioTab(tab);
+    if (tab === "form") {
+      pauseAllLiveIframesAudio();
+    }
   };
+
+  useEffect(() => {
+    if (activeStudioTab === "form") {
+      pauseAllLiveIframesAudio();
+    }
+    return () => {
+      pauseAllLiveIframesAudio();
+    };
+  }, [activeStudioTab, pauseAllLiveIframesAudio]);
 
   // Master-Detail Two-Column Studio State
   const [activeSectionTab, setActiveSectionTab] = useState<string>("sec1");
@@ -368,61 +420,39 @@ export default function EditInvitation() {
     }
   };
 
-  // Independent Section Collapse States (true = collapsed/tutup, false = expanded/buka)
+  // Mode Master-Detail Sidebar: seluruh seksi form selalu terbuka penuh (always expanded)
   const defaultCollapsed: Record<string, boolean> = {
-    sec1: true,  // 1. Tema & Warna
-    sec2: true,  // 2. Sampul & Musik
-    sec3: true,  // 3. Profil Mempelai
-    sec4: true,  // 4. Kutipan Pembuka
-    sec5: true,  // 5. Rangkaian Acara
-    sec6: true,  // 6. Pengaturan QR Code & Check-in
-    sec7: true,  // 7. Kisah Cinta (Love Story)
-    sec8: true,  // 8. Pengaturan Galeri Foto & Video
-    sec9: true,  // 9. Rekening Bank & Hadiah Digital
-    sec10: true, // 10. Panduan Busana (Dress Code)
-    sec11: true, // 11. Siaran Langsung (Live Streaming)
-    sec12: true, // 12. Filter Instagram Story
-    sec13: true, // 13. Turut Mengundang & Himbauan
-    sec14: true, // 14. Galeri Kenangan Tamu (After-Event)
-    sec15: true, // 15. Pengaturan Teks UI & Bahasa
+    sec1: false,  // 1. Tema & Warna
+    sec2: false,  // 2. Sampul & Musik
+    sec3: false,  // 3. Profil Mempelai
+    sec4: false,  // 4. Kutipan Pembuka
+    sec5: false,  // 5. Rangkaian Acara
+    sec6: false,  // 6. Pengaturan QR Code & Check-in
+    sec7: false,  // 7. Kisah Cinta (Love Story)
+    sec8: false,  // 8. Pengaturan Galeri Foto & Video
+    sec9: false,  // 9. Rekening Bank & Hadiah Digital
+    sec10: false, // 10. Panduan Busana (Dress Code)
+    sec11: false, // 11. Siaran Langsung (Live Streaming)
+    sec12: false, // 12. Filter Instagram Story
+    sec13: false, // 13. Turut Mengundang & Himbauan
+    sec14: false, // 14. Galeri Kenangan Tamu (After-Event)
+    sec15: false, // 15. Pengaturan Teks UI & Bahasa
   };
 
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>(defaultCollapsed);
 
-  // Restore persisted collapsed state from localStorage on load
+  // Bersihkan legacy collapsed state dari localStorage agar tidak mengunci tampilan seksi
   useEffect(() => {
     if (typeof window !== "undefined" && invitationId) {
       try {
-        const saved = localStorage.getItem(`lux_studio_collapsed_${invitationId}`);
-        if (saved) {
-          setCollapsed((prev) => ({ ...prev, ...JSON.parse(saved) }));
-        }
+        localStorage.removeItem(`lux_studio_collapsed_${invitationId}`);
       } catch {}
     }
   }, [invitationId]);
 
-  // Single-Expanded Exclusive Accordion: Membuka satu seksi otomatis menutup seksi lainnya
-  const toggleSection = (secKey: string) => {
-    setCollapsed((prev) => {
-      const isCurrentlyCollapsed = Boolean(prev[secKey]);
-      let next: Record<string, boolean>;
-      if (isCurrentlyCollapsed) {
-        // Exclusive: Tutup semua seksi lain, buka hanya seksi yang diklik
-        next = Object.keys(defaultCollapsed).reduce((acc, key) => {
-          acc[key] = key !== secKey;
-          return acc;
-        }, {} as Record<string, boolean>);
-      } else {
-        // Jika sudah terbuka dan user mengklik untuk menutup, tutup seksi tersebut
-        next = { ...prev, [secKey]: true };
-      }
-      if (typeof window !== "undefined" && invitationId) {
-        try {
-          localStorage.setItem(`lux_studio_collapsed_${invitationId}`, JSON.stringify(next));
-        } catch {}
-      }
-      return next;
-    });
+  // Mode Master-Detail: seksi aktif selalu terbuka penuh
+  const toggleSection = (_secKey: string) => {
+    // No-op: seksi form aktif selalu terbuka
   };
 
   useEffect(() => {
@@ -489,7 +519,54 @@ export default function EditInvitation() {
         };
 
         const ev = parseJ(inv.eventData, []);
-        const loadedEvents = Array.isArray(ev) ? ev : [];
+        const rawList = Array.isArray(ev) ? ev : [];
+        const loadedEvents = rawList.map((item: any) => {
+          let startTime = item.startTime || "";
+          let endTime = item.endTime || "";
+          let timezone = item.timezone || "WIB";
+          let isUntilDone = Boolean(item.isUntilDone);
+
+          if ((!startTime || !endTime) && item.time) {
+            const raw = String(item.time).trim();
+            if (/WITA/i.test(raw)) timezone = "WITA";
+            else if (/WIT/i.test(raw)) timezone = "WIT";
+            else if (/WIB/i.test(raw)) timezone = "WIB";
+
+            const match = raw.match(/(\d{1,2}[:.]\d{2})\s*[-–—]\s*(\d{1,2}[:.]\d{2}|selesai)/i);
+            if (match) {
+              startTime = match[1].replace(".", ":").padStart(5, "0");
+              if (/selesai/i.test(match[2])) {
+                isUntilDone = true;
+                endTime = "23:59";
+              } else {
+                endTime = match[2].replace(".", ":").padStart(5, "0");
+              }
+            }
+          }
+
+          if (!startTime) startTime = "09:00";
+          if (!endTime) endTime = isUntilDone ? "23:59" : "12:00";
+
+          let date = item.date || "";
+          if (date.includes("T")) {
+            date = date.split("T")[0];
+          }
+
+          const sTime = startTime || "09:00";
+          const eTime = isUntilDone ? "Selesai" : (endTime || "12:00");
+          const tz = timezone || "WIB";
+          const synthTime = item.time || `${sTime} - ${eTime} ${tz}`;
+
+          return {
+            ...item,
+            date,
+            startTime,
+            endTime,
+            timezone,
+            isUntilDone,
+            time: synthTime,
+          };
+        });
         setEvents(loadedEvents);
 
         const st = parseJ(inv.loveStory, []);
@@ -544,7 +621,8 @@ export default function EditInvitation() {
       });
 
       if (!res.ok) {
-        throw new Error("Gagal menyimpan data ke server");
+        const errData = await res.json().catch(() => null);
+        throw new Error(errData?.error || errData?.message || "Gagal menyimpan data ke server");
       }
 
       // Update saved snapshot to current state
@@ -559,18 +637,7 @@ export default function EditInvitation() {
       const timeStr = new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
       setLastSaved(`Tersimpan pukul ${timeStr}`);
 
-      // If saved from a specific section, collapse it cleanly and persist state
-      if (secKey) {
-        setCollapsed((prev) => {
-          const next = { ...prev, [secKey]: true };
-          if (typeof window !== "undefined" && invitationId) {
-            try {
-              localStorage.setItem(`lux_studio_collapsed_${invitationId}`, JSON.stringify(next));
-            } catch {}
-          }
-          return next;
-        });
-      }
+      // Mode Master-Detail: seksi aktif tetap terbuka setelah disimpan
 
       // Broadcast hot reload to open Live Preview tabs
       try {
@@ -585,7 +652,7 @@ export default function EditInvitation() {
       console.error("Save failed:", err);
       setStudioNotification({
         type: "error",
-        message: "Terjadi kendala saat menyimpan data ke server. Silakan periksa koneksi internet Anda dan coba lagi.",
+        message: err?.message || "Terjadi kendala saat menyimpan data ke server. Silakan coba lagi.",
       });
     } finally {
       setSaving(false);
@@ -702,10 +769,10 @@ export default function EditInvitation() {
     applyToDoc(liveSingleIframeRef.current);
   }, []);
 
-  const handleSelectPalette = useCallback((paletteId: string) => {
+  const handleSelectPalette = (paletteId: string) => {
     updateFeatureSetting("colorPalette", paletteId);
     applyPaletteToIframe(paletteId);
-  }, [applyPaletteToIframe]);
+  };
 
   const getFeatureSetting = (key: string, fallback: any = "") => {
     if (!invitation?.featureSettings) return fallback;
@@ -1010,33 +1077,90 @@ export default function EditInvitation() {
 
   const hasAnyDirty = Object.values(isDirty).some(Boolean);
 
-  // Event Handlers
+  // Event Handlers & Chronological Auto-Sort
+  const sortEventsChronologically = (list: any[]) => {
+    return [...list].sort((a, b) => {
+      const dateA = a.date || "";
+      const dateB = b.date || "";
+      const cmp = dateA.localeCompare(dateB);
+      if (cmp !== 0) return cmp;
+      const timeA = a.startTime || a.time || "";
+      const timeB = b.startTime || b.time || "";
+      return timeA.localeCompare(timeB);
+    });
+  };
+
   const addEvent = (presetTitle: string = "Sesi Baru") => {
-    setEvents((prev) => [
-      ...prev,
-      {
+    setEvents((prev) => {
+      const isFirst = prev.length === 0;
+      const defaultStart = isFirst ? "09:00" : "13:00";
+      const defaultEnd = isFirst ? "11:00" : "16:00";
+      const defaultTz = prev[0]?.timezone || "WIB";
+      const defaultTime = `${defaultStart} - ${defaultEnd} ${defaultTz}`;
+      const newEv = {
         title: presetTitle,
         date: prev[0]?.date || "",
-        time: "",
-        location: "",
-        address: "",
-        mapsUrl: "",
+        startTime: defaultStart,
+        endTime: defaultEnd,
+        timezone: defaultTz,
+        isUntilDone: false,
+        time: defaultTime,
+        location: prev[0]?.location || "",
+        address: prev[0]?.address || "",
+        mapsUrl: prev[0]?.mapsUrl || "",
         badge: presetTitle.toLowerCase().includes("akad") || presetTitle.toLowerCase().includes("pemberkatan") ? "Sakral" : "Umum",
         notes: "",
-      },
-    ]);
+        isPrimary: isFirst || !prev.some((e) => e.isPrimary),
+      };
+      return sortEventsChronologically([...prev, newEv]);
+    });
   };
 
   const removeEvent = (index: number) => {
-    setEvents((prev) => prev.filter((_, i) => i !== index));
+    setEvents((prev) => {
+      const filtered = prev.filter((_, i) => i !== index);
+      if (filtered.length > 0 && !filtered.some((e) => e.isPrimary)) {
+        filtered[0].isPrimary = true;
+      }
+      return filtered;
+    });
+  };
+
+  const setAsPrimaryEvent = (index: number) => {
+    setEvents((prev) => {
+      return prev.map((ev, i) => ({
+        ...ev,
+        isPrimary: i === index,
+      }));
+    });
   };
 
   const updateEventItem = (index: number, field: string, value: any) => {
     setEvents((prev) => {
       const next = [...prev];
       next[index] = { ...next[index], [field]: value };
+      if (field === "date" && typeof value === "string" && value.length === 10) {
+        return sortEventsChronologically(next);
+      }
       return next;
     });
+    broadcastToAllLiveIframes({ type: "LUX_REMOTE_EDIT_CHANGE", field: `events.${index}.${field}`, value });
+  };
+
+  const handleTimeFieldChange = (index: number, field: "startTime" | "endTime" | "timezone" | "isUntilDone", value: any) => {
+    let synthTime = "";
+    setEvents((prev) => {
+      const next = [...prev];
+      const current = { ...next[index], [field]: value };
+      const sTime = current.startTime || "09:00";
+      const eTime = current.isUntilDone ? "Selesai" : (current.endTime || "12:00");
+      const tz = current.timezone || "WIB";
+      synthTime = `${sTime} - ${eTime} ${tz}`;
+      current.time = synthTime;
+      next[index] = current;
+      return next;
+    });
+    broadcastToAllLiveIframes({ type: "LUX_REMOTE_EDIT_CHANGE", field: `events.${index}.time`, value: synthTime });
     broadcastToAllLiveIframes({ type: "LUX_REMOTE_EDIT_CHANGE", field: `events.${index}.${field}`, value });
   };
 
@@ -1109,7 +1233,7 @@ export default function EditInvitation() {
 
   const planType = invitation.order?.planType || "";
   const packageConfig = platformSettings?.packages?.find((p: any) => p.id === planType);
-  const allowedCaps = packageConfig?.capabilities || (planType === "PREMIUM" ? ["music", "gallery", "qr_checkin", "guest_memories", "custom_domain"] : planType === "MODERN" ? ["music", "gallery", "qr_checkin"] : ["music", "gallery"]);
+  const allowedCaps = packageConfig?.capabilities || (planType === "PREMIUM" ? ["music", "gallery", "qr_checkin", "guest_memories", "custom_domain"] : planType === "MODERN" ? ["music", "gallery", "qr_checkin", "guest_memories"] : ["music", "gallery"]);
   const hasCap = (cap: string) => allowedCaps.includes(cap);
 
   const showMusic = getFeatureSetting("showMusic", true);
@@ -3256,24 +3380,50 @@ export default function EditInvitation() {
             </div>
 
             {(invitation?.status === "PUBLISHED" || invitation?.status === "EVENT_FINISHED") && (
-              <div className="p-3.5 bg-amber-50/80 border border-amber-200/80 rounded-2xl flex items-start gap-3 text-xs text-amber-950 mt-3 mb-1">
+              <div className="p-3.5 bg-stone-50 border border-stone-200 rounded-2xl flex items-start gap-3 text-xs text-stone-700 mt-3 mb-1">
                 <svg className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <div>
-                  <p className="font-bold text-amber-900">Jadwal Acara Telah Terkunci</p>
-                  <p className="text-[11px] text-amber-800/90 mt-0.5 leading-relaxed">
-                    Tanggal acara terkunci secara otomatis setelah undangan diterbitkan untuk menjamin akurasi jadwal sistem retensi. Jika terdapat perubahan jadwal darurat, silakan hubungi Customer Support / Admin.
+                  <p className="font-bold text-stone-900">Penyesuaian Jadwal &amp; Sesi Acara</p>
+                  <p className="text-[11px] text-stone-600 mt-0.5 leading-relaxed">
+                    Anda tetap leluasa menyesuaikan jam dan menambah sesi acara kapan saja. Tanggal dasar masa aktif undangan tetap berpatokan pada jadwal awal saat pertama kali dipublikasikan.
                   </p>
                 </div>
               </div>
             )}
 
             <div className="space-y-4 mt-2">
-              {events.map((ev, idx) => (
-                <div key={idx} className="p-4 rounded-2xl border border-stone-200 bg-stone-50/50 space-y-3">
-                  <div className="flex items-center justify-between border-b border-stone-200/80 pb-2">
-                    <span className="text-xs font-bold text-amber-800 uppercase tracking-wider">Sesi #{idx + 1} — {ev.title || "Acara"}</span>
+              {events.map((ev, idx) => {
+                const isDateLocked = Boolean(ev.isPrimary && (invitation?.status === "PUBLISHED" || invitation?.status === "EVENT_FINISHED"));
+                return (
+                <div key={idx} className={`p-4 rounded-2xl border transition ${
+                  ev.isPrimary 
+                    ? "border-amber-300 bg-amber-50/40 shadow-xs ring-1 ring-amber-200/60" 
+                    : "border-stone-200 bg-stone-50/50"
+                } space-y-3`}>
+                  <div className="flex items-center justify-between border-b border-stone-200/80 pb-2 flex-wrap gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-amber-900 uppercase tracking-wider">
+                        Sesi #{idx + 1} — {ev.title || "Acara"}
+                      </span>
+                      {ev.isPrimary ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-950 border border-amber-300 shadow-xs">
+                          <svg className="w-3 h-3 text-amber-700" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                          Sesi Acara Utama (Patokan Masa Aktif)
+                        </span>
+                      ) : !(invitation?.status === "PUBLISHED" || invitation?.status === "EVENT_FINISHED") ? (
+                        <button
+                          type="button"
+                          onClick={() => setAsPrimaryEvent(idx)}
+                          className="text-[10px] font-semibold text-stone-500 hover:text-amber-900 px-2 py-0.5 rounded-md hover:bg-amber-100/60 border border-stone-200/80 transition cursor-pointer"
+                        >
+                          Jadikan Sesi Utama
+                        </button>
+                      ) : null}
+                    </div>
                     {events.length > 1 && (
                       <button
                         type="button"
@@ -3286,25 +3436,119 @@ export default function EditInvitation() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                     <Input label="Nama Sesi Acara" value={ev.title || ""} onChange={(v) => updateEventItem(idx, "title", v)} placeholder="Masukkan nama sesi acara (Misal: Akad Nikah)" />
-                    <Input
-                      label="Hari, Tanggal"
-                      value={ev.date || ""}
-                      onChange={(v) => updateEventItem(idx, "date", v)}
-                      placeholder="Sabtu, 15 Juni 2026"
-                      disabled={invitation?.status === "PUBLISHED" || invitation?.status === "EVENT_FINISHED"}
-                      subtitle={(invitation?.status === "PUBLISHED" || invitation?.status === "EVENT_FINISHED") ? "Terkunci Pasca Publish" : undefined}
-                    />
-                    <Input label="Waktu / Jam" value={ev.time || ""} onChange={(v) => updateEventItem(idx, "time", v)} placeholder="Contoh: 09:00 - 12:00 WIB / WITA / WIT" />
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-semibold text-stone-700">
+                          Hari, Tanggal Acara
+                        </label>
+                        {isDateLocked && (
+                          <span className="text-[10px] font-bold text-amber-800 bg-amber-100/70 px-1.5 py-0.5 rounded">
+                            Terkunci
+                          </span>
+                        )}
+                      </div>
+                      <input
+                        type="date"
+                        disabled={isDateLocked}
+                        value={ev.date || ""}
+                        onChange={(e) => updateEventItem(idx, "date", e.target.value)}
+                        className={`w-full px-3 py-2 text-xs rounded-xl border font-medium transition ${
+                          isDateLocked
+                            ? "border-stone-200 bg-stone-100 text-stone-500 cursor-not-allowed"
+                            : "border-stone-200 bg-white text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+                        }`}
+                      />
+                      {isDateLocked ? (
+                        <p className="text-[10px] text-amber-800 font-medium mt-1 leading-relaxed">
+                          Terkunci pasca-publikasi sebagai patokan masa aktif. Hubungi Admin jika perlu penyesuaian.
+                        </p>
+                      ) : ev.date ? (
+                        <p className="text-[11px] text-amber-900 font-semibold mt-1">
+                          {formatIndonesianDatePreview(ev.date)}
+                        </p>
+                      ) : (
+                        <p className="text-[11px] text-stone-400 mt-1">
+                          Pilih tanggal pelaksanaan acara
+                        </p>
+                      )}
+                    </div>
+                    <Input label="Label Badge" value={ev.badge || ""} onChange={(b) => updateEventItem(idx, "badge", b)} placeholder="Sakral / Adat Bugis / Umum" />
+
+                    {/* Form Waktu Terstruktur */}
+                    <div className="sm:col-span-2 md:col-span-3 p-3.5 bg-stone-50/80 rounded-2xl border border-stone-200/90 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-stone-800">Waktu &amp; Zona Wilayah Acara</span>
+                        <span className="text-[11px] font-mono font-semibold text-amber-900 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/80">
+                          {ev.time || `${ev.startTime || "09:00"} - ${ev.isUntilDone ? "Selesai" : (ev.endTime || "12:00")} ${ev.timezone || "WIB"}`}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                          <label className="block text-[11px] font-semibold text-stone-700 mb-1">
+                            Jam Mulai
+                          </label>
+                          <input
+                            type="time"
+                            value={ev.startTime || "09:00"}
+                            onChange={(e) => handleTimeFieldChange(idx, "startTime", e.target.value)}
+                            className="w-full px-3 py-2 text-xs rounded-xl border border-stone-200 bg-white font-mono text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 transition"
+                          />
+                        </div>
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="block text-[11px] font-semibold text-stone-700">
+                              Jam Selesai
+                            </label>
+                            <label className="flex items-center gap-1.5 cursor-pointer text-[10px] text-stone-600 hover:text-stone-900">
+                              <input
+                                type="checkbox"
+                                checked={Boolean(ev.isUntilDone)}
+                                onChange={(e) => handleTimeFieldChange(idx, "isUntilDone", e.target.checked)}
+                                className="rounded border-stone-300 text-amber-600 focus:ring-amber-500/20"
+                              />
+                              <span>Sampai Selesai</span>
+                            </label>
+                          </div>
+                          {ev.isUntilDone ? (
+                            <div className="px-3 py-2 text-xs rounded-xl border border-dashed border-stone-300 bg-stone-100 text-stone-600 font-medium text-center">
+                              Sampai Selesai Acara
+                            </div>
+                          ) : (
+                            <input
+                              type="time"
+                              value={ev.endTime || "12:00"}
+                              onChange={(e) => handleTimeFieldChange(idx, "endTime", e.target.value)}
+                              className="w-full px-3 py-2 text-xs rounded-xl border border-stone-200 bg-white font-mono text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 transition"
+                            />
+                          )}
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-stone-700 mb-1">
+                            Pilihan Zona Waktu
+                          </label>
+                          <select
+                            value={ev.timezone || "WIB"}
+                            onChange={(e) => handleTimeFieldChange(idx, "timezone", e.target.value)}
+                            className="w-full px-3 py-2 text-xs rounded-xl border border-stone-200 bg-white font-medium text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 transition"
+                          >
+                            <option value="WIB">WIB (Indonesia Barat - UTC+7)</option>
+                            <option value="WITA">WITA (Indonesia Tengah - UTC+8)</option>
+                            <option value="WIT">WIT (Indonesia Timur - UTC+9)</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
                     <Input label="Nama Lokasi / Gedung" value={ev.location || ""} onChange={(v) => updateEventItem(idx, "location", v)} placeholder="Contoh: Gedung Pertemuan / Rumah Mempelai" />
                     <Input label="Alamat Lengkap" value={ev.address || ""} onChange={(v) => updateEventItem(idx, "address", v)} placeholder="Contoh: Jl. Melati No. 10" />
                     <Input label="Link Google Maps" value={ev.mapsUrl || ""} onChange={(v) => updateEventItem(idx, "mapsUrl", v)} placeholder="https://maps.app.goo.gl/..." />
-                    <Input label="Label Badge" value={ev.badge || ""} onChange={(b) => updateEventItem(idx, "badge", b)} placeholder="Sakral / Adat Bugis / Umum" />
-                    <div className="sm:col-span-2">
+                    <div className="sm:col-span-2 md:col-span-3">
                       <Input label="Catatan Tambahan (Opsional)" value={ev.notes || ""} onChange={(v) => updateEventItem(idx, "notes", v)} placeholder="Masukkan catatan tambahan untuk tamu (Opsional)" />
                     </div>
                   </div>
                 </div>
-              ))}
+              );
+            })}
             </div>
 
             <div className="pt-4 border-t border-stone-100 flex justify-end">
@@ -4233,331 +4477,75 @@ export default function EditInvitation() {
 
             {getFeatureSetting("showGuestMemories", true) && (
               <div className="space-y-6">
-                {/* ── A. PRESET FILTER ANALOG ACARA ── */}
+                {/* ── A. TAMPILAN SEKSI DI WEBSITE UNDANGAN ── */}
                 <div className="space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                    <div>
-                      <span className="text-xs font-bold text-stone-800 block">Preset Filter Analog Acara:</span>
-                      <span className="text-[11px] text-stone-500">Filter ini seragam diterapkan ke kamera virtual seluruh tamu undangan Anda</span>
-                    </div>
-                    <span className="self-start sm:self-auto text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 font-bold uppercase tracking-wider">
-                      Virtual Disposable Camera
-                    </span>
+                  <div>
+                    <span className="text-xs font-bold text-stone-800 block">Gaya Tampilan Seksi di Website Undangan:</span>
+                    <span className="text-[11px] text-stone-500">Pilih bagaimana galeri kenangan candid tamu disajikan kepada para tamu di website undangan Anda</span>
                   </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
-                      {[
-                        { id: "aura_90s", name: "Aura '90s", desc: "Hangat, kulit merona, vignette lembut (Morements Recipe)", badge: "Populer", previewBg: "from-amber-700/80 via-orange-600/70 to-stone-900" },
-                        { id: "heritage_romance", name: "Heritage Romance", desc: "Sepia pudar, champagne lembut, romantis klasik", badge: "Klasik", previewBg: "from-amber-900/80 via-stone-800 to-amber-950" },
-                        { id: "botanical_mist", name: "Botanical Mist", desc: "Pastel green teduh, cocok untuk pesta outdoor/garden", badge: "Garden", previewBg: "from-emerald-900/80 via-teal-900 to-stone-900" },
-                        { id: "cinema_noir", name: "Cinema Noir", desc: "Monokrom kontras tegas, mewah & dramatis (B&W)", badge: "Monokrom", previewBg: "from-stone-950 via-stone-800 to-stone-900" },
-                        { id: "pure_daylight", name: "Pure Daylight", desc: "Warna asli alami tanpa distorsi, jernih & presisi", badge: "Natural", previewBg: "from-sky-900/60 via-stone-800 to-stone-900" },
-                      ].map((flt) => {
-                        const isSelected = getFeatureSetting("memoriesFilter", "aura_90s") === flt.id;
-                        return (
-                          <button
-                            key={flt.id}
-                            type="button"
-                            onClick={() => updateFeatureSetting("memoriesFilter", flt.id)}
-                            className={`p-2.5 rounded-xl border text-left transition flex flex-col justify-between cursor-pointer ${
-                              isSelected
-                                ? "bg-amber-50/90 border-amber-600 ring-2 ring-amber-600 shadow-xs"
-                                : "bg-white border-stone-200 hover:border-stone-300"
-                            }`}
-                          >
-                            <div className={`h-14 w-full rounded-lg bg-gradient-to-tr ${flt.previewBg} mb-2 relative overflow-hidden flex items-end p-1.5 shadow-inner`}>
-                              <span className="text-[8px] font-mono text-amber-300 font-bold bg-stone-950/70 px-1 py-0.5 rounded">15 09 &apos;26</span>
-                            </div>
-                            <div>
-                              <div className="flex items-center justify-between gap-1 mb-0.5">
-                                <span className={`text-[11px] font-bold truncate ${isSelected ? "text-amber-950" : "text-stone-800"}`}>
-                                  {flt.name}
-                                </span>
-                              </div>
-                              <p className="text-[10px] text-stone-500 leading-snug line-clamp-2">
-                                {flt.desc}
-                              </p>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {/* Stempel Tanggal LED */}
-                    <div className="pt-2 flex flex-wrap items-center justify-between gap-3 bg-stone-50/60 p-3.5 rounded-xl border border-stone-200/60">
-                      <div>
-                        <span className="text-xs font-bold text-stone-800 block">Stempel Tanggal Retro (Date Imprint):</span>
-                        <span className="text-[11px] text-stone-500">Cetak teks tanggal oranye menyala di pojok kanan bawah foto</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <select
-                          value={getFeatureSetting("memoriesDateFormat", "DD MM 'YY")}
-                          onChange={(e) => updateFeatureSetting("memoriesDateFormat", e.target.value)}
-                          disabled={!getFeatureSetting("memoriesDateStamp", true)}
-                          className="p-1.5 bg-white border border-stone-200 rounded-lg text-xs font-mono text-stone-800 disabled:opacity-40"
-                        >
-                          <option value="DD MM 'YY">Format: 15 09 &apos;26</option>
-                          <option value="DD · MMM · YYYY">Format: 15 · SEP · 2026</option>
-                        </select>
-                        <SectionHeaderToggle
-                          label=""
-                          checked={Boolean(getFeatureSetting("memoriesDateStamp", true))}
-                          onChange={(v) => updateFeatureSetting("memoriesDateStamp", v)}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Foto Khusus Opening Kamera Tamu */}
-                    <div className="pt-2 flex flex-wrap items-center justify-between gap-3 bg-stone-50/60 p-3.5 rounded-xl border border-stone-200/60">
-                      <div>
-                        <span className="text-xs font-bold text-stone-800 block">Foto Khusus Layar Opening (/sharemoment):</span>
-                        <span className="text-[11px] text-stone-500">Tampilkan foto potret khusus untuk layar pembuka tamu (opsional, default memakai foto cover)</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        {Boolean(getFeatureSetting("memoriesCoverPhoto", "")) && (
-                          <div className="w-8 h-10 rounded-lg overflow-hidden border border-stone-300 shadow-xs relative">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={getFeatureSetting("memoriesCoverPhoto", "")} alt="Cover Preview" className="w-full h-full object-cover" />
-                          </div>
-                        )}
-                        <label className="cursor-pointer px-3 py-1.5 bg-white border border-stone-200 hover:border-amber-500 rounded-lg text-xs font-bold text-stone-700 hover:text-amber-800 transition">
-                          <span>{getFeatureSetting("memoriesCoverPhoto", "") ? "Ganti Foto Opening" : "Unggah Foto Opening"}</span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={async (e) => {
-                              const file = e.target.files?.[0];
-                              if (!file || !invitation?.id) return;
-                              const fd = new FormData();
-                              fd.append("file", file);
-                              fd.append("invitationId", invitation.id);
-                              fd.append("slot", "MEMORIES_COVER");
-                              try {
-                                const res = await fetch("/api/client/upload", { method: "POST", body: fd });
-                                if (res.ok) {
-                                  const d = await res.json();
-                                  updateFeatureSetting("memoriesCoverPhoto", d.localPath || d.mediaUrl);
-                                }
-                              } catch {}
-                            }}
-                          />
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-
-                {/* ── B. PENGATURAN KUOTA DINAMIS: TAMU KONTRIBUTOR × ROLL LIMIT ── */}
-                {(() => {
-                  const planMemoriesQuota = (invitation as any)?.planMemoriesQuota || {
-                    maxContributors: planType === "PREMIUM" ? 100 : (planType === "MODERN" ? 50 : 30),
-                    shotsQuota: planType === "PREMIUM" ? 5 : (planType === "MODERN" ? 3 : 3),
-                    hasAccess: planType === "PREMIUM" || planType === "MODERN",
-                  };
-                  const maxContribLimit = planMemoriesQuota.maxContributors || 100;
-                  const shotsQuotaLimit = planMemoriesQuota.shotsQuota || 5;
-                  const currentMaxContrib = Math.min(maxContribLimit, Number(getFeatureSetting("memoriesMaxContributors", maxContribLimit)) || maxContribLimit);
-                  const currentShotsQuota = Math.min(shotsQuotaLimit, Number(getFeatureSetting("memoriesShotsQuota", shotsQuotaLimit)) || shotsQuotaLimit);
-
-                  return (
-                    <div className="space-y-3 bg-stone-50/80 p-4 rounded-2xl border border-stone-200/80">
-                      <div className="flex flex-wrap items-center justify-between gap-2 pb-1 border-b border-stone-200/60">
-                        <span className="text-xs font-bold text-stone-800">Plafon Paket Anda ({planType}):</span>
-                        <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-200">
-                          Maks. {maxContribLimit} Tamu × {shotsQuotaLimit} Roll ({maxContribLimit * shotsQuotaLimit} Foto)
-                        </span>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-xs font-bold text-stone-800 mb-1">
-                            Jatah Jepretan per Tamu (Roll Limit):
-                          </label>
-                          <p className="text-[11px] text-stone-500 mb-2">Berapa foto per tamu (Pilihan fleksibel: 1 - 30 Roll)</p>
-                          <div className="flex items-center gap-3">
-                            <input
-                              type="number"
-                              min={1}
-                              max={30}
-                              value={currentShotsQuota}
-                              onChange={(e) => updateFeatureSetting("memoriesShotsQuota", Math.min(30, Math.max(1, parseInt(e.target.value) || 1)))}
-                              className="w-24 p-2 bg-white border border-stone-200 rounded-xl text-xs font-bold font-mono text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700/30 text-center"
-                            />
-                            <span className="text-xs text-stone-600 font-medium">Foto / Tamu</span>
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-bold text-stone-800 mb-1">
-                            Batas Kuota Tamu Pengunggah:
-                          </label>
-                          <p className="text-[11px] text-stone-500 mb-2">Maksimal tamu kontributor (Plafon paket: {maxContribLimit} Tamu)</p>
-                          <div className="flex items-center gap-3">
-                            <input
-                              type="number"
-                              min={5}
-                              max={maxContribLimit}
-                              step={5}
-                              value={currentMaxContrib}
-                              onChange={(e) => updateFeatureSetting("memoriesMaxContributors", Math.min(maxContribLimit, Math.max(5, parseInt(e.target.value) || 5)))}
-                              className="w-24 p-2 bg-white border border-stone-200 rounded-xl text-xs font-bold font-mono text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700/30 text-center"
-                            />
-                            <span className="text-xs text-stone-600 font-medium">Tamu Kontributor</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Kalkulasi Kapasitas Otomatis */}
-                      <div className="p-3 bg-amber-500/10 border border-amber-600/20 rounded-xl flex items-center justify-between text-xs text-amber-900">
-                        <span className="font-medium">
-                          Estimasi Kapasitas Acara:{" "}
-                          <strong>
-                            {`${currentMaxContrib} Tamu × ${currentShotsQuota} Roll = ${currentMaxContrib * currentShotsQuota} Maks. Foto`}
-                          </strong>
-                        </span>
-                        <span className="text-[11px] text-amber-800/80 font-mono hidden sm:inline">
-                          Otomatis menutup tamu baru saat kuota penuh
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {/* ── D. JADWAL WAKTU & DELAYED REVEAL ── */}
-                <div className="space-y-3 bg-stone-50/80 p-4 rounded-2xl border border-stone-200/80">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-xs font-bold text-stone-800 block">Jadwal Kamera Aktif:</span>
-                      <span className="text-[11px] text-stone-500">Kapan tamu diizinkan mulai memotret dan kapan sesi ditutup</span>
-                    </div>
-                    <label className="flex items-center gap-2 text-xs font-bold text-stone-700 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={Boolean(getFeatureSetting("memoriesCustomSchedule", false))}
-                        onChange={(e) => updateFeatureSetting("memoriesCustomSchedule", e.target.checked)}
-                        className="rounded border-stone-300 text-amber-700 focus:ring-amber-700"
-                      />
-                      <span>Kustom Jam Mandiri</span>
-                    </label>
-                  </div>
-
-                  {Boolean(getFeatureSetting("memoriesCustomSchedule", false)) ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                      <div>
-                        <label className="block text-[11px] font-bold text-stone-600 mb-1">Jam Kamera Mulai Dibuka:</label>
-                        <input
-                          type="datetime-local"
-                          value={getFeatureSetting("memoriesStartTime", "")}
-                          onChange={(e) => updateFeatureSetting("memoriesStartTime", e.target.value)}
-                          className="w-full p-2 bg-white border border-stone-200 rounded-xl text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700/30 font-mono"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-bold text-stone-600 mb-1">Jam Sesi Ditutup (Tutup Kamera):</label>
-                        <input
-                          type="datetime-local"
-                          value={getFeatureSetting("memoriesEndTime", "")}
-                          onChange={(e) => updateFeatureSetting("memoriesEndTime", e.target.value)}
-                          className="w-full p-2 bg-white border border-stone-200 rounded-xl text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700/30 font-mono"
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="p-2.5 bg-white rounded-xl border border-stone-200/70 text-[11px] text-stone-600 flex items-center gap-2">
-                      <span className="text-amber-800 font-bold font-mono">Auto-Sync:</span>
-                      <span>Kamera otomatis aktif mengikuti tanggal &amp; jam acara resepsi yang tertera di data undangan.</span>
-                    </div>
-                  )}
-
-                  {/* Delayed Reveal Switcher */}
-                  <div className="pt-2 border-t border-stone-200/60 flex items-center justify-between">
-                    <div>
-                      <span className="text-xs font-bold text-stone-800 block">Delayed Reveal (Kunci Galeri Bersama):</span>
-                      <span className="text-[11px] text-stone-500">Tamu tidak bisa melihat hasil foto siapa pun sampai jam acara selesai (kejutan serentak)</span>
-                    </div>
-                    <SectionHeaderToggle
-                      label=""
-                      checked={Boolean(getFeatureSetting("memoriesDelayedReveal", false))}
-                      onChange={(v) => updateFeatureSetting("memoriesDelayedReveal", v)}
-                    />
-                  </div>
-
-                  {/* ── D.2 PERALIHAN RUTE KE GALERI MOMEN (DUAL-MODE) ── */}
-                  <div className="pt-3 border-t border-stone-200/60 space-y-3">
-                    <div className="flex items-center justify-between flex-wrap gap-2">
-                      <div>
-                        <span className="text-xs font-bold text-stone-800 block">Peralihan Rute ke Galeri Momen:</span>
-                        <span className="text-[11px] text-stone-500">Tentukan kapan tautan undangan otomatis beralih menampilkan Galeri Foto Tamu.</span>
-                      </div>
-                      <div className="flex items-center gap-1 p-1 bg-stone-100 rounded-xl border border-stone-200 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {[
+                      {
+                        id: "stories",
+                        name: "Circle Stories",
+                        tag: "Instagram-Style",
+                        desc: "Lingkaran avatar bertumpuk dengan ring gradient emas dan cuplikan foto terkini.",
+                      },
+                      {
+                        id: "grid",
+                        name: "Modern Masonry",
+                        tag: "Populer",
+                        desc: "Grid mosaik foto candid bertumpuk artistik dengan rasio foto dinamis.",
+                      },
+                      {
+                        id: "minimal",
+                        name: "Clean Minimalist",
+                        tag: "Elegan",
+                        desc: "Banner kartu ringkas dengan tombol aksi 'Kirim Foto Momen' yang anggun.",
+                      },
+                    ].map((lay) => {
+                      const isSelected = getFeatureSetting("memoriesWebLayout", "stories") === lay.id;
+                      return (
                         <button
+                          key={lay.id}
                           type="button"
-                          onClick={() => updateFeatureSetting("memoriesTransitionMode", "AUTO")}
-                          className={`px-3 py-1 rounded-lg font-semibold transition cursor-pointer ${
-                            getFeatureSetting("memoriesTransitionMode", "AUTO") === "AUTO"
-                              ? "bg-white text-stone-900 shadow-xs"
-                              : "text-stone-500 hover:text-stone-800"
+                          onClick={() => updateFeatureSetting("memoriesWebLayout", lay.id)}
+                          className={`p-3.5 rounded-2xl border text-left transition flex flex-col justify-between cursor-pointer ${
+                            isSelected
+                              ? "bg-amber-50/90 border-amber-600 ring-2 ring-amber-600 shadow-xs"
+                              : "bg-white border-stone-200 hover:border-stone-300 hover:bg-stone-50/60"
                           }`}
                         >
-                          Otomatis
+                          <div className="flex items-center justify-between gap-1 mb-1.5">
+                            <span className="text-xs font-bold text-stone-900">{lay.name}</span>
+                            <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900">
+                              {lay.tag}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-stone-500 leading-relaxed">
+                            {lay.desc}
+                          </p>
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => updateFeatureSetting("memoriesTransitionMode", "MANUAL")}
-                          className={`px-3 py-1 rounded-lg font-semibold transition cursor-pointer ${
-                            getFeatureSetting("memoriesTransitionMode", "AUTO") === "MANUAL"
-                              ? "bg-white text-stone-900 shadow-xs"
-                              : "text-stone-500 hover:text-stone-800"
-                          }`}
-                        >
-                          Manual
-                        </button>
-                      </div>
-                    </div>
-
-                    {getFeatureSetting("memoriesTransitionMode", "AUTO") === "AUTO" ? (
-                      <div className="p-3 bg-white rounded-xl border border-stone-200/70 space-y-2">
-                        <div className="flex items-center justify-between gap-3 flex-wrap">
-                          <label className="text-xs font-medium text-stone-700">Waktu Beralih Otomatis:</label>
-                          <select
-                            value={String(getFeatureSetting("memoriesTransitionDays", 1))}
-                            onChange={(e) => updateFeatureSetting("memoriesTransitionDays", Number(e.target.value))}
-                            className="p-1.5 px-3 bg-stone-50 border border-stone-200 rounded-lg text-xs text-stone-800 font-semibold focus:outline-none focus:ring-2 focus:ring-amber-700/30 cursor-pointer"
-                          >
-                            <option value="1">1 Hari Pasca-Acara (Keesokan Harinya — Rekomendasi)</option>
-                            <option value="2">2 Hari Pasca-Acara</option>
-                            <option value="3">3 Hari Pasca-Acara</option>
-                            <option value="7">7 Hari Pasca-Acara</option>
-                          </select>
-                        </div>
-                        <p className="text-[11px] text-stone-500">
-                          ✦ Begitu waktu tercapai, link yang sudah Anda sebar di WhatsApp otomatis langsung menyajikan Galeri Foto Tamu tanpa mengubah alamat URL.
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="p-3 bg-amber-50/70 rounded-xl border border-amber-200/80 flex items-center justify-between gap-3 flex-wrap">
-                        <div>
-                          <span className="text-xs font-bold text-amber-950 block">Status Tampilan Saat Ini:</span>
-                          <span className="text-[11px] text-amber-800">
-                            {Boolean(getFeatureSetting("memoriesForceGallery", false))
-                              ? "Link publik saat ini diarahkan langsung ke Galeri Momen Tamu."
-                              : "Link publik saat ini tetap menampilkan Undangan Penuh (RSVP & Peta)."}
-                          </span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => updateFeatureSetting("memoriesForceGallery", !getFeatureSetting("memoriesForceGallery", false))}
-                          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
-                            getFeatureSetting("memoriesForceGallery", false)
-                              ? "bg-amber-800 text-white hover:bg-amber-900 shadow-xs"
-                              : "bg-white text-amber-900 border border-amber-300 hover:bg-amber-100/50"
-                          }`}
-                        >
-                          {getFeatureSetting("memoriesForceGallery", false) ? "Kembalikan ke Undangan" : "Alihkan ke Galeri Sekarang"}
-                        </button>
-                      </div>
-                    )}
+                      );
+                    })}
                   </div>
+                </div>
+
+                {/* ── B. PANDUAN PUSAT OPERASIONAL KAMERA MOMENTS ── */}
+                <div className="p-4 bg-stone-50 rounded-2xl border border-stone-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                  <div className="space-y-0.5">
+                    <span className="font-bold text-stone-900 block">Pusat Komando Kamera &amp; Operasional Moments</span>
+                    <p className="text-[11px] text-stone-500 leading-relaxed">
+                      Pengaturan filter analog, jatah roll per tamu, jadwal sesi kamera, alokasi kuota per sesi, cetak standing banner &amp; kartu QR, dan unduh ZIP foto kini dikelola terpusat di menu Moments.
+                    </p>
+                  </div>
+                  <Link
+                    href="/dashboard/moments"
+                    className="px-3.5 py-2 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-bold transition shrink-0 flex items-center gap-1.5 shadow-2xs self-start sm:self-auto"
+                  >
+                    <span>Buka Menu Moments &rarr;</span>
+                  </Link>
                 </div>
 
                 {/* ── E. TEKS JUDUL & MONITORING ── */}
@@ -4605,7 +4593,7 @@ export default function EditInvitation() {
                     <div className="text-xs text-stone-600 space-y-0.5">
                       <span className="font-bold text-stone-900 block">Monitoring &amp; Unduh Arsip Foto Tamu</span>
                       <p className="leading-relaxed text-[11px]">
-                        Seluruh kiriman foto tamu dapat Anda pantau secara live, moderasi, dan unduh ZIP di Dashboard Utama.
+                        Seluruh kiriman foto tamu dapat Anda pantau secara live, moderasi, dan unduh ZIP di Menu Moments.
                       </p>
                     </div>
                   </div>
@@ -4619,10 +4607,10 @@ export default function EditInvitation() {
                       <span>Tes Kamera</span>
                     </Link>
                     <Link
-                      href="/dashboard#section-galeri-kenangan"
+                      href="/dashboard/moments"
                       className="px-3 py-1.5 rounded-lg bg-amber-800 hover:bg-amber-900 text-white font-bold text-xs flex items-center gap-1 transition"
                     >
-                      <span>Dashboard Momen &rarr;</span>
+                      <span>Menu Moments &rarr;</span>
                     </Link>
                   </div>
                 </div>
@@ -5307,17 +5295,13 @@ function SectionHeaderActions({
   isDirty,
   isSaving,
   onSave,
-  collapsed,
-  onToggle,
-  closedLabel,
-  openLabel = "Tutup",
 }: {
   isDirty: boolean;
   isSaving?: boolean;
   onSave: () => void;
-  collapsed: boolean;
-  onToggle: () => void;
-  closedLabel: string;
+  collapsed?: boolean;
+  onToggle?: () => void;
+  closedLabel?: string;
   openLabel?: string;
 }) {
   return (
@@ -5336,17 +5320,6 @@ function SectionHeaderActions({
           </button>
         </div>
       )}
-      <button
-        type="button"
-        onClick={onToggle}
-        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-          collapsed
-            ? "bg-amber-50 text-amber-900 hover:bg-amber-100"
-            : "bg-stone-100 text-stone-600 hover:bg-stone-200"
-        }`}
-      >
-        {collapsed ? closedLabel : openLabel}
-      </button>
     </div>
   );
 }

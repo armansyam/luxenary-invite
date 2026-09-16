@@ -322,19 +322,26 @@ Siklus hidup undangan diatur secara otomatis oleh cron job (`POST /api/cron/clea
    - **Formulir Studio Editor (`/dashboard/invitation/[id]` Seksi 14):** Styling & konfigurasi seksi: Toggle aktif (`showGuestMemories`), Judul Seksi, Eyebrow, Deskripsi, Mode Pengambilan (Disposable Camera vs Standard Form), Pilihan 5 Filter Analog (`aura_90s`, `heritage_romance`, `botanical_mist`, `cinema_noir`, `pure_daylight`), Toggle & Format LED Date Stamp (`#e8875a`), Kuota Dinamis Tamu Pengunggah (`memoriesMaxContributors`), Jatah Roll per Tamu bebas hingga 30 foto (`memoriesShotsQuota`), Jadwal Kamera Aktif Mandiri, dan Toggle Kamar Gelap Digital (*Delayed Reveal*).
    - **Dashboard Klien (`/dashboard` Seksi 5 & Card 4):** Pusat operasional & monitoring momen tamu: tautan album kenangan, widget unduh arsip ZIP client-side, status kuota real-time, rincian masa simpan transparan (*Masa Aktif: Base Days (Default) + Perpanjangan (XH) : Tanggal Mulai s.d. Tanggal Expired*), tombol & modal *Atur Jatah Roll Tamu* dengan estimasi kapasitas dinamis `~Floor(Sisa_Pool / Jatah_Roll) Tamu`, dan *Unified Addon Modal* bertema Warm Editorial Ivory & Royal Amber Gold untuk top-up kuota foto (+100, +250, +500), perpanjangan masa galeri (+30 hari via QRIS), dan upgrade tier paket.
    - **Fitur Kamera Disposable Retro & Galeri Masonry Roll Stack (Opsi B):**
-     - Layar bidik WebRTC live dengan tombol zoom digital (1x, 2x), flash/torch hardware, pembalik kamera, dan synthesized mechanical shutter audio via Web Audio API.
      - Foto dikompresi client-side Canvas menjadi WebP/JPEG ringan (~300KB) dengan filter analog terpilih dan cap tanggal oranye retro analog.
-     - **Formula Kuota Acara, Invarian Anti-Hangus, & Boundary Clamping:**
-       - Kuota foto berpatokan pada Total Kuota Foto Acara (`memories_total_quota_{plan}`) dari Admin.
-       - *Anti-Hangus (Non-Pre-Reservation):* Unggah foto berlangsung seketika per jepretan (*real-time snapshot*). Jika tamu hanya mengambil sebagian jatah roll (misal 3 dari 15 roll), sisa kuota roll-nya tetap berada di pool acara untuk tamu lain tanpa hangus.
-       - *Boundary Clamping Tamu Terakhir:* Ketika sisa pool foto lebih sedikit dari jatah roll (misal tersisa 8 foto dengan setting 15 roll), sistem secara otomatis menerapkan `effectiveShotsQuota = Math.min(configuredShotsQuota, remainingPool)` sehingga tamu terakhir dapat menghabiskan kuota pool secara presisi tanpa error 403. Saat pool penuh 100%, tamu baru disajikan kartu status elegan *"Kuota Roll Kenangan Telah Penuh"*.
-     - Galeri publik mengadopsi Masonry Roll Stack (1 card bertumpuk per tamu dengan badge jumlah foto dan ucapan doa tunggal), membuka modal popup lightbox interaktif untuk menelusuri seluruh foto dalam roll tersebut.
+     - **Formula Kuota Acara, Invarian Anti-Hangus, & Smart Quota Boundary Guard:**
+        - Kuota foto berpatokan pada Total Kuota Foto Acara (`memories_total_quota_{plan}`) dari Admin.
+        - *Smart Quota Boundary Guard (Pembatas Kuota Multi-Sesi Real-Time):* Alokasi kuota per sesi di dasbor klien dibatasi otomatis (`Math.min(parsed, maxAllowed)`) terhadap sisa kuota yang belum dialokasikan ke sesi lain. Dilengkapi tombol toolbar *"Bagi Rata Kuota"* (membagi rata kuota ke seluruh sesi secara proporsional) dan *"Pakai Sisa (X)"* di tiap baris sesi. Backend API `/api/client/invitations/[id]/memories` menjamin validasi kuota server-side agar total alokasi tidak pernah melampaui `maxTotalPhotos`.
+        - *Anti-Hangus (Non-Pre-Reservation):* Unggah foto berlangsung seketika per jepretan (*real-time snapshot*). Jika tamu hanya mengambil sebagian jatah roll (misal 3 dari 15 roll), sisa kuota roll-nya tetap berada di pool acara untuk tamu lain tanpa hangus.
+        - *Boundary Clamping Tamu Terakhir:* Ketika sisa pool foto lebih sedikit dari jatah roll (misal tersisa 8 foto dengan setting 15 roll), sistem secara otomatis menerapkan `effectiveShotsQuota = Math.min(configuredShotsQuota, remainingPool)` sehingga tamu terakhir dapat menghabiskan kuota pool secara presisi tanpa error 403. Saat pool penuh 100%, tamu baru disajikan kartu status elegan *"Kuota Roll Kenangan Telah Penuh"*.
+      - Galeri publik mengadopsi Masonry Roll Stack (1 card bertumpuk per tamu dengan badge jumlah foto dan ucapan doa tunggal), membuka modal popup lightbox interaktif untuk menelusuri seluruh foto dalam roll tersebut.
 5. **Manajemen Domain Undangan & Hero Launchpad Publikasi (Buku Tamu / WhatsApp Broadcast)**:
    - **Hero Launchpad Publikasi (/dashboard/settings):** Bagian peluncuran ditingkatkan menjadi Hero Launchpad mandiri di bagian teratas panel pengaturan. Dilengkapi mode fokus penuh dengan animasi pemindai radar dan jendela *sliding ticker* vertikal (maksimal 3 baris tampak). Item yang selesai diverifikasi otomatis bergulir naik ke atas secara sekuensial memeriksa 12 komponen data: Subdomain, Tema, Visual Sampul & Latar Belakang (Landing Cover, Desktop Sidebar, Fixed BG, Foto Penutup), Nama Kedua Mempelai, Foto Profil Kedua Mempelai (The Groom & The Bride), Tanggal Acara Utama (sebagai referensi masa berlaku website), Waktu & Lokasi, Galeri Foto, Cerita Cinta, Rekening/Hadiah, Musik Latar, dan PIN Keamanan Tamu.
    - **Resolusi Hierarkis Domain (`resolveEffectiveInvitationUrl`):** Sistem otomatis mendeteksi dan memprioritaskan domain tautan undangan dengan urutan jujur: (1) Custom Domain Klien (`customDomain`), (2) Subdomain Platform (`subdomain`). Menghilangkan total tebakan slug palsu/halusinasi saat domain belum disetel.
    - **Proteksi Pengiriman Draft:** Jika undangan masih berstatus `DRAFT`, tombol Salin tautan dan tombol Kirim WhatsApp dikunci secara disabled dengan cursor `not-allowed` serta dilengkapi *floating hover tooltip* gelap elegan.
    - **Sinkronisasi Seketika Pasca-Publikasi (Zero-Cache):** Begitu status menjadi `PUBLISHED`, API `/api/client/invitations` mengirimkan `Cache-Control: no-store` dan seluruh halaman dasbor klien (`/dashboard`, `/dashboard/guests`, `/dashboard/settings`) menggunakan `{ cache: "no-store" }` sehingga tautan tamu `{link_undangan}` dan tombol WhatsApp langsung aktif seketika tanpa *caching lag*. Ditutup dengan Banner Selebrasi Resmi berbahasa formal-netral dan Official Launch Box dengan lencana SSL aktif.
-6. **Studio Editor — Seksi 15 (Pengaturan Teks UI & Label) & Netralisasi Live Editor:**
+6. **Studio Editor Master-Detail (15 Seksi), Zero Auto-Collapse & Smart Dynamic Gift Section:**
+   - **Arsitektur Master-Detail Selalu Terbuka (*Zero Auto-Collapse*):** Panel form kustomisasi `/dashboard/invitation/[id]` menerapkan navigasi Master-Detail (sidebar navigator pada desktop & horizontal pills pada mobile). Seluruh seksi formulir selalu tersaji terbuka lebar (*always expanded*), menghilangkan tombol toggle akordion buka/tutup yang membingungkan. Ketika tombol "Simpan" ditekan, formulir tetap berada dalam kondisi terbuka (*zero auto-collapse*).
+   - **Smart Dynamic Gift Section & Standar Penyimpanan QRIS (`lib/themeEngine.ts`):**
+     - Berkas fisik QRIS disimpan di server pada `public/uploads/invitations/[id]/qris.webp` (WebP 800×800 px) dan dicatat pada `featureSettings.qrisImageUrl`.
+     - *Hanya Digital (Rekening / QRIS):* Jika alamat kado dikosongkan, tab "Kirim Kado" dan kartu alamat otomatis disembunyikan 100% tanpa teks fallback dummy Makassar. Tamu langsung disajikan kartu rekening / scan QRIS tanpa tombol tab.
+     - *Hanya QRIS (Tanpa Rekening Bank):* Jika pengantin hanya mengunggah QRIS tanpa rekening bank, sistem hanya menampilkan kartu QRIS murni tanpa menyisipkan kartu rekening BCA palsu.
+     - *Hanya Kado Fisik:* Kartu alamat langsung tampil tanpa tombol tab transfer.
+     - *Digital + Kado Fisik:* Kedua tab dimunculkan berdampingan.
    - **Seksi 15 (`SEC15`):** Menyediakan kontrol formulir untuk kustomisasi teks tombol RSVP (`customLabels.rsvpBtnText`), form RSVP, tombol buka undangan, dan label hitung mundur.
    - **Live Editor Engine:** Saat mode edit aktif (`isEditMode`), seluruh form submission dinonaktifkan (`form.noValidate = true`, `preventDefault`) dan tombol submit dinetralkan ke `type="button"` sehingga pengguna dapat mengklik dan mengetik langsung teks tombol RSVP tanpa memicu balon validasi *"Please fill out this field"*.
 7. **Proteksi Studio Editor Pasca Publish, Buka Kunci Darurat, & Atomic Single Deploy:**
@@ -344,10 +351,23 @@ Siklus hidup undangan diatur secara otomatis oleh cron job (`POST /api/cron/clea
    - **Atomic Single Deploy & Auto-Lock (`DEPLOY_AND_LOCK`):** Di puncak formulir tersedia tombol aksi **"Perbarui Undangan & Kunci Kembali"** yang mengeksekusi 1 kali kompilasi HTML penuh, migrasi/sinkronisasi ke Cloudflare R2, dan seketika mengunci kembali studio secara otomatis.
    - **Pelepasan Subdomain Otomatis:** Jika subdomain diubah, subdomain lama langsung terlepas dari record database (`@unique`) dan kembali bebas ke pool publik secara otomatis.
    - **Subdomain Monitor & Live Inspector Admin:** Dashboard Admin (`/admin?tab=custom_domains`) menyediakan sub-tab khusus Subdomain Sistem (sesuai root domain aktif, misal `*.localhost:3000` di lokal atau `*.luxvite.id` di VPS) dengan 3 kartu KPI real-time (Total Aktif, Live, Kedaluwarsa), alat pencarian kepemilikan nama (*Live Subdomain Inspector*), dan aksi daur ulang 1-klik untuk melepaskan subdomain kedaluwarsa (H+7 hari acara) kembali ke pool namespace.
-7. **Proteksi Siklus Download Galeri Tamu (ZIP), Layar Opening Editorial (`/sharemoment`), & Studio Cetak QR:**
-   - **Layar Pembuka Editorial (Editorial Pre-Camera Opening Screen):** Tamu yang mengakses `/sharemoment` disambut terlebih dahulu oleh layar pembuka editorial non-agresif dengan 3 model pilihan layout (*Editorial Showcase*, *Cinematic Hero*, *Polaroid Nostalgia*), foto potret mempelai dinamis/kustom (`memoriesCoverPhoto`), cap tanggal retro analog, dan hitung mundur live jika acara belum dibuka. Izin kamera (`getUserMedia`) baru diminta ketika tamu menekan tombol *"Mulai motret →"*.
-   - **Studio Desain Kartu Meja & Standing Banner Barcode (`PrintableQRCardModal.tsx`):** Tersedia generator kartu cetak mandiri di Dasbor Klien dengan 4 format ukuran percetakan (*A3 Standing Easel Banner*, *A4 Table Standee*, *A5 Tent Card Meja Lipat*, dan *4R Mini Akrilik*) serta 4 pilihan model gaya desain (*Warm Editorial*, *Modern Minimalist*, *Royal Arch Heritage*, *Retro Film Polaroid*). Dilengkapi kustomisasi foto opening, teks header/petunjuk, dan ekspor 300 DPI high-resolution PNG siap cetak.
-   - **Sinkronisasi Jadwal Hari H (`getMemoriesActiveSchedule`):** Kamera momen tamu (`/sharemoment`) otomatis dibuka mengikuti tanggal & jam acara resepsi (atau jadwal kustom di Studio). Jika diakses sebelum waktu mulai, tamu disajikan jadwal pembukaan resmi dan live countdown.
+8. **Proteksi Siklus Download Galeri Tamu (ZIP), Layar Opening Editorial (`/sharemoment`), & Pemisahan Studio Fisik vs Digital:**
+   - **Layar Pembuka Editorial (Editorial Pre-Camera Opening Screen):** Tamu yang mengakses `/sharemoment` disambut terlebih dahulu oleh layar pembuka editorial non-agresif dengan 3 model pilihan layout (`POLAROID_MINIMAL`, `VINTAGE_FILM`, `MODERN_ELEGANT`), teks instruksi kustom (`memoriesCardInstruction`), foto potret mempelai dinamis/kustom (`memoriesCoverPhoto`), cap tanggal retro analog, dan hitung mundur live jika acara belum dibuka. Izin kamera (`getUserMedia`) baru diminta ketika tamu menekan tombol *"Mulai Abadikan Momen →"*.
+   - **Pemisahan Studio Cetak Fisik vs Studio Layar Pembuka Digital:**
+     - *Studio Desain Kartu Meja & Standing Banner Barcode (`PrintableQRCardModal.tsx`):* Generator mandiri kartu fisik meja resepsi dengan 4 format ukuran percetakan (*A3 Standing Easel Banner*, *A4 Table Standee*, *A5 Tent Card Meja Lipat*, dan *4R Mini Akrilik*), kustomisasi teks header (*"KAMERA KENANGAN TAMU"*) dan kalimat petunjuk meja (*"Pindai kode QR untuk mengabadikan momen istimewa dari sudut pandang Anda."*), serta ekspor 300 DPI high-resolution PNG siap cetak.
+     - *Studio Kustomisasi Layar Pembuka HP Tamu (`GuestOpeningSetupModal.tsx`):* Editor visual mandiri untuk mengatur tampilan pembuka digital tamu saat memindai QR (`/sharemoment`) dengan pratinjau interaktif iPhone 16 Pro realistis (multi-ring titanium bezel, dynamic island, dan glass sheen overlay).
+   - **Multi-Session Camera Windows & Jadwal Hari H (`getMemoriesActiveSchedule`):** 
+      - Kamera momen tamu (`/sharemoment`) mendukung multi-sesi waktu aktif fleksibel (misal: Sesi Akad Nikah, Resepsi Malam, dan After Party) yang tersimpan pada `featureSettings.memoriesSessions`.
+      - **Tombol Auto-Sync Acara:** Sekali klik di Studio Editor Seksi 14 langsung menarik dan menyinkronkan data nama sesi, tanggal, jam mulai, dan jam selesai dari susunan acara undangan (`eventData`).
+      - **Time-Gate Overrides Roll Quota:** Jika waktu acara belum dimulai, sedang dalam jeda antar-sesi, atau seluruh rangkaian acara telah usai (`isAllFinished` / status `EVENT_FINISHED`), pengiriman foto pada `/api/public/memories/upload` diblokir mutlak (status 403/423) terlepas dari apakah tamu masih memiliki sisa roll kuota kamera.
+      - **Alokasi Kuota per Sesi & Formula Smart Rollover Anti-Hangus:** Klien dapat mengalokasikan kuota foto per sesi agar tidak habis di sesi awal. Sisa kuota yang tidak terpakai pada sesi sebelumnya otomatis melimpah (*rollover*) menambah kuota sesi berikutnya secara matematis:
+        $$\text{allowedCumulativeQuota} = \min\Big(\text{totalEventQuota}, \text{photosBeforeThisSession} + \text{currentAllocated} + \max(0, \text{pastAllocated} - \text{photosBeforeThisSession})\Big)$$
+        Mencegah hangusnya kuota pengantin sekaligus melindungi ketersediaan kuota untuk sesi-sesi penting berikutnya.
+      - **Live Antar-Sesi & Countdown Real-Time:** Jika diakses sebelum waktu mulai atau saat jeda antar-sesi, tamu disajikan nama sesi berikutnya dan hitung mundur live menuju jam pembukaan sesi tersebut. Saat sesi aktif, antarmuka menampilkan indikator live dot modern tanpa emoji default OS.
+   - **Kebijakan Perpanjangan Bertahap (Single-Step Retention Policy):**
+      - Opsi perpanjangan masa aktif galeri tamu dikunci ke sistem bertahap **1 Bulan (+30 Hari)** seharga Rp50.000, meniadakan opsi tahunan untuk mencegah penumpukan data zombie tanpa batas (*anti-zombie storage*).
+      - **Jendela Perpanjangan (H-7 Renewal Window):** Pilihan perpanjangan di Dasbor Klien hanya dibuka saat sisa masa aktif $\le$ 7 hari (`daysRemaining <= 7`). Di luar jendela ini, tombol perpanjangan disembunyikan dan dasbor menampilkan status aman ("Masa Aktif Aman").
+      - **Maksimal 1 Kali Perpanjangan:** Perpanjangan dibatasi maksimal 1 kali (`extraGalleryDays >= 30`), setelah itu opsi terkunci permanen di dasbor dan API backend, serta CTA utama diarahkan ke unduh ZIP seluruh foto.
    - **Mode Simulasi Pengantin (`?test=true`):** Mempelai dapat menguji coba viewfinder kamera dan layar opening sebelum hari H tanpa diblokir jadwal acara.
    - **Proteksi Unduh ZIP & Status Draft:** Tombol unduh ZIP di dashboard klien otomatis dinonaktifkan saat status masih `DRAFT` atau jika belum ada foto tamu (`guestMemoriesCount === 0`).
    - **Pencegahan Data Tercecer (Early Lock Warning):** Jika klien mengunduh ZIP saat acara masih berjalan (`PUBLISHED` & `!memoriesUploadLocked`), sistem memunculkan modal dialog peringatan bahwa pengunduhan akan langsung mengunci upload tamu secara permanen.
@@ -483,6 +503,9 @@ Sistem pengiriman email otomatis menggunakan **Nodemailer** yang membaca kredens
    - Semua aset gambar dikompresi WebP tajam dan disimpan terisolasi di `public/portfolio/assets/[slug]/`.
 2. **Custom Domain Klien (`dimas-clarissa.com`) & 2 Layanan Tambahan Resmi**:
    - **Inklusif Dalam Paket (Bebas Biaya Tambahan)**: Custom domain merupakan fitur bawaan yang sudah **termasuk bebas biaya (gratis)** pada paket yang memiliki kapabilitas `custom_domain` (seperti tier Eternity / Premium). Klien tidak perlu membayar biaya add-on tambahan.
+   - **Gembok Master Saklar Admin (`addon_custom_domain_enabled`)**:
+     - Administrator dapat mengaktifkan atau menonaktifkan fitur Custom Domain platform kapan saja melalui **Admin Dashboard > Pengaturan > Setup & Integrasi > Integrasi Domain Pribadi & DNS Server**.
+     - Ketika dinonaktifkan (`false`), kartu "Domain Sendiri" di dashboard pengaturan klien otomatis disembunyikan sepenuhnya dari pandangan klien, dan endpoint backend `POST /api/client/custom-domain` memblokir registrasi domain baru dengan proteksi HTTP 403 Forbidden.
    - **Tautan Langsung Mandiri**:
      - Klien yang paketnya mendukung `custom_domain` dapat langsung memasukkan nama domain pribadi dan menyimpannya secara instan via Dasbor Pengaturan (`/dashboard/settings` -> `POST /api/client/custom-domain`).
      - Klien yang paketnya belum mendukung dapat melakukan upgrade paket melalui Kasir Upgrade, di mana fitur Custom Domain langsung terbuka begitu tier aktif.
@@ -661,8 +684,9 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
 11. **Ekosistem Demo Publik Mandiri Fitur Hari-H (Day-of-Event Tech Demo):**
    - **Dual-Tab Hub di `/demo`:** Navigasi tab utama *"Koleksi Desain Tema"* (15 tema fisik) dan *"Sistem & Fitur Acara"* (3 modul teknologi operasional Hari-H).
    - **Demo Sistem Resepsionis & QR Scanner (`/demo/receptionist`):** Arsitektur *zero-database in-memory client demo*. Dilengkapi generator tiket QR kustom (Nama, Kategori VIP/Keluarga/Reguler, Pax, Nomor Meja), unduh QR PNG, modal preview layar HP untuk scan kamera, live camera scanner via `html5-qrcode`, audio beep chime, proteksi anti-double scan, daftar kehadiran tamu real-time, dan simulasi kunci layar PIN panitia (`1234`).
-   - **Demo Buku Tamu Foto Digital (`/demo/sharemoment`):** Upload selfie & ucapan bertahap simulasi non-database, disimpan di `sessionStorage` lokal (`demo_guest_moments`) dan otomatis terpampang di posisi teratas pada galeri kenangan tamu.
-   - **Demo Galeri Kenangan Tamu (`/demo/memories`):** Feed foto kenangan tamu berformat *Fluid Full-Width Masonry Grid* (`max-w-[1920px]`, 2 hingga 7 kolom adaptif), Instagram Story Highlights Rail di bagian atas feed, lencana khusus *"Momen Baru Diunggah (Anda)"* untuk foto hasil sesi user, Clean Modal Lightbox tanpa ikon panah mengambang (dukungan swipe sentuh di smartphone & tombol panah keyboard di desktop), serta tombol simulasi unduh ZIP resolusi asli.
+   - **Demo Guest Moment Camera (`/demo/sharemoment`):** Kamera disposable retro berlayar pembuka editorial (*Editorial Showcase*), 5 filter analog branded (Aura '90s, Heritage Romance, dll.), Web Audio shutter sound, cap tanggal oranye LED, dan penyimpanan lokal `sessionStorage` (`demo_guest_moments`).
+   - **Demo Galeri Kenangan Tamu (`/demo/memories`):** Feed foto kenangan tamu berformat **Roll Stack (1 Card / Tamu)** berlapis fisik dengan badge jumlah foto, filter tab (Semua, Siang, Malam, Favorit), Touch-Swipe & Keyboard Multi-Foto Modal Lightbox, tombol mengambang Buka Kamera, dan simulasi unduh ZIP resolusi asli.
+   - **Arsitektur Zero-Setup Unified Sandbox:** Seluruh tema demo (`/demo/[theme]`) otomatis mengarahkan tombol "Bagikan Foto Momen" dan "Buka Galeri Momen Lengkap" ke `/demo/sharemoment` dan `/demo/memories`. Form RSVP demo pada seluruh tema didukung respon simulasi instan (`POST /api/public/rsvp`) tanpa error 404.
 
 ---
 
@@ -791,5 +815,45 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - **Audit Data & Pre-Publish Launchpad (Tab 4):** Meniru persis arsitektur `app/(client)/dashboard/settings/page.tsx` dengan Hero Launchpad dan Jendela Sliding Ticker 3 Baris (`mask-image` linier) yang memverifikasi 10 komponen kesiapan data sekuensial sebelum status publikasi resmi mengudara (`PUBLISHED`).
    - **Konsistensi Penamaan File Bahasa Inggris:** Seluruh modul kode dan rute terstandarisasi penuh dalam Bahasa Inggris (`app/how-it-works/page.tsx`, `app/how-it-works/HowItWorksInteractive.tsx`), serta terdaftar dalam `PLATFORM_EXCLUSIONS` pada `middleware.ts`.
 
+---
 
+## 18. Arsitektur Sesi Acara Utama (Primary Event Anchor), Kuncian Pasca Publikasi, & All-Access Themes
 
+1. **Sesi Acara Utama Tunggal (`isPrimary: true`):**
+   - Setiap undangan memiliki tepat 1 sesi acara yang ditetapkan sebagai **Sesi Acara Utama** (misalnya: Akad Nikah atau Resepsi Utama).
+   - Ditandai dengan badge khusus `★ Sesi Acara Utama (Patokan Masa Aktif)` pada Seksi 5 Studio Editor.
+   - Sesi utama ini menjadi jangkar tunggal (*single source of truth*) kalkulasi:
+     * Masa aktif undangan (`expiresAt = mainDate + 30 hari`).
+     * Batas kedaluwarsa galeri foto kenangan tamu (`galleryExpiresAt = mainDate + 14 hari + extraGalleryDays`).
+     * Countdown Timer di cover HTML live (`targetDate = mainDate + startTime`).
+     * Header tanggal pernikahan di tema (`weddingDate`).
+     * Jadwal Google Calendar pengingat tamu.
+
+2. **Kunci Tanggal & Status Sesi Utama Pasca Publikasi:**
+   - Selama berstatus `DRAFT`, pengantin bebas mengatur dan mengubah tanggal acara utama serta memindahkan penanda sesi utama.
+   - Setelah undangan diterbitkan (`PUBLISHED`), formulir Studio Editor otomatis dikunci (`isLocked = true`).
+   - Input tanggal pada sesi acara utama **dikunci permanen (disabled)** untuk klien non-admin dan tombol *"Jadikan Sesi Utama"* disembunyikan agar patokan tanggal tidak bergeser. Penyesuaian tanggal utama pasca publikasi hanya dapat dilakukan oleh Super Admin melalui Dasbor Admin via endpoint `/api/admin/invitations/[id]/lifecycle` (`UPDATE_EVENT_DATE`).
+   - Sesi-sesi acara lainnya (seperti Pengajian, Siraman, Mappacci, Resepsi ke-2) **tetap bebas disesuaikan tanggal dan jamnya kapan saja**.
+   - Modul operasional tamu (`/dashboard/guests`, RSVP online, seat VIP) dan kamera momen (`/dashboard/moments`) **tetap terbuka penuh** dan berjalan real-time.
+
+3. **Alur Buka Kunci Darurat (Emergency Unlock 24 Jam):**
+   - Admin membuka kunci darurat dari Dasbor Admin (`adminUnlockedUntil` aktif 24 jam).
+   - Klien melakukan koreksi data di Studio Editor, lalu menekan **"Perbarui Undangan & Kunci Kembali"** (`DEPLOY_AND_LOCK`).
+   - Sistem membake ulang file HTML live CDN dalam 1 kali kompilasi tunggal dan otomatis mereset `adminUnlockedUntil = null`, mengunci kembali studio secara instan.
+
+4. **Pengurutan Kronologis Otomatis:**
+   - Rangkaian acara diurutkan secara otomatis berdasarkan kronologi waktu: `Tanggal (Ascending) -> Jam Mulai (Ascending)`.
+   - Sesi tambahan yang memiliki tanggal lebih awal (misal H-1) secara otomatis naik ke posisi nomor 1 di atas acara utama tanpa merusak penanda sesi utama.
+
+5. **Penegasan Kebijakan All-Access Themes & Feature-Gating:**
+   - Koleksi seluruh 16 tema desain terbuka 100% untuk semua paket (`TRADITIONAL`, `MODERN`, `PREMIUM`).
+   - Diferensiasi antar paket murni bertumpu pada **Feature Gating**:
+     * Traditional (Serenade): Undangan Intim, Musik Autoplay, Galeri Prewedding, RSVP Online, Generator WhatsApp Personal.
+     * Modern (Symphony): Traditional + Scanner Resepsionis QR Check-In (`qr_checkin`) + Kamera Momen Tamu / Guest Memories Vault (`guest_memories`).
+     * Premium (Eternity): Modern + Custom Domain Pribadi (`custom_domain`) + Kuota Tamu & Foto Unlimited.
+
+6. **Arsitektur Deduplikasi Dasbor Klien & Pemisahan Modul Hari H:**
+   - **Dasbor Utama (`/dashboard`):** Menampilkan metrik eksekutif, status undangan, hitung mundur, dan ringkasan kehadiran (bebas dari kartu operasional teknis tumpang tindih).
+   - **Buku Tamu (`/dashboard/guests`):** Menampung Portal Resepsionis Hari H (`/[slug]/receptionist`) untuk scanner tiket QR tamu di meja penerima tamu pintu masuk beserta PIN akses panitia dan tombol salin info WO.
+   - **Pusat Komando Dedicated Moments (`/dashboard/moments`):** Pusat operasional kamera virtual lengkap dengan 3D Tri-Device Mockup Showcase (iPhone 16 Pro + Media Fisik Standing Banner & Kartu QR), pemilihan 5 filter film analog kurasi, stempel LED, formulir multi-sesi jadwal & kuota, pengatur roll, studio cetak standing banner akrilik 300 DPI, dan download center ZIP.
+   - **Studio Editor (`/dashboard/invitation/[id]` Seksi 14):** Khusus pengaturan estetika tampilan web undangan (*Circle Stories*, *Modern Masonry*, *Clean Minimalist*) dan teks judul tanpa instrumen operasional berat.

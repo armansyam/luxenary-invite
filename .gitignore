@@ -65,3 +65,11 @@ logs/
 
 # archive zip files
 *.zip
+
+# dynamic uploaded media (client uploads & moments)
+/public/uploads/invitations/*
+!/public/uploads/invitations/.gitkeep
+/public/uploads/guest-memories/*
+!/public/uploads/guest-memories/.gitkeep
+/public/uploads/proofs/*
+!/public/uploads/proofs/.gitkeep

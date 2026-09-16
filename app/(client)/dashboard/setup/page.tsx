@@ -91,6 +91,10 @@ function SetupWizardContent() {
           router.push(`/dashboard/invitation/${state.invitation.id}`);
           return;
         }
+        if (state.hasPaidOrder === false && state.redirectUrl) {
+          router.replace(state.redirectUrl);
+          return;
+        }
         if (state.planType) {
           setCurrentPlan(state.planType.toUpperCase());
         }

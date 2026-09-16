@@ -735,6 +735,15 @@ const INLINE_LIVE_EDITOR_SCRIPT = `
       });
     } else if (e.data.type === 'LUX_REMOTE_OPEN_INVITATION') {
       executeUniversalOpenInvitation(true);
+    } else if (e.data.type === 'LUX_PAUSE_AUDIO') {
+      try {
+        var audios = document.querySelectorAll('audio, video');
+        audios.forEach(function(a) { a.pause(); });
+        var musicFabs = document.querySelectorAll('.audio-fab, .music-fab, .btn-music, .btn-audio-fab, #music-control, #musicFab');
+        musicFabs.forEach(function(fab) {
+          fab.classList.remove('playing', 'spin', 'rotate');
+        });
+      } catch(err) {}
     } else if (e.data.type === 'LUX_SCROLL_SYNC') {
       if (typeof e.data.ratio === 'number') {
         applyScrollRatio(e.data.ratio);

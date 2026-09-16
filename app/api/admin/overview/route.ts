@@ -206,7 +206,7 @@ export async function GET() {
         orderBy: { createdAt: "desc" },
       }),
       prisma.order.findMany({
-        where: { orderType: "CUSTOM_DOMAIN_ADDON" },
+        where: { requestedDomain: { not: null } },
         orderBy: { createdAt: "desc" },
         include: {
           user: { select: { name: true, email: true, phoneNumber: true } },

@@ -42,7 +42,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Anda tidak memiliki akses ke undangan ini." }, { status: 403 });
     }
 
-    // 2. Verifikasi kapabilitas paket
+    // 2. Verifikasi status fitur master Custom Domain oleh Administrator
+    const enabledSetting = await prisma.adminSetting.findUnique({
+      where: { key: "addon_custom_domain_enabled" },
+    });
+    const isCustomDomainEnabled = enabledSetting ? enabledSetting.value !== "false" : true;
+    if (!isCustomDomainEnabled && !isAdmin) {
+      return NextResponse.json(
+        { error: "Layanan integrasi custom domain saat ini sedang dinonaktifkan oleh administrator." },
+        { status: 403 }
+      );
+    }
+
+    // 3. Verifikasi kapabilitas paket
     const canUseCustomDomain = await hasPlanCapability(invitation.order?.planType, "custom_domain");
     if (!canUseCustomDomain && !isAdmin) {
       return NextResponse.json(
@@ -51,7 +63,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 3. Penanganan pelepasan domain (unlink) jika customDomain dikirim kosong/null
+    // 4. Penanganan pelepasan domain (unlink) jika customDomain dikirim kosong/null
     if (!customDomain || typeof customDomain !== "string" || !customDomain.trim()) {
       await prisma.invitation.update({
         where: { id: invitationId },

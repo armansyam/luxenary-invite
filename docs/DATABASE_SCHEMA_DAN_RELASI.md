@@ -191,17 +191,27 @@ Entitas pusat platform yang menyimpan konfigurasi undangan:
 - `memoriesUploadLocked` (Boolean): Flag penutup fitur upload foto tamu.
 - `eventData` (JSON String): Detail tanggal, jam, zona waktu, nama venue akad/resepsi.
 - `bankAccounts` (JSON String): Daftar nomor rekening dan e-wallet tanda kasih.
-- `featureSettings` (JSON String): Pengaturan aktif/nonaktif seksi undangan.
+- `featureSettings` (JSON String): Pengaturan aktif/nonaktif seksi undangan, konfigurasi kamera momen (`memoriesOpeningLayout`, `memoriesCardInstruction`, `memoriesFilter`, `memoriesDateStamp`, `memoriesSessions` dengan alokasi kuota), alamat kado fisik (`shippingAddress`), dan URL gambar QRIS (`qrisImageUrl`).
 
 #### 2. Tabel `media` (Model `InvitationMedia`)
 Menyimpan daftar aset visual mempelai:
-- `mediaSlot` (Enum `MediaSlot`):
-  - `LANDING_COVER`: Banner sampul depan undangan.
-  - `HOME_PHOTO`: Foto hero pembuka.
-  - `DESKTOP_SIDEBAR`: Foto/video panel kiri layar desktop.
-  - `GROOM_PHOTO` & `BRIDE_PHOTO`: Foto mempelai pria dan wanita.
-  - `GALLERY`: Foto-foto album pre-wedding.
-- `localPath` (String): URL file di Cloudflare R2 CDN.
+- `mediaSlot` (Enum `MediaSlot` — 9 Nilai Resmi):
+  - `LANDING_COVER`: Banner sampul depan undangan (mobile/default).
+  - `LANDING_COVER_DESKTOP`: Banner sampul depan layar desktop layar lebar.
+  - `HOME_PHOTO`: Foto hero pembuka di awal undangan.
+  - `DESKTOP_SIDEBAR`: Foto/video panel sisi kiri layar desktop.
+  - `GLOBAL_FIXED_BG`: Foto latar belakang tetap (*fixed background*).
+  - `GROOM_PHOTO`: Foto potret mempelai pria.
+  - `BRIDE_PHOTO`: Foto potret mempelai wanita.
+  - `GALLERY`: Foto-foto album pre-wedding / galeri momen.
+  - `CLOSING_COVER`: Banner visual penutup di akhir undangan.
+- `localPath` (String): URL file di Cloudflare R2 CDN atau path storage lokal.
+
+> **Media Khusus Non-Enum (`app/api/client/upload/route.ts`):**
+> Media berikut dikelola secara langsung melalui penamaan file deterministik:
+> - `QRIS`: Disimpan di `public/uploads/invitations/[id]/qris.webp` (WebP 800×800 px).
+> - `MEMORIES_COVER`: Disimpan di `public/uploads/invitations/[id]/memories-cover.webp`.
+> - `MUSIC`: Disimpan di `public/uploads/invitations/[id]/wedding-song.mp3` (Maks 20MB).
 
 ---
 

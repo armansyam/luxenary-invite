@@ -630,50 +630,134 @@ export default async function Home() {
               </div>
             </div>
 
-            {/* Screen 1: Buku Tamu Landscape Split */}
-            <div className="exp-screen-layer" id="exp-screen-1">
-              <div className="exp-gb-split">
-                <div className="exp-gb-side">
-                  <div>
-                    <span className="exp-form-eyebrow">BUKU TAMU DIGITAL</span>
-                    <h3 className="exp-gb-names">Doa &amp; Ucapan</h3>
-                    <div className="exp-gb-badge">248 Ucapan Tersimpan</div>
+            {/* Screen 1: Guest Moment Camera (Virtual Disposable Camera UI) */}
+            <div className="exp-screen-layer active" id="exp-screen-1">
+              <div className="exp-cam-kiosk">
+                {/* Topbar Kamera Virtual */}
+                <div className="exp-cam-topbar">
+                  <div className="exp-cam-brand">
+                    <div className="exp-cam-lens-icon">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <circle cx="12" cy="12" r="10" />
+                        <circle cx="12" cy="12" r="4" />
+                      </svg>
+                    </div>
+                    <div>
+                      <span className="exp-cam-title">GUEST CAMERA</span>
+                      <span className="exp-cam-sub">Virtual Disposable Camera · Syahril &amp; Elyana</span>
+                    </div>
                   </div>
-                  <div className="exp-gb-input-wrap">
-                    Tulis doa restu terindah untuk Syahril &amp; Elyana...
+                  <div className="exp-cam-status">
+                    <div className="exp-cam-live">
+                      <span className="exp-cam-pulse-dot"></span>
+                      <span>LIVE · SESI RESEPSI</span>
+                    </div>
+                    <div className="exp-cam-roll-pill">
+                      <span>ROLL 08/10</span>
+                    </div>
                   </div>
                 </div>
-                <div className="exp-gb-feed-side">
-                  <div className="exp-gb-card">
-                    <div className="exp-gb-top">
-                      <span className="exp-gb-author">Rina Puspita</span>
-                      <span className="exp-gb-time">2 jam lalu</span>
+
+                {/* 2-Column Camera Grid */}
+                <div className="exp-cam-grid">
+                  {/* Kolom Kiri: Kamera Viewfinder Chassis */}
+                  <div className="exp-cam-view-card">
+                    <div className="exp-cam-view-header">
+                      <span className="exp-cam-preset-badge">AURA &apos;90S • VINTAGE WARM</span>
+                      <div className="exp-cam-hud-pills">
+                        <span className="exp-cam-flash-tag">
+                          <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor"><path d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                          FLASH AUTO
+                        </span>
+                        <span className="exp-cam-zoom-tag">1x</span>
+                      </div>
                     </div>
-                    <div className="exp-gb-text">&ldquo;Semoga sakinah mawaddah warahmah hingga kakek nenek. Bahagia selalu!&rdquo;</div>
-                    <div className="exp-gb-love">♥ 12 suka</div>
+
+                    <div className="exp-cam-view-frame" id="exp-cam-viewport">
+                      {/* 4 Corner Brackets */}
+                      <div className="cam-bracket cam-tl"></div>
+                      <div className="cam-bracket cam-tr"></div>
+                      <div className="cam-bracket cam-bl"></div>
+                      <div className="cam-bracket cam-br"></div>
+
+                      {/* Center Focus Crosshair */}
+                      <div className="exp-cam-crosshair">+</div>
+
+                      {/* Live Candid Photo */}
+                      <img
+                        src="/assets/homepage/exp_rsvp_cover.webp"
+                        alt="Candid Wedding Moment"
+                        className="exp-cam-view-img"
+                        id="exp-cam-preview-img"
+                      />
+
+                      {/* Vignette Overlay */}
+                      <div className="exp-cam-vignette"></div>
+
+                      {/* Retro LED Date Stamp */}
+                      <div className="exp-cam-led-stamp">12  08  &apos;25</div>
+
+                      {/* Flash Burst Overlay */}
+                      <div className="exp-cam-flash-overlay" id="exp-cam-flash"></div>
+                    </div>
+
+                    <div className="exp-cam-view-footer">
+                      <span>ISO 400 · 35MM F/2.8</span>
+                      <span style={{ color: "var(--lux-gold)" }}>• Kamera Siaga</span>
+                    </div>
                   </div>
-                  <div className="exp-gb-card">
-                    <div className="exp-gb-top">
-                      <span className="exp-gb-author">Budi Santoso</span>
-                      <span className="exp-gb-time">4 jam lalu</span>
+
+                  {/* Kolom Kanan: Film Roll Deck & Controls */}
+                  <div className="exp-cam-controls-col">
+                    {/* Panel Sisa Roll & Tamu */}
+                    <div className="exp-cam-roll-card">
+                      <div className="exp-cam-guest-row">
+                        <span className="exp-cam-guest-title">Ahmad Fauzan &amp; Istri</span>
+                        <div className="exp-cam-roll-badge">
+                          <span className="exp-cam-roll-num" id="exp-cam-count">08</span>
+                          <span className="exp-cam-roll-total">/ 10 Sisa Roll</span>
+                        </div>
+                      </div>
+                      <div className="exp-cam-guest-msg">
+                        &ldquo;Momen haru saat sungkeman, bahagia selalu sahabatku!&rdquo;
+                      </div>
                     </div>
-                    <div className="exp-gb-text">&ldquo;Selamat menempuh hidup baru sahabatku! Doa terbaik dari kami sekeluarga.&rdquo;</div>
-                    <div className="exp-gb-love">♥ 8 suka</div>
-                  </div>
-                  <div className="exp-gb-card">
-                    <div className="exp-gb-top">
-                      <span className="exp-gb-author">Dewi Anggraini</span>
-                      <span className="exp-gb-time">6 jam lalu</span>
+
+                    {/* Filter Selector */}
+                    <div className="exp-cam-filter-card">
+                      <span className="exp-cam-filter-header">Preset Filter Analog</span>
+                      <div className="exp-cam-filter-list">
+                        <button type="button" className="exp-cam-filter-item active" data-filter="aura_90s">Aura &apos;90s</button>
+                        <button type="button" className="exp-cam-filter-item" data-filter="heritage">Heritage</button>
+                        <button type="button" className="exp-cam-filter-item" data-filter="botanical">Botanical</button>
+                        <button type="button" className="exp-cam-filter-item" data-filter="cinema_noir">Noir</button>
+                        <button type="button" className="exp-cam-filter-item" data-filter="daylight">Daylight</button>
+                      </div>
                     </div>
-                    <div className="exp-gb-text">&ldquo;Undangannya sangat elegan, berkelas dan modern!&rdquo;</div>
-                    <div className="exp-gb-love">♥ 5 suka</div>
+
+                    {/* Shutter Action Panel */}
+                    <div className="exp-cam-action-card">
+                      <div className="exp-cam-shutter-wrap">
+                        <div className="exp-cam-shutter-circle" id="exp-cam-shutter" title="Tekan untuk simulasi jepret">
+                          <div className="exp-cam-shutter-inner"></div>
+                        </div>
+                        <div className="exp-cam-shutter-info">
+                          <span className="exp-cam-shutter-label">Tekan Shutter</span>
+                          <span className="exp-cam-shutter-sub">Auto-upload ke R2</span>
+                        </div>
+                      </div>
+                      <div className="exp-cam-winder">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                        <span>Putar Roll</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Screen 2: QR Check-in & Authentic Receptionist Kiosk (AKTIF PERMINTAAN USER) */}
-            <div className="exp-screen-layer active" id="exp-screen-2">
+            {/* Screen 2: QR Check-in & Authentic Receptionist Kiosk */}
+            <div className="exp-screen-layer" id="exp-screen-2">
               <div className="exp-rec-kiosk">
                 {/* Topbar Resepsionis persis /demo/receptionist */}
                 <div className="exp-rec-topbar">
@@ -913,13 +997,13 @@ export default async function Home() {
                 </div>
                 <span>RSVP</span>
               </div>
-              <div className="exp-dock-item" data-dock="1">
+              <div className="exp-dock-item active" data-dock="1">
                 <div className="exp-dock-icon">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
                 </div>
-                <span>Buku Tamu</span>
+                <span>Guest Camera</span>
               </div>
-              <div className="exp-dock-item active" data-dock="2">
+              <div className="exp-dock-item" data-dock="2">
                 <div className="exp-dock-icon">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3z"/></svg>
                 </div>
@@ -950,7 +1034,7 @@ export default async function Home() {
         Kami menghadirkan pengalaman lengkap untuk Anda dan para tamu, dari undangan pertama hingga hari istimewa tiba.
       </p>
 
-      {/* 4 Feature Icon Buttons (QR Resepsionis Aktif Pertama Sesuai Permintaan) */}
+      {/* 4 Feature Icon Buttons (Guest Moment Camera Aktif Pertama) */}
       <div className="exp-icon-dock" role="tablist" aria-label="Pilih Fitur Pengalaman">
         <button className="exp-icon-btn" role="tab" id="exp-tab-0" aria-selected="false" data-exp="0">
           <div className="exp-icon-circle">
@@ -965,20 +1049,20 @@ export default async function Home() {
           </div>
         </button>
 
-        <button className="exp-icon-btn" role="tab" id="exp-tab-1" aria-selected="false" data-exp="1">
+        <button className="exp-icon-btn active" role="tab" id="exp-tab-1" aria-selected="true" data-exp="1">
           <div className="exp-icon-circle">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+              <circle cx="12" cy="13" r="4"/>
             </svg>
           </div>
           <div className="exp-icon-info">
-            <span className="exp-icon-title">Buku Tamu</span>
-            <span className="exp-icon-sub">Simpan Pesan &amp; Doa</span>
+            <span className="exp-icon-title">Guest Camera</span>
+            <span className="exp-icon-sub">Kamera Saku Tamu</span>
           </div>
         </button>
 
-        <button className="exp-icon-btn active" role="tab" id="exp-tab-2" aria-selected="true" data-exp="2">
+        <button className="exp-icon-btn" role="tab" id="exp-tab-2" aria-selected="false" data-exp="2">
           <div className="exp-icon-circle">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="3" width="7" height="7"/>
@@ -1060,7 +1144,7 @@ export default async function Home() {
               Pilih Paket yang Sesuai dengan Cerita Anda
             </h2>
             <p className="harga-desc reveal reveal-delay-2">
-              Biaya satu kali bayar dengan masa aktif subdomain hingga {graceDays} hari pasca-acara, Galeri Kenangan Tamu (/memories) aktif {galleryRetention} untuk paket terpilih, dan portofolio resmi permanen.
+              Biaya satu kali bayar dengan masa aktif tautan undangan &amp; galeri kenangan hingga 30 hari pasca-acara, dan portofolio resmi permanen.
             </p>
             <Link href="/demo?tab=features" className="harga-detail-link reveal reveal-delay-3">
               Lihat Detail Fitur

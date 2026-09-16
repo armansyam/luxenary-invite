@@ -128,7 +128,12 @@ export async function POST(req: NextRequest) {
 
     const finalBaseAmount = Math.max(0, basePrice - appliedDiscount);
 
-    // 4. Update Order: finalisasi amount, set checkoutConfirmedAt
+    // Re-resolusi paymentMethod dari platform AdminSetting — sinkronisasi saat konfirmasi
+    // Platform setting selalu menang atas order-level default untuk memastikan konsistensi
+    const paymentModeSettingConfirm = await prisma.adminSetting.findUnique({ where: { key: "payment_mode" } });
+    const resolvedMethodOnConfirm = paymentModeSettingConfirm?.value === "MANUAL" ? "MANUAL_TRANSFER" : "GATEWAY";
+
+    // 4. Update Order: finalisasi amount, paymentMethod, set checkoutConfirmedAt
     const updatedOrder = await prisma.order.update({
       where: { id: order.id },
       data: {
@@ -136,6 +141,7 @@ export async function POST(req: NextRequest) {
         discountAmount: appliedDiscount > 0 ? appliedDiscount : null,
         promoCodeApplied: appliedPromoCode,
         promoCouponId: promoCouponId,
+        paymentMethod: resolvedMethodOnConfirm,
         checkoutConfirmedAt: now,
       },
     });

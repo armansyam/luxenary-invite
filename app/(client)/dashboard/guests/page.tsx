@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { getInvitationPublicUrl, resolveEffectiveInvitationUrl } from "@/lib/domainUtils";
 
 interface Guest {
@@ -69,6 +69,7 @@ const WA_PRESETS = [
 export default function GuestsPage() {
   const [invitationId, setInvitationId] = useState<string>("");
   const [invitationData, setInvitationData] = useState<any>(null);
+  const [platformPackages, setPlatformPackages] = useState<any[]>([]);
   const [guests, setGuests] = useState<Guest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -372,6 +373,9 @@ export default function GuestsPage() {
         if (data.waTemplateMessage && data.waTemplateMessage.trim()) {
           setAdminWaTemplate(data.waTemplateMessage.trim());
         }
+        if (Array.isArray(data.packages)) {
+          setPlatformPackages(data.packages);
+        }
       })
       .catch(() => {});
   }, []);
@@ -631,11 +635,11 @@ export default function GuestsPage() {
   const sentCount = guests.filter((g) => g.waStatus === "SENT").length;
   const pendingCount = totalGuests - sentCount;
 
-  const GUEST_STATUS_TABS = [
+  const GUEST_STATUS_TABS = useMemo(() => [
     { id: "all", label: "Semua Tamu", count: totalGuests },
     { id: "SENT", label: "Sudah Terkirim", count: sentCount },
     { id: "PENDING", label: "Belum Dikirim", count: pendingCount },
-  ];
+  ], [totalGuests, sentCount, pendingCount]);
 
   useEffect(() => {
     const idx = GUEST_STATUS_TABS.findIndex((t) => t.id === filterStatus);
@@ -643,7 +647,7 @@ export default function GuestsPage() {
     if (el) {
       setBeamStyle({ left: el.offsetLeft, width: el.offsetWidth });
     }
-  }, [filterStatus, totalGuests, sentCount, pendingCount]);
+  }, [filterStatus, GUEST_STATUS_TABS]);
 
   return (
     <div className="space-y-2.5 sm:space-y-3 font-sans pb-20">
@@ -734,6 +738,73 @@ export default function GuestsPage() {
           </div>
         </div>
       )}
+
+      {/* Portal Resepsionis & Check-In Meja Tamu (Hari H) */}
+      {(() => {
+        const plan = (invitationData?.order?.planType || invitationData?.planType || "TRADITIONAL").toUpperCase();
+        const pkg = platformPackages.find((p: any) => p.id === plan);
+        const hasQrCheckin = pkg ? pkg.capabilities?.includes("qr_checkin") : (plan === "MODERN" || plan === "PREMIUM");
+        if (!hasQrCheckin) return null;
+
+        return (
+          <div className="bg-emerald-50/70 border border-emerald-200/90 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-start sm:items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0 mt-0.5 sm:mt-0">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                </svg>
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-xs sm:text-sm font-bold text-emerald-950">Portal Resepsionis (Scanner Check-In Hari H)</h3>
+                  <span className="text-[10px] font-mono font-bold bg-white border border-emerald-300 text-emerald-800 px-2 py-0.5 rounded-md">
+                    PIN: {invitationData?.staffPin || "-"}
+                  </span>
+                </div>
+                <p className="text-[11px] text-emerald-800/80 mt-0.5">
+                  Buka di tablet/laptop petugas penerima tamu di pintu masuk untuk memindai tiket QR kehadiran tamu.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              {invitationData?.status === "PUBLISHED" && invitationData?.subdomain ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const url = `${window.location.origin}/s/${invitationData.subdomain}/receptionist`;
+                      navigator.clipboard.writeText(`Tautan Portal Resepsionis: ${url}\nPIN Akses: ${invitationData?.staffPin || ""}`);
+                      alert("Tautan Scanner & PIN berhasil disalin untuk Panitia / WO.");
+                    }}
+                    className="px-3 py-1.5 bg-white hover:bg-emerald-100 text-emerald-900 border border-emerald-300 text-xs font-bold rounded-lg transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                  >
+                    <svg className="w-3.5 h-3.5 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    <span>Salin Info WO</span>
+                  </button>
+                  <a
+                    href={`/s/${invitationData.subdomain}/receptionist`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-lg transition flex items-center gap-1.5 shadow-2xs"
+                  >
+                    <span>Buka Scanner</span>
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </a>
+                </>
+              ) : (
+                <span className="text-[11px] text-stone-400 bg-white/80 border border-stone-200 px-3 py-1.5 rounded-lg font-medium">
+                  Tersedia setelah Publish
+                </span>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Quick Summary Counter Bar (Clickable Filter Cards) */}
       <div className="grid grid-cols-3 gap-3">

@@ -1707,6 +1707,13 @@ export function composeDemoTemplateData(
           <span class="souvenir-lbl">VOUCHER SOUVENIR:</span>
           <span class="souvenir-code">SOUVENIR-${demo.themeId.toUpperCase()}</span>
         </div>
+
+        <div style="text-align: center; margin-top: 1.25rem;">
+          <a href="/demo/receptionist" class="btn-map-outline" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 22px; font-size: 11px; font-weight: 700; border-radius: 50px; text-decoration: none; border: 1px solid currentColor; letter-spacing: 0.06em; transition: all 0.2s ease;">
+            <span>UJI SCAN DI RESEPSIONIS DEMO</span>
+            <span>&rarr;</span>
+          </a>
+        </div>
       </div>
     </section>
   `;
@@ -1850,7 +1857,7 @@ export function composeDemoTemplateData(
         </p>
 
         <!-- 1. TOMBOL UPLOAD MOMEN (DIRECT LINK) -->
-        <a href="/demo/${demo.themeId}/sharemoment" style="display: block; width: 100%; max-width: 360px; margin: 0 auto 1.8rem auto; padding: 14px 20px; border-radius: 50px; background: #ffffff; color: #000000; font-weight: 700; font-size: 0.9rem; letter-spacing: 0.05em; text-align: center; text-decoration: none; box-shadow: 0 4px 15px rgba(255,255,255,0.18); transition: transform 0.15s ease;">
+        <a href="/demo/sharemoment?theme=${demo.themeId}" style="display: block; width: 100%; max-width: 360px; margin: 0 auto 1.8rem auto; padding: 14px 20px; border-radius: 50px; background: #ffffff; color: #000000; font-weight: 700; font-size: 0.9rem; letter-spacing: 0.05em; text-align: center; text-decoration: none; box-shadow: 0 4px 15px rgba(255,255,255,0.18); transition: transform 0.15s ease;">
           BAGIKAN FOTO MOMEN ANDA
         </a>
 
@@ -1875,7 +1882,7 @@ export function composeDemoTemplateData(
 
         <!-- 3. TOMBOL DIRECT KE HALAMAN GALERI WEB (memories) -->
         <div style="text-align: center;">
-          <a href="/demo/${demo.themeId}/memories" class="btn-outline-box btn-memories-gallery" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 28px; font-size: 12px; font-weight: 700; border-radius: 50px; text-decoration: none; border: 1px solid currentColor; letter-spacing: 0.08em; transition: all 0.25s ease;">
+          <a href="/demo/memories?theme=${demo.themeId}" class="btn-outline-box btn-memories-gallery" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 28px; font-size: 12px; font-weight: 700; border-radius: 50px; text-decoration: none; border: 1px solid currentColor; letter-spacing: 0.08em; transition: all 0.25s ease;">
             <span>BUKA GALERI MOMEN LENGKAP</span>
           </a>
         </div>

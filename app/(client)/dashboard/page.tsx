@@ -2,14 +2,11 @@
 
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
-import { useState, useEffect, useRef, Suspense, useCallback } from "react";
+import { useState, useEffect, Suspense, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import QRCode from "react-qr-code";
 
-import { getInvitationPublicUrl, resolveEffectiveInvitationUrl, shouldDisplayMemoriesGallery, getLatestEventDate } from "@/lib/domainUtils";
-import { MemoriesDownloadSection } from "@/components/client/MemoriesDownloadSection";
+import { getInvitationPublicUrl, resolveEffectiveInvitationUrl, getLatestEventDate } from "@/lib/domainUtils";
 import UnifiedAddonModal from "@/components/client/UnifiedAddonModal";
-import PrintableQRCardModal from "@/components/client/PrintableQRCardModal";
 
 function DashboardHomeContent() {
   const { data: session } = useSession();
@@ -20,10 +17,6 @@ function DashboardHomeContent() {
   const [platformSettings, setPlatformSettings] = useState<any>(null);
   const [guestMemoriesList, setGuestMemoriesList] = useState<any[]>([]);
   const [loadingMemories, setLoadingMemories] = useState(false);
-  const [deletingMemoryId, setDeletingMemoryId] = useState<string | null>(null);
-  const [copiedGallery, setCopiedGallery] = useState(false);
-  const [isQRModalOpen, setIsQRModalOpen] = useState(false);
-  const qrRef = useRef<HTMLDivElement>(null);
   const [stats, setStats] = useState({
     guestCount: 0,
     waSentCount: 0,
@@ -35,37 +28,6 @@ function DashboardHomeContent() {
   const [pendingGalleryOrder, setPendingGalleryOrder] = useState<any>(null);
   const [memoriesQuota, setMemoriesQuota] = useState<any>(null);
   const [isAddonModalOpen, setIsAddonModalOpen] = useState(false);
-  const [isRollModalOpen, setIsRollModalOpen] = useState(false);
-  const [rollModalInput, setRollModalInput] = useState<number>(5);
-  const [isSavingRoll, setIsSavingRoll] = useState(false);
-  const [rollModalMsg, setRollModalMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
-
-  const handleSaveRollQuota = async () => {
-    if (!invitation?.id || isSavingRoll) return;
-    setIsSavingRoll(true);
-    setRollModalMsg(null);
-    try {
-      const res = await fetch(`/api/client/invitations/${invitation.id}/memories`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ shotsQuota: rollModalInput }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || "Gagal menyimpan jatah roll.");
-      }
-      setRollModalMsg({ type: "success", text: `Jatah roll berhasil disimpan: ${rollModalInput} foto per tamu.` });
-      await fetchGuestMemories(invitation.id);
-      setTimeout(() => {
-        setIsRollModalOpen(false);
-        setRollModalMsg(null);
-      }, 1000);
-    } catch (err: any) {
-      setRollModalMsg({ type: "error", text: err.message || "Gagal menyimpan pengaturan." });
-    } finally {
-      setIsSavingRoll(false);
-    }
-  };
 
   const fetchGuestMemories = useCallback(async (invId?: string) => {
     const targetId = invId || invitation?.id;
@@ -159,13 +121,14 @@ function DashboardHomeContent() {
 
   const planType = invitation?.order?.planType || "TRADITIONAL";
   const packageConfig = platformSettings?.packages?.find((p: any) => p.id === planType);
-  const allowedCaps: string[] = packageConfig?.capabilities || (planType === "PREMIUM" ? ["music", "gallery", "qr_checkin", "guest_memories", "custom_domain"] : planType === "MODERN" ? ["music", "gallery", "qr_checkin"] : ["music", "gallery"]);
+  const allowedCaps: string[] = packageConfig?.capabilities || (planType === "PREMIUM" ? ["music", "gallery", "qr_checkin", "guest_memories", "custom_domain"] : planType === "MODERN" ? ["music", "gallery", "qr_checkin", "guest_memories"] : ["music", "gallery"]);
   const hasCap = (cap: string) => allowedCaps.includes(cap);
 
-  // Baca displayOrder dari featureSettings agar urutan nama sesuai setting di Studio Editor
   const featureSettings = (() => {
     try { return JSON.parse(invitation?.featureSettings || "{}"); } catch { return {}; }
   })();
+
+
   const displayOrder: string = featureSettings?.displayOrder || "GROOM_FIRST";
   const coupleDisplayName = invitation
     ? displayOrder === "BRIDE_FIRST"
@@ -179,66 +142,6 @@ function DashboardHomeContent() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
-  };
-
-  const handleCopyGalleryLink = () => {
-    if (invitation) {
-      const url = `${invUrl}/memories`;
-      navigator.clipboard.writeText(url);
-      setCopiedGallery(true);
-      setTimeout(() => setCopiedGallery(false), 2000);
-    }
-  };
-
-  const [deleteMemoryError, setDeleteMemoryError] = useState<string | null>(null);
-
-  const handleDeleteMemory = async (memoryId: string) => {
-    if (!invitation?.id) return;
-    setDeletingMemoryId(memoryId);
-    setDeleteMemoryError(null);
-    try {
-      const res = await fetch(`/api/client/invitations/${invitation.id}/memories?memoryId=${memoryId}`, {
-        method: "DELETE",
-      });
-      const data = await res.json();
-      if (data.success) {
-        setGuestMemoriesList((prev) => prev.filter((m) => m.id !== memoryId));
-      } else {
-        setDeleteMemoryError(data.error || "Gagal menghapus foto kenangan.");
-      }
-    } catch (err: any) {
-      setDeleteMemoryError(err.message || "Terjadi gangguan jaringan saat menghapus foto.");
-    } finally {
-      setDeletingMemoryId(null);
-    }
-  };
-
-  const handleDownloadQR = () => {
-    if (!qrRef.current) return;
-    const svg = qrRef.current.querySelector("svg");
-    if (!svg) return;
-    
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    const img = new Image();
-    
-    img.onload = () => {
-      canvas.width = img.width;
-      canvas.height = img.height;
-      if (ctx) {
-        ctx.fillStyle = "white";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0);
-        const pngFile = canvas.toDataURL("image/png");
-        const downloadLink = document.createElement("a");
-        downloadLink.download = `QR-GuestMoment-${invitation?.groomSlug}-${invitation?.brideSlug}.png`;
-        downloadLink.href = pngFile;
-        downloadLink.click();
-      }
-    };
-    
-    img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
   };
 
   if (loading) {
@@ -450,8 +353,8 @@ function DashboardHomeContent() {
   }
 
   const editorUrl = invitation ? `/dashboard/invitation/${invitation.id}` : "/dashboard/invitation";
-  const isGalleryRoute = shouldDisplayMemoriesGallery(invitation);
-  const retentionDays = platformSettings?.retentionCleanupDays || 14;
+
+  const retentionDays = Number(platformSettings?.retentionCleanupDays) || 30;
   const latestEventDate = getLatestEventDate(invitation?.eventData);
   const effectiveExpiry = invitation?.galleryExpiresAt
     ? new Date(invitation.galleryExpiresAt)
@@ -464,8 +367,11 @@ function DashboardHomeContent() {
     : null;
 
   const currentPlan = (invitation?.order?.planType || "TRADITIONAL").toUpperCase();
-  const baseRetentionDays = currentPlan === "PREMIUM" ? 365 : (currentPlan === "MODERN" ? 90 : 30);
+  const baseRetentionDays = retentionDays;
   const extraGalleryDays = Number(featureSettings?.extraGalleryDays) || 0;
+  const hasExtended = extraGalleryDays >= 30;
+  const isRenewalWindow = daysRemaining !== null && daysRemaining <= 7 && daysRemaining > 0;
+  const canExtend = !hasExtended && isRenewalWindow;
 
   const addonPricingSettings = platformSettings ? {
     priceTraditional: platformSettings.packages?.find((p: any) => p.id === "TRADITIONAL")?.price ?? 50000,
@@ -536,20 +442,7 @@ function DashboardHomeContent() {
                 </span>
               )}
 
-              {/* Dynamic Route Switcher Badge */}
-              {(invitation?.status === 'PUBLISHED' || invitation?.status === 'EVENT_FINISHED') && (
-                isGalleryRoute ? (
-                  <span className="px-2.5 py-0.5 bg-purple-50 border border-purple-200 text-purple-800 text-[10px] sm:text-[11px] font-bold rounded-full uppercase tracking-wider flex items-center gap-1.5" title="URL utama otomatis menampilkan Galeri Momen Tamu">
-                    <span className="w-1.5 h-1.5 rounded-full bg-purple-600"></span>
-                    Rute: Galeri Momen
-                  </span>
-                ) : (
-                  <span className="px-2.5 py-0.5 bg-blue-50 border border-blue-200 text-blue-800 text-[10px] sm:text-[11px] font-bold rounded-full uppercase tracking-wider flex items-center gap-1.5" title="URL utama menampilkan Halaman Undangan Lengkap">
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
-                    Rute: Undangan Penuh
-                  </span>
-                )
-              )}
+
             </div>
             
             <span className="text-[11px] text-stone-500 font-medium">
@@ -563,31 +456,77 @@ function DashboardHomeContent() {
             </span>
           </div>
 
-          {/* Retention Timer Countdown */}
-          {(invitation?.status === 'PUBLISHED' || invitation?.status === 'EVENT_FINISHED') && effectiveExpiry && (
-            <div className="flex items-center gap-2 text-[11px] text-stone-600 font-medium pt-0.5">
-              <svg className="w-3.5 h-3.5 text-stone-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>
-                {extraGalleryDays > 0 ? (
-                  <>
-                    Masa Simpan: <strong className="text-stone-800">{baseRetentionDays} Hari (Default)</strong> + <strong className="text-purple-800 font-bold">Perpanjangan ({extraGalleryDays}H)</strong> : {latestEventDate ? latestEventDate.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : "-"} s.d. {effectiveExpiry.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })} <span className="text-stone-500 font-mono">({daysRemaining !== null && daysRemaining > 0 ? `${daysRemaining} hari lagi` : "Menunggu jadwal pembersihan"})</span>
-                  </>
+          {/* Unified Retention & Service Active Card (Ditempatkan di Bagian Atas agar Sangat Jelas) */}
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-stone-50/90 border border-stone-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+            <div className="space-y-1.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-bold text-stone-800 flex items-center gap-1.5">
+                  <svg className="w-4 h-4 text-amber-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>Masa Aktif Layanan Undangan:</span>
+                </span>
+
+                {effectiveExpiry ? (
+                  <span className="px-2.5 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg font-mono text-[11px] font-bold inline-flex items-center gap-1">
+                    <span>Aktif s.d. {effectiveExpiry.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</span>
+                    <span className="text-emerald-600 font-medium">({daysRemaining !== null && daysRemaining > 0 ? `${daysRemaining} hari lagi` : "Menunggu jadwal pembersihan"})</span>
+                  </span>
                 ) : (
-                  <>
-                    Masa Simpan Sistem (Retensi {baseRetentionDays} Hari Pasca Acara):{" "}
-                    {daysRemaining !== null && daysRemaining > 0 ? (
-                      <strong className="text-stone-800 font-bold">{daysRemaining} hari lagi</strong>
-                    ) : (
-                      <strong className="text-amber-800 font-bold">Menunggu jadwal pembersihan</strong>
-                    )}
-                    {effectiveExpiry ? ` (hingga ${effectiveExpiry.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })})` : ""}
-                  </>
+                  <span className="px-2.5 py-0.5 bg-stone-200/70 text-stone-700 rounded-lg text-[11px] font-semibold">
+                    {baseRetentionDays} Hari Pasca Acara (Setelah Resepsi)
+                  </span>
                 )}
-              </span>
+
+                {extraGalleryDays > 0 && (
+                  <span className="px-2 py-0.5 bg-purple-50 border border-purple-200 text-purple-800 rounded-lg text-[10px] font-bold uppercase tracking-wider">
+                    +{extraGalleryDays} Hari Perpanjangan
+                  </span>
+                )}
+              </div>
+
+              <p className="text-[11px] text-stone-500 leading-relaxed">
+                Satu masa aktif terpadu mencakup <strong>situs web undangan</strong>, <strong>subdomain</strong>, <strong>kamera disposable tamu</strong>, dan <strong>cloud galeri foto</strong> ({baseRetentionDays} hari default{extraGalleryDays > 0 ? ` + perpanjangan ${extraGalleryDays} hari` : ""}{invitation?.status === 'DRAFT' ? ', dihitung pasca acara resepsi' : ''}).
+                {!hasExtended && daysRemaining !== null && daysRemaining > 7 && (
+                  <span className="block text-stone-400 mt-0.5">
+                    Opsi perpanjangan +30 hari (maksimal 1x) akan terbuka otomatis pada H-7 sebelum masa aktif berakhir.
+                  </span>
+                )}
+                {hasExtended && (
+                  <span className="block text-amber-800 font-medium mt-0.5">
+                    Masa aktif telah diperpanjang maksimal (+30 hari). Pastikan Anda telah mengunduh seluruh foto kenangan sebelum batas waktu berakhir.
+                  </span>
+                )}
+              </p>
             </div>
-          )}
+
+            {/* Quick Action Button: Perpanjangan Bertahap (H-7 & Maksimal 1x) */}
+            <div className="shrink-0 flex items-center gap-2">
+              {hasExtended ? (
+                <span className="px-3 py-1.5 bg-stone-100 border border-stone-200 text-stone-600 rounded-xl text-[11px] font-bold inline-flex items-center gap-1.5" title="Batas maksimal perpanjangan (+30 hari) telah digunakan.">
+                  <span className="w-1.5 h-1.5 rounded-full bg-stone-400"></span>
+                  Perpanjangan Maksimal Telah Digunakan
+                </span>
+              ) : canExtend ? (
+                <button
+                  type="button"
+                  onClick={() => setIsAddonModalOpen(true)}
+                  className="px-3.5 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-bold transition shadow-sm flex items-center justify-center gap-1.5 cursor-pointer w-full sm:w-auto animate-pulse"
+                  title="Masa aktif tersisa 7 hari atau kurang. Buka jendela perpanjangan."
+                >
+                  <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  <span>Perpanjang +30 Hari</span>
+                </button>
+              ) : (
+                <span className="px-2.5 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-[11px] font-semibold inline-flex items-center gap-1.5" title="Opsi perpanjangan akan terbuka saat sisa masa aktif 7 hari">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                  Masa Aktif Aman
+                </span>
+              )}
+            </div>
+          </div>
 
           <div className="space-y-1">
             <h1 className="text-base sm:text-lg md:text-xl lg:text-2xl font-serif font-bold text-stone-900 leading-snug tracking-tight">
@@ -667,9 +606,9 @@ function DashboardHomeContent() {
                 <span className="w-2 h-2 rounded-full bg-purple-600"></span>
                 <span>Acara telah selesai. URL website Anda sekarang otomatis menampilkan <strong>Galeri Momen Tamu</strong>.</span>
               </div>
-              <a href="#section-galeri-kenangan" className="text-amber-800 hover:underline font-semibold">
+              <Link href="/dashboard/moments" className="text-amber-800 hover:underline font-semibold">
                 Kelola Galeri &amp; Unduh ZIP &rarr;
-              </a>
+              </Link>
             </div>
           )}
 
@@ -844,330 +783,6 @@ function DashboardHomeContent() {
         </div>
       </div>
 
-      {/* 4. Fitur Operasional Hari H */}
-      {(hasCap("qr_checkin") || hasCap("guest_memories")) && (
-        <div className="pt-4 border-t border-stone-200/50">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
-            <h2 className="text-sm font-bold text-stone-900 flex items-center gap-2">
-              <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
-              Fitur Operasional (Hari H)
-            </h2>
-            {hasCap("qr_checkin") && (
-              <div className="bg-rose-50 border border-rose-200 px-3 py-1.5 rounded-lg flex items-center gap-2">
-                <svg className="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-                <span className="text-[11px] font-bold text-rose-800">PIN Akses Panitia: <span className="font-mono text-sm ml-1 tracking-widest">{invitation?.staffPin || "-"}</span></span>
-              </div>
-            )}
-          </div>
-          <div className={`grid grid-cols-1 ${hasCap("qr_checkin") && hasCap("guest_memories") ? "sm:grid-cols-2 lg:grid-cols-2" : "sm:grid-cols-1 max-w-md"} gap-4 sm:gap-5`}>
-            
-            {/* Receptionist */}
-            {hasCap("qr_checkin") && (
-              <div className="bg-white p-5 rounded-2xl border border-stone-200/80 shadow-xs flex flex-col justify-between space-y-4 hover:border-emerald-500/40 transition">
-                <div>
-                  <h3 className="text-sm font-bold text-stone-900 mb-1">Buku Tamu Digital (QR)</h3>
-                  <p className="text-[11px] text-stone-500 leading-relaxed">Buka di tablet penerima tamu untuk scan QR Code tamu yang datang.</p>
-                </div>
-                {invitation?.status === 'PUBLISHED' && invitation?.subdomain ? (
-                  <a href={`/s/${invitation.subdomain}/receptionist`} target="_blank" className="w-full py-2 bg-stone-100 hover:bg-emerald-50 text-emerald-800 font-bold rounded-xl text-xs transition text-center border border-stone-200">
-                    Buka Scanner QR
-                  </a>
-                ) : (
-                  <div className="w-full py-2 bg-stone-100 text-stone-400 font-bold rounded-xl text-xs text-center border border-stone-200 cursor-not-allowed">
-                    Tersedia setelah Publish
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* QR Guest Moment (New) */}
-            {hasCap("guest_memories") && (
-              <div className="bg-gradient-to-br from-amber-50 to-white p-5 rounded-2xl border border-amber-200 shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md transition relative">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-sm font-bold text-stone-900">QR Guest Moment</h3>
-                    <span className="bg-rose-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full animate-pulse">NEW</span>
-                  </div>
-                  <p className="text-[11px] text-stone-500 leading-relaxed mb-4">Cetak URL ini sebagai Standing Banner di meja agar tamu bisa kirim foto.</p>
-                  
-                  {invUrl ? (
-                    <div className="flex justify-center mb-2 bg-white p-2 rounded-xl border border-amber-100 shadow-inner max-w-[120px] mx-auto" ref={qrRef}>
-                      <QRCode
-                        value={`${invUrl}/sharemoment`}
-                        size={100}
-                        style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                        viewBox={`0 0 100 100`}
-                        fgColor="#451a03" // amber-950
-                      />
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center h-[120px] mb-2 bg-stone-50 rounded-xl border border-stone-200 border-dashed text-stone-400 text-[10px] text-center p-2 mx-auto max-w-[120px]">
-                      Menyiapkan tautan...
-                    </div>
-                  )}
-                </div>
-                
-                <div className="space-y-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsQRModalOpen(true)}
-                    className="w-full py-2.5 font-bold rounded-xl text-xs transition text-center flex items-center justify-center gap-2 shadow-xs cursor-pointer bg-stone-900 hover:bg-stone-800 text-white"
-                  >
-                    <svg className="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <span>Studio Cetak Kartu & Banner</span>
-                  </button>
-
-                  <div className="flex gap-2">
-                    <button 
-                      onClick={handleDownloadQR} 
-                      className="flex-1 py-1.5 border border-dashed font-bold rounded-xl text-[10px] transition text-center flex items-center justify-center gap-1 border-amber-500 text-amber-800 hover:bg-amber-50 cursor-pointer"
-                      title="Unduh QR Saja"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                      Unduh QR
-                    </button>
-                    <a 
-                      href={`${invUrl}/sharemoment${invitation?.status !== 'PUBLISHED' ? '?test=true' : ''}`} 
-                      target="_blank" 
-                      rel="noreferrer" 
-                      className="flex-1 py-1.5 bg-amber-600 text-white font-bold rounded-xl text-[10px] transition text-center hover:bg-amber-700 flex items-center justify-center gap-1 shadow-xs"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                      {invitation?.status === 'PUBLISHED' ? 'Buka Link' : 'Simulasi'}
-                    </a>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* 5. Galeri Kenangan Tamu (Monitoring & Unduh Foto) - Khusus Paket dengan kapabilitas guest_memories */}
-      {hasCap("guest_memories") && (
-        <div id="section-galeri-kenangan" className="pt-6 border-t border-stone-200/60 space-y-5 scroll-mt-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h2 className="text-sm font-bold text-stone-900 flex items-center gap-2">
-              <svg className="w-5 h-5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <span>Galeri Kenangan Tamu (Memory Vault)</span>
-            </h2>
-            <p className="text-xs text-stone-500 mt-0.5">
-              Pantau foto candid yang diunggah tamu, bagikan tautan album publik, dan unduh arsip foto (ZIP).
-              {memoriesQuota && (
-                <span className="block mt-1 text-[11px] text-amber-900 font-medium">
-                  Kapasitas: Jatah {memoriesQuota.shotsQuota} Foto/Tamu • Estimasi: ~{Math.floor(memoriesQuota.remainingPhotos / (memoriesQuota.shotsQuota || 5))} Tamu dapat berpartisipasi (Sisa Kuota: {memoriesQuota.remainingPhotos} foto)
-                </span>
-              )}
-              {invitation?.galleryExpiresAt && (
-                <span className="block mt-0.5 text-[11px] font-mono text-stone-700">
-                  Masa Aktif: <strong className="text-stone-800">{baseRetentionDays} Hari (Default)</strong>
-                  {extraGalleryDays > 0 && (
-                    <> + <strong className="text-purple-800 font-bold">Perpanjangan ({extraGalleryDays}H)</strong></>
-                  )} : {latestEventDate ? latestEventDate.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" }) : "-"} s.d. {new Date(invitation.galleryExpiresAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
-                </span>
-              )}
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
-            <span className="text-xs font-mono font-bold text-stone-800 bg-stone-100 border border-stone-200 px-3 py-1.5 rounded-xl">
-              {memoriesQuota ? `${memoriesQuota.usedPhotos} / ${memoriesQuota.maxTotalPhotos} Foto` : `${guestMemoriesList.length} Foto Masuk`}
-            </span>
-            <button
-              type="button"
-              onClick={() => {
-                setRollModalInput(memoriesQuota?.shotsQuota || 5);
-                setRollModalMsg(null);
-                setIsRollModalOpen(true);
-              }}
-              className="px-3 py-1.5 bg-white hover:bg-stone-100 text-stone-700 border border-stone-300 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
-              title="Atur Jatah Roll Kamera per Tamu"
-            >
-              <svg className="w-3.5 h-3.5 text-stone-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              <span>Atur Roll Tamu</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsAddonModalOpen(true)}
-              className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
-              title="Tambah Kuota Foto atau Perpanjang Masa Aktif Galeri"
-            >
-              <svg className="w-3.5 h-3.5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              <span>Tambah Kuota / Durasi</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => fetchGuestMemories()}
-              disabled={loadingMemories}
-              className="px-3 py-1.5 bg-white hover:bg-stone-100 text-stone-700 border border-stone-300 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
-            >
-              <svg className={`w-3.5 h-3.5 ${loadingMemories ? "animate-spin text-amber-700" : "text-stone-500"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              <span>{loadingMemories ? "Memuat..." : "Refresh"}</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Link Album Kenangan Tamu */}
-        <div className="p-4 sm:p-5 rounded-2xl border border-stone-200 bg-stone-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="min-w-0">
-            <span className="text-[10px] font-bold text-emerald-800 tracking-wider uppercase block font-mono">
-              LINK ALBUM KENANGAN TAMU (PUBLIK)
-            </span>
-            <span className="text-xs sm:text-sm font-mono font-bold text-stone-900 break-all">
-              {invitation?.status === 'PUBLISHED' || invitation?.status === 'EVENT_FINISHED'
-                ? `${invUrl}/memories`
-                : "Tersedia setelah undangan dipublish"}
-            </span>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={handleCopyGalleryLink}
-              disabled={invitation?.status !== 'PUBLISHED' && invitation?.status !== 'EVENT_FINISHED'}
-              className="px-3.5 py-2 bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 rounded-xl text-xs font-bold transition cursor-pointer shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {copiedGallery ? "Tersalin" : "Salin Link"}
-            </button>
-            {invitation?.status === 'PUBLISHED' || invitation?.status === 'EVENT_FINISHED' ? (
-              <a
-                href={`${invUrl}/memories`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-3.5 py-2 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs font-bold transition inline-flex items-center gap-1.5 shadow-2xs"
-              >
-                <span>Buka Galeri</span>
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-              </a>
-            ) : null}
-          </div>
-        </div>
-
-        {/* Client-Side JSZip Download — VPS tidak kena beban bandwidth foto */}
-        {invitation && (
-          <MemoriesDownloadSection
-            invitationId={invitation.id}
-            retentionDays={platformSettings?.retentionCleanupDays || 14}
-            isUploadLocked={invitation.memoriesUploadLocked ?? false}
-            galleryExpiresAt={invitation.galleryExpiresAt ? new Date(invitation.galleryExpiresAt).toISOString() : null}
-            extensionPrice={platformSettings?.galleryExtensionPricePerMonth || 50000}
-            invitationStatus={invitation.status}
-            guestMemoriesCount={guestMemoriesList.length}
-            pendingOrder={pendingGalleryOrder}
-            onRefresh={() => fetchGuestMemories()}
-            onOpenAddonModal={() => setIsAddonModalOpen(true)}
-            eventDate={latestEventDate ? latestEventDate.toISOString() : null}
-            planType={currentPlan}
-            extraGalleryDays={extraGalleryDays}
-          />
-        )}
-
-        {/* Real-time Submissions Monitoring List */}
-        <div className="bg-white p-5 sm:p-6 rounded-2xl border border-stone-200/80 shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-            <h3 className="text-xs sm:text-sm font-bold text-stone-900 flex items-center gap-2">
-              <span>Daftar Foto Masuk dari Tamu</span>
-              <span className="px-2 py-0.5 bg-stone-100 text-stone-800 rounded-full text-[10px] font-mono font-bold">
-                {guestMemoriesList.length}
-              </span>
-            </h3>
-            <span className="text-[11px] text-stone-400">Diurutkan dari yang terbaru</span>
-          </div>
-
-          {deleteMemoryError && (
-            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-xs text-rose-800 animate-in fade-in duration-200">
-              <svg className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-              <div className="flex-1 min-w-0">
-                <p className="font-bold text-rose-900 leading-tight">Gagal Menghapus Foto</p>
-                <p className="text-[11px] text-rose-700 mt-0.5 leading-relaxed">{deleteMemoryError}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setDeleteMemoryError(null)}
-                className="text-rose-400 hover:text-rose-700 p-0.5 rounded transition cursor-pointer"
-                title="Tutup pesan"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          )}
-
-          {guestMemoriesList.length === 0 ? (
-            <div className="p-8 rounded-2xl bg-stone-50 border border-stone-200 text-center space-y-2">
-              <svg className="w-8 h-8 text-stone-300 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <p className="text-xs text-stone-500 font-medium max-w-sm mx-auto">
-                Belum ada kiriman foto dari tamu. Saat acara berlangsung, foto yang dikirim tamu akan muncul di sini secara otomatis.
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 max-h-[500px] overflow-y-auto pr-1">
-              {guestMemoriesList.map((item) => (
-                <div key={item.id} className="p-3.5 bg-stone-50/70 hover:bg-stone-50 border border-stone-200 rounded-2xl flex gap-3 items-start relative group transition">
-                  <div className="w-16 h-16 rounded-xl overflow-hidden bg-stone-200 shrink-0 border border-stone-300 flex items-center justify-center">
-                    <img src={item.mediaUrl} alt={item.senderName} className="w-full h-full object-cover" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-1">
-                      <h4 className="text-xs font-bold text-stone-900 truncate">{item.senderName}</h4>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteMemory(item.id)}
-                        disabled={deletingMemoryId === item.id}
-                        className="text-[11px] text-rose-600 hover:text-rose-800 font-bold transition cursor-pointer p-1"
-                        title="Hapus kiriman ini"
-                      >
-                        {deletingMemoryId === item.id ? "..." : "✕"}
-                      </button>
-                    </div>
-                    <p className="text-[10px] text-stone-500 font-mono truncate">{item.senderEmail}</p>
-                    {item.message && (
-                      <p className="text-[11px] text-stone-700 mt-1 line-clamp-2 italic">
-                        &ldquo;{item.message}&rdquo;
-                      </p>
-                    )}
-                    <div className="flex items-center justify-between gap-2 mt-2 pt-1 border-t border-stone-200/60">
-                      <span className="text-[10px] text-stone-400">
-                        {new Date(item.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
-                      </span>
-                      <a
-                        href={item.mediaUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[10px] font-bold text-amber-800 hover:underline inline-flex items-center gap-1"
-                      >
-                        <span>Lihat Full</span>
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-      )}
 
       {/* Pusat Layanan Tambahan & Upgrade Terpadu */}
       {invitation && (
@@ -1177,193 +792,14 @@ function DashboardHomeContent() {
           invitationId={invitation.id}
           currentPlan={invitation.order?.planType || "TRADITIONAL"}
           currentQuota={memoriesQuota?.maxTotalPhotos || 250}
-          galleryExpiresAt={invitation.galleryExpiresAt ? new Date(invitation.galleryExpiresAt).toISOString() : null}
+          galleryExpiresAt={effectiveExpiry ? effectiveExpiry.toISOString() : null}
           pricingSettings={addonPricingSettings}
+          hasExtended={hasExtended}
+          daysRemaining={daysRemaining}
         />
       )}
 
-      {/* Modal Studio Desain Kartu Cetak & Standing Banner QR */}
-      {invitation && (
-        <PrintableQRCardModal
-          isOpen={isQRModalOpen}
-          onClose={() => setIsQRModalOpen(false)}
-          invitation={invitation}
-          shareMomentUrl={`${invUrl}/sharemoment`}
-          onInvitationUpdated={(updated) => setInvitation(updated)}
-        />
-      )}
 
-      {/* Modal Atur Jatah Roll Kamera Tamu */}
-      {isRollModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-stone-200 overflow-hidden flex flex-col max-h-[90vh]">
-            {/* Header */}
-            <div className="px-6 py-5 border-b border-stone-200 bg-stone-50/70 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-amber-100/80 border border-amber-300/60 flex items-center justify-center text-amber-800">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-stone-900">Atur Jatah Roll Kamera Tamu</h3>
-                  <p className="text-xs text-stone-500">Sesuaikan kuota jepretan kamera Disposable per tamu</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsRollModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-500 flex items-center justify-center transition cursor-pointer"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
-            </div>
-
-            {/* Body */}
-            <div className="p-6 space-y-5 overflow-y-auto">
-              {/* Pool Status & Dynamic Calculation Card */}
-              <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 space-y-3">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-stone-700">Total Kuota Foto Pool:</span>
-                  <span className="font-mono font-bold text-stone-900">{memoriesQuota?.maxTotalPhotos || 0} Foto</span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-stone-700">Foto Sudah Terpakai:</span>
-                  <span className="font-mono font-bold text-stone-900">{memoriesQuota?.usedPhotos || 0} Foto</span>
-                </div>
-                <div className="flex items-center justify-between text-xs border-t border-amber-200/60 pt-2">
-                  <span className="font-bold text-amber-950">Sisa Kuota Tersedia:</span>
-                  <span className="font-mono font-bold text-amber-900 text-sm">{memoriesQuota?.remainingPhotos || 0} Foto</span>
-                </div>
-
-                {/* Dynamic Capacity Estimation */}
-                <div className="p-3 bg-white/90 rounded-xl border border-amber-200/80 text-xs space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-stone-600 font-medium">Estimasi Tamu Aktif:</span>
-                    <span className="font-mono font-bold text-amber-900 text-sm">
-                      ~{rollModalInput > 0 ? Math.floor((memoriesQuota?.remainingPhotos || 0) / rollModalInput) : 0} Tamu
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-stone-500 leading-relaxed">
-                    Dengan jatah <strong className="text-stone-800">{rollModalInput} foto/tamu</strong>, sisa kuota pool dapat mengakomodasi sekitar <strong className="text-amber-800">~{rollModalInput > 0 ? Math.floor((memoriesQuota?.remainingPhotos || 0) / rollModalInput) : 0} tamu</strong> lagi.
-                  </p>
-                </div>
-              </div>
-
-              {/* Selector & Stepper */}
-              <div className="space-y-3">
-                <label className="block text-xs font-bold text-stone-800">
-                  Pilih atau Masukkan Jatah Roll per Tamu (1 - 30 Foto):
-                </label>
-
-                {/* Quick Presets */}
-                <div className="grid grid-cols-5 gap-2">
-                  {[3, 5, 10, 15, 20].map((val) => (
-                    <button
-                      key={val}
-                      type="button"
-                      onClick={() => setRollModalInput(val)}
-                      className={`py-2 text-xs font-bold rounded-xl border transition cursor-pointer font-mono ${
-                        rollModalInput === val
-                          ? "bg-amber-800 text-white border-amber-800 shadow-xs"
-                          : "bg-stone-50 hover:bg-stone-100 text-stone-700 border-stone-200"
-                      }`}
-                    >
-                      {val} Roll
-                    </button>
-                  ))}
-                </div>
-
-                {/* Stepper + Input */}
-                <div className="flex items-center gap-3 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => setRollModalInput((prev) => Math.max(1, prev - 1))}
-                    disabled={rollModalInput <= 1}
-                    className="w-11 h-11 rounded-xl bg-stone-100 hover:bg-stone-200 disabled:opacity-40 text-stone-800 font-bold flex items-center justify-center transition cursor-pointer text-lg"
-                  >
-                    -
-                  </button>
-                  <div className="flex-1 relative">
-                    <input
-                      type="number"
-                      min={1}
-                      max={30}
-                      value={rollModalInput}
-                      onChange={(e) => {
-                        const val = parseInt(e.target.value, 10);
-                        if (!isNaN(val)) {
-                          setRollModalInput(Math.min(30, Math.max(1, val)));
-                        }
-                      }}
-                      className="w-full text-center py-2.5 text-base font-bold font-mono text-stone-900 bg-stone-50 border border-stone-300 rounded-xl focus:ring-2 focus:ring-amber-700/20 focus:border-amber-700 transition"
-                    />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-stone-400 font-medium">Foto</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setRollModalInput((prev) => Math.min(30, prev + 1))}
-                    disabled={rollModalInput >= 30}
-                    className="w-11 h-11 rounded-xl bg-stone-100 hover:bg-stone-200 disabled:opacity-40 text-stone-800 font-bold flex items-center justify-center transition cursor-pointer text-lg"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-
-              {/* Information Cards (Anti-Hangus & Boundary) */}
-              <div className="p-3.5 rounded-xl bg-stone-50 border border-stone-200/90 text-xs text-stone-600 space-y-1.5 leading-relaxed">
-                <div className="flex items-start gap-2">
-                  <span className="text-amber-700 font-bold shrink-0">✓</span>
-                  <span><strong>Jatah Roll Anti-Hangus:</strong> Tamu yang hanya mengambil 1 atau 2 foto dan selesai, sisa jatah roll-nya <strong>tetap utuh di pool</strong> dan tidak terbuang.</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-amber-700 font-bold shrink-0">✓</span>
-                  <span><strong>Penyesuaian Tamu Terakhir:</strong> Jika sisa foto di pool tersisa lebih sedikit dari jatah roll (misal sisa 8 foto), kamera tamu otomatis disesuaikan dengan sisa foto tersebut.</span>
-                </div>
-              </div>
-
-              {/* Status Message */}
-              {rollModalMsg && (
-                <div className={`p-3 rounded-xl text-xs font-semibold ${
-                  rollModalMsg.type === "success"
-                    ? "bg-emerald-50 text-emerald-900 border border-emerald-200"
-                    : "bg-rose-50 text-rose-900 border border-rose-200"
-                }`}>
-                  {rollModalMsg.text}
-                </div>
-              )}
-            </div>
-
-            {/* Footer */}
-            <div className="px-6 py-4 border-t border-stone-200 bg-stone-50/70 flex items-center justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setIsRollModalOpen(false)}
-                className="px-4 py-2 text-xs font-semibold text-stone-600 hover:text-stone-900 hover:bg-stone-100 rounded-xl transition cursor-pointer"
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveRollQuota}
-                disabled={isSavingRoll}
-                className="px-5 py-2 bg-amber-800 hover:bg-amber-900 disabled:opacity-60 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer shadow-sm"
-              >
-                {isSavingRoll ? (
-                  <>
-                    <svg className="w-3.5 h-3.5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                    <span>Menyimpan...</span>
-                  </>
-                ) : (
-                  <span>Simpan Pengaturan Roll</span>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

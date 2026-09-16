@@ -70,9 +70,9 @@ Memerlukan sesi aktif klien (`role: CLIENT` atau Admin Remote Session):
 | **Undangan** | `GET` | `/api/client/invitations` | Mengambil seluruh undangan milik user aktif. |
 | | `POST` | `/api/client/invitations/create` | Membuat draf undangan baru setelah aktivasi invoice. |
 | | `GET` | `/api/client/invitations/{id}` | Mengambil detail konfigurasi lengkap satu undangan. |
-| | `PUT` | `/api/client/invitations/{id}` | Memperbarui konten 14 seksi formulir Studio Editor. |
+| | `PUT` | `/api/client/invitations/{id}` | Memperbarui konten 15 seksi formulir Studio Editor. |
 | | `POST` | `/api/client/invitations/{id}/preview` | Preview real-time live perubahan draf undangan. |
-| **Media** | `POST` | `/api/client/upload` | Mengunggah aset foto prewedding atau lagu mempelai ke Cloudflare R2. |
+| **Media** | `POST` | `/api/client/upload` | Mengunggah aset foto, video, lagu, atau QRIS (`slot: QRIS` WebP 800×800) ke Storage lokal / Cloudflare R2. |
 | | `DELETE` | `/api/client/media/{id}` | Menghapus aset media dari galeri undangan. |
 | **Buku Tamu** | `GET` | `/api/client/guests` | Mengambil daftar tamu undangan pengantin. |
 | | `POST` | `/api/client/guests` | Menambahkan satu tamu baru secara manual. |
@@ -81,7 +81,9 @@ Memerlukan sesi aktif klien (`role: CLIENT` atau Admin Remote Session):
 | **RSVP** | `GET` | `/api/client/rsvps` | Mengambil data kehadiran dan ucapan dari tamu untuk dimoderasi. |
 | **Domain** | `GET` | `/api/client/subdomain/check` | Memeriksa ketersediaan nama subdomain secara instan. |
 | | `POST` | `/api/client/custom-domain/buy` | Membuat pesanan lisensi custom domain pribadi. |
-| **Memories** | `GET` | `/api/client/memories/download` | Mengunduh seluruh foto kenangan tamu dalam satu berkas `.zip`. |
+| **Moments** | `GET` | `/api/client/invitations/{id}/memories` | Mengambil feed kenangan tamu, status order perpanjangan pending, dan kalkulasi kuota foto (`baseTotalPhotos`, `extraMemoriesQuota`, `usedPhotos`, `remainingPhotos`). |
+| | `PATCH` | `/api/client/invitations/{id}/memories` | Mengonfigurasi kamera tamu (`memoriesOpeningLayout`, `memoriesCardInstruction`, `memoriesFilter`, `memoriesDateStamp`, jatah roll, dan jadwal `memoriesSessions` dengan pembatas kuota server-side). |
+| | `GET` | `/api/client/memories/download` | Mengunduh seluruh foto kenangan tamu dalam satu berkas `.zip`. |
 | | `POST` | `/api/client/memories/lock` | Mengunci unggahan momen tamu setelah acara selesai. |
 | | `POST` | `/api/client/memories/extend` | Membuat invoice perpanjangan masa aktif galeri (+30 hari). |
 

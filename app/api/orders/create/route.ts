@@ -283,6 +283,10 @@ export async function POST(req: NextRequest) {
 
     const invoiceNumber = `INV-LUX-${Date.now()}-${randomUUID().slice(0, 6).toUpperCase()}`;
 
+    // Resolusi paymentMethod dari AdminSetting — platform setting wins, bukan schema default
+    const paymentModeSetting = await prisma.adminSetting.findUnique({ where: { key: "payment_mode" } });
+    const resolvedPaymentMethod = paymentModeSetting?.value === "MANUAL" ? "MANUAL_TRANSFER" : "GATEWAY";
+
     const order = await prisma.order.create({
       data: {
         userId: validUserId,
@@ -290,6 +294,7 @@ export async function POST(req: NextRequest) {
         planType: planType as "TRADITIONAL" | "MODERN" | "PREMIUM",
         amount,
         status: "PENDING",
+        paymentMethod: resolvedPaymentMethod,
         expiredAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
       },
     });

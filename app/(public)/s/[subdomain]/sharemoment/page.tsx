@@ -1,8 +1,8 @@
 import { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import GuestMomentClient from "@/app/components/features/GuestMomentClient";
-import { getAdminSetting, getPlanMemoriesQuota } from "@/lib/settings";
+import { getAdminSetting, getPlanMemoriesQuota, hasPlanCapability } from "@/lib/settings";
 import { getMemoriesActiveSchedule } from "@/lib/domainUtils";
 
 export const dynamic = "force-dynamic";
@@ -49,6 +49,12 @@ export default async function GuestMemoriesStandalonePage({ params, searchParams
 
   if (!invitation) {
     notFound();
+  }
+
+  // Cek kapabilitas guest_memories secara dinamis berdasarkan konfigurasi admin
+  const canAccessMemories = await hasPlanCapability(invitation.order?.planType, "guest_memories");
+  if (!canAccessMemories) {
+    redirect(`/s/${subdomain}`);
   }
 
   const memories: any[] = invitation.guestMemories || [];
@@ -99,7 +105,9 @@ export default async function GuestMemoriesStandalonePage({ params, searchParams
 
   // Jatah efektif tamu: tidak boleh melampaui sisa pool yang tersedia
   const effectiveShotsQuota = remainingPool > 0 ? Math.min(configuredShotsQuota, remainingPool) : configuredShotsQuota;
-  const { startTime, endTime } = getMemoriesActiveSchedule(invitation.featureSettings, invitation.eventData);
+  const schedule = getMemoriesActiveSchedule(invitation.featureSettings, invitation.eventData);
+  const isAllFinished = schedule.isAllFinished || invitation.status === "EVENT_FINISHED" || invitation.status === "ARCHIVED";
+  const nextSessionIso = schedule.nextSession ? `${schedule.nextSession.date}T${schedule.nextSession.startTime}:00` : null;
 
   return (
     <GuestMomentClient 
@@ -110,8 +118,8 @@ export default async function GuestMemoriesStandalonePage({ params, searchParams
       galleryUrl={galleryUrl}
       backUrl={backUrl}
       isUploadLocked={invitation.memoriesUploadLocked}
-      startTime={startTime ? startTime.toISOString() : null}
-      endTime={endTime ? endTime.toISOString() : null}
+      startTime={schedule.startTime ? schedule.startTime.toISOString() : null}
+      endTime={schedule.endTime ? schedule.endTime.toISOString() : null}
       filterId={filterId}
       shotsQuota={effectiveShotsQuota}
       maxContributors={maxContributors}
@@ -121,6 +129,11 @@ export default async function GuestMemoriesStandalonePage({ params, searchParams
       dateFormat={dateFormat}
       isTestMode={isTestMode}
       openingLayout={fs.memoriesOpeningLayout || "editorial_showcase"}
+      currentSessionName={schedule.currentSession?.name || null}
+      nextSessionName={schedule.nextSession?.name || null}
+      nextSessionStartTime={nextSessionIso}
+      isSessionActive={schedule.isSessionActive}
+      isAllFinished={isAllFinished}
     />
   );
 }
