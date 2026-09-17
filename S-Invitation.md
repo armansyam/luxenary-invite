@@ -343,6 +343,11 @@ Siklus hidup undangan diatur secara otomatis oleh cron job (`POST /api/cron/clea
      - *Hanya Kado Fisik:* Kartu alamat langsung tampil tanpa tombol tab transfer.
      - *Digital + Kado Fisik:* Kedua tab dimunculkan berdampingan.
    - **Seksi 15 (`SEC15`):** Menyediakan kontrol formulir untuk kustomisasi teks tombol RSVP (`customLabels.rsvpBtnText`), form RSVP, tombol buka undangan, dan label hitung mundur.
+   - **Mobile Edge-to-Edge Architecture & Sticky Quick-Save Thumb Bar:**
+     - *Eliminasi Matryoshka Card:* Di viewport ponsel (< 768px), container layout melepaskan padding (`px-0 sm:px-6`) dan 16 seksi formulir bertransisi ke layout *flat edge-to-edge* (`rounded-none sm:rounded-3xl border-y sm:border p-3.5 sm:p-7`), membebaskan hingga 128px ruang horizontal (33% layar).
+     - *Sticky Floating Quick-Save Bar:* Mengambang di bagian bawah viewport mobile (`lg:hidden fixed bottom-3 left-3 right-3 z-30`) menyajikan indikator *dirty state* kontekstual per-seksi aktif ("Belum Disimpan" vs "Tersimpan") serta tombol simpan instan ber-spinner tanpa perlu scroll ke dasar seksi.
+     - *Dock Suppression:* Dock melayang 6-menu dinonaktifkan khusus pada `/dashboard/invitation/*` agar tidak bertabrakan dengan keyboard virtual atau Quick-Save Bar.
+     - *Un-mockup Mobile Live Preview:* Pratinjau mobile meniadakan mockup frame 390px sekunder di ponsel fisik, menyajikan kanvas 100% native edge-to-edge.
    - **Live Editor Engine:** Saat mode edit aktif (`isEditMode`), seluruh form submission dinonaktifkan (`form.noValidate = true`, `preventDefault`) dan tombol submit dinetralkan ke `type="button"` sehingga pengguna dapat mengklik dan mengetik langsung teks tombol RSVP tanpa memicu balon validasi *"Please fill out this field"*.
 7. **Proteksi Studio Editor Pasca Publish, Buka Kunci Darurat, & Atomic Single Deploy:**
    - **Proteksi Pasca Terbit (`PUBLISHED`):** Tab Edit Undangan otomatis terkunci dan menampilkan layar proteksi minimalis elegan dengan tombol kontak WhatsApp Admin untuk mencegah modifikasi data yang tidak sengaja saat tautan live sedang diakses tamu.

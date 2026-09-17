@@ -289,22 +289,25 @@ export default function ClientDashboardLayout({
       )}
 
       {/* Main Content Area */}
-      <main className={`flex-1 w-full mx-auto px-4 sm:px-6 pt-3 sm:pt-4 pb-28 md:pb-12 transition-all duration-300 ${
-        pathname.startsWith("/dashboard/invitation") ? "max-w-[1600px]" : "max-w-6xl"
+      <main className={`flex-1 w-full mx-auto transition-all duration-300 ${
+        pathname.startsWith("/dashboard/invitation")
+          ? "max-w-[1600px] px-0 sm:px-6 pt-0 sm:pt-4 pb-20 md:pb-12"
+          : "max-w-6xl px-4 sm:px-6 pt-3 sm:pt-4 pb-28 md:pb-12"
       }`}>
         {children}
       </main>
 
-      {/* Apple-Style Transparent Floating Liquid Glass Dock (Mobile Only) */}
-      <nav 
-        aria-label="Navigasi Utama Mobile"
-        className={`md:hidden fixed bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-          isDockVisible
-            ? "translate-y-0 opacity-100 pointer-events-auto"
-            : "translate-y-24 opacity-0 pointer-events-none"
-        }`}
-      >
-        <div className="bg-white/30 backdrop-blur-2xl border border-white/50 shadow-xl shadow-stone-900/5 rounded-full p-1.5 flex items-center justify-center gap-1 sm:gap-2">
+      {/* Apple-Style Transparent Floating Liquid Glass Dock (Mobile Only) — Sembunyikan saat berada di Studio Editor agar tidak menutupi form & keyboard */}
+      {!pathname.startsWith("/dashboard/invitation") && (
+        <nav 
+          aria-label="Navigasi Utama Mobile"
+          className={`md:hidden fixed bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+            isDockVisible
+              ? "translate-y-0 opacity-100 pointer-events-auto"
+              : "translate-y-24 opacity-0 pointer-events-none"
+          }`}
+        >
+          <div className="bg-white/30 backdrop-blur-2xl border border-white/50 shadow-xl shadow-stone-900/5 rounded-full p-1.5 flex items-center justify-center gap-1 sm:gap-2">
           {navItems.map((item) => {
             const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
             return (
@@ -338,6 +341,7 @@ export default function ClientDashboardLayout({
           })}
         </div>
       </nav>
+      )}
     </div>
   );
 }

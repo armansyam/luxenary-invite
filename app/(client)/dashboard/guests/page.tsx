@@ -1009,61 +1009,63 @@ export default function GuestsPage() {
               return (
                 <div
                   key={guest.id}
-                  className={`p-3.5 sm:px-5 sm:py-3.5 transition flex flex-col md:grid md:grid-cols-12 gap-2.5 md:gap-3 md:items-center ${
+                  className={`p-3 sm:px-5 sm:py-3.5 transition flex flex-col md:grid md:grid-cols-12 gap-2 md:gap-3 md:items-center ${
                     isSent ? "bg-emerald-50/20 hover:bg-emerald-50/40" : "hover:bg-stone-50/80"
                   }`}
                 >
                   
-                  {/* Column 1: Checkbox (Status Terkirim) */}
-                  <div className="flex md:col-span-1 items-center justify-between md:justify-center">
-                    <label className="flex items-center gap-2 cursor-pointer select-none group" title="Centang jika undangan sudah dikirim ke tamu ini">
+                  {/* Row 1 di Mobile / Col 1-4 di Desktop: Checkbox, Nama Tamu, Kategori & Index */}
+                  <div className="flex items-center justify-between md:col-span-5 gap-2 min-w-0">
+                    <div className="flex items-center gap-2.5 min-w-0">
                       <input
                         type="checkbox"
                         checked={isSent}
                         onChange={() => toggleWaStatus(guest.id, guest.waStatus)}
-                        className="w-4 h-4 text-emerald-700 rounded border-stone-300 focus:ring-emerald-700 cursor-pointer"
+                        className="w-4 h-4 text-emerald-700 rounded border-stone-300 focus:ring-emerald-700 cursor-pointer shrink-0"
+                        title={isSent ? "Undangan sudah dikirim" : "Centang jika sudah dikirim"}
                       />
-                      <span className="md:hidden text-xs font-bold text-stone-700">
-                        {isSent ? "✓ Sudah Dikirim" : "Belum Dikirim"}
+                      <div className="min-w-0">
+                        <h4 className="text-xs sm:text-sm font-bold text-stone-900 truncate">{guest.name}</h4>
+                        <span className="text-[11px] text-stone-500 font-mono truncate block md:hidden">
+                          {guest.phone || "Tanpa No. WhatsApp"} · {guest.guestQuota || guest.guestLimit || 1} Pax
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className={`px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] font-bold uppercase tracking-wider ${
+                        (guest.category || "").toUpperCase() === "VIP"
+                          ? "bg-amber-100 text-amber-900 border border-amber-300/60"
+                          : (guest.category || "").toUpperCase() === "KELUARGA"
+                          ? "bg-purple-100 text-purple-900 border border-purple-300/60"
+                          : (guest.category || "").toUpperCase() === "TEMAN"
+                          ? "bg-blue-100 text-blue-900 border border-blue-300/60"
+                          : "bg-stone-100 text-stone-700 border border-stone-200"
+                      }`}>
+                        {guest.category || "UMUM"}
                       </span>
-                    </label>
-
-                    {/* Mobile Index Badge */}
-                    <span className="md:hidden text-[10px] text-stone-400 font-mono">#{idx + 1}</span>
+                      <span className="md:hidden text-[10px] text-stone-400 font-mono">#{idx + 1}</span>
+                    </div>
                   </div>
 
-                  {/* Column 2: Guest Name & Phone */}
-                  <div className="md:col-span-4 min-w-0">
-                    <h4 className="text-xs sm:text-sm font-bold text-stone-900 truncate">{guest.name}</h4>
-                    <span className="text-[11px] text-stone-500 font-mono block truncate">
-                      {guest.phone || "Tanpa No. WhatsApp"}
-                    </span>
+                  {/* Desktop Only: Kontak & Kategori */}
+                  <div className="hidden md:block md:col-span-2 text-xs text-stone-600 font-mono truncate">
+                    {guest.phone || "Tanpa No. WhatsApp"}
                   </div>
 
-                  {/* Column 3: Category Badge */}
-                  <div className="md:col-span-2 flex items-center gap-2">
-                    <span className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
-                      (guest.category || "").toUpperCase() === "VIP"
-                        ? "bg-amber-100 text-amber-900 border border-amber-300/60"
-                        : (guest.category || "").toUpperCase() === "KELUARGA"
-                        ? "bg-purple-100 text-purple-900 border border-purple-300/60"
-                        : (guest.category || "").toUpperCase() === "TEMAN"
-                        ? "bg-blue-100 text-blue-900 border border-blue-300/60"
-                        : "bg-stone-100 text-stone-700 border border-stone-200"
-                    }`}>
-                      {guest.category || "UMUM"}
-                    </span>
-                  </div>
-
-                  {/* Column 4: Quota & Session */}
-                  <div className="md:col-span-2 text-xs text-stone-600">
+                  {/* Desktop Only: Kuota & Sesi */}
+                  <div className="hidden md:block md:col-span-2 text-xs text-stone-600">
                     <span className="font-semibold text-stone-900">{guest.guestQuota || guest.guestLimit || 1} Pax</span>
                     <span className="text-stone-400 mx-1">·</span>
                     <span className="text-[11px] text-stone-500">{guest.sessionInfo || "Reguler"}</span>
                   </div>
 
-                  {/* Column 5: Action Buttons (WhatsApp, Copy Link, Delete) */}
-                  <div className="md:col-span-3 flex items-center justify-end gap-1.5 pt-2 md:pt-0 border-t md:border-0 border-stone-100">
+                  {/* Column 5 / Row 2 di Mobile: Action Buttons */}
+                  <div className="md:col-span-3 flex items-center justify-between md:justify-end gap-1.5 pt-1.5 md:pt-0 border-t md:border-0 border-stone-100">
+                    <span className="md:hidden text-[10px] font-semibold text-stone-500">
+                      {isSent ? "✓ Terkirim" : "Belum Kirim"}
+                    </span>
+                    <div className="flex items-center gap-1.5">
                     
                     {/* Copy Link Button */}
                     <div className={`relative group flex items-center ${!isPublished ? "cursor-not-allowed" : ""}`}>
@@ -1147,6 +1149,7 @@ export default function GuestsPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
                     </button>
+                    </div>
                   </div>
 
                 </div>

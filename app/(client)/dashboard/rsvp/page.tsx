@@ -145,7 +145,7 @@ export default function RsvpPage() {
         <button
           type="button"
           onClick={() => setFilterStatus("all")}
-          className={`p-4 rounded-2xl border transition text-left cursor-pointer ${
+          className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border transition text-left cursor-pointer ${
             filterStatus === "all"
               ? "bg-white border-stone-900 shadow-md ring-2 ring-stone-900/10"
               : "bg-white/80 border-stone-200 hover:bg-white hover:border-stone-300 shadow-2xs"
@@ -160,7 +160,7 @@ export default function RsvpPage() {
         <button
           type="button"
           onClick={() => setFilterStatus("hadir")}
-          className={`p-4 rounded-2xl border transition text-left cursor-pointer ${
+          className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border transition text-left cursor-pointer ${
             filterStatus === "hadir"
               ? "bg-emerald-50/80 border-emerald-700 shadow-md ring-2 ring-emerald-700/20"
               : "bg-white/80 border-stone-200 hover:bg-white hover:border-stone-300 shadow-2xs"
@@ -175,7 +175,7 @@ export default function RsvpPage() {
         <button
           type="button"
           onClick={() => setFilterStatus("tidak")}
-          className={`p-4 rounded-2xl border transition text-left cursor-pointer ${
+          className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border transition text-left cursor-pointer ${
             filterStatus === "tidak"
               ? "bg-rose-50/80 border-rose-700 shadow-md ring-2 ring-rose-700/20"
               : "bg-white/80 border-stone-200 hover:bg-white hover:border-stone-300 shadow-2xs"
@@ -190,7 +190,7 @@ export default function RsvpPage() {
         <button
           type="button"
           onClick={() => setFilterStatus("ragu")}
-          className={`p-4 rounded-2xl border transition text-left cursor-pointer ${
+          className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border transition text-left cursor-pointer ${
             filterStatus === "ragu"
               ? "bg-amber-50/80 border-amber-700 shadow-md ring-2 ring-amber-700/20"
               : "bg-white/80 border-stone-200 hover:bg-white hover:border-stone-300 shadow-2xs"

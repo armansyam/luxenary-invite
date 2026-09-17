@@ -422,11 +422,11 @@ function DashboardHomeContent() {
       )}
 
       {/* 1. Hero Card (White Dominant Luxury & Responsive) */}
-      <div className="bg-white text-stone-900 rounded-2xl p-4 sm:p-5 shadow-xs border border-stone-200/80 relative overflow-hidden bg-gradient-to-br from-white via-[#fcfbf9] to-stone-50/60">
+      <div className="bg-white text-stone-900 rounded-xl sm:rounded-2xl p-3.5 sm:p-5 shadow-xs border border-stone-200/80 relative overflow-hidden bg-gradient-to-br from-white via-[#fcfbf9] to-stone-50/60">
         <div className="absolute top-0 right-0 w-72 h-72 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
         
         <div className="relative z-10 space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-0.5 bg-stone-100 border border-stone-200/80 text-stone-600 text-[10px] sm:text-[11px] font-semibold rounded-full uppercase tracking-wider">
                 Undangan Pernikahan
@@ -463,24 +463,24 @@ function DashboardHomeContent() {
           </div>
 
           {/* Unified Retention & Service Active Card (Ditempatkan di Bagian Atas agar Sangat Jelas) */}
-          <div className="p-3.5 sm:p-4 rounded-2xl bg-stone-50/90 border border-stone-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+          <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-stone-50/90 border border-stone-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 shadow-xs">
             <div className="space-y-1.5">
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                 <span className="text-xs font-bold text-stone-800 flex items-center gap-1.5">
                   <svg className="w-4 h-4 text-amber-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span>Masa Aktif Layanan Undangan:</span>
+                  <span>Masa Aktif Layanan:</span>
                 </span>
 
                 {effectiveExpiry ? (
-                  <span className="px-2.5 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg font-mono text-[11px] font-bold inline-flex items-center gap-1">
-                    <span>Aktif s.d. {effectiveExpiry.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</span>
-                    <span className="text-emerald-600 font-medium">({daysRemaining !== null && daysRemaining > 0 ? `${daysRemaining} hari lagi` : "Menunggu jadwal pembersihan"})</span>
+                  <span className="px-2 sm:px-2.5 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg font-mono text-[10px] sm:text-[11px] font-bold inline-flex items-center gap-1 flex-wrap">
+                    <span>s.d. {effectiveExpiry.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</span>
+                    <span className="text-emerald-600 font-medium">({daysRemaining !== null && daysRemaining > 0 ? `${daysRemaining} hari lagi` : "Menunggu jadwal"})</span>
                   </span>
                 ) : (
-                  <span className="px-2.5 py-0.5 bg-stone-200/70 text-stone-700 rounded-lg text-[11px] font-semibold">
-                    {baseRetentionDays} Hari Pasca Acara (Setelah Resepsi)
+                  <span className="px-2 sm:px-2.5 py-0.5 bg-stone-200/70 text-stone-700 rounded-lg text-[10px] sm:text-[11px] font-semibold">
+                    {baseRetentionDays} Hari Pasca Acara
                   </span>
                 )}
 

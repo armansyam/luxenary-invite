@@ -1593,9 +1593,9 @@ export default function EditInvitation() {
       )}
 
       {/* Unified Studio Control & Header Card */}
-      <div className="bg-white rounded-2xl shadow-xs border border-stone-200 overflow-hidden">
+      <div className="bg-white rounded-none sm:rounded-2xl shadow-none sm:shadow-xs border-b sm:border border-stone-200 overflow-hidden">
         {/* Tier 1: Title, Couple Info, Badges & Primary Actions */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-3.5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 px-3.5 py-3 sm:px-6 sm:py-3.5">
           <div>
             <span className="text-[10px] font-bold tracking-widest text-amber-800 uppercase block">Studio Editor Undangan</span>
             <h1 className="text-base sm:text-lg font-serif font-bold text-stone-900 mt-0.5 leading-snug">
@@ -1640,7 +1640,7 @@ export default function EditInvitation() {
           
           <div className="flex items-center gap-2 shrink-0 flex-wrap">
             {/* Status Badge */}
-            <div className="px-3 py-1.5 bg-stone-50 border border-stone-200 rounded-xl flex items-center gap-1.5">
+            <div className="px-2.5 sm:px-3 py-1.5 bg-stone-50 border border-stone-200 rounded-xl flex items-center gap-1.5">
               {saving ? (
                 <span className="flex items-center gap-1.5 text-xs text-amber-800 font-semibold">
                   <span className="w-2 h-2 rounded-full bg-amber-600 animate-ping"></span>
@@ -1649,7 +1649,7 @@ export default function EditInvitation() {
               ) : isUploading ? (
                 <span className="flex items-center gap-1.5 text-xs text-blue-700 font-semibold">
                   <span className="w-2 h-2 rounded-full bg-blue-600 animate-ping"></span>
-                  <span>Mengunggah media...</span>
+                  <span>Mengunggah...</span>
                 </span>
               ) : (
                 <span className="flex items-center gap-1.5 text-xs text-emerald-700 font-medium">
@@ -1665,9 +1665,10 @@ export default function EditInvitation() {
               href={`/api/client/invitations/${invitationId}/preview?mode=preview`}
               target="_blank"
               rel="noreferrer"
-              className="px-3.5 py-1.5 bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-xl text-xs transition flex items-center gap-1.5 shadow-xs"
+              className="px-3 sm:px-3.5 py-1.5 bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-xl text-xs transition flex items-center gap-1.5 shadow-xs"
             >
-              <span>Buka di Tab Baru</span>
+              <span className="hidden sm:inline">Buka di Tab Baru</span>
+              <span className="sm:hidden">Tab Baru</span>
               <svg className="w-3.5 h-3.5 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
               </svg>
@@ -1780,7 +1781,7 @@ export default function EditInvitation() {
                 </svg>
               </button>
 
-              <div className="flex items-center bg-stone-100 p-0.5 rounded-xl border border-stone-200 text-xs">
+              <div className="hidden sm:flex items-center bg-stone-100 p-0.5 rounded-xl border border-stone-200 text-xs">
                 <button
                   type="button"
                   onClick={() => setPreviewDevice("mobile")}
@@ -1969,10 +1970,10 @@ export default function EditInvitation() {
              ========================================================================== */}
           <div
             ref={liveCanvasRef}
-            className={`bg-stone-950 border border-stone-800 shadow-xl flex flex-col items-center transition-all duration-200 ${
+            className={`bg-stone-950 sm:border sm:border-stone-800 shadow-xl flex flex-col items-center transition-all duration-200 ${
               isCanvasFullscreen
-                ? "fixed inset-0 z-50 rounded-none w-screen h-screen p-4 sm:p-6 overflow-y-auto"
-                : "rounded-3xl p-4 sm:p-8 min-h-[850px]"
+                ? "fixed inset-0 z-50 rounded-none w-screen h-screen p-2 sm:p-6 overflow-y-auto"
+                : "rounded-none sm:rounded-3xl p-2 sm:p-8 min-h-[calc(100vh-140px)] sm:min-h-[850px]"
             }`}
           >
             <div className="w-full flex items-center justify-between pb-4 border-b border-stone-800 mb-6 text-xs text-stone-400">
@@ -2098,8 +2099,8 @@ export default function EditInvitation() {
 
                 {/* Mobile & Tablet Fallback (< lg): Single Mobile Frame */}
                 <div className="lg:hidden w-full flex justify-center">
-                  <div className={`w-[390px] max-w-full rounded-2xl overflow-hidden border border-stone-800 shadow-2xl bg-black ${
-                    isCanvasFullscreen ? "h-[calc(100vh-140px)]" : "h-[780px]"
+                  <div className={`w-full sm:w-[390px] rounded-none sm:rounded-2xl overflow-hidden border-0 sm:border border-stone-800 shadow-2xl bg-black ${
+                    isCanvasFullscreen ? "h-[calc(100vh-100px)]" : "h-[calc(100vh-220px)] sm:h-[780px]"
                   }`}>
                     <iframe
                       key={`fallback-${liveIframeKey}`}
@@ -2115,13 +2116,13 @@ export default function EditInvitation() {
             ) : (
               /* Single Mode (Mobile or Desktop Fullscreen) */
               <div
-                className={`transition-all duration-300 rounded-2xl overflow-hidden border border-stone-700/60 shadow-2xl bg-black flex justify-center ${
+                className={`transition-all duration-300 rounded-none sm:rounded-2xl overflow-hidden border-0 sm:border border-stone-700/60 shadow-2xl bg-black flex justify-center ${
                   isCanvasFullscreen
                     ? previewDevice === "mobile"
-                      ? "w-[390px] h-[calc(100vh-140px)] max-w-full"
-                      : "w-full h-[calc(100vh-140px)]"
+                      ? "w-full sm:w-[390px] h-[calc(100vh-100px)]"
+                      : "w-full h-[calc(100vh-100px)]"
                     : previewDevice === "mobile"
-                    ? "w-[390px] h-[780px] max-w-full"
+                    ? "w-full sm:w-[390px] h-[calc(100vh-220px)] sm:h-[780px]"
                     : "w-full h-[850px]"
                 }`}
               >
@@ -2150,40 +2151,44 @@ export default function EditInvitation() {
           {/* ── LEFT COLUMN: SECTION NAVIGATOR (STICKY ON DESKTOP) ── */}
           <aside className="w-full lg:w-80 lg:shrink-0 lg:sticky lg:top-20 z-10">
             {/* Mobile / Tablet Horizontal Scrollable Pills (< lg) */}
-            <div className="lg:hidden bg-white p-2.5 rounded-2xl border border-stone-200 shadow-xs mb-3">
-              <div className="flex items-center justify-between mb-2 px-1">
-                <span className="text-[11px] font-bold text-stone-500 uppercase tracking-wider">Navigasi Seksi Form</span>
+            <div className="lg:hidden bg-white/95 backdrop-blur-md px-3.5 py-2 sm:p-2.5 rounded-none sm:rounded-2xl border-b sm:border border-stone-200 shadow-none sm:shadow-xs mb-2.5 sm:mb-3 sticky top-0 sm:top-14 z-20">
+              <div className="flex items-center justify-between mb-1.5 px-0.5">
+                <span className="text-[10px] sm:text-[11px] font-bold text-stone-500 uppercase tracking-wider">Navigasi Seksi Form</span>
                 <span className="text-[11px] text-amber-900 font-semibold truncate max-w-[200px]">
                   {visibleSections.find(s => s.id === activeSectionTab)?.num}. {visibleSections.find(s => s.id === activeSectionTab)?.shortTitle}
                 </span>
               </div>
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-                {visibleSections.map((sec) => {
-                  const isActive = activeSectionTab === sec.id;
-                  const isSecDirty = Boolean((isDirty as Record<string, boolean>)[sec.id]);
-                  return (
-                    <button
-                      key={sec.id}
-                      type="button"
-                      onClick={() => handleSelectSection(sec.id)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
-                        isActive
-                          ? "bg-amber-900 text-white shadow-xs"
-                          : "bg-stone-100 text-stone-600 hover:bg-stone-200/70"
-                      }`}
-                    >
-                      <span className={`w-4 h-4 rounded-full text-[10px] flex items-center justify-center font-bold ${
-                        isActive ? "bg-amber-800 text-amber-100" : "bg-stone-200 text-stone-700"
-                      }`}>
-                        {sec.num}
-                      </span>
-                      <span>{sec.shortTitle}</span>
-                      {isSecDirty && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                      )}
-                    </button>
-                  );
-                })}
+              <div className="relative">
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar pr-6">
+                  {visibleSections.map((sec) => {
+                    const isActive = activeSectionTab === sec.id;
+                    const isSecDirty = Boolean((isDirty as Record<string, boolean>)[sec.id]);
+                    return (
+                      <button
+                        key={sec.id}
+                        type="button"
+                        onClick={() => handleSelectSection(sec.id)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                          isActive
+                            ? "bg-amber-900 text-white shadow-xs"
+                            : "bg-stone-100 text-stone-600 hover:bg-stone-200/70"
+                        }`}
+                      >
+                        <span className={`w-4 h-4 rounded-full text-[10px] flex items-center justify-center font-bold ${
+                          isActive ? "bg-amber-800 text-amber-100" : "bg-stone-200 text-stone-700"
+                        }`}>
+                          {sec.num}
+                        </span>
+                        <span>{sec.shortTitle}</span>
+                        {isSecDirty && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                {/* Visual Scroll Shadow on Right */}
+                <div className="pointer-events-none absolute right-0 top-0 bottom-1 w-6 bg-gradient-to-l from-white to-transparent" />
               </div>
             </div>
 
@@ -2258,17 +2263,17 @@ export default function EditInvitation() {
           </aside>
 
           {/* ── RIGHT COLUMN: ACTIVE SECTION DETAIL FORM ── */}
-          <main className="w-full flex-1 min-w-0 space-y-4">
+          <main className="w-full flex-1 min-w-0 space-y-4 pb-24 sm:pb-0">
 
       {/* 1. SEKSI TEMA & PALET WARNA (SEC1) */}
       {(activeSectionTab === "sec1") && (
-      <section id="section-sec1" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
+      <section id="section-sec1" className="bg-white rounded-none sm:rounded-3xl shadow-none sm:shadow-xs border-y sm:border border-stone-200 overflow-hidden transition-all duration-200">
         <div
           onClick={() => toggleSection("sec1")}
           className={`flex items-center justify-between gap-3 transition cursor-pointer ${
             collapsed.sec1
-              ? "px-5 py-3.5 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
-              : "p-5 sm:p-6 border-b border-stone-100 bg-white"
+              ? "px-3.5 py-3 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
+              : "px-3.5 py-3 sm:p-6 border-b border-stone-100 bg-white"
           }`}
         >
           <div className="min-w-0">
@@ -2306,7 +2311,7 @@ export default function EditInvitation() {
         </div>
 
         {!collapsed.sec1 && (
-          <div className="p-5 sm:p-7 space-y-6">
+          <div className="p-3.5 sm:p-7 space-y-5 sm:space-y-6">
             {/* Theme Mockups for this Category / Store */}
             {(() => {
               // Seluruh tema desain bebas dipilih di semua paket (All-Access Themes)
@@ -2584,13 +2589,13 @@ export default function EditInvitation() {
 
       {/* 2. SEKSI SAMPUL & VISUAL UTAMA (SEC2) */}
       {(activeSectionTab === "sec2") && (
-      <section id="section-sec2" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
+      <section id="section-sec2" className="bg-white rounded-none sm:rounded-3xl shadow-none sm:shadow-xs border-y sm:border border-stone-200 overflow-hidden transition-all duration-200">
         <div
           onClick={() => toggleSection("sec2")}
           className={`flex items-center justify-between gap-3 transition cursor-pointer ${
             collapsed.sec2
-              ? "px-5 py-3.5 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
-              : "p-5 sm:p-6 border-b border-stone-100 bg-white"
+              ? "px-3.5 py-3 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
+              : "px-3.5 py-3 sm:p-6 border-b border-stone-100 bg-white"
           }`}
         >
           <div className="min-w-0">
@@ -2622,7 +2627,7 @@ export default function EditInvitation() {
         </div>
 
         {!collapsed.sec2 && (
-          <div className="p-5 sm:p-7 space-y-6">
+          <div className="p-3.5 sm:p-7 space-y-5 sm:space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <PhotoInput
                 label="Cover Pembuka Mobile — Portrait 9:16"
@@ -2953,13 +2958,13 @@ export default function EditInvitation() {
 
       {/* 3. SEKSI PROFIL MEMPELAI (SEC3) */}
       {(activeSectionTab === "sec3") && (
-      <section id="section-sec3" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
+      <section id="section-sec3" className="bg-white rounded-none sm:rounded-3xl shadow-none sm:shadow-xs border-y sm:border border-stone-200 overflow-hidden transition-all duration-200">
         <div
           onClick={() => toggleSection("sec3")}
           className={`flex items-center justify-between gap-3 transition cursor-pointer ${
             collapsed.sec3
-              ? "px-5 py-3.5 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
-              : "p-5 sm:p-6 border-b border-stone-100 bg-white"
+              ? "px-3.5 py-3 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
+              : "px-3.5 py-3 sm:p-6 border-b border-stone-100 bg-white"
           }`}
         >
           <div className="min-w-0">
@@ -2993,7 +2998,7 @@ export default function EditInvitation() {
         </div>
 
         {!collapsed.sec3 && (
-          <div className="p-5 sm:p-7 space-y-6">
+          <div className="p-3.5 sm:p-7 space-y-5 sm:space-y-6">
             <div className="flex items-center p-1 bg-stone-100 rounded-xl border border-stone-200 self-start sm:self-auto w-fit">
               <button
                 type="button"
@@ -3180,13 +3185,13 @@ export default function EditInvitation() {
 
       {/* 4. SEKSI KUTIPAN PEMBUKA (SEC4) */}
       {(activeSectionTab === "sec4") && (
-      <section id="section-sec4" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
+      <section id="section-sec4" className="bg-white rounded-none sm:rounded-3xl shadow-none sm:shadow-xs border-y sm:border border-stone-200 overflow-hidden transition-all duration-200">
         <div
           onClick={() => toggleSection("sec4")}
           className={`flex items-center justify-between gap-3 transition cursor-pointer ${
             collapsed.sec4
-              ? "px-5 py-3.5 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
-              : "p-5 sm:p-6 border-b border-stone-100 bg-white"
+              ? "px-3.5 py-3 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
+              : "px-3.5 py-3 sm:p-6 border-b border-stone-100 bg-white"
           }`}
         >
           <div className="min-w-0">
@@ -3218,7 +3223,7 @@ export default function EditInvitation() {
         </div>
 
         {!collapsed.sec4 && (
-          <div className="p-5 sm:p-7 space-y-4">
+          <div className="p-3.5 sm:p-7 space-y-4">
             {/* Quick Presets for Multi-Religious / Universal / Literary Quotes */}
             <div>
               <label className="block text-xs font-bold text-stone-700 mb-2">Pilih Preset Cepat (Ayat Suci, Puisi, atau Kata Mutiara):</label>
@@ -3406,13 +3411,13 @@ export default function EditInvitation() {
 
       {/* 5. SEKSI RANGKAIAN ACARA (SEC5) */}
       {(activeSectionTab === "sec5") && (
-      <section id="section-sec5" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
+      <section id="section-sec5" className="bg-white rounded-none sm:rounded-3xl shadow-none sm:shadow-xs border-y sm:border border-stone-200 overflow-hidden transition-all duration-200">
         <div
           onClick={() => toggleSection("sec5")}
           className={`flex items-center justify-between gap-3 transition cursor-pointer ${
             collapsed.sec5
-              ? "px-5 py-3.5 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
-              : "p-5 sm:p-6 border-b border-stone-100 bg-white"
+              ? "px-3.5 py-3 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
+              : "px-3.5 py-3 sm:p-6 border-b border-stone-100 bg-white"
           }`}
         >
           <div className="min-w-0">
@@ -3445,7 +3450,7 @@ export default function EditInvitation() {
         </div>
 
         {!collapsed.sec5 && (
-          <div className="p-5 sm:p-7 space-y-4">
+          <div className="p-3.5 sm:p-7 space-y-4">
             <div className="flex items-center justify-between gap-2 flex-wrap pb-2 border-b border-stone-100">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="text-[11px] font-bold text-stone-500 mr-1">Quick Add:</span>
@@ -3664,13 +3669,13 @@ export default function EditInvitation() {
 
       {/* 6. SEKSI KARTU AKSES QR & CHECK-IN (SEC6) */}
       {hasCap("qr_checkin") && (activeSectionTab === "sec6") && (
-      <section id="section-sec6" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
+      <section id="section-sec6" className="bg-white rounded-none sm:rounded-3xl shadow-none sm:shadow-xs border-y sm:border border-stone-200 overflow-hidden transition-all duration-200">
         <div
           onClick={() => toggleSection("sec6")}
           className={`flex items-center justify-between gap-3 transition cursor-pointer ${
             collapsed.sec6
-              ? "px-5 py-3.5 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
-              : "p-5 sm:p-6 border-b border-stone-100 bg-white"
+              ? "px-3.5 py-3 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
+              : "px-3.5 py-3 sm:p-6 border-b border-stone-100 bg-white"
           }`}
         >
           <div className="min-w-0">
@@ -3702,7 +3707,7 @@ export default function EditInvitation() {
         </div>
 
         {!collapsed.sec6 && (
-          <div className="p-5 sm:p-7 space-y-4">
+          <div className="p-3.5 sm:p-7 space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <span className="text-xs font-bold text-stone-900">Aktifkan Kartu Akses QR &amp; Check-In:</span>
@@ -3750,13 +3755,13 @@ export default function EditInvitation() {
 
       {/* 7. SEKSI KISAH CINTA (SEC7) */}
       {(activeSectionTab === "sec7") && (
-      <section id="section-sec7" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
+      <section id="section-sec7" className="bg-white rounded-none sm:rounded-3xl shadow-none sm:shadow-xs border-y sm:border border-stone-200 overflow-hidden transition-all duration-200">
         <div
           onClick={() => toggleSection("sec7")}
           className={`flex items-center justify-between gap-3 transition cursor-pointer ${
             collapsed.sec7
-              ? "px-5 py-3.5 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
-              : "p-5 sm:p-6 border-b border-stone-100 bg-white"
+              ? "px-3.5 py-3 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
+              : "px-3.5 py-3 sm:p-6 border-b border-stone-100 bg-white"
           }`}
         >
           <div className="min-w-0">
@@ -3788,7 +3793,7 @@ export default function EditInvitation() {
         </div>
 
         {!collapsed.sec7 && (
-          <div className="p-5 sm:p-7 space-y-4">
+          <div className="p-3.5 sm:p-7 space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-stone-700">Tampilkan Seksi Kisah Cinta:</span>
               <div className="flex items-center gap-3">
@@ -3865,13 +3870,13 @@ export default function EditInvitation() {
 
       {/* 8. SEKSI GALERI & VIDEO (SEC8) */}
       {(activeSectionTab === "sec8") && (
-      <section id="section-sec8" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
+      <section id="section-sec8" className="bg-white rounded-none sm:rounded-3xl shadow-none sm:shadow-xs border-y sm:border border-stone-200 overflow-hidden transition-all duration-200">
         <div
           onClick={() => toggleSection("sec8")}
           className={`flex items-center justify-between gap-3 transition cursor-pointer ${
             collapsed.sec8
-              ? "px-5 py-3.5 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
-              : "p-5 sm:p-6 border-b border-stone-100 bg-white"
+              ? "px-3.5 py-3 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
+              : "px-3.5 py-3 sm:p-6 border-b border-stone-100 bg-white"
           }`}
         >
           <div className="min-w-0">
@@ -3903,7 +3908,7 @@ export default function EditInvitation() {
         </div>
 
         {!collapsed.sec8 && (
-          <div className="p-5 sm:p-7 space-y-5">
+          <div className="p-3.5 sm:p-7 space-y-4 sm:space-y-5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-stone-700">Tampilkan Galeri Pre-Wedding:</span>
               <SectionHeaderToggle
@@ -3993,13 +3998,13 @@ export default function EditInvitation() {
 
       {/* 9. SEKSI TANDA KASIH & AMPLOP (SEC9) */}
       {(activeSectionTab === "sec9") && (
-      <section id="section-sec9" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
+      <section id="section-sec9" className="bg-white rounded-none sm:rounded-3xl shadow-none sm:shadow-xs border-y sm:border border-stone-200 overflow-hidden transition-all duration-200">
         <div
           onClick={() => toggleSection("sec9")}
           className={`flex items-center justify-between gap-3 transition cursor-pointer ${
             collapsed.sec9
-              ? "px-5 py-3.5 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
-              : "p-5 sm:p-6 border-b border-stone-100 bg-white"
+              ? "px-3.5 py-3 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
+              : "px-3.5 py-3 sm:p-6 border-b border-stone-100 bg-white"
           }`}
         >
           <div className="min-w-0">
@@ -4031,7 +4036,7 @@ export default function EditInvitation() {
         </div>
 
         {!collapsed.sec9 && (
-          <div className="p-5 sm:p-7 space-y-4">
+          <div className="p-3.5 sm:p-7 space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-stone-700">Tampilkan Amplop Digital:</span>
               <div className="flex items-center gap-3">
@@ -4152,13 +4157,13 @@ export default function EditInvitation() {
 
       {/* 10. SEKSI DRESS CODE (SEC10) */}
       {(activeSectionTab === "sec10") && (
-      <section id="section-sec10" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
+      <section id="section-sec10" className="bg-white rounded-none sm:rounded-3xl shadow-none sm:shadow-xs border-y sm:border border-stone-200 overflow-hidden transition-all duration-200">
         <div
           onClick={() => toggleSection("sec10")}
           className={`flex items-center justify-between gap-3 transition cursor-pointer ${
             collapsed.sec10
-              ? "px-5 py-3.5 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
-              : "p-5 sm:p-6 border-b border-stone-100 bg-white"
+              ? "px-3.5 py-3 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
+              : "px-3.5 py-3 sm:p-6 border-b border-stone-100 bg-white"
           }`}
         >
           <div className="min-w-0">
@@ -4190,7 +4195,7 @@ export default function EditInvitation() {
         </div>
 
         {!collapsed.sec10 && (
-          <div className="p-5 sm:p-7 space-y-4">
+          <div className="p-3.5 sm:p-7 space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-stone-700">Tampilkan Panduan Dress Code:</span>
               <SectionHeaderToggle
@@ -4236,13 +4241,13 @@ export default function EditInvitation() {
 
       {/* 11. SEKSI LIVE STREAMING (SEC11) */}
       {(activeSectionTab === "sec11") && (
-      <section id="section-sec11" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
+      <section id="section-sec11" className="bg-white rounded-none sm:rounded-3xl shadow-none sm:shadow-xs border-y sm:border border-stone-200 overflow-hidden transition-all duration-200">
         <div
           onClick={() => toggleSection("sec11")}
           className={`flex items-center justify-between gap-3 transition cursor-pointer ${
             collapsed.sec11
-              ? "px-5 py-3.5 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
-              : "p-5 sm:p-6 border-b border-stone-100 bg-white"
+              ? "px-3.5 py-3 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
+              : "px-3.5 py-3 sm:p-6 border-b border-stone-100 bg-white"
           }`}
         >
           <div className="min-w-0">
@@ -4274,7 +4279,7 @@ export default function EditInvitation() {
         </div>
 
         {!collapsed.sec11 && (
-          <div className="p-5 sm:p-7 space-y-4">
+          <div className="p-3.5 sm:p-7 space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-stone-700">Tampilkan Siaran Langsung:</span>
               <SectionHeaderToggle
@@ -4332,13 +4337,13 @@ export default function EditInvitation() {
 
       {/* 12. SEKSI FILTER INSTAGRAM (SEC12) */}
       {(activeSectionTab === "sec12") && (
-      <section id="section-sec12" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
+      <section id="section-sec12" className="bg-white rounded-none sm:rounded-3xl shadow-none sm:shadow-xs border-y sm:border border-stone-200 overflow-hidden transition-all duration-200">
         <div
           onClick={() => toggleSection("sec12")}
           className={`flex items-center justify-between gap-3 transition cursor-pointer ${
             collapsed.sec12
-              ? "px-5 py-3.5 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
-              : "p-5 sm:p-6 border-b border-stone-100 bg-white"
+              ? "px-3.5 py-3 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
+              : "px-3.5 py-3 sm:p-6 border-b border-stone-100 bg-white"
           }`}
         >
           <div className="min-w-0">
@@ -4370,7 +4375,7 @@ export default function EditInvitation() {
         </div>
 
         {!collapsed.sec12 && (
-          <div className="p-5 sm:p-7 space-y-4">
+          <div className="p-3.5 sm:p-7 space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-stone-700">Tampilkan Tombol Filter Instagram:</span>
               <SectionHeaderToggle
@@ -4414,13 +4419,13 @@ export default function EditInvitation() {
 
       {/* 13. SEKSI TURUT MENGUNDANG & HIMBAUAN (SEC13) */}
       {(activeSectionTab === "sec13") && (
-      <section id="section-sec13" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
+      <section id="section-sec13" className="bg-white rounded-none sm:rounded-3xl shadow-none sm:shadow-xs border-y sm:border border-stone-200 overflow-hidden transition-all duration-200">
         <div
           onClick={() => toggleSection("sec13")}
           className={`flex items-center justify-between gap-3 transition cursor-pointer ${
             collapsed.sec13
-              ? "px-5 py-3.5 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
-              : "p-5 sm:p-6 border-b border-stone-100 bg-white"
+              ? "px-3.5 py-3 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
+              : "px-3.5 py-3 sm:p-6 border-b border-stone-100 bg-white"
           }`}
         >
           <div className="min-w-0">
@@ -4452,7 +4457,7 @@ export default function EditInvitation() {
         </div>
 
         {!collapsed.sec13 && (
-          <div className="p-5 sm:p-7 space-y-4">
+          <div className="p-3.5 sm:p-7 space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-stone-700">Tampilkan Seksi Turut Mengundang:</span>
               <SectionHeaderToggle
@@ -4511,13 +4516,13 @@ export default function EditInvitation() {
 
       {/* 14. SEKSI GALERI KENANGAN TAMU (SEC14) */}
       {hasCap("guest_memories") && (activeSectionTab === "sec14") && (
-      <section id="section-sec14" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
+      <section id="section-sec14" className="bg-white rounded-none sm:rounded-3xl shadow-none sm:shadow-xs border-y sm:border border-stone-200 overflow-hidden transition-all duration-200">
         <div
           onClick={() => toggleSection("sec14")}
           className={`flex items-center justify-between gap-3 transition cursor-pointer ${
             collapsed.sec14
-              ? "px-5 py-3.5 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
-              : "p-5 sm:p-6 border-b border-stone-100 bg-white"
+              ? "px-3.5 py-3 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
+              : "px-3.5 py-3 sm:p-6 border-b border-stone-100 bg-white"
           }`}
         >
           <div className="min-w-0">
@@ -4552,7 +4557,7 @@ export default function EditInvitation() {
         </div>
 
         {!collapsed.sec14 && (
-          <div className="p-5 sm:p-7 space-y-6">
+          <div className="p-3.5 sm:p-7 space-y-5 sm:space-y-6">
             <div className="flex items-center justify-between">
               <div>
                 <span className="text-xs font-bold text-stone-800 block">Aktifkan Seksi Galeri Kenangan Tamu:</span>
@@ -4730,13 +4735,13 @@ export default function EditInvitation() {
 
       {/* 15. SEKSI PENGATURAN TEKS UI & LABEL (SEC15) */}
       {(activeSectionTab === "sec15") && (
-      <section id="section-sec15" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
+      <section id="section-sec15" className="bg-white rounded-none sm:rounded-3xl shadow-none sm:shadow-xs border-y sm:border border-stone-200 overflow-hidden transition-all duration-200">
         <div
           onClick={() => toggleSection("sec15")}
           className={`flex items-center justify-between gap-3 transition cursor-pointer ${
             collapsed.sec15
-              ? "px-5 py-3.5 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
-              : "p-5 sm:p-6 border-b border-stone-100 bg-white"
+              ? "px-3.5 py-3 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
+              : "px-3.5 py-3 sm:p-6 border-b border-stone-100 bg-white"
           }`}
         >
           <div className="min-w-0">
@@ -4768,7 +4773,7 @@ export default function EditInvitation() {
         </div>
 
         {!collapsed.sec15 && (
-          <div className="p-5 sm:p-7 space-y-5">
+          <div className="p-3.5 sm:p-7 space-y-4 sm:space-y-5">
             {/* Group 1: Formulir & Tombol RSVP */}
             <div className="space-y-3">
               <h4 className="text-xs font-bold text-stone-900 uppercase tracking-wider text-amber-950 flex items-center gap-1.5">
@@ -4894,13 +4899,13 @@ export default function EditInvitation() {
 
       {/* 16. SEKSI MITRA & VENDOR PERNIKAHAN (SEC16) */}
       {(activeSectionTab === "sec16") && (
-      <section id="section-sec16" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
+      <section id="section-sec16" className="bg-white rounded-none sm:rounded-3xl shadow-none sm:shadow-xs border-y sm:border border-stone-200 overflow-hidden transition-all duration-200">
         <div
           onClick={() => toggleSection("sec16")}
           className={`flex items-center justify-between gap-3 transition cursor-pointer ${
             collapsed.sec16
-              ? "px-5 py-3.5 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
-              : "p-5 sm:p-6 border-b border-stone-100 bg-white"
+              ? "px-3.5 py-3 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
+              : "px-3.5 py-3 sm:p-6 border-b border-stone-100 bg-white"
           }`}
         >
           <div className="min-w-0">
@@ -4932,7 +4937,7 @@ export default function EditInvitation() {
         </div>
 
         {!collapsed.sec16 && (
-          <div className="p-5 sm:p-7 space-y-6">
+          <div className="p-3.5 sm:p-7 space-y-5 sm:space-y-6">
             {/* Toggle Switch Tampilkan Section Vendor */}
             <div className="flex items-center justify-between p-4 bg-stone-50 rounded-2xl border border-stone-200">
               <div>
@@ -5195,6 +5200,47 @@ export default function EditInvitation() {
       )}
 
           </main>
+
+          {/* Mobile Floating Sticky Quick-Save Bar (Aktif khusus layar mobile saat berada di form tab) */}
+          <div className="lg:hidden fixed bottom-3 left-3 right-3 z-30 bg-stone-900/95 backdrop-blur-md border border-stone-800 text-white p-2.5 rounded-2xl shadow-xl flex items-center justify-between gap-3 animate-in slide-in-from-bottom-3 duration-200">
+            <div className="min-w-0 pl-1.5">
+              <p className="text-xs font-bold text-stone-100 truncate">
+                {visibleSections.find((s) => s.id === activeSectionTab)?.num}. {visibleSections.find((s) => s.id === activeSectionTab)?.shortTitle}
+              </p>
+              <p className="text-[10px] text-stone-400 truncate mt-0.5">
+                {Boolean((isDirty as Record<string, boolean>)[activeSectionTab]) ? (
+                  <span className="text-amber-400 font-semibold flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                    Ada perubahan belum disimpan
+                  </span>
+                ) : (
+                  <span className="text-emerald-400 flex items-center gap-1">
+                    <svg className="w-3 h-3 text-emerald-400 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/></svg>
+                    Data tersimpan aman
+                  </span>
+                )}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => saveSection(activeSectionTab)}
+              disabled={saving || !Boolean((isDirty as Record<string, boolean>)[activeSectionTab])}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                Boolean((isDirty as Record<string, boolean>)[activeSectionTab])
+                  ? "bg-amber-600 hover:bg-amber-500 text-white shadow-md active:scale-95"
+                  : "bg-stone-800 text-stone-500 cursor-not-allowed"
+              }`}
+            >
+              {saving && savingSec === activeSectionTab ? (
+                <>
+                  <div className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                  <span>Menyimpan...</span>
+                </>
+              ) : (
+                <span>Simpan Seksi</span>
+              )}
+            </button>
+          </div>
         </div>
 
 
@@ -5507,7 +5553,7 @@ function PhotoInput({
   };
 
   return (
-    <div className={`p-4 rounded-2xl border transition-colors space-y-3 ${uploadError ? "border-rose-300 bg-rose-50/30" : "border-stone-200 bg-stone-50/60"}`}>
+    <div className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border transition-colors space-y-2.5 sm:space-y-3 ${uploadError ? "border-rose-300 bg-rose-50/30" : "border-stone-200 bg-stone-50/60"}`}>
       <div className="flex items-start justify-between gap-2">
         <div>
           <h4 className="text-xs font-bold text-stone-900">{label}</h4>
@@ -5555,9 +5601,9 @@ function PhotoInput({
       {value ? (
         <div className="space-y-2">
           {/* Clean Proportional Preview Card */}
-          <div className="p-3 bg-white border border-stone-200 rounded-xl flex items-center gap-3.5 shadow-2xs">
-            {/* Media Thumbnail Container */}
-            <div className="relative w-24 h-32 sm:w-28 sm:h-36 rounded-lg overflow-hidden border border-stone-200 bg-stone-100 shrink-0 group">
+          <div className="p-2.5 sm:p-3 bg-white border border-stone-200 rounded-xl flex items-center gap-3 sm:gap-3.5 shadow-2xs">
+            {/* Media Thumbnail Container (Compact 16x22 on mobile, 28x36 on desktop) */}
+            <div className="relative w-16 h-22 sm:w-28 sm:h-36 rounded-lg overflow-hidden border border-stone-200 bg-stone-100 shrink-0 group">
               {isVideo ? (
                 <video
                   src={value}
@@ -5585,15 +5631,15 @@ function PhotoInput({
             </div>
 
             {/* Media Info & Controls */}
-            <div className="flex-1 min-w-0 space-y-2">
+            <div className="flex-1 min-w-0 space-y-1.5 sm:space-y-2">
               <div className="space-y-0.5">
                 <span className="text-xs font-bold text-stone-900 block">{isVideo ? "Video Terpasang" : "Foto Terpasang"}</span>
                 <p className="text-[11px] text-stone-500 line-clamp-1">{label}</p>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center gap-2 pt-1">
-                <label className="px-3.5 py-1.5 bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-lg text-xs cursor-pointer shadow-xs transition flex items-center gap-1.5">
+              <div className="flex items-center gap-2 pt-0.5 sm:pt-1">
+                <label className="px-3 sm:px-3.5 py-1.5 bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-lg text-xs cursor-pointer shadow-xs transition flex items-center gap-1.5">
                   <svg className="w-3.5 h-3.5 text-stone-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
@@ -5609,7 +5655,7 @@ function PhotoInput({
                 <button
                   type="button"
                   onClick={() => onChange("")}
-                  className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/80 font-bold rounded-lg text-xs transition cursor-pointer"
+                  className="px-2.5 sm:px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/80 font-bold rounded-lg text-xs transition cursor-pointer"
                 >
                   Hapus
                 </button>

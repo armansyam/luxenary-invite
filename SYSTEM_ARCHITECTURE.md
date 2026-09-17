@@ -2043,6 +2043,27 @@ Untuk memberikan pengalaman interaktif penuh bagi calon klien sebelum memesan pa
    - Pintu publik tak berautentikasi (`/memories` & `/sharemoment`) otomatis dialihkan ke sandbox demo interaktif (`/demo/memories` & `/demo/sharemoment`), mencegah hambatan auth wall bagi calon klien.
    - Endpoint publik RSVP (`/api/public/rsvp`) diperkaya simulasi instan untuk ID `demo-*`, memungkinkan pengujian pengiriman ucapan doa & konfirmasi kehadiran secara interaktif tanpa kendala database 404.
 
+### 20.6 — Mobile UI/UX Overhaul: Edge-to-Edge Canvas, Anti-Matryoshka Card & Sticky Quick-Save Bar
+1. **Eliminasi "Matryoshka Card Syndrome" (Pelepasan Padding Berlapis Mobile):**
+   - **Dasbor Layout Container (`app/(client)/dashboard/layout.tsx`):** Container konten utama disesuaikan secara bersyarat: `px-0 sm:px-6 pt-0 sm:pt-4 pb-20 md:pb-12` khusus untuk rute editor studio (`/dashboard/invitation/*`). Perubahan ini melepaskan ~32px ruang horizontal yang sebelumnya terbuang sia-sia di viewport ponsel (< 768px).
+   - **Restrukturisasi 16 Seksi Studio Editor (`/dashboard/invitation/[id]`):** Seluruh seksi formulir dirombak dari kotak kartu tebal mengambang (`rounded-3xl shadow-xs border p-5 sm:p-7`) menjadi tata letak *flat edge-to-edge* di mobile (`rounded-none sm:rounded-3xl shadow-none sm:shadow-xs border-y sm:border border-stone-200 p-3.5 sm:p-7`). Menghemat total ~128px ruang horizontal (33% dari layar 390px) yang sebelumnya terbuang untuk batas dan padding berlapis.
+2. **Sticky Quick-Save Floating Thumb Bar (`lg:hidden fixed bottom-3 left-3 right-3 z-30`):**
+   - Menghadirkan bar aksi simpan mengambang di zona jangkauan jempol bawah layar saat membuka tab formulir di perangkat mobile/tablet.
+   - Dilengkapi *Dirty State Tracker* reaktif per seksi (indikator titik oranye/amber bertuliskan "Belum Disimpan" saat form berubah, dan "Tersimpan" saat bersih) serta tombol simpan instan `[ Simpan Seksi ]` dengan status loading spinner tanpa mengharuskan pengguna scroll jauh ke bawah seksi.
+3. **Conditional Mobile Bottom Dock Suppression:**
+   - Navigasi melayang 6-menu liquid glass bawah layar di dasbor klien secara cerdas disembunyikan khusus pada rute `/dashboard/invitation/*` (`!pathname.startsWith("/dashboard/invitation")`).
+   - Mencegah persaingan sentuhan (*touch competition*) dengan Quick-Save Bar serta mencegah tertutupnya field input saat virtual keyboard ponsel aktif.
+4. **Eliminasi "Mockup Inception" pada Live Canvas Preview:**
+   - Di layar ponsel fisik pengguna, kanvas pratinjau live editor (`LiveViewTab`) tidak lagi memaksakan bingkai mockup ponsel 390px tiruan (`w-full sm:w-[390px] rounded-none sm:rounded-2xl border-0 sm:border`).
+   - Iframe pratinjau merespons 100% lebar layar mobile native, sementara toggle simulasi perangkat (`Mobile` vs `Layar Penuh`) disembunyikan di mobile (`hidden sm:flex`) untuk mengeliminasi pemotongan horizontal pada toolbar.
+5. **High-Density 2-Tier Guest Card (`/dashboard/guests`):**
+   - Daftar tamu di layar mobile ditransformasikan dari tumpukan vertikal 5 blok menjadi kartu 2-tier berkepadatan tinggi:
+     - *Baris 1:* Checkbox seleksi, Nama Tamu, Badge Kategori, dan Nomor Urut.
+     - *Baris 2:* Nomor Telepon, Kuota Tamu, Tombol Salin Tautan Cepat, Tombol Kirim WhatsApp, dan Tombol Hapus (seluruh target sentuh berukuran $\ge 40\text{px}$).
+6. **Refinement Responsif Dasbor Utama (`/dashboard`) & Filter RSVP (`/dashboard/rsvp`):**
+   - Hero card dan retention card dasbor menerapkan wrapping fleksibel dan ukuran tipografi adaptif (`text-[10px] sm:text-[11px]`, padding `p-3.5 sm:p-5`) untuk mencegah pemotongan badge pada viewport ultra-sempit (< 375px).
+   - 4 kartu metrik filter RSVP disesuaikan menjadi `p-3 sm:p-4 rounded-xl sm:rounded-2xl` untuk grid 2-kolom mobile yang seimbang.
+
 ---
 
 ### 21.0 — Homepage Hero Device Mockup Architecture & WebP Asset Standardization (< 200 KB)
