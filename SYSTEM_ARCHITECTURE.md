@@ -2242,4 +2242,23 @@ Sistem telah melalui audit mendalam berbasis bukti empiris (*Empirical Verificat
    - **Skema Bersih 0-Drift:** Kolom lama `phoneNumber` pada tabel `guests` dibersihkan, menyisakan `phone` murni. Nilai enum `WaStatus` distandarisasi murni ke `PENDING` dan `SENT`.
    - **Master Seed Terpadu:** Seluruh 84 parameter platform (nama paket dinamis `Serenade`, `Symphony`, `Eternity`, kuota foto roll, aturan retensi), 16 tema master, 2 preset musik, dan 2 akun admin default ditanamkan permanen di `prisma/defaultSettings.ts` dan `prisma/seed.ts`.
 
+---
+
+## 27. Seksi Mitra & Vendor Pernikahan (Wedding Credits): Arsitektur No-Card-Wrap & Injeksi Universal
+
+1. **Prinsip Estetika Bersih Tanpa Card Wrap (Floating Minimalist):**
+   - **Zero Card Wrap Policy:** Elemen vendor (logo PNG transparan & nama teks) dipasang melayang langsung di atas latar tema tanpa kotak kartu, tanpa border, dan tanpa latar belakang buatan (`background: transparent !important; border: none !important; box-shadow: none !important;`).
+   - Mencegah timbulnya kesan kaku "stempel kotak" dari logo PNG vendor yang berlatar transparan.
+   - Menggunakan token tema dinamis `color: var(--accent)` untuk tipografi nama vendor dan judul seksi.
+
+2. **Injeksi Universal di Atas Footer (`lib/renderTemplate.ts`):**
+   - Engine secara otomatis menyuntikkan section vendor tepat sebelum elemen `<footer` pada seluruh 15 master template HTML.
+   - Jika `showVendors` dinonaktifkan atau daftarnya kosong, section menghasilkan string kosong (`""`) tanpa menyisakan margin/padding (Zero-Gap Policy).
+
+3. **Studio Editor Dashboard Klien (Seksi 16):**
+   - Rute: `app/(client)/dashboard/invitation/[id]/page.tsx`
+   - Terdaftar di `defaultCollapsed`, `isDirty` (`sec16: dirty16`), dan `FORM_SECTIONS` (Seksi 16: "Mitra & Vendor Pernikahan").
+   - Mendukung penambahan vendor tak terbatas dengan upload logo (terintegrasi kompresi WebP berslot `vendor` pada `/api/client/upload`), input nama, dan deteksi otomatis format `@username` Instagram atau tautan web portofolio vendor.
+   - Tersimpan utuh pada field JSON `featureSettings.vendors` dan `featureSettings.customLabels` tanpa memerlukan migrasi skema database baru (Zero DB Migration).
+
 

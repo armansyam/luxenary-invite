@@ -44,6 +44,9 @@ export interface ThemeBlueprint {
   closingSub: string;
   rsvpTitle: string;
   rsvpBtnText?: string;
+  vendorTitle?: string;
+  vendorEyebrow?: string;
+  vendorSubtitle?: string;
 }
 
 export const THEME_BLUEPRINTS: Record<string, ThemeBlueprint> = {

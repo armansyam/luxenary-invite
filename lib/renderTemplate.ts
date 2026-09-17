@@ -1923,6 +1923,15 @@ export async function renderTemplateFile(
     tpl += injectedScripts;
   }
 
+  // Universal Wedding Vendors Section Auto-Placement (if not explicitly declared in template)
+  if (data.vendorsSectionHtml && !tpl.includes("{{vendorsSectionHtml}}") && !tpl.includes('id="section-vendors"')) {
+    if (tpl.includes("<footer")) {
+      tpl = tpl.replace("<footer", `${data.vendorsSectionHtml}\n    <footer`);
+    } else if (tpl.includes("<FOOTER")) {
+      tpl = tpl.replace("<FOOTER", `${data.vendorsSectionHtml}\n    <FOOTER`);
+    }
+  }
+
 
   // Server-Side Injection for Custom Labels (Zero-Hardcode Master Themes)
   const customLabels = data.featureSettings?.customLabels || data.customLabels || {};

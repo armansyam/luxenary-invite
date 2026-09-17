@@ -187,8 +187,9 @@ export async function composeTemplateData(invitationId: string) {
   const showDresscode = featureSettings.showDresscode !== undefined ? Boolean(featureSettings.showDresscode) : true;
   const showQrCheckin = featureSettings.showQrCheckin !== undefined ? Boolean(featureSettings.showQrCheckin) : true;
   const showLiveStream = featureSettings.showLiveStream !== undefined ? Boolean(featureSettings.showLiveStream) : true;
-  const showFilter = featureSettings.showFilter !== undefined ? Boolean(featureSettings.showFilter) : true;
   const showTurutMengundang = featureSettings.showTurutMengundang !== undefined ? Boolean(featureSettings.showTurutMengundang) : true;
+  const showFilter = featureSettings.showFilter !== undefined ? Boolean(featureSettings.showFilter) : false;
+  const showVendors = featureSettings.showVendors !== undefined ? Boolean(featureSettings.showVendors) : true;
 
   // Dynamic Couple Display Order Resolution
   const isGroomFirst = featureSettings.displayOrder === "GROOM_FIRST" || (!featureSettings.displayOrder && Boolean(inv.groomName));
@@ -433,6 +434,9 @@ export async function composeTemplateData(invitationId: string) {
     turutMengundangEyebrow: blueprint.turutMengundangEyebrow || "Keluarga Besar",
     turutMengundangSubtitle: blueprint.turutMengundangSubtitle || "Keluarga Besar & Kerabat yang turut berbahagia:",
     rsvpBtnText: blueprint.rsvpBtnText || "Kirim Konfirmasi & Doa",
+    vendorTitle: blueprint.vendorTitle || "Vendor",
+    vendorEyebrow: blueprint.vendorEyebrow || "SPECIAL THANKS",
+    vendorSubtitle: blueprint.vendorSubtitle || "",
     ...(featureSettings.customLabels || {}),
   };
   const quoteSectionTitle = customLabels.quoteTitle || featureSettings.quoteTitle || blueprint.quoteSectionTitle;
@@ -463,6 +467,9 @@ export async function composeTemplateData(invitationId: string) {
   const giftSectionDesc = customLabels.giftDesc || blueprint.giftSectionDesc;
   const wishesSectionTitle = customLabels.wishesTitle || blueprint.wishesSectionTitle;
   const wishesSectionSub = customLabels.wishesSub || blueprint.wishesSectionSub;
+  const vendorTitle = customLabels.vendorTitle || blueprint.vendorTitle || "Vendor";
+  const vendorEyebrow = customLabels.vendorEyebrow || blueprint.vendorEyebrow || "SPECIAL THANKS";
+  const vendorSubtitle = customLabels.vendorSubtitle || blueprint.vendorSubtitle || "";
 
   // 2. Dynamic Journey of Love / Story Module
   let storySectionHtml = "";
@@ -1656,6 +1663,73 @@ export async function composeTemplateData(invitationId: string) {
     `;
   }
 
+  // 12. Section: Wedding Vendors (Clean, Borderless, No-Card-Wrap Minimalist Logo Grid)
+  let vendorsSectionHtml = "";
+  let rawVendors: any[] = [];
+  if (Array.isArray(featureSettings.vendors)) {
+    rawVendors = featureSettings.vendors;
+  } else if (typeof featureSettings.vendors === "string") {
+    try {
+      rawVendors = JSON.parse(featureSettings.vendors);
+    } catch {}
+  }
+
+  const validVendors = rawVendors.filter((v) => v && (v.name?.trim() || v.logoUrl?.trim()));
+
+  if (showVendors && validVendors.length > 0) {
+    const vendorItemsHtml = validVendors.map((v: any) => {
+      const name = (v.name || "").trim();
+      const logo = (v.logoUrl || "").trim();
+      let rawUrl = (v.url || "").trim();
+      let finalUrl = "";
+      if (rawUrl) {
+        if (rawUrl.startsWith("@")) {
+          finalUrl = `https://instagram.com/${rawUrl.slice(1).trim()}`;
+        } else if (rawUrl.startsWith("http://") || rawUrl.startsWith("https://") || rawUrl.startsWith("//")) {
+          finalUrl = rawUrl;
+        } else {
+          finalUrl = `https://${rawUrl}`;
+        }
+      }
+
+      // Clean borderless floating presentation directly on canvas background (NO CARD WRAP)
+      const logoHtml = logo
+        ? `<img src="${logo}" alt="${escapeHtml(name || "Vendor")}" class="lux-vendor-logo-img" loading="lazy" style="max-height: 48px; max-width: 140px; width: auto; height: auto; object-fit: contain; filter: brightness(0) invert(1); opacity: 0.88; transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;" onmouseover="this.style.opacity='1'; this.style.transform='scale(1.06)';" onmouseout="this.style.opacity='0.88'; this.style.transform='scale(1)';" />`
+        : "";
+
+      const nameHtml = name
+        ? `<span class="lux-vendor-text-name ${logo ? "" : "serif"}" style="${logo ? "font-size: 0.78rem; font-weight: 500; letter-spacing: 0.04em;" : "font-size: 1.05rem; font-weight: 600; letter-spacing: 0.04em;"} color: var(--accent); opacity: 0.88; text-align: center; line-height: 1.35; background: transparent !important; border: none !important;">${escapeHtml(name)}</span>`
+        : "";
+
+      const itemContent = `
+        <div class="lux-vendor-item" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.45rem; background: transparent !important; border: none !important; box-shadow: none !important;">
+          ${logoHtml}
+          ${nameHtml}
+        </div>
+      `.trim();
+
+      if (finalUrl) {
+        return `<a href="${finalUrl}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(name || "Kunjungi Profil Vendor")}" class="lux-vendor-link" style="display: flex; align-items: center; justify-content: center; text-decoration: none; padding: 0.5rem; background: transparent !important; border: none !important; box-shadow: none !important; transition: transform 0.2s ease;">${itemContent}</a>`;
+      }
+      return `<div style="display: flex; align-items: center; justify-content: center; padding: 0.5rem; background: transparent !important; border: none !important; box-shadow: none !important;">${itemContent}</div>`;
+    }).join("");
+
+    vendorsSectionHtml = `
+      <section class="sec-flow slide-section" id="section-vendors" data-section-alias="vendors" style="position: relative; padding: 4.5rem 1.5rem; text-align: center;">
+        <a id="vendors" style="display:none;"></a>
+        <div class="sec-content-box reveal-on-scroll" style="max-width: 580px; margin: 0 auto; text-align: center;">
+          ${vendorEyebrow ? `<span class="sec-eyebrow" data-lux-field="customLabels.vendorEyebrow" style="display: block; font-size: 0.65rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--accent); opacity: 0.85; margin-bottom: 0.5rem;">${escapeHtml(vendorEyebrow)}</span>` : ""}
+          <h2 class="sec-main-title serif" data-lux-field="customLabels.vendorTitle" style="font-size: 2.3rem; margin-bottom: ${vendorSubtitle ? '0.6rem' : '2.8rem'}; color: var(--accent); letter-spacing: 0.02em;">${escapeHtml(vendorTitle)}</h2>
+          ${vendorSubtitle ? `<p class="sec-sub" data-lux-field="customLabels.vendorSubtitle" style="max-width: 480px; margin: 0 auto 2.5rem auto; font-size: 0.84rem; line-height: 1.6; opacity: 0.8;">${escapeHtml(vendorSubtitle)}</p>` : ""}
+
+          <div class="lux-vendors-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 2.5rem 1.8rem; align-items: center; justify-items: center; max-width: 460px; margin: 0 auto;">
+            ${vendorItemsHtml}
+          </div>
+        </div>
+      </section>
+    `;
+  }
+
   const appOrigin = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `http://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "http://localhost:3000")).replace(/\/$/, "");
   const fallbackOgImage = `/demo/${inv.themeId || "kalandra"}/cover.webp`;
   const resolvedCover = coverUrl || fallbackOgImage;
@@ -1761,6 +1835,7 @@ export async function composeTemplateData(invitationId: string) {
     giftSectionHtml,
     wishesHtml,
     memoriesSectionHtml,
+    vendorsSectionHtml,
     musicPlayerHtml,
     qrAccessCardHtml: showQrCheckin ? qrAccessCardHtml : "",
     qrButtonDisplay: showQrCheckin ? "" : "display:none;",
@@ -1780,6 +1855,7 @@ export async function composeTemplateData(invitationId: string) {
     showWeddingFilter: showFilter,
     showFilter,
     showTurutMengundang,
+    showVendors,
 
     // Custom Section Titles & Labels
     openingGreeting,
@@ -1800,6 +1876,9 @@ export async function composeTemplateData(invitationId: string) {
     giftSectionDesc,
     wishesSectionTitle,
     wishesSectionSub,
+    vendorTitle,
+    vendorEyebrow,
+    vendorSubtitle,
     quoteTitle: quoteSectionTitle,
     coupleEyebrow: coupleSectionEyebrow,
     coupleTitle: coupleSectionTitle,

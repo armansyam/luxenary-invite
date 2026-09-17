@@ -167,6 +167,10 @@ export async function POST(req: NextRequest) {
         maxWidth = 800;
         maxHeight = 800;
         quality = 85;
+      } else if (slotKey.startsWith("VENDOR")) {
+        maxWidth = 600;
+        maxHeight = 300;
+        quality = 88;
       }
 
       finalFileName = `${baseSlug}.webp`;

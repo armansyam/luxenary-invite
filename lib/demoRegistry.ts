@@ -2061,6 +2061,72 @@ export function composeDemoTemplateData(
   const effectiveBride = withV((customData as any)?.bridePhotoUrl !== undefined ? (customData as any)?.bridePhotoUrl : demo.bridePhotoUrl);
   const versionedGallery = activeGallery.map((p) => withV(p));
 
+  // 13. Wedding Vendors Section Demo (Clean, borderless, no-card-wrap minimalist logo grid)
+  const demoVendorSvgs = [
+    `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 44" fill="white"><circle cx="22" cy="22" r="14" fill="none" stroke="white" stroke-width="4"/><circle cx="22" cy="22" r="6" fill="white"/><text x="48" y="27" font-family="sans-serif" font-size="16" font-weight="700" letter-spacing="1">logoipsum</text></svg>`,
+    `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 44" fill="white"><path d="M10 28 A12 12 0 0 1 34 28 Z" fill="white"/><text x="48" y="27" font-family="sans-serif" font-size="16" font-weight="700" letter-spacing="1">logoipsum</text></svg>`,
+    `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 44" fill="white"><circle cx="22" cy="22" r="12" fill="none" stroke="white" stroke-width="3" stroke-dasharray="6 3"/><circle cx="22" cy="22" r="4" fill="white"/><text x="48" y="27" font-family="sans-serif" font-size="16" font-weight="700" letter-spacing="1">logoipsum</text></svg>`,
+    `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 44" fill="white"><rect x="10" y="10" width="24" height="24" rx="6" fill="none" stroke="white" stroke-width="3"/><rect x="16" y="16" width="12" height="12" rx="3" fill="white"/><text x="48" y="27" font-family="sans-serif" font-size="16" font-weight="700" letter-spacing="1">logoipsum</text></svg>`,
+    `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 44" fill="white"><polygon points="22,8 34,32 10,32" fill="none" stroke="white" stroke-width="3"/><text x="48" y="27" font-family="sans-serif" font-size="16" font-weight="700" letter-spacing="1">logoipsum</text></svg>`,
+    `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 44" fill="white"><circle cx="16" cy="22" r="8" fill="white"/><circle cx="28" cy="22" r="8" fill="none" stroke="white" stroke-width="3"/><text x="48" y="27" font-family="sans-serif" font-size="16" font-weight="700" letter-spacing="1">logoipsum</text></svg>`
+  ];
+
+  const demoVendorsList = [
+    { name: "Royal Wedding Planner", logoUrl: demoVendorSvgs[0], url: "https://instagram.com" },
+    { name: "Lumiere Photography", logoUrl: demoVendorSvgs[1], url: "https://instagram.com" },
+    { name: "Glow by Sarah MUA", logoUrl: demoVendorSvgs[2], url: "https://instagram.com" },
+    { name: "Flora & Bloom Decoration", logoUrl: demoVendorSvgs[3], url: "https://instagram.com" },
+    { name: "Mahkota Traditional Attire", logoUrl: demoVendorSvgs[4], url: "https://instagram.com" },
+    { name: "Harmoni Sound & Entertainment", logoUrl: demoVendorSvgs[5], url: "https://instagram.com" },
+  ];
+
+  const customVendors = (customData as any)?.featureSettings?.vendors;
+  const effectiveVendors = Array.isArray(customVendors) && customVendors.length > 0 ? customVendors : demoVendorsList;
+  const isVendorsEnabled = (customData as any)?.featureSettings?.showVendors !== undefined ? Boolean((customData as any).featureSettings.showVendors) : true;
+
+  const vendorTitle = (customData as any)?.customLabels?.vendorTitle || blueprint.vendorTitle || "Vendor";
+  const vendorEyebrow = (customData as any)?.customLabels?.vendorEyebrow || blueprint.vendorEyebrow || "SPECIAL THANKS";
+  const vendorSubtitle = (customData as any)?.customLabels?.vendorSubtitle || blueprint.vendorSubtitle || "";
+
+  let vendorsSectionHtml = "";
+  if (isVendorsEnabled && effectiveVendors.length > 0) {
+    const vendorCardsHtml = effectiveVendors.map((v: any) => {
+      const name = (v.name || "").trim();
+      const logo = (v.logoUrl || "").trim();
+      let rawUrl = (v.url || "").trim();
+      let finalUrl = "";
+      if (rawUrl) {
+        if (rawUrl.startsWith("@")) finalUrl = `https://instagram.com/${rawUrl.slice(1).trim()}`;
+        else if (rawUrl.startsWith("http://") || rawUrl.startsWith("https://") || rawUrl.startsWith("//")) finalUrl = rawUrl;
+        else finalUrl = `https://${rawUrl}`;
+      }
+
+      const itemContent = logo
+        ? `<img src="${logo}" alt="${name || "Vendor"}" class="lux-vendor-logo-img" loading="lazy" style="max-height: 48px; max-width: 140px; width: auto; height: auto; object-fit: contain; filter: brightness(0) invert(1); opacity: 0.88; transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;" onmouseover="this.style.opacity='1'; this.style.transform='scale(1.08)';" onmouseout="this.style.opacity='0.88'; this.style.transform='scale(1)';" />`
+        : `<span class="lux-vendor-text-name serif" style="font-size: 1.05rem; font-weight: 600; letter-spacing: 0.04em; color: var(--accent); opacity: 0.9; text-align: center;">${name}</span>`;
+
+      if (finalUrl) {
+        return `<a href="${finalUrl}" target="_blank" rel="noopener noreferrer" title="${name || "Kunjungi Profil Vendor"}" style="display: flex; align-items: center; justify-content: center; text-decoration: none; padding: 0.5rem; transition: transform 0.2s ease;">${itemContent}</a>`;
+      }
+      return `<div style="display: flex; align-items: center; justify-content: center; padding: 0.5rem;">${itemContent}</div>`;
+    }).join("");
+
+    vendorsSectionHtml = `
+      <section class="sec-flow slide-section" id="section-vendors" data-section-alias="vendors" style="position: relative; padding: 4.5rem 1.5rem; text-align: center;">
+        <a id="vendors" style="display:none;"></a>
+        <div class="sec-content-box reveal-on-scroll" style="max-width: 580px; margin: 0 auto; text-align: center;">
+          ${vendorEyebrow ? `<span class="sec-eyebrow" data-lux-field="customLabels.vendorEyebrow" style="display: block; font-size: 0.65rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--accent); opacity: 0.85; margin-bottom: 0.5rem;">${vendorEyebrow}</span>` : ""}
+          <h2 class="sec-main-title serif" data-lux-field="customLabels.vendorTitle" style="font-size: 2.3rem; margin-bottom: ${vendorSubtitle ? '0.6rem' : '2.8rem'}; color: var(--accent); letter-spacing: 0.02em;">${vendorTitle}</h2>
+          ${vendorSubtitle ? `<p class="sec-sub" data-lux-field="customLabels.vendorSubtitle" style="max-width: 480px; margin: 0 auto 2.5rem auto; font-size: 0.84rem; line-height: 1.6; opacity: 0.8;">${vendorSubtitle}</p>` : ""}
+
+          <div class="lux-vendors-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 2.5rem 1.8rem; align-items: center; justify-items: center; max-width: 460px; margin: 0 auto;">
+            ${vendorCardsHtml}
+          </div>
+        </div>
+      </section>
+    `;
+  }
+
   return {
     invitationId: `demo-${demo.themeId}`,
     themeId: demo.themeId,
@@ -2176,11 +2242,16 @@ export function composeDemoTemplateData(
     weddingFilterHtml,
     memoriesSectionHtml,
     turutMengundangHtml,
+    vendorsSectionHtml,
     qrCoverButtonHtml,
     qrDockButtonHtml,
     wishesHtml,
     bankAccountsHtml: bankCardsHtml,
     shippingAddress: `Kediaman Mempelai, ${demo.city}, Indonesia`,
+    showVendors: isVendorsEnabled,
+    vendorTitle,
+    vendorEyebrow,
+    vendorSubtitle,
     
     googleCalendarUrl,
     waLink: `https://wa.me/6281234567890?text=Halo%20${encodeURIComponent(demo.groomName)}%20dan%20${encodeURIComponent(demo.brideName)}`,

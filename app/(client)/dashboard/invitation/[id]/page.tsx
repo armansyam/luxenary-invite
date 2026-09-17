@@ -438,6 +438,7 @@ export default function EditInvitation() {
     sec13: false, // 13. Turut Mengundang & Himbauan
     sec14: false, // 14. Galeri Kenangan Tamu (After-Event)
     sec15: false, // 15. Pengaturan Teks UI & Bahasa
+    sec16: false, // 16. Mitra & Vendor Pernikahan
   };
 
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>(defaultCollapsed);
@@ -921,6 +922,7 @@ export default function EditInvitation() {
         sec1: false, sec2: false, sec3: false, sec4: false, sec5: false,
         sec6: false, sec7: false, sec8: false, sec9: false, sec10: false,
         sec11: false, sec12: false, sec13: false, sec14: false, sec15: false,
+        sec16: false,
       };
     }
 
@@ -1056,6 +1058,27 @@ export default function EditInvitation() {
       getCustomLabel("memoriesSubtitle", "") !== getSavedCustomLabel("memoriesSubtitle", "")
     );
 
+    // Sec 16: Mitra & Vendor Pernikahan (Wedding Credits)
+    const dirty16 = (() => {
+      try {
+        const curFs = typeof invitation.featureSettings === "object" ? invitation.featureSettings : JSON.parse(invitation.featureSettings || "{}");
+        const prevFs = typeof savedSnapshot.invitation?.featureSettings === "object" ? savedSnapshot.invitation.featureSettings : JSON.parse(savedSnapshot.invitation?.featureSettings || "{}");
+        const curShow = Boolean(curFs.showVendors);
+        const prevShow = Boolean(prevFs.showVendors);
+        const curVendors = JSON.stringify(curFs.vendors || []);
+        const prevVendors = JSON.stringify(prevFs.vendors || []);
+        const curTitle = curFs.customLabels?.vendorTitle || "";
+        const prevTitle = prevFs.customLabels?.vendorTitle || "";
+        const curSub = curFs.customLabels?.vendorSubtitle || "";
+        const prevSub = prevFs.customLabels?.vendorSubtitle || "";
+        const curEye = curFs.customLabels?.vendorEyebrow || "";
+        const prevEye = prevFs.customLabels?.vendorEyebrow || "";
+        return curShow !== prevShow || curVendors !== prevVendors || curTitle !== prevTitle || curSub !== prevSub || curEye !== prevEye;
+      } catch {
+        return false;
+      }
+    })();
+
     return {
       sec1: dirty1,
       sec2: dirty2,
@@ -1072,6 +1095,7 @@ export default function EditInvitation() {
       sec13: dirty13,
       sec14: dirty14,
       sec15: dirty15,
+      sec16: dirty16,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [invitation, media, events, stories, bankList, savedSnapshot]);
@@ -1435,6 +1459,23 @@ export default function EditInvitation() {
       title: "Pengaturan Teks UI & Label",
       shortTitle: "Pengaturan Label",
       summary: "Hitung mundur & teks tombol",
+    },
+    {
+      id: "sec16",
+      num: "16",
+      title: "Mitra & Vendor Pernikahan (Wedding Credits)",
+      shortTitle: "Vendor Pernikahan",
+      summary: getFeatureSetting("showVendors", false)
+        ? `${(() => {
+            const raw = getFeatureSetting("vendors", []);
+            let list = [];
+            if (Array.isArray(raw)) list = raw;
+            else if (typeof raw === "string") {
+              try { list = JSON.parse(raw); } catch {}
+            }
+            return Array.isArray(list) ? list.length : 0;
+          })()} Vendor`
+        : "Nonaktif",
     },
   ];
 
@@ -4846,6 +4887,244 @@ export default function EditInvitation() {
               </button>
             </div>
             {renderSectionNavFooter("sec15")}
+          </div>
+        )}
+      </section>
+      )}
+
+      {/* 16. SEKSI MITRA & VENDOR PERNIKAHAN (SEC16) */}
+      {(activeSectionTab === "sec16") && (
+      <section id="section-sec16" className="bg-white rounded-2xl sm:rounded-3xl shadow-xs border border-stone-200 overflow-hidden transition-all duration-200">
+        <div
+          onClick={() => toggleSection("sec16")}
+          className={`flex items-center justify-between gap-3 transition cursor-pointer ${
+            collapsed.sec16
+              ? "px-5 py-3.5 sm:px-6 sm:py-3.5 hover:bg-stone-50/80"
+              : "p-5 sm:p-6 border-b border-stone-100 bg-white"
+          }`}
+        >
+          <div className="min-w-0">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h2 className="text-sm sm:text-base font-bold text-stone-900">16. Mitra &amp; Vendor Pernikahan (Wedding Credits)</h2>
+              {collapsed.sec16 && (
+                <span className="text-xs text-stone-500 font-normal truncate flex items-center gap-1.5">
+                  <span className="text-stone-300">•</span>
+                  <span className="text-stone-600 font-medium truncate max-w-[220px] sm:max-w-xs">
+                    {Boolean(getFeatureSetting("showVendors", false)) ? "Aktif" : "Nonaktif"}
+                  </span>
+                </span>
+              )}
+            </div>
+            {!collapsed.sec16 && (
+              <p className="text-xs text-stone-500 mt-0.5">Daftar logo dan nama vendor pernikahan (fotografer, MUA, dekorasi, busana) yang tampil bersih tanpa bingkai kartu di atas footer.</p>
+            )}
+          </div>
+          <div onClick={(e) => e.stopPropagation()}>
+            <SectionHeaderActions
+              isDirty={Boolean(isDirty.sec16)}
+              isSaving={saving && savingSec === "sec16"}
+              onSave={() => saveSection("sec16")}
+              collapsed={Boolean(collapsed.sec16)}
+              onToggle={() => toggleSection("sec16")}
+              closedLabel="Edit"
+            />
+          </div>
+        </div>
+
+        {!collapsed.sec16 && (
+          <div className="p-5 sm:p-7 space-y-6">
+            {/* Toggle Switch Tampilkan Section Vendor */}
+            <div className="flex items-center justify-between p-4 bg-stone-50 rounded-2xl border border-stone-200">
+              <div>
+                <span className="text-xs font-bold text-stone-800 block">Tampilkan Section Mitra Vendor:</span>
+                <span className="text-[11px] text-stone-500 leading-tight block mt-0.5">Aktifkan untuk menampilkan ucapan kredit dan logo mitra vendor di undangan digital Anda.</span>
+              </div>
+              <SectionHeaderToggle
+                label=""
+                checked={Boolean(getFeatureSetting("showVendors", false))}
+                onChange={(v) => updateFeatureSetting("showVendors", v)}
+              />
+            </div>
+
+            {Boolean(getFeatureSetting("showVendors", false)) && (
+              <>
+                {/* Petunjuk Desain Bersih */}
+                <div className="p-4 bg-amber-50/60 rounded-2xl border border-amber-200/70 flex items-start gap-3">
+                  <div className="w-5 h-5 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">
+                    i
+                  </div>
+                  <div className="text-xs text-amber-900 leading-relaxed">
+                    <p className="font-semibold mb-0.5">Desain Bersih &amp; Melayang (No Card Wrap)</p>
+                    <p className="text-amber-800/90 text-[11px]">Sesuai standar estetika modern, logo vendor berformat PNG transparan akan tampil melayang langsung di atas latar belakang tema undangan tanpa bingkai kartu, sehingga menghasilkan visual yang bersih, rapi, dan elegan.</p>
+                  </div>
+                </div>
+
+                {/* Pengaturan Label Section */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Input
+                    label="Judul Section"
+                    value={getCustomLabel("vendorTitle", "Vendor")}
+                    onChange={(v) => updateCustomLabel("vendorTitle", v)}
+                    placeholder="Vendor / Wedding Vendors"
+                  />
+                  <Input
+                    label="Teks Subtitle / Catatan (Opsional)"
+                    value={getCustomLabel("vendorSubtitle", "")}
+                    onChange={(v) => updateCustomLabel("vendorSubtitle", v)}
+                    placeholder="Terima kasih kepada seluruh mitra yang telah membantu..."
+                  />
+                </div>
+
+                {/* Daftar Vendor */}
+                <div className="space-y-4 pt-2">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-bold text-stone-900 uppercase tracking-wider text-amber-950 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+                      Daftar Mitra Vendor
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const raw = getFeatureSetting("vendors", []);
+                        let curList: any[] = [];
+                        if (Array.isArray(raw)) curList = [...raw];
+                        else if (typeof raw === "string") {
+                          try { curList = JSON.parse(raw); } catch {}
+                        }
+                        const newV = {
+                          id: `v_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+                          name: "",
+                          logoUrl: "",
+                          url: "",
+                        };
+                        updateFeatureSetting("vendors", [...curList, newV]);
+                      }}
+                      className="px-3.5 py-1.5 text-xs font-semibold bg-stone-900 hover:bg-stone-800 text-white rounded-xl transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                      <span>Tambah Vendor</span>
+                    </button>
+                  </div>
+
+                  {(() => {
+                    const raw = getFeatureSetting("vendors", []);
+                    let list: any[] = [];
+                    if (Array.isArray(raw)) list = raw;
+                    else if (typeof raw === "string") {
+                      try { list = JSON.parse(raw); } catch {}
+                    }
+                    if (!Array.isArray(list)) list = [];
+
+                    if (list.length === 0) {
+                      return (
+                        <div className="p-8 text-center bg-stone-50/70 rounded-2xl border border-dashed border-stone-200">
+                          <p className="text-xs font-medium text-stone-500 mb-2">Belum ada mitra vendor yang ditambahkan.</p>
+                          <p className="text-[11px] text-stone-400 max-w-sm mx-auto mb-4">Klik tombol Tambah Vendor untuk memasukkan logo atau nama vendor fotografer, MUA, dekorasi, atau busana pernikahan Anda.</p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newV = {
+                                id: `v_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+                                name: "",
+                                logoUrl: "",
+                                url: "",
+                              };
+                              updateFeatureSetting("vendors", [newV]);
+                            }}
+                            className="px-4 py-2 text-xs font-semibold bg-amber-800 hover:bg-amber-900 text-white rounded-xl transition inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                            <span>Tambah Vendor Pertama</span>
+                          </button>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="space-y-4">
+                        {list.map((vendor: any, idx: number) => (
+                          <div key={vendor.id || idx} className="p-4 sm:p-5 rounded-2xl border border-stone-200 bg-stone-50/50 space-y-3 relative group">
+                            <div className="flex items-center justify-between pb-2 border-b border-stone-200/60">
+                              <span className="text-xs font-bold text-stone-700 flex items-center gap-2">
+                                <span className="w-5 h-5 rounded-full bg-stone-200 text-stone-700 flex items-center justify-center text-[10px] font-semibold">
+                                  {idx + 1}
+                                </span>
+                                {vendor.name?.trim() ? vendor.name : `Mitra Vendor #${idx + 1}`}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updated = list.filter((_, i) => i !== idx);
+                                  updateFeatureSetting("vendors", updated);
+                                }}
+                                className="text-xs text-rose-600 hover:text-rose-700 font-medium flex items-center gap-1 p-1 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                                title="Hapus vendor ini"
+                              >
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                <span>Hapus</span>
+                              </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <Input
+                                label="Nama Vendor"
+                                value={vendor.name || ""}
+                                onChange={(val) => {
+                                  const updated = list.map((v, i) => i === idx ? { ...v, name: val } : v);
+                                  updateFeatureSetting("vendors", updated);
+                                }}
+                                placeholder="Contoh: Ams Photography / Diamond MUA"
+                              />
+                              <Input
+                                label="Tautan / Instagram Vendor"
+                                value={vendor.url || ""}
+                                onChange={(val) => {
+                                  const updated = list.map((v, i) => i === idx ? { ...v, url: val } : v);
+                                  updateFeatureSetting("vendors", updated);
+                                }}
+                                placeholder="Contoh: @amsphotography atau https://instagram.com/..."
+                              />
+                            </div>
+
+                            <div>
+                              <PhotoInput
+                                label="Logo Vendor (Format PNG Transparan / WebP)"
+                                desc="Unggah logo dengan latar transparan agar melayang rapi di atas kanvas tema undangan."
+                                value={vendor.logoUrl || ""}
+                                onChange={(url) => {
+                                  const updated = list.map((v, i) => i === idx ? { ...v, logoUrl: url } : v);
+                                  updateFeatureSetting("vendors", updated);
+                                }}
+                                placeholder="https://.../logo.webp"
+                                slot="vendor"
+                                invitationId={invitationId}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+              </>
+            )}
+
+            <div className="pt-4 border-t border-stone-100 flex justify-end">
+              <button
+                type="button"
+                onClick={() => saveSection("sec16")}
+                disabled={saving || !isDirty.sec16}
+                className={`px-5 py-2.5 font-bold rounded-xl text-xs transition flex items-center gap-2 shadow-xs ${
+                  !isDirty.sec16
+                    ? "bg-stone-100 text-stone-400 border border-stone-200 cursor-not-allowed"
+                    : "bg-amber-800 hover:bg-amber-900 text-white cursor-pointer"
+                }`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                <span>{!isDirty.sec16 ? "Tersimpan" : "Simpan Mitra Vendor"}</span>
+              </button>
+            </div>
+            {renderSectionNavFooter("sec16")}
           </div>
         )}
       </section>

@@ -899,9 +899,13 @@ export default function AdminPage() {
         if (data.success) {
           setSnapshots(data.snapshots || []);
         }
-        setLoadingSnapshots(false);
       })
-      .catch(() => setLoadingSnapshots(false));
+      .catch(() => {})
+      .finally(() => {
+        setLoadingSnapshots(false);
+        setInitialLoaded(true);
+        setLoading(false);
+      });
   }, []);
 
   const handleCreateSnapshot = async () => {
@@ -1197,10 +1201,12 @@ export default function AdminPage() {
       loadThemes();
     } else if (activeTab === "database") {
       loadSnapshots();
+    } else {
+      // Tab mandiri (settings, orders, invitations, portfolio, marketing, finance, team):
+      // Lifecycle data dikelola mandiri oleh masing-masing tab, maka loading primer langsung selesai.
+      setInitialLoaded(true);
+      setLoading(false);
     }
-    // Tab lain (orders, invitations, portfolio, marketing, finance, team)
-    // adalah komponen self-contained yang fetch data sendiri saat mount.
-    // Tidak perlu trigger loadOverviewData untuk menghindari double-fetch.
   }, [activeTab, loadOverviewData, loadThemes, loadSnapshots]);
 
 

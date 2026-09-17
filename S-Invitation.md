@@ -884,3 +884,26 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - Menstandarkan tabel `guests` ke kolom `phone` murni dan enum `WaStatus` (`PENDING`, `SENT`).
    - Menanamkan seluruh 84 parameter platform (nama paket dinamis `Serenade`, `Symphony`, `Eternity`), 16 tema master, 2 preset musik, dan akun admin default ke dalam seed otomatis terpadu.
 
+---
+
+## 20. Mitra & Vendor Pernikahan (Wedding Credits): Estetika Bersih Tanpa Card Wrap & Auto-Placement Universal
+
+1. **Arsitektur Tanpa Card Wrap (Clean Floating Presentation):**
+   - **Zero Card Wrap:** Logo vendor (berformat PNG transparan/WebP) dan teks nama vendor melayang bersih langsung di atas kanvas/latar belakang tema undangan tanpa pembungkus kotak, border, atau latar kartu (`background: transparent !important; border: none !important; box-shadow: none !important;`).
+   - **Tampilan Fleksibel & Responsif:**
+     - Jika ada Logo + Nama: Logo PNG transparan berada di atas dan nama vendor di bawahnya dengan teks halus elegan berpalet tema (`color: var(--accent)`).
+     - Jika hanya Logo: Logo PNG melayang dengan transisi *hover micro-scale* (1.06x).
+     - Jika hanya Nama: Teks nama vendor tampil bersih tanpa kartu pembungkus.
+   - **Tautan Cerdas:** Otomatis mengubah input `@username` menjadi `https://instagram.com/username` dan link web dengan `target="_blank"`.
+   - **Grid Simetris:** Grid responsif 2 kolom (`grid-template-columns: repeat(2, 1fr)`) dengan jarak lega (`gap: 2.5rem 1.8rem`).
+
+2. **Auto-Placement Universal di Atas Footer (`lib/renderTemplate.ts`):**
+   - Engine secara otomatis menyuntikkan section vendor tepat sebelum tag `<footer` di seluruh 15 master tema jika tema tidak mendeklarasikan placeholder manual.
+   - Mematuhi **Zero-Gap Policy**: jika `showVendors` nonaktif atau daftarnya kosong, section menghasilkan string kosong `""` tanpa sisa padding atau margin yang merusak tata letak.
+
+3. **Studio Editor Klien (Seksi 16 di `/dashboard/invitation/[id]`):**
+   - Ditambahkan sebagai Seksi 16: *"Mitra & Vendor Pernikahan (Wedding Credits)"* di panel editor dashboard.
+   - Dilengkapi sakelar toggle `showVendors`, kustomisasi judul section (`customLabels.vendorTitle`, default: "Vendor") dan subtitle ucapan terima kasih (`customLabels.vendorSubtitle`).
+   - Manajemen item vendor interaktif: tombol tambah vendor, input nama, input tautan/akun Instagram, tombol hapus, dan komponen upload logo PNG/WebP transparan via `PhotoInput` yang terhubung ke API `/api/client/upload` slot `vendor`.
+   - Terintegrasi penuh dengan sistem *Dirty Tracking* (`isDirty.sec16`) dan auto-save `saveSection("sec16")`.
+
