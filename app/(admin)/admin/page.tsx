@@ -3330,10 +3330,23 @@ export default function AdminPage() {
                           <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200">
                             <span className="text-xs text-gray-500 block font-medium">Status Sistem</span>
                             <div className="mt-1.5">
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-300">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                Produksi (Live)
-                              </span>
+                              {(() => {
+                                const gw = settingsMap["active_payment_gateway"] || "midtrans";
+                                const isSandbox =
+                                  (gw === "midtrans" && (settingsMap["midtrans_server_key"] || "").startsWith("SB-")) ||
+                                  (gw === "xendit" && (settingsMap["xendit_api_key"] || "").startsWith("xnd_development"));
+                                return isSandbox ? (
+                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 border border-slate-300">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-slate-500 animate-pulse"></span>
+                                    Sandbox (Simulator)
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-300">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                    Produksi (Live)
+                                  </span>
+                                );
+                              })()}
                             </div>
                           </div>
 
