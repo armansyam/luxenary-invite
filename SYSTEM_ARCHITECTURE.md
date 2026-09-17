@@ -2089,6 +2089,11 @@ Untuk memberikan pengalaman interaktif penuh bagi calon klien sebelum memesan pa
    - Memastikan standar *Editorial Luxury Typography*: tombol pil (`btn-primary`, `btn-secondary`, `btn-cta`) menerapkan `white-space: nowrap;` dan `justify-content: center;` untuk mencegah pembengkakan canggung dan pemotongan teks (*multiline wrap*) di mode mobile.
    - Merampingkan microcopy kaku AI dari *"Pelajari Cara Kerja Lengkap"* menjadi lugas: **"Pelajari Cara Kerja"**.
    - Melepaskan batasan kaku mobile `max-width: 280px` dan `max-width: 260px` menjadi ukuran dinamis proporsional (`width: auto; min-width: 210px; max-width: 300px; padding: 0.85rem 1.8rem;`) yang ergonomis terhadap *thumb zone* smartphone.
+6. **Alternating Zig-Zag Section Rhythm & 3D Isometric Mirroring (Seksi Pengalaman):**
+   - Mengembalikan ritme visual editorial selang-seling (Zig-Zag Rhythm A - B - A) di Landing Page: Koleksi (Mockup Kanan) $\rightarrow$ Studio Mandiri (Mockup Kiri) $\rightarrow$ Pengalaman (Mockup Kanan).
+   - Membebaskan teks narasi *"Lebih dari Sekadar Undangan"* dan 4 dock tombol fitur dari tabrakan visual dengan tubuh kedua mempelai pada latar foto `pengalaman_bg.webp` dengan memindahkan teks ke sisi kiri (area negative space langit/lautan tenang).
+   - Menerapkan *3D Perspective Mirroring* pada frame iPad (`rotateY(-14deg) rotateX(8deg) rotateZ(-1deg)`) dan bayangan `-25px 35px 80px rgba(0,0,0,0.85)` agar layar menatap anggun ke arah teks narasi di kiri, serta menyelaraskan kalkulasi parallax mousemove di `components/landing/LandingInteractive.tsx`.
+   - Pada viewport mobile/tablet ($< 1024\text{px}$), urutan bertransisi natural: teks narasi dan tab fitur di baris atas (`grid-row: 1`), diikuti langsung oleh panggung display iPad interaktif di baris bawah (`grid-row: 2`).
 
 ---
 

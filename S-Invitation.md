@@ -161,6 +161,10 @@ Sistem Studio Editor Klien dan Admin dirancang dengan arsitektur **Dual-Native M
    - Mengunci aturan `white-space: nowrap;` dan `justify-content: center;` pada seluruh tombol kapsul untuk mencegah patahnya teks menjadi dua baris (*unwanted multiline wrap*) di layar smartphone kecil.
    - Merampingkan microcopy dari kalimat terjemahan mesin kaku (*"Pelajari Cara Kerja Lengkap"*) menjadi microcopy tegas editorial (**"Pelajari Cara Kerja"**).
    - Menyesuaikan batas kaku mobile (`max-width: 280px` / `260px`) menjadi lebar fleksibel ergonomis sentuhan jempol (`width: auto; min-width: 210px; max-width: 300px; padding: 0.85rem 1.8rem;`).
+2. **Alternating Zig-Zag Showcase & 3D Isometric Mirroring (Seksi Pengalaman):**
+   - Menyelaraskan ritme visual panggung halaman utama menjadi selang-seling berimbang (A - B - A): Koleksi (Mockup Kanan), Studio Mandiri (Mockup Kiri), Pengalaman (Mockup Kanan).
+   - Memindahkan teks narasi ke sisi kiri untuk membebaskannya dari tabrakan visual dengan tubuh kedua mempelai pada background foto `pengalaman_bg.webp`.
+   - Mengalibrasi rotasi 3D iPad ke `rotateY(-14deg) rotateX(8deg) rotateZ(-1deg)` dan bayangan `-25px 35px 80px` agar layar menatap ke arah teks di kiri panggung, serta menyelaraskan mousemove parallax controller di frontend.
 
 ---
 

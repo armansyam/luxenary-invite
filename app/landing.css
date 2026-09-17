@@ -2186,12 +2186,14 @@
       max-width: 1260px;
       margin: 0 auto;
       display: grid;
-      grid-template-columns: 550px 1fr;
+      grid-template-columns: 1fr 550px;
       gap: 4rem;
       align-items: center;
     }
-/* 3D Isometric iPad Stage */
+/* 3D Isometric iPad Stage (Kanan) */
 .lux-landing-root .exp-stage {
+      grid-column: 2;
+      grid-row: 1;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -2216,10 +2218,10 @@
       height: 375px;
       background: #0d0c0b;
       border-radius: 26px;
-      transform: rotateY(14deg) rotateX(8deg) rotateZ(1deg);
+      transform: rotateY(-14deg) rotateX(8deg) rotateZ(-1deg);
       transform-style: preserve-3d;
       box-shadow:
-        25px 35px 80px rgba(0,0,0,0.85),
+        -25px 35px 80px rgba(0,0,0,0.85),
         0 0 0 1.5px rgba(255,255,255,0.12),
         0 0 0 8px #1c1a18,
         0 0 0 10px rgba(0,0,0,0.5);
@@ -2228,9 +2230,9 @@
     }
 
 .lux-landing-root .exp-stage:hover .exp-ipad-3d, .lux-landing-root .exp-stage:hover .exp-phone-3d {
-      transform: rotateY(9deg) rotateX(5deg) rotateZ(0deg) translateY(-6px);
+      transform: rotateY(-9deg) rotateX(5deg) rotateZ(0deg) translateY(-6px);
       box-shadow:
-        30px 45px 95px rgba(0,0,0,0.9),
+        -30px 45px 95px rgba(0,0,0,0.9),
         0 0 0 1.5px rgba(201,162,39,0.35),
         0 0 0 8px #1c1a18,
         0 0 0 10px rgba(0,0,0,0.5);
@@ -3407,8 +3409,10 @@
       font-size: 0.46rem;
       letter-spacing: 0.04em;
     }
-/* Right Narrative & Icon Dock */
+/* Left Narrative & Icon Dock (Kiri) */
 .lux-landing-root .exp-content {
+      grid-column: 1;
+      grid-row: 1;
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -4895,6 +4899,8 @@
       }
 
 .lux-landing-root .exp-stage {
+        grid-column: 1;
+        grid-row: 2;
         perspective: none;
         padding: 0;
         width: 100%;
@@ -4920,6 +4926,8 @@
       }
 
 .lux-landing-root .exp-content {
+        grid-column: 1;
+        grid-row: 1;
         align-items: center;
       }
 

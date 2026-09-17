@@ -308,8 +308,8 @@ export function LandingInteractive() {
       const x = (e.clientX - rect.left) / rect.width - 0.5;
       const y = (e.clientY - rect.top) / rect.height - 0.5;
       const rx = 8 - y * 10;
-      const ry = 14 + x * 12;
-      expPhone.style.transform = `rotateY(${ry.toFixed(2)}deg) rotateX(${rx.toFixed(2)}deg) rotateZ(1deg)`;
+      const ry = -14 + x * 12;
+      expPhone.style.transform = `rotateY(${ry.toFixed(2)}deg) rotateX(${rx.toFixed(2)}deg) rotateZ(-1deg)`;
     };
 
     const onExpLeave = () => {
@@ -317,7 +317,7 @@ export function LandingInteractive() {
       if (window.innerWidth < 1024) {
         expPhone.style.transform = "";
       } else {
-        expPhone.style.transform = "rotateY(14deg) rotateX(8deg) rotateZ(1deg)";
+        expPhone.style.transform = "rotateY(-14deg) rotateX(8deg) rotateZ(-1deg)";
       }
     };
 
@@ -326,7 +326,7 @@ export function LandingInteractive() {
       if (window.innerWidth < 1024) {
         expPhone.style.transform = "";
       } else {
-        expPhone.style.transform = "rotateY(14deg) rotateX(8deg) rotateZ(1deg)";
+        expPhone.style.transform = "rotateY(-14deg) rotateX(8deg) rotateZ(-1deg)";
       }
     };
 

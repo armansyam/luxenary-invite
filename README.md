@@ -32,6 +32,7 @@ Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model 
 1. LANDING PAGE (/) & SHOWROOM KATALOG (/demo)
    - Katalog paket + demo tema interaktif (16 tema fisik master)
    - **Studio Mandiri Showcase (Dual-Device Live Sync):** Simulasi visual panggung Laptop Editor bersanding dengan Mobile Phone Preview 1:1, live typing, gallery & audio player, serta sebar link WhatsApp instan.
+   - **Alternating Zig-Zag Showcase (Koleksi, Studio, Pengalaman):** Ritme visual editorial berimbang selang-seling (Koleksi: Mockup Kanan, Studio: Mockup Kiri, Pengalaman: Mockup 3D iPad Kanan dengan *3D perspective mirroring* dan teks narasi bebas tabrakan foto latar).
    - **Panduan Terdedikasi (`/how-it-works`):** Edukasi alur mandiri dengan bahasa santun & intuitif, anti-jargon, simulasi interaktif dasbor klien 5 tab (Live Canvas, Tema Nusantara, Buku Tamu VIP, RSVP, serta Pre-Publish Audit Launchpad & Sliding Ticker sekuensial), dan FAQ lengkap.
    - Tab "Sistem & Fitur Acara" (Zero-Setup Unified Demo Sandbox):
       - `/demo/receptionist` (Sistem Resepsionis Digital, Generator Tiket QR & Pemindai Live)
