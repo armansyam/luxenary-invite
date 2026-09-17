@@ -105,16 +105,23 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // File size safety guards — baca maxUploadMb dari AdminSetting (fallback hardcoded)
+    // File size safety guards — baca batas upload dinamis dari AdminSetting
     let maxImageMb = 15;
+    let maxVideoMb = 50;
     try {
-      const setting = await prisma.adminSetting.findUnique({ where: { key: "max_upload_mb" } });
-      if (setting?.value) maxImageMb = Math.min(Number(setting.value) || 15, 50); // cap 50MB
+      const settings = await prisma.adminSetting.findMany({
+        where: { key: { in: ["max_upload_mb", "max_photo_upload_mb", "max_video_upload_mb"] } }
+      });
+      const settingMap = Object.fromEntries(settings.map(s => [s.key, s.value]));
+      if (settingMap["max_photo_upload_mb"]) maxImageMb = Math.min(Number(settingMap["max_photo_upload_mb"]) || 15, 50);
+      else if (settingMap["max_upload_mb"]) maxImageMb = Math.min(Number(settingMap["max_upload_mb"]) || 15, 50);
+
+      if (settingMap["max_video_upload_mb"]) maxVideoMb = Math.min(Number(settingMap["max_video_upload_mb"]) || 50, 100);
     } catch {}
 
-    if (isVideo && file.size > 30 * 1024 * 1024) {
+    if (isVideo && file.size > maxVideoMb * 1024 * 1024) {
       return NextResponse.json(
-        { error: "Ukuran video melebihi batas maksimal 30 MB. Silakan potong durasi (maks 20 detik) atau kompres video Anda." },
+        { error: `Ukuran video melebihi batas maksimal ${maxVideoMb} MB. Silakan potong durasi (maks 20 detik) atau kompres video Anda.` },
         { status: 400 }
       );
     }

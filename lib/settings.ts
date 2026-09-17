@@ -59,6 +59,8 @@ export interface PublicPlatformSettings {
   smtpFromName: string;
   waTemplateMessage: string;
   maxUploadMb: number;
+  maxVideoUploadMb: number;
+  maxPhotoUploadMb: number;
   cnameTarget: string;
   serverPublicIp: string;
   landingFeature1Title: string;
@@ -242,6 +244,8 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
     smtpFromName: map["smtp_from_name"] || map["platform_name"] || "Billing",
     waTemplateMessage: map["wa_template_message"] || "Assalamu'alaikum {{GUEST_NAME}},\n\nKami mengundang Bapak/Ibu dalam pernikahan kami.\n\nUndangan: {{INVITATION_URL}}\n\nHormat kami,\n{{GROOM_NAME}} & {{BRIDE_NAME}}",
     maxUploadMb: Number(map["max_upload_mb"] || 5),
+    maxVideoUploadMb: Number(map["max_video_upload_mb"] || 50),
+    maxPhotoUploadMb: Number(map["max_photo_upload_mb"] || 15),
     cnameTarget: map["cname_target"] || "",
     serverPublicIp: map["server_public_ip"] || "",
     landingFeature1Title: map["landing_feature_1_title"] || "Desain Kalandra, Aurelia & Prameswari",

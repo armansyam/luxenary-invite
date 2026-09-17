@@ -4486,35 +4486,85 @@ export default function AdminPage() {
                     </div>
                   </SettingsCard>
 
-                  {/* Limit Upload Memori */}
+                  {/* Limit Upload Media & Galeri */}
                   <SettingsCard
-                    title="Batas Upload Galeri Tamu (Memories)"
-                    description="Tentukan batas ukuran file maksimum untuk foto yang diunggah oleh tamu."
+                    title="Batas Upload Media &amp; Galeri"
+                    description="Tentukan batas ukuran file maksimum untuk media video &amp; foto di Studio Klien serta foto yang diunggah oleh tamu."
                     isEditing={Boolean(editSection["upload_limit"])}
                     onEdit={() => toggleEditSection("upload_limit")}
-                    onCancel={() => cancelEdit("upload_limit", ["max_upload_mb"])}
-                    onSave={() => saveSettings(["max_upload_mb"], setSavingPlatformCustom, "upload_limit")}
+                    onCancel={() => cancelEdit("upload_limit", ["max_upload_mb", "max_video_upload_mb", "max_photo_upload_mb"])}
+                    onSave={() => saveSettings(["max_upload_mb", "max_video_upload_mb", "max_photo_upload_mb"], setSavingPlatformCustom, "upload_limit")}
                     saving={savingPlatformCustom}
-                    isDirty={isSectionDirty(["max_upload_mb"])}
+                    isDirty={isSectionDirty(["max_upload_mb", "max_video_upload_mb", "max_photo_upload_mb"])}
                     saveSuccess={settingsSaved["upload_limit"]}
                     saveSuccessMessage="Batas upload berhasil disimpan"
                     viewContent={
-                      <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 flex items-center gap-2">
-                        <span className="text-3xl font-mono font-bold text-gray-900">{settingsMap["max_upload_mb"] || "5"}</span>
-                        <span className="text-sm text-gray-500 font-medium mt-1">Megabyte (MB) per file</span>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200">
+                          <span className="text-xs text-gray-500 font-medium block">Video Studio Klien</span>
+                          <div className="flex items-baseline gap-1 mt-1">
+                            <span className="text-2xl font-mono font-bold text-gray-900">{settingsMap["max_video_upload_mb"] || "50"}</span>
+                            <span className="text-xs text-gray-500 font-medium">MB</span>
+                          </div>
+                        </div>
+                        <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200">
+                          <span className="text-xs text-gray-500 font-medium block">Foto Studio Klien</span>
+                          <div className="flex items-baseline gap-1 mt-1">
+                            <span className="text-2xl font-mono font-bold text-gray-900">{settingsMap["max_photo_upload_mb"] || "15"}</span>
+                            <span className="text-xs text-gray-500 font-medium">MB</span>
+                          </div>
+                        </div>
+                        <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200">
+                          <span className="text-xs text-gray-500 font-medium block">Foto Tamu (Memories)</span>
+                          <div className="flex items-baseline gap-1 mt-1">
+                            <span className="text-2xl font-mono font-bold text-gray-900">{settingsMap["max_upload_mb"] || "5"}</span>
+                            <span className="text-xs text-gray-500 font-medium">MB</span>
+                          </div>
+                        </div>
                       </div>
                     }
                   >
-                    <FieldRow label="Maksimal Ukuran File (MB)">
-                      <input
-                        type="number"
-                        min="1"
-                        max="50"
-                        value={settingsMap["max_upload_mb"] || "5"}
-                        onChange={(e) => setSetting("max_upload_mb", e.target.value)}
-                        className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 transition shadow-2xs max-w-[200px]"
-                      />
-                    </FieldRow>
+                    <div className="space-y-4">
+                      <FieldRow label="Batas Video Studio Klien (MB)">
+                        <div className="space-y-1">
+                          <input
+                            type="number"
+                            min="5"
+                            max="100"
+                            value={settingsMap["max_video_upload_mb"] || "50"}
+                            onChange={(e) => setSetting("max_video_upload_mb", e.target.value)}
+                            className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 transition shadow-2xs max-w-[200px]"
+                          />
+                          <p className="text-[11px] text-gray-500">Maksimal ukuran video MP4/MOV/WebM di Studio. Server otomatis mengompresi via FFmpeg ke ~2-5 MB.</p>
+                        </div>
+                      </FieldRow>
+                      <FieldRow label="Batas Foto Studio Klien (MB)">
+                        <div className="space-y-1">
+                          <input
+                            type="number"
+                            min="1"
+                            max="50"
+                            value={settingsMap["max_photo_upload_mb"] || "15"}
+                            onChange={(e) => setSetting("max_photo_upload_mb", e.target.value)}
+                            className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 transition shadow-2xs max-w-[200px]"
+                          />
+                          <p className="text-[11px] text-gray-500">Maksimal ukuran foto JPG/PNG/WebP sebelum dikompresi otomatis ke WebP.</p>
+                        </div>
+                      </FieldRow>
+                      <FieldRow label="Batas Foto Tamu Memories (MB)">
+                        <div className="space-y-1">
+                          <input
+                            type="number"
+                            min="1"
+                            max="50"
+                            value={settingsMap["max_upload_mb"] || "5"}
+                            onChange={(e) => setSetting("max_upload_mb", e.target.value)}
+                            className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 transition shadow-2xs max-w-[200px]"
+                          />
+                          <p className="text-[11px] text-gray-500">Batas ukuran foto yang diunggah oleh tamu di halaman galeri kenangan.</p>
+                        </div>
+                      </FieldRow>
+                    </div>
                   </SettingsCard>
 
                   {/* Subdomain Lifecycle & Archiving Settings */}

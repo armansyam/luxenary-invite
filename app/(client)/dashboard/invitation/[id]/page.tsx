@@ -2683,7 +2683,7 @@ export default function EditInvitation() {
                   </div>
                   <div className="p-2.5 bg-white rounded-lg border border-stone-200/70 sm:col-span-2">
                     <span className="font-bold text-stone-800 block mb-1">Format &amp; Video Loop</span>
-                    Foto: JPG/PNG/WebP maks 15 MB. Video: MP4/MOV maks 30 MB, durasi ideal 10–20 detik (dipotong otomatis &gt; 20 detik), tanpa audio (dihapus otomatis agar autoplay instan).
+                    Foto: JPG/PNG/WebP maks {Number(platformSettings?.max_photo_upload_mb) || 15} MB. Video: MP4/MOV maks {Number(platformSettings?.max_video_upload_mb) || 50} MB, durasi ideal 10–20 detik (dipotong otomatis &gt; 20 detik), tanpa audio (dihapus otomatis agar autoplay instan).
                   </div>
                 </div>
               </div>
@@ -5030,6 +5030,8 @@ function PhotoInput({
   slot = "photo",
   onUploadStart,
   onUploadEnd,
+  maxVideoMb,
+  maxPhotoMb,
 }: {
   label: string;
   desc: string;
@@ -5041,6 +5043,8 @@ function PhotoInput({
   slot?: string;
   onUploadStart?: () => void;
   onUploadEnd?: () => void;
+  maxVideoMb?: number;
+  maxPhotoMb?: number;
 }) {
   const [uploading, setUploading] = useState(false);
   const [showUrlInput, setShowUrlInput] = useState(false);
@@ -5050,6 +5054,28 @@ function PhotoInput({
     fileName?: string;
     fileSize?: string;
   } | null>(null);
+  const [dynamicLimits, setDynamicLimits] = useState<{ video: number; photo: number }>({
+    video: maxVideoMb || 50,
+    photo: maxPhotoMb || 15,
+  });
+
+  useEffect(() => {
+    if (maxVideoMb && maxPhotoMb) {
+      setDynamicLimits({ video: maxVideoMb, photo: maxPhotoMb });
+      return;
+    }
+    fetch("/api/public/settings")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.max_video_upload_mb || d?.max_photo_upload_mb) {
+          setDynamicLimits({
+            video: Number(d.max_video_upload_mb) || 50,
+            photo: Number(d.max_photo_upload_mb) || 15,
+          });
+        }
+      })
+      .catch(() => {});
+  }, [maxVideoMb, maxPhotoMb]);
 
   const isVideo = Boolean(
     value && /\.(mp4|webm|mov)(\?.*)?$/i.test(value)
@@ -5061,16 +5087,18 @@ function PhotoInput({
 
     setUploadError(null);
 
-    // Client-side file size guards
+    // Client-side file size guards (menggunakan batas dinamis dari AdminSetting)
     const isVideoFile = file.type.startsWith("video/") || /\.(mp4|webm|mov)$/i.test(file.name);
-    const maxVideoSize = 30 * 1024 * 1024; // 30 MB
-    const maxPhotoSize = 15 * 1024 * 1024; // 15 MB
+    const dynamicMaxVideoMb = dynamicLimits.video;
+    const dynamicMaxPhotoMb = dynamicLimits.photo;
+    const maxVideoSize = dynamicMaxVideoMb * 1024 * 1024;
+    const maxPhotoSize = dynamicMaxPhotoMb * 1024 * 1024;
 
     if (isVideoFile && file.size > maxVideoSize) {
       const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
       setUploadError({
-        title: "Ukuran Video Terlalu Besar (Maksimal 30 MB)",
-        message: `File video "${file.name}" berukuran ${sizeMB} MB. Batas maksimal ukuran video adalah 30 MB agar halaman undangan tetap ringan dibuka oleh tamu undangan. Silakan kompres atau potong durasi video (ideal 10–20 detik) terlebih dahulu.`,
+        title: `Ukuran Video Terlalu Besar (Maksimal ${dynamicMaxVideoMb} MB)`,
+        message: `File video "${file.name}" berukuran ${sizeMB} MB. Batas maksimal ukuran video adalah ${dynamicMaxVideoMb} MB agar halaman undangan tetap ringan dibuka oleh tamu undangan. Silakan kompres atau potong durasi video (ideal 10–20 detik) terlebih dahulu.`,
         fileName: file.name,
         fileSize: `${sizeMB} MB`,
       });
@@ -5081,8 +5109,8 @@ function PhotoInput({
     if (!isVideoFile && file.size > maxPhotoSize) {
       const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
       setUploadError({
-        title: "Ukuran Foto Terlalu Besar (Maksimal 15 MB)",
-        message: `File foto "${file.name}" berukuran ${sizeMB} MB. Batas maksimal ukuran foto adalah 15 MB. Silakan gunakan foto yang telah dikompres.`,
+        title: `Ukuran Foto Terlalu Besar (Maksimal ${dynamicMaxPhotoMb} MB)`,
+        message: `File foto "${file.name}" berukuran ${sizeMB} MB. Batas maksimal ukuran foto adalah ${dynamicMaxPhotoMb} MB. Silakan gunakan foto yang telah dikompres.`,
         fileName: file.name,
         fileSize: `${sizeMB} MB`,
       });
@@ -5273,7 +5301,7 @@ function PhotoInput({
                   Pilih File dari Galeri HP / Komputer
                 </span>
                 <span className="text-[10px] text-stone-500 font-medium">
-                  {allowVideo ? "Video MP4/MOV/WebM (Maks 30 MB) • Foto JPG/PNG/WebP (Maks 15 MB)" : "Format Foto JPG, PNG, WebP (Maks 15 MB)"}
+                  {allowVideo ? `Video MP4/MOV/WebM (Maks ${dynamicLimits.video} MB) • Foto JPG/PNG/WebP (Maks ${dynamicLimits.photo} MB)` : `Format Foto JPG, PNG, WebP (Maks ${dynamicLimits.photo} MB)`}
                 </span>
               </>
             )}

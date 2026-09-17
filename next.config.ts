@@ -26,7 +26,7 @@ const nextConfig: NextConfig = {
     ],
   },
   experimental: {
-    proxyClientMaxBodySize: "50mb",
+    proxyClientMaxBodySize: "100mb",
   },
   async headers() {
     return [

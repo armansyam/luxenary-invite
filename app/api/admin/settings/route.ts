@@ -69,6 +69,10 @@ const DEFAULT_SETTINGS: Array<{ key: string; value: string; label: string; group
   { key: "retention_account_days", value: "365", label: "Pembersihan Akun Klien Nonaktif (Hari)", group: "subdomain" },
   // Retensi order — terpisah dari retensi undangan
   { key: "retention_order_days", value: "90", label: "Pembersihan Order Lama EXPIRED/FAILED/PENDING (Hari)", group: "subdomain" },
+  // Batas upload file media
+  { key: "max_upload_mb", value: "5", label: "Batas Upload Foto Tamu Memories (MB)", group: "setup" },
+  { key: "max_video_upload_mb", value: "50", label: "Batas Upload Video Studio (MB)", group: "setup" },
+  { key: "max_photo_upload_mb", value: "15", label: "Batas Upload Foto Studio (MB)", group: "setup" },
 ];
 
 async function seedDefaultSettings() {

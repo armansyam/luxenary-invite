@@ -24,6 +24,9 @@ export async function GET() {
       gallery_extension_price_per_month: settings.galleryExtensionPricePerMonth,
       server_public_ip: settings.serverPublicIp,
       cname_target: settings.cnameTarget,
+      max_video_upload_mb: settings.maxVideoUploadMb,
+      max_photo_upload_mb: settings.maxPhotoUploadMb,
+      max_upload_mb: settings.maxUploadMb,
       logo: logoExists ? "/assets/brand/logo.webp" : null,
       favicon: faviconExists ? "/assets/brand/favicon.png" : null,
     });

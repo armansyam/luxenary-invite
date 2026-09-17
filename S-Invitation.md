@@ -259,7 +259,7 @@ Sistem Studio Editor Klien (`/dashboard/invitation/[id]`) menyediakan kendali kr
    - **True Seamless Crossfade Looping:** Menggunakan filter `xfade` (0.6s–1.2s) yang memadukan ekor video dengan kepala video secara transparan sehingga frame awal dan akhir 100% identik, menghasilkan pengulangan video mulus tanpa jump-cut patah.
    - Mode senyap (*Silent Loop*): Menghapus track audio (`-an`) untuk menghemat file ~20% dan menjamin pemutaran otomatis (*autoplay*) tanpa hambatan di iOS Safari dan Android Chrome.
    - Pembatasan frame rate ke 30 fps (`-r 30`) untuk efisiensi GPU dan memberikan efek gerak sinematik filmis.
-   - Proteksi ukuran file berlapis: maks. 30MB untuk video dan 15MB untuk foto.
+   - Proteksi ukuran file berlapis dinamis: dikontrol melalui Admin Setting (default 50MB hingga 100MB untuk video Studio, dan 15MB untuk foto) dengan proxy body size limit Next.js 100MB.
    - Rendering engine otomatis menyuntikkan tag HTML5 `<video class="..." autoplay loop muted playsinline webkit-playsinline>` dengan overlay gradasi kontras tinggi.
 4. **Arsitektur Dual Cover Responsif (Mobile 9:16 vs Desktop 16:9 Fullscreen Override):**
    - **Mobile (< 900px):** Selalu menggunakan `LANDING_COVER` (rasio portrait 9:16) sebagai pop-up sampul pembuka layar HP.

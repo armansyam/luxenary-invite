@@ -1694,7 +1694,7 @@ Untuk mengeliminasi seluruh string konfigurasi *hardcoded* dan mematuhi spesifik
 
 1. **Tab Terdedikasi `Setup & Integrasi` di Admin:**
    - Memisahkan urusan infrastruktur teknis dari tab `Platform` (branding & marketing).
-   - Mengelola **Integrasi Domain & DNS Server**, **Server Email (SMTP)**, **Batas Upload Galeri Tamu (MB)**, dan **Siklus Hidup Subdomain & Retensi**.
+   - Mengelola **Integrasi Domain & DNS Server**, **Server Email (SMTP)**, **Batas Upload Media & Galeri** (Video Studio Klien hingga 100 MB via FFmpeg auto-compression, Foto Studio Klien, dan Foto Galeri Tamu Memories), dan **Siklus Hidup Subdomain & Retensi**.
 2. **IP Publik VPS & CNAME Target Dinamis:**
    - `server_public_ip`: Disimpan di database `AdminSetting` dan dapat dideteksi secara otomatis real-time melalui endpoint `GET /api/admin/server-ip` (fallback multi-upstream ipify, icanhazip) dengan validasi IPv4 ketat.
    - `cname_target`: Hostname CNAME target perantara (misal: `cname.domain-anda.id`), dengan tombol *preset auto-fill* cepat dari hostname browser aktif.
