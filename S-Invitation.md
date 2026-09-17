@@ -906,11 +906,12 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
 3. **Studio Editor Klien (Seksi 16 di `/dashboard/invitation/[id]`):**
    - Ditambahkan sebagai Seksi 16: *"Mitra & Vendor Pernikahan (Wedding Credits)"* di panel editor dashboard.
    - Dilengkapi sakelar toggle `showVendors`, kustomisasi judul section (`customLabels.vendorTitle`, default: "Vendor") dan subtitle ucapan terima kasih (`customLabels.vendorSubtitle`).
-   - Manajemen item vendor interaktif: tombol tambah vendor, input nama, input tautan/akun Instagram, tombol hapus, dan komponen upload logo PNG/WebP transparan via `PhotoInput` yang terhubung ke API `/api/client/upload` slot `vendor`.
+   - Manajemen item vendor interaktif dengan format **Compact Single-Row Strip**: baris horizontal ramping (~48-52px) yang menyatukan slot logo mini (64×40px dengan preview langsung, file picker terintegrasi, dan tombol clear), input nama vendor, input tautan/Instagram, serta tombol hapus tanpa card wrap bertingkat (bebas cardception).
    - Terintegrasi penuh dengan sistem *Dirty Tracking* (`isDirty.sec16`) dan auto-save `saveSection("sec16")`.
 
 4. **Theme Demo Studio Admin (Tab ke-5 "Mitra Vendor"):**
    - Integrasi tab ke-5 *"Mitra Vendor"* di modal Demo Studio Admin (`/admin`).
-   - Fitur lengkap: toggle visibilitas seksi vendor demo, kustomisasi judul/eyebrow/subtitle seksi, upload berkas logo per vendor (`/api/admin/themes/[id]/demo-asset`), input tautan/Instagram, pratinjau visual logo di kanvas gelap, dan tombol cepat *"Muat 4 Logo Dummy Default"* (`/uploads/logo_dummy/logo_1.png` s.d. `logo_4.png`).
+   - Format **Compact Single-Row Strip** konsisten dengan Client Studio: slot logo mini interaktif (unggah berkas via `/api/admin/themes/[id]/demo-asset` atau input URL kustom manual), input nama, tautan akun, dan tombol hapus.
+   - Fitur lengkap: toggle visibilitas seksi vendor demo, kustomisasi judul/eyebrow/subtitle seksi, dan tombol cepat *"Muat 4 Logo Dummy Default"* (`/uploads/logo_dummy/logo_1.png` s.d. `logo_4.png`).
    - Kompilasi otomatis file static HTML showroom (`/public/demo/[theme]/index.html`) saat admin menyimpan perubahan.
 

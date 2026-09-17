@@ -1832,7 +1832,8 @@ Untuk memberikan pengalaman interaktif penuh bagi calon klien sebelum memesan pa
 2. **Centered Flexbox Layout:**
    - Mengganti grid 2-kolom dengan flexbox terpusat (`display: flex; flex-wrap: wrap; justify-content: center; gap: 2.2rem 2.8rem;`) agar baik 1 vendor tunggal maupun beberapa vendor selalu tampil simetris di tengah kanvas.
 3. **Tab ke-5 di Theme Demo Studio Admin (`app/(admin)/admin/page.tsx`):**
-   - Menyediakan Tab *"Mitra Vendor"* dengan kemampuan: toggle switch `showVendors`, edit judul/eyebrow/subtitle, upload logo langsung ke `/api/admin/themes/[id]/demo-asset` (slot `vendor_[n]`), input tautan profil/Instagram, dan tombol cepat *"Muat 4 Logo Dummy Default"* (`/uploads/logo_dummy/logo_1.png` s.d. `logo_4.png`).
+   - Menyediakan Tab *"Mitra Vendor"* dengan antarmuka **Compact Single-Row Strip**: baris horizontal ramping (~48-52px) dengan slot logo mini terintegrasi (unggah berkas atau prompt URL), input nama, tautan akun, dan tombol hapus.
+   - Fitur lengkap: toggle switch `showVendors`, edit judul/eyebrow/subtitle, upload logo langsung ke `/api/admin/themes/[id]/demo-asset` (slot `vendor_[n]`), dan tombol cepat *"Muat 4 Logo Dummy Default"* (`/uploads/logo_dummy/logo_1.png` s.d. `logo_4.png`).
 
 ### 17.10 — Arsitektur Theme Freedom: Pemisahan Desain Tema Master & Conditional Blocks (`{{#if}}`)
 1. **Prinsip Independensi Desain Tema Master:**
@@ -2267,7 +2268,7 @@ Sistem telah melalui audit mendalam berbasis bukti empiris (*Empirical Verificat
 
 3. **Studio Editor Dashboard Klien (Seksi 16):**
    - Rute: `app/(client)/dashboard/invitation/[id]/page.tsx`
-   - Terdaftar di `defaultCollapsed`, `isDirty` (`sec16: dirty16`), dan `FORM_SECTIONS` (Seksi 16: "Mitra & Vendor Pernikahan").
+   - Antarmuka **Compact Single-Row Strip**: form input horizontal ramping (~48-52px) yang menyatukan slot logo mini (64×40px dengan preview langsung, file picker terintegrasi, dan tombol clear), input nama vendor, input tautan/Instagram, serta tombol hapus tanpa card wrap bertingkat (bebas cardception).
    - Mendukung penambahan vendor tak terbatas dengan upload logo (terintegrasi kompresi WebP berslot `vendor` pada `/api/client/upload`), input nama, dan deteksi otomatis format `@username` Instagram atau tautan web portofolio vendor.
    - Tersimpan utuh pada field JSON `featureSettings.vendors` dan `featureSettings.customLabels` tanpa memerlukan migrasi skema database baru (Zero DB Migration).
 

@@ -4948,17 +4948,6 @@ export default function EditInvitation() {
 
             {Boolean(getFeatureSetting("showVendors", false)) && (
               <>
-                {/* Petunjuk Desain Bersih */}
-                <div className="p-4 bg-amber-50/60 rounded-2xl border border-amber-200/70 flex items-start gap-3">
-                  <div className="w-5 h-5 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">
-                    i
-                  </div>
-                  <div className="text-xs text-amber-900 leading-relaxed">
-                    <p className="font-semibold mb-0.5">Desain Bersih &amp; Melayang (No Card Wrap)</p>
-                    <p className="text-amber-800/90 text-[11px]">Sesuai standar estetika modern, logo vendor berformat PNG transparan akan tampil melayang langsung di atas latar belakang tema undangan tanpa bingkai kartu, sehingga menghasilkan visual yang bersih, rapi, dan elegan.</p>
-                  </div>
-                </div>
-
                 {/* Pengaturan Label Section */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input
@@ -4976,12 +4965,21 @@ export default function EditInvitation() {
                 </div>
 
                 {/* Daftar Vendor */}
-                <div className="space-y-4 pt-2">
+                <div className="space-y-3 pt-2">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-bold text-stone-900 uppercase tracking-wider text-amber-950 flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
-                      Daftar Mitra Vendor
-                    </h4>
+                    <div>
+                      <h4 className="text-xs font-bold text-stone-900 uppercase tracking-wider text-amber-950 flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+                        <span>Daftar Mitra Vendor</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-100 text-amber-900 border border-amber-300/70">
+                          {(() => {
+                            const raw = getFeatureSetting("vendors", []);
+                            return Array.isArray(raw) ? raw.length : 0;
+                          })()} Vendor
+                        </span>
+                      </h4>
+                      <p className="text-[11px] text-stone-500 mt-0.5">Logo PNG transparan dan nama vendor tampil melayang bersih tanpa bingkai kartu di atas footer.</p>
+                    </div>
                     <button
                       type="button"
                       onClick={() => {
@@ -5041,67 +5039,133 @@ export default function EditInvitation() {
                     }
 
                     return (
-                      <div className="space-y-4">
-                        {list.map((vendor: any, idx: number) => (
-                          <div key={vendor.id || idx} className="p-4 sm:p-5 rounded-2xl border border-stone-200 bg-stone-50/50 space-y-3 relative group">
-                            <div className="flex items-center justify-between pb-2 border-b border-stone-200/60">
-                              <span className="text-xs font-bold text-stone-700 flex items-center gap-2">
-                                <span className="w-5 h-5 rounded-full bg-stone-200 text-stone-700 flex items-center justify-center text-[10px] font-semibold">
-                                  {idx + 1}
-                                </span>
-                                {vendor.name?.trim() ? vendor.name : `Mitra Vendor #${idx + 1}`}
+                      <div className="space-y-2.5">
+                        {list.map((vendor: any, idx: number) => {
+                          const vendorSlot = `vendor_${vendor.id || idx + 1}`;
+                          return (
+                            <div 
+                              key={vendor.id || idx} 
+                              className="p-2 sm:p-2.5 rounded-xl border border-stone-200 bg-white hover:border-stone-300 transition-all shadow-2xs flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3"
+                            >
+                              {/* Nomor urut */}
+                              <span className="hidden sm:flex w-6 h-6 rounded-lg bg-stone-100 text-stone-600 text-[10px] font-mono font-bold items-center justify-center shrink-0">
+                                {idx + 1}
                               </span>
+
+                              {/* Slot Logo Mini */}
+                              <div className="relative shrink-0 flex items-center gap-1.5">
+                                <label 
+                                  className="w-16 h-10 rounded-lg border border-dashed border-stone-300 hover:border-amber-600 bg-stone-50 hover:bg-amber-50/30 flex items-center justify-center p-1 transition cursor-pointer relative group/logo overflow-hidden" 
+                                  title={vendor.logoUrl ? "Klik untuk mengganti logo" : "Klik untuk unggah logo PNG transparan"}
+                                >
+                                  <input
+                                    type="file"
+                                    accept="image/png,image/svg+xml,image/webp,image/jpeg"
+                                    className="hidden"
+                                    onChange={async (e) => {
+                                      const file = e.target.files?.[0];
+                                      if (!file) return;
+                                      try {
+                                        let fileToUpload = file;
+                                        if (!file.name.toLowerCase().endsWith(".svg")) {
+                                          fileToUpload = await compressImageToWebP(file, {
+                                            maxWidth: 600,
+                                            maxHeight: 300,
+                                            quality: 0.88,
+                                          });
+                                        }
+                                        const fd = new FormData();
+                                        fd.append("file", fileToUpload);
+                                        if (invitationId) fd.append("invitationId", invitationId);
+                                        fd.append("slot", vendorSlot);
+
+                                        const res = await fetch("/api/client/upload", {
+                                          method: "POST",
+                                          body: fd,
+                                        });
+                                        const data = await res.json();
+                                        if (data.success && data.url) {
+                                          const updated = list.map((v: any, i: number) => i === idx ? { ...v, logoUrl: data.url } : v);
+                                          updateFeatureSetting("vendors", updated);
+                                        } else {
+                                          alert(data.error || "Gagal mengunggah logo");
+                                        }
+                                      } catch (err: any) {
+                                        alert(err?.message || "Gagal mengunggah logo");
+                                      }
+                                    }}
+                                  />
+                                  {vendor.logoUrl ? (
+                                    <img 
+                                      src={vendor.logoUrl} 
+                                      alt="Logo" 
+                                      className="max-h-8 max-w-full object-contain" 
+                                    />
+                                  ) : (
+                                    <div className="flex flex-col items-center text-stone-400 group-hover/logo:text-amber-700">
+                                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                      <span className="text-[8px] font-semibold tracking-tight mt-0.5">+ Logo</span>
+                                    </div>
+                                  )}
+                                </label>
+                                {vendor.logoUrl && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const updated = list.map((v: any, i: number) => i === idx ? { ...v, logoUrl: "" } : v);
+                                      updateFeatureSetting("vendors", updated);
+                                    }}
+                                    className="text-stone-400 hover:text-rose-600 p-1 rounded transition cursor-pointer"
+                                    title="Hapus logo (gunakan hanya teks nama)"
+                                  >
+                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                  </button>
+                                )}
+                              </div>
+
+                              {/* Input Nama Vendor */}
+                              <div className="flex-1 min-w-[140px]">
+                                <input
+                                  type="text"
+                                  value={vendor.name || ""}
+                                  onChange={(e) => {
+                                    const updated = list.map((v: any, i: number) => i === idx ? { ...v, name: e.target.value } : v);
+                                    updateFeatureSetting("vendors", updated);
+                                  }}
+                                  placeholder="Nama Vendor (misal: Sore Hari Floral)"
+                                  className="w-full px-3 py-2 text-xs bg-stone-50/60 focus:bg-white border border-stone-200 focus:border-amber-600 rounded-lg text-stone-800 focus:outline-none transition"
+                                />
+                              </div>
+
+                              {/* Input Tautan / Instagram */}
+                              <div className="flex-1 min-w-[140px]">
+                                <input
+                                  type="text"
+                                  value={vendor.url || ""}
+                                  onChange={(e) => {
+                                    const updated = list.map((v: any, i: number) => i === idx ? { ...v, url: e.target.value } : v);
+                                    updateFeatureSetting("vendors", updated);
+                                  }}
+                                  placeholder="@instagram atau https://..."
+                                  className="w-full px-3 py-2 text-xs bg-stone-50/60 focus:bg-white border border-stone-200 focus:border-amber-600 rounded-lg text-stone-800 focus:outline-none transition"
+                                />
+                              </div>
+
+                              {/* Tombol Hapus Vendor */}
                               <button
                                 type="button"
                                 onClick={() => {
-                                  const updated = list.filter((_, i) => i !== idx);
+                                  const updated = list.filter((_: any, i: number) => i !== idx);
                                   updateFeatureSetting("vendors", updated);
                                 }}
-                                className="text-xs text-rose-600 hover:text-rose-700 font-medium flex items-center gap-1 p-1 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                                className="self-end sm:self-center p-2 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition shrink-0 cursor-pointer"
                                 title="Hapus vendor ini"
                               >
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                <span>Hapus</span>
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                               </button>
                             </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              <Input
-                                label="Nama Vendor"
-                                value={vendor.name || ""}
-                                onChange={(val) => {
-                                  const updated = list.map((v, i) => i === idx ? { ...v, name: val } : v);
-                                  updateFeatureSetting("vendors", updated);
-                                }}
-                                placeholder="Contoh: Ams Photography / Diamond MUA"
-                              />
-                              <Input
-                                label="Tautan / Instagram Vendor"
-                                value={vendor.url || ""}
-                                onChange={(val) => {
-                                  const updated = list.map((v, i) => i === idx ? { ...v, url: val } : v);
-                                  updateFeatureSetting("vendors", updated);
-                                }}
-                                placeholder="Contoh: @amsphotography atau https://instagram.com/..."
-                              />
-                            </div>
-
-                            <div>
-                              <PhotoInput
-                                label="Logo Vendor (Format PNG Transparan / WebP)"
-                                desc="Unggah logo dengan latar transparan agar melayang rapi di atas kanvas tema undangan."
-                                value={vendor.logoUrl || ""}
-                                onChange={(url) => {
-                                  const updated = list.map((v, i) => i === idx ? { ...v, logoUrl: url } : v);
-                                  updateFeatureSetting("vendors", updated);
-                                }}
-                                placeholder="https://.../logo.webp"
-                                slot="vendor"
-                                invitationId={invitationId}
-                              />
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     );
                   })()}
