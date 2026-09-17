@@ -449,7 +449,7 @@ export default function AdminOrdersTab() {
                             if (singleItem.type === "GALLERY_EXTENSION") {
                               return (
                                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-800 border border-purple-200">
-                                  <span>Perpanjang Galeri (+30 Hari)</span>
+                                  <span>Perpanjang Masa Aktif (+30 Hari)</span>
                                 </span>
                               );
                             }
@@ -479,7 +479,7 @@ export default function AdminOrdersTab() {
                           if (ord.orderType === "GALLERY_EXTENSION") {
                             return (
                               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-800 border border-purple-200">
-                                <span>Perpanjang Galeri (+30 Hari)</span>
+                                <span>Perpanjang Masa Aktif (+30 Hari)</span>
                               </span>
                             );
                           }

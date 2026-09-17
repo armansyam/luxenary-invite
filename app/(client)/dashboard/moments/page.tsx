@@ -713,7 +713,7 @@ export default function MomentsSetupPage() {
           </div>
           {hasExtended ? (
             <span className="text-[11px] font-bold text-stone-700 bg-stone-100 border border-stone-300/80 px-2.5 py-1 rounded-full shrink-0">
-              Masa Simpan Maksimal (+30 Hari Digunakan)
+              Masa Aktif Maksimal (+30 Hari Digunakan)
             </span>
           ) : daysRemaining !== null && daysRemaining > 7 ? (
             <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full shrink-0">
@@ -725,7 +725,7 @@ export default function MomentsSetupPage() {
               onClick={() => setIsAddonModalOpen(true)}
               className="px-3 py-1.5 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs font-semibold transition cursor-pointer shrink-0 shadow-2xs"
             >
-              Perpanjang (+30 Hari)
+              Perpanjang Masa Aktif (+30 Hari)
             </button>
           )}
         </div>

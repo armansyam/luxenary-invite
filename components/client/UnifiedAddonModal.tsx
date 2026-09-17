@@ -240,11 +240,11 @@ export default function UnifiedAddonModal({
             )}
           </div>
 
-          {/* SEKSI 2: PERPANJANGAN MASA AKTIF GALERI */}
+          {/* SEKSI 2: PERPANJANGAN MASA AKTIF UNDANGAN & GALERI */}
           <div className="space-y-3 pt-2 border-t border-stone-100">
             <div className="flex items-center justify-between">
               <label className="font-bold text-stone-800 uppercase tracking-wider text-[11px]">
-                2. Perpanjang Masa Aktif Galeri Tamu
+                2. Perpanjangan Masa Aktif (Undangan & Galeri)
               </label>
               <span className="text-[10px] text-amber-800 font-medium">Dihitung pasca acara</span>
             </div>
@@ -255,7 +255,7 @@ export default function UnifiedAddonModal({
                 <div>
                   <strong className="block font-semibold text-stone-800">Perpanjangan Maksimal Telah Digunakan</strong>
                   <p className="text-[11px] text-stone-500 mt-0.5 leading-relaxed">
-                    Masa simpan telah diperpanjang maksimal (+30 hari). Tidak dapat ditambah lagi guna mencegah penumpukan data permanen. Pastikan Anda mengunduh seluruh foto kenangan (ZIP) sebelum masa aktif berakhir.
+                    Masa aktif telah diperpanjang maksimal (+30 hari). Tidak dapat ditambah lagi guna mencegah penumpukan data permanen di server. Pastikan Anda mengunduh seluruh foto kenangan (ZIP) sebelum masa aktif berakhir.
                   </p>
                 </div>
               </div>
@@ -304,7 +304,7 @@ export default function UnifiedAddonModal({
                   </button>
                 </div>
                 <p className="text-[10px] text-stone-500">
-                  * Perpanjangan hanya dapat dilakukan 1 kali (+30 hari) pasca acara resepsi selesai.
+                  * Perpanjangan masa aktif hanya dapat dilakukan 1 kali (+30 hari) pasca acara resepsi selesai.
                 </p>
               </>
             )}

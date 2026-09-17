@@ -73,7 +73,7 @@ export async function POST(
       return NextResponse.json({
         success: true,
         galleryExpiresAt: updated.galleryExpiresAt,
-        message: `Masa aktif galeri berhasil diperpanjang hingga ${newExpiry.toLocaleDateString("id-ID")}.`,
+        message: `Masa aktif berhasil diperpanjang hingga ${newExpiry.toLocaleDateString("id-ID")}.`,
       });
     }
 

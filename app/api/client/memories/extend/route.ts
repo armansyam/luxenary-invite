@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
 
     if (existingPendingWithProof) {
       return NextResponse.json({
-        error: "Anda memiliki tagihan perpanjangan galeri yang sedang menunggu verifikasi admin.",
+        error: "Anda memiliki tagihan perpanjangan masa aktif yang sedang menunggu verifikasi admin.",
         orderId: existingPendingWithProof.id,
         invoiceNumber: existingPendingWithProof.invoiceNumber,
         paymentUrl: `/payment?order=${existingPendingWithProof.id}`,
@@ -190,7 +190,7 @@ export async function POST(req: NextRequest) {
       invoiceNumber: newOrder.invoiceNumber,
       amount: extensionPrice,
       paymentUrl: `/payment?order=${newOrder.id}`,
-      message: "Order perpanjangan galeri berhasil dibuat. Silakan lanjutkan ke pembayaran.",
+      message: "Order perpanjangan masa aktif berhasil dibuat. Silakan lanjutkan ke pembayaran.",
     });
   } catch (error: any) {
     console.error("[Extend Memories Order Error]", error);

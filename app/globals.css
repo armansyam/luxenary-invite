@@ -41,7 +41,6 @@ body {
 .stp-tablet {
   position: relative;
   width: 100%;
-  aspect-ratio: 16 / 10;
   background: #141210;
   border-radius: 10px;
   box-shadow:
@@ -93,7 +92,8 @@ body {
 }
 
 .stp-tablet-screen {
-  flex: 1;
+  width: 100%;
+  aspect-ratio: 16 / 10;
   overflow: hidden;
   background: #0d0c0b;
   position: relative;
@@ -107,13 +107,13 @@ body {
   transition: transform 0.45s cubic-bezier(0.25,0.46,0.45,0.94);
 }
 
-/* Phone mockup — overlapping bottom-left */
+/* Phone mockup — overlapping bottom-left (Standard 1:2) */
 .stp-phone {
   position: absolute;
   bottom: 0;
   left: 1%;                  /* positif agar tidak terpotong overflow-hidden card */
   width: 27%;
-  aspect-ratio: 9 / 19;
+  aspect-ratio: 1 / 2;
   background: #0d0c0b;
   border-radius: 18px;
   box-shadow:

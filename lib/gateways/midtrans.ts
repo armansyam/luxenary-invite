@@ -207,8 +207,8 @@ export class MidtransGateway implements PaymentGateway {
 
     if (orderType === "GALLERY_EXTENSION") {
       itemId = "EXT_GALLERY";
-      itemName = "Perpanjang Galeri Tamu (+30 Hari)";
-      itemCategory = "Add-on Galeri";
+      itemName = "Perpanjangan Masa Aktif (+30 Hari)";
+      itemCategory = "Add-on Masa Aktif";
     } else if (orderType === "MEMORIES_TOPUP") {
       itemId = "TOPUP_MEMORIES";
       itemName = "Top-Up Kuota Momen Foto";

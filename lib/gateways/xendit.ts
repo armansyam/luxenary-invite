@@ -162,9 +162,9 @@ export class XenditGateway implements PaymentGateway {
     let itemCategory = "Paket Undangan";
 
     if (orderType === "GALLERY_EXTENSION") {
-      itemName = "Perpanjang Galeri Tamu (+30 Hari)";
-      itemDescription = `[${platformName}] Perpanjangan Galeri Tamu (+30 Hari) #${invoiceNumber} (${customerFullName})`;
-      itemCategory = "Add-on Galeri";
+      itemName = "Perpanjangan Masa Aktif (+30 Hari)";
+      itemDescription = `[${platformName}] Perpanjangan Masa Aktif (+30 Hari) #${invoiceNumber} (${customerFullName})`;
+      itemCategory = "Add-on Masa Aktif";
     } else if (orderType === "MEMORIES_TOPUP") {
       itemName = "Top-Up Kuota Momen Foto";
       itemDescription = `[${platformName}] Top-Up Kuota Momen Foto #${invoiceNumber} (${customerFullName})`;

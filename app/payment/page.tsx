@@ -524,7 +524,7 @@ function PaymentContent() {
                 return (
                   <div>
                     <span className="text-[11px] text-purple-400 font-mono font-semibold block uppercase tracking-wider">Layanan Tambahan (Add-On)</span>
-                    <span className="text-base font-bold text-white">Perpanjang Galeri Tamu</span>
+                    <span className="text-base font-bold text-white">Perpanjangan Masa Aktif (Undangan & Galeri)</span>
                   </div>
                 );
               }

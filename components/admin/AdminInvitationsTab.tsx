@@ -482,7 +482,7 @@ export default function AdminInvitationsTab({ onNavigateToThemes }: AdminInvitat
                               onClick={() => handleExtendGallery(inv)}
                               disabled={actionLoading}
                               className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 border border-transparent hover:border-emerald-100 transition cursor-pointer"
-                              title="Perpanjang Masa Galeri (+30 Hari)"
+                              title="Perpanjang Masa Aktif (+30 Hari)"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />

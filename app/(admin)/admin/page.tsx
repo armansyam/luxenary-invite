@@ -703,7 +703,7 @@ export default function AdminPage() {
   // Theme Demo Studio State
   const [showDemoStudioModal, setShowDemoStudioModal] = useState(false);
   const [demoStudioTheme, setDemoStudioTheme] = useState<any | null>(null);
-  const [demoStudioTab, setDemoStudioTab] = useState<"visual" | "profile" | "stories" | "narratives">("visual");
+  const [demoStudioTab, setDemoStudioTab] = useState<"visual" | "profile" | "stories" | "narratives" | "vendors">("visual");
   const [demoStudioData, setDemoStudioData] = useState<any>({});
   const [initialDemoStudioData, setInitialDemoStudioData] = useState<any>({});
   const [stagedDemoFiles, setStagedDemoFiles] = useState<Record<string, File>>({});
@@ -1746,7 +1746,7 @@ export default function AdminPage() {
         showAdminToast(data.message, true);
         loadOverviewData();
       } else {
-        showAdminToast(data.error || "Gagal memperpanjang galeri", false);
+        showAdminToast(data.error || "Gagal memperpanjang masa aktif", false);
       }
     } catch (e: any) {
       showAdminToast("Error: " + e.message, false);
@@ -3995,7 +3995,7 @@ export default function AdminPage() {
                     return (
                       <SettingsCard
                         title="Pengaturan Layanan Tambahan (Add-Ons)"
-                        description="Atur tarif dinamis untuk layanan perpanjangan masa aktif galeri momen tamu serta add-on kapasitas kuota foto tambahan (top-up)."
+                        description="Atur tarif dinamis untuk layanan perpanjangan masa aktif (undangan & galeri momen tamu) serta add-on kapasitas kuota foto tambahan (top-up)."
                         isEditing={Boolean(editSection["addons"])}
                         onEdit={() => toggleEditSection("addons")}
                         onCancel={() => cancelEdit("addons", ADDONS_KEYS)}
@@ -4008,7 +4008,7 @@ export default function AdminPage() {
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="p-4 bg-purple-50/60 rounded-xl border border-purple-200 flex flex-col justify-between">
                               <div>
-                                <span className="text-xs font-bold text-purple-900 block mb-1">Perpanjangan Masa Aktif Galeri Tamu</span>
+                                <span className="text-xs font-bold text-purple-900 block mb-1">Perpanjangan Masa Aktif (Undangan & Galeri)</span>
                                 <div className="flex items-baseline gap-1.5">
                                   <span className="text-xl font-mono font-bold text-purple-950">
                                     Rp {Number(settingsMap["gallery_extension_price_per_month"] || 50000).toLocaleString("id-ID")}
@@ -4016,7 +4016,7 @@ export default function AdminPage() {
                                   <span className="text-xs text-purple-800 font-medium">/ 30 Hari (Bulan)</span>
                                 </div>
                                 <p className="text-xs text-stone-600 mt-2 leading-relaxed">
-                                  Tarif perpanjangan penyimpanan foto candid tamu di server cloud per 30 hari via kasir terpadu.
+                                  Tarif perpanjangan masa aktif website undangan & penyimpanan foto momen tamu per 30 hari via kasir terpadu.
                                 </p>
                               </div>
                             </div>
@@ -4045,8 +4045,8 @@ export default function AdminPage() {
                       >
                         <div className="space-y-4">
                           <FieldRow
-                            label="Tarif Perpanjangan Masa Aktif Galeri (Bulanan / 30 Hari)"
-                            description="Nominal tagihan dinamis per bulan untuk mempertahankan masa simpan galeri foto kenangan tamu di cloud (Rupiah)."
+                            label="Tarif Perpanjangan Masa Aktif (Bulanan / 30 Hari)"
+                            description="Nominal tagihan dinamis per bulan (+30 hari) untuk mempertahankan masa aktif website undangan dan penyimpanan galeri foto momen tamu di cloud (Rupiah)."
                           >
                             <input
                               type="number"
@@ -6417,11 +6417,11 @@ export default function AdminPage() {
             )}
 
             {/* Navigation Tabs */}
-            <div className="px-6 border-b border-gray-100 bg-gray-50 flex items-center gap-2 pt-2 shrink-0">
+            <div className="px-6 border-b border-gray-100 bg-gray-50 flex items-center gap-2 pt-2 shrink-0 overflow-x-auto">
               <button
                 type="button"
                 onClick={() => setDemoStudioTab("visual")}
-                className={`px-4 py-2.5 text-xs font-bold rounded-t-xl transition border-b-2 cursor-pointer ${
+                className={`px-4 py-2.5 text-xs font-bold rounded-t-xl transition border-b-2 cursor-pointer shrink-0 ${
                   demoStudioTab === "visual"
                     ? "bg-white text-stone-900 border-amber-600 shadow-2xs"
                     : "text-gray-500 hover:text-gray-800 border-transparent"
@@ -6432,7 +6432,7 @@ export default function AdminPage() {
               <button
                 type="button"
                 onClick={() => setDemoStudioTab("profile")}
-                className={`px-4 py-2.5 text-xs font-bold rounded-t-xl transition border-b-2 cursor-pointer ${
+                className={`px-4 py-2.5 text-xs font-bold rounded-t-xl transition border-b-2 cursor-pointer shrink-0 ${
                   demoStudioTab === "profile"
                     ? "bg-white text-stone-900 border-amber-600 shadow-2xs"
                     : "text-gray-500 hover:text-gray-800 border-transparent"
@@ -6443,7 +6443,7 @@ export default function AdminPage() {
               <button
                 type="button"
                 onClick={() => setDemoStudioTab("stories")}
-                className={`px-4 py-2.5 text-xs font-bold rounded-t-xl transition border-b-2 cursor-pointer ${
+                className={`px-4 py-2.5 text-xs font-bold rounded-t-xl transition border-b-2 cursor-pointer shrink-0 ${
                   demoStudioTab === "stories"
                     ? "bg-white text-stone-900 border-amber-600 shadow-2xs"
                     : "text-gray-500 hover:text-gray-800 border-transparent"
@@ -6454,13 +6454,24 @@ export default function AdminPage() {
               <button
                 type="button"
                 onClick={() => setDemoStudioTab("narratives")}
-                className={`px-4 py-2.5 text-xs font-bold rounded-t-xl transition border-b-2 cursor-pointer ${
+                className={`px-4 py-2.5 text-xs font-bold rounded-t-xl transition border-b-2 cursor-pointer shrink-0 ${
                   demoStudioTab === "narratives"
                     ? "bg-white text-stone-900 border-amber-600 shadow-2xs"
                     : "text-gray-500 hover:text-gray-800 border-transparent"
                 }`}
               >
                 Teks Seksi &amp; Narasi Bawaan
+              </button>
+              <button
+                type="button"
+                onClick={() => setDemoStudioTab("vendors")}
+                className={`px-4 py-2.5 text-xs font-bold rounded-t-xl transition border-b-2 cursor-pointer shrink-0 ${
+                  demoStudioTab === "vendors"
+                    ? "bg-white text-stone-900 border-amber-600 shadow-2xs"
+                    : "text-gray-500 hover:text-gray-800 border-transparent"
+                }`}
+              >
+                Mitra Vendor
               </button>
             </div>
 
@@ -6645,7 +6656,15 @@ export default function AdminPage() {
                                   <p className="text-[11px] text-gray-500 leading-tight">{item.desc}</p>
                                 </div>
 
-                                <div className="relative aspect-video rounded-xl bg-stone-100 overflow-hidden border border-gray-300 flex items-center justify-center">
+                                <div className={`relative rounded-xl bg-stone-100 overflow-hidden border border-gray-300 flex items-center justify-center ${
+                                  item.slot === "thumbnail_mobile"
+                                    ? "aspect-[1/2] max-h-56 mx-auto w-auto min-w-[112px]"
+                                    : item.slot === "thumbnail_desktop"
+                                    ? "aspect-[16/10] w-full"
+                                    : item.slot === "cover" || item.slot === "groom" || item.slot === "bride" || item.slot === "hero"
+                                    ? "aspect-[3/4] max-h-56 mx-auto w-auto min-w-[140px]"
+                                    : "aspect-video w-full"
+                                }`}>
                                   <div className="absolute inset-0 flex flex-col items-center justify-center p-3 text-center pointer-events-none text-stone-400">
                                     <svg className="w-6 h-6 mb-1 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -6662,14 +6681,14 @@ export default function AdminPage() {
                                       loop
                                       muted
                                       playsInline
-                                      className="w-full h-full object-cover relative z-1"
+                                      className="w-full h-full object-cover object-top relative z-1"
                                     />
                                   ) : effectiveSrc ? (
                                     <img
                                       key={isStaged ? localPreview : updatedDemoSlots[item.slot] || effectiveSrc}
                                       src={effectiveSrc}
                                       alt={item.label}
-                                      className="w-full h-full object-cover relative z-1"
+                                      className="w-full h-full object-cover object-top relative z-1"
                                       onError={(e) => {
                                         (e.target as HTMLElement).style.display = "none";
                                       }}
@@ -8148,6 +8167,328 @@ export default function AdminPage() {
                               className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500"
                             />
                           </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TAB 5: MITRA VENDOR */}
+                  {demoStudioTab === "vendors" && (
+                    <div className="space-y-6">
+                      {/* Info Banner */}
+                      <div className="p-4 bg-amber-50/60 border border-amber-200/70 rounded-2xl text-amber-900 text-xs leading-relaxed flex items-start gap-3">
+                        <div className="w-5 h-5 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center shrink-0 mt-0.5 font-bold text-xs">
+                          i
+                        </div>
+                        <div>
+                          <strong>Desain Bersih &amp; Melayang (No Card Wrap):</strong> Atur logo, nama, dan tautan mitra vendor (fotografer, MUA, dekorasi, busana) untuk tema <strong>{demoStudioTheme.name}</strong>. Seluruh logo transparan tampil melayang elegan langsung di atas kanvas tema tanpa bingkai kartu di atas footer.
+                        </div>
+                      </div>
+
+                      {/* Panel 1: Switch Tampilkan Section Vendor & Label Kustom */}
+                      <div className="p-4 bg-gray-50 border border-gray-200 rounded-2xl space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="font-bold text-gray-900 text-xs uppercase tracking-wider">
+                              1. Pengaturan &amp; Visibilitas Seksi Vendor
+                            </h4>
+                            <p className="text-[11px] text-gray-500 mt-0.5">Tentukan apakah seksi mitra vendor ditampilkan pada demo publik tema ini.</p>
+                          </div>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={demoStudioData.showVendors !== false}
+                              onChange={(e) => {
+                                setDemoStudioData({
+                                  ...demoStudioData,
+                                  showVendors: e.target.checked,
+                                });
+                              }}
+                              className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+                            <span className="ml-2.5 text-xs font-bold text-gray-800">
+                              {demoStudioData.showVendors !== false ? "Aktif (Tampil)" : "Nonaktif (Sembunyi)"}
+                            </span>
+                          </label>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-gray-200/60">
+                          <div>
+                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Judul Seksi</label>
+                            <input
+                              type="text"
+                              value={demoStudioData.customLabels?.vendorTitle ?? demoStudioData.vendorTitle ?? "Vendor"}
+                              onChange={(e) => {
+                                const customLabels = { ...(demoStudioData.customLabels || {}) };
+                                customLabels.vendorTitle = e.target.value;
+                                setDemoStudioData({ ...demoStudioData, customLabels, vendorTitle: e.target.value });
+                              }}
+                              placeholder="Vendor / Wedding Vendors"
+                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Eyebrow Seksi</label>
+                            <input
+                              type="text"
+                              value={demoStudioData.customLabels?.vendorEyebrow ?? demoStudioData.vendorEyebrow ?? "SPECIAL THANKS"}
+                              onChange={(e) => {
+                                const customLabels = { ...(demoStudioData.customLabels || {}) };
+                                customLabels.vendorEyebrow = e.target.value;
+                                setDemoStudioData({ ...demoStudioData, customLabels, vendorEyebrow: e.target.value });
+                              }}
+                              placeholder="SPECIAL THANKS"
+                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Subtitle / Catatan (Opsional)</label>
+                            <input
+                              type="text"
+                              value={demoStudioData.customLabels?.vendorSubtitle ?? demoStudioData.vendorSubtitle ?? ""}
+                              onChange={(e) => {
+                                const customLabels = { ...(demoStudioData.customLabels || {}) };
+                                customLabels.vendorSubtitle = e.target.value;
+                                setDemoStudioData({ ...demoStudioData, customLabels, vendorSubtitle: e.target.value });
+                              }}
+                              placeholder="Terima kasih kepada seluruh mitra..."
+                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Panel 2: Daftar Mitra Vendor & Upload Logo */}
+                      <div className="p-4 bg-gray-50 border border-gray-200 rounded-2xl space-y-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div>
+                            <h4 className="font-bold text-gray-900 text-xs uppercase tracking-wider flex items-center gap-2">
+                              <span>2. Daftar Logo &amp; Profil Mitra Vendor</span>
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-100 text-amber-900 border border-amber-300/70">
+                                {((demoStudioData.vendors || demoStudioData.featureSettings?.vendors) || []).length} Vendor
+                              </span>
+                            </h4>
+                            <p className="text-[11px] text-gray-500 mt-0.5">Unggah logo PNG transparan dan atur tautan media sosial mitra.</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const dummyVendors = [
+                                  { id: "v_1", name: "AMS Creative Studio", logoUrl: "/uploads/logo_dummy/logo_1.png", url: "https://instagram.com" },
+                                  { id: "v_2", name: "Pick Your Photo", logoUrl: "/uploads/logo_dummy/logo_2.png", url: "https://instagram.com" },
+                                  { id: "v_3", name: "Sore Hari Floral & Styling", logoUrl: "/uploads/logo_dummy/logo_3.png", url: "https://instagram.com" },
+                                  { id: "v_4", name: "Royal Wedding Car", logoUrl: "/uploads/logo_dummy/logo_4.png", url: "https://instagram.com" },
+                                ];
+                                setDemoStudioData({
+                                  ...demoStudioData,
+                                  vendors: dummyVendors,
+                                });
+                              }}
+                              className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-300 rounded-lg text-xs font-semibold transition cursor-pointer flex items-center gap-1.5"
+                              title="Muat 4 Logo Dummy Default (AMS, Pick Your Photo, Sore Hari, Royal Wedding Car)"
+                            >
+                              <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                              <span>Muat 4 Logo Dummy Default</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const curVendors = [...((demoStudioData.vendors || demoStudioData.featureSettings?.vendors) || [])];
+                                curVendors.push({
+                                  id: `v_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+                                  name: "",
+                                  logoUrl: "",
+                                  url: "",
+                                });
+                                setDemoStudioData({ ...demoStudioData, vendors: curVendors });
+                              }}
+                              className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                            >
+                              <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                              <span>Tambah Vendor</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* List Vendor Items */}
+                        <div className="space-y-3">
+                          {(() => {
+                            const curVendors = (demoStudioData.vendors || demoStudioData.featureSettings?.vendors) || [];
+                            if (curVendors.length === 0) {
+                              return (
+                                <div className="p-8 bg-white border border-dashed border-gray-300 rounded-xl text-center space-y-3">
+                                  <div className="w-10 h-10 bg-amber-50 text-amber-800 rounded-full flex items-center justify-center mx-auto text-xs font-bold">
+                                    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-bold text-gray-700">Belum Ada Mitra Vendor</p>
+                                    <p className="text-[11px] text-gray-400 mt-0.5">Tambahkan logo vendor secara manual atau klik tombol di bawah untuk memuat 4 logo dummy transparan default.</p>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const dummyVendors = [
+                                        { id: "v_1", name: "AMS Creative Studio", logoUrl: "/uploads/logo_dummy/logo_1.png", url: "https://instagram.com" },
+                                        { id: "v_2", name: "Pick Your Photo", logoUrl: "/uploads/logo_dummy/logo_2.png", url: "https://instagram.com" },
+                                        { id: "v_3", name: "Sore Hari Floral & Styling", logoUrl: "/uploads/logo_dummy/logo_3.png", url: "https://instagram.com" },
+                                        { id: "v_4", name: "Royal Wedding Car", logoUrl: "/uploads/logo_dummy/logo_4.png", url: "https://instagram.com" },
+                                      ];
+                                      setDemoStudioData({
+                                        ...demoStudioData,
+                                        vendors: dummyVendors,
+                                      });
+                                    }}
+                                    className="px-4 py-2 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs font-semibold transition cursor-pointer shadow-xs"
+                                  >
+                                    Muat 4 Logo Dummy Default
+                                  </button>
+                                </div>
+                              );
+                            }
+
+                            return curVendors.map((vendor: any, vIdx: number) => {
+                              const vendorSlot = `vendor_${vIdx + 1}`;
+                              return (
+                                <div key={vendor.id || vIdx} className="p-4 bg-white border border-gray-200 rounded-2xl space-y-3 shadow-2xs">
+                                  <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                                    <span className="text-xs font-bold text-gray-800 flex items-center gap-2">
+                                      <span className="w-5 h-5 rounded-full bg-amber-100 text-amber-900 flex items-center justify-center text-[10px] font-mono font-bold">
+                                        {vIdx + 1}
+                                      </span>
+                                      {vendor.name?.trim() ? vendor.name : `Mitra Vendor #${vIdx + 1}`}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const updated = curVendors.filter((_: any, idx: number) => idx !== vIdx);
+                                        setDemoStudioData({ ...demoStudioData, vendors: updated });
+                                      }}
+                                      className="text-xs text-rose-600 hover:text-rose-700 font-semibold px-2 py-0.5 rounded-lg hover:bg-rose-50 transition cursor-pointer"
+                                    >
+                                      Hapus Vendor
+                                    </button>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                      <label className="block text-[11px] font-bold text-gray-700 mb-1">Nama Vendor</label>
+                                      <input
+                                        type="text"
+                                        value={vendor.name || ""}
+                                        onChange={(e) => {
+                                          const updated = curVendors.map((v: any, i: number) => i === vIdx ? { ...v, name: e.target.value } : v);
+                                          setDemoStudioData({ ...demoStudioData, vendors: updated });
+                                        }}
+                                        placeholder="Contoh: AMS Creative Studio"
+                                        className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-[11px] font-bold text-gray-700 mb-1">Tautan / Akun Instagram</label>
+                                      <input
+                                        type="text"
+                                        value={vendor.url || ""}
+                                        onChange={(e) => {
+                                          const updated = curVendors.map((v: any, i: number) => i === vIdx ? { ...v, url: e.target.value } : v);
+                                          setDemoStudioData({ ...demoStudioData, vendors: updated });
+                                        }}
+                                        placeholder="Contoh: @amscreative / https://instagram.com/..."
+                                        className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white text-gray-900 focus:outline-none focus:border-amber-500"
+                                      />
+                                    </div>
+                                  </div>
+
+                                  {/* Upload & Pratinjau Logo */}
+                                  <div className="p-3 bg-stone-50 border border-stone-200/80 rounded-xl space-y-2">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                      <div>
+                                        <span className="text-[11px] font-bold text-stone-800 block">Logo Mitra Vendor (PNG Transparan / WebP / SVG)</span>
+                                        <span className="text-[10px] text-stone-500 block">Gunakan logo berlatar transparan untuk hasil terbaik di atas kanvas tema.</span>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <label className="px-3 py-1 bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 rounded-lg text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 shadow-2xs">
+                                          <input
+                                            type="file"
+                                            accept="image/png,image/svg+xml,image/webp,image/jpeg"
+                                            className="hidden"
+                                            onChange={async (e) => {
+                                              const file = e.target.files?.[0];
+                                              if (!file || !demoStudioTheme) return;
+                                              try {
+                                                setUploadingSlot(vendorSlot);
+                                                const fd = new FormData();
+                                                fd.append("slot", vendorSlot);
+                                                fd.append("file", file);
+                                                const res = await fetch(`/api/admin/themes/${demoStudioTheme.id}/demo-asset`, {
+                                                  method: "POST",
+                                                  body: fd,
+                                                });
+                                                const json = await res.json();
+                                                if (json.success && json.rawUrl) {
+                                                  const updated = curVendors.map((v: any, i: number) => i === vIdx ? { ...v, logoUrl: json.rawUrl } : v);
+                                                  setDemoStudioData({ ...demoStudioData, vendors: updated });
+                                                } else {
+                                                  alert(json.error || "Gagal mengunggah logo vendor");
+                                                }
+                                              } catch (err: any) {
+                                                alert(err.message || "Error mengunggah logo");
+                                              } finally {
+                                                setUploadingSlot(null);
+                                              }
+                                            }}
+                                          />
+                                          <span>{uploadingSlot === vendorSlot ? "Mengunggah..." : "Unggah Berkas Logo"}</span>
+                                        </label>
+                                        {vendor.logoUrl && (
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              const updated = curVendors.map((v: any, i: number) => i === vIdx ? { ...v, logoUrl: "" } : v);
+                                              setDemoStudioData({ ...demoStudioData, vendors: updated });
+                                            }}
+                                            className="px-2.5 py-1 text-[11px] text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition border border-rose-200 cursor-pointer"
+                                          >
+                                            Hapus Logo
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {/* Input URL manual & Preview */}
+                                    <div className="flex flex-col sm:flex-row items-center gap-3 pt-1">
+                                      <div className="flex-1 w-full">
+                                        <input
+                                          type="text"
+                                          value={vendor.logoUrl || ""}
+                                          onChange={(e) => {
+                                            const updated = curVendors.map((v: any, i: number) => i === vIdx ? { ...v, logoUrl: e.target.value } : v);
+                                            setDemoStudioData({ ...demoStudioData, vendors: updated });
+                                          }}
+                                          placeholder="URL Logo, contoh: /uploads/logo_dummy/logo_1.png"
+                                          className="w-full px-2.5 py-1 border border-stone-300 rounded-lg text-xs bg-white text-stone-800 font-mono focus:outline-none focus:border-amber-500"
+                                        />
+                                      </div>
+                                      {vendor.logoUrl ? (
+                                        <div className="h-12 w-28 shrink-0 bg-stone-900/90 rounded-lg border border-stone-700 flex items-center justify-center p-1.5 shadow-inner" title="Pratinjau Logo di atas kanvas gelap">
+                                          <img
+                                            src={vendor.logoUrl}
+                                            alt={vendor.name || "Logo"}
+                                            className="max-h-9 max-w-full object-contain"
+                                          />
+                                        </div>
+                                      ) : (
+                                        <div className="h-12 w-28 shrink-0 bg-stone-100 rounded-lg border border-dashed border-stone-300 flex items-center justify-center text-[10px] text-stone-400">
+                                          Tanpa Logo
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            });
+                          })()}
                         </div>
                       </div>
                     </div>

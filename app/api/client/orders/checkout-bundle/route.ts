@@ -224,7 +224,7 @@ export async function POST(req: NextRequest) {
 
       items.push({
         type: "GALLERY_EXTENSION",
-        label: `Perpanjangan Masa Aktif Galeri (+30 Hari)`,
+        label: `Perpanjangan Masa Aktif Undangan & Galeri (+30 Hari)`,
         price: extPrice,
         months: 1,
         days: 30,

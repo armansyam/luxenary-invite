@@ -407,7 +407,7 @@ function DashboardHomeContent() {
             <div>
               <h4 className="font-bold text-sm text-emerald-300">Pembayaran Berhasil!</h4>
               <p className="text-xs text-emerald-200/90 mt-0.5">
-                Masa simpan foto galeri momen tamu Anda telah diperpanjang <strong>+30 Hari</strong>. Seluruh momen candid tamu tetap tersimpan aman di server.
+                Masa aktif website undangan & galeri momen tamu Anda telah diperpanjang <strong>+30 Hari</strong>. Seluruh momen candid tamu tetap tersimpan aman di server.
               </p>
             </div>
           </div>
@@ -486,7 +486,7 @@ function DashboardHomeContent() {
 
                 {extraGalleryDays > 0 && (
                   <span className="px-2 py-0.5 bg-purple-50 border border-purple-200 text-purple-800 rounded-lg text-[10px] font-bold uppercase tracking-wider">
-                    +{extraGalleryDays} Hari Perpanjangan
+                    +{extraGalleryDays} Hari Perpanjangan Masa Aktif
                   </span>
                 )}
               </div>
@@ -523,7 +523,7 @@ function DashboardHomeContent() {
                   <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
-                  <span>Perpanjang +30 Hari</span>
+                  <span>Perpanjang Masa Aktif (+30 Hari)</span>
                 </button>
               ) : (
                 <span className="px-2.5 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-[11px] font-semibold inline-flex items-center gap-1.5" title="Opsi perpanjangan akan terbuka saat sisa masa aktif 7 hari">

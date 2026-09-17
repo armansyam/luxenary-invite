@@ -454,10 +454,10 @@ Platform mendukung arsitektur payment gateway 2-arah (*two-way handshake*) terin
       1. *Registrasi Paket Awal (`NEW`)*: Pemilihan tier paket via `/packages` -> in-app QRIS checkout -> pasca lunas dialihkan ke `/dashboard/setup`.
       2. *Upgrade Layanan (`UPGRADE`)*: Menaikkan tier paket langsung dari studio undangan `/dashboard/invitation/[id]` dengan kalkulasi selisih harga dinamis -> pasca lunas tier induk diperbarui seketika.
       3. *Dua Add-On Layanan Tambahan Murni*:
-         - *Perpanjang Galeri Tamu (`GALLERY_EXTENSION`)*: Menambah masa aktif penyimpanan galeri foto momen tamu (+1 s.d. 12 bulan) dan membuka kembali kunci formulir upload.
+         - *Perpanjangan Masa Aktif (`GALLERY_EXTENSION`)*: Menambah masa aktif website undangan, tautan subdomain, dan penyimpanan galeri foto momen tamu (+30 hari perpanjangan) serta membuka kembali kunci formulir upload.
          - *Top-Up Kuota Foto Momen Tamu (`MEMORIES_TOPUP`)*: Menambah plafon kapasitas foto candid tamu di album kenangan (kelipatan 100 foto).
          *(Catatan: Custom domain merupakan fitur inklusif bawaan paket Eternity tanpa biaya jasa add-on).*
-      4. *Checkout Terpadu Multi-Layanan (`Unified Add-on & Upgrade Hub`)*: Menggabungkan upgrade tier paket, perpanjangan masa aktif galeri multi-bulan, dan top-up kuota foto tamu ke dalam 1 kasir / 1 invoice (`itemsJson`) dengan pemenuhan atomik berurutan (`applyBundleFulfillment`).
+      4. *Checkout Terpadu Multi-Layanan (`Unified Add-on & Upgrade Hub`)*: Menggabungkan upgrade tier paket, perpanjangan masa aktif undangan & galeri (+30 hari), dan top-up kuota foto tamu ke dalam 1 kasir / 1 invoice (`itemsJson`) dengan pemenuhan atomik berurutan (`applyBundleFulfillment`).
     - **Transmisi Detail Lengkap ke Payment Gateway**:
       - *Profil Pembeli*: Nama depan & nama belakang (`first_name`, `last_name` / `given_names`, `surname`), alamat email resmi akun, dan nomor kontak WhatsApp aktif klien (`phoneNumber` terformat E.164).
       - *Alamat*: Alamat penagihan & pengiriman digital terstandarisasi ISO `IDN`, terhubung ke alamat pengiriman fisik jika tersedia di data undangan.
@@ -749,9 +749,9 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - **Mockup Showcase Desktop (Laptop):** Standar rasio **16 : 10** (ukuran pas: **1280 × 800 px** / **2560 × 1600 px**).
    - Seluruh teks panduan formulir Demo Studio disederhanakan secara to-the-point tanpa referensi rancu ke iPad Mini, langsung menyajikan ukuran pas dan rasio yang dibutuhkan administrator.
 4. **Device Pair Mockup Showcase & Resolusi Ganda Thumbnail (Mobile & Desktop):**
-   - Mengintegrasikan sistem showcase ganda presisi (*Device Pair Mockup*: `stp-tablet` di belakang dan `stp-phone` di depan) pada kartu tema di `/admin?tab=themes`, `/dashboard/setup`, dan `/dashboard/invitation/[id]`.
+   - Mengintegrasikan sistem showcase ganda presisi (*Device Pair Mockup*: `stp-tablet-screen` 16:10 di belakang dan `stp-phone` 1:2 di depan) pada kartu tema di `/admin?tab=themes`, `/dashboard/setup`, dan `/dashboard/invitation/[id]`.
    - Mengusung hirarki visual profesional: (1) Pratinjau Visual Ganda Responsive + status aktif toggle + kategori tier, (2) Nama Tema, slug, deskripsi, dan (3) Tombol aksi (`Preview`, `Studio`, `Edit`, `Delete`).
-   - Frame ponsel secara eksklusif memuat `thumbnailMobile`, sedangkan frame tablet memuat `thumbnailDesktop` dengan rantai fallback landscape aman (`hero.webp` $\rightarrow$ `cover.webp`).
+   - Frame ponsel secara eksklusif memuat `thumbnailMobile` (1:2), sedangkan area layar tablet memuat `thumbnailDesktop` (16:10) dengan rantai fallback landscape aman (`cover_desktop.webp` $\rightarrow$ `hero.webp` $\rightarrow$ `cover.webp`). Layar tablet mengunci rasio 16:10 secara mandiri sehingga terbebas dari crop bilah atas.
 
 ---
 
@@ -889,13 +889,15 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
 ## 20. Mitra & Vendor Pernikahan (Wedding Credits): Estetika Bersih Tanpa Card Wrap & Auto-Placement Universal
 
 1. **Arsitektur Tanpa Card Wrap (Clean Floating Presentation):**
-   - **Zero Card Wrap:** Logo vendor (berformat PNG transparan/WebP) dan teks nama vendor melayang bersih langsung di atas kanvas/latar belakang tema undangan tanpa pembungkus kotak, border, atau latar kartu (`background: transparent !important; border: none !important; box-shadow: none !important;`).
+   - **Zero Card Wrap:** Logo vendor (berformat PNG transparan/WebP/SVG) dan teks nama vendor melayang bersih langsung di atas kanvas/latar belakang tema undangan tanpa pembungkus kotak, border, atau latar kartu (`background: transparent !important; border: none !important; box-shadow: none !important;`).
+   - **Preservasi Warna Asli Brand:** Logo vendor mempertahankan warna asli brand (oranye, emas, biru, dsb) tanpa filter monokrom invert, sehingga identitas visual mitra tampil otentik dan tajam.
    - **Tampilan Fleksibel & Responsif:**
-     - Jika ada Logo + Nama: Logo PNG transparan berada di atas dan nama vendor di bawahnya dengan teks halus elegan berpalet tema (`color: var(--accent)`).
+     - Jika ada Logo + Nama: Logo PNG transparan berada di atas dan nama vendor di bawahnya dengan teks halus elegan berpalet tema (`color: var(--accent) !important`).
      - Jika hanya Logo: Logo PNG melayang dengan transisi *hover micro-scale* (1.06x).
      - Jika hanya Nama: Teks nama vendor tampil bersih tanpa kartu pembungkus.
+   - **Proteksi Warna Link (:visited Isolation):** Link vendor `<a class="lux-vendor-link">` diproteksi dengan aturan CSS khusus (`color: var(--accent) !important; text-decoration: none !important;`) sehingga tidak terpengaruh warna ungu default peramban (`#551a8b`).
    - **Tautan Cerdas:** Otomatis mengubah input `@username` menjadi `https://instagram.com/username` dan link web dengan `target="_blank"`.
-   - **Grid Simetris:** Grid responsif 2 kolom (`grid-template-columns: repeat(2, 1fr)`) dengan jarak lega (`gap: 2.5rem 1.8rem`).
+   - **Layout Terpusat Dinamis (Centered Flexbox):** Menggunakan flexbox horizontal terpusat (`display: flex; flex-wrap: wrap; justify-content: center; gap: 2.2rem 2.8rem;`) sehingga baik 1 vendor, 2 vendor, maupun banyak vendor selalu tertata simetris dan rapi di tengah kanvas.
 
 2. **Auto-Placement Universal di Atas Footer (`lib/renderTemplate.ts`):**
    - Engine secara otomatis menyuntikkan section vendor tepat sebelum tag `<footer` di seluruh 15 master tema jika tema tidak mendeklarasikan placeholder manual.
@@ -906,4 +908,9 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - Dilengkapi sakelar toggle `showVendors`, kustomisasi judul section (`customLabels.vendorTitle`, default: "Vendor") dan subtitle ucapan terima kasih (`customLabels.vendorSubtitle`).
    - Manajemen item vendor interaktif: tombol tambah vendor, input nama, input tautan/akun Instagram, tombol hapus, dan komponen upload logo PNG/WebP transparan via `PhotoInput` yang terhubung ke API `/api/client/upload` slot `vendor`.
    - Terintegrasi penuh dengan sistem *Dirty Tracking* (`isDirty.sec16`) dan auto-save `saveSection("sec16")`.
+
+4. **Theme Demo Studio Admin (Tab ke-5 "Mitra Vendor"):**
+   - Integrasi tab ke-5 *"Mitra Vendor"* di modal Demo Studio Admin (`/admin`).
+   - Fitur lengkap: toggle visibilitas seksi vendor demo, kustomisasi judul/eyebrow/subtitle seksi, upload berkas logo per vendor (`/api/admin/themes/[id]/demo-asset`), input tautan/Instagram, pratinjau visual logo di kanvas gelap, dan tombol cepat *"Muat 4 Logo Dummy Default"* (`/uploads/logo_dummy/logo_1.png` s.d. `logo_4.png`).
+   - Kompilasi otomatis file static HTML showroom (`/public/demo/[theme]/index.html`) saat admin menyimpan perubahan.
 

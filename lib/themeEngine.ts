@@ -1694,35 +1694,39 @@ export async function composeTemplateData(invitationId: string) {
 
       // Clean borderless floating presentation directly on canvas background (NO CARD WRAP)
       const logoHtml = logo
-        ? `<img src="${logo}" alt="${escapeHtml(name || "Vendor")}" class="lux-vendor-logo-img" loading="lazy" style="max-height: 48px; max-width: 140px; width: auto; height: auto; object-fit: contain; filter: brightness(0) invert(1); opacity: 0.88; transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;" onmouseover="this.style.opacity='1'; this.style.transform='scale(1.06)';" onmouseout="this.style.opacity='0.88'; this.style.transform='scale(1)';" />`
+        ? `<img src="${escapeHtml(logo)}" alt="${escapeHtml(name || "Vendor")}" class="lux-vendor-logo-img" loading="lazy" style="max-height: 48px; max-width: 140px; width: auto; height: auto; object-fit: contain; opacity: 0.95; transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;" onmouseover="this.style.opacity='1'; this.style.transform='scale(1.06)';" onmouseout="this.style.opacity='0.95'; this.style.transform='scale(1)';" />`
         : "";
 
       const nameHtml = name
-        ? `<span class="lux-vendor-text-name ${logo ? "" : "serif"}" style="${logo ? "font-size: 0.78rem; font-weight: 500; letter-spacing: 0.04em;" : "font-size: 1.05rem; font-weight: 600; letter-spacing: 0.04em;"} color: var(--accent); opacity: 0.88; text-align: center; line-height: 1.35; background: transparent !important; border: none !important;">${escapeHtml(name)}</span>`
+        ? `<span class="lux-vendor-text-name ${logo ? "" : "serif"}" style="${logo ? "font-size: 0.82rem; font-weight: 500; letter-spacing: 0.03em;" : "font-size: 1.05rem; font-weight: 600; letter-spacing: 0.04em;"} color: var(--accent) !important; opacity: 0.92; text-align: center; line-height: 1.35; background: transparent !important; border: none !important; text-decoration: none !important;">${escapeHtml(name)}</span>`
         : "";
 
       const itemContent = `
-        <div class="lux-vendor-item" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.45rem; background: transparent !important; border: none !important; box-shadow: none !important;">
+        <div class="lux-vendor-item" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; background: transparent !important; border: none !important; box-shadow: none !important;">
           ${logoHtml}
           ${nameHtml}
         </div>
       `.trim();
 
       if (finalUrl) {
-        return `<a href="${finalUrl}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(name || "Kunjungi Profil Vendor")}" class="lux-vendor-link" style="display: flex; align-items: center; justify-content: center; text-decoration: none; padding: 0.5rem; background: transparent !important; border: none !important; box-shadow: none !important; transition: transform 0.2s ease;">${itemContent}</a>`;
+        return `<a href="${finalUrl}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(name || "Kunjungi Profil Vendor")}" class="lux-vendor-link" style="display: flex; align-items: center; justify-content: center; text-decoration: none !important; color: var(--accent) !important; padding: 0.5rem; background: transparent !important; border: none !important; box-shadow: none !important; transition: transform 0.2s ease;">${itemContent}</a>`;
       }
-      return `<div style="display: flex; align-items: center; justify-content: center; padding: 0.5rem; background: transparent !important; border: none !important; box-shadow: none !important;">${itemContent}</div>`;
+      return `<div class="lux-vendor-link" style="display: flex; align-items: center; justify-content: center; text-decoration: none !important; color: var(--accent) !important; padding: 0.5rem; background: transparent !important; border: none !important; box-shadow: none !important;">${itemContent}</div>`;
     }).join("");
 
     vendorsSectionHtml = `
       <section class="sec-flow slide-section" id="section-vendors" data-section-alias="vendors" style="position: relative; padding: 4.5rem 1.5rem; text-align: center;">
+        <style>
+          .lux-vendors-grid a.lux-vendor-link, .lux-vendors-grid a.lux-vendor-link:visited, .lux-vendors-grid a.lux-vendor-link:hover, .lux-vendors-grid a.lux-vendor-link:active { color: var(--accent) !important; text-decoration: none !important; }
+          .lux-vendors-grid a.lux-vendor-link:hover .lux-vendor-text-name { opacity: 1 !important; text-decoration: underline !important; }
+        </style>
         <a id="vendors" style="display:none;"></a>
         <div class="sec-content-box reveal-on-scroll" style="max-width: 580px; margin: 0 auto; text-align: center;">
           ${vendorEyebrow ? `<span class="sec-eyebrow" data-lux-field="customLabels.vendorEyebrow" style="display: block; font-size: 0.65rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--accent); opacity: 0.85; margin-bottom: 0.5rem;">${escapeHtml(vendorEyebrow)}</span>` : ""}
           <h2 class="sec-main-title serif" data-lux-field="customLabels.vendorTitle" style="font-size: 2.3rem; margin-bottom: ${vendorSubtitle ? '0.6rem' : '2.8rem'}; color: var(--accent); letter-spacing: 0.02em;">${escapeHtml(vendorTitle)}</h2>
           ${vendorSubtitle ? `<p class="sec-sub" data-lux-field="customLabels.vendorSubtitle" style="max-width: 480px; margin: 0 auto 2.5rem auto; font-size: 0.84rem; line-height: 1.6; opacity: 0.8;">${escapeHtml(vendorSubtitle)}</p>` : ""}
 
-          <div class="lux-vendors-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 2.5rem 1.8rem; align-items: center; justify-items: center; max-width: 460px; margin: 0 auto;">
+          <div class="lux-vendors-grid" style="display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 2.2rem 2.8rem; max-width: 540px; margin: 0 auto;">
             ${vendorItemsHtml}
           </div>
         </div>

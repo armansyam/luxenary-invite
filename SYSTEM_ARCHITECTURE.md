@@ -1458,7 +1458,7 @@ Setiap inisialisasi tagihan ke payment gateway (Midtrans & Xendit) mengirimkan i
   - Mengirimkan deskripsi item yang presisi sesuai kondisi transaksi dengan atribut `brand`, `category`, dan `merchant_name` dinamis dari konfigurasi `AdminSetting`:
     - *Paket Undangan Digital - [Tier]* (Kategori: *Paket Undangan*)
     - *Upgrade: [Tier Asal] ke [Tier Tujuan]* (Kategori: *Upgrade Paket*)
-    - *Perpanjang Galeri Tamu (+30 Hari)* (Kategori: *Add-on Galeri*)
+    - *Perpanjangan Masa Aktif (+30 Hari)* (Kategori: *Add-on Masa Aktif*)
     - *Jasa Integrasi Domain: [Domain Kustom]* (Kategori: *Add-on Domain*)
   - Rincian biaya layanan gateway (`ADMIN_FEE`) terpisah dan transparan dengan jumlah matematis presisi (`gross_amount === sum(item.price * item.quantity)`).
 - **Metadata Pelacakan Dua Arah:**
@@ -1825,6 +1825,15 @@ Untuk memberikan pengalaman interaktif penuh bagi calon klien sebelum memesan pa
 5. **Garansi Kompatibilitas Mundur 100% (Zero-Breaking Policy):**
    - Seluruh 14 tema master lainnya tetap berfungsi normal tanpa regresi karena Engine tetap mengekspor fallback token lama (`storySectionHtml`, dll.).
 
+### 17.6 — Arsitektur Seksi Mitra Vendor (Wedding Credits): Preservasi Warna Brand & Tab Demo Studio
+1. **Preservasi Warna Asli Brand & Isolasi Link Peramban:**
+   - Menghapus filter monokrom `filter: brightness(0) invert(1)` dari `.lux-vendor-logo-img`, memastikan seluruh logo mitra (seperti oranye Sore Hari atau biru AMS) tampil dalam warna brand otentik tanpa distorsi.
+   - Mengisolasi warna link `<a class="lux-vendor-link">` dan status peramban `:visited` dengan `color: var(--accent) !important; text-decoration: none !important;` untuk mencegah warna ungu bawaan peramban (`#551a8b`).
+2. **Centered Flexbox Layout:**
+   - Mengganti grid 2-kolom dengan flexbox terpusat (`display: flex; flex-wrap: wrap; justify-content: center; gap: 2.2rem 2.8rem;`) agar baik 1 vendor tunggal maupun beberapa vendor selalu tampil simetris di tengah kanvas.
+3. **Tab ke-5 di Theme Demo Studio Admin (`app/(admin)/admin/page.tsx`):**
+   - Menyediakan Tab *"Mitra Vendor"* dengan kemampuan: toggle switch `showVendors`, edit judul/eyebrow/subtitle, upload logo langsung ke `/api/admin/themes/[id]/demo-asset` (slot `vendor_[n]`), input tautan profil/Instagram, dan tombol cepat *"Muat 4 Logo Dummy Default"* (`/uploads/logo_dummy/logo_1.png` s.d. `logo_4.png`).
+
 ### 17.10 — Arsitektur Theme Freedom: Pemisahan Desain Tema Master & Conditional Blocks (`{{#if}}`)
 1. **Prinsip Independensi Desain Tema Master:**
    - Menghapus monopoli tampilan Engine atas seksi-seksi dinamis. Engine (`lib/themeEngine.ts` & `lib/demoRegistry.ts`) bertindak sebagai **penyedia data murni** (data provider), sedangkan Tema Master (`themes/**/*.html`) memiliki kebebasan penuh merancang struktur DOM, ornamen, tipografi, dan tata letak visualnya sendiri.
@@ -2049,9 +2058,10 @@ Untuk memberikan pengalaman interaktif penuh bagi calon klien sebelum memesan pa
 3. **Penyelarasan Teks Panduan Demo Studio:**
    - Menghapus referensi rancu "iPad Mini" pada form Demo Studio, menyajikan label dan ukuran presisi yang langsung pada intinya bagi administrator.
 4. **Device Pair Mockup Showcase & Resolusi Ganda Thumbnail (Mobile & Desktop):**
-   - Mengintegrasikan sistem panggung ganda presisi (*Device Pair Mockup*: `stp-tablet` 16:10 di belakang dan `stp-phone` 9:19 di depan) pada kartu tema di panel admin (`/admin?tab=themes`), Setup Wizard (`/dashboard/setup`), dan Studio Visual Editor (`/dashboard/invitation/[id]`).
-   - Menerapkan arsitektur pembagian aset yang presisi: Frame ponsel menampilkan `thumbnailMobile` (`thumbnail_mobile.webp`), sedangkan frame tablet menampilkan `thumbnailDesktop` (`thumbnail_desktop.webp` dengan fallback cerdas ke `hero.webp` dan `cover.webp`).
-   - Endpoint `/api/admin/themes` dan `/api/admin/overview` secara serentak mengembalikan kedua properti `thumbnailMobile` dan `thumbnailDesktop` dari konfigurasi Demo Studio atau disk fisik VPS guna menjamin konsistensi visual instan tanpa refresh halaman.
+   - Mengintegrasikan sistem panggung ganda presisi (*Device Pair Mockup*: `stp-tablet-screen` 16:10 di belakang dan `stp-phone` 1:2 di depan) pada kartu tema di panel admin (`/admin?tab=themes`), Setup Wizard (`/dashboard/setup`), dan Studio Visual Editor (`/dashboard/invitation/[id]`).
+   - Menerapkan arsitektur pembagian aset yang presisi: Frame ponsel menampilkan `thumbnailMobile` (`thumbnail_mobile.webp` rasio 1:2), sedangkan frame tablet menampilkan `thumbnailDesktop` (`thumbnail_desktop.webp` rasio 16:10 dengan fallback cerdas ke `cover_desktop.webp`, `hero.webp`, dan `cover.webp`).
+   - Area layar tablet (`*-screen`) mengunci `aspect-ratio: 16 / 10` secara langsung sehingga terbebas dari pemotongan topbar (*Zero-Crop Architecture*).
+   - Endpoint `/api/admin/themes`, `/api/admin/overview`, dan `/api/public/themes` secara serentak mengembalikan kedua properti `thumbnailMobile` dan `thumbnailDesktop` dari konfigurasi Demo Studio atau disk fisik VPS guna menjamin konsistensi visual instan tanpa refresh halaman.
 
 ---
 

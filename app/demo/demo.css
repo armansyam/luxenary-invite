@@ -42,7 +42,6 @@
 .demo-catalog-root .dm-tablet {
   position: relative;
   width: 100%;
-  aspect-ratio: 16 / 10;
   background: #141210;
   border-radius: 16px;
   box-shadow:
@@ -100,7 +99,8 @@
 
 .demo-catalog-root .dm-tablet-screen {
   position: relative;
-  flex: 1;
+  width: 100%;
+  aspect-ratio: 16 / 10;
   overflow: hidden;
   background: #0d0c0b;
 }
@@ -118,14 +118,13 @@
   transform: scale(1.04);
 }
 
-/* ── Phone / Mobile frame ─────────────────── */
+/* ── Phone / Mobile frame (Standard 1:2) ─────── */
 .demo-catalog-root .dm-phone {
   position: absolute;
   bottom: 0;
   left: -10px;
   width: 30%;
-  /* Intrinsic phone ratio: 9:19.5 ≈ aspect 0.46 */
-  aspect-ratio: 9 / 19;
+  aspect-ratio: 1 / 2;
   background: #0d0c0b;
   border-radius: 26px;
   box-shadow:

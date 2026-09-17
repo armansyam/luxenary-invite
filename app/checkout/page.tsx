@@ -303,9 +303,9 @@ function CheckoutContent() {
           } else if (orderStatusData.orderType === "GALLERY_EXTENSION") {
             setCurrentPlanType("EXTEND_GALLERY");
             setPlanData({
-              name: "Perpanjang Galeri Tamu (+30 Hari)",
+              name: "Perpanjangan Masa Aktif Undangan & Galeri (+30 Hari)",
               price: Number(orderStatusData.amount),
-              desc: "Perpanjangan penyimpanan foto momen para tamu di server selama +30 hari tambahan.",
+              desc: "Perpanjangan masa aktif website undangan, tautan subdomain, dan penyimpanan galeri foto momen tamu selama +30 hari tambahan.",
             });
           } else if (orderStatusData.orderType === "MEMORIES_TOPUP") {
             setCurrentPlanType("MEMORIES_TOPUP");
@@ -746,7 +746,7 @@ function CheckoutContent() {
                 <div className="flex justify-between items-center bg-stone-900/30 px-4 py-3 rounded-xl border border-white/5">
                   <span className="text-stone-400 font-medium text-xs">
                     {currentOrderType === "GALLERY_EXTENSION"
-                      ? "Item Perpanjangan"
+                      ? "Perpanjangan Masa Aktif"
                       : currentOrderType === "MEMORIES_TOPUP"
                       ? "Top-Up Kuota Foto"
                       : currentOrderType === "CUSTOM_DOMAIN_ADDON"

@@ -42,6 +42,10 @@ export async function POST(
       extension = file.name.toLowerCase().endsWith(".ogg") ? "ogg" : "mp3";
     } else if (isVideo) {
       extension = "mp4";
+    } else if (file.name.toLowerCase().endsWith(".png")) {
+      extension = "png";
+    } else if (file.name.toLowerCase().endsWith(".svg")) {
+      extension = "svg";
     }
 
     const fileName = `${slot}.${extension}`;
@@ -116,6 +120,17 @@ export async function POST(
           customData.galleryPhotos = [];
         }
         customData.galleryPhotos[idx] = rawUrl;
+      } else if (slot.startsWith("vendor_")) {
+        const rawIdx = parseInt(slot.replace("vendor_", "").replace("logo_", ""), 10);
+        const idx = isNaN(rawIdx) ? 0 : Math.max(0, rawIdx - 1);
+        if (!Array.isArray(customData.vendors)) {
+          customData.vendors = [];
+        }
+        if (!customData.vendors[idx]) {
+          customData.vendors[idx] = { name: "", logoUrl: rawUrl, url: "" };
+        } else {
+          customData.vendors[idx].logoUrl = rawUrl;
+        }
       }
 
       const upserted = await prisma.adminSetting.upsert({
@@ -239,6 +254,12 @@ export async function DELETE(
         const idx = parseInt(slot.replace("gallery_", ""), 10) - 1;
         if (Array.isArray(customData.galleryPhotos)) {
           customData.galleryPhotos[idx] = "";
+        }
+      } else if (slot.startsWith("vendor_")) {
+        const rawIdx = parseInt(slot.replace("vendor_", "").replace("logo_", ""), 10);
+        const idx = isNaN(rawIdx) ? 0 : Math.max(0, rawIdx - 1);
+        if (Array.isArray(customData.vendors) && customData.vendors[idx]) {
+          customData.vendors[idx].logoUrl = "";
         }
       }
 
