@@ -47,7 +47,7 @@ Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model 
      │
      ▼
 2. LOGIN + PILIH PAKET (/login → /packages)
-   Google OAuth → Pilih paket (Traditional / Modern / Premium).
+   Google OAuth → Pilih paket (TIER_1 Serenade / TIER_2 Symphony / TIER_3 Eternity).
    *Onboarding Guard:* Jika klien memiliki tagihan aktif berstatus PENDING, akses ke /packages otomatis dicegat dan dilempar kembali ke kasir aktif (/checkout?order=...).
      │
      ▼
@@ -124,12 +124,12 @@ ADMIN PORTAL (/admin)
    - Klien (Users): Manajemen akun terbagi ke dalam 3 segmen filter (*Semua*, *Klien Aktif*, dan *Calon Klien / Leads*). Tombol **Remote Dasbor Klien** hanya aktif untuk klien yang memiliki ruang kerja/undangan, sedangkan calon klien dilengkapi pintasan follow-up WhatsApp dan opsi penghapusan akun lead yang batal.
    - Undangan (Invitations): Manajemen siklus hidup (Close to Gallery, Extend), dan fitur **Remote Klien** untuk mengendalikan Dasbor Klien secara utuh tanpa password (berbasis *httpOnly Cookie Session Override* dengan *Immunity Guard* di Admin, Emergency Amber Warning Banner, dan auto-cleanup cookie saat logout).
    - Domain Kustom (Custom Domains): Monitoring domain klien, panduan konfigurasi Caddy, dan shortcut ke tab Setup DNS.
-   - Tema & Musik (Themes & Music): Manajemen katalog tema, Demo Studio (kustomisasi 6 seksi narasi & label tema, dynamic timeline acara, dynamic bab cerita, dynamic rekening bank, harmonisasi casing font skrip vs uppercase, dan pewarisan otomatis ke undangan klien), serta Pustaka Musik Sistem dinamis (auto-sync file fisik audio di disk `public/music/` ke database, tambah audio dengan auto-kompresi FFmpeg MP3 128kbps, preview, edit, dan toggle aktif/nonaktif untuk klien)
+   - Tema & Musik (Themes & Music): Manajemen katalog tema dengan showcase visual interaktif Device Pair Mockup (Tablet 16:10 + Ponsel 9:19 bersanding dengan resolusi aset thumbnailDesktop & thumbnailMobile otomatis), Demo Studio (kustomisasi 6 seksi narasi & label tema, dynamic timeline acara, dynamic bab cerita, dynamic rekening bank, harmonisasi casing font skrip vs uppercase, dan pewarisan otomatis ke undangan klien), serta Pustaka Musik Sistem dinamis (auto-sync file fisik audio di disk `public/music/` ke database, tambah audio dengan auto-kompresi FFmpeg MP3 128kbps, preview, edit, dan toggle aktif/nonaktif untuk klien)
    - Portofolio (Portfolio): Kurasi & kloning undangan pilihan → /portfolio
    - Pengaturan (Settings): 
      - **Tab Setup & Integrasi:** Konfigurasi DNS & IP Server (auto-detect IP publik VPS, CNAME target dinamis), SMTP Email Server, Batas Upload Galeri Tamu (MB), dan Siklus Hidup & Retensi Sistem (parameter tunggal 14 hari pasca acara).
      - **Tab Platform:** Branding & Identitas Platform, CS Support, Hero Tagline, Fitur Landing Page, Template WhatsApp.
-     - **Tab Paket & Harga:** Konfigurasi harga paket undangan (Traditional, Modern, Premium) serta Layanan Tambahan (Add-Ons) resmi: Perpanjang Masa Aktif Bulanan (30 Hari - Rp50.000) dan Tahunan (1 Tahun - Rp150.000). Fitur custom domain sudah melekat gratis dan opsional pada Paket Premium.
+     - **Tab Paket & Harga:** Konfigurasi harga paket undangan (TIER_1 Serenade, TIER_2 Symphony, TIER_3 Eternity) serta Layanan Tambahan (Add-Ons) resmi: Perpanjang Masa Aktif Bulanan (30 Hari - Rp50.000) dan Tahunan (1 Tahun - Rp150.000). Fitur custom domain sudah melekat gratis dan opsional pada Paket TIER_3 Eternity.
      - **Tab Gateway QRIS:** Pusat kontrol global dan sub-tabs terisolasi per vendor gateway 2-arah (Midtrans dan Xendit) dengan kredensial terpadu dan resolusi endpoint otomatis.
    - Database (Database): Snapshot backup & restore PostgreSQL
    - Monitoring (Monitoring & Status Server): Pemantauan kestabilan sistem 60-hari interaktif (Interactive Uptime Status Bar), pemantauan memori fisik Host RAM VPS (`os.totalmem()`), Host OS Uptime, beban partisi root Linux (/), latensi & metrik ukuran terpakai Cloudflare R2 Media Storage (kapasitas terpakai, sisa kuota bebas biaya 10 GB), serta audit aktivitas staf & webhook gateway.
@@ -179,9 +179,9 @@ Pre-Flight Checklist & Smart Audit (/dashboard/settings):
 
 | Paket | Kapasitas & Fitur Utama | Plafon Kamera Disposable (Admin Setting) | Pilihan Tema |
 |:--|:--|:--|:--|
-| **Serenade** *(Dasar / Traditional)* | Hingga 300 Tamu, Subdomain Platform, RSVP & Ucapan Realtime, Musik Latar Bebas, Retensi 1 Bulan (30 Hari) | Kamera Tamu: **Nonaktif** *(Dapat diaktifkan via Admin)* | **Bebas Semua 16 Tema** *(Traditional, Modern, Premium)* |
-| **Symphony** *(Menengah / Modern)* | Hingga 1.000 Tamu, Seluruh Fitur Serenade + **Sistem Resepsionis QR Check-In & PIN Staf Panitia**, Retensi 1 Bulan (30 Hari) | Total Kuota: **250 Foto Acara** *(Pengantin bebas atur roll per tamu)* | **Bebas Semua 16 Tema** *(Traditional, Modern, Premium)* |
-| **Eternity** *(Tertinggi / Premium)* | **Tamu Tanpa Batas (Unlimited)**, Seluruh Fitur Symphony + **Hak Integrasi Custom Domain**, Dashboard Monitoring Momen Tamu, Retensi 1 Bulan (30 Hari) | Total Kuota: **1.000 Foto Acara** *(Pengantin bebas atur roll per tamu)* | **Bebas Semua 16 Tema** *(Traditional, Modern, Premium)* |
+| **Serenade** *(TIER_1)* | Hingga 300 Tamu, Subdomain Platform, RSVP & Ucapan Realtime, Musik Latar Bebas, Retensi 1 Bulan (30 Hari) | Kamera Tamu: **Nonaktif** *(Dapat diaktifkan via Admin)* | **Bebas Semua 16 Tema** *(Traditional, Modern, Premium)* |
+| **Symphony** *(TIER_2)* | Hingga 1.000 Tamu, Seluruh Fitur Serenade + **Sistem Resepsionis QR Check-In & PIN Staf Panitia**, Retensi 1 Bulan (30 Hari) | Total Kuota: **250 Foto Acara** *(Pengantin bebas atur roll per tamu)* | **Bebas Semua 16 Tema** *(Traditional, Modern, Premium)* |
+| **Eternity** *(TIER_3)* | **Tamu Tanpa Batas (Unlimited)**, Seluruh Fitur Symphony + **Hak Integrasi Custom Domain**, Dashboard Monitoring Momen Tamu, Retensi 1 Bulan (30 Hari) | Total Kuota: **1.000 Foto Acara** *(Pengantin bebas atur roll per tamu)* | **Bebas Semua 16 Tema** *(Traditional, Modern, Premium)* |
 
 > Harga dan kuota plafon kamera per paket serta add-on top-up foto (+100 Foto - Rp35.000) dan perpanjangan (+30 Hari - Rp50.000) dapat diatur mandiri oleh Administrator di Admin Portal → tab Paket & Harga tanpa perlu deploy ulang.
 
@@ -243,8 +243,8 @@ Pre-Flight Checklist & Smart Audit (/dashboard/settings):
 ## 4 Kondisi Pembayaran & Transmisi Data Lengkap Gateway (Rich Payload)
 
 Sistem mendukung 4 kondisi transaksi dengan integrasi 2-arah eksklusif (Midtrans & Xendit) yang dilengkapi pembatalan seketika (*two-way cancel/expire*) dan payload lengkap:
-1. **Registrasi Paket Awal (`NEW`):** Aktivasi paket baru (Traditional / Modern / Premium). Setelah lunas, klien langsung diarahkan ke `/dashboard/setup`.
-2. **Upgrade Layanan (`UPGRADE`):** Klien menaikkan tier paket (misal Traditional ke Modern / Premium) dengan selisih harga dinamis yang bersumber dari konfigurasi database (`AdminSetting`), disajikan via modal Obsidian Gold Luxury. Tier induk diperbarui seketika.
+1. **Registrasi Paket Awal (`NEW`):** Aktivasi paket baru (`TIER_1` / `TIER_2` / `TIER_3`). Setelah lunas, klien langsung diarahkan ke `/dashboard/setup`.
+2. **Upgrade Layanan (`UPGRADE`):** Klien menaikkan tier paket (misal `TIER_1` ke `TIER_2` / `TIER_3`) dengan selisih harga dinamis yang bersumber dari konfigurasi database (`AdminSetting`), disajikan via modal Obsidian Gold Luxury. Tier induk diperbarui seketika.
 3. **2 Add-On Layanan Tambahan Murni:**
    - **Perpanjang Galeri Tamu (`GALLERY_EXTENSION`):** Menambah masa simpan foto momen tamu (+1 s.d. 12 bulan) dan membuka kunci form upload.
    - **Top-Up Kuota Foto Momen (`MEMORIES_TOPUP`):** Menambah plafon kapasitas foto candid tamu di album kenangan (kelipatan 100 foto).
@@ -548,7 +548,7 @@ Setiap developer atau AI Agent yang melakukan modifikasi pada codebase **WAJIB**
 
 
 ### Kebijakan Akses Tema & Sesi Acara Utama (Update September 2026)
-- **All-Access Themes**: Bebas pilih seluruh koleksi 16 tema desain untuk semua paket (Traditional, Modern, Premium). Perbedaan paket murni pada hak kapabilitas fitur (Kamera Moments, QR Pass, Buku Tamu VIP, dsb).
+- **All-Access Themes**: Bebas pilih seluruh koleksi 16 tema desain untuk semua paket (`TIER_1`, `TIER_2`, `TIER_3`). Perbedaan paket murni pada hak kapabilitas fitur (Kamera Moments, QR Pass, Buku Tamu VIP, dsb).
 - **Sesi Acara Utama (Primary Anchor)**: Tepat 1 sesi acara inti (Akad/Resepsi) sebagai basis hitungan kedaluwarsa layanan. Tanggal sesi utama terkunci permanen pasca publikasi (hanya admin yang dapat mengubah). Sesi lain bebas diatur kapan saja.
 - **Deduplikasi Modul Moments & Dasbor Bersih**: Dasbor utama (`/dashboard`) terfokus sebagai pusat informasi & metrik eksekutif cepat tanpa instrumen operasional tumpang tindih. Portal Resepsionis Check-In tamu dipusatkan di dalam tab Buku Tamu (`/dashboard/guests`), sementara operasional disposable camera (Dual Mockup iPhone 16 Pro + Standing Banner Kartu QR, filter grading analog, multi-sesi, dan feed foto candid) terpusat penuh di Dedicated Command Center (`/dashboard/moments`), dan Studio Editor (`/dashboard/invitation/[id]` Seksi 14) khusus menangani styling web undangan.
 - **Penguatan Konkurensi Hari-H & Anti-Kebocoran VPS (v5.7.5)**:

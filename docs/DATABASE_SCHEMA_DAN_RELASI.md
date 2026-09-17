@@ -143,7 +143,7 @@ Mencatat seluruh aksi operasional administrator untuk kepatuhan audit keamanan (
 #### 1. Tabel `orders`
 Menyimpan lembar penagihan dan riwayat transaksi:
 - `invoiceNumber` (String, Unique): Nomor tagihan format `INV-YYYYMMDD-XXXX`.
-- `planType` (Enum `PlanType`): Paket langganan (`TRADITIONAL`, `MODERN`, `PREMIUM`).
+- `planType` (Enum `PlanType`): Paket langganan (`TIER_1`, `TIER_2`, `TIER_3`).
 - `amount` (Decimal): Total nominal yang harus dibayar.
 - `status` (Enum `OrderStatus`):
   - `PENDING`: Menunggu pembayaran.

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import path from "path";
 import sharp from "sharp";
+import { fileTypeFromBuffer } from "file-type";
 import { uploadFile } from "@/lib/storage";
 import { optimizeWebVideo, optimizeWebAudio } from "@/lib/videoOptimizer";
 import { auth } from "@/auth";
@@ -29,7 +30,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Rate limit: maks 10 upload/menit per IP — mencegah bandwidth & disk exhaustion
-    const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
+    // Prioritaskan cf-connecting-ip (Cloudflare) yang tidak bisa dipalsukan
+    const ip = req.headers.get("cf-connecting-ip") || req.headers.get("x-real-ip") || req.headers.get("x-forwarded-for")?.split(",")[0].trim() || "unknown";
     if (!rateLimit(`upload:${ip}`, 10, 60_000)) {
       return NextResponse.json(
         { error: "Terlalu banyak upload. Silakan tunggu beberapa saat sebelum mencoba lagi." },
@@ -76,6 +78,32 @@ export async function POST(req: NextRequest) {
     const relativePathBase = `invitations/${safeInvitationId}`;
     const isAudio = file.type.startsWith("audio/") || file.name.endsWith(".mp3") || file.name.endsWith(".wav") || file.name.endsWith(".m4a") || slotKey === "MUSIC";
     const isVideo = !isAudio && (file.type.startsWith("video/") || file.name.endsWith(".mp4") || file.name.endsWith(".webm") || file.name.endsWith(".mov"));
+
+    // ── Magic Bytes Validation (F-06) ──
+    // Verifikasi konten aktual file, bukan hanya header Content-Type dari browser.
+    // Mencegah file berbahaya (HTML, SVG, executable) yang berpura-pura sebagai media.
+    const detectedType = await fileTypeFromBuffer(buffer);
+    if (detectedType) {
+      const mime = detectedType.mime;
+      if (isAudio && !mime.startsWith("audio/") && !mime.startsWith("video/")) {
+        return NextResponse.json(
+          { error: "Format file audio tidak valid. Hanya MP3, WAV, M4A yang diizinkan." },
+          { status: 415 }
+        );
+      }
+      if (isVideo && !mime.startsWith("video/")) {
+        return NextResponse.json(
+          { error: "Format file video tidak valid. Hanya MP4, WebM, MOV yang diizinkan." },
+          { status: 415 }
+        );
+      }
+      if (!isAudio && !isVideo && !mime.startsWith("image/")) {
+        return NextResponse.json(
+          { error: "Format file gambar tidak valid. Hanya JPEG, PNG, WebP, HEIC yang diizinkan." },
+          { status: 415 }
+        );
+      }
+    }
 
     // File size safety guards — baca maxUploadMb dari AdminSetting (fallback hardcoded)
     let maxImageMb = 15;

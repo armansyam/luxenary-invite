@@ -1130,7 +1130,7 @@ export default function ReceptionistScannerClient({
               {currentTime}
             </div>
             <div className="text-stone-500 text-[11px] hidden sm:block">
-              {platformName || "Luxenary Invite"}
+              {platformName || "Sistem Undangan"}
             </div>
           </div>
 

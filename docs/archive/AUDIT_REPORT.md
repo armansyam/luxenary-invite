@@ -5,8 +5,11 @@
 **Status:** ✅ **SEMUA BLOCKER RESOLVED — Siap Deploy**  
 **Pemeriksa:** Antigravity AI Engine (Verifikasi Empiris / Zero-Assertion Protocol)  
 
-> [!NOTE]
-> Dokumen ini dipertahankan sebagai referensi historis. Semua temuan P0/P1 dari audit 3 Sep 2026 **telah diselesaikan** per 8 Sep 2026. Lihat bagian di bawah untuk detail resolusi.
+> [!CAUTION]
+> **ARSIP HISTORIS USANG — DILARANG DIJADIKAN RUJUKAN AKTIF (DEPRECATED):**
+> Dokumen ini adalah catatan historis (3–8 September 2026). Konsep *"Manajemen Siklus Hidup & Retensi 3 Fase (H+7, H+30, H+365)"* dan penghapusan akun klien yang tercatat di sini **SUDAH TIDAK BERLAKU LAGI**. 
+> Sistem saat ini telah disederhanakan menjadi **1 JADWAL RETENSI TUNGGAL TERPADU (H + retention_cleanup_days [14 Hari])** dan kebijakan **Zero Account Deletion (Akun Klien Abadi)**. 
+> Rujukan arsitektur resmi tunggal adalah: [SYSTEM_ARCHITECTURE.md](../../SYSTEM_ARCHITECTURE.md).
 
 ---
 

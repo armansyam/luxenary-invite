@@ -4,19 +4,20 @@ import { auth } from "@/auth";
 import { randomUUID } from "crypto";
 import { hasPlanCapability } from "@/lib/settings";
 import { getLatestEventDate } from "@/lib/domainUtils";
+import { normalizePlanType } from "@/lib/planUtils";
 
 export const dynamic = "force-dynamic";
 
 const PLAN_HIERARCHY: Record<string, number> = {
-  TRADITIONAL: 1,
-  MODERN: 2,
-  PREMIUM: 3,
+  TIER_1: 1,
+  TIER_2: 2,
+  TIER_3: 3,
 };
 
 const PLAN_NAMES: Record<string, string> = {
-  TRADITIONAL: "Serenade",
-  MODERN: "Symphony",
-  PREMIUM: "Eternity",
+  TIER_1: "Serenade",
+  TIER_2: "Symphony",
+  TIER_3: "Eternity",
 };
 
 interface BundleItem {
@@ -79,7 +80,7 @@ export async function POST(req: NextRequest) {
     }
 
     const currentOrder = invitation.order;
-    const currentPlan = (currentOrder?.planType || "TRADITIONAL").toUpperCase();
+    const currentPlan = normalizePlanType(currentOrder?.planType);
 
     // 2. Cegah spam / duplikasi jika ada pesanan pending yang sudah memiliki bukti transfer
     const existingPendingWithProof = await prisma.order.findFirst({
@@ -103,12 +104,12 @@ export async function POST(req: NextRequest) {
 
     // 3. Ambil konfigurasi harga dinamis dari admin_settings
     const settingKeys = [
-      "price_traditional",
-      "price_modern",
-      "price_premium",
-      "name_traditional",
-      "name_modern",
-      "name_premium",
+      "price_tier1",
+      "price_tier2",
+      "price_tier3",
+      "name_tier1",
+      "name_tier2",
+      "name_tier3",
       "gallery_extension_price_per_month",
       "addon_memories_topup_price",
       "addon_memories_topup_photos",
@@ -128,15 +129,15 @@ export async function POST(req: NextRequest) {
     }
 
     const priceMap: Record<string, number> = {
-      TRADITIONAL: Number(settingsMap["price_traditional"]) || 50000,
-      MODERN: Number(settingsMap["price_modern"]) || 150000,
-      PREMIUM: Number(settingsMap["price_premium"]) || 250000,
+      TIER_1: Number(settingsMap["price_tier1"]) || 99000,
+      TIER_2: Number(settingsMap["price_tier2"]) || 150000,
+      TIER_3: Number(settingsMap["price_tier3"]) || 200000,
     };
 
     const planNames: Record<string, string> = {
-      TRADITIONAL: settingsMap["name_traditional"] || PLAN_NAMES.TRADITIONAL,
-      MODERN: settingsMap["name_modern"] || PLAN_NAMES.MODERN,
-      PREMIUM: settingsMap["name_premium"] || PLAN_NAMES.PREMIUM,
+      TIER_1: settingsMap["name_tier1"] || PLAN_NAMES.TIER_1,
+      TIER_2: settingsMap["name_tier2"] || PLAN_NAMES.TIER_2,
+      TIER_3: settingsMap["name_tier3"] || PLAN_NAMES.TIER_3,
     };
 
     const monthlyExtPrice = Number(settingsMap["gallery_extension_price_per_month"]) || 50000;
@@ -149,30 +150,29 @@ export async function POST(req: NextRequest) {
     // 4. Kalkulasi Item 1: Upgrade Paket (jika diminta)
     let effectiveTargetPlan: string | null = null;
     if (targetPlan) {
-      const targetPlanUpper = String(targetPlan).toUpperCase();
-      if (!["MODERN", "PREMIUM"].includes(targetPlanUpper)) {
+      const canonicalTarget = normalizePlanType(String(targetPlan));
+      if (!["TIER_2", "TIER_3"].includes(canonicalTarget)) {
         return NextResponse.json({ error: "Paket tujuan upgrade tidak valid." }, { status: 400 });
       }
 
-      if ((PLAN_HIERARCHY[targetPlanUpper] ?? 0) <= (PLAN_HIERARCHY[currentPlan] ?? 0)) {
+      if ((PLAN_HIERARCHY[canonicalTarget] ?? 0) <= (PLAN_HIERARCHY[currentPlan] ?? 0)) {
         return NextResponse.json({
-          error: `Tidak bisa upgrade ke ${planNames[targetPlanUpper] || targetPlanUpper}. Paket Anda saat ini sudah setara atau lebih tinggi.`,
+          error: `Tidak bisa upgrade ke ${planNames[canonicalTarget] || canonicalTarget}. Paket Anda saat ini sudah setara atau lebih tinggi.`,
         }, { status: 400 });
       }
 
       const priceFrom = priceMap[currentPlan] ?? 0;
-      const priceTo = priceMap[targetPlanUpper] ?? 0;
+      const priceTo = priceMap[canonicalTarget] ?? 0;
       const diffPrice = Math.max(0, priceTo - priceFrom);
 
+      effectiveTargetPlan = canonicalTarget;
       items.push({
         type: "UPGRADE",
-        label: `Upgrade Paket: ${planNames[currentPlan] || currentPlan} ➔ ${planNames[targetPlanUpper] || targetPlanUpper}`,
+        label: `Upgrade ke Paket ${planNames[canonicalTarget]}`,
         price: diffPrice,
         fromPlan: currentPlan,
-        targetPlan: targetPlanUpper,
+        targetPlan: canonicalTarget,
       });
-
-      effectiveTargetPlan = targetPlanUpper;
     }
 
     // 5. Kalkulasi Item 2: Perpanjangan Masa Aktif Galeri (maksimal 1x 30 hari di H-7)

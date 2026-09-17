@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     ]);
 
     const expectedIp = (ipSetting?.value || process.env.SERVER_PUBLIC_IP || "").trim();
-    const expectedCname = (cnameSetting?.value || process.env.NEXT_PUBLIC_ROOT_DOMAIN || "luxenary.com").trim().toLowerCase();
+    const expectedCname = (cnameSetting?.value || process.env.NEXT_PUBLIC_ROOT_DOMAIN || "").trim().toLowerCase();
 
     let detectedA: string[] = [];
     let detectedCname: string[] = [];

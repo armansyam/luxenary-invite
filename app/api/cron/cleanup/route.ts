@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import fs from "fs";
 import path from "path";
+import crypto from "crypto";
 import { buildAndSavePublishedHtml, deletePublishedHtml } from "@/lib/staticPublisher";
 import { getLatestEventDate } from "@/lib/domainUtils";
 
@@ -27,8 +28,13 @@ async function isAuthorized(req: NextRequest): Promise<boolean> {
   }
 
   // Bearer token check (untuk cron job eksternal seperti cron-job.org atau server cron)
-  if (cronSecret && authHeader === `Bearer ${cronSecret}`) {
-    return true;
+  // Menggunakan timingSafeEqual untuk mencegah timing attack dari internet
+  if (cronSecret && authHeader) {
+    const expected = `Bearer ${cronSecret}`;
+    const isTimingSafe =
+      authHeader.length === expected.length &&
+      crypto.timingSafeEqual(Buffer.from(authHeader), Buffer.from(expected));
+    if (isTimingSafe) return true;
   }
 
   // Admin session fallback (hanya jika tidak ada CRON_SECRET atau request dari browser admin)
@@ -56,7 +62,7 @@ export async function POST(req: NextRequest) {
     const now = new Date();
     const thresholdOrderDate = new Date(now.getTime() - (retentionOrderDays * 24 * 60 * 60 * 1000));
 
-    // ── FASE 1: Transisi Undangan Selesai ke EVENT_FINISHED ──
+    // ── 1. TRANSISI STATUS PASCA-ACARA (PUBLISHED -> EVENT_FINISHED) ──
     // Undangan yang tanggal resepsinya sudah terlewati ditandai EVENT_FINISHED
     const activeInvs = await prisma.invitation.findMany({
       where: { status: "PUBLISHED" },
@@ -84,12 +90,12 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // ── FASE 2: Pembersihan Terpadu Pasca-Acara (H + cleanupDays ATAU galleryExpiresAt) ──
-    // Berjalan serentak pada H+14 (atau sesuai batas extend time):
+    // ── 2. RETENSI TERPADU SEKALI JALAN (SINGLE UNIFIED CLEANUP: H + cleanupDays ATAU galleryExpiresAt) ──
+    // Berjalan serentak dalam satu jadwal terpadu (default H+14 atau batas perpanjangan galeri):
     // 1. Bersihkan foto candid tamu di R2 & local
     // 2. Daur ulang subdomain ke pool (subdomain: null) jika auto-recycle aktif
-    // 3. Bersihkan data RSVP yang kedaluwarsa
-    // 4. Ubah status undangan menjadi ARCHIVED (Akun klien tetap abadi)
+    // 3. Bersihkan data RSVP yang kedaluwarsa demi privasi
+    // 4. Ubah status undangan menjadi ARCHIVED (Akun klien tetap abadi seumur hidup - Zero Account Deletion)
     const finishedInvs = await prisma.invitation.findMany({
       where: { status: { in: ["EVENT_FINISHED", "TAKEN_DOWN"] } },
       select: {
@@ -123,7 +129,8 @@ export async function POST(req: NextRequest) {
         const memories = await prisma.guestMemory.findMany({ where: { invitationId: inv.id } });
         if (memories.length > 0) {
           const { deleteFile } = await import("@/lib/storage");
-          await Promise.all(memories.map(mem => mem.mediaUrl ? deleteFile(mem.mediaUrl) : Promise.resolve())).catch(() => {});
+          await Promise.all(memories.map(mem => mem.mediaUrl ? deleteFile(mem.mediaUrl) : Promise.resolve()))
+            .catch((e) => console.warn(`[Cron Cleanup] Partial guestMemory file delete failed (inv: ${inv.id}):`, e.message));
         }
         await prisma.guestMemory.deleteMany({ where: { invitationId: inv.id } });
 
@@ -134,10 +141,10 @@ export async function POST(req: NextRequest) {
           if (await fileExists(legacyMemoriesDir)) await fs.promises.rm(legacyMemoriesDir, { recursive: true, force: true });
         } catch {}
 
-        // 3. Bersihkan formulir RSVP kedaluwarsa
+        // 3. Bersihkan formulir RSVP kedaluwarsa demi privasi
         await prisma.rsvp.deleteMany({ where: { invitationId: inv.id } });
 
-        // 3. Daur ulang subdomain ke pool dan tandai ARCHIVED
+        // 4. Daur ulang subdomain ke pool dan tandai ARCHIVED
         const shouldReleaseSubdomain = isAutoRecycleSubdomain && Boolean(inv.subdomain);
         await prisma.invitation.update({
           where: { id: inv.id },
@@ -153,7 +160,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // ── FASE 5: Pembersihan Mandiri Sampah File Draft (Orphaned Drafts) ──
+    // ── 3. HOUSEKEEPING INTERNAL: PEMBERSIHAN DRAFT YATIM & ORDER LAMA ──
     const draftsDir = path.join(process.cwd(), "data", "drafts");
     let cleanedOrphanedDraftsCount = 0;
     if (await fileExists(draftsDir)) {
@@ -167,7 +174,7 @@ export async function POST(req: NextRequest) {
             select: { id: true },
           });
           if (!invExists) {
-            await fs.promises.unlink(path.join(draftsDir, file)).catch(() => {});
+            await fs.promises.unlink(path.join(draftsDir, file)).catch((e: any) => console.warn(`[Cron Cleanup] Gagal hapus orphaned draft ${file}:`, e.message));
             cleanedOrphanedDraftsCount++;
           }
         }
@@ -176,7 +183,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Bersihkan file Order (Sama seperti dulu)
+    // Bersihkan data order kedaluwarsa lama (PENDING / EXPIRED / FAILED > retentionOrderDays)
     const staleOrders = await prisma.order.findMany({
       where: {
         status: { in: ["EXPIRED", "FAILED", "PENDING"] },

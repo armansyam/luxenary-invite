@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import crypto from "crypto";
 import { createDatabaseSnapshot } from "@/lib/databaseBackup";
 
 export const dynamic = "force-dynamic";
@@ -9,8 +10,13 @@ async function isAuthorized(req: NextRequest): Promise<boolean> {
   const authHeader = req.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
   
-  if (cronSecret && authHeader === `Bearer ${cronSecret}`) {
-    return true;
+  // Menggunakan timingSafeEqual untuk mencegah timing attack dari internet
+  if (cronSecret && authHeader) {
+    const expected = `Bearer ${cronSecret}`;
+    const isTimingSafe =
+      authHeader.length === expected.length &&
+      crypto.timingSafeEqual(Buffer.from(authHeader), Buffer.from(expected));
+    if (isTimingSafe) return true;
   }
   
   const session = await auth();
@@ -19,6 +25,14 @@ async function isAuthorized(req: NextRequest): Promise<boolean> {
 }
 
 export async function GET(req: NextRequest) {
+  return handleBackupRequest(req);
+}
+
+export async function POST(req: NextRequest) {
+  return handleBackupRequest(req);
+}
+
+async function handleBackupRequest(req: NextRequest) {
   try {
     if (!(await isAuthorized(req))) {
       return NextResponse.json({ error: "Unauthorized: Invalid or missing CRON_SECRET / Admin session" }, { status: 401 });

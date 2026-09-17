@@ -6,7 +6,7 @@ export const revalidate = 0;
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getPublicPlatformSettings();
-  const brand = settings.platformName || "Luxenary";
+  const brand = settings.platformName || "Sistem Undangan";
 
   return {
     title: {

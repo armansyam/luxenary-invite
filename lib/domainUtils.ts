@@ -268,20 +268,6 @@ export function isSubdomainExpired(eventDateInput?: string | Date | null, graceP
   }
 }
 
-/**
- * Evaluator rute Galeri Momen (/memories) - DEPRECATED
- * Sesuai arsitektur unhijacked URL: URL utama (/[slug] atau /s/[subdomain]) selalu menyajikan
- * halaman web undangan penuh. Galeri Momen dan Kamera Tamu masing-masing memiliki rute tersendiri
- * (/[slug]/memories dan /[slug]/sharemoment) dengan navigasi kembali ke undangan yang jelas.
- */
-export function shouldDisplayMemoriesGallery(_invitation?: {
-  status: string;
-  eventData?: any;
-  featureSettings?: string | null;
-  order?: { planType?: string | null } | null;
-}): boolean {
-  return false;
-}
 
 export interface MemoriesSession {
   id: string;

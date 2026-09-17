@@ -146,7 +146,7 @@ export default function EditInvitation() {
 
   // Upgrade Paket State
   const [upgradeModal, setUpgradeModal] = useState(false);
-  const [upgradeTarget, setUpgradeTarget] = useState<"MODERN" | "PREMIUM" | null>(null);
+  const [upgradeTarget, setUpgradeTarget] = useState<"TIER_2" | "TIER_3" | null>(null);
   const [upgrading, setUpgrading] = useState(false);
   const [upgradeError, setUpgradeError] = useState<string | null>(null);
   const [isDeploying, setIsDeploying] = useState(false);
@@ -161,29 +161,29 @@ export default function EditInvitation() {
     return () => clearTimeout(timer);
   }, [studioNotification]);
 
-  const PLAN_HIERARCHY: Record<string, number> = { TRADITIONAL: 1, MODERN: 2, PREMIUM: 3 };
+  const PLAN_HIERARCHY: Record<string, number> = { TIER_1: 1, TIER_2: 2, TIER_3: 3 };
   const PLAN_PRICES: Record<string, number> = {
-    TRADITIONAL: Number(
-      platformSettings?.packages?.find((p: any) => p.id === "TRADITIONAL")?.price ??
-      platformSettings?.pricing?.price_traditional ?? 80000
+    TIER_1: Number(
+      platformSettings?.packages?.find((p: any) => p.id === "TIER_1")?.price ??
+      platformSettings?.pricing?.price_tier1 ?? 49000
     ),
-    MODERN: Number(
-      platformSettings?.packages?.find((p: any) => p.id === "MODERN")?.price ??
-      platformSettings?.pricing?.price_modern ?? 100000
+    TIER_2: Number(
+      platformSettings?.packages?.find((p: any) => p.id === "TIER_2")?.price ??
+      platformSettings?.pricing?.price_tier2 ?? 99000
     ),
-    PREMIUM: Number(
-      platformSettings?.packages?.find((p: any) => p.id === "PREMIUM")?.price ??
-      platformSettings?.pricing?.price_premium ?? 120000
+    TIER_3: Number(
+      platformSettings?.packages?.find((p: any) => p.id === "TIER_3")?.price ??
+      platformSettings?.pricing?.price_tier3 ?? 149000
     ),
   };
   const PLAN_COLOR: Record<string, string> = {
-    TRADITIONAL: "bg-amber-50 text-amber-800 border-amber-200",
-    MODERN: "bg-stone-100 text-stone-800 border-stone-200",
-    PREMIUM: "bg-amber-100/70 text-amber-950 border-amber-300",
+    TIER_1: "bg-amber-50 text-amber-800 border-amber-200",
+    TIER_2: "bg-stone-100 text-stone-800 border-stone-200",
+    TIER_3: "bg-amber-100/70 text-amber-950 border-amber-300",
   };
   const PLAN_FEATURES: Record<string, string[]> = {
-    MODERN: ["Akses semua tema Traditional & Modern", "Semua fitur paket Traditional"],
-    PREMIUM: ["Akses semua tema (Traditional, Modern & Premium)", "Tema eksklusif editorial & luxury", "Semua fitur paket Modern", "Termasuk Custom Domain Pribadi"],
+    TIER_2: ["Akses semua tema desain pilihan", "Dilengkapi QR Check-in Resepsionis", "Kamera Saku Digital Tamu (250 Foto)"],
+    TIER_3: ["Akses seluruh tema tanpa batas", "Termasuk Custom Domain Pribadi (.com / .id)", "Kamera Tamu Kuota Maksimal (1.000 Foto)", "Prioritas Akses Server"],
   };
 
   const handleUpgrade = async () => {
@@ -1234,7 +1234,7 @@ export default function EditInvitation() {
 
   const planType = invitation.order?.planType || "";
   const packageConfig = platformSettings?.packages?.find((p: any) => p.id === planType);
-  const allowedCaps = packageConfig?.capabilities || (planType === "PREMIUM" ? ["music", "gallery", "qr_checkin", "guest_memories", "custom_domain"] : planType === "MODERN" ? ["music", "gallery", "qr_checkin", "guest_memories"] : ["music", "gallery"]);
+  const allowedCaps = packageConfig?.capabilities || (planType === "TIER_3" ? ["music", "gallery", "qr_checkin", "guest_memories", "custom_domain"] : planType === "TIER_2" ? ["music", "gallery", "qr_checkin", "guest_memories"] : ["music", "gallery"]);
   const hasCap = (cap: string) => allowedCaps.includes(cap);
 
   const showMusic = getFeatureSetting("showMusic", true);
@@ -1578,7 +1578,7 @@ export default function EditInvitation() {
                   <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${PLAN_COLOR[planType] || "bg-stone-50 text-stone-700 border-stone-200"}`}>
                     {planType}
                   </span>
-                  {planType !== "PREMIUM" && (
+                  {planType !== "TIER_3" && (
                     <button
                       type="button"
                       onClick={() => {
@@ -2352,10 +2352,12 @@ export default function EditInvitation() {
                       <p className="font-medium">Tidak ada tema yang tersedia untuk kategori ini.</p>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
                     {displayedThemes.map((th) => {
                       const isSelected = Boolean(invitation.themeId) && invitation.themeId === th.id;
                       const isThemeLocked = invitation?.status === "PUBLISHED" || invitation?.status === "EVENT_FINISHED";
+                      const thumbMobile = th.thumbnailMobile || `/demo/${th.id}/thumbnail_mobile.webp`;
+                      const thumbDesktop = th.thumbnailDesktop || `/demo/${th.id}/thumbnail_desktop.webp`;
                       return (
                         <div
                           key={th.id}
@@ -2368,49 +2370,95 @@ export default function EditInvitation() {
                               setLiveIframeKey((k) => k + 1);
                             }
                           }}
-                          className={`rounded-2xl border overflow-hidden transition flex flex-col ${
+                          className={`stp-card rounded-2xl p-3 border transition-all ${
                             isThemeLocked ? "cursor-default opacity-90" : "cursor-pointer"
                           } ${
                             isSelected
-                              ? "border-amber-800 bg-amber-50/30 ring-2 ring-amber-800/20 shadow-sm"
+                              ? "is-selected border-amber-800 bg-amber-50/20 ring-2 ring-amber-800/15"
                               : "border-stone-200 hover:border-stone-300 bg-white"
                           }`}
                         >
-                          <div className="relative aspect-video overflow-hidden bg-stone-100">
-                            <img src={th.coverUrl || th.cover} alt={th.name} className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" />
-                            <span className="absolute top-2.5 left-2.5 text-[9px] font-bold tracking-wider uppercase bg-black/70 backdrop-blur-xs text-white px-2 py-0.5 rounded">
-                              {th.series || th.tag || th.subtitle}
-                            </span>
+                          {/* ── Device Pair Mockup ── */}
+                          <div className="stp-scene">
+                            {/* Tablet frame */}
+                            <div className="stp-tablet">
+                              <div className="stp-tablet-bar">
+                                <div className="stp-tablet-dots">
+                                  <span/><span/><span/>
+                                </div>
+                                <div className="stp-tablet-url">
+                                  luxenary.id/{th.id}
+                                </div>
+                                <div style={{ width: "18px" }}/>
+                              </div>
+                              <div className="stp-tablet-screen">
+                                <img
+                                  src={thumbDesktop}
+                                  alt={`${th.name} desktop`}
+                                  loading="lazy"
+                                  onError={(e) => {
+                                    const el = e.currentTarget;
+                                    if (!el.src.includes("hero.webp") && !el.src.includes("cover.webp")) {
+                                      el.src = `/demo/${th.id}/hero.webp`;
+                                    } else if (el.src.includes("hero.webp")) {
+                                      el.src = `/demo/${th.id}/cover.webp`;
+                                    }
+                                  }}
+                                />
+                                <div className="stp-glare"/>
+                              </div>
+                            </div>
+
+                            {/* Phone frame — overlapping bottom-left */}
+                            <div className="stp-phone">
+                              <div className="stp-phone-notch"/>
+                              <div className="stp-phone-screen">
+                                <img
+                                  src={thumbMobile}
+                                  alt={`${th.name} mobile`}
+                                  loading="lazy"
+                                  onError={(e) => {
+                                    const el = e.currentTarget;
+                                    if (!el.src.includes("cover.webp")) el.src = `/demo/${th.id}/cover.webp`;
+                                  }}
+                                />
+                                <div className="stp-glare"/>
+                              </div>
+                            </div>
+
+                            {/* Selected tick */}
                             {isSelected && (
-                              <span className="absolute top-2.5 right-2.5 w-6 h-6 rounded-full bg-amber-800 text-white flex items-center justify-center text-xs font-bold shadow-md">
+                              <span className="absolute top-2 right-2 z-20 w-6 h-6 rounded-full bg-amber-800 text-white flex items-center justify-center text-xs font-bold shadow-md">
                                 ✓
                               </span>
                             )}
                           </div>
-                          <div className="p-3.5 space-y-1 flex-1 flex flex-col justify-between">
-                            <div>
-                              <h3 className="font-bold text-stone-900 text-xs">{th.name}</h3>
-                              <p className="text-[10px] text-stone-500 line-clamp-2 mt-0.5 leading-relaxed">{th.desc}</p>
-                            </div>
-                            <div className="pt-2 flex items-center justify-between border-t border-stone-100">
-                              <a
-                                href={`/demo/${th.id}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                className="text-[10px] font-bold text-amber-800 hover:underline"
-                              >
-                                Lihat Demo
-                              </a>
-                              <span className={`text-[10px] font-bold ${isSelected ? "text-amber-900" : "text-stone-400"}`}>
-                                {isSelected ? "Terpilih" : isThemeLocked ? "Terkunci" : "Pilih"}
+
+                          {/* ── Theme Info ── */}
+                          <div className="space-y-1 mt-0.5">
+                            <div className="flex items-center justify-between">
+                              <p className="text-[9px] font-bold uppercase tracking-wider text-stone-400">{th.series}</p>
+                              <span className={`text-[9px] font-bold ${isSelected ? "text-amber-900" : "text-stone-400"}`}>
+                                {isSelected ? "Terpilih" : isThemeLocked ? "Terkunci" : ""}
                               </span>
                             </div>
+                            <h3 className="font-bold text-stone-900 text-xs leading-tight">{th.name}</h3>
+                            <p className="text-[10px] text-stone-500 line-clamp-2 leading-relaxed">{th.desc}</p>
+                            <a
+                              href={`/demo/${th.id}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="inline-block text-[10px] font-bold text-amber-800 hover:underline pt-0.5"
+                            >
+                              Lihat Demo →
+                            </a>
                           </div>
                         </div>
                       );
                     })}
                   </div>
+
                   )}
                 </div>
               );
@@ -4823,14 +4871,14 @@ export default function EditInvitation() {
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
               </div>
-              <h2 className="text-xl font-serif font-bold text-stone-100">Tingkatkan Akses Tema</h2>
+              <h2 className="text-xl font-serif font-bold text-stone-100">Tingkatkan Fitur & Kapasitas Paket</h2>
               <p className="text-stone-300 text-xs mt-1">Paket saat ini: <strong className="text-amber-300 font-semibold">{getPlanDisplayName(planType, platformSettings?.packages)}</strong></p>
             </div>
 
             {/* Tier Options */}
             <div className="p-5 space-y-3">
-              {(["MODERN", "PREMIUM"] as const)
-                .filter((t) => PLAN_HIERARCHY[t] > PLAN_HIERARCHY[planType])
+              {(["TIER_2", "TIER_3"] as const)
+                .filter((t) => (PLAN_HIERARCHY[t] || 0) > (PLAN_HIERARCHY[planType] || 1))
                 .map((tier) => {
                   const diff = (PLAN_PRICES[tier] ?? 0) - (PLAN_PRICES[planType] ?? 0);
                   const isSelected = upgradeTarget === tier;
@@ -4890,7 +4938,7 @@ export default function EditInvitation() {
                     <>
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
                       <span>
-                        Upgrade Sekarang{upgradeTarget ? ` ke ${upgradeTarget}` : ""}
+                        Upgrade Sekarang{upgradeTarget ? ` ke ${getPlanDisplayName(upgradeTarget, platformSettings?.packages)}` : ""}
                         {(() => {
                           if (!upgradeTarget) return "";
                           const diff = (PLAN_PRICES[upgradeTarget] ?? 0) - (PLAN_PRICES[planType] ?? 0);

@@ -127,9 +127,9 @@ flowchart TD
 *   **File:** [`app/packages/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/packages/page.tsx)
 *   **Logika Dinamis:** Paket tidak di-hardcode. Halaman melakukan fetch ke `GET /api/public/settings` untuk mengambil konfigurasi paket dari database (`AdminSetting: platform_packages`).
 *   **Tingkatan Tier Paket:**
-    *   **TRADITIONAL:** Akses tema-tema bernuansa adat/tradisional nusantara (`badrika`, `candani`, `dillalucky`, `mayang`, `prameswari`).
-    *   **MODERN:** Membuka tema-tema modern editorial + tema tradisional (`ameera`, `chronicle`, `lumina`, `papercut`, `solaria`, `wave`).
-    *   **PREMIUM:** Membuka seluruh 15 tema termasuk seri haute-couture (`kalandra`, `valente`, `aurelia`, `artisan`), custom domain ready, galeri momen tamu tak terbatas.
+    *   **TIER_1 (Serenade):** Paket esensial intim, undangan online berkelas, pemutar musik, RSVP & seluruh 16 tema terbuka.
+    *   **TIER_2 (Symphony):** Seluruh fitur Tier 1 + Resepsionis QR Check-In Scanner + Kamera Momen Tamu (200 Foto).
+    *   **TIER_3 (Eternity):** Seluruh fitur Tier 2 + Custom Domain Pribadi (.com/.id) inklusif + Kuota Momen Tamu Maksimal (500 Foto).
 *   **Aksi:** Tombol "Pilih Paket" mengarahkan pengguna ke:
     `/checkout?plan=${packageId}`
 
@@ -272,7 +272,7 @@ model User {
 model Order {
   id            String       @id @default(uuid())
   userId        String
-  planType      PlanType     // TRADITIONAL | MODERN | PREMIUM
+  planType      PlanType     // TIER_1 | TIER_2 | TIER_3
   amount        Int
   status        OrderStatus  @default(PENDING) // PENDING | PAID | FAILED | EXPIRED
   paymentMethod String?      // QRIS | MANUAL_TRANSFER

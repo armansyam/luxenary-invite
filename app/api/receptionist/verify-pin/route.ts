@@ -34,9 +34,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Undangan tidak ditemukan" }, { status: 404 });
     }
 
-    if (invitation.order?.planType === "TRADITIONAL") {
+    if (invitation.order?.planType === "TIER_1") {
       return NextResponse.json(
-        { error: "Fitur Sistem Resepsionis & QR Check-in tidak tersedia pada Paket Traditional." },
+        { error: "Fitur Sistem Resepsionis & QR Check-in tidak tersedia pada paket dasar Anda. Silakan upgrade paket untuk mengaktifkan fitur ini." },
         { status: 403 }
       );
     }

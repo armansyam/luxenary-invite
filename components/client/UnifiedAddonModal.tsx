@@ -2,21 +2,22 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { normalizePlanType } from "@/lib/planUtils";
 
 interface UnifiedAddonModalProps {
   isOpen: boolean;
   onClose: () => void;
   invitationId: string;
-  currentPlan: string; // "TRADITIONAL" | "MODERN" | "PREMIUM"
-  currentQuota: number; // e.g. 250
+  currentPlan: string;
+  currentQuota: number;
   galleryExpiresAt?: string | null;
   pricingSettings?: {
-    priceTraditional: number;
-    priceModern: number;
-    pricePremium: number;
-    nameTraditional: string;
-    nameModern: string;
-    namePremium: string;
+    priceTier1?: number;
+    priceTier2?: number;
+    priceTier3?: number;
+    nameTier1?: string;
+    nameTier2?: string;
+    nameTier3?: string;
     galleryExtensionPricePerMonth: number;
     addonMemoriesTopupPrice: number;
     addonMemoriesTopupPhotos: number;
@@ -30,7 +31,7 @@ export default function UnifiedAddonModal({
   isOpen,
   onClose,
   invitationId,
-  currentPlan = "TRADITIONAL",
+  currentPlan: rawCurrentPlan = "TIER_1",
   currentQuota = 250,
   galleryExpiresAt,
   pricingSettings,
@@ -38,18 +39,19 @@ export default function UnifiedAddonModal({
   daysRemaining = null,
 }: UnifiedAddonModalProps) {
   const router = useRouter();
+  const currentPlan = normalizePlanType(rawCurrentPlan);
 
   // Settings fallbacks
   const prices = useMemo(() => ({
-    TRADITIONAL: pricingSettings?.priceTraditional ?? 50000,
-    MODERN: pricingSettings?.priceModern ?? 150000,
-    PREMIUM: pricingSettings?.pricePremium ?? 250000,
+    TIER_1: pricingSettings?.priceTier1 ?? 99000,
+    TIER_2: pricingSettings?.priceTier2 ?? 150000,
+    TIER_3: pricingSettings?.priceTier3 ?? 200000,
   }), [pricingSettings]);
 
   const planNames = useMemo(() => ({
-    TRADITIONAL: pricingSettings?.nameTraditional || "Serenade",
-    MODERN: pricingSettings?.nameModern || "Symphony",
-    PREMIUM: pricingSettings?.namePremium || "Eternity",
+    TIER_1: pricingSettings?.nameTier1 || "Serenade",
+    TIER_2: pricingSettings?.nameTier2 || "Symphony",
+    TIER_3: pricingSettings?.nameTier3 || "Eternity",
   }), [pricingSettings]);
 
   const monthlyExtPrice = pricingSettings?.galleryExtensionPricePerMonth ?? 50000;
@@ -182,9 +184,9 @@ export default function UnifiedAddonModal({
               </span>
             </div>
 
-            {currentPlan === "PREMIUM" ? (
+            {currentPlan === "TIER_3" ? (
               <div className="p-4 bg-amber-50/60 border border-amber-200/80 rounded-2xl text-amber-950 leading-relaxed font-medium">
-                ✨ Anda sudah berada di tingkatan paket tertinggi (<strong>Eternity</strong>). Seluruh fitur sistem dan custom domain telah aktif.
+                ✨ Anda sudah berada di tingkatan paket tertinggi (<strong>{planNames.TIER_3}</strong>). Seluruh fitur sistem dan custom domain telah aktif.
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -203,36 +205,36 @@ export default function UnifiedAddonModal({
                   <p className="text-[10px] text-stone-500 mt-1">Tidak melakukan upgrade tingkatan paket.</p>
                 </div>
 
-                {currentPlan === "TRADITIONAL" && (
+                {currentPlan === "TIER_1" && (
                   <div
-                    onClick={() => setTargetPlan("MODERN")}
+                    onClick={() => setTargetPlan("TIER_2")}
                     className={`p-3.5 rounded-2xl border transition cursor-pointer ${
-                      targetPlan === "MODERN"
+                      targetPlan === "TIER_2"
                         ? "bg-amber-50/70 border-2 border-amber-700 text-stone-900 shadow-xs ring-1 ring-amber-700/20"
                         : "bg-stone-50/50 border-stone-200 hover:border-stone-300 hover:bg-stone-50 text-stone-700"
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-bold">Naik ke {planNames.MODERN}</span>
-                      <span className="text-[11px] font-mono font-bold text-amber-900">+Rp {(prices.MODERN - prices.TRADITIONAL).toLocaleString("id-ID")}</span>
+                      <span className="font-bold">Naik ke {planNames.TIER_2}</span>
+                      <span className="text-[11px] font-mono font-bold text-amber-900">+Rp {(prices.TIER_2 - prices.TIER_1).toLocaleString("id-ID")}</span>
                     </div>
-                    <p className="text-[10px] text-stone-500 mt-1">Buka Resepsionis QR & Kamera Tamu (Kuota 250 Foto).</p>
+                    <p className="text-[10px] text-stone-500 mt-1">Buka Resepsionis QR & Kamera Tamu (Kuota 200 Foto).</p>
                   </div>
                 )}
 
                 <div
-                  onClick={() => setTargetPlan("PREMIUM")}
+                  onClick={() => setTargetPlan("TIER_3")}
                   className={`p-3.5 rounded-2xl border transition cursor-pointer ${
-                    targetPlan === "PREMIUM"
+                    targetPlan === "TIER_3"
                       ? "bg-amber-50/70 border-2 border-amber-700 text-stone-900 shadow-xs ring-1 ring-amber-700/20"
                       : "bg-stone-50/50 border-stone-200 hover:border-stone-300 hover:bg-stone-50 text-stone-700"
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-bold">Naik ke {planNames.PREMIUM}</span>
-                    <span className="text-[11px] font-mono font-bold text-amber-900">+Rp {(prices.PREMIUM - prices[currentPlan as keyof typeof prices]).toLocaleString("id-ID")}</span>
+                    <span className="font-bold">Naik ke {planNames.TIER_3}</span>
+                    <span className="text-[11px] font-mono font-bold text-amber-900">+Rp {(prices.TIER_3 - prices[currentPlan as keyof typeof prices]).toLocaleString("id-ID")}</span>
                   </div>
-                  <p className="text-[10px] text-stone-500 mt-1">All-Inclusive: Kuota 1.000 Foto + Custom Domain Pribadi.</p>
+                  <p className="text-[10px] text-stone-500 mt-1">All-Inclusive: Kuota 500 Foto + Custom Domain Pribadi.</p>
                 </div>
               </div>
             )}

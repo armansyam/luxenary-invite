@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { NextRequest, NextResponse } from "next/server";
 import { PlanType } from "@prisma/client";
+import { normalizePlanType } from "@/lib/planUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -155,7 +156,13 @@ export async function POST(req: NextRequest) {
 
       // 3.8 Hitung nominal diskon berdasarkan base package price
       // Ambil harga dasar paket dari setting atau order amount
-      const priceSettingKey = `price_${order.planType.toLowerCase()}`;
+      const canonical = normalizePlanType(order.planType);
+      const priceKeyMap: Record<string, string> = {
+        TIER_1: "price_tier1",
+        TIER_2: "price_tier2",
+        TIER_3: "price_tier3",
+      };
+      const priceSettingKey = priceKeyMap[canonical];
       const basePriceSetting = await tx.adminSetting.findUnique({ where: { key: priceSettingKey } });
       const basePackagePrice = basePriceSetting && !isNaN(Number(basePriceSetting.value))
         ? Number(basePriceSetting.value)

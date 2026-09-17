@@ -47,7 +47,7 @@ flowchart TD
     D -->|Tidak Ada Draft| F[Inisialisasi State Kosong: themeId = kosong]
     
     E & F --> G[Fetch Hak Akses Paket: Onboarding-State / Query Param]
-    G --> H[Identifikasi Tier Paket Klien: TRADITIONAL / MODERN / PREMIUM]
+    G --> H[Identifikasi Tier Paket Klien: TIER_1 / TIER_2 / TIER_3]
     
     H --> I[LANGKAH 1: Profil Pasangan]
     I -->|Wajib| I1[Nama Panggilan Pria & Wanita]
@@ -126,11 +126,8 @@ flowchart TD
 ### LANGKAH 3: Pemilihan Desain Tema Perdana
 * **Komponen:** [`app/(client)/dashboard/setup/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/(client)/dashboard/setup/page.tsx) (`step === 3`)
 * **Tujuan:** Memberikan kebebasan visual penuh bagi calon pengantin untuk memilih gaya estetika tema pertama mereka tanpa paksaan bawaan.
-* **Logika Hak Akses Tema (Waterfall Tier Mapping):**
-  Daftar tema diambil secara dinamis dari database melalui `GET /api/public/themes` dan disaring (*filter*) sesuai paket aktif klien:
-  - **Paket PREMIUM:** Mendapatkan akses ke **seluruh tema lengkap** (Traditional, Modern, dan Luxury Premium).
-  - **Paket MODERN:** Mendapatkan akses ke tema berkategori **Modern** dan **Traditional**.
-  - **Paket TRADITIONAL:** Mendapatkan akses khusus tema berkategori **Traditional**.
+* **Logika Hak Akses Tema (All-Access Themes):**
+  Daftar tema diambil secara dinamis dari database melalui `GET /api/public/themes`. Sesuai kebijakan *All-Access Themes*, seluruh 16 tema terbuka 100% untuk semua tingkatan paket (`TIER_1`, `TIER_2`, `TIER_3`). Pembeda antar paket murni bertumpu pada kapabilitas fitur (*Feature Gating*).
 * **Clean State Tanpa Default Tema:**
   - Variabel `themeId` diinisialisasi sebagai string kosong `""`.
   - Tidak ada auto-select ke `availableThemes[0]`.

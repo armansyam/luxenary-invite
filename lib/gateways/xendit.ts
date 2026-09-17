@@ -35,7 +35,7 @@ export class XenditGateway implements PaymentGateway {
     let customerFullName = "Klien";
     let customerEmail = "no-reply@example.com";
     let customerPhone = "";
-    let packageType = "PREMIUM";
+    let packageType = "TIER_1";
     let baseAmount = amount;
     let orderType = "NEW";
     let invoiceNumber = orderId;
@@ -126,8 +126,8 @@ export class XenditGateway implements PaymentGateway {
     // Baca konfigurasi platform, prefix judul, & masa kedaluwarsa dari admin setting
     let expiryMinutes = 60;
     let invoicePrefix = "Tagihan Pembayaran";
-    let platformName = "Luxenary";
-    let supportEmail = "support@luxenary.com";
+    let platformName = "Sistem Undangan";
+    let supportEmail = "support@domain.com";
     let supportPhone = "";
 
     try {

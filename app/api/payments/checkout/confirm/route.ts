@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { NextRequest, NextResponse } from "next/server";
+import { normalizePlanType } from "@/lib/planUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -77,7 +78,13 @@ export async function POST(req: NextRequest) {
       // Untuk pesanan terpadu (bundle add-on / upgrade), gunakan nominal order.amount yang telah dihitung server
       basePrice = Number(order.amount);
     } else if (order.orderType === "NEW") {
-      const priceKey = `price_${order.planType.toLowerCase()}`;
+      const canonical = normalizePlanType(order.planType);
+      const priceKeyMap: Record<string, string> = {
+        TIER_1: "price_tier1",
+        TIER_2: "price_tier2",
+        TIER_3: "price_tier3",
+      };
+      const priceKey = priceKeyMap[canonical];
       const priceSetting = await prisma.adminSetting.findUnique({ where: { key: priceKey } });
       if (priceSetting && !isNaN(Number(priceSetting.value))) {
         basePrice = Number(priceSetting.value);

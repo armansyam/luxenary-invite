@@ -32,7 +32,9 @@ export async function sendInvoiceEmail(opts: InvoiceEmailOptions): Promise<{ suc
         pass: settings.smtpPassword || "",
       },
       tls: {
-        rejectUnauthorized: false,
+        // Production: wajib verifikasi sertifikat TLS untuk mencegah MITM pada email invoice.
+        // Development/staging: boleh false untuk mendukung Mailhog / SMTP self-signed cert lokal.
+        rejectUnauthorized: process.env.NODE_ENV === "production",
       },
     });
 

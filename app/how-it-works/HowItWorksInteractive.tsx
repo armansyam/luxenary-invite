@@ -1051,7 +1051,7 @@ export function HowItWorksInteractive({ activeDomain }: { activeDomain: string }
                         </div>
                         <div className="my-1.5 p-2 rounded-lg bg-stone-900/90 border border-stone-800/80 flex items-center justify-between">
                           <span className="font-mono text-xs text-emerald-400 break-all select-all font-semibold">
-                            eka-putri.luxvite.id
+                            eka-putri.{activeDomain || "domainanda.id"}
                           </span>
                           <span className="text-[11px] text-stone-500">Tautan Utama</span>
                         </div>
@@ -1090,7 +1090,7 @@ export function HowItWorksInteractive({ activeDomain }: { activeDomain: string }
                       <div className="inline-flex items-center gap-3 px-4 py-2 rounded-xl bg-stone-900/90 border border-emerald-500/40 shadow-inner">
                         <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                         <span className="font-mono text-xs sm:text-sm text-emerald-300 font-bold">
-                          eka-putri.luxvite.id
+                          eka-putri.{activeDomain || "domainanda.id"}
                         </span>
                         <span className="text-[10px] uppercase tracking-wider font-bold bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30">
                           Live

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import NextAuth from "next-auth";
 import { authConfig } from "@/auth.config";
 import { isReservedSubdomain } from "@/lib/domainUtils";
+import { rateLimit } from "@/lib/rateLimit";
 
 const { auth } = NextAuth(authConfig);
 
@@ -59,9 +60,26 @@ async function resolveCustomDomain(host: string, baseUrl: string): Promise<Custo
 
 
 export default auth(async (req) => {
+  const { pathname } = req.nextUrl;
+
+  // ── Guard Brute-Force Login: 5 percobaan per IP per 15 menit ──
+  // Hanya berlaku untuk endpoint autentikasi credentials (login admin/client)
+  if (pathname === "/api/auth/callback/credentials" && req.method === "POST") {
+    const ip = req.headers.get("cf-connecting-ip")
+      || req.headers.get("x-real-ip")
+      || req.headers.get("x-forwarded-for")?.split(",")[0].trim()
+      || "unknown";
+    // 5 percobaan dalam window 15 menit (900.000ms)
+    if (!rateLimit(`auth_login:${ip}`, 5, 15 * 60 * 1000)) {
+      return new Response(
+        JSON.stringify({ error: "Terlalu banyak percobaan login. Silakan tunggu 15 menit." }),
+        { status: 429, headers: { "Content-Type": "application/json" } }
+      );
+    }
+  }
+
   const isLoggedIn = !!req.auth?.user;
   const isAdmin = (req.auth?.user as any)?.isAdmin === true || (req.auth?.user as any)?.role === "ADMIN" || (req.auth?.user as any)?.role === "SUPER_ADMIN";
-  const { pathname } = req.nextUrl;
 
   const host = req.headers.get("host") || "";
   const cleanHost = host.split(":")[0].toLowerCase(); // remove port & normalize

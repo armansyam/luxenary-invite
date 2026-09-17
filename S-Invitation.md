@@ -748,9 +748,10 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - **Mockup Showcase Mobile (HP):** Standar rasio **1 : 2** (ukuran pas: **390 × 780 px** / **800 × 1600 px**).
    - **Mockup Showcase Desktop (Laptop):** Standar rasio **16 : 10** (ukuran pas: **1280 × 800 px** / **2560 × 1600 px**).
    - Seluruh teks panduan formulir Demo Studio disederhanakan secara to-the-point tanpa referensi rancu ke iPad Mini, langsung menyajikan ukuran pas dan rasio yang dibutuhkan administrator.
-4. **Visual Showcase Thumbnail Mobile pada Katalog Tema Admin:**
-   - Menambahkan preview visual thumbnail mobile (`aspect-[3/4]`, `object-cover object-top`) pada kartu tema di `/admin?tab=themes`.
-   - Mengusung hirarki visual profesional: (1) Pratinjau Visual Tema + status aktif toggle + kategori tier, (2) Nama Tema, slug, deskripsi, dan (3) Tombol aksi (`Preview`, `Studio`, `Edit`, `Delete`).
+4. **Device Pair Mockup Showcase & Resolusi Ganda Thumbnail (Mobile & Desktop):**
+   - Mengintegrasikan sistem showcase ganda presisi (*Device Pair Mockup*: `stp-tablet` di belakang dan `stp-phone` di depan) pada kartu tema di `/admin?tab=themes`, `/dashboard/setup`, dan `/dashboard/invitation/[id]`.
+   - Mengusung hirarki visual profesional: (1) Pratinjau Visual Ganda Responsive + status aktif toggle + kategori tier, (2) Nama Tema, slug, deskripsi, dan (3) Tombol aksi (`Preview`, `Studio`, `Edit`, `Delete`).
+   - Frame ponsel secara eksklusif memuat `thumbnailMobile`, sedangkan frame tablet memuat `thumbnailDesktop` dengan rantai fallback landscape aman (`hero.webp` $\rightarrow$ `cover.webp`).
 
 ---
 
@@ -846,11 +847,11 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - Sesi tambahan yang memiliki tanggal lebih awal (misal H-1) secara otomatis naik ke posisi nomor 1 di atas acara utama tanpa merusak penanda sesi utama.
 
 5. **Penegasan Kebijakan All-Access Themes & Feature-Gating:**
-   - Koleksi seluruh 16 tema desain terbuka 100% untuk semua paket (`TRADITIONAL`, `MODERN`, `PREMIUM`).
+   - Koleksi seluruh 16 tema desain terbuka 100% untuk semua paket (`TIER_1`, `TIER_2`, `TIER_3`).
    - Diferensiasi antar paket murni bertumpu pada **Feature Gating**:
-     * Traditional (Serenade): Undangan Intim, Musik Autoplay, Galeri Prewedding, RSVP Online, Generator WhatsApp Personal.
-     * Modern (Symphony): Traditional + Scanner Resepsionis QR Check-In (`qr_checkin`) + Kamera Momen Tamu / Guest Memories Vault (`guest_memories`).
-     * Premium (Eternity): Modern + Custom Domain Pribadi (`custom_domain`) + Kuota Tamu & Foto Unlimited.
+     * TIER_1 (Serenade): Undangan Intim, Musik Autoplay, Galeri Prewedding, RSVP Online, Generator WhatsApp Personal.
+     * TIER_2 (Symphony): Fitur Tier 1 + Scanner Resepsionis QR Check-In (`qr_checkin`) + Kamera Momen Tamu / Guest Memories Vault (`guest_memories`).
+     * TIER_3 (Eternity): Fitur Tier 2 + Custom Domain Pribadi (`custom_domain`) + Kuota Tamu & Foto Maksimal.
 
 6. **Arsitektur Deduplikasi Dasbor Klien & Pemisahan Modul Hari H:**
    - **Dasbor Utama (`/dashboard`):** Menampilkan metrik eksekutif, status undangan, hitung mundur, dan ringkasan kehadiran (bebas dari kartu operasional teknis tumpang tindih).

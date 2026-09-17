@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useTransition } from "react";
+import { getPlanDisplayName } from "@/lib/planUtils";
 
 interface OrderItem {
   id: string;
@@ -492,13 +493,13 @@ export default function AdminOrdersTab() {
                           if (ord.orderType === "UPGRADE") {
                             return (
                               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-sky-800 border border-sky-200">
-                                <span>Upgrade ➔ {ord.targetPlanType || ord.planType}</span>
+                                <span>Upgrade ➔ {getPlanDisplayName(ord.targetPlanType || ord.planType)}</span>
                               </span>
                             );
                           }
                           return (
                             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                              <span>Paket {ord.planType === "TRADITIONAL" ? "Serenade" : (ord.planType === "MODERN" ? "Symphony" : "Eternity")}</span>
+                              <span>Paket {getPlanDisplayName(ord.planType)}</span>
                             </span>
                           );
                         })()}
@@ -677,7 +678,7 @@ export default function AdminOrdersTab() {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">Paket:</span>
-                <span className="font-semibold text-gray-900">{inspectOrder.planType}</span>
+                <span className="font-semibold text-gray-900">{getPlanDisplayName(inspectOrder.planType)} <span className="text-xs text-gray-400 font-mono font-normal">({inspectOrder.planType})</span></span>
               </div>
 
               {/* Rincian Multi-Item Bundle */}

@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { getInvitationPublicUrl, resolveEffectiveInvitationUrl, getLatestEventDate } from "@/lib/domainUtils";
 import UnifiedAddonModal from "@/components/client/UnifiedAddonModal";
-import { getPlanDisplayName, getPlanDisplayDescription } from "@/lib/planUtils";
+import { getPlanDisplayName, getPlanDisplayDescription, normalizePlanType } from "@/lib/planUtils";
 
 function DashboardHomeContent() {
   const { data: session } = useSession();
@@ -120,9 +120,10 @@ function DashboardHomeContent() {
   });
   const invUrl = resolvedDomain.url;
 
-  const planType = invitation?.order?.planType || "TRADITIONAL";
-  const packageConfig = platformSettings?.packages?.find((p: any) => p.id === planType);
-  const allowedCaps: string[] = packageConfig?.capabilities || (planType === "PREMIUM" ? ["music", "gallery", "qr_checkin", "guest_memories", "custom_domain"] : planType === "MODERN" ? ["music", "gallery", "qr_checkin", "guest_memories"] : ["music", "gallery"]);
+  const rawPlanType = invitation?.order?.planType || "TIER_1";
+  const planType = normalizePlanType(rawPlanType);
+  const packageConfig = platformSettings?.packages?.find((p: any) => p.id === planType || p.id === rawPlanType);
+  const allowedCaps: string[] = packageConfig?.capabilities || (planType === "TIER_3" ? ["music", "gallery", "qr_checkin", "guest_memories", "custom_domain"] : planType === "TIER_2" ? ["music", "gallery", "qr_checkin", "guest_memories"] : ["music", "gallery"]);
   const hasCap = (cap: string) => allowedCaps.includes(cap);
 
   const featureSettings = (() => {
@@ -367,20 +368,24 @@ function DashboardHomeContent() {
     ? Math.ceil((effectiveExpiry.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null;
 
-  const currentPlan = (invitation?.order?.planType || "TRADITIONAL").toUpperCase();
+  const currentPlan = normalizePlanType(invitation?.order?.planType || "TIER_1");
   const baseRetentionDays = retentionDays;
   const extraGalleryDays = Number(featureSettings?.extraGalleryDays) || 0;
   const hasExtended = extraGalleryDays >= 30;
   const isRenewalWindow = daysRemaining !== null && daysRemaining <= 7 && daysRemaining > 0;
   const canExtend = !hasExtended && isRenewalWindow;
 
+  const pkgTier1 = platformSettings?.packages?.find((p: any) => p.id === "TIER_1");
+  const pkgTier2 = platformSettings?.packages?.find((p: any) => p.id === "TIER_2");
+  const pkgTier3 = platformSettings?.packages?.find((p: any) => p.id === "TIER_3");
+
   const addonPricingSettings = platformSettings ? {
-    priceTraditional: platformSettings.packages?.find((p: any) => p.id === "TRADITIONAL")?.price ?? 50000,
-    priceModern: platformSettings.packages?.find((p: any) => p.id === "MODERN")?.price ?? 150000,
-    pricePremium: platformSettings.packages?.find((p: any) => p.id === "PREMIUM")?.price ?? 250000,
-    nameTraditional: platformSettings.packages?.find((p: any) => p.id === "TRADITIONAL")?.name || "Serenade",
-    nameModern: platformSettings.packages?.find((p: any) => p.id === "MODERN")?.name || "Symphony",
-    namePremium: platformSettings.packages?.find((p: any) => p.id === "PREMIUM")?.name || "Eternity",
+    priceTier1: pkgTier1?.price ?? 49000,
+    priceTier2: pkgTier2?.price ?? 99000,
+    priceTier3: pkgTier3?.price ?? 149000,
+    nameTier1: pkgTier1?.name || "Serenade",
+    nameTier2: pkgTier2?.name || "Symphony",
+    nameTier3: pkgTier3?.name || "Eternity",
     galleryExtensionPricePerMonth: platformSettings.galleryExtensionPricePerMonth ?? 50000,
     addonMemoriesTopupPrice: platformSettings.addonMemoriesTopupPrice ?? 35000,
     addonMemoriesTopupPhotos: platformSettings.addonMemoriesTopupPhotos ?? 100,
@@ -701,7 +706,7 @@ function DashboardHomeContent() {
                 title="Buka Pusat Checkout Terpadu Layanan & Upgrade"
               >
                 <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
-                <span>{invitation?.order?.planType !== "PREMIUM" ? "Upgrade & Add-On" : "Kelola Add-On"}</span>
+                <span>{normalizePlanType(invitation?.order?.planType) !== "TIER_3" ? "Upgrade & Add-On" : "Kelola Add-On"}</span>
               </button>
             )}
           </div>
@@ -785,7 +790,7 @@ function DashboardHomeContent() {
           isOpen={isAddonModalOpen}
           onClose={() => setIsAddonModalOpen(false)}
           invitationId={invitation.id}
-          currentPlan={invitation.order?.planType || "TRADITIONAL"}
+          currentPlan={invitation.order?.planType || "TIER_1"}
           currentQuota={memoriesQuota?.maxTotalPhotos || 250}
           galleryExpiresAt={effectiveExpiry ? effectiveExpiry.toISOString() : null}
           pricingSettings={addonPricingSettings}

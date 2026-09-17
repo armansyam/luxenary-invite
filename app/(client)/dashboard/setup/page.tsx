@@ -6,7 +6,59 @@ import { useSession } from "next-auth/react";
 import { BrandLogo } from "@/components/BrandLogo";
 import { DEFAULT_PLAN_NAMES } from "@/lib/planUtils";
 
+
+// Daftar kota/kabupaten Indonesia dengan zona waktu \u2014 sumber tunggal untuk autocomplete
+const INDONESIAN_CITIES: { name: string; tz: "WIB" | "WITA" | "WIT" }[] = [
+  // WIB \u2014 Sumatera & Jawa
+  { name: "Jakarta", tz: "WIB" }, { name: "Surabaya", tz: "WIB" },
+  { name: "Bandung", tz: "WIB" }, { name: "Medan", tz: "WIB" },
+  { name: "Semarang", tz: "WIB" }, { name: "Palembang", tz: "WIB" },
+  { name: "Tangerang", tz: "WIB" }, { name: "Depok", tz: "WIB" },
+  { name: "Bekasi", tz: "WIB" }, { name: "Bogor", tz: "WIB" },
+  { name: "Yogyakarta", tz: "WIB" }, { name: "Malang", tz: "WIB" },
+  { name: "Pekanbaru", tz: "WIB" }, { name: "Batam", tz: "WIB" },
+  { name: "Padang", tz: "WIB" }, { name: "Bandar Lampung", tz: "WIB" },
+  { name: "Jambi", tz: "WIB" }, { name: "Bengkulu", tz: "WIB" },
+  { name: "Banda Aceh", tz: "WIB" }, { name: "Lhokseumawe", tz: "WIB" },
+  { name: "Langsa", tz: "WIB" }, { name: "Sabang", tz: "WIB" },
+  { name: "Sibolga", tz: "WIB" }, { name: "Padang Sidempuan", tz: "WIB" },
+  { name: "Binjai", tz: "WIB" }, { name: "Pematangsiantar", tz: "WIB" },
+  { name: "Tanjungpinang", tz: "WIB" }, { name: "Pangkal Pinang", tz: "WIB" },
+  { name: "Serang", tz: "WIB" }, { name: "Cilegon", tz: "WIB" },
+  { name: "Cirebon", tz: "WIB" }, { name: "Sukabumi", tz: "WIB" },
+  { name: "Tasikmalaya", tz: "WIB" }, { name: "Banjar", tz: "WIB" },
+  { name: "Magelang", tz: "WIB" }, { name: "Solo", tz: "WIB" },
+  { name: "Surakarta", tz: "WIB" }, { name: "Salatiga", tz: "WIB" },
+  { name: "Pekalongan", tz: "WIB" }, { name: "Tegal", tz: "WIB" },
+  { name: "Purwokerto", tz: "WIB" }, { name: "Cilacap", tz: "WIB" },
+  { name: "Kediri", tz: "WIB" }, { name: "Madiun", tz: "WIB" },
+  { name: "Mojokerto", tz: "WIB" }, { name: "Pasuruan", tz: "WIB" },
+  { name: "Probolinggo", tz: "WIB" }, { name: "Blitar", tz: "WIB" },
+  { name: "Jember", tz: "WIB" }, { name: "Banyuwangi", tz: "WIB" },
+  { name: "Pontianak", tz: "WIB" }, { name: "Singkawang", tz: "WIB" },
+  // WITA \u2014 Kalimantan Tengah-Selatan-Timur, Sulawesi, Bali, NTT, NTB
+  { name: "Makassar", tz: "WITA" }, { name: "Denpasar", tz: "WITA" },
+  { name: "Balikpapan", tz: "WITA" }, { name: "Samarinda", tz: "WITA" },
+  { name: "Banjarmasin", tz: "WITA" }, { name: "Palangka Raya", tz: "WITA" },
+  { name: "Mataram", tz: "WITA" }, { name: "Kupang", tz: "WITA" },
+  { name: "Bima", tz: "WITA" }, { name: "Palu", tz: "WITA" },
+  { name: "Kendari", tz: "WITA" }, { name: "Manado", tz: "WITA" },
+  { name: "Gorontalo", tz: "WITA" }, { name: "Mamuju", tz: "WITA" },
+  { name: "Kotabaru", tz: "WITA" }, { name: "Bontang", tz: "WITA" },
+  { name: "Tarakan", tz: "WITA" }, { name: "Nunukan", tz: "WITA" },
+  { name: "Tanjung Selor", tz: "WITA" }, { name: "Parepare", tz: "WITA" },
+  { name: "Palopo", tz: "WITA" }, { name: "Bulukumba", tz: "WITA" },
+  { name: "Sinjai", tz: "WITA" }, { name: "Enrekang", tz: "WITA" },
+  // WIT \u2014 Maluku & Papua
+  { name: "Ambon", tz: "WIT" }, { name: "Jayapura", tz: "WIT" },
+  { name: "Sorong", tz: "WIT" }, { name: "Manokwari", tz: "WIT" },
+  { name: "Fakfak", tz: "WIT" }, { name: "Ternate", tz: "WIT" },
+  { name: "Tidore", tz: "WIT" }, { name: "Tual", tz: "WIT" },
+  { name: "Merauke", tz: "WIT" }, { name: "Timika", tz: "WIT" },
+];
+
 function SetupWizardContent() {
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session } = useSession();
@@ -33,10 +85,16 @@ function SetupWizardContent() {
   const [brideName, setBrideName] = useState("");
   const [weddingDate, setWeddingDate] = useState("");
   const [city, setCity] = useState("");
+  const [cityQuery, setCityQuery] = useState("");
+  const [showCitySuggestions, setShowCitySuggestions] = useState(false);
   const [timeZone, setTimeZone] = useState("WIB");
-  const [akadTime, setAkadTime] = useState("");
-  const [resepsiTime, setResepsiTime] = useState("");
+  // Structured time state — bukan free-text agar format terjamin
+  const [akadStart, setAkadStart] = useState("");
+  const [akadEnd, setAkadEnd] = useState("");
+  const [resepsiStart, setResepsiStart] = useState("");
+  const [resepsiEnd, setResepsiEnd] = useState("");
   const [themeId, setThemeId] = useState("");
+  const [activeCategory, setActiveCategory] = useState<"all" | "premium" | "modern" | "traditional">("all");
 
   const [isDraftLoaded, setIsDraftLoaded] = useState(false);
 
@@ -53,7 +111,7 @@ function SetupWizardContent() {
         setTimeZone("WIB");
       }
 
-      const saved = localStorage.getItem("luxenary_setup_draft");
+      const saved = localStorage.getItem("app_setup_draft") || localStorage.getItem("luxenary_setup_draft");
       if (saved) {
         const draft = JSON.parse(saved);
         if (draft.groomNickname) setGroomNickname(draft.groomNickname);
@@ -63,8 +121,10 @@ function SetupWizardContent() {
         if (draft.weddingDate) setWeddingDate(draft.weddingDate);
         if (draft.city) setCity(draft.city);
         if (draft.timeZone) setTimeZone(draft.timeZone);
-        if (draft.akadTime) setAkadTime(draft.akadTime);
-        if (draft.resepsiTime) setResepsiTime(draft.resepsiTime);
+        if (draft.akadStart) setAkadStart(draft.akadStart);
+        if (draft.akadEnd) setAkadEnd(draft.akadEnd);
+        if (draft.resepsiStart) setResepsiStart(draft.resepsiStart);
+        if (draft.resepsiEnd) setResepsiEnd(draft.resepsiEnd);
         if (draft.themeId) setThemeId(draft.themeId);
         if (draft.step) setStep(draft.step);
       }
@@ -75,9 +135,9 @@ function SetupWizardContent() {
   // Save Draft to localStorage on change
   useEffect(() => {
     if (!isDraftLoaded) return;
-    const draft = { groomNickname, brideNickname, groomName, brideName, weddingDate, city, timeZone, akadTime, resepsiTime, themeId, step };
-    localStorage.setItem("luxenary_setup_draft", JSON.stringify(draft));
-  }, [groomNickname, brideNickname, groomName, brideName, weddingDate, city, timeZone, akadTime, resepsiTime, themeId, step, isDraftLoaded]);
+    const draft = { groomNickname, brideNickname, groomName, brideName, weddingDate, city, timeZone, akadStart, akadEnd, resepsiStart, resepsiEnd, themeId, step };
+    localStorage.setItem("app_setup_draft", JSON.stringify(draft));
+  }, [groomNickname, brideNickname, groomName, brideName, weddingDate, city, timeZone, akadStart, akadEnd, resepsiStart, resepsiEnd, themeId, step, isDraftLoaded]);
 
   // Resolve dynamic host, settings, themes, and detect existing draft on mount
   useEffect(() => {
@@ -173,8 +233,9 @@ function SetupWizardContent() {
           weddingDate,
           city: city.trim(),
           timeZone,
-          akadTime: akadTime.trim(),
-          resepsiTime: resepsiTime.trim(),
+          // Format terstruktur: "HH:MM – HH:MM TZ" — dijamin konsisten dari time picker
+          akadTime: akadStart ? `${akadStart}${akadEnd ? ` – ${akadEnd}` : ""} ${timeZone}`.trim() : "",
+          resepsiTime: resepsiStart ? `${resepsiStart}${resepsiEnd ? ` – ${resepsiEnd}` : ""} ${timeZone}`.trim() : "",
           themeId,
           planType: currentPlan,
         }),
@@ -186,6 +247,7 @@ function SetupWizardContent() {
       }
 
       // Success Redirect directly to the invitation editor
+      localStorage.removeItem("app_setup_draft");
       localStorage.removeItem("luxenary_setup_draft");
       router.push(`/dashboard/invitation/${data.invitationId}`);
     } catch (err: any) {
@@ -219,6 +281,7 @@ function SetupWizardContent() {
         throw new Error(data.error || "Gagal melewati penyiapan.");
       }
 
+      localStorage.removeItem("app_setup_draft");
       localStorage.removeItem("luxenary_setup_draft");
       router.push(`/dashboard/invitation/${data.invitationId}`);
     } catch (err: any) {
@@ -424,17 +487,52 @@ function SetupWizardContent() {
                 <p className="text-[11px] text-stone-400 mt-1">Tanggal ini akan digunakan sebagai hitung mundur (countdown) awal.</p>
               </div>
 
-              <div>
+              <div className="relative">
                 <label className="block text-xs font-bold text-stone-700 mb-1.5">
                   Kota / Wilayah Utama Acara <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  placeholder="Contoh: Jakarta, Surabaya, Makassar, Medan, Bandung, dll."
+                  value={cityQuery || city}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setCityQuery(v);
+                    setCity(v);
+                    setShowCitySuggestions(v.length >= 1);
+                  }}
+                  onFocus={() => setShowCitySuggestions((cityQuery || city).length >= 1)}
+                  onBlur={() => setTimeout(() => setShowCitySuggestions(false), 150)}
+                  placeholder="Ketik nama kota atau kabupaten..."
+                  autoComplete="off"
                   className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-sm font-semibold text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30"
                 />
+                {showCitySuggestions && (() => {
+                  const q = (cityQuery || city).toLowerCase().trim();
+                  const filtered = INDONESIAN_CITIES.filter(c =>
+                    c.name.toLowerCase().includes(q) ||
+                    c.name.toLowerCase().startsWith(q)
+                  ).slice(0, 8);
+                  return filtered.length > 0 ? (
+                    <ul className="absolute z-50 left-0 right-0 mt-1 bg-white border border-stone-200 rounded-xl shadow-lg overflow-hidden">
+                      {filtered.map((c) => (
+                        <li
+                          key={c.name}
+                          onMouseDown={() => {
+                            setCity(c.name);
+                            setCityQuery(c.name);
+                            setShowCitySuggestions(false);
+                            // Auto-isi zona waktu berdasarkan wilayah kota
+                            if (c.tz) setTimeZone(c.tz);
+                          }}
+                          className="px-4 py-2.5 text-sm text-stone-800 hover:bg-amber-50 hover:text-amber-900 cursor-pointer flex items-center justify-between"
+                        >
+                          <span className="font-semibold">{c.name}</span>
+                          <span className="text-[10px] text-stone-400 font-normal">{c.tz}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null;
+                })()}
               </div>
 
               {/* Zona Waktu Acara Dinamis */}
@@ -464,35 +562,59 @@ function SetupWizardContent() {
                 </div>
               </div>
 
-              {/* Input Waktu Opsional */}
+              {/* Input Waktu Terstruktur */}
               <div className="pt-2 border-t border-stone-100">
                 <span className="text-[11px] font-bold text-stone-500 uppercase tracking-wider block mb-2">
                   Perkiraan Jam Acara <span className="text-stone-400 font-normal lowercase">(opsional — dapat disesuaikan nanti di editor)</span>
                 </span>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Waktu Akad */}
                   <div>
-                    <label className="block text-xs font-medium text-stone-600 mb-1">
-                      Waktu Akad / Pemberkatan
-                    </label>
-                    <input
-                      type="text"
-                      value={akadTime}
-                      onChange={(e) => setAkadTime(e.target.value)}
-                      placeholder={`Contoh: 08:00 - 10:00 ${timeZone}`}
-                      className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-800 focus:bg-white focus:outline-none"
-                    />
+                    <label className="block text-xs font-medium text-stone-600 mb-1.5">Waktu Akad / Pemberkatan</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="time"
+                        value={akadStart}
+                        onChange={(e) => setAkadStart(e.target.value)}
+                        className="flex-1 px-3 py-2 bg-stone-50 border border-stone-200 rounded-lg text-xs text-stone-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/20"
+                      />
+                      <span className="text-stone-400 text-xs font-medium shrink-0">–</span>
+                      <input
+                        type="time"
+                        value={akadEnd}
+                        onChange={(e) => setAkadEnd(e.target.value)}
+                        className="flex-1 px-3 py-2 bg-stone-50 border border-stone-200 rounded-lg text-xs text-stone-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/20"
+                      />
+                    </div>
+                    {akadStart && (
+                      <p className="mt-1 text-[10px] text-amber-700 font-medium">
+                        {akadStart}{akadEnd ? ` – ${akadEnd}` : ""} {timeZone}
+                      </p>
+                    )}
                   </div>
+                  {/* Waktu Resepsi */}
                   <div>
-                    <label className="block text-xs font-medium text-stone-600 mb-1">
-                      Waktu Resepsi
-                    </label>
-                    <input
-                      type="text"
-                      value={resepsiTime}
-                      onChange={(e) => setResepsiTime(e.target.value)}
-                      placeholder={`Contoh: 11:00 - 14:00 ${timeZone}`}
-                      className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-800 focus:bg-white focus:outline-none"
-                    />
+                    <label className="block text-xs font-medium text-stone-600 mb-1.5">Waktu Resepsi</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="time"
+                        value={resepsiStart}
+                        onChange={(e) => setResepsiStart(e.target.value)}
+                        className="flex-1 px-3 py-2 bg-stone-50 border border-stone-200 rounded-lg text-xs text-stone-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/20"
+                      />
+                      <span className="text-stone-400 text-xs font-medium shrink-0">–</span>
+                      <input
+                        type="time"
+                        value={resepsiEnd}
+                        onChange={(e) => setResepsiEnd(e.target.value)}
+                        className="flex-1 px-3 py-2 bg-stone-50 border border-stone-200 rounded-lg text-xs text-stone-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/20"
+                      />
+                    </div>
+                    {resepsiStart && (
+                      <p className="mt-1 text-[10px] text-amber-700 font-medium">
+                        {resepsiStart}{resepsiEnd ? ` – ${resepsiEnd}` : ""} {timeZone}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -533,108 +655,202 @@ function SetupWizardContent() {
           </div>
         )}
 
-        {/* STEP 3: Pilihan Tema Sesuai Kategori Paket */}
-        {step === 3 && (
-          <div className="space-y-6 animate-fadeIn">
-            <div className="text-center space-y-2">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-100 text-amber-900 rounded-full text-xs font-bold mb-1">
-                <span>Paket Anda:</span>
-                <span className="font-extrabold">{planNames[currentPlan] || currentPlan}</span>
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-serif font-bold text-stone-900">Pilih Desain Tema Perdana</h1>
-              <p className="text-xs sm:text-sm text-stone-500 max-w-md mx-auto">
-                Berikut adalah koleksi tema yang tersedia untuk {planNames[currentPlan] || currentPlan}. Pilih tema awal yang Anda sukai.
-              </p>
-            </div>
+        {/* STEP 3: Pilihan Tema dengan Kategori & Thumbnail Preview */}
+        {step === 3 && (() => {
+          const categories = [
+            { id: "all", label: "Semua" },
+            { id: "premium", label: "Premium" },
+            { id: "modern", label: "Modern" },
+            { id: "traditional", label: "Tradisional" },
+          ] as const;
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {availableThemes.map((theme) => {
-                const isSelected = themeId === theme.id;
-                return (
-                  <div
-                    key={theme.id}
-                    onClick={() => setThemeId(theme.id)}
-                    className={`p-4 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between relative overflow-hidden ${
-                      isSelected
-                        ? "bg-white border-amber-800 shadow-md ring-2 ring-amber-800/20"
-                        : "bg-white/70 border-stone-200 hover:bg-white hover:border-stone-300"
+          const filteredThemes = activeCategory === "all"
+            ? availableThemes
+            : availableThemes.filter((t: any) => t.category?.toLowerCase() === activeCategory);
+
+          return (
+            <div className="space-y-6 animate-fadeIn">
+              <div className="text-center space-y-2">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-100 text-amber-900 rounded-full text-xs font-bold mb-1">
+                  <span>Paket Anda:</span>
+                  <span className="font-extrabold">{planNames[currentPlan] || currentPlan}</span>
+                </div>
+                <h1 className="text-2xl sm:text-3xl font-serif font-bold text-stone-900">Pilih Desain Tema Perdana</h1>
+                <p className="text-xs sm:text-sm text-stone-500 max-w-md mx-auto">
+                  Pilih tema awal yang Anda sukai. Dapat diganti kapan saja di Studio Editor.
+                </p>
+              </div>
+
+              {/* Category Tabs */}
+              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                {categories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => setActiveCategory(cat.id)}
+                    className={`shrink-0 px-4 py-1.5 rounded-full text-xs font-bold border transition-all ${
+                      activeCategory === cat.id
+                        ? "bg-stone-900 text-white border-stone-900"
+                        : "bg-white text-stone-600 border-stone-200 hover:border-stone-400"
                     }`}
                   >
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500">
-                          {theme.series}
-                        </span>
+                    {cat.label}
+                    {cat.id !== "all" && (
+                      <span className="ml-1.5 opacity-60">
+                        {availableThemes.filter((t: any) => t.category?.toLowerCase() === cat.id).length}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {/* Theme Grid — Device Pair Mockup */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {filteredThemes.map((theme: any) => {
+                  const isSelected = themeId === theme.id;
+                  const thumbMobile = theme.thumbnailMobile || `/demo/${theme.id}/thumbnail_mobile.webp`;
+                  const thumbDesktop = theme.thumbnailDesktop || `/demo/${theme.id}/thumbnail_desktop.webp`;
+                  return (
+                    <div
+                      key={theme.id}
+                      onClick={() => setThemeId(theme.id)}
+                      className={`stp-card rounded-2xl p-3 border cursor-pointer transition-all ${
+                        isSelected
+                          ? "is-selected border-amber-800 bg-amber-50/20 ring-2 ring-amber-800/15 shadow-md"
+                          : "border-stone-200 bg-white hover:border-stone-400 hover:shadow-sm"
+                      }`}
+                    >
+                      {/* Device Pair Scene */}
+                      <div className="stp-scene">
+                        {/* Tablet frame */}
+                        <div className="stp-tablet">
+                          <div className="stp-tablet-bar">
+                            <div className="stp-tablet-dots"><span/><span/><span/></div>
+                            <div className="stp-tablet-url">luxenary.id/{theme.id}</div>
+                            <div style={{ width: "18px" }}/>
+                          </div>
+                          <div className="stp-tablet-screen">
+                            <img
+                              src={thumbDesktop}
+                              alt={`${theme.name} desktop`}
+                              loading="lazy"
+                              onError={(e) => {
+                                const el = e.currentTarget;
+                                if (!el.src.includes("hero.webp") && !el.src.includes("cover.webp")) {
+                                  el.src = `/demo/${theme.id}/hero.webp`;
+                                } else if (el.src.includes("hero.webp")) {
+                                  el.src = `/demo/${theme.id}/cover.webp`;
+                                }
+                              }}
+                            />
+                            <div className="stp-glare"/>
+                          </div>
+                        </div>
+
+                        {/* Phone frame — overlapping bottom-left */}
+                        <div className="stp-phone">
+                          <div className="stp-phone-notch"/>
+                          <div className="stp-phone-screen">
+                            <img
+                              src={thumbMobile}
+                              alt={`${theme.name} mobile`}
+                              loading="lazy"
+                              onError={(e) => {
+                                const el = e.currentTarget;
+                                if (!el.src.includes("cover.webp")) el.src = `/demo/${theme.id}/cover.webp`;
+                              }}
+                            />
+                            <div className="stp-glare"/>
+                          </div>
+                        </div>
+
+                        {/* Selected badge */}
                         {isSelected && (
-                          <span className="px-2 py-0.5 rounded-full bg-amber-800 text-white text-[10px] font-bold">
-                            Terpilih
+                          <span className="absolute top-2 right-2 z-20 w-6 h-6 rounded-full bg-amber-800 text-white flex items-center justify-center text-xs font-bold shadow-md">
+                            ✓
+                          </span>
+                        )}
+
+                        {/* Premium badge */}
+                        {theme.isPremium && (
+                          <span className="absolute top-2 left-2 z-20 px-1.5 py-0.5 bg-amber-800 text-white text-[9px] font-bold rounded-full uppercase tracking-wide">
+                            Premium
                           </span>
                         )}
                       </div>
 
-                      <h3 className="text-base font-serif font-bold text-stone-900">{theme.name}</h3>
-                      <p className="text-xs text-stone-500 leading-relaxed">{theme.tagline}</p>
+                      {/* Info + Preview link */}
+                      <div className="space-y-0.5 mt-0.5">
+                        <p className="text-[9px] font-bold uppercase tracking-wider text-stone-400">{theme.series}</p>
+                        <h3 className="text-sm font-serif font-bold text-stone-900 leading-tight">{theme.name}</h3>
+                        <p className="text-[10px] text-stone-400 line-clamp-2 leading-snug">{theme.description}</p>
+                        <a
+                          href={`/demo/${theme.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-block text-[10px] font-bold text-amber-800 hover:underline pt-0.5"
+                        >
+                          Lihat Demo →
+                        </a>
+                      </div>
                     </div>
-
-                    <div className="pt-4 mt-3 border-t border-stone-100 flex items-center justify-between text-[11px] text-stone-400">
-                      <span className="font-mono">{theme.id}.html</span>
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: theme.accent }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Summary Box */}
-            <div className="p-5 rounded-3xl bg-stone-900 text-white shadow-xl space-y-3">
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 block">Undangan Siap Dibuat</span>
-                  <h4 className="text-lg font-serif font-bold text-white">
-                    {groomNickname} &amp; {brideNickname}
-                  </h4>
-
-                </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-mono ${themeId ? "bg-white/10 text-stone-300" : "bg-amber-500/20 text-amber-300 border border-amber-500/30"}`}>
-                  Tema: {themesList.find((t: any) => t.id === themeId)?.name || (themeId ? themeId : "Belum Memilih Tema")}
-                </span>
+                  );
+                })}
               </div>
-              <p className="text-xs text-stone-400">
-                Setelah ini Anda akan langsung masuk ke Studio Editor untuk melengkapi susunan acara, foto pre-wedding, dan daftar tamu.
-              </p>
-            </div>
 
-            <div className="flex items-center justify-between pt-2">
-              <button
-                type="button"
-                onClick={() => setStep(2)}
-                disabled={loading}
-                className="px-6 py-3.5 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold rounded-xl transition cursor-pointer disabled:opacity-50"
-              >
-                ← Kembali
-              </button>
 
-              <button
-                type="button"
-                onClick={handleCompleteSetup}
-                disabled={loading}
-                className="px-8 py-3.5 bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-amber-950/20 cursor-pointer flex items-center gap-2 disabled:opacity-50"
-              >
-                {loading ? (
-                  <>
-                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                    <span>Menyiapkan Studio Undangan...</span>
-                  </>
-                ) : (
-                  <>
+
+              {/* Summary Box */}
+              <div className="p-5 rounded-3xl bg-stone-900 text-white shadow-xl space-y-3">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 block">Undangan Siap Dibuat</span>
+                    <h4 className="text-lg font-serif font-bold text-white">
+                      {groomNickname} &amp; {brideNickname}
+                    </h4>
+                  </div>
+                  <span className={`px-3 py-1 rounded-full text-xs font-mono ${themeId ? "bg-white/10 text-stone-300" : "bg-amber-500/20 text-amber-300 border border-amber-500/30"}`}>
+                    Tema: {themesList.find((t: any) => t.id === themeId)?.name || (themeId ? themeId : "Belum Memilih Tema")}
+                  </span>
+                </div>
+                <p className="text-xs text-stone-400">
+                  Setelah ini Anda akan langsung masuk ke Studio Editor untuk melengkapi susunan acara, foto pre-wedding, dan daftar tamu.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between pt-2">
+                <button
+                  type="button"
+                  onClick={() => setStep(2)}
+                  disabled={loading}
+                  className="px-6 py-3.5 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold rounded-xl transition cursor-pointer disabled:opacity-50"
+                >
+                  ← Kembali
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleCompleteSetup}
+                  disabled={loading}
+                  className="px-8 py-3.5 bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-amber-950/20 cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                >
+                  {loading ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      <span>Menyiapkan Studio Undangan...</span>
+                    </>
+                  ) : (
                     <span>Selesai &amp; Masuk ke Studio Undangan</span>
-                    
-                  </>
-                )}
-              </button>
+                  )}
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
+
+
+
       </main>
 
       {/* Footer */}

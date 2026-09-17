@@ -29,7 +29,7 @@ export async function generateMetadata(): Promise<Metadata> {
     getPublicPlatformSettings(),
     getDynamicServerAppUrl(),
   ]);
-  const brandName = settings.platformName || "Luxenary";
+  const brandName = settings.platformName || "Sistem Undangan";
   const tagline = settings.heroTagline || "Undangan Pernikahan Digital Elegan, Hangat & Berkelas";
   const desc = settings.heroSubtitle || "Platform undangan pernikahan digital self-service dengan desain estetika mewah dan eksklusif.";
 
@@ -90,18 +90,12 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 const LUXENARY_WATERMARK = `
 <!--
- _      _   _  __  __  _____   _   _      _     ____   __   __
-| |    | | | | \\ \\/ / | ____| | \\ | |    / \\   |  _ \\  \\ \\ / /
-| |    | | | |  \\  /  |  _|   |  \\| |   / _ \\  | |_) |  \\ V / 
-| |___ | |_| |  /  \\  | |___  | |\\  |  / ___ \\ |  _ <    | |  
-|_____| \\___/  /_/\\_\\ |_____| |_| \\_| /_/   \\_\\|_| \\_\\   |_|  
-
   ==============================================================
   STOP! PERHATIAN!
   --------------------------------------------------------------
-  Sistem dan desain ini adalah milik eksklusif Luxenary.
+  Sistem dan desain antarmuka ini dilindungi oleh hak cipta.
   Dilarang keras menyalin, menduplikasi, atau menjual ulang 
-  tanpa izin resmi dari pihak Luxenary (luxenary.id).
+  tanpa izin lisensi resmi pengembang.
   
   Hak cipta dilindungi undang-undang.
   ==============================================================
@@ -111,8 +105,8 @@ const LUXENARY_WATERMARK = `
     try {
       if (window.console && console.log) {
         console.log("%cSTOP!", "color: #ef4444; font-size: 50px; font-weight: 900; text-shadow: 2px 2px 0 #000; font-family: sans-serif;");
-        console.log("%cIni adalah properti eksklusif Luxenary.", "color: #b5833c; font-size: 20px; font-weight: bold;");
-        console.log("%cSegala bentuk pencurian kode, scraping, atau modifikasi ilegal akan direkam.\\nDomain saat ini: " + window.location.hostname, "font-size: 14px; color: #a8a29e;");
+        console.log("%cIni adalah properti sistem berlisensi resmi.", "color: #b5833c; font-size: 20px; font-weight: bold;");
+        console.log("%cSegala bentuk pencurian kode, scraping, atau modifikasi ilegal dilarang keras.\\nDomain saat ini: " + window.location.hostname, "font-size: 14px; color: #a8a29e;");
       }
     } catch(e) {}
   })();
@@ -124,7 +118,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     getPublicPlatformSettings(),
     getDynamicServerAppUrl(),
   ]);
-  const brandName = settings.platformName || "Luxenary";
+  const brandName = settings.platformName || "Sistem Undangan";
   const tagline = settings.heroTagline || "Undangan Pernikahan Digital Elegan, Hangat & Berkelas";
 
   return (
@@ -143,7 +137,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               "@context": "https://schema.org",
               "@type": "WebSite",
               "name": brandName,
-              "alternateName": [brandName, "Luxenary"],
+              "alternateName": [brandName],
               "url": siteUrl,
               "description": tagline,
               "potentialAction": {

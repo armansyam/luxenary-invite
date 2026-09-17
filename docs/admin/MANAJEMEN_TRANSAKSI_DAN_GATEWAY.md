@@ -50,7 +50,7 @@ Menampilkan catatan seluruh lembar penagihan (*invoice*) yang tercipta di sistem
 ### Kolom Data pada Tabel Transaksi:
 - **Invoice:** Nomor faktur unik sistem (contoh: `INV-20260904-XXXX`).
 - **Klien:** Nama akun dan email klien pemesan.
-- **Paket:** Tier paket yang dibeli (`TRADITIONAL`, `MODERN`, `PREMIUM`) atau add-on.
+- **Paket:** Tier paket yang dibeli (`TIER_1`, `TIER_2`, `TIER_3`) atau add-on.
 - **Metode:** Indikator badge metode pembayaran:
   - `Transfer Bank` (Manual Transfer)
   - `QRIS / Otomatis` (Midtrans / Xendit)

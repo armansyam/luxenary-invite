@@ -130,7 +130,7 @@ export async function GET(
       memories,
       pendingOrder: activePendingOrder,
       quota: {
-        planType: invitation.order?.planType || "MODERN",
+        planType: invitation.order?.planType || "TIER_1",
         maxContributors,
         shotsQuota,
         baseTotalPhotos,

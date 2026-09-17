@@ -115,7 +115,7 @@ function SuccessContent() {
           </div>
           <div className="flex flex-col gap-3">
             <a
-              href={`/checkout?plan=PREMIUM`}
+              href={`/checkout?plan=TIER_3`}
               className="block w-full py-3.5 rounded-2xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-sm transition shadow-lg text-center"
             >
               Coba Bayar Ulang

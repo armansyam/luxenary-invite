@@ -35,7 +35,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Proteksi domain sistem
-    const reservedPlatformHosts = ["luxvite.id", "luxenary.com", "localhost", "amsdev.my.id"];
+    const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN || "").trim().toLowerCase();
+    const reservedPlatformHosts = [rootDomain, "localhost", "127.0.0.1"].filter(Boolean);
     if (reservedPlatformHosts.some((h) => cleanDomain === h || cleanDomain.endsWith(`.${h}`))) {
       return NextResponse.json({ error: "Domain tersebut merupakan domain platform sistem dan tidak dapat digunakan." }, { status: 400 });
     }

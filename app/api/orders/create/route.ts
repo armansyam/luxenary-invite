@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { deleteFile } from "@/lib/storage";
+import { normalizePlanType } from "@/lib/planUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -42,15 +43,13 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => ({}));
-    const { planType, regenerate, buyerName, buyerPhone, phoneNumber } = body;
+    const { planType: rawPlanType, regenerate, buyerName, buyerPhone, phoneNumber } = body;
 
-    if (!planType) {
+    if (!rawPlanType) {
       return NextResponse.json({ error: "Missing planType" }, { status: 400 });
     }
 
-    if (!["TRADITIONAL", "MODERN", "PREMIUM"].includes(planType)) {
-      return NextResponse.json({ error: "PlanType tidak valid. Gunakan TRADITIONAL, MODERN, atau PREMIUM." }, { status: 400 });
-    }
+    const planType = normalizePlanType(rawPlanType);
 
     // 3. Verifikasi Single Source of Truth — User terdaftar di database
     let targetUser = await prisma.user.findFirst({
@@ -121,10 +120,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Baca harga paket dari AdminSetting — WAJIB ada. Jika belum dikonfigurasi, tolak order.
-    // Tidak boleh ada fallback hardcode: harga bisa berubah sewaktu-waktu dari Admin.
-    const priceKey = planType === "PREMIUM" ? "price_premium" : planType === "MODERN" ? "price_modern" : "price_traditional";
-    const priceSetting = await prisma.adminSetting.findUnique({ where: { key: priceKey } });
+    const tierNum = planType === "TIER_3" ? "3" : planType === "TIER_2" ? "2" : "1";
+    const priceSetting = await prisma.adminSetting.findUnique({ where: { key: `price_tier${tierNum}` } });
     if (!priceSetting || !priceSetting.value || isNaN(Number(priceSetting.value)) || Number(priceSetting.value) <= 0) {
       return NextResponse.json(
         { error: `Harga paket ${planType} belum dikonfigurasi di sistem. Hubungi administrator.` },
@@ -247,7 +244,7 @@ export async function POST(req: NextRequest) {
         const updated = await prisma.order.update({
           where: { id: existingPending.id },
           data: {
-            planType: planType as "TRADITIONAL" | "MODERN" | "PREMIUM",
+            planType: planType as "TIER_1" | "TIER_2" | "TIER_3",
             amount,
             status: "PENDING",
             proofImageUrl: isResetProof ? null : existingPending.proofImageUrl,
@@ -291,7 +288,7 @@ export async function POST(req: NextRequest) {
       data: {
         userId: validUserId,
         invoiceNumber,
-        planType: planType as "TRADITIONAL" | "MODERN" | "PREMIUM",
+        planType: planType as "TIER_1" | "TIER_2" | "TIER_3",
         amount,
         status: "PENDING",
         paymentMethod: resolvedPaymentMethod,

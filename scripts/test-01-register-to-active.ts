@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { prisma } from '../lib/prisma';
 
 async function runTest01() {
@@ -21,7 +22,7 @@ async function runTest01() {
       data: {
         userId: user.id,
         invoiceNumber: `INV-TEST-${Date.now()}`,
-        planType: "MODERN",
+        planType: "TIER_2",
         amount: 499000,
         status: "PENDING",
         orderType: "NEW",

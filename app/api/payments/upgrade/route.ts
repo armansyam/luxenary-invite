@@ -1,21 +1,22 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
+import { normalizePlanType } from "@/lib/planUtils";
 
 export const dynamic = "force-dynamic";
 
 const PLAN_HIERARCHY: Record<string, number> = {
-  TRADITIONAL: 1,
-  MODERN: 2,
-  PREMIUM: 3,
+  TIER_1: 1,
+  TIER_2: 2,
+  TIER_3: 3,
 };
 
 /**
  * POST /api/payments/upgrade
  * Membuat order upgrade tier baru dengan nominal = selisih harga.
- * Harga basis diambil dari AdminSetting (price_traditional, price_modern, price_premium).
+ * Harga basis diambil dari AdminSetting (price_tier1, price_tier2, price_tier3).
  *
- * Body: { invitationId: string, targetPlan: "MODERN" | "PREMIUM" }
+ * Body: { invitationId: string, targetPlan: "TIER_2" | "TIER_3" }
  */
 export async function POST(req: Request) {
   try {
@@ -31,9 +32,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "invitationId dan targetPlan wajib diisi." }, { status: 400 });
     }
 
-    const targetPlanUpper = String(targetPlan).toUpperCase();
-    if (!["MODERN", "PREMIUM"].includes(targetPlanUpper)) {
-      return NextResponse.json({ error: "targetPlan hanya boleh MODERN atau PREMIUM." }, { status: 400 });
+    const targetPlanUpper = normalizePlanType(String(targetPlan));
+    if (!["TIER_2", "TIER_3"].includes(targetPlanUpper)) {
+      return NextResponse.json({ error: "targetPlan hanya boleh TIER_2 atau TIER_3." }, { status: 400 });
     }
 
     // 1. Ambil invitation beserta order aktifnya
@@ -59,32 +60,28 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Undangan ini belum memiliki paket aktif yang lunas." }, { status: 400 });
     }
 
-    const currentPlan = currentOrder.planType.toUpperCase();
+    const currentPlan = normalizePlanType(currentOrder.planType);
 
     // 2. Validasi arah upgrade (hanya boleh naik)
     if ((PLAN_HIERARCHY[targetPlanUpper] ?? 0) <= (PLAN_HIERARCHY[currentPlan] ?? 0)) {
       return NextResponse.json({
-        error: `Tidak bisa upgrade ke ${targetPlanUpper}. Paket Anda saat ini sudah ${currentPlan} atau lebih tinggi.`,
+        error: `Tidak bisa upgrade ke ${targetPlanUpper}. Paket Anda saat ini sudah setara atau lebih tinggi.`,
       }, { status: 400 });
     }
 
     // 3. Ambil harga paket dan payment_mode dari AdminSetting sekaligus (1 roundtrip)
-    const priceKeys = ["price_traditional", "price_modern", "price_premium", "payment_mode"];
+    const priceKeys = ["price_tier1", "price_tier2", "price_tier3", "payment_mode"];
     const settings = await prisma.adminSetting.findMany({
       where: { key: { in: priceKeys } },
       select: { key: true, value: true },
     });
 
-    const priceMap: Record<string, number> = {};
-    let activePaymentMode = "GATEWAY";
-    for (const s of settings) {
-      if (s.key === "payment_mode") {
-        activePaymentMode = s.value || "GATEWAY";
-      } else {
-        const plan = s.key.replace("price_", "").toUpperCase();
-        priceMap[plan] = Number(s.value) || 0;
-      }
-    }
+    const priceMap: Record<string, number> = {
+      TIER_1: Number(settings.find(s => s.key === "price_tier1")?.value) || 99000,
+      TIER_2: Number(settings.find(s => s.key === "price_tier2")?.value) || 150000,
+      TIER_3: Number(settings.find(s => s.key === "price_tier3")?.value) || 200000,
+    };
+    const activePaymentMode = settings.find(s => s.key === "payment_mode")?.value || "GATEWAY";
     const resolvedPaymentMethod = activePaymentMode === "MANUAL" ? "MANUAL_TRANSFER" : "GATEWAY";
 
     const priceFrom = priceMap[currentPlan] ?? 0;

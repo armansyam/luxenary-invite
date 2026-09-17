@@ -328,20 +328,20 @@ export async function PUT(
           let parsedFeatures = { ...existingObj, ...incomingObj };
 
           // --- SERVER-SIDE FEATURE GATING ---
-          // Prevent API Bypass for premium features based on planType
+          // Prevent API Bypass for tiered features based on planType
           if (!isAdmin) {
             const { getPublicPlatformSettings } = await import("@/lib/settings");
             const platformSettings = await getPublicPlatformSettings();
             
             // Get PlanType from order
-            let planType = "TRADITIONAL";
+            let planType = "TIER_1";
             if (currentInv.orderId) {
               const order = await prisma.order.findUnique({ where: { id: currentInv.orderId }, select: { planType: true } });
               if (order) planType = order.planType;
             }
 
             const packageConfig = platformSettings.packages?.find(p => p.id === planType);
-            const allowedCaps = packageConfig?.capabilities || (planType === "PREMIUM" ? ["music", "gallery", "qr_checkin", "guest_memories", "custom_domain"] : planType === "MODERN" ? ["music", "gallery", "qr_checkin"] : ["music", "gallery"]);
+            const allowedCaps = packageConfig?.capabilities || (planType === "TIER_3" ? ["music", "gallery", "qr_checkin", "guest_memories", "custom_domain"] : planType === "TIER_2" ? ["music", "gallery", "qr_checkin"] : ["music", "gallery"]);
             const hasCap = (cap: string) => allowedCaps.includes(cap);
 
             // Force override if they try to enable features they don't have
@@ -530,7 +530,7 @@ export async function PUT(
 
     // Save media updates
     if (body.media && typeof body.media === "object" && !Array.isArray(body.media)) {
-      const VALID_ENUM_SLOTS = ["LANDING_COVER", "LANDING_COVER_DESKTOP", "HOME_PHOTO", "DESKTOP_SIDEBAR", "GLOBAL_FIXED_BG", "GROOM_PHOTO", "BRIDE_PHOTO", "GALLERY", "CLOSING_COVER"];
+      const VALID_ENUM_SLOTS = ["LANDING_COVER", "LANDING_COVER_DESKTOP", "HOME_PHOTO", "DESKTOP_SIDEBAR", "GLOBAL_FIXED_BG", "GROOM_PHOTO", "BRIDE_PHOTO", "GALLERY", "CLOSING_COVER", "MEMORIES_COVER"];
       for (const [slot, url] of Object.entries(body.media)) {
         if (!VALID_ENUM_SLOTS.includes(slot)) continue;
         const urlStr = typeof url === "string" ? url.trim() : "";

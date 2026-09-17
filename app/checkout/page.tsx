@@ -75,7 +75,7 @@ function CheckoutContent() {
   const [copiedAmount, setCopiedAmount] = useState(false);
   const [platformName, setPlatformName] = useState("");
   const [serviceStatus, setServiceStatus] = useState<any>(null);
-  // PlanType state — menyimpan ID paket aktif (ex: "PREMIUM", "TRADITIONAL") untuk regenerasi order yang benar
+  // PlanType state — menyimpan ID paket aktif (ex: "TIER_1", "TIER_2", "TIER_3") untuk regenerasi order yang benar
   const [currentPlanType, setCurrentPlanType] = useState<string>(planParam || "");
   const [currentOrderType, setCurrentOrderType] = useState<string>("NEW_INVITATION");
   const [feePercent, setFeePercent] = useState<number>(0.7);
@@ -370,7 +370,7 @@ function CheckoutContent() {
       }
 
       // KONSISTENSI GUARD: Cek apakah user sudah punya paket aktif / undangan
-      // Mencegah pembuatan order double saat refresh tab usang (?plan=MODERN)
+      // Mencegah pembuatan order double saat refresh tab usang (?plan=TIER_2)
       const onboardingRes = await fetch("/api/client/onboarding-state", { cache: "no-store" });
       if (onboardingRes.ok) {
         const onboardingData = await onboardingRes.json();

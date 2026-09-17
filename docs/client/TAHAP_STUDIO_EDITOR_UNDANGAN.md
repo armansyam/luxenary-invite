@@ -42,11 +42,9 @@ flowchart TD
 Studio Editor membagi form input menjadi 15 seksi terorganisir untuk kenyamanan pengantin:
 
 ### Seksi 1: Tema Desain & Palet Warna (`SEC1`)
-- **Filter Tema Berdasarkan Tier Paket:**
-  - `TRADITIONAL`: Akses tema tradisional (Badrika, Candani, Dilla Lucky, dll).
-  - `MODERN`: Akses tema Modern + Traditional.
-  - `PREMIUM`: Akses seluruh tema eksklusif editorial & cinematic (Kalandra, Valente, Aurelia, Artisan).
-  - Jika klien mencoba memilih tema di atas tier paketnya, muncul **Modal Upgrade Paket** interaktif dengan kalkulasi selisih harga dinamis dari `AdminSetting`.
+- **Akses Tema Penuh (All-Access Themes):**
+  - Seluruh 16 tema terbuka penuh untuk semua tier paket (`TIER_1`, `TIER_2`, `TIER_3`).
+  - Klien dapat bebas memilih tema sebelum undangan dipublikasikan (`DRAFT`). Pasca publikasi (`PUBLISHED`), pergantian tema dikunci untuk menjaga integritas file HTML statis.
 - **Dynamic Color Palettes:**
   - Pemilihan preset palet warna (Default, Romantic Blush, Royal Gold, Emerald Forest, Midnight Navy, Vintage Sepia).
   - Menghasilkan token CSS Variables `--primary`, `--accent`, `--surface`, `--text-main` yang langsung disuntikkan ke rendering engine tema.

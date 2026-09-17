@@ -36,7 +36,7 @@ Admin memiliki kendali penuh untuk membuat dan memonitor kupon promosi:
 | **Maks. Diskon** | Angka | Plafon diskon maksimal untuk tipe persentase agar melindungi batas keuntungan platform. |
 | **Min. Transaksi** | Angka | Syarat nominal pesanan minimum sebelum kupon dapat diaplikasikan. |
 | **Batas Kuota** | Angka | Total jatah pemakaian kupon secara global di platform. |
-| **Paket Target** | Multi-Pilihan | Membatasi kupon hanya berlaku untuk paket tertentu (`TRADITIONAL`, `MODERN`, `PREMIUM`). |
+| **Paket Target** | Multi-Pilihan | Membatasi kupon hanya berlaku untuk paket tertentu (`TIER_1`, `TIER_2`, `TIER_3`). |
 | **Masa Berlaku** | Tanggal | Tanggal awal dan akhir berlakunya kupon diskon. |
 
 ### Mekanisme Proteksi Kasir 15 Menit (`PromoHold`):

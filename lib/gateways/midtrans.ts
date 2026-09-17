@@ -97,7 +97,7 @@ export class MidtransGateway implements PaymentGateway {
     let customerFullName = "Klien";
     let customerEmail = "no-reply@example.com";
     let customerPhone = "";
-    let packageType = "PREMIUM";
+    let packageType = "TIER_1";
     let baseAmount = amount;
     let orderType = "NEW";
     let invoiceNumber = orderId;
@@ -181,9 +181,9 @@ export class MidtransGateway implements PaymentGateway {
 
     // Baca konfigurasi platform & masa kedaluwarsa QRIS dari admin setting
     let expiryMinutes = 60;
-    let platformName = "Luxenary";
-    let supportEmail = "support@luxenary.com";
-    let supportPhone = "081234567890";
+    let platformName = "Sistem Undangan";
+    let supportEmail = "support@domain.com";
+    let supportPhone = "";
     try {
       const settings = await prisma.adminSetting.findMany({
         where: {

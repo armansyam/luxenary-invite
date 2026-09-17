@@ -212,10 +212,12 @@ export async function DELETE(req: Request) {
 
         // 3. Hapus file media & guest memories dari R2/Local
         if (inv.media && inv.media.length > 0) {
-          await Promise.all(inv.media.map(m => m.localPath ? deleteFile(m.localPath) : Promise.resolve())).catch(() => {});
+          await Promise.all(inv.media.map(m => m.localPath ? deleteFile(m.localPath) : Promise.resolve()))
+            .catch((e) => console.warn(`[Admin DeleteUser] Partial media file delete failed (inv: ${inv.id}):`, e.message));
         }
         if (inv.guestMemories && inv.guestMemories.length > 0) {
-          await Promise.all(inv.guestMemories.map(mem => mem.mediaUrl ? deleteFile(mem.mediaUrl) : Promise.resolve())).catch(() => {});
+          await Promise.all(inv.guestMemories.map(mem => mem.mediaUrl ? deleteFile(mem.mediaUrl) : Promise.resolve()))
+            .catch((e) => console.warn(`[Admin DeleteUser] Partial guestMemory file delete failed (inv: ${inv.id}):`, e.message));
         }
 
         // 4. Hapus folder uploads fisik invitation & guest-memories lokal

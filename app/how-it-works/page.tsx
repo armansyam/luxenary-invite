@@ -10,7 +10,7 @@ export const revalidate = 86400; // Cache 24 jam (ISR)
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getPublicPlatformSettings();
-  const brandName = settings.platformName || "Luxenary";
+  const brandName = settings.platformName || "Sistem Undangan";
   return {
     title: `Cara Kerja Studio Mandiri — ${brandName}`,
     description: `Pelajari betapa mudah dan menyenangkannya merancang undangan pernikahan digital eksklusif di ${brandName}. Kendali penuh, live preview instan, dan sebar link personal seketika.`,
@@ -20,7 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function HowItWorksPage() {
   const settings = await getPublicPlatformSettings();
   const activeDomain = await getDynamicServerRootDomain();
-  const brandName = settings.platformName || "Luxenary";
+  const brandName = settings.platformName || "Sistem Undangan";
   const supportWhatsapp = settings.supportWhatsapp || "";
   const cleanWaNumber = supportWhatsapp.replace(/\D/g, "").replace(/^0/, "62");
 

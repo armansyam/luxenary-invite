@@ -73,3 +73,11 @@ logs/
 !/public/uploads/guest-memories/.gitkeep
 /public/uploads/proofs/*
 !/public/uploads/proofs/.gitkeep
+
+# published baked invitation HTML (konten klien — jangan commit ke repo)
+/public/published/
+public/published/
+
+# portfolio HTML baked (full static clone klien)
+/public/portfolio/assets/
+public/portfolio/assets/

@@ -314,7 +314,7 @@ export async function syncR2LifecycleRule(days: number): Promise<boolean> {
             ID: "Auto-Cleanup-Rule",
             Status: "Enabled",
             Filter: {
-              Prefix: "", // Apply to all objects
+              Prefix: "guest-memories/", // Terisolasi aman: hanya menghapus foto kenangan tamu sementara, tidak menyentuh cover/portofolio
             },
             Expiration: {
               Days: days,

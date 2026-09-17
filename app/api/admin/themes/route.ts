@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import fs from "fs";
+import path from "path";
 
 export const dynamic = "force-dynamic";
 
@@ -42,8 +44,8 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
     }
 
-    let themes = await prisma.theme.findMany({ orderBy: { sortOrder: "asc" } });
-    if (themes.length === 0) {
+    let dbThemes = await prisma.theme.findMany({ orderBy: { sortOrder: "asc" } });
+    if (dbThemes.length === 0) {
       for (const t of DEFAULT_THEMES) {
         await prisma.theme.upsert({
           where: { id: t.id },
@@ -51,8 +53,46 @@ export async function GET() {
           update: t,
         });
       }
-      themes = await prisma.theme.findMany({ orderBy: { sortOrder: "asc" } });
+      dbThemes = await prisma.theme.findMany({ orderBy: { sortOrder: "asc" } });
     }
+
+    const themeSettingKeys = dbThemes.map((t) => `theme_demo_${t.id.toLowerCase()}`);
+    const themeSettings = await prisma.adminSetting.findMany({
+      where: { key: { in: themeSettingKeys } },
+      select: { key: true, value: true, updatedAt: true },
+    });
+
+    const themeCustomDataMap: Record<string, { data: any; updatedAt: number }> = {};
+    for (const s of themeSettings) {
+      const themeId = s.key.replace("theme_demo_", "");
+      try {
+        themeCustomDataMap[themeId] = {
+          data: JSON.parse(s.value),
+          updatedAt: s.updatedAt ? new Date(s.updatedAt).getTime() : 1,
+        };
+      } catch {}
+    }
+
+    const themes = dbThemes.map((t) => {
+      const themeKey = t.id.toLowerCase();
+      const customEntry = themeCustomDataMap[themeKey];
+      const customData = customEntry?.data;
+
+      const demoThemeDir = path.join(process.cwd(), "public", "demo", themeKey);
+      const hasMobileThumb = fs.existsSync(path.join(demoThemeDir, "thumbnail_mobile.webp"));
+      const hasDesktopThumb = fs.existsSync(path.join(demoThemeDir, "thumbnail_desktop.webp"));
+      const defaultCoverFallback = t.thumbnail || `/demo/${themeKey}/cover.webp`;
+
+      const rawThumbMobile = customData?.thumbnailMobileUrl || (hasMobileThumb ? `/demo/${themeKey}/thumbnail_mobile.webp` : defaultCoverFallback);
+      const rawThumbDesktop = customData?.thumbnailDesktopUrl || (hasDesktopThumb ? `/demo/${themeKey}/thumbnail_desktop.webp` : defaultCoverFallback);
+
+      return {
+        ...t,
+        thumbnailMobile: rawThumbMobile,
+        thumbnailDesktop: rawThumbDesktop,
+      };
+    });
+
     return NextResponse.json({ success: true, themes });
   } catch (error: any) {
     return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Terjadi kesalahan server" : error.message }, { status: 500 });

@@ -166,7 +166,7 @@ export default function ClientLoginPage() {
     fetch("/api/public/settings", { cache: "no-store" })
       .then(res => res.json())
       .then(data => {
-        const name = data.platformName || "Luxenary";
+        const name = data.platformName || "Sistem Undangan";
         setPlatformName(name);
         if (data.serviceStatus) {
           setServiceStatus(data.serviceStatus);

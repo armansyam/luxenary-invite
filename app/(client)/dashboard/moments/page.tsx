@@ -287,11 +287,11 @@ export default function MomentsSetupPage() {
     );
   }
 
-  const planType = (invitation?.order?.planType || invitation?.planType || "TRADITIONAL").toUpperCase();
+  const planType = (invitation?.order?.planType || invitation?.planType || "TIER_1").toUpperCase();
   const pkgConfig = platformSettings?.packages?.find((p: any) => p.id === planType);
   const hasAccess = pkgConfig
     ? Boolean(pkgConfig.capabilities?.includes("guest_memories"))
-    : (memoriesQuota?.hasAccess !== undefined ? Boolean(memoriesQuota.hasAccess) : (planType === "PREMIUM" || planType === "MODERN"));
+    : (memoriesQuota?.hasAccess !== undefined ? Boolean(memoriesQuota.hasAccess) : (planType === "TIER_2" || planType === "TIER_3"));
 
   if (!hasAccess) {
     return (
@@ -338,7 +338,7 @@ export default function MomentsSetupPage() {
   const activeFilterId = getFeatureSetting("memoriesFilter", "aura_90s");
   const activePreset = FILTER_PRESETS_LIST.find((f) => f.id === activeFilterId) || FILTER_PRESETS_LIST[0];
   const isEnabled = getFeatureSetting("showGuestMemories", true);
-  const baseRetentionDays = planType === "PREMIUM" ? 90 : (planType === "MODERN" ? 30 : 7);
+  const baseRetentionDays = planType === "TIER_3" ? 90 : (planType === "TIER_2" ? 30 : 7);
   const extraGalleryDays = Number(getFeatureSetting("extraGalleryDays", 0)) || 0;
   const totalRetentionDays = baseRetentionDays + extraGalleryDays;
 
@@ -386,7 +386,7 @@ export default function MomentsSetupPage() {
     }
   })();
 
-  const totalEventQuota = memoriesQuota?.maxTotalPhotos || (planType === "PREMIUM" ? 1000 : 250);
+  const totalEventQuota = memoriesQuota?.maxTotalPhotos || (planType === "TIER_3" ? 1000 : 250);
 
   // Simpan sesi ke server secara terisolasi tanpa memicu fetchGuestMemories atau lag pengetikan
   const saveSessionsToServer = async (updatedSessions: any[]) => {
@@ -928,7 +928,7 @@ export default function MomentsSetupPage() {
                         <span>→</span>
                       </div>
                       <div className="text-center font-serif font-bold text-[10px] tracking-widest text-stone-400">
-                        LUXENARY
+                        {coupleTitle ? coupleTitle.toUpperCase() : "GUEST MOMENTS"}
                       </div>
                       <div className="w-20 h-1 bg-stone-300 rounded-full mx-auto mt-1" />
                     </div>
@@ -1669,7 +1669,7 @@ export default function MomentsSetupPage() {
           onClose={() => setIsAddonModalOpen(false)}
           invitationId={invitation.id}
           currentPlan={planType}
-          currentQuota={memoriesQuota?.maxTotalPhotos || (planType === "PREMIUM" ? 1000 : 250)}
+          currentQuota={memoriesQuota?.maxTotalPhotos || (planType === "TIER_3" ? 1000 : 250)}
           galleryExpiresAt={effectiveExpiry ? effectiveExpiry.toISOString() : null}
           pricingSettings={platformSettings}
           hasExtended={hasExtended}

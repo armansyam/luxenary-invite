@@ -148,7 +148,7 @@ export async function POST(req: NextRequest) {
       // Push notifikasi real-time ke browser klien via SSE
       paymentEmitter.emit(orderId, {
         status: "PAID",
-        planType: paidOrder?.planType ?? "TRADITIONAL",
+        planType: paidOrder?.planType ?? "TIER_1",
       });
 
     } else if (isExpired) {
@@ -166,7 +166,7 @@ export async function POST(req: NextRequest) {
       });
       paymentEmitter.emit(orderId, {
         status: "EXPIRED",
-        planType: expiredOrder?.planType ?? "PREMIUM",
+        planType: expiredOrder?.planType ?? "TIER_1",
       });
     }
 

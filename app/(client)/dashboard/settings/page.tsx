@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getInvitationPublicUrl, getApexRootDomain, resolveEffectiveInvitationUrl } from "@/lib/domainUtils";
+import { getPlanDisplayName } from "@/lib/planUtils";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -158,9 +159,9 @@ export default function SettingsPage() {
   };
 
   const checkHasQrCheckin = (inv: any): boolean => {
-    const plan = (inv?.order?.planType || inv?.planType || "TRADITIONAL").toUpperCase();
+    const plan = (inv?.order?.planType || inv?.planType || "TIER_1").toUpperCase();
     const pkg = platformPackages.find((p: any) => p.id === plan);
-    const caps: string[] = pkg?.capabilities || (plan === "PREMIUM" ? ["music", "gallery", "qr_checkin", "guest_memories", "custom_domain"] : ["music", "gallery"]);
+    const caps: string[] = pkg?.capabilities || (plan === "TIER_3" ? ["music", "gallery", "qr_checkin", "guest_memories", "custom_domain"] : plan === "TIER_2" ? ["music", "gallery", "qr_checkin", "guest_memories"] : ["music", "gallery"]);
     return caps.includes("qr_checkin");
   };
 
@@ -594,12 +595,13 @@ export default function SettingsPage() {
   const receptionistUrl = subdomainUrl ? `${subdomainUrl.replace(/\/$/, "")}/receptionist` : "";
   const memoriesUrl = subdomainUrl ? `${subdomainUrl.replace(/\/$/, "")}/memories` : "";
   const shareMomentUrl = subdomainUrl ? `${subdomainUrl.replace(/\/$/, "")}/sharemoment` : "";
-  const planType = (invitation?.order?.planType || invitation?.planType || "TRADITIONAL").toUpperCase();
+  const planType = (invitation?.order?.planType || invitation?.planType || "TIER_1").toUpperCase();
   const currentPkg = platformPackages.find((p: any) => p.id === planType);
-  const allowedCaps: string[] = currentPkg?.capabilities || (planType === "PREMIUM" ? ["music", "gallery", "qr_checkin", "guest_memories", "custom_domain"] : ["music", "gallery"]);
+  const allowedCaps: string[] = currentPkg?.capabilities || (planType === "TIER_3" ? ["music", "gallery", "qr_checkin", "guest_memories", "custom_domain"] : planType === "TIER_2" ? ["music", "gallery", "qr_checkin", "guest_memories"] : ["music", "gallery"]);
   const hasQrCheckin = allowedCaps.includes("qr_checkin");
   const hasGuestMemories = allowedCaps.includes("guest_memories");
   const canUseCustomDomain = allowedCaps.includes("custom_domain");
+  const tier3Name = getPlanDisplayName("TIER_3", platformPackages);
 
   const reviewItems: any[] = [
     {
@@ -1796,7 +1798,7 @@ export default function SettingsPage() {
                 className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-gradient-to-r from-violet-700 to-indigo-700 hover:from-violet-800 hover:to-indigo-800 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer"
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
-                <span>Upgrade ke Premium</span>
+                <span>Upgrade ke Paket {tier3Name}</span>
               </a>
             </div>
           </div>
@@ -2081,14 +2083,14 @@ export default function SettingsPage() {
               <div className="p-4 rounded-xl border border-purple-200 bg-purple-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <h4 className="text-xs font-bold text-purple-950">Fitur Custom Domain (.com / .id)</h4>
-                  <p className="text-[11px] text-purple-800/80 mt-1">Gunakan domain Anda sendiri untuk alamat website undangan. Fitur ini tersedia eksklusif pada Paket Premium (bebas biaya jasa integrasi).</p>
+                  <p className="text-[11px] text-purple-800/80 mt-1">Gunakan domain Anda sendiri untuk alamat website undangan. Fitur ini tersedia eksklusif pada Paket {tier3Name} (bebas biaya jasa integrasi).</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => router.push("/dashboard?upgrade=true")}
                   className="px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white font-bold rounded-xl text-xs transition whitespace-nowrap shadow-xs cursor-pointer"
                 >
-                  Upgrade ke Premium
+                  Upgrade ke Paket {tier3Name}
                 </button>
               </div>
             )}

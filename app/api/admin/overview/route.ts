@@ -6,6 +6,11 @@ import path from "path";
 
 export const dynamic = "force-dynamic";
 
+// Throttle: auto-expire sweep hanya berjalan maks 1x per 5 menit
+// (in-memory, reset saat server restart — aman dan tidak perlu DB tambahan)
+let lastExpireSweepAt = 0;
+const EXPIRE_SWEEP_INTERVAL_MS = 5 * 60 * 1000; // 5 menit
+
 export async function GET() {
   try {
     const session = await auth();
@@ -15,44 +20,52 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
     }
 
-    // --- AUTO EXPIRE SWEEP (ADMIN SIDE) ---
-    // Pastikan admin selalu melihat data mutakhir (expired QRIS & order usang)
-    const pendingOrders = await prisma.order.findMany({
-      where: { status: "PENDING" },
-      select: { id: true, snapToken: true, paymentMethod: true, expiredAt: true }
-    });
-    
+    // --- AUTO EXPIRE SWEEP (ADMIN SIDE) — Throttle 5 menit ---
+    // Sweep hanya dijalankan jika sudah > 5 menit dari sweep terakhir
+    // Mencegah query berat berjalan di setiap refresh admin
     const now = Date.now();
-    const expiredIds: string[] = [];
-    
-    for (const ord of pendingOrders) {
-      let isExpired = false;
-      
-      // 1. Cek expiry dari QRIS snapToken (jika ada)
-      if (ord.paymentMethod === "GATEWAY" && typeof ord.snapToken === "string" && ord.snapToken.startsWith("{")) {
-        try {
-          const tokenData = JSON.parse(ord.snapToken);
-          if (tokenData && tokenData.expiry && now > tokenData.expiry + 120000) {
+    if (now - lastExpireSweepAt > EXPIRE_SWEEP_INTERVAL_MS) {
+      lastExpireSweepAt = now; // Update timestamp SEBELUM await agar tidak ada double-sweep concurrent
+      try {
+        const pendingOrders = await prisma.order.findMany({
+          where: { status: "PENDING" },
+          select: { id: true, snapToken: true, paymentMethod: true, expiredAt: true }
+        });
+
+        const expiredIds: string[] = [];
+        for (const ord of pendingOrders) {
+          let isExpired = false;
+
+          // 1. Cek expiry dari QRIS snapToken (jika ada)
+          if (ord.paymentMethod === "GATEWAY" && typeof ord.snapToken === "string" && ord.snapToken.startsWith("{")) {
+            try {
+              const tokenData = JSON.parse(ord.snapToken);
+              if (tokenData && tokenData.expiry && now > tokenData.expiry + 120000) {
+                isExpired = true;
+              }
+            } catch {}
+          }
+
+          // 2. Cek expiry database (fallback: manual transfer ditinggalkan > batas waktu)
+          if (!isExpired && ord.expiredAt && ord.expiredAt.getTime() < now) {
             isExpired = true;
           }
-        } catch (e) {}
-      }
-      
-      // 2. Cek expiry database (fallback jika snapToken null atau manual transfer ditinggalkan lama > 24h)
-      if (!isExpired && ord.expiredAt && ord.expiredAt.getTime() < now) {
-        isExpired = true;
-      }
-      
-      if (isExpired) {
-        expiredIds.push(ord.id);
-      }
-    }
 
-    if (expiredIds.length > 0) {
-      await prisma.order.updateMany({
-        where: { id: { in: expiredIds } },
-        data: { status: "EXPIRED" }
-      });
+          if (isExpired) expiredIds.push(ord.id);
+        }
+
+        if (expiredIds.length > 0) {
+          await prisma.order.updateMany({
+            where: { id: { in: expiredIds } },
+            data: { status: "EXPIRED" }
+          });
+          console.info(`[Expire Sweep] ${expiredIds.length} order ditandai EXPIRED.`);
+        }
+      } catch (sweepErr) {
+        // Sweep failure tidak boleh gagalkan seluruh overview response
+        console.error("[Expire Sweep Error]:", sweepErr);
+        lastExpireSweepAt = 0; // Reset agar sweep bisa dicoba lagi di request berikutnya
+      }
     }
     // ----------------------------------------
 
@@ -86,14 +99,16 @@ export async function GET() {
 
       const demoThemeDir = path.join(process.cwd(), "public", "demo", themeKey);
       const hasMobileThumb = fs.existsSync(path.join(demoThemeDir, "thumbnail_mobile.webp"));
+      const hasDesktopThumb = fs.existsSync(path.join(demoThemeDir, "thumbnail_desktop.webp"));
       const defaultCoverFallback = t.thumbnail || `/demo/${themeKey}/cover.webp`;
 
       const rawThumbMobile = customData?.thumbnailMobileUrl || (hasMobileThumb ? `/demo/${themeKey}/thumbnail_mobile.webp` : defaultCoverFallback);
-      const thumbMobile = rawThumbMobile;
+      const rawThumbDesktop = customData?.thumbnailDesktopUrl || (hasDesktopThumb ? `/demo/${themeKey}/thumbnail_desktop.webp` : defaultCoverFallback);
 
       return {
         ...t,
-        thumbnailMobile: thumbMobile,
+        thumbnailMobile: rawThumbMobile,
+        thumbnailDesktop: rawThumbDesktop,
       };
     });
 
@@ -236,6 +251,7 @@ export async function GET() {
       customDomainOrders,
     });
   } catch (error: any) {
+    console.error("[Admin Overview Server Error]:", error);
     return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Failed to load admin overview" : (error.message || "Failed to load admin overview") }, { status: 500 });
   }
 }

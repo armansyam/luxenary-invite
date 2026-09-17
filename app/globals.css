@@ -21,3 +21,157 @@ body {
   color: #2d2c2a !important;
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
+
+/* =============================================
+   STUDIO THEME PICKER — Device Mockup Scene
+   Scoped: .stp-scene
+   Fully responsive: semua ukuran berbasis %
+   Gambar di dalam mockup bersifat statis (WebP).
+   ============================================= */
+
+/* Wrapper: seluruh scene relatif terhadap container */
+.stp-scene {
+  position: relative;
+  width: 100%;
+  padding-bottom: 28%;       /* ruang bawah untuk phone — cukup tanpa terpotong */
+  margin-bottom: 0.75rem;
+}
+
+/* Tablet / Desktop mockup — mengisi penuh lebar container */
+.stp-tablet {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  background: #141210;
+  border-radius: 10px;
+  box-shadow:
+    0 0 0 1.5px rgba(255,255,255,0.07),
+    0 0 0 5px #1f1c1a,
+    0 0 0 6.5px rgba(0,0,0,0.22),
+    0 16px 40px rgba(11,10,9,0.35);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94);
+}
+
+.stp-tablet-bar {
+  height: 14px;
+  background: #191716;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 7px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  flex-shrink: 0;
+  gap: 4px;
+}
+
+.stp-tablet-dots {
+  display: flex;
+  gap: 3px;
+}
+.stp-tablet-dots span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.13);
+}
+
+.stp-tablet-url {
+  flex: 1;
+  font-size: 0.38rem;
+  letter-spacing: 0.06em;
+  color: rgba(255,255,255,0.25);
+  background: rgba(0,0,0,0.28);
+  padding: 1px 7px;
+  border-radius: 6px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+
+.stp-tablet-screen {
+  flex: 1;
+  overflow: hidden;
+  background: #0d0c0b;
+  position: relative;
+}
+.stp-tablet-screen img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
+  transition: transform 0.45s cubic-bezier(0.25,0.46,0.45,0.94);
+}
+
+/* Phone mockup — overlapping bottom-left */
+.stp-phone {
+  position: absolute;
+  bottom: 0;
+  left: 1%;                  /* positif agar tidak terpotong overflow-hidden card */
+  width: 27%;
+  aspect-ratio: 9 / 19;
+  background: #0d0c0b;
+  border-radius: 18px;
+  box-shadow:
+    0 0 0 1.5px rgba(255,255,255,0.10),
+    0 0 0 4px #1a1816,
+    0 0 0 5px rgba(0,0,0,0.30),
+    0 16px 40px rgba(0,0,0,0.55);
+  overflow: hidden;
+  z-index: 10;
+  transition: transform 0.45s cubic-bezier(0.25,0.46,0.45,0.94);
+}
+
+.stp-phone-notch {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 28%;
+  height: 6px;
+  background: #000;
+  border-radius: 5px;
+  z-index: 5;
+}
+
+.stp-phone-screen {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #111;
+}
+.stp-phone-screen img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
+  transition: transform 0.45s cubic-bezier(0.25,0.46,0.45,0.94);
+}
+
+/* Glare layer */
+.stp-glare {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.06) 0%, transparent 45%);
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* Hover interactions */
+.stp-card:hover .stp-tablet    { transform: translateY(-3px); }
+.stp-card:hover .stp-phone     { transform: translateY(-6px); }
+.stp-card:hover .stp-tablet-screen img { transform: scale(1.03); }
+.stp-card:hover .stp-phone-screen img  { transform: scale(1.03); }
+
+/* Selected state overlay */
+.stp-card.is-selected .stp-tablet {
+  box-shadow:
+    0 0 0 2px rgba(146,64,14,0.6),
+    0 0 0 5px #1f1c1a,
+    0 16px 40px rgba(11,10,9,0.35);
+}

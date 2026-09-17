@@ -16,9 +16,9 @@ export async function GET() {
       success: true,
       ...settings,
       pricing: {
-        price_traditional: settings.packages?.find((p) => p.id === "TRADITIONAL")?.price ?? 0,
-        price_modern: settings.packages?.find((p) => p.id === "MODERN")?.price ?? 0,
-        price_premium: settings.packages?.find((p) => p.id === "PREMIUM")?.price ?? 0,
+        price_tier1: settings.packages?.find((p) => p.id === "TIER_1")?.price ?? 0,
+        price_tier2: settings.packages?.find((p) => p.id === "TIER_2")?.price ?? 0,
+        price_tier3: settings.packages?.find((p) => p.id === "TIER_3")?.price ?? 0,
       },
       addon_custom_domain_enabled: settings.addonCustomDomainEnabled,
       gallery_extension_price_per_month: settings.galleryExtensionPricePerMonth,

@@ -88,6 +88,10 @@ echo "🗄️ Sinkronisasi skema database (Prisma)..."
 npx prisma generate
 npx prisma migrate deploy || npx prisma db push
 
+# 5a. Seed database (upsert-safe: aman dijalankan berulang — themes, settings, music presets)
+echo "🌱 Menyinkronisasi data master (Themes, Admin Settings, Music Presets)..."
+npx prisma db seed || echo "⚠️ Seed gagal atau sudah ada — lanjut deployment."
+
 # 5b. Kompilasi Cache Demo Tema Statis
 echo "🎨 Memastikan cache demo tema statis terkompilasi segar..."
 npx tsx -r dotenv/config -e "import { compileAllStaticDemos } from './lib/demoPublisher'; compileAllStaticDemos().then(n => console.log('✅ ' + n + ' demo tema berhasil dikompilasi.')).catch(e => console.warn('⚠️ Gagal pra-kompilasi demo (akan dikompilasi on-demand saat diakses):', e.message));" || true

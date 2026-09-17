@@ -132,7 +132,7 @@ export default function GuestsPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", "template_buku_tamu_luxenary.csv");
+    link.setAttribute("download", "template_buku_tamu.csv");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -741,9 +741,9 @@ export default function GuestsPage() {
 
       {/* Portal Resepsionis & Check-In Meja Tamu (Hari H) */}
       {(() => {
-        const plan = (invitationData?.order?.planType || invitationData?.planType || "TRADITIONAL").toUpperCase();
+        const plan = (invitationData?.order?.planType || invitationData?.planType || "TIER_1").toUpperCase();
         const pkg = platformPackages.find((p: any) => p.id === plan);
-        const hasQrCheckin = pkg ? pkg.capabilities?.includes("qr_checkin") : (plan === "MODERN" || plan === "PREMIUM");
+        const hasQrCheckin = pkg ? pkg.capabilities?.includes("qr_checkin") : (plan === "TIER_2" || plan === "TIER_3");
         if (!hasQrCheckin) return null;
 
         return (

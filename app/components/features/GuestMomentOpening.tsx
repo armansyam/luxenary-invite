@@ -240,7 +240,7 @@ export default function GuestMomentOpening({
 
         <footer className="relative z-10 w-full max-w-sm text-center py-2">
           <span className="text-[10px] font-serif tracking-widest text-stone-400 uppercase">
-            LUXENARY · CINEMATIC MOMENTS
+            CINEMATIC MOMENTS
           </span>
         </footer>
       </div>
@@ -381,7 +381,7 @@ export default function GuestMomentOpening({
 
         <footer className="w-full max-w-sm text-center py-2">
           <span className="text-[10px] font-mono tracking-widest text-stone-500 uppercase">
-            LUXENARY · ANALOG POLAROID
+            ANALOG POLAROID
           </span>
         </footer>
       </div>
@@ -537,7 +537,7 @@ export default function GuestMomentOpening({
       {/* Footer Minimalist Branding */}
       <footer className="w-full max-w-sm text-center py-2">
         <div className="inline-flex items-center gap-1.5 text-stone-400 hover:text-stone-600 transition text-xs font-serif tracking-widest uppercase">
-          <span className="font-bold text-stone-600">LUXENARY</span>
+          <span className="font-bold text-stone-600">GUEST</span>
           <span className="text-[9px] tracking-normal font-sans font-medium text-stone-400">· Moments</span>
         </div>
       </footer>

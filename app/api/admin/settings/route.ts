@@ -36,15 +36,9 @@ const DEFAULT_SETTINGS: Array<{ key: string; value: string; label: string; group
   { key: "google_auth_enabled", value: "true", label: "Aktifkan Login Google", group: "google" },
   { key: "google_client_id", value: "", label: "Google Client ID", group: "google" },
   { key: "google_client_secret", value: "", label: "Google Client Secret", group: "google" },
-  { key: "name_traditional", value: "Traditional", label: "Nama Paket Traditional", group: "pricing" },
-  { key: "name_modern", value: "Modern", label: "Nama Paket Modern", group: "pricing" },
-  { key: "name_premium", value: "Premium", label: "Nama Paket Premium", group: "pricing" },
-  { key: "price_traditional", value: "50000", label: "Harga Paket Traditional (IDR)", group: "pricing" },
-  { key: "price_modern", value: "100000", label: "Harga Paket Modern (IDR)", group: "pricing" },
-  { key: "price_premium", value: "120000", label: "Harga Paket Premium (IDR)", group: "pricing" },
-  { key: "desc_traditional", value: "Tema Standart — Elegan, Bernuansa Tradisional", label: "Deskripsi Paket Traditional", group: "pricing" },
-  { key: "desc_modern", value: "Tema Premium — Sinematik, Editorial, Kontemporer", label: "Deskripsi Paket Modern", group: "pricing" },
-  { key: "desc_premium", value: "Tema Premium — Editorial, Full-Text & Luxury Visual Motion", label: "Deskripsi Paket Premium", group: "pricing" },
+  { key: "desc_tier1", value: "Paket Intim & Esensial — Undangan Digital Berkelas, Musik & RSVP Online", label: "Deskripsi Paket Tier 1", group: "pricing" },
+  { key: "desc_tier2", value: "Paket Harmoni Pesta — Dilengkapi Resepsionis QR Check-In & Kamera Momen Tamu", label: "Deskripsi Paket Tier 2", group: "pricing" },
+  { key: "desc_tier3", value: "Paket Mahakarya Abadi — All-Inclusive dengan Custom Domain Pribadi (.com/.id) & Kuota Maksimal", label: "Deskripsi Paket Tier 3", group: "pricing" },
   // Biaya gateway — dikonfigurasi dinamis agar tidak perlu edit kode saat tarif berubah
   { key: "payment_fee_payer", value: "MERCHANT", label: "Penanggung Fee Gateway (MERCHANT/BUYER)", group: "payment" },
   { key: "payment_gateway_fee_percent", value: "0.7", label: "Tarif Fee Gateway (%)", group: "payment" },
@@ -94,7 +88,10 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
     }
 
-    await seedDefaultSettings();
+    const settingCount = await prisma.adminSetting.count();
+    if (settingCount === 0) {
+      await seedDefaultSettings();
+    }
     const settings = await prisma.adminSetting.findMany({
       orderBy: [{ group: "asc" }, { key: "asc" }],
     });

@@ -1,8 +1,9 @@
 import { prisma } from "./prisma";
 import { getDynamicServerRootDomain } from "./serverDomainUtils";
+import { normalizePlanType } from "./planUtils";
 
 export interface PricingPackageItem {
-  id: "TRADITIONAL" | "MODERN" | "PREMIUM";
+  id: "TIER_1" | "TIER_2" | "TIER_3";
   name: string;
   price: number;
   desc: string;
@@ -131,10 +132,7 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
     console.error("[getPublicPlatformSettings error]", e);
   }
 
-  const traditionalThemes = themes.filter(t => !t.isPremium && ["traditional", "heritage", "moody"].includes(t.series.toLowerCase())).map(t => t.name);
-  const modernThemes = themes.filter(t => !t.isPremium && t.series.toLowerCase() === "modern").map(t => t.name);
-  const premiumThemes = themes.filter(t => t.isPremium).map(t => t.name);
-  const totalThemesCount = traditionalThemes.length + modernThemes.length + premiumThemes.length;
+
 
   const galleryRetentionDays = Number(map["retention_gallery_default_days"] || 30);
   const galleryDurationLabel = galleryRetentionDays >= 30 && galleryRetentionDays % 30 === 0
@@ -160,7 +158,7 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
       }
       if (caps.includes("guest_memories")) {
         const totalQ = Number(map[`memories_total_quota_${planId}`]);
-        const defaultTotal = planId === "premium" ? 1000 : (planId === "modern" ? 250 : 100);
+        const defaultTotal = planId === "TIER_3" ? 1000 : (planId === "TIER_2" ? 250 : 100);
         const totalPhotos = !isNaN(totalQ) && totalQ > 0 ? totalQ : defaultTotal;
         rawList.push(`Kamera Digital Tamu bergaya analog (Kapasitas Total ${totalPhotos} Foto)`);
       }
@@ -172,30 +170,43 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
     const hasGalleryItem = rawList.some(item => /galeri\s+kenangan|guest\s+memories|guest\s*gal|guest\s*camera|disposable\s*camera|kamera/i.test(item));
     if (caps.includes("guest_memories") && !hasGalleryItem) {
       const totalQ = Number(map[`memories_total_quota_${planId}`]);
-      const defaultTotal = planId === "premium" ? 1000 : (planId === "modern" ? 250 : 100);
+      const defaultTotal = planId === "TIER_3" ? 1000 : (planId === "TIER_2" ? 250 : 100);
       const totalPhotos = !isNaN(totalQ) && totalQ > 0 ? totalQ : defaultTotal;
       rawList.push(`Guest Camera — Kamera Saku Tamu (Kapasitas Total ${totalPhotos} Foto — Aktif 1 bulan setelah acara)`);
     }
 
     const isLocalDevDomain = !activeDomain || activeDomain.includes("localhost") || activeDomain.includes("127.0.0.1") || activeDomain.includes("192.168.") || activeDomain.includes(":");
+    const targetDomain = isLocalDevDomain ? "domainanda.id" : activeDomain;
+    const nameTier1 = map["name_tier1"] || "Serenade";
+    const nameTier2 = map["name_tier2"] || "Symphony";
 
     return rawList.map(item => {
       let resolvedItem = item;
-      if (!isLocalDevDomain && activeDomain !== "luxvite.id" && resolvedItem.includes(".luxvite.id")) {
-        resolvedItem = resolvedItem.replace(/\.luxvite\.id/g, `.${activeDomain}`);
+      if (resolvedItem.includes(".luxvite.id")) {
+        resolvedItem = resolvedItem.replace(/\.luxvite\.id/g, `.${targetDomain}`);
+      }
+      if (resolvedItem.includes(".domain.id")) {
+        resolvedItem = resolvedItem.replace(/\.domain\.id/g, `.${targetDomain}`);
+      }
+      // Dynamic cross-tier naming
+      if (resolvedItem.includes("Paket Serenade") && nameTier1 !== "Serenade") {
+        resolvedItem = resolvedItem.replace(/Paket Serenade/g, `Paket ${nameTier1}`);
+      }
+      if (resolvedItem.includes("Paket Symphony") && nameTier2 !== "Symphony") {
+        resolvedItem = resolvedItem.replace(/Paket Symphony/g, `Paket ${nameTier2}`);
       }
       return resolvedItem;
     });
   };
 
-  const capsTraditional: string[] = map["capabilities_traditional"] ? JSON.parse(map["capabilities_traditional"]) : ["music", "gallery"];
-  const capsModern: string[] = map["capabilities_modern"] ? JSON.parse(map["capabilities_modern"]) : ["music", "gallery", "qr_checkin", "guest_memories"];
-  const capsPremium: string[] = map["capabilities_premium"] ? JSON.parse(map["capabilities_premium"]) : ["music", "gallery", "qr_checkin", "guest_memories", "custom_domain"];
+  const capsTier1: string[] = map["capabilities_tier1"] ? JSON.parse(map["capabilities_tier1"]) : ["music", "gallery"];
+  const capsTier2: string[] = map["capabilities_tier2"] ? JSON.parse(map["capabilities_tier2"]) : ["music", "gallery", "qr_checkin", "guest_memories"];
+  const capsTier3: string[] = map["capabilities_tier3"] ? JSON.parse(map["capabilities_tier3"]) : ["music", "gallery", "qr_checkin", "guest_memories", "custom_domain"];
 
   const allActiveThemeNames = themes.map(t => t.name);
 
   return {
-    platformName: map["platform_name"] || "Luxenary",
+    platformName: map["platform_name"] || "Sistem Undangan",
     heroTagline: map["hero_tagline"] || "Undangan Pernikahan Digital Elegan, Hangat & Berkelas",
     heroSubtitle:
       map["hero_subtitle"] ||
@@ -241,35 +252,35 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
     landingFeature3Desc: map["landing_feature_3_desc"] || "Manajemen check-in tamu VIP secara real-time di resepsionis menggunakan scanner QR Code pintar.",
     packages: [
       {
-        id: "TRADITIONAL",
-        name: map["name_traditional"] || "Serenade",
-        price: Number(map["price_traditional"] || 0),
-        desc: map["desc_traditional"] || "Paket Intim & Esensial — Undangan Digital Berkelas, Musik & RSVP Online",
+        id: "TIER_1",
+        name: map["name_tier1"] || "Serenade",
+        price: Number(map["price_tier1"] || 0),
+        desc: map["desc_tier1"] || "Paket Intim & Esensial — Undangan Digital Berkelas, Musik & RSVP Online",
         themes: allActiveThemeNames,
-        features: parseFeatures("features_traditional", `Bebas pilih seluruh koleksi tema desain (${allActiveThemeNames.length} Tema)`, capsTraditional, "traditional"),
-        capabilities: capsTraditional,
+        features: parseFeatures("features_tier1", `Bebas pilih seluruh koleksi tema desain (${allActiveThemeNames.length} Tema)`, capsTier1, "tier1"),
+        capabilities: capsTier1,
         color: "amber",
         isFeatured: false,
       },
       {
-        id: "MODERN",
-        name: map["name_modern"] || "Symphony",
-        price: Number(map["price_modern"] || 0),
-        desc: map["desc_modern"] || "Paket Harmoni Pesta — Dilengkapi Resepsionis QR Check-In & Kamera Momen Tamu",
+        id: "TIER_2",
+        name: map["name_tier2"] || "Symphony",
+        price: Number(map["price_tier2"] || 0),
+        desc: map["desc_tier2"] || "Paket Harmoni Pesta — Dilengkapi Resepsionis QR Check-In & Kamera Momen Tamu",
         themes: allActiveThemeNames,
-        features: parseFeatures("features_modern", `Bebas pilih seluruh koleksi tema desain (${allActiveThemeNames.length} Tema)`, capsModern, "modern"),
-        capabilities: capsModern,
+        features: parseFeatures("features_tier2", `Bebas pilih seluruh koleksi tema desain (${allActiveThemeNames.length} Tema)`, capsTier2, "tier2"),
+        capabilities: capsTier2,
         color: "slate",
         isFeatured: false,
       },
       {
-        id: "PREMIUM",
-        name: map["name_premium"] || "Eternity",
-        price: Number(map["price_premium"] || 0),
-        desc: map["desc_premium"] || "Paket Mahakarya Abadi — All-Inclusive dengan Custom Domain Pribadi & Kuota Maksimal",
+        id: "TIER_3",
+        name: map["name_tier3"] || "Eternity",
+        price: Number(map["price_tier3"] || 0),
+        desc: map["desc_tier3"] || "Paket Mahakarya Abadi — All-Inclusive dengan Custom Domain Pribadi (.com/.id) & Kuota Maksimal",
         themes: allActiveThemeNames,
-        features: parseFeatures("features_premium", `Bebas pilih seluruh koleksi tema desain (${allActiveThemeNames.length} Tema)`, capsPremium, "premium"),
-        capabilities: capsPremium,
+        features: parseFeatures("features_tier3", `Bebas pilih seluruh koleksi tema desain (${allActiveThemeNames.length} Tema)`, capsTier3, "tier3"),
+        capabilities: capsTier3,
         badge: "Terpopuler",
         color: "purple",
         isFeatured: true,
@@ -299,10 +310,19 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
  * Reads dynamically from AdminSetting DB with sensible fallbacks.
  */
 export async function hasPlanCapability(planType: string | null | undefined, capability: string): Promise<boolean> {
-  const normPlan = (planType || "TRADITIONAL").toUpperCase();
+  const canonical = normalizePlanType(planType);
+  const tierKey = canonical.toLowerCase().replace("_", ""); // "tier1", "tier2", "tier3"
   try {
-    const settingKey = `capabilities_${normPlan.toLowerCase()}`;
-    const setting = await prisma.adminSetting.findUnique({ where: { key: settingKey } });
+    const setting = await prisma.adminSetting.findFirst({
+      where: {
+        key: {
+          in: [
+            `capabilities_${tierKey}`,
+            `capabilities_${canonical.toLowerCase()}`,
+          ]
+        }
+      }
+    });
     if (setting?.value) {
       const caps = JSON.parse(setting.value);
       if (Array.isArray(caps)) {
@@ -313,11 +333,11 @@ export async function hasPlanCapability(planType: string | null | undefined, cap
 
   // Default fallback if not set in DB
   const defaultCaps: Record<string, string[]> = {
-    TRADITIONAL: ["music", "gallery"],
-    MODERN: ["music", "gallery", "qr_checkin", "guest_memories"],
-    PREMIUM: ["music", "gallery", "qr_checkin", "guest_memories", "custom_domain"],
+    TIER_1: ["music", "gallery"],
+    TIER_2: ["music", "gallery", "qr_checkin", "guest_memories"],
+    TIER_3: ["music", "gallery", "qr_checkin", "guest_memories", "custom_domain"],
   };
-  return (defaultCaps[normPlan] || []).includes(capability);
+  return (defaultCaps[canonical] || []).includes(capability);
 }
 
 export interface PlanMemoriesQuota {
@@ -332,27 +352,27 @@ export interface PlanMemoriesQuota {
  * Single Source of Truth untuk pembatasan resource server & quota tier.
  */
 export async function getPlanMemoriesQuota(planType: string | null | undefined): Promise<PlanMemoriesQuota> {
-  const normPlan = (planType || "TRADITIONAL").toUpperCase();
-  const hasAccess = await hasPlanCapability(normPlan, "guest_memories");
+  const canonical = normalizePlanType(planType);
+  const hasAccess = await hasPlanCapability(canonical, "guest_memories");
   if (!hasAccess) {
     return { totalQuota: 0, maxContributors: 0, shotsQuota: 0, hasAccess: false };
   }
 
   try {
-    const planKey = normPlan.toLowerCase();
+    const tierKey = canonical.toLowerCase().replace("_", ""); // "tier1", "tier2", "tier3"
     const [totalQuotaSetting, maxContribSetting, shotsQuotaSetting] = await Promise.all([
-      prisma.adminSetting.findUnique({ where: { key: `memories_total_quota_${planKey}` } }),
-      prisma.adminSetting.findUnique({ where: { key: `memories_max_contributors_${planKey}` } }),
-      prisma.adminSetting.findUnique({ where: { key: `memories_shots_quota_${planKey}` } }),
+      prisma.adminSetting.findUnique({ where: { key: `memories_total_quota_${tierKey}` } }),
+      prisma.adminSetting.findUnique({ where: { key: `memories_max_contributors_${tierKey}` } }),
+      prisma.adminSetting.findUnique({ where: { key: `memories_shots_quota_${tierKey}` } }),
     ]);
 
     const defaultQuotas: Record<string, { totalQuota: number; maxContributors: number; shotsQuota: number }> = {
-      TRADITIONAL: { totalQuota: 0, maxContributors: 0, shotsQuota: 0 },
-      MODERN: { totalQuota: 250, maxContributors: 50, shotsQuota: 5 },
-      PREMIUM: { totalQuota: 1000, maxContributors: 200, shotsQuota: 5 },
+      TIER_1: { totalQuota: 0, maxContributors: 0, shotsQuota: 0 },
+      TIER_2: { totalQuota: 200, maxContributors: 50, shotsQuota: 5 },
+      TIER_3: { totalQuota: 500, maxContributors: 200, shotsQuota: 15 },
     };
 
-    const fallback = defaultQuotas[normPlan] || { totalQuota: 250, maxContributors: 50, shotsQuota: 5 };
+    const fallback = defaultQuotas[canonical] || { totalQuota: 200, maxContributors: 50, shotsQuota: 5 };
 
     const shotsQuota = shotsQuotaSetting?.value
       ? Math.max(1, parseInt(shotsQuotaSetting.value, 10) || fallback.shotsQuota)

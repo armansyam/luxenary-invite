@@ -3,6 +3,7 @@ import Link from "next/link";
 import { BrandLogo } from "@/components/BrandLogo";
 import { getPublicPlatformSettings } from "@/lib/settings";
 import { getDynamicServerRootDomain } from "@/lib/serverDomainUtils";
+import { getPlanDisplayName } from "@/lib/planUtils";
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getPublicPlatformSettings();
@@ -20,6 +21,7 @@ export default async function TermsPage() {
   const graceDays = settings.retentionInvitationGraceDays || 7;
   const galleryDays = settings.retentionGalleryDefaultDays || 30;
   const rootDomain = await getDynamicServerRootDomain();
+  const tier3Name = getPlanDisplayName("TIER_3", settings.packages);
 
   return (
     <div className="min-h-screen bg-[#faf8f5] font-sans flex flex-col text-stone-800" style={{ colorScheme: "only light", backgroundColor: "#faf8f5", color: "#292524" }}>
@@ -89,7 +91,7 @@ export default async function TermsPage() {
                   4. Galeri Kenangan Tamu (/memories) & Hak Unduh Arsip Foto ZIP
                 </h3>
                 <p className="text-xs text-stone-600 leading-relaxed">
-                  Khusus Paket Premium yang dilengkapi fitur Galeri Kenangan Tamu, seluruh foto candid dan video ucapan yang diunggah para tamu tersimpan aman di cloud server dan dapat dibuka selama <strong>{galleryDays % 30 === 0 ? `${galleryDays / 30} bulan (${galleryDays} hari)` : `${galleryDays} hari`} pasca-acara</strong> secara gratis. Klien memiliki fasilitas untuk <strong>mengunduh seluruh foto resolusi asli dalam 1 file ZIP</strong> ke galeri ponsel/laptop pribadi agar tersimpan selamanya, atau dapat memperpanjang masa simpan cloud via Add-on.
+                  Khusus Paket {tier3Name} yang dilengkapi fitur Galeri Kenangan Tamu, seluruh foto candid dan video ucapan yang diunggah para tamu tersimpan aman di cloud server dan dapat dibuka selama <strong>{galleryDays % 30 === 0 ? `${galleryDays / 30} bulan (${galleryDays} hari)` : `${galleryDays} hari`} pasca-acara</strong> secara gratis. Klien memiliki fasilitas untuk <strong>mengunduh seluruh foto resolusi asli dalam 1 file ZIP</strong> ke galeri ponsel/laptop pribadi agar tersimpan selamanya, atau dapat memperpanjang masa simpan cloud via Add-on.
                 </p>
               </div>
 

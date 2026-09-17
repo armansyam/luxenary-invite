@@ -24,7 +24,7 @@ export async function GET(
       return new NextResponse(
         `<!DOCTYPE html>
         <html lang="id">
-        <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Tema Tidak Tersedia | Luxenary</title></head>
+        <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Tema Tidak Tersedia</title></head>
         <body style="display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;font-family:sans-serif;background:#faf8f5;color:#2d2c2a;text-align:center;padding:20px;">
           <div style="max-width:420px;padding:32px;background:#fff;border-radius:24px;border:1px solid #eadecf;box-shadow:0 4px 12px rgba(0,0,0,0.05);">
             <h2 style="font-size:20px;font-weight:700;margin-bottom:8px;color:#1e1c1a;">Tema Tidak Tersedia</h2>

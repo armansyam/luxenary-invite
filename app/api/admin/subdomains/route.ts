@@ -105,7 +105,7 @@ export async function GET(req: Request) {
         clientPhone: inv.user?.phoneNumber || "-",
         status: inv.status,
         themeId: inv.themeId || "Default",
-        planType: inv.order?.planType || "TRADITIONAL",
+        planType: inv.order?.planType || "TIER_1",
         customDomain: inv.customDomain || null,
         invitationSlug: inv.invitationSlug,
         eventDate,

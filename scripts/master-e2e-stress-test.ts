@@ -30,7 +30,7 @@ async function main() {
       data: {
         userId: testUser.id,
         invoiceNumber: `INV-STRESS-${Date.now()}`,
-        planType: "MODERN",
+        planType: "TIER_2",
         amount: 499000,
         status: "PENDING",
         orderType: "NEW",
@@ -212,7 +212,7 @@ async function main() {
       data: {
         userId: testUser.id,
         invoiceNumber: `INV-TOPUP-${Date.now()}`,
-        planType: "MODERN",
+        planType: "TIER_2",
         amount: 35000,
         status: "PENDING",
         orderType: "MEMORIES_TOPUP",

@@ -360,6 +360,7 @@ export default function AdminPage() {
   const [deletingClient, setDeletingClient] = useState(false);
   const [clientActionMsg, setClientActionMsg] = useState<{ ok: boolean; msg: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initialLoaded, setInitialLoaded] = useState(false);
   const [impersonatingClient, setImpersonatingClient] = useState(false);
   const [adminToast, setAdminToast] = useState<{ ok: boolean; msg: string } | null>(null);
 
@@ -518,8 +519,11 @@ export default function AdminPage() {
         params.delete("sub");
       }
 
-      const newUrl = `${window.location.pathname}?${params.toString()}`;
-      window.history.replaceState(null, "", newUrl);
+      const newSearch = `?${params.toString()}`;
+      if (window.location.search !== newSearch) {
+        const newUrl = `${window.location.pathname}${newSearch}`;
+        window.history.replaceState(null, "", newUrl);
+      }
     } catch {}
   }, [activeTab, activeSettingsTab]);
 
@@ -738,24 +742,67 @@ export default function AdminPage() {
     return hasStagedFiles || hasDeletedSlots || hasDataChanges;
   }, [stagedDemoFiles, stagedDeletedSlots, demoStudioData, initialDemoStudioData]);
 
+  const loadThemes = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/themes", { cache: "no-store" });
+      const data = await res.json();
+      if (res.ok && data.success && Array.isArray(data.themes)) {
+        setThemes(data.themes);
+      } else {
+        console.error("[Admin Themes Error]:", data.error);
+      }
+    } catch (e: any) {
+      console.error("[Admin Themes Fetch Failed]:", e);
+    } finally {
+      setInitialLoaded(true);
+      // loadThemes adalah primary loader untuk tab themes — boleh set loading false
+      setLoading(false);
+    }
+  }, []);
+
   const loadOverviewData = useCallback((isBackground = false) => {
     if (!isBackground) setLoading(true);
     fetch("/api/admin/overview", { cache: "no-store" })
-      .then((res) => res.json())
+      .then(async (res) => {
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data) {
+          console.warn(`[Admin Overview ${res.status}]:`, data?.error || "Gagal memuat data overview");
+          return null;
+        }
+        return data;
+      })
       .then((data) => {
-        if (data.success) {
+        if (data && data.success) {
           setStats(data.stats || {});
           setOrders(data.orders || []);
           setAllOrders(data.allOrders || []);
           setUsers(data.users || []);
           setInvitations(data.invitations || []);
-          setThemes(data.themes || []);
+          if (Array.isArray(data.themes) && data.themes.length > 0) {
+            setThemes(data.themes);
+          } else {
+            // Fallback: overview tidak mengembalikan themes (gagal partial)
+            // Ambil dari endpoint khusus agar katalog tema tetap tampil
+            fetch("/api/admin/themes", { cache: "no-store" })
+              .then((r) => r.json())
+              .then((td) => {
+                if (td.success && Array.isArray(td.themes) && td.themes.length > 0) {
+                  setThemes(td.themes);
+                }
+              })
+              .catch(() => {}); // Non-fatal: fallback themes tidak kritikal
+          }
           setLogs(data.logs || []);
           setCustomDomainOrders(data.customDomainOrders || []);
         }
+        setInitialLoaded(true);
         if (!isBackground) setLoading(false);
       })
-      .catch(() => { if (!isBackground) setLoading(false); });
+      .catch((err) => {
+        console.warn("[Admin Overview Network Error]:", err);
+        setInitialLoaded(true);
+        if (!isBackground) setLoading(false);
+      });
   }, []);
 
   const handleDeleteClient = async (id: string) => {
@@ -789,8 +836,14 @@ export default function AdminPage() {
           setInitialSettingsMap(map);
         }
       })
-      .catch(() => {})
+      .catch((e) => {
+        // Settings adalah data sekunder — error tidak boleh crash UI,
+        // tapi HARUS dicatat agar admin tahu ada masalah koneksi DB/API
+        console.error("[Admin Settings Error]:", e);
+      })
       .finally(() => {
+        // Settings adalah data background — tidak mengontrol loading state primer.
+        // loading state dikontrol sepenuhnya oleh loadOverviewData / loadThemes.
         setSettingsLoaded(true);
       });
   }, []);
@@ -1115,18 +1168,41 @@ export default function AdminPage() {
 
   const platformName = settingsMap["platform_name"];
   useEffect(() => {
-    const brand = platformName || "Luxenary";
+    const brand = platformName || "Sistem Undangan";
     document.title = `${brand} Admin — Control Panel`;
   }, [platformName]);
 
 
+  // Inisialisasi esensial: Pengaturan brand & logo (ringan, ~50ms)
   useEffect(() => {
-    loadOverviewData();
     loadSettings();
     loadBrandAssets();
-    loadSnapshots();
-    fetchSystemMusics();
-  }, [loadOverviewData, loadSettings, loadBrandAssets, loadSnapshots, fetchSystemMusics]);
+  }, [loadSettings, loadBrandAssets]);
+
+  // Pemuatan On-Demand / Lazy Load per Tab:
+  // Grup "overview" = tab yang bergantung pada data dari /api/admin/overview
+  // Grup "themes"  = fetch mandiri ke /api/admin/themes
+  // Tab orders, invitations, users = komponen self-contained (fetch mandiri mereka sendiri)
+  // custom_domains & logs menggunakan state dari overview (customDomainOrders, logs),
+  // sehingga tetap perlu trigger loadOverviewData saat tab aktif.
+  useEffect(() => {
+    if (
+      activeTab === "overview" ||
+      activeTab === "users" ||
+      activeTab === "logs" ||
+      activeTab === "custom_domains"
+    ) {
+      loadOverviewData();
+    } else if (activeTab === "themes") {
+      loadThemes();
+    } else if (activeTab === "database") {
+      loadSnapshots();
+    }
+    // Tab lain (orders, invitations, portfolio, marketing, finance, team)
+    // adalah komponen self-contained yang fetch data sendiri saat mount.
+    // Tidak perlu trigger loadOverviewData untuk menghindari double-fetch.
+  }, [activeTab, loadOverviewData, loadThemes, loadSnapshots]);
+
 
   const setSetting = (key: string, value: string) => {
     setSettingsMap((prev) => ({ ...prev, [key]: value }));
@@ -1148,6 +1224,7 @@ export default function AdminPage() {
       setSetting(key, JSON.stringify([...current, capId]));
     }
   };
+
 
   const toggleEditSection = (section: string) => {
     setEditSection((prev) => ({ ...prev, [section]: !prev[section] }));
@@ -1743,13 +1820,13 @@ export default function AdminPage() {
   const conversionRate = totalOrdersCount > 0 ? Math.round((paidCount / totalOrdersCount) * 100) : 0;
 
   // Plan Sales Breakdown
-  const traditionalOrders = orderList.filter((o) => o.planType === "TRADITIONAL" && o.status === "PAID");
-  const modernOrders = orderList.filter((o) => o.planType === "MODERN" && o.status === "PAID");
-  const premiumOrders = orderList.filter((o) => o.planType === "PREMIUM" && o.status === "PAID");
+  const tier1Orders = orderList.filter((o) => o.planType === "TIER_1" && o.status === "PAID");
+  const tier2Orders = orderList.filter((o) => o.planType === "TIER_2" && o.status === "PAID");
+  const tier3Orders = orderList.filter((o) => o.planType === "TIER_3" && o.status === "PAID");
 
-  const traditionalRev = traditionalOrders.reduce((sum, o) => sum + Number(o.amount), 0);
-  const modernRev = modernOrders.reduce((sum, o) => sum + Number(o.amount), 0);
-  const premiumRev = premiumOrders.reduce((sum, o) => sum + Number(o.amount), 0);
+  const tier1Rev = tier1Orders.reduce((sum, o) => sum + Number(o.amount), 0);
+  const tier2Rev = tier2Orders.reduce((sum, o) => sum + Number(o.amount), 0);
+  const tier3Rev = tier3Orders.reduce((sum, o) => sum + Number(o.amount), 0);
 
   // Top themes calculation
   const themeUsageMap: Record<string, number> = {};
@@ -1977,8 +2054,11 @@ export default function AdminPage() {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 overflow-y-auto w-full">
-          {loading ? (
+        <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 overflow-y-auto w-full relative">
+          {loading && initialLoaded && (
+            <div className="absolute top-0 left-0 right-0 h-0.5 bg-amber-500 animate-pulse z-30 pointer-events-none" />
+          )}
+          {loading && !initialLoaded ? (
             <div className="flex items-center justify-center py-20">
               <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-amber-600"></div>
             </div>
@@ -2166,69 +2246,69 @@ export default function AdminPage() {
                       </div>
 
                       <div className="space-y-4 pt-1">
-                        {/* Traditional */}
+                        {/* Tier 1 */}
                         <div className="p-3.5 bg-stone-50 rounded-2xl border border-stone-200/80 space-y-2">
                           <div className="flex items-center justify-between text-xs">
                             <span className="font-bold text-amber-900 uppercase tracking-wide">
-                              {settingsMap["name_traditional"] || "Traditional"}
+                              Tier 1 • {settingsMap["name_tier1"] || "Serenade"}
                             </span>
                             <span className="font-bold text-gray-900">
-                              Rp {traditionalRev.toLocaleString("id-ID")}
+                              Rp {tier1Rev.toLocaleString("id-ID")}
                             </span>
                           </div>
                           <div className="w-full bg-stone-200 h-2 rounded-full overflow-hidden">
                             <div
                               className="bg-amber-700 h-full rounded-full transition-all duration-500"
-                              style={{ width: `${paidCount > 0 ? (traditionalOrders.length / paidCount) * 100 : 0}%` }}
+                              style={{ width: `${paidCount > 0 ? (tier1Orders.length / paidCount) * 100 : 0}%` }}
                             />
                           </div>
                           <div className="flex items-center justify-between text-[11px] text-gray-500">
-                            <span>{traditionalOrders.length} order lunas</span>
-                            <span>{paidCount > 0 ? Math.round((traditionalOrders.length / paidCount) * 100) : 0}% dari total penjualan</span>
+                            <span>{tier1Orders.length} order lunas</span>
+                            <span>{paidCount > 0 ? Math.round((tier1Orders.length / paidCount) * 100) : 0}% dari total penjualan</span>
                           </div>
                         </div>
 
-                        {/* Modern */}
+                        {/* Tier 2 */}
                         <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2">
                           <div className="flex items-center justify-between text-xs">
                             <span className="font-bold text-slate-800 uppercase tracking-wide">
-                              {settingsMap["name_modern"] || "Modern"}
+                              Tier 2 • {settingsMap["name_tier2"] || "Symphony"}
                             </span>
                             <span className="font-bold text-gray-900">
-                              Rp {modernRev.toLocaleString("id-ID")}
+                              Rp {tier2Rev.toLocaleString("id-ID")}
                             </span>
                           </div>
                           <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
                             <div
                               className="bg-slate-700 h-full rounded-full transition-all duration-500"
-                              style={{ width: `${paidCount > 0 ? (modernOrders.length / paidCount) * 100 : 0}%` }}
+                              style={{ width: `${paidCount > 0 ? (tier2Orders.length / paidCount) * 100 : 0}%` }}
                             />
                           </div>
                           <div className="flex items-center justify-between text-[11px] text-gray-500">
-                            <span>{modernOrders.length} order lunas</span>
-                            <span>{paidCount > 0 ? Math.round((modernOrders.length / paidCount) * 100) : 0}% dari total penjualan</span>
+                            <span>{tier2Orders.length} order lunas</span>
+                            <span>{paidCount > 0 ? Math.round((tier2Orders.length / paidCount) * 100) : 0}% dari total penjualan</span>
                           </div>
                         </div>
 
-                        {/* Premium */}
+                        {/* Tier 3 */}
                         <div className="p-3.5 bg-purple-50/70 rounded-2xl border border-purple-200/80 space-y-2">
                           <div className="flex items-center justify-between text-xs">
                             <span className="font-bold text-purple-900 uppercase tracking-wide">
-                              {settingsMap["name_premium"] || "Premium"}
+                              Tier 3 • {settingsMap["name_tier3"] || "Eternity"}
                             </span>
                             <span className="font-bold text-gray-900">
-                              Rp {premiumRev.toLocaleString("id-ID")}
+                              Rp {tier3Rev.toLocaleString("id-ID")}
                             </span>
                           </div>
                           <div className="w-full bg-purple-200 h-2 rounded-full overflow-hidden">
                             <div
                               className="bg-purple-700 h-full rounded-full transition-all duration-500"
-                              style={{ width: `${paidCount > 0 ? (premiumOrders.length / paidCount) * 100 : 0}%` }}
+                              style={{ width: `${paidCount > 0 ? (tier3Orders.length / paidCount) * 100 : 0}%` }}
                             />
                           </div>
                           <div className="flex items-center justify-between text-[11px] text-gray-500">
-                            <span>{premiumOrders.length} order lunas</span>
-                            <span>{paidCount > 0 ? Math.round((premiumOrders.length / paidCount) * 100) : 0}% dari total penjualan</span>
+                            <span>{tier3Orders.length} order lunas</span>
+                            <span>{paidCount > 0 ? Math.round((tier3Orders.length / paidCount) * 100) : 0}% dari total penjualan</span>
                           </div>
                         </div>
                       </div>
@@ -2629,35 +2709,84 @@ export default function AdminPage() {
                             return (
                               <div
                                 key={theme.id}
-                                className={`group bg-white rounded-2xl border flex flex-col justify-between overflow-hidden transition-all duration-300 shadow-2xs hover:shadow-md ${
+                                className={`group bg-white rounded-2xl border flex flex-col justify-between transition-all duration-300 shadow-2xs hover:shadow-md ${
                                   theme.isActive === false
                                     ? "opacity-65 border-dashed border-stone-300"
                                     : "border-stone-200 hover:border-stone-300"
                                 }`}
                               >
                                 <div>
-                                  {/* 1. Visual Showcase: Thumbnail Mobile (Hirarki Teratas) */}
-                                  <div className="relative aspect-[3/4] w-full bg-gradient-to-b from-stone-100 to-stone-50 overflow-hidden border-b border-stone-100 group/thumb flex items-center justify-center">
-                                    <img
-                                      src={theme.thumbnailMobile || `/demo/${theme.id}/thumbnail_mobile.webp`}
-                                      alt={`${theme.name} Mobile Thumbnail`}
-                                      loading="lazy"
-                                      decoding="async"
-                                      className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
-                                      onError={(e) => {
-                                        const t = e.currentTarget;
-                                        if (!t.src.includes("cover.webp") && !t.src.includes("hero.webp")) {
-                                          t.src = `/demo/${theme.id}/cover.webp`;
-                                        } else if (t.src.includes("cover.webp")) {
-                                          t.src = `/demo/${theme.id}/hero.webp`;
-                                        }
-                                      }}
-                                    />
-                                    {/* Ambient hover shadow overlay */}
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                                  {/* 1. Visual Showcase: Device Pair Mockup */}
+                                  <div className="p-3 pb-1">
+                                    <div className="stp-scene">
+                                      {/* Tablet frame */}
+                                      <div className="stp-tablet">
+                                        <div className="stp-tablet-bar">
+                                          <div className="stp-tablet-dots"><span/><span/><span/></div>
+                                          <div className="stp-tablet-url">luxenary.id/{theme.id}</div>
+                                          <div style={{ width: "18px" }}/>
+                                        </div>
+                                        <div className="stp-tablet-screen">
+                                          <img
+                                            src={theme.thumbnailDesktop || `/demo/${theme.id}/thumbnail_desktop.webp`}
+                                            alt={`${theme.name} Desktop`}
+                                            loading="lazy"
+                                            decoding="async"
+                                            className="w-full h-full object-cover object-top"
+                                            onError={(e) => {
+                                              const t = e.currentTarget;
+                                              if (!t.src.includes("hero.webp") && !t.src.includes("cover.webp")) {
+                                                t.src = `/demo/${theme.id}/hero.webp`;
+                                              } else if (t.src.includes("hero.webp")) {
+                                                t.src = `/demo/${theme.id}/cover.webp`;
+                                              }
+                                            }}
+                                          />
+                                          <div className="stp-glare"/>
+                                        </div>
 
-                                    {/* Floating Category Badge Top-Right */}
-                                    <div className="absolute top-2.5 right-2.5 z-10 pointer-events-none">
+                                      {/* Hover Quick Action — Lihat Live */}
+                                      <a
+                                        href={`/demo/${theme.id}`}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20 bg-black/30 backdrop-blur-[1px]"
+                                        title={`Buka Demo ${theme.name}`}
+                                      >
+                                        <span className="px-3.5 py-1.5 bg-stone-900/90 hover:bg-black text-white text-xs font-bold rounded-xl shadow-lg flex items-center gap-1.5 transition-transform group-hover:scale-105">
+                                          <svg className="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                          </svg>
+                                          Lihat Live
+                                        </span>
+                                      </a>
+                                    </div>
+
+                                    {/* Phone frame — overlapping bottom-left */}
+                                    <div className="stp-phone">
+                                      <div className="stp-phone-notch"/>
+                                      <div className="stp-phone-screen">
+                                        <img
+                                          src={theme.thumbnailMobile || `/demo/${theme.id}/thumbnail_mobile.webp`}
+                                          alt={`${theme.name} Mobile`}
+                                          loading="lazy"
+                                          decoding="async"
+                                          onError={(e) => {
+                                            const t = e.currentTarget;
+                                            if (!t.src.includes("cover.webp") && !t.src.includes("hero.webp")) {
+                                              t.src = `/demo/${theme.id}/cover.webp`;
+                                            } else if (t.src.includes("cover.webp")) {
+                                              t.src = `/demo/${theme.id}/hero.webp`;
+                                            }
+                                          }}
+                                        />
+                                        <div className="stp-glare"/>
+                                      </div>
+                                    </div>
+
+                                    {/* Floating Category Badge */}
+                                    <div className="absolute top-5 right-5 z-30 pointer-events-none">
                                       <span
                                         className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full border shadow-xs backdrop-blur-md ${
                                           cat === "traditional"
@@ -2671,8 +2800,8 @@ export default function AdminPage() {
                                       </span>
                                     </div>
 
-                                    {/* Floating Active Status Badge Top-Left */}
-                                    <div className="absolute top-2.5 left-2.5 z-10">
+                                    {/* Floating Active Status Badge */}
+                                    <div className="absolute top-5 left-5 z-30">
                                       <button
                                         type="button"
                                         onClick={(e) => {
@@ -2696,24 +2825,9 @@ export default function AdminPage() {
                                         <span>{theme.isActive !== false ? "Aktif" : "Nonaktif"}</span>
                                       </button>
                                     </div>
-
-                                    {/* Hover Quick Action: "Lihat Live" */}
-                                    <a
-                                      href={`/demo/${theme.id}`}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20"
-                                      title={`Buka Demo ${theme.name}`}
-                                    >
-                                      <span className="px-3.5 py-1.5 bg-stone-900/90 hover:bg-black text-white text-xs font-bold rounded-xl shadow-lg backdrop-blur-xs flex items-center gap-1.5 transition-transform group-hover:scale-105">
-                                        <svg className="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                        </svg>
-                                        Lihat Live
-                                      </span>
-                                    </a>
                                   </div>
+                                </div>
+
 
                                   {/* 2. Theme Identity & Description (Hirarki Tengah) */}
                                   <div className="p-4 space-y-1.5">
@@ -3157,7 +3271,7 @@ export default function AdminPage() {
                               type="text"
                               value={settingsMap["bank_account_holder"] || ""}
                               onChange={(e) => setSetting("bank_account_holder", e.target.value)}
-                              placeholder="Contoh: PT Luxenary Indonesia / Nama Pemilik"
+                              placeholder="Contoh: PT Nama Perusahaan / Nama Pemilik"
                               className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition"
                             />
                         </FieldRow>
@@ -3542,19 +3656,19 @@ export default function AdminPage() {
                   {/* Pricing Settings */}
                   {(() => {
                     const PRICING_KEYS = [
-                      "name_traditional", "name_modern", "name_premium",
-                      "price_traditional", "price_modern", "price_premium",
-                      "desc_traditional", "desc_modern", "desc_premium",
-                      "features_traditional", "features_modern", "features_premium",
-                      "capabilities_traditional", "capabilities_modern", "capabilities_premium",
-                      "memories_total_quota_traditional", "memories_max_contributors_traditional", "memories_shots_quota_traditional",
-                      "memories_total_quota_modern", "memories_max_contributors_modern", "memories_shots_quota_modern",
-                      "memories_total_quota_premium", "memories_max_contributors_premium", "memories_shots_quota_premium",
+                      "name_tier1", "name_tier2", "name_tier3",
+                      "price_tier1", "price_tier2", "price_tier3",
+                      "desc_tier1", "desc_tier2", "desc_tier3",
+                      "features_tier1", "features_tier2", "features_tier3",
+                      "capabilities_tier1", "capabilities_tier2", "capabilities_tier3",
+                      "memories_total_quota_tier1", "memories_max_contributors_tier1", "memories_shots_quota_tier1",
+                      "memories_total_quota_tier2", "memories_max_contributors_tier2", "memories_shots_quota_tier2",
+                      "memories_total_quota_tier3", "memories_max_contributors_tier3", "memories_shots_quota_tier3",
                     ];
                     return (
                       <SettingsCard
                         title="Manajemen Harga & Paket"
-                        description="Atur nama paket, harga, deskripsi, kapabilitas, dan plafon kuota kamera tamu untuk 3 tingkatan paket undangan."
+                        description="Atur nama paket komersial, harga, deskripsi, kapabilitas, dan plafon kuota kamera tamu untuk masing-masing tingkatan (Tier 1, Tier 2, Tier 3)."
                         isEditing={Boolean(editSection["pricing"])}
                         onEdit={() => toggleEditSection("pricing")}
                         onCancel={() => cancelEdit("pricing", PRICING_KEYS)}
@@ -3567,49 +3681,58 @@ export default function AdminPage() {
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
                             <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 space-y-2">
                               <div className="flex items-center justify-between mb-1">
-                                <span className="text-xs font-bold text-amber-800 uppercase tracking-wider">
-                                  {settingsMap["name_traditional"] || "Traditional"}
-                                </span>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                  <span className="text-xs font-bold text-amber-800 uppercase tracking-wider">
+                                    Tier 1 • {settingsMap["name_tier1"] || "Serenade"}
+                                  </span>
+                                </div>
                                 <span className="text-sm font-bold text-gray-900 font-mono">
-                                  Rp {Number(settingsMap["price_traditional"] || 299000).toLocaleString("id-ID")}
+                                  Rp {Number(settingsMap["price_tier1"] || 49000).toLocaleString("id-ID")}
                                 </span>
                               </div>
-                              <p className="text-xs text-gray-600 leading-relaxed">{settingsMap["desc_traditional"] || "Tema Traditional — Sakral, Megah & Bernuansa Tradisional"}</p>
+                              <p className="text-xs text-gray-600 leading-relaxed">{settingsMap["desc_tier1"] || "Paket Intim & Esensial — Undangan Digital Berkelas, Musik & RSVP Online"}</p>
                               <div className="text-[11px] font-mono px-2.5 py-1 rounded-lg border text-stone-700 bg-white border-stone-200">
-                                {getCaps("capabilities_traditional").includes("guest_memories")
-                                  ? `Kamera: ${settingsMap["memories_total_quota_traditional"] || 0} Foto Acara`
+                                {getCaps("capabilities_tier1").includes("guest_memories")
+                                  ? `Kamera: ${settingsMap["memories_total_quota_tier1"] || 0} Foto Acara`
                                   : "Kamera Tamu: Nonaktif"}
                               </div>
                             </div>
                             <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
                               <div className="flex items-center justify-between mb-1">
-                                <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                                  {settingsMap["name_modern"] || "Modern"}
-                                </span>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-slate-600"></span>
+                                  <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                                    Tier 2 • {settingsMap["name_tier2"] || "Symphony"}
+                                  </span>
+                                </div>
                                 <span className="text-sm font-bold text-gray-900 font-mono">
-                                  Rp {Number(settingsMap["price_modern"] || 499000).toLocaleString("id-ID")}
+                                  Rp {Number(settingsMap["price_tier2"] || 99000).toLocaleString("id-ID")}
                                 </span>
                               </div>
-                              <p className="text-xs text-gray-600 leading-relaxed">{settingsMap["desc_modern"] || "Tema Modern — Minimalis, Kontemporer & Sinematik"}</p>
+                              <p className="text-xs text-gray-600 leading-relaxed">{settingsMap["desc_tier2"] || "Paket Harmoni Pesta — Dilengkapi Resepsionis QR Check-In & Kamera Momen Tamu"}</p>
                               <div className="text-[11px] font-mono px-2.5 py-1 rounded-lg border text-slate-700 bg-white border-slate-200">
-                                {getCaps("capabilities_modern").includes("guest_memories")
-                                  ? `Kamera: ${settingsMap["memories_total_quota_modern"] || 250} Foto Acara`
+                                {getCaps("capabilities_tier2").includes("guest_memories")
+                                  ? `Kamera: ${settingsMap["memories_total_quota_tier2"] || 250} Foto Acara`
                                   : "Kamera Tamu: Nonaktif"}
                               </div>
                             </div>
                             <div className="p-4 bg-purple-50/70 rounded-xl border border-purple-200 space-y-2">
                               <div className="flex items-center justify-between mb-1">
-                                <span className="text-xs font-bold text-purple-800 uppercase tracking-wider">
-                                  {settingsMap["name_premium"] || "Premium"}
-                                </span>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-purple-600"></span>
+                                  <span className="text-xs font-bold text-purple-800 uppercase tracking-wider">
+                                    Tier 3 • {settingsMap["name_tier3"] || "Eternity"}
+                                  </span>
+                                </div>
                                 <span className="text-sm font-bold text-gray-900 font-mono">
-                                  Rp {Number(settingsMap["price_premium"] || 699000).toLocaleString("id-ID")}
+                                  Rp {Number(settingsMap["price_tier3"] || 149000).toLocaleString("id-ID")}
                                 </span>
                               </div>
-                              <p className="text-xs text-gray-600 leading-relaxed">{settingsMap["desc_premium"] || "Tema Premium — Editorial, Full-Text & Luxury Visual Motion"}</p>
+                              <p className="text-xs text-gray-600 leading-relaxed">{settingsMap["desc_tier3"] || "Paket Mahakarya Abadi — All-Inclusive dengan Custom Domain Pribadi (.com/.id) & Kuota Maksimal"}</p>
                               <div className="text-[11px] font-mono px-2.5 py-1 rounded-lg border text-purple-700 bg-white border-purple-200">
-                                {getCaps("capabilities_premium").includes("guest_memories")
-                                  ? `Kamera: ${settingsMap["memories_total_quota_premium"] || 1000} Foto Acara`
+                                {getCaps("capabilities_tier3").includes("guest_memories")
+                                  ? `Kamera: ${settingsMap["memories_total_quota_tier3"] || 1000} Foto Acara`
                                   : "Kamera Tamu: Nonaktif"}
                               </div>
                             </div>
@@ -3617,41 +3740,42 @@ export default function AdminPage() {
                         }
                       >
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                      {/* Tier 1 */}
                       <div className="p-4 bg-stone-50 rounded-xl border border-stone-200 space-y-3">
                         <div className="flex items-center gap-2">
                           <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-                          <span className="text-sm font-bold text-gray-800">Paket 1 (Traditional)</span>
+                          <span className="text-sm font-bold text-gray-800">Tier 1 • {settingsMap["name_tier1"] || "Serenade"}</span>
                         </div>
                         <FieldRow label="Nama Paket">
                           <input
                             type="text"
-                            value={settingsMap["name_traditional"] || "Traditional"}
-                            onChange={(e) => setSetting("name_traditional", e.target.value)}
-                            placeholder="Contoh: Traditional"
+                            value={settingsMap["name_tier1"] || "Serenade"}
+                            onChange={(e) => setSetting("name_tier1", e.target.value)}
+                            placeholder="Contoh: Serenade"
                             className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition"
                           />
                         </FieldRow>
                         <FieldRow label="Harga (IDR)">
                           <input
                             type="number"
-                            value={settingsMap["price_traditional"] || "299000"}
-                            onChange={(e) => setSetting("price_traditional", e.target.value)}
+                            value={settingsMap["price_tier1"] || "49000"}
+                            onChange={(e) => setSetting("price_tier1", e.target.value)}
                             className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition"
                           />
                         </FieldRow>
                         <FieldRow label="Deskripsi">
                           <textarea
                             rows={3}
-                            value={settingsMap["desc_traditional"] || "Tema Traditional — Sakral, Megah & Bernuansa Tradisional"}
-                            onChange={(e) => setSetting("desc_traditional", e.target.value)}
+                            value={settingsMap["desc_tier1"] || "Paket Intim & Esensial — Undangan Digital Berkelas, Musik & RSVP Online"}
+                            onChange={(e) => setSetting("desc_tier1", e.target.value)}
                             className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition resize-none"
                           />
                         </FieldRow>
                         <FieldRow label="Daftar Fitur (Satu per baris)">
                           <textarea
                             rows={4}
-                            value={settingsMap["features_traditional"] || ""}
-                            onChange={(e) => setSetting("features_traditional", e.target.value)}
+                            value={settingsMap["features_tier1"] || ""}
+                            onChange={(e) => setSetting("features_tier1", e.target.value)}
                             placeholder="Pisahkan dengan baris baru (Enter)"
                             className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition resize-none"
                           />
@@ -3664,15 +3788,15 @@ export default function AdminPage() {
                                 <input
                                   type="checkbox"
                                   className="rounded border-gray-300 text-amber-600 focus:ring-amber-600 w-3.5 h-3.5 cursor-pointer"
-                                  checked={getCaps("capabilities_traditional").includes(cap.id)}
-                                  onChange={() => toggleCap("capabilities_traditional", cap.id)}
+                                  checked={getCaps("capabilities_tier1").includes(cap.id)}
+                                  onChange={() => toggleCap("capabilities_tier1", cap.id)}
                                 />
                                 <span>{cap.label}</span>
                               </label>
                             ))}
                           </div>
                         </div>
-                        {getCaps("capabilities_traditional").includes("guest_memories") && (
+                        {getCaps("capabilities_tier1").includes("guest_memories") && (
                           <div className="mt-2.5 p-3 bg-amber-500/10 rounded-xl border border-amber-300/60 space-y-2">
                             <span className="block text-[11px] font-bold text-amber-900 uppercase tracking-wide">Total Kuota Foto Acara</span>
                             <div>
@@ -3682,8 +3806,8 @@ export default function AdminPage() {
                                 min={0}
                                 max={2000}
                                 step={25}
-                                value={settingsMap["memories_total_quota_traditional"] || "0"}
-                                onChange={(e) => setSetting("memories_total_quota_traditional", e.target.value)}
+                                value={settingsMap["memories_total_quota_tier1"] || "0"}
+                                onChange={(e) => setSetting("memories_total_quota_tier1", e.target.value)}
                                 className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs font-mono font-bold text-gray-900 bg-white focus:outline-none focus:border-amber-500"
                               />
                             </div>
@@ -3694,41 +3818,42 @@ export default function AdminPage() {
                         )}
                       </div>
 
+                      {/* Tier 2 */}
                       <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
                         <div className="flex items-center gap-2">
                           <span className="w-2 h-2 rounded-full bg-slate-600"></span>
-                          <span className="text-sm font-bold text-gray-800">Paket 2 (Modern)</span>
+                          <span className="text-sm font-bold text-gray-800">Tier 2 • {settingsMap["name_tier2"] || "Symphony"}</span>
                         </div>
                         <FieldRow label="Nama Paket">
                           <input
                             type="text"
-                            value={settingsMap["name_modern"] || "Modern"}
-                            onChange={(e) => setSetting("name_modern", e.target.value)}
-                            placeholder="Contoh: Modern"
+                            value={settingsMap["name_tier2"] || "Symphony"}
+                            onChange={(e) => setSetting("name_tier2", e.target.value)}
+                            placeholder="Contoh: Symphony"
                             className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 transition"
                           />
                         </FieldRow>
                         <FieldRow label="Harga (IDR)">
                           <input
                             type="number"
-                            value={settingsMap["price_modern"] || "499000"}
-                            onChange={(e) => setSetting("price_modern", e.target.value)}
+                            value={settingsMap["price_tier2"] || "99000"}
+                            onChange={(e) => setSetting("price_tier2", e.target.value)}
                             className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 transition"
                           />
                         </FieldRow>
                         <FieldRow label="Deskripsi">
                           <textarea
                             rows={3}
-                            value={settingsMap["desc_modern"] || "Tema Modern — Minimalis, Kontemporer & Sinematik"}
-                            onChange={(e) => setSetting("desc_modern", e.target.value)}
+                            value={settingsMap["desc_tier2"] || "Paket Harmoni Pesta — Dilengkapi Resepsionis QR Check-In & Kamera Momen Tamu"}
+                            onChange={(e) => setSetting("desc_tier2", e.target.value)}
                             className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 transition resize-none"
                           />
                         </FieldRow>
                         <FieldRow label="Daftar Fitur (Satu per baris)">
                           <textarea
                             rows={4}
-                            value={settingsMap["features_modern"] || ""}
-                            onChange={(e) => setSetting("features_modern", e.target.value)}
+                            value={settingsMap["features_tier2"] || ""}
+                            onChange={(e) => setSetting("features_tier2", e.target.value)}
                             placeholder="Pisahkan dengan baris baru (Enter)"
                             className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500 transition resize-none"
                           />
@@ -3741,15 +3866,15 @@ export default function AdminPage() {
                                 <input
                                   type="checkbox"
                                   className="rounded border-gray-300 text-slate-600 focus:ring-slate-600 w-3.5 h-3.5 cursor-pointer"
-                                  checked={getCaps("capabilities_modern").includes(cap.id)}
-                                  onChange={() => toggleCap("capabilities_modern", cap.id)}
+                                  checked={getCaps("capabilities_tier2").includes(cap.id)}
+                                  onChange={() => toggleCap("capabilities_tier2", cap.id)}
                                 />
                                 <span>{cap.label}</span>
                               </label>
                             ))}
                           </div>
                         </div>
-                        {getCaps("capabilities_modern").includes("guest_memories") && (
+                        {getCaps("capabilities_tier2").includes("guest_memories") && (
                           <div className="mt-2.5 p-3 bg-slate-100 rounded-xl border border-slate-300/80 space-y-2">
                             <span className="block text-[11px] font-bold text-slate-800 uppercase tracking-wide">Total Kuota Foto Acara</span>
                             <div>
@@ -3759,8 +3884,8 @@ export default function AdminPage() {
                                 min={50}
                                 max={5000}
                                 step={50}
-                                value={settingsMap["memories_total_quota_modern"] || "250"}
-                                onChange={(e) => setSetting("memories_total_quota_modern", e.target.value)}
+                                value={settingsMap["memories_total_quota_tier2"] || "250"}
+                                onChange={(e) => setSetting("memories_total_quota_tier2", e.target.value)}
                                 className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs font-mono font-bold text-gray-900 bg-white focus:outline-none focus:border-slate-500"
                               />
                             </div>
@@ -3771,41 +3896,42 @@ export default function AdminPage() {
                         )}
                       </div>
 
+                      {/* Tier 3 */}
                       <div className="p-4 bg-purple-50/70 rounded-xl border border-purple-200 space-y-3">
                         <div className="flex items-center gap-2">
                           <span className="w-2 h-2 rounded-full bg-purple-600"></span>
-                          <span className="text-sm font-bold text-gray-800">Paket 3 (Premium)</span>
+                          <span className="text-sm font-bold text-gray-800">Tier 3 • {settingsMap["name_tier3"] || "Eternity"}</span>
                         </div>
                         <FieldRow label="Nama Paket">
                           <input
                             type="text"
-                            value={settingsMap["name_premium"] || "Premium"}
-                            onChange={(e) => setSetting("name_premium", e.target.value)}
-                            placeholder="Contoh: Premium"
+                            value={settingsMap["name_tier3"] || "Eternity"}
+                            onChange={(e) => setSetting("name_tier3", e.target.value)}
+                            placeholder="Contoh: Eternity"
                             className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
                           />
                         </FieldRow>
                         <FieldRow label="Harga (IDR)">
                           <input
                             type="number"
-                            value={settingsMap["price_premium"] || "699000"}
-                            onChange={(e) => setSetting("price_premium", e.target.value)}
+                            value={settingsMap["price_tier3"] || "149000"}
+                            onChange={(e) => setSetting("price_tier3", e.target.value)}
                             className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
                           />
                         </FieldRow>
                         <FieldRow label="Deskripsi">
                           <textarea
                             rows={3}
-                            value={settingsMap["desc_premium"] || "Tema Premium — Editorial, Full-Text & Luxury Visual Motion"}
-                            onChange={(e) => setSetting("desc_premium", e.target.value)}
+                            value={settingsMap["desc_tier3"] || "Paket Mahakarya Abadi — All-Inclusive dengan Custom Domain Pribadi (.com/.id) & Kuota Maksimal"}
+                            onChange={(e) => setSetting("desc_tier3", e.target.value)}
                             className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition resize-none"
                           />
                         </FieldRow>
                         <FieldRow label="Daftar Fitur (Satu per baris)">
                           <textarea
                             rows={4}
-                            value={settingsMap["features_premium"] || ""}
-                            onChange={(e) => setSetting("features_premium", e.target.value)}
+                            value={settingsMap["features_tier3"] || ""}
+                            onChange={(e) => setSetting("features_tier3", e.target.value)}
                             placeholder="Pisahkan dengan baris baru (Enter)"
                             className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition resize-none"
                           />
@@ -3818,15 +3944,15 @@ export default function AdminPage() {
                                 <input
                                   type="checkbox"
                                   className="rounded border-purple-300 text-purple-600 focus:ring-purple-600 w-3.5 h-3.5 cursor-pointer"
-                                  checked={getCaps("capabilities_premium").includes(cap.id)}
-                                  onChange={() => toggleCap("capabilities_premium", cap.id)}
+                                  checked={getCaps("capabilities_tier3").includes(cap.id)}
+                                  onChange={() => toggleCap("capabilities_tier3", cap.id)}
                                 />
                                 <span>{cap.label}</span>
                               </label>
                             ))}
                           </div>
                         </div>
-                        {getCaps("capabilities_premium").includes("guest_memories") && (
+                        {getCaps("capabilities_tier3").includes("guest_memories") && (
                           <div className="mt-2.5 p-3 bg-purple-50 rounded-xl border border-purple-200 space-y-2">
                             <span className="block text-[11px] font-bold text-purple-900 uppercase tracking-wide">Total Kuota Foto Acara</span>
                             <div>
@@ -3836,8 +3962,8 @@ export default function AdminPage() {
                                 min={100}
                                 max={10000}
                                 step={100}
-                                value={settingsMap["memories_total_quota_premium"] || "1000"}
-                                onChange={(e) => setSetting("memories_total_quota_premium", e.target.value)}
+                                value={settingsMap["memories_total_quota_tier3"] || "1000"}
+                                onChange={(e) => setSetting("memories_total_quota_tier3", e.target.value)}
                                 className="w-full px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs font-mono font-bold text-gray-900 bg-white focus:outline-none focus:border-purple-500"
                               />
                             </div>
@@ -5313,7 +5439,7 @@ export default function AdminPage() {
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                           <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
                             <span className="text-xs text-gray-500 block font-medium">Nama Platform</span>
-                            <span className="text-sm font-bold text-gray-800 mt-0.5 inline-block">{settingsMap["platform_name"] || "Luxenary"}</span>
+                            <span className="text-sm font-bold text-gray-800 mt-0.5 inline-block">{settingsMap["platform_name"] || "Sistem Undangan"}</span>
                           </div>
                           <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
                             <span className="text-xs text-gray-500 block font-medium">Domain Host</span>
@@ -5346,7 +5472,7 @@ export default function AdminPage() {
                       <FieldRow label="Nama Platform">
                         <input
                           type="text"
-                          value={settingsMap["platform_name"] !== undefined ? settingsMap["platform_name"] : "Luxenary"}
+                          value={settingsMap["platform_name"] !== undefined ? settingsMap["platform_name"] : "Sistem Undangan"}
                           onChange={(e) => setSetting("platform_name", e.target.value)}
                           className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
                         />

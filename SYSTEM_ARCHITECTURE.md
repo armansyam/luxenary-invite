@@ -1434,8 +1434,8 @@ Admin Setting: active_payment_gateway
 ### 15.2 — Kondisi Pembayaran & Sinkronisasi Gateway 2-Arah (*Two-Way Payment Handshake*)
 Sistem mendukung alur pembayaran terintegrasi dengan gateway 2-arah eksklusif (**Midtrans Core API QRIS** dan **Xendit Invoices**), didukung transfer bank manual:
 1. **Registrasi Paket Awal (`orderType: NEW`) & Upgrade Tier (`orderType: UPGRADE`):**
-   - Pembayaran aktivasi lisensi paket undangan (`TRADITIONAL`, `MODERN`, `PREMIUM`) atau kenaikan tier dengan nominal selisih harga dinamis dari `AdminSetting`.
-   - Pada tier `PREMIUM`, fitur Custom Domain sudah **termasuk bebas biaya (gratis)** tanpa biaya integrasi tambahan.
+   - Pembayaran aktivasi lisensi paket undangan (`TIER_1` / Serenade, `TIER_2` / Symphony, `TIER_3` / Eternity) atau kenaikan tier dengan nominal selisih harga dinamis dari `AdminSetting`.
+   - Pada tier `TIER_3` (Eternity), fitur Custom Domain sudah **termasuk bebas biaya (gratis)** tanpa biaya integrasi tambahan.
    - Setelah pelunasan, tier diperbarui seketika dan klien diarahkan ke Studio/Dashboard (`/dashboard?msg=plan_upgraded`).
 2. **Perpanjangan Galeri Tamu (`orderType: GALLERY_EXTENSION`):**
    - Menambahkan masa simpan foto tamu (+1 s.d. 12 bulan) ke `invitation.galleryExpiresAt` dan membuka kembali kunci unggah momen foto tamu (`memoriesUploadLocked: false`).
@@ -1530,8 +1530,9 @@ Setiap inisialisasi tagihan ke payment gateway (Midtrans & Xendit) mengirimkan i
   - Persetujuan admin di portal `/admin` seketika mengubah status menjadi `PAID` dan mengeksekusi `applyUpgradePlan` untuk mengaktifkan paket/add-on secara instan.
 
 ### 15.7 — Identitas Publik & Proteksi Hak Cipta Statis (Luxenary Public Identity Banner & DevTools Guard)
-- **Banner ASCII & Lisensi Eksklusif:** Setiap dokumen publik (Root Layout [`app/layout.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/layout.tsx), 16 master template [`themes/`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/themes), serta seluruh kompilasi demo statis [`public/demo/`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/public/demo)) dilengkapi komentar banner ASCII resmi **LUXENARY** di baris pertama dokumen.
-- **Pipeline Kompilasi Otomatis:** Engine [`lib/renderTemplate.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/lib/renderTemplate.ts) dan [`lib/staticPublisher.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/lib/staticPublisher.ts) menjamin setiap undangan yang dibake saat publish (`public/published/ids/[id].html`) maupun diakses di subdomain/custom domain secara otomatis menyertakan banner identitas dan skrip proteksi konsol Luxenary sebelum tag `</body>`.
+- **Banner ASCII & Lisensi Eksklusif:** Setiap dokumen publik (Root Layout [`app/layout.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/layout.tsx), 16 master template [`themes/`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/themes), serta seluruh kompilasi demo statis [`public/demo/`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/public/demo)) dilengkapi komentar lisensi resmi di baris pertama dokumen.
+- **Isolasi Brand & Dynamic Domain Penuh (Zero-Hardcode Whitelabel):** Seluruh antarmuka publik, modul tamu (Guest Moments, Receptionist Scanner), layout metadata, gateway invoice, dan fitur paket tidak lagi menggunakan nilai hardcode. Nama platform dan domain aktif diselesaikan secara dinamis melalui `admin_settings.platform_name` dan environment `NEXT_PUBLIC_ROOT_DOMAIN` / request host. Penamaan paket antar-tier juga diresolusi dinamis sehingga perubahan nama tier di panel admin seketika tersinkronisasi ke seluruh deskripsi fitur.
+- **Pipeline Kompilasi Otomatis:** Engine [`lib/renderTemplate.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/lib/renderTemplate.ts) dan [`lib/staticPublisher.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/lib/staticPublisher.ts) menjamin setiap undangan yang dibake saat publish (`public/published/ids/[id].html`) maupun diakses di subdomain/custom domain secara otomatis menyertakan banner identitas dan skrip proteksi konsol sebelum tag `</body>`.
 - **Kartu Notifikasi Penolakan Menetap (*Persistent Rejection Card*):**
   - Jika admin menolak bukti pembayaran di portal `/admin`, order diperbarui menjadi `status: "FAILED"` dengan catatan `rejectReason`.
   - Kasir klien menampilkan kartu peringatan merah permanen tepat di atas formulir unggah ulang yang menampilkan alasan penolakan dari admin secara dinamis dan tidak hilang saat halaman di-refresh.
@@ -1607,7 +1608,7 @@ Setiap inisialisasi tagihan ke payment gateway (Midtrans & Xendit) mengirimkan i
   - Mengeliminasi pembayaran berkali-kali, menghemat biaya admin/gateway bagi klien, dan menyederhanakan proses verifikasi transfer bank manual oleh Admin menjadi 1 kali klik persetujuan.
 - **Skema Database & Snapshot Item Terstruktur:**
   - Kolom `itemsJson` (TEXT/JSON) pada tabel `orders` PostgreSQL menyimpan snapshot lengkap setiap item transaksi: tipe layanan (`type`: `UPGRADE`, `GALLERY_EXTENSION`, `MEMORIES_TOPUP`), label deskriptif (`label`), nominal satuan (`price`), target paket (`targetPlan`), jumlah bulan (`months`), jumlah hari (`days`), dan jumlah kuota foto (`photos`).
-  - Nilai harga satuan ditarik secara dinamis dari `admin_settings` (`price_traditional`, `price_modern`, `price_premium`, `gallery_extension_price_per_month`, `addon_memories_topup_price`, `addon_memories_topup_photos`) tanpa nilai hardcode.
+  - Nilai harga satuan ditarik secara dinamis dari `admin_settings` (`price_tier1`, `price_tier2`, `price_tier3`, `gallery_extension_price_per_month`, `addon_memories_topup_price`, `addon_memories_topup_photos`) tanpa nilai hardcode.
 - **Eksekusi Pemenuhan Transaksi Atomik (`applyBundleFulfillment` di `lib/upgradeHelper.ts`):**
   - Seluruh pemenuhan multi-layanan dibungkus dalam transaksi atomik database (`prisma.$transaction`) dengan urutan eksekusi bergaransi:
     1. **Upgrade Tier:** Akun dan order registrasi induk dinaikkan terlebih dahulu ke tier target (Serenade ➔ Symphony/Eternity, atau Symphony ➔ Eternity).
@@ -2047,10 +2048,10 @@ Untuk memberikan pengalaman interaktif penuh bagi calon klien sebelum memesan pa
    - Seluruh aset dikompresi dengan WebP effort 6 serta unsharp mask filter (`sharp.sharpen({ sigma: 1.0, m1: 0.75, m2: 2.0 })`) dengan bobot 100% di bawah 200 KB untuk menjamin metrik LCP < 2.5s.
 3. **Penyelarasan Teks Panduan Demo Studio:**
    - Menghapus referensi rancu "iPad Mini" pada form Demo Studio, menyajikan label dan ukuran presisi yang langsung pada intinya bagi administrator.
-4. **Hirarki Visual Katalog Tema Admin & Integrasi Thumbnail Mobile:**
-   - Menyematkan wadah thumbnail mobile (`aspect-[3/4]`, `object-cover object-top`) pada setiap kartu tema di panel admin (`/admin?tab=themes`).
-   - Menerapkan hirarki visual yang intuitif: (1) Showcase Visual Thumbnail Mobile di posisi teratas dilengkapi floating badge kategori & active toggle pill, (2) Identitas Nama Tema, slug `/{id}`, dan deskripsi di bagian tengah, serta (3) Tombol aksi (`Preview`, `Studio`, `Edit`, `Delete`) di bagian bawah.
-   - Endpoint `/api/admin/overview` secara dinamis memperkaya objek tema dengan `thumbnailMobile` dari konfigurasi Demo Studio (`adminSetting`) atau fallback disk fisik `/demo/[theme]/thumbnail_mobile.webp` beserta proteksi `onError`.
+4. **Device Pair Mockup Showcase & Resolusi Ganda Thumbnail (Mobile & Desktop):**
+   - Mengintegrasikan sistem panggung ganda presisi (*Device Pair Mockup*: `stp-tablet` 16:10 di belakang dan `stp-phone` 9:19 di depan) pada kartu tema di panel admin (`/admin?tab=themes`), Setup Wizard (`/dashboard/setup`), dan Studio Visual Editor (`/dashboard/invitation/[id]`).
+   - Menerapkan arsitektur pembagian aset yang presisi: Frame ponsel menampilkan `thumbnailMobile` (`thumbnail_mobile.webp`), sedangkan frame tablet menampilkan `thumbnailDesktop` (`thumbnail_desktop.webp` dengan fallback cerdas ke `hero.webp` dan `cover.webp`).
+   - Endpoint `/api/admin/themes` dan `/api/admin/overview` secara serentak mengembalikan kedua properti `thumbnailMobile` dan `thumbnailDesktop` dari konfigurasi Demo Studio atau disk fisik VPS guna menjamin konsistensi visual instan tanpa refresh halaman.
 
 ---
 
@@ -2170,16 +2171,16 @@ Sistem telah melalui audit mendalam berbasis bukti empiris (*Empirical Verificat
 ## 25. Standarisasi Akses Tema (All-Access Themes), Arsitektur Feature-Gated, Sesi Acara Utama, & Kuncian Pasca Publikasi
 
 1. **Kebijakan Akses Tema Tanpa Batas (All-Access Themes):**
-   - Seluruh 16 koleksi tema desain (Traditional Series, Modern Series, Premium Series) dapat dipilih secara bebas oleh semua tingkatan paket klien (`TRADITIONAL`, `MODERN`, `PREMIUM`) tanpa ada diskriminasi atau tier-locking visual.
+   - Seluruh 16 koleksi tema desain (Traditional Series, Modern Series, Premium Series) dapat dipilih secara bebas oleh semua tingkatan paket klien (`TIER_1`, `TIER_2`, `TIER_3`) tanpa ada diskriminasi atau tier-locking visual.
    - Seluruh logika lama pembatasan tema berdasarkan tier paket (*legacy theme tier gating*) pada `app/api/client/invitations/[id]/route.ts` telah dieliminasi secara tuntas.
    - Proteksi integritas template: Pasca publikasi (`PUBLISHED`), pergantian tema oleh klien dikunci di Studio Editor untuk menjaga konsistensi piringan template statis aktif di live CDN (hanya Admin yang dapat mengubah tema).
 
 2. **Pembeda Paket Murni Berbasis Kapabilitas Fitur (Feature Gating):**
    - Pembeda paket tidak lagi menggunakan tema, melainkan murni berbasis kapabilitas fitur (*capabilities*):
-     - **Traditional (Serenade):** Esensial undangan online, musik latar autoplay, galeri foto standar prewedding, RSVP online, WhatsApp personal generator (Kuota tamu: 200).
-     - **Modern (Symphony):** Seluruh fitur Traditional + Resepsionis QR Check-In Scanner (`qr_checkin`) + Kamera Momen Tamu / Disposable Photo Drop (`guest_memories`) (Kuota tamu: 500).
-     - **Premium (Eternity):** Seluruh fitur Modern + Custom Domain Pribadi (`custom_domain`) + Kuota Tamu & Foto Tamu Unlimited.
-   - Fallback kapabilitas di `lib/settings.ts` (`hasPlanCapability`) dan `app/(client)/dashboard/invitation/[id]/page.tsx` (`allowedCaps`) diselaraskan 100% sehingga paket Modern secara konsisten mendapatkan akses ke modul `qr_checkin` dan `guest_memories`.
+     - **TIER_1 (Serenade):** Esensial undangan online, musik latar autoplay, galeri foto standar prewedding, RSVP online, WhatsApp personal generator (Kuota tamu: 200).
+     - **TIER_2 (Symphony):** Seluruh fitur Tier 1 + Resepsionis QR Check-In Scanner (`qr_checkin`) + Kamera Momen Tamu / Disposable Photo Drop (`guest_memories`) (Kuota tamu: 500).
+     - **TIER_3 (Eternity):** Seluruh fitur Tier 2 + Custom Domain Pribadi (`custom_domain`) + Kuota Tamu & Foto Tamu Maksimal.
+   - Fallback kapabilitas di `lib/settings.ts` (`hasPlanCapability`) dan `app/(client)/dashboard/invitation/[id]/page.tsx` (`allowedCaps`) diselaraskan 100% sehingga paket Tier 2 (Symphony) secara konsisten mendapatkan akses ke modul `qr_checkin` dan `guest_memories`.
 
 3. **Sesi Acara Utama (Single Primary Event Anchor) sebagai Patokan Mutlak Masa Berlaku:**
    - Klien menandai tepat 1 sesi acara sebagai **Sesi Acara Utama** (`isPrimary: true`, misal: Akad Nikah atau Resepsi Utama) yang menjadi jangkar tunggal (*single source of truth*) untuk:
