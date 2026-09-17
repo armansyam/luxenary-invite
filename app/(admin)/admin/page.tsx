@@ -3528,6 +3528,52 @@ export default function AdminPage() {
                     saveSuccessMessage="Pengaturan Midtrans berhasil disimpan"
                     viewContent={
                       <div className="space-y-3">
+                        {/* ── Badge Mode Gateway Midtrans ── */}
+                        {(() => {
+                          const sk = settingsMap["midtrans_server_key"] || "";
+                          if (!sk) return (
+                            <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-rose-50 border border-rose-200">
+                              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0"></span>
+                              <div>
+                                <span className="text-xs font-bold text-rose-700 uppercase tracking-wider">Belum Dikonfigurasi</span>
+                                <span className="text-[10px] text-rose-500 block mt-0.5">Klik Edit lalu isi Server Key dan Client Key dari dashboard Midtrans.</span>
+                              </div>
+                            </div>
+                          );
+                          if (sk.startsWith("SB-")) return (
+                            <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-slate-100 border border-slate-300">
+                              <span className="w-2.5 h-2.5 rounded-full bg-slate-500 animate-pulse shrink-0"></span>
+                              <div>
+                                <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Sandbox — Simulator Aktif</span>
+                                <span className="text-[10px] text-slate-500 block mt-0.5">Transaksi fiktif — tidak ada uang asli terpotong. Gunakan kartu uji coba Midtrans Sandbox.</span>
+                              </div>
+                            </div>
+                          );
+                          return (
+                            <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-amber-50 border border-amber-300">
+                              <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0"></span>
+                              <div>
+                                <span className="text-xs font-bold text-amber-800 uppercase tracking-wider">Production — Live Gateway</span>
+                                <span className="text-[10px] text-amber-700 block mt-0.5">Transaksi nyata aktif — setiap pembayaran memotong saldo rekening bank klien secara langsung.</span>
+                              </div>
+                            </div>
+                          );
+                        })()}
+
+                        {/* ── Peringatan Client Key Tertukar ── */}
+                        {(() => {
+                          const sk = settingsMap["midtrans_server_key"] || "";
+                          const ck = settingsMap["midtrans_client_key"] || "";
+                          const ckLooksLikeServerKey = ck && (ck.startsWith("Mid-server-") || ck.startsWith("SB-Mid-server-"));
+                          if (!ckLooksLikeServerKey) return null;
+                          return (
+                            <div className="flex items-start gap-2 px-3.5 py-2.5 rounded-xl bg-rose-50 border border-rose-200">
+                              <svg className="w-3.5 h-3.5 text-rose-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                              <span className="text-xs text-rose-700 font-medium">Client Key terisi dengan Server Key. Harusnya berawalan <code className="font-mono bg-rose-100 px-1 rounded">Mid-client-...</code> atau <code className="font-mono bg-rose-100 px-1 rounded">SB-Mid-client-...</code> — ambil dari Midtrans Dashboard → Settings → Access Keys.</span>
+                            </div>
+                          );
+                        })()}
+
                         <div className="p-3 bg-white rounded-xl border border-gray-200 space-y-2">
                           <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
                             <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
@@ -3560,14 +3606,14 @@ export default function AdminPage() {
                         <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
                         <h4 className="text-xs font-bold text-emerald-900 uppercase tracking-wider">Kredensial Midtrans</h4>
                       </div>
-                      <FieldRow label="Server Key" description="Dari Midtrans Dashboard → Settings → Access Keys">
+                      <FieldRow label="Server Key" description="Midtrans Dashboard → Settings → Access Keys. Sandbox: SB-Mid-server-xxx | Production: Mid-server-xxx">
                         <input type="password" value={settingsMap["midtrans_server_key"] || ""} onChange={(e) => setSetting("midtrans_server_key", e.target.value)}
-                          placeholder="Mid-server-xxxx"
+                          placeholder="SB-Mid-server-xxx (sandbox) atau Mid-server-xxx (production)"
                           className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs" />
                       </FieldRow>
-                      <FieldRow label="Client Key" description="Dari Midtrans Dashboard → Settings → Access Keys">
+                      <FieldRow label="Client Key" description="Midtrans Dashboard → Settings → Access Keys. Sandbox: SB-Mid-client-xxx | Production: Mid-client-xxx">
                         <input type="text" value={settingsMap["midtrans_client_key"] || ""} onChange={(e) => setSetting("midtrans_client_key", e.target.value)}
-                          placeholder="Mid-client-xxxx"
+                          placeholder="SB-Mid-client-xxx (sandbox) atau Mid-client-xxx (production)"
                           className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs" />
                       </FieldRow>
                     </div>
@@ -3598,6 +3644,38 @@ export default function AdminPage() {
                     saveSuccessMessage="Pengaturan Xendit berhasil disimpan"
                     viewContent={
                       <div className="space-y-3">
+                        {/* ── Badge Mode Gateway Xendit ── */}
+                        {(() => {
+                          const ak = settingsMap["xendit_api_key"] || "";
+                          if (!ak) return (
+                            <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-rose-50 border border-rose-200">
+                              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0"></span>
+                              <div>
+                                <span className="text-xs font-bold text-rose-700 uppercase tracking-wider">Belum Dikonfigurasi</span>
+                                <span className="text-[10px] text-rose-500 block mt-0.5">Klik Edit lalu isi Secret API Key dan Webhook Token dari dashboard Xendit.</span>
+                              </div>
+                            </div>
+                          );
+                          if (ak.startsWith("xnd_development")) return (
+                            <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-slate-100 border border-slate-300">
+                              <span className="w-2.5 h-2.5 rounded-full bg-slate-500 animate-pulse shrink-0"></span>
+                              <div>
+                                <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Test Mode — Sandbox Aktif</span>
+                                <span className="text-[10px] text-slate-500 block mt-0.5">Transaksi fiktif — tidak ada uang asli terpotong. Gunakan metode uji coba Xendit.</span>
+                              </div>
+                            </div>
+                          );
+                          return (
+                            <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-amber-50 border border-amber-300">
+                              <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0"></span>
+                              <div>
+                                <span className="text-xs font-bold text-amber-800 uppercase tracking-wider">Production — Live Gateway</span>
+                                <span className="text-[10px] text-amber-700 block mt-0.5">Transaksi nyata aktif — setiap pembayaran memotong saldo rekening bank klien secara langsung.</span>
+                              </div>
+                            </div>
+                          );
+                        })()}
+
                         <div className="p-3 bg-white rounded-xl border border-gray-200 space-y-2">
                           <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
                             <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
@@ -3630,9 +3708,9 @@ export default function AdminPage() {
                         <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
                         <h4 className="text-xs font-bold text-emerald-900 uppercase tracking-wider">Kredensial Xendit</h4>
                       </div>
-                      <FieldRow label="Secret API Key" description="Dari Xendit Dashboard → Settings → API Keys">
+                      <FieldRow label="Secret API Key" description="Xendit Dashboard → Settings → API Keys. Sandbox: xnd_development_xxx | Production: xnd_production_xxx">
                         <input type="password" value={settingsMap["xendit_api_key"] || ""} onChange={(e) => setSetting("xendit_api_key", e.target.value)}
-                          placeholder="xnd_production_xxxx"
+                          placeholder="xnd_development_xxx (sandbox) atau xnd_production_xxx (production)"
                           className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs" />
                       </FieldRow>
                       <FieldRow label="Webhook Verification Token" description="Dari Xendit Dashboard → Settings → Webhooks">
