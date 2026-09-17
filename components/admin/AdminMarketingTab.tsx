@@ -109,11 +109,8 @@ export function AdminMarketingTab() {
     description: "",
     discountType: "NOMINAL" as "NOMINAL" | "PERCENT",
     discountValue: "",
-    minOrderAmount: "0",
     maxDiscountAmount: "",
     quotaLimit: "",
-    isSingleUse: false,
-    perUserLimit: "1",
     applicablePlans: [] as string[],
     validFrom: "",
     validUntil: "",
@@ -216,11 +213,8 @@ export function AdminMarketingTab() {
         description: coupon.description || "",
         discountType: coupon.discountType,
         discountValue: String(coupon.discountValue),
-        minOrderAmount: String(coupon.minOrderAmount || 0),
         maxDiscountAmount: coupon.maxDiscountAmount ? String(coupon.maxDiscountAmount) : "",
         quotaLimit: coupon.quotaLimit !== null ? String(coupon.quotaLimit) : "",
-        isSingleUse: coupon.isSingleUse,
-        perUserLimit: coupon.perUserLimit ? String(coupon.perUserLimit) : "1",
         applicablePlans: coupon.applicablePlans || [],
         validFrom: coupon.validFrom ? new Date(coupon.validFrom).toISOString().slice(0, 16) : "",
         validUntil: coupon.validUntil ? new Date(coupon.validUntil).toISOString().slice(0, 16) : "",
@@ -234,11 +228,8 @@ export function AdminMarketingTab() {
         description: "",
         discountType: "NOMINAL",
         discountValue: "",
-        minOrderAmount: "0",
         maxDiscountAmount: "",
         quotaLimit: "",
-        isSingleUse: false,
-        perUserLimit: "1",
         applicablePlans: [],
         validFrom: "",
         validUntil: "",
@@ -260,11 +251,8 @@ export function AdminMarketingTab() {
         description: couponForm.description,
         discountType: couponForm.discountType,
         discountValue: Number(couponForm.discountValue),
-        minOrderAmount: Number(couponForm.minOrderAmount || 0),
         maxDiscountAmount: couponForm.maxDiscountAmount ? Number(couponForm.maxDiscountAmount) : null,
         quotaLimit: couponForm.quotaLimit ? Number(couponForm.quotaLimit) : null,
-        isSingleUse: couponForm.isSingleUse,
-        perUserLimit: couponForm.perUserLimit ? Number(couponForm.perUserLimit) : 1,
         applicablePlans: couponForm.applicablePlans,
         validFrom: couponForm.validFrom ? new Date(couponForm.validFrom).toISOString() : null,
         validUntil: couponForm.validUntil ? new Date(couponForm.validUntil).toISOString() : null,
@@ -1159,54 +1147,64 @@ export function AdminMarketingTab() {
                 </div>
               </div>
 
-              {/* Batas Maks Diskon & Min Belanja */}
-              <div className="grid grid-cols-2 gap-3">
-                {couponForm.discountType === "PERCENT" && (
-                  <div>
-                    <label className="font-bold text-gray-700 block mb-1">Maksimal Diskon (Rp)</label>
-                    <input
-                      type="number"
-                      value={couponForm.maxDiscountAmount}
-                      onChange={(e) => setCouponForm({ ...couponForm, maxDiscountAmount: e.target.value })}
-                      placeholder="Opsional, misal 50000"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs font-mono bg-white focus:outline-none focus:border-amber-500"
-                    />
-                  </div>
-                )}
+              {/* Cap Potongan Maks (hanya untuk diskon persen) */}
+              {couponForm.discountType === "PERCENT" && (
                 <div>
-                  <label className="font-bold text-gray-700 block mb-1">Min. Transaksi (Rp)</label>
+                  <label className="font-bold text-gray-700 block mb-1">Cap Potongan Maks. (Rp)</label>
                   <input
                     type="number"
-                    value={couponForm.minOrderAmount}
-                    onChange={(e) => setCouponForm({ ...couponForm, minOrderAmount: e.target.value })}
-                    placeholder="0"
+                    value={couponForm.maxDiscountAmount}
+                    onChange={(e) => setCouponForm({ ...couponForm, maxDiscountAmount: e.target.value })}
+                    placeholder="Opsional, misal 50000"
                     className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs font-mono bg-white focus:outline-none focus:border-amber-500"
                   />
+                  <span className="text-[10px] text-gray-400 block mt-1">Batasi agar diskon persen tidak terlalu besar pada paket mahal. Kosongkan jika bebas.</span>
                 </div>
+              )}
+
+              {/* Berlaku untuk Paket */}
+              <div>
+                <label className="font-bold text-gray-700 block mb-1">Berlaku untuk Paket</label>
+                <div className="flex flex-wrap gap-3 mt-1">
+                  {(["TIER_1", "TIER_2", "TIER_3"] as const).map((tier) => {
+                    const labels: Record<string, string> = {
+                      TIER_1: "Serenade (Tier 1)",
+                      TIER_2: "Symphony (Tier 2)",
+                      TIER_3: "Eternity (Tier 3)",
+                    };
+                    const isChecked = couponForm.applicablePlans.includes(tier);
+                    return (
+                      <label key={tier} className="flex items-center gap-2 text-xs font-semibold text-gray-700 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => {
+                            const next = isChecked
+                              ? couponForm.applicablePlans.filter((p) => p !== tier)
+                              : [...couponForm.applicablePlans, tier];
+                            setCouponForm({ ...couponForm, applicablePlans: next });
+                          }}
+                          className="rounded border-gray-300 text-amber-600 focus:ring-amber-500 w-3.5 h-3.5"
+                        />
+                        {labels[tier]}
+                      </label>
+                    );
+                  })}
+                </div>
+                <span className="text-[10px] text-gray-400 block mt-1">Kosongkan semua = berlaku untuk semua paket.</span>
               </div>
 
-              {/* Kuota Limit & Per-User Limit */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="font-bold text-gray-700 block mb-1">Batas Kuota Total</label>
-                  <input
-                    type="number"
-                    value={couponForm.quotaLimit}
-                    onChange={(e) => setCouponForm({ ...couponForm, quotaLimit: e.target.value })}
-                    placeholder="Kosongkan jika tanpa batas"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs font-mono bg-white focus:outline-none focus:border-amber-500"
-                  />
-                </div>
-                <div>
-                  <label className="font-bold text-gray-700 block mb-1">Batas per Pengguna</label>
-                  <input
-                    type="number"
-                    value={couponForm.perUserLimit}
-                    onChange={(e) => setCouponForm({ ...couponForm, perUserLimit: e.target.value })}
-                    placeholder="Default: 1"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs font-mono bg-white focus:outline-none focus:border-amber-500"
-                  />
-                </div>
+              {/* Batas Kuota Total */}
+              <div>
+                <label className="font-bold text-gray-700 block mb-1">Batas Kuota Total</label>
+                <input
+                  type="number"
+                  value={couponForm.quotaLimit}
+                  onChange={(e) => setCouponForm({ ...couponForm, quotaLimit: e.target.value })}
+                  placeholder="Kosongkan jika tanpa batas"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs font-mono bg-white focus:outline-none focus:border-amber-500"
+                />
+                <span className="text-[10px] text-gray-400 block mt-1">Berapa orang yang boleh pakai kupon ini secara total.</span>
               </div>
 
               {/* Masa Berlaku */}

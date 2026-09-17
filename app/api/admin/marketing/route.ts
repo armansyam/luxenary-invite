@@ -159,11 +159,11 @@ export async function POST(req: NextRequest) {
           description: description?.trim() || null,
           discountType: (discountType === "PERCENT" ? "PERCENT" : "NOMINAL") as DiscountType,
           discountValue: Number(discountValue),
-          minOrderAmount: minOrderAmount ? Number(minOrderAmount) : 0,
+          minOrderAmount: 0, // Tidak diekspos di form — selalu 0 (filter paket via applicablePlans)
           maxDiscountAmount: maxDiscountAmount ? Number(maxDiscountAmount) : null,
           quotaLimit: quotaLimit !== null && quotaLimit !== undefined && quotaLimit !== "" ? Number(quotaLimit) : null,
-          isSingleUse: Boolean(isSingleUse),
-          perUserLimit: perUserLimit ? Number(perUserLimit) : 1,
+          isSingleUse: false,
+          perUserLimit: 1, // Hardcode: 1 akun = 1 kali pakai, tidak bisa diubah dari form
           applicablePlans: Array.isArray(applicablePlans) ? applicablePlans : [],
           validFrom: validFrom ? new Date(validFrom) : null,
           validUntil: validUntil ? new Date(validUntil) : null,
@@ -203,11 +203,11 @@ export async function POST(req: NextRequest) {
           description: description?.trim() || null,
           discountType: (discountType === "PERCENT" ? "PERCENT" : "NOMINAL") as DiscountType,
           discountValue: Number(discountValue),
-          minOrderAmount: minOrderAmount ? Number(minOrderAmount) : 0,
+          minOrderAmount: 0, // Tidak diekspos di form — selalu 0
           maxDiscountAmount: maxDiscountAmount ? Number(maxDiscountAmount) : null,
           quotaLimit: quotaLimit !== null && quotaLimit !== undefined && quotaLimit !== "" ? Number(quotaLimit) : null,
-          isSingleUse: Boolean(isSingleUse),
-          perUserLimit: perUserLimit ? Number(perUserLimit) : 1,
+          isSingleUse: false,
+          perUserLimit: 1, // Hardcode: 1 akun = 1 kali pakai
           applicablePlans: Array.isArray(applicablePlans) ? applicablePlans : [],
           validFrom: validFrom ? new Date(validFrom) : null,
           validUntil: validUntil ? new Date(validUntil) : null,
