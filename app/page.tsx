@@ -46,7 +46,7 @@ export default async function Home() {
               rel="noopener noreferrer"
               className="text-[#C9A227] hover:underline font-bold ml-1 shrink-0 text-[11px]"
             >
-              Info Antrean →
+              Info Antrean
             </a>
           )}
         </aside>
@@ -62,7 +62,7 @@ export default async function Home() {
         <a href="#harga">Paket &amp; Harga</a>
         <Link href="/portfolio">Portofolio</Link>
         <Link href="/login" style={{ color: "var(--lux-gold)", marginTop: "1rem", fontSize: "1.1rem" }}>
-          Mulai Sekarang →
+          Mulai Sekarang
         </Link>
       </div>
 
@@ -79,7 +79,7 @@ export default async function Home() {
           <li><a href="#harga">Harga</a></li>
           <li><Link href="/portfolio">Portofolio</Link></li>
         </ul>
-        <Link href="/login" className="nav-cta nav-cta-desktop">Mulai Sekarang →</Link>
+        <Link href="/login" className="nav-cta nav-cta-desktop">Mulai Sekarang</Link>
         <button className="nav-hamburger" id="hamburger-btn" aria-label="Buka menu" aria-expanded="false">
           <span></span><span></span><span></span>
         </button>
@@ -114,15 +114,9 @@ export default async function Home() {
     <div className="hero-cta-group">
       <Link href="/demo" className="btn-primary" id="hero-cta-primary">
         <span>Jelajahi Koleksi</span>
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-          <path d="M2 7h10M7 2l5 5-5 5" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
       </Link>
       <a href="#pengalaman" className="btn-secondary">
         <span>Lihat Pengalaman</span>
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-          <path d="M1.5 6h9M6 1.5l4.5 4.5L6 10.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-        </svg>
       </a>
     </div>
   </div>
@@ -187,9 +181,6 @@ export default async function Home() {
     </p>
     <Link href="/demo" className="koleksi-link reveal reveal-delay-3">
       Lihat Semua Koleksi
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-        <path d="M2 7h10M7 2l5 5-5 5" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round"/>
-      </svg>
     </Link>
   </div>
 
@@ -382,7 +373,7 @@ export default async function Home() {
                       Dengan penuh rasa syukur dan sukacita kami mengundang Anda
                     </div>
                     <div className="sim-inv-btn">BUKA</div>
-                    <div className="sim-inv-qr">QR CHECK-IN →</div>
+                    <div className="sim-inv-qr">QR CHECK-IN</div>
                   </div>
                 </div>
               </div>
@@ -402,7 +393,7 @@ export default async function Home() {
                       <span className="guest-name">Bpk. Ahmad Fauzan &amp; Istri</span>
                       <span className="guest-tag">VIP · Meja 04 · Kuota 2 Tamu</span>
                     </div>
-                    <button className="guest-btn-wa">Kirim WA →</button>
+                    <button className="guest-btn-wa">Kirim WA</button>
                   </div>
                   <div className="guest-row-mockup">
                     <div className="guest-avatar">RP</div>
@@ -410,7 +401,7 @@ export default async function Home() {
                       <span className="guest-name">dr. Rina Puspita</span>
                       <span className="guest-tag">Sahabat · Kuota 1 Tamu</span>
                     </div>
-                    <button className="guest-btn-wa">Kirim WA →</button>
+                    <button className="guest-btn-wa">Kirim WA</button>
                   </div>
                 </div>
               </div>
@@ -483,7 +474,7 @@ export default async function Home() {
                       <span className="phone-guest-badge">VIP · Meja 04</span>
                     </div>
                   </div>
-                  <button className="phone-guest-btn">Kirim WA →</button>
+                  <button className="phone-guest-btn">Kirim WA</button>
                 </div>
                 <div className="phone-guest-card">
                   <div className="phone-guest-top">
@@ -493,7 +484,7 @@ export default async function Home() {
                       <span className="phone-guest-badge">Sahabat</span>
                     </div>
                   </div>
-                  <button className="phone-guest-btn">Kirim WA →</button>
+                  <button className="phone-guest-btn">Kirim WA</button>
                 </div>
               </div>
             </div>
@@ -571,10 +562,7 @@ export default async function Home() {
 
       <div className="studio-cta-wrap">
         <Link href="/how-it-works" className="btn-primary" id="studio-cta-guide">
-          <span>Pelajari Cara Kerja Lengkap</span>
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-            <path d="M2 7h10M7 2l5 5-5 5" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
+          <span>Pelajari Cara Kerja</span>
         </Link>
       </div>
     </div>
@@ -1148,9 +1136,6 @@ export default async function Home() {
             </p>
             <Link href="/demo?tab=features" className="harga-detail-link reveal reveal-delay-3">
               Lihat Detail Fitur
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                <path d="M2 7h10M7 2l5 5-5 5" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round"/>
-              </svg>
             </Link>
           </div>
 
@@ -1212,9 +1197,6 @@ export default async function Home() {
     </p>
     <Link href="/login" className="btn-cta reveal reveal-delay-3" id="cta-main-btn">
       Mulai Kisahmu
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-        <path d="M2 7h10M7 2l5 5-5 5" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round"/>
-      </svg>
     </Link>
   </div>
 </section>

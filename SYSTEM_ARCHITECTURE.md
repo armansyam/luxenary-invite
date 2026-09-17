@@ -2084,6 +2084,11 @@ Untuk memberikan pengalaman interaktif penuh bagi calon klien sebelum memesan pa
    - Menerapkan arsitektur pembagian aset yang presisi: Frame ponsel menampilkan `thumbnailMobile` (`thumbnail_mobile.webp` rasio 1:2), sedangkan frame tablet menampilkan `thumbnailDesktop` (`thumbnail_desktop.webp` rasio 16:10 dengan fallback cerdas ke `cover_desktop.webp`, `hero.webp`, dan `cover.webp`).
    - Area layar tablet (`*-screen`) mengunci `aspect-ratio: 16 / 10` secara langsung sehingga terbebas dari pemotongan topbar (*Zero-Crop Architecture*).
    - Endpoint `/api/admin/themes`, `/api/admin/overview`, dan `/api/public/themes` secara serentak mengembalikan kedua properti `thumbnailMobile` dan `thumbnailDesktop` dari konfigurasi Demo Studio atau disk fisik VPS guna menjamin konsistensi visual instan tanpa refresh halaman.
+5. **Clean Editorial Button Architecture & Eliminasi Total Ornamen Panah AI (`app/page.tsx` & `app/landing.css`):**
+   - Menghapus total seluruh SVG panah generik bawaan AI (`M2 7h10M7 2l5 5-5 5`) dan simbol panah literal (`→`) dari seluruh tombol primer dan teks CTA (`btn-primary`, `btn-secondary`, `btn-cta`, `koleksi-link`, `harga-detail-link`, navbar, banner status, dan mockup kartu).
+   - Memastikan standar *Editorial Luxury Typography*: tombol pil (`btn-primary`, `btn-secondary`, `btn-cta`) menerapkan `white-space: nowrap;` dan `justify-content: center;` untuk mencegah pembengkakan canggung dan pemotongan teks (*multiline wrap*) di mode mobile.
+   - Merampingkan microcopy kaku AI dari *"Pelajari Cara Kerja Lengkap"* menjadi lugas: **"Pelajari Cara Kerja"**.
+   - Melepaskan batasan kaku mobile `max-width: 280px` dan `max-width: 260px` menjadi ukuran dinamis proporsional (`width: auto; min-width: 210px; max-width: 300px; padding: 0.85rem 1.8rem;`) yang ergonomis terhadap *thumb zone* smartphone.
 
 ---
 

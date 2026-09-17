@@ -382,6 +382,7 @@
 .lux-landing-root .btn-primary {
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 0.6rem;
       font-family: 'DM Sans', sans-serif;
       font-size: 0.82rem;
@@ -394,6 +395,7 @@
       border: none;
       cursor: pointer;
       text-decoration: none;
+      white-space: nowrap;
       transition: background 0.3s, transform 0.3s var(--ease-luxury), box-shadow 0.3s;
       box-shadow: 0 10px 25px rgba(201, 162, 39, 0.35);
     }
@@ -418,7 +420,9 @@
       transition: background 0.3s, border-color 0.3s, color 0.3s;
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 0.5rem;
+      white-space: nowrap;
     }
 
 .lux-landing-root .btn-secondary:hover {
@@ -4635,6 +4639,7 @@
 .lux-landing-root .btn-cta {
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 0.6rem;
       font-family: 'DM Sans', sans-serif;
       font-size: 0.82rem;
@@ -4647,6 +4652,7 @@
       border-radius: 100px;
       border: none;
       cursor: pointer;
+      white-space: nowrap;
       transition: background 0.3s, transform 0.4s var(--ease-luxury), box-shadow 0.3s;
       position: relative;
     }
@@ -4982,15 +4988,17 @@
       }
 
 .lux-landing-root .hero-cta-group .btn-primary, .lux-landing-root .hero-cta-group .btn-secondary {
-        width: 100%;
-        max-width: 260px;
+        width: auto;
+        min-width: 210px;
+        max-width: 300px;
         justify-content: center;
         text-align: center;
         font-size: 0.85rem;
-        padding: 0.85rem 1.4rem;
-        min-height: 44px;
+        padding: 0.85rem 1.8rem;
+        min-height: 46px;
         display: inline-flex;
         align-items: center;
+        white-space: nowrap;
       }
 
 .lux-landing-root .hero-phones {
@@ -5177,12 +5185,13 @@
 
 .lux-landing-root .studio-pill-row {
         justify-content: center;
-        gap: 5px;
+        gap: 6px;
+        flex-wrap: wrap;
       }
 
 .lux-landing-root .studio-badge-pill {
-        font-size: 0.62rem;
-        padding: 3px 8px;
+        font-size: 0.65rem;
+        padding: 4px 10px;
       }
 
 .lux-landing-root .mini-sub {
@@ -5219,9 +5228,12 @@
       }
 
 .lux-landing-root .studio-cta-wrap .btn-primary {
-        width: 100%;
-        max-width: 280px;
+        width: auto;
+        min-width: 210px;
+        max-width: 100%;
+        padding: 0.85rem 2rem;
         justify-content: center;
+        white-space: nowrap;
       }
 
 .lux-landing-root #pengalaman {
@@ -5317,8 +5329,9 @@
 
 .lux-landing-root .btn-cta {
         align-self: flex-start;  /* jangan stretch full-width */
-        font-size: 0.76rem;
+        font-size: 0.78rem;
         padding: 0.85rem 1.8rem;
+        white-space: nowrap;
       }
 
 .lux-landing-root .cta-heading { font-size: 1.8rem; line-height: 1.2; }

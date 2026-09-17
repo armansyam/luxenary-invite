@@ -155,6 +155,13 @@ Sistem Studio Editor Klien dan Admin dirancang dengan arsitektur **Dual-Native M
    - Tidak ada ketergantungan pada blok puzzle eksperimental atau builder dinamis terpisah.
    - Semua tema katalog teruji secara visual di viewport mobile, tablet, dan desktop widescreen dengan layout split desktop elegan.
 
+### I. Standar Editorial Luxury Typography & Eliminasi Panah AI (Landing Page & CTA)
+1. **Clean Editorial Button Standard (`btn-primary`, `btn-secondary`, `btn-cta`):**
+   - Menghilangkan total seluruh SVG panah generik bawaan AI (`M2 7h10M7 2l5 5-5 5`) dan karakter literal `→` pada seluruh tombol aksi primer dan tautan CTA halaman utama.
+   - Mengunci aturan `white-space: nowrap;` dan `justify-content: center;` pada seluruh tombol kapsul untuk mencegah patahnya teks menjadi dua baris (*unwanted multiline wrap*) di layar smartphone kecil.
+   - Merampingkan microcopy dari kalimat terjemahan mesin kaku (*"Pelajari Cara Kerja Lengkap"*) menjadi microcopy tegas editorial (**"Pelajari Cara Kerja"**).
+   - Menyesuaikan batas kaku mobile (`max-width: 280px` / `260px`) menjadi lebar fleksibel ergonomis sentuhan jempol (`width: auto; min-width: 210px; max-width: 300px; padding: 0.85rem 1.8rem;`).
+
 ---
 
 ## 3. Studio Editor & Dynamic Multi-Event Architecture
