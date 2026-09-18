@@ -233,7 +233,6 @@ async function main() {
         label: s.label,
       },
       update: {
-        value: s.value,
         label: s.label,
       },
     });

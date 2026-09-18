@@ -89,7 +89,7 @@ export const defaultSettings: DefaultSettingItem[] = [
   {
     "id": "cdac08d5-8351-449d-9c4f-1638e000133c",
     "key": "bank_account_holder",
-    "value": "asda",
+    "value": "",
     "label": "Nama Pemilik Rekening",
     "group": "payment",
     "updatedAt": "2026-09-16T06:28:33.026Z"
@@ -97,7 +97,7 @@ export const defaultSettings: DefaultSettingItem[] = [
   {
     "id": "ab6e23cf-ac98-4830-9537-dab9da0165df",
     "key": "bank_account_number",
-    "value": "asd",
+    "value": "",
     "label": "Nomor Rekening Bank",
     "group": "payment",
     "updatedAt": "2026-09-16T06:28:33.025Z"
@@ -113,7 +113,7 @@ export const defaultSettings: DefaultSettingItem[] = [
   {
     "id": "f9017a15-4a9f-4dce-b792-f4d3e9609f1e",
     "key": "bank_name",
-    "value": "aas",
+    "value": "",
     "label": "Nama Bank Transfer Manual",
     "group": "payment",
     "updatedAt": "2026-09-16T06:28:33.029Z"
@@ -409,7 +409,7 @@ export const defaultSettings: DefaultSettingItem[] = [
   {
     "id": "cccc3334-df2d-4660-9a76-5ef1a0530ca5",
     "key": "payment_mode",
-    "value": "MANUAL",
+    "value": "GATEWAY",
     "label": "Mode Pembayaran (GATEWAY/MANUAL)",
     "group": "payment",
     "updatedAt": "2026-09-16T06:28:33.028Z"

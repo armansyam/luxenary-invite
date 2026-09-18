@@ -2269,7 +2269,7 @@ Sistem telah melalui audit mendalam berbasis bukti empiris (*Empirical Verificat
 5. **Purifikasi Skema Murni & Master Seed Terpadu (`prisma/seed.ts`):**
    - **Eliminasi Model Mati:** Model `Wish` dan tabel `wishes` resmi dihapus dari skema (migrasi `20260916143000`). Seluruh ucapan doa dikelola tunggal pada `rsvps.message`.
    - **Skema Bersih 0-Drift:** Kolom lama `phoneNumber` pada tabel `guests` dibersihkan, menyisakan `phone` murni. Nilai enum `WaStatus` distandarisasi murni ke `PENDING` dan `SENT`.
-   - **Master Seed Terpadu:** Seluruh 84 parameter platform (nama paket dinamis `Serenade`, `Symphony`, `Eternity`, kuota foto roll, aturan retensi), 16 tema master, 2 preset musik, dan 2 akun admin default ditanamkan permanen di `prisma/defaultSettings.ts` dan `prisma/seed.ts`.
+   - **Master Seed Terpadu (Non-Destructive Invariant):** Seluruh 84 parameter platform (nama paket dinamis `Serenade`, `Symphony`, `Eternity`, kuota foto roll, aturan retensi), 16 tema master, 2 preset musik, dan 2 akun admin default ditanamkan di `prisma/defaultSettings.ts` dan `prisma/seed.ts`. Operasi `upsert` pada `AdminSetting` diproteksi secara non-destruktif: hanya memperbarui `label` dan tidak pernah menimpa nilai `value` yang sudah dikonfigurasi oleh admin di database produksi.
 
 ---
 
