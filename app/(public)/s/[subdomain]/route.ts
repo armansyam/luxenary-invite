@@ -22,7 +22,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ subd
 
   if (!invitation) {
     // If subdomain is vacant / released, redirect to homepage with info
-    return NextResponse.redirect(new URL("/?notice=subdomain-available", req.url));
+    const rootUrl = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `https://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "https://luxvite.id")).replace(/\/$/, "");
+    return NextResponse.redirect(`${rootUrl}/?notice=subdomain-available`, 307);
   }
 
 
@@ -108,7 +109,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ subd
         where: { id: invitation.id },
         data: { subdomain: null },
       });
-      return NextResponse.redirect(new URL("/?notice=subdomain-expired", req.url));
+      const rootUrl = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `https://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "https://luxvite.id")).replace(/\/$/, "");
+      return NextResponse.redirect(`${rootUrl}/?notice=subdomain-expired`, 307);
     }
   } catch (err) {
     console.warn("[Subdomain Route] Gagal memvalidasi setting retensi:", err);

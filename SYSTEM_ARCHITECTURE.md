@@ -2270,6 +2270,9 @@ Sistem telah melalui audit mendalam berbasis bukti empiris (*Empirical Verificat
    - **Eliminasi Model Mati:** Model `Wish` dan tabel `wishes` resmi dihapus dari skema (migrasi `20260916143000`). Seluruh ucapan doa dikelola tunggal pada `rsvps.message`.
    - **Skema Bersih 0-Drift:** Kolom lama `phoneNumber` pada tabel `guests` dibersihkan, menyisakan `phone` murni. Nilai enum `WaStatus` distandarisasi murni ke `PENDING` dan `SENT`.
    - **Master Seed Terpadu (Non-Destructive Invariant):** Seluruh 84 parameter platform (nama paket dinamis `Serenade`, `Symphony`, `Eternity`, kuota foto roll, aturan retensi), 16 tema master, 2 preset musik, dan 2 akun admin default ditanamkan di `prisma/defaultSettings.ts` dan `prisma/seed.ts`. Operasi `upsert` pada `AdminSetting` diproteksi secara non-destruktif: hanya memperbarui `label` dan tidak pernah menimpa nilai `value` yang sudah dikonfigurasi oleh admin di database produksi.
+6. **Resolusi Domain Kanonikal Redirect Subdomain & Slug (`app/(public)/s/` & `[slug]`):**
+   - Mengeliminasi ketergantungan pada `req.url` internal reverse proxy (`localhost:3001`).
+   - Seluruh pengalihan (subdomain kosong `subdomain-available`, kedaluwarsa `subdomain-expired`, maupun arsip portofolio) dialihkan secara kanonikal ke `NEXT_PUBLIC_APP_URL` / `NEXT_PUBLIC_ROOT_DOMAIN` resmi (`https://luxvite.id`).
 
 ---
 

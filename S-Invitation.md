@@ -897,6 +897,8 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - Menghapus model mati `Wish` dan tabel `wishes` dari skema.
    - Menstandarkan tabel `guests` ke kolom `phone` murni dan enum `WaStatus` (`PENDING`, `SENT`).
    - Menanamkan seluruh 84 parameter platform (nama paket dinamis `Serenade`, `Symphony`, `Eternity`), 16 tema master, 2 preset musik, dan akun admin default ke dalam seed otomatis terpadu dengan proteksi non-destruktif (klausul `update` pada `AdminSetting` hanya memperbarui label metadata dan tidak pernah menimpa nilai `value` produksi).
+6. **Resolusi Domain Kanonikal Subdomain & Slug (`app/(public)/s/` & `[slug]`):**
+   - Menjamin bahwa seluruh pengalihan internal untuk subdomain yang belum terisi (`subdomain-available`), kedaluwarsa (`subdomain-expired`), maupun undangan berstatus `ARCHIVED` diarahkan ke URL kanonikal resmi (`NEXT_PUBLIC_APP_URL` / `https://luxvite.id`) tanpa membocorkan binding reverse proxy internal (`localhost:3001`).
 
 ---
 

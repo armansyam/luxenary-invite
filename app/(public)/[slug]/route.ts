@@ -113,13 +113,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
 
   // Jika undangan sudah berstatus ARCHIVED (masa galeri telah berakhir)
   if (invitation.status === "ARCHIVED") {
+    const rootUrl = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `https://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "https://luxvite.id")).replace(/\/$/, "");
     const portfolioExists = await hasPortfolio(slug);
     if (portfolioExists) {
-      return NextResponse.redirect(new URL(`/portfolio/${slug}`, req.url));
+      return NextResponse.redirect(`${rootUrl}/portfolio/${slug}`, 307);
     }
 
     // Jika tidak ada portofolio, langsung alihkan ke halaman utama
-    return NextResponse.redirect(new URL("/", req.url));
+    return NextResponse.redirect(`${rootUrl}/`, 307);
   }
 
   let html: string | null = null;

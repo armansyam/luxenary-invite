@@ -563,7 +563,7 @@ Setiap developer atau AI Agent yang melakukan modifikasi pada codebase **WAJIB**
   * **PostgreSQL Pool Boundaries (`lib/prisma.ts`)**: Konfigurasi batas koneksi pool eksplisit (`max: 10`, `idleTimeoutMillis: 30000`) mencegah kehabisan koneksi pada PM2 Cluster mode.
   * **Off-Site Disaster Recovery ke Cloudflare R2 (`lib/databaseBackup.ts`)**: Replikasi otomatis snapshot `.sql` terkompresi ke R2 bucket setiap kali backup dijalankan.
   * **Sinkronisasi Otomatis Crontab Linux & Logrotate (`deploy.sh`)**: Setup otomatis `pm2-logrotate` (maks 10MB x 7 rotasi) dan pendaftaran crontab pemeliharaan dengan `CRON_SECRET` aktif.
-  * **Koreksi Retensi Subdomain (`app/(public)/s/[subdomain]/route.ts`)**: Evaluasi tanggal acara multi-sesi terpadu via `getLatestEventDate` dan sinkronisasi dengan `adminSetting`.
+  * **Koreksi Retensi & Pengalihan Subdomain Kanonikal (`app/(public)/s/[subdomain]/route.ts` & `[slug]`):** Evaluasi tanggal acara multi-sesi terpadu via `getLatestEventDate`, sinkronisasi retensi admin, dan pengalihan kanonikal absolut ke `NEXT_PUBLIC_APP_URL` (`https://luxvite.id`) untuk mencegah kebocoran port lokal internal reverse proxy (`localhost:3001`).
 
 
 
