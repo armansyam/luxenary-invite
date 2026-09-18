@@ -7,7 +7,7 @@ interface OrderItem {
   id: string;
   invoiceNumber: string;
   planType: string;
-  orderType?: "NEW" | "UPGRADE" | "CUSTOM_DOMAIN_ADDON" | "GALLERY_EXTENSION" | string;
+  orderType?: "NEW" | "UPGRADE" | "GALLERY_EXTENSION" | string;
   targetPlanType?: string | null;
   requestedDomain?: string | null;
   amount: number | string;
@@ -453,13 +453,6 @@ export default function AdminOrdersTab() {
                                 </span>
                               );
                             }
-                            if (singleItem.type === "CUSTOM_DOMAIN_ADDON") {
-                              return (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-800 border border-indigo-200">
-                                  <span>Custom Domain {singleItem.domain ? `(${singleItem.domain})` : ""}</span>
-                                </span>
-                              );
-                            }
                             if (singleItem.type === "UPGRADE") {
                               return (
                                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-sky-800 border border-sky-200">
@@ -480,13 +473,6 @@ export default function AdminOrdersTab() {
                             return (
                               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-800 border border-purple-200">
                                 <span>Perpanjang Masa Aktif (+30 Hari)</span>
-                              </span>
-                            );
-                          }
-                          if (ord.orderType === "CUSTOM_DOMAIN_ADDON") {
-                            return (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-800 border border-indigo-200">
-                                <span>Custom Domain {ord.requestedDomain ? `(${ord.requestedDomain})` : ""}</span>
                               </span>
                             );
                           }

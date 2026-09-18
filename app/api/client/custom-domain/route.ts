@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
 
     // 2. Verifikasi status fitur master Custom Domain oleh Administrator
     const enabledSetting = await prisma.adminSetting.findUnique({
-      where: { key: "addon_custom_domain_enabled" },
+      where: { key: "custom_domain_enabled" },
     });
     const isCustomDomainEnabled = enabledSetting ? enabledSetting.value !== "false" : true;
     if (!isCustomDomainEnabled && !isAdmin) {

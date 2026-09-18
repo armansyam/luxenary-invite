@@ -113,17 +113,12 @@ export async function applyBundleFulfillment(paidOrderId: string): Promise<boole
       }
     }
 
-    // 5. Eksekusi CUSTOM DOMAIN jika ada
-    const domainItem = items.find(i => i.type === "CUSTOM_DOMAIN_ADDON");
-    const domainToApply = domainItem?.domain || order.requestedDomain || null;
-
-    // 6. Simpan seluruh pembaruan ke invitation
+    // 5. Simpan seluruh pembaruan ke invitation
     await tx.invitation.update({
       where: { id: invitation.id },
       data: {
         featureSettings: JSON.stringify(curFs),
         ...(newExpiry ? { galleryExpiresAt: newExpiry, memoriesUploadLocked: false } : {}),
-        ...(domainToApply ? { customDomain: domainToApply } : {}),
       },
     });
   });
@@ -224,45 +219,6 @@ export async function applyMemoriesTopup(topupOrderId: string): Promise<void> {
   });
 }
 
-/**
- * applyCustomDomainAddon
- * Dipanggil setelah order CUSTOM_DOMAIN_ADDON berhasil PAID.
- * Memasang custom domain dan menambahkan 365 hari (1 tahun) ke galleryExpiresAt.
- */
-export async function applyCustomDomainAddon(addonOrderId: string): Promise<void> {
-  const order = await prisma.order.findUnique({
-    where: { id: addonOrderId },
-    select: {
-      orderType: true,
-      linkedOrderId: true,
-      requestedDomain: true,
-    },
-  });
-
-  if (!order || (order.orderType as any) !== "CUSTOM_DOMAIN_ADDON" || !order.linkedOrderId || !order.requestedDomain) return;
-
-  const invitation = await prisma.invitation.findUnique({
-    where: { id: order.linkedOrderId },
-    select: { id: true, galleryExpiresAt: true },
-  });
-
-  if (!invitation) return;
-
-  const now = new Date();
-  const baseDate = invitation.galleryExpiresAt && invitation.galleryExpiresAt > now
-    ? new Date(invitation.galleryExpiresAt)
-    : now;
-
-  const newExpiry = new Date(baseDate.getTime() + 365 * 24 * 60 * 60 * 1000); // 1 tahun
-
-  await prisma.invitation.update({
-    where: { id: invitation.id },
-    data: {
-      customDomain: order.requestedDomain,
-      galleryExpiresAt: newExpiry,
-    },
-  });
-}
 
 /**
  * purgeObsoleteUserOrders
@@ -360,10 +316,6 @@ export async function applyUpgradePlan(paidOrderId: string): Promise<void> {
     return;
   }
 
-  if ((order.orderType as any) === "CUSTOM_DOMAIN_ADDON") {
-    await applyCustomDomainAddon(paidOrderId);
-    return;
-  }
 
   if (order.orderType !== "UPGRADE") return;
   if (!order.linkedOrderId || !order.targetPlanType) return;

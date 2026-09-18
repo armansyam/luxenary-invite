@@ -153,8 +153,8 @@ Menyimpan lembar penagihan dan riwayat transaksi:
 - `orderType` (Enum `OrderType`):
   - `NEW`: Pembuatan undangan pertama kali.
   - `UPGRADE`: Upgrade ke paket lebih tinggi.
-  - `GALLERY_EXTENSION`: Add-on perpanjangan galeri foto tamu (+30 hari).
-  - `CUSTOM_DOMAIN_ADDON`: Pembelian lisensi custom domain.
+  - `GALLERY_EXTENSION`: Add-on perpanjangan masa aktif galeri foto tamu.
+  - `MEMORIES_TOPUP`: Add-on kuota tambahan foto kenangan tamu.
 - `paymentMethod` (String): Kanal pembayaran (`GATEWAY` atau `MANUAL_TRANSFER`).
 - `proofImageUrl` (String, Nullable): URL slip transfer jika menggunakan transfer manual.
 - `promoCodeApplied` (String, Nullable): Kode kupon diskon yang diaplikasikan saat checkout.

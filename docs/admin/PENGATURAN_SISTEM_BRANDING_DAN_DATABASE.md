@@ -74,7 +74,7 @@ Menyediakan antarmuka Disaster Recovery mandiri untuk database PostgreSQL:
 - **Kartu Status Mesin Database:**
   - Menampilkan mesin aktif: `PostgreSQL (pg_dump)` dengan indikator status koneksi (*Connected & Running*).
   - Total file snapshot yang tersedia di direktori penyimpanan lokal server.
-  - Direktori path penyimpanan backup (default: `/data/backups` atau sesuai nilai `backup_path`).
+  - Direktori path penyimpanan backup (default: `./data/backups` untuk folder internal proyek, atau path absolut `/mnt/...` untuk partisi HDD/Mount). Dilengkapi **Live Directory Inspector**, deteksi izin tulis (*write permission*), dan notifikasi merah dengan perintah perbaikan terminal otomatis jika akses ditolak.
 - **Pembuatan Snapshot Mandiri 1-Klik:**
   - Tombol *"Buat Snapshot Sekarang"* (`POST /api/admin/database/backup`) yang memicu eksekusi utilitas `pg_dump` secara asynchronous tanpa menghentikan lalu lintas web.
 - **Upload & Restore Snapshot Eksternal:**

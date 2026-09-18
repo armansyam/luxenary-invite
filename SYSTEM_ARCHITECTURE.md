@@ -111,7 +111,7 @@
 │   │       ├── AdminInvitationsTab.tsx   # Siklus hidup projek & emergency unlock
 │   │       ├── AdminCustomDomainsTab.tsx # Live DNS check resolver & aktivasi 1-klik
 │   │       ├── AdminMonitoringTab.tsx    # Detak kesehatan server, kuota & ukuran riil Cloudflare R2 (MB/GB), kapasitas disk VPS, audit staf & webhook
-│   │       └── AdminFinanceTab.tsx       # Finance center, multi-chart visualisasi, pembukuan & tutup buku
+│   │       └── AdminCashflowTab.tsx      # Dashboard kas & hasil bisnis terpadu (uang masuk, keluar & sisa kas)
 │   │
 │   ├── checkout/             # Halaman checkout & pembayaran (multi-gateway 2-arah + manual transfer)
 │   ├── demo/                 # Demo tema publik
@@ -1442,8 +1442,8 @@ Sistem mendukung alur pembayaran terintegrasi dengan gateway 2-arah eksklusif (*
    - Dikelola dari kartu operasional galeri atau modal layanan tambahan di Dashboard klien, dialihkan ke `/checkout` atau kasir bundle, dan setelah lunas dialihkan ke `/dashboard?msg=gallery_extended`.
 3. **Top-Up Kuota Foto Momen Tamu (`orderType: MEMORIES_TOPUP` / Bundle):**
    - Menambah plafon kuota foto candid tamu (kelipatan 100 foto) yang disimpan di `extraMemoriesQuota`.
-4. *Catatan Historis `CUSTOM_DOMAIN_ADDON`:*
-   - Enum `CUSTOM_DOMAIN_ADDON` dipertahankan di skema database semata untuk kompatibilitas data audit historis. Pengaturan custom domain aktif kini dilakukan langsung secara instan dan bebas biaya di `/dashboard/settings` (`POST /api/client/custom-domain`) bagi pemilik paket eligible.
+4. **Fitur Custom Domain (Inklusif Bebas Biaya):**
+   - Custom domain bukan merupakan add-on berbayar, melainkan fitur inklusif bawaan untuk paket yang memenuhi syarat (TIER_3). Klien dapat langsung mendaftarkan atau memutuskan domain mandiri melalui `/dashboard/settings` (`POST /api/client/custom-domain`) tanpa melalui kasir/order. Saklar master platform dikontrol admin via `custom_domain_enabled`.
 
 ### 15.2.1 — Transmisi Data Lengkap ke Payment Gateway (Rich Payload Delivery)
 Setiap inisialisasi tagihan ke payment gateway (Midtrans & Xendit) mengirimkan informasi komprehensif untuk pelacakan keuangan, notifikasi multi-kanal, dan audit perbankan:
@@ -1513,7 +1513,7 @@ Setiap inisialisasi tagihan ke payment gateway (Midtrans & Xendit) mengirimkan i
   - Ringkasan pesanan (*summary*), nomor invoice, snapshot nominal, dan snapToken dibaca langsung dari database PostgreSQL, menjamin performa cepat dan konsistensi data 100%.
 - **Ketepatan Single State Guard (`isUserPaid`):**
   - Evaluasi `isUserPaid` dikunci secara presisi **hanya untuk order pendaftaran awal (`NEW`)**.
-  - Klien yang telah memiliki undangan lunas diizinkan secara bebas untuk memesan add-on (`GALLERY_EXTENSION`, `CUSTOM_DOMAIN_ADDON`, dan `UPGRADE`) tanpa terkunci atau terlempar ke form setup undangan.
+  - Klien yang telah memiliki undangan lunas diizinkan secara bebas untuk memesan upgrade atau add-on (`UPGRADE`, `GALLERY_EXTENSION`, dan `MEMORIES_TOPUP`) tanpa terkunci atau terlempar ke form setup undangan.
 - **Proteksi Tagihan Usang (*Superseded Order Guard*):**
   - Jika klien membuka tautan riwayat/bookmark invoice lama (`?order=OLD_ID`) padahal sudah memiliki tagihan baru dengan `orderType` yang sama:
     - API `GET /api/client/orders/[id]/status` mendeteksi `isSuperseded: true` dan menyertakan `activeOrderId`.
@@ -1912,44 +1912,31 @@ Untuk memberikan pengalaman interaktif penuh bagi calon klien sebelum memesan pa
 
 ---
 
-## 18. SISTEM FINANCE & REKAPITULASI KAS TERPUSAT
+## 18. SISTEM KAS & HASIL BISNIS TERPADU (CASHFLOW HUB)
 
-### 18.1 — Filosofi Desain Continuous Editorial Canvas
-1. **Pemberantasan Klise Card AI:**
-   - Tidak menggunakan kotak-kotak card tebal berbayangan tajam yang bertumpuk-tumpuk.
-   - Menggunakan kanvas mengalir datar dengan garis pembatas rambut tipis (*hairline*) `border-stone-200/80`, tipografi serif hangat berkarakter korporat eksekutif, dan pita metrik horizontal (*horizontal metric ribbon*) terintegrasi.
-2. **Palet Bebas Kelelahan Mata (Low Eye Strain):**
-   - Latar belakang warm stone `#FAFAF9`, charcoal `#1C1917`, hijau sage `#15803D` untuk omzet, dan terracotta `#B91C1C` untuk beban, tanpa saturasi neon mencolok.
-3. **Pemberantasan Emoji Sistem Operasi (Zero OS Emojis):**
+### 18.1 — Filosofi Single-Page Unified Cashflow
+1. **Prinsip Efisiensi Maksimal (Anti-Birokrasi & Anti-Bloat):**
+   - Menghapus tab bertingkat yang membingungkan. Seluruh data kas terintegrasi langsung dalam 1 halaman kas terpadu (`AdminCashflowTab`).
+   - Berfokus murni pada esensi hasil bisnis: **Uang Masuk, Uang Keluar, dan Sisa Kas Riil (Laba Bersih)**.
+   - Menggunakan kanvas mengalir dengan batas garis hairline tipis `border-stone-200/80` dan palet warna tenang yang ramah mata (*warm stone, charcoal, emerald, rose*).
+2. **Pemberantasan Emoji Sistem Operasi (Zero OS Emojis):**
    - Seluruh status diwakili oleh vektor SVG murni, tipografi angka monospaced, dan indikator titik halus (*1.5px dot indicators*).
 
 ### 18.2 — Alur Arus Kas & Anti-Redundansi Pendapatan
-1. **Otomatisasi 100% Pemasukan:**
+1. **Otomatisasi 100% Pemasukan (Zero-Duplication):**
    - Data arus kas masuk (*Gross Revenue*) mengalir murni secara dinamis dari tabel `Order` berstatus `PAID` (baik auto-PAID via Midtrans/Xendit maupun approval transfer bank manual).
    - Admin dilarang menginput pendapatan order klien secara manual untuk mencegah redundansi, selisih kas (*discrepancy*), dan *ghost revenue*.
 2. **Pencatatan Beban Kas Operasional (OPEX):**
    - Mutasi pengeluaran kas dicatat dalam tabel `Expense` dengan parameter kategori (`ExpenseCategory`), tanggal mutasi, sumber bayar (`paymentSource`), nomor referensi, catatan audit, dan berkas fisik bukti struk.
 
-### 18.3 — Engine Grafik Interaktif Multi-Model (Native 60 FPS SVG)
-1. **3 Model Grafik:**
-   - **Batang Komparasi (Dual Bar):** Perbandingan bersanding omzet penjualan vs beban operasional.
-   - **Kurva Kontinu (Smooth Area):** Tren kurva Bezier halus dengan gradient transparan dan tooltip hover interaktif.
-   - **Net Flow Baseline (Rp 0):** Grafik deviasi laba bersih di atas / di bawah garis impas Rp 0.
-2. **3 Rentang Waktu:** Harian (30 Hari), Bulanan (12 Bulan), dan Tahunan (Multi-Tahun).
+### 18.3 — Visualisasi Tren Arus Kas Bulanan (Native SVG)
+- **Grafik Batang Bulanan (Januari s.d. Desember):** Grafik komparasi langsung bersanding antara Uang Masuk (Emerald) dan Uang Keluar (Rose) per bulan.
+- **Interaksi Tooltip Cepat:** Menampilkan rincian nominal masuk, keluar, dan sisa kas per bulan tanpa beban komputasi Bezier yang berat.
 
-### 18.4 — Tagihan Rutin Bulanan (1-Klik Bayar & Bukukan)
-- Mengelola komitmen rutin bulanan (Server VPS Hostinger, Fiber IndiHome, Listrik PLN, lisensi software) dalam model `RecurringExpense`.
-- Fitur **1-Klik Bayar** mengonversi tagihan langsung menjadi catatan `Expense` di buku kas dengan referensi unik `REC-{ID}-{TAHUN}-{BULAN}` dan memutakhirkan agenda lunas bulan berjalan secara instan.
-
-### 18.5 — Prosedur Audit-Safe Tutup Buku (Financial Closing)
-- Menyimpan snapshot agregasi laba rugi bulanan ke dalam model `FinancialClosing`.
-- Mengunci mutasi kas secara otomatis (`isLocked = true`) sehingga transaksi pada bulan tersebut tidak dapat diubah atau dihapus kembali.
-- Menolak penambahan transaksi baru pada periode yang telah ditutup buku.
-- Pembukaan kembali (*reopen/unlock*) periode tutup buku dibatasi khusus untuk pemegang role `SUPER_ADMIN`.
-
-### 18.6 — Rekapitulasi Pajak PPh Final UMKM 0,5% (PP 55/2022)
-- Lembar kerja 12 bulan (Januari s.d. Desember) menghitung otomatis kewajiban PPh Final 0,5% atas peredaran bruto (omzet kotor).
-- Menyediakan pencatatan nomor transaksi penerimaan negara (NTPN/BPN) dan tanggal setor bank persepsi untuk kelengkapan arsip pelaporan SPT Tahunan di DJP Online.
+### 18.4 — Buku Kas Pengeluaran Terpadu (Expense Ledger)
+- Pencatatan, pencarian, dan filter cepat per kategori dan sumber dana.
+- Aksi hapus pengeluaran dilindungi pola konfirmasi inline 2-step aman tanpa dialog popup browser.
+- Ekspor streaming CSV untuk kebutuhan arsip pembukuan eksternal.
 
 ---
 
@@ -2302,5 +2289,26 @@ Sistem telah melalui audit mendalam berbasis bukti empiris (*Empirical Verificat
    - Antarmuka **Compact Single-Row Strip**: form input horizontal ramping (~48-52px) yang menyatukan slot logo mini (64×40px dengan preview langsung, file picker terintegrasi, dan tombol clear), input nama vendor, input tautan/Instagram, serta tombol hapus tanpa card wrap bertingkat (bebas cardception).
    - Mendukung penambahan vendor tak terbatas dengan upload logo (terintegrasi kompresi WebP berslot `vendor` pada `/api/client/upload`), input nama, dan deteksi otomatis format `@username` Instagram atau tautan web portofolio vendor.
    - Tersimpan utuh pada field JSON `featureSettings.vendors` dan `featureSettings.customLabels` tanpa memerlukan migrasi skema database baru (Zero DB Migration).
+
+---
+
+## 28. Penguatan Stabilitas DevOps & Server Infrastructure (September 2026)
+
+1. **PostgreSQL Connection Pool Sizing & Idle Timeout (`lib/prisma.ts`):**
+   - Mengatur batas eksplisit `max` (default 10 koneksi per worker atau configurable via `DB_POOL_MAX`), `idleTimeoutMillis: 30000`, dan `connectionTimeoutMillis: 5000`.
+   - Mencegah kehabisan slot koneksi database (`too many clients already`) saat aplikasi dijalankan pada PM2 Cluster Mode multi-worker.
+
+2. **Disaster Recovery: Replikasi Off-Site Snapshot ke Cloudflare R2 (`lib/databaseBackup.ts`):**
+   - Setiap snapshot `.sql` yang di-generate via `pg_dump` otomatis diunggah ke Cloudflare R2 bucket (`backups/database/snapshot_xxx.sql`).
+   - Menghilangkan *Single Point of Failure (SPOF)*: jika server VPS mengalami kerusakan perangkat keras, database dapat direstorasi dari cloud R2 independen.
+   - Penghapusan snapshot dan rotasi `pruneOldSnapshots` disinkronkan menghapus file di disk lokal dan R2 secara bersamaan.
+
+3. **Sinkronisasi Retensi Subdomain Terpadu (`app/(public)/s/[subdomain]/route.ts`):**
+   - Menghapus logika stale hardcoded 7 hari dan evaluasi satu tanggal. Rute kini mengevaluasi `isSubdomainExpired` menggunakan `getLatestEventDate(eventData)` (mendukung acara multi-sesi) dan membaca setting faktual `retention_cleanup_days` serta `subdomain_auto_recycle`.
+
+4. **Otomatisasi Pendaftaran Crontab OS & Rotasi Log PM2 (`deploy.sh`):**
+   - Skrip deployment otomatis mengonfigurasi `pm2-logrotate` (maks 10MB x 7 arsip) untuk mencegah kebocoran disk VPS dari `logs/out.log`.
+   - Skrip deployment otomatis mendaftarkan jadwal cron job pemeliharaan (`/api/cron/cleanup` pukul 02:00 dan `/api/cron/backup` pukul 03:00) ke crontab Linux host menggunakan `CRON_SECRET` aktif, mengeliminasi kebutuhan konfigurasi manual oleh engineer IT.
+
 
 

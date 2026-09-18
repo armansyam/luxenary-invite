@@ -137,7 +137,7 @@ ADMIN PORTAL (/admin)
    - Monitoring (Monitoring & Status Server): Pemantauan kestabilan sistem 60-hari interaktif (Interactive Uptime Status Bar), pemantauan memori fisik Host RAM VPS (`os.totalmem()`), Host OS Uptime, beban partisi root Linux (/), latensi & metrik ukuran terpakai Cloudflare R2 Media Storage (kapasitas terpakai, sisa kuota bebas biaya 10 GB), serta audit aktivitas staf & webhook gateway.
    - Tim & Akses (Team): Manajemen akun staf admin dengan isolasi 4-tier Role Access Matrix (`SUPER_ADMIN`, `ADMIN`, `FINANCE`, `SUPPORT`) dilengkapi pratinjau hak akses menu dinamis (*Reactive Allowed vs Restricted Tab Badges*).
    - Pemasaran & Afiliasi (Marketing): Manajemen kupon promo & diskon (potongan persen/nominal, kuota, masa berlaku, alokasi sementara promo hold saat checkout), kemitraan mitra afiliasi (Wedding Organizer, KOL, vendor) dengan perhitungan komisi otomatis, pelacakan konversi, dan pencairan saldo komisi.
-   - **Finance & Keuangan (Posisi Paling Bawah):** Pusat pembukuan keuangan terpadu dengan Continuous Editorial Canvas (bebas tumpukan card AI klise), visualisasi grafik interaktif multi-model 60 FPS SVG (Dual Bar, Kurva Kontinu, dan Net Flow Baseline Rp 0), buku kas keluar (OPEX) terstruktur dengan tagging sumber bayar & bukti struk, pelacak tagihan rutin 1-klik (VPS, internet, listrik), prosedur audit-safe Tutup Buku bulanan/tahunan (penguncian mutasi kas permanen), dan lembar kerja Rekapitulasi Pajak PPh Final 0,5% (PP 55/2022) siap lapor SPT di DJP Online.
+   - **Kas & Hasil Bisnis (Finance):** Dashboard kas terpadu single-page (`AdminCashflowTab`) yang berfokus murni pada hasil bisnis riil: omzet masuk otomatis dari pesanan paket lunas (PAID), buku kas pengeluaran operasional (OPEX), visualisasi grafik batang bulanan (Jan - Des), dan kalkulasi sisa kas bersih riil tanpa birokrasi penutupan buku atau lembar pajak formalitas yang membebani.
    *(Dilengkapi Tab Memory Persistence via URL Query & LocalStorage sehingga reload halaman tidak pernah terpental kembali ke tab ringkasan)*
 ```
 
@@ -156,7 +156,7 @@ Format URL Asli / Kanonikal (SATU-SATUNYA PINTU UTAMA / Single Source of Truth):
 Format Portofolio (HTML statis terisolasi):
   https://luxenary.id/portfolio/dimas-clarissa-030326
 
-Format Custom Domain (SaaS Add-on 1 Tahun):
+Format Custom Domain (Inklusif Paket Eternity):
   https://dimas-clarissa.com (Auto-SSL Caddy & internal rewrite ke endpoint URL Asli)
 
 Sub-routes publik:
@@ -350,7 +350,7 @@ Luxenary-Invite/
 │       ├── AdminInvitationsTab.tsx   # Siklus hidup projek & emergency unlock
 │       ├── AdminCustomDomainsTab.tsx # Live DNS check & aktivasi 1-klik
 │       ├── AdminMonitoringTab.tsx    # Detak kesehatan server, kuota & ukuran riil R2 (MB/GB), disk VPS, audit staf & webhook
-│       ├── AdminFinanceTab.tsx       # Finance center, multi-chart visualisasi & pembukuan kas
+│       ├── AdminCashflowTab.tsx      # Dashboard kas & hasil bisnis terpadu (uang masuk, keluar & sisa kas)
 │       └── AdminThemeFactory         # ⭐ Generator tema modular Build Custom & kompilasi demo statis otomatis
 ├── public/
 │   ├── published/             # HTML baked (subdomains/, slugs/, ids/)
@@ -559,5 +559,11 @@ Setiap developer atau AI Agent yang melakukan modifikasi pada codebase **WAJIB**
   * **Pembersihan Berkas VPS Otomatis**: Siklus cron cleanup saat status berubah ke `ARCHIVED` otomatis membuang HTML terbitan canonical (`deletePublishedHtml`) dan berkas draft lokal (`data/drafts/<id>.html`).
   * **Top-Up Kuota Momen Tamu Terpadu**: Integrasi checkout add-on `MEMORIES_TOPUP`, aktivasi otomatis melalui helper `applyMemoriesTopup`, dan akumulasi langsung ke `totalEventQuota` di upload endpoint.
   * **Purifikasi Skema & Master Seed Mandiri**: Menghapus model mati `Wish`, menormalisasi enum & kolom sisa ke 0-drift, serta membukukan seluruh 84 parameter platform (nama paket dinamis `Serenade`, `Symphony`, `Eternity`), 16 tema master, 2 preset musik, dan admin default ke dalam `prisma/seed.ts`.
+- **Penguatan Stabilitas DevOps & Server Infrastructure (v5.8.0)**:
+  * **PostgreSQL Pool Boundaries (`lib/prisma.ts`)**: Konfigurasi batas koneksi pool eksplisit (`max: 10`, `idleTimeoutMillis: 30000`) mencegah kehabisan koneksi pada PM2 Cluster mode.
+  * **Off-Site Disaster Recovery ke Cloudflare R2 (`lib/databaseBackup.ts`)**: Replikasi otomatis snapshot `.sql` terkompresi ke R2 bucket setiap kali backup dijalankan.
+  * **Sinkronisasi Otomatis Crontab Linux & Logrotate (`deploy.sh`)**: Setup otomatis `pm2-logrotate` (maks 10MB x 7 rotasi) dan pendaftaran crontab pemeliharaan dengan `CRON_SECRET` aktif.
+  * **Koreksi Retensi Subdomain (`app/(public)/s/[subdomain]/route.ts`)**: Evaluasi tanggal acara multi-sesi terpadu via `getLatestEventDate` dan sinkronisasi dengan `adminSetting`.
+
 
 

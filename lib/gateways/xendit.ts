@@ -169,10 +169,6 @@ export class XenditGateway implements PaymentGateway {
       itemName = "Top-Up Kuota Momen Foto";
       itemDescription = `[${platformName}] Top-Up Kuota Momen Foto #${invoiceNumber} (${customerFullName})`;
       itemCategory = "Add-on Kuota";
-    } else if (orderType === "CUSTOM_DOMAIN_ADDON") {
-      itemName = `Jasa Integrasi Domain ${requestedDomain || ""}`.trim();
-      itemDescription = `[${platformName}] Jasa Integrasi Domain: ${requestedDomain || ""} #${invoiceNumber} (${customerFullName})`;
-      itemCategory = "Add-on Domain";
     } else if (orderType === "UPGRADE") {
       itemName = `Upgrade Paket: ${upgradedFromPlan || "Tier"} ke ${targetPlanType || packageType}`;
       itemDescription = `[${platformName}] Upgrade Layanan ke ${targetPlanType || packageType} #${invoiceNumber} (${customerFullName})`;

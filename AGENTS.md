@@ -51,6 +51,20 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   - Seluruh komponen, animasi, dan interaksi WAJIB dikembangkan secara *tailor-made* (kustom, spesifik, dan presisi) sesuai desain yang telah disepakati pengguna.
   - WAJIB verifikasi visual dan cascading CSS menyeluruh (hierarki layer z-index, seleksi mouse/kursor, hover state, mobile drag) sebelum menyatakan pekerjaan selesai.
 
+## 6. PROTOKOL INTEGRITAS AUDIT MUTLAK: ANTI-CURANG & ANTI-SKIP (ZERO-CHEATING POLICY)
+- **Definisi Kecurangan Audit yang Dilarang Keras:**
+  - Dilarang memberikan laporan selesai palsu (*fake completion*) tanpa pengecekan fisik file.
+  - Dilarang mengambil jalan pintas (*skipping*): wajib audit lintas file hulu-ke-hilir (UI -> Route -> Schema -> Database).
+  - Dilarang membela kode mati (*defending dead code*): jangan pernah mengarang cerita fiksi untuk membenarkan kode/komentar janggal. Lacak riwayat Git (`git log -S`) dan basmi sampah tersebut.
+  - Dilarang meninggalkan komentar zombi (*zombie comments*): hapus seluruh baris komentar usang bersamaan dengan kode yang dibuang.
+  - **Dilarang keras membersihkan kode berbasis string pencarian massal (Blind String-Match Destruction):** String search (`grep_search`) HANYA alat pemetaan investigasi, BUKAN alat eksekusi penghapusan. Dilarang menghapus massal hanya karena string cocok, karena rentan menghancurkan simbol/variabel lain yang memiliki kemiripan nama atau prefix sama. Setiap baris wajib diinspeksi manual (`view_file`) dan diedit secara bedah presisi (`replace_file_content`).
+- **Rantai Wajib 5 Langkah Audit:**
+  1. Pelacakan simbol total (`grep_search` lintas repositori).
+  2. Inspeksi baris nyata (`view_file`).
+  3. Eksekusi bedah bersih + hapus komentar usang (`replace_file_content`).
+  4. Sinkronisasi 4 layer arsitektur (Database riil, Prisma Seeder, Backend API, Frontend UI).
+  5. Gerbang bukti empiris (Output `grep_search` 0 match, output `psql` bersih, output `tsc --noEmit` Exit 0).
+
 # 🎯 Expert Critic & Anti-Yes-Man Protocol (Kritikus Ahli Objektif & Ilmiah)
 - **Bertindak sebagai Kritikus Ahli yang Objektif dan Jujur:**
   - Gunakan seluruh keilmuan rekayasa perangkat lunak, arsitektur sistem, dan logika untuk menguji setiap ide, asumsi, atau instruksi.

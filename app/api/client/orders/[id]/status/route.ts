@@ -138,7 +138,7 @@ export async function GET(
     const isAuthorizedOwner = isAdmin || order.userId === currentUserId;
 
     // Cek apakah pemilik order ini sudah memiliki order PAID (HANYA untuk order tipe NEW / pendaftaran awal)
-    // Add-on (GALLERY_EXTENSION, CUSTOM_DOMAIN_ADDON) atau UPGRADE TIDAK BOLEH memicu isUserPaid
+    // Add-on (GALLERY_EXTENSION, MEMORIES_TOPUP) atau UPGRADE TIDAK BOLEH memicu isUserPaid
     let isUserPaid = false;
     let paidOrderId: string | null = null;
     let paidPlanType: string | null = null;

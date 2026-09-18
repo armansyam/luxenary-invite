@@ -401,8 +401,8 @@ export default function SettingsPage() {
         if (d?.platformName) setPlatformName(d.platformName);
         if (d?.cnameTarget || d?.cname_target) setCnameTarget(d.cnameTarget || d.cname_target);
         if (d?.serverPublicIp || d?.server_public_ip) setServerPublicIp(d.serverPublicIp || d.server_public_ip);
-        if (d?.addon_custom_domain_enabled !== undefined) {
-          setIsCustomDomainEnabled(d.addon_custom_domain_enabled !== false);
+        if (d?.custom_domain_enabled !== undefined) {
+          setIsCustomDomainEnabled(d.custom_domain_enabled !== false);
         }
         const cleanupDays = Number(d?.retentionCleanupDays ?? d?.retention_cleanup_days ?? d?.retentionInvitationGraceDays ?? 14);
         setRetentionGraceDays(cleanupDays);

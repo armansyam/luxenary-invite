@@ -92,25 +92,26 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ subd
     }
   }
 
-  // Check if subdomain has expired (> 7 days post event)
-  let eventDateToTest: string | null = null;
+  // Evaluasi masa aktif subdomain sesuai adminSetting dan tanggal acara mutakhir (multi-sesi)
   try {
-    if (invitation.eventData) {
-      const parsed = JSON.parse(invitation.eventData);
-      if (Array.isArray(parsed) && parsed[0]?.date) {
-        eventDateToTest = parsed[0].date;
-      }
-    }
-  } catch {}
+    const [retentionCleanupSetting, autoRecycleSetting] = await Promise.all([
+      prisma.adminSetting.findUnique({ where: { key: "retention_cleanup_days" } }),
+      prisma.adminSetting.findUnique({ where: { key: "subdomain_auto_recycle" } }),
+    ]);
 
-  if (isSubdomainExpired(eventDateToTest, 7)) {
-    // Auto-release subdomain back to pool (invitation remains published on canonical path)
-    await prisma.invitation.update({
-      where: { id: invitation.id },
-      data: { subdomain: null },
-    });
-    
-    return NextResponse.redirect(new URL("/?notice=subdomain-expired", req.url));
+    const cleanupDays = Number(retentionCleanupSetting?.value) || 14;
+    const isAutoRecycle = (autoRecycleSetting?.value || "true") === "true";
+
+    if (isAutoRecycle && isSubdomainExpired(invitation.eventData, cleanupDays)) {
+      // Auto-release subdomain kembali ke pool jika masa retensi terlewati
+      await prisma.invitation.update({
+        where: { id: invitation.id },
+        data: { subdomain: null },
+      });
+      return NextResponse.redirect(new URL("/?notice=subdomain-expired", req.url));
+    }
+  } catch (err) {
+    console.warn("[Subdomain Route] Gagal memvalidasi setting retensi:", err);
   }
 
   let html: string | null = null;

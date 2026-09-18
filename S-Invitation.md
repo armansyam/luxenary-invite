@@ -519,7 +519,7 @@ Sistem pengiriman email otomatis menggunakan **Nodemailer** yang membaca kredens
    - Semua aset gambar dikompresi WebP tajam dan disimpan terisolasi di `public/portfolio/assets/[slug]/`.
 2. **Custom Domain Klien (`dimas-clarissa.com`) & 2 Layanan Tambahan Resmi**:
    - **Inklusif Dalam Paket (Bebas Biaya Tambahan)**: Custom domain merupakan fitur bawaan yang sudah **termasuk bebas biaya (gratis)** pada paket yang memiliki kapabilitas `custom_domain` (seperti tier Eternity / Premium). Klien tidak perlu membayar biaya add-on tambahan.
-   - **Gembok Master Saklar Admin (`addon_custom_domain_enabled`)**:
+   - **Gembok Master Saklar Admin (`custom_domain_enabled`)**:
      - Administrator dapat mengaktifkan atau menonaktifkan fitur Custom Domain platform kapan saja melalui **Admin Dashboard > Pengaturan > Setup & Integrasi > Integrasi Domain Pribadi & DNS Server**.
      - Ketika dinonaktifkan (`false`), kartu "Domain Sendiri" di dashboard pengaturan klien otomatis disembunyikan sepenuhnya dari pandangan klien, dan endpoint backend `POST /api/client/custom-domain` memblokir registrasi domain baru dengan proteksi HTTP 403 Forbidden.
    - **Tautan Langsung Mandiri**:
@@ -706,29 +706,27 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
 
 ---
 
-## 17. Modul Eksekutif Finance & Pembukuan Kas Terpusat (`/admin?tab=finance`)
-1. **Prinsip Continuous Editorial Canvas & Zero AI Cards:**
-   - Menghilangkan tumpukan kartu box berbayangan tebal yang membuat mata lelah.
-   - Kanvas mengalir bebas card dengan garis hairline pembatas halus `border-stone-200/80`, tipografi serif hangat, dan pita metrik horizontal (*horizontal metric ribbon*) terpadu.
-   - Eliminasi total emoji OS bawaan (digantikan oleh vektor SVG murni dan dot indicator 1.5px).
+## 17. Modul Eksekutif Kas & Hasil Bisnis Terpadu (`/admin?tab=finance`)
+1. **Prinsip Single-Page Unified Cashflow & Anti-Birokrasi:**
+   - Menghapus tab bertingkat yang membingungkan. Seluruh data kas terintegrasi langsung dalam 1 halaman kas terpadu (`AdminCashflowTab`).
+   - Berfokus murni pada esensi hasil bisnis: **Uang Masuk, Uang Keluar, dan Sisa Kas Riil (Laba Bersih)**.
+   - Mengeliminasi total emoji OS bawaan (digantikan oleh vektor SVG murni dan indikator titik 1.5px).
 2. **Arsitektur Aliran Kas Pemasukan 100% Otomatis (Zero-Duplication):**
-   - Gross Revenue diperoleh secara deterministik dan non-duplikatif dari tabel `Order` berstatus `PAID`.
-   - Admin dilarang menginput omzet order secara manual untuk menjaga keaslian mutasi dan mencegah selisih kas.
-3. **Engine Grafik Interaktif Multi-Model 60 FPS Native SVG:**
-   - 3 Model: Batang Komparasi (*Dual Bar*), Kurva Kontinu (*Smooth Area*), dan Net Flow Baseline (*Rp 0 Break-Even Equilibrium*).
-   - 3 Timeframe: Harian (30 Hari), Bulanan (12 Bulan), dan Tahunan (Multi-Tahun).
-4. **Buku Kas Pengeluaran (OPEX) & Unggah Struk:**
-   - Pencatatan mutasi kas keluar dengan kategori, sumber dana (BCA, Mandiri, QRIS, Kas Tunai), nomor referensi, catatan memo, dan upload struk fisik (JPG, PNG, WebP, PDF) tersimpan di `/uploads/finance/receipts/`.
-   - Filter lengkap kategori, sumber dana, pencarian, dan ekspor streaming CSV.
-5. **Jadwal Tagihan Rutin Bulanan & 1-Klik Bayar:**
-   - Katalog tagihan rutin (Server VPS Hostinger, Internet IndiHome, Listrik PLN, lisensi aplikasi).
-   - Aksi 1-klik bayar yang membukukan tagihan langsung ke tabel `Expense` dengan referensi unik `REC-{ID}-{TAHUN}-{BULAN}` dan memutakhirkan agenda bulan berjalan secara instan.
-6. **Prosedur Audit-Safe Tutup Buku (Financial Closing):**
-   - Mengagregasi snapshot laba rugi ke model `FinancialClosing` dan mengunci seluruh mutasi kas pengeluaran bulan tersebut (`isLocked = true`).
-   - Mencegah input mutasi baru pada bulan yang telah dikunci. Pembukaan kunci (*reopen/unlock*) dilindungi otorisasi khusus `SUPER_ADMIN`.
-7. **Rekapitulasi Pajak PPh Final UMKM 0,5% (PP 55/2022):**
-   - Lembar kerja fiskal 12 bulan (Januari s.d. Desember) menghitung otomatis tarif 0,5% dari peredaran bruto omzet order.
-   - Pencatatan kode NTPN/BPN resmi hasil setoran di bank persepsi untuk kelengkapan pelaporan SPT Tahunan di DJP Online.
+   - Gross Revenue diperoleh secara deterministik dan otomatis dari tabel `Order` berstatus `PAID`.
+   - Admin dilarang menginput omzet order secara manual untuk menjaga keaslian mutasi kas dan mencegah selisih/ghost revenue.
+3. **Pita 3 Metrik Realitas Kas (The Rule of 3 Metrics):**
+   - **Total Uang Masuk:** Akumulasi pendapatan order paket undangan lunas pada tahun terpilih.
+   - **Total Uang Keluar:** Akumulasi beban server, iklan, lisensi, dan belanja operasional.
+   - **Sisa Kas Usaha (Hasil Bersih):** Surplus kas berjalan beserta margin profitabilitas (%).
+4. **Grafik Batang Bulanan Bersih (Januari s.d. Desember):**
+   - 1 Grafik batang SVG responsif dan ringan yang menyandingkan Uang Masuk (Emerald) dan Uang Keluar (Rose) per bulan.
+   - Tooltip hover interaktif yang menampilkan detail nominal masuk, keluar, dan sisa kas per bulan tanpa beban kalkulasi kurva yang berat.
+5. **Buku Kas Pengeluaran (Expense Ledger) & Unggah Struk:**
+   - Pencatatan mutasi kas keluar dengan kategori, sumber dana (BCA, Mandiri, Transfer, QRIS, Kas Tunai), nomor referensi, catatan memo, dan upload struk fisik (JPG, PNG, WebP, PDF) tersimpan di `/uploads/finance/receipts/`.
+   - Fitur pencarian instan, filter kategori/sumber dana, pagination bersih, dan ekspor streaming CSV.
+   - Aksi hapus mutasi terlindungi oleh konfirmasi inline 2-step aman tanpa dialog popup peramban (`window.confirm`).
+6. **Eliminasi Sub-Tab Pajak Formalitas & Penguncian Tutup Buku:**
+   - Menghapus sub-tab tutup buku kaku (`financial_closings`) dan rekapitulasi NTPN pajak formalitas agar operasional pencatatan nota operasional tim tetap lincah, fleksibel, dan tidak menyulitkan pencatatan di kemudian hari.
 
 ---
 
@@ -931,3 +929,21 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - Fitur lengkap: toggle visibilitas seksi vendor demo, kustomisasi judul/eyebrow/subtitle seksi, dan tombol cepat *"Muat 4 Logo Dummy Default"* (`/uploads/logo_dummy/logo_1.png` s.d. `logo_4.png`).
    - Kompilasi otomatis file static HTML showroom (`/public/demo/[theme]/index.html`) saat admin menyimpan perubahan.
 
+---
+
+## 21. Penguatan Stabilitas DevOps & Ketahanan Server (v5.8.0)
+
+1. **Batas Koneksi PostgreSQL Terukur (`lib/prisma.ts`):**
+   - Mendefinisikan batas eksplisit pool `max: 10` per worker Node.js (dapat dikonfigurasi via `DB_POOL_MAX`), `idleTimeoutMillis: 30000`, dan `connectionTimeoutMillis: 5000`.
+   - Menjamin pemakaian koneksi PostgreSQL tetap di bawah ambang batas default `max_connections = 100` saat berjalan di PM2 Cluster multi-instance.
+
+2. **Disaster Recovery Mandiri ke Cloudflare R2 (`lib/databaseBackup.ts`):**
+   - Setiap pencadangan harian (`pg_dump -F c`) otomatis mengunggah arsip snapshot biner terkompresi ke Cloudflare R2 (`backups/database/snapshot_xxx.sql`).
+   - Melenyapkan risiko Single Point of Failure (SPOF) dari penyimpanan backup di harddisk lokal yang sama.
+
+3. **Sinkronisasi Retensi Subdomain Multi-Sesi (`app/(public)/s/[subdomain]/route.ts`):**
+   - Memperbarui rute penanganan subdomain tamu agar mengevaluasi tanggal acara mutakhir (`getLatestEventDate`) dan menghormati setting platform `retention_cleanup_days` serta `subdomain_auto_recycle`.
+
+4. **Otomatisasi Pendaftaran Crontab OS & Rotasi Log PM2 (`deploy.sh`):**
+   - Menanamkan instalasi dan konfigurasi otomatis `pm2-logrotate` (maksimal 10MB x 7 rotasi terkompresi).
+   - Menanamkan pendaftaran otomatis jadwal pemeliharaan `/api/cron/cleanup` (02:00) dan `/api/cron/backup` (03:00) ke dalam crontab Linux host saat deployment, menghilangkan kebutuhan intervensi manual oleh engineer IT.

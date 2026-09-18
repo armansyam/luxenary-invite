@@ -247,8 +247,8 @@ Setiap kali transaksi disetujui lunas (baik otomatis via Webhook QRIS maupun man
 3. **Pencabangan Tipe Order (`orderType`):**
    - **`NEW`:** Transaksi paket pertama ➔ Mengarahkan klien masuk ke Formulir Setup Undangan ([`app/(client)/dashboard/setup/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/(client)/dashboard/setup/page.tsx)).
    - **`UPGRADE` (`applyUpgradePlan`):** Memperbarui `planType` pada order awal (`linkedOrderId`) ke tier yang lebih tinggi (misal: Modern ➔ Premium).
-   - **`GALLERY_EXTENSION` (`applyGalleryExtension`):** Menambahkan **+30 hari** ke `galleryExpiresAt` pada undangan klien dan membuka kembali kunci unggah foto kenangan tamu (`memoriesUploadLocked: false`).
-   - **`CUSTOM_DOMAIN_ADDON` (`applyCustomDomainAddon`):** Memasang domain kustom yang diminta (`requestedDomain`) ke undangan klien dan menambahkan masa aktif galeri selama **+365 hari (1 tahun)**.
+    - **`GALLERY_EXTENSION` (`applyGalleryExtension`):** Menambahkan masa simpan foto kenangan tamu ke `galleryExpiresAt` pada undangan klien dan membuka kembali kunci unggah foto kenangan tamu (`memoriesUploadLocked: false`).
+    - **`MEMORIES_TOPUP` (`applyMemoriesTopup`):** Menambahkan kuota foto kenangan tamu (`extraMemoriesQuota`) pada undangan klien.
 
 ---
 

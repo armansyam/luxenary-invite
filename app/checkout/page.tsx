@@ -100,9 +100,6 @@ function CheckoutContent() {
     if (type === "MEMORIES_TOPUP") {
       return "/dashboard/moments?msg=quota_added";
     }
-    if (type === "CUSTOM_DOMAIN_ADDON") {
-      return "/dashboard/settings?msg=custom_domain_activated";
-    }
     if (type === "UPGRADE") {
       return "/dashboard?msg=plan_upgraded";
     }
@@ -140,8 +137,8 @@ function CheckoutContent() {
     setError(null);
 
     // Untuk pesanan add-on atau upgrade, jangan buat order paket baru
-    if (currentOrderType === "GALLERY_EXTENSION" || currentOrderType === "MEMORIES_TOPUP" || currentOrderType === "CUSTOM_DOMAIN_ADDON" || currentOrderType === "UPGRADE") {
-      const returnUrl = currentOrderType === "MEMORIES_TOPUP" ? "/dashboard/moments?msg=order_expired" : currentOrderType === "CUSTOM_DOMAIN_ADDON" ? "/dashboard/settings?msg=order_expired" : "/dashboard?msg=order_expired";
+    if (currentOrderType === "GALLERY_EXTENSION" || currentOrderType === "MEMORIES_TOPUP" || currentOrderType === "UPGRADE") {
+      const returnUrl = currentOrderType === "MEMORIES_TOPUP" ? "/dashboard/moments?msg=order_expired" : "/dashboard?msg=order_expired";
       router.replace(returnUrl);
       return;
     }
@@ -223,11 +220,10 @@ function CheckoutContent() {
 
         if (orderStatusRes.ok && orderStatusData.id) {
           // SINGLE STATE GUARD: Hanya berlaku untuk pendaftaran paket baru (NEW)
-          // Add-on (GALLERY_EXTENSION, MEMORIES_TOPUP, CUSTOM_DOMAIN_ADDON) dan UPGRADE tidak boleh memicu pengalihan
+          // Add-on (GALLERY_EXTENSION, MEMORIES_TOPUP) dan UPGRADE tidak boleh memicu pengalihan
           const isAddonOrder =
             orderStatusData.orderType === "GALLERY_EXTENSION" ||
             orderStatusData.orderType === "MEMORIES_TOPUP" ||
-            orderStatusData.orderType === "CUSTOM_DOMAIN_ADDON" ||
             orderStatusData.orderType === "UPGRADE";
 
           if (!isAddonOrder && orderStatusData.isUserPaid && orderStatusData.paidOrderId) {
@@ -313,13 +309,6 @@ function CheckoutContent() {
               name: "Top-Up Kuota Momen Foto",
               price: Number(orderStatusData.amount),
               desc: "Penambahan kuota penyimpanan foto kenangan para tamu di album acara.",
-            });
-          } else if (orderStatusData.orderType === "CUSTOM_DOMAIN_ADDON") {
-            setCurrentPlanType("CUSTOM_DOMAIN_ADDON");
-            setPlanData({
-              name: "Jasa Integrasi Custom Domain (1 Tahun)",
-              price: Number(orderStatusData.amount),
-              desc: `Aktivasi domain ${orderStatusData.requestedDomain || "kustom"} lengkap dengan SSL/TLS & Cloudflare DNS selama 1 tahun.`,
             });
           } else if (orderStatusData.orderType === "UPGRADE") {
             const targetTier = orderStatusData.targetPlanType || orderStatusData.planType || "";
@@ -565,10 +554,6 @@ function CheckoutContent() {
         router.replace("/dashboard/moments?msg=topup_cancelled");
         return;
       }
-      if (currentOrderType === "CUSTOM_DOMAIN_ADDON") {
-        router.replace("/dashboard/settings?msg=domain_addon_cancelled");
-        return;
-      }
       if (currentOrderType === "UPGRADE") {
         router.replace("/dashboard?msg=upgrade_cancelled");
         return;
@@ -749,8 +734,6 @@ function CheckoutContent() {
                       ? "Perpanjangan Masa Aktif"
                       : currentOrderType === "MEMORIES_TOPUP"
                       ? "Top-Up Kuota Foto"
-                      : currentOrderType === "CUSTOM_DOMAIN_ADDON"
-                      ? "Add-on Kustom"
                       : currentOrderType === "UPGRADE"
                       ? "Upgrade Layanan"
                       : "Aktivasi Paket"}
@@ -774,18 +757,7 @@ function CheckoutContent() {
                     </span>
                   </div>
                 )}
-                {currentOrderType === "CUSTOM_DOMAIN_ADDON" ? (
-                  <>
-                    <div className="flex justify-between items-center">
-                      <span className="text-stone-400">Domain Tujuan</span>
-                      <span className="text-amber-400 font-mono text-xs font-bold">{requestedDomain || "-"}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-stone-400">Masa Aktif Domain</span>
-                      <span className="text-emerald-400 font-semibold">1 Tahun (365 Hari)</span>
-                    </div>
-                  </>
-                ) : currentOrderType === "GALLERY_EXTENSION" ? (
+                {currentOrderType === "GALLERY_EXTENSION" ? (
                   <div className="flex justify-between items-center">
                     <span className="text-stone-400">Masa Tambahan Galeri</span>
                     <span className="text-emerald-400 font-semibold">+30 Hari Kalender</span>

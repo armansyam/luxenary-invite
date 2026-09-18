@@ -45,7 +45,7 @@ export interface PublicPlatformSettings {
   retentionCleanupDays: number;
   retentionCustomDomainDays: number;
   galleryExtensionPricePerMonth: number;
-  addonCustomDomainEnabled: boolean;
+  customDomainEnabled: boolean;
   addonMemoriesTopupEnabled: boolean;
   addonMemoriesTopupPhotos: number;
   addonMemoriesTopupPrice: number;
@@ -224,13 +224,13 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
     bankInstructions:
       map["bank_instructions"] ||
       "Silakan transfer tepat sesuai total tagihan invoice. Setelah transfer, unggah foto bukti transfer di bawah ini untuk diverifikasi admin.",
-    retentionInvitationDays: Number(map["retention_invitation_days"] || 30),
+    retentionInvitationDays: Number(map["retention_cleanup_days"] || 14),
     retentionInvitationGraceDays: Number(map["retention_invitation_grace_days"] || 7),
     retentionGalleryDefaultDays: Number(map["retention_cleanup_days"] || galleryRetentionDays || 14),
     retentionCleanupDays: Number(map["retention_cleanup_days"] || 14),
     retentionCustomDomainDays: Number(map["retention_custom_domain_days"] || 30),
     galleryExtensionPricePerMonth: Number(map["gallery_extension_price_per_month"] || 50000),
-    addonCustomDomainEnabled: map["addon_custom_domain_enabled"] !== "false",
+    customDomainEnabled: map["custom_domain_enabled"] !== "false",
     addonMemoriesTopupEnabled: map["addon_memories_topup_enabled"] !== "false",
     addonMemoriesTopupPhotos: Number(map["addon_memories_topup_photos"] || 100),
     addonMemoriesTopupPrice: Number(map["addon_memories_topup_price"] || 35000),

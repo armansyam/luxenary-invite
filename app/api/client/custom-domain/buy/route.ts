@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
 
     // 2. Cek status aktivasi fitur Custom Domain
     const enabledSetting = await prisma.adminSetting.findUnique({
-      where: { key: "addon_custom_domain_enabled" },
+      where: { key: "custom_domain_enabled" },
     });
     const isCustomDomainEnabled = enabledSetting ? enabledSetting.value !== "false" : true;
     if (!isCustomDomainEnabled) {

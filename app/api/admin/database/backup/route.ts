@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createDatabaseSnapshot, listDatabaseSnapshots, deleteDatabaseSnapshot } from "@/lib/databaseBackup";
+import { createDatabaseSnapshot, listDatabaseSnapshots, deleteDatabaseSnapshot, inspectBackupPath } from "@/lib/databaseBackup";
+import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 
 export const dynamic = "force-dynamic";
@@ -20,8 +21,18 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized. Khusus Administrator." }, { status: 401 });
     }
 
-    const snapshots = await listDatabaseSnapshots();
-    return NextResponse.json({ success: true, snapshots });
+    let backupPathSetting = "./data/backups";
+    try {
+      const s = await prisma.adminSetting.findUnique({ where: { key: "backup_path" } });
+      if (s?.value) backupPathSetting = s.value;
+    } catch {}
+
+    const [snapshots, pathInfo] = await Promise.all([
+      listDatabaseSnapshots(),
+      inspectBackupPath(backupPathSetting),
+    ]);
+
+    return NextResponse.json({ success: true, snapshots, pathInfo });
   } catch (error: any) {
     return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Gagal mengambil daftar snapshot" : (error.message || "Gagal mengambil daftar snapshot") }, { status: 500 });
   }
@@ -35,6 +46,13 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => ({}));
+
+    // Uji izin akses direktori kustom secara real-time
+    if (body.action === "test_path" || body.testPath !== undefined) {
+      const pathInfo = await inspectBackupPath(body.testPath);
+      return NextResponse.json({ success: true, pathInfo });
+    }
+
     const label = body.label ? String(body.label).replace(/[^a-zA-Z0-9_-]/g, "") : undefined;
     const result = await createDatabaseSnapshot(label);
     return NextResponse.json({

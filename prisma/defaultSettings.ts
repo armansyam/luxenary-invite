@@ -24,7 +24,7 @@ export const defaultSettings: DefaultSettingItem[] = [
   },
   {
     "id": "357a5478-6597-49f7-a84a-1b75aefe3f6b",
-    "key": "addon_custom_domain_enabled",
+    "key": "custom_domain_enabled",
     "value": "false",
     "label": "Aktifkan Fitur Custom Domain Klien",
     "group": "setup",
@@ -73,7 +73,7 @@ export const defaultSettings: DefaultSettingItem[] = [
   {
     "id": "2b10b0ca-0951-49e6-9c60-d63f28620a81",
     "key": "backup_path",
-    "value": "/data/backups",
+    "value": "./data/backups",
     "label": "Path Direktori Backup",
     "group": "backup",
     "updatedAt": "2026-09-16T06:28:33.006Z"
@@ -463,14 +463,6 @@ export const defaultSettings: DefaultSettingItem[] = [
     "updatedAt": "2026-09-16T06:28:33.038Z"
   },
   {
-    "id": "b49c9caa-606a-4fba-9853-363c8ee3cc21",
-    "key": "retention_account_days",
-    "value": "365",
-    "label": "Pembersihan Total Akun & Portofolio (Hari)",
-    "group": "subdomain",
-    "updatedAt": "2026-09-16T06:28:33.009Z"
-  },
-  {
     "id": "retention_cleanup_days",
     "key": "retention_cleanup_days",
     "value": "30",
@@ -485,14 +477,6 @@ export const defaultSettings: DefaultSettingItem[] = [
     "label": "Masa Aktif Custom Domain (Hari)",
     "group": "setup",
     "updatedAt": "2026-09-16T06:28:33.048Z"
-  },
-  {
-    "id": "401d8dfa-95b5-4b4f-911e-7f48908c84de",
-    "key": "retention_invitation_days",
-    "value": "30",
-    "label": "Retensi Undangan Aktif & Recycle Subdomain (Hari)",
-    "group": "subdomain",
-    "updatedAt": "2026-09-16T06:28:33.008Z"
   },
   {
     "id": "854e5478-1300-408e-a8fc-f29b46d7a220",

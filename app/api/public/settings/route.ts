@@ -20,7 +20,7 @@ export async function GET() {
         price_tier2: settings.packages?.find((p) => p.id === "TIER_2")?.price ?? 0,
         price_tier3: settings.packages?.find((p) => p.id === "TIER_3")?.price ?? 0,
       },
-      addon_custom_domain_enabled: settings.addonCustomDomainEnabled,
+      custom_domain_enabled: settings.customDomainEnabled,
       gallery_extension_price_per_month: settings.galleryExtensionPricePerMonth,
       server_public_ip: settings.serverPublicIp,
       cname_target: settings.cnameTarget,

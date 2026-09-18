@@ -9,7 +9,13 @@ declare global {
 }
 
 const connectionString = process.env.DATABASE_URL;
-export const pool = global.pgPool ?? new Pool({ connectionString });
+const maxConnections = process.env.DB_POOL_MAX ? parseInt(process.env.DB_POOL_MAX, 10) : 10;
+export const pool = global.pgPool ?? new Pool({
+  connectionString,
+  max: maxConnections,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000,
+});
 if (process.env.NODE_ENV !== 'production') global.pgPool = pool;
 
 const adapter = new PrismaPg(pool);

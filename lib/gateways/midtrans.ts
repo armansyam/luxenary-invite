@@ -213,10 +213,6 @@ export class MidtransGateway implements PaymentGateway {
       itemId = "TOPUP_MEMORIES";
       itemName = "Top-Up Kuota Momen Foto";
       itemCategory = "Add-on Kuota";
-    } else if (orderType === "CUSTOM_DOMAIN_ADDON") {
-      itemId = "CUSTOM_DOMAIN";
-      itemName = `Jasa Integrasi Domain ${requestedDomain || ""}`.trim().slice(0, 50);
-      itemCategory = "Add-on Domain";
     } else if (orderType === "UPGRADE") {
       itemId = `UPG_${targetPlanType || packageType}`.slice(0, 50);
       itemName = `Upgrade: ${upgradedFromPlan || "Tier"} ke ${targetPlanType || packageType}`.trim().slice(0, 50);
@@ -289,9 +285,7 @@ export class MidtransGateway implements PaymentGateway {
 
     // Keterangan pendukung metadata
     const customField3 = (
-      orderType === "CUSTOM_DOMAIN_ADDON"
-        ? `Domain: ${requestedDomain || "-"}`
-        : orderType === "UPGRADE"
+      orderType === "UPGRADE"
         ? `Upgrade: ${upgradedFromPlan || "Tier"} ke ${targetPlanType || packageType}`
         : orderType === "MEMORIES_TOPUP"
         ? "Top-Up Kuota Momen Foto"

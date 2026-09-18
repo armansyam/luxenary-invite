@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
         basePrice = Number(priceSetting.value);
       }
     } else {
-      // Untuk UPGRADE, GALLERY_EXTENSION, dan CUSTOM_DOMAIN_ADDON, gunakan nominal order.amount
+      // Untuk UPGRADE dan GALLERY_EXTENSION, gunakan nominal order.amount
       basePrice = Number(order.amount);
     }
 

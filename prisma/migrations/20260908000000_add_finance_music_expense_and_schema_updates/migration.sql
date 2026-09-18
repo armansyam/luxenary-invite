@@ -23,12 +23,7 @@ BEGIN
   END IF;
 END$$;
 
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_enum e JOIN pg_type t ON e.enumtypid = t.oid WHERE t.typname = 'OrderType' AND e.enumlabel = 'CUSTOM_DOMAIN_ADDON') THEN
-    ALTER TYPE "OrderType" ADD VALUE 'CUSTOM_DOMAIN_ADDON';
-  END IF;
-END$$;
+
 
 DO $$
 BEGIN

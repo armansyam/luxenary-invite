@@ -21,7 +21,7 @@ const DEFAULT_SETTINGS: Array<{ key: string; value: string; label: string; group
   { key: "support_whatsapp", value: "", label: "Nomor WhatsApp Support / Admin", group: "platform" },
   { key: "server_public_ip", value: "", label: "IP Public Server (Record A)", group: "setup" },
   { key: "cname_target", value: "", label: "Host Target CNAME (Custom Domain)", group: "setup" },
-  { key: "addon_custom_domain_enabled", value: "true", label: "Aktifkan Fitur Custom Domain Klien", group: "setup" },
+  { key: "custom_domain_enabled", value: "true", label: "Aktifkan Fitur Custom Domain Klien", group: "setup" },
   { key: "hero_tagline", value: "Undangan Pernikahan Digital Elegan, Hangat & Berkelas", label: "Tagline Hero", group: "platform" },
   { key: "hero_subtitle", value: "Didesain khusus dengan sentuhan estetika mewah dan eksklusif. Hadirkan pengalaman berkesan dengan layout split desktop, custom subdomain, buku tamu real-time, dan video booth ucapan.", label: "Deskripsi Hero", group: "platform" },
   { key: "service_status_mode", value: "OPEN", label: "Status Layanan & Pendaftaran (OPEN/CLOSED_ORDER/MAINTENANCE/COMING_SOON)", group: "platform" },
@@ -61,12 +61,10 @@ const DEFAULT_SETTINGS: Array<{ key: string; value: string; label: string; group
   { key: "bank_instructions", value: "Silakan transfer tepat sesuai total tagihan invoice. Setelah transfer, unggah foto bukti transfer di bawah ini untuk diverifikasi admin.", label: "Instruksi Transfer Manual", group: "payment" },
   { key: "backup_auto_enabled", value: "true", label: "Auto-Backup Harian Aktif", group: "backup" },
   { key: "backup_auto_time", value: "02:00", label: "Waktu Eksekusi Auto-Backup (HH:mm)", group: "backup" },
-  { key: "backup_path", value: "/data/backups", label: "Path Direktori Backup", group: "backup" },
+  { key: "backup_path", value: "./data/backups", label: "Path Direktori Backup", group: "backup" },
   { key: "backup_retention_count", value: "10", label: "Batas Jumlah Snapshot Disimpan", group: "backup" },
   { key: "subdomain_grace_days", value: "7", label: "Masa Tenggang Subdomain (Hari Pasca Acara)", group: "subdomain" },
   { key: "subdomain_auto_recycle", value: "true", label: "Otomatis Lepas Subdomain ke Pool", group: "subdomain" },
-  { key: "retention_invitation_days", value: "30", label: "Retensi Undangan Aktif & Recycle Subdomain (Hari)", group: "subdomain" },
-  { key: "retention_account_days", value: "365", label: "Pembersihan Akun Klien Nonaktif (Hari)", group: "subdomain" },
   // Retensi order — terpisah dari retensi undangan
   { key: "retention_order_days", value: "90", label: "Pembersihan Order Lama EXPIRED/FAILED/PENDING (Hari)", group: "subdomain" },
   // Batas upload file media
@@ -156,7 +154,7 @@ export async function POST(req: NextRequest) {
       }
 
       // Sync Cloudflare R2 Object Lifecycle dynamically if retention setting is updated
-      if (key === "retention_account_days") {
+      if (key === "retention_cleanup_days") {
         const retentionDays = Number(strVal);
         if (!isNaN(retentionDays) && retentionDays > 0) {
           import("@/lib/storage").then(({ syncR2LifecycleRule }) => {

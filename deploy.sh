@@ -107,6 +107,14 @@ fi
 # 7. Restart Server & Persist PM2
 echo "🔄 Merestart aplikasi..."
 if command -v pm2 &> /dev/null; then
+  echo "🪵 Memastikan rotasi log PM2 (anti-disk leak) aktif..."
+  if ! pm2 list | grep -q "pm2-logrotate"; then
+    pm2 install pm2-logrotate --silent || true
+  fi
+  pm2 set pm2-logrotate:max_size 10M > /dev/null 2>&1 || true
+  pm2 set pm2-logrotate:retain 7 > /dev/null 2>&1 || true
+  pm2 set pm2-logrotate:compress true > /dev/null 2>&1 || true
+
   echo "✅ PM2 terdeteksi. Merestart aplikasi via ecosystem..."
   pm2 reload ecosystem.config.js --update-env || pm2 start ecosystem.config.js
   pm2 save
@@ -123,4 +131,23 @@ else
   echo "⚠️ PM2 tidak terdeteksi di sistem ini. Silakan jalankan manual via 'npm run start'."
 fi
 
-echo "✨ Deployment selesai dengan sukses! Aplikasi Anda sudah yang paling mutakhir."
+# 8. Sinkronisasi Crontab Pemeliharaan OS Linux Otomatis
+if command -v crontab &> /dev/null; then
+  echo "⏰ Memverifikasi dan menyinkronkan jadwal pemeliharaan OS (crontab)..."
+  ACTUAL_CRON_SECRET=$(grep -E "^CRON_SECRET=" .env | cut -d '=' -f2 | tr -d '"' | tr -d "'")
+  if [ -n "$ACTUAL_CRON_SECRET" ] && [ "$ACTUAL_CRON_SECRET" != '""' ]; then
+    CURRENT_CRON=$(crontab -l 2>/dev/null || true)
+    FILTERED_CRON=$(echo "$CURRENT_CRON" | grep -v "api/cron/cleanup" | grep -v "api/cron/backup" || true)
+    
+    CLEANUP_LINE="0 2 * * * curl -s -X POST -H \"Authorization: Bearer $ACTUAL_CRON_SECRET\" http://localhost:3001/api/cron/cleanup > /dev/null 2>&1"
+    BACKUP_LINE="0 3 * * * curl -s -X POST -H \"Authorization: Bearer $ACTUAL_CRON_SECRET\" http://localhost:3001/api/cron/backup > /dev/null 2>&1"
+    
+    NEW_CRON=$(printf "%s\n%s\n%s\n" "$FILTERED_CRON" "$CLEANUP_LINE" "$BACKUP_LINE" | sed '/^[[:space:]]*$/d')
+    echo "$NEW_CRON" | crontab - 2>/dev/null || true
+    echo "✅ Crontab OS disinkronkan: Cleanup (02:00) & Backup (03:00) dengan token aktif."
+  else
+    echo "⚠️ CRON_SECRET tidak ditemukan di .env — sinkronisasi crontab dilewati."
+  fi
+fi
+
+echo "✨ Deployment selesai dengan sukses! Aplikasi Anda sudah yang paling mutakhir dan terproteksi."

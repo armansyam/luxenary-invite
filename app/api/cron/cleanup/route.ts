@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
     // 1. Bersihkan foto candid tamu di R2 & local
     // 2. Daur ulang subdomain ke pool (subdomain: null) jika auto-recycle aktif
     // 3. Bersihkan data RSVP yang kedaluwarsa demi privasi
-    // 4. Ubah status undangan menjadi ARCHIVED (Akun klien tetap abadi seumur hidup - Zero Account Deletion)
+    // 4. Daur ulang subdomain ke pool dan tandai ARCHIVED
     const finishedInvs = await prisma.invitation.findMany({
       where: { status: { in: ["EVENT_FINISHED", "TAKEN_DOWN"] } },
       select: {
