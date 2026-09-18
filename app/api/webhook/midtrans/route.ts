@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     if (process.env.MIDTRANS_SERVER_KEY) serverKeys.push(process.env.MIDTRANS_SERVER_KEY.trim());
     try {
       const settings = await prisma.adminSetting.findMany({
-        where: { group: "midtrans" },
+        where: { key: { in: ["midtrans_server_key", "midtrans_client_key"] } },
       });
       const map: Record<string, string> = {};
       settings.forEach((s) => (map[s.key] = s.value?.trim() || ""));

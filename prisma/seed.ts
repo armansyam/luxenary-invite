@@ -231,9 +231,11 @@ async function main() {
         key: s.key,
         value: s.value,
         label: s.label,
+        group: s.group || "general",
       },
       update: {
         label: s.label,
+        group: s.group || "general",
       },
     });
   }

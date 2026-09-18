@@ -16,7 +16,9 @@ export class XenditGateway implements PaymentGateway {
     let webhookToken = process.env.XENDIT_WEBHOOK_TOKEN || "";
 
     try {
-      const settings = await prisma.adminSetting.findMany({ where: { group: "xendit" } });
+      const settings = await prisma.adminSetting.findMany({
+        where: { key: { in: ["xendit_api_key", "xendit_webhook_token"] } },
+      });
       const map: Record<string, string> = {};
       settings.forEach((s) => (map[s.key] = s.value));
 

@@ -49,7 +49,9 @@ export class MidtransGateway implements PaymentGateway {
     let clientKey = "";
 
     try {
-      const settings = await prisma.adminSetting.findMany({ where: { group: "midtrans" } });
+      const settings = await prisma.adminSetting.findMany({
+        where: { key: { in: ["midtrans_server_key", "midtrans_client_key"] } },
+      });
       const map: Record<string, string> = {};
       settings.forEach((s) => (map[s.key] = s.value));
 

@@ -76,7 +76,7 @@ async function runCleanup() {
 
     // 2. Cari semua undangan PUBLISHED yang memiliki subdomain untuk dicek masa kedaluwarsanya
     console.log(`[CLEANUP] Mengecek masa aktif undangan PUBLISHED...`);
-    const adminSetting = await prisma.adminSetting.findUnique({ where: { key: "retention_invitation_days" } });
+    const adminSetting = await prisma.adminSetting.findUnique({ where: { key: "retention_cleanup_days" } });
     const retentionDays = adminSetting?.value ? parseInt(adminSetting.value, 10) : 30;
     
     const publishedInvitations = await prisma.invitation.findMany({

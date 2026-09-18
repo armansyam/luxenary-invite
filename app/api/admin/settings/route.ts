@@ -143,7 +143,7 @@ export async function POST(req: NextRequest) {
       const updated = await prisma.adminSetting.upsert({
         where: { key },
         create: { key, value: strVal, group: group || "general" },
-        update: { value: strVal },
+        update: { value: strVal, ...(group ? { group } : {}) },
       });
       results.push(updated);
 

@@ -685,14 +685,4 @@ export const defaultMusicPresets = [
     isActive: true,
     sortOrder: 1,
   },
-  {
-    id: "preset-sempurna",
-    title: "Sempurna",
-    composer: "Andra and the BackBone",
-    genre: "Acoustic / Ballad",
-    url: "/music/sempurna.mp3",
-    durationSec: 255,
-    isActive: true,
-    sortOrder: 2,
-  },
 ];
