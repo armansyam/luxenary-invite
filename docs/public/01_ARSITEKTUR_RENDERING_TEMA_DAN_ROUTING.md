@@ -12,13 +12,20 @@ Sistem melayani undangan publik melalui 3 skema alamat URL yang berbeda namun di
 ```mermaid
 flowchart TD
     subgraph RequestMasuk [Request Pengunjung / Tamu]
-        A[Request Masuk via HTTP / HTTPS] --> B{middleware.ts: Analisis Host}
+        A[Request Masuk via HTTP / HTTPS] --> B{middleware.ts: Analisis Host & Subdomain}
     end
     
-    subgraph RouteResolution [Engine Resolusi URL]
+    subgraph StrictSubdomainGuard [Pilar Isolasi Subdomain]
+        B -->|Subdomain demo| B1[307 Redirect: luxvite.id/demo]
+        B -->|Subdomain Reserved: app, login, dll| B2[307 Redirect: luxvite.id/pathname]
+        B -->|Platform Path di Subdomain Klien: /packages, /login, dll| B3[307 Redirect: Lepas Subdomain ke luxvite.id/pathname]
+        B -->|Subdomain Kosong / Tak Terdaftar| B4[307 Redirect: luxvite.id/?notice=subdomain-available]
+    end
+    
+    subgraph RouteResolution [Engine Resolusi URL Undangan]
         B -->|Host: wedding-andi-siti.com| C[Custom Domain: Cek DNS & Query DB by customDomain]
-        B -->|Host: andi-siti.luxenary.com| D[Subdomain: Rewrite Internal ke /s/andi-siti]
-        B -->|Host: luxenary.com/andi-siti| E[Path Slug: Direct Route ke /[slug]]
+        B -->|Host: andi-siti.luxvite.id| D[Subdomain Klien: Eksklusif 5 Rute Acara Rewrite ke /s/andi-siti]
+        B -->|Host: luxvite.id/andi-siti| E[Path Slug Kanonikal: Direct Route ke /[slug]]
     end
     
     subgraph TemplateCompiler [Engine Kompilasi Tema Fisik]
@@ -39,14 +46,22 @@ flowchart TD
 
 ---
 
-## 2. Resolusi Jalur URL
+## 2. Resolusi Jalur URL & Strict Subdomain Isolation Guard
 
 1. **Custom Domain (`https://wedding-andi-siti.com`):**
-   - Host dievaluasi oleh `middleware.ts`. Jika bukan domain utama platform (`luxenary.com`), sistem memanggil resolver internal untuk mencocokkan field `customDomain` pada tabel `Invitation`.
+   - Host dievaluasi oleh `middleware.ts`. Jika bukan domain utama platform (`luxvite.id`), sistem memanggil resolver internal untuk mencocokkan field `customDomain` pada tabel `Invitation`.
+   - Menggunakan cache in-memory TTL 5 menit untuk mencegah amplifikasi self-fetch request.
    - Domain dilindungi sertifikat HTTPS otomatis via Caddy *On-Demand TLS*.
-2. **Subdomain Sistem (`https://andi-siti.luxenary.com`):**
-   - Middleware mengekstrak subdomain dari host header dan melakukan internal rewrite ke rute `/s/[subdomain]`.
-3. **Path Slug Standar (`https://luxenary.com/andi-siti`):**
+2. **Subdomain Klien (`https://andi-siti.luxvite.id`):**
+   - Dilindungi oleh **Strict Subdomain Isolation Guard**:
+     - **Pelepasan Jalur Platform:** Jika tamu/klien membuka rute platform resmi (`/packages`, `/checkout`, `/login`, `/dashboard`, `/admin`, `/contact`, `/terms`, `/privacy`, `/refund`, `/how-it-works`, `/demo`, `/portfolio`), middleware otomatis melepaskan subdomain dan me-redirect (HTTP 307) ke `https://luxvite.id/{path}`.
+     - **Eksklusif 5 Rute Acara:** Subdomain klien hanya melayani 5 endpoint undangan: Beranda Utama (`/`), Tamu Personal (`/{guest}` atau `/?to=`), Galeri Kenangan (`/memories`), Meja Resepsionis (`/receptionist`), dan Kamera Momen Tamu (`/sharemoment`).
+     - **Pencegahan URL Collision:** Mencegah rute seperti `/packages` disalahartikan sebagai nama tamu undangan (`?to=packages`).
+3. **Subdomain Sistem Terproteksi:**
+   - `demo.luxvite.id` otomatis dialihkan (HTTP 307) ke katalog resmi `https://luxvite.id/demo`.
+   - Subdomain cadangan sistem (`www`, `app`, `login`, `dashboard`, dll.) otomatis dialihkan (HTTP 307) ke apex domain `https://luxvite.id${pathname}`.
+   - Subdomain kosong/kedaluwarsa otomatis dialihkan ke `https://luxvite.id/?notice=subdomain-available`.
+4. **Path Slug Standar (`https://luxvite.id/andi-siti`):**
    - Ditangani langsung oleh Route Handler `app/(public)/[slug]/route.ts`.
 
 ---
@@ -63,7 +78,7 @@ Platform mematuhi prinsip **Single Source of Truth** di mana master tema tersimp
 | `{{groom_fullname}}` | `invitation.groomName` | Andi Pratama, S.T. |
 | `{{bride_fullname}}` | `invitation.brideName` | Siti Nurhaliza, S.E. |
 | `{{event_date_formatted}}`| `invitation.events[0].date` | Minggu, 15 Oktober 2026 |
-| `{{music_url}}` | `invitation.musicUrl` | `https://pub-r2.luxenary.com/audio/...` |
+| `{{music_url}}` | `invitation.musicUrl` | `https://pub-r2.luxvite.id/audio/...` |
 | `{{recipient_name}}` | Query Parameter `?to=` | Bpk. Dr. H. Bambang |
 
 ---

@@ -89,11 +89,12 @@ Sistem mengadopsi pergantian gateway instan 1-klik (*Hot-Switching*) langsung da
 
 ### Pengaturan Mode Pembayaran Global (`payment_mode`):
 - `both`: Mengaktifkan pembayaran QRIS otomatis dan transfer bank manual secara bersamaan.
-- `gateway`: Hanya mengizinkan pembayaran otomatis via gateway.
-- `manual`: Hanya mengizinkan pembayaran transfer bank manual ke rekening admin.
+- `GATEWAY`: Hanya mengizinkan pembayaran otomatis via gateway (Midtrans / Xendit).
+- `MANUAL`: Hanya mengizinkan pembayaran transfer bank manual ke rekening admin.
+- **Status Gateway Dinamis:** Indikator status gateway pada dashboard dan kartu pengaturan bersifat 100% dinamis mengikuti nilai `payment_mode` dan kredensial aktif dari basis data, tanpa hardcode statis label status.
 
 ### Gateway Aktif (`active_payment_gateway`):
-- Pilihan radio button: `midtrans` atau `xendit`.
+- Pilihan: `midtrans` atau `xendit`.
 - Pergantian vendor berlangsung instan pada sesi checkout klien tanpa perlu restart server.
 
 ---

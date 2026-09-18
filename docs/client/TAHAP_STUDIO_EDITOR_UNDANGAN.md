@@ -1,5 +1,5 @@
 # DOKUMENTASI RESMI: TAHAP STUDIO EDITOR UNDANGAN
-**Luxenary Invite Platform — Dual-Native Studio & Kustomisasi 14 Seksi Undangan**
+**Luxenary Invite Platform — Dual-Native Studio & Kustomisasi 16 Seksi Undangan**
 
 Dokumen ini membedah arsitektur teknis, alur data, komponen UI, serta mekanisme penyimpanan pada tahap **Studio Editor Undangan** (`/dashboard/invitation/[id]`), ruang kerja utama tempat klien merancang, mengunggah media, mengonfigurasi palet warna, dan mempublikasikan undangan digital.
 
@@ -9,9 +9,10 @@ Dokumen ini membedah arsitektur teknis, alur data, komponen UI, serta mekanisme 
 
 Halaman Studio Editor menerapkan pola **Dual-Native Mode**:
 1. **Form Mode (Panel Kustomisasi Master-Detail):** 
-   - **Sidebar Navigator (Desktop $\ge$ lg):** Panel navigasi sticky vertikal di sebelah kiri dengan indikator progress `(X / 15)`, badge status revisi belum tersimpan (*dirty pulse indicator*), dan status modul.
+   - **Sidebar Navigator (Desktop $\ge$ lg):** Panel navigasi sticky vertikal di sebelah kiri dengan indikator progress `(X / 16)`, badge status revisi belum tersimpan (*dirty pulse indicator*), dan status modul.
    - **Horizontal Pills (Mobile / Tablet < lg):** Baris tombol pill horizontal yang dapat digeser (*scrollable*) di bagian atas layar.
    - **Detail Form Seksi Aktif (Panel Kanan):** Seksi yang dipilih langsung tersaji terbuka penuh (*always expanded*) tanpa akordion tersembunyi. Saat tombol "Simpan" ditekan, formulir tetap terbuka lebar dan tidak menutup sendiri (*zero auto-collapse*).
+   - **Mobile UX Overhaul (Edge-to-Edge & Sticky Quick-Save Bar):** Pada layar ponsel, kanvas form membentang *edge-to-edge* untuk memaksimalkan area ketik, dilengkapi bilah melayang *Sticky Quick-Save Bar* di bawah layar sehingga pengantin dapat menyimpan revisi seksi dengan 1 ketukan tanpa perlu scroll ke ujung formulir.
 2. **Live Visual Editor (Interactive Canvas Mode):** Tampilan kanvas WYSIWYG berbasis `iframe` yang merender pratinjau langsung secara real-time dengan tombol toggle *Viewport Switcher* (Mobile 390px vs Desktop Responsive).
 
 ```mermaid
@@ -37,9 +38,9 @@ flowchart TD
 
 ---
 
-## 2. Rincian 15 Seksi Modular Form Editor
+## 2. Rincian 16 Seksi Modular Form Editor
 
-Studio Editor membagi form input menjadi 15 seksi terorganisir untuk kenyamanan pengantin:
+Studio Editor membagi form input menjadi 16 seksi terorganisir untuk kenyamanan pengantin:
 
 ### Seksi 1: Tema Desain & Palet Warna (`SEC1`)
 - **Akses Tema Penuh (All-Access Themes):**
@@ -161,6 +162,22 @@ Studio Editor membagi form input menjadi 15 seksi terorganisir untuk kenyamanan 
 - **Kustomisasi Label Hitung Mundur (Countdown Timer):**
   - Penamaan unit waktu: Hari (`cdDays`), Jam (`cdHours`), Menit (`cdMins`), Detik (`cdSecs`).
 
+### Seksi 16: Mitra & Vendor Pernikahan / Wedding Credits (`SEC16`)
+- **Penghargaan Karya & Ekosistem Vendor:**
+  - Ruang apresiasi resmi bagi seluruh tim profesional di balik kesuksesan hari bahagia pengantin (Wedding Organizer, Fotografer, Videografer, MUA, Busana/Attire, Dekorator, Venue, Katering, Band/Musik, Sound & Lighting, MC, dll).
+- **Format Input & Struktur Data:**
+  - Setiap entri vendor memuat:
+    - **Kategori Vendor:** Dropdown preset terstandarisasi (*Wedding Organizer*, *Photographer*, *Videographer*, *Makeup Artist (MUA)*, *Attire / Busana*, *Decoration*, *Venue*, *Catering*, *Band & Music*, *Sound & Lighting*, *Master of Ceremonies (MC)*, *Souvenir*, *Kue Pengantin / Cake*, *Undangan & Kaligrafi*, *Lainnya*).
+    - **Nama Vendor / Brand:** Nama studio atau entitas bisnis vendor (contoh: *"Lentera Fotografi"*).
+    - **Tautan Profil / Akun:** Link Instagram (`https://instagram.com/...`) atau website resmi vendor.
+    - **Logo / Identitas Visual:** Upload logo resmi vendor yang disimpan aman di storage Cloudflare R2 / lokal.
+- **Desain Antarmuka Compact Single-Row Strip UI:**
+  - Menghindari kartu blok (*card wrap*) kaku bawaan AI. Menggunakan tata letak baris strip ringkas (*compact horizontal strip*) yang elegan dengan warna autentik logo vendor, pemisahan link yang terisolasi (*visited link color isolation*), dan tombol aksi cepat.
+- **Kustomisasi Teks & Eyebrow:**
+  - Pengantin dapat menyesuaikan judul seksi (`customLabels.vendorTitle`), subjudul (`customLabels.vendorSubtitle`), dan teks pemanis (*eyebrow*: `customLabels.vendorEyebrow`).
+- **Penayangan di Undangan Publik:**
+  - Ditayangkan secara presisi di atas bagian penutup (*closing footer*) undangan tanpa merusak tata letak visual tema.
+
 ---
 
 ## 3. Sistem Audio Player & Kebijakan Autoplay
@@ -188,7 +205,7 @@ Studio Editor membagi form input menjadi 15 seksi terorganisir untuk kenyamanan 
     "groomNickname": "Andi",
     "brideName": "Siti Nurhaliza",
     "brideNickname": "Siti",
-    "musicUrl": "https://pub-r2.luxenary.com/audio/wedding-song.mp3",
+    "musicUrl": "https://pub-r2.luxvite.id/audio/wedding-song.mp3",
     "events": [
       {
         "title": "Akad Nikah",
@@ -200,7 +217,17 @@ Studio Editor membagi form input menjadi 15 seksi terorganisir untuk kenyamanan 
       }
     ],
     "stories": [],
-    "bankList": []
+    "bankList": [],
+    "showVendors": true,
+    "vendors": [
+      {
+        "id": "v1",
+        "category": "Photographer",
+        "name": "Lentera Story",
+        "url": "https://instagram.com/lenterastory",
+        "logo": "/uploads/invitations/inv-1/vendor-logo.webp"
+      }
+    ]
   }
   ```
 - **Prinsip Zero-Loss & Visual Header Dirty Tracking:** Setiap seksi form memiliki pemantau perubahan mandiri (`isDirty.secX`). Ketika seksi memiliki perubahan yang belum disimpan (termasuk saat seksi ditutup/dilipat), header seksi langsung menampilkan notifikasi tipografi bersih tanpa card: **"Perubahan belum tersimpan • Simpan"**. Pengantin dapat langsung menyimpan seksi tersebut dengan 1 klik tanpa harus membuka akordion kembali. Begitu data tersimpan, teks otomatis lenyap dan header kembali bersih total.

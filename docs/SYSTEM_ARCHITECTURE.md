@@ -218,13 +218,15 @@
 │       ├── 04_AMPLOP_DIGITAL_DAN_HADIAH_PERNIKAHAN.md # Rekening bank copy button, QRIS & kado fisik
 │       ├── 05_SISTEM_RESEPSIONIS_DAN_CHECKIN_QR.md # Portal resepsionis, HTML5 QR scanner & souvenir
 │       └── 06_LIVE_MOMENT_DAN_CLOUD_MEMORIES.md # Upload foto candid tamu, galeri kenangan live real-time & cloud memories
+│   ├── SYSTEM_ARCHITECTURE.md    # Dokumen arsitektur ini
+│   └── S-Invitation.md           # Catatan bisnis & fitur
 │
 ├── middleware.ts             # ⭐ Edge routing utama (CRITICAL FILE)
 ├── auth.ts                   # NextAuth config entry
 ├── auth.config.ts            # NextAuth strategy config
-├── AGENTS.md                 # Aturan perilaku Agent AI (WAJIB DIBACA)
-├── SYSTEM_ARCHITECTURE.md    # Dokumen ini
-├── S-Invitation.md           # Catatan bisnis & fitur
+├── README.md                 # Dokumentasi induk repositori (Root)
+├── AGENTS.md                 # Aturan perilaku Agent AI (Next.js & Engine)
+├── CLAUDE.md                 # Pointer kontrak Anthropic Claude Code CLI
 ├── deploy.sh                 # Script deployment VPS
 └── tsconfig.json / package.json / next.config.ts
 ```
@@ -1094,7 +1096,7 @@ FASE 4: VERIFIKASI EMPIRIS
   d. Jika ada side effect tak terduga, lapor jujur ke user
 
 FASE 5: DOKUMENTASI
-  a. Update SYSTEM_ARCHITECTURE.md jika mengubah arsitektur
+  a. Update docs/SYSTEM_ARCHITECTURE.md jika mengubah arsitektur
   b. Update AGENTS.md jika ada pola kerja baru yang perlu diingat
 ```
 
@@ -1202,7 +1204,7 @@ const url = media.localPath || "/default.jpg";
 Jika Anda agent baru yang masuk ke proyek ini, baca file-file ini secara berurutan:
 
 ```
-1. SYSTEM_ARCHITECTURE.md (dokumen ini)   → Paham big picture
+1. docs/SYSTEM_ARCHITECTURE.md (dokumen ini)   → Paham big picture
 2. AGENTS.md                              → Aturan perilaku
 3. prisma/schema.prisma                   → Paham struktur data
 4. middleware.ts                          → Paham routing

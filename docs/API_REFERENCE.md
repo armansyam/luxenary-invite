@@ -70,7 +70,7 @@ Memerlukan sesi aktif klien (`role: CLIENT` atau Admin Remote Session):
 | **Undangan** | `GET` | `/api/client/invitations` | Mengambil seluruh undangan milik user aktif. |
 | | `POST` | `/api/client/invitations/create` | Membuat draf undangan baru setelah aktivasi invoice. |
 | | `GET` | `/api/client/invitations/{id}` | Mengambil detail konfigurasi lengkap satu undangan. |
-| | `PUT` | `/api/client/invitations/{id}` | Memperbarui konten 15 seksi formulir Studio Editor. |
+| | `PUT` | `/api/client/invitations/{id}` | Memperbarui konten 16 seksi formulir Studio Editor (termasuk Seksi 16: Mitra & Vendor Pernikahan / Wedding Credits). |
 | | `POST` | `/api/client/invitations/{id}/preview` | Preview real-time live perubahan draf undangan. |
 | **Media** | `POST` | `/api/client/upload` | Mengunggah aset foto, video, lagu, atau QRIS (`slot: QRIS` WebP 800×800) ke Storage lokal / Cloudflare R2. |
 | | `DELETE` | `/api/client/media/{id}` | Menghapus aset media dari galeri undangan. |

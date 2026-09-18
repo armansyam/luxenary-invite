@@ -16,7 +16,7 @@ flowchart TD
     end
     
     subgraph StorageCloud [Cloudflare R2 Object Storage]
-        D --> E[Simpan File Gambar: pub-r2.luxenary.com/memories/...]
+        D --> E[Simpan File Gambar: pub-r2.luxvite.id/memories/...]
         D --> F[Simpan Record ke Database: GuestMemory]
     end
     

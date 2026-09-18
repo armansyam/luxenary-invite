@@ -57,8 +57,8 @@ Platform secara otomatis memetakan domain aktif undangan klien untuk menghasilka
 
 1. **Resolusi Domain:**
    - Jika klien memasang Custom Domain aktif: `https://wedding-andi-siti.com/?to=Nama+Tamu`
-   - Jika klien menggunakan Subdomain: `https://andi-siti.luxenary.com/?to=Nama+Tamu`
-   - Jika menggunakan Path Slug standar: `https://luxenary.com/andi-siti?to=Nama+Tamu`
+   - Jika klien menggunakan Subdomain: `https://andi-siti.luxvite.id/?to=Nama+Tamu`
+   - Jika menggunakan Path Slug standar: `https://luxvite.id/andi-siti?to=Nama+Tamu`
 2. **URL Encoding Otomatis:**
    Nama tamu secara otomatis di-encode (`encodeURIComponent`) agar gelar kehormatan, tanda koma, dan spasi dapat diakses secara sempurna oleh browser (misal: `?to=Prof.+Dr.+Bambang%2C+M.Sc.`).
 3. **Penyuntikan ke Halaman Undangan:**

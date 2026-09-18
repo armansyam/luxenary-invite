@@ -220,7 +220,7 @@ Klien kini memiliki akses ke 4 modul utama:
     *   Tombol **"Kirim WA"** (Tautan langsung `https://wa.me/628...?text=...`) yang otomatis mengisi pesan undangan personal beserta tautan nama tamu tanpa perlu mengetik manual.
     *   Tiket QR Check-in per tamu untuk penerimaan di meja resepsionis pada hari H.
 4.  **Pengaturan, Domain & Terbit ([`app/(client)/dashboard/settings/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/%28client%29/dashboard/settings/page.tsx)):**
-    *   Live checker ketersediaan subdomain (misal: `dimas-clarissa.luxenary.id`).
+    *   Live checker ketersediaan subdomain (misal: `dimas-clarissa.luxvite.id`).
     *   Konfigurasi PIN 4-digit panitia resepsionis (dienkripsi AES-256).
     *   Validasi kelayakan penerbitan (`isPublishable`).
     *   Tombol Publikasikan yang memicu baking file HTML statis mandiri via [`lib/staticPublisher.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/lib/staticPublisher.ts).
@@ -235,7 +235,7 @@ Klien kini memiliki akses ke 4 modul utama:
 | **Auth** | Config | `auth.ts` & `auth.config.ts` | Konfigurasi NextAuth v5 & PrismaAdapter |
 | **Onboarding** | UI Hub | `app/onboarding/page.tsx` | Layar transisi dan traffic dispatcher |
 | **Onboarding** | API Engine | `app/api/client/onboarding-state/route.ts` | Decision tree penentu rute berdasarkan status order |
-| **Katalog** | UI | `app/packages/page.tsx` | Grid pemilihan paket (Traditional, Modern, Premium) |
+| **Katalog** | UI | `app/packages/page.tsx` | Grid pemilihan paket (Serenade, Symphony, Eternity) |
 | **Checkout** | UI | `app/checkout/page.tsx` | Kasir pembayaran, countdown QRIS, & upload bukti transfer |
 | **Order** | API | `app/api/orders/create/route.ts` | Penerbitan nomor invoice unik transaksi |
 | **Payment** | API SSE | `app/api/payments/status-stream/[id]/route.ts` | Realtime listener status pembayaran lunas |
@@ -384,7 +384,7 @@ Salam bahagia,
 
 #### Variabel Placeholder Otomatis:
 *   `{nama_tamu}`: Otomatis digantikan dengan nama tamu dari database.
-*   `{link_undangan}`: Otomatis digantikan dengan URL lengkap undangan tamu (contoh: `https://dimas-clarissa.luxenary.id?to=Budi+Santoso`).
+*   `{link_undangan}`: Otomatis digantikan dengan URL lengkap undangan tamu (contoh: `https://dimas-clarissa.luxvite.id?to=Budi+Santoso`).
 *   `{nama_mempelai}`: Otomatis diisi nama kedua pengantin.
 *   `{kuota_tamu}`: Jumlah alokasi pax kehadiran tamu (contoh: "2 Pax").
 *   `{sesi_acara}`: Sesi acara yang ditentukan untuk tamu tersebut (contoh: "Sesi 1 (Akad & Resepsi)").

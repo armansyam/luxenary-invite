@@ -112,9 +112,9 @@ Setiap kali Agent memberikan jawaban teknis yang berpotensi memodifikasi kode, A
 
 # Protokol Wajib: Sinkronisasi & Pembaruan Dokumentasi Otomatis (Auto-Update on Edit/Push)
 - **WAJIB SINKRONISASI 3 DOKUMEN MASTER:** Setiap kali selesai melakukan pengeditan kode (fitur baru, bugfix, refactor, skema database, atau endpoint baru), dan **SEBELUM/SAAT melakukan push ke Git remote (GitHub)**, Agent **WAJIB SECARA OTOMATIS** memeriksa seluruh kode faktual dan memperbarui ketiga dokumen master:
-  1. `SYSTEM_ARCHITECTURE.md` (arsitektur, routing, database schema, diagram)
+  1. `docs/SYSTEM_ARCHITECTURE.md` (arsitektur, routing, database schema, diagram)
   2. `README.md` (panduan alur, katalog tema, deployment, environment)
-  3. `S-Invitation.md` (spesifikasi fungsional modul, tema fisik, dan gateway)
+  3. `docs/S-Invitation.md` (spesifikasi fungsional modul, tema fisik, dan gateway)
 - **DILARANG PUSH JIKA DOCS BELUM TERBARU:** Push ke git remote hanya boleh dilakukan setelah ketiga dokumen diverifikasi sinkron dengan kode faktual terbaru dan `npx tsc --noEmit` menghasilkan Exit Code 0.
 # 🚨 STRICT ANTI-DESTRUCTION PROTOCOL (KHUSUS GEMINI / ALL AI AGENTS) 🚨
 Aturan ini **HARGA MATI** dan tidak boleh dilanggar dalam kondisi apapun untuk mencegah hilangnya pekerjaan lokal user (Uncommitted Work) dan kerusakan massal:

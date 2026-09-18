@@ -45,8 +45,13 @@ Seluruh media berat (foto prewedding, video teaser, berkas audio MP3, struk tran
 - `R2_ACCOUNT_ID` — ID akun Cloudflare pemilik bucket.
 - `R2_ACCESS_KEY_ID` — Kunci akses S3 API R2.
 - `R2_SECRET_ACCESS_KEY` — Kunci rahasia S3 API R2.
-- `R2_BUCKET_NAME` — Nama bucket penyimpanan (contoh: `luxenary-media`).
-- `R2_PUBLIC_URL` — Domain publik atau Cloudflare Custom Domain untuk akses cepat CDN (contoh: `https://pub-r2.luxenary.com`).
+- `R2_BUCKET_NAME` — Nama bucket penyimpanan (contoh: `luxvite-media`).
+- `R2_PUBLIC_URL` — Domain publik atau Cloudflare Custom Domain untuk akses cepat CDN (contoh: `https://pub-r2.luxvite.id`).
+
+### Batas Upload Media & Web Optimization Dinamis:
+Administrator dapat mengatur ambang batas ukuran berkas media secara langsung tanpa menyentuh kode:
+- **Batas Unggah Video (`video_upload_max_mb`):** Batas kapasitas video prewedding (default: `50` MB). Disertai optimasi kompresi otomatis FFmpeg (kodek H.264 & audio AAC) untuk kelancaran streaming di jaringan seluler tamu.
+- **Batas Unggah Foto (`photo_upload_max_mb`):** Batas kapasitas berkas foto (default: `10` MB). Dikonversi dan dikompresi otomatis ke format WebP via Sharp Engine.
 
 ### Mekanisme Sinkronisasi CORS Otomatis (`/api/admin/r2-cors`):
 Browser memblokir upload langsung (*direct client-to-storage upload*) jika header CORS bucket belum diizinkan. Administrator cukup menekan tombol **"Sinkronisasi CORS R2"**:
@@ -71,6 +76,9 @@ Mengatur akses keamanan internal pengelola sistem:
 ## 5. Pemeliharaan & Manajemen Snapshot Database (`Tab: database`)
 
 Menyediakan antarmuka Disaster Recovery mandiri untuk database PostgreSQL:
+- **Arsitektur Koneksi & Sizing Connection Pool:**
+  - Konfigurasi Prisma PostgreSQL memanfaatkan parameter URL `connection_limit=15&pool_timeout=20` untuk menjamin stabilitas query konkurensi tinggi dan mencegah kehabisan slot koneksi database (*pool exhaustion*).
+  - **Non-Destructive Database Seeder:** Seeder `prisma/seed.ts` menerapkan logika non-destruktif (`upsert` tanpa menimpa nilai `value` eksisting), menjamin kredensial produksi dan kunci payment gateway di database tidak akan pernah tereset menjadi nilai dummy saat proses build/deploy.
 - **Kartu Status Mesin Database:**
   - Menampilkan mesin aktif: `PostgreSQL (pg_dump)` dengan indikator status koneksi (*Connected & Running*).
   - Total file snapshot yang tersedia di direktori penyimpanan lokal server.
@@ -82,15 +90,13 @@ Menyediakan antarmuka Disaster Recovery mandiri untuk database PostgreSQL:
   - **Proteksi Safety Backup Otomatis:** Sistem selalu membuat snapshot darurat dari data yang sedang berjalan sebelum file baru ditimpa (*restore*).
 - **Tabel Tata Kelola Snapshot:**
   - Menampilkan riwayat snapshot lengkap dengan timestamp, ukuran file, tombol Unduh (*Download*) ke komputer lokal, tombol Pulihkan (*Restore*), dan tombol Hapus (*Delete*).
-- **Roadmap Peningkatan:**
-  - Penambahan visualisasi live jumlah baris (*row counts*) per tabel Prisma dan pemantauan ukuran disk database PostgreSQL realtime.
 
 ---
 
 ## 6. Manajemen Harga Paket & Layanan Tambahan (Add-Ons) (`Tab: Paket & Harga`)
 
 Mengatur struktur biaya dinamis platform yang langsung tersinkronisasi dua arah ke dashboard klien tanpa hardcode:
-- **Paket Undangan Utama:** Traditional, Modern, Premium.
+- **Paket Undangan Utama:** TIER_1 (Serenade), TIER_2 (Symphony), TIER_3 (Eternity).
 - **Layanan Tambahan (Add-Ons) & Perpanjangan (2 Layanan Resmi):**
   1. **Jasa Integrasi Custom Domain (1 Tahun Penuh) (`addon_custom_domain_price`):**
      - Mengatur tarif jasa integrasi domain pribadi milik klien (DNS CNAME / Record A & Auto-SSL Caddy).

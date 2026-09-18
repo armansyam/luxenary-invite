@@ -186,7 +186,7 @@ Di samping fitur Remote, Admin Control Panel mengelola siklus hidup akun klien d
 | Status | Penjelasan & Hak Akses |
 |---|---|
 | `DRAFT` | Undangan baru dibuat atau belum dipublikasikan. Hanya dapat dilihat oleh pemilik di dasbor atau Admin. Belum dapat diakses publik. |
-| `PUBLISHED` | Undangan telah aktif dan dapat diakses tamu via subdomain (`namapasangan.luxenary.id`) atau custom domain. |
+| `PUBLISHED` | Undangan telah aktif dan dapat diakses tamu via subdomain (`namapasangan.luxvite.id`) atau custom domain. |
 | `EXPIRED` | Masa aktif retensi undangan telah habis (`Tanggal Acara + retention_invitation_days`). Subdomain dapat didaur ulang. |
 | `CLOSED_TO_GALLERY` | Undangan ditutup dan dikonversi menjadi galeri kenangan tamu mandiri (`/memories`). Tampilan resepsi dinonaktifkan. |
 
@@ -230,7 +230,7 @@ Di samping fitur Remote, Admin Control Panel mengelola siklus hidup akun klien d
 
 ### Skenario: Membantu Klien yang Mengalami Kendala Desain / Setup
 
-1. **Buka Portal Admin:** Masuk ke `https://luxenary.id/admin` menggunakan akun Admin Anda.
+1. **Buka Portal Admin:** Masuk ke `https://luxvite.id/admin` menggunakan akun Admin Anda.
 2. **Cari Klien / Undangan:**
    - Masuk ke tab **Klien** untuk mencari berdasarkan nama atau email pengantin.
    - Atau masuk ke tab **Undangan** untuk mencari berdasarkan nama mempelai atau subdomain.

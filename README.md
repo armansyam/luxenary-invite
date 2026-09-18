@@ -10,8 +10,8 @@
 > 1. **Periksa Seluruh Kode Faktual:** Jangan membuat asumsi. Baca kode implementasi riil untuk memverifikasi perubahan.
 > 2. **Perbarui Semua File Dokumentasi Master:**
 >    - [`README.md`](./README.md) — Selaraskan alur, versi, tabel tema, dan instruksi deployment.
->    - [`SYSTEM_ARCHITECTURE.md`](./SYSTEM_ARCHITECTURE.md) — Perbarui diagram arsitektur, peta routing, skema database Prisma, dan lifecycle.
->    - [`S-Invitation.md`](./S-Invitation.md) — Perbarui spesifikasi fungsional dan kapabilitas modul.
+>    - [`docs/SYSTEM_ARCHITECTURE.md`](./docs/SYSTEM_ARCHITECTURE.md) — Perbarui diagram arsitektur, peta routing, skema database Prisma, dan lifecycle.
+>    - [`docs/S-Invitation.md`](./docs/S-Invitation.md) — Perbarui spesifikasi fungsional dan kapabilitas modul.
 > 3. **Verifikasi Empiris:** Wajib jalankan `npx tsc --noEmit` (Exit Code 0) sebelum menyatakan pekerjaan selesai.
 > 4. **Commit & Push Bersamaan:** Seluruh dokumen yang diperbarui **WAJIB di-commit dan di-push bersamaan** dengan kode agar GitHub selalu sinkron dengan kondisi codebase lokal!
 
@@ -377,6 +377,8 @@ Luxenary-Invite/
 │   │   ├── TAHAP_MANAJEMEN_TAMU_DAN_QR.md      # Buku tamu, import CSV, personalisasi link & tiket QR
 │   │   ├── TAHAP_RSVP_DAN_MODERASI_UCAPAN.md   # Monitoring RSVP, hitung pax katering & feed doa
 │   │   └── TAHAP_PENGATURAN_AKUN_CUSTOM_DOMAIN_DAN_ADDON.md # Subdomain checker, CNAME, & WOW publish
+│   ├── SYSTEM_ARCHITECTURE.md  # ⭐ Arsitektur sistem menyeluruh, database & routing
+│   ├── S-Invitation.md         # Catatan filosofi bisnis & spesifikasi fitur
 │   ├── admin/
 │   │   ├── DASHBOARD_OVERVIEW_DAN_STATISTIK.md # Analitik metrik bisnis, pendapatan & server health
 │   │   ├── REMOTE_DAN_MANAJEMEN_KLIEN.md      # Cookie-based remote session & user lifecycle
@@ -394,8 +396,9 @@ Luxenary-Invite/
 │       ├── 05_SISTEM_RESEPSIONIS_DAN_CHECKIN_QR.md # Portal resepsionis, HTML5 QR scanner & souvenir
 │       └── 06_LIVE_MOMENT_DAN_CLOUD_MEMORIES.md # Upload foto candid tamu, galeri kenangan live real-time & cloud memories
 ├── middleware.ts               # ⭐ Edge routing utama (CRITICAL)
-├── SYSTEM_ARCHITECTURE.md      # ⭐ Dokumentasi arsitektur lengkap (WAJIB BACA)
-├── AGENTS.md                   # Aturan perilaku AI Agent
+├── README.md                   # Dokumentasi induk repositori (Root)
+├── AGENTS.md                   # Aturan perilaku AI Agent (Next.js & Engine)
+├── CLAUDE.md                   # Pointer kontrak Anthropic Claude Code CLI
 └── deploy.sh                   # Script deploy VPS
 ```
 
@@ -484,7 +487,7 @@ pm2 reload ecosystem.config.js --update-env || pm2 start ecosystem.config.js
 Untuk deployment kluster 2+ server VPS di balik Load Balancer (Cloudflare / Caddy):
 - **Central Database & Object Storage:** PostgreSQL & Cloudflare R2 otomatis terpusat untuk seluruh node aplikasi.
 - **Shared Storage via Symlink Linux:** Folder dinamis lokal (`themes/`, `public/demo/`, `data/drafts/`, `public/published/`) di-mount ke `/mnt/shared_luxenary/` dan dihubungkan ke project melalui symlink (`ln -s`). Kode Next.js 100% portabel dan konsisten tanpa modifikasi path.
-- *Panduan lengkap:* Baca [Tahap 10: DEPLOYMENT_VPS_CADDY.md](docs/admin/DEPLOYMENT_VPS_CADDY.md#tahap-10-panduan-skalabilitas-multi-server-shared-storage-nfs--symlink-blueprint) dan [SYSTEM_ARCHITECTURE.md (17.13)](SYSTEM_ARCHITECTURE.md#1713--arsitektur-skalabilitas-multi-server-shared-storage--symlink-mounting-pattern).
+- *Panduan lengkap:* Baca [Tahap 10: DEPLOYMENT_VPS_CADDY.md](docs/admin/DEPLOYMENT_VPS_CADDY.md#tahap-10-panduan-skalabilitas-multi-server-shared-storage-nfs--symlink-blueprint) dan [SYSTEM_ARCHITECTURE.md (17.13)](docs/SYSTEM_ARCHITECTURE.md#1713--arsitektur-skalabilitas-multi-server-shared-storage--symlink-mounting-pattern).
 
 ---
 
@@ -515,7 +518,7 @@ Setiap developer atau AI Agent yang melakukan modifikasi pada codebase **WAJIB**
 [1. Baca Seluruh Kode Faktual] ──► Telusuri baris per baris tanpa asumsi
          │
          ▼
-[2. Periksa & Perbarui 3 Docs] ──► SYSTEM_ARCHITECTURE.md + README.md + S-Invitation.md
+[2. Periksa & Perbarui 3 Docs] ──► docs/SYSTEM_ARCHITECTURE.md + README.md + docs/S-Invitation.md
          │
          ▼
 [3. Verifikasi Empiris]        ──► Jalankan `npx tsc --noEmit` (Exit Code 0)
@@ -525,7 +528,7 @@ Setiap developer atau AI Agent yang melakukan modifikasi pada codebase **WAJIB**
 ```
 
 ### Aturan Baku Dokumentasi:
-1. **Dilarang keras push tanpa menyelaraskan docs:** Jika ada penambahan endpoint, migrasi kolom database, gateway baru, atau perubahan alur UI, ketiga file dokumen (`README.md`, `SYSTEM_ARCHITECTURE.md`, `S-Invitation.md`) wajib langsung disinkronkan di commit yang sama.
+1. **Dilarang keras push tanpa menyelaraskan docs:** Jika ada penambahan endpoint, migrasi kolom database, gateway baru, atau perubahan alur UI, ketiga file dokumen (`README.md`, `docs/SYSTEM_ARCHITECTURE.md`, `docs/S-Invitation.md`) wajib langsung disinkronkan di commit yang sama.
 2. **Katalog Tema Fisik:** Pastikan jumlah tema fisik yang aktif di database dan template selalu sinkron (16 tema fisik aktif).
 3. **No Phantom Docs:** Dokumentasi harus mencantumkan path dan nama variabel lingkungan aktual (misal format AWS SDK `S3_*` untuk R2, bukan format lama).
 4. **Standar Kontrak Placeholder Nama Mempelai:** Cover buka undangan, hero title, sidebar desktop, dan closing footer **MUTLAK** menggunakan Nama Panggilan (`{{firstName}} & {{secondName}}`). Nama lengkap beserta gelar (`{{firstDisplayName}} & {{secondDisplayName}}`) hanya digunakan pada Seksi Profil Pasangan (*The Couple*).
@@ -546,7 +549,7 @@ Setiap developer atau AI Agent yang melakukan modifikasi pada codebase **WAJIB**
 
 ---
 
-> Untuk detail teknis lengkap, baca [`SYSTEM_ARCHITECTURE.md`](./SYSTEM_ARCHITECTURE.md)
+> Untuk detail teknis lengkap, baca [`docs/SYSTEM_ARCHITECTURE.md`](./docs/SYSTEM_ARCHITECTURE.md)
 
 
 ### Kebijakan Akses Tema & Sesi Acara Utama (Update September 2026)
