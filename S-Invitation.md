@@ -899,6 +899,9 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - Menanamkan seluruh 84 parameter platform (nama paket dinamis `Serenade`, `Symphony`, `Eternity`), 16 tema master, 2 preset musik, dan akun admin default ke dalam seed otomatis terpadu dengan proteksi non-destruktif (klausul `update` pada `AdminSetting` hanya memperbarui label metadata dan tidak pernah menimpa nilai `value` produksi).
 6. **Resolusi Domain Kanonikal Subdomain & Slug (`app/(public)/s/` & `[slug]`):**
    - Menjamin bahwa seluruh pengalihan internal untuk subdomain yang belum terisi (`subdomain-available`), kedaluwarsa (`subdomain-expired`), maupun undangan berstatus `ARCHIVED` diarahkan ke URL kanonikal resmi (`NEXT_PUBLIC_APP_URL` / `https://luxvite.id`) tanpa membocorkan binding reverse proxy internal (`localhost:3001`).
+7. **Isolasi Subdomain Total (Strict Subdomain Isolation Guard di `middleware.ts`):**
+   - Mengalihkan seluruh subdomain sistem (`demo`, `app`, `www`, dll.) serta seluruh rute halaman platform (`/packages`, `/login`, `/dashboard`, `/admin`, dll.) ke domain kanonikal `https://luxvite.id`.
+   - Mengisolasi subdomain klien aktif secara murni untuk 5 fungsi acara (undangan, tamu personal, galeri momen, resepsionis QR, upload foto tamu) sehingga mustahil terjadi tabrakan rute (*URL collision*).
 
 ---
 

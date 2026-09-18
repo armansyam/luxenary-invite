@@ -91,15 +91,49 @@ export default auth(async (req) => {
   const isSubdomainOfOurs = rootDomains.some((d) => cleanHost.endsWith(`.${d}`) && cleanHost !== d && cleanHost !== `www.${d}`);
   const isCustomDomain = !isSubdomainOfOurs && !isRootDomain;
 
-  // C. Blokir Halaman Admin di subdomain klien (misal budi-ani.luxvite.id/admin)
-  if (isSubdomainOfOurs && (pathname === "/admin" || pathname.startsWith("/admin/"))) {
+  // C. Isolasi Subdomain: Cegah Halaman Platform & Subdomain Sistem Dibuka di Bawah Subdomain
+  if (isSubdomainOfOurs && !pathname.startsWith("/api") && !pathname.startsWith("/_next") && !pathname.startsWith("/static")) {
+    const parts = cleanHost.split(".");
+    const subdomain = parts[0];
     const protocol = req.nextUrl.protocol;
     const portSuffix = host.includes(":") ? `:${host.split(":")[1]}` : "";
     const matchedRoot = rootDomains.find((d) => cleanHost.endsWith(`.${d}`)) || "localhost";
-    const targetHost = `${matchedRoot}${portSuffix}`;
-    const redirectUrl = new URL(pathname, `${protocol}//${targetHost}`);
-    redirectUrl.search = req.nextUrl.search;
-    return NextResponse.redirect(redirectUrl, 307);
+    const apexHost = `${matchedRoot}${portSuffix}`;
+
+    // 1. Mencegah akses langsung ke CNAME Target (Anti Kloning)
+    if (["cname", "host", "alias", "invite"].includes(subdomain)) {
+      return NextResponse.redirect(`${protocol}//${apexHost}/`, 301);
+    }
+
+    // 2. Subdomain 'demo' dialihkan ke katalog tema resmi di apex domain
+    if (subdomain === "demo") {
+      let targetPath = "/demo";
+      if (pathname !== "/" && pathname !== "") {
+        targetPath = pathname.startsWith("/demo") ? pathname : `/demo${pathname}`;
+      }
+      const redirectUrl = new URL(targetPath, `${protocol}//${apexHost}`);
+      redirectUrl.search = req.nextUrl.search;
+      return NextResponse.redirect(redirectUrl, 307);
+    }
+
+    // 3. Subdomain sistem umum (www, app, auth, login, dashboard, dll) dialihkan langsung ke apex
+    if (isReservedSubdomain(subdomain)) {
+      const redirectUrl = new URL(pathname, `${protocol}//${apexHost}`);
+      redirectUrl.search = req.nextUrl.search;
+      return NextResponse.redirect(redirectUrl, 307);
+    }
+
+    // 4. Seluruh halaman platform resmi DILARANG dibuka dari subdomain klien apapun
+    const PLATFORM_PATHS = [
+      "/admin", "/login", "/packages", "/checkout", "/onboarding",
+      "/dashboard", "/contact", "/how-it-works", "/privacy", "/terms",
+      "/refund", "/portfolio", "/demo"
+    ];
+    if (PLATFORM_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
+      const redirectUrl = new URL(pathname, `${protocol}//${apexHost}`);
+      redirectUrl.search = req.nextUrl.search;
+      return NextResponse.redirect(redirectUrl, 307);
+    }
   }
 
   // 1. Admin login page
@@ -148,16 +182,7 @@ export default auth(async (req) => {
     if (parts.length > 1) {
       const subdomain = parts[0];
 
-      // Mencegah akses langsung ke CNAME Target (Anti Kloning)
-      if (["cname", "host", "alias", "invite"].includes(subdomain)) {
-        const protocol = req.nextUrl.protocol;
-        const mainDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "localhost:3000";
-        return NextResponse.redirect(`${protocol}//${mainDomain}/`, 301);
-      }
-
-      // Hanya subdomain klien yang diizinkan untuk di-rewrite ke undangan (/s/[subdomain])
-      // Subdomain cadangan sistem (cdn R2, admin, api, www, assets, static, dll.) tidak boleh di-intercept
-      if (!isReservedSubdomain(subdomain)) {
+      // Hanya rute undangan klien yang dilayani di sini
       if (pathname === "/" || pathname === "") {
         const rewriteUrl = new URL(`/s/${subdomain}`, req.url);
         rewriteUrl.search = req.nextUrl.search;
@@ -191,7 +216,15 @@ export default auth(async (req) => {
         }
         return NextResponse.rewrite(rewriteUrl);
       }
-      }
+
+      // Rute lain yang tidak dikenali di subdomain klien dialihkan ke apex domain
+      const protocol = req.nextUrl.protocol;
+      const portSuffix = host.includes(":") ? `:${host.split(":")[1]}` : "";
+      const matchedRoot = rootDomains.find((d) => cleanHost.endsWith(`.${d}`)) || "localhost";
+      const apexHost = `${matchedRoot}${portSuffix}`;
+      const redirectUrl = new URL(pathname, `${protocol}//${apexHost}`);
+      redirectUrl.search = req.nextUrl.search;
+      return NextResponse.redirect(redirectUrl, 307);
     }
   }
 

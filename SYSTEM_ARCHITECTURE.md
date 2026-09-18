@@ -2273,6 +2273,10 @@ Sistem telah melalui audit mendalam berbasis bukti empiris (*Empirical Verificat
 6. **Resolusi Domain Kanonikal Redirect Subdomain & Slug (`app/(public)/s/` & `[slug]`):**
    - Mengeliminasi ketergantungan pada `req.url` internal reverse proxy (`localhost:3001`).
    - Seluruh pengalihan (subdomain kosong `subdomain-available`, kedaluwarsa `subdomain-expired`, maupun arsip portofolio) dialihkan secara kanonikal ke `NEXT_PUBLIC_APP_URL` / `NEXT_PUBLIC_ROOT_DOMAIN` resmi (`https://luxvite.id`).
+7. **Isolasi Subdomain Ketat (Strict Subdomain Isolation Guard di `middleware.ts`):**
+   - **Pemisahan Domain Platform vs Subdomain Klien:** Subdomain sistem (`demo`, `app`, `www`, `admin`, `login`, `checkout`, dll.) otomatis dialihkan 307 ke domain kanonikal `https://luxvite.id` (`demo.luxvite.id` dialihkan ke `https://luxvite.id/demo`).
+   - **Proteksi Halaman Platform:** Akses ke rute platform resmi (`/packages`, `/login`, `/dashboard`, `/admin`, `/contact`, `/terms`, dll.) dari subdomain klien manapun dialihkan secara absolut ke domain utama, melepaskan subdomain dari URL bar.
+   - **Eksklusivitas Undangan Klien:** Subdomain klien aktif secara eksklusif hanya melayani 5 fungsi acara: Undangan Utama (`/`), Tamu Personal (`/{guest}`), Momen Tamu (`/memories`), Check-In QR (`/receptionist`), dan Kamera Tamu (`/sharemoment`), mencegah salah interpretasi nama rute platform sebagai nama tamu undangan (*Collision Prevention*).
 
 ---
 
