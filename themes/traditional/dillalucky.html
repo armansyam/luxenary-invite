@@ -920,10 +920,6 @@
       border-radius: 4px;
     }
 
-    .moment-photo-item:hover img {
-      transform: scale(1.05);
-    }
-
     /* SECTIONS DIVIDER & GIFT */
     .sec-divider {
       width: 100%;
@@ -1411,6 +1407,7 @@
       </div>
 
       <div class="opening-bottom">
+        <span class="opening-greeting" data-lux-field="customLabels.openingGreeting">{{openingGreeting}}</span>
         <p class="opening-quote-text">"{{openingQuote}}"</p>
         <cite class="opening-quote-ref">{{openingQuoteRef}}</cite>
         <div class="scroll-indicator">
@@ -1542,6 +1539,9 @@
     {{qrAccessSectionHtml}}
 
     <!-- 15. FOOTER / THANK YOU (Adaptive Full-Height 100vh) -->
+    <!-- SECTION: MITRA VENDOR / WEDDING CREDITS -->
+    {{vendorsSectionHtml}}
+
     <footer class="site-footer {{closingPhotoClass}}" id="footer" style="{{closingBgStyle}}">
       <div class="closing-content">
         <p style="font-size:0.85rem; color:rgba(255,255,255,0.75); line-height:1.7; margin-bottom:1.5rem;">
@@ -1784,6 +1784,7 @@
         btn.textContent = 'Kirim Konfirmasi & Doa';
       }
     }
+    window.luxSubmitRsvp = submitRsvp;
 
     // SMART AUTO-HIDE DOCK & MUSIC PLAYER ON SCROLL DOWN, REVEAL ON SCROLL UP
     (function initSmartDock() {

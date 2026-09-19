@@ -18,7 +18,7 @@ Sistem template undangan menggunakan arsitektur HTML multi-layer mandiri dengan 
 2. **Valente (`themes/premium/valente.html`)**
    - High-fashion editorial spread dengan framing foto portrait 3:4 dan indeks terbitan majalah (`NO. 01 / THE GROOM`, `NO. 02 / THE BRIDE`).
    - Countdown tipografis minimalis bergaris hairline editorial tanpa box kaku.
-   - Side Navigation Drawer ala daftar isi majalah (*Table of Contents*) bernomor urut dan cover berlabel special issue.
+   - Side Navigation Floating Frosted Glass Card ala daftar isi majalah (*Table of Contents*) bernomor urut (01 Home s.d. 08 RSVP & Wishes), auto-height dengan backdrop click-outside dismissal, dan cover berlabel special issue.
    - Responsif 100% full-bleed di layar mobile/tablet dan desktop split-screen 460px.
 3. **Aurelia (`themes/premium/aurelia.html`)**
    - Kanvas video sutra bergerak (*Video Canvas Backdrop*) dengan fallback poster.
@@ -402,10 +402,9 @@ Siklus hidup undangan diatur secara otomatis oleh cron job (`POST /api/cron/clea
    - **Prinsip Content-Driven Rendering:** Meniadakan saklar on/off manual dan kerumitan kustomisasi label. Seksi otomatis tampil bila data diisi (cerita, rekening hadiah, dll.) dan padam bila dikosongkan.
    - **Full Caching Strategy:** Seluruh aset showroom demo (`/demo/**`) dan pustaka musik bawaan (`/music/**`) dikonfigurasi dengan header HTTP `Cache-Control` optimal di `next.config.ts` (`s-maxage=604800` untuk Edge CDN Cloudflare, dan `immutable` untuk audio), disertai query cache buster `?t=...` saat admin memperbarui aset.
    - **Showroom Color Palette Selector:** Demo Studio Admin menyertakan pemilih 6 palet warna resmi (`champagne`, `emerald`, `burgundy`, `sage`, `terracotta`, `monochrome`), menjamin demo publik seperti Badrika tampil anggun dalam balutan warna khasnya (Emerald Green & Gold) tanpa mengunci kode CSS tema secara hardcoded.
-10. **Standarisasi Formulir RSVP & Buku Tamu Interaktif (15 Master Tema Fisik):**
-    - Seluruh 15 tema fisik kini secara konsisten menyematkan blok `<form id="rsvpForm" onsubmit="luxSubmitRsvp(event)">` lengkap dengan input Nama Lengkap (`#rsvpName`), pilihan Kehadiran (`#rsvpStatus`), jumlah tamu (`#rsvpCount`), dan textarea Ucapan & Doa (`#rsvpMessage`), yang membungkus feed ucapan `{{wishesHtml}}` di dalam container `.wishes-list#wishesList`.
-    - Menghilangkan anomali seksi kosong tanpa formulir pada tema-tema seperti `candani`, `mayang`, `badrika`, `lumina`, `solaria`, dan `chronicle`.
-    - Terkoneksi secara otomatis ke endpoint publik `/api/public/rsvp` via engine JavaScript universal di `lib/renderTemplate.ts`, dengan kapabilitas real-time prepend ucapan baru ke dalam daftar seketika setelah formulir berhasil dikirim, serta status feedback box elegan (`#luxRsvpStatusBox`) tanpa native browser alert.
+10. **Standarisasi Menyeluruh Ekosistem 16 Master Tema Fisik:**
+    - Seluruh 16 tema fisik (`kalandra`, `aurelia`, `artisan`, `valente`, `ameera`, `chronicle`, `lumina`, `papercut`, `solaria`, `wave`, `badrika`, `candani`, `dillalucky`, `lagaligo`, `mayang`, `prameswari`) kini 100% konsisten menyematkan blok formulir RSVP interaktif `<form id="rsvpForm" onsubmit="luxSubmitRsvp(event)">` yang terhubung ke `/api/public/rsvp` dengan kapabilitas real-time prepend kartu doa seketika, status feedback box tanpa native alert, dan batas kontainer scroll aman (`max-height: 290px-320px`, `overscroll-behavior: contain`, dan custom thin luxury scrollbar anti-scroll trap).
+    - Seluruh 16 tema fisik telah distandarisasi menyematkan placeholder ekosistem lengkap: Salam Pembuka Universal `{{openingGreeting}}`, Mitra Vendor `{{vendorsSectionHtml}}`, Galeri Kenangan Tamu Kamera Virtual `{{memoriesSectionHtml}}` (Photo Only), Amplop/Gift `{{giftSectionHtml}}`, dan blok proteksi hak cipta sistem (Zero Missing Tokens / 100% Health Valid).
 11. **Pustaka Musik Sistem Dinamis (Zero Hardcode):**
     - **Database-Driven Presets (`MusicPreset`):** Koleksi musik sistem dikelola secara dinamis via database PostgreSQL (`music_presets`), menggantikan seluruh array dan fallback hardcode di sisi klien.
     - **Portal Admin Sub-Tab Musik:** Tab "Tema & Musik" menyediakan sub-tab "Pustaka Musik Sistem" untuk menambah lagu baru (dengan auto-kompresi FFmpeg 128 kbps MP3 yang hemat bandwidth), menyunting judul/komposer/genre, memutar pratinjau audio langsung, mengaktifkan/menonaktifkan lagu untuk klien, dan menghapus lagu dari pustaka.
@@ -635,7 +634,7 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - Target sentuhan menu navigasi minimal $44\times 44\text{px}$ dengan `touch-action: manipulation`.
 5. **Proteksi Anti Auto-Zoom Form Safari iOS & Grid Galeri Responsif:**
    - Seluruh elemen form (`.form-in`, `.form-sel`, `.form-ta`) dikunci pada ukuran font minimum **`16px`** untuk menonaktifkan auto-zoom peramban WebKit Safari saat input difokuskan.
-   - Modal galeri foto universal (`themeEngine.ts`) menerapkan breakpoint responsif 2 kolom (`columns: 2 !important;`) pada mobile ($\le 640\text{px}$) agar foto kenangan tetap tampil artistik dan proporsional.
+   - Galeri foto universal (`themeEngine.ts`, `demoRegistry.ts`, `modules.css`) menerapkan tata letak Masonry **2 kolom** (`columns: 2 !important; column-gap: 8px;`) secara seragam pada mobile maupun desktop split screen (feed seksi dibatasi 2–3 baris / maks 6 foto, dan modal penuh memuat seluruh foto) sehingga foto mengalir padat tanpa ruang kosong dan tidak ada foto yang mengecil.
 
 ---
 
@@ -703,6 +702,10 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - **Demo Guest Moment Camera (`/demo/sharemoment`):** Kamera disposable retro berlayar pembuka editorial (*Editorial Showcase*), 5 filter analog branded (Aura '90s, Heritage Romance, dll.), Web Audio shutter sound, cap tanggal oranye LED, dan penyimpanan lokal `sessionStorage` (`demo_guest_moments`).
    - **Demo Galeri Kenangan Tamu (`/demo/memories`):** Feed foto kenangan tamu berformat **Roll Stack (1 Card / Tamu)** berlapis fisik dengan badge jumlah foto, filter tab (Semua, Siang, Malam, Favorit), Touch-Swipe & Keyboard Multi-Foto Modal Lightbox, tombol mengambang Buka Kamera, dan simulasi unduh ZIP resolusi asli.
    - **Arsitektur Zero-Setup Unified Sandbox:** Seluruh tema demo (`/demo/[theme]`) otomatis mengarahkan tombol "Bagikan Foto Momen" dan "Buka Galeri Momen Lengkap" ke `/demo/sharemoment` dan `/demo/memories`. Form RSVP demo pada seluruh tema didukung respon simulasi instan (`POST /api/public/rsvp`) tanpa error 404.
+12. **Universal Vertical Glowing Luxury Timeline Standard (Love Story / Our Journey):**
+    - Menstandarisasikan tampilan seksi Kisah Cinta di seluruh 16 tema master (Valente, Kalandra, Aurelia, Artisan, Papercut, Ameera, Mayang, Candani, Lagaligo, dll.) dan Engine bawaan (`lib/themeEngine.ts` & `lib/demoRegistry.ts`).
+    - Mengeliminasi total wadah kaku `.journey-card` dan 2 foto bujur sangkar `.journey-previews` yang mempersempit ruang visual.
+    - Mengimplementasikan sumbu rel vertikal bergradien pendar emas (`::before` dengan `linear-gradient`) dan titik node simpul emas bercahaya (`.story-chapter-block::before` dengan pendaran halo `box-shadow`) yang mengalir harmonis dengan palet dinamis masing-masing tema via rantai token anti-hardcode `--timeline-gold`.
 
 ---
 
@@ -934,6 +937,12 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - Fitur lengkap: toggle visibilitas seksi vendor demo, kustomisasi judul/eyebrow/subtitle seksi, dan tombol cepat *"Muat 4 Logo Dummy Default"* (`/uploads/logo_dummy/logo_1.png` s.d. `logo_4.png`).
    - Kompilasi otomatis file static HTML showroom (`/public/demo/[theme]/index.html`) saat admin menyimpan perubahan.
 
+5. **Harmonisasi Blueprint Master Tema & Eliminasi Wrapper `.reveal` Statis:**
+   - Seluruh 16 master template tema dan cetakan draft aktif dibebaskan dari wrapper usang `<div class="reveal">` yang sebelumnya mengunci seksi vendor pada `opacity: 0` di tema bertipe `.reveal-on-scroll` (Candani, Solaria, Lumina, Badrika, Mayang, Chronicle).
+   - Inisialisasi IntersectionObserver scroll pada seluruh tema distandarisasi mengamati varian reveal lengkap (`.reveal-on-scroll, .reveal, .reveal-up, .reveal-zoom, .reveal-fade`).
+   - `public/css/modules.css` diselaraskan agar mendukung pemicu kelas ganda (`.reveal.active, .reveal.is-visible`).
+   - Registry `lib/themeDefaults.ts` diperbarui menyertakan narasi bawaan vendor (`vendorTitle`, `vendorEyebrow`, `vendorSubtitle`) untuk seluruh arketipe tema (Candani, Traditional, Modern, dan Premium).
+
 ---
 
 ## 21. Penguatan Stabilitas DevOps & Ketahanan Server (v5.8.0)
@@ -952,3 +961,22 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
 4. **Otomatisasi Pendaftaran Crontab OS & Rotasi Log PM2 (`deploy.sh`):**
    - Menanamkan instalasi dan konfigurasi otomatis `pm2-logrotate` (maksimal 10MB x 7 rotasi terkompresi).
    - Menanamkan pendaftaran otomatis jadwal pemeliharaan `/api/cron/cleanup` (02:00) dan `/api/cron/backup` (03:00) ke dalam crontab Linux host saat deployment, menghilangkan kebutuhan intervensi manual oleh engineer IT.
+
+---
+
+## 22. Sinkronisasi Sesi Acara Utama, Kalender & Arsitektur Tema (v5.8.5)
+
+1. **Sinkronisasi Kalender Google & Countdown Timer ke Sesi Utama (`isPrimary: true`):**
+   - Seluruh 16 tema master (`aurelia`, `artisan`, `kalandra`, `valente`, `wave`, `papercut`, `ameera`, `chronicle`, `lumina`, `solaria`, `prameswari`, `dillalucky`, `badrika`, `mayang`, `candani`, `lagaligo`) kini mengonsumsi `{{googleCalendarUrl}}` dan `{{targetDate}}` yang terpusat ke Sesi Acara Utama.
+   - Memastikan agenda tamu di Google Calendar dan waktu hitung mundur hari H selalu selaras dengan tanggal acara puncak.
+
+2. **Deduplikasi Cerdas Multi-Sesi Acara (`lib/themeEngine.ts`):**
+   - Jika semua sesi berada di venue dan tanggal yang sama, kartu lokasi disatukan (`.event-unified-venue-card`).
+   - Jika terdapat sesi di hari yang berbeda atau lokasi terpisah, tanggal spesifik sesi (`.ev-session-date`) dicantumkan eksplisit di atas jam acara dan setiap sesi memiliki tombol Google Maps mandiri.
+
+3. **Standarisasi Global Opening Cover Desktop (100vw):**
+   - Tema `ameera` dan `chronicle` kini mengadopsi layar sampul pembuka 100% viewport di desktop (`@media (min-width: 900px)`), memanfaatkan foto landscape 16:9 (`landingCoverDesktopUrl`) secara optimal sebelum undangan dibuka.
+
+4. **Evolusi Desain Unik Tema Ameera & Chronicle:**
+   - **Ameera:** Bahasa desain Modern Arch / Romantic Silhouette dengan kubah lengkung modern, tombol kapsul, dan timeline Love Story mutiara.
+   - **Chronicle:** Bahasa desain Cardless Pure Editorial Timeline dengan rel 1px, diamond node 9px (`rotate(45deg)`), dan pemisah garis putus-putus tipis tanpa kotak latar.

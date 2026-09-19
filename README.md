@@ -85,7 +85,7 @@ Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model 
    - Isi data pengantin & keluarga (4 kolom terpisah: Ayah & Ibu dengan deteksi otomatis awalan "Putra dari" / "Putri dari" tanpa dropdown anak ke-n), jadwal acara multi-event (auto-sort kronologis: Tanggal -> Jam).
    - Pengaturan Musik Latar Pernikahan (Audio background, preset sakral, unggah MP3/M4A, sinkronisasi otomatis tombol Buka Undangan & fallback interaksi)
    - Upload foto (cover, groom, bride, gallery, dll)
-   - Kustomisasi seksi (Love Story, Gift, QR Check-in, Teks Galeri Kenangan Tamu)
+   - Kustomisasi seksi (Universal Vertical Glowing Luxury Timeline untuk Kisah Cinta / Love Story di seluruh 16 tema master, Smart Puzzle Grid Galeri Momen 4-kolom, Gift, QR Check-in, Teks Galeri Kenangan Tamu)
    - Kelola tamu + generate WhatsApp link personal (Deteksi cerdas Custom Domain / Subdomain & proteksi draft) dengan filter toolbar **Borderless Glowing Beam Tabs** (`Semua Tamu`, `Sudah Terkirim`, `Belum Dikirim`) dan badge kategori minimalis.
    - RSVP & ucapan real-time dengan tab navigasi **Borderless Glowing Beam** beranimasi sliding light beam 60 FPS (`Semua`, `Hadir`, `Tidak Hadir`, `Ragu-ragu`).
    - **Studio Editor & Triple Native Tabs (Form Data vs Live Visual vs Build Custom):** Switcher mode ditenagai animasi **Sliding Magnetic Pill** (rel inset lembut dengan thumb fisik bergeser deterministik `Form Data`, `Live Editor`, dan `Build Custom`) yang mengintegrasikan **Direct Action Chips** (`⚠️ Perlu: [ + Sampul ] [ + Foto Mempelai ]`) di sisi kanan untuk menghemat ruang vertikal tanpa kartu bertumpuk.
@@ -567,7 +567,11 @@ Setiap developer atau AI Agent yang melakukan modifikasi pada codebase **WAJIB**
   * **Off-Site Disaster Recovery ke Cloudflare R2 (`lib/databaseBackup.ts`)**: Replikasi otomatis snapshot `.sql` terkompresi ke R2 bucket setiap kali backup dijalankan.
   * **Sinkronisasi Otomatis Crontab Linux & Logrotate (`deploy.sh`)**: Setup otomatis `pm2-logrotate` (maks 10MB x 7 rotasi) dan pendaftaran crontab pemeliharaan dengan `CRON_SECRET` aktif.
   * **Koreksi Retensi & Pengalihan Subdomain Kanonikal (`app/(public)/s/[subdomain]/route.ts` & `[slug]`):** Evaluasi tanggal acara multi-sesi terpadu via `getLatestEventDate`, sinkronisasi retensi admin, dan pengalihan kanonikal absolut ke `NEXT_PUBLIC_APP_URL` (`https://luxvite.id`) untuk mencegah kebocoran port lokal internal reverse proxy (`localhost:3001`).
-  * **Isolasi Subdomain Total (Strict Subdomain Isolation di `middleware.ts`):** Pengalihan otomatis subdomain sistem (`demo` $\rightarrow$ `/demo`, `www`, `app`) dan pelepasan subdomain saat mengakses rute platform (`/packages`, `/login`, `/dashboard`, dll.) ke apex domain kanonikal, mengeliminasi bentrok nama tamu undangan dan kebocoran sesi login.
+- **Sinkronisasi Kalender & Hitung Mundur Sesi Acara Utama (v5.8.5)**:
+  * **Tautan Kalender & Countdown Seragam**: Google Calendar (`googleCalendarUrl`) dan Countdown Timer (`targetDate`) lintas seluruh 16 tema master kini 100% tersinkronisasi mengacu ke Sesi Acara Utama (`isPrimary: true`).
+  * **Dukungan Multi-Sesi Multi-Hari**: Deduplikasi cerdas menyatukan venue kartu jika tanggal & lokasi sama; menampilkan tanggal eksplisit sesi (`.ev-session-date`) pada acara beda hari atau beda gedung.
+  * **Global Opening Cover Desktop (100vw)**: Layar pembuka desktop membentang penuh 100% viewport pada tema `ameera` dan `chronicle` sebelum undangan dibuka.
+  * **Evolusi Desain Tema**: Bahasa desain Modern Arch pada tema `ameera` dan Cardless Pure Editorial Timeline pada tema `chronicle`.
 
 
 

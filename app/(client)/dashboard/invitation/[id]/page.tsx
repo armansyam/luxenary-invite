@@ -4671,7 +4671,7 @@ export default function EditInvitation() {
                   <label className="block text-xs font-bold text-stone-700 mb-1">Deskripsi / Ajakan Berbagi Momen:</label>
                   <textarea
                     rows={2}
-                    value={getCustomLabel("memoriesSubtitle", "Punya foto candid seru selama menghadiri pernikahan kami? Bagikan momen spesial Anda langsung ke album pribadi kami.")}
+                    value={getCustomLabel("memoriesSubtitle", "Buka kamera dan jepret momen candid seru Anda selama menghadiri pernikahan kami langsung ke album kenangan bersama:")}
                     onChange={(e) => updateCustomLabel("memoriesSubtitle", e.target.value)}
                     className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-700/30 resize-none"
                   />

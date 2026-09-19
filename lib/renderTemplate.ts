@@ -1461,7 +1461,7 @@ export async function renderTemplateFile(
         .site-footer::before, footer::before, footer#footer::before {
           display: none !important;
         }
-        .site-footer *, footer *, footer#footer * {
+        .site-footer *:not(.footer-initials), footer *:not(.footer-initials), footer#footer *:not(.footer-initials) {
           color: #fff !important;
         }
       </style>`;

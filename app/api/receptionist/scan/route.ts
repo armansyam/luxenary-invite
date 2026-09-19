@@ -141,7 +141,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: isCheckIn ? "Check-in berhasil disimpan ke server!" : "QR Code valid. Siap merekam video ucapan!",
+      message: isCheckIn ? "Check-in berhasil disimpan ke server!" : "QR Code valid. Siap mengambil foto momen!",
       guest: {
         id: guest.id,
         name: guest.name,

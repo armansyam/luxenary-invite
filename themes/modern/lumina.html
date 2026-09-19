@@ -425,6 +425,7 @@
         <div class="sec-content-box reveal-on-scroll">
           <span class="sec-eyebrow">A SACRED UNION</span>
           <h2 class="sec-heading" style="margin-bottom: 0.8rem;">Together as One</h2>
+          <span class="opening-greeting" data-lux-field="customLabels.openingGreeting" style="display:block; margin-bottom:0.6rem; font-size:1.1rem; opacity:0.9;">{{openingGreeting}}</span>
           <p style="font-size: 0.94rem; line-height: 1.9; color: rgba(255,255,255,0.85); max-width: 420px; margin: 0 auto;">
             "{{openingQuote}}"
           </p>
@@ -538,6 +539,9 @@
       {{qrAccessSectionHtml}}
 
       <!-- FOOTER (Adaptive Full-Height 100vh) -->
+    <!-- SECTION: MITRA VENDOR / WEDDING CREDITS -->
+    {{vendorsSectionHtml}}
+
       <footer class="site-footer {{closingPhotoClass}}" style="{{closingBgStyle}}">
         <div class="closing-content">
           <p style="font-size: 0.85rem; color: rgba(255,255,255,0.8); line-height: 1.7; margin-bottom: 1.5rem; max-width: 480px; margin-left: auto; margin-right: auto;">
@@ -660,7 +664,7 @@
         });
       }, { threshold: 0.15 });
 
-      document.querySelectorAll('.reveal-on-scroll').forEach(el => observer.observe(el));
+      document.querySelectorAll('.reveal-on-scroll, .reveal, .reveal-up, .reveal-zoom, .reveal-fade').forEach(el => observer.observe(el));
     }
 
     function startCountdown() {

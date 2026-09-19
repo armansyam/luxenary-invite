@@ -125,7 +125,7 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     galleryPhotos: [
       "/demo/kalandra/gallery_01.webp",
       "/demo/kalandra/gallery_02.webp",
-      "/demo/kalandra/gallery_03.webp",
+      "/demo/kalandra/gallery_03_landscape.webp",
       "/demo/kalandra/gallery_04.webp",
       "/demo/kalandra/gallery_05.webp",
       "/demo/kalandra/gallery_06.webp",
@@ -1473,17 +1473,15 @@ export function composeDemoTemplateData(
   `).join("");
 
   const storySectionHtml = `
-    <section class="sec-flow" id="story">
-      <span class="sec-eyebrow" data-lux-field="customLabels.storyEyebrow">${blueprint.storySectionEyebrow || "OUR JOURNEY"}</span>
-      <h2 class="sec-main-title serif" data-lux-field="customLabels.storyTitle">${blueprint.storySectionTitle || "Love Story"}</h2>
-      <div class="journey-card-container">
-        <div class="journey-chapters">
-          ${storyItemsHtml}
-        </div>
-        <div class="journey-footer">
-          <div class="jf-line"></div>
-          <span class="jf-signature serif">${demo.groomName} &amp; ${demo.brideName}</span>
-        </div>
+    <section class="sec-flow sec-journey" id="story">
+      <span class="sec-eyebrow reveal" data-lux-field="customLabels.storyEyebrow">${blueprint.storySectionEyebrow || "OUR JOURNEY"}</span>
+      <h2 class="sec-main-title journey-title serif reveal delay-1" data-lux-field="customLabels.storyTitle">${blueprint.storySectionTitle || "Love Story"}</h2>
+      <div class="journey-timeline journey-chapters reveal-up delay-2">
+        ${storyItemsHtml}
+      </div>
+      <div class="journey-footer reveal-fade delay-3">
+        <div class="jf-line"></div>
+        <span class="jf-signature serif">${demo.groomName} <em>&amp;</em> ${demo.brideName}</span>
       </div>
     </section>
   `;
@@ -1494,13 +1492,13 @@ export function composeDemoTemplateData(
 
   const photosFeedHtml = activeGallery.map((imgUrl, i) => `
     <div class="moment-photo-item" data-idx="${i}" onclick="luxOpenZoom(${i})">
-      <img src="${withV(imgUrl)}" alt="Our Moment ${i + 1}" loading="lazy" decoding="async">
+      <img src="${withV(imgUrl)}" alt="Our Moment ${i + 1}" loading="lazy" decoding="async" referrerpolicy="no-referrer">
     </div>
   `).join("");
 
   const allPhotosGridHtml = activeGallery.map((imgUrl, i) => `
     <div class="full-gallery-item" onclick="luxOpenZoom(${i})">
-      <img src="${withV(imgUrl)}" alt="Photo ${i + 1}" loading="lazy" decoding="async">
+      <img src="${withV(imgUrl)}" alt="Photo ${i + 1}" loading="lazy" decoding="async" referrerpolicy="no-referrer">
     </div>
   `).join("");
 
@@ -1519,6 +1517,22 @@ export function composeDemoTemplateData(
       <button type="button" class="btn-outline-box btn-show-gallery" onclick="luxOpenFullGallery()">
         LIHAT SEMUA FOTO (${activeGallery.length} FOTO)
       </button>
+
+      <style>
+        .moments-grid-10 {
+          display: grid !important; grid-template-columns: repeat(4, 1fr) !important; grid-auto-flow: dense !important;
+          gap: 5px !important; margin-bottom: 2.2rem !important; width: 100% !important;
+        }
+        .moment-photo-item {
+          position: relative !important; overflow: hidden !important; border-radius: 6px !important; cursor: pointer !important;
+          border: 1px solid rgba(255,255,255,0.12) !important; box-shadow: 0 4px 12px rgba(0,0,0,0.35) !important;
+          transition: border-color 0.25s ease, filter 0.25s ease !important; aspect-ratio: 3/4 !important;
+        }
+        .moment-photo-item.is-landscape { grid-column: span 2 !important; aspect-ratio: 3/2 !important; }
+        .moment-photo-item:hover { border-color: rgba(255,255,255,0.35) !important; filter: brightness(1.08) !important; }
+        .moment-photo-item img { width: 100% !important; height: 100% !important; object-fit: cover !important; display: block !important; }
+        .btn-show-gallery { display: inline-block !important; margin-bottom: 0 !important; }
+      </style>
     </section>
 
     <!-- FULL GALLERY LIGHTBOX MODAL -->
@@ -1539,7 +1553,7 @@ export function composeDemoTemplateData(
       <button class="lux-zoom-close" onclick="luxCloseZoom()">✕</button>
       <button class="lux-zoom-nav prev" onclick="luxPrevZoom(event)">‹</button>
       <div class="lux-zoom-img-box" onclick="event.stopPropagation()">
-        <img id="luxZoomActiveImg" src="${withV(activeGallery[0] || '')}" alt="Zoom View">
+        <img id="luxZoomActiveImg" src="${withV(activeGallery[0] || '')}" alt="Zoom View" referrerpolicy="no-referrer">
         <div class="lux-zoom-counter" id="luxZoomCounter">1 / ${activeGallery.length || 1}</div>
       </div>
       <button class="lux-zoom-nav next" onclick="luxNextZoom(event)">›</button>
@@ -1628,6 +1642,72 @@ export function composeDemoTemplateData(
         if (img) img.src = window.LUX_ALL_PHOTOS[window.luxActivePhotoIdx];
         if (counter) counter.textContent = (window.luxActivePhotoIdx + 1) + " / " + window.LUX_ALL_PHOTOS.length;
       };
+
+      // Smart Puzzle Grid Auto-Packing (100% flush rectangular frame, no holes)
+      function initSmartPuzzleGallery() {
+        const grid = document.querySelector('.moments-grid-10');
+        if (!grid) return;
+        const items = Array.from(grid.querySelectorAll('.moment-photo-item'));
+        if (!items.length) return;
+
+        let loadedCount = 0;
+        items.forEach((item) => {
+          const img = item.querySelector('img');
+          if (!img) return;
+
+          function applyOrientation(w, h) {
+            if (w && h) {
+              if (w > h * 1.12) {
+                item.classList.add('is-landscape');
+              } else {
+                item.classList.remove('is-landscape');
+              }
+            }
+            loadedCount++;
+            if (loadedCount >= items.length) {
+              packPuzzleSlots(items);
+            }
+          }
+
+          if (img.complete && img.naturalWidth > 0) {
+            applyOrientation(img.naturalWidth, img.naturalHeight);
+          } else {
+            const probe = new Image();
+            probe.referrerPolicy = 'no-referrer';
+            probe.onload = function() {
+              applyOrientation(probe.naturalWidth, probe.naturalHeight);
+            };
+            probe.onerror = function() {
+              loadedCount++;
+            };
+            probe.src = img.src;
+          }
+        });
+
+        setTimeout(() => { packPuzzleSlots(items); }, 500);
+      }
+
+      function packPuzzleSlots(items) {
+        let totalSlots = 0;
+        const targetMaxPhotos = 12;
+        const targetMaxSlots = 12;
+        let bestCutoff = Math.min(items.length, 8);
+
+        for (let i = 0; i < items.length; i++) {
+          if (i >= targetMaxPhotos) break;
+          const slotCost = items[i].classList.contains('is-landscape') ? 2 : 1;
+          if (totalSlots + slotCost > targetMaxSlots) break;
+          totalSlots += slotCost;
+          if (totalSlots % 4 === 0) {
+            bestCutoff = i + 1;
+          }
+        }
+
+        items.forEach((item, idx) => {
+          item.style.display = idx < bestCutoff ? 'block' : 'none';
+        });
+      }
+      document.addEventListener('DOMContentLoaded', initSmartPuzzleGallery);
     </script>
   `;
 
@@ -1693,16 +1773,6 @@ export function composeDemoTemplateData(
           <h4 class="pass-guest-name serif" id="passGuestName">Tamu Undangan</h4>
         </div>
 
-        <div class="pass-meta-grid">
-          <div class="pass-meta-item">
-            <span class="pass-meta-lbl">SESI</span>
-            <span class="pass-meta-val">Sesi 1 (Akad &amp; Resepsi)</span>
-          </div>
-          <div class="pass-meta-item">
-            <span class="pass-meta-lbl">LIMIT</span>
-            <span class="pass-meta-val">1 - 2 Orang</span>
-          </div>
-        </div>
 
         <div class="pass-souvenir-bar">
           <span class="souvenir-lbl">VOUCHER SOUVENIR:</span>
@@ -1797,6 +1867,20 @@ export function composeDemoTemplateData(
       </div>
       <p class="wish-msg">“Lancar sampai hari H yaa! Cantik dan gagah banget, can't wait to celebrate your special day!”</p>
     </div>
+    <div class="wish-item">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
+        <span class="wish-name">Keluarga Besar Makassar</span>
+        <span style="font-size:0.65rem; padding:2px 8px; border-radius:50px; background:rgba(74,222,128,0.15); color:#4ade80; font-weight:600;">Hadir (4 Orang)</span>
+      </div>
+      <p class="wish-msg">“Barakallahu lakuma wa baraka alaikuma wa jama'a bainakuma fii khair. Turut berbahagia untuk kedua mempelai tercinta.”</p>
+    </div>
+    <div class="wish-item">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
+        <span class="wish-name">Alumni Kampus</span>
+        <span style="font-size:0.65rem; padding:2px 8px; border-radius:50px; background:rgba(74,222,128,0.15); color:#4ade80; font-weight:600;">Hadir (2 Orang)</span>
+      </div>
+      <p class="wish-msg">“Selamat menempuh hidup baru sahabatku! Bahagia selalu sampai kakek nenek.”</p>
+    </div>
   `;
 
   // 11. Wedding Instagram Filter Section
@@ -1854,12 +1938,12 @@ export function composeDemoTemplateData(
         <span class="sec-eyebrow">AFTER-EVENT MEMORIES</span>
         <h2 class="sec-main-title serif">KENANGAN TAMU</h2>
         <p class="sec-sub" style="max-width: 480px; margin: 0 auto 1.5rem auto; font-size: 0.82rem; line-height: 1.6; opacity: 0.8;">
-          Punya foto candid atau video seru selama menghadiri pernikahan kami? Bagikan momen spesial Anda langsung di sini:
+          Buka kamera dan jepret momen candid seru Anda selama menghadiri pernikahan kami langsung ke album kenangan bersama:
         </p>
 
-        <!-- 1. TOMBOL UPLOAD MOMEN (DIRECT LINK) -->
+        <!-- 1. TOMBOL BUKA KAMERA KENANGAN -->
         <a href="/demo/sharemoment?theme=${demo.themeId}" style="display: block; width: 100%; max-width: 360px; margin: 0 auto 1.8rem auto; padding: 14px 20px; border-radius: 50px; background: #ffffff; color: #000000; font-weight: 700; font-size: 0.9rem; letter-spacing: 0.05em; text-align: center; text-decoration: none; box-shadow: 0 4px 15px rgba(255,255,255,0.18); transition: transform 0.15s ease;">
-          BAGIKAN FOTO MOMEN ANDA
+          BUKA KAMERA KENANGAN
         </a>
 
         <!-- 2. HIGHLIGHT LINGKARAN (5 LINGKARAN DI LAYAR, LOOPING MARQUEE JIKA > 5) -->
@@ -1867,7 +1951,7 @@ export function composeDemoTemplateData(
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; font-size: 10px; font-weight: 700; opacity: 0.85; padding: 0 6px;">
             <span style="display: flex; align-items: center; gap: 6px;">
               <span style="width: 7px; height: 7px; border-radius: 99px; background: #10b981; display: inline-block;"></span>
-              KAMI SUDAH MEMBAGIKAN MOMEN
+              FOTO DARI PARA TAMU
             </span>
             <span style="font-size: 9px; opacity: 0.5; font-family: monospace;">Acak (${totalCount} Foto)</span>
           </div>
@@ -2026,7 +2110,9 @@ export function composeDemoTemplateData(
     </script>
   `;
 
-  const googleCalendarUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`The Wedding of ${demo.groomName} & ${demo.brideName}`)}&dates=${demo.weddingDateYear}${demo.weddingDateMonth}${demo.weddingDateDay}T010000Z/${demo.weddingDateYear}${demo.weddingDateMonth}${demo.weddingDateDay}T140000Z&location=${encodeURIComponent(demo.events[0]?.location || demo.city)}`;
+  const primaryDemoEvent = demo.events.find((e) => (e as any).isPrimary) || demo.events[0];
+  const calendarLocation = primaryDemoEvent?.location || primaryDemoEvent?.address || demo.events[0]?.location || demo.city || "Makassar";
+  const googleCalendarUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`The Wedding of ${demo.groomName} & ${demo.brideName}`)}&dates=${demo.weddingDateYear}${demo.weddingDateMonth}${demo.weddingDateDay}T010000Z/${demo.weddingDateYear}${demo.weddingDateMonth}${demo.weddingDateDay}T140000Z&location=${encodeURIComponent(calendarLocation)}`;
 
   const demoDir = path.join(process.cwd(), "public", "demo", demo.themeId);
   const localHomeExists = fs.existsSync(path.join(demoDir, "home.webp"));
@@ -2098,7 +2184,7 @@ export function composeDemoTemplateData(
         : "";
 
       const nameHtml = name
-        ? `<span class="lux-vendor-text-name ${logo ? "" : "serif"}" style="${logo ? "font-size: 0.82rem; font-weight: 500; letter-spacing: 0.03em;" : "font-size: 1.05rem; font-weight: 600; letter-spacing: 0.04em;"} color: var(--accent) !important; opacity: 0.92; text-align: center; line-height: 1.35; background: transparent !important; border: none !important; text-decoration: none !important;">${escapeHtml(name)}</span>`
+        ? `<span class="lux-vendor-text-name ${logo ? "" : "serif"}" style="${logo ? "font-size: 0.82rem; font-weight: 500; letter-spacing: 0.03em;" : "font-size: 1.05rem; font-weight: 600; letter-spacing: 0.04em;"} color: var(--text-main, #ffffff) !important; opacity: 0.92; text-align: center; line-height: 1.35; background: transparent !important; border: none !important; text-decoration: none !important;">${escapeHtml(name)}</span>`
         : "";
 
       const itemContent = `
@@ -2263,12 +2349,14 @@ export function composeDemoTemplateData(
     googleCalendarUrl,
     waLink: `https://wa.me/6281234567890?text=Halo%20${encodeURIComponent(demo.groomName)}%20dan%20${encodeURIComponent(demo.brideName)}`,
     audioUrl: effectiveAudioUrl,
-    musicPlayerHtml: effectiveAudioUrl ? `
+    musicPlayerHtml: `
+    ${effectiveAudioUrl ? `
     <!-- UNIVERSAL MUSIC PLAYER INJECTED BY DEMO ENGINE -->
     <audio id="luxAudioPlayer" loop preload="auto">
       <source src="${effectiveAudioUrl}" type="audio/ogg" />
       <source src="${effectiveAudioUrl}" type="audio/mpeg" />
     </audio>
+    ` : ""}
     <script>
       (function() {
         var a = document.getElementById('luxAudioPlayer');
@@ -2276,9 +2364,74 @@ export function composeDemoTemplateData(
           window.bgAudio = a;
           window.weddingAudio = a;
         }
+        window.__LUX_INVITATION_ID__ = "demo";
       })();
+
+      // Universal RSVP Handler for Static Demos
+      if (typeof window.luxSubmitRsvp !== 'function') {
+        window.luxSubmitRsvp = function(e) {
+          if (typeof submitRsvp === 'function') {
+            return submitRsvp(e);
+          }
+          e.preventDefault();
+          var btn = document.getElementById('btnSubmit') || (e.target ? e.target.querySelector('button[type="submit"]') : null);
+          var nameInput = document.getElementById('rsvpName');
+          var statusSelect = document.getElementById('rsvpStatus');
+          var countInput = document.getElementById('rsvpCount');
+          var messageInput = document.getElementById('rsvpMessage');
+          var name = nameInput ? nameInput.value.trim() : '';
+          var status = statusSelect ? statusSelect.value : 'hadir';
+          var count = countInput ? (parseInt(countInput.value, 10) || 1) : 1;
+          var message = messageInput ? messageInput.value.trim() : '';
+
+          if (!name) {
+            if (typeof showToast === 'function') { showToast('Silakan isi nama Anda', 'error'); }
+            else { alert('Silakan isi nama Anda'); }
+            return;
+          }
+
+          if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'MENGIRIM DOA...';
+          }
+
+          setTimeout(function() {
+            if (typeof showToast === 'function') {
+              showToast('Konfirmasi kehadiran & doa restu berhasil dikirim!');
+            }
+            var wishesList = document.getElementById('wishesList') || document.getElementById('wishesFeed');
+            if (wishesList && message) {
+              var emptyPlaceholder = wishesList.querySelector('p');
+              if (emptyPlaceholder && emptyPlaceholder.textContent.includes('Jadilah yang pertama')) {
+                emptyPlaceholder.remove();
+              }
+              var newCard = document.createElement('div');
+              newCard.className = 'wish-item';
+              var isHadir = status === 'hadir';
+              var badgeText = isHadir ? 'Hadir (' + count + ' Tamu)' : 'Berhalangan';
+              var badgeBg = isHadir ? 'rgba(74,222,128,0.15)' : 'rgba(248,113,113,0.15)';
+              var badgeColor = isHadir ? '#4ade80' : '#f87171';
+              var safeName = name.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+              var safeMsg = message.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+              newCard.innerHTML = 
+                '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">' +
+                  '<span class="wish-name" style="font-weight:600;">' + safeName + '</span>' +
+                  '<span style="font-size:0.65rem; padding:2px 8px; border-radius:50px; background:' + badgeBg + '; color:' + badgeColor + '; font-weight:600;">' + badgeText + '</span>' +
+                '</div>' +
+                '<p class="wish-msg" style="margin:0.3rem 0 0; opacity:0.85; font-size:0.82rem; line-height:1.5;">“' + safeMsg + '”</p>';
+              wishesList.insertBefore(newCard, wishesList.firstChild);
+              wishesList.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+            if (messageInput) messageInput.value = '';
+            if (btn) {
+              btn.disabled = false;
+              btn.textContent = 'Kirim Konfirmasi & Doa';
+            }
+          }, 400);
+        };
+      }
     </script>
-    ` : "",
+    `,
     
     colorPrimary: palette.primary,
     colorSecondary: palette.secondary,

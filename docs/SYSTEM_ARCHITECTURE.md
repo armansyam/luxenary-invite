@@ -720,6 +720,29 @@ HTML standalone lengkap (self-contained, inline CSS/JS)
   - **Standarisasi Proporsi Split Desktop (Golden Ratio 460px di Seluruh 16 Tema Master):**
     - Seluruh 16 tema fisik master kini mengadopsi rasio proporsional desktop presisi: panel undangan kanan dikunci pada lebar ideal smartphone flagship **`width: 460px; margin-left: calc(100% - 460px);`**, sementara sidebar Hero kiri otomatis membentang mengisi seluruh sisa panggung layar widescreen (`width: calc(100% - 460px);`).
     - Menghilangkan total masalah konten melar pada monitor besar (1920px Full HD atau ultrawide), dan menjamin floating dock navigasi (`.bottom-dock`) selalu terpusat simetris di tengah panel undangan (`left: calc(100% - 230px) !important;`).
+  - **Arsitektur Layar Sampul Pembuka Full-Global Desktop (`.cover-screen` / `.cover-overlay` 100vw):**
+    - Pada tema modern dan premium (`aurelia`, `valente`, `artisan`, `ameera`, dan `chronicle`), layar sampul pembuka (`.cover-screen` / `.cover-overlay`) pada layar lebar (`@media (min-width: 900px)`) membentang penuh 100% viewport (`width: 100%; left: 0; right: 0; padding: 4rem 2.5rem;`).
+    - Memanfaatkan foto landscape 16:9 (`LANDING_COVER_DESKTOP`) secara maksimal sebelum undangan dibuka. Elemen konten terpusat rapi dengan sub-kontainer adaptif (`.cover-top (max-width: 1100px)`, `.cover-center (max-width: 850px)`, `.cover-bottom (max-width: 520px)`).
+    - Setelah tombol *"Buka Undangan"* diklik, panel konten kanan berukuran 460px aktif berdampingan dengan hero sidebar kiri.
+  - **Arsitektur Desain Editorial Newspaper & Magazine Timeline (Tema Chronicle):**
+    - Tema `chronicle.html` mengadopsi bahasa desain **High-Fashion Editorial & Magazine**:
+      - **Global Opening Cover 100vw:** Layar pembuka `.cover-overlay` membentang penuh 100% viewport dengan sub-kontainer adaptif `.cover-center` (`max-width: 850px`), tipografi headline `Bellefair` berskala responsif (`clamp(3.2rem, 5.5vw, 5.5rem)`), dan tombol pembuka majalah `.btn-open-issue`.
+      - **Editorial Love Story Timeline (Pure Editorial / Cardless):** Seksi Love Story (`#story`) mengadopsi rel garis vertikal editorial 1px bergradasi (`.journey-timeline::before`), penanda babak berupa diamond node 9px (`transform: rotate(45deg)`), dan babak narasi majalah tanpa kotak latar (*cardless*) dengan pembatas garis putus-putus halus (`border-bottom: 1px dashed var(--editorial-border)`).
+  - **Arsitektur Desain Modern Arch & Romantic Silhouette (Tema Ameera):**
+    - Tema `ameera.html` mengadopsi bahasa desain **Modern Arch / Romantic Silhouette** yang membedakannya secara tegas dari karakter tajam/kaku tema `artisan.html`:
+      - **Modern Arch Dome:** Kartu acara (`.event-block-item`, `.event-unified-venue-card`, `.access-pass-card`) menggunakan kubah lengkung modern (`border-radius: 80px 80px 20px 20px` hingga `90px 90px 24px 24px`) dengan efek *frosted glassmorphism* (`backdrop-filter: blur(20px)`).
+      - **Capsule & Pill Ergonomics:** Seluruh tombol CTA (`.btn-buka`, `.btn-outline-box`, `.btn-map-outline`, `.btn-rsvp-submit`, `.gift-tab-btn`, `.btn-copy`) menggunakan bentuk kapsul ergonomis (`border-radius: 9999px`).
+      - **Romantic Countdown Shrine:** Modul hitung mundur dibungkus kontainer kapsul melengkung halus (`border-radius: 20px`) berlatar semi-transparan `color-mix(in srgb, var(--bg-dark) 55%, transparent)`.
+      - **Modern Arch Love Story Timeline:** Seksi Love Story (`#story`) dilengkapi rel garis vertikal bergradasi (`.journey-timeline::before`), penanda node mutiara berkilau (`.story-chapter-block::before`), kartu babak kubah lengkung (`border-radius: 28px 28px 16px 16px`), dan pill badge babak (`border-radius: 9999px`).
+      - **Soft Rounded Form & Cards:** Input RSVP (`border-radius: 12px`), kartu ucapan (`border-radius: 14px`), dan kartu rekening bank (`border-radius: 18px`) memberikan kesan modern, ramah, dan anggun.
+  - **Orkestrasi Multi-Sesi Acara & Sinkronisasi Kalender (`lib/themeEngine.ts`):**
+    - **Deduplikasi Cerdas Lokasi & Tanggal (`isSameLocationForAll`):**
+      - *Skenario 1 (Satu Tempat & Satu Hari):* Jika seluruh sesi berada pada tanggal dan venue yang sama, kartu venue disatukan di bagian bawah (`.event-unified-venue-card`) dengan satu tombol Google Maps terpusat.
+      - *Skenario 2 (Beda Hari atau Beda Lokasi):* Jika terdapat sesi pada hari yang berbeda (misal: Mappacci hari Jumat, Akad & Resepsi hari Sabtu) atau gedung berbeda, setiap sesi dirender dalam kartu mandiri dengan tombol Google Maps masing-masing, serta mencantumkan tanggal spesifik sesi (`.ev-session-date`) secara eksplisit di atas jam acara guna mengeliminasi kebingungan tamu.
+    - **Prioritas Acara Utama pada Tautan Kalender (`googleCalendarUrl`):**
+      - Tautan Google Calendar secara konsisten membaca tanggal dan lokasi dari sesi yang ditandai sebagai **Acara Utama (`isPrimary: true`)** (`primaryEvent?.location || primaryEvent?.address`), menjamin agenda kalender tamu sinkron 1:1 dengan acara puncak pernikahan.
+    - **Sinkronisasi Hitung Mundur (*Countdown Timer*) ke Sesi Acara Utama (`targetDate`):**
+      - Seluruh 16 tema master (`aurelia`, `artisan`, `kalandra`, `valente`, `wave`, `papercut`, `ameera`, `chronicle`, `lumina`, `solaria`, `prameswari`, `dillalucky`, `badrika`, `mayang`, `candani`, `lagaligo`) kini mengonsumsi `targetDate` yang ditambatkan secara presisi ke `primaryEventDate` dan jam mulai acara utama, menjamin angka hitung mundur hari H selalu aktif dan seragam.
   - **Standarisasi Tipografi Anti-Overflow Split Desktop (Mobile-Emulation Scale):**
     - **Akar Masalah Tipografi `vw`:** Unit CSS `vw` mengevaluasi lebar seluruh layar peramban (1440px - 1920px), bukan lebar kontainer 460px. Hal ini membuat judul besar berhuruf kapital (misal "LIVE STREAMING") atau font kaligrafi (seperti *Parisienne* / *Cinzel*) membengkak hingga >54px dan meluap keluar dari panel split kanan.
     - **Pemberian Cap Maksimal:** Pada media query `@media (min-width: 900px)`, seluruh judul seksi `.sec-main-title, .sec-heading` dikunci maksimal pada `font-size: clamp(1.75rem, 2.1rem, 2.3rem) !important;` dengan proteksi `overflow-wrap: break-word !important; word-break: break-word !important;`.
@@ -734,8 +757,8 @@ HTML standalone lengkap (self-contained, inline CSS/JS)
     - **Standar Ukuran Area Sentuh (Apple HIG & Google Material Compliance):**
       - Tombol menu dock navigasi (`.dock-a` / `.dock-btn`) memiliki dimensi sentuhan minimum **44 × 44 px** dengan deklarasi `touch-action: manipulation;`.
       - Tombol salin rekening (`.btn-copy`) dinormalisasi dengan tinggi sentuhan $\ge 38\text{px}$ dan padding nyaman ($0.55\text{rem } 1.1\text{rem}$) demi kenyamanan tamu lansia.
-    - **Rasio Masonry Galeri Responsif Mobile:**
-      - Engine universal `lib/themeEngine.ts` menerapkan breakpoint otomatis `@media (max-width: 640px)` dengan tata letak **2 kolom** (`columns: 2 !important; column-gap: 8px;`) pada modal galeri penuh, menggantikan tata letak kaku 4 kolom agar foto tampil proporsional tanpa tertekan menjadi ukuran perangko.
+    - **Standarisasi Galeri Masonry Universal (Mobile & Desktop Split 100% Identik):**
+      - Engine universal `lib/themeEngine.ts`, `lib/demoRegistry.ts`, dan `public/css/modules.css` menerapkan tata letak Masonry **2 kolom** (`columns: 2 !important; column-gap: 8px;`) secara universal pada feed seksi Our Moment (dibatasi 2–3 baris pertama / maks 6 foto) maupun pada modal galeri penuh. Tidak ada disparitas media query antara desktop dan mobile karena panel kanan desktop berukuran representasi mobile yang identik (~460px). Setiap foto mengalir alami (`break-inside: avoid; height: auto;`) mengisi ruang secara padat tanpa menyisakan ruang kosong atau foto mengecil.
     - **Standarisasi Dasbor Klien pada Layar Ponsel (`/dashboard`):**
       - Dock navigasi bawah mengambang (`layout.tsx`) diperbarui menggunakan `bottom-[calc(1rem+env(safe-area-inset-bottom,0px))]` guna mencegah interferensi gestur Home Indicator iOS 34px.
       - Grid metrik lisensi akun (`page.tsx`) dioptimalkan menjadi flex wrap responsif (`flex-col sm:flex-row gap-1.5`) agar teks paket dan tombol upgrade tidak saling bertubrukan pada perangkat sempit 360px.
@@ -1034,7 +1057,7 @@ Media di InvitationMedia:
 
 | File/Modul | Status | Penjelasan |
 |---|---|---|
-| `lib/driveHelper.ts` | ✅ Diperbarui | Dirombak total menggunakan Google Drive API v3 resmi. Bukan scraper lagi, lebih stabil dan bersih menggunakan `GOOGLE_API_KEY`. |
+| `lib/driveHelper.ts` | ✅ Diperbarui | Dirombak total menggunakan Google Drive API v3 resmi (`GOOGLE_API_KEY`) dengan fitur auto-detect subfolder cerdas (otomatis menelusuri subfolder seperti '1. Galeri Sellected' jika folder induk tidak memiliki file foto langsung). |
 | `GOOGLE_DRIVE_WEBHOOK_URL` | 🗑️ Terhapus | Variabel webhook Google Apps Script lama dihapus dari .env, digantikan Cloudflare R2 / S3 dan Google Drive API v3 resmi. |
 | `app/api/cdn/drive/route.ts` | 🗑️ Terhapus | Proxy CDN Google Drive sudah dihapus. |
 | `app/api/client/invitations/[id]/retention-sync/route.ts` | 🗑️ Terhapus | API sinkronisasi Drive ke DB lokal sudah dihapus. |
@@ -1858,8 +1881,30 @@ Untuk memberikan pengalaman interaktif penuh bagi calon klien sebelum memesan pa
    - Mendokumentasikan dua opsi implementasi seksi dinamis bagi para pengembang tema (Theme Builders):
      - **Opsi A (Bawaan Engine):** Menggunakan token seksi terkomposisi instan (`{{storySectionHtml}}`).
      - **Opsi B (Native Master Theme):** Menggunakan blok kondisional `{{#if showStory}}` dengan kelas CSS kustom dan token item granular (`{{storyItemsHtml}}`).
-5. **Garansi Kompatibilitas Mundur 100% (Zero-Breaking Policy):**
-   - Seluruh 14 tema master lainnya tetap berfungsi normal tanpa regresi karena Engine tetap mengekspor fallback token lama (`storySectionHtml`, dll.).
+### 17.11 — Standardisasi Universal Seksi Kisah Cinta (Love Story / Journey Timeline): Vertical Glowing Luxury Standard
+1. **Latar Belakang & Eliminasi Card Box Statis:**
+   - Seksi Kisah Cinta (Love Story / Journey) sebelumnya menampilkan wadah kartu kaku (`.journey-card` / `.journey-previews`) dengan 2 foto preview bujur sangkar yang memakan ruang vertikal dan memberikan kesan generik/standar.
+   - Desain timeline editorial mewah yang sebelumnya hanya aktif di Kalandra (`themes/premium/kalandra.html`) kini distandarisasi ke seluruh 16 tema master (Modern, Traditional, dan Premium) serta Engine default (`lib/themeEngine.ts` dan `lib/demoRegistry.ts`).
+2. **Arsitektur Sumbu Rel & Node Simpul Berpendar (Vertical Glowing Rail):**
+   - **Garis Rel Vertikal:** Diterapkan via pseudo-elemen `::before` pada kontainer timeline (`.journey-timeline, .journey-chapters, .kalandra-timeline, .mayang-story-flow, .candani-story-flow, .lagaligo-story-flow`) dengan gradien pendar linier:
+     ```css
+     background: linear-gradient(to bottom, var(--timeline-gold), color-mix(in srgb, var(--timeline-gold) 40%, transparent) 70%, transparent);
+     ```
+   - **Titik Node Emas Bercahaya (*Luminous Gold Dots*):** Setiap bab kisah cinta (`.story-chapter-block::before`) memiliki titik simpul bulat emas 9px dengan efek halo berpendar berlapis:
+     ```css
+     box-shadow: 0 0 10px 2px color-mix(in srgb, var(--timeline-gold) 65%, transparent),
+                 0 0 20px color-mix(in srgb, var(--timeline-gold) 35%, transparent);
+     ```
+3. **Resolusi Token Warna Dinamis Adaptif (Anti-Hardcode Chain):**
+   - Mendukung harmonisasi palet dinamis di semua tema tanpa hardcode warna mati:
+     ```css
+     --timeline-gold: var(--primary, var(--gold, var(--accent, var(--jawa-gold, var(--floral-gold, var(--sunset-amber, #d4af37))))));
+     ```
+   - Pada tema modern & premium (Valente, Aurelia, Artisan, Papercut), node mengalir mengikuti `--accent` atau `--gold`.
+   - Pada tema tradisional (Mayang, Candani, Lagaligo), node mengalir mengikuti `--jawa-gold` atau `--floral-terracotta-light`.
+4. **Pembersihan Bersih & Kompatibilitas Engine:**
+   - Wadah lama `.journey-card` dinetralkan (`background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important;`) dan `.journey-previews` disembunyikan (`display: none !important;`) di `public/css/modules.css`.
+   - Engine universal `lib/themeEngine.ts` dan `lib/demoRegistry.ts` memancarkan DOM ramping `sec-flow sec-journey` dengan pembungkus `.journey-timeline.journey-chapters` dan tanda tangan penutup `.journey-footer`.
 
 ### 17.12 — Standarisasi Universal Token Dinamis & Panduan Master Blueprint (Zero Hardcode Policy)
 1. **Pemberantasan Teks Statis & Hardcode Budaya/Agama:**
@@ -1872,7 +1917,40 @@ Untuk memberikan pengalaman interaktif penuh bagi calon klien sebelum memesan pa
 2. **Panduan Master Desain Tema (`themes/BLUEPRINT_GUIDE.md`):**
    - Dibuat dokumen standar teknis resmi untuk para Theme Builder / desainer tema yang merangkum kamus token lengkap, aturan atribut binding dua arah (`data-lux-field`), arsitektur split 460px desktop, CSS custom properties, dan SOP 5-langkah registrasi tema baru ke engine database tanpa sentuhan manual backend.
 
-### 17.11 — Arsitektur Single-Screen Zero-Scroll Kiosk pada Sistem Resepsionis Live & Demo
+### 17.13 — Profil Pasangan Tema Aurelia: Zero-Radius High-Fashion Editorial Spread
+1. **Pelepasan Defisit Ruang Horizontal & Solusi Tipografi Nama Panjang:**
+   - Mentransformasi susunan profil mempelai Aurelia dari model horizontal kaku (*side-by-side flex*) menjadi **Centered Stacked Editorial Layout** (100% lebar kontainer ~360px–420px).
+   - Mengalibrasi tipografi nama pasangan (`.couple-duo-name`) dengan `font-size: clamp(1.18rem, 3.6vw, 1.45rem);` dan `line-height: 1.35;` sehingga nama panjang (3–4 kata + gelar akademis/adat seperti *"Arjuna Wibowo, S.E., M.B.A."*) muat dalam satu baris secara proporsional dan elegan tanpa patah baris canggung (*awkward line-break*).
+2. **Ciri Khas Orisinal Bebas Klise AI (Zero-Radius Editorial Sharp Frame):**
+   - Mengeliminasi bingkai lengkung/kubah generik AI (*arch frame*) dan menggantinya dengan potongan tajam bersudut 0px (`border-radius: 0;`), rasio potret editorial murni **3:4** (`140px × 186px`), dibingkai garis hairline presisi 1px (`border: 1px solid color-mix(in srgb, var(--gold) 40%, rgba(255, 255, 255, 0.2))`).
+   - Tautan Instagram (`.btn-ig-pill`) dikonfigurasi bersih tanpa box/border wrap (`border: none; background: transparent;`), menampilkan username Instagram minimalis dengan transisi hover ke palet emas (`var(--gold)`).
+3. **Penyajian Elegan Bersih Berbasis `first` dan `second`:**
+   - Mengeliminasi lencana angka kaku (*01/02 curatorial badge*) untuk memberikan kesan mewah yang bersih, lapang, dan bersahaja.
+   - Mengalirkan profil secara hierarkis dinamis berdasarkan pihak pengundang utama (`first`) dan pihak pasangan (`second`), dipisahkan oleh konektor monogram inisial di bagian tengah (`.couple-duo-connector`).
+4. **Pemberantasan Jebakan Viewport Kaku:**
+   - Wadah `.slide-couple-duo` diubah dari `min-height: 100vh; justify-content: space-between;` menjadi flow alami vertikal (`min-height: auto; padding: 5rem 1.8rem 4.5rem; gap: 2.2rem;`), melenyapkan risiko benturan elemen pada layar ponsel pendek.
+
+### 17.13.1 — Penyelarasan Latar Gradasi & Navigasi Tema Artisan (Premium)
+1. **Gradasi Latar Foto Profil Dinamis (*Zero Hardcode Overlay*):**
+   - Mengganti overlay `rgba(7, 7, 9)` statis pada `.slide-couple::before` dengan token dinamis `linear-gradient(to top, var(--bg-dark, #070709) 0%, color-mix(in srgb, var(--bg-dark, #070709) 45%, transparent) 45%, transparent 100%)`. Latar bawah foto profil 100vh kini menyatu mulus secara otomatis dengan palet tema apapun yang dipilih klien di Studio Editor.
+2. **Standarisasi Anchor Navigasi `#couple` & RSVP Handler:**
+   - Menyematkan `<span id="couple" class="couple-anchor"></span>` pada Slide 2 (`#host1`) untuk standardisasi navigasi lintas tema.
+   - Mengaitkan `window.luxSubmitRsvp = submitRsvp;` pada script lokal untuk memastikan formulir RSVP dapat dieksekusi baik pada mode preview statis maupun produksi engine.
+3. **Resolusi Dinamis Audio Autoplay (`playAudio`):**
+   - Memperbaiki `playAudio()` agar mencari elemen audio secara dinamis (`luxAudioPlayer`, `bgAudio`, atau `window.bgAudio`) saat tombol "Buka Undangan" diklik, menuntaskan kegagalan pemutaran otomatis musik latar akibat inisialisasi ID statis.
+4. **Gradasi Dinamis Foto Penutup Footer:**
+   - Mengganti overlay hitam mati `rgba(0,0,0,0.92)` pada `.site-footer.has-closing-photo::before` dengan `linear-gradient(to bottom, transparent 0%, color-mix(in srgb, var(--bg-dark, #070709) 55%, transparent) 50%, var(--bg-dark, #070709) 100%)`.
+
+### 17.13.2 — Dekoupling & Jaminan Eksekusi RSVP Universal (Produksi & Showroom Demo)
+1. **Pemisahan dari Ketergantungan Audio (`lib/themeEngine.ts`):**
+   - Sebelumnya, blok skrip runtime (`luxSubmitRsvp`, countdown timer, audio helper) dibungkus bersyarat di dalam `finalAudioUrl ? ... : ""`. Jika klien menonaktifkan musik latar (`showMusic: false`) atau tidak memiliki URL audio, formulir RSVP menjadi mati karena fungsinya tidak terinjeksi ke DOM.
+   - Dilakukan perbaikan arsitektural: skrip `luxSubmitRsvp` kini diinjeksi secara **mutlak tanpa syarat** ke setiap undangan yang dirender engine, menjamin 100% formulir RSVP klien selalu berfungsi tanpa terpengaruh status audio.
+2. **Universal Demo RSVP Handler (`lib/demoRegistry.ts`):**
+   - Menyuntikkan handler mandiri `luxSubmitRsvp` pada showroom demo statis (`/demo/[themeId]/index.html`), memungkinkan pengunjung menguji formulir RSVP dan melihat pesan doa secara instan tanpa error console `ReferenceError: luxSubmitRsvp is not defined`.
+3. **Harmonisasi Skrip Lokal Master Template:**
+   - Seluruh 8 tema yang memiliki fungsi `submitRsvp` internal (`artisan`, `valente`, `aurelia`, `papercut`, `wave`, `ameera`, `dillalucky`, `prameswari`) kini secara konsisten menyematkan `window.luxSubmitRsvp = submitRsvp;`.
+
+### 17.14 — Arsitektur Single-Screen Zero-Scroll Kiosk pada Sistem Resepsionis Live & Demo
 1. **Pemberantasan Window Scrolling (`h-screen overflow-hidden`):**
    - Baik pada sistem resepsionis live (`app/components/features/ReceptionistScannerClient.tsx`) maupun showroom demo (`app/demo/receptionist/page.tsx`), viewport dikunci kokoh pada `h-screen overflow-hidden`.
    - Mengeliminasi distorsi *elastic bounce*, pergeseran layout, dan scrollbar vertikal browser saat panitia menyentuh layar tablet (iPad) atau mengarahkan barcode scanner tembak.
@@ -2027,10 +2105,12 @@ Untuk memberikan pengalaman interaktif penuh bagi calon klien sebelum memesan pa
    - `/demo/sharemoment` disinkronkan ke mesin kamera disposable modern ([`GuestMomentClient`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/components/features/GuestMomentClient.tsx)) lengkap dengan Web Audio shutter sound, 5 preset filter analog, date stamp retro, dan *opening showcase*.
    - `/demo/memories` ditransformasikan dari model flat 1-foto menjadi arsitektur **Roll Stack (1 Card / Tamu)** berlapis fisik dengan badge jumlah foto dan modal lightbox swipe multi-foto yang terhubung dengan `sessionStorage` jepretan kamera demo.
 5. **Arsitektur Zero-Setup Unified Demo Sandbox (Otomasi Jalur Demo):**
-   - Seluruh tema showroom (`/demo/[theme]`) mengarahkan tombol *"BAGIKAN FOTO MOMEN ANDA"* ke `/demo/sharemoment?theme=[theme]`, tombol *"BUKA GALERI MOMEN LENGKAP"* ke `/demo/memories?theme=[theme]`, dan kartu tiket QR pass ke `/demo/receptionist`.
+   - Seluruh tema showroom (`/demo/[theme]`) mengarahkan tombol *"BUKA KAMERA KENANGAN"* ke `/demo/sharemoment?theme=[theme]`, tombol *"BUKA GALERI MOMEN LENGKAP"* ke `/demo/memories?theme=[theme]`, dan kartu tiket QR pass ke `/demo/receptionist`.
    - Sub-rute tema lama (`/demo/[theme]/memories`) otomatis dialihkan (307 redirect) ke `/demo/memories?theme=[theme]` demi mengeliminasi fragmentasi dan layout usang.
    - Pintu publik tak berautentikasi (`/memories` & `/sharemoment`) otomatis dialihkan ke sandbox demo interaktif (`/demo/memories` & `/demo/sharemoment`), mencegah hambatan auth wall bagi calon klien.
    - Endpoint publik RSVP (`/api/public/rsvp`) diperkaya simulasi instan untuk ID `demo-*`, memungkinkan pengujian pengiriman ucapan doa & konfirmasi kehadiran secara interaktif tanpa kendala database 404.
+6. **Standarisasi Menyeluruh Ekosistem 16 Master Tema Fisik:**
+   - Seluruh 16 tema fisik (`themes/premium/`, `themes/modern/`, `themes/traditional/`) 100% konsisten menyematkan modul Salam Pembuka Universal `{{openingGreeting}}`, Mitra Vendor `{{vendorsSectionHtml}}`, Galeri Kenangan Tamu Kamera Virtual `{{memoriesSectionHtml}}` (Photo Only), serta formulir RSVP interaktif dengan container scroll aman (`max-height: 290px-320px`, `overscroll-behavior: contain`, dan custom thin luxury scrollbar) dan proteksi hak cipta Luxenary.
 
 ### 20.6 — Mobile UI/UX Overhaul: Edge-to-Edge Canvas, Anti-Matryoshka Card & Sticky Quick-Save Bar
 1. **Eliminasi "Matryoshka Card Syndrome" (Pelepasan Padding Berlapis Mobile):**

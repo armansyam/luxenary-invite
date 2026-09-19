@@ -435,14 +435,45 @@
     }
     .btn-map-outline:hover { background: var(--jawa-gold); color: var(--bg-dark, #120c06); }
 
-    /* JOURNEY / STORY STYLING */
+    /* JOURNEY / STORY STYLING (VERTICAL GLOWING LUXURY TIMELINE) */
     .mayang-story-flow {
-      display: flex; flex-direction: column; gap: 1.25rem; width: 100%; max-width: 440px; text-align: left;
-      background: var(--jawa-card); border: 1px solid var(--jawa-border); border-radius: 18px; padding: 1.8rem 1.5rem;
-      box-shadow: var(--border-glow);
+      position: relative;
+      width: 100%;
+      max-width: 420px;
+      margin: 2.5rem auto 1.8rem;
+      padding-left: 2.4rem;
+      text-align: left;
+      display: block;
     }
-    .story-chapter-block { padding-bottom: 0.8rem; border-bottom: 1px dashed var(--jawa-border-dim); }
-    .story-chapter-block:last-child { border-bottom: none; padding-bottom: 0; }
+    .mayang-story-flow::before {
+      content: '';
+      position: absolute;
+      top: 0.6rem;
+      bottom: 0.6rem;
+      left: 7px;
+      width: 1px;
+      background: linear-gradient(to bottom, var(--jawa-gold), color-mix(in srgb, var(--jawa-gold) 40%, transparent) 70%, transparent);
+    }
+    .mayang-story-flow .story-chapter-block {
+      position: relative;
+      padding-bottom: 2.4rem;
+      border-bottom: none !important;
+    }
+    .mayang-story-flow .story-chapter-block:last-child {
+      padding-bottom: 0.5rem;
+    }
+    .mayang-story-flow .story-chapter-block::before {
+      content: '';
+      position: absolute;
+      top: 0.35rem;
+      left: calc(-2.4rem + 3px);
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--jawa-gold);
+      box-shadow: 0 0 10px 2px color-mix(in srgb, var(--jawa-gold) 65%, transparent), 0 0 20px color-mix(in srgb, var(--jawa-gold) 35%, transparent);
+      z-index: 2;
+    }
     .sc-label { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.65rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--jawa-gold); font-weight: 600; display: block; margin-bottom: 0.2rem; }
     .sc-title { font-size: 1.25rem; color: var(--jawa-gold-light); font-family: 'Cinzel Decorative', serif; margin-bottom: 0.4rem; }
     .sc-desc { font-size: 0.84rem; color: rgba(255,255,255,0.85); line-height: 1.7; font-style: italic; }
@@ -847,6 +878,9 @@
       {{qrAccessSectionHtml}}
 
       <!-- FOOTER (Adaptive Full-Height 100vh) -->
+    <!-- SECTION: MITRA VENDOR / WEDDING CREDITS -->
+    {{vendorsSectionHtml}}
+
       <footer class="site-footer {{closingPhotoClass}}" style="{{closingBgStyle}}">
         <div class="closing-content">
           <p class="font-kraton-sans" style="font-size: 0.85rem; color: rgba(255,255,255,0.8); line-height: 1.7; margin-bottom: 1.5rem; max-width: 480px; margin-left: auto; margin-right: auto;">
@@ -1000,7 +1034,7 @@
         });
       }, { threshold: 0.15 });
 
-      document.querySelectorAll('.reveal-on-scroll').forEach(el => observer.observe(el));
+      document.querySelectorAll('.reveal-on-scroll, .reveal, .reveal-up, .reveal-zoom, .reveal-fade').forEach(el => observer.observe(el));
     }
 
     function startCountdown() {

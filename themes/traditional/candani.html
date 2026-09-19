@@ -468,15 +468,45 @@
     }
     .btn-map-outline:hover { background: var(--floral-terracotta-light); color: #fff; }
 
-    /* JOURNEY / STORY STYLING (NATIVE CANDANI FLOW) */
+    /* JOURNEY / STORY STYLING (VERTICAL GLOWING LUXURY TIMELINE) */
     .candani-story-flow {
-      display: flex; flex-direction: column; gap: 1.25rem; width: 100%; max-width: 440px; text-align: left;
-      background: rgba(43, 30, 24, 0.45); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-      border: none; border-radius: 16px; padding: 1.5rem 1.4rem;
-      box-shadow: 0 12px 36px rgba(0,0,0,0.3);
+      position: relative;
+      width: 100%;
+      max-width: 420px;
+      margin: 2.5rem auto 1.8rem;
+      padding-left: 2.4rem;
+      text-align: left;
+      display: block;
     }
-    .story-chapter-block { padding-bottom: 0.8rem; border-bottom: 1px dashed var(--floral-border-dim); }
-    .story-chapter-block:last-child { border-bottom: none; padding-bottom: 0; }
+    .candani-story-flow::before {
+      content: '';
+      position: absolute;
+      top: 0.6rem;
+      bottom: 0.6rem;
+      left: 7px;
+      width: 1px;
+      background: linear-gradient(to bottom, var(--floral-terracotta-light), color-mix(in srgb, var(--floral-terracotta-light) 40%, transparent) 70%, transparent);
+    }
+    .candani-story-flow .story-chapter-block {
+      position: relative;
+      padding-bottom: 2.4rem;
+      border-bottom: none !important;
+    }
+    .candani-story-flow .story-chapter-block:last-child {
+      padding-bottom: 0.5rem;
+    }
+    .candani-story-flow .story-chapter-block::before {
+      content: '';
+      position: absolute;
+      top: 0.35rem;
+      left: calc(-2.4rem + 3px);
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--floral-terracotta-light);
+      box-shadow: 0 0 10px 2px color-mix(in srgb, var(--floral-terracotta-light) 65%, transparent), 0 0 20px color-mix(in srgb, var(--floral-terracotta-light) 35%, transparent);
+      z-index: 2;
+    }
     .sc-label { font-family: 'Jost', sans-serif; font-size: 0.65rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--floral-terracotta-light); font-weight: 600; display: block; margin-bottom: 0.2rem; }
     .sc-title { font-size: 1.25rem; color: var(--floral-sand); font-family: 'Italiana', serif; margin-bottom: 0.4rem; }
     .sc-desc { font-size: 0.84rem; color: rgba(251,247,244,0.85); line-height: 1.7; font-family: 'Playfair Display', serif; font-style: italic; }
@@ -883,6 +913,9 @@
       {{qrAccessSectionHtml}}
 
       <!-- FOOTER (Adaptive Full-Height 100vh) -->
+    <!-- SECTION: MITRA VENDOR / WEDDING CREDITS -->
+    {{vendorsSectionHtml}}
+
       <footer class="site-footer {{closingPhotoClass}}" style="{{closingBgStyle}}">
         <div class="closing-content">
           <p class="font-floral-sans" style="font-size: 0.85rem; color: rgba(251,247,244,0.8); line-height: 1.7; margin-bottom: 1.5rem; max-width: 480px; margin-left: auto; margin-right: auto;">
@@ -1032,7 +1065,7 @@
         });
       }, { threshold: 0.15 });
 
-      document.querySelectorAll('.reveal-on-scroll').forEach(el => observer.observe(el));
+      document.querySelectorAll('.reveal-on-scroll, .reveal, .reveal-up, .reveal-zoom, .reveal-fade').forEach(el => observer.observe(el));
     }
 
     function startCountdown() {
@@ -1061,6 +1094,19 @@
       }, 1000);
     }
   </script>
+
+<!-- LUXENARY PROTECTION SCRIPT -->
+<script>
+  (function() {
+    try {
+      if (window.console && console.log) {
+        console.log("%cSTOP!", "color: #ef4444; font-size: 50px; font-weight: 900; text-shadow: 2px 2px 0 #000; font-family: sans-serif;");
+        console.log("%cIni adalah properti eksklusif Luxenary.", "color: #b5833c; font-size: 20px; font-weight: bold;");
+        console.log("%cSegala bentuk pencurian kode, scraping, atau modifikasi ilegal akan direkam. Domain saat ini: " + window.location.hostname, "font-size: 14px; color: #a8a29e;");
+      }
+    } catch(e) {}
+  })();
+</script>
 
   {{musicPlayerHtml}}
 </body>

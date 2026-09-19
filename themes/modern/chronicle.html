@@ -33,53 +33,12 @@
 
   <style>
     :root {
-      --primary: {
-          {
-          colorPrimary
-        }
-      }
-
-      ;
-
-      --secondary: {
-          {
-          colorSecondary
-        }
-      }
-
-      ;
-
-      --accent: {
-          {
-          colorAccent
-        }
-      }
-
-      ;
-
-      --bg-light: {
-          {
-          colorBgLight
-        }
-      }
-
-      ;
-
-      --bg-dark: {
-          {
-          colorBgDark
-        }
-      }
-
-      ;
-
-      --text-dark: {
-          {
-          colorTextDark
-        }
-      }
-
-      ;
+      --primary: {{colorPrimary}};
+      --secondary: {{colorSecondary}};
+      --accent: {{colorAccent}};
+      --bg-light: {{colorBgLight}};
+      --bg-dark: {{colorBgDark}};
+      --text-dark: {{colorTextDark}};
       --editorial-cream: #f4ede4;
       --editorial-paper: #eae0d0;
       --editorial-dark: #0e0e11;
@@ -165,6 +124,17 @@
       opacity: 0;
       visibility: hidden;
       pointer-events: none;
+    }
+
+    .cover-center {
+      width: 100%;
+      max-width: 850px;
+      margin: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
     }
 
     .cover-tagline {
@@ -323,17 +293,29 @@
       }
 
       .cover-overlay {
-        width: 460px;
-        left: calc(100% - 460px);
+        width: 100%;
+        left: 0;
+        right: 0;
+        padding: 4rem 2.5rem;
+        background-image: radial-gradient(circle at center, rgba(22, 22, 27, 0.78) 0%, rgba(14, 14, 17, 0.94) 100%),
+          url('{{landingCoverDesktopUrl}}'),
+          url('{{landingCoverUrl}}');
+        background-size: cover;
+        background-position: center;
+      }
+
+      .cover-center {
+        max-width: 850px;
+        margin: auto;
+      }
+
+      .cover-names {
+        font-size: clamp(3.2rem, 5.5vw, 5.5rem) !important;
+        overflow-wrap: break-word !important;
       }
 
       .bottom-dock {
         left: calc(100% - 230px) !important;
-      }
-
-      .cover-names {
-        font-size: clamp(2.2rem, 2.8rem, 3.2rem) !important;
-        overflow-wrap: break-word !important;
       }
 
       .hero-editorial-title {
@@ -726,7 +708,7 @@
       color: #0e0e11;
     }
 
-    /* JOURNEY / STORY STYLING */
+    /* JOURNEY / STORY EDITORIAL TIMELINE */
     .journey-card-container {
       background: var(--editorial-card);
       border: 1px solid var(--editorial-border);
@@ -737,22 +719,74 @@
       max-width: 440px;
     }
 
-    .journey-chapters {
+    .journey-chapters,
+    .journey-timeline {
+      position: relative;
       display: flex;
       flex-direction: column;
-      gap: 1.5rem;
+      gap: 1.8rem;
+      padding-left: 1.8rem;
+      margin: 1.6rem auto 0;
+      text-align: left;
+      width: 100%;
+      max-width: 440px;
     }
 
-    .story-chapter-block {
-      padding-bottom: 0.8rem;
+    .journey-timeline::before,
+    .journey-chapters::before {
+      content: '';
+      position: absolute;
+      left: 6px;
+      top: 12px;
+      bottom: 12px;
+      width: 1px;
+      background: linear-gradient(to bottom, var(--editorial-cream), var(--editorial-border));
+    }
+
+    .story-chapter-block,
+    .journey-chapter-item {
+      position: relative;
+      background: transparent;
+      border: none;
+      padding: 0.2rem 0 1.8rem 0;
       border-bottom: 1px dashed var(--editorial-border);
+      transition: all 0.35s ease;
     }
 
-    .story-chapter-block:last-child {
+    .story-chapter-block:last-child,
+    .journey-chapter-item:last-child {
       border-bottom: none;
+      padding-bottom: 0.5rem;
     }
 
-    .sc-label {
+    .story-chapter-block:hover,
+    .journey-chapter-item:hover {
+      transform: translateX(4px);
+    }
+
+    .story-chapter-block::before,
+    .journey-chapter-item::before {
+      content: '';
+      position: absolute;
+      left: calc(-1.8rem + 2px);
+      top: 0.35rem;
+      width: 9px;
+      height: 9px;
+      background: var(--editorial-cream);
+      border: 1.5px solid var(--editorial-dark);
+      transform: rotate(45deg);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--editorial-cream) 20%, transparent);
+      transition: all 0.3s ease;
+    }
+
+    .story-chapter-block:hover::before,
+    .journey-chapter-item:hover::before {
+      background: #ffffff;
+      box-shadow: 0 0 0 5px color-mix(in srgb, var(--editorial-cream) 40%, transparent);
+    }
+
+    .sc-label,
+    .chapter-eyebrow {
       font-family: 'Syne', sans-serif;
       font-size: 0.65rem;
       letter-spacing: 0.25em;
@@ -760,18 +794,21 @@
       color: var(--editorial-paper);
       font-weight: 600;
       display: block;
-      margin-bottom: 0.2rem;
+      margin-bottom: 0.3rem;
     }
 
-    .sc-title {
+    .sc-title,
+    .chapter-heading {
       font-size: 1.25rem;
       color: #fff;
       font-family: 'Bellefair', serif;
       text-transform: uppercase;
-      margin-bottom: 0.4rem;
+      margin-bottom: 0.5rem;
+      letter-spacing: 0.04em;
     }
 
-    .sc-desc {
+    .sc-desc,
+    .chapter-desc {
       font-size: 0.88rem;
       color: rgba(244, 237, 228, 0.8);
       line-height: 1.8;
@@ -1121,21 +1158,23 @@
 
   <!-- 1. DREAMBOLLEN COVER OVERLAY -->
   <div id="coverOverlay" class="cover-overlay">
-    <p class="cover-tagline">THE WEDDING &bull; SPECIAL EDITION</p>
-    <h1 class="cover-names">{{firstName}} <em>&amp;</em> {{secondName}}</h1>
+    <div class="cover-center">
+      <p class="cover-tagline">THE WEDDING &bull; SPECIAL EDITION</p>
+      <h1 class="cover-names">{{firstName}} <em>&amp;</em> {{secondName}}</h1>
 
-    <div class="cover-guest-pill">
-      <p class="cover-guest-to">Kepada Yth. Bapak/Ibu/Saudara/i</p>
-      <h3 id="coverGuestName" class="cover-guest-val">Tamu Undangan</h3>
+      <div class="cover-guest-pill">
+        <p class="cover-guest-to">Kepada Yth. Bapak/Ibu/Saudara/i</p>
+        <h3 id="coverGuestName" class="cover-guest-val">Tamu Undangan</h3>
+      </div>
+
+      <button class="btn-open-issue" onclick="openInvitation()" data-lux-field="customLabels.openBtn">
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+          <path
+            d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
+        </svg>
+        Buka Undangan
+      </button>
     </div>
-
-    <button class="btn-open-issue" onclick="openInvitation()" data-lux-field="customLabels.openBtn">
-      <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-        <path
-          d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
-      </svg>
-      Buka Undangan
-    </button>
   </div>
 
   <div class="fixed-bg-layer"></div>
@@ -1185,6 +1224,7 @@
           </div>
           <h2 class="sec-heading" style="margin-bottom: 0.8rem;" data-lux-field="customLabels.quoteTitle">Doa &amp;
             Harapan</h2>
+          <span class="opening-greeting" data-lux-field="customLabels.openingGreeting" style="display:block; margin-bottom:0.6rem; font-size:1.1rem; opacity:0.9;">{{openingGreeting}}</span>
           <p
             style="font-size: 0.98rem; line-height: 1.95; color: rgba(244,237,228,0.9); max-width: 420px; margin: 0 auto; font-style: italic;">
             "{{openingQuote}}"
@@ -1315,6 +1355,9 @@
       {{qrAccessSectionHtml}}
 
       <!-- FOOTER (Adaptive Full-Height 100vh) -->
+    <!-- SECTION: MITRA VENDOR / WEDDING CREDITS -->
+    {{vendorsSectionHtml}}
+
       <footer class="site-footer {{closingPhotoClass}}" style="{{closingBgStyle}}">
         <div class="closing-content">
           <p
@@ -1462,7 +1505,7 @@
         });
       }, { threshold: 0.15 });
 
-      document.querySelectorAll('.reveal-on-scroll').forEach(el => observer.observe(el));
+      document.querySelectorAll('.reveal-on-scroll, .reveal, .reveal-up, .reveal-zoom, .reveal-fade').forEach(el => observer.observe(el));
     }
 
     function startCountdown() {

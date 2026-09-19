@@ -472,18 +472,19 @@
       }
     }
 
-    /* SLIDE 2: COUPLE PROFILE DUO (100vh SINGLE SCREEN DIAGONAL) */
+    /* SLIDE 2: COUPLE PROFILE DUO (AURELIA HIGH-FASHION EDITORIAL SPREAD — ZERO-RADIUS) */
     .slide-couple-duo {
       position: relative;
       width: 100%;
-      min-height: 100vh;
-      min-height: 100dvh;
+      min-height: auto;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
+      align-items: center;
+      justify-content: center;
+      gap: 2.2rem;
       overflow: hidden;
-      padding: 3.5rem 1.8rem 3rem;
-      background: linear-gradient(180deg, rgba(7, 7, 9, 0.88) 0%, rgba(12, 12, 16, 0.80) 50%, rgba(7, 7, 9, 0.94) 100%);
+      padding: 5rem 1.8rem 4.5rem;
+      background: linear-gradient(180deg, rgba(7, 7, 9, 0.92) 0%, rgba(12, 12, 16, 0.85) 50%, rgba(7, 7, 9, 0.96) 100%);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
     }
@@ -499,55 +500,57 @@
     .couple-duo-header {
       text-align: center;
       width: 100%;
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.8rem;
     }
 
     .couple-duo-eyebrow {
       font-size: 0.62rem;
-      letter-spacing: 0.32em;
+      letter-spacing: 0.35em;
       text-transform: uppercase;
-      color: rgba(255, 255, 255, 0.6);
+      color: rgba(255, 255, 255, 0.55);
       display: block;
-      margin-bottom: 0.25rem;
+      margin-bottom: 0.35rem;
     }
 
     .couple-duo-title {
-      font-size: clamp(1.4rem, 4.5vw, 1.8rem);
+      font-size: clamp(1.5rem, 5vw, 1.95rem);
       color: #ffffff;
       font-weight: 300;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.08em;
       margin: 0;
     }
 
     .couple-duo-card {
       display: flex;
+      flex-direction: column;
       align-items: center;
+      text-align: center;
       width: 100%;
-      gap: 1.1rem;
+      max-width: 380px;
+      margin: 0 auto;
       position: relative;
       z-index: 2;
     }
 
-    .couple-duo-card.first-host {
-      margin-right: auto;
-      justify-content: flex-start;
-    }
 
-    .couple-duo-card.second-host {
-      margin-left: auto;
-      justify-content: flex-end;
-    }
 
+    /* ZERO-RADIUS SHARP EDITORIAL PORTRAIT (3:4 RATIO) */
     .couple-duo-avatar-wrap {
-      width: 96px;
-      height: 128px;
+      width: 140px;
+      height: 186px;
       flex-shrink: 0;
-      border-radius: 16px;
+      margin: 0 auto 1.4rem;
+      border-radius: 0 !important;
       overflow: hidden;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55);
-      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid color-mix(in srgb, var(--gold) 40%, rgba(255, 255, 255, 0.2));
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.75);
+      background: rgba(255, 255, 255, 0.03);
       position: relative;
+      transition: border-color 0.4s ease;
+    }
+
+    .couple-duo-card:hover .couple-duo-avatar-wrap {
+      border-color: var(--gold);
     }
 
     .couple-duo-avatar {
@@ -555,66 +558,66 @@
       height: 100%;
       object-fit: cover;
       display: block;
-      transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+      border-radius: 0 !important;
+      transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .couple-duo-card:hover .couple-duo-avatar {
-      transform: scale(1.05);
+      transform: scale(1.04);
     }
 
     .couple-duo-info {
-      flex: 1;
-      min-width: 0;
-      text-align: left;
-    }
-
-    .couple-duo-info.right {
-      text-align: right;
+      width: 100%;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
     .couple-duo-name {
-      font-size: clamp(1.25rem, 3.8vw, 1.6rem);
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.18rem, 3.6vw, 1.45rem);
       color: #ffffff;
-      line-height: 1.15;
-      margin-bottom: 0.35rem;
-      font-weight: 300;
-      word-break: break-word;
-    }
-
-    .couple-role {
-      font-size: 0.6rem;
-      letter-spacing: 0.28em;
-      text-transform: uppercase;
-      color: rgba(255, 255, 255, 0.65);
-      display: block;
-      margin-bottom: 0.25rem;
+      line-height: 1.35;
+      margin-bottom: 0.45rem;
+      font-weight: 400;
+      letter-spacing: 0.02em;
+      text-align: center;
+      word-break: normal;
+      overflow-wrap: break-word;
+      max-width: 360px;
     }
 
     .couple-label {
-      font-size: 0.55rem;
-      letter-spacing: 0.18em;
+      font-size: 0.56rem;
+      letter-spacing: 0.25em;
       text-transform: uppercase;
-      color: rgba(255, 255, 255, 0.55);
+      color: rgba(255, 255, 255, 0.5);
       display: block;
-      margin-bottom: 0.15rem;
+      margin-bottom: 0.25rem;
       font-weight: 600;
     }
 
     .couple-parents {
-      font-size: 0.74rem;
+      font-size: 0.8rem;
       color: rgba(255, 255, 255, 0.78);
-      line-height: 1.45;
-      margin-bottom: 0.65rem;
-      word-break: break-word;
+      line-height: 1.55;
+      margin-bottom: 1.1rem;
+      max-width: 320px;
+      margin-left: auto;
+      margin-right: auto;
+      word-break: normal;
+      overflow-wrap: break-word;
     }
 
-    /* FLOATING MONOGRAM / AMPERSAND CONNECTOR */
+    /* EDITORIAL DIVIDER (HAIRLINE RULE WITH CENTERED MONOGRAM TEXT) */
     .couple-duo-connector {
       display: flex;
       align-items: center;
       justify-content: center;
       width: 100%;
-      margin: 0.6rem 0;
+      max-width: 340px;
+      margin: 1.5rem auto;
       position: relative;
       z-index: 2;
     }
@@ -624,58 +627,54 @@
       content: '';
       flex: 1;
       height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18), transparent);
+      background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--gold) 40%, transparent), transparent);
     }
 
     .monogram-badge {
-      padding: 6px 14px;
-      border-radius: 50px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 5px;
+      gap: 6px;
+      padding: 0 1rem;
       font-size: 0.85rem;
-      color: #ffffff;
-      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
-      margin: 0 0.8rem;
+      color: rgba(255, 255, 255, 0.85);
+      background: transparent;
+      border: none;
+      box-shadow: none;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
     }
 
     .mono-initial {
       font-family: 'Playfair Display', serif;
-      font-weight: 400;
-      letter-spacing: 0.08em;
+      font-weight: 300;
+      letter-spacing: 0.12em;
     }
 
     .mono-amp {
       font-family: 'Playfair Display', serif;
       font-style: italic;
-      color: rgba(255, 255, 255, 0.65);
-      font-size: 0.78rem;
+      color: var(--gold);
+      font-size: 0.82rem;
     }
 
     .btn-ig-pill {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 0.45rem 1.1rem;
-      border: 1px solid rgba(255, 255, 255, 0.45);
-      border-radius: 50px;
-      color: #ffffff;
+      padding: 0.25rem 0.5rem;
+      border: none !important;
+      background: transparent !important;
+      color: rgba(255, 255, 255, 0.7);
       text-decoration: none;
-      font-size: 0.7rem;
-      letter-spacing: 0.08em;
-      transition: all 0.3s;
-      background: rgba(0, 0, 0, 0.2);
-      backdrop-filter: blur(6px);
+      font-size: 0.68rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      transition: color 0.3s ease;
     }
 
     .btn-ig-pill:hover {
-      border-color: #ffffff;
-      background: rgba(255, 255, 255, 0.15);
+      color: var(--gold);
     }
 
     /* JOURNEY OF LOVE */
@@ -1125,10 +1124,6 @@
       background: rgba(255, 255, 255, 0.1);
       padding: 2px 8px;
       border-radius: 4px;
-    }
-
-    .moment-photo-item:hover img {
-      transform: scale(1.05);
     }
 
     /* SECTIONS DIVIDER & GIFT */
@@ -1636,6 +1631,7 @@
       </div>
 
       <div class="opening-bottom lux-reveal delay-3">
+        <span class="opening-greeting" data-lux-field="customLabels.openingGreeting">{{openingGreeting}}</span>
         <p class="opening-quote-text">"{{openingQuote}}"</p>
         <cite class="opening-quote-ref">{{openingQuoteRef}}</cite>
         <div class="scroll-indicator">
@@ -1656,18 +1652,17 @@
         <h2 class="couple-duo-title serif" data-lux-field="customLabels.coupleTitle">Groom &amp; Bride</h2>
       </div>
 
-      <!-- FIRST HOST: TOP LEFT -->
-      <div class="couple-duo-card first-host lux-reveal-left delay-1">
+      <!-- FIRST HOST: PRIMARY INVITER (DYNAMIC ROLE & DATA) -->
+      <div class="couple-duo-card first-host lux-reveal delay-1">
         <div class="couple-duo-avatar-wrap">
           <img src="{{firstPhotoUrl}}" alt="{{firstDisplayName}}" class="couple-duo-avatar" loading="lazy" />
         </div>
         <div class="couple-duo-info">
-          <span class="couple-role">{{firstRole}}</span>
           <h3 class="couple-duo-name serif">{{firstDisplayName}}</h3>
           <span class="couple-label">{{firstParentLabel}}</span>
           <p class="couple-parents">{{firstFather}} &amp; {{firstMother}}</p>
           <a href="https://instagram.com/{{firstInstagram}}" target="_blank" class="btn-ig-pill">
-            <svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24">
+            <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24">
               <path
                 d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
             </svg>
@@ -1685,23 +1680,22 @@
         </div>
       </div>
 
-      <!-- SECOND HOST: BOTTOM RIGHT -->
-      <div class="couple-duo-card second-host lux-reveal-right delay-3">
-        <div class="couple-duo-info right">
-          <span class="couple-role">{{secondRole}}</span>
+      <!-- SECOND HOST: SECONDARY INVITER (DYNAMIC ROLE & DATA) -->
+      <div class="couple-duo-card second-host lux-reveal delay-3">
+        <div class="couple-duo-avatar-wrap">
+          <img src="{{secondPhotoUrl}}" alt="{{secondDisplayName}}" class="couple-duo-avatar" loading="lazy" />
+        </div>
+        <div class="couple-duo-info">
           <h3 class="couple-duo-name serif">{{secondDisplayName}}</h3>
           <span class="couple-label">{{secondParentLabel}}</span>
           <p class="couple-parents">{{secondFather}} &amp; {{secondMother}}</p>
           <a href="https://instagram.com/{{secondInstagram}}" target="_blank" class="btn-ig-pill">
-            <svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24">
+            <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24">
               <path
                 d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
             </svg>
             @{{secondInstagram}}
           </a>
-        </div>
-        <div class="couple-duo-avatar-wrap">
-          <img src="{{secondPhotoUrl}}" alt="{{secondDisplayName}}" class="couple-duo-avatar" loading="lazy" />
         </div>
       </div>
     </section>
@@ -1793,6 +1787,9 @@
     {{qrAccessSectionHtml}}
 
     <!-- 15. FOOTER / THANK YOU (Adaptive Full-Height 100vh) -->
+    <!-- SECTION: MITRA VENDOR / WEDDING CREDITS -->
+    {{vendorsSectionHtml}}
+
     <footer class="site-footer {{closingPhotoClass}}" id="footer" style="{{closingBgStyle}}">
       <div class="closing-content">
         <p style="font-size:0.85rem; color:rgba(255,255,255,0.75); line-height:1.7; margin-bottom:1.5rem;">
@@ -2042,6 +2039,7 @@
         btn.textContent = 'Kirim Konfirmasi & Doa';
       }
     }
+    window.luxSubmitRsvp = submitRsvp;
 
     // SMART AUTO-HIDE DOCK & MUSIC PLAYER ON SCROLL DOWN, REVEAL ON SCROLL UP
     (function initSmartDock() {

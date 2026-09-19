@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const coupleName = `${invitation.groomNickname || "Pria"} & ${invitation.brideNickname || "Wanita"}`;
   return {
     title: `Guest Moment — ${coupleName} | ${platformName}`,
-    description: `Bagikan foto candid dan video ucapan Anda secara real-time di pernikahan ${coupleName}.`,
+    description: `Bagikan foto candid Anda secara real-time di pernikahan ${coupleName}.`,
   };
 }
 

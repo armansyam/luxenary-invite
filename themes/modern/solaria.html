@@ -1162,6 +1162,9 @@
       {{qrAccessSectionHtml}}
 
       <!-- FOOTER (Adaptive Full-Height 100vh) -->
+    <!-- SECTION: MITRA VENDOR / WEDDING CREDITS -->
+    {{vendorsSectionHtml}}
+
       <footer class="site-footer {{closingPhotoClass}}" style="{{closingBgStyle}}">
         <div class="closing-content">
           <p
@@ -1308,7 +1311,7 @@
         });
       }, { threshold: 0.15 });
 
-      document.querySelectorAll('.reveal-on-scroll').forEach(el => observer.observe(el));
+      document.querySelectorAll('.reveal-on-scroll, .reveal, .reveal-up, .reveal-zoom, .reveal-fade').forEach(el => observer.observe(el));
     }
 
     function startCountdown() {

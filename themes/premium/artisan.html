@@ -409,7 +409,7 @@
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(to top, rgba(7, 7, 9, 0.92) 0%, rgba(7, 7, 9, 0.25) 45%, transparent 100%);
+      background: linear-gradient(to top, var(--bg-dark, #070709) 0%, color-mix(in srgb, var(--bg-dark, #070709) 45%, transparent) 45%, transparent 100%);
       z-index: 1;
     }
 
@@ -928,10 +928,6 @@
       border-radius: 4px;
     }
 
-    .moment-photo-item:hover img {
-      transform: scale(1.05);
-    }
-
     /* SECTIONS DIVIDER & GIFT */
     .sec-divider {
       width: 100%;
@@ -1132,7 +1128,7 @@
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.55) 50%, rgba(0,0,0,0.92) 100%);
+      background: linear-gradient(to bottom, transparent 0%, color-mix(in srgb, var(--bg-dark, #070709) 55%, transparent) 50%, var(--bg-dark, #070709) 100%);
       pointer-events: none;
       z-index: 1;
     }
@@ -1437,6 +1433,7 @@
       </div>
 
       <div class="opening-bottom">
+        <span class="opening-greeting" data-lux-field="customLabels.openingGreeting">{{openingGreeting}}</span>
         <p class="opening-quote-text">"{{openingQuote}}"</p>
         <cite class="opening-quote-ref">{{openingQuoteRef}}</cite>
         <div class="scroll-indicator">
@@ -1449,6 +1446,7 @@
 
     <!-- 2. SLIDE 2: HOST 1 (100vh FULL PHOTO) -->
     <section class="slide-couple" id="host1" style="background-image: url('{{firstPhotoUrl}}');">
+      <span id="couple" class="couple-anchor"></span>
       <div class="couple-content right">
         <span class="couple-role">{{firstRole}}</span>
         <h2 class="couple-name serif">{{firstDisplayName}}</h2>
@@ -1568,6 +1566,9 @@
     {{qrAccessSectionHtml}}
 
     <!-- 15. FOOTER / THANK YOU (Adaptive Full-Height 100vh) -->
+    <!-- SECTION: MITRA VENDOR / WEDDING CREDITS -->
+    {{vendorsSectionHtml}}
+
     <footer class="site-footer {{closingPhotoClass}}" id="footer" style="{{closingBgStyle}}">
       <div class="closing-content">
         <p style="font-size:0.85rem; color:rgba(255,255,255,0.75); line-height:1.7; margin-bottom:1.5rem;">
@@ -1685,11 +1686,10 @@
       }
     }
 
-    const audio = document.getElementById('bgAudio');
-    const musicFab = document.getElementById('musicFab');
-
     function playAudio() {
       if (window.__DISABLE_AUDIO__ || new URLSearchParams(window.location.search).get("autoplay") === "1" || window !== window.top) return;
+      const audio = document.getElementById('luxAudioPlayer') || document.getElementById('bgAudio') || window.bgAudio || document.querySelector('audio');
+      const musicFab = document.getElementById('musicFab');
       if (!audio) return;
       audio.play().then(() => {
         isPlaying = true;
@@ -1810,6 +1810,7 @@
         btn.textContent = 'Kirim Konfirmasi & Doa';
       }
     }
+    window.luxSubmitRsvp = submitRsvp;
 
     // SMART AUTO-HIDE DOCK & MUSIC PLAYER ON SCROLL DOWN, REVEAL ON SCROLL UP
     (function initSmartDock() {

@@ -80,10 +80,50 @@ export async function getGoogleDriveFolderPhotos(folderUrlOrId: string): Promise
     }
 
     const data = await response.json();
-    const files = data.files || [];
+    let files = data.files || [];
+
+    // Jika tidak ada foto langsung di root, otomatis telusuri subfolder (misal: "1. Galeri Sellected")
+    if (files.length === 0) {
+      try {
+        const subQ = `'${folderId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed=false`;
+        const subUrl = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(subQ)}&key=${apiKey}&fields=files(id,name)&pageSize=20`;
+        const subRes = await fetch(subUrl, {
+          method: "GET",
+          headers: { "Accept": "application/json" },
+          signal: AbortSignal.timeout(10000),
+        });
+
+        if (subRes.ok) {
+          const subData = await subRes.json();
+          const subfolders: Array<{ id: string; name: string }> = subData.files || [];
+          if (subfolders.length > 0) {
+            // Prioritaskan subfolder dengan kata kunci galeri / gallery / selected / sellected
+            const targetFolder = subfolders.find((f) => /galeri|gallery|select/i.test(f.name)) || subfolders[0];
+            if (targetFolder) {
+              const subImgQ = `'${targetFolder.id}' in parents and mimeType contains 'image/' and trashed=false`;
+              const subImgUrl = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(subImgQ)}&key=${apiKey}&fields=files(id)&pageSize=100`;
+              const subImgRes = await fetch(subImgUrl, {
+                method: "GET",
+                headers: { "Accept": "application/json" },
+                signal: AbortSignal.timeout(10000),
+              });
+              if (subImgRes.ok) {
+                const subImgData = await subImgRes.json();
+                if (subImgData.files && subImgData.files.length > 0) {
+                  files = subImgData.files;
+                  console.log(`[DriveHelper] Auto-detect: Berhasil mengambil ${files.length} foto dari subfolder '${targetFolder.name}'`);
+                }
+              }
+            }
+          }
+        }
+      } catch (subErr) {
+        console.warn("[DriveHelper] Gagal menelusuri subfolder:", subErr);
+      }
+    }
 
     if (files.length === 0) {
-      console.warn("[DriveHelper] Tidak ada file gambar ditemukan di folder.");
+      console.warn("[DriveHelper] Tidak ada file gambar ditemukan di folder atau subfolder.");
       return [];
     }
 

@@ -378,11 +378,24 @@ export async function composeTemplateData(invitationId: string) {
         </div>
       `;
     } else {
-      // Skenario 2: Lokasi Berbeda (Misal: Akad di Masjid, Resepsi di Hotel) -> Tampilkan Maps per Acara
-      eventsHtml = rawEventsList.map((ev: any, idx: number) => `
+      // Skenario 2: Lokasi Berbeda atau Tanggal Berbeda -> Tampilkan Maps per Acara
+      eventsHtml = rawEventsList.map((ev: any, idx: number) => {
+        let sessionDateFormatted = "";
+        if (ev.date) {
+          try {
+            const sd = new Date(ev.date);
+            if (!isNaN(sd.getTime())) {
+              sessionDateFormatted = sd.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+            }
+          } catch {}
+        }
+        const showSessionDate = Boolean(sessionDateFormatted && sessionDateFormatted !== weddingDate);
+
+        return `
         <div class="event-block-item">
           <span class="ev-cat">${(ev.badge || (idx === 0 ? "SAKRAMEN / AKAD" : "RESEPSI")).toUpperCase()}</span>
           <h3 class="ev-name serif" data-lux-field="events.${idx}.title">${(ev.title || (idx === 0 ? "Akad Nikah" : "Resepsi Pernikahan")).toUpperCase()}</h3>
+          ${showSessionDate ? `<p class="ev-session-date" style="font-size:0.85rem; letter-spacing:0.04em; color:rgba(255,255,255,0.92); font-weight:500; margin-bottom:0.25rem;">${sessionDateFormatted}</p>` : ""}
           ${ev.time ? `<p class="ev-time" data-lux-field="events.${idx}.time">${ev.time}</p>` : ""}
           ${ev.location ? `<h4 class="ev-venue" data-lux-field="events.${idx}.location">${ev.location}</h4>` : ""}
           ${ev.address ? `<p class="ev-addr" data-lux-field="events.${idx}.address">${ev.address}</p>` : ""}
@@ -393,7 +406,8 @@ export async function composeTemplateData(invitationId: string) {
             </a>
           ` : ""}
         </div>
-      `).join("");
+      `;
+      }).join("");
     }
   }
 
@@ -498,21 +512,15 @@ export async function composeTemplateData(invitationId: string) {
     }).join("");
 
     storySectionHtml = `
-      <section class="sec-journey" id="story">
-        <div class="journey-card">
-          <div class="journey-previews">
-            <div class="jp-item"><img src="${firstPhotoUrl}" alt="Journey Preview 1" loading="lazy"></div>
-            <div class="jp-item"><img src="${secondPhotoUrl}" alt="Journey Preview 2" loading="lazy"></div>
-          </div>
-          <span class="sec-eyebrow" data-lux-field="customLabels.storyEyebrow" style="text-align:center;">${storySectionEyebrow}</span>
-          <h2 class="journey-title serif" data-lux-field="customLabels.storyTitle">${storySectionTitle}</h2>
-          <div class="journey-chapters">
-            ${storyItemsHtml}
-          </div>
-          <div class="journey-footer">
-            <div class="jf-line"></div>
-            <span class="jf-signature serif">${firstName} &amp; ${secondName}</span>
-          </div>
+      <section class="sec-flow sec-journey" id="story">
+        <span class="sec-eyebrow reveal" data-lux-field="customLabels.storyEyebrow" style="text-align:center;">${storySectionEyebrow}</span>
+        <h2 class="sec-main-title journey-title serif reveal delay-1" data-lux-field="customLabels.storyTitle">${storySectionTitle}</h2>
+        <div class="journey-timeline journey-chapters reveal-up delay-2">
+          ${storyItemsHtml}
+        </div>
+        <div class="journey-footer reveal-fade delay-3">
+          <div class="jf-line"></div>
+          <span class="jf-signature serif">${firstName} <em>&amp;</em> ${secondName}</span>
         </div>
       </section>
     `;
@@ -591,13 +599,13 @@ export async function composeTemplateData(invitationId: string) {
   if (showGallery) {
     const photosFeedHtml = allPhotos.map((imgUrl, i) => `
       <div class="moment-photo-item" data-idx="${i}" onclick="luxOpenZoom(${i})">
-        <img src="${imgUrl}" alt="Our Moment ${i + 1}" loading="lazy" decoding="async">
+        <img src="${imgUrl}" alt="Our Moment ${i + 1}" loading="lazy" decoding="async" referrerpolicy="no-referrer">
       </div>
     `).join("");
 
     const allPhotosGridHtml = allPhotos.map((imgUrl, i) => `
       <div class="full-gallery-item" onclick="luxOpenZoom(${i})">
-        <img src="${imgUrl}" alt="Photo ${i + 1}" loading="lazy" decoding="async">
+        <img src="${imgUrl}" alt="Photo ${i + 1}" loading="lazy" decoding="async" referrerpolicy="no-referrer">
       </div>
     `).join("");
 
@@ -620,7 +628,7 @@ export async function composeTemplateData(invitationId: string) {
         </button>
         
         <style>
-          /* OUR MOMENT UNIVERSAL GRID */
+          /* OUR MOMENT UNIVERSAL 4-COLUMN SMART PUZZLE GRID */
           .moments-grid-10 {
             display: grid !important; grid-template-columns: repeat(4, 1fr) !important; grid-auto-flow: dense !important;
             gap: 5px !important; margin-bottom: 2.2rem !important; width: 100% !important;
@@ -628,13 +636,13 @@ export async function composeTemplateData(invitationId: string) {
           .moment-photo-item {
             position: relative !important; overflow: hidden !important; border-radius: 6px !important; cursor: pointer !important;
             border: 1px solid rgba(255,255,255,0.12) !important; box-shadow: 0 4px 12px rgba(0,0,0,0.35) !important;
-            transition: transform 0.3s ease !important; aspect-ratio: 3/4 !important;
+            transition: border-color 0.25s ease, filter 0.25s ease !important; aspect-ratio: 3/4 !important;
           }
           .moment-photo-item.is-landscape { grid-column: span 2 !important; aspect-ratio: 3/2 !important; }
-          .moment-photo-item:hover { transform: scale(1.03) !important; z-index: 2 !important; box-shadow: 0 8px 20px rgba(0,0,0,0.5) !important; }
+          .moment-photo-item:hover { border-color: rgba(255,255,255,0.35) !important; filter: brightness(1.08) !important; }
+          .moment-photo-item:hover img { transform: none !important; }
           .moment-photo-item img { width: 100% !important; height: 100% !important; object-fit: cover !important; display: block !important; }
           .btn-show-gallery { display: inline-block !important; margin-bottom: 0 !important; }
-          @media (max-width: 640px) { .moments-grid-10 { grid-template-columns: repeat(3, 1fr) !important; } }
 
           /* LIGHTBOX MODALS UNIVERSAL */
           .gallery-modal-backdrop {
@@ -644,28 +652,25 @@ export async function composeTemplateData(invitationId: string) {
             background: rgba(7,7,9,0.96) !important; backdrop-filter: blur(20px) !important;
             display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: flex-start !important;
             opacity: 0 !important; visibility: hidden !important; transition: all 0.3s ease !important;
-            overflow-y: auto !important; padding: 2.5rem 1.5rem !important; box-sizing: border-box !important;
+            overflow-y: auto !important; padding: calc(1.5rem + env(safe-area-inset-top, 0px)) 1rem calc(2rem + env(safe-area-inset-bottom, 0px)) !important; box-sizing: border-box !important;
           }
           .gallery-modal-backdrop.open { opacity: 1 !important; visibility: visible !important; }
           .gallery-modal-container { max-width: 600px !important; width: 100% !important; margin: 0 auto !important; }
-          .gallery-modal-header { display: flex !important; justify-content: space-between !important; align-items: center !important; margin-bottom: 1.8rem !important; padding-bottom: 1rem !important; border-bottom: 1px solid rgba(255,255,255,0.15) !important; }
-          .modal-gallery-title { font-size: 1.8rem !important; color: #fff !important; letter-spacing: 0.1em !important; margin: 0 !important; }
+          .gallery-modal-header { display: flex !important; justify-content: space-between !important; align-items: center !important; margin-bottom: 1.5rem !important; padding-bottom: 0.8rem !important; border-bottom: 1px solid rgba(255,255,255,0.15) !important; }
+          .modal-gallery-title { font-size: 1.6rem !important; color: #fff !important; letter-spacing: 0.1em !important; margin: 0 !important; }
           .gallery-modal-close {
             background: rgba(255,255,255,0.1) !important; border: 1px solid rgba(255,255,255,0.1) !important; color: #ffffff !important;
-            width: 34px !important; height: 34px !important; border-radius: 50% !important; font-size: 1rem !important; cursor: pointer !important;
+            width: 38px !important; height: 38px !important; border-radius: 50% !important; font-size: 1.1rem !important; cursor: pointer !important;
             display: flex !important; align-items: center !important; justify-content: center !important;
           }
-          .gallery-modal-grid { columns: 4 !important; column-gap: 8px !important; }
-          @media (max-width: 640px) {
-            .gallery-modal-backdrop { padding: calc(1.5rem + env(safe-area-inset-top, 0px)) 1rem calc(2rem + env(safe-area-inset-bottom, 0px)) !important; }
-            .gallery-modal-grid { columns: 2 !important; column-gap: 8px !important; }
-          }
+          .gallery-modal-grid { columns: 4 !important; column-gap: 5px !important; }
+          @media (max-width: 480px) { .gallery-modal-grid { columns: 3 !important; } }
           .full-gallery-item {
             break-inside: avoid !important; margin-bottom: 8px !important; overflow: hidden !important; border-radius: 6px !important; cursor: pointer !important;
-            border: 1px solid rgba(255,255,255,0.12) !important;
+            border: 1px solid rgba(255,255,255,0.12) !important; transition: border-color 0.25s ease, filter 0.25s ease !important;
           }
-          .full-gallery-item img { width: 100% !important; height: auto !important; display: block !important; transition: transform 0.35s !important; }
-          .full-gallery-item:hover img { transform: scale(1.05) !important; }
+          .full-gallery-item img { width: 100% !important; height: auto !important; display: block !important; }
+          .full-gallery-item:hover { border-color: rgba(255,255,255,0.35) !important; filter: brightness(1.08) !important; }
 
           /* ZOOM LIGHTBOX UNIVERSAL */
           .lux-zoom-backdrop {
@@ -720,7 +725,7 @@ export async function composeTemplateData(invitationId: string) {
         <button class="lux-zoom-close" onclick="luxCloseZoom()">✕</button>
         <button class="lux-zoom-nav prev" onclick="luxPrevZoom(event)">‹</button>
         <div class="lux-zoom-img-box" onclick="event.stopPropagation()">
-          <img id="luxZoomActiveImg" src="${allPhotos[0] || ''}" alt="Zoom View">
+          <img id="luxZoomActiveImg" src="${allPhotos[0] || ''}" alt="Zoom View" referrerpolicy="no-referrer">
           <div class="lux-zoom-counter" id="luxZoomCounter">1 / ${allPhotos.length}</div>
         </div>
         <button class="lux-zoom-nav next" onclick="luxNextZoom(event)">›</button>
@@ -810,30 +815,21 @@ export async function composeTemplateData(invitationId: string) {
           if (counter) counter.textContent = (window.luxActivePhotoIdx + 1) + " / " + window.LUX_ALL_PHOTOS.length;
         };
 
-        // Smart Puzzle Grid Auto-Packing (100% flush rectangular frame, no holes, randomized shuffle)
+        // Smart Puzzle Grid Auto-Packing (100% flush rectangular frame, no holes)
         function initSmartPuzzleGallery() {
           const grid = document.querySelector('.moments-grid-10');
           if (!grid) return;
           const items = Array.from(grid.querySelectorAll('.moment-photo-item'));
           if (!items.length) return;
 
-          // Shuffle items randomly on each page refresh
-          for (let i = items.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            grid.appendChild(items[j]);
-            const temp = items[i];
-            items[i] = items[j];
-            items[j] = temp;
-          }
-
           let loadedCount = 0;
           items.forEach((item) => {
             const img = item.querySelector('img');
             if (!img) return;
 
-            function processImage() {
-              if (img.naturalWidth && img.naturalHeight) {
-                if (img.naturalWidth > img.naturalHeight * 1.12) {
+            function applyOrientation(w, h) {
+              if (w && h) {
+                if (w > h * 1.12) {
                   item.classList.add('is-landscape');
                 } else {
                   item.classList.remove('is-landscape');
@@ -846,22 +842,31 @@ export async function composeTemplateData(invitationId: string) {
             }
 
             if (img.complete && img.naturalWidth > 0) {
-              processImage();
+              applyOrientation(img.naturalWidth, img.naturalHeight);
             } else {
-              img.addEventListener('load', processImage);
-              img.addEventListener('error', () => { loadedCount++; });
+              const probe = new Image();
+              probe.referrerPolicy = 'no-referrer';
+              probe.onload = function() {
+                applyOrientation(probe.naturalWidth, probe.naturalHeight);
+              };
+              probe.onerror = function() {
+                loadedCount++;
+              };
+              probe.src = img.src;
             }
           });
 
-          setTimeout(() => { packPuzzleSlots(items); }, 600);
+          setTimeout(() => { packPuzzleSlots(items); }, 500);
         }
 
         function packPuzzleSlots(items) {
           let totalSlots = 0;
+          const targetMaxPhotos = 12;
           const targetMaxSlots = 12;
-          let bestCutoff = items.length;
+          let bestCutoff = Math.min(items.length, 8);
 
           for (let i = 0; i < items.length; i++) {
+            if (i >= targetMaxPhotos) break;
             const slotCost = items[i].classList.contains('is-landscape') ? 2 : 1;
             if (totalSlots + slotCost > targetMaxSlots) break;
             totalSlots += slotCost;
@@ -871,11 +876,7 @@ export async function composeTemplateData(invitationId: string) {
           }
 
           items.forEach((item, idx) => {
-            if (idx < bestCutoff) {
-              item.style.display = 'block';
-            } else {
-              item.style.display = 'none';
-            }
+            item.style.display = idx < bestCutoff ? 'block' : 'none';
           });
         }
         document.addEventListener('DOMContentLoaded', initSmartPuzzleGallery);
@@ -931,16 +932,6 @@ export async function composeTemplateData(invitationId: string) {
           <h4 class="pass-guest-name serif" id="passGuestName">Tamu Undangan</h4>
         </div>
 
-        <div class="pass-meta-grid">
-          <div class="pass-meta-item">
-            <span class="pass-meta-lbl">SESI</span>
-            <span class="pass-meta-val">Sesi 1 (Akad &amp; Resepsi)</span>
-          </div>
-          <div class="pass-meta-item">
-            <span class="pass-meta-lbl">LIMIT</span>
-            <span class="pass-meta-val">1 - 2 Orang</span>
-          </div>
-        </div>
 
         <div class="pass-souvenir-bar">
           <span class="souvenir-lbl">VOUCHER SOUVENIR:</span>
@@ -966,11 +957,13 @@ export async function composeTemplateData(invitationId: string) {
 
   const finalAudioUrl = featureSettings.showMusic !== false ? (inv.musicUrl || featureSettings.musicUrl || fallbackMusicUrl) : "";
   const isOgg = finalAudioUrl.toLowerCase().endsWith(".ogg");
-  const musicPlayerHtml = finalAudioUrl ? `
+  const musicPlayerHtml = `
+    ${finalAudioUrl ? `
     <!-- UNIVERSAL MUSIC PLAYER INJECTED BY THEME ENGINE -->
     <audio id="luxAudioPlayer" loop preload="auto">
       <source src="${finalAudioUrl}" type="${isOgg ? "audio/ogg" : "audio/mpeg"}" />
     </audio>
+    ` : ""}
     <script>
       // 1. Universal Audio Player & Backward-Compatible Aliases
       (function() {
@@ -1031,34 +1024,90 @@ export async function composeTemplateData(invitationId: string) {
       // 3. Universal RSVP Handler
       function luxSubmitRsvp(e) {
         e.preventDefault();
-        const btn = e.target.querySelector('button[type="submit"]');
-        if(btn) {
+        var btn = document.getElementById('btnSubmit') || e.target.querySelector('button[type="submit"]');
+        var nameInput = document.getElementById('rsvpName');
+        var statusSelect = document.getElementById('rsvpStatus');
+        var countInput = document.getElementById('rsvpCount');
+        var messageInput = document.getElementById('rsvpMessage');
+        var statusBox = document.getElementById('luxRsvpStatusBox');
+        var wishesList = document.getElementById('wishesList') || document.getElementById('wishesFeed');
+
+        var name = nameInput ? nameInput.value.trim() : '';
+        var status = statusSelect ? statusSelect.value : 'hadir';
+        var count = countInput ? (parseInt(countInput.value, 10) || 1) : 1;
+        var message = messageInput ? messageInput.value.trim() : '';
+
+        if (!name) return;
+
+        if (btn) {
           btn.disabled = true;
-          btn.innerHTML = 'Memproses...';
+          btn.textContent = 'MENGIRIM DOA...';
         }
-        
-        // Mock processing for now. Will connect to API.
-        setTimeout(() => {
-          const nameInput = document.getElementById('rsvpName');
-          const name = nameInput ? nameInput.value : "Tamu";
-          let statusBox = document.getElementById('luxRsvpStatusBox');
-          if (!statusBox) {
-            statusBox = document.createElement('div');
-            statusBox.id = 'luxRsvpStatusBox';
-            statusBox.style.cssText = 'margin-top:12px; padding:12px; border-radius:10px; background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.3); color:#6ee7b7; font-size:13px; font-weight:600; text-align:center;';
-            e.target.appendChild(statusBox);
+
+        var invId = window.__LUX_INVITATION_ID__ || '${invitationId}';
+
+        fetch('/api/public/rsvp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            invitationId: invId,
+            guestName: name,
+            status: status,
+            guestCount: count,
+            message: message
+          })
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          if (statusBox) {
+            statusBox.style.cssText = 'display:block; margin-top:1rem; padding:0.8rem 1rem; border-radius:8px; font-size:0.82rem; text-align:center; background:rgba(74,222,128,0.15); border:1px solid rgba(74,222,128,0.3); color:#4ade80; font-weight:600;';
+            statusBox.textContent = 'Terima kasih, konfirmasi dan doa restu atas nama ' + name + ' telah terkirim!';
           }
-          statusBox.textContent = 'Terima kasih, konfirmasi dan doa restu atas nama ' + name + ' telah terkirim!';
-          statusBox.style.display = 'block';
+
+          if (wishesList) {
+            var emptyPlaceholder = wishesList.querySelector('p');
+            if (emptyPlaceholder && emptyPlaceholder.textContent.includes('Jadilah yang pertama')) {
+              emptyPlaceholder.remove();
+            }
+
+            var newCard = document.createElement('div');
+            newCard.className = 'wish-item';
+            var isHadir = status === 'hadir';
+            var badgeText = isHadir ? 'Hadir (' + count + ' Orang)' : 'Berhalangan';
+            var badgeBg = isHadir ? 'rgba(74,222,128,0.15)' : 'rgba(248,113,113,0.15)';
+            var badgeColor = isHadir ? '#4ade80' : '#f87171';
+
+            var safeName = name.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            var safeMsg = message ? message.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
+
+            newCard.innerHTML = 
+              '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">' +
+                '<span class="wish-name">' + safeName + '</span>' +
+                '<span style="font-size:0.65rem; padding:2px 8px; border-radius:50px; background:' + badgeBg + '; color:' + badgeColor + '; font-weight:600;">' + badgeText + '</span>' +
+              '</div>' +
+              (safeMsg ? '<p class="wish-msg">“' + safeMsg + '”</p>' : '');
+
+            wishesList.insertBefore(newCard, wishesList.firstChild);
+            wishesList.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+
           e.target.reset();
-          if(btn) {
-            btn.disabled = false;
-            btn.innerHTML = 'Kirim Konfirmasi';
+        })
+        .catch(function(err) {
+          if (statusBox) {
+            statusBox.style.cssText = 'display:block; margin-top:1rem; padding:0.8rem 1rem; border-radius:8px; font-size:0.82rem; text-align:center; background:rgba(248,113,113,0.15); border:1px solid rgba(248,113,113,0.3); color:#f87171;';
+            statusBox.textContent = 'Gagal mengirim konfirmasi. Silakan coba lagi.';
           }
-        }, 800);
+        })
+        .finally(function() {
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'KIRIM KONFIRMASI & DOA';
+          }
+        });
       }
     </script>
-  ` : "";
+  `;
 
   // 7. Section: Dress Code
   const dressCodeColors = featureSettings.dressCodeColors || "";
@@ -1231,14 +1280,15 @@ export async function composeTemplateData(invitationId: string) {
     </div>
   `;
 
-  // Google Calendar URL
-  const googleCalendarUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`The Wedding of ${firstName} & ${secondName}`)}&dates=${weddingDateYear}${weddingDateMonth}${weddingDateDay}T010000Z/${weddingDateYear}${weddingDateMonth}${weddingDateDay}T140000Z&location=${encodeURIComponent(events[0]?.location || "Makassar")}`;
+  // Google Calendar URL (Prioritaskan lokasi dari Acara Utama)
+  const calendarLocation = primaryEvent?.location || primaryEvent?.address || events[0]?.location || events[0]?.address || "Makassar";
+  const googleCalendarUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`The Wedding of ${firstName} & ${secondName}`)}&dates=${weddingDateYear}${weddingDateMonth}${weddingDateDay}T010000Z/${weddingDateYear}${weddingDateMonth}${weddingDateDay}T140000Z&location=${encodeURIComponent(calendarLocation)}`;
 
   // ─── Guest Memories (After-Event Moments Drop & Stream) ───
   const showGuestMemories = featureSettings.showGuestMemories !== false;
   const memoriesSectionEyebrow = customLabels.memoriesEyebrow || "AFTER-EVENT MEMORIES";
   const memoriesSectionTitle = customLabels.memoriesTitle || "Abadikan Momen Indah";
-  const memoriesSectionSubtitle = customLabels.memoriesSubtitle || "Punya foto candid seru selama menghadiri pernikahan kami? Bagikan momen spesial Anda langsung ke album pribadi kami.";
+  const memoriesSectionSubtitle = customLabels.memoriesSubtitle || "Buka kamera dan jepret momen candid seru Anda selama menghadiri pernikahan kami langsung ke album kenangan bersama:";
 
   const guestMemories = await prisma.guestMemory.findMany({
     where: { invitationId },
@@ -1289,9 +1339,9 @@ export async function composeTemplateData(invitationId: string) {
             ${memoriesSectionSubtitle}
           </p>
 
-          <!-- 1. TOMBOL UPLOAD MOMEN (DIRECT LINK) -->
+          <!-- 1. TOMBOL BUKA KAMERA KENANGAN -->
           <a href="${shareMomentUrl}" style="display: block; width: 100%; max-width: 360px; margin: 0 auto 1.8rem auto; padding: 14px 20px; border-radius: 50px; background: #ffffff; color: #000000; font-weight: 700; font-size: 0.9rem; letter-spacing: 0.05em; text-align: center; text-decoration: none; box-shadow: 0 4px 15px rgba(255,255,255,0.18); transition: transform 0.15s ease;">
-            BAGIKAN FOTO MOMEN ANDA
+            BUKA KAMERA KENANGAN
           </a>
 
           <!-- 2. HIGHLIGHT LINGKARAN (5 LINGKARAN DI LAYAR, LOOPING MARQUEE JIKA > 5) -->
@@ -1300,7 +1350,7 @@ export async function composeTemplateData(invitationId: string) {
               <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; font-size: 10px; font-weight: 700; opacity: 0.85; padding: 0 6px;">
                 <span style="display: flex; align-items: center; gap: 6px;">
                   <span style="width: 7px; height: 7px; border-radius: 99px; background: #10b981; display: inline-block;"></span>
-                  KAMI SUDAH MEMBAGIKAN MOMEN
+                  FOTO DARI PARA TAMU
                 </span>
                 <span style="font-size: 9px; opacity: 0.5; font-family: monospace;">Acak (${totalMemCount} Foto)</span>
               </div>
@@ -1698,7 +1748,7 @@ export async function composeTemplateData(invitationId: string) {
         : "";
 
       const nameHtml = name
-        ? `<span class="lux-vendor-text-name ${logo ? "" : "serif"}" style="${logo ? "font-size: 0.82rem; font-weight: 500; letter-spacing: 0.03em;" : "font-size: 1.05rem; font-weight: 600; letter-spacing: 0.04em;"} color: var(--accent) !important; opacity: 0.92; text-align: center; line-height: 1.35; background: transparent !important; border: none !important; text-decoration: none !important;">${escapeHtml(name)}</span>`
+        ? `<span class="lux-vendor-text-name ${logo ? "" : "serif"}" style="${logo ? "font-size: 0.82rem; font-weight: 500; letter-spacing: 0.03em;" : "font-size: 1.05rem; font-weight: 600; letter-spacing: 0.04em;"} color: var(--text-main, #ffffff) !important; opacity: 0.92; text-align: center; line-height: 1.35; background: transparent !important; border: none !important; text-decoration: none !important;">${escapeHtml(name)}</span>`
         : "";
 
       const itemContent = `

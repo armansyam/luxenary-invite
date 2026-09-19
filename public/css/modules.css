@@ -16,17 +16,17 @@
 /* 2. OUR MOMENT (SMART PUZZLE GRID) */
 .moment-quote { font-style: italic; font-size: 1.05rem; line-height: 1.65; color: currentColor; opacity: 0.75; max-width: 420px; margin: 0 auto 2rem; }
 .moments-grid-10 {
-  display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-flow: dense;
-  gap: 5px; margin-bottom: 2.2rem; width: 100%;
+  display: grid !important; grid-template-columns: repeat(4, 1fr) !important; grid-auto-flow: dense !important;
+  gap: 5px !important; margin-bottom: 2.2rem !important; width: 100% !important;
 }
 .moment-photo-item {
-  position: relative; overflow: hidden; border-radius: 6px; cursor: pointer;
-  border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 4px 12px rgba(0,0,0,0.35);
-  transition: transform 0.3s ease; aspect-ratio: 3/4; background: rgba(128,128,128,0.1);
+  position: relative !important; overflow: hidden !important; border-radius: 6px !important; cursor: pointer !important;
+  border: 1px solid rgba(255,255,255,0.12) !important; box-shadow: 0 4px 12px rgba(0,0,0,0.35) !important;
+  transition: transform 0.3s ease, border-color 0.25s ease !important; aspect-ratio: 3/4 !important; background: rgba(128,128,128,0.1) !important;
 }
-.moment-photo-item.is-landscape { grid-column: span 2; aspect-ratio: 3/2; }
-.moment-photo-item:hover { transform: scale(1.03); }
-.moment-photo-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.moment-photo-item.is-landscape { grid-column: span 2 !important; aspect-ratio: 3/2 !important; }
+.moment-photo-item:hover { transform: scale(1.03) !important; border-color: rgba(255,255,255,0.35) !important; }
+.moment-photo-item img { width: 100% !important; height: 100% !important; object-fit: cover !important; display: block !important; }
 .btn-show-gallery { margin-bottom: 0 !important; }
 
 /* 3. LIGHTBOX MODALS (GALLERY & ZOOM) */
@@ -48,7 +48,8 @@
   width: 34px; height: 34px; border-radius: 50%; font-size: 1rem; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
 }
-.gallery-modal-grid { columns: 4; column-gap: 5px; }
+.gallery-modal-grid { columns: 4 !important; column-gap: 5px !important; }
+@media (max-width: 480px) { .gallery-modal-grid { columns: 3 !important; } }
 .full-gallery-item { break-inside: avoid; margin-bottom: 5px; overflow: hidden; border-radius: 6px; cursor: pointer; border: 1px solid rgba(255,255,255,0.12); background: rgba(128,128,128,0.1); }
 .full-gallery-item img { width: 100%; height: auto; display: block; transition: transform 0.35s; }
 .full-gallery-item:hover img { transform: scale(1.05); }
@@ -137,24 +138,193 @@
 .pass-meta-val { font-size: 0.75rem; font-weight: 500; }
 .pass-souvenir-bar { border-top: 1px dashed currentColor; padding-top: 0.9rem; font-size: 0.72rem; opacity: 0.8; display: flex; justify-content: space-between; align-items: center; }
 
-/* 7. JOURNEY OF LOVE */
-.sec-journey { padding: 4.5rem 1.8rem; max-width: 480px; margin: 0 auto; text-align: center; position: relative; }
-.journey-card {
-  background: rgba(128, 128, 128, 0.05); border: 1px solid currentColor;
-  border-radius: 18px; padding: 2.5rem 1.8rem 2.2rem; backdrop-filter: blur(10px);
+/* 7. JOURNEY OF LOVE — UNIVERSAL VERTICAL GLOWING TIMELINE (KALANDRA STANDARD) */
+:root {
+  --timeline-gold: var(--primary, var(--gold, var(--accent, var(--jawa-gold, var(--floral-gold, var(--sunset-amber, #d4af37))))));
 }
-.journey-previews { display: flex; justify-content: center; gap: 12px; margin-bottom: 2rem; }
-.jp-item { flex: 1; max-width: 140px; aspect-ratio: 1/1; border-radius: 14px; overflow: hidden; border: 1px solid rgba(255,255,255,0.2); }
-.jp-item img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.4s ease; }
-.jp-item:hover img { transform: scale(1.06); }
-.journey-title { font-size: clamp(1.8rem, 6vw, 2.4rem); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 2rem; font-weight: 400; }
-.journey-chapters { display: flex; flex-direction: column; gap: 1.6rem; text-align: left; }
-.journey-chapter-item { padding-bottom: 0.4rem; }
-.chapter-heading { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.4rem; letter-spacing: 0.02em; }
-.chapter-desc { font-size: 0.78rem; opacity: 0.8; line-height: 1.65; }
-.journey-footer { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; margin-top: 2rem; padding-top: 1rem; }
-.jf-line { flex: 1; height: 1px; background: currentColor; opacity: 0.2; }
-.jf-signature { font-style: italic; font-size: 1.15rem; opacity: 0.9; font-family: 'Cormorant Garamond', serif; }
+
+.sec-journey {
+  padding: 4.5rem 1.8rem;
+  max-width: 480px;
+  margin: 0 auto;
+  text-align: center;
+  position: relative;
+}
+
+.journey-card {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  padding: 0 !important;
+}
+
+.journey-previews {
+  display: none !important;
+}
+
+.journey-title {
+  font-size: clamp(1.8rem, 6vw, 2.4rem);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 2rem;
+  font-weight: 400;
+}
+
+/* Sumbu Garis Rel Vertikal Timeline */
+.journey-timeline,
+.journey-chapters,
+.kalandra-timeline,
+.mayang-story-flow,
+.candani-story-flow,
+.custom-story-container {
+  position: relative !important;
+  width: 100% !important;
+  max-width: 420px !important;
+  margin: 2.8rem auto 1.8rem !important;
+  padding-left: 2.4rem !important;
+  text-align: left !important;
+  display: block !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.journey-timeline::before,
+.journey-chapters::before,
+.kalandra-timeline::before,
+.mayang-story-flow::before,
+.candani-story-flow::before,
+.custom-story-container::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0.6rem !important;
+  bottom: 0.6rem !important;
+  left: 7px !important;
+  width: 1px !important;
+  background: linear-gradient(
+    to bottom,
+    var(--timeline-gold),
+    color-mix(in srgb, var(--timeline-gold) 40%, transparent) 70%,
+    transparent
+  ) !important;
+  z-index: 1 !important;
+}
+
+.journey-timeline .story-chapter-block,
+.journey-chapters .story-chapter-block,
+.kalandra-timeline .story-chapter-block,
+.mayang-story-flow .story-chapter-block,
+.candani-story-flow .story-chapter-block,
+.custom-story-container .story-chapter-block {
+  position: relative !important;
+  padding-bottom: 2.4rem !important;
+  border-left: none !important;
+  border-bottom: none !important;
+  padding-left: 0 !important;
+}
+
+.journey-timeline .story-chapter-block:last-child,
+.journey-chapters .story-chapter-block:last-child,
+.kalandra-timeline .story-chapter-block:last-child,
+.mayang-story-flow .story-chapter-block:last-child,
+.candani-story-flow .story-chapter-block:last-child,
+.custom-story-container .story-chapter-block:last-child {
+  padding-bottom: 0.5rem !important;
+}
+
+/* Titik Node Simpul Emas Bercahaya Halus (*Single Luminous Gold Dot*) */
+.journey-timeline .story-chapter-block::before,
+.journey-chapters .story-chapter-block::before,
+.kalandra-timeline .story-chapter-block::before,
+.mayang-story-flow .story-chapter-block::before,
+.candani-story-flow .story-chapter-block::before,
+.custom-story-container .story-chapter-block::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0.35rem !important;
+  left: calc(-2.4rem + 3px) !important;
+  width: 9px !important;
+  height: 9px !important;
+  border-radius: 50% !important;
+  background: var(--timeline-gold) !important;
+  border: none !important;
+  box-shadow: 0 0 10px 2px color-mix(in srgb, var(--timeline-gold) 65%, transparent),
+              0 0 20px color-mix(in srgb, var(--timeline-gold) 35%, transparent) !important;
+  z-index: 2 !important;
+}
+
+.journey-timeline .sc-label,
+.journey-chapters .sc-label,
+.kalandra-timeline .sc-label,
+.mayang-story-flow .sc-label,
+.candani-story-flow .sc-label,
+.custom-story-container .sc-label,
+.chapter-eyebrow {
+  font-family: inherit;
+  font-size: 0.68rem !important;
+  letter-spacing: 0.28em !important;
+  text-transform: uppercase !important;
+  color: var(--timeline-gold) !important;
+  font-weight: 600 !important;
+  display: block !important;
+  margin-bottom: 0.35rem !important;
+}
+
+.journey-timeline .sc-title,
+.journey-chapters .sc-title,
+.kalandra-timeline .sc-title,
+.mayang-story-flow .sc-title,
+.candani-story-flow .sc-title,
+.custom-story-container .sc-title,
+.chapter-heading {
+  font-family: inherit;
+  font-size: 1.4rem !important;
+  color: var(--text-heading, var(--text-main, currentColor)) !important;
+  font-weight: 400 !important;
+  line-height: 1.25 !important;
+  margin-bottom: 0.55rem !important;
+  letter-spacing: 0.02em !important;
+}
+
+.journey-timeline .sc-desc,
+.journey-chapters .sc-desc,
+.kalandra-timeline .sc-desc,
+.mayang-story-flow .sc-desc,
+.candani-story-flow .sc-desc,
+.custom-story-container .sc-desc,
+.chapter-desc {
+  font-family: inherit;
+  font-size: 0.86rem !important;
+  color: var(--text-muted, currentColor) !important;
+  opacity: 0.85;
+  line-height: 1.75 !important;
+  font-weight: 300 !important;
+}
+
+.journey-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  width: 100%;
+}
+.jf-line {
+  flex: 1;
+  height: 1px;
+  background: var(--timeline-gold);
+  opacity: 0.3;
+}
+.jf-signature {
+  font-style: italic;
+  font-size: 1.25rem;
+  color: var(--timeline-gold);
+  opacity: 0.95;
+  font-family: 'Cormorant Garamond', 'Great Vibes', serif;
+}
 
 /* 8. EVENTS UNIFIED (AKAD & RESEPSI) */
 .event-full-date { font-size: 0.95rem; letter-spacing: 0.08em; opacity: 0.9; margin-bottom: 2rem; font-weight: 400; }
@@ -182,9 +352,9 @@
 
 /* REUSABLE UTILITIES */
 .reveal { opacity: 0; transform: translateY(30px); transition: all 1s ease; }
-.reveal.active { opacity: 1; transform: translateY(0); }
+.reveal.active, .reveal.is-visible { opacity: 1; transform: translateY(0); }
 .reveal-zoom { opacity: 0; transform: scale(0.95); transition: all 1s ease; }
-.reveal-zoom.active { opacity: 1; transform: scale(1); }
+.reveal-zoom.active, .reveal-zoom.is-visible { opacity: 1; transform: scale(1); }
 .delay-1 { transition-delay: 0.1s; }
 .delay-2 { transition-delay: 0.2s; }
 

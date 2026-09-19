@@ -90,6 +90,9 @@ export const THEME_BLUEPRINTS: Record<string, ThemeBlueprint> = {
     closingSub: "Salam hangat penuh hormat dari keluarga besar kedua mempelai.",
     rsvpTitle: "Konfirmasi Kehadiran & Doa",
     rsvpBtnText: "Kirim Konfirmasi & Doa",
+    vendorTitle: "Mitra Vendor",
+    vendorEyebrow: "WEDDING CREDITS",
+    vendorSubtitle: "Rasa terima kasih dan penghargaan setulusnya kepada seluruh vendor yang telah membantu menyempurnakan hari bahagia kami.",
   },
   dillalucky: {
     themeId: "dillalucky",
@@ -554,6 +557,9 @@ export const DEFAULT_TRADITIONAL_BLUEPRINT: ThemeBlueprint = {
   closingSub: "Salam hangat dari keluarga besar kedua mempelai.",
   rsvpTitle: "Konfirmasi Kehadiran & Doa",
   rsvpBtnText: "Kirim Konfirmasi & Doa",
+  vendorTitle: "Mitra Vendor",
+  vendorEyebrow: "WEDDING CREDITS",
+  vendorSubtitle: "Terima kasih kepada seluruh mitra dan vendor yang turut menyempurnakan hari bahagia kami.",
 };
 
 export const DEFAULT_MODERN_BLUEPRINT: ThemeBlueprint = {
@@ -595,6 +601,9 @@ export const DEFAULT_MODERN_BLUEPRINT: ThemeBlueprint = {
   closingSub: "Warmest love, the bride & groom and our families.",
   rsvpTitle: "RSVP & Confirmation",
   rsvpBtnText: "Confirm Attendance",
+  vendorTitle: "Wedding Vendors",
+  vendorEyebrow: "SPECIAL THANKS",
+  vendorSubtitle: "Heartfelt gratitude to our exceptional vendors who made our dream wedding come to life.",
 };
 
 export const DEFAULT_PREMIUM_BLUEPRINT: ThemeBlueprint = {
@@ -636,6 +645,9 @@ export const DEFAULT_PREMIUM_BLUEPRINT: ThemeBlueprint = {
   closingSub: "Respectfully, the bride, the groom & families.",
   rsvpTitle: "RSVP & Attendance",
   rsvpBtnText: "Submit RSVP",
+  vendorTitle: "Distinguished Vendors",
+  vendorEyebrow: "CURATED CREDITS",
+  vendorSubtitle: "Our deepest gratitude to the master artisans and distinguished partners behind this celebration.",
 };
 
 /**

@@ -1102,6 +1102,68 @@
       box-shadow: var(--gold-glow);
     }
 
+    /* JOURNEY / STORY STYLING (VERTICAL GLOWING LUXURY TIMELINE) */
+    .lagaligo-story-flow {
+      position: relative;
+      width: 100%;
+      max-width: 420px;
+      margin: 2.5rem auto 1.8rem;
+      padding-left: 2.4rem;
+      text-align: left;
+      display: block;
+    }
+    .lagaligo-story-flow::before {
+      content: '';
+      position: absolute;
+      top: 0.6rem;
+      bottom: 0.6rem;
+      left: 7px;
+      width: 1px;
+      background: linear-gradient(to bottom, var(--bugis-gold-warm), color-mix(in srgb, var(--bugis-gold-warm) 40%, transparent) 70%, transparent);
+    }
+    .lagaligo-story-flow .story-chapter-block {
+      position: relative;
+      padding-bottom: 2.4rem;
+      border-bottom: none !important;
+    }
+    .lagaligo-story-flow .story-chapter-block:last-child {
+      padding-bottom: 0.5rem;
+    }
+    .lagaligo-story-flow .story-chapter-block::before {
+      content: '';
+      position: absolute;
+      top: 0.35rem;
+      left: calc(-2.4rem + 3px);
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--bugis-gold-warm);
+      box-shadow: 0 0 10px 2px color-mix(in srgb, var(--bugis-gold-warm) 65%, transparent), 0 0 20px color-mix(in srgb, var(--bugis-gold-warm) 35%, transparent);
+      z-index: 2;
+    }
+    .lagaligo-story-flow .sc-label {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.65rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--bugis-gold-warm);
+      font-weight: 600;
+      display: block;
+      margin-bottom: 0.2rem;
+    }
+    .lagaligo-story-flow .sc-title {
+      font-size: 1.25rem;
+      color: var(--bugis-gold-antique);
+      font-family: 'Cormorant Garamond', serif;
+      margin-bottom: 0.4rem;
+    }
+    .lagaligo-story-flow .sc-desc {
+      font-size: 0.84rem;
+      color: rgba(251, 248, 241, 0.85);
+      line-height: 1.7;
+      font-style: italic;
+    }
+
     /* DIGITAL GIFT & LOVE STORY EXTENSIONS */
     .gift-tabs {
       display: flex;
@@ -1322,10 +1384,30 @@
 
     .wishes-feed-list {
       margin-top: 24px;
+      max-height: 290px;
+      overflow-y: auto;
+      overscroll-behavior: contain;
       display: flex;
       flex-direction: column;
       gap: 12px;
       text-align: left;
+      padding-right: 4px;
+      scrollbar-width: thin;
+      scrollbar-color: color-mix(in srgb, var(--bugis-gold-warm) 40%, transparent) transparent;
+      scroll-behavior: smooth;
+    }
+    .wishes-feed-list::-webkit-scrollbar {
+      width: 4px;
+    }
+    .wishes-feed-list::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .wishes-feed-list::-webkit-scrollbar-thumb {
+      background: color-mix(in srgb, var(--bugis-gold-warm) 40%, transparent);
+      border-radius: 99px;
+    }
+    .wishes-feed-list::-webkit-scrollbar-thumb:hover {
+      background: var(--bugis-gold-warm);
     }
 
     .wish-item {
@@ -1602,10 +1684,10 @@
       {{#if showStory}}
       <section class="sec-flow" id="story">
         <div class="reveal-up">
-          <span class="sec-eyebrow">{{storySectionEyebrow}}</span>
-          <h2 class="sec-main-title font-serif">{{storySectionTitle}}</h2>
+          <span class="sec-eyebrow" data-lux-field="customLabels.storyEyebrow">{{storySectionEyebrow}}</span>
+          <h2 class="sec-main-title font-serif reveal delay-1" data-lux-field="customLabels.storyTitle">{{storySectionTitle}}</h2>
         </div>
-        <div class="custom-story-container">
+        <div class="lagaligo-story-flow reveal-up delay-2">
           {{storyItemsHtml}}
         </div>
       </section>
@@ -1678,12 +1760,15 @@
         </div>
 
         <!-- Feed Doa Ucapan Tamu Real-Time -->
-        <div class="wishes-feed-list" id="wishesFeed">
+        <div class="wishes-feed-list wishes-list" id="wishesList">
           {{wishesHtml}}
         </div>
       </section>
 
       <!-- SEKSI 15: SALAM PENUTUP (Adaptive Full-Height 100vh) -->
+    <!-- SECTION: MITRA VENDOR / WEDDING CREDITS -->
+    {{vendorsSectionHtml}}
+
       <footer class="closing-sec {{closingPhotoClass}}" style="{{closingBgStyle}}">
         <div class="closing-content">
           <div class="font-lontara" style="font-size: 18px; color: var(--bugis-gold-warm); letter-spacing: 0.22em; margin-bottom: 10px;">
@@ -1741,6 +1826,40 @@
   <!-- 4. JAVASCRIPT LOGIC (STANDAR LUXENARY PRODUCTION READY)             -->
   <!-- =================================================================== -->
   <script>
+    const INVITATION_ID = "{{invitationId}}";
+    const TARGET_DATE = "{{targetDate}}";
+
+    // Hitung Mundur Hari H (Patokan Sesi Acara Utama)
+    function initCountdown() {
+      const targetStr = TARGET_DATE || "2026-10-05T08:00:00";
+      const target = new Date(targetStr).getTime();
+      if (isNaN(target)) return;
+      function update() {
+        const diff = target - Date.now();
+        if (diff > 0) {
+          const d = Math.floor(diff / 86400000);
+          const h = Math.floor((diff % 86400000) / 3600000);
+          const m = Math.floor((diff % 3600000) / 60000);
+          const s = Math.floor((diff % 60000) / 1000);
+          const elD = document.getElementById('cdDays');
+          const elH = document.getElementById('cdHours');
+          const elM = document.getElementById('cdMins');
+          const elS = document.getElementById('cdSecs');
+          if (elD) elD.textContent = String(d).padStart(2, '0');
+          if (elH) elH.textContent = String(h).padStart(2, '0');
+          if (elM) elM.textContent = String(m).padStart(2, '0');
+          if (elS) elS.textContent = String(s).padStart(2, '0');
+        }
+      }
+      update();
+      setInterval(update, 1000);
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initCountdown);
+    } else {
+      initCountdown();
+    }
+
     // A0. Interaktivitas Amplop Cover (Click-to-Open 3D Envelope)
     function luxToggleEnvelope() {
       const box = document.getElementById('envelopeBox');

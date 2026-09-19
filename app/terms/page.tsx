@@ -91,7 +91,7 @@ export default async function TermsPage() {
                   4. Galeri Kenangan Tamu (/memories) & Hak Unduh Arsip Foto ZIP
                 </h3>
                 <p className="text-xs text-stone-600 leading-relaxed">
-                  Khusus Paket {tier3Name} yang dilengkapi fitur Galeri Kenangan Tamu, seluruh foto candid dan video ucapan yang diunggah para tamu tersimpan aman di cloud server dan dapat dibuka selama <strong>{galleryDays % 30 === 0 ? `${galleryDays / 30} bulan (${galleryDays} hari)` : `${galleryDays} hari`} pasca-acara</strong> secara gratis. Klien memiliki fasilitas untuk <strong>mengunduh seluruh foto resolusi asli dalam 1 file ZIP</strong> ke galeri ponsel/laptop pribadi agar tersimpan selamanya, atau dapat memperpanjang masa aktif via Add-on Perpanjangan Masa Aktif.
+                  Khusus Paket {tier3Name} yang dilengkapi fitur Galeri Kenangan Tamu, seluruh foto candid yang diunggah para tamu tersimpan aman di cloud server dan dapat dibuka selama <strong>{galleryDays % 30 === 0 ? `${galleryDays / 30} bulan (${galleryDays} hari)` : `${galleryDays} hari`} pasca-acara</strong> secara gratis. Klien memiliki fasilitas untuk <strong>mengunduh seluruh foto resolusi asli dalam 1 file ZIP</strong> ke galeri ponsel/laptop pribadi agar tersimpan selamanya, atau dapat memperpanjang masa aktif via Add-on Perpanjangan Masa Aktif.
                 </p>
               </div>
 
