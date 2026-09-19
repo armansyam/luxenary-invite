@@ -74,7 +74,7 @@ Sistem template undangan menggunakan arsitektur HTML multi-layer mandiri dengan 
 4. **Chronicle (`themes/modern/chronicle.html`)**
    - Gaya jurnal editorial majalah eksklusif dengan tipografi Times-style masthead. Mengusung struktur slot visual presisi: Dynamic Desktop Sidebar (`{{sidebarPhotoUrl}}`), Cover Pop-up (`{{landingCoverUrl}}`), Slide Hero Pembuka Editorial `#home` (`{{homePhotoCssUrl}}`), dan Wallpaper Kanvas `.fixed-bg-layer` yang fokus presisi di kolom undangan 460px (`{{globalBgUrl}}`). Kanvas Home bersih tanpa menimpa foto tekstur demo saat slot dikosongkan.
 5. **Lumina (`themes/modern/lumina.html`)**
-   - Pencahayaan prisma lembut (*soft glow lens flares*) dengan layout ultra-modern.
+   - Sinematografi modern perak (*Modern Cinema / Silver Screen Aesthetics*) dengan pencahayaan prisma lembut, bingkai foto *Cinema Viewfinder* beraksen sudut kamera, dan *Cinematic Reel Timeline* (cardless dengan *silver lens aperture nodes* dan pemisah babak *dashed separator*).
 6. **Solaria (`themes/modern/solaria.html`)**
    - Nuansa hangat terik matahari senja (*warm sunset aesthetics*) & kartu transparan.
 

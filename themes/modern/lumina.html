@@ -53,10 +53,23 @@
       color: #f4f4f5;
       overflow-x: hidden;
       width: 100%;
-      background-image: radial-gradient(circle at 50% 10%, rgba(24,24,27,0.85) 0%, rgba(9,9,11,0.95) 85%), url('{{homePhotoCssUrl}}');
+    }
+
+    /* FIXED BACKGROUND LAYER (FOKUS DI PANEL UNDANGAN) */
+    .fixed-bg-layer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100vh;
+      background-image: radial-gradient(circle at 50% 10%, rgba(24,24,27,0.82) 0%, rgba(9,9,11,0.94) 85%),
+        url('{{globalBgUrl}}'),
+        url('{{homePhotoCssUrl}}');
       background-size: cover;
       background-position: center;
-      background-attachment: fixed;
+      background-repeat: no-repeat;
+      z-index: 5;
+      pointer-events: none;
     }
 
     /* TYPOGRAPHY CLASSES */
@@ -90,6 +103,17 @@
     }
     .cover-overlay.opened {
       transform: translateY(-100%); pointer-events: none; opacity: 0;
+    }
+
+    .cover-center {
+      width: 100%;
+      max-width: 850px;
+      margin: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
     }
 
     .cover-badge {
@@ -142,17 +166,33 @@
 
     @media (min-width: 900px) {
       .sidebar-desktop { display: block; width: calc(100% - 460px); }
+      .fixed-bg-layer { left: calc(100% - 460px); width: 460px; }
       .main-scroll-panel { width: 460px; margin-left: calc(100% - 460px); min-width: 0; }
-      .cover-overlay { width: 460px; left: calc(100% - 460px); }
+      .cover-overlay {
+        width: 100%;
+        left: 0;
+        right: 0;
+        padding: 4rem 2.5rem;
+        background-image: radial-gradient(circle at center, rgba(18,18,22,0.78) 0%, rgba(9,9,11,0.96) 100%),
+          url('{{landingCoverDesktopUrl}}'),
+          url('{{landingCoverUrl}}');
+        background-size: cover;
+        background-position: center;
+      }
+      .cover-center {
+        max-width: 850px;
+        margin: auto;
+      }
+      .cover-names {
+        font-size: clamp(3.2rem, 5.5vw, 5.2rem) !important;
+        overflow-wrap: break-word !important;
+      }
       .bottom-dock { left: calc(100% - 230px) !important; }
       .sec-main-title,
       .sec-heading {
-        font-size: 2.0rem !important;
+        font-size: clamp(1.75rem, 2.1rem, 2.3rem) !important;
         overflow-wrap: break-word;
         word-break: break-word;
-      }
-      .cover-title {
-        font-size: 2.8rem !important;
       }
     }
 
@@ -160,7 +200,7 @@
        FULL VIEWPORT ISOLATED SLIDES (100VH SETIAP SEKSI)
        ========================================================================== */
     .slide-section, .section-block, .sec-flow,
-    #section-quote, #section-couple, #section-events, #story, #moments, #gift,
+    #home, #section-quote, #section-couple, #section-events, #story, #moments, #gift,
     #section-wishes, #access-pass, #dresscode, #live, #turut-mengundang {
       width: 100%;
       min-height: 100vh;
@@ -173,6 +213,78 @@
       box-sizing: border-box;
       position: relative;
       text-align: center;
+    }
+
+    /* SEKSI HERO / OPENING SLIDE (LATAR HOME) */
+    #home.sec-hero-cinema {
+      position: relative;
+      background-image: linear-gradient(180deg, rgba(9,9,11,0.35) 0%, rgba(9,9,11,0.65) 60%, rgba(9,9,11,0.96) 100%),
+        url('{{homePhotoCssUrl}}');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      padding: 5rem 1.8rem;
+    }
+    .cinema-premiere-badge {
+      font-size: 0.68rem;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--silver-white);
+      border: 1px solid var(--cinema-border);
+      padding: 0.4rem 1.3rem;
+      border-radius: 50px;
+      margin-bottom: 1.2rem;
+      background: rgba(255,255,255,0.04);
+      backdrop-filter: blur(10px);
+      display: inline-block;
+    }
+    .cinema-hero-title {
+      font-size: clamp(2.6rem, 7.5vw, 4rem);
+      color: #ffffff;
+      line-height: 1.1;
+      margin-bottom: 1rem;
+      font-weight: 300;
+      text-shadow: 0 4px 25px rgba(0,0,0,0.8);
+    }
+    .cinema-hero-title em {
+      font-style: italic;
+      font-size: 0.75em;
+      color: var(--silver-muted);
+      display: inline-block;
+      margin: 0 0.15em;
+    }
+    .cinema-date-badge {
+      display: inline-block;
+      font-size: 0.82rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--silver-muted);
+      margin-bottom: 1rem;
+    }
+    .cinema-hero-tagline {
+      font-size: 0.88rem;
+      color: rgba(255,255,255,0.8);
+      max-width: 380px;
+      margin: 0 auto 2rem;
+      line-height: 1.7;
+    }
+    .hero-scroll-indicator {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
+      margin-top: 1.5rem;
+      color: var(--silver-muted);
+      font-size: 0.68rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      opacity: 0.85;
+      animation: bounceIndicator 2.2s infinite ease-in-out;
+    }
+    @keyframes bounceIndicator {
+      0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+      40% { transform: translateY(6px); }
+      60% { transform: translateY(3px); }
     }
 
     .sec-content-box {
@@ -204,10 +316,28 @@
     }
     .couple-card:hover { border-color: var(--cinema-border-bright); transform: translateY(-4px); }
     .couple-photo-wrap {
-      width: 155px; height: 195px; margin: 0 auto 1.3rem; border-radius: 100px 100px 20px 20px;
-      padding: 3px; border: 1px solid var(--cinema-border); overflow: hidden;
+      width: 165px; height: 220px; margin: 0 auto 1.4rem; position: relative;
+      border-radius: 4px; padding: 4px; border: 1px solid var(--cinema-border);
+      background: rgba(255,255,255,0.02); box-shadow: 0 10px 30px rgba(0,0,0,0.6);
     }
-    .couple-photo-wrap img { width: 100%; height: 100%; object-fit: cover; border-radius: 96px 96px 16px 16px; }
+    .couple-photo-wrap img {
+      width: 100%; height: 100%; object-fit: cover; border-radius: 2px;
+      filter: grayscale(15%); transition: filter 0.4s ease;
+    }
+    .couple-photo-wrap:hover img { filter: grayscale(0%); }
+    /* Cinema Viewfinder Corner Brackets */
+    .couple-photo-wrap::before,
+    .couple-photo-wrap::after {
+      content: ''; position: absolute; width: 12px; height: 12px;
+      border-color: var(--silver-white); border-style: solid;
+      pointer-events: none; z-index: 2;
+    }
+    .couple-photo-wrap::before {
+      top: -2px; left: -2px; border-width: 2px 0 0 2px;
+    }
+    .couple-photo-wrap::after {
+      bottom: -2px; right: -2px; border-width: 0 2px 2px 0;
+    }
     .couple-name { font-size: 1.6rem; color: #fff; margin-bottom: 0.3rem; font-family: 'Cinzel Decorative', serif; font-weight: 400; }
     .couple-parents { font-size: 0.84rem; color: rgba(255,255,255,0.75); line-height: 1.6; }
     .couple-ig { display: inline-block; margin-top: 0.6rem; font-size: 0.78rem; color: #fff; text-decoration: none; font-weight: 500; }
@@ -240,6 +370,21 @@
     .ev-name { font-size: 1.4rem; color: #fff; font-family: 'Cinzel Decorative', serif; margin-bottom: 0.4rem; }
     .ev-time { font-size: 0.85rem; color: rgba(255,255,255,0.85); }
     
+    /* MULTI-SESSION DATE BADGE */
+    .ev-session-date {
+      display: inline-block;
+      font-size: 0.68rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--cinema-border);
+      border-radius: 50px;
+      padding: 0.25rem 0.85rem;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+
     .event-unified-venue-card {
       background: var(--cinema-card); border: 1px solid var(--cinema-border); border-radius: 18px;
       padding: 1.8rem 1.4rem; text-align: center; backdrop-filter: blur(20px);
@@ -255,17 +400,65 @@
     }
     .btn-map-outline:hover { background: #fff; color: #09090b; }
 
-    /* JOURNEY / STORY STYLING */
+    /* JOURNEY / STORY CINEMATIC REEL TIMELINE */
     .journey-card-container {
       background: var(--cinema-card); border: 1px solid var(--cinema-border); border-radius: 18px;
       padding: 2rem 1.5rem; text-align: left; backdrop-filter: blur(20px); width: 100%; max-width: 440px;
     }
-    .journey-chapters { display: flex; flex-direction: column; gap: 1.5rem; }
-    .story-chapter-block { padding-bottom: 0.8rem; border-bottom: 1px dashed var(--cinema-border); }
-    .story-chapter-block:last-child { border-bottom: none; }
-    .sc-label { font-size: 0.65rem; letter-spacing: 0.25em; text-transform: uppercase; color: var(--silver-muted); font-weight: 600; display: block; margin-bottom: 0.2rem; }
-    .sc-title { font-size: 1.2rem; color: #fff; font-family: 'Cinzel Decorative', serif; margin-bottom: 0.4rem; }
-    .sc-desc { font-size: 0.84rem; color: rgba(255,255,255,0.8); line-height: 1.7; }
+    .journey-chapters,
+    .journey-timeline {
+      position: relative; display: flex; flex-direction: column; gap: 1.8rem;
+      padding-left: 1.8rem; margin: 1.6rem auto 0; text-align: left;
+      width: 100%; max-width: 440px;
+    }
+    .journey-timeline::before,
+    .journey-chapters::before {
+      content: ''; position: absolute; left: 6px; top: 10px; bottom: 10px; width: 1px;
+      background: linear-gradient(to bottom, var(--silver-white), var(--cinema-border));
+      box-shadow: 0 0 8px rgba(255, 255, 255, 0.35);
+    }
+    .story-chapter-block,
+    .journey-chapter-item {
+      position: relative; background: transparent; border: none;
+      padding: 0.2rem 0 1.8rem 0; border-bottom: 1px dashed var(--cinema-border);
+      transition: all 0.35s ease;
+    }
+    .story-chapter-block:last-child,
+    .journey-chapter-item:last-child {
+      border-bottom: none; padding-bottom: 0.5rem;
+    }
+    .story-chapter-block:hover,
+    .journey-chapter-item:hover {
+      transform: translateX(4px);
+    }
+    /* Silver Lens Aperture Node */
+    .story-chapter-block::before,
+    .journey-chapter-item::before {
+      content: ''; position: absolute; left: calc(-1.8rem + 1px); top: 0.35rem;
+      width: 11px; height: 11px; border-radius: 50%;
+      background: #ffffff; border: 2px solid var(--cinema-dark);
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2), 0 0 12px rgba(255, 255, 255, 0.55);
+      transition: all 0.3s ease;
+    }
+    .story-chapter-block:hover::before,
+    .journey-chapter-item:hover::before {
+      box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.4), 0 0 18px rgba(255, 255, 255, 0.85);
+    }
+    .sc-label,
+    .chapter-eyebrow {
+      font-size: 0.65rem; letter-spacing: 0.28em; text-transform: uppercase;
+      color: var(--silver-muted); font-weight: 600; display: block; margin-bottom: 0.3rem;
+    }
+    .sc-title,
+    .chapter-heading {
+      font-size: 1.25rem; color: #fff; font-family: 'Cinzel Decorative', serif;
+      margin-bottom: 0.4rem; letter-spacing: 0.04em;
+    }
+    .sc-desc,
+    .chapter-desc {
+      font-size: 0.85rem; color: rgba(255, 255, 255, 0.82);
+      line-height: 1.75; font-family: 'Plus Jakarta Sans', sans-serif;
+    }
     .journey-footer { display: flex; align-items: center; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem; }
     .jf-line { flex: 1; height: 1px; background: var(--cinema-border); }
     .jf-signature { font-family: 'Cinzel Decorative', serif; font-size: 1.2rem; color: #fff; }
@@ -392,19 +585,24 @@
 
   <!-- 1. COVER OVERLAY -->
   <div id="coverOverlay" class="cover-overlay">
-    <span class="cover-badge">THE WEDDING CELEBRATION</span>
-    <h1 class="cover-names">{{firstName}} <em>&amp;</em> {{secondName}}</h1>
-    
-    <div class="cover-guest-box">
-      <p class="cover-guest-lbl">Dear Honorable Guest</p>
-      <h3 class="cover-guest-val">Tamu Undangan</h3>
-    </div>
+    <div class="cover-center">
+      <span class="cover-badge">THE WEDDING CELEBRATION</span>
+      <h1 class="cover-names">{{firstName}} <em>&amp;</em> {{secondName}}</h1>
+      
+      <div class="cover-guest-box">
+        <p class="cover-guest-lbl">Dear Honorable Guest</p>
+        <h3 class="cover-guest-val">Tamu Undangan</h3>
+      </div>
 
-    <button class="btn-buka-undangan" onclick="openInvitation()">
-      <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
-      Open Invitation
-    </button>
+      <button class="btn-buka-undangan" onclick="openInvitation()">
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+        Open Invitation
+      </button>
+    </div>
   </div>
+
+  <!-- FIXED BACKGROUND LAYER (FOKUS DI PANEL UNDANGAN) -->
+  <div class="fixed-bg-layer"></div>
 
   <div class="layout-wrapper">
     
@@ -420,7 +618,25 @@
     <!-- MAIN SCROLLABLE PANEL -->
     <main class="main-scroll-panel">
       
-      <!-- SEKSI 1: TOGETHER AS ONE & COUNTDOWN (100VH STANDALONE) -->
+      <!-- SEKSI HERO / SLIDE OPENING (LATAR HOME) -->
+      <section id="home" class="slide-section sec-hero-cinema">
+        <div class="sec-content-box reveal-on-scroll">
+          <span class="cinema-premiere-badge">THE PREMIERE CELEBRATION</span>
+          <h1 class="font-cinema-title cinema-hero-title">{{firstName}} <em>&amp;</em> {{secondName}}</h1>
+          <div class="cinema-date-badge">
+            <span>{{weddingDate}}</span>
+          </div>
+          <p class="cinema-hero-tagline">{{weddingTagline}}</p>
+          <div class="hero-scroll-indicator">
+            <span>Scroll to Explore</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            </svg>
+          </div>
+        </div>
+      </section>
+
+      <!-- SEKSI 2: TOGETHER AS ONE & COUNTDOWN (100VH STANDALONE) -->
       <section id="section-quote" class="slide-section">
         <div class="sec-content-box reveal-on-scroll">
           <span class="sec-eyebrow">A SACRED UNION</span>
@@ -561,9 +777,9 @@
 
   <!-- FLOATING NAVIGATION DOCK -->
   <nav class="bottom-dock">
-    <a href="#section-quote" class="dock-btn">
+    <a href="#home" class="dock-btn">
       <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-      <span>Cover</span>
+      <span>Home</span>
     </a>
     <a href="#section-couple" class="dock-btn">
       <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
@@ -593,7 +809,7 @@
       if (cover) cover.classList.add('opened');
       const dock = document.querySelector('.bottom-dock');
       if (dock) dock.classList.remove('dock-hidden');
-      const audio = document.getElementById('weddingAudio');
+      const audio = document.getElementById('luxAudioPlayer') || document.getElementById('weddingAudio');
       if (audio && !window.__DISABLE_AUDIO__ && new URLSearchParams(window.location.search).get("autoplay") !== "1" && window === window.top) audio.play().catch(() => {});
       startCountdown();
       initScrollAnimations();

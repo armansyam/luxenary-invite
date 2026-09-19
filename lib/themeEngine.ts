@@ -257,12 +257,12 @@ export async function composeTemplateData(invitationId: string) {
   const closingPhotoUrl = mediaMap.get("CLOSING_COVER") || null;
 
   // Background Canvas: Zero-Fake Fallback (Tanpa Memaksa Foto Demo / Foto Model Asing)
-  // Jika klien tidak mengunggah GLOBAL_FIXED_BG, biarkan kosong agar kanvas murni mengekspos warna palet tema
-  const fixedBgUrl = customFixedBg || "";
+  // Sediakan dual-fallback cerdas antara GLOBAL_FIXED_BG dan HOME_PHOTO agar konsisten di seluruh tema
+  const fixedBgUrl = customFixedBg || customHomePhoto || "";
   const coverUrl = customCover || fixedBgUrl || "";
   const coverDesktopUrl = mediaMap.get("LANDING_COVER_DESKTOP") || coverUrl;
   const sidebarUrl = customSidebar || coverUrl;
-  const homePhotoUrl = customHomePhoto || "";
+  const homePhotoUrl = customHomePhoto || customFixedBg || "";
 
   // Foto Personal Mempelai: Jika tidak diunggah, gunakan Monogram Inisial Artistik (Anti-Foto Model Orang Asing)
   const groomPhoto = customGroom || generateInitialAvatarSvg(groomNickname || groomName, "The Groom");
