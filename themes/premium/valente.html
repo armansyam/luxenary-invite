@@ -1499,9 +1499,9 @@
           document.body.offsetHeight,
           document.documentElement.offsetHeight
         );
-        const isNearBottom = (currentScrollY + windowHeight) >= (docHeight - 60);
+        const isNearBottom = (currentScrollY + windowHeight) >= (docHeight - 70);
 
-        if (currentScrollY <= TOP_REVEAL_ZONE || isNearBottom) {
+        if (currentScrollY <= TOP_REVEAL_ZONE) {
           setVisible(true);
           lastScrollY = currentScrollY;
           ticking = false;
@@ -1509,6 +1509,19 @@
         }
 
         const delta = currentScrollY - lastScrollY;
+
+        // Ultra-Clean Outro: Sembunyikan kontrol di ujung bawah
+        // Jika tamu scroll-up (delta < -SCROLL_THRESHOLD), segera munculkan kembali kontrol
+        if (isNearBottom) {
+          if (delta < -SCROLL_THRESHOLD) {
+            setVisible(true);
+          } else {
+            setVisible(false);
+          }
+          lastScrollY = currentScrollY;
+          ticking = false;
+          return;
+        }
 
         if (Math.abs(delta) >= SCROLL_THRESHOLD) {
           if (delta > 0) {

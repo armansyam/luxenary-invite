@@ -1301,9 +1301,9 @@
           document.body.offsetHeight,
           document.documentElement.offsetHeight
         );
-        const isNearBottom = (currentScrollY + windowHeight) >= (docHeight - 60);
+        const isNearBottom = (currentScrollY + windowHeight) >= (docHeight - 70);
 
-        if (currentScrollY <= TOP_REVEAL_ZONE || isNearBottom) {
+        if (currentScrollY <= TOP_REVEAL_ZONE) {
           dock.classList.remove('dock-hidden');
           lastScrollY = currentScrollY;
           ticking = false;
@@ -1311,6 +1311,19 @@
         }
 
         const delta = currentScrollY - lastScrollY;
+
+        // Ultra-Clean Outro: Sembunyikan dock di ujung bawah
+        // Jika tamu scroll-up (delta < -SCROLL_THRESHOLD), segera munculkan kembali kontrol
+        if (isNearBottom) {
+          if (delta < -SCROLL_THRESHOLD) {
+            dock.classList.remove('dock-hidden');
+          } else {
+            dock.classList.add('dock-hidden');
+          }
+          lastScrollY = currentScrollY;
+          ticking = false;
+          return;
+        }
 
         if (Math.abs(delta) >= SCROLL_THRESHOLD) {
           if (delta > 0) {

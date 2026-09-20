@@ -276,7 +276,7 @@ export async function POST(req: Request) {
             eventData: JSON.stringify(initialEvents),
             featureSettings: JSON.stringify({
               weddingTagline: "THE WEDDING OF",
-              colorPalette: "champagne",
+              colorPalette: blueprint.defaultPalette || "champagne",
               showStory: true,
               showGallery: true,
               showGift: true,

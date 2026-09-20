@@ -17,6 +17,9 @@ const COLOR_PALETTES = [
   { id: "sage", name: "Botanical Sage Green", hex: "#4a5d4e", desc: "Segar, earthy, dan organik kekinian" },
   { id: "terracotta", name: "Warm Terracotta & Sand", hex: "#8c583a", desc: "Hangat, rustic modern, dan estetik" },
   { id: "monochrome", name: "Monochrome Dark & Silver", hex: "#262626", desc: "Minimalis editorial hitam-putih" },
+  { id: "toraja", name: "Toraja Crimson & Bamboo Gold", hex: "#750b0a", desc: "Adat Toraja agung, merah marun & emas bambu" },
+  { id: "bugis", name: "Bugis Royal Maroon & Gold", hex: "#5a0b10", desc: "Adat Bugis bangsawan, marun tua & emas megah" },
+  { id: "makassar", name: "Makassar Phinisi Navy & Gold", hex: "#0a192f", desc: "Adat Makassar maritim, biru phinisi & emas" },
 ];
 
 // Preset Palet Busana Pernikahan Populer (1-Klik untuk Pengguna Awam)
@@ -1248,13 +1251,12 @@ export default function EditInvitation() {
 
   if (!invitation) return <div className="text-center py-12 text-rose-600 font-medium">Undangan tidak ditemukan</div>;
 
-  const currentPalette = getFeatureSetting("colorPalette", "champagne");
-  const displayOrder = getFeatureSetting("displayOrder", "BRIDE_FIRST");
-
   const currentThemeId = invitation.themeId === "kila" ? "kalandra" : (invitation.themeId || "");
   const selectedThemeObj = currentThemeId ? (themesList.find((t) => t.id === currentThemeId) || null) : null;
-  const selectedPaletteObj = COLOR_PALETTES.find((p) => p.id === currentPalette) || COLOR_PALETTES[0];
   const activeBlueprint = getThemeBlueprint(currentThemeId || "kalandra");
+  const currentPalette = getFeatureSetting("colorPalette", activeBlueprint.defaultPalette || "champagne");
+  const displayOrder = getFeatureSetting("displayOrder", "BRIDE_FIRST");
+  const selectedPaletteObj = COLOR_PALETTES.find((p) => p.id === currentPalette) || COLOR_PALETTES[0];
 
   const planType = invitation.order?.planType || "";
   const packageConfig = platformSettings?.packages?.find((p: any) => p.id === planType);

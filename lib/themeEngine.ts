@@ -3,85 +3,14 @@ import { getGoogleDriveFolderPhotos } from "@/lib/driveHelper";
 import { escapeHtml } from "@/lib/escapeHtml";
 import { getThemeBlueprint } from "@/lib/themeDefaults";
 import { getAdminSetting } from "@/lib/settings";
+import { COLOR_PALETTES, type ColorPalette } from "@/lib/colorPalettes";
+
+export { COLOR_PALETTES, type ColorPalette };
 
 function nl2br(str: string): string {
   if (!str) return "";
   return escapeHtml(str).replace(/\r\n|\r|\n/g, "<br />");
 }
-
-export interface ColorPalette {
-  id: string;
-  name: string;
-  primary: string;
-  secondary: string;
-  accent: string;
-  bgLight: string;
-  bgDark: string;
-  textDark: string;
-}
-
-export const COLOR_PALETTES: Record<string, ColorPalette> = {
-  champagne: {
-    id: "champagne",
-    name: "Royal Champagne Gold",
-    primary: "#a67c52",
-    secondary: "#7a5430",
-    accent: "#b38b4d",
-    bgLight: "#faf7f2",
-    bgDark: "#1a1614",
-    textDark: "#2b2725",
-  },
-  emerald: {
-    id: "emerald",
-    name: "Emerald Green & Gold",
-    primary: "#1b4332",
-    secondary: "#2d6a4f",
-    accent: "#c9a227",
-    bgLight: "#f2f7f4",
-    bgDark: "#0b1c14",
-    textDark: "#132a20",
-  },
-  burgundy: {
-    id: "burgundy",
-    name: "Burgundy & Rose Gold",
-    primary: "#54192b",
-    secondary: "#7a253f",
-    accent: "#d4a373",
-    bgLight: "#faf2f4",
-    bgDark: "#1c070e",
-    textDark: "#2c0e17",
-  },
-  sage: {
-    id: "sage",
-    name: "Botanical Sage Green",
-    primary: "#4a5d4e",
-    secondary: "#627d68",
-    accent: "#b89f81",
-    bgLight: "#f1f5f2",
-    bgDark: "#141c16",
-    textDark: "#212d24",
-  },
-  terracotta: {
-    id: "terracotta",
-    name: "Warm Terracotta & Sand",
-    primary: "#8c583a",
-    secondary: "#a86b47",
-    accent: "#c99a57",
-    bgLight: "#fdf8f4",
-    bgDark: "#21150e",
-    textDark: "#2c1c13",
-  },
-  monochrome: {
-    id: "monochrome",
-    name: "Monochrome Dark & Silver",
-    primary: "#262626",
-    secondary: "#404040",
-    accent: "#c0a062",
-    bgLight: "#f5f5f5",
-    bgDark: "#0f0f0f",
-    textDark: "#171717",
-  },
-};
 
 const NUMBER_WORDS = ["One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve"];
 
@@ -178,7 +107,10 @@ export async function composeTemplateData(invitationId: string) {
     featureSettings = {};
   }
 
-  const activePaletteId = featureSettings.colorPalette || "champagne";
+  // Theme Blueprint Defaults Resolution
+  const blueprint = getThemeBlueprint(inv.themeId || "kalandra");
+
+  const activePaletteId = featureSettings.colorPalette || blueprint.defaultPalette || "champagne";
   const palette = COLOR_PALETTES[activePaletteId] || COLOR_PALETTES.champagne;
 
   const showStory = featureSettings.showStory !== undefined ? Boolean(featureSettings.showStory) : true;
@@ -411,8 +343,7 @@ export async function composeTemplateData(invitationId: string) {
     }
   }
 
-  // Theme Blueprint Defaults Resolution
-  const blueprint = getThemeBlueprint(inv.themeId || "kalandra");
+
 
   // Custom Labels & Section Titles Override (with Theme Blueprint Fallbacks)
   const customLabels = {

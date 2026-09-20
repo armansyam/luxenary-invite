@@ -8,6 +8,7 @@ export interface ThemeBlueprint {
   themeId: string;
   themeName: string;
   series: "traditional" | "modern" | "premium";
+  defaultPalette?: string;
   openingQuote: string;
   openingQuoteRef: string;
   coverSubtitle: string;
@@ -241,6 +242,7 @@ export const THEME_BLUEPRINTS: Record<string, ThemeBlueprint> = {
     themeId: "toraja",
     themeName: "Toraja",
     series: "traditional",
+    defaultPalette: "toraja",
     openingQuote: "Misa' kada dipotuo, pantan kada dipomate. Keberkahan dan kedamaian senantiasa melingkupi dua insan yang dipersatukan dalam ikatan suci pernikahan adat Toraja.",
     openingQuoteRef: "KADA DIPOTUO TORAJA",
     coverSubtitle: "Kurresumanga'. Tanpa mengurangi rasa hormat, kami mengundang Bapak/Ibu/Saudara/i untuk menghadiri hari bahagia kami.",
@@ -284,6 +286,7 @@ export const THEME_BLUEPRINTS: Record<string, ThemeBlueprint> = {
     themeId: "bugis",
     themeName: "Bugis",
     series: "traditional",
+    defaultPalette: "bugis",
     openingQuote: "Sipakatau, sipakalebbi, sipakainge. Narekko purai sikaleng, tessisarakang lino ahera. Dengan memohon ridho dan rahmat Allah SWT, kami bermaksud melangsungkan ikatan suci pernikahan adat Bugis.",
     openingQuoteRef: "PAPPASENG TO RIOLO & QS. AR-RUM: 21",
     coverSubtitle: "Kurru Sumanga'. Tanpa mengurangi rasa hormat, kami mengundang Bapak/Ibu/Saudara/i untuk menghadiri hari bahagia kami.",
@@ -327,6 +330,7 @@ export const THEME_BLUEPRINTS: Record<string, ThemeBlueprint> = {
     themeId: "makassar",
     themeName: "Makassar",
     series: "traditional",
+    defaultPalette: "makassar",
     openingQuote: "Bajiki passiriki, sombere' na malabbiri. Siri' na pacce menjadi landasan teguh dua insan yang berpadu dalam ikatan suci pernikahan adat Makassar.",
     openingQuoteRef: "PASANG RI BURA'NE & QS. AR-RUM: 21",
     coverSubtitle: "Tabe' kipammopporang. Tanpa mengurangi rasa hormat, kami mengundang Bapak/Ibu/Saudara/i untuk menghadiri hari bahagia kami.",

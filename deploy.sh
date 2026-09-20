@@ -94,7 +94,7 @@ npx prisma db seed || echo "⚠️ Seed gagal atau sudah ada — lanjut deployme
 
 # 5b. Kompilasi Cache Demo Tema Statis
 echo "🎨 Memastikan cache demo tema statis terkompilasi segar..."
-npx tsx -r dotenv/config -e "import { compileAllStaticDemos } from './lib/demoPublisher.ts'; compileAllStaticDemos().then(n => console.log('✅ ' + n + ' demo tema berhasil dikompilasi.')).catch(e => console.warn('⚠️ Gagal pra-kompilasi demo (akan dikompilasi on-demand saat diakses):', e.message));" || true
+npx -y tsx -r dotenv/config -e "import('./lib/demoPublisher.ts').then(m => (m.compileAllStaticDemos || m.default.compileAllStaticDemos)()).then(n => console.log('✅ ' + n + ' demo tema berhasil dikompilasi.')).catch(e => console.warn('⚠️ Gagal pra-kompilasi demo (akan dikompilasi on-demand saat diakses):', e.message));" || true
 
 # 6. Build Aplikasi Next.js
 echo "🏗️ Membangun (Build) aplikasi Next.js... (Ini mungkin memakan waktu)"
