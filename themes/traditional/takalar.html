@@ -34,14 +34,14 @@
       --bg-light: {{colorBgLight}};
       --bg-dark: {{colorBgDark}};
       --text-dark: {{colorTextDark}};
-      --makassar-navy: var(--primary, #0a192f);
-      --makassar-gold: var(--accent, #dfb76c);
-      --makassar-dark: var(--bg-dark, #030914);
-      --makassar-card: color-mix(in srgb, var(--primary, #0a192f) 28%, var(--bg-dark, #030914) 86%);
+      --makassar-navy: var(--primary, #061a33);
+      --makassar-gold: var(--accent, #e2be75);
+      --makassar-dark: var(--bg-dark, #020914);
+      --makassar-card: color-mix(in srgb, var(--primary, #061a33) 28%, var(--bg-dark, #020914) 86%);
       --theme-card: var(--makassar-card);
-      --border-gold: color-mix(in srgb, var(--accent, #dfb76c) 35%, transparent);
-      --border-gold-bright: color-mix(in srgb, var(--accent, #dfb76c) 80%, transparent);
-      --gold-glow: color-mix(in srgb, var(--accent, #dfb76c) 25%, transparent);
+      --border-gold: color-mix(in srgb, var(--accent, #e2be75) 35%, transparent);
+      --border-gold-bright: color-mix(in srgb, var(--accent, #e2be75) 80%, transparent);
+      --gold-glow: color-mix(in srgb, var(--accent, #e2be75) 25%, transparent);
       --text-muted: color-mix(in srgb, #ffffff 75%, transparent);
     }
 
@@ -421,13 +421,13 @@
       object-fit: contain;
       filter: drop-shadow(0 8px 24px var(--gold-glow));
     }
-    /* HOME ARCH PHOTO FRAME */
+    /* HOME ARCH PHOTO FRAME — SANROBONE LONTAR CROSS-WEAVE FRAME */
     .home-arch-wrap {
       position: relative;
       width: clamp(190px, 54vw, 230px);
       height: clamp(250px, 68vw, 295px);
       margin: 0.6rem auto 1.2rem;
-      border-radius: 160px 160px 16px 16px;
+      border-radius: 130px 130px 48px 48px;
       padding: 5px;
       background: linear-gradient(
         135deg,
@@ -435,12 +435,12 @@
         color-mix(in srgb, var(--bg-dark) 80%, transparent) 50%,
         var(--makassar-gold) 100%
       );
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65), 0 0 15px color-mix(in srgb, var(--makassar-gold) 20%, transparent);
+      box-shadow: 0 0 0 2px var(--makassar-gold), 0 0 0 5px color-mix(in srgb, var(--bg-dark) 90%, transparent), 0 0 0 7px var(--border-gold), 0 16px 36px rgba(0, 0, 0, 0.85);
     }
     .home-arch-inner {
       width: 100%;
       height: 100%;
-      border-radius: 156px 156px 12px 12px;
+      border-radius: 126px 126px 44px 44px;
       overflow: hidden;
       position: relative;
       background: var(--bg-dark);
