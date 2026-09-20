@@ -242,7 +242,7 @@ export const THEME_BLUEPRINTS: Record<string, ThemeBlueprint> = {
     themeName: "Toraja",
     series: "traditional",
     openingQuote: "Misa' kada dipotuo, pantan kada dipomate. Keberkahan dan kedamaian senantiasa melingkupi dua insan yang dipersatukan dalam ikatan suci pernikahan adat Toraja.",
-    openingQuoteRef: "PAPPASENG TORAJA & QS. AR-RUM: 21",
+    openingQuoteRef: "KADA DIPOTUO TORAJA",
     coverSubtitle: "Kurresumanga'. Tanpa mengurangi rasa hormat, kami mengundang Bapak/Ibu/Saudara/i untuk menghadiri hari bahagia kami.",
     openBtn: "Buka Undangan",
     quoteSectionTitle: "Petuah & Doa Restu",

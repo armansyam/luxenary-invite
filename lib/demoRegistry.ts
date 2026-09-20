@@ -942,7 +942,7 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     weddingDateMonth: "12",
     weddingDateYear: "2026",
     openingQuote: "Misa' kada dipotuo, pantan kada dipomate. Keberkahan dan kedamaian senantiasa melingkupi dua insan yang dipersatukan dalam ikatan suci pernikahan adat Toraja.",
-    openingQuoteRef: "PAPPASENG TORAJA & QS. AR-RUM: 21",
+    openingQuoteRef: "KADA DIPOTUO TORAJA",
     city: "Tana Toraja",
     globalBgUrl: "/demo/toraja/background.webp",
     homePhotoUrl: "/demo/toraja/hero.webp",

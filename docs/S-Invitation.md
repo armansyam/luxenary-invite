@@ -990,14 +990,18 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
 
 1. **Master Tema Tradisional Toraja (`themes/traditional/toraja.html`):**
    - Tema etnik ke-7 (tema master ke-17) yang mengangkat seni ukir dan filosofi luhur masyarakat Toraja, Sulawesi Selatan.
-   - **Ornamen Budaya Otentik Toraja:**
+   - **Ornamen Budaya Otentik Toraja (`public/assets/ornaments/toraja/`):**
       * *Pa'barre Allo:* Ukiran matahari penanda kemuliaan dan sumber kehidupan pada puncak seksi hero dan monogram.
       * *Pa'kadang Pao Seamless:* Border horizontal seamless bermotif kait mangga yang bergerak halus melintasi batas seksi (`border-pa-kadang-pao-seamless.webp`).
-      * *Rumah Tongkonan Perspektif:* Siluet ganda vektor transparan (`rumah-tongkonan-perspektif.svg`) di sudut kiri dan kanan bawah cover pembuka dengan efek mirror.
-      * *Rumah Tongkonan Vektor:* Ilustrasi frontal otentik (`rumah-tongkonan.svg`) pada puncak seksi home dan penutup tanpa glow buatan.
-      * *Mandala Toraja:* Pola geometris konsentris sebagai latar lencana doa dan kutipan.
+      * *Watermark Tongkonan 3D:* Siluet 3D tampak perspektif (`tongkonan-perspektif-3d.webp`) di sudut kiri dan kanan bawah cover dengan efek mirror, serta tampak depan 3D di tengah (`tongkonan-depan-3d.webp`).
+      * *Siluet Skyline Atap Home:* Siluet atap tampak perspektif ganda (`atap-tongkonan-perspektif.webp`) di sudut kiri dan kanan (mirror) serta tampak depan (`atap-tongkonan-depan.webp`) di dasar seksi Home.
+      * *Rumah Tongkonan 3D Depan:* Ilustrasi 3D frontal otentik (`tongkonan-depan-3d.webp`) pada desktop sidebar hero, puncak seksi home, prasasti petuah doa, dan penutup Kurresumanga'.
+      * *Mahkota Atap Tongkonan:* Ornamen atap kayu ukir Toraja 3D (`atap-tongkonan-depan.webp`) di belakang bingkai foto profil mempelai dengan gradasi bayangan dimensional.
+      * *Sudut Siku Passura' Toraja:* 4 ornamen sudut siku ukiran emas asli Toraja (`sudut-siku-passura-toraja.webp`) di setiap sudut bingkai foto mempelai pria dan wanita.
+      * *Ornamen Spiral Tedong:* Ornamen ukiran spiral emas (`divider-spiral-tedong-toraja.webp`) di dasar lengkungan bingkai foto home.
+      * *Watermark Sudut Acanthus Emas 12%:* Watermark ornamen sudut emas (`sudut-flourish-acanthus-toraja.webp`) dengan orientasi 2 sudut diagonal (kiri-atas & kanan-bawah) pada opacity 12% di seluruh kartu utama (`.quote-plaque`, `.event-unified-venue-card`, `.bank-card`, `.access-pass-card`, `.rsvp-form-box`).
     - **Bingkai Foto Home Arch Adaptif:**
-      * Menghadirkan bingkai *Arch Frame* kubah melengkung ganda emas Toraja (`width: clamp(190px, 54vw, 230px); height: clamp(250px, 68vw, 295px)`).
+      * Menghadirkan bingkai *Arch Frame* kubah melengkung ganda emas Toraja (`width: clamp(190px, 54vw, 230px); height: clamp(250px, 68vw, 295px)`) dengan ornamen spiral tedong di batas bawahnya.
       * *Conditional Fallback Cerdas:* Jika foto home diunggah (`hasCustomHomePhoto`), foto tampil terpusat dengan nama mendatar responsif (`home-names-row`); jika tanpa foto, tampilan otomatis kembali ke ilustrasi Tongkonan megah (110px) dan tipografi bertumpuk tanpa celah kosong.
     - **Canvas Scrim 70% & Kanvas Home Transparan:**
       * Seksi `#home` berlatar transparan murni, mengekspos gambar latar belakang `background.webp` (kain tenun merah-emas & siluet) yang dilapisi canvas scrim 70% seragam untuk kenyamanan kontras teks maksimal.
