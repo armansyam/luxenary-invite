@@ -41,6 +41,9 @@ const THEME_MAP: Record<string, { file: string; folder: "premium" | "traditional
   "mayang": { file: "mayang.html", folder: "traditional" },
   "candani": { file: "candani.html", folder: "traditional" },
   "lagaligo": { file: "lagaligo.html", folder: "traditional" },
+  "toraja": { file: "toraja.html", folder: "traditional" },
+  "bugis": { file: "bugis.html", folder: "traditional" },
+  "makassar": { file: "makassar.html", folder: "traditional" },
 
   // Modern Series
   "wave": { file: "wave.html", folder: "modern" },

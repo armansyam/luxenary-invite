@@ -1886,8 +1886,23 @@
       }
     })();
 
+    // Smart Mobile Fullscreen
+    function requestSmartFullscreen() {
+      const isMobile = window.innerWidth <= 1024 || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+      if (!isMobile) return;
+      try {
+        const docEl = document.documentElement;
+        const req = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+        if (req) {
+          const res = req.call(docEl);
+          if (res && res.catch) res.catch(function () {});
+        }
+      } catch (err) {}
+    }
+
     // A. Buka Undangan & Autoplay Audio
     function openInvitation() {
+      requestSmartFullscreen();
       const cover = document.getElementById('coverOverlay');
       if (cover) cover.classList.add('opened');
       const dock = document.querySelector('.bottom-dock');

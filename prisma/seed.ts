@@ -193,7 +193,41 @@ const themes: Prisma.ThemeCreateInput[] = [
     isActive: true,
     sortOrder: 16,
   },
+  {
+    id: 'toraja',
+    name: 'Toraja',
+    category: 'traditional',
+    series: 'Traditional',
+    description: 'Kemegahan Adat Toraja Rampuan Lolo Berbalut Crimson Marun & Kilau Emas Tongkonan',
+    previewUrl: '/demo/toraja',
+    isPremium: false,
+    isActive: true,
+    sortOrder: 17,
+  },
+  {
+    id: 'bugis',
+    name: 'Bugis',
+    category: 'traditional',
+    series: 'Traditional',
+    description: 'Kemegahan Adat Bugis Berbalut Royal Maroon & Kilau Emas Tenun Saoraja',
+    previewUrl: '/demo/bugis',
+    isPremium: false,
+    isActive: true,
+    sortOrder: 18,
+  },
+  {
+    id: 'makassar',
+    name: 'Makassar',
+    category: 'traditional',
+    series: 'Traditional',
+    description: 'Kemegahan Adat Makassar Siri\' na Pacce Berbalut Royal Navy & Emas Kehormatan Phinisi',
+    previewUrl: '/demo/makassar',
+    isPremium: false,
+    isActive: true,
+    sortOrder: 19,
+  },
 ]
+
 
 async function main() {
   // Purge any obsolete themes not in the official 15 standalone list

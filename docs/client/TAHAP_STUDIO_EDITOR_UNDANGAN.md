@@ -44,7 +44,7 @@ Studio Editor membagi form input menjadi 16 seksi terorganisir untuk kenyamanan 
 
 ### Seksi 1: Tema Desain & Palet Warna (`SEC1`)
 - **Akses Tema Penuh (All-Access Themes):**
-  - Seluruh 16 tema terbuka penuh untuk semua tier paket (`TIER_1`, `TIER_2`, `TIER_3`).
+  - Seluruh 19 tema terbuka penuh untuk semua tier paket (`TIER_1`, `TIER_2`, `TIER_3`).
   - Klien dapat bebas memilih tema sebelum undangan dipublikasikan (`DRAFT`). Pasca publikasi (`PUBLISHED`), pergantian tema dikunci untuk menjaga integritas file HTML statis.
 - **Dynamic Color Palettes:**
   - Pemilihan preset palet warna (Default, Romantic Blush, Royal Gold, Emerald Forest, Midnight Navy, Vintage Sepia).

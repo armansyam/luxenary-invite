@@ -978,7 +978,21 @@
   </div>
 
   <script>
+    function requestSmartFullscreen() {
+      const isMobile = window.innerWidth <= 1024 || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+      if (!isMobile) return;
+      try {
+        const docEl = document.documentElement;
+        const req = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+        if (req) {
+          const res = req.call(docEl);
+          if (res && res.catch) res.catch(function () {});
+        }
+      } catch (err) {}
+    }
+
     function openInvitation() {
+      requestSmartFullscreen();
       const cover = document.getElementById('coverScreen') || document.getElementById('coverOverlay');
       if (cover) cover.classList.add('opened', 'slide-up-hidden');
       startCountdown();

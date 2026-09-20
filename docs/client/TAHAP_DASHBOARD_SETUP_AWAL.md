@@ -127,7 +127,7 @@ flowchart TD
 * **Komponen:** [`app/(client)/dashboard/setup/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/(client)/dashboard/setup/page.tsx) (`step === 3`)
 * **Tujuan:** Memberikan kebebasan visual penuh bagi calon pengantin untuk memilih gaya estetika tema pertama mereka tanpa paksaan bawaan.
 * **Logika Hak Akses Tema (All-Access Themes):**
-  Daftar tema diambil secara dinamis dari database melalui `GET /api/public/themes`. Sesuai kebijakan *All-Access Themes*, seluruh 16 tema terbuka 100% untuk semua tingkatan paket (`TIER_1`, `TIER_2`, `TIER_3`). Pembeda antar paket murni bertumpu pada kapabilitas fitur (*Feature Gating*).
+  Daftar tema diambil secara dinamis dari database melalui `GET /api/public/themes`. Sesuai kebijakan *All-Access Themes*, seluruh 19 tema terbuka 100% untuk semua tingkatan paket (`TIER_1`, `TIER_2`, `TIER_3`). Pembeda antar paket murni bertumpu pada kapabilitas fitur (*Feature Gating*).
 * **Clean State Tanpa Default Tema:**
   - Variabel `themeId` diinisialisasi sebagai string kosong `""`.
   - Tidak ada auto-select ke `availableThemes[0]`.

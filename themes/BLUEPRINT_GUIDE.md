@@ -298,3 +298,80 @@ Ikuti 5 langkah mudah berikut setiap kali ingin merilis tema baru ke ekosistem L
 5. **Pengujian Faktual:**
    - Buka halaman preview live editor tema baru di browser.
    - Klik langsung pada badge cover, salam pembuka, dan judul seksi untuk memastikan fitur *Click-to-Edit* berfungsi sempurna.
+
+---
+
+## 💎 5. Standar Emas Navigasi, Desktop Split, & Estetika Visual (Visual Excellence & Isolation Standards)
+
+### A. Clean Hero Canvas (Panel Kiri Bersih Murni)
+- **Panel Kiri Desktop Split ($\ge 900\text{px}$):**
+  - Elemen `<aside class="sidebar-desktop"></aside>` harus berupa **kanvas foto murni** (`{{sidebarPhotoUrl}}`).
+  - **DILARANG KERAS** menaruh elemen teks duplikat, quote, emblem, atau nama mempelai di atas panel kiri desktop.
+  - Elemen pembuka undangan HANYA boleh tampil di dalam gerbang cover pembuka (`#coverScreen` / `.cover-overlay`). Setelah dibuka, panel kiri berfungsi murni sebagai latar foto sinematik yang bersih dan elegan.
+
+### B. Isolasi Dock Navigasi (Strict 460px Desktop Boundary & Mobile Anti-Overflow)
+- **Mode Desktop ($\ge 900\text{px}$):**
+  Dock navigasi (`.bottom-dock`) WAJIB terisolasi secara mutlak di dalam kolom undangan 460px:
+  ```css
+  @media (min-width: 900px) {
+    .bottom-dock {
+      left: calc(100% - 230px) !important;
+      transform: translate3d(-50%, 0, 0) !important;
+      width: calc(460px - 28px) !important;
+      max-width: calc(460px - 28px) !important;
+      box-sizing: border-box !important;
+      padding: 0.35rem 0.45rem !important;
+      gap: 0.15rem !important;
+      justify-content: space-around !important;
+    }
+  }
+  ```
+  *Dilarang keras dock meluber atau menyeberang ke area foto sebelah kiri maupun keluar dari tepi layar kanan.*
+- **Mode Mobile ($< 900\text{px}$):**
+  Untuk mencegah scroll horizontal (scroll kanan-kiri), dock wajib memiliki batas lebar adaptif dan setiap tombol dock harus lentur:
+  ```css
+  .bottom-dock {
+    width: calc(100% - 24px);
+    max-width: 436px;
+    box-sizing: border-box;
+    left: 50%;
+    transform: translate3d(-50%, 0, 0);
+  }
+  .bottom-dock .dock-btn, .bottom-dock .dock-a, .bottom-dock .nav-item {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 0.25rem 0.15rem;
+  }
+  .bottom-dock .dock-btn span, .bottom-dock .dock-a span, .bottom-dock .nav-item span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.55rem;
+    max-width: 100%;
+  }
+  ```
+- **Harmonisasi Tombol QR TAMU:**
+  Tombol QR pass (`.bottom-dock .qr-btn, .bottom-dock button.nav-item`) wajib diatur transparan (`background: transparent !important; border: none !important;`) agar menyatu harmonis dengan estetika tema dan tidak memunculkan kotak putih bawaan peramban.
+
+### C. Smart Controls: Autohide on Scroll & Home Zone Guard
+- Dock navigasi dan FAB audio wajib mengimplementasikan kontrol cerdas:
+  1. Tersembunyi otomatis saat pengguna menggulir ke bawah (`delta > 0`).
+  2. Muncul kembali seketika saat pengguna menggulir ke atas (`delta < 0`).
+  3. Tersembunyi saat berada di zona hero cover (`lux-at-home-zone`).
+
+### D. Standar Seksi Penutup (Outro / Closing Section)
+- **Mode Ada Foto (`has-closing-photo`):**
+  - Ornamen ilustrasi (seperti rumah adat atau lambang budaya) wajib berada di **ATAS** secara statis (tanpa animasi floating berlebih dan tanpa glow berlebihan).
+  - Teks ucapan terima kasih dan nama mempelai berada di **BAWAH** dengan scrim pelindung kontras.
+  - Hal ini menjamin wajah kedua mempelai pada foto penutup di bagian tengah **TIDAK TERHALANG** oleh ornamen apapun.
+- **Mode Tanpa Foto (`no-closing-photo`):**
+  - Seluruh elemen terpusat rapi di tengah (`justify-content: center;`).
+
+### E. Integrasi Ornamen Budaya & Pembatas (Non-Obtrusive Aesthetics)
+- **Pembatas (Divider):** Dilarang memasang gambar pembatas kotak dengan tepi tajam terpotong. Gunakan masker gradasi halus:
+  ```css
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 18%, black 82%, transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0%, black 18%, black 82%, transparent 100%);
+  ```
+- **Ornamen Kartu:** Ornamen motif kultural harus diletakkan rapi di dalam padding kartu tanpa terpotong kasar oleh `overflow: hidden` pada sudut kartu yang melengkung.
+

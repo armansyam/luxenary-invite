@@ -177,7 +177,7 @@ export const defaultSettings: DefaultSettingItem[] = [
   {
     "id": "dc53c2e4-1a88-4299-9bb7-28688cef01c1",
     "key": "features_tier1",
-    "value": "Akses bebas ke seluruh koleksi desain tema (16 Tema)\nPengiriman link undangan personal WhatsApp tanpa batas\nFormulir konfirmasi kehadiran (RSVP) & ucapan doa\nGaleri foto, cerita cinta & pemutar musik latar\nAlamat tautan khusus (namakamu.domain.id)\nMasa aktif undangan 1 bulan (30 hari) setelah acara",
+    "value": "Akses bebas ke seluruh koleksi desain tema (19 Tema)\nPengiriman link undangan personal WhatsApp tanpa batas\nFormulir konfirmasi kehadiran (RSVP) & ucapan doa\nGaleri foto, cerita cinta & pemutar musik latar\nAlamat tautan khusus (namakamu.domain.id)\nMasa aktif undangan 1 bulan (30 hari) setelah acara",
     "label": null,
     "group": "pricing",
     "updatedAt": "2026-09-16T06:28:33.044Z"

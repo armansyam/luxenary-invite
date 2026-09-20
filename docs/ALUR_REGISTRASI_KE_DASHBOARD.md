@@ -127,7 +127,7 @@ flowchart TD
 *   **File:** [`app/packages/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/packages/page.tsx)
 *   **Logika Dinamis:** Paket tidak di-hardcode. Halaman melakukan fetch ke `GET /api/public/settings` untuk mengambil konfigurasi paket dari database (`AdminSetting: platform_packages`).
 *   **Tingkatan Tier Paket:**
-    *   **TIER_1 (Serenade):** Paket esensial intim, undangan online berkelas, pemutar musik, RSVP & seluruh 16 tema terbuka.
+    *   **TIER_1 (Serenade):** Paket esensial intim, undangan online berkelas, pemutar musik, RSVP & seluruh 19 tema terbuka.
     *   **TIER_2 (Symphony):** Seluruh fitur Tier 1 + Resepsionis QR Check-In Scanner + Kamera Momen Tamu (200 Foto).
     *   **TIER_3 (Eternity):** Seluruh fitur Tier 2 + Custom Domain Pribadi (.com/.id) inklusif + Kuota Momen Tamu Maksimal (500 Foto).
 *   **Aksi:** Tombol "Pilih Paket" mengarahkan pengguna ke:

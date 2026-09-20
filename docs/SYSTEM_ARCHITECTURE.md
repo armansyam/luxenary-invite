@@ -161,10 +161,10 @@
 │
 ├── prisma.config.ts           # Konfigurasi Prisma 7 DB URL
 │
-├── themes/                   # Template HTML tema undangan (16 Tema + 1 Blueprint)
+├── themes/                   # Template HTML tema undangan (19 Tema + 1 Blueprint)
 │   ├── premium/              # kalandra, valente, aurelia, artisan
 │   ├── modern/               # wave, papercut, ameera, chronicle, lumina, solaria
-│   ├── traditional/          # prameswari, dillalucky, badrika, mayang, candani, lagaligo
+│   ├── traditional/          # prameswari, dillalucky, badrika, mayang, candani, lagaligo, toraja, bugis, makassar
 │   └── starter-blueprint.html# Standard acuan template baru
 │
 ├── public/
@@ -591,10 +591,10 @@ Ketika undangan telah berstatus `ARCHIVED`, dasbor klien secara otomatis beralih
      - *Digital + Kado Fisik:* Kedua tab dimunculkan berdampingan secara harmonis.
 7. **All-Access Themes Model & Restrukturisasi Paket Estetis:**
    - **Nama Paket Estetis & Puitis:**
-     - **Serenade** (Dasar / Traditional - Intim & Esensial): Undangan digital berkelas, musik latar, RSVP online, bebas pilih seluruh 16 tema fisik, retensi terpadu standar.
+     - **Serenade** (Dasar / Traditional - Intim & Esensial): Undangan digital berkelas, musik latar, RSVP online, bebas pilih seluruh 17 tema fisik, retensi terpadu standar.
      - **Symphony** (Menengah / Modern - Harmoni Pesta): Seluruh fitur Serenade + Sistem Resepsionis QR Check-In & Kamera Momen Tamu (Kapasitas 250 Foto Acara), retensi terpadu standar.
      - **Eternity** (Tertinggi / Premium - Mahakarya Abadi): Seluruh fitur Symphony + Integrasi Custom Domain (.com/.id) & Kamera Momen Tamu Kapasitas Besar (1.000 Foto Acara), retensi terpadu standar.
-   - **Pemisahan Estetika vs Kapabilitas:** Menghilangkan restriksi tema berbasis tier paket. Klien pada seluruh paket (Serenade, Symphony, Eternity) mendapatkan akses penuh tanpa batas ke seluruh katalog 16 tema fisik aktif.
+   - **Pemisahan Estetika vs Kapabilitas:** Menghilangkan restriksi tema berbasis tier paket. Klien pada seluruh paket (Serenade, Symphony, Eternity) mendapatkan akses penuh tanpa batas ke seluruh katalog 17 tema fisik aktif.
    - **Diferensiasi Murni Fungsional:** Paket dibedakan secara objektif berdasarkan kapasitas operasional dan infrastruktur server:
      - Batas kapasitas tamu undangan (300 / 1.000 / Unlimited).
      - Sistem Resepsionis Check-In QR Code & PIN Keamanan panitia (Symphony & Eternity).
@@ -713,12 +713,12 @@ HTML standalone lengkap (self-contained, inline CSS/JS)
     - `closingPhotoUrl`: URL foto dari slot media `CLOSING_COVER` (atau `null` jika kosong).
     - `hasClosingPhoto`: Boolean ketersediaan foto.
     - `closingPhotoClass`: `"has-closing-photo"` bila ada foto, atau `"no-closing-photo"` bila kosong.
-    - `closingBgStyle`: CSS inline `background-image: url(...)` dinamis yang disematkan langsung pada tag `<footer class="site-footer {{closingPhotoClass}}" style="{{closingBgStyle}}">` di seluruh 16 tema master dan blueprint, menjamin foto penutup yang diunggah klien langsung tampil mulus.
+    - `closingBgStyle`: CSS inline `background-image: url(...)` dinamis yang disematkan langsung pada tag `<footer class="site-footer {{closingPhotoClass}}" style="{{closingBgStyle}}">` di seluruh 19 tema master dan blueprint, menjamin foto penutup yang diunggah klien langsung tampil mulus.
   - **Dua Mode Tampilan Outro 100vh:**
     1. *Mode Kanvas Kosong (`no-closing-photo`):* Layar penuh 100vh murni transparan (`background: transparent;`) menyatu sempurna dengan kanvas latar belakang global (`body` dan `.fixed-bg-layer`) dan token palet tema (`--bg-dark`) tanpa balok warna solid / hex mati. Blok ucapan terima kasih dan nama mempelai terpusat sempurna di tengah layar (`justify-content: center; align-items: center; text-align: center;`).
     2. *Mode Foto Penutup (`has-closing-photo`):* Foto penutup mengisi background layar penuh via `style="{{closingBgStyle}}"` dengan overlay gradasi/scrim pelindung keterbacaan teks, dan blok teks berpindah secara elegan ke bagian bawah layar (`justify-content: flex-end;`).
-  - **Standarisasi Proporsi Split Desktop (Golden Ratio 460px di Seluruh 16 Tema Master):**
-    - Seluruh 16 tema fisik master kini mengadopsi rasio proporsional desktop presisi: panel undangan kanan dikunci pada lebar ideal smartphone flagship **`width: 460px; margin-left: calc(100% - 460px);`**, sementara sidebar Hero kiri otomatis membentang mengisi seluruh sisa panggung layar widescreen (`width: calc(100% - 460px);`).
+  - **Standarisasi Proporsi Split Desktop (Golden Ratio 460px di Seluruh 19 Tema Master):**
+    - Seluruh 19 tema fisik master kini mengadopsi rasio proporsional desktop presisi: panel undangan kanan dikunci pada lebar ideal smartphone flagship **`width: 460px; margin-left: calc(100% - 460px);`**, sementara sidebar Hero kiri otomatis membentang mengisi seluruh sisa panggung layar widescreen (`width: calc(100% - 460px);`).
     - Menghilangkan total masalah konten melar pada monitor besar (1920px Full HD atau ultrawide), dan menjamin floating dock navigasi (`.bottom-dock`) selalu terpusat simetris di tengah panel undangan (`left: calc(100% - 230px) !important;`).
   - **Arsitektur Layar Sampul Pembuka Full-Global Desktop (`.cover-screen` / `.cover-overlay` 100vw):**
     - Pada tema modern dan premium (`aurelia`, `valente`, `artisan`, `ameera`, `chronicle`, dan `lumina`), layar sampul pembuka (`.cover-screen` / `.cover-overlay`) pada layar lebar (`@media (min-width: 900px)`) membentang penuh 100% viewport (`width: 100%; left: 0; right: 0; padding: 4rem 2.5rem;`).
@@ -747,7 +747,7 @@ HTML standalone lengkap (self-contained, inline CSS/JS)
     - **Prioritas Acara Utama pada Tautan Kalender (`googleCalendarUrl`):**
       - Tautan Google Calendar secara konsisten membaca tanggal dan lokasi dari sesi yang ditandai sebagai **Acara Utama (`isPrimary: true`)** (`primaryEvent?.location || primaryEvent?.address`), menjamin agenda kalender tamu sinkron 1:1 dengan acara puncak pernikahan.
     - **Sinkronisasi Hitung Mundur (*Countdown Timer*) ke Sesi Acara Utama (`targetDate`):**
-      - Seluruh 16 tema master (`aurelia`, `artisan`, `kalandra`, `valente`, `wave`, `papercut`, `ameera`, `chronicle`, `lumina`, `solaria`, `prameswari`, `dillalucky`, `badrika`, `mayang`, `candani`, `lagaligo`) kini mengonsumsi `targetDate` yang ditambatkan secara presisi ke `primaryEventDate` dan jam mulai acara utama, menjamin angka hitung mundur hari H selalu aktif dan seragam.
+      - Seluruh 19 tema master (`aurelia`, `artisan`, `kalandra`, `valente`, `wave`, `papercut`, `ameera`, `chronicle`, `lumina`, `solaria`, `prameswari`, `dillalucky`, `badrika`, `mayang`, `candani`, `lagaligo`, `toraja`, `bugis`, `makassar`) kini mengonsumsi `targetDate` yang ditambatkan secara presisi ke `primaryEventDate` dan jam mulai acara utama, menjamin angka hitung mundur hari H selalu aktif dan seragam.
   - **Standarisasi Tipografi Anti-Overflow Split Desktop (Mobile-Emulation Scale):**
     - **Akar Masalah Tipografi `vw`:** Unit CSS `vw` mengevaluasi lebar seluruh layar peramban (1440px - 1920px), bukan lebar kontainer 460px. Hal ini membuat judul besar berhuruf kapital (misal "LIVE STREAMING") atau font kaligrafi (seperti *Parisienne* / *Cinzel*) membengkak hingga >54px dan meluap keluar dari panel split kanan.
     - **Pemberian Cap Maksimal:** Pada media query `@media (min-width: 900px)`, seluruh judul seksi `.sec-main-title, .sec-heading` dikunci maksimal pada `font-size: clamp(1.75rem, 2.1rem, 2.3rem) !important;` dengan proteksi `overflow-wrap: break-word !important; word-break: break-word !important;`.
@@ -774,7 +774,7 @@ HTML standalone lengkap (self-contained, inline CSS/JS)
     - **Pencegahan Duplikasi Foto ke Seksi Home:** Jika klien tidak mengunggah foto khusus `HOME_PHOTO`, seksi `#home` berstatus transparan (`background: transparent;`) tanpa memaksa duplikasi dari foto latar, menjaga tampilan bersih dengan tipografi, kaligrafi, dan monogram artistik.
     - **Infinite Seamless Flow (Anti-Garis Potongan Seksi):** Seluruh seksi aliran konten (`.slide-opening`, `.sec-flow`) dilarang memiliki `border-bottom` pemotong layar. Panel scroll (`.main-scroll-panel`) berlatar transparan penuh (`background: transparent;`) di mobile maupun desktop, menjamin seluruh pergantian seksi mengalir mulus sebagai satu kanvas utuh yang elegan.
   - **Standarisasi Smart Auto-Hide Navigasi Dock & Kontrol Audio Mengambang:**
-    - Seluruh 16 tema fisik master dan `starter-blueprint.html` dilengkapi mekanisme auto-hide pintar berbasis hardware acceleration (`translate3d` & `opacity`).
+    - Seluruh 19 tema fisik master dan `starter-blueprint.html` dilengkapi mekanisme auto-hide pintar berbasis hardware acceleration (`translate3d` & `opacity`).
     - **Engine Smart Dock Home Zone State Guard (`body.lux-at-home-zone`):**
       - Saat tamu pertama kali membuka undangan atau berada di seksi pembuka/Home (zona cover/quote/doa/countdown awal), dock navigasi bawah (`.bottom-dock`) **tetap tersembunyi (hidden)** secara mutlak (`transform: translate3d(-50%, calc(100% + 48px), 0) !important; opacity: 0 !important; pointer-events: none !important;`) sehingga tampilan Home section 100% bersih, elegan, dan bebas dari polusi floating bar.
       - Saat tamu melakukan scroll ke bawah menuju seksi berikutnya (Couple, Event, Gallery, Wishes, dsb), dock navigasi tetap berstatus tersembunyi.
@@ -804,6 +804,40 @@ HTML standalone lengkap (self-contained, inline CSS/JS)
     - Bottom Dock terintegrasi penuh: tombol pertama diarahkan ke `#home` dengan label 'Home', dan tombol musik ditempatkan langsung di dock (`#musicToggle` / `.dock-music-btn`) yang tersinkronisasi otomatis dengan status audio engine (`.playing` dengan pulse animation saat memutar, tanpa emoji sistem bawaan).
     - Terintegrasi penuh dengan Universal Smart Dock Home Zone State Guard (`body.lux-at-home-zone`), memastikan seksi Home bebas dari dock saat pertama dibuka atau di-scroll balik ke paling atas.
     - Dilengkapi modal terpadu `#modalBg` untuk kartu akses QR dan souvenir voucher, serta seluruh elemen teks menggunakan atribut standar `data-lux-field`.
+  - **Standarisasi Smart Mobile Fullscreen (`requestSmartFullscreen()`):**
+    - Seluruh 19 tema fisik master dan `starter-blueprint.html` mengimplementasikan fungsi `requestSmartFullscreen()` yang dipicu tepat saat tamu menekan tombol *"Buka Undangan"*.
+    - **Akar Masalah Browser Mobile Bar:** Pada peramban smartphone (Safari iOS, Chrome Mobile, Samsung Internet), address bar dan navigation bar sering kali memakan ruang vertikal dan mengganggu pengalaman visual imersif undangan pernikahan digital.
+    - **Solusi Dua Tingkat (Native Fullscreen + Smart Window Scroll Offset):**
+      1. *Native Fullscreen API:* Memeriksa `requestFullscreen`, `webkitRequestFullscreen`, `mozRequestFullScreen`, atau `msRequestFullscreen` pada `document.documentElement` dengan penanganan `catch()` non-blocking.
+      2. *Smart Address Bar Auto-Hide Fallback:* Jika fullscreen native ditolak atau pada peramban yang membatasi API fullscreen tanpa interaksi video (seperti Safari iOS), sistem secara otomatis mengeksekusi `window.scrollTo(0, 1)` setelah jeda 100ms untuk memaksa peramban mobile menyembunyikan address bar (*minimal UI mode*).
+  - **Arsitektur Tema Tradisional Toraja (`themes/traditional/toraja.html`):**
+    - Tema `toraja.html` merupakan tema tradisional ke-7 (tema master ke-17) yang dirancang khusus mengangkat warisan budaya luhur suku Toraja, Sulawesi Selatan:
+      - **Ornamen Budaya Otentik Toraja:** Mengintegrasikan aset vektor/WebP resmi di `public/assets/ornaments/toraja/`:
+        - *Pa'barre Allo:* Simbol matahari dan keagungan Toraja yang diletakkan di puncak seksi hero dan monogram.
+        - *Pa'kadang Pao Seamless:* Border horizontal seamless bermotif kait mangga yang bergerak halus melintasi batas seksi (`border-pa-kadang-pao-seamless.webp`).
+        - *Rumah Tongkonan Perspektif:* Siluet ganda vektor transparan (`rumah-tongkonan-perspektif.svg`) di sudut kiri dan kanan bawah cover pembuka dengan efek mirror.
+        - *Rumah Tongkonan Vektor:* Ilustrasi frontal otentik (`rumah-tongkonan.svg`) pada puncak seksi home dan penutup tanpa glow buatan.
+        - *Motif Mandala Toraja:* Pola geometris konsentris sebagai latar lencana kutipan dan kartu doa.
+      - **Tipografi Etnik Berketerbacaan Tinggi:** Mengombinasikan `Cinzel` untuk judul sakral, `Great Vibes` untuk aksen kaligrafi romantis, dan `Plus Jakarta Sans` untuk teks narasi, informasi acara, dan kontrol antarmuka.
+      - **Bingkai Foto Home Arch Adaptif:** Seksi `#home` menghadirkan bingkai *Arch Frame* kubah melengkung ganda emas Toraja dengan fallback kondisional cerdas: jika foto home diunggah (`hasCustomHomePhoto`), foto tampil terpusat dengan nama mendatar responsif; jika tanpa foto, tampilan otomatis kembali ke ilustrasi Tongkonan megah (110px) dan tipografi bertumpuk tanpa celah kosong.
+      - **Canvas Scrim 70% & Kanvas Home Transparan:** Seksi `#home` berlatar transparan murni, memperlihatkan gambar latar belakang `background.webp` (kain tenun merah-emas & siluet) yang dilapisi canvas scrim 70% seragam untuk keterbacaan teks maksimal.
+      - **Narasi Adat Puitis (Toraja Wedding Lore):** Dilengkapi pepatah luhur Toraja *"Misa' kada dipotuo, pantan kada dipomate"* (Bersatu kita teguh, bercerai kita runtuh) pada seksi doa, serta ungkapan syukur *"Kurresumanga'"* pada seksi penutup.
+      - **Palet Warna Otentik Toraja:** Terdaftar di `lib/colorPalettes.ts` dengan warna dasar Merah Tua Toraja (`primary: #750b0a`), Kuning Emas Toraja (`accent: #f1d17e`), dan Obsidian Deep Brown (`bgDark: #1a0404`).
+      - **Aset Resmi `public/demo/toraja/` & 9 Slot Media Penuh:** 100% menggunakan foto lokal terstandarisasi (`cover.webp`, `cover_desktop.webp` landscape panorama Tongkonan 16:9, `home.webp`, `hero.webp`, `background.webp`, `groom.webp`, `bride.webp`, `footer.webp`, dan `gallery_01.webp` s/d `08`), layout split 460px desktop, dan Smart Auto-Hide dock navigasi.
+  - **Arsitektur Tema Tradisional Bugis (`themes/traditional/bugis.html`):**
+    - Tema `bugis.html` merupakan tema tradisional ke-8 (tema master ke-18) yang dirancang mengangkat kemegahan tradisi bangsawan Bugis Saoraja:
+      - **Ornamen Budaya Otentik Bugis:** Mengintegrasikan ornamen Rumah Adat Bugis (`/assets/ornaments/bugis/rumah-adat-bugis.webp`), 4 sudut bunga emas (`flower-tl/tr/bl/br.webp`), border horizontal emas Bugis (`frame-top.webp`, `frame-bottom.webp`), serta latar belakang tekstur marun sakral (`bg-maroon.webp`).
+      - **Tipografi Etnik Berketerbacaan Tinggi:** Mengombinasikan `Cinzel` untuk judul sakral, `Great Vibes` untuk kaligrafi nama mempelai, `Cormorant Garamond` untuk kutipan doa, dan `Plus Jakarta Sans` untuk teks informasi.
+      - **Narasi Adat Puitis (Bugis Wedding Lore):** Petuah luhur *"Sipakatau, sipakalebbi, sipakainge"* (Saling menghormati, saling menghargai, saling mengingatkan) dan *"Kurru Sumanga'"* sebagai ungkapan syukur.
+      - **Palet Warna Bugis Royal Maroon & Gold:** Terdaftar di `lib/colorPalettes.ts` (`primary: #5a0b10`, `accent: #dfb76c`, `bgDark: #140204`).
+      - **Zero-Unsplash & Kepatuhan Blueprint 460px:** 100% menggunakan foto lokal dummy, layout split desktop 460px, Smart Mobile Fullscreen, dan Smart Auto-Hide dock navigasi.
+  - **Arsitektur Tema Tradisional Makassar (`themes/traditional/makassar.html`):**
+    - Tema `makassar.html` merupakan tema tradisional ke-9 (tema master ke-19) yang mengangkat filosofi kehormatan dan kemaritiman agung suku Makassar:
+      - **Ornamen Budaya Otentik Makassar:** Mengintegrasikan lambang Kapal Phinisi (`/assets/ornaments/bugis/kapal-phinisi.webp`), bingkai border Makassar (`frame-makassar-top.webp`, `frame-makassar-bottom.webp`), 4 sudut bunga emas, dan latar belakang tekstur navy agung (`bg-makassar.webp`).
+      - **Tipografi Luhur:** Kombinasi `Cinzel`, `Great Vibes`, `Cormorant Garamond`, dan `Plus Jakarta Sans`.
+      - **Narasi Adat Puitis (Makassar Wedding Lore):** Filosofi kehormatan *"Siri' na Pacce"* dan *"Bajiki passiriki, sombere' na malabbiri"* (Menjaga martabat dengan budi pekerti yang ramah dan mulia), serta ucapan *"Tarima kasi' lompo"*.
+      - **Palet Warna Makassar Phinisi Navy & Gold:** Terdaftar di `lib/colorPalettes.ts` (`primary: #0a192f`, `accent: #dfb76c`, `bgDark: #030914`).
+      - **Zero-Unsplash & Kepatuhan Blueprint 460px:** 100% menggunakan foto lokal dummy, layout split desktop 460px, Smart Mobile Fullscreen, dan Smart Auto-Hide dock navigasi.
 
 ### 8.1 Studio Editor: Dual-Native Mode (Form Data & Live Editor)
 
@@ -1889,7 +1923,7 @@ Untuk memberikan pengalaman interaktif penuh bagi calon klien sebelum memesan pa
 ### 17.11 — Standardisasi Universal Seksi Kisah Cinta (Love Story / Journey Timeline): Vertical Glowing Luxury Standard
 1. **Latar Belakang & Eliminasi Card Box Statis:**
    - Seksi Kisah Cinta (Love Story / Journey) sebelumnya menampilkan wadah kartu kaku (`.journey-card` / `.journey-previews`) dengan 2 foto preview bujur sangkar yang memakan ruang vertikal dan memberikan kesan generik/standar.
-   - Desain timeline editorial mewah yang sebelumnya hanya aktif di Kalandra (`themes/premium/kalandra.html`) kini distandarisasi ke seluruh 16 tema master (Modern, Traditional, dan Premium) serta Engine default (`lib/themeEngine.ts` dan `lib/demoRegistry.ts`).
+   - Desain timeline editorial mewah yang sebelumnya hanya aktif di Kalandra (`themes/premium/kalandra.html`) kini distandarisasi ke seluruh 19 tema master (Modern, Traditional, dan Premium) serta Engine default (`lib/themeEngine.ts` dan `lib/demoRegistry.ts`).
 2. **Arsitektur Sumbu Rel & Node Simpul Berpendar (Vertical Glowing Rail):**
    - **Garis Rel Vertikal:** Diterapkan via pseudo-elemen `::before` pada kontainer timeline (`.journey-timeline, .journey-chapters, .kalandra-timeline, .mayang-story-flow, .candani-story-flow, .lagaligo-story-flow`) dengan gradien pendar linier:
      ```css
@@ -1913,7 +1947,7 @@ Untuk memberikan pengalaman interaktif penuh bagi calon klien sebelum memesan pa
 
 ### 17.12 — Standarisasi Universal Token Dinamis & Panduan Master Blueprint (Zero Hardcode Policy)
 1. **Pemberantasan Teks Statis & Hardcode Budaya/Agama:**
-   - Seluruh 16 berkas template fisik (`themes/**/*.html`) dan master blueprint (`themes/starter-blueprint.html` & `public/downloads/starter-blueprint.html`) distandarisasi 100% bebas dari teks statis hardcode keagamaan (`﷽`, `بِسْمِ اللَّهِ...`, `WALIMATUL 'URS`, dll.).
+   - Seluruh 17 berkas template fisik (`themes/**/*.html`) dan master blueprint (`themes/starter-blueprint.html` & `public/downloads/starter-blueprint.html`) distandarisasi 100% bebas dari teks statis hardcode keagamaan (`﷽`, `بِسْمِ اللَّهِ...`, `WALIMATUL 'URS`, dll.).
    - Diperkenalkan token universal baru:
      - `{{openingGreeting}}`: Salam pembuka dinamis yang dapat disetel ke teks Arab, teks Latin, salam umum, salam adat, maupun dikosongkan total (`""`) tanpa revert.
      - `{{coverBadge}}`: Label lencana pembuka cover gate (fallback otomatis ke `{{weddingTagline}}`).
@@ -2114,8 +2148,8 @@ Untuk memberikan pengalaman interaktif penuh bagi calon klien sebelum memesan pa
    - Sub-rute tema lama (`/demo/[theme]/memories`) otomatis dialihkan (307 redirect) ke `/demo/memories?theme=[theme]` demi mengeliminasi fragmentasi dan layout usang.
    - Pintu publik tak berautentikasi (`/memories` & `/sharemoment`) otomatis dialihkan ke sandbox demo interaktif (`/demo/memories` & `/demo/sharemoment`), mencegah hambatan auth wall bagi calon klien.
    - Endpoint publik RSVP (`/api/public/rsvp`) diperkaya simulasi instan untuk ID `demo-*`, memungkinkan pengujian pengiriman ucapan doa & konfirmasi kehadiran secara interaktif tanpa kendala database 404.
-6. **Standarisasi Menyeluruh Ekosistem 16 Master Tema Fisik:**
-   - Seluruh 16 tema fisik (`themes/premium/`, `themes/modern/`, `themes/traditional/`) 100% konsisten menyematkan modul Salam Pembuka Universal `{{openingGreeting}}`, Mitra Vendor `{{vendorsSectionHtml}}`, Galeri Kenangan Tamu Kamera Virtual `{{memoriesSectionHtml}}` (Photo Only), serta formulir RSVP interaktif dengan container scroll aman (`max-height: 290px-320px`, `overscroll-behavior: contain`, dan custom thin luxury scrollbar) dan proteksi hak cipta Luxenary.
+6. **Standarisasi Menyeluruh Ekosistem 17 Master Tema Fisik:**
+   - Seluruh 19 tema fisik (`themes/premium/`, `themes/modern/`, `themes/traditional/`) 100% konsisten menyematkan modul Salam Pembuka Universal `{{openingGreeting}}`, Mitra Vendor `{{vendorsSectionHtml}}`, Galeri Kenangan Tamu Kamera Virtual `{{memoriesSectionHtml}}` (Photo Only), serta formulir RSVP interaktif dengan container scroll aman (`max-height: 290px-320px`, `overscroll-behavior: contain`, dan custom thin luxury scrollbar) dan proteksi hak cipta Luxenary.
 
 ### 20.6 — Mobile UI/UX Overhaul: Edge-to-Edge Canvas, Anti-Matryoshka Card & Sticky Quick-Save Bar
 1. **Eliminasi "Matryoshka Card Syndrome" (Pelepasan Padding Berlapis Mobile):**
@@ -2356,7 +2390,7 @@ Sistem telah melalui audit mendalam berbasis bukti empiris (*Empirical Verificat
 5. **Purifikasi Skema Murni & Master Seed Terpadu (`prisma/seed.ts`):**
    - **Eliminasi Model Mati:** Model `Wish` dan tabel `wishes` resmi dihapus dari skema (migrasi `20260916143000`). Seluruh ucapan doa dikelola tunggal pada `rsvps.message`.
    - **Skema Bersih 0-Drift:** Kolom lama `phoneNumber` pada tabel `guests` dibersihkan, menyisakan `phone` murni. Nilai enum `WaStatus` distandarisasi murni ke `PENDING` dan `SENT`.
-   - **Master Seed Terpadu (Non-Destructive Invariant):** Seluruh 84 parameter platform (nama paket dinamis `Serenade`, `Symphony`, `Eternity`, kuota foto roll, aturan retensi), 16 tema master, 2 preset musik, dan 2 akun admin default ditanamkan di `prisma/defaultSettings.ts` dan `prisma/seed.ts`. Operasi `upsert` pada `AdminSetting` diproteksi secara non-destruktif: hanya memperbarui `label` dan tidak pernah menimpa nilai `value` yang sudah dikonfigurasi oleh admin di database produksi.
+   - **Master Seed Terpadu (Non-Destructive Invariant):** Seluruh 84 parameter platform (nama paket dinamis `Serenade`, `Symphony`, `Eternity`, kuota foto roll, aturan retensi), 19 tema master, 2 preset musik, dan 2 akun admin default ditanamkan di `prisma/defaultSettings.ts` dan `prisma/seed.ts`. Operasi `upsert` pada `AdminSetting` diproteksi secara non-destruktif: hanya memperbarui `label` dan tidak pernah menimpa nilai `value` yang sudah dikonfigurasi oleh admin di database produksi.
 6. **Resolusi Domain Kanonikal Redirect Subdomain & Slug (`app/(public)/s/` & `[slug]`):**
    - Mengeliminasi ketergantungan pada `req.url` internal reverse proxy (`localhost:3001`).
    - Seluruh pengalihan (subdomain kosong `subdomain-available`, kedaluwarsa `subdomain-expired`, maupun arsip portofolio) dialihkan secara kanonikal ke `NEXT_PUBLIC_APP_URL` / `NEXT_PUBLIC_ROOT_DOMAIN` resmi (`https://luxvite.id`).

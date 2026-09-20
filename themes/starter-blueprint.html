@@ -168,6 +168,37 @@
 
       .bottom-dock {
         left: calc(100% - 230px) !important;
+        transform: translate3d(-50%, 0, 0) !important;
+        width: calc(460px - 28px) !important;
+        max-width: calc(460px - 28px) !important;
+        box-sizing: border-box !important;
+        padding: 0.35rem 0.45rem !important;
+        gap: 0.15rem !important;
+        justify-content: space-around !important;
+      }
+      .bottom-dock.dock-hidden {
+        transform: translate3d(-50%, calc(100% + 48px), 0) !important;
+      }
+      .bottom-dock .dock-btn,
+      .bottom-dock .nav-item {
+        padding: 0.25rem 0.25rem !important;
+        font-size: 0.58rem !important;
+        letter-spacing: 0 !important;
+        flex: 1 1 0 !important;
+        min-width: 0 !important;
+      }
+      .bottom-dock .dock-btn span,
+      .bottom-dock .nav-item span {
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        font-size: 0.55rem !important;
+        max-width: 100% !important;
+      }
+      .bottom-dock .dock-btn svg,
+      .bottom-dock .nav-item svg {
+        width: 16px !important;
+        height: 16px !important;
       }
 
       .fixed-bg-layer {
@@ -209,7 +240,7 @@
       flex-direction: column;
       justify-content: space-between;
       align-items: center;
-      padding: 4.5rem 1.8rem 2.8rem;
+      padding: clamp(2rem, 5vh, 4rem) 1.5rem clamp(1.5rem, 4vh, 2.8rem);
       text-align: center;
       position: relative;
       background-position: center;
@@ -532,6 +563,18 @@
       fill: currentColor;
     }
 
+    .bottom-dock .qr-btn, .bottom-dock button.nav-item {
+      background: transparent !important;
+      border: none !important;
+      color: var(--text-muted, #736b63) !important;
+      box-shadow: none !important;
+      cursor: pointer !important;
+    }
+    .bottom-dock .qr-btn:hover, .bottom-dock button.nav-item:hover {
+      color: var(--primary, #b5833c) !important;
+      background: transparent !important;
+    }
+
     .audio-fab.playing {
       animation: rotateDisc 8s linear infinite;
     }
@@ -780,7 +823,7 @@
       overflow: hidden;
       box-sizing: border-box;
       text-align: center;
-      padding: 40px 24px 100px;
+      padding: clamp(2.5rem, 6vh, 4rem) 1.5rem calc(90px + env(safe-area-inset-bottom, 0px));
       background: transparent;
       background-size: cover;
       background-position: center;
@@ -873,16 +916,8 @@
     <!-- FIXED PARALLAX BACKGROUND CANVAS (FOKUS DI PANEL UNDANGAN) -->
     <div class="fixed-bg-layer" style="background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.70) 0%, rgba(255, 255, 255, 0.45) 40%, rgba(255, 255, 255, 0.95) 100%), url('{{globalBgUrl}}');"></div>
 
-    <!-- DESKTOP FIXED SIDEBAR (Hanya tampil di layar desktop >= 900px) -->
-    <aside class="sidebar-desktop">
-      <div class="sidebar-desktop-content">
-        <span class="sidebar-eyebrow"
-          style="font-size: 11px; letter-spacing: 0.25em; text-transform: uppercase; opacity: 0.8; display: block; margin-bottom: 8px;">{{weddingTagline}}</span>
-        <h1 class="sidebar-names serif" style="font-size: 2.8rem; line-height: 1.1; margin-bottom: 8px;">{{firstName}}
-          &amp; {{secondName}}</h1>
-        <p class="sidebar-date" style="font-size: 13px; opacity: 0.85;">{{weddingDate}}</p>
-      </div>
-    </aside>
+    <!-- DESKTOP FIXED SIDEBAR (Hanya tampil di layar desktop >= 900px - CLEAN CANVAS) -->
+    <aside class="sidebar-desktop"></aside>
 
     <!-- PANEL KONTEN UTAMA (EMULASI MOBILE 460PX PADA DESKTOP SPLIT) -->
     <main class="main-scroll-panel app-container">
@@ -934,7 +969,10 @@
             </div>
             <span class="couple-role">{{groomRole}}</span>
             <h3 class="couple-name serif">{{firstDisplayName}}</h3>
-            <p class="couple-parents">{{firstParents}}</p>
+            <p class="couple-parents">
+              {{firstParentPrefix}}<br>
+              <strong>{{firstFather}}</strong> &amp; <strong>{{firstMother}}</strong>
+            </p>
             <a href="https://instagram.com/{{firstInstagram}}" target="_blank" class="couple-ig">
               <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
                 <path
@@ -953,7 +991,10 @@
             </div>
             <span class="couple-role">{{brideRole}}</span>
             <h3 class="couple-name serif">{{secondDisplayName}}</h3>
-            <p class="couple-parents">{{secondParents}}</p>
+            <p class="couple-parents">
+              {{secondParentPrefix}}<br>
+              <strong>{{secondFather}}</strong> &amp; <strong>{{secondMother}}</strong>
+            </p>
             <a href="https://instagram.com/{{secondInstagram}}" target="_blank" class="couple-ig">
               <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
                 <path
@@ -1088,17 +1129,21 @@
         </div>
       </section>
 
-      <!-- SEKSI 15: SALAM PENUTUP (Adaptive Full-Height 100vh) -->
+      <!-- SEKSI 15: VENDOR PERNIKAHAN (WEDDING VENDORS) -->
+      {{vendorsSectionHtml}}
+
+      <!-- SEKSI 16: SALAM PENUTUP (Adaptive Full-Height 100vh) -->
       <footer class="closing-sec {{closingPhotoClass}}" style="{{closingBgStyle}}">
         <div class="closing-content">
           <p
-            style="font-size:13px; color:var(--text-muted, #736b63); max-width:480px; margin:0 auto 16px; line-height:1.7;">
-            Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Sahabat berkenan hadir dan memberikan
-            doa restu bagi kami.
+            style="font-size:13px; color:var(--text-muted, #736b63); max-width:480px; margin:0 auto 16px; line-height:1.7;"
+            data-lux-field="customLabels.closingQuote">
+            {{closingQuote}}
           </p>
           <p
-            style="font-size:11px; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; color:var(--primary, #b5833c);">
-            Kami Yang Berbahagia,
+            style="font-size:11px; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; color:var(--primary, #b5833c);"
+            data-lux-field="customLabels.closingSub">
+            {{closingSub}}
           </p>
           <h3 class="serif" style="font-size:24px; margin-top:8px; color:#1a1614;">
             {{firstName}} &amp; {{secondName}}
@@ -1115,7 +1160,7 @@
   <!-- 3. FLOATING NAVIGATION DOCK & AUDIO                                 -->
   <!-- =================================================================== -->
   <nav class="bottom-dock dock-hidden">
-    <a href="#home" class="dock-btn active">
+    <a href="#home" class="dock-btn">
       <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
       <span>Home</span>
     </a>
@@ -1148,8 +1193,23 @@
   <!-- 4. JAVASCRIPT LOGIC (STANDAR & PRODUCTION READY)                    -->
   <!-- =================================================================== -->
   <script>
+    // Smart Mobile Fullscreen: otomatis fullscreen di layar mobile/tablet tanpa mengganggu desktop
+    function requestSmartFullscreen() {
+      const isMobile = window.innerWidth <= 1024 || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+      if (!isMobile) return;
+      try {
+        const docEl = document.documentElement;
+        const req = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+        if (req) {
+          const res = req.call(docEl);
+          if (res && res.catch) res.catch(function () {});
+        }
+      } catch (err) {}
+    }
+
     // A. Buka Undangan & Autoplay Audio
     function openInvitation() {
+      requestSmartFullscreen();
       const cover = document.getElementById('coverOverlay');
       if (cover) cover.classList.add('opened');
       const fab = document.getElementById('musicToggle');
@@ -1320,6 +1380,64 @@
         });
       }
     })();
+
+    // Smart Dock ScrollSpy & Click State Sync
+    function initDockScrollSpy() {
+      const dock = document.querySelector('.bottom-dock');
+      if (!dock) return;
+
+      const links = Array.from(dock.querySelectorAll('a.dock-btn, a.nav-item'));
+      const sectionMap = [];
+
+      links.forEach(link => {
+        const href = link.getAttribute('href');
+        if (href && href.startsWith('#')) {
+          const targetId = href.slice(1);
+          const targetEl = document.getElementById(targetId);
+          if (targetEl) {
+            sectionMap.push({ id: targetId, link, el: targetEl });
+          }
+        }
+      });
+
+      function setActive(targetId) {
+        links.forEach(link => {
+          const href = link.getAttribute('href');
+          if (href === '#' + targetId) {
+            link.classList.add('active');
+          } else {
+            link.classList.remove('active');
+          }
+        });
+      }
+
+      setActive('home');
+
+      links.forEach(link => {
+        link.addEventListener('click', function () {
+          const href = this.getAttribute('href');
+          if (href && href.startsWith('#')) {
+            setActive(href.slice(1));
+          }
+        });
+      });
+
+      if ('IntersectionObserver' in window && sectionMap.length > 0) {
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              setActive(entry.target.id);
+            }
+          });
+        }, {
+          rootMargin: '-20% 0px -60% 0px',
+          threshold: 0
+        });
+
+        sectionMap.forEach(item => observer.observe(item.el));
+      }
+    }
+    document.addEventListener('DOMContentLoaded', initDockScrollSpy);
   </script>
 
   <!-- LUXENARY PROTECTION SCRIPT -->
