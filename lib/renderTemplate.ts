@@ -45,7 +45,14 @@ const THEME_MAP: Record<string, { file: string; folder: "premium" | "traditional
   "rantepao": { file: "rantepao.html", folder: "traditional" },
   "makale": { file: "makale.html", folder: "traditional" },
   "bugis": { file: "bugis.html", folder: "traditional" },
+  "bone": { file: "bone.html", folder: "traditional" },
+  "wajo": { file: "wajo.html", folder: "traditional" },
+  "soppeng": { file: "soppeng.html", folder: "traditional" },
   "makassar": { file: "makassar.html", folder: "traditional" },
+  "gowa": { file: "gowa.html", folder: "traditional" },
+  "maros": { file: "maros.html", folder: "traditional" },
+  "takalar": { file: "takalar.html", folder: "traditional" },
+  "bulukumba": { file: "bulukumba.html", folder: "traditional" },
 
   // Modern Series
   "wave": { file: "wave.html", folder: "modern" },

@@ -150,8 +150,8 @@ Sistem Studio Editor Klien dan Admin dirancang dengan arsitektur **Dual-Native M
    - **Universal Envelope Open Sync:** Tombol *"Buka Undangan"* di dalam iframe manapun maupun tombol *"Buka Amplop"* di toolbar dasbor membuka sampul kedua layar secara serentak di semua tema.
    - **Zero-Reload Tab Switching:** Peralihan antara Form Data dan Live Editor berlangsung instan tanpa reload, menjaga integritas status amplop dan draft sementara.
 
-2. **Master Catalog Template Engine (21 Tema Fisik):**
-   - Setiap tema merupakan template HTML/CSS/JS mandiri di direktori `themes/{kategori}/{nama}.html` (Modern, Tradisional, Minimalis, dsb.). Termasuk rumpun tema Sulawesi Selatan: **Toraja** (`toraja.html`), **Toraja Rantepao** (`rantepao.html`), **Toraja Makale** (`makale.html`), **Bugis** (`bugis.html`), dan **Makassar** (`makassar.html`) yang mengangkat kekayaan kultural dengan ornamen otentik dan 9 slot media lengkap.
+2. **Master Catalog Template Engine (28 Tema Fisik):**
+   - Setiap tema merupakan template HTML/CSS/JS mandiri di direktori `themes/{kategori}/{nama}.html` (Modern, Tradisional, Minimalis, dsb.). Termasuk rumpun tema Sulawesi Selatan: **Toraja** (`toraja.html`), **Toraja Rantepao** (`rantepao.html`), **Toraja Makale** (`makale.html`), **Bugis** (`bugis.html`), **Bone** (`bone.html`), **Wajo** (`wajo.html`), **Soppeng** (`soppeng.html`), **Makassar** (`makassar.html`), **Gowa** (`gowa.html`), **Maros** (`maros.html`), **Takalar** (`takalar.html`), dan **Bulukumba** (`bulukumba.html`) yang mengangkat kekayaan kultural dengan ornamen otentik dan 9 slot media lengkap.
    - `lib/renderTemplate.ts` mengeksekusi injeksi data dinamis klien ke dalam placeholder token template master dengan keamanan XSS escaping, CSS token palet dinamis, serta integrasi Smart Dock & Hybrid Preloader.
 
 3. **Injeksi Blueprint Aman & Zero-Bespoke Isolation:**
@@ -405,9 +405,9 @@ Siklus hidup undangan diatur secara otomatis oleh cron job (`POST /api/cron/clea
    - **Prinsip Content-Driven Rendering:** Meniadakan saklar on/off manual dan kerumitan kustomisasi label. Seksi otomatis tampil bila data diisi (cerita, rekening hadiah, dll.) dan padam bila dikosongkan.
    - **Full Caching Strategy:** Seluruh aset showroom demo (`/demo/**`) dan pustaka musik bawaan (`/music/**`) dikonfigurasi dengan header HTTP `Cache-Control` optimal di `next.config.ts` (`s-maxage=604800` untuk Edge CDN Cloudflare, dan `immutable` untuk audio), disertai query cache buster `?t=...` saat admin memperbarui aset.
    - **Showroom Color Palette Selector:** Demo Studio Admin menyertakan pemilih 6 palet warna resmi (`champagne`, `emerald`, `burgundy`, `sage`, `terracotta`, `monochrome`), menjamin demo publik seperti Badrika tampil anggun dalam balutan warna khasnya (Emerald Green & Gold) tanpa mengunci kode CSS tema secara hardcoded.
-10. **Standarisasi Menyeluruh Ekosistem 21 Master Tema Fisik:**
-    - Seluruh 21 tema fisik (`kalandra`, `aurelia`, `artisan`, `valente`, `ameera`, `chronicle`, `lumina`, `papercut`, `solaria`, `wave`, `badrika`, `candani`, `dillalucky`, `lagaligo`, `mayang`, `prameswari`, `toraja`, `rantepao`, `makale`, `bugis`, `makassar`) kini 100% konsisten menyematkan blok formulir RSVP interaktif `<form id="rsvpForm" onsubmit="luxSubmitRsvp(event)">` yang terhubung ke `/api/public/rsvp` dengan kapabilitas real-time prepend kartu doa seketika, status feedback box tanpa native alert, dan batas kontainer scroll aman (`max-height: 290px-320px`, `overscroll-behavior: contain`, dan custom thin luxury scrollbar anti-scroll trap).
-    - Seluruh 21 tema fisik telah distandarisasi menyematkan placeholder ekosistem lengkap: Salam Pembuka Universal `{{openingGreeting}}`, Mitra Vendor `{{vendorsSectionHtml}}`, Galeri Kenangan Tamu Kamera Virtual `{{memoriesSectionHtml}}` (Photo Only), Amplop/Gift `{{giftSectionHtml}}`, dan blok proteksi hak cipta sistem (Zero Missing Tokens / 100% Health Valid).
+10. **Standarisasi Menyeluruh Ekosistem 28 Master Tema Fisik:**
+    - Seluruh 28 tema fisik (`kalandra`, `aurelia`, `artisan`, `valente`, `ameera`, `chronicle`, `lumina`, `papercut`, `solaria`, `wave`, `badrika`, `candani`, `dillalucky`, `lagaligo`, `mayang`, `prameswari`, `toraja`, `rantepao`, `makale`, `bugis`, `bone`, `wajo`, `soppeng`, `makassar`, `gowa`, `maros`, `takalar`, `bulukumba`) kini 100% konsisten menyematkan blok formulir RSVP interaktif `<form id="rsvpForm" onsubmit="luxSubmitRsvp(event)">` yang terhubung ke `/api/public/rsvp` dengan kapabilitas real-time prepend kartu doa seketika, status feedback box tanpa native alert, dan batas kontainer scroll aman (`max-height: 290px-320px`, `overscroll-behavior: contain`, dan custom thin luxury scrollbar anti-scroll trap).
+    - Seluruh 28 tema fisik telah distandarisasi menyematkan placeholder ekosistem lengkap: Salam Pembuka Universal `{{openingGreeting}}`, Mitra Vendor `{{vendorsSectionHtml}}`, Galeri Kenangan Tamu Kamera Virtual `{{memoriesSectionHtml}}` (Photo Only), Amplop/Gift `{{giftSectionHtml}}`, dan blok proteksi hak cipta sistem (Zero Missing Tokens / 100% Health Valid).
 11. **Pustaka Musik Sistem Dinamis (Zero Hardcode):**
     - **Database-Driven Presets (`MusicPreset`):** Koleksi musik sistem dikelola secara dinamis via database PostgreSQL (`music_presets`), menggantikan seluruh array dan fallback hardcode di sisi klien.
     - **Portal Admin Sub-Tab Musik:** Tab "Tema & Musik" menyediakan sub-tab "Pustaka Musik Sistem" untuk menambah lagu baru (dengan auto-kompresi FFmpeg 128 kbps MP3 yang hemat bandwidth), menyunting judul/komposer/genre, memutar pratinjau audio langsung, mengaktifkan/menonaktifkan lagu untuk klien, dan menghapus lagu dari pustaka.
@@ -970,7 +970,7 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
 ## 22. Sinkronisasi Sesi Acara Utama, Kalender & Arsitektur Tema (v5.8.5)
 
 1. **Sinkronisasi Kalender Google & Countdown Timer ke Sesi Utama (`isPrimary: true`):**
-   - Seluruh 21 tema master (`aurelia`, `artisan`, `kalandra`, `valente`, `wave`, `papercut`, `ameera`, `chronicle`, `lumina`, `solaria`, `prameswari`, `dillalucky`, `badrika`, `mayang`, `candani`, `lagaligo`, `toraja`, `rantepao`, `makale`, `bugis`, `makassar`) kini mengonsumsi `{{googleCalendarUrl}}` dan `{{targetDate}}` yang terpusat ke Sesi Acara Utama.
+   - Seluruh 28 tema master (`aurelia`, `artisan`, `kalandra`, `valente`, `wave`, `papercut`, `ameera`, `chronicle`, `lumina`, `solaria`, `prameswari`, `dillalucky`, `badrika`, `mayang`, `candani`, `lagaligo`, `toraja`, `rantepao`, `makale`, `bugis`, `bone`, `wajo`, `soppeng`, `makassar`, `gowa`, `maros`, `takalar`, `bulukumba`) kini mengonsumsi `{{googleCalendarUrl}}` dan `{{targetDate}}` yang terpusat ke Sesi Acara Utama.
    - Memastikan agenda tamu di Google Calendar dan waktu hitung mundur hari H selalu selaras dengan tanggal acara puncak.
 
 2. **Deduplikasi Cerdas Multi-Sesi Acara (`lib/themeEngine.ts`):**
@@ -1107,4 +1107,22 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
      * `accent`: `#f1d17e` (Toraja Tongkonan Gold).
      * `bgDark`: `#1a0404` (Obsidian Marun).
 
+## 27. Spesifikasi Master Tema Daerah Sulawesi Selatan (v5.9.4)
 
+1. **Penyempurnaan Master Base Bugis & Makassar:**
+   - Menambahkan bingkai potret pembuka mempelai (*Home Arch Photo Frame*) `{{homePhotoUrl}}` pada seksi `#home` di `bugis.html` dan `makassar.html`.
+   - Mengalihkan sumber aset demo ke folder terisolasi resmi `public/demo/bugis/` dan `public/demo/makassar/` dengan 9 slot media lengkap.
+   - Mengeliminasi `lux-at-home-zone` agar docking navigasi tetap terlihat stabil saat scroll ke atas dan hanya auto-hide saat mencapai seksi outro terbawah.
+
+2. **Koleksi 7 Master Tema Fisik Daerah Sulawesi Selatan:**
+   - **Bugis Bone (`themes/traditional/bone.html`):** Mengangkat kemegahan bangsawan Kerajaan Bone, Saoraja Lamurukung, dan filosofi Songkok To Bone. Folder ornamen: `public/assets/ornaments/bone/`.
+   - **Bugis Wajo (`themes/traditional/wajo.html`):** Mengangkat keindahan tenun sutera Sengkang, Danau Tempe, dan Saoraja Ranreng Bettempola. Folder ornamen: `public/assets/ornaments/wajo/`.
+   - **Bugis Soppeng (`themes/traditional/soppeng.html`):** Mengangkat keanggunan Bumi Latemmamala dan Villa Yuliana. Folder ornamen: `public/assets/ornaments/soppeng/`.
+   - **Makassar Gowa (`themes/traditional/gowa.html`):** Mengangkat keagungan Kesultanan Gowa, Istana Balla Lompoa Sungguminasa, dan Benteng Somba Opu. Folder ornamen: `public/assets/ornaments/gowa/`.
+   - **Makassar Maros (`themes/traditional/maros.html`):** Mengangkat kearifan Butta Salewangang, karst Rammang-Rammang, dan Marusu'. Folder ornamen: `public/assets/ornaments/maros/`.
+   - **Makassar Takalar (`themes/traditional/takalar.html`):** Mengangkat semangat Butta Panrannuangku dan Balla Lompoa Sanrobone. Folder ornamen: `public/assets/ornaments/takalar/`.
+   - **Makassar Bulukumba (`themes/traditional/bulukumba.html`):** Mengangkat kemegahan bahtera Phinisi Tanah Beru, filosofi Butta Panrita Lopi, dan tradisi Ammatoa. Folder ornamen: `public/assets/ornaments/bulukumba/`.
+
+3. **Invarian 9 Slot Media & Aset Terisolasi:**
+   - Setiap tema memiliki direktori demo terisolasi (`public/demo/{daerah}/`) dan folder ornamen mandiri (`public/assets/ornaments/{daerah}/`).
+   - Mendukung penuh seluruh 9 slot media (`LANDING_COVER`, `LANDING_COVER_DESKTOP`, `HOME_PHOTO`, `DESKTOP_SIDEBAR`, `GLOBAL_FIXED_BG`, `GROOM_PHOTO`, `BRIDE_PHOTO`, `GALLERY`, `CLOSING_COVER`).

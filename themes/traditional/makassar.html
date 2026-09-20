@@ -413,13 +413,57 @@
     }
     .home-phinisi-wrap {
       width: 150px;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1.2rem;
     }
     .home-phinisi-wrap img {
       width: 100%;
       height: auto;
       object-fit: contain;
       filter: drop-shadow(0 8px 24px var(--gold-glow));
+    }
+    /* HOME ARCH PHOTO FRAME */
+    .home-arch-wrap {
+      position: relative;
+      width: clamp(190px, 54vw, 230px);
+      height: clamp(250px, 68vw, 295px);
+      margin: 0.6rem auto 1.2rem;
+      border-radius: 160px 160px 16px 16px;
+      padding: 5px;
+      background: linear-gradient(
+        135deg,
+        var(--makassar-gold) 0%,
+        color-mix(in srgb, var(--bg-dark) 80%, transparent) 50%,
+        var(--makassar-gold) 100%
+      );
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65), 0 0 15px color-mix(in srgb, var(--makassar-gold) 20%, transparent);
+    }
+    .home-arch-inner {
+      width: 100%;
+      height: 100%;
+      border-radius: 156px 156px 12px 12px;
+      overflow: hidden;
+      position: relative;
+      background: var(--bg-dark);
+      border: 1px solid var(--border-gold);
+    }
+    .home-arch-inner img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center top;
+      display: block;
+      filter: contrast(1.03) saturate(1.05);
+    }
+    .home-arch-inner::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to bottom,
+        transparent 60%,
+        color-mix(in srgb, var(--bg-dark) 55%, transparent) 100%
+      );
+      pointer-events: none;
     }
     .home-names {
       font-family: 'Cinzel', serif;
@@ -825,12 +869,6 @@
       max-width: 436px;
       box-sizing: border-box;
     }
-    body.lux-at-home-zone .bottom-dock {
-      transform: translate3d(-50%, calc(100% + 48px), 0) !important;
-      opacity: 0 !important;
-      pointer-events: none !important;
-    }
-    body.lux-at-home-zone .music-fab,
     .music-fab.fab-hidden {
       transform: scale(0.6) translateY(-20px) !important;
       opacity: 0 !important;
@@ -990,6 +1028,14 @@
         </div>
         
         <span class="sec-eyebrow reveal-on-scroll" data-lux-field="customLabels.coverSubtitle">{{coverSubtitle}}</span>
+        
+        <div class="reveal-on-scroll" style="width: 100%;">
+          <div class="home-arch-wrap">
+            <div class="home-arch-inner">
+              <img src="{{homePhotoUrl}}" alt="{{firstName}} &amp; {{secondName}}" />
+            </div>
+          </div>
+        </div>
         
         <h2 class="home-names reveal-on-scroll">
           {{firstName}}
@@ -1325,19 +1371,6 @@
 
       items.forEach(function(el) { observer.observe(el); });
 
-      // Home Zone Guard
-      const home = document.getElementById('home');
-      function checkHomeZone() {
-        if (!home) return;
-        const rect = home.getBoundingClientRect();
-        if (rect.bottom > 150) {
-          document.body.classList.add('lux-at-home-zone');
-        } else {
-          document.body.classList.remove('lux-at-home-zone');
-        }
-      }
-      window.addEventListener('scroll', checkHomeZone, { passive: true });
-      checkHomeZone();
     }
 
     // SMART DOCK & CONTROLS AUTOHIDE ON SCROLL

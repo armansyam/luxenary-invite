@@ -161,10 +161,10 @@
 │
 ├── prisma.config.ts           # Konfigurasi Prisma 7 DB URL
 │
-├── themes/                   # Template HTML tema undangan (21 Tema + 1 Blueprint)
+├── themes/                   # Template HTML tema undangan (28 Tema + 1 Blueprint)
 │   ├── premium/              # kalandra, valente, aurelia, artisan
 │   ├── modern/               # wave, papercut, ameera, chronicle, lumina, solaria
-│   ├── traditional/          # prameswari, dillalucky, badrika, mayang, candani, lagaligo, toraja, rantepao, makale, bugis, makassar
+│   ├── traditional/          # prameswari, dillalucky, badrika, mayang, candani, lagaligo, toraja, rantepao, makale, bugis, bone, wajo, soppeng, makassar, gowa, maros, takalar, bulukumba
 │   └── starter-blueprint.html# Standard acuan template baru
 │
 ├── public/
@@ -747,7 +747,7 @@ HTML standalone lengkap (self-contained, inline CSS/JS)
     - **Prioritas Acara Utama pada Tautan Kalender (`googleCalendarUrl`):**
       - Tautan Google Calendar secara konsisten membaca tanggal dan lokasi dari sesi yang ditandai sebagai **Acara Utama (`isPrimary: true`)** (`primaryEvent?.location || primaryEvent?.address`), menjamin agenda kalender tamu sinkron 1:1 dengan acara puncak pernikahan.
     - **Sinkronisasi Hitung Mundur (*Countdown Timer*) ke Sesi Acara Utama (`targetDate`):**
-      - Seluruh 21 tema master (`aurelia`, `artisan`, `kalandra`, `valente`, `wave`, `papercut`, `ameera`, `chronicle`, `lumina`, `solaria`, `prameswari`, `dillalucky`, `badrika`, `mayang`, `candani`, `lagaligo`, `toraja`, `rantepao`, `makale`, `bugis`, `makassar`) kini mengonsumsi `targetDate` yang ditambatkan secara presisi ke `primaryEventDate` dan jam mulai acara utama, menjamin angka hitung mundur hari H selalu aktif dan seragam.
+      - Seluruh 28 tema master (`aurelia`, `artisan`, `kalandra`, `valente`, `wave`, `papercut`, `ameera`, `chronicle`, `lumina`, `solaria`, `prameswari`, `dillalucky`, `badrika`, `mayang`, `candani`, `lagaligo`, `toraja`, `rantepao`, `makale`, `bugis`, `bone`, `wajo`, `soppeng`, `makassar`, `gowa`, `maros`, `takalar`, `bulukumba`) kini mengonsumsi `targetDate` yang ditambatkan secara presisi ke `primaryEventDate` dan jam mulai acara utama, menjamin angka hitung mundur hari H selalu aktif dan seragam.
   - **Standarisasi Tipografi Anti-Overflow Split Desktop (Mobile-Emulation Scale):**
     - **Akar Masalah Tipografi `vw`:** Unit CSS `vw` mengevaluasi lebar seluruh layar peramban (1440px - 1920px), bukan lebar kontainer 460px. Hal ini membuat judul besar berhuruf kapital (misal "LIVE STREAMING") atau font kaligrafi (seperti *Parisienne* / *Cinzel*) membengkak hingga >54px dan meluap keluar dari panel split kanan.
     - **Pemberian Cap Maksimal:** Pada media query `@media (min-width: 900px)`, seluruh judul seksi `.sec-main-title, .sec-heading` dikunci maksimal pada `font-size: clamp(1.75rem, 2.1rem, 2.3rem) !important;` dengan proteksi `overflow-wrap: break-word !important; word-break: break-word !important;`.
@@ -853,6 +853,18 @@ HTML standalone lengkap (self-contained, inline CSS/JS)
       - **Tipografi Luhur & Narasi Adat:** Mengombinasikan `Cinzel`, `Great Vibes`, `Cormorant Garamond`, dan `Plus Jakarta Sans`, dengan petuah agung *"Misa' kada dipotuo, pantan kada dipomate"* dan ungkapan rasa syukur *"Kurresumanga'"*.
       - **Palet Warna Toraja Crimson Marun & Gold:** Terikat dinamis pada token CSS (`primary: #750b0a`, `accent: #f1d17e`, `bgDark: #1a0404`).
       - **Zero-Unsplash & Kepatuhan Blueprint 460px:** 100% menggunakan foto lokal dummy, layout split desktop 460px, Smart Mobile Fullscreen, dan Smart Outro Auto-Hide pada floating dock dan kontrol audio saat mencapai dasar halaman.
+  - **Arsitektur Rumpun 7 Tema Daerah Sulawesi Selatan (v5.9.4):**
+    - Ekspansi 7 tema master fisik daerah Sulawesi Selatan (`bone`, `wajo`, `soppeng`, `gowa`, `maros`, `takalar`, `bulukumba`) menggenapkan koleksi menjadi **28 tema master** mandiri:
+      - **Rumpun Bugis Tellumpoccoe:**
+        * **Bone (`bone.html`):** Mengangkat kemegahan bangsawan Kerajaan Bone, Arung Palakka, Saoraja Lamurukung, dan filosofi Songkok To Bone berbalut Royal Maroon & Gold (`#5a0b10` / `#dfb76c`). Folder ornamen: `public/assets/ornaments/bone/`.
+        * **Wajo (`wajo.html`):** Mengangkat keindahan tenun sutera Sengkang, Danau Tempe, dan Saoraja Ranreng Bettempola berbalut Sutera Maroon & Gold Wajo (`#5a0b10` / `#dfb76c`). Folder ornamen: `public/assets/ornaments/wajo/`.
+        * **Soppeng (`soppeng.html`):** Mengangkat keanggunan Bumi Latemmamala, keteduhan Villa Yuliana, dan petuah leluhur Soppeng berbalut Royal Maroon & Gold (`#5a0b10` / `#dfb76c`). Folder ornamen: `public/assets/ornaments/soppeng/`.
+      - **Rumpun Makassar & Maritim:**
+        * **Gowa (`gowa.html`):** Mengangkat keagungan Kesultanan Gowa, Istana Balla Lompoa Sungguminasa, dan Benteng Somba Opu berbalut Royal Navy & Gold (`#0a192f` / `#dfb76c`). Folder ornamen: `public/assets/ornaments/gowa/`.
+        * **Maros (`maros.html`):** Mengangkat kearifan Butta Salewangang, kemegahan bukit karst Rammang-Rammang, dan pesona Marusu' berbalut Royal Navy & Gold (`#0a192f` / `#dfb76c`). Folder ornamen: `public/assets/ornaments/maros/`.
+        * **Takalar (`takalar.html`):** Mengangkat semangat Butta Panrannuangku dan kawasan adat Balla Lompoa Sanrobone berbalut Royal Navy & Gold (`#0a192f` / `#dfb76c`). Folder ornamen: `public/assets/ornaments/takalar/`.
+        * **Bulukumba (`bulukumba.html`):** Mengangkat keperkasaan bahtera Phinisi Tanah Beru, filosofi Butta Panrita Lopi, dan tradisi luhur Ammatoa berbalut Royal Navy & Gold (`#0a192f` / `#dfb76c`). Folder ornamen: `public/assets/ornaments/bulukumba/`.
+      - **Integrasi 9 Slot Media & Standarisasi Emas:** Ketujuh tema secara penuh mengintegrasikan 9 slot media (`LANDING_COVER`, `LANDING_COVER_DESKTOP`, `HOME_PHOTO`, `DESKTOP_SIDEBAR`, `GLOBAL_FIXED_BG`, `GROOM_PHOTO`, `BRIDE_PHOTO`, `GALLERY`, `CLOSING_COVER`), Home Arch Photo Frame mempelai, folder demo terisolasi (`public/demo/{daerah}/`), folder ornamen mandiri (`public/assets/ornaments/{daerah}/`), serta Smart Outro Auto-Hide pada floating dock.
 
 
 
