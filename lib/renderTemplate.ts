@@ -43,6 +43,7 @@ const THEME_MAP: Record<string, { file: string; folder: "premium" | "traditional
   "lagaligo": { file: "lagaligo.html", folder: "traditional" },
   "toraja": { file: "toraja.html", folder: "traditional" },
   "rantepao": { file: "rantepao.html", folder: "traditional" },
+  "makale": { file: "makale.html", folder: "traditional" },
   "bugis": { file: "bugis.html", folder: "traditional" },
   "makassar": { file: "makassar.html", folder: "traditional" },
 

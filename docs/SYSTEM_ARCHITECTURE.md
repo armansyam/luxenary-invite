@@ -161,10 +161,10 @@
 │
 ├── prisma.config.ts           # Konfigurasi Prisma 7 DB URL
 │
-├── themes/                   # Template HTML tema undangan (20 Tema + 1 Blueprint)
+├── themes/                   # Template HTML tema undangan (21 Tema + 1 Blueprint)
 │   ├── premium/              # kalandra, valente, aurelia, artisan
 │   ├── modern/               # wave, papercut, ameera, chronicle, lumina, solaria
-│   ├── traditional/          # prameswari, dillalucky, badrika, mayang, candani, lagaligo, toraja, rantepao, bugis, makassar
+│   ├── traditional/          # prameswari, dillalucky, badrika, mayang, candani, lagaligo, toraja, rantepao, makale, bugis, makassar
 │   └── starter-blueprint.html# Standard acuan template baru
 │
 ├── public/
@@ -747,7 +747,7 @@ HTML standalone lengkap (self-contained, inline CSS/JS)
     - **Prioritas Acara Utama pada Tautan Kalender (`googleCalendarUrl`):**
       - Tautan Google Calendar secara konsisten membaca tanggal dan lokasi dari sesi yang ditandai sebagai **Acara Utama (`isPrimary: true`)** (`primaryEvent?.location || primaryEvent?.address`), menjamin agenda kalender tamu sinkron 1:1 dengan acara puncak pernikahan.
     - **Sinkronisasi Hitung Mundur (*Countdown Timer*) ke Sesi Acara Utama (`targetDate`):**
-      - Seluruh 20 tema master (`aurelia`, `artisan`, `kalandra`, `valente`, `wave`, `papercut`, `ameera`, `chronicle`, `lumina`, `solaria`, `prameswari`, `dillalucky`, `badrika`, `mayang`, `candani`, `lagaligo`, `toraja`, `rantepao`, `bugis`, `makassar`) kini mengonsumsi `targetDate` yang ditambatkan secara presisi ke `primaryEventDate` dan jam mulai acara utama, menjamin angka hitung mundur hari H selalu aktif dan seragam.
+      - Seluruh 21 tema master (`aurelia`, `artisan`, `kalandra`, `valente`, `wave`, `papercut`, `ameera`, `chronicle`, `lumina`, `solaria`, `prameswari`, `dillalucky`, `badrika`, `mayang`, `candani`, `lagaligo`, `toraja`, `rantepao`, `makale`, `bugis`, `makassar`) kini mengonsumsi `targetDate` yang ditambatkan secara presisi ke `primaryEventDate` dan jam mulai acara utama, menjamin angka hitung mundur hari H selalu aktif dan seragam.
   - **Standarisasi Tipografi Anti-Overflow Split Desktop (Mobile-Emulation Scale):**
     - **Akar Masalah Tipografi `vw`:** Unit CSS `vw` mengevaluasi lebar seluruh layar peramban (1440px - 1920px), bukan lebar kontainer 460px. Hal ini membuat judul besar berhuruf kapital (misal "LIVE STREAMING") atau font kaligrafi (seperti *Parisienne* / *Cinzel*) membengkak hingga >54px dan meluap keluar dari panel split kanan.
     - **Pemberian Cap Maksimal:** Pada media query `@media (min-width: 900px)`, seluruh judul seksi `.sec-main-title, .sec-heading` dikunci maksimal pada `font-size: clamp(1.75rem, 2.1rem, 2.3rem) !important;` dengan proteksi `overflow-wrap: break-word !important; word-break: break-word !important;`.
@@ -846,6 +846,14 @@ HTML standalone lengkap (self-contained, inline CSS/JS)
       - **Tipografi Luhur & Narasi Adat:** Mengombinasikan `Cinzel`, `Great Vibes`, `Cormorant Garamond`, dan `Plus Jakarta Sans`, dengan petuah agung *"Misa' kada dipotuo, pantan kada dipomate"* dan ungkapan rasa syukur *"Kurresumanga'"*.
       - **Palet Warna Toraja Crimson Marun & Gold:** Terikat dinamis pada token CSS (`primary: #6b1414`, `accent: #d4af37`, `bgDark: #1a0404`).
       - **Zero-Unsplash & Kepatuhan Blueprint 460px:** 100% menggunakan foto lokal dummy, layout split desktop 460px, Smart Mobile Fullscreen, dan Smart Outro Auto-Hide pada floating dock dan kontrol audio saat mencapai dasar halaman.
+  - **Arsitektur Tema Tradisional Toraja Makale (`themes/traditional/makale.html`):**
+    - Tema `makale.html` merupakan tema tradisional ke-11 (tema master ke-21) yang mengangkat kemegahan kultural Tana Toraja Makale berbalut Royal Earth Crimson & Kilau Emas Tongkonan:
+      - **Integrasi 9 Slot Media Lengkap:** Mendukung secara penuh `LANDING_COVER` (mobile 9:16), `LANDING_COVER_DESKTOP` (desktop 16:9 fullscreen override), `HOME_PHOTO` (hero pembuka), `DESKTOP_SIDEBAR` (hero panel kiri desktop), `GLOBAL_FIXED_BG` (kanvas latar tetap), `GROOM_PHOTO` & `BRIDE_PHOTO` (avatar foto mempelai), `GALLERY` (8 grid foto & lightbox), dan `CLOSING_COVER` (seksi outro 100vh adaptif `.site-footer.has-closing-photo`).
+      - **Ornamen Budaya Otentik Tana Toraja Makale:** Mengintegrasikan motif ukiran Passura', siluet agung Buntu Burake & Tongkonan, serta bingkai ornamen khas Tana Toraja (`public/assets/ornaments/makale/`).
+      - **Tipografi Luhur & Narasi Adat:** Mengombinasikan `Cinzel`, `Great Vibes`, `Cormorant Garamond`, dan `Plus Jakarta Sans`, dengan petuah agung *"Misa' kada dipotuo, pantan kada dipomate"* dan ungkapan rasa syukur *"Kurresumanga'"*.
+      - **Palet Warna Toraja Crimson Marun & Gold:** Terikat dinamis pada token CSS (`primary: #750b0a`, `accent: #f1d17e`, `bgDark: #1a0404`).
+      - **Zero-Unsplash & Kepatuhan Blueprint 460px:** 100% menggunakan foto lokal dummy, layout split desktop 460px, Smart Mobile Fullscreen, dan Smart Outro Auto-Hide pada floating dock dan kontrol audio saat mencapai dasar halaman.
+
 
 
 ### 8.1 Studio Editor: Dual-Native Mode (Form Data & Live Editor)

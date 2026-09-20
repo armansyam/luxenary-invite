@@ -237,6 +237,17 @@ const themes: Prisma.ThemeCreateInput[] = [
     isActive: true,
     sortOrder: 20,
   },
+  {
+    id: 'makale',
+    name: 'Makale',
+    category: 'traditional',
+    series: 'Traditional',
+    description: 'Kemegahan Adat Tana Toraja Makale Berbalut Royal Earth Crimson & Kilau Emas Tongkonan',
+    previewUrl: '/demo/makale',
+    isPremium: false,
+    isActive: true,
+    sortOrder: 21,
+  },
 ]
 
 
