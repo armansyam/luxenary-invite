@@ -226,6 +226,17 @@ const themes: Prisma.ThemeCreateInput[] = [
     isActive: true,
     sortOrder: 19,
   },
+  {
+    id: 'rantepao',
+    name: 'Rantepao',
+    category: 'traditional',
+    series: 'Traditional',
+    description: 'Kemegahan Adat Toraja Rantepao Berbalut Crimson Marun & Kilau Emas Bambu',
+    previewUrl: '/demo/rantepao',
+    isPremium: false,
+    isActive: true,
+    sortOrder: 20,
+  },
 ]
 
 

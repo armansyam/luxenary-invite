@@ -55,6 +55,7 @@ export interface DemoThemeData {
   sidebarPhotoUrl: string;
   landingCoverUrl: string;
   landingCoverDesktopUrl?: string;
+  closingPhotoUrl?: string;
   galleryPhotos: string[];
   
   // Events
@@ -997,6 +998,93 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     ],
     dressCodeColors: "#750b0a, #f1d17e, #1a0404, #ffffff",
     dressCodeNote: "Busana Adat Toraja / Nuansa Crimson Marun, Emas Bambu & Hitam Tongkonan",
+    turutMengundang: ["Rumpun Keluarga Besar Sambolinggi'", "Rumpun Keluarga Besar Salombe'"],
+  },
+
+  rantepao: {
+    themeId: "rantepao",
+    themeName: "Rantepao",
+    series: "Traditional",
+    category: "traditional",
+    defaultPalette: "toraja",
+    tagline: "RAMPUAN LOLO & KURRESUMANGA' RANTEPAO",
+    groomName: "Arka",
+    brideName: "Naya",
+    groomDisplayName: "Arka Zayn Sambolinggi', S.T.",
+    brideDisplayName: "Naya Kayla Salombe', B.Des.",
+    groomRole: "Mempelai Pria",
+    brideRole: "Mempelai Wanita",
+    groomParents: "Putra dari Bpk. Adi Suseno & Ibu Isnaniah",
+    groomFather: "Adi Suseno",
+    groomMother: "Isnaniah",
+    brideParents: "Putri dari Bpk. Bambang Salombe' & Ibu Novi",
+    brideFather: "Bambang Salombe'",
+    brideMother: "Novi",
+    groomInstagram: "arka.toraja",
+    brideInstagram: "naya.salombe",
+    monogramInitial: "A & N",
+    targetDate: "2026-12-30T09:00:00",
+    weddingDateFormatted: "Rabu, 30 Desember 2026",
+    weddingDateDay: "30",
+    weddingDateMonth: "12",
+    weddingDateYear: "2026",
+    openingQuote: "Misa' kada dipotuo, pantan kada dipomate. Bersatu kita teguh dalam janji suci, berpadu dua rumpun keluarga besar adat Toraja di bumi Rantepao.",
+    openingQuoteRef: "PETUAH KELUARGA BESAR TORAJA",
+    city: "Rantepao, Toraja Utara",
+    globalBgUrl: "/demo/rantepao/background.webp",
+    homePhotoUrl: "/demo/rantepao/home.webp",
+    groomPhotoUrl: "/demo/rantepao/groom.webp",
+    bridePhotoUrl: "/demo/rantepao/bride.webp",
+    sidebarPhotoUrl: "/demo/rantepao/hero.webp",
+    landingCoverUrl: "/demo/rantepao/cover.webp",
+    landingCoverDesktopUrl: "/demo/rantepao/cover_desktop.webp",
+    closingPhotoUrl: "/demo/rantepao/footer.webp",
+    galleryPhotos: [
+      "/demo/rantepao/gallery_01.webp",
+      "/demo/rantepao/gallery_02.webp",
+      "/demo/rantepao/gallery_03.webp",
+      "/demo/rantepao/gallery_04.webp",
+      "/demo/rantepao/gallery_05.webp",
+      "/demo/rantepao/gallery_06.webp",
+      "/demo/rantepao/gallery_07.webp",
+      "/demo/rantepao/gallery_08.webp",
+    ],
+    events: [
+      {
+        badge: "PEMBERKATAN / AKAD",
+        title: "Ibadah Pemberkatan Nikah",
+        time: "09.00 WITA – Selesai",
+        location: "Gereja Toraja Jemaat Rantepao",
+        address: "Jl. Sam Ratulangi No. 12, Rantepao, Toraja Utara",
+        mapsUrl: "https://maps.google.com",
+      },
+      {
+        badge: "RESEPSI ADAT",
+        title: "Resepsi Adat Rampuan Lolo",
+        time: "12.00 WITA – Selesai",
+        location: "Balai Kesenian Rantepao",
+        address: "Rantepao, Kabupaten Toraja Utara, Sulawesi Selatan",
+        mapsUrl: "https://maps.google.com",
+      },
+    ],
+    stories: [
+      {
+        chapter: "Pertemuan",
+        title: "Awal Mula Kisah Kasih",
+        content: "Di bawah naungan bumi Rantepao, dua langkah dipertemukan oleh takdir yang indah.",
+      },
+      {
+        chapter: "Komitmen",
+        title: "Mengikat Janji Suci",
+        content: "Dengan restu kedua rumpun keluarga besar, kami bertekad melangkah bersama menuju mahligai rumah tangga yang kokoh.",
+      },
+    ],
+    banks: [
+      { bank: "BCA", number: "7901238491", name: "Arka Zayn Sambolinggi'" },
+      { bank: "Bank Mandiri", number: "1520098765432", name: "Naya Kayla Salombe'" },
+    ],
+    dressCodeColors: "#750b0a, #f1d17e, #1a0404, #ffffff",
+    dressCodeNote: "Busana Adat Toraja / Nuansa Crimson Marun, Emas Bambu & Hitam Rantepao",
     turutMengundang: ["Rumpun Keluarga Besar Sambolinggi'", "Rumpun Keluarga Besar Salombe'"],
   },
 
