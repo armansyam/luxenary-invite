@@ -37,9 +37,6 @@ const THEME_MAP: Record<string, { file: string; folder: "premium" | "traditional
   // Traditional Series
   "prameswari": { file: "prameswari.html", folder: "traditional" },
   "dillalucky": { file: "dillalucky.html", folder: "traditional" },
-  "badrika": { file: "badrika.html", folder: "traditional" },
-  "mayang": { file: "mayang.html", folder: "traditional" },
-  "candani": { file: "candani.html", folder: "traditional" },
   "lagaligo": { file: "lagaligo.html", folder: "traditional" },
   "toraja": { file: "toraja.html", folder: "traditional" },
   "rantepao": { file: "rantepao.html", folder: "traditional" },
@@ -55,6 +52,9 @@ const THEME_MAP: Record<string, { file: string; folder: "premium" | "traditional
   "bulukumba": { file: "bulukumba.html", folder: "traditional" },
 
   // Modern Series
+  "badrika": { file: "badrika.html", folder: "modern" },
+  "mayang": { file: "mayang.html", folder: "modern" },
+  "candani": { file: "candani.html", folder: "modern" },
   "wave": { file: "wave.html", folder: "modern" },
   "papercut": { file: "papercut.html", folder: "modern" },
   "ameera": { file: "ameera.html", folder: "modern" },
@@ -1918,6 +1918,11 @@ export async function renderTemplateFile(
     } else {
       tpl = universalPreloaderHtml + tpl;
     }
+  }
+
+  // Strip any existing static/template <title> if dynamic metaTags supplies a <title> to prevent duplicate tags or theme name leaks
+  if (metaTags && /<title\b[^>]*>/i.test(metaTags)) {
+    tpl = tpl.replace(/<title\b[^>]*>[\s\S]*?<\/title>\s*/gi, "");
   }
 
   if (tpl.includes("<head>")) {

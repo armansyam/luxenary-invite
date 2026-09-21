@@ -140,7 +140,7 @@
 
 /* 7. JOURNEY OF LOVE — UNIVERSAL VERTICAL GLOWING TIMELINE (KALANDRA STANDARD) */
 :root {
-  --timeline-gold: var(--primary, var(--gold, var(--accent, var(--jawa-gold, var(--floral-gold, var(--sunset-amber, #d4af37))))));
+  --timeline-gold: var(--accent, var(--gold, var(--theme-gold, var(--primary, var(--jawa-gold, var(--floral-gold, var(--sunset-amber, #d4af37)))))));
 }
 
 .sec-journey {

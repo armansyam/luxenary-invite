@@ -20,7 +20,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>The Wedding of {{firstName}} &amp; {{secondName}} — Bugis Royal Maroon</title>
+  <title>The Wedding of {{firstName}} &amp; {{secondName}}</title>
   
   <!-- THEME TYPOGRAPHY: Self-Hosted Local Google Fonts -->
   <link rel="stylesheet" href="/fonts/fonts.css">
@@ -39,38 +39,70 @@
       --bugis-dark: var(--bg-dark, #140204);
       --bugis-card: color-mix(in srgb, var(--primary, #5a0b10) 24%, var(--bg-dark, #140204) 86%);
       --theme-card: var(--bugis-card);
-      --border-gold: color-mix(in srgb, var(--accent, #dfb76c) 35%, transparent);
-      --border-gold-bright: color-mix(in srgb, var(--accent, #dfb76c) 80%, transparent);
+      --border-gold: color-mix(in srgb, var(--accent, #dfb76c) 18%, transparent);
+      --border-gold-bright: color-mix(in srgb, var(--accent, #dfb76c) 70%, transparent);
       --gold-glow: color-mix(in srgb, var(--accent, #dfb76c) 25%, transparent);
       --text-muted: color-mix(in srgb, #ffffff 75%, transparent);
+      --timeline-gold: var(--bugis-gold);
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
+    html {
+      scroll-behavior: smooth;
+      -ms-overflow-style: none; /* IE and Edge */
+      scrollbar-width: none;    /* Firefox */
+    }
     body {
       font-family: 'Plus Jakarta Sans', sans-serif;
       background-color: var(--bg-dark, #140204);
       color: #ffffff;
       overflow-x: hidden;
       width: 100%;
+      -ms-overflow-style: none; /* IE and Edge */
+      scrollbar-width: none;    /* Firefox */
     }
 
-    /* FIXED BACKGROUND LAYER */
+    /* Sembunyikan scrollbar visual bawaan peramban */
+    html::-webkit-scrollbar,
+    body::-webkit-scrollbar {
+      display: none;
+      width: 0;
+      height: 0;
+    }
+
+    /* ==========================================================================
+       LAPISAN 2: MEDIA SLOT BACKGROUND (MURNI GAMBAR TANPA GRADIEN)
+       ========================================================================== */
     .fixed-bg-layer {
       position: fixed;
       inset: 0;
       width: 100%;
       height: 100vh;
-      background-image: linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--bg-dark, #140204) 84%, transparent) 0%,
-        color-mix(in srgb, var(--primary, #5a0b10) 60%, transparent) 35%,
-        color-mix(in srgb, var(--bg-dark, #140204) 86%, transparent) 75%,
-        color-mix(in srgb, var(--bg-dark, #140204) 96%, transparent) 100%
-      ), url('/assets/ornaments/bugis/bg-maroon.webp'), url('{{globalBgUrl}}'), url('{{homePhotoCssUrl}}');
+      height: 100dvh;
+      background-image: url('{{globalBgUrl}}'), url('/assets/ornaments/bugis/bg-maroon.webp');
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* ==========================================================================
+       LAPISAN 3: KANVAS SCRIM (MANDIRI MENGATUR TONE & KONTRAS)
+       ========================================================================== */
+    .scrim-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100vh;
+      height: 100dvh;
+      background: linear-gradient(
+        180deg,
+        rgba(0, 0, 0, 0.15) 0%,
+        color-mix(in srgb, var(--primary, #5a0b10) 20%, transparent) 35%,
+        color-mix(in srgb, var(--bg-dark, #140204) 35%, transparent) 70%,
+        color-mix(in srgb, var(--bg-dark, #140204) 50%, transparent) 100%
+      );
       z-index: 1;
       pointer-events: none;
     }
@@ -104,9 +136,8 @@
     /* 4-CORNER FLORAL ORNAMENTS */
     .corner-floral {
       position: absolute;
-      width: 110px;
-      height: 110px;
-      object-fit: contain;
+      width: clamp(75px, 20vw, 95px);
+      height: auto;
       pointer-events: none;
       z-index: 15;
       filter: drop-shadow(0 4px 14px rgba(0,0,0,0.55));
@@ -115,29 +146,46 @@
     .corner-tr { top: 0; right: 0; }
     .corner-bl { bottom: 0; left: 0; }
     .corner-br { bottom: 0; right: 0; }
+    .cover-screen .corner-bl,
+    .cover-screen .corner-br { display: none !important; }
 
-    /* BORDER FRAMES */
+    /* BORDER FRAMES (SEAMLESS REPEAT-X ARCHITECTURE) */
     .bugis-frame-top {
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
-      height: 38px;
-      object-fit: fill;
+      height: clamp(54px, 8vw, 75px);
+      background-image: url('/assets/ornaments/bugis/bugis-atas.webp');
+      background-repeat: repeat-x;
+      background-position: top center;
+      background-size: auto 100%;
       pointer-events: none;
       z-index: 14;
-      opacity: 0.9;
+      opacity: 0.98;
+      filter: drop-shadow(0 4px 16px rgba(0,0,0,0.6));
+    }
+    .cover-screen .bugis-frame-top {
+      height: clamp(80px, 14vw, 115px);
+      background-image: url('/assets/ornaments/bugis/bugis-atas.webp');
+      background-repeat: repeat-x;
+      background-position: top center;
+      background-size: auto 100%;
     }
     .bugis-frame-bottom {
       position: absolute;
       bottom: 0;
       left: 0;
       width: 100%;
-      height: 48px;
-      object-fit: fill;
+      height: 88px;
+      background-image: url('/assets/ornaments/bugis/frame-bottom.webp');
+      background-repeat: repeat-x;
+      background-position: bottom center;
+      background-size: auto 88px;
       pointer-events: none;
       z-index: 14;
-      opacity: 0.9;
+      opacity: 0.98;
+      filter: drop-shadow(0 -4px 18px rgba(0,0,0,0.65));
     }
 
     /* COVER SCREEN (POP-UP GATEWAY) */
@@ -148,17 +196,17 @@
       background-color: var(--bg-dark, #140204);
       background-image: linear-gradient(
         180deg,
-        color-mix(in srgb, var(--bg-dark, #140204) 75%, transparent) 0%,
-        color-mix(in srgb, var(--primary, #5a0b10) 50%, transparent) 40%,
-        color-mix(in srgb, var(--bg-dark, #140204) 90%, transparent) 100%
-      ), url('/assets/ornaments/bugis/bg-maroon.webp'), url('{{landingCoverUrl}}');
+        rgba(0, 0, 0, 0.20) 0%,
+        color-mix(in srgb, var(--primary, #5a0b10) 25%, transparent) 40%,
+        color-mix(in srgb, var(--bg-dark, #140204) 45%, transparent) 100%
+      ), url('{{landingCoverUrl}}'), url('/assets/ornaments/bugis/bg-maroon.webp');
       background-size: cover;
       background-position: center;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      padding: 2.5rem 1.5rem;
+      padding: clamp(35px, 6vh, 60px) 1.2rem clamp(40px, 7vh, 65px);
       text-align: center;
       transition: transform 0.85s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.85s cubic-bezier(0.77, 0, 0.175, 1);
     }
@@ -168,58 +216,87 @@
       pointer-events: none;
     }
 
-    .cover-emblem-wrap {
-      width: 120px;
-      height: 120px;
-      margin-bottom: 1.25rem;
+    /* WALASUJI BAMBOO ARCH (FRONT LAYER Z-INDEX: 16) */
+    .walasuji-arch-wrap {
       position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      width: min(80vw, 320px);
+      aspect-ratio: 1046 / 1504;
+      margin: clamp(0.6rem, 1.8vh, 1.2rem) auto 0.5rem;
+      z-index: 16;
     }
-    .cover-emblem-img {
+    .walasuji-photo-frame {
+      position: absolute;
+      left: 15%;
+      top: 47.5%;
+      width: 70%;
+      height: 48%;
+      z-index: 1;
+      overflow: hidden;
+      clip-path: polygon(0 0, 100% 0, 100% 90%, 86% 90%, 86% 100%, 14% 100%, 14% 90%, 0 90%);
+      background: color-mix(in srgb, var(--bg-dark, #140204) 80%, black);
+    }
+    .walasuji-photo {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 12%;
+      display: block;
+    }
+    .walasuji-sabbe-drape {
+      position: absolute;
+      left: 23%;
+      width: 54%;
+      bottom: 2.5%;
+      z-index: 2;
+      pointer-events: none;
+      filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
+    }
+    .walasuji-arch-img {
+      position: absolute;
+      inset: 0;
       width: 100%;
       height: 100%;
       object-fit: contain;
-      filter: drop-shadow(0 6px 20px var(--gold-glow));
-      animation: bugisFloat 6s ease-in-out infinite;
+      z-index: 3;
+      pointer-events: none;
+      filter: drop-shadow(0 8px 24px var(--gold-glow));
     }
     .cover-tagline {
-      font-size: 0.75rem;
-      letter-spacing: 0.25em;
+      font-size: 0.72rem;
+      letter-spacing: 0.22em;
       text-transform: uppercase;
       color: var(--bugis-gold);
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.25rem;
       font-weight: 600;
     }
     .cover-names {
-      font-size: 2.4rem;
+      font-size: clamp(1.8rem, 5vw, 2.2rem);
       line-height: 1.15;
       color: #ffffff;
-      margin-bottom: 1.5rem;
+      margin-bottom: 0.75rem;
       text-shadow: 0 4px 18px rgba(0,0,0,0.6);
     }
     .cover-names span {
       display: block;
       font-family: 'Great Vibes', cursive;
-      font-size: 2.1rem;
+      font-size: 1.8rem;
       color: var(--bugis-gold);
-      margin: 0.2rem 0;
+      margin: 0.15rem 0;
     }
     .cover-guest-box {
       background: color-mix(in srgb, var(--primary, #5a0b10) 32%, var(--bg-dark, #140204) 80%);
       border: 1px solid var(--border-gold);
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
-      border-radius: 16px;
-      padding: 1.2rem 1.6rem;
-      margin-bottom: 1.75rem;
+      border-radius: 14px;
+      padding: 0.85rem 1.4rem;
+      margin-bottom: 1rem;
       width: 100%;
-      max-width: 320px;
+      max-width: 310px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.45);
     }
     .cover-guest-lbl { font-size: 0.75rem; color: var(--text-muted); letter-spacing: 0.08em; text-transform: uppercase; }
-    .cover-guest-val { font-family: 'Cinzel', serif; font-size: 1.2rem; color: #fff; margin-top: 0.25rem; font-weight: 600; letter-spacing: 0.05em; }
+    .cover-guest-val { font-family: 'Cinzel', serif; font-size: 1.15rem; color: #fff; margin-top: 0.2rem; font-weight: 600; letter-spacing: 0.05em; }
 
     .btn-buka-undangan {
       background: linear-gradient(135deg, var(--bugis-maroon), color-mix(in srgb, var(--bugis-maroon) 70%, #000));
@@ -247,6 +324,32 @@
       border-color: #ffffff;
     }
 
+    .btn-open-qr-cover, .btn-qr-ghost {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-top: 0.85rem;
+      background: color-mix(in srgb, var(--bg-dark) 80%, transparent);
+      color: var(--bugis-gold);
+      border: 1px solid var(--border-gold);
+      border-radius: 9999px;
+      padding: 0.45rem 1.2rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
+      position: relative;
+      z-index: 20;
+    }
+    .btn-open-qr-cover:hover, .btn-qr-ghost:hover {
+      background: var(--bugis-gold);
+      color: var(--bg-dark);
+      border-color: var(--bugis-gold);
+    }
+
     /* DESKTOP SPLIT-SCREEN 460PX ARCHITECTURE */
     .layout-wrapper {
       position: relative;
@@ -265,55 +368,83 @@
         display: flex;
         flex-direction: column;
         justify-content: flex-end;
-        padding: 4rem 3.5rem;
+        padding: 4.5rem 4rem;
         z-index: 10;
         background-image: linear-gradient(
+          to top,
+          color-mix(in srgb, var(--bg-dark, #140204) 95%, transparent) 0%,
+          color-mix(in srgb, var(--bg-dark, #140204) 75%, transparent) 35%,
+          color-mix(in srgb, var(--bg-dark, #140204) 30%, transparent) 65%,
+          transparent 100%
+        ), linear-gradient(
           to right,
-          color-mix(in srgb, var(--bg-dark, #140204) 40%, transparent) 0%,
-          color-mix(in srgb, var(--bg-dark, #140204) 95%, transparent) 100%
+          transparent 70%,
+          color-mix(in srgb, var(--bg-dark, #140204) 85%, transparent) 100%
         ), url('{{sidebarPhotoUrl}}'), url('/assets/ornaments/bugis/bg-maroon.webp');
         background-size: cover;
         background-position: center;
       }
-      .sidebar-desktop .sb-brand {
-        font-family: 'Cinzel', serif;
-        font-size: 1.1rem;
-        letter-spacing: 0.25em;
+      .sidebar-desktop-content {
+        position: relative;
+        z-index: 2;
+        max-width: 600px;
+        color: #ffffff;
+      }
+      .sidebar-desktop-emblem {
+        width: clamp(120px, 11vw, 150px);
+        height: auto;
+        margin-bottom: 1.25rem;
+        filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.45));
+      }
+      .sidebar-desktop-tagline {
+        font-size: 0.8rem;
+        letter-spacing: 0.26em;
         color: var(--bugis-gold);
-        margin-bottom: 1.5rem;
         text-transform: uppercase;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
       }
-      .sidebar-desktop .sb-names {
-        font-family: 'Cinzel', serif;
-        font-size: 3.8rem;
-        color: #fff;
-        line-height: 1.1;
-        margin-bottom: 1.2rem;
+      .sidebar-desktop-names {
+        font-size: clamp(2.6rem, 4.5vw, 3.8rem);
+        color: #ffffff;
+        line-height: 1.12;
+        margin-bottom: 0.6rem;
+        font-weight: 600;
+        text-shadow: 0 4px 20px rgba(0,0,0,0.8);
       }
-      .sidebar-desktop .sb-names span {
+      .sidebar-desktop-names span {
         font-family: 'Great Vibes', cursive;
         color: var(--bugis-gold);
-        font-size: 3.4rem;
-        display: block;
-        margin: 0.2rem 0;
+        font-size: 2.4rem;
+        margin: 0 0.35rem;
       }
-      .sidebar-desktop .sb-date {
-        font-size: 1.05rem;
-        letter-spacing: 0.15em;
-        color: var(--text-muted);
+      .sidebar-desktop-date {
+        font-size: 0.95rem;
+        letter-spacing: 0.16em;
+        color: var(--bugis-gold);
         text-transform: uppercase;
+        margin-bottom: 1.25rem;
+        font-weight: 500;
+      }
+      .sidebar-desktop-quote {
+        font-size: 1.05rem;
+        line-height: 1.65;
+        color: color-mix(in srgb, #ffffff 82%, var(--text-muted));
+        max-width: 520px;
+        text-shadow: 0 2px 10px rgba(0,0,0,0.8);
       }
 
       .main-scroll-panel {
         width: 460px !important;
         margin-left: calc(100% - 460px) !important;
-        background: color-mix(in srgb, var(--bg-dark, #140204) 94%, transparent);
+        background: transparent !important;
         border-left: 1px solid var(--border-gold);
         box-shadow: -15px 0 45px rgba(0,0,0,0.6);
         min-height: 100vh;
       }
 
-      .fixed-bg-layer {
+      .fixed-bg-layer,
+      .scrim-canvas {
         width: 460px !important;
         left: calc(100% - 460px) !important;
       }
@@ -379,6 +510,11 @@
       margin-bottom: 0.6rem;
       display: block;
       font-weight: 600;
+      text-align: center;
+      max-width: 380px;
+      margin-left: auto;
+      margin-right: auto;
+      line-height: 1.6;
     }
     .sec-main-title {
       font-family: 'Cinzel', serif;
@@ -388,6 +524,7 @@
       margin-bottom: 1.2rem;
       line-height: 1.25;
       overflow-wrap: break-word;
+      text-align: center;
     }
 
     /* SECTION HERO / HOME */
@@ -402,16 +539,17 @@
       padding: clamp(2rem, 5vh, 3.5rem) 1.5rem;
       position: relative;
       background: radial-gradient(circle at center, color-mix(in srgb, var(--primary, #5a0b10) 30%, transparent) 0%, transparent 70%);
+      text-align: center;
     }
     .home-emblem-wrap {
-      width: 140px;
+      width: clamp(140px, 42vw, 170px);
       margin-bottom: 1.2rem;
     }
     .home-emblem-wrap img {
       width: 100%;
       height: auto;
       object-fit: contain;
-      filter: drop-shadow(0 8px 24px var(--gold-glow));
+      filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.45));
     }
     /* HOME ARCH PHOTO FRAME */
     .home-arch-wrap {
@@ -459,21 +597,31 @@
     }
     .home-names {
       font-family: 'Cinzel', serif;
-      font-size: 2.6rem;
+      font-size: clamp(1.6rem, 5.5vw, 2.3rem);
       color: #ffffff;
-      line-height: 1.15;
-      margin-bottom: 1.2rem;
+      line-height: 1.2;
+      margin-bottom: 0.9rem;
+      text-align: center;
+      letter-spacing: 0.05em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.55rem;
+      flex-wrap: wrap;
     }
     .home-names span {
-      font-family: 'Great Vibes', cursive;
-      font-size: 2.3rem;
+      font-family: 'Cormorant Garamond', 'Cinzel', serif;
+      font-style: italic;
+      font-size: 1.25em;
       color: var(--bugis-gold);
-      display: block;
+      display: inline-block;
+      font-weight: 400;
+      line-height: 1;
     }
     .home-date-badge {
       display: inline-block;
-      border-top: 1px solid var(--border-gold);
-      border-bottom: 1px solid var(--border-gold);
+      border-top: 1px solid color-mix(in srgb, var(--bugis-gold) 35%, transparent);
+      border-bottom: 1px solid color-mix(in srgb, var(--bugis-gold) 35%, transparent);
       padding: 0.55rem 1.8rem;
       font-size: 0.85rem;
       letter-spacing: 0.2em;
@@ -494,12 +642,14 @@
       gap: 0.6rem;
     }
     .cd-item {
-      background: var(--theme-card);
-      border: 1px solid var(--border-gold);
+      background: color-mix(in srgb, var(--bg-dark, #140204) 55%, transparent);
+      border: 1px solid color-mix(in srgb, var(--accent, #dfb76c) 15%, transparent);
       border-radius: 12px;
       padding: 0.75rem 0.3rem;
       text-align: center;
       backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
     }
     .cd-num {
       font-family: 'Cinzel', serif;
@@ -516,42 +666,62 @@
       margin-top: 0.35rem;
     }
 
-    /* THE COUPLE SECTION */
-    .couple-card {
-      background: var(--theme-card);
-      border: 1px solid var(--border-gold);
-      border-radius: 20px;
-      padding: 2.2rem 1.6rem;
-      margin-bottom: 2rem;
+    /* THE COUPLE SECTION — CARDLESS BAMBOO FRAME */
+    .couple-profile {
+      background: transparent;
+      border: none;
+      padding: 0;
+      margin-bottom: 2.8rem;
       position: relative;
-      overflow: hidden;
+      text-align: center;
     }
-    .couple-photo-wrap {
-      width: 160px;
-      height: 220px;
-      margin: 0 auto 1.4rem;
-      border-radius: 80px 80px 16px 16px;
-      overflow: hidden;
-      border: 2px solid var(--border-gold-bright);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    /* Bamboo frame container: foto di dalam, frame di atasnya */
+    .couple-frame-wrap {
       position: relative;
+      width: 210px;
+      height: 280px;
+      margin: 0 auto 1.5rem;
     }
-    .couple-photo-wrap img {
+    .couple-photo-inner {
+      position: absolute;
+      /* Menggeser foto agar masuk ke dalam area kosong frame bambu */
+      top: 10%;
+      left: 12%;
+      width: 76%;
+      height: 78%;
+      overflow: hidden;
+      border-radius: 4px;
+    }
+    .couple-photo-inner img {
       width: 100%;
       height: 100%;
       object-fit: cover;
+      object-position: top center;
+    }
+    /* Frame bambu sebagai overlay di atas foto */
+    .couple-frame-overlay {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.55));
     }
     .couple-name {
       font-family: 'Cinzel', serif;
-      font-size: 1.45rem;
+      font-size: 1.35rem;
       color: #ffffff;
-      margin-bottom: 0.6rem;
+      margin-bottom: 0.5rem;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.6);
     }
     .couple-parents {
-      font-size: 0.85rem;
-      line-height: 1.6;
+      font-size: 0.82rem;
+      line-height: 1.65;
       color: var(--text-muted);
       margin-bottom: 1rem;
+      max-width: 280px;
+      margin-left: auto;
+      margin-right: auto;
     }
     .couple-ig {
       display: inline-flex;
@@ -566,7 +736,7 @@
       transition: all 0.3s ease;
     }
     .couple-ig:hover {
-      background: var(--border-gold);
+      background: color-mix(in srgb, var(--bugis-gold) 20%, transparent);
       color: #ffffff;
     }
 
@@ -708,48 +878,111 @@
       transform: scale(1.04);
     }
 
-    /* WEDDING GIFT SECTION */
-    .gift-card {
-      background: var(--theme-card);
-      border: 1px solid var(--border-gold);
-      border-radius: 18px;
-      padding: 1.8rem 1.4rem;
-      margin-bottom: 1.4rem;
-      text-align: center;
+    /* WEDDING GIFT SECTION (COMPATIBLE WITH ENGINE) */
+    .gift-card, .bank-card {
+      background: var(--theme-card) !important;
+      border: 1px solid var(--border-gold) !important;
+      border-radius: 18px !important;
+      padding: 1.6rem 1.4rem !important;
+      margin-bottom: 1.2rem !important;
+      text-align: left !important;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4) !important;
     }
-    .gift-bank-name {
-      font-family: 'Cinzel', serif;
-      font-size: 1.15rem;
-      color: var(--bugis-gold);
-      margin-bottom: 0.5rem;
+    .bank-label {
+      font-family: 'Cinzel', serif !important;
+      font-size: 1.15rem !important;
+      color: var(--bugis-gold) !important;
+      margin-bottom: 0.35rem !important;
+      display: block !important;
+      font-weight: 600 !important;
     }
-    .gift-acc-num {
-      font-family: 'Cinzel', monospace;
-      font-size: 1.35rem;
-      letter-spacing: 0.1em;
-      color: #ffffff;
-      margin-bottom: 0.4rem;
+    .bank-owner {
+      font-size: 0.85rem !important;
+      color: var(--text-muted) !important;
+      margin-bottom: 0.8rem !important;
+      display: block !important;
     }
-    .gift-acc-holder {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      margin-bottom: 1.2rem;
+    .bank-row {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      background: color-mix(in srgb, var(--bg-dark, #140204) 75%, transparent) !important;
+      border: 1px solid var(--border-gold) !important;
+      padding: 0.6rem 0.9rem !important;
+      border-radius: 10px !important;
+    }
+    .bank-number {
+      font-family: 'Cinzel', monospace !important;
+      font-size: 1.25rem !important;
+      letter-spacing: 0.08em !important;
+      color: #ffffff !important;
+    }
+    .gift-tabs {
+      display: flex !important;
+      max-width: 320px !important;
+      margin: 1.2rem auto 1.6rem !important;
+      border: 1px solid var(--border-gold) !important;
+      border-radius: 9999px !important;
+      overflow: hidden !important;
+      background: color-mix(in srgb, var(--bg-dark, #140204) 80%, transparent) !important;
+      padding: 3px !important;
+    }
+    .gift-tab-btn {
+      flex: 1 !important;
+      padding: 0.6rem 0.8rem !important;
+      background: transparent !important;
+      border: none !important;
+      color: var(--text-muted) !important;
+      font-size: 0.72rem !important;
+      font-weight: 600 !important;
+      cursor: pointer !important;
+      letter-spacing: 0.08em !important;
+      text-transform: uppercase !important;
+      border-radius: 9999px !important;
+      transition: all 0.3s ease !important;
+    }
+    .gift-tab-btn.active {
+      background: var(--bugis-maroon) !important;
+      color: #ffffff !important;
+      border: 1.5px solid var(--border-gold-bright) !important;
+      box-shadow: 0 4px 12px var(--gold-glow) !important;
     }
     .btn-copy {
-      background: color-mix(in srgb, var(--bg-dark, #140204) 85%, transparent);
-      color: var(--bugis-gold);
-      border: 1px solid var(--border-gold);
-      padding: 0.5rem 1.4rem;
-      border-radius: 9999px;
-      font-size: 0.78rem;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      cursor: pointer;
-      transition: all 0.3s ease;
+      background: color-mix(in srgb, var(--bg-dark, #140204) 85%, transparent) !important;
+      color: var(--bugis-gold) !important;
+      border: 1px solid var(--border-gold) !important;
+      padding: 0.45rem 1.2rem !important;
+      border-radius: 9999px !important;
+      font-size: 0.75rem !important;
+      font-weight: 600 !important;
+      letter-spacing: 0.08em !important;
+      cursor: pointer !important;
+      transition: all 0.3s ease !important;
     }
     .btn-copy:hover {
-      background: var(--bugis-gold);
-      color: var(--bg-dark, #140204);
+      background: var(--bugis-gold) !important;
+      color: var(--bg-dark, #140204) !important;
+    }
+    .btn-map-outline {
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 0.5rem !important;
+      background: var(--bugis-maroon) !important;
+      color: #ffffff !important;
+      border: 1px solid var(--border-gold-bright) !important;
+      padding: 0.65rem 1.4rem !important;
+      border-radius: 9999px !important;
+      font-size: 0.8rem !important;
+      font-weight: 600 !important;
+      letter-spacing: 0.1em !important;
+      text-decoration: none !important;
+      transition: all 0.3s ease !important;
+      box-shadow: 0 4px 14px var(--gold-glow) !important;
+      margin-top: 0.8rem !important;
+    }
+    .btn-map-outline:hover {
+      border-color: #ffffff !important;
+      transform: translateY(-2px) !important;
     }
 
     /* RSVP & WISHES */
@@ -812,6 +1045,13 @@
       overflow-y: auto;
       overscroll-behavior: contain;
       padding-right: 0.4rem;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .wishes-stream-wrap::-webkit-scrollbar {
+      display: none;
+      width: 0;
+      height: 0;
     }
     .wish-item {
       background: var(--theme-card);
@@ -822,20 +1062,73 @@
       text-align: left;
     }
 
-    /* OUTRO 100VH */
+    /* OUTRO 100VH (GLOBAL STANDARDIZATION) */
     .site-footer {
       min-height: 100vh;
       min-height: 100dvh;
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      padding: clamp(2.5rem, 6vh, 4rem) 1.5rem calc(80px + env(safe-area-inset-bottom, 0px));
-      text-align: center;
       position: relative;
+      overflow: hidden;
+      text-align: center;
+      padding: clamp(2.5rem, 6vh, 4rem) 1.5rem calc(90px + env(safe-area-inset-bottom, 0px));
+      background: transparent;
       background-size: cover;
       background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    /* 1. KONDISI TANPA FOTO: Center Murni */
+    .site-footer.no-closing-photo {
+      justify-content: center;
+      align-items: center;
+      background: transparent;
+    }
+
+    /* 2. KONDISI ADA FOTO: Space-Between Memisahkan Ornamen Atas & Konten Bawah */
+    .site-footer.has-closing-photo {
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Scrim Gradient Gelap Dinamis Melindungi Keterbacaan Teks di Atas Foto */
+    .site-footer.has-closing-photo::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0.15) 0%,
+        color-mix(in srgb, var(--bg-dark, #140204) 45%, transparent) 45%,
+        color-mix(in srgb, var(--bg-dark, #140204) 92%, transparent) 100%
+      );
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Ornamen Budaya Atas (Top Walasuji) */
+    .site-footer .closing-top-ornament {
+      position: relative;
+      z-index: 2;
+      width: clamp(130px, 35vw, 160px);
+      margin: 0 auto 1.2rem;
+    }
+    .site-footer.has-closing-photo .closing-top-ornament {
+      width: clamp(100px, 28vw, 125px);
+      margin: 0 auto 0.6rem;
+    }
+
+    /* Kontainer Konten Penutup (Di Bawah, Di Atas Scrim) */
+    .site-footer .closing-content {
+      position: relative;
+      z-index: 2;
+      max-width: 520px;
+      width: 100%;
+      margin: 0 auto;
+    }
+    .site-footer.has-closing-photo .closing-content {
+      margin-top: auto;
     }
 
     /* BOTTOM DOCK & MUSIC FAB */
@@ -939,12 +1232,68 @@
     .music-fab.playing {
       animation: pulseGlow 2s infinite ease-in-out;
     }
+
+    /* MODAL QR CHECK-IN & SOUVENIR */
+    .modal-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.4rem;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    .modal-bg.open {
+      opacity: 1;
+      visibility: visible;
+    }
+    .modal-card {
+      background: color-mix(in srgb, var(--primary, #5a0b10) 30%, var(--bg-dark, #140204) 90%);
+      border: 1px solid var(--border-gold);
+      border-radius: 16px;
+      padding: 2.2rem 1.8rem;
+      width: 100%;
+      max-width: 380px;
+      text-align: center;
+      position: relative;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.6);
+    }
+    .modal-close {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border-gold);
+      color: var(--bugis-gold);
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+    }
+    .modal-close:hover {
+      background: var(--bugis-gold);
+      color: var(--bg-dark);
+    }
   </style>
 </head>
 <body>
 
-  <!-- FIXED BACKGROUND LAYER -->
-  <div class="fixed-bg-layer"></div>
+  <!-- LAPISAN 2: MEDIA SLOT BACKGROUND (MURNI GAMBAR) -->
+  <div class="fixed-bg-layer" aria-hidden="true"></div>
+
+  <!-- LAPISAN 3: KANVAS SCRIM OVERLAY (MANDIRI) -->
+  <div class="scrim-canvas" aria-hidden="true"></div>
 
   <!-- FLOATING AUDIO CONTROL -->
   <button id="musicToggle" class="music-fab" aria-label="Toggle Musik" onclick="toggleAudio()">
@@ -958,18 +1307,20 @@
 
   <!-- COVER SCREEN POP-UP (PORTAL GATE) -->
   <div id="coverScreen" class="cover-screen">
-    <!-- 4 Corner Floral Ornaments -->
+    <!-- Top Floral Ornaments -->
     <img src="/assets/ornaments/flowers/flower-tl.webp" alt="Ornament" class="corner-floral corner-tl">
     <img src="/assets/ornaments/flowers/flower-tr.webp" alt="Ornament" class="corner-floral corner-tr">
-    <img src="/assets/ornaments/flowers/flower-bl.webp" alt="Ornament" class="corner-floral corner-bl">
-    <img src="/assets/ornaments/flowers/flower-br.webp" alt="Ornament" class="corner-floral corner-br">
     
-    <!-- Top & Bottom Gold Borders -->
-    <img src="/assets/ornaments/bugis/frame-top.webp" alt="Border" class="bugis-frame-top">
-    <img src="/assets/ornaments/bugis/frame-bottom.webp" alt="Border" class="bugis-frame-bottom">
+    <!-- Top & Bottom Gold Borders (Seamless Repeat Architecture) -->
+    <div class="bugis-frame-top" role="presentation"></div>
+    <div class="bugis-frame-bottom" role="presentation"></div>
 
-    <div class="cover-emblem-wrap">
-      <img src="/assets/ornaments/bugis/rumah-adat-bugis.webp" alt="Rumah Adat Bugis" class="cover-emblem-img">
+    <div class="walasuji-arch-wrap">
+      <div class="walasuji-photo-frame">
+        <img src="{{homePhotoUrl}}" alt="{{firstName}} &amp; {{secondName}}" class="walasuji-photo">
+      </div>
+      <img src="/assets/ornaments/bugis/sabbe.webp" alt="Kain Sabbe Bugis" class="walasuji-sabbe-drape">
+      <img src="/assets/ornaments/bugis/vapillion-bamboo2.webp" alt="Gerbang Walasuji" class="walasuji-arch-img">
     </div>
 
     <div class="cover-tagline" data-lux-field="customLabels.coverBadge">{{coverBadge}}</div>
@@ -982,7 +1333,7 @@
 
     <div class="cover-guest-box">
       <div class="cover-guest-lbl" data-lux-field="customLabels.coverGuestLabel">KEPADA YTH. BAPAK/IBU/SAUDARA/I</div>
-      <div class="cover-guest-val" id="guestNameSlot">{{guestName}}</div>
+      <div class="cover-guest-val" id="coverGuestName">Tamu Undangan</div>
     </div>
 
     <button type="button" class="btn-buka-undangan" onclick="openInvitation()" data-lux-field="customLabels.openBtn">
@@ -991,27 +1342,35 @@
         <polyline points="7 10 12 15 17 10"></polyline>
         <line x1="12" y1="15" x2="12" y2="3"></line>
       </svg>
-      {{openBtnText}}
+      {{openBtn}}
     </button>
   </div>
 
   <!-- MAIN LAYOUT WRAPPER (DESKTOP SPLIT 460PX) -->
   <div class="layout-wrapper">
     
-    <!-- DESKTOP SIDEBAR (HERO WIDESCREEN - CLEAN CANVAS) -->
-    <aside class="sidebar-desktop"></aside>
+    <!-- DESKTOP SIDEBAR (HERO WIDESCREEN) -->
+    <aside class="sidebar-desktop">
+      <div class="sidebar-desktop-content">
+        <img src="/assets/ornaments/bugis/top-walasuji.webp" alt="Walasuji Bugis" class="sidebar-desktop-emblem">
+        <div class="sidebar-desktop-tagline">{{weddingTagline}}</div>
+        <h1 class="sidebar-desktop-names">{{firstName}} <span>&amp;</span> {{secondName}}</h1>
+        <div class="sidebar-desktop-date">{{weddingDate}}</div>
+        <p class="sidebar-desktop-quote">"Kurru Sumanga’ - Menautkan dua insan dalam ikatan suci adat dan syariat."</p>
+      </div>
+    </aside>
 
     <!-- RIGHT SCROLLABLE PANEL (460PX) -->
     <main class="main-scroll-panel">
 
       <!-- SECTION 1: HOME / OPENING HERO -->
       <section id="home" class="sec-home">
-        <!-- Top & Bottom Gold Borders -->
-        <img src="/assets/ornaments/bugis/frame-top.webp" alt="Border" class="bugis-frame-top">
-        <img src="/assets/ornaments/bugis/frame-bottom.webp" alt="Border" class="bugis-frame-bottom">
+        <!-- Top & Bottom Gold Borders (Seamless Repeat Architecture) -->
+        <div class="bugis-frame-top" role="presentation"></div>
+        <div class="bugis-frame-bottom" role="presentation"></div>
 
         <div class="home-emblem-wrap reveal-on-scroll">
-          <img src="/assets/ornaments/bugis/rumah-adat-bugis.webp" alt="Rumah Adat Bugis">
+          <img src="/assets/ornaments/bugis/top-walasuji.webp" alt="Walasuji Bugis">
         </div>
         
         <span class="sec-eyebrow reveal-on-scroll" data-lux-field="customLabels.coverSubtitle">{{coverSubtitle}}</span>
@@ -1031,7 +1390,7 @@
         </h2>
 
         <div class="home-date-badge reveal-on-scroll">
-          {{primaryEventDate}}
+          {{weddingDate}}
         </div>
 
         <!-- COUNTDOWN SHRINE -->
@@ -1047,6 +1406,9 @@
 
       <!-- SECTION 2: QUOTE / DOA ADAT BUGIS -->
       <section class="sec-flow sec-quote">
+        {{#if openingGreeting}}
+        <div class="font-bugis-accent reveal-on-scroll" style="font-size: 1.8rem; color: var(--bugis-gold); margin-bottom: 0.6rem;" data-lux-field="customLabels.openingGreeting">{{openingGreeting}}</div>
+        {{/if}}
         <span class="sec-eyebrow reveal-on-scroll" data-lux-field="customLabels.quoteEyebrow">{{quoteSectionEyebrow}}</span>
         <h2 class="sec-main-title reveal-on-scroll" data-lux-field="customLabels.quoteTitle">{{quoteSectionTitle}}</h2>
         
@@ -1054,9 +1416,11 @@
           <p class="font-bugis-quote" style="font-size: 1.15rem; line-height: 1.7; color: #ffffff; margin-bottom: 1.2rem;" data-lux-field="customLabels.openingQuote">
             {{openingQuote}}
           </p>
+          {{#if openingQuoteRef}}
           <div style="font-size: 0.8rem; letter-spacing: 0.15em; color: var(--bugis-gold); text-transform: uppercase;" data-lux-field="customLabels.openingQuoteRef">
             {{openingQuoteRef}}
           </div>
+          {{/if}}
         </div>
       </section>
 
@@ -1068,40 +1432,54 @@
           {{coupleSectionSub}}
         </p>
 
-        <!-- GROOM CARD -->
-        <div class="couple-card reveal-on-scroll">
-          <div class="couple-photo-wrap">
-            <img src="{{groomPhotoUrl}}" alt="{{groomName}}">
+        <!-- GROOM — CARDLESS BAMBOO FRAME -->
+        <div class="couple-profile reveal-on-scroll">
+          <div class="couple-frame-wrap">
+            <!-- Foto di balik frame -->
+            <div class="couple-photo-inner">
+              <img src="{{firstPhotoUrl}}" alt="{{firstDisplayName}}">
+            </div>
+            <!-- Frame bambu sebagai overlay -->
+            <img
+              src="/assets/ornaments/bugis/frame-profil.webp"
+              alt="Bingkai Bambu Bugis"
+              class="couple-frame-overlay"
+            >
           </div>
-          <h3 class="couple-name">{{groomFullName}}</h3>
-          <div class="couple-parents">
-            {{firstParentPrefix}}<br>
-            <strong>{{firstFather}}</strong> &amp; <strong>{{firstMother}}</strong>
+          <h3 class="couple-name" data-lux-field="groomName">{{firstDisplayName}}</h3>
+          <div class="couple-parents" data-lux-field="groomParents">
+            {{firstParents}}
           </div>
-          {{#if groomIg}}
-          <a href="https://instagram.com/{{groomIg}}" target="_blank" class="couple-ig">
+          {{#if firstInstagram}}
+          <a href="https://instagram.com/{{firstInstagram}}" target="_blank" class="couple-ig">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
-            @{{groomIg}}
+            @{{firstInstagram}}
           </a>
           {{/if}}
         </div>
 
-        <div class="reveal-on-scroll" style="font-family: 'Great Vibes', cursive; font-size: 2.8rem; color: var(--bugis-gold); margin: 0.5rem 0 2rem;">&amp;</div>
+        <div class="reveal-on-scroll" style="font-family: 'Great Vibes', cursive; font-size: 2.8rem; color: var(--bugis-gold); margin: 0.5rem 0 2.5rem;">&amp;</div>
 
-        <!-- BRIDE CARD -->
-        <div class="couple-card reveal-on-scroll">
-          <div class="couple-photo-wrap">
-            <img src="{{bridePhotoUrl}}" alt="{{brideName}}">
+        <!-- BRIDE — CARDLESS BAMBOO FRAME -->
+        <div class="couple-profile reveal-on-scroll">
+          <div class="couple-frame-wrap">
+            <div class="couple-photo-inner">
+              <img src="{{secondPhotoUrl}}" alt="{{secondDisplayName}}">
+            </div>
+            <img
+              src="/assets/ornaments/bugis/frame-profil.webp"
+              alt="Bingkai Bambu Bugis"
+              class="couple-frame-overlay"
+            >
           </div>
-          <h3 class="couple-name">{{brideFullName}}</h3>
-          <div class="couple-parents">
-            {{secondParentPrefix}}<br>
-            <strong>{{secondFather}}</strong> &amp; <strong>{{secondMother}}</strong>
+          <h3 class="couple-name" data-lux-field="brideName">{{secondDisplayName}}</h3>
+          <div class="couple-parents" data-lux-field="brideParents">
+            {{secondParents}}
           </div>
-          {{#if brideIg}}
-          <a href="https://instagram.com/{{brideIg}}" target="_blank" class="couple-ig">
+          {{#if secondInstagram}}
+          <a href="https://instagram.com/{{secondInstagram}}" target="_blank" class="couple-ig">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
-            @{{brideIg}}
+            @{{secondInstagram}}
           </a>
           {{/if}}
         </div>
@@ -1131,40 +1509,43 @@
       {{/if}}
 
       <!-- SECTION 6: GALLERY / OUR MOMENTS -->
-      {{#if showGallery}}
-      <section id="gallery" class="sec-flow sec-gallery">
-        <span class="sec-eyebrow reveal-on-scroll" data-lux-field="customLabels.galleryEyebrow">{{gallerySectionEyebrow}}</span>
-        <h2 class="sec-main-title reveal-on-scroll" data-lux-field="customLabels.galleryTitle">{{gallerySectionTitle}}</h2>
-        
-        <div class="gallery-masonry-grid reveal-on-scroll">
-          {{galleryItemsHtml}}
-        </div>
-      </section>
-      {{/if}}
+      <div id="gallery" style="position:relative; top:-20px;"></div>
+      {{gallerySectionHtml}}
 
-      <!-- SECTION 7: WEDDING GIFT -->
-      {{#if showGift}}
-      <section id="gift" class="sec-flow sec-gift">
-        <span class="sec-eyebrow reveal-on-scroll" data-lux-field="customLabels.giftEyebrow">{{giftSectionEyebrow}}</span>
-        <h2 class="sec-main-title reveal-on-scroll" data-lux-field="customLabels.giftTitle">{{giftSectionTitle}}</h2>
-        <p class="reveal-on-scroll" style="font-size: 0.85rem; color: var(--text-muted); max-width: 340px; margin: 0 auto 2rem;" data-lux-field="customLabels.giftDesc">
-          {{giftSectionDesc}}
-        </p>
+      <!-- SECTION 7: DRESS CODE -->
+      {{dressCodeHtml}}
 
-        {{giftSectionHtml}}
-      </section>
-      {{/if}}
+      <!-- SECTION 8: LIVE STREAMING -->
+      {{liveStreamingHtml}}
 
-      <!-- SECTION 8: RSVP & WISHES -->
+      <!-- SECTION 9: WEDDING FILTER -->
+      {{weddingFilterHtml}}
+
+      <!-- SECTION 10: WEDDING GIFT -->
+      {{giftSectionHtml}}
+
+      <!-- SECTION 11: TURUT MENGUNDANG -->
+      {{turutMengundangHtml}}
+
+      <!-- SECTION 12: GUEST MEMORIES PHOTO BOOTH -->
+      {{memoriesSectionHtml}}
+
+      <!-- SECTION 13: QR CHECK-IN ACCESS CARD -->
+      {{qrAccessSectionHtml}}
+
+      <!-- SECTION 14: RSVP & WISHES -->
       <section id="rsvp" class="sec-flow sec-rsvp">
-        <span class="sec-eyebrow reveal-on-scroll" data-lux-field="customLabels.rsvpEyebrow">KONFIRMASI KEHADIRAN</span>
+        <span class="sec-eyebrow reveal-on-scroll" data-lux-field="customLabels.wishesEyebrow">{{wishesSectionEyebrow}}</span>
         <h2 class="sec-main-title reveal-on-scroll" data-lux-field="customLabels.rsvpTitle">{{rsvpTitle}}</h2>
+        <p class="reveal-on-scroll" style="font-size: 0.85rem; color: var(--text-muted); max-width: 340px; margin: 0 auto 2rem;" data-lux-field="customLabels.wishesSub">
+          {{wishesSectionSub}}
+        </p>
         
         <div class="rsvp-form-box reveal-on-scroll">
           <form id="rsvpForm" onsubmit="luxSubmitRsvp(event)">
             <div class="form-group">
               <label for="rsvpName" data-lux-field="customLabels.rsvpNameLabel">Nama Lengkap</label>
-              <input type="text" id="rsvpName" name="name" class="form-in" value="{{guestName}}" required placeholder="Tulis nama Anda">
+              <input type="text" id="rsvpName" name="guestName" class="form-in" value="" required placeholder="Tulis nama Anda">
             </div>
             <div class="form-group">
               <label for="rsvpStatus" data-lux-field="customLabels.rsvpStatusLabel">Konfirmasi Kehadiran</label>
@@ -1175,57 +1556,61 @@
               </select>
             </div>
             <div class="form-group">
-              <label for="rsvpPax" data-lux-field="customLabels.rsvpCountLabel">Jumlah Tamu</label>
-              <select id="rsvpPax" name="pax" class="form-sel">
+              <label for="rsvpCount" data-lux-field="customLabels.rsvpCountLabel">Jumlah Tamu</label>
+              <select id="rsvpCount" name="guestCount" class="form-sel">
                 <option value="1">1 Orang</option>
                 <option value="2">2 Orang</option>
+                <option value="3">3 Orang</option>
+                <option value="4">4 Orang</option>
               </select>
             </div>
             <div class="form-group">
               <label for="rsvpMessage" data-lux-field="customLabels.rsvpMessageLabel">Ucapan &amp; Doa Restu</label>
               <textarea id="rsvpMessage" name="message" class="form-ta" rows="3" required placeholder="Tuliskan doa restu untuk kedua mempelai"></textarea>
             </div>
-            <button type="submit" class="btn-rsvp-submit" data-lux-field="customLabels.rsvpBtnText">
+            <button type="submit" id="btnSubmit" class="btn-rsvp-submit" data-lux-field="customLabels.rsvpBtnText">
               {{rsvpBtnText}}
             </button>
           </form>
         </div>
 
         <!-- WISHES FEED -->
-        <div class="wishes-stream-wrap reveal-on-scroll" id="wishesStream">
-          {{wishesItemsHtml}}
+        <div class="wishes-stream-wrap wishes-feed-list wishes-list reveal-on-scroll" id="wishesList">
+          {{wishesHtml}}
         </div>
       </section>
 
       <!-- VENDORS SECTION -->
       {{vendorsSectionHtml}}
 
-      <!-- SECTION 9: OUTRO / CLOSING FOOTER 100VH -->
+      <!-- SECTION 15: OUTRO / CLOSING FOOTER 100VH -->
       <footer class="site-footer {{closingPhotoClass}}" style="{{closingBgStyle}}">
-        <!-- 4 Corner Floral Ornaments -->
+        <!-- Top Floral Ornaments -->
         <img src="/assets/ornaments/flowers/flower-tl.webp" alt="Ornament" class="corner-floral corner-tl">
         <img src="/assets/ornaments/flowers/flower-tr.webp" alt="Ornament" class="corner-floral corner-tr">
-        <img src="/assets/ornaments/flowers/flower-bl.webp" alt="Ornament" class="corner-floral corner-bl">
-        <img src="/assets/ornaments/flowers/flower-br.webp" alt="Ornament" class="corner-floral corner-br">
         
-        <!-- Top & Bottom Gold Borders -->
-        <img src="/assets/ornaments/bugis/frame-top.webp" alt="Border" class="bugis-frame-top">
-        <img src="/assets/ornaments/bugis/frame-bottom.webp" alt="Border" class="bugis-frame-bottom">
+        <!-- Top & Bottom Gold Borders (Seamless Repeat Architecture) -->
+        <div class="bugis-frame-top" role="presentation"></div>
+        <div class="bugis-frame-bottom" role="presentation"></div>
 
-        <div class="reveal-on-scroll" style="width: 100px; margin: 0 auto 1.5rem;">
-          <img src="/assets/ornaments/bugis/rumah-adat-bugis.webp" alt="Rumah Adat Bugis" style="width: 100%; height: auto; filter: drop-shadow(0 6px 18px var(--gold-glow));">
+        <!-- Top Cultural Ornament (Statis di Atas) -->
+        <div class="closing-top-ornament reveal-on-scroll">
+          <img src="/assets/ornaments/bugis/top-walasuji.webp" alt="Walasuji Bugis" style="width: 100%; height: auto; filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.45));">
         </div>
 
-        <p class="font-bugis-quote reveal-on-scroll" style="font-size: 1.15rem; line-height: 1.7; color: #ffffff; max-width: 360px; margin: 0 auto 1.5rem;" data-lux-field="customLabels.closingQuote">
-          {{closingQuote}}
-        </p>
-        
-        <div class="reveal-on-scroll" style="font-size: 0.85rem; letter-spacing: 0.15em; color: var(--bugis-gold); text-transform: uppercase;" data-lux-field="customLabels.closingSub">
-          {{closingSub}}
-        </div>
+        <!-- Closing Content Box (Merapat ke Bawah saat Ada Foto) -->
+        <div class="closing-content">
+          <p class="font-bugis-quote reveal-on-scroll" style="font-size: 1.15rem; line-height: 1.7; color: #ffffff; max-width: 360px; margin: 0 auto 1.5rem;" data-lux-field="customLabels.closingQuote">
+            {{closingQuote}}
+          </p>
+          
+          <div class="reveal-on-scroll" style="font-size: 0.85rem; letter-spacing: 0.15em; color: var(--bugis-gold); text-transform: uppercase;" data-lux-field="customLabels.closingSub">
+            {{closingSub}}
+          </div>
 
-        <div class="font-bugis-title reveal-on-scroll" style="font-size: 1.8rem; color: #ffffff; margin-top: 1.8rem; font-weight: 600;">
-          {{firstName}} &amp; {{secondName}}
+          <div class="font-bugis-title reveal-on-scroll" style="font-size: 1.8rem; color: #ffffff; margin-top: 1.8rem; font-weight: 600;">
+            {{firstName}} &amp; {{secondName}}
+          </div>
         </div>
       </footer>
 
@@ -1233,20 +1618,49 @@
   </div>
 
   <!-- FLOATING BOTTOM DOCK NAVIGATION -->
-  <nav class="bottom-dock">
+  <nav class="bottom-dock" id="bottomDock">
     <a href="#home" class="dock-a" aria-label="Home">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+      <span>Home</span>
     </a>
     <a href="#couple" class="dock-a" aria-label="Mempelai">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg>
+      <span>Couple</span>
     </a>
     <a href="#events" class="dock-a" aria-label="Acara">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+      <span>Acara</span>
+    </a>
+    <a href="#story" class="dock-a" aria-label="Kisah">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"></path><path d="M6 6h10"></path><path d="M6 10h10"></path></svg>
+      <span>Kisah</span>
+    </a>
+    <a href="#gallery" class="dock-a" aria-label="Galeri">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path></svg>
+      <span>Galeri</span>
+    </a>
+    <a href="#gift" class="dock-a" aria-label="Kado">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="14" rx="2"></rect><path d="M12 8v14"></path><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"></path><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"></path></svg>
+      <span>Kado</span>
     </a>
     <a href="#rsvp" class="dock-a" aria-label="RSVP &amp; Ucapan">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+      <span>Doa</span>
     </a>
+    {{qrDockButtonHtml}}
   </nav>
+
+  <!-- QR / TICKET MODAL -->
+  <div class="modal-bg" id="modalBg" onclick="closeModal(event)">
+    <div class="modal-card" onclick="event.stopPropagation()">
+      <button class="modal-close" onclick="closeModal()" aria-label="Tutup Modal">✕</button>
+      {{qrAccessCardHtml}}
+      <div style="margin-top: 1.2rem; padding: 0.9rem; background: color-mix(in srgb, var(--bg-dark) 85%, transparent); border: 1px solid var(--border-gold); text-align: center; border-radius: 10px;">
+        <span style="font-size: 0.65rem; letter-spacing: 0.2em; color: var(--text-muted); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 0.4rem;">Voucher Souvenir</span>
+        <div style="font-family: monospace; font-weight: 700; font-size: 0.85rem; color: var(--bugis-gold); letter-spacing: 0.12em; padding: 0.45rem; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--border-gold); border-radius: 6px;">SOUVENIR-{{invitationId}}</div>
+      </div>
+    </div>
+  </div>
 
   <!-- THEME RUNTIME SCRIPTS -->
   <script>
@@ -1507,6 +1921,19 @@
       });
     }
 
+    // MODAL HANDLERS
+    function openModal() {
+      const modal = document.getElementById('modalBg');
+      if (modal) modal.classList.add('open');
+    }
+
+    function closeModal(e) {
+      if (!e || e.target === document.getElementById('modalBg') || (e.target && e.target.classList && e.target.classList.contains('modal-close'))) {
+        const modal = document.getElementById('modalBg');
+        if (modal) modal.classList.remove('open');
+      }
+    }
+
     // SUBMIT RSVP
     async function luxSubmitRsvp(e) {
       e.preventDefault();
@@ -1518,9 +1945,9 @@
         btn.textContent = 'MENGIRIM...';
       }
 
-      const name = form.name.value;
+      const name = form.guestName ? form.guestName.value : (form.name ? form.name.value : '');
       const status = form.status.value;
-      const pax = form.pax ? form.pax.value : '1';
+      const pax = form.guestCount ? form.guestCount.value : (form.pax ? form.pax.value : '1');
       const msg = form.message.value;
 
       try {
@@ -1529,15 +1956,20 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             invitationId: '{{invitationId}}',
-            name: name,
+            guestName: name,
             status: status,
-            pax: parseInt(pax) || 1,
+            guestCount: parseInt(pax) || 1,
             message: msg
           })
         });
 
-        // Prepend wish to stream
-        const stream = document.getElementById('wishesStream');
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || 'Gagal mengirim RSVP');
+        }
+
+        // Prepend wish to feed
+        const stream = document.getElementById('wishesList') || document.getElementById('wishesStream');
         if (stream && msg) {
           const item = document.createElement('div');
           item.className = 'wish-item';
@@ -1555,8 +1987,11 @@
         }, 2500);
       } catch (err) {
         if (btn) {
-          btn.disabled = false;
-          btn.textContent = oldBtnText;
+          btn.textContent = 'GAGAL MENGIRIM';
+          setTimeout(function() {
+            btn.disabled = false;
+            btn.textContent = oldBtnText;
+          }, 2500);
         }
       }
     }

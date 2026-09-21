@@ -11,15 +11,26 @@ import { getPlanDisplayName } from "@/lib/planUtils";
 
 
 const COLOR_PALETTES = [
+  // Palet Universal & Modern
   { id: "champagne", name: "Royal Champagne Gold", hex: "#a67c52", desc: "Elegan, netral, universal mewah" },
   { id: "emerald", name: "Emerald Green & Gold", hex: "#1b4332", desc: "Nuansa agung khas Bugis-Makassar / Islami" },
   { id: "burgundy", name: "Burgundy & Rose Gold", hex: "#54192b", desc: "Megah, klasik, dan romantis berani" },
   { id: "sage", name: "Botanical Sage Green", hex: "#4a5d4e", desc: "Segar, earthy, dan organik kekinian" },
   { id: "terracotta", name: "Warm Terracotta & Sand", hex: "#8c583a", desc: "Hangat, rustic modern, dan estetik" },
   { id: "monochrome", name: "Monochrome Dark & Silver", hex: "#262626", desc: "Minimalis editorial hitam-putih" },
+  { id: "rose", name: "Dusty Rose & Blush", hex: "#9d5c63", desc: "Lembut, romantis, feminin pastel" },
+  { id: "midnight", name: "Midnight Navy & Gold", hex: "#1c2d42", desc: "Klasik megah, biru malam & aksen emas" },
+  // Palet Warisan Adat Bugis, Makassar & Toraja
   { id: "toraja", name: "Toraja Crimson & Bamboo Gold", hex: "#750b0a", desc: "Adat Toraja agung, merah marun & emas bambu" },
   { id: "bugis", name: "Bugis Royal Maroon & Gold", hex: "#5a0b10", desc: "Adat Bugis bangsawan, marun tua & emas megah" },
   { id: "makassar", name: "Makassar Phinisi Navy & Gold", hex: "#0a192f", desc: "Adat Makassar maritim, biru phinisi & emas" },
+  { id: "bone", name: "Bugis Bone Royal Saoraja", hex: "#46060a", desc: "Adat Bone Saoraja, marun mendalam & emas kerajaan" },
+  { id: "wajo", name: "Bugis Wajo Sutera Sengkang", hex: "#5e091e", desc: "Adat Wajo Sutera, merah fuchsia sutera & emas" },
+  { id: "soppeng", name: "Bugis Soppeng Latemmamala", hex: "#480b18", desc: "Adat Soppeng Latemmamala, merah marun klasik & emas" },
+  { id: "gowa", name: "Makassar Gowa Balla Lompoa", hex: "#08162b", desc: "Adat Gowa Balla Lompoa, biru navy agung & emas" },
+  { id: "maros", name: "Makassar Maros Salewangang", hex: "#081f26", desc: "Adat Maros Salewangang, teal gelap karst & emas" },
+  { id: "takalar", name: "Makassar Takalar Sanrobone", hex: "#061a33", desc: "Adat Takalar Sanrobone, biru pesisir & aksen emas" },
+  { id: "bulukumba", name: "Makassar Bulukumba Panrita Lopi", hex: "#0c1420", desc: "Adat Bulukumba Panrita Lopi, maritim samudra & emas pinisi" },
 ];
 
 // Preset Palet Busana Pernikahan Populer (1-Klik untuk Pengguna Awam)

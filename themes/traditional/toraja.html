@@ -20,7 +20,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>The Wedding of {{firstName}} &amp; {{secondName}} — Toraja Royal Heritage</title>
+  <title>The Wedding of {{firstName}} &amp; {{secondName}}</title>
   
   <!-- THEME TYPOGRAPHY: 100% Self-Hosted Local Google Fonts (Zero External Latency) -->
   <link rel="stylesheet" href="/fonts/fonts.css">
@@ -58,6 +58,8 @@
       overflow-x: hidden;
       width: 100%;
       max-width: 100%;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
     }
     body {
       font-family: 'Plus Jakarta Sans', sans-serif;
@@ -68,6 +70,16 @@
       max-width: 100%;
       position: relative;
       line-height: 1.6;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* Sembunyikan scrollbar visual bawaan peramban */
+    html::-webkit-scrollbar,
+    body::-webkit-scrollbar {
+      display: none;
+      width: 0;
+      height: 0;
     }
 
     /* TYPOGRAPHY CLASSES */
@@ -989,6 +1001,13 @@
 
     .wishes-stream-wrap {
       margin-top: 2rem; max-height: 340px; overflow-y: auto; overscroll-behavior: contain; padding-right: 0.4rem;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .wishes-stream-wrap::-webkit-scrollbar {
+      display: none;
+      width: 0;
+      height: 0;
     }
     .wish-item {
       background: var(--theme-card); border: 1px solid var(--border-gold);
@@ -1161,7 +1180,7 @@
       
       <div class="cover-guest-card">
         <div class="cover-guest-lbl" data-lux-field="customLabels.coverGuestLabel">KEPADA YTH. BAPAK/IBU/SAUDARA/I:</div>
-        <div class="cover-guest-val" id="guestNameSlot">{{guestName}}</div>
+        <div class="cover-guest-val" id="coverGuestName">Tamu Undangan</div>
       </div>
 
       <button type="button" class="btn-buka-undangan" onclick="openInvitation()" data-lux-field="customLabels.openBtn">
@@ -1481,7 +1500,7 @@
           <form id="rsvpForm" onsubmit="luxSubmitRsvp(event)">
             <div class="form-group">
               <label class="form-lbl" for="rsvpName" data-lux-field="customLabels.rsvpNameLabel">Nama Tamu</label>
-              <input type="text" id="rsvpName" name="name" class="form-in" required placeholder="Nama Anda" value="{{guestName}}">
+              <input type="text" id="rsvpName" name="name" class="form-in" required placeholder="Nama Anda" value="">
             </div>
             <div class="form-group">
               <label class="form-lbl" for="rsvpStatus" data-lux-field="customLabels.rsvpStatusLabel">Konfirmasi Kehadiran</label>

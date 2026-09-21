@@ -42,8 +42,8 @@ export async function compileAndSaveStaticDemo(
   const absoluteCover = rawCover.startsWith("http") ? rawCover : `${demoHost}${rawCover.startsWith("/") ? "" : "/"}${rawCover}`;
   const groom = (data as any).groomName || "Groom";
   const bride = (data as any).brideName || "Bride";
-  const demoTitle = `The Wedding of ${groom} & ${bride} — ${(data as any).themeName || cleanId.toUpperCase()}`;
-  const demoDesc = `Undangan pernikahan digital eksklusif tema ${(data as any).themeName || cleanId.toUpperCase()}. Desain elegan, split desktop view, RSVP real-time & galeri momen.`;
+  const demoTitle = `The Wedding of ${groom} & ${bride}`;
+  const demoDesc = `Undangan pernikahan digital eksklusif. Desain elegan, split desktop view, RSVP real-time & galeri momen.`;
   const platformName = await getAdminSetting("platform_name", "Platform Undangan");
 
   (data as any).metaTagsHtml = `

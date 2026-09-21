@@ -20,7 +20,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>{{firstName}} &amp; {{secondName}} — The Wedding</title>
+  <title>The Wedding of {{firstName}} &amp; {{secondName}}</title>
   <!-- 100% Self-Hosted Local Google Fonts (Zero External Latency) -->
   <link rel="stylesheet" href="/fonts/fonts.css">
   <style>
@@ -41,6 +41,15 @@
       overflow-x: hidden;
       scroll-behavior: smooth;
       width: 100%;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    /* Sembunyikan scrollbar visual bawaan peramban */
+    html::-webkit-scrollbar,
+    body::-webkit-scrollbar {
+      display: none;
+      width: 0;
+      height: 0;
     }
     h1, h2, h3, .serif {
       font-family: 'DM Serif Display', serif;
@@ -94,6 +103,20 @@
     .left-hero-names { font-size: clamp(2.6rem, 4.2vw, 4rem); line-height: 1.1; color: #ffffff; font-weight: 300; letter-spacing: 0.02em; }
     .left-hero-names em { font-style: italic; font-size: 0.8em; margin: 0 0.15em; color: rgba(255,255,255,0.75); display: inline; }
     .left-hero-date { font-size: 0.78rem; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(255,255,255,0.75); margin-top: 0.8rem; font-weight: 400; }
+
+    /* FIXED PARALLAX BACKGROUND LAYER (GLOBAL BG) */
+    .fixed-bg-layer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      z-index: 5;
+      background-position: center;
+      background-size: cover;
+      background-repeat: no-repeat;
+      pointer-events: none;
+    }
 
     /* RIGHT SCROLLABLE PANEL */
     .right-panel {
@@ -258,7 +281,16 @@
       border: none; font-weight: 700; font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; transition: all 0.3s;
     }
     .btn-rsvp-submit:hover { background: rgba(255,255,255,0.85); }
-    .wishes-list { margin-top: 1.5rem; max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.8rem; }
+    .wishes-list {
+      margin-top: 1.5rem; max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.8rem;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .wishes-list::-webkit-scrollbar {
+      display: none;
+      width: 0;
+      height: 0;
+    }
     .wish-item { padding: 0.9rem; background: rgba(255,255,255,0.03); border: 1px solid var(--border); text-align: left; }
     .wish-name { font-weight: 600; font-size: 0.82rem; color: #ffffff; margin-bottom: 0.2rem; }
     .wish-msg { font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; }
@@ -353,6 +385,7 @@
 
     @media (min-width: 900px) {
       .left-hero { display: block; width: calc(100% - 460px); }
+      .fixed-bg-layer { width: 460px; left: calc(100% - 460px); right: 0; }
       .cover-screen { width: 460px; left: calc(100% - 460px); }
       .right-panel { margin-left: calc(100% - 460px); width: 460px; min-width: 0; }
       .bottom-dock { left: calc(100% - 230px); }
@@ -400,11 +433,14 @@
     </div>
   </div>
 
+  <!-- FIXED PARALLAX BACKGROUND LAYER (GLOBAL BG) -->
+  <div class="fixed-bg-layer" style="background-image: linear-gradient(to bottom, rgba(7,7,9,0.55) 0%, rgba(7,7,9,0.40) 35%, rgba(7,7,9,0.82) 70%, rgba(7,7,9,0.94) 100%), url('{{globalBgUrl}}');"></div>
+
   <!-- RIGHT SCROLLABLE PANEL -->
   <div class="right-panel" id="rightPanel">
 
     <!-- 1. SLIDE 1: OPENING VIEW (100vh FULLSCREEN) -->
-    <section class="slide-opening" id="home" style="background-image: linear-gradient(to bottom, rgba(7,7,9,0.60) 0%, rgba(7,7,9,0.45) 40%, rgba(7,7,9,0.88) 100%), url('{{homePhotoCssUrl}}'), url('{{globalBgUrl}}');">
+    <section class="slide-opening" id="home" style="background-image: linear-gradient(to bottom, rgba(7,7,9,0.60) 0%, rgba(7,7,9,0.45) 40%, rgba(7,7,9,0.88) 100%), url('{{homePhotoCssUrl}}');">
       <div class="opening-top-date">
         <span>{{weddingDateDay}}/{{weddingDateMonth}}</span>
         <span>{{weddingDateYear}}</span>

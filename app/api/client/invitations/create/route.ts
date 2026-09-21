@@ -235,8 +235,80 @@ export async function POST(req: Request) {
   try {
     let invitation: { id: string; subdomain: string | null; status: string };
 
+    const defaultCustomLabels = {
+      coverSubtitle: blueprint.coverSubtitle,
+      coverBadge: blueprint.coverBadge || "THE WEDDING OF",
+      coverGuestLabel: "Kepada Yth. Bapak/Ibu/Saudara/i",
+      openingGreeting: blueprint.openingGreeting || "",
+      openBtn: blueprint.openBtn,
+      rsvpTitle: blueprint.rsvpTitle,
+      rsvpBtnText: blueprint.rsvpBtnText || "Kirim Konfirmasi & Doa",
+      quoteTitle: blueprint.quoteSectionTitle,
+      quoteEyebrow: blueprint.quoteSectionEyebrow,
+      coupleTitle: blueprint.coupleSectionTitle,
+      coupleEyebrow: blueprint.coupleSectionEyebrow || "THE COUPLE",
+      coupleSub: blueprint.coupleSectionSub,
+      eventsTitle: blueprint.eventsSectionTitle,
+      eventsEyebrow: blueprint.eventsSectionEyebrow || "AGENDA ACARA",
+      eventsSub: blueprint.eventsSectionSub,
+      storyTitle: blueprint.storySectionTitle,
+      storyEyebrow: blueprint.storySectionEyebrow || "OUR JOURNEY",
+      galleryTitle: blueprint.gallerySectionTitle,
+      galleryEyebrow: blueprint.gallerySectionEyebrow,
+      galleryQuote: blueprint.galleryQuote,
+      dressCodeTitle: blueprint.dressCodeTitle || "Dress Code",
+      dressCodeEyebrow: blueprint.dressCodeEyebrow || "A Guide To",
+      dressCodeSubtitle: blueprint.dressCodeSubtitle || "Kami mengundang tamu undangan untuk mengenakan palet warna berikut:",
+      streamingTitle: blueprint.streamingTitle || "Live Streaming",
+      streamingEyebrow: blueprint.streamingEyebrow || "Virtual Ceremony",
+      streamingSubtitle: blueprint.streamingSubtitle || "Bagi keluarga & sahabat yang menyaksikan dari jauh, bergabunglah melalui siaran daring:",
+      giftTitle: blueprint.giftSectionTitle,
+      giftEyebrow: blueprint.giftSectionEyebrow,
+      giftDesc: blueprint.giftSectionDesc,
+      turutMengundangTitle: blueprint.turutMengundangTitle || "Turut Mengundang",
+      turutMengundangEyebrow: blueprint.turutMengundangEyebrow || "Keluarga Besar",
+      turutMengundangSubtitle: blueprint.turutMengundangSubtitle || "Keluarga Besar & Kerabat yang turut berbahagia:",
+      wishesTitle: blueprint.wishesSectionTitle,
+      wishesEyebrow: blueprint.wishesSectionEyebrow || "WISHES & RSVP",
+      wishesSub: blueprint.wishesSectionSub,
+      closingQuote: blueprint.closingQuote,
+      closingSub: blueprint.closingSub,
+      rsvpNameLabel: "Nama Lengkap",
+      rsvpStatusLabel: "Konfirmasi Kehadiran",
+      rsvpCountLabel: "Jumlah Tamu",
+      rsvpMessageLabel: "Ucapan & Doa Restu",
+      vendorTitle: blueprint.vendorTitle || "Mitra Vendor",
+      vendorEyebrow: blueprint.vendorEyebrow || "WEDDING CREDITS",
+      vendorSubtitle: blueprint.vendorSubtitle || "Rasa terima kasih dan penghargaan setulusnya kepada seluruh vendor yang telah membantu menyempurnakan hari bahagia kami.",
+    };
+
+    const initialPalette = customDemoData?.defaultPalette || customDemoData?.colorPalette || blueprint.defaultPalette || "champagne";
+    const initialMusicUrl = customDemoData?.audioUrl || customDemoData?.defaultMusicUrl || blueprint.defaultMusicUrl || "";
+
     invitation = await prisma.$transaction(async (tx) => {
       if (existingDraft) {
+        let existingFs: any = {};
+        if (existingDraft.featureSettings) {
+          try {
+            existingFs = typeof existingDraft.featureSettings === "string" ? JSON.parse(existingDraft.featureSettings) : existingDraft.featureSettings;
+          } catch {}
+        }
+
+        const mergedFs = {
+          weddingTagline: existingFs.weddingTagline || blueprint.coverBadge || "THE WEDDING OF",
+          colorPalette: existingFs.colorPalette || initialPalette,
+          musicUrl: existingFs.musicUrl || existingDraft.musicUrl || initialMusicUrl || undefined,
+          showStory: existingFs.showStory !== undefined ? existingFs.showStory : true,
+          showGallery: existingFs.showGallery !== undefined ? existingFs.showGallery : true,
+          showGift: existingFs.showGift !== undefined ? existingFs.showGift : true,
+          showDresscode: existingFs.showDresscode !== undefined ? existingFs.showDresscode : true,
+          showMusic: existingFs.showMusic !== undefined ? existingFs.showMusic : true,
+          customLabels: {
+            ...defaultCustomLabels,
+            ...(existingFs.customLabels || {}),
+          },
+        };
+
         return tx.invitation.update({
           where: { id: existingDraft.id },
           data: {
@@ -250,9 +322,11 @@ export async function POST(req: Request) {
             invitationSlug: (finalGroomNick || finalBrideNick) ? invitationSlug : existingDraft.invitationSlug,
             subdomain: finalSubdomain !== null ? finalSubdomain : existingDraft.subdomain,
             themeId: themeId?.trim() ? themeId.trim() : (existingDraft.themeId || ""),
+            musicUrl: existingDraft.musicUrl || initialMusicUrl || undefined,
             openingQuote: blueprint.openingQuote || existingDraft.openingQuote,
             openingQuoteRef: blueprint.openingQuoteRef || existingDraft.openingQuoteRef,
             eventData: initialEvents.length > 0 ? JSON.stringify(initialEvents) : existingDraft.eventData,
+            featureSettings: JSON.stringify(mergedFs),
             status: "DRAFT",
             publishedAt: publishedAt || existingDraft.publishedAt,
           },
@@ -262,6 +336,7 @@ export async function POST(req: Request) {
           data: {
             userId: userId,
             orderId: paidOrder?.id ?? undefined,
+            musicUrl: initialMusicUrl || undefined,
             groomName: groomName?.trim() || finalGroomNick || "",
             brideName: brideName?.trim() || finalBrideNick || "",
             groomNickname: finalGroomNick || "",
@@ -275,49 +350,15 @@ export async function POST(req: Request) {
             openingQuoteRef: blueprint.openingQuoteRef,
             eventData: JSON.stringify(initialEvents),
             featureSettings: JSON.stringify({
-              weddingTagline: "THE WEDDING OF",
-              colorPalette: blueprint.defaultPalette || "champagne",
+              weddingTagline: blueprint.coverBadge || "THE WEDDING OF",
+              colorPalette: initialPalette,
+              musicUrl: initialMusicUrl || undefined,
               showStory: true,
               showGallery: true,
               showGift: true,
               showDresscode: true,
               showMusic: true,
-              customLabels: {
-                coverSubtitle: blueprint.coverSubtitle,
-                openBtn: blueprint.openBtn,
-                rsvpTitle: blueprint.rsvpTitle,
-                rsvpBtnText: blueprint.rsvpBtnText || "Kirim Konfirmasi & Doa",
-                quoteTitle: blueprint.quoteSectionTitle,
-                quoteEyebrow: blueprint.quoteSectionEyebrow,
-                coupleTitle: blueprint.coupleSectionTitle,
-                coupleEyebrow: blueprint.coupleSectionEyebrow || "THE COUPLE",
-                coupleSub: blueprint.coupleSectionSub,
-                eventsTitle: blueprint.eventsSectionTitle,
-                eventsSub: blueprint.eventsSectionSub,
-                storyTitle: blueprint.storySectionTitle,
-                storyEyebrow: blueprint.storySectionEyebrow || "OUR JOURNEY",
-                galleryTitle: blueprint.gallerySectionTitle,
-                galleryEyebrow: blueprint.gallerySectionEyebrow,
-                galleryQuote: blueprint.galleryQuote,
-                dressCodeTitle: blueprint.dressCodeTitle || "Dress Code",
-                dressCodeEyebrow: blueprint.dressCodeEyebrow || "A Guide To",
-                dressCodeSubtitle: blueprint.dressCodeSubtitle || "Kami mengundang tamu undangan untuk mengenakan palet warna berikut:",
-                streamingTitle: blueprint.streamingTitle || "Live Streaming",
-                streamingEyebrow: blueprint.streamingEyebrow || "Virtual Ceremony",
-                streamingSubtitle: blueprint.streamingSubtitle || "Bagi keluarga & sahabat yang menyaksikan dari jauh, bergabunglah melalui siaran daring:",
-                giftTitle: blueprint.giftSectionTitle,
-                giftEyebrow: blueprint.giftSectionEyebrow,
-                giftDesc: blueprint.giftSectionDesc,
-                turutMengundangTitle: blueprint.turutMengundangTitle || "Turut Mengundang",
-                turutMengundangEyebrow: blueprint.turutMengundangEyebrow || "Keluarga Besar",
-                turutMengundangSubtitle: blueprint.turutMengundangSubtitle || "Keluarga Besar & Kerabat yang turut berbahagia:",
-                wishesTitle: blueprint.wishesSectionTitle,
-                wishesSub: blueprint.wishesSectionSub,
-                rsvpNameLabel: "Nama Lengkap",
-                rsvpStatusLabel: "Konfirmasi Kehadiran",
-                rsvpCountLabel: "Jumlah Tamu",
-                rsvpMessageLabel: "Ucapan & Doa Restu"
-              }
+              customLabels: defaultCustomLabels,
             }),
             status: invitationStatus,
             publishedAt: publishedAt,

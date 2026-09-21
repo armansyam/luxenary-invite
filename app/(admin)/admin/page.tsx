@@ -1946,7 +1946,7 @@ export default function AdminPage() {
       )}
 
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-30">
+      <header className="bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-200 sticky top-0 z-40">
         <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Left: Mobile Toggle + Brand */}
@@ -2102,7 +2102,7 @@ export default function AdminPage() {
         {/* Main Content */}
         <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 overflow-y-auto w-full relative">
           {loading && initialLoaded && (
-            <div className="absolute top-0 left-0 right-0 h-0.5 bg-amber-500 animate-pulse z-30 pointer-events-none" />
+            <div className="absolute top-0 left-0 right-0 h-0.5 bg-amber-500 animate-pulse z-20 pointer-events-none" />
           )}
           {loading && !initialLoaded ? (
             <div className="flex items-center justify-center py-20">
@@ -2796,7 +2796,7 @@ export default function AdminPage() {
                                         href={`/demo/${theme.id}`}
                                         target="_blank"
                                         rel="noreferrer"
-                                        className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20 bg-black/30 backdrop-blur-[1px]"
+                                        className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 bg-black/30 backdrop-blur-[1px]"
                                         title={`Buka Demo ${theme.name}`}
                                       >
                                         <span className="px-3.5 py-1.5 bg-stone-900/90 hover:bg-black text-white text-xs font-bold rounded-xl shadow-lg flex items-center gap-1.5 transition-transform group-hover:scale-105">
@@ -2832,7 +2832,7 @@ export default function AdminPage() {
                                     </div>
 
                                     {/* Floating Category Badge */}
-                                    <div className="absolute top-5 right-5 z-30 pointer-events-none">
+                                    <div className="absolute top-5 right-5 z-20 pointer-events-none">
                                       <span
                                         className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full border shadow-xs backdrop-blur-md ${
                                           cat === "traditional"
@@ -2847,7 +2847,7 @@ export default function AdminPage() {
                                     </div>
 
                                     {/* Floating Active Status Badge */}
-                                    <div className="absolute top-5 left-5 z-30">
+                                    <div className="absolute top-5 left-5 z-20">
                                       <button
                                         type="button"
                                         onClick={(e) => {
@@ -6732,61 +6732,126 @@ export default function AdminPage() {
                         </div>
                       </div>
 
-                      {/* Showroom Color Palette Selector */}
-                      <div className="p-4 bg-white border border-stone-200 rounded-2xl space-y-3">
-                        <div className="flex items-center justify-between">
+                      {/* Showroom & Baseline Color Palette Selector */}
+                      <div className="p-4 bg-white border border-stone-200 rounded-2xl space-y-3.5">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                           <div>
                             <h4 className="font-bold text-stone-900 text-xs uppercase tracking-wider">
-                              Palet Warna Showroom Demo
+                              Palet Warna Bawaan &amp; Showroom Demo
                             </h4>
                             <p className="text-[11px] text-stone-500 mt-0.5">
-                              Pilih nuansa warna resmi yang dikompilasi ke halaman pratinjau showroom publik (/demo/{demoStudioTheme.id}).
+                              Pilih palet warna resmi untuk tema ini. Palet ini menjadi standar bawaan otomatis saat klien membuat undangan baru dan diterapkan pada pratinjau showroom publik (/demo/{demoStudioTheme.id}).
                             </p>
                           </div>
-                          {(demoStudioData.defaultPalette || demoStudioData.colorPalette) && (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-stone-100 text-stone-700 capitalize">
-                              {demoStudioData.defaultPalette || demoStudioData.colorPalette}
-                            </span>
-                          )}
-                        </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5 pt-1">
-                          {[
-                            { id: "champagne", name: "Champagne Gold", hex: "#a67c52" },
-                            { id: "emerald", name: "Royal Emerald", hex: "#1b4332" },
-                            { id: "burgundy", name: "Burgundy Wine", hex: "#54192b" },
-                            { id: "sage", name: "Botanical Sage", hex: "#4a5d4e" },
-                            { id: "terracotta", name: "Warm Terracotta", hex: "#8c583a" },
-                            { id: "monochrome", name: "Monochrome Dark", hex: "#262626" },
-                          ].map((pal) => {
-                            const currentPal = demoStudioData.defaultPalette || demoStudioData.colorPalette || (demoStudioTheme.id === "badrika" ? "emerald" : demoStudioTheme.id === "candani" ? "terracotta" : demoStudioTheme.id === "ameera" ? "burgundy" : demoStudioTheme.id === "chronicle" ? "monochrome" : "champagne");
-                            const isSelected = currentPal === pal.id;
+                          {(() => {
+                            const activeBp = getThemeBlueprint(demoStudioTheme.id);
+                            const currentPal = demoStudioData.defaultPalette || demoStudioData.colorPalette || activeBp.defaultPalette || "champagne";
                             return (
-                              <button
-                                key={pal.id}
-                                type="button"
-                                onClick={() => {
-                                  setDemoStudioData((prev: any) => ({
-                                    ...prev,
-                                    defaultPalette: pal.id,
-                                    colorPalette: pal.id,
-                                  }));
-                                }}
-                                className={`p-2 rounded-xl border text-left flex items-center gap-2.5 transition cursor-pointer ${
-                                  isSelected
-                                    ? "border-amber-800 bg-amber-50/70 ring-2 ring-amber-800/30 shadow-xs"
-                                    : "border-stone-200 hover:border-stone-300 bg-white"
-                                }`}
-                              >
-                                <span
-                                  className="w-5 h-5 rounded-full shadow-inner border border-black/10 shrink-0"
-                                  style={{ backgroundColor: pal.hex }}
-                                />
-                                <div className="min-w-0">
-                                  <p className="text-[11px] font-bold text-stone-900 truncate">{pal.name}</p>
-                                </div>
-                              </button>
+                              <span className="self-start sm:self-auto text-[10px] font-bold px-2.5 py-1 rounded bg-stone-100 text-stone-700 capitalize border border-stone-200 shrink-0">
+                                Aktif: {currentPal}
+                              </span>
                             );
-                          })}
+                          })()}
+                        </div>
+
+                        {/* Palet Universal */}
+                        <div className="space-y-1.5">
+                          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">
+                            Palet Universal &amp; Editorial Modern (8 Palet)
+                          </p>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-2">
+                            {[
+                              { id: "champagne", name: "Champagne Gold", hex: "#a67c52" },
+                              { id: "emerald", name: "Royal Emerald", hex: "#1b4332" },
+                              { id: "burgundy", name: "Burgundy Wine", hex: "#54192b" },
+                              { id: "sage", name: "Botanical Sage", hex: "#4a5d4e" },
+                              { id: "terracotta", name: "Warm Terracotta", hex: "#8c583a" },
+                              { id: "monochrome", name: "Monochrome Dark", hex: "#262626" },
+                              { id: "rose", name: "Dusty Rose", hex: "#9d5c63" },
+                              { id: "midnight", name: "Midnight Navy", hex: "#1c2d42" },
+                            ].map((pal) => {
+                              const activeBp = getThemeBlueprint(demoStudioTheme.id);
+                              const currentPal = demoStudioData.defaultPalette || demoStudioData.colorPalette || activeBp.defaultPalette || "champagne";
+                              const isSelected = currentPal === pal.id;
+                              return (
+                                <button
+                                  key={pal.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setDemoStudioData((prev: any) => ({
+                                      ...prev,
+                                      defaultPalette: pal.id,
+                                      colorPalette: pal.id,
+                                    }));
+                                  }}
+                                  className={`p-2 rounded-xl border text-left flex items-center gap-2.5 transition cursor-pointer ${
+                                    isSelected
+                                      ? "border-amber-800 bg-amber-50/70 ring-2 ring-amber-800/30 shadow-xs"
+                                      : "border-stone-200 hover:border-stone-300 bg-white"
+                                  }`}
+                                >
+                                  <span
+                                    className="w-5 h-5 rounded-full shadow-inner border border-black/10 shrink-0"
+                                    style={{ backgroundColor: pal.hex }}
+                                  />
+                                  <div className="min-w-0">
+                                    <p className="text-[11px] font-bold text-stone-900 truncate">{pal.name}</p>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Palet Warisan Tradisional Bugis, Makassar & Toraja */}
+                        <div className="space-y-1.5 pt-1">
+                          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">
+                            Palet Warisan Tradisional Bugis, Makassar &amp; Toraja (10 Palet)
+                          </p>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+                            {[
+                              { id: "toraja", name: "Toraja Crimson", hex: "#750b0a" },
+                              { id: "bugis", name: "Bugis Maroon", hex: "#5a0b10" },
+                              { id: "makassar", name: "Makassar Phinisi", hex: "#0a192f" },
+                              { id: "bone", name: "Bugis Bone Saoraja", hex: "#46060a" },
+                              { id: "wajo", name: "Bugis Wajo Sutera", hex: "#5e091e" },
+                              { id: "soppeng", name: "Bugis Soppeng Latemmamala", hex: "#480b18" },
+                              { id: "gowa", name: "Makassar Gowa Balla Lompoa", hex: "#08162b" },
+                              { id: "maros", name: "Makassar Maros Salewangang", hex: "#081f26" },
+                              { id: "takalar", name: "Makassar Takalar Sanrobone", hex: "#061a33" },
+                              { id: "bulukumba", name: "Makassar Bulukumba Panrita Lopi", hex: "#0c1420" },
+                            ].map((pal) => {
+                              const activeBp = getThemeBlueprint(demoStudioTheme.id);
+                              const currentPal = demoStudioData.defaultPalette || demoStudioData.colorPalette || activeBp.defaultPalette || "champagne";
+                              const isSelected = currentPal === pal.id;
+                              return (
+                                <button
+                                  key={pal.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setDemoStudioData((prev: any) => ({
+                                      ...prev,
+                                      defaultPalette: pal.id,
+                                      colorPalette: pal.id,
+                                    }));
+                                  }}
+                                  className={`p-2 rounded-xl border text-left flex items-center gap-2.5 transition cursor-pointer ${
+                                    isSelected
+                                      ? "border-amber-800 bg-amber-50/70 ring-2 ring-amber-800/30 shadow-xs"
+                                      : "border-stone-200 hover:border-stone-300 bg-white"
+                                  }`}
+                                >
+                                  <span
+                                    className="w-5 h-5 rounded-full shadow-inner border border-black/10 shrink-0"
+                                    style={{ backgroundColor: pal.hex }}
+                                  />
+                                  <div className="min-w-0">
+                                    <p className="text-[11px] font-bold text-stone-900 truncate">{pal.name}</p>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
                       </div>
 

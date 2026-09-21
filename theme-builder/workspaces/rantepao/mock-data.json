@@ -1,0 +1,135 @@
+{
+  "themeId": "rantepao",
+  "themeName": "Rantepao",
+  "firstName": "Raditya",
+  "secondName": "Alisha",
+  "firstFullName": "Raditya Bagas Pratama, S.T.",
+  "secondFullName": "Alisha Zahra Maharani, B.A.",
+  "firstDisplayName": "Raditya Pratama",
+  "secondDisplayName": "Alisha Maharani",
+  "coupleMonogram": "R & A",
+  "groomRole": "Mempelai Pria",
+  "brideRole": "Mempelai Wanita",
+  "firstParentPrefix": "Putra pertama dari",
+  "firstFather": "Bpk. Bambang Wijaya",
+  "firstMother": "Ibu Ratna Dewi",
+  "secondParentPrefix": "Putri kedua dari",
+  "secondFather": "Bpk. Hendra Gunawan",
+  "secondMother": "Ibu Sri Mulyani",
+  "firstInstagram": "raditya.pratama",
+  "secondInstagram": "alisha.maharani",
+  "weddingDate": "Sabtu, 24 Oktober 2026",
+  "weddingDateDay": "24",
+  "weddingDateMonth": "10",
+  "weddingDateYear": "2026",
+  "targetDate": "2026-10-24T09:00:00+07:00",
+  "googleCalendarUrl": "https://calendar.google.com/calendar/render?action=TEMPLATE&text=The+Wedding+of+Raditya+%26+Alisha",
+  "weddingTagline": "THE WEDDING CELEBRATION",
+  "coverBadge": "WALIMATUL 'URS",
+  "coverSubtitle": "Tanpa mengurangi rasa hormat, kami mengundang Bapak/Ibu/Saudara/i untuk menghadiri hari bahagia kami.",
+  "openBtn": "Buka Undangan",
+  "openingGreeting": "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
+  "quoteSectionEyebrow": "WALIMATUL 'URS",
+  "quoteSectionTitle": "Untaian Doa Suci",
+  "openingQuote": "Dan di antara tanda-tanda (kebesaran)-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri, agar kamu cenderung dan merasa tenteram kepadanya, dan Dia menjadikan di antaramu rasa kasih dan sayang.",
+  "openingQuoteRef": "QS. AR-RUM: 21",
+  "coupleSectionEyebrow": "THE COUPLE",
+  "coupleSectionTitle": "Dua Insan Bahagia",
+  "coupleSectionSub": "Dua Hati Bersatu Menjalin Ikatan Suci Rumah Tangga Sakinah",
+  "eventsSectionTitle": "Rangkaian Acara",
+  "storySectionEyebrow": "OUR JOURNEY",
+  "storySectionTitle": "Kisah Kasih Kami",
+  "wishesSectionTitle": "Doa & Ucapan Restu",
+  "wishesSectionSub": "Untaian Harapan & Doa Suci Dari Sahabat Serta Kerabat",
+  "closingQuote": "Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu.",
+  "closingSub": "Salam hangat penuh hormat dari keluarga besar kedua mempelai.",
+  "sidebarPhotoUrl": "/demo/starter/hero.webp",
+  "globalBgUrl": "/demo/starter/background.webp",
+  "landingCoverUrl": "/demo/starter/cover.webp",
+  "homePhotoUrl": "/demo/starter/hero.webp",
+  "firstPhotoUrl": "/demo/starter/groom.webp",
+  "secondPhotoUrl": "/demo/starter/bride.webp",
+  "closingPhotoUrl": "/demo/starter/footer.webp",
+  "audioUrl": "/music/canon-in-d.ogg",
+  "events": [
+    {
+      "badge": "AKAD NIKAH",
+      "title": "Akad Nikah & Ijab Qabul",
+      "time": "08:00 - 10:00 WITA",
+      "location": "Grand Ballroom Hotel Mulia",
+      "address": "Jl. MH. Thamrin No. 1, Jakarta Pusat",
+      "mapsUrl": "https://maps.google.com"
+    },
+    {
+      "badge": "RESEPSI",
+      "title": "Resepsi Pernikahan",
+      "time": "11:00 - 14:00 WITA",
+      "location": "Grand Ballroom Hotel Mulia",
+      "address": "Jl. MH. Thamrin No. 1, Jakarta Pusat",
+      "mapsUrl": "https://maps.google.com"
+    }
+  ],
+  "stories": [
+    {
+      "chapter": "BAB I — PERTEMUAN",
+      "title": "Pertama Kali Bersua",
+      "content": "Pertemuan pertama yang tak disengaja di sebuah perpustakaan kota menjadi awal mula cerita indah ini bersemi."
+    },
+    {
+      "chapter": "BAB II — KOMITMEN",
+      "title": "Langkah Menuju Keseriusan",
+      "content": "Setelah melewati berbagai musim kehidupan bersama, kami memantapkan hati untuk saling melengkapi dalam ikatan suci."
+    },
+    {
+      "chapter": "BAB III — SELAMANYA",
+      "title": "Janji Sehidup Semati",
+      "content": "Kini, dengan restu kedua orang tua, kami mengikat janji suci untuk melangkah bersama mengarungi bahtera rumah tangga."
+    }
+  ],
+  "banks": [
+    {
+      "bank": "BCA",
+      "number": "8830918231",
+      "name": "Raditya Bagas Pratama"
+    },
+    {
+      "bank": "Bank Mandiri",
+      "number": "1370019283741",
+      "name": "Alisha Zahra Maharani"
+    }
+  ],
+  "galleryPhotos": [
+    "/demo/starter/gallery_01.webp",
+    "/demo/starter/gallery_02.webp",
+    "/demo/starter/gallery_03.webp",
+    "/demo/starter/gallery_04.webp",
+    "/demo/starter/gallery_05.webp",
+    "/demo/starter/gallery_06.webp"
+  ],
+  "dressCode": {
+    "title": "Dress Code",
+    "note": "Tamu undangan disarankan mengenakan busana bernuansa Terracotta, Champagne, atau Warm Earth.",
+    "colors": [
+      "#d8cebe",
+      "#c47a53",
+      "#2b2725"
+    ]
+  },
+  "turutMengundang": [
+    "Keluarga Besar Bpk. Bambang Wijaya (Jakarta)",
+    "Keluarga Besar Bpk. Hendra Gunawan (Bandung)",
+    "Segenap Sahabat & Kerabat Dekat"
+  ],
+  "wishes": [
+    {
+      "name": "Andi Saputra",
+      "time": "10 menit lalu",
+      "message": "Selamat menempuh hidup baru Radit & Alisha! Semoga menjadi keluarga yang sakinah, mawaddah, warahmah."
+    },
+    {
+      "name": "Nadia Kirana",
+      "time": "1 jam lalu",
+      "message": "Barakallahu lakum wa baraka alaikum. Bahagia selalu sampai kakek nenek ya!"
+    }
+  ]
+}

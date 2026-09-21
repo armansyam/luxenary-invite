@@ -1,0 +1,10 @@
+{
+  "id": "starter-theme",
+  "name": "Starter Theme",
+  "category": "traditional",
+  "series": "Traditional",
+  "description": "Desain kemewahan warisan nusantara dengan tata letak split desktop dan ornamen elegan.",
+  "defaultPalette": "champagne",
+  "isPremium": false,
+  "sortOrder": 1
+}

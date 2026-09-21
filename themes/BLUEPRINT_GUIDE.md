@@ -31,6 +31,27 @@ Setiap tema wajib menerapkan tata letak responsif 2-pilar:
 2. **Layar Ponsel Mobile ($< 900\text{px}$):**
    - 100% Full Width Mobile-First dengan scroll lancar.
 
+### D. Pemisahan Mutlak: Master Theme Assets vs Client Media Slots
+Sistem memisahkan secara tegas antara aset bawaan tema dan wadah unggahan personal klien:
+1. **Master Theme Assets (DNA Bawaan Tema Master):**
+   - **Lokasi Fisik:** `/assets/ornaments/<slug>/...` (statis di disk dan CDN).
+   - **Kepemilikan:** Milik template tema master (sistem/desainer).
+   - **Akses Klien:** **NOL (Zero-Access)**. Klien tidak bisa mengubah, menimpa, atau menghapus aset ini.
+   - **Cakupan:** Latar belakang kanvas master (`background.webp`), frame adat (Walasuji, Patra, Pa'tedong), corak kain (Sabbe, Tenun), aksara/watermark, pembatas (divider), dan ornamen sudut.
+   - **Implementasi:** Di-embed langsung di CSS/HTML tema via URL statis `/assets/ornaments/<slug>/...`.
+2. **Client Media Slots (Slot Unggahan Personal Klien):**
+   - **Lokasi Fisik:** `public/uploads/invitations/<id>/...` atau Cloud Storage (R2/S3).
+   - **Kepemilikan:** Milik klien/pemesan undangan per ID acara. Dikelola via tabel `InvitationMedia` (Prisma enum `MediaSlot`).
+   - **Akses Klien:** Penuh (Upload, ganti foto, crop, hapus melalui Studio/Dashboard).
+   - **Cakupan:** `COVER_PHOTO` (`{{homePhotoUrl}}`), `LANDING_COVER_DESKTOP` (`{{sidebarPhotoUrl}}`), `GLOBAL_FIXED_BG` (`{{globalBgUrl}}`), `GROOM_PHOTO` (`{{firstPhotoUrl}}`), `BRIDE_PHOTO` (`{{secondPhotoUrl}}`), `CLOSING_COVER` (`{{closingBgStyle}}`), dan `BACKGROUND_MUSIC`.
+   - **Implementasi:** Disuntikkan runtime secara dinamis melalui kurung kurawal ganda `{{token}}`.
+
+### E. Pewarisan Palet Bawaan Tema (Default Theme Palette Inheritance)
+Setiap tema master memiliki **identitas warna bawaan (default palette)** yang tercatat di `lib/themeDefaults.ts` dan tabel `Theme` di Admin Settings (`Theme.defaultPalette`):
+- Saat klien memilih tema baru, sistem secara otomatis mewarisi palet bawaan tema tersebut ke undangan klien.
+- Engine menyuntikkan token warna palet (`--primary`, `--secondary`, `--accent`, `--bg-dark`, `--bg-light`) ke dalam `:root`.
+- Fallback di CSS tema (misal `var(--bg-dark, #140204)`) wajib menggunakan nilai hex resmi dari palet default tema tersebut agar 100% harmonis.
+
 ---
 
 ## 🔑 2. Kamus Lengkap Token Dinamis (Universal Token Dictionary)
@@ -135,7 +156,7 @@ Gunakan token mandiri berikut agar tema otomatis terhubung dengan seluruh modul 
 
 ```html
 <section class="sec-flow" id="rsvp">
-  <span class="sec-eyebrow" data-lux-field="customLabels.wishesEyebrow">WISHES & RSVP</span>
+  <span class="sec-eyebrow" data-lux-field="customLabels.wishesEyebrow">WISHES &amp; RSVP</span>
   <h2 class="sec-main-title serif" data-lux-field="customLabels.wishesTitle">{{wishesSectionTitle}}</h2>
   <p class="sec-sub" data-lux-field="customLabels.wishesSub">{{wishesSectionSub}}</p>
 
@@ -143,11 +164,11 @@ Gunakan token mandiri berikut agar tema otomatis terhubung dengan seluruh modul 
     <form onsubmit="luxSubmitRsvp(event)">
       <div class="form-group">
         <label class="form-label" data-lux-field="customLabels.rsvpNameLabel">Nama Lengkap</label>
-        <input type="text" id="rsvpName" class="form-input" placeholder="Masukkan nama Anda" required />
+        <input type="text" id="rsvpName" name="guestName" class="form-input" placeholder="Masukkan nama Anda" required />
       </div>
       <div class="form-group">
         <label class="form-label" data-lux-field="customLabels.rsvpStatusLabel">Konfirmasi Kehadiran</label>
-        <select id="rsvpStatus" class="form-select">
+        <select id="rsvpStatus" name="status" class="form-select" required>
           <option value="HADIR">Hadir dengan Senang Hati</option>
           <option value="TIDAK_HADIR">Mohon Maaf, Berhalangan Hadir</option>
           <option value="RAGU">Masih Ragu</option>
@@ -155,27 +176,43 @@ Gunakan token mandiri berikut agar tema otomatis terhubung dengan seluruh modul 
       </div>
       <div class="form-group">
         <label class="form-label" data-lux-field="customLabels.rsvpCountLabel">Jumlah Tamu</label>
-        <select id="rsvpGuests" class="form-select">
+        <select id="rsvpGuests" name="guestCount" class="form-select">
           <option value="1">1 Orang</option>
           <option value="2">2 Orang</option>
+          <option value="3">3 Orang</option>
+          <option value="4">4 Orang</option>
         </select>
       </div>
       <div class="form-group">
-        <label class="form-label" data-lux-field="customLabels.rsvpMessageLabel">Ucapan & Doa Restu</label>
-        <textarea id="rsvpMessage" class="form-textarea" rows="3" placeholder="Tuliskan ucapan..." required></textarea>
+        <label class="form-label" data-lux-field="customLabels.rsvpMessageLabel">Ucapan &amp; Doa Restu</label>
+        <textarea id="rsvpMessage" name="message" class="form-textarea" rows="3" placeholder="Tuliskan ucapan..." required></textarea>
       </div>
       <button type="submit" id="btnSubmit" class="btn-submit-rsvp" data-lux-field="customLabels.rsvpBtnText">
-        Kirim Konfirmasi & Doa
+        Kirim Konfirmasi &amp; Doa
       </button>
     </form>
   </div>
 
-  <!-- Feed Komentar / Ucapan Real-Time -->
-  <div class="wishes-stream-container">
-    {{wishesListHtml}}
+  <!-- Feed Komentar / Ucapan Real-Time (WAJIB: Gunakan token {{wishesHtml}}) -->
+  <div class="wishes-stream-container" id="wishesList">
+    {{wishesHtml}}
   </div>
 </section>
 ```
+
+#### Kontrak API Backend (`/api/public/rsvp`) & Handler JavaScript:
+Setiap tema **WAJIB** mengirim payload JSON yang cocok dengan kontrak backend:
+```javascript
+// Payload JSON yang diterima backend:
+{
+  invitationId: '{{invitationId}}',
+  guestName: name,     // WAJIB: guestName (BUKAN name)
+  status: status,       // WAJIB: HADIR / TIDAK_HADIR / RAGU
+  guestCount: pax,      // WAJIB: guestCount integer (BUKAN pax)
+  message: msg          // WAJIB: message string
+}
+```
+**Aturan Anti-Fake Success:** Dilarang menampilkan status `"TERKIRIM!"` jika `res.ok` bernilai `false`. Selalu tangkap error JSON dari backend dan tampilkan pesan kesalahan nyata kepada pengguna. Prepend ucapan baru ke container feed `#wishesList` secara reaktif.
 
 ### G. Seksi Footer & Salam Penutup (Closing Section)
 
@@ -184,18 +221,24 @@ Area footer penutup (`closing-sec` / `site-footer`) wajib menggunakan kanvas **t
 ```html
 <!-- HTML Wajib: Selalu sematkan {{closingPhotoClass}} dan style="{{closingBgStyle}}" -->
 <footer class="site-footer {{closingPhotoClass}}" style="{{closingBgStyle}}">
+  <!-- (Opsional untuk Tema Adat/Kultural) Ornamen/Lambang Budaya di Bagian Atas -->
+  <div class="closing-top-ornament">
+    <img src="/assets/ornaments/.../icon.webp" alt="Lambang Budaya">
+  </div>
+
+  <!-- Kontainer Konten Penutup Wajib: Berada di Bagian Bawah saat Ada Foto -->
   <div class="closing-content">
-    <p style="font-size:0.85rem; color:rgba(255,255,255,0.8); line-height:1.7; margin-bottom:1.5rem;">
-      Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu bagi kami.
+    <p style="font-size:0.85rem; color:rgba(255,255,255,0.85); line-height:1.7; margin-bottom:1.5rem;" data-lux-field="customLabels.closingQuote">
+      {{closingQuote}}
     </p>
-    <p style="font-size:0.75rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--accent); font-weight:600; margin-bottom:0.5rem;">
-      Kami Yang Berbahagia,
+    <p style="font-size:0.75rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--accent); font-weight:600; margin-bottom:0.5rem;" data-lux-field="customLabels.closingSub">
+      {{closingSub}}
     </p>
-    <h2 class="footer-names serif" style="font-size:2.6rem; color:var(--primary); margin-bottom:0.4rem;">
+    <h2 class="footer-names serif" style="font-size:2.4rem; color:var(--primary); margin-bottom:0.4rem;">
       {{firstName}} &amp; {{secondName}}
     </h2>
-    <p style="font-size:0.75rem; color:rgba(255,255,255,0.7); letter-spacing:0.2em; text-transform:uppercase; margin-top:0.5rem;">
-      TERIMA KASIH ATAS DOA DAN KEHADIRAN ANDA
+    <p style="font-size:0.75rem; color:rgba(255,255,255,0.7); letter-spacing:0.15em; text-transform:uppercase; margin-top:0.5rem;">
+      Beserta Keluarga Besar Kedua Mempelai
     </p>
   </div>
 </footer>
@@ -212,52 +255,102 @@ Area footer penutup (`closing-sec` / `site-footer`) wajib menggunakan kanvas **t
   overflow: hidden;
   box-sizing: border-box;
   text-align: center;
-  padding: 4rem 1.5rem 6.5rem;
+  padding: clamp(2.5rem, 6vh, 4rem) 1.5rem calc(90px + env(safe-area-inset-bottom, 0px));
   background: transparent; /* ⚠️ DILARANG KERAS MENGGUNAKAN WARNA HEX SOLID/HARDCODE */
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
 }
 
-/* Tanpa Foto: Transparan penuh, kanvas wallpaper & palet tema tembus alami */
+/* Tanpa Foto: Transparan penuh, semua elemen terpusat rapi di tengah kanvas */
 .site-footer.no-closing-photo, .closing-sec.no-closing-photo {
   justify-content: center;
   align-items: center;
   background: transparent;
 }
 
-/* Ada Foto: Konten merapat ke bawah dengan Scrim Overlay pelindung kontras teks */
+/* Ada Foto: Memisahkan ornamen atas dan teks bawah (Wajah mempelai di tengah bebas halangan) */
 .site-footer.has-closing-photo, .closing-sec.has-closing-photo {
-  justify-content: flex-end;
+  justify-content: space-between; /* Gunakan flex-end jika tema tidak memiliki ornamen atas */
   align-items: center;
 }
 
+/* Scrim Gradient Gelap Dinamis Melindungi Keterbacaan Teks di Bawah Foto */
 .site-footer.has-closing-photo::before, .closing-sec.has-closing-photo::before {
   content: '';
   position: absolute;
   inset: 0;
-  /* Scrim gradasi gelap dinamis di atas foto penutup */
   background: linear-gradient(
     to bottom,
-    rgba(0, 0, 0, 0.2) 0%,
-    color-mix(in srgb, var(--bg-dark, #050507) 60%, transparent) 50%,
-    color-mix(in srgb, var(--bg-dark, #050507) 95%, transparent) 100%
+    rgba(0, 0, 0, 0.15) 0%,
+    color-mix(in srgb, var(--bg-dark, #050507) 45%, transparent) 45%,
+    color-mix(in srgb, var(--bg-dark, #050507) 92%, transparent) 100%
   );
   pointer-events: none;
   z-index: 1;
 }
 
+/* Ornamen Atas (Jika Ada): Tetap di atas secara elegan */
+.site-footer .closing-top-ornament, .closing-sec .closing-top-ornament {
+  position: relative;
+  z-index: 2;
+  margin: 0 auto 1.5rem;
+}
+.site-footer.has-closing-photo .closing-top-ornament, .closing-sec.has-closing-photo .closing-top-ornament {
+  margin: 0 auto 0.8rem;
+}
+
+/* Kontainer Konten Penutup Wajib: Berada di atas scrim dan merapat ke bawah */
 .site-footer .closing-content, .closing-sec .closing-content {
   position: relative;
   z-index: 2;
   max-width: 520px;
+  width: 100%;
   margin: 0 auto;
+}
+.site-footer.has-closing-photo .closing-content, .closing-sec.has-closing-photo .closing-content {
+  margin-top: auto;
+}
+```
+
+### H. Standar Modal QR Check-In &amp; Voucher Souvenir (Ticket Gateway)
+
+Engine menyediakan token `{{qrCoverButtonHtml}}` (pada sampul) dan `{{qrDockButtonHtml}}` (pada dock navigasi bawah). Kedua tombol ini memicu pemanggilan JavaScript `onclick="openModal()"`.
+
+Setiap tema **WAJIB** menyertakan markup modal, styling CSS, dan pengendali fungsi berikut:
+
+```html
+<!-- HTML Wajib: Letakkan tepat sebelum </body> atau setelah </nav> -->
+<div class="modal-bg" id="modalBg" onclick="closeModal(event)">
+  <div class="modal-card" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeModal()" aria-label="Tutup Modal">✕</button>
+    {{qrAccessCardHtml}}
+    <div style="margin-top: 1.2rem; padding: 0.9rem; background: rgba(0, 0, 0, 0.04); border: 1px solid var(--border, rgba(0,0,0,0.1)); text-align: center; border-radius: 10px;">
+      <span style="font-size: 0.65rem; letter-spacing: 0.2em; color: var(--text-muted); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 0.4rem;">Voucher Souvenir</span>
+      <div style="font-family: monospace; font-weight: 700; font-size: 0.85rem; color: var(--primary); letter-spacing: 0.12em; padding: 0.45rem; background: rgba(0, 0, 0, 0.05); border: 1px solid var(--border, rgba(0,0,0,0.1)); border-radius: 6px;">SOUVENIR-{{invitationId}}</div>
+    </div>
+  </div>
+</div>
+```
+
+```javascript
+// JS Wajib: Pengendali Modal Global
+function openModal() {
+  const modal = document.getElementById('modalBg');
+  if (modal) modal.classList.add('open');
+}
+
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('modalBg') || (e.target && e.target.classList && e.target.classList.contains('modal-close'))) {
+    const modal = document.getElementById('modalBg');
+    if (modal) modal.classList.remove('open');
+  }
 }
 ```
 
 ---
 
-## ⚡ 3. Cara Kerja Live Editor & Click-to-Edit
+## ⚡ 3. Cara Kerja Live Editor &amp; Click-to-Edit
 
 Ketika template dibuka di Live Editor:
 1. Engine memindai semua elemen yang memiliki atribut `data-lux-field="..."`.
@@ -367,11 +460,240 @@ Ikuti 5 langkah mudah berikut setiap kali ingin merilis tema baru ke ekosistem L
 - **Mode Tanpa Foto (`no-closing-photo`):**
   - Seluruh elemen terpusat rapi di tengah (`justify-content: center;`).
 
-### E. Integrasi Ornamen Budaya & Pembatas (Non-Obtrusive Aesthetics)
+### E. Integrasi Ornamen Budaya &amp; Pembatas (Non-Obtrusive Aesthetics)
 - **Pembatas (Divider):** Dilarang memasang gambar pembatas kotak dengan tepi tajam terpotong. Gunakan masker gradasi halus:
   ```css
   -webkit-mask-image: linear-gradient(to right, transparent 0%, black 18%, black 82%, transparent 100%);
   mask-image: linear-gradient(to right, transparent 0%, black 18%, black 82%, transparent 100%);
   ```
 - **Ornamen Kartu:** Ornamen motif kultural harus diletakkan rapi di dalam padding kartu tanpa terpotong kasar oleh `overflow: hidden` pada sudut kartu yang melengkung.
+
+### F. Standarisasi Ornamen Kultural Tradisional &amp; Framing Mobile (Traditional Theme Rules)
+Bagi tema tradisional/kultural yang menyematkan bingkai ornamen adat (Bugis, Makassar, Toraja, Jawa, Bali, dll.):
+1. **Arsitektur Frame & Ornamen Tepi Responsif (Seamless Repeat Policy):**
+   - **DILARANG KERAS** menggunakan `object-fit: cover` dengan batas `max-height` kaku pada container berlebar `width: 100%`, karena akan memotong (*crop*) vertikal rumbai/detail ornamen ketika dibuka di resolusi tablet atau desktop layar lebar.
+   - **Wajib Menggunakan Seamless Repeat Tile (`repeat-x`):**
+     Gunakan elemen container `div` berlatar belakang `background-repeat: repeat-x` dengan ukuran tinggi tetap (`background-size: auto <tinggi>px`). Dengan arsitektur ini, motif ornamen akan otomatis memanjang ke samping mengisi layar tanpa pernah membesar berlebihan atau terpotong:
+     ```css
+     .bugis-frame-top, .cultural-frame-top {
+       position: absolute;
+       top: 0;
+       left: 0;
+       width: 100%;
+       height: 110px;
+       background-image: url('/assets/ornaments/bugis/bugis-atas.webp');
+       background-repeat: repeat-x;
+       background-position: top center;
+       background-size: auto 110px;
+       pointer-events: none;
+       z-index: 14;
+     }
+     .bugis-frame-bottom, .cultural-frame-bottom {
+       position: absolute;
+       bottom: 0;
+       left: 0;
+       width: 100%;
+       height: 88px;
+       background-image: url('/assets/ornaments/bugis/frame-bottom.webp');
+       background-repeat: repeat-x;
+       background-position: bottom center;
+       background-size: auto 88px;
+       pointer-events: none;
+       z-index: 14;
+       filter: drop-shadow(0 -4px 18px rgba(0,0,0,0.65));
+     }
+     ```
+2. **Isolasi Bunga Sudut (`.corner-floral`) vs Frame Geometris:**
+   - Ukuran bunga sudut wajib adaptif: `width: clamp(75px, 20vw, 95px); height: clamp(75px, 20vw, 95px);`.
+   - Bunga di dua sudut bawah cover **WAJIB DINONAKTIFKAN** pada layar cover pembuka:
+     ```css
+     .cover-screen .corner-bl,
+     .cover-screen .corner-br {
+       display: none !important;
+     }
+     ```
+     Hal ini untuk mencegah bunga menimpa atau bertabrakan kusut dengan ornamen rumah adat di pojok kiri dan kanan bawah.
+3. **Safe Padding Bawah Cover:**
+   - Cover wajib memiliki padding bawah minimal setara tinggi frame:
+     ```css
+     .cover-screen {
+       padding: 2.2rem 1.5rem clamp(95px, 26vw, 125px);
+     }
+     ```
+     Ini menjamin tombol aksi *Buka Undangan* dan box nama tamu tidak menabrak atap ornamen rumah adat.
+
+### G. Kebersihan Visual Tanpa Scrollbar Native (Scrollbar Suppression Standard)
+Untuk menghadirkan pengalaman visual yang bersih (*luxury clean aesthetic*) tanpa bilah scrollbar native abu-abu yang merusak estetika tepi layar desktop maupun mobile, seluruh tema **WAJIB** menyembunyikan scrollbar visual di tingkat root (`html, body`) serta kontainer scroll internal (`.wishes-list`, `.cover-screen`, dll.) tanpa mematikan kemampuan scroll roda mouse, trackpad, maupun gestur sentuh:
+```css
+/* Root Document Suppression */
+html {
+  scroll-behavior: smooth;
+  -ms-overflow-style: none; /* IE & Edge */
+  scrollbar-width: none;    /* Firefox */
+}
+body {
+  overflow-x: hidden;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* Scrollable Container Suppression (e.g. Wishes Feed / Drawers) */
+.wishes-list,
+.wishes-stream-wrap,
+.wishes-feed-list {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.wishes-list::-webkit-scrollbar,
+.wishes-stream-wrap::-webkit-scrollbar,
+.wishes-feed-list::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+```
+
+---
+
+## 🏛️ 6. Standar Master Hirarki 5 Lapisan Tema (Official 5-Layer Stacking Hierarchy)
+
+Seluruh tema master di ekosistem Luxenary **WAJIB** menerapkan urutan 5 lapisan baku ini dari lapisan paling bawah hingga paling atas. Tidak boleh ada lapisan yang tertukar atau dicampuradukkan:
+
+```
+▲ [LAPISAN 5: COVER PEMBUKA] (z-index: 9999) ── Paling atas: Gerbang sampul pembuka sebelum undangan dibuka
+│
+▲ [LAPISAN 4: KONTEN UNDANGAN] (z-index: 10)  ── Isi acara, mempelai, ornamen frame, countdown, dock navigasi
+│
+▲ [LAPISAN 3: KANVAS SCRIM] (z-index: 1)     ── Kanvas gradasi transparan pelindung kontras teks (Mandiri)
+│
+▲ [LAPISAN 2: MEDIA SLOT BACKGROUND] (z-index: 0) ── Gambar background murni (Unggahan Klien / Fallback Master)
+│
+▲ [LAPISAN 1: WARNA PALET] (Dasar Kanvas)    ── background-color: var(--bg-dark); (Warna palet solid terbawah)
+```
+
+### Rincian Implementasi 5 Lapisan:
+
+| Lapisan | Nama Lapisan | Selektor / Tag HTML | Perilaku & Karakteristik |
+| :--- | :--- | :--- | :--- |
+| **Lapisan 1** | **Warna Palet (Dasar Terbawah)** | `body` / `:root` | `background-color: var(--bg-dark);`. Warna palet solid dasar tema. |
+| **Lapisan 2** | **Media Slot Background** | `<div class="fixed-bg-layer"></div>` | Murni gambar tanpa gradien: `background-image: url('{{globalBgUrl}}'), url('/assets/ornaments/<slug>/<bg-master>.webp');`. `position: fixed; inset: 0; z-index: 0; pointer-events: none;`. |
+| **Lapisan 3** | **Kanvas Scrim** | `<div class="scrim-canvas"></div>` | Kanvas overlay gradasi transparan mandiri di atas gambar: `position: fixed; inset: 0; z-index: 1; pointer-events: none;`. |
+| **Lapisan 4** | **Konten Undangan** | `<div class="layout-wrapper">...</div>` | Area konten interaktif (profil, kartu acara, galeri, form rsvp, ornamen frame, dock navigasi). `position: relative; z-index: 10;`. |
+| **Lapisan 5** | **Cover Pembuka (Paling Atas)** | `<div id="coverScreen">...</div>` | Gerbang pembuka saat tamu pertama kali tiba: `position: fixed; inset: 0; z-index: 9999;`. Meluncur ke atas saat tombol *Buka Undangan* diklik. |
+
+---
+
+## 🌌 7. Standar Kanvas Latar Belakang & Formula Scrim Dinamis (Anti-Blackout Policy)
+
+### PRINSIP MUTLAK: TIDAK BOLEH ADA SCRIM YANG MEMBUNUH LATAR
+Jika scrim terlalu pekat, maka **fitur Media Slot background (`GLOBAL_FIXED_BG`) menjadi sia-sia** karena gambar apapun yang diunggah klien atau disediakan oleh master tema akan tertelan menjadi gelap gulita.
+
+Latar belakang (baik foto unggahan klien maupun lukisan/corak master tema) adalah **panggung visual utama tema**. Scrim **HANYA** berfungsi sebagai lapisan tipis penyeimbang kontras teks, **BUKAN** penutup latar.
+
+### A. Rantai CSS Fallback Media Slot `GLOBAL_FIXED_BG`
+Latar belakang kanvas tema diatur pada elemen `.fixed-bg-layer`. Template wajib menghubungkan slot media dinamis klien dengan gambar master bawaan tema sebagai fallback:
+
+```css
+.fixed-bg-layer {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  /* Rantai Fallback: Scrim Halus -> Upload Klien -> Background Bawaan Master */
+  background-image: 
+    linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.15) 0%,
+      color-mix(in srgb, var(--primary) 20%, transparent) 35%,
+      color-mix(in srgb, var(--bg-dark) 35%, transparent) 70%,
+      color-mix(in srgb, var(--bg-dark) 50%, transparent) 100%
+    ),
+    url('{{globalBgUrl}}'),
+    url('/assets/ornaments/<theme-slug>/<master-background>.webp');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: 1;
+  pointer-events: none;
+}
+```
+
+- **Rentang Emas Scrim (Golden Range):** **15% – 45%**. Gambar latar belakang (tekstur cat air, siluet arsitektur, partikel emas, atau foto prewedding klien) wajib tampil hidup, tajam, dan memikat di layar.
+
+### C. Isolasi Slot Media & Larangan Fallback Silang (Zero Cross-Fallback Policy)
+- **DILARANG KERAS MEM-FALLBACK FOTO MEMPELAI KE BACKGROUND GLOBAL:**
+  Slot foto seksi pembuka (`HOME_PHOTO` / `{{homePhotoCssUrl}}` / `{{homePhotoUrl}}`) adalah slot khusus subjek mempelai (manusia). Jangan pernah memasang fallback ke motif wallpaper background global (`url('{{globalBgUrl}}')`) di seksi `#home` atau di dalam bingkai foto adat.
+- **Setiap Slot Memiliki Domain Mandiri:**
+  - `HOME_PHOTO`: Murni foto pasangan kedua mempelai di seksi pembuka.
+  - `GLOBAL_FIXED_BG`: Murni motif kain tenun, tekstur kertas, atau wallpaper kanvas yang diam di `.fixed-bg-layer`.
+  Keduanya tidak boleh saling dioplos secara serampangan.
+
+---
+
+## ✨ 8. Filosofi Surface Elevation & Anti-Border Fatigue (Haute-Couture Standard)
+
+Kesan mewah (*luxury*) lahir dari **kedalaman permukaan (surface elevation), pencahayaan halus, dan tipografi**, BUKAN dari garis kotak (*border*) yang dibungkuskan ke setiap elemen.
+
+### A. Aturan Garis Tepi (Border Policy)
+1. **Elemen Mikro & Widget Data (Countdown, Badge Tanggal, Pill):**
+   - **HARAM** menggunakan `border: 1px solid var(--border-gold)` di sekeliling kotak.
+   - Wajib menggunakan **Tonal Glassmorphism**:
+     ```css
+     background: color-mix(in srgb, var(--bg-dark) 55%, transparent);
+     backdrop-filter: blur(10px);
+     -webkit-backdrop-filter: blur(10px);
+     border: 1px solid color-mix(in srgb, var(--accent) 15%, transparent); /* Micro-border translusen */
+     border-radius: 12px;
+     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+     ```
+2. **Kartu Konten Utama (Event, Rekening Gift, Form RSVP, Wishes):**
+   - Gunakan permukaan tonal yang menyatu dengan latar belakang kanvas.
+   - Jika membutuhkan pembeda visual, gunakan **garis aksen tunggal** (misal: garis emas halus di sisi atas kartu `border-top: 1px solid color-mix(in srgb, var(--accent) 40%, transparent)`), jangan membungkus keempat sisi dengan garis tebal.
+3. **Bingkai Fisik Penuh (Border Eksklusif):**
+   - HANYA diperuntukkan bagi ornamen arsitektur budaya autentik (seperti gerbang Walasuji) dan bingkai foto kedua mempelai.
+
+---
+
+## 🔤 9. Tipografi Fluid & Proteksi Teks Klien (Anti-Overflow Defense)
+
+Untuk mencegah tampilan rusak saat klien memasukkan nama panjang, gelar akademik, atau data pendek:
+
+1. **Fluid Typography pada Nama Pasangan (`.home-names`, `.cover-names`):**
+   - Selalu gunakan `clamp()` agar ukuran font otomatis menyusut di layar kecil tanpa terpotong:
+     ```css
+     font-size: clamp(1.5rem, 5vw, 2.3rem);
+     line-height: 1.25;
+     word-break: normal;
+     overflow-wrap: break-word;
+     ```
+2. **Flexbox Responsif untuk Nama & Ampersand:**
+   - Gunakan `display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 0.5rem 0.8rem;`.
+   - Simbol `&` (`.home-ampersand`) wajib berpadu harmonis dengan nama mempelai, bukan terisolasi di baris tersendiri.
+3. **Proteksi Kontainer Kosong:**
+   - Gunakan pseudo-class CSS `:empty { display: none !important; }` pada container deskripsi atau keterangan opsional agar tidak menyisakan ruang hampa jika klien mengosongkan form.
+
+---
+
+## 🏷️ 10. Kamus Standar Tunggal Penamaan Komponen (Canonical Ubiquitous Language)
+
+Untuk menjaga konsistensi mutlak lintas tema, seluruh pengembang dan agen dilarang keras membuat variasi nama baru. Wajib mengikuti kamus resmi berikut:
+
+| Komponen Fungsional | Enum Database (Prisma) | Tag Template HTML | ID / Class Selektor Standar | Trigger JavaScript |
+| :--- | :--- | :--- | :--- | :--- |
+| **Latar Belakang Global** | `GLOBAL_FIXED_BG` | `{{globalBgUrl}}` | `.fixed-bg-layer` | Injeksi otomatis backend |
+| **Foto Pembuka (Home)** | `HOME_PHOTO` | `{{homePhotoUrl}}` / `{{homePhotoCssUrl}}` | `.home-arch-inner img` / `.slide-opening#home` | Murni foto mempelai (Anti-Cross Fallback) |
+| **Nama Tamu di Cover** | *(Dinamis via `?to=`)* | *(Fallback "Tamu Undangan")* | `#coverGuestName` / `.cover-guest-val` | `resolveGuestName()` |
+| **Tombol Musik Floating** | `BACKGROUND_MUSIC` | `{{musicPlayerHtml}}` | `#musicToggle` / `.audio-fab` (alias: `#musicFab`, `.music-fab`) | `luxToggleAudio()` |
+| **Panggung Kiri Desktop** | `LANDING_COVER_DESKTOP` | `{{sidebarPhotoUrl}}` | `.sidebar-desktop` (alias: `.left-hero`) | Media Query Split ≥ 900px |
+| **Panel Konten Undangan** | *(Container Utama)* | *(Struktur Layout)* | `.main-scroll-panel` (alias: `.right-panel`, `.page-wrap`) | Kunci lebar mobile 460px Desktop |
+| **Sampul Pembuka (Cover)** | `COVER_PHOTO` | `{{landingCoverUrl}}` | `#coverOverlay` / `.cover-overlay` (alias: `#coverScreen`) | `openInvitation()` |
+
+
 

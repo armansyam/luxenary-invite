@@ -28,11 +28,11 @@ export const DEFAULT_THEMES = [
   { id: "papercut", name: "Papercut", category: "modern", series: "Modern", description: "TEXTURED CRAFT & MINIMALIST — Keanggunan Tekstur Kertas Alami", isPremium: false, sortOrder: 8, isActive: true },
   { id: "solaria", name: "Solaria", category: "modern", series: "Modern", description: "WARM SUNSET BOTANICAL — Kehangatan Golden Hour & Botani Segar", isPremium: false, sortOrder: 9, isActive: true },
   { id: "wave", name: "Wave", category: "modern", series: "Modern", description: "DYNAMIC FLUID OCEAN — Aliran Gelombang Modern Dinamis & Segar", isPremium: false, sortOrder: 10, isActive: true },
-  // Traditional Series (6)
-  { id: "badrika", name: "Badrika", category: "traditional", series: "Traditional", description: "Klasik Jawa Ningrat dengan Ornamen Khas Keraton", isPremium: false, sortOrder: 11, isActive: true },
-  { id: "candani", name: "Candani", category: "traditional", series: "Traditional", description: "Tradisi Nusantara Elegan dengan Siluet Padi & Nuansa Tanah", isPremium: false, sortOrder: 12, isActive: true },
-  { id: "dillalucky", name: "Dilla Lucky", category: "traditional", series: "Traditional", description: "Kehangatan Adat Melayu & Padang Modern", isPremium: false, sortOrder: 13, isActive: true },
-  { id: "mayang", name: "Mayang", category: "traditional", series: "Traditional", description: "Kemegahan Adat Sunda Silih Wangi yang Anggun", isPremium: false, sortOrder: 14, isActive: true },
+  { id: "badrika", name: "Badrika", category: "modern", series: "Modern", description: "ARCHITECTURAL EDITORIAL — Garis Lengkung Mewah & Tipografi Kontemporer", isPremium: false, sortOrder: 11, isActive: true },
+  { id: "candani", name: "Candani", category: "modern", series: "Modern", description: "BOTANICAL WARMTH — Kehangatan Nuansa Alam & Tipografi Modern Bersih", isPremium: false, sortOrder: 12, isActive: true },
+  { id: "mayang", name: "Mayang", category: "modern", series: "Modern", description: "CONTEMPORARY GOLDEN CHIC — Kilau Emas Minimalis & Elegan", isPremium: false, sortOrder: 13, isActive: true },
+  // Traditional Series
+  { id: "dillalucky", name: "Dilla Lucky", category: "traditional", series: "Traditional", description: "Kehangatan Adat Melayu & Padang Modern", isPremium: false, sortOrder: 14, isActive: true },
   { id: "prameswari", name: "Prameswari", category: "traditional", series: "Traditional", description: "Royal Heritage Tradisional Agung Nan Sarat Makna", isPremium: false, sortOrder: 15, isActive: true },
   { id: "lagaligo", name: "La Galigo", category: "traditional", series: "Traditional", description: "Kemegahan Adat Bugis-Makassar Berbalut Hijau Zamrud & Kilau Benang Emas", isPremium: false, sortOrder: 16, isActive: true },
 ];

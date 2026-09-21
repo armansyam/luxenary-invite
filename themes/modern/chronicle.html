@@ -55,6 +55,8 @@
 
     html {
       scroll-behavior: smooth;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
     }
 
     body {
@@ -63,6 +65,16 @@
       color: #f4ede4;
       overflow-x: hidden;
       width: 100%;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* Sembunyikan scrollbar visual bawaan peramban */
+    html::-webkit-scrollbar,
+    body::-webkit-scrollbar {
+      display: none;
+      width: 0;
+      height: 0;
     }
 
     /* TYPOGRAPHY CLASSES */
@@ -986,6 +998,14 @@
       gap: 0.9rem;
       width: 100%;
       max-width: 440px;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    .wishes-list::-webkit-scrollbar {
+      display: none;
+      width: 0;
+      height: 0;
     }
 
     .wish-item {
@@ -1105,6 +1125,43 @@
       width: 18px;
       height: 18px;
       fill: currentColor;
+    }
+
+    .music-fab {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: color-mix(in srgb, var(--cinema-bg, #11100f) 85%, transparent);
+      border: 1px solid var(--cinema-border, rgba(212, 175, 55, 0.3));
+      color: var(--editorial-cream, #f5f2eb);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      cursor: pointer;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: transform 0.42s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: transform, opacity;
+    }
+
+    .music-fab.fab-hidden {
+      transform: translateY(-80px);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .music-fab.playing svg {
+      animation: spinVinyl 5s linear infinite;
+    }
+
+    @keyframes spinVinyl {
+      to {
+        transform: rotate(360deg);
+      }
     }
 
     /* FOOTER & CLOSING (Adaptive Full-Height 100vh) */
@@ -1427,6 +1484,13 @@
     </a>
   </nav>
 
+  <!-- FLOATING MUSIC BUTTON -->
+  <button class="music-fab fab-hidden" id="musicFab" onclick="luxToggleAudio()" aria-label="Toggle Music">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
+    </svg>
+  </button>
+
   <script>
     function requestSmartFullscreen() {
       const isMobile = window.innerWidth <= 1024 || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
@@ -1447,8 +1511,11 @@
       if (cover) cover.classList.add('opened');
       const dock = document.querySelector('.bottom-dock');
       if (dock) dock.classList.remove('dock-hidden');
+      const musicFab = document.getElementById('musicFab');
+      if (musicFab) musicFab.classList.remove('fab-hidden');
       if (typeof window.playAudio === 'function') {
         window.playAudio();
+        if (musicFab) musicFab.classList.add('playing');
       }
       startCountdown();
       initScrollAnimations();
@@ -1477,20 +1544,25 @@
 
         if (currentScrollY <= TOP_REVEAL_ZONE) {
           dock.classList.remove('dock-hidden');
+          const musicFab = document.getElementById('musicFab');
+          if (musicFab) musicFab.classList.remove('fab-hidden');
           lastScrollY = currentScrollY;
           ticking = false;
           return;
         }
 
         const delta = currentScrollY - lastScrollY;
+        const musicFab = document.getElementById('musicFab');
 
         // Ultra-Clean Outro: Sembunyikan dock di ujung bawah
         // Jika tamu scroll-up (delta < -SCROLL_THRESHOLD), segera munculkan kembali kontrol
         if (isNearBottom) {
           if (delta < -SCROLL_THRESHOLD) {
             dock.classList.remove('dock-hidden');
+            if (musicFab) musicFab.classList.remove('fab-hidden');
           } else {
             dock.classList.add('dock-hidden');
+            if (musicFab) musicFab.classList.add('fab-hidden');
           }
           lastScrollY = currentScrollY;
           ticking = false;
@@ -1500,8 +1572,10 @@
         if (Math.abs(delta) >= SCROLL_THRESHOLD) {
           if (delta > 0) {
             dock.classList.add('dock-hidden');
+            if (musicFab) musicFab.classList.add('fab-hidden');
           } else {
             dock.classList.remove('dock-hidden');
+            if (musicFab) musicFab.classList.remove('fab-hidden');
           }
           lastScrollY = currentScrollY;
         }

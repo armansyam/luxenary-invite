@@ -93,6 +93,9 @@ export async function GET(
     if (!resolvedData.openingQuoteRef) resolvedData.openingQuoteRef = blueprint.openingQuoteRef;
     if (!resolvedData.closingQuote) resolvedData.closingQuote = blueprint.closingQuote;
     if (!resolvedData.closingSub) resolvedData.closingSub = blueprint.closingSub;
+    if (!resolvedData.audioUrl && blueprint.defaultMusicUrl) {
+      resolvedData.audioUrl = blueprint.defaultMusicUrl;
+    }
 
     return NextResponse.json({
       success: true,

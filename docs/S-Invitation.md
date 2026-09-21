@@ -1,12 +1,12 @@
 # S-Invitation: Luxenary Invite System Architecture & Master Specification
-> **Versi: 5.7.5 | Diperbarui: 16 September 2026**
+> **Versi: 5.9.5 | Diperbarui: 21 September 2026**
 
 ## 1. Executive Summary & Core Philosophy
 **Luxenary Invite** adalah platform ekosistem undangan pernikahan digital modern berbasis Next.js 16 (App Router + Turbopack) yang menghadirkan pengalaman visual mewah (*haute couture*), kecepatan muat instan (<0.8 detik), self-service dashboard mandiri bagi klien, dan integrasi cloud edge caching.
 
 ---
 
-## 2. Katalog & Arsitektur DOM Tema Aktual (15 Tema Fisik + 1 Blueprint)
+## 2. Katalog & Arsitektur DOM Tema Aktual (28 Tema Fisik + 1 Blueprint)
 
 Sistem template undangan menggunakan arsitektur HTML multi-layer mandiri dengan placeholder `{{variabel}}` yang diinjeksi oleh `lib/themeEngine.ts` dan dipetakan oleh `lib/renderTemplate.ts`:
 
@@ -16,7 +16,7 @@ Sistem template undangan menggunakan arsitektur HTML multi-layer mandiri dengan 
    - Full-bleed vertical photo slides 100vh untuk Pengantin Pria & Wanita.
    - Live Countdown, Google Calendar sync, dan floating glass dock.
 2. **Valente (`themes/premium/valente.html`)**
-   - High-fashion editorial spread dengan framing foto portrait 3:4 dan indeks terbitan majalah (`NO. 01 / THE GROOM`, `NO. 02 / THE BRIDE`).
+   - High-fashion editorial spread dengan framing foto portrait 3:4 dan badge peran pasangan minimalis.
    - Countdown tipografis minimalis bergaris hairline editorial tanpa box kaku.
    - Side Navigation Floating Frosted Glass Card ala daftar isi majalah (*Table of Contents*) bernomor urut (01 Home s.d. 08 RSVP & Wishes), auto-height dengan backdrop click-outside dismissal, dan cover berlabel special issue.
    - Responsif 100% full-bleed di layar mobile/tablet dan desktop split-screen 460px.
@@ -34,26 +34,9 @@ Sistem template undangan menggunakan arsitektur HTML multi-layer mandiri dengan 
    - 3D Wax Seal Envelope opening modal dengan stempel lilin emas (`BUKA ✦`).
    - Portal kubah lengkung keraton (*Traditional Arch Portals*) berbingkai emas.
    - Tekstur kertas perkamen antik & ornamen klasik Nusantara.
-2. **Badrika (`themes/traditional/badrika.html`)**
-   - Nuansa adat Bugis-Makassar royal celebration dengan aksen emas tembaga, rumah adat Bugis, dan arsitektur split-desktop (`.fixed-bg-layer` 460px semi-transparan berpadu kain sutra Lontara).
-3. **Candani (`themes/traditional/candani.html`)**
-   - Floral Heritage Nusantara berpadu palet warna bumi (*terracotta, sand, warm gold*), serta dukungan penuh palet dinamis sistem (`{{colorPrimary}}`, `{{colorSecondary}}`, `{{colorAccent}}`, `{{colorBgDark}}`).
-   - Arsitektur Desktop Split 460px presisi: `.sidebar-desktop .left-hero` dinamis (`calc(100% - 460px)`), panel undangan terisolasi 460px, serta kanvas `.fixed-bg-layer` fokus 460px di desktop dan 100% di mobile.
-   - Home Section dinamis murni tanpa card (`#home` berpadu *optical center typography* dengan ritme vertikal kompak sehingga teks doa & countdown menyatu leluasa dengan kanvas latar belakang).
-   - Profil Mempelai Card-less Staggered (`.couple-staggered-container`): Menghilangkan kotak card tebal, mempertahankan bingkai kubah melengkung berbayangan mewah (*luxury layered shadow*), First (Pria) berposisi di kiri dengan inisial huruf pertama bergradasi (*watermark gradient*) di sisi kanannya, Second (Wanita) di kanan dengan inisial di sisi kirinya, terhubung oleh ampersand puitis `&`, serta bebas dari efek loncat hover/scroll yang mengganggu.
-   - Keterangan Orang Tua Terstruktur Anti-Orphan & Murni String Bebas (`.couple-parents`): Menggunakan pemisahan 4 kolom terstruktur (`groomFather`, `groomMother`, `brideFather`, `brideMother`) dengan deteksi awalan otomatis (`{{firstParentPrefix}}` = "Putra dari" / "Putri dari") dan penataan hierarki vertikal per baris tanpa paksaan awalan Bpk/Ibu, sehingga klien bebas menuliskan nama langsung, gelar akademik/adat, atau status almarhum/almarhumah (`Alm.`, `Almh.`), tersusun rapi tanpa patah kata (*no orphan wrapping*).
-   - Smart Bottom Dock dengan navigasi berlabel 'Home' (menuju `#home`), integrasi pemutar musik langsung di dock (`#musicToggle` berstatus pulsing animasi saat menyala, tanpa emoji OS), dan integrasi Universal Smart Dock Home Zone Guard (`body.lux-at-home-zone`).
-   - Zero-hardcode dengan atribut `data-lux-field`, peranan mempelai dinamis (`{{groomRole}}` & `{{brideRole}}`), divider floral ornamen SVG khas, serta modal QR Check-in (`#modalBg`) terpadu.
-4. **Dillalucky (`themes/traditional/dillalucky.html`)**
+2. **Dillalucky (`themes/traditional/dillalucky.html`)**
    - Motif floral tradisional yang anggun dengan sentuhan pastel sakral.
-5. **Mayang (`themes/traditional/mayang.html`)**
-   - Mengusung keanggunan Pawikahan Ageng Keraton Jawi dengan dukungan penuh Dynamic Kraton Heritage Palette (`--jawa-gold`, `--jawa-gold-light`, `--jawa-dark`, `--jawa-card`, `--jawa-border`) berbasis `:root` tokens dan `color-mix(...)` selaras Candani.
-   - Mengadopsi kanvas `.fixed-bg-layer` anti-lag iOS yang terkunci di dalam kolom layout wrapper 460px (tidak bocor ke background desktop).
-   - Discrete Parents Architecture (`{{firstParentPrefix}}`, `{{firstFather}}`, `{{firstMother}}`, `{{secondParentPrefix}}`, `{{secondFather}}`, `{{secondMother}}`) lengkap dengan frame lengkung Jawa dan inisial monogram melayang.
-   - Identifikasi seksi pembuka menggunakan ID `#home` yang kompatibel penuh dengan injeksi template engine (`homePhotoCssUrl` untuk kanvas bersih tanpa fallback tekstur jika kosong).
-   - Integrasi seksi kisah `#story` (`{{storyItemsHtml}}`), ornamen pembatas kraton SVG murni tanpa emoji OS, Smart Bottom Dock dengan audio toggle terintegrasi (`luxToggleAudio()`), serta modal voucher souvenir QR (`#modalBg`).
-   - Terpasang atribut `data-lux-field` lengkap untuk mendukung pengalaman Live Visual Studio Click-to-Edit.
-6. **La Galigo (`themes/traditional/lagaligo.html`)**
+3. **La Galigo (`themes/traditional/lagaligo.html`)**
    - Kemegahan Etnik Adat Bugis-Makassar berbalut Deep Emerald (`#003f30`), aksen Emerald Rich (`#059669`), dan kilau benang emas sutera Bugis (`#f9e7bc` / `#e5cb93`).
    - Pola ornamen tenun geometris khas Bugis (*cross-hatch lattice pattern* via CSS murni terisolasi).
    - Bingkai empat sudut emas klasik (*four-corner traditional filigree frames*) pada kartu mempelai dan kutipan ayat.
@@ -77,6 +60,23 @@ Sistem template undangan menggunakan arsitektur HTML multi-layer mandiri dengan 
    - Sinematografi modern perak (*Modern Cinema / Silver Screen Aesthetics*) dengan pencahayaan prisma lembut, bingkai foto *Cinema Viewfinder* beraksen sudut kamera, dan *Cinematic Reel Timeline* (cardless dengan *silver lens aperture nodes* dan pemisah babak *dashed separator*).
 6. **Solaria (`themes/modern/solaria.html`)**
    - Nuansa hangat terik matahari senja (*warm sunset aesthetics*) & kartu transparan.
+7. **Badrika (`themes/modern/badrika.html`)**
+   - Garis lengkung arsitektural mewah (*Architectural Arch Portals*) dengan palet emerald mendalam dan aksen emas kontemporer. Murni estetika modern tanpa ornamen adat.
+8. **Candani (`themes/modern/candani.html`)**
+   - Modern Botanical Floral berpadu palet warna bumi (*terracotta, sand, warm gold*), serta dukungan penuh palet dinamis sistem (`{{colorPrimary}}`, `{{colorSecondary}}`, `{{colorAccent}}`, `{{colorBgDark}}`).
+   - Arsitektur Desktop Split 460px presisi: `.sidebar-desktop .left-hero` dinamis (`calc(100% - 460px)`), panel undangan terisolasi 460px, serta kanvas `.fixed-bg-layer` fokus 460px di desktop dan 100% di mobile.
+   - Home Section dinamis murni tanpa card (`#home` berpadu *optical center typography* dengan ritme vertikal kompak sehingga teks doa & countdown menyatu leluasa dengan kanvas latar belakang).
+   - Profil Mempelai Card-less Staggered (`.couple-staggered-container`): Menghilangkan kotak card tebal, mempertahankan bingkai kubah melengkung berbayangan mewah (*luxury layered shadow*), First (Pria) berposisi di kiri dengan inisial huruf pertama bergradasi (*watermark gradient*) di sisi kanannya, Second (Wanita) di kanan dengan inisial di sisi kirinya, terhubung oleh ampersand puitis `&`, serta bebas dari efek loncat hover/scroll yang mengganggu.
+   - Keterangan Orang Tua Terstruktur Anti-Orphan & Murni String Bebas (`.couple-parents`): Menggunakan pemisahan 4 kolom terstruktur (`groomFather`, `groomMother`, `brideFather`, `brideMother`) dengan deteksi awalan otomatis (`{{firstParentPrefix}}` = "Putra dari" / "Putri dari") dan penataan hierarki vertikal per baris tanpa paksaan awalan Bpk/Ibu, sehingga klien bebas menuliskan nama langsung, gelar akademik, atau status almarhum/almarhumah (`Alm.`, `Almh.`), tersusun rapi tanpa patah kata (*no orphan wrapping*).
+   - Smart Bottom Dock dengan navigasi berlabel 'Home' (menuju `#home`), integrasi pemutar musik langsung di dock (`#musicToggle` berstatus pulsing animasi saat menyala, tanpa emoji OS), dan integrasi Universal Smart Dock Home Zone Guard (`body.lux-at-home-zone`).
+   - Zero-hardcode dengan atribut `data-lux-field`, peranan mempelai dinamis (`{{groomRole}}` & `{{brideRole}}`), divider floral ornamen SVG khas, serta modal QR Check-in (`#modalBg`) terpadu.
+9. **Mayang (`themes/modern/mayang.html`)**
+   - Keanggunan kontemporer (*Contemporary Golden Chic*) dengan dukungan penuh Dynamic Modern Palette (`--mayang-gold`, `--mayang-gold-light`, `--mayang-dark`, `--mayang-card`, `--mayang-border`) berbasis `:root` tokens dan `color-mix(...)`.
+   - Mengadopsi kanvas `.fixed-bg-layer` anti-lag iOS yang terkunci di dalam kolom layout wrapper 460px (tidak bocor ke background desktop).
+   - Discrete Parents Architecture (`{{firstParentPrefix}}`, `{{firstFather}}`, `{{firstMother}}`, `{{secondParentPrefix}}`, `{{secondFather}}`, `{{secondMother}}`) lengkap dengan frame lengkung modern dan inisial monogram melayang.
+   - Identifikasi seksi pembuka menggunakan ID `#home` yang kompatibel penuh dengan injeksi template engine (`homePhotoCssUrl` untuk kanvas bersih tanpa fallback tekstur jika kosong).
+   - Integrasi seksi kisah `#story` (`{{storyItemsHtml}}`), monogram pembatas modern SVG murni tanpa emoji OS, Smart Bottom Dock dengan audio toggle terintegrasi (`luxToggleAudio()`), serta modal voucher souvenir QR (`#modalBg`).
+   - Terpasang atribut `data-lux-field` lengkap untuk mendukung pengalaman Live Visual Studio Click-to-Edit.
 
 ### D. Developer Blueprint
 - **Starter Blueprint (`themes/starter-blueprint.html` & `public/downloads/starter-blueprint.html`)**
@@ -121,7 +121,15 @@ Seluruh 19 tema fisik master dan starter blueprint mengimplementasikan standaris
    - Seluruh 19 tema fisik master dan `starter-blueprint.html` mengeksekusi `requestSmartFullscreen()` saat tombol *"Buka Undangan"* diklik.
    - Memicu Fullscreen API native (`requestFullscreen`, `webkitRequestFullscreen`, `mozRequestFullScreen`, `msRequestFullscreen`) dengan penanganan fallback `window.scrollTo(0, 1)` untuk menyembunyikan address bar browser smartphone (Safari iOS / Chrome Android) demi menghadirkan viewport imersif bebas gangguan navigasi browser.
 
-### G. Arsitektur Preloader Hibrida & Anti-Visual Leak Guard
+### G. Standar Global Seksi Penutup / Outro 100vh (`.site-footer`)
+1. **Dua Mode Tampilan Outro Adaptif:**
+   - **Mode Tanpa Foto (`.no-closing-photo`):** Footer transparan 100vh tanpa garis batas (`background: transparent; border-top: none;`). Seluruh konten terpusat sempurna di tengah layar (`display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 1.5rem;`).
+   - **Mode Ada Foto (`.has-closing-photo`):** Foto penutup (`CLOSING_COVER`) mengisi latar belakang layar penuh via inline style `style="{{closingBgStyle}}"`. Layout bertransformasi ke `justify-content: space-between; align-items: center;` dengan padding vertikal clamp.
+2. **Komponen Standar Footer:**
+   - **Ornamen Kultural Statis (`.closing-top-ornament`):** Diposisikan di bagian atas footer. Menggunakan ukuran terstandarisasi (`max-width: 95px` saat no-photo, `max-width: 80px` saat has-photo) dengan drop-shadow hitam natural (`filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.45));`) tanpa pendaran neon glow artifisial.
+   - **Blok Konten Penutup (`.closing-content`):** Membungkus kutipan penutup (`{{closingQuote}}`), sub-judul penutup (`{{closingSub}}`), dan nama mempelai (`{{firstName}} & {{secondName}}`). Pada mode foto, blok ini otomatis merapat ke bagian bawah layar, membiarkan wajah mempelai pada foto latar belakang terekspos bersih tanpa tertutup teks.
+
+### H. Arsitektur Preloader Hibrida & Anti-Visual Leak Guard
 Sistem mengimplementasikan proteksi pembuka dua tingkat (*Hybrid Preloader Architecture*) untuk mencegah bocornya lapisan isi undangan sebelum aset gambar cover pembuka selesai diunduh:
 1. **Prioritas Preloader Master (`id="themePreloader"`):**
    - Jika tema master memiliki elemen berkontrak `id="themePreloader"`, engine **TIDAK** menyuntikkan preloader bawaan, memberikan keleluasaan penuh bagi desainer untuk menciptakan animasi dan ornamen khas tema.
@@ -397,7 +405,7 @@ Siklus hidup undangan diatur secara otomatis oleh cron job (`POST /api/cron/clea
    - **Tombol Buka Undangan Selalu Berteks:** Tag `<button data-lux-field="customLabels.openBtn">` di seluruh 15 master template dan starter blueprint wajib memiliki teks fisik default `"Buka Undangan"`. Engine komposer (`lib/themeEngine.ts` dan `lib/demoRegistry.ts`) menjamin penyediaan fallback default `customLabels.openBtn = "Buka Undangan"`, sehingga tombol cover gate tidak pernah kosong/transparan dalam kondisi apapun.
    - **Seksi Penutup Adaptif Layar Penuh (`min-height: 100vh`):** Seksi outro/penutup (`.site-footer` / `.closing-sec`) dijamin selalu berukuran layar penuh `100vh` untuk kenyamanan navigasi scroll snap, menghilangkan masalah footer "nyempil" atau terpotong.
    - **Mode Kanvas Kosong (Default / Tanpa Foto Penutup):** Jika klien tidak mengunggah foto penutup (`CLOSING_COVER`), seksi otomatis menerima class `.no-closing-photo`. Background murni transparan (`background: transparent;`) sehingga menyatu mulus dengan kanvas latar belakang global (`body` dan `.fixed-bg-layer`) serta token palet tema (`--bg-dark`) tanpa balok warna solid/hex mati (`#050507`, `#04120e`). HARAM menggunakan fallback gambar dummy/Unsplash palsu. Konten teks ucapan terima kasih dan nama mempelai (`{{firstName}} & {{secondName}}`) terposisikan tepat di tengah-tengah layar secara vertikal dan horizontal (`justify-content: center; align-items: center;`).
-   - **Mode Foto Penutup Terunggah:** Jika foto penutup diunggah (`.has-closing-photo`), foto disuntikkan secara dinamis ke tag footer via `style="{{closingBgStyle}}"` dan mengisi latar belakang layar penuh (`background-size: cover; background-position: center;`) dengan overlay scrim gelap/gradasi elegan (`.has-closing-photo::before`), dan blok teks penutup otomatis bergeser ke area bawah layar (*bottom-aligned*, `justify-content: flex-end;`).
+   - **Mode Foto Penutup Terunggah:** Jika foto penutup diunggah (`.has-closing-photo`), foto disuntikkan secara dinamis ke tag footer via `style="{{closingBgStyle}}"` dan mengisi latar belakang layar penuh (`background-size: cover; background-position: center;`) dengan overlay scrim gelap/gradasi dinamis (`.has-closing-photo::before` berbasis token dinamis `color-mix(in srgb, var(--bg-dark) X%, transparent)`). Ornamen kultural atas (jika ada) berada di bagian paling atas secara statis (`.closing-top-ornament`), dan seluruh blok teks penutup terbungkus rapi dalam `.closing-content` yang merapat ke dasar layar (*bottom-aligned*, `margin-top: auto;`). Area tengah viewport dijamin bersih tanpa ornamen/teks penumpuk sehingga wajah dan busana mempelai pada foto penutup tetap terlihat jernih dan tidak terhalang.
 9. **Spesifikasi Theme Demo Studio & Dukungan Video MP4 / Audio BGM (v5.7.0)**:
    - **Upload Video MP4 (Cover, Hero, Background, Home, & Closing):** Mesin render (`lib/renderTemplate.ts`) mendukung pemutaran video ambient loop muted (`<video autoplay loop muted playsinline>`) untuk slot sampul (`cover`), sidebar/hero desktop (`hero`), background global (`background`), serta seksi pembuka (`homePhotoUrl` → `.lux-home-video`) dan seksi penutup (`closingPhotoUrl` → `.lux-closing-video`).
    - **Pembersihan File Format Berlawanan:** Endpoint `demo-asset` otomatis membersihkan file format berlawanan (misal menghapus `.webp` lama saat `.mp4` diunggah) dan menyinkronkan URL ke `AdminSetting` (`theme_demo_${themeId}`) serta mengompilasi ulang halaman demo statis.
@@ -550,8 +558,12 @@ Sistem pengiriman email otomatis menggunakan **Nodemailer** yang membaca kredens
    - **Formulir Interaktif Dinamis:** Admin dapat menambah dan menghapus rangkaian acara (`events`), bab kisah cinta (`stories`), dan rekening bank (`banks`) demo secara langsung tanpa batasan statis.
    - **6 Sub-Panel Narasi Tema:** Meliputi seluruh seksi undangan (Sampul & Pembuka, Mempelai & Acara, Kisah Cinta & Galeri, Dress Code & Streaming, Tanda Kasih & Turut Mengundang, Doa Penutup & RSVP).
    - **Harmonisasi Tipografi Casing (Anti-Collision Parisienne):** Menghindari huruf kapital semua (*ALL-CAPS*) pada font kaligrafi bersambung seperti di tema Candani, menyajikan Title Case anggun (`Dress Code`, `Live Streaming`, `Love Story`, `Our Moments`, `Turut Mengundang`) yang terbaca jernih.
-   - **Pewarisan Otomatis ke Undangan Klien (Smart Inheritance):** Saat klien membuat undangan baru via `POST /api/client/invitations/create`, sistem secara dinamis mewariskan seluruh label dan narasi yang telah disempurnakan admin di database (`theme_demo_${themeId}`) atau `ThemeBlueprint`.
+   - **Pemilih Palet Warna Bawaan Tema (18 Palet):** Admin dapat menentukan palet warna resmi untuk setiap tema (8 Palet Universal + 10 Palet Warisan Adat Bugis, Makassar, Toraja). Pilihan ini disimpan ke tabel `AdminSetting` (`theme_demo_${themeId}`) dan langsung tampil pada showroom publik (`/demo/${themeId}`).
+   - **Pewarisan Otomatis ke Undangan Klien (Smart Inheritance):** Saat klien membuat undangan baru via `POST /api/client/invitations/create`, sistem secara dinamis mewariskan palet default tema serta seluruh label dan narasi yang telah disempurnakan admin di database (`theme_demo_${themeId}`) atau `ThemeBlueprint`.
    - **Sintesis Arketipe Kategori Otomatis (Zero-Config untuk Tema Baru):** Saat Admin mengunggah file tema baru, sistem secara cerdas mendeteksi kategori dan memetakannya ke arketipe default (`DEFAULT_TRADITIONAL_BLUEPRINT`, `DEFAULT_MODERN_BLUEPRINT`, atau `DEFAULT_PREMIUM_BLUEPRINT`). Seluruh formulir di Demo Studio otomatis terisi lengkap tanpa ada input kosong.
+   - **Pewarisan Musik Default Tema (Theme Default Music Architecture):** Setiap tema memiliki musik latar bawaan mandiri (Traditional: `/music/bermuara.mp3`, Modern & Premium: `/music/canon-in-d.ogg`) yang dapat dikustomisasi oleh Admin di Tab *Themes* -> *Studio* (`audioUrl` tersimpan di `AdminSetting.theme_demo_${themeId}`). Saat klien membuat undangan via `POST /api/client/invitations/create`, lagu bawaan tema ini otomatis terwariskan ke `invitation.musicUrl` dan `featureSettings.musicUrl`, serta diprioritaskan oleh Theme Engine saat merender audio player universal.
+   - **Standarisasi 5-Layer Master Stacking Hierarchy:** Pemisahan kanvas visual tema menjadi 5 lapisan independen: Lapisan 1 (Palet `body`), Lapisan 2 (Media Slot Background `.fixed-bg-layer`), Lapisan 3 (Kanvas Scrim `.scrim-canvas` 15%–45%), Lapisan 4 (Konten Undangan `.layout-wrapper`), Lapisan 5 (Cover Pembuka `#coverScreen`).
+   - **Pembersihan Aset Ornamen (Zero Bulky PNG):** Seluruh berkas mentah `.png` di `public/assets/ornaments/` (39 berkas) telah dikonversi menjadi `.webp` ringan dan dihapus tuntas, menghemat beban lalu lintas data mobile.
 
 ## 11. Filosofi Integritas UI Admin & Perlindungan Hak Klien
 Dalam pengelolaan Klien dan Undangan di Dashboard Admin (`app/(admin)/admin/page.tsx`), prinsip **Anti-Overreach** (anti-intervensi berlebih) ditegakkan secara ketat untuk mencegah manipulasi data yang membingungkan klien dan merusak metrik sistem:
@@ -1032,10 +1044,10 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
 1. **Master Tema Tradisional Bugis (`themes/traditional/bugis.html`):**
    - Tema etnik ke-8 (tema master ke-18) mengangkat keagungan adat bangsawan Bugis Saoraja berbalut Royal Maroon & Gold.
    - **Ornamen Budaya Otentik Bugis:**
-     * *Rumah Adat Bugis:* Siluet arsitektur rumah adat Bugis Saoraja dengan timpa laja bersusun pada cover pembuka, seksi hero, dan penutup.
-     * *4 Sudut Bunga Emas:* Ornamen bunga sudut WebP transparan presisi (`flower-tl/tr/bl/br.webp`).
-     * *Border Horizontal Emas:* Bingkai emas Bugis (`frame-top.webp`, `frame-bottom.webp`).
-     * *Tekstur Marun Sakral:* Latar belakang tekstur marun bergradasi halus (`bg-maroon.webp`).
+      * *Gerbang Walasuji Bambu & Sabbe:* Arsitektur gerbang bambu Walasuji megah 85% (`vapillion-bamboo2.webp`) dengan selempang sutra Bugis (`sabbe.webp`) menutup batas bawah foto mempelai secara presisi dan dinamis di balik tiang bambu.
+      * *Mahkota Rumbai Bugis Atas & Border Bawah:* Rumbai emas adat Bugis Saoraja (`bugis-atas.webp`) pada cover atas dan batas bawah emas (`frame-bottom.webp`) berbasis arsitektur **Seamless Repeat Tile (`repeat-x`)** anti-crop pada seluruh variasi resolusi (mobile, tablet, desktop).
+      * *4 Sudut Bunga Emas:* Ornamen bunga sudut WebP transparan presisi flush (`flower-tl/tr/bl/br.webp`).
+      * *Tekstur Marun Sakral:* Latar belakang tekstur marun bergradasi halus (`bg-maroon.webp`).
    - **Tipografi Luhur:** Kombinasi `Cinzel` (judul sakral), `Great Vibes` (aksen nama), `Cormorant Garamond` (kutipan doa), dan `Plus Jakarta Sans` (informasi acara).
    - **Narasi Adat Puitis (Bugis Wedding Lore):** Petuah luhur *"Sipakatau, sipakalebbi, sipakainge"* dan ungkapan syukur *"Kurru Sumanga'"*.
    - **Palet Warna Etnik Dinamis (`lib/colorPalettes.ts`):**

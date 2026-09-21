@@ -20,7 +20,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>{{firstName}} &amp; {{secondName}} — The Wedding</title>
+  <title>The Wedding of {{firstName}} &amp; {{secondName}}</title>
   <!-- 100% Self-Hosted Local Google Fonts (Zero External Latency) -->
   <link rel="stylesheet" href="/fonts/fonts.css">
   <style>
@@ -48,6 +48,15 @@
       overflow-x: hidden;
       scroll-behavior: smooth;
       width: 100%;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    /* Sembunyikan scrollbar visual bawaan peramban */
+    html::-webkit-scrollbar,
+    body::-webkit-scrollbar {
+      display: none;
+      width: 0;
+      height: 0;
     }
     h1, h2, h3, h4, .serif {
       font-family: 'Cormorant', serif;
@@ -107,7 +116,7 @@
        ========================================= */
     .page-wrap {
       width: 100%; margin: 0 auto; background: var(--bg-main);
-      min-height: 100vh; position: relative; box-shadow: 0 0 60px rgba(0,0,0,0.8);
+      min-height: 100vh; position: relative; z-index: 10; box-shadow: 0 0 60px rgba(0,0,0,0.8);
       overflow-x: hidden;
     }
 
@@ -208,6 +217,20 @@
     .hero-content-bottom { position: relative; z-index: 3; width: 100%; max-width: 440px; margin-top: auto; }
     .hero-quote-text { font-style: italic; font-size: 0.95rem; line-height: 1.7; color: rgba(245, 245, 245, 0.92); text-shadow: 0 2px 10px rgba(0,0,0,0.9); margin-bottom: 0.4rem; }
     .hero-quote-ref { font-family: 'Cormorant Infant', serif; font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); display: block; font-weight: 600; }
+
+    /* FIXED PARALLAX BACKGROUND LAYER (GLOBAL BG) */
+    .fixed-bg-layer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      z-index: 1;
+      background-position: center;
+      background-size: cover;
+      background-repeat: no-repeat;
+      pointer-events: none;
+    }
 
     /* SECTION COMMON */
     .sec-flow { padding: 4.8rem 1.8rem; text-align: center; position: relative; }
@@ -634,8 +657,16 @@
       width: 100%; padding: 0.9rem; background: var(--bg-surface); color: #d9d9d9;
       border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); font-weight: 600; font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; transition: all 0.3s; font-family: 'Lora', serif;
     }
-    .btn-rsvp-submit:hover { background: #d9d9d9; color: #262627; }
-    .wishes-list { margin-top: 1.5rem; max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.8rem; }
+    .wishes-list {
+      margin-top: 1.5rem; max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.8rem;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .wishes-list::-webkit-scrollbar {
+      display: none;
+      width: 0;
+      height: 0;
+    }
     .wish-item { padding: 0.9rem; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); text-align: left; }
     .wish-name { font-weight: 600; font-size: 0.85rem; color: #ffffff; margin-bottom: 0.2rem; font-family: 'Cormorant', serif; text-transform: uppercase; }
     .wish-msg { font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; font-family: 'Lora', serif; }
@@ -737,6 +768,13 @@
       transition: all 0.32s cubic-bezier(0.16, 1, 0.3, 1);
       box-shadow: 0 24px 65px rgba(0, 0, 0, 0.82), inset 0 1px 0 rgba(255, 255, 255, 0.15);
       overflow-y: auto;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .side-nav-drawer::-webkit-scrollbar {
+      display: none;
+      width: 0;
+      height: 0;
     }
     .side-nav-drawer.open {
       opacity: 1; visibility: visible;
@@ -873,6 +911,7 @@
 
     @media (min-width: 900px) {
       .left-hero { display: block; width: calc(100% - 460px); }
+      .fixed-bg-layer { width: 460px; left: calc(100% - 460px); right: 0; }
       .page-wrap { margin-left: calc(100% - 460px); width: 460px; max-width: none; min-width: 0; }
       .cover-screen {
         width: 100%;
@@ -1007,6 +1046,9 @@
     </button>
   </div>
 
+  <!-- FIXED PARALLAX BACKGROUND LAYER (GLOBAL BG) -->
+  <div class="fixed-bg-layer" style="background-image: linear-gradient(to bottom, rgba(7,7,9,0.55) 0%, rgba(7,7,9,0.40) 35%, rgba(7,7,9,0.82) 70%, rgba(7,7,9,0.94) 100%), url('{{globalBgUrl}}');"></div>
+
   <!-- =========================================
        MAIN SCROLLABLE PAGE (EDITORIAL MAGAZINE)
        ========================================= -->
@@ -1045,8 +1087,6 @@
         <!-- Host 1 Card (Groom) -->
         <div class="couple-editorial-card reveal-zoom">
           <div class="couple-issue-badge">
-            <span>NO. 01</span>
-            <span>•</span>
             <span>{{firstRole}}</span>
           </div>
           <div class="couple-photo-frame">
@@ -1073,8 +1113,6 @@
         <!-- Host 2 Card (Bride) -->
         <div class="couple-editorial-card reveal-zoom delay-1">
           <div class="couple-issue-badge">
-            <span>NO. 02</span>
-            <span>•</span>
             <span>{{secondRole}}</span>
           </div>
           <div class="couple-photo-frame">

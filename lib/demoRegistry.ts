@@ -86,6 +86,8 @@ export interface DemoThemeData {
   dressCodeNote: string;
   turutMengundang: string[];
   defaultPalette?: string;
+  audioUrl?: string;
+  defaultMusicUrl?: string;
 }
 
 export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
@@ -115,8 +117,8 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     weddingDateDay: "14",
     weddingDateMonth: "11",
     weddingDateYear: "2026",
-    openingQuote: "Dan di antara tanda-tanda kebesaran-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri, agar kamu cenderung dan merasa tenteram kepadanya.",
-    openingQuoteRef: "QS. AR-RUM : 21",
+    openingQuote: "Two lives, two hearts, joined together in friendship, united forever in love.",
+    openingQuoteRef: "THE WEDDING CELEBRATION",
     city: "Jakarta",
     globalBgUrl: "/demo/kalandra/background.webp",
     groomPhotoUrl: "/demo/kalandra/groom.webp",
@@ -839,10 +841,10 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
   badrika: {
     themeId: "badrika",
     themeName: "Badrika",
-    series: "Traditional",
-    category: "traditional",
+    series: "Modern",
+    category: "modern",
     defaultPalette: "emerald",
-    tagline: "WALIMATUL 'URS & SAORAJA ROYAL",
+    tagline: "THE WEDDING CELEBRATION",
     groomName: "Syahril",
     brideName: "Elyana",
     groomDisplayName: "Andi Syahril Ramadhan, S.T.",
@@ -883,27 +885,27 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     ],
     events: [
       {
-        badge: "MAPACCI",
-        title: "Mappacci / Korontigi Sakral",
-        time: "19.00 WITA – Selesai",
-        location: "Kediaman Mempelai Wanita",
-        address: "Jl. Boulevard No. 88, Panakkukang, Makassar",
+        badge: "HOLY MATRIMONY / AKAD",
+        title: "Akad Nikah",
+        time: "08.00 – 10.00 WITA",
+        location: "Grand Ballroom The Rinra Makassar",
+        address: "Jl. Metro Tanjung Bunga No. 2, Makassar",
         mapsUrl: "https://maps.google.com",
       },
       {
-        badge: "AKAD & RESEPSI",
-        title: "Akad & Resepsi Bugis Royal",
-        time: "10.00 – 14.00 WITA",
-        location: "Claro Hotel Makassar (Phinisi Ballroom)",
-        address: "Jl. A. P. Pettarani No. 3, Mannuruki, Makassar",
+        badge: "WEDDING RECEPTION",
+        title: "Resepsi Pernikahan",
+        time: "11.30 – 14.30 WITA",
+        location: "Nusantara Hall, The Rinra Makassar",
+        address: "Jl. Metro Tanjung Bunga No. 2, Makassar",
         mapsUrl: "https://maps.google.com",
       },
     ],
     stories: [
       {
-        chapter: "Mappatabe",
-        title: "Restu Orang Tua & Sesepuh",
-        content: "Melangkah bersama dengan doa restu keluarga besar menuju mahligai rumah tangga yang sakinah.",
+        chapter: "Chapter 01",
+        title: "A Beautiful Beginning",
+        content: "Melangkah bersama dengan cinta dan komitmen untuk membangun masa depan yang penuh kebahagiaan.",
       },
     ],
     banks: [
@@ -911,7 +913,7 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
       { bank: "Bank Mandiri", number: "1520098765432", name: "Andi Elyana" },
     ],
     dressCodeColors: "#0f2b23, #c5a059, #fbfaf7",
-    dressCodeNote: "Busana Adat Bugis / Nuansa Emerald Hijau & Emas Saoraja",
+    dressCodeNote: "Formal Evening Attire / Nuansa Emerald & Champagne Gold",
     turutMengundang: ["Keluarga Besar Andi Ramadhan", "Keluarga Besar Andi Tenri Tatta"],
   },
 
@@ -1203,7 +1205,7 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     weddingDateMonth: "12",
     weddingDateYear: "2026",
     openingQuote: "Sipakatau, sipakalebbi, sipakainge. Narekko purai sikaleng, tessisarakang lino ahera. Dengan memohon ridho dan rahmat Allah SWT, kami bermaksud melangsungkan ikatan suci pernikahan adat Bugis.",
-    openingQuoteRef: "PAPPASENG TO RIOLO & QS. AR-RUM: 21",
+    openingQuoteRef: "PAPPASENG TO RIOLO",
     city: "Bone",
     globalBgUrl: "/demo/bugis/background.webp",
     homePhotoUrl: "/demo/bugis/home.webp",
@@ -1290,7 +1292,7 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     weddingDateMonth: "12",
     weddingDateYear: "2026",
     openingQuote: "Bajiki passiriki, sombere' na malabbiri. Siri' na pacce menjadi landasan teguh dua insan yang berpadu dalam ikatan suci pernikahan adat Makassar.",
-    openingQuoteRef: "PASANG RI BURA'NE & QS. AR-RUM: 21",
+    openingQuoteRef: "PASANG RI BURA'NE",
     city: "Makassar",
     globalBgUrl: "/demo/makassar/background.webp",
     homePhotoUrl: "/demo/makassar/home.webp",
@@ -1377,7 +1379,7 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     weddingDateMonth: "12",
     weddingDateYear: "2026",
     openingQuote: "Sipakatau, sipakalebbi, sipakainge. Di bumi Arung Palakka dan keagungan Saoraja Lamurukung, dua rumpun keluarga bangsawan Bone berpadu dalam ikrar suci.",
-    openingQuoteRef: "PAPPASENG TO BONE & QS. AR-RUM: 21",
+    openingQuoteRef: "PAPPASENG TO BONE",
     city: "Watampone, Bone",
     globalBgUrl: "/demo/bone/background.webp",
     homePhotoUrl: "/demo/bone/home.webp",
@@ -1464,7 +1466,7 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     weddingDateMonth: "12",
     weddingDateYear: "2026",
     openingQuote: "Maradeka to Wajo-e, naia tompo' ri ade'na. Dalam ketulusan cinta dan keindahan sutera Sengkang, kami berpadu mengikat janji suci pernikahan.",
-    openingQuoteRef: "PAPPASENG TO WAJO & QS. AR-RUM: 21",
+    openingQuoteRef: "PAPPASENG TO WAJO",
     city: "Sengkang, Wajo",
     globalBgUrl: "/demo/wajo/background.webp",
     homePhotoUrl: "/demo/wajo/home.webp",
@@ -1551,7 +1553,7 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     weddingDateMonth: "12",
     weddingDateYear: "2026",
     openingQuote: "Tepu nalisu ada to riolo, mate ri tani-tani, malompo ri ada tongeng. Di bumi Latemmamala Soppeng, dua hati bersatu dalam naungan adat dan kehormatan.",
-    openingQuoteRef: "PAPPASENG TO SOPPENG & QS. AR-RUM: 21",
+    openingQuoteRef: "PAPPASENG TO SOPPENG",
     city: "Watansoppeng, Soppeng",
     globalBgUrl: "/demo/soppeng/background.webp",
     homePhotoUrl: "/demo/soppeng/home.webp",
@@ -1638,7 +1640,7 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     weddingDateMonth: "12",
     weddingDateYear: "2026",
     openingQuote: "Bajiki passiriki, sombere' na malabbiri. Di bumi bersejarah Somba Opu dan Balla Lompoa Gowa, dua insan berpadu dalam ikatan suci adat Makassar yang agung.",
-    openingQuoteRef: "PASANG RI GOWA & QS. AR-RUM: 21",
+    openingQuoteRef: "PASANG RI GOWA",
     city: "Sungguminasa, Gowa",
     globalBgUrl: "/demo/gowa/background.webp",
     homePhotoUrl: "/demo/gowa/home.webp",
@@ -1962,18 +1964,18 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
 
     themeId: "mayang",
     themeName: "Mayang",
-    series: "Traditional",
-    category: "traditional",
+    series: "Modern",
+    category: "modern",
     defaultPalette: "champagne",
-    tagline: "PAWIKAHAN AGENG KERATON",
+    tagline: "THE WEDDING CELEBRATION",
     groomName: "Bagus",
     brideName: "Mayang",
-    groomDisplayName: "Raden Bagus Wicaksono, M.M.",
-    brideDisplayName: "Raden Ajeng Mayang Kusuma, S.Sn.",
+    groomDisplayName: "Bagus Wicaksono, M.M.",
+    brideDisplayName: "Mayang Kusuma, S.Sn.",
     groomRole: "Mempelai Pria",
     brideRole: "Mempelai Wanita",
-    groomParents: "Putra dari K.R.T. Suryonegoro & Dra. Retno Palupi",
-    groomFather: "K.R.T. Suryonegoro",
+    groomParents: "Putra dari Ir. Hendra Suryonegoro & Dra. Retno Palupi",
+    groomFather: "Ir. Hendra Suryonegoro",
     groomMother: "Dra. Retno Palupi",
     brideParents: "Putri dari Ir. H. Bambang Hartono & Hj. Endang Sulistyowati",
     brideFather: "Ir. H. Bambang Hartono",
@@ -2041,10 +2043,10 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
   candani: {
     themeId: "candani",
     themeName: "Candani",
-    series: "Traditional",
-    category: "traditional",
+    series: "Modern",
+    category: "modern",
     defaultPalette: "terracotta",
-    tagline: "PESONA NUSANTARA FLORAL",
+    tagline: "MODERN BOTANICAL FLORAL",
     groomName: "Rijal",
     brideName: "Mega",
     groomDisplayName: "Rijal Fauzi, S.Pd.",
@@ -2477,7 +2479,7 @@ export function composeDemoTemplateData(
   const baseDemo = getDemoThemeData(themeId);
   const demo: DemoThemeData = customData ? { ...baseDemo, ...customData } : baseDemo;
   const blueprint = getThemeBlueprint(themeId, customData);
-  const resolvedPalette = paletteKey || customData?.defaultPalette || demo.defaultPalette || "champagne";
+  const resolvedPalette = paletteKey || customData?.defaultPalette || (customData as any)?.colorPalette || blueprint.defaultPalette || demo.defaultPalette || "champagne";
   const palette = COLOR_PALETTES[resolvedPalette] || COLOR_PALETTES.champagne;
 
   const v = cacheVersion || (customData as any)?.cacheVersion || undefined;
@@ -3181,7 +3183,7 @@ export function composeDemoTemplateData(
 
   const defaultCanonExists = fs.existsSync(path.join(process.cwd(), "public", "music", "canon-in-d.ogg"));
   const fallbackSong = defaultCanonExists ? "/music/canon-in-d.ogg" : (fs.existsSync(path.join(process.cwd(), "public", "music", "bermuara.mp3")) ? "/music/bermuara.mp3" : "");
-  const effectiveAudioUrl = withV((customData as any)?.audioUrl !== undefined ? (customData as any)?.audioUrl : ((demo as any)?.audioUrl || fallbackSong));
+  const effectiveAudioUrl = withV((customData as any)?.audioUrl !== undefined ? (customData as any)?.audioUrl : ((demo as any)?.audioUrl || (customData as any)?.defaultMusicUrl || blueprint.defaultMusicUrl || fallbackSong));
 
   const effectiveLandingCover = withV((customData as any)?.landingCoverUrl !== undefined ? (customData as any)?.landingCoverUrl : demo.landingCoverUrl);
   const effectiveLandingCoverDesktop = withV((customData as any)?.landingCoverDesktopUrl !== undefined ? (customData as any)?.landingCoverDesktopUrl : (demo.landingCoverDesktopUrl || ""));
@@ -3348,6 +3350,9 @@ export function composeDemoTemplateData(
     coverBadge: (customData as any)?.featureSettings?.customLabels?.coverBadge !== undefined
       ? (customData as any)?.featureSettings?.customLabels?.coverBadge
       : (blueprint.coverBadge || (customData as any)?.featureSettings?.weddingTagline || "THE WEDDING OF"),
+    openBtn: (customData as any)?.customLabels?.openBtn || blueprint.openBtn || "Buka Undangan",
+    coverSubtitle: (customData as any)?.customLabels?.coverSubtitle || blueprint.coverSubtitle || "",
+    coverGuestLabel: (customData as any)?.customLabels?.coverGuestLabel || "Kepada Yth. Bapak/Ibu/Saudara/i",
     quoteSectionTitle: blueprint.quoteSectionTitle,
     quoteSectionEyebrow: blueprint.quoteSectionEyebrow,
     quoteTitle: blueprint.quoteSectionTitle,
@@ -3357,6 +3362,22 @@ export function composeDemoTemplateData(
     coupleSectionSub: blueprint.coupleSectionSub || "Dengan penuh rasa syukur dan sukacita, kami mengundang Anda untuk merayakan persatuan cinta kami dalam ikatan suci pernikahan.",
     coupleTitle: blueprint.coupleSectionTitle || "Mempelai",
     coupleEyebrow: blueprint.coupleSectionEyebrow || "THE COUPLE",
+    eventsSectionTitle: blueprint.eventsSectionTitle || "Rangkaian Acara",
+    eventsSectionSub: blueprint.eventsSectionSub || "",
+    eventsSectionEyebrow: blueprint.eventsSectionEyebrow || "AGENDA ACARA",
+    eventsTitle: blueprint.eventsSectionTitle || "Rangkaian Acara",
+    eventsEyebrow: blueprint.eventsSectionEyebrow || "AGENDA ACARA",
+    storySectionTitle: blueprint.storySectionTitle || "Kisah Cinta Kami",
+    storySectionEyebrow: blueprint.storySectionEyebrow || "OUR JOURNEY",
+    storyTitle: blueprint.storySectionTitle || "Kisah Cinta Kami",
+    storyEyebrow: blueprint.storySectionEyebrow || "OUR JOURNEY",
+    wishesSectionTitle: blueprint.wishesSectionTitle || "Doa & Ucapan",
+    wishesSectionSub: blueprint.wishesSectionSub || "",
+    wishesSectionEyebrow: "WISHES & RSVP",
+    wishesTitle: blueprint.wishesSectionTitle || "Doa & Ucapan",
+    wishesEyebrow: "WISHES & RSVP",
+    rsvpTitle: blueprint.rsvpTitle || "Konfirmasi Kehadiran",
+    rsvpBtnText: blueprint.rsvpBtnText || "Kirim Konfirmasi & Doa",
     closingQuote: (customData as any)?.closingQuote || blueprint.closingQuote,
     closingSub: (customData as any)?.closingSub || blueprint.closingSub,
     

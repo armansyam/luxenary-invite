@@ -1,0 +1,10 @@
+{
+  "id": "makale",
+  "name": "Makale",
+  "category": "traditional",
+  "series": "Toraja Heritage",
+  "description": "Tema tradisional adat Toraja (Makale) dengan ukiran Pa'barre Allo, arsitektur Tongkonan, dan split desktop view.",
+  "defaultPalette": "toraja-crimson",
+  "isPremium": false,
+  "sortOrder": 22
+}

@@ -108,7 +108,18 @@ export async function composeTemplateData(invitationId: string) {
   }
 
   // Theme Blueprint Defaults Resolution
-  const blueprint = getThemeBlueprint(inv.themeId || "kalandra");
+  let customDemoData: any = null;
+  try {
+    const customSetting = await prisma.adminSetting.findUnique({
+      where: { key: `theme_demo_${(inv.themeId || "kalandra").toLowerCase()}` },
+      select: { value: true },
+    });
+    if (customSetting?.value) {
+      customDemoData = JSON.parse(customSetting.value);
+    }
+  } catch {}
+
+  const blueprint = getThemeBlueprint(inv.themeId || "kalandra", customDemoData || undefined);
 
   const activePaletteId = featureSettings.colorPalette || blueprint.defaultPalette || "champagne";
   const palette = COLOR_PALETTES[activePaletteId] || COLOR_PALETTES.champagne;
@@ -189,12 +200,12 @@ export async function composeTemplateData(invitationId: string) {
   const closingPhotoUrl = mediaMap.get("CLOSING_COVER") || null;
 
   // Background Canvas: Zero-Fake Fallback (Tanpa Memaksa Foto Demo / Foto Model Asing)
-  // Sediakan dual-fallback cerdas antara GLOBAL_FIXED_BG dan HOME_PHOTO agar konsisten di seluruh tema
-  const fixedBgUrl = customFixedBg || customHomePhoto || "";
+  // GLOBAL_FIXED_BG adalah slot media mandiri untuk background canvas
+  const fixedBgUrl = customFixedBg || "";
   const coverUrl = customCover || fixedBgUrl || "";
   const coverDesktopUrl = mediaMap.get("LANDING_COVER_DESKTOP") || coverUrl;
   const sidebarUrl = customSidebar || coverUrl;
-  const homePhotoUrl = customHomePhoto || customFixedBg || "";
+  const homePhotoUrl = customHomePhoto || "";
 
   // Foto Personal Mempelai: Jika tidak diunggah, gunakan Monogram Inisial Artistik (Anti-Foto Model Orang Asing)
   const groomPhoto = customGroom || generateInitialAvatarSvg(groomNickname || groomName, "The Groom");
@@ -875,14 +886,18 @@ export async function composeTemplateData(invitationId: string) {
   // 6.5. Section: Universal Audio Player
   let fallbackMusicUrl = "";
   if (!inv.musicUrl && !featureSettings.musicUrl && featureSettings.showMusic !== false) {
-    try {
-      const activePreset = await prisma.musicPreset.findFirst({
-        where: { isActive: true },
-        orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
-      });
-      if (activePreset?.url) fallbackMusicUrl = activePreset.url;
-    } catch (e) {
-      console.warn("[themeEngine] Gagal memuat fallback musik preset dari database:", e);
+    if (blueprint.defaultMusicUrl) {
+      fallbackMusicUrl = blueprint.defaultMusicUrl;
+    } else {
+      try {
+        const activePreset = await prisma.musicPreset.findFirst({
+          where: { isActive: true },
+          orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+        });
+        if (activePreset?.url) fallbackMusicUrl = activePreset.url;
+      } catch (e) {
+        console.warn("[themeEngine] Gagal memuat fallback musik preset dari database:", e);
+      }
     }
   }
 
@@ -1843,6 +1858,9 @@ export async function composeTemplateData(invitationId: string) {
     showVendors,
 
     // Custom Section Titles & Labels
+    openBtn: customLabels.openBtn || blueprint.openBtn || "Buka Undangan",
+    coverSubtitle: customLabels.coverSubtitle || blueprint.coverSubtitle || "",
+    coverGuestLabel: (customLabels as any).coverGuestLabel || "Kepada Yth. Bapak/Ibu/Saudara/i",
     openingGreeting,
     coverBadge,
     quoteSectionTitle,
@@ -1852,7 +1870,11 @@ export async function composeTemplateData(invitationId: string) {
     coupleSectionSub,
     eventsSectionTitle,
     eventsSectionSub,
+    eventsSectionEyebrow: (customLabels as any).eventsEyebrow || "AGENDA ACARA",
+    eventsEyebrow: (customLabels as any).eventsEyebrow || "AGENDA ACARA",
     storySectionTitle,
+    storySectionEyebrow: customLabels.storyEyebrow || blueprint.storySectionEyebrow || "OUR JOURNEY",
+    storyEyebrow: customLabels.storyEyebrow || blueprint.storySectionEyebrow || "OUR JOURNEY",
     gallerySectionTitle,
     gallerySectionEyebrow,
     galleryQuote,
@@ -1861,10 +1883,15 @@ export async function composeTemplateData(invitationId: string) {
     giftSectionDesc,
     wishesSectionTitle,
     wishesSectionSub,
+    wishesSectionEyebrow: (customLabels as any).wishesEyebrow || "WISHES & RSVP",
+    wishesEyebrow: (customLabels as any).wishesEyebrow || "WISHES & RSVP",
+    rsvpTitle: customLabels.rsvpTitle || blueprint.rsvpTitle || "Konfirmasi Kehadiran",
+    rsvpBtnText: customLabels.rsvpBtnText || blueprint.rsvpBtnText || "Kirim Konfirmasi & Doa",
     vendorTitle,
     vendorEyebrow,
     vendorSubtitle,
     quoteTitle: quoteSectionTitle,
+    quoteEyebrow: quoteSectionEyebrow,
     coupleEyebrow: coupleSectionEyebrow,
     coupleTitle: coupleSectionTitle,
     eventsTitle: eventsSectionTitle,
