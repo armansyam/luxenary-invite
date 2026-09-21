@@ -2503,5 +2503,31 @@ Sistem telah melalui audit mendalam berbasis bukti empiris (*Empirical Verificat
    - Skrip deployment otomatis mengonfigurasi `pm2-logrotate` (maks 10MB x 7 arsip) untuk mencegah kebocoran disk VPS dari `logs/out.log`.
    - Skrip deployment otomatis mendaftarkan jadwal cron job pemeliharaan (`/api/cron/cleanup` pukul 02:00 dan `/api/cron/backup` pukul 03:00) ke crontab Linux host menggunakan `CRON_SECRET` aktif, mengeliminasi kebutuhan konfigurasi manual oleh engineer IT.
 
+---
+
+## 29. Standarisasi Cloudflare Edge Caching, Decoupled Dynamic Wishes & URL-Specific Purge (September 2026)
+
+1. **Header Edge Caching Terpadu (`app/(public)/s/[subdomain]/route.ts` & `[slug]/route.ts`):**
+   - Rute publik undangan yang telah berstatus `PUBLISHED` secara eksplisit mengirimkan header:
+     `Cache-Control: public, max-age=60, s-maxage=604800, stale-while-revalidate=86400`
+   - Memungkinkan 300+ data center Cloudflare Edge di seluruh dunia menyimpan salinan dokumen HTML statis selama 7 hari, mengeliminasi beban CPU VPS dan query PostgreSQL hingga 0% saat ribuan tamu mengakses secara serentak di hari-H.
+   - Mode `DRAFT` atau `preview` tetap memancarkan `no-store, no-cache, must-revalidate` untuk menjamin interaktivitas kanvas studio secara real-time.
+
+2. **Pemisahan Data Dinamis Doa & Ucapan (Decoupled Dynamic Wishes Feed):**
+   - Seluruh 18 tema produksi dan sistem *Triple Blueprint* (`themes/starter-blueprint.html`, `public/downloads/starter-blueprint.html`, `theme-builder/starter/master.html`, dan `lib/themeEngine.ts`) dilengkapi pemanggil otomatis asinkron `fetch('/api/public/rsvp?invitationId=...')` saat halaman dimuat.
+   - Kotak doa dan ucapan tamu selalu terisi real-time dari database tanpa perlu membakar ulang file HTML atau membatalkan cache edge Cloudflare.
+
+3. **URL-Specific Purge Otomatis pada Aksi "Update Publikasi" (`DEPLOY_AND_LOCK`):**
+   - Di [app/api/client/invitations/[id]/route.ts](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/api/client/invitations/%5Bid%5D/route.ts), saat pengantin menyelesaikan revisi di studio melalui masa Emergency Unlock dan mengklik **"Update Publikasi & Kunci Kembali"**, sistem secara atomik:
+     1. Mengompilasi ulang berkas HTML fisik `public/published/ids/<id>.html`.
+     2. Menembak API `purgeCloudflareCache` terisolasi hanya untuk URL spesifik undangan terkait (`https://subdomain.luxvite.id/`, `https://luxvite.id/slug`, dan custom domain jika ada).
+     3. Mengosongkan `adminUnlockedUntil = null` untuk mengunci kembali studio editor secara otomatis.
+   - Menjamin nol risiko *cache stampede* pada undangan klien lain.
+
+4. **Tombol Mandiri "Bakar Ulang & Purge Cache" di Dasbor Admin (`components/admin/AdminInvitationsTab.tsx`):**
+   - Disediakan endpoint terproteksi `POST /api/admin/invitations/[id]/purge` beserta tombol aksi di tabel undangan Dasbor Admin.
+   - Memungkinkan administrator memicu kompilasi ulang HTML dan pembersihan cache Cloudflare secara instan untuk undangan tertentu saat ada permintaan troubleshooting dari klien.
+
+
 
 

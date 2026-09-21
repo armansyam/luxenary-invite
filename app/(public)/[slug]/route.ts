@@ -154,9 +154,19 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
     // html = html.replace(/<span id="guest-name">.*?<\/span>/, `<span id="guest-name">${to}</span>`);
   }
 
+  const responseHeaders: Record<string, string> = {
+    "Content-Type": "text/html; charset=utf-8",
+  };
+
+  if (invitation.status === "PUBLISHED" && !isPreview) {
+    // Edge Cache Cloudflare: s-maxage 7 hari, browser cache 60 detik, revalidasi di background
+    responseHeaders["Cache-Control"] = "public, max-age=60, s-maxage=604800, stale-while-revalidate=86400";
+  } else {
+    // Mode Draft/Preview live editing: jangan di-cache agar instan terlihat saat edit
+    responseHeaders["Cache-Control"] = "no-store, no-cache, must-revalidate";
+  }
+
   return new NextResponse(html, {
-    headers: {
-      "Content-Type": "text/html; charset=utf-8",
-    },
+    headers: responseHeaders,
   });
 }

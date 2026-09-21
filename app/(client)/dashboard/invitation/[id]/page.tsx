@@ -1564,14 +1564,14 @@ export default function EditInvitation() {
               {isDeploying ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Memperbarui Online...</span>
+                  <span>Mengupdate Publikasi...</span>
                 </>
               ) : (
                 <>
                   <svg className="w-4 h-4 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
-                  <span>Perbarui Undangan &amp; Kunci Kembali</span>
+                  <span>Update Publikasi &amp; Kunci Kembali</span>
                 </>
               )}
             </button>

@@ -164,17 +164,41 @@ export default function AdminInvitationsTab({ onNavigateToThemes }: AdminInvitat
       const res = await fetch(`/api/admin/invitations/${inv.id}/lifecycle`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "EXTEND_GALLERY", days: 30 }),
+        body: JSON.stringify({ action: "EXTEND_GALLERY", extendDays: 30 }),
       });
       const data = await res.json();
       if (data.success) {
-        setActionMsg({ ok: true, msg: "Masa aktif galeri berhasil diperpanjang 30 hari." });
+        setActionMsg({ ok: true, msg: "Masa aktif galeri foto berhasil diperpanjang 30 hari." });
         fetchInvitations();
       } else {
-        throw new Error(data.error || "Gagal memperpanjang masa galeri");
+        throw new Error(data.error || "Gagal memperpanjang masa aktif galeri");
       }
     } catch (err: any) {
-      setActionMsg({ ok: false, msg: err.message || "Gagal memperpanjang masa galeri" });
+      setActionMsg({ ok: false, msg: err.message || "Gagal memperpanjang masa aktif" });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Handle Single Invitation Re-bake & Purge Cache Cloudflare
+  const handlePurgeCache = async (inv: InvitationItem) => {
+    try {
+      setActionLoading(true);
+      setActionMsg(null);
+      const res = await fetch(`/api/admin/invitations/${inv.id}/purge`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (data.success) {
+        setActionMsg({
+          ok: true,
+          msg: data.message || "Undangan berhasil dibakar ulang dan cache Cloudflare telah dibersihkan.",
+        });
+      } else {
+        throw new Error(data.error || "Gagal mem-purge cache undangan.");
+      }
+    } catch (err: any) {
+      setActionMsg({ ok: false, msg: err.message || "Gagal memproses purge cache" });
     } finally {
       setActionLoading(false);
     }
@@ -486,6 +510,21 @@ export default function AdminInvitationsTab({ onNavigateToThemes }: AdminInvitat
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                            </button>
+                          )}
+
+                          {/* Bakar Ulang HTML & Purge Cache Cloudflare */}
+                          {(inv.status === "PUBLISHED" || inv.status === "EVENT_FINISHED") && (
+                            <button
+                              type="button"
+                              onClick={() => handlePurgeCache(inv)}
+                              disabled={actionLoading}
+                              className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-50 border border-transparent hover:border-amber-200 transition cursor-pointer"
+                              title="Bakar Ulang HTML & Purge Cache Cloudflare"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                               </svg>
                             </button>
                           )}

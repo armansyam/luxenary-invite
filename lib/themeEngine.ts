@@ -1052,6 +1052,36 @@ export async function composeTemplateData(invitationId: string) {
           }
         });
       }
+
+      // 4. Auto-Fetch Real-Time Dynamic Wishes Feed (Decoupled Edge Cache)
+      (function() {
+        var invId = window.__LUX_INVITATION_ID__ || '${invitationId}';
+        if (!invId || invId.startsWith('{{')) return;
+        fetch('/api/public/rsvp?invitationId=' + encodeURIComponent(invId))
+          .then(function(res) { return res.json(); })
+          .then(function(data) {
+            if (data && data.success && Array.isArray(data.rsvps) && data.rsvps.length > 0) {
+              var wishesList = document.getElementById('wishesList') || document.getElementById('wishesFeed');
+              if (!wishesList) return;
+              wishesList.innerHTML = data.rsvps.map(function(r) {
+                var isHadir = String(r.status).toLowerCase() === 'hadir';
+                var badgeText = isHadir ? 'Hadir (' + (r.guestCount || 1) + ' Orang)' : 'Berhalangan';
+                var badgeBg = isHadir ? 'rgba(74,222,128,0.15)' : 'rgba(248,113,113,0.15)';
+                var badgeColor = isHadir ? '#4ade80' : '#f87171';
+                var safeName = String(r.guestName || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                var safeMsg = r.message ? String(r.message).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
+                return '<div class="wish-item" style="margin-bottom: 0.75rem;">' +
+                  '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">' +
+                    '<span class="wish-name">' + safeName + '</span>' +
+                    '<span style="font-size:0.65rem; padding:2px 8px; border-radius:50px; background:' + badgeBg + '; color:' + badgeColor + '; font-weight:600;">' + badgeText + '</span>' +
+                  '</div>' +
+                  (safeMsg ? '<p class="wish-msg">“' + safeMsg + '”</p>' : '') +
+                '</div>';
+              }).join('');
+            }
+          })
+          .catch(function() {});
+      })();
     </script>
   `;
 

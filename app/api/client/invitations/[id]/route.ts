@@ -212,6 +212,27 @@ export async function PUT(
           },
         });
 
+        // Otomatis bersihkan (purge) edge cache Cloudflare untuk URL spesifik undangan ini (Anti-Stale Cache)
+        try {
+          const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN || "luxvite.id").split(":")[0].toLowerCase();
+          const urlsToPurge: string[] = [];
+          if (currentInv.subdomain) {
+            urlsToPurge.push(`https://${currentInv.subdomain}.${rootDomain}/`);
+          }
+          if (currentInv.invitationSlug) {
+            urlsToPurge.push(`https://${rootDomain}/${currentInv.invitationSlug}`);
+          }
+          if (currentInv.customDomain) {
+            urlsToPurge.push(`https://${currentInv.customDomain}/`);
+          }
+          if (urlsToPurge.length > 0) {
+            const { purgeCloudflareCache } = await import("@/lib/cloudflare");
+            await purgeCloudflareCache({ files: urlsToPurge });
+          }
+        } catch (purgeErr: any) {
+          console.warn("[DEPLOY_AND_LOCK] Auto purge Cloudflare failed (non-blocking):", purgeErr.message);
+        }
+
         const newLockStatus = getInvitationLockStatus(updated);
 
         return NextResponse.json({
@@ -580,6 +601,16 @@ export async function PUT(
           } else {
             const { buildAndSavePublishedHtml } = await import("@/lib/staticPublisher");
             await buildAndSavePublishedHtml(updated.id);
+          }
+
+          // Bersihkan cache jika subdomain sebelumnya sempat diakses sebelum rilis
+          const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN || "luxvite.id").split(":")[0].toLowerCase();
+          const urlsToPurge: string[] = [];
+          if (updated.subdomain) urlsToPurge.push(`https://${updated.subdomain}.${rootDomain}/`);
+          if (updated.invitationSlug) urlsToPurge.push(`https://${rootDomain}/${updated.invitationSlug}`);
+          if (urlsToPurge.length > 0) {
+            const { purgeCloudflareCache } = await import("@/lib/cloudflare");
+            await purgeCloudflareCache({ files: urlsToPurge });
           }
         } catch (err) {
           console.error("Initial publish auto-bake / R2 Sync failed (background):", err);

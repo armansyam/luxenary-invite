@@ -1589,7 +1589,35 @@
       return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
-    // G. Hitung Mundur Otomatis
+    // G. Pemuatan Feed Doa & Ucapan Dinamis Real-Time (Decoupled Edge Cache)
+    (function initDynamicWishes() {
+      const invId = window.__LUX_INVITATION_ID__ || '{{invitationId}}';
+      if (!invId || invId.startsWith('{{')) return;
+      fetch('/api/public/rsvp?invitationId=' + encodeURIComponent(invId))
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          if (data && data.success && Array.isArray(data.rsvps) && data.rsvps.length > 0) {
+            const stream = document.getElementById('wishesFeed') || document.getElementById('wishesList') || document.getElementById('wishesStream');
+            if (!stream) return;
+            stream.innerHTML = data.rsvps.map(function(r) {
+              const isHadir = String(r.status).toLowerCase() === 'hadir';
+              const badgeText = isHadir ? 'Hadir (' + (r.guestCount || 1) + ' Orang)' : 'Berhalangan';
+              const badgeBg = isHadir ? 'rgba(74, 222, 128, 0.15)' : 'rgba(248, 113, 113, 0.15)';
+              const badgeColor = isHadir ? '#16a34a' : '#dc2626';
+              return '<div class="wish-item-card" style="background: rgba(0, 0, 0, 0.03); border: 1px solid rgba(0, 0, 0, 0.08); border-radius: 12px; padding: 1rem 1.2rem; margin-bottom: 0.75rem; text-align: left;">' +
+                '<div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.35rem;">' +
+                  '<strong style="color: var(--primary, #b5833c); font-size: 0.92rem;">' + escapeHtml(r.guestName) + '</strong>' +
+                  '<span style="font-size: 0.68rem; padding: 2px 8px; border-radius: 50px; background:' + badgeBg + '; color:' + badgeColor + '; font-weight:600;">' + badgeText + '</span>' +
+                '</div>' +
+                (r.message ? '<p style="margin: 0; font-size: 0.85rem; line-height: 1.5; color: var(--text-main, #2b2725);">“' + escapeHtml(r.message) + '”</p>' : '') +
+              '</div>';
+            }).join('');
+          }
+        })
+        .catch(function() {});
+    })();
+
+    // H. Hitung Mundur Otomatis
     (function initCountdown() {
       const rawTarget = "{{targetDate}}" || "";
       const parsed = rawTarget ? new Date(rawTarget).getTime() : NaN;
