@@ -90,6 +90,11 @@ export async function POST(req: NextRequest) {
         invitationSlug: true,
         featureSettings: true,
         eventData: true,
+        groomNickname: true,
+        groomName: true,
+        brideNickname: true,
+        brideName: true,
+        user: { select: { email: true, name: true } },
         order: { select: { planType: true } },
       },
     });
@@ -205,7 +210,7 @@ export async function POST(req: NextRequest) {
           quotaExceeded: true,
           totalQuota: totalEventQuota,
           currentTotalPhotos,
-          message: `Kapasitas kuota foto kenangan untuk acara ini telah terisi penuh (${totalEventQuota}/${totalEventQuota} foto). Terima kasih atas partisipasi Anda!`,
+          message: "Terima kasih banyak atas momen indahnya! Roll kamera kenangan untuk acara ini telah terisi penuh dengan cinta. Semua foto sedang kami proses dan simpan dengan aman ke dalam album kenangan pengantin ✨",
         },
         { status: 403 }
       );
@@ -261,7 +266,7 @@ export async function POST(req: NextRequest) {
             quotaExceeded: true,
             shotsQuota,
             guestUploadedCount,
-            message: `Roll film Anda telah terisi penuh (${shotsQuota}/${shotsQuota} foto). Terima kasih atas partisipasi Anda!`,
+            message: "Seluruh jepretan roll kamera Anda telah terpakai. Terima kasih telah mengabadikan momen berharga ini bersama kedua mempelai!",
           },
           { status: 403 }
         );
@@ -316,6 +321,47 @@ export async function POST(req: NextRequest) {
       sseEmitter.emit("new_memory", memory);
     } catch (sseErr) {
       console.error("[SSE Emitter Error]", sseErr);
+    }
+
+    // ── TRIGGER NOTIFIKASI AMBANG BATAS 80% (NON-BLOCKING BACKGROUND) ──
+    const newTotalPhotos = currentTotalPhotos + 1;
+    const threshold80 = Math.floor(totalEventQuota * 0.8);
+
+    if (
+      totalEventQuota >= 10 &&
+      newTotalPhotos >= threshold80 &&
+      !fs.memoriesNotified80 &&
+      invitation.user?.email
+    ) {
+      // Tandai memoriesNotified80 di DB agar notifikasi hanya dikirim 1 kali
+      const updatedFs = { ...fs, memoriesNotified80: true };
+      prisma.invitation
+        .update({
+          where: { id: invitationId },
+          data: { featureSettings: JSON.stringify(updatedFs) },
+        })
+        .catch((e) => console.error("[Memories Upload] Gagal menyimpan flag notifikasi 80%:", e));
+
+      // Kirim email notifikasi secara asynchronous (tidak memperlambat response upload tamu)
+      const groomFirst = (invitation.groomNickname || invitation.groomName || "Mempelai").trim();
+      const brideFirst = (invitation.brideNickname || invitation.brideName || "").trim();
+      const coupleNames = brideFirst ? `${groomFirst} & ${brideFirst}` : groomFirst;
+      const remainingPhotos = Math.max(0, totalEventQuota - newTotalPhotos);
+
+      import("@/lib/mailer")
+        .then(({ sendMemoriesQuotaAlertEmail }) => {
+          sendMemoriesQuotaAlertEmail({
+            invitationId,
+            invitationSlug: invitation.invitationSlug,
+            coupleNames,
+            usedPhotos: newTotalPhotos,
+            totalQuota: totalEventQuota,
+            remainingPhotos,
+            recipientEmail: invitation.user.email,
+            recipientName: invitation.user.name || coupleNames,
+          }).catch((err) => console.error("[Memories Upload] Gagal kirim email alert kuota roll:", err));
+        })
+        .catch(() => {});
     }
 
     const remainingShots = shotsQuota > 0 ? Math.max(0, shotsQuota - (guestUploadedCount + 1)) : 999;

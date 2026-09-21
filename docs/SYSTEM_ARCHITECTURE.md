@@ -2528,6 +2528,20 @@ Sistem telah melalui audit mendalam berbasis bukti empiris (*Empirical Verificat
    - Disediakan endpoint terproteksi `POST /api/admin/invitations/[id]/purge` beserta tombol aksi di tabel undangan Dasbor Admin.
    - Memungkinkan administrator memicu kompilasi ulang HTML dan pembersihan cache Cloudflare secara instan untuk undangan tertentu saat ada permintaan troubleshooting dari klien.
 
+---
 
+## 30. Sistem Peringatan Kuota Roll Kamera Tamu & Wording Analog Sopan (September 2026)
 
+1. **Peringatan Otomatis Ambang Batas 80% via Email (`lib/mailer.ts` & `upload/route.ts`):**
+   - Saat tamu mengunggah foto ke `/api/public/memories/upload` dan total foto mencapai $\ge 80\%$ dari plafon paket (`totalEventQuota * 0.8`), sistem secara otomatis mengeksekusi `sendMemoriesQuotaAlertEmail` ke alamat email pengantin yang terdaftar.
+   - Bersifat *fire-and-forget* (asinkron non-blocking) agar tidak memperlambat waktu respon pengambilan foto tamu di lokasi acara.
+   - Dilindungi bendera *idempotent* `memoriesNotified80: true` di `featureSettings` undangan, menjamin email hanya dikirimkan 1 kali per acara dan tidak membanjiri kotak masuk pengguna.
+   - Tautan CTA di dalam email mengarahkan pengantin langsung menuju Dasbor Momen Tamu privat (`/dashboard/moments`) untuk menjaga keamanan sesi autentikasi dan transparansi transaksi.
 
+2. **Banner Peringatan Visual Amber di Dasbor Klien (`/dashboard/moments`):**
+   - Jika kuota terpakai mencapai $\ge 80\%$, Dasbor Momen pengantin secara otomatis memunculkan banner peringatan *Amber Gold* dengan microcopy antusiasme tamu (*"Roll kamera hampir penuh..."*) dan tombol cepat *Top-Up +100 Foto via QRIS*.
+
+3. **Wording Analog Sopan di Sisi Tamu (*Zero-Embarrassment Guarantee*):**
+   - Saat kuota foto acara telah terisi penuh ($100\%$), sistem menolak unggahan baru dengan status HTTP 403 namun memancarkan pesan metafora analog yang hangat dan bersahabat:
+     *"Terima kasih banyak atas momen indahnya! Roll kamera kenangan untuk acara ini telah terisi penuh dengan cinta. Semua foto sedang kami proses dan simpan dengan aman ke dalam album kenangan pengantin ✨"*
+   - Menghilangkan total eksposur angka kuota atau kesan batasan paket di depan para tamu undangan, menjaga martabat dan wibawa pengantin tetap terlindungi 100%.

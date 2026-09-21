@@ -211,3 +211,130 @@ export async function sendInvoiceEmail(opts: InvoiceEmailOptions): Promise<{ suc
     return { success: false, error: error.message };
   }
 }
+
+export interface MemoriesQuotaAlertOptions {
+  invitationId: string;
+  invitationSlug?: string;
+  coupleNames: string;
+  usedPhotos: number;
+  totalQuota: number;
+  remainingPhotos: number;
+  recipientEmail: string;
+  recipientName?: string;
+  appUrl?: string;
+}
+
+export async function sendMemoriesQuotaAlertEmail(opts: MemoriesQuotaAlertOptions): Promise<{ success: boolean; error?: string }> {
+  try {
+    const settings = await getPublicPlatformSettings();
+
+    // Graceful check: Jika SMTP belum dikonfigurasi, skip dengan aman
+    if (!settings.smtpHost || !settings.smtpUser) {
+      console.log("[Mailer] SMTP belum dikonfigurasi di Admin Settings. Email peringatan roll dilewati.");
+      return { success: false, error: "SMTP_NOT_CONFIGURED" };
+    }
+
+    const transporter = nodemailer.createTransport({
+      host: settings.smtpHost,
+      port: settings.smtpPort || 587,
+      secure: settings.smtpPort === 465,
+      auth: {
+        user: settings.smtpUser,
+        pass: settings.smtpPassword || "",
+      },
+      tls: {
+        rejectUnauthorized: process.env.NODE_ENV === "production",
+      },
+    });
+
+    const platformName = settings.platformName || "Platform Kami";
+    const percentUsed = Math.round((opts.usedPhotos / opts.totalQuota) * 100);
+    const subject = `[Pemberitahuan] Roll Kamera Tamu ${opts.coupleNames} Sudah ${percentUsed}% Terisi 📸`;
+
+    const baseUrl = opts.appUrl || process.env.NEXTAUTH_URL || `https://${process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'luxvite.id'}`;
+    const topupUrl = `${baseUrl}/dashboard/moments`;
+
+    const htmlContent = `<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${subject}</title>
+  <style>
+    body { margin: 0; padding: 0; background-color: #0c0a09; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f5f5f4; }
+    .container { max-width: 560px; margin: 0 auto; padding: 32px 20px; }
+    .card { background-color: #1c1917; border: 1px solid #292524; border-radius: 20px; padding: 32px 28px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+    .header { text-align: center; border-bottom: 1px solid #292524; padding-bottom: 20px; margin-bottom: 24px; }
+    .brand { font-family: 'Cinzel', Georgia, serif; font-size: 16px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #d97706; margin-bottom: 6px; }
+    .title { font-size: 18px; font-weight: 700; color: #ffffff; margin: 0 0 10px 0; }
+    .badge { display: inline-block; padding: 5px 12px; border-radius: 9999px; font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; background-color: #fef3c7; color: #92400e; }
+    .message-box { background-color: #26221f; border-left: 4px solid #d97706; border-radius: 8px; padding: 16px; margin: 20px 0; font-size: 13px; line-height: 1.6; color: #d6d3d1; }
+    .meter-container { background-color: #292524; border-radius: 12px; padding: 20px; margin: 24px 0; text-align: center; }
+    .meter-bar-bg { background-color: #1c1917; border-radius: 999px; height: 12px; overflow: hidden; margin: 12px 0; border: 1px solid #3b3530; }
+    .meter-bar-fill { background: linear-gradient(90deg, #d97706 0%, #f59e0b 100%); height: 100%; border-radius: 999px; }
+    .meter-label { display: flex; justify-content: space-between; font-size: 12px; color: #a8a29e; font-weight: 600; }
+    .btn-wrap { text-align: center; margin: 28px 0 20px 0; }
+    .btn { display: inline-block; background: linear-gradient(135deg, #d97706 0%, #b45309 100%); color: #ffffff !important; text-decoration: none; padding: 14px 28px; border-radius: 12px; font-weight: 700; font-size: 13px; letter-spacing: 0.5px; box-shadow: 0 10px 20px rgba(217, 119, 6, 0.3); }
+    .footer { text-align: center; font-size: 11px; color: #78716c; line-height: 1.6; border-top: 1px solid #292524; padding-top: 20px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="header">
+        <div class="brand">${platformName}</div>
+        <h1 class="title">ROLL KAMERA TAMU HAMPIR PENUH</h1>
+        <span class="badge">ANTUSIASME TINGGI (${percentUsed}%)</span>
+      </div>
+
+      <div class="message-box">
+        <p style="margin: 0 0 8px 0;">Halo <strong>${opts.recipientName || opts.coupleNames}</strong>,</p>
+        <p style="margin: 0;">Tamu undangan pernikahan Anda sangat antusias! Saat ini roll kamera kenangan telah terisi sebanyak <strong>${opts.usedPhotos} dari ${opts.totalQuota} foto</strong> (tersisa <strong>${opts.remainingPhotos} foto</strong>).</p>
+      </div>
+
+      <div class="meter-container">
+        <div class="meter-label">
+          <span>Kapasitas Terpakai</span>
+          <span style="color: #fbbf24; font-weight: 700;">${opts.usedPhotos} / ${opts.totalQuota} Foto (${percentUsed}%)</span>
+        </div>
+        <div class="meter-bar-bg">
+          <div class="meter-bar-fill" style="width: ${Math.min(100, percentUsed)}%;"></div>
+        </div>
+        <div style="font-size: 11px; color: #78716c; margin-top: 4px;">
+          Sisa jatah jepretan: <strong>${opts.remainingPhotos} foto</strong> sebelum roll penuh.
+        </div>
+      </div>
+
+      <p style="font-size: 12px; color: #a8a29e; text-align: center; line-height: 1.5;">
+        Silakan buka Dasbor Momen Tamu untuk melihat foto-foto yang telah masuk atau menambah kuota roll foto secara aman langsung dari dasbor Anda:
+      </p>
+
+      <div class="btn-wrap">
+        <a href="${topupUrl}" class="btn" target="_blank">Buka Dasbor Momen Tamu &rarr;</a>
+      </div>
+
+      <div class="footer">
+        <p>Pemberitahuan otomatis ini dikirimkan khusus untuk menjaga kelancaran dokumentasi pernikahan Anda di <strong>${platformName}</strong>.</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    const fromAddress = settings.smtpFromEmail || settings.smtpUser;
+    const fromName = settings.smtpFromName || platformName;
+
+    await transporter.sendMail({
+      from: `"${fromName}" <${fromAddress}>`,
+      to: opts.recipientEmail,
+      subject,
+      html: htmlContent,
+    });
+
+    console.log(`[Mailer] Peringatan kuota roll 80% berhasil dikirim ke ${opts.recipientEmail}`);
+    return { success: true };
+  } catch (error: any) {
+    console.error("[Mailer] Gagal mengirim email peringatan kuota roll:", error);
+    return { success: false, error: error.message };
+  }
+}

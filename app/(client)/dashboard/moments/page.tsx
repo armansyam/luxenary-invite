@@ -671,6 +671,37 @@ export default function MomentsSetupPage() {
         </div>
       </div>
 
+      {/* Alert Banner 80%+ Kuota Terpakai */}
+      {memoriesQuota && memoriesQuota.maxTotalPhotos > 0 && (memoriesQuota.usedPhotos / memoriesQuota.maxTotalPhotos) >= 0.8 && (
+        <div className="p-4 sm:p-5 rounded-2xl bg-amber-50 border border-amber-300 text-amber-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-start sm:items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-amber-100 border border-amber-300 flex items-center justify-center shrink-0 text-amber-800">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <div className="text-xs font-bold uppercase tracking-wider text-amber-900">
+                Pemberitahuan Kuota Roll: {Math.round((memoriesQuota.usedPhotos / memoriesQuota.maxTotalPhotos) * 100)}% Terisi
+              </div>
+              <p className="text-xs text-amber-800 mt-0.5 leading-relaxed">
+                Tamu Anda sangat antusias! Saat ini telah terabadikan <strong>{memoriesQuota.usedPhotos} dari {memoriesQuota.maxTotalPhotos} foto</strong> (tersisa {memoriesQuota.remainingPhotos} foto). Anda dapat menambah roll kapan saja agar tamu tetap leluasa mengabadikan momen.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsAddonModalOpen(true)}
+            className="px-4 py-2 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs shrink-0"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            <span>Top-Up +100 Foto</span>
+          </button>
+        </div>
+      )}
+
       {/* Switch Status Aktifkan Fitur Kamera */}
       <div className="bg-white p-4 sm:p-5 rounded-2xl border border-stone-200/90 shadow-xs flex items-center justify-between gap-4">
         <div>
