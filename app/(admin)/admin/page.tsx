@@ -490,6 +490,7 @@ export default function AdminPage() {
   const [savingXendit, setSavingXendit] = useState(false);
   const [savingSmtp, setSavingSmtp] = useState(false);
   const [savingDomainDns, setSavingDomainDns] = useState(false);
+  const [savingMemoriesMilestones, setSavingMemoriesMilestones] = useState(false);
   const [detectingServerIp, setDetectingServerIp] = useState(false);
   const [detectIpResult, setDetectIpResult] = useState<{ success: boolean; message: string } | null>(null);
   const [activeSettingsTab, setActiveSettingsTab] = useState<"akun" | "pembayaran" | "gateway" | "paket" | "setup" | "platform">(() => {
@@ -4699,6 +4700,121 @@ export default function AdminPage() {
                             className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 transition shadow-2xs max-w-[200px]"
                           />
                           <p className="text-[11px] text-gray-500">Batas ukuran foto yang diunggah oleh tamu di halaman galeri kenangan.</p>
+                        </div>
+                      </FieldRow>
+                    </div>
+                  </SettingsCard>
+
+                  {/* Ambang Batas Notifikasi Kuota Roll Tamu (Memories) */}
+                  <SettingsCard
+                    title="Notifikasi Ambang Batas Kuota Roll Tamu (Memories)"
+                    description="Atur persentase penggunaan roll kamera kenangan tamu yang memicu email peringatan otomatis ke pengantin sebelum kuota habis, agar pengantin dapat memperluas kapasitas tepat waktu."
+                    isEditing={Boolean(editSection["memories_milestones"])}
+                    onEdit={() => toggleEditSection("memories_milestones")}
+                    onCancel={() => cancelEdit("memories_milestones", ["memories_notify_milestones"])}
+                    onSave={() => saveSettings(["memories_notify_milestones"], setSavingMemoriesMilestones, "setup")}
+                    saving={savingMemoriesMilestones}
+                    isDirty={isSectionDirty(["memories_notify_milestones"])}
+                    saveSuccess={settingsSaved["memories_milestones"]}
+                    saveSuccessMessage="Ambang batas notifikasi roll berhasil disimpan"
+                    viewContent={
+                      <div className="space-y-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                          {(settingsMap["memories_notify_milestones"] || "50,80,100")
+                            .split(",")
+                            .map((s) => parseInt(s.trim(), 10))
+                            .filter((n) => !isNaN(n) && n > 0 && n <= 100)
+                            .sort((a, b) => a - b)
+                            .map((m) => {
+                              const isFull = m >= 100;
+                              const isHigh = m >= 80;
+                              return (
+                                <span
+                                  key={m}
+                                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold font-mono border ${
+                                    isFull
+                                      ? "bg-rose-50 text-rose-800 border-rose-200"
+                                      : isHigh
+                                      ? "bg-amber-50 text-amber-800 border-amber-200"
+                                      : "bg-blue-50 text-blue-800 border-blue-200"
+                                  }`}
+                                >
+                                  <span className={`w-2 h-2 rounded-full ${isFull ? "bg-rose-500" : isHigh ? "bg-amber-500" : "bg-blue-500"}`} />
+                                  {m}% {isFull ? "(Roll Penuh)" : isHigh ? "(Hampir Penuh)" : "(Separuh Roll)"}
+                                </span>
+                              );
+                            })}
+                        </div>
+                        <p className="text-xs text-stone-500 leading-relaxed">
+                          Sistem akan mengirim email otomatis ke pengantin saat total foto tamu mencapai masing-masing ambang batas di atas. Email menyertakan progres kuota aktual dan tautan privat ke Dasbor Momen untuk top-up tanpa perantara pihak ketiga.
+                        </p>
+                      </div>
+                    }
+                  >
+                    <div className="space-y-4">
+                      <FieldRow
+                        label="Pilihan Cepat Ambang Batas (Milestones)"
+                        description="Pilih kombinasi ambang batas umum yang ingin diaktifkan untuk memicu email otomatis ke pengantin."
+                      >
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                          {[
+                            { value: 50, label: "50% (Separuh Roll)", desc: "Pemberitahuan roll terpakai separuh" },
+                            { value: 80, label: "80% (Antusiasme Tinggi)", desc: "Peringatan roll hampir penuh" },
+                            { value: 100, label: "100% (Roll Penuh)", desc: "Pemberitahuan roll terkunci penuh" },
+                          ].map((preset) => {
+                            const currentList = (settingsMap["memories_notify_milestones"] || "50,80,100")
+                              .split(",")
+                              .map((s) => parseInt(s.trim(), 10))
+                              .filter((n) => !isNaN(n));
+                            const isChecked = currentList.includes(preset.value);
+
+                            return (
+                              <button
+                                key={preset.value}
+                                type="button"
+                                onClick={() => {
+                                  let nextList: number[];
+                                  if (isChecked) {
+                                    nextList = currentList.filter((n) => n !== preset.value);
+                                  } else {
+                                    nextList = [...currentList, preset.value].sort((a, b) => a - b);
+                                  }
+                                  setSetting("memories_notify_milestones", nextList.join(","));
+                                }}
+                                className={`p-3 rounded-xl border text-left transition flex flex-col justify-between cursor-pointer ${
+                                  isChecked
+                                    ? "bg-amber-50/80 border-amber-400 text-amber-950 ring-1 ring-amber-400"
+                                    : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
+                                }`}
+                              >
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-xs font-bold font-mono">{preset.label}</span>
+                                  <span className={`w-3.5 h-3.5 rounded-md flex items-center justify-center border text-[10px] ${
+                                    isChecked ? "bg-amber-700 text-white border-amber-700" : "border-gray-300"
+                                  }`}>
+                                    {isChecked ? "✓" : ""}
+                                  </span>
+                                </div>
+                                <span className="text-[11px] text-gray-500">{preset.desc}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </FieldRow>
+
+                      <FieldRow
+                        label="Daftar Nilai Kustom Persentase (CSV)"
+                        description="Format persentase yang dipisahkan koma (contoh: 50,80,100 atau 25,50,75,90,100). Sistem akan memproses dan mengurutkannya secara otomatis."
+                      >
+                        <div className="space-y-1">
+                          <input
+                            type="text"
+                            value={settingsMap["memories_notify_milestones"] ?? "50,80,100"}
+                            onChange={(e) => setSetting("memories_notify_milestones", e.target.value)}
+                            placeholder="50,80,100"
+                            className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 transition shadow-2xs font-mono max-w-[300px]"
+                          />
+                          <p className="text-[11px] text-gray-500">Nilai yang valid adalah bilangan bulat 1 s/d 100 dipisahkan koma.</p>
                         </div>
                       </FieldRow>
                     </div>

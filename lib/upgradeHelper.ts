@@ -83,6 +83,24 @@ export async function applyBundleFulfillment(paidOrderId: string): Promise<boole
     const topupItem = items.find(i => i.type === "MEMORIES_TOPUP");
     if (topupItem && typeof topupItem.photos === "number" && topupItem.photos > 0) {
       curFs.extraMemoriesQuota = (curFs.extraMemoriesQuota || 0) + topupItem.photos;
+
+      // Re-arm milestone notifikasi kuota yang berada di atas persentase baru
+      try {
+        const { getPlanMemoriesQuota } = await import("@/lib/settings");
+        const planQuota = await getPlanMemoriesQuota(invitation.order?.planType);
+        const baseQuota = planQuota.totalQuota > 0 ? planQuota.totalQuota : (planQuota.maxContributors * planQuota.shotsQuota);
+        const newTotalQuota = baseQuota + curFs.extraMemoriesQuota;
+        const currentPhotos = await tx.guestMemory.count({
+          where: { invitationId: invitation.id },
+        });
+        const newUsagePercent = newTotalQuota > 0 ? (currentPhotos / newTotalQuota) * 100 : 0;
+        if (Array.isArray(curFs.memoriesNotifiedMilestones)) {
+          curFs.memoriesNotifiedMilestones = curFs.memoriesNotifiedMilestones.filter((m: number) => m <= newUsagePercent);
+        }
+        curFs.memoriesNotified80 = newUsagePercent >= 80;
+      } catch (rearmErr) {
+        console.warn("[applyBundleFulfillment] Gagal re-arm milestone notifikasi:", rearmErr);
+      }
     }
 
     // 4. Eksekusi PERPANJANGAN GALERI jika ada
@@ -190,7 +208,7 @@ export async function applyMemoriesTopup(topupOrderId: string): Promise<void> {
         { orderId: order.linkedOrderId },
       ],
     },
-    select: { id: true, featureSettings: true },
+    select: { id: true, featureSettings: true, order: { select: { planType: true } } },
   });
 
   if (!invitation) return;
@@ -210,6 +228,24 @@ export async function applyMemoriesTopup(topupOrderId: string): Promise<void> {
   const photosToAdd = Number(topupSetting?.value) || 100;
 
   curFs.extraMemoriesQuota = (curFs.extraMemoriesQuota || 0) + photosToAdd;
+
+  // Re-arm milestone notifikasi kuota yang berada di atas persentase baru
+  try {
+    const { getPlanMemoriesQuota } = await import("@/lib/settings");
+    const planQuota = await getPlanMemoriesQuota(invitation.order?.planType);
+    const baseQuota = planQuota.totalQuota > 0 ? planQuota.totalQuota : (planQuota.maxContributors * planQuota.shotsQuota);
+    const newTotalQuota = baseQuota + curFs.extraMemoriesQuota;
+    const currentPhotos = await prisma.guestMemory.count({
+      where: { invitationId: invitation.id },
+    });
+    const newUsagePercent = newTotalQuota > 0 ? (currentPhotos / newTotalQuota) * 100 : 0;
+    if (Array.isArray(curFs.memoriesNotifiedMilestones)) {
+      curFs.memoriesNotifiedMilestones = curFs.memoriesNotifiedMilestones.filter((m: number) => m <= newUsagePercent);
+    }
+    curFs.memoriesNotified80 = newUsagePercent >= 80;
+  } catch (rearmErr) {
+    console.warn("[applyMemoriesTopup] Gagal re-arm milestone notifikasi:", rearmErr);
+  }
 
   await prisma.invitation.update({
     where: { id: invitation.id },

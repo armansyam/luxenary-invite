@@ -671,36 +671,61 @@ export default function MomentsSetupPage() {
         </div>
       </div>
 
-      {/* Alert Banner 80%+ Kuota Terpakai */}
-      {memoriesQuota && memoriesQuota.maxTotalPhotos > 0 && (memoriesQuota.usedPhotos / memoriesQuota.maxTotalPhotos) >= 0.8 && (
-        <div className="p-4 sm:p-5 rounded-2xl bg-amber-50 border border-amber-300 text-amber-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
-          <div className="flex items-start sm:items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-amber-100 border border-amber-300 flex items-center justify-center shrink-0 text-amber-800">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div>
-              <div className="text-xs font-bold uppercase tracking-wider text-amber-900">
-                Pemberitahuan Kuota Roll: {Math.round((memoriesQuota.usedPhotos / memoriesQuota.maxTotalPhotos) * 100)}% Terisi
+      {/* Dynamic Alert Banner: Roll Penuh (100%+) atau Peringatan Kuota (80%+) */}
+      {memoriesQuota && memoriesQuota.maxTotalPhotos > 0 && (memoriesQuota.usedPhotos / memoriesQuota.maxTotalPhotos) >= 0.8 && (() => {
+        const percent = Math.round((memoriesQuota.usedPhotos / memoriesQuota.maxTotalPhotos) * 100);
+        const isFull = percent >= 100;
+
+        return (
+          <div className={`p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs border ${
+            isFull
+              ? "bg-rose-50 border-rose-300 text-rose-950"
+              : "bg-amber-50 border-amber-300 text-amber-950"
+          }`}>
+            <div className="flex items-start sm:items-center gap-3">
+              <div className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 ${
+                isFull
+                  ? "bg-rose-100 border-rose-300 text-rose-800"
+                  : "bg-amber-100 border-amber-300 text-amber-800"
+              }`}>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {isFull ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  ) : (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  )}
+                </svg>
               </div>
-              <p className="text-xs text-amber-800 mt-0.5 leading-relaxed">
-                Tamu Anda sangat antusias! Saat ini telah terabadikan <strong>{memoriesQuota.usedPhotos} dari {memoriesQuota.maxTotalPhotos} foto</strong> (tersisa {memoriesQuota.remainingPhotos} foto). Anda dapat menambah roll kapan saja agar tamu tetap leluasa mengabadikan momen.
-              </p>
+              <div>
+                <div className={`text-xs font-bold uppercase tracking-wider ${isFull ? "text-rose-900" : "text-amber-900"}`}>
+                  {isFull ? "Kapasitas Roll Kamera Penuh (100%)" : `Pemberitahuan Kuota Roll: ${percent}% Terisi`}
+                </div>
+                <p className={`text-xs mt-0.5 leading-relaxed ${isFull ? "text-rose-800" : "text-amber-800"}`}>
+                  {isFull ? (
+                    <>Seluruh kapasitas roll kamera kenangan (<strong>{memoriesQuota.usedPhotos} dari {memoriesQuota.maxTotalPhotos} foto</strong>) telah terisi penuh. Tamu saat ini tidak dapat mengunggah foto baru. Perluas roll kapan saja agar tamu dapat kembali mengabadikan momen.</>
+                  ) : (
+                    <>Tamu Anda sangat antusias! Saat ini telah terabadikan <strong>{memoriesQuota.usedPhotos} dari {memoriesQuota.maxTotalPhotos} foto</strong> (tersisa {memoriesQuota.remainingPhotos} foto). Anda dapat menambah roll kapan saja agar tamu tetap leluasa mengabadikan momen.</>
+                  )}
+                </p>
+              </div>
             </div>
+            <button
+              type="button"
+              onClick={() => setIsAddonModalOpen(true)}
+              className={`px-4 py-2 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs shrink-0 ${
+                isFull
+                  ? "bg-rose-700 hover:bg-rose-800"
+                  : "bg-amber-800 hover:bg-amber-900"
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              <span>{isFull ? "Buka Kunci Roll (+100 Foto)" : "Top-Up +100 Foto"}</span>
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => setIsAddonModalOpen(true)}
-            className="px-4 py-2 bg-amber-800 hover:bg-amber-900 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs shrink-0"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            <span>Top-Up +100 Foto</span>
-          </button>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Switch Status Aktifkan Fitur Kamera */}
       <div className="bg-white p-4 sm:p-5 rounded-2xl border border-stone-200/90 shadow-xs flex items-center justify-between gap-4">

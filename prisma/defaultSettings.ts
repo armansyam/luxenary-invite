@@ -319,6 +319,14 @@ export const defaultSettings: DefaultSettingItem[] = [
     "updatedAt": "2026-09-16T06:28:33.048Z"
   },
   {
+    "id": "78b4e12c-90fc-47e3-982a-a537f818b291",
+    "key": "memories_notify_milestones",
+    "value": "50,80,100",
+    "label": "Ambang Batas Notifikasi Kuota Roll Foto (%)",
+    "group": "general",
+    "updatedAt": "2026-09-21T15:00:00.000Z"
+  },
+  {
     "id": "c052bc1f-f7c0-4084-9440-da66efff8cd2",
     "key": "midtrans_client_key",
     "value": "",

@@ -2532,16 +2532,33 @@ Sistem telah melalui audit mendalam berbasis bukti empiris (*Empirical Verificat
 
 ## 30. Sistem Peringatan Kuota Roll Kamera Tamu & Wording Analog Sopan (September 2026)
 
-1. **Peringatan Otomatis Ambang Batas 80% via Email (`lib/mailer.ts` & `upload/route.ts`):**
-   - Saat tamu mengunggah foto ke `/api/public/memories/upload` dan total foto mencapai $\ge 80\%$ dari plafon paket (`totalEventQuota * 0.8`), sistem secara otomatis mengeksekusi `sendMemoriesQuotaAlertEmail` ke alamat email pengantin yang terdaftar.
-   - Bersifat *fire-and-forget* (asinkron non-blocking) agar tidak memperlambat waktu respon pengambilan foto tamu di lokasi acara.
-   - Dilindungi bendera *idempotent* `memoriesNotified80: true` di `featureSettings` undangan, menjamin email hanya dikirimkan 1 kali per acara dan tidak membanjiri kotak masuk pengguna.
-   - Tautan CTA di dalam email mengarahkan pengantin langsung menuju Dasbor Momen Tamu privat (`/dashboard/moments`) untuk menjaga keamanan sesi autentikasi dan transparansi transaksi.
+1. **Ambang Batas Notifikasi Dinamis & Multi-Milestone (`lib/settings.ts`, `prisma/defaultSettings.ts`):**
+   - Batas notifikasi kuota roll tidak di-hardcode. Dikelola dinamis melalui pengaturan admin `memories_notify_milestones` (default `"50,80,100"`), diparsing menjadi array bilangan bulat terurut `[50, 80, 100]`.
+   - Administrator dapat mengonfigurasi milestone secara bebas dari Tab Setup di Dasbor Admin:
+     - Preset 50%: Peringatan roll terpakai separuh (Separuh Roll).
+     - Preset 80%: Peringatan roll hampir penuh (Antusiasme Tinggi).
+     - Preset 100%: Pemberitahuan roll terkunci penuh (Roll 100% Penuh).
+     - Nilai Kustom CSV: Mendukung input persentase kustom arbitrer (misal `25, 50, 75, 90, 100`).
 
-2. **Banner Peringatan Visual Amber di Dasbor Klien (`/dashboard/moments`):**
-   - Jika kuota terpakai mencapai $\ge 80\%$, Dasbor Momen pengantin secara otomatis memunculkan banner peringatan *Amber Gold* dengan microcopy antusiasme tamu (*"Roll kamera hampir penuh..."*) dan tombol cepat *Top-Up +100 Foto via QRIS*.
+2. **Pemicu Otomatis Non-Blocking & Idempotensi Milestone (`upload/route.ts` & `lib/mailer.ts`):**
+   - Saat tamu mengunggah foto ke `/api/public/memories/upload`, sistem menghitung `newTotalPhotos` terhadap setiap milestone dalam `settings.memoriesNotifyMilestones`.
+   - Idempotensi terjamin dengan menyimpan array `memoriesNotifiedMilestones: number[]` di dalam `invitation.featureSettings` (disertai kompatibilitas balik `memoriesNotified80: boolean`). Setiap milestone hanya memicu email 1 kali.
+   - Template email adaptif via `sendMemoriesQuotaAlertEmail`:
+     - $\ge 100\%$: Badge merah `ROLL 100% PENUH`, subjek `[Pemberitahuan] Roll Kamera Tamu Telah Terisi Penuh (100%) 📸`.
+     - $\ge 80\%$: Badge amber `ANTUSIASME TINGGI (80%)`, subjek `[Pemberitahuan] Roll Kamera Tamu Sudah 80% Terisi 📸`.
+     - $< 80\%$: Badge biru/amber `SEPARUH ROLL (50%)`, subjek `[Pemberitahuan] Roll Kamera Tamu Sudah 50% Terisi 📸`.
+   - Tautan CTA di dalam email mengarahkan pengantin langsung menuju Dasbor Momen Tamu privat (`/dashboard/moments`) untuk menjaga keamanan sesi autentikasi dan mencegah kebocoran link pembayaran publik.
 
-3. **Wording Analog Sopan di Sisi Tamu (*Zero-Embarrassment Guarantee*):**
+3. **Mekanisme Re-Arming Milestone Pasca Top-Up Kuota (`lib/upgradeHelper.ts`):**
+   - Saat pengantin melakukan pembelian top-up roll foto (`applyPaidUpgrades` atau `applyMemoriesTopup`), saldo kuota bertambah sehingga persentase pemakaian roll menurun.
+   - Sistem secara otomatis me-rearm milestone yang berada di atas persentase pemakaian baru (`curFs.memoriesNotifiedMilestones = curFs.memoriesNotifiedMilestones.filter(m => m <= newUsagePercent)`).
+   - Menjamin pengantin akan tetap mendapatkan notifikasi peringatan kembali saat kuota yang baru diperluas mendekati batas di masa mendatang.
+
+4. **Banner Peringatan Visual Adaptif di Dasbor Klien (`/dashboard/moments`):**
+   - Jika kuota $\ge 100\%$: Banner merah *Rose* menampilkan status roll terkunci, penjelasan bahwa tamu belum bisa mengunggah foto baru, dan tombol cepat *Buka Kunci Roll (+100 Foto)*.
+   - Jika kuota $\ge 80\%$: Banner emas *Amber* menampilkan status antusiasme tamu, sisa jepretan, dan tombol cepat *Top-Up +100 Foto*.
+
+5. **Wording Analog Sopan di Sisi Tamu (*Zero-Embarrassment Guarantee*):**
    - Saat kuota foto acara telah terisi penuh ($100\%$), sistem menolak unggahan baru dengan status HTTP 403 namun memancarkan pesan metafora analog yang hangat dan bersahabat:
      *"Terima kasih banyak atas momen indahnya! Roll kamera kenangan untuk acara ini telah terisi penuh dengan cinta. Semua foto sedang kami proses dan simpan dengan aman ke dalam album kenangan pengantin ✨"*
    - Menghilangkan total eksposur angka kuota atau kesan batasan paket di depan para tamu undangan, menjaga martabat dan wibawa pengantin tetap terlindungi 100%.

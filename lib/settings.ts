@@ -49,6 +49,7 @@ export interface PublicPlatformSettings {
   addonMemoriesTopupEnabled: boolean;
   addonMemoriesTopupPhotos: number;
   addonMemoriesTopupPrice: number;
+  memoriesNotifyMilestones: number[];
   paymentGatewayFeePercent: number;
   paymentGatewayFeePayer: "BUYER" | "MERCHANT";
   smtpHost: string;
@@ -234,6 +235,11 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
     addonMemoriesTopupEnabled: map["addon_memories_topup_enabled"] !== "false",
     addonMemoriesTopupPhotos: Number(map["addon_memories_topup_photos"] || 100),
     addonMemoriesTopupPrice: Number(map["addon_memories_topup_price"] || 35000),
+    memoriesNotifyMilestones: (map["memories_notify_milestones"] || "50,80,100")
+      .split(",")
+      .map((s) => parseInt(s.trim(), 10))
+      .filter((n) => !isNaN(n) && n > 0 && n <= 100)
+      .sort((a, b) => a - b),
     paymentGatewayFeePercent: Number(map["payment_gateway_fee_percent"] || (map["payment_fee_rate"] ? Number(map["payment_fee_rate"]) * 100 : 0.7)),
     paymentGatewayFeePayer: ((map["payment_fee_payer"] || map["payment_gateway_fee_payer"] || "MERCHANT") === "BUYER" ? "BUYER" : "MERCHANT"),
     smtpHost: map["smtp_host"] || "",

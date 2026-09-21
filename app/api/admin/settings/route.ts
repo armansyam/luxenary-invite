@@ -71,6 +71,7 @@ const DEFAULT_SETTINGS: Array<{ key: string; value: string; label: string; group
   { key: "max_upload_mb", value: "5", label: "Batas Upload Foto Tamu Memories (MB)", group: "setup" },
   { key: "max_video_upload_mb", value: "50", label: "Batas Upload Video Studio (MB)", group: "setup" },
   { key: "max_photo_upload_mb", value: "15", label: "Batas Upload Foto Studio (MB)", group: "setup" },
+  { key: "memories_notify_milestones", value: "50,80,100", label: "Milestone Peringatan Kuota Roll Tamu (%)", group: "setup" },
 ];
 
 async function seedDefaultSettings() {

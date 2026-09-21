@@ -219,6 +219,7 @@ export interface MemoriesQuotaAlertOptions {
   usedPhotos: number;
   totalQuota: number;
   remainingPhotos: number;
+  milestonePercent?: number;
   recipientEmail: string;
   recipientName?: string;
   appUrl?: string;
@@ -248,11 +249,26 @@ export async function sendMemoriesQuotaAlertEmail(opts: MemoriesQuotaAlertOption
     });
 
     const platformName = settings.platformName || "Platform Kami";
-    const percentUsed = Math.round((opts.usedPhotos / opts.totalQuota) * 100);
-    const subject = `[Pemberitahuan] Roll Kamera Tamu ${opts.coupleNames} Sudah ${percentUsed}% Terisi 📸`;
+    const percentUsed = opts.milestonePercent ?? Math.round((opts.usedPhotos / opts.totalQuota) * 100);
+    const isFull = percentUsed >= 100;
+
+    const subject = isFull
+      ? `[Pemberitahuan] Roll Kamera Tamu ${opts.coupleNames} Telah Terisi Penuh (100%) 📸`
+      : `[Pemberitahuan] Roll Kamera Tamu ${opts.coupleNames} Sudah ${percentUsed}% Terisi 📸`;
+
+    const titleText = isFull ? "ROLL KAMERA TAMU TELAH PENUH" : `PROGRESS ROLL KAMERA TAMU (${percentUsed}%)`;
+    const badgeText = isFull ? "ROLL 100% PENUH" : (percentUsed >= 80 ? `ANTUSIASME TINGGI (${percentUsed}%)` : `SEPARUH ROLL (${percentUsed}%)`);
+    const badgeBg = isFull ? "#fee2e2" : "#fef3c7";
+    const badgeColor = isFull ? "#991b1b" : "#92400e";
 
     const baseUrl = opts.appUrl || process.env.NEXTAUTH_URL || `https://${process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'luxvite.id'}`;
     const topupUrl = `${baseUrl}/dashboard/moments`;
+
+    const greetingHtml = isFull
+      ? `<p style="margin: 0 0 8px 0;">Halo <strong>${opts.recipientName || opts.coupleNames}</strong>,</p>
+         <p style="margin: 0;">Seluruh kapasitas roll kamera kenangan untuk pernikahan Anda saat ini telah terisi penuh sebanyak <strong>${opts.usedPhotos} dari ${opts.totalQuota} foto</strong> (tersisa <strong>0 foto</strong>). Tamu baru saat ini tidak dapat mengunggah foto lagi kecuali kuota roll diperluas.</p>`
+      : `<p style="margin: 0 0 8px 0;">Halo <strong>${opts.recipientName || opts.coupleNames}</strong>,</p>
+         <p style="margin: 0;">Tamu undangan pernikahan Anda sangat antusias! Saat ini roll kamera kenangan telah terisi sebanyak <strong>${opts.usedPhotos} dari ${opts.totalQuota} foto</strong> (tersisa <strong>${opts.remainingPhotos} foto</strong>).</p>`;
 
     const htmlContent = `<!DOCTYPE html>
 <html lang="id">
@@ -267,11 +283,11 @@ export async function sendMemoriesQuotaAlertEmail(opts: MemoriesQuotaAlertOption
     .header { text-align: center; border-bottom: 1px solid #292524; padding-bottom: 20px; margin-bottom: 24px; }
     .brand { font-family: 'Cinzel', Georgia, serif; font-size: 16px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #d97706; margin-bottom: 6px; }
     .title { font-size: 18px; font-weight: 700; color: #ffffff; margin: 0 0 10px 0; }
-    .badge { display: inline-block; padding: 5px 12px; border-radius: 9999px; font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; background-color: #fef3c7; color: #92400e; }
-    .message-box { background-color: #26221f; border-left: 4px solid #d97706; border-radius: 8px; padding: 16px; margin: 20px 0; font-size: 13px; line-height: 1.6; color: #d6d3d1; }
+    .badge { display: inline-block; padding: 5px 12px; border-radius: 9999px; font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; background-color: ${badgeBg}; color: ${badgeColor}; }
+    .message-box { background-color: #26221f; border-left: 4px solid ${isFull ? '#ef4444' : '#d97706'}; border-radius: 8px; padding: 16px; margin: 20px 0; font-size: 13px; line-height: 1.6; color: #d6d3d1; }
     .meter-container { background-color: #292524; border-radius: 12px; padding: 20px; margin: 24px 0; text-align: center; }
     .meter-bar-bg { background-color: #1c1917; border-radius: 999px; height: 12px; overflow: hidden; margin: 12px 0; border: 1px solid #3b3530; }
-    .meter-bar-fill { background: linear-gradient(90deg, #d97706 0%, #f59e0b 100%); height: 100%; border-radius: 999px; }
+    .meter-bar-fill { background: ${isFull ? 'linear-gradient(90deg, #ef4444 0%, #dc2626 100%)' : 'linear-gradient(90deg, #d97706 0%, #f59e0b 100%)'}; height: 100%; border-radius: 999px; }
     .meter-label { display: flex; justify-content: space-between; font-size: 12px; color: #a8a29e; font-weight: 600; }
     .btn-wrap { text-align: center; margin: 28px 0 20px 0; }
     .btn { display: inline-block; background: linear-gradient(135deg, #d97706 0%, #b45309 100%); color: #ffffff !important; text-decoration: none; padding: 14px 28px; border-radius: 12px; font-weight: 700; font-size: 13px; letter-spacing: 0.5px; box-shadow: 0 10px 20px rgba(217, 119, 6, 0.3); }
@@ -283,25 +299,24 @@ export async function sendMemoriesQuotaAlertEmail(opts: MemoriesQuotaAlertOption
     <div class="card">
       <div class="header">
         <div class="brand">${platformName}</div>
-        <h1 class="title">ROLL KAMERA TAMU HAMPIR PENUH</h1>
-        <span class="badge">ANTUSIASME TINGGI (${percentUsed}%)</span>
+        <h1 class="title">${titleText}</h1>
+        <span class="badge">${badgeText}</span>
       </div>
 
       <div class="message-box">
-        <p style="margin: 0 0 8px 0;">Halo <strong>${opts.recipientName || opts.coupleNames}</strong>,</p>
-        <p style="margin: 0;">Tamu undangan pernikahan Anda sangat antusias! Saat ini roll kamera kenangan telah terisi sebanyak <strong>${opts.usedPhotos} dari ${opts.totalQuota} foto</strong> (tersisa <strong>${opts.remainingPhotos} foto</strong>).</p>
+        ${greetingHtml}
       </div>
 
       <div class="meter-container">
         <div class="meter-label">
           <span>Kapasitas Terpakai</span>
-          <span style="color: #fbbf24; font-weight: 700;">${opts.usedPhotos} / ${opts.totalQuota} Foto (${percentUsed}%)</span>
+          <span style="color: ${isFull ? '#f87171' : '#fbbf24'}; font-weight: 700;">${opts.usedPhotos} / ${opts.totalQuota} Foto (${percentUsed}%)</span>
         </div>
         <div class="meter-bar-bg">
           <div class="meter-bar-fill" style="width: ${Math.min(100, percentUsed)}%;"></div>
         </div>
         <div style="font-size: 11px; color: #78716c; margin-top: 4px;">
-          Sisa jatah jepretan: <strong>${opts.remainingPhotos} foto</strong> sebelum roll penuh.
+          ${isFull ? 'Seluruh jatah foto telah digunakan.' : `Sisa jatah jepretan: <strong>${opts.remainingPhotos} foto</strong> sebelum roll penuh.`}
         </div>
       </div>
 
@@ -331,7 +346,7 @@ export async function sendMemoriesQuotaAlertEmail(opts: MemoriesQuotaAlertOption
       html: htmlContent,
     });
 
-    console.log(`[Mailer] Peringatan kuota roll 80% berhasil dikirim ke ${opts.recipientEmail}`);
+    console.log(`[Mailer] Peringatan kuota roll ${percentUsed}% berhasil dikirim ke ${opts.recipientEmail}`);
     return { success: true };
   } catch (error: any) {
     console.error("[Mailer] Gagal mengirim email peringatan kuota roll:", error);

@@ -323,24 +323,44 @@ export async function POST(req: NextRequest) {
       console.error("[SSE Emitter Error]", sseErr);
     }
 
-    // ── TRIGGER NOTIFIKASI AMBANG BATAS 80% (NON-BLOCKING BACKGROUND) ──
+    // ── TRIGGER NOTIFIKASI AMBANG BATAS ROLL DINAMIS (NON-BLOCKING BACKGROUND) ──
     const newTotalPhotos = currentTotalPhotos + 1;
-    const threshold80 = Math.floor(totalEventQuota * 0.8);
+    const configuredMilestones: number[] = (settings.memoriesNotifyMilestones && settings.memoriesNotifyMilestones.length > 0)
+      ? settings.memoriesNotifyMilestones
+      : [50, 80, 100];
+
+    const alreadyNotified: number[] = Array.isArray(fs.memoriesNotifiedMilestones)
+      ? fs.memoriesNotifiedMilestones
+      : (fs.memoriesNotified80 ? [80] : []);
+
+    // Temukan milestone yang telah tercapai oleh akumulasi foto saat ini dan belum pernah ternotifikasi
+    const newlyReachedMilestones = configuredMilestones.filter((m) => {
+      if (alreadyNotified.includes(m)) return false;
+      const threshold = Math.floor(totalEventQuota * (m / 100));
+      return newTotalPhotos >= threshold && threshold > 0;
+    });
 
     if (
-      totalEventQuota >= 10 &&
-      newTotalPhotos >= threshold80 &&
-      !fs.memoriesNotified80 &&
+      totalEventQuota >= 5 &&
+      newlyReachedMilestones.length > 0 &&
       invitation.user?.email
     ) {
-      // Tandai memoriesNotified80 di DB agar notifikasi hanya dikirim 1 kali
-      const updatedFs = { ...fs, memoriesNotified80: true };
+      // Ambil milestone tertinggi yang tercapai dalam batch upload ini
+      const targetMilestone = newlyReachedMilestones[newlyReachedMilestones.length - 1];
+      const updatedMilestones = Array.from(new Set([...alreadyNotified, ...newlyReachedMilestones]));
+      const updatedFs = {
+        ...fs,
+        memoriesNotifiedMilestones: updatedMilestones,
+        memoriesNotified80: updatedMilestones.includes(80),
+      };
+
+      // Tandai milestone di DB agar notifikasi hanya dikirim 1 kali per ambang batas
       prisma.invitation
         .update({
           where: { id: invitationId },
           data: { featureSettings: JSON.stringify(updatedFs) },
         })
-        .catch((e) => console.error("[Memories Upload] Gagal menyimpan flag notifikasi 80%:", e));
+        .catch((e) => console.error("[Memories Upload] Gagal menyimpan flag milestone notifikasi:", e));
 
       // Kirim email notifikasi secara asynchronous (tidak memperlambat response upload tamu)
       const groomFirst = (invitation.groomNickname || invitation.groomName || "Mempelai").trim();
@@ -359,6 +379,7 @@ export async function POST(req: NextRequest) {
             remainingPhotos,
             recipientEmail: invitation.user.email,
             recipientName: invitation.user.name || coupleNames,
+            milestonePercent: targetMilestone,
           }).catch((err) => console.error("[Memories Upload] Gagal kirim email alert kuota roll:", err));
         })
         .catch(() => {});
