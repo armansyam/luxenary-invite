@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sseEmitter } from "@/lib/sseEmitter";
 import { verifyPin } from "@/lib/pinEncryption";
-import { rateLimit } from "@/lib/rateLimit";
+import { rateLimit, getClientIp } from "@/lib/rateLimit";
 import { verifyReceptionistToken } from "@/lib/receptionistAuth";
 
 export async function POST(req: NextRequest) {
   try {
-    const ip = req.headers.get("x-forwarded-for") || "unknown-ip";
+    const ip = getClientIp(req);
     // Rate limit: max 30 scan per menit per IP (anti brute-force via scan endpoint)
     if (!rateLimit(`scan:${ip}`, 30, 60 * 1000)) {
       return NextResponse.json({ error: "Terlalu banyak permintaan. Silakan tunggu sebentar." }, { status: 429 });
@@ -105,25 +105,25 @@ export async function POST(req: NextRequest) {
     }
 
     if (isCheckIn) {
-      // Idempotent Sync: Jika tamu sudah berstatus redeemed (misal hasil sync antrean offline berulang),
-      // tetap kembalikan success agar antrean offline di browser klien berhasil di-flush.
-      const wasAlreadyRedeemed = guest.isTokenRedeemed;
+      // Atomic Conditional Update: hanya update jika isTokenRedeemed masih false (Anti-Race Condition Multi-Scanner)
+      const updateResult = await prisma.guest.updateMany({
+        where: { id: guest.id, isTokenRedeemed: false },
+        data: { isTokenRedeemed: true },
+      });
 
-      if (!wasAlreadyRedeemed) {
-        // Mark as redeemed in database
-        await prisma.guest.update({
-          where: { id: guest.id },
-          data: { isTokenRedeemed: true },
-        });
+      const isFirstCheckIn = updateResult.count === 1;
 
-        // Emit Server-Sent Event for real-time dashboard updates
+      if (isFirstCheckIn) {
+        // Emit Server-Sent Event for real-time dashboard updates HANYA pada scanner pertama yang memenangkan mutasi atomik
         sseEmitter.emit("new_guest_checkin", {
           invitationId: guest.invitationId,
           guestId: guest.id,
           guestName: guest.name,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       }
+
+      const wasAlreadyRedeemed = !isFirstCheckIn;
 
       return NextResponse.json({
         success: true,

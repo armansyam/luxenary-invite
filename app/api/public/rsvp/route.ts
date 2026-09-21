@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { rateLimit } from "@/lib/rateLimit";
+import { rateLimit, getClientIp } from "@/lib/rateLimit";
 
 export async function GET(req: NextRequest) {
   try {
-    const ip = req.headers.get("x-forwarded-for") || "unknown-ip";
+    const ip = getClientIp(req);
     // Rate limit: 30 req/menit untuk mencegah scraping massal data tamu
     if (!rateLimit(ip, 30, 60000)) {
       return NextResponse.json({ error: "Terlalu banyak permintaan. Silakan coba lagi sebentar." }, { status: 429 });
@@ -82,7 +82,7 @@ async function withRsvpLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
 
 export async function POST(req: NextRequest) {
   try {
-    const ip = req.headers.get("x-forwarded-for") || "unknown-ip";
+    const ip = getClientIp(req);
     // Limit: 10 request RSVP per menit (60000ms) untuk mencegah spam buku tamu
     if (!rateLimit(ip, 10, 60000)) {
       return NextResponse.json({ error: "Terlalu banyak pengiriman RSVP. Silakan coba lagi sebentar." }, { status: 429 });
@@ -131,9 +131,12 @@ export async function POST(req: NextRequest) {
     const cleanGuestName = String(guestName).trim();
     const lockKey = `${invitationId}:${cleanGuestName.toLowerCase()}`;
 
-    // Atomic transaction dengan in-memory key lock untuk mencegah race condition double-submit dan menjamin batas pax katering
+    // Atomic transaction dengan in-memory key lock dan PostgreSQL advisory lock untuk mencegah race condition double-submit (Cross-Process PM2 Cluster Safe)
     const rsvp = await withRsvpLock(lockKey, async () => {
       return await prisma.$transaction(async (tx) => {
+        // PostgreSQL Advisory Transaction Lock untuk serialisasi absolut lintas proses / cluster
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`;
+
         // 1. Cari data tamu terdaftar jika ada
         const matchingGuest = await tx.guest.findFirst({
           where: {

@@ -2562,3 +2562,28 @@ Sistem telah melalui audit mendalam berbasis bukti empiris (*Empirical Verificat
    - Saat kuota foto acara telah terisi penuh ($100\%$), sistem menolak unggahan baru dengan status HTTP 403 namun memancarkan pesan metafora analog yang hangat dan bersahabat:
      *"Terima kasih banyak atas momen indahnya! Roll kamera kenangan untuk acara ini telah terisi penuh dengan cinta. Semua foto sedang kami proses dan simpan dengan aman ke dalam album kenangan pengantin ✨"*
    - Menghilangkan total eksposur angka kuota atau kesan batasan paket di depan para tamu undangan, menjaga martabat dan wibawa pengantin tetap terlindungi 100%.
+
+---
+
+## 31. Pengerasan Keamanan Konkurensi & Anti-Race Condition Multi-Proses (September 2026)
+
+1. **Anti-Double Check-In Atomic Conditional Update (`app/api/receptionist/scan/route.ts`):**
+   - Menggantikan pola *read-then-write* non-atomik dengan *Atomic Compare-and-Swap (CAS)*:
+     `prisma.guest.updateMany({ where: { id: guest.id, isTokenRedeemed: false }, data: { isTokenRedeemed: true } })`.
+   - Event Server-Sent Events (`new_guest_checkin`) dan penyerahan souvenir fisik hanya dieksekusi jika `updateResult.count === 1`.
+   - Menutup celah konkurensi saat dua perangkat tablet resepsionis memindai QR code tamu yang sama pada milidetik yang identik.
+
+2. **Pencegahan Duplikasi RSVP Lintas Cluster PM2 (`app/api/public/rsvp/route.ts`):**
+   - Memperkuat *in-memory lock* lokal dengan *PostgreSQL Advisory Transaction Lock*:
+     `SELECT pg_advisory_xact_lock(hashtext(lockKey))` di dalam transaksi atomik Prisma.
+   - Menjamin serialisasi request pendaftaran/pemberian RSVP bahkan ketika dijalankan di atas multi-worker PM2 Cluster yang memiliki memori terisolasi.
+
+3. **Pemberantasan TOCTOU (Time-of-Check to Time-of-Use) Kuota Foto Tamu (`app/api/public/memories/upload/route.ts`):**
+   - Transaksi penyimpanan foto candid tamu dikunci secara transaksional pada level PostgreSQL:
+     `SELECT pg_advisory_xact_lock(hashtext('memories_quota:' || invitationId))`.
+   - Verifikasi ulang kuota dilakukan tepat di dalam transaksi atomik sebelum `guestMemory.create()`.
+   - Jika kuota terdeteksi penuh saat concurrent uploads, berkas fisik yang sempat terunggah ke Cloudflare R2 otomatis dibersihkan (`deleteFile`) untuk mencegah *storage leak*.
+
+4. **Ekstraksi IP Aman dari Reverse Proxy (`lib/rateLimit.ts`):**
+   - Menambahkan helper `getClientIp()` yang memprioritaskan header terpercaya dari cloud provider (`cf-connecting-ip`, `x-real-ip`, lalu IP paling kiri pada `x-forwarded-for`).
+   - Mencegah penyerang mem-bypass rate limiter dengan memalsukan header `X-Forwarded-For`.

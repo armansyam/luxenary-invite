@@ -54,3 +54,28 @@ export function rateLimit(ip: string, limit: number, windowMs: number): boolean 
   // Melebihi batas!
   return false;
 }
+
+/**
+ * Ekstraksi IP Klien yang Aman dari Reverse Proxy (Cloudflare / Caddy / Nginx)
+ * Memprioritaskan header terpercaya dari cloud provider sebelum fallback ke header x-forwarded-for.
+ */
+export function getClientIp(req: Request | { headers: Headers }): string {
+  const headers = req.headers;
+  // 1. Cloudflare True Client IP
+  const cfIp = headers.get("cf-connecting-ip");
+  if (cfIp && cfIp.trim()) return cfIp.trim();
+
+  // 2. Nginx / Caddy X-Real-IP
+  const realIp = headers.get("x-real-ip");
+  if (realIp && realIp.trim()) return realIp.trim();
+
+  // 3. X-Forwarded-For: Ambil IP paling kiri yang valid (origin IP)
+  const forwarded = headers.get("x-forwarded-for");
+  if (forwarded && forwarded.trim()) {
+    const ips = forwarded.split(",").map((s) => s.trim());
+    if (ips.length > 0 && ips[0]) return ips[0];
+  }
+
+  return "unknown-ip";
+}
+

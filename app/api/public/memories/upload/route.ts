@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getPublicPlatformSettings, hasPlanCapability, getPlanMemoriesQuota } from "@/lib/settings";
 import crypto from "crypto";
-import { uploadFile } from "@/lib/storage";
-import { rateLimit } from "@/lib/rateLimit";
+import { uploadFile, deleteFile } from "@/lib/storage";
+import { rateLimit, getClientIp } from "@/lib/rateLimit";
 import { sseEmitter } from "@/lib/sseEmitter";
 import { getMemoriesActiveSchedule, calculateSessionCumulativeQuota } from "@/lib/domainUtils";
 
@@ -39,7 +39,7 @@ function detectMimeFromMagicBytes(buffer: Buffer): { mimeType: string; ext: stri
 
 export async function POST(req: NextRequest) {
   try {
-    const ip = req.headers.get("x-forwarded-for") || "unknown-ip";
+    const ip = getClientIp(req);
     // Limit: 15 request per menit (60000ms) untuk mengakomodasi jaringan WiFi yang sama
     if (!rateLimit(ip, 15, 60000)) {
       return NextResponse.json({ error: "Terlalu banyak permintaan unggahan. Silakan coba lagi sebentar." }, { status: 429 });
@@ -303,18 +303,73 @@ export async function POST(req: NextRequest) {
     const mediaUrl = await uploadFile(buffer, relativePath, detected.mimeType);
 
 
-    // Save to Database
-    const memory = await prisma.guestMemory.create({
-      data: {
-        invitationId,
-        senderName: senderName || "Guest",
-        senderEmail: senderEmail || "guest@system",
-        mediaUrl,
-        mediaType: "IMAGE", // Compressed JPEG from Canvas
-        thumbnailUrl: mediaUrl,
-        message: caption || "",
-      },
-    });
+    // Save to Database secara atomik dengan PostgreSQL Advisory Lock untuk menjamin totalEventQuota & jatah roll tamu tidak pernah bocor saat upload paralel
+    let memory;
+    let newTotalPhotos = currentTotalPhotos + 1;
+    try {
+      const lockKey = `memories_quota:${invitationId}`;
+      const saveResult = await prisma.$transaction(async (tx) => {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`;
+
+        const atomicTotal = await tx.guestMemory.count({ where: { invitationId } });
+        if (totalEventQuota > 0 && atomicTotal >= totalEventQuota) {
+          throw new Error("ERR_TOTAL_QUOTA_EXCEEDED");
+        }
+
+        if (senderEmail && shotsQuota > 0) {
+          const atomicGuestCount = await tx.guestMemory.count({
+            where: { invitationId, senderEmail },
+          });
+          if (atomicGuestCount >= shotsQuota) {
+            throw new Error("ERR_GUEST_ROLL_EXCEEDED");
+          }
+        }
+
+        const created = await tx.guestMemory.create({
+          data: {
+            invitationId,
+            senderName: senderName || "Guest",
+            senderEmail: senderEmail || "guest@system",
+            mediaUrl,
+            mediaType: "IMAGE", // Compressed JPEG from Canvas
+            thumbnailUrl: mediaUrl,
+            message: caption || "",
+          },
+        });
+
+        return { created, newCount: atomicTotal + 1 };
+      });
+
+      memory = saveResult.created;
+      newTotalPhotos = saveResult.newCount;
+    } catch (saveErr: any) {
+      // Jika kuota penuh saat race condition, bersihkan file yang baru diunggah ke R2
+      deleteFile(relativePath).catch(() => {});
+
+      if (saveErr.message === "ERR_TOTAL_QUOTA_EXCEEDED") {
+        return NextResponse.json(
+          {
+            quotaExceeded: true,
+            totalQuota: totalEventQuota,
+            message: "Terima kasih banyak atas momen indahnya! Roll kamera kenangan untuk acara ini telah terisi penuh dengan cinta. Semua foto sedang kami proses dan simpan dengan aman ke dalam album kenangan pengantin ✨",
+          },
+          { status: 403 }
+        );
+      }
+
+      if (saveErr.message === "ERR_GUEST_ROLL_EXCEEDED") {
+        return NextResponse.json(
+          {
+            quotaExceeded: true,
+            shotsQuota,
+            message: "Seluruh jepretan roll kamera Anda telah terpakai. Terima kasih telah mengabadikan momen berharga ini bersama kedua mempelai!",
+          },
+          { status: 403 }
+        );
+      }
+
+      throw saveErr;
+    }
 
     // Pancarkan event real-time ke SSE stream galeri tamu
     try {
@@ -324,7 +379,6 @@ export async function POST(req: NextRequest) {
     }
 
     // ── TRIGGER NOTIFIKASI AMBANG BATAS ROLL DINAMIS (NON-BLOCKING BACKGROUND) ──
-    const newTotalPhotos = currentTotalPhotos + 1;
     const configuredMilestones: number[] = (settings.memoriesNotifyMilestones && settings.memoriesNotifyMilestones.length > 0)
       ? settings.memoriesNotifyMilestones
       : [50, 80, 100];
