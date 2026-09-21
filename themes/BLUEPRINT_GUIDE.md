@@ -348,6 +348,20 @@ function closeModal(e) {
 }
 ```
 
+### I. Standar Floating Audio FAB & Visibilitas Dock (Home-Safe Audio & Outro Autohide)
+
+Tombol audio mengambang (`#musicToggle` / `.audio-fab`) dan dock navigasi bawah (`.bottom-dock`) wajib mengimplementasikan sinkronisasi visibilitas terpadu:
+1. **Tersembunyi di Seksi Pembuka `#home` (`fab-hidden`):**
+   - Saat sampul dibuka (`openInvitation()`), audio mulai diputar di latar, namun tombol fisik FAB **wajib tetap tersembunyi** (`fab.classList.add('fab-hidden')`) agar tidak merusak keanggunan visual Opening Hero 100vh.
+2. **Mengikuti Dock saat Scroll:**
+   - Begitu tamu scroll melewati seksi `#home` (`currentScrollY > homeThreshold`), tombol audio muncul bersama dock navigasi.
+   - Saat scroll ke bawah cepat (*scroll down*), kedua kontrol bersembunyi bersamaan.
+   - Saat scroll ke atas (*scroll up*), kedua kontrol muncul kembali bersamaan.
+3. **Ultra-Clean Outro (Ujung Bawah Halaman):**
+   - Di ujung bawah halaman (seksi penutup/outro), dock dan audio FAB otomatis bersembunyi untuk memberikan tampilan akhir yang bersih dan elegan.
+4. **Navigasi Balik ke `#home`:**
+   - Jika tamu men-scroll kembali ke `#home` atau mengklik tab `#home` di dock navigasi, audio FAB kembali tersembunyi secara otomatis (`setControls(true, false)`).
+
 ---
 
 ## ⚡ 3. Cara Kerja Live Editor &amp; Click-to-Edit

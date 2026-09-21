@@ -198,6 +198,7 @@ Sebelum tema diimpor ke produksi:
 - [ ] Menjalankan `npm run theme:preview [id-tema]` dan memastikan terminal menampilkan `100% Lolos Audit Standar Emas!`.
 - [ ] Memeriksa tampilan di layar Desktop ($\ge 900\text{px}$) dan Mobile ($< 900\text{px}$).
 - [ ] Memastikan musik berputar saat tombol audio diklik.
+- [ ] Memastikan tombol audio FAB tersembunyi saat berada di seksi #home (agar tidak mengganggu visual pembuka) dan mengikuti visibilitas dock navigasi saat scroll.
 - [ ] Memastikan tombol QR Check-In memunculkan modal tiket tamu.
 - [ ] Memastikan navigasi dock dan tombol musik autohide saat scroll mendekati footer.
 - [ ] Tidak ada `#hex` warna mati yang menimpa kanvas latar.

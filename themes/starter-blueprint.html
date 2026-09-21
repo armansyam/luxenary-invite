@@ -55,6 +55,16 @@
       -webkit-tap-highlight-color: transparent;
     }
 
+    ::selection {
+      background: color-mix(in srgb, var(--primary, #b5833c) 30%, transparent);
+      color: #ffffff;
+    }
+
+    ::-moz-selection {
+      background: color-mix(in srgb, var(--primary, #b5833c) 30%, transparent);
+      color: #ffffff;
+    }
+
     html {
       scroll-behavior: smooth;
       -ms-overflow-style: none;
@@ -1366,7 +1376,7 @@
   </div>
 
   <!-- TOMBOL AUDIO FAB -->
-  <button id="musicToggle" class="audio-fab" onclick="luxToggleAudio()" title="Putar / Hentikan Musik">
+  <button id="musicToggle" class="audio-fab fab-hidden" onclick="luxToggleAudio()" title="Putar / Hentikan Musik">
     <svg id="musicIconPlay" width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
       <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
     </svg>
@@ -1396,7 +1406,7 @@
       const cover = document.getElementById('coverOverlay');
       if (cover) cover.classList.add('opened');
       const fab = document.getElementById('musicToggle');
-      if (fab) fab.classList.remove('fab-hidden');
+      if (fab) fab.classList.add('fab-hidden');
       const dock = document.querySelector('.bottom-dock');
       if (dock) dock.classList.remove('dock-hidden');
       const audio = document.getElementById('luxAudioPlayer');
@@ -1623,15 +1633,23 @@
       let lastScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
       let ticking = false;
       const SCROLL_THRESHOLD = 12;
-      const TOP_REVEAL_ZONE = 70;
 
-      function setVisible(visible) {
-        if (visible) {
-          if (dock) dock.classList.remove('dock-hidden');
-          if (fab) fab.classList.remove('fab-hidden');
-        } else {
-          if (dock) dock.classList.add('dock-hidden');
-          if (fab) fab.classList.add('fab-hidden');
+      function getHomeThreshold() {
+        const homeEl = document.getElementById('home');
+        if (homeEl) {
+          return Math.max(homeEl.offsetTop + homeEl.offsetHeight - 120, 100);
+        }
+        return (window.innerHeight || 600) * 0.75;
+      }
+
+      function setControls(dockVisible, fabVisible) {
+        if (dock) {
+          if (dockVisible) dock.classList.remove('dock-hidden');
+          else dock.classList.add('dock-hidden');
+        }
+        if (fab) {
+          if (fabVisible) fab.classList.remove('fab-hidden');
+          else fab.classList.add('fab-hidden');
         }
       }
 
@@ -1645,9 +1663,11 @@
           document.documentElement.offsetHeight
         );
         const isNearBottom = (currentScrollY + windowHeight) >= (docHeight - 70);
+        const isAtHome = currentScrollY <= getHomeThreshold();
 
-        if (currentScrollY <= TOP_REVEAL_ZONE) {
-          setVisible(true);
+        // Jika berada di seksi #home: dock tampil, audio fab disembunyikan agar estetika pembuka bersih
+        if (isAtHome) {
+          setControls(true, false);
           lastScrollY = currentScrollY;
           ticking = false;
           return;
@@ -1659,9 +1679,9 @@
         // Jika tamu scroll-up (delta < -SCROLL_THRESHOLD), segera munculkan kembali kontrol
         if (isNearBottom) {
           if (delta < -SCROLL_THRESHOLD) {
-            setVisible(true);
+            setControls(true, true);
           } else {
-            setVisible(false);
+            setControls(false, false);
           }
           lastScrollY = currentScrollY;
           ticking = false;
@@ -1670,9 +1690,11 @@
 
         if (Math.abs(delta) >= SCROLL_THRESHOLD) {
           if (delta > 0) {
-            setVisible(false);
+            // Scroll ke bawah: sembunyikan dock & audio fab
+            setControls(false, false);
           } else {
-            setVisible(true);
+            // Scroll ke atas: tampilkan dock & audio fab (karena sudah di luar home)
+            setControls(true, true);
           }
           lastScrollY = currentScrollY;
         }
@@ -1690,7 +1712,12 @@
       if (dock) {
         dock.querySelectorAll('a, .dock-btn').forEach(link => {
           link.addEventListener('click', () => {
-            setVisible(true);
+            const href = link.getAttribute('href');
+            if (href === '#home') {
+              setControls(true, false);
+            } else {
+              setControls(true, true);
+            }
           });
         });
       }

@@ -111,12 +111,13 @@ Seluruh 19 tema fisik master dan starter blueprint mengimplementasikan standaris
 5. **Standar Tipografi Anti-Overflow Panel Kanan:**
    - Karena perhitungan unit `vw` mengevaluasi layar monitor penuh (1440–1920px), seluruh judul seksi `.sec-main-title, .sec-heading` dikunci maksimal pada `font-size: clamp(1.75rem, 2.1rem, 2.3rem) !important;` dengan aturan protektif `overflow-wrap: break-word !important; word-break: break-word !important;`.
    - Padding seksi desktop dinormalisasi menjadi `1.8rem` (~57px), menjamin ruang konten efektif sebesar ~404px yang identik dengan layar mobile sesungguhnya.
-6. **Integrasi Starter Blueprint (`themes/starter-blueprint.html` & `public/downloads/starter-blueprint.html`):**
-   - Arsitektur Golden Standard split 460px, seksi pembuka 100vh `#home`, dan aturan tipografi anti-overflow telah dibundel secara bawaan ke dalam cetak biru developer untuk memudahkan para Theme Builder menciptakan tema baru tanpa perlu mendesain ulang sistem layout desktop.
-7. **Smart Auto-Hide Navigasi Dock & Floating Audio (`initSmartDock` / `initSmartControls`):**
-   - Seluruh 19 tema mengadopsi mekanisme auto-hide pintar hardware-accelerated (`translate3d` & `opacity`).
-   - Saat tamu menggulir ke bawah untuk membaca atau menikmati konten, dock dan tombol musik mengambang meluncur keluar layar secara serentak demi menghadirkan viewport yang 100% bersih dan imersif.
-   - Saat tamu menggulir ke atas (delta $\ge$ 12px), berada di posisi paling atas (`scrollTop <= 70px`), mencapai footer, atau menekan menu navigasi, seluruh kontrol mengambang otomatis meluncur masuk kembali dengan transisi lembut (`cubic-bezier(0.16, 1, 0.3, 1)`).
+6. **Integrasi Starter Blueprint Triple Synchronization:**
+   - Arsitektur Golden Standard split 460px, seksi pembuka 100vh `#home`, dan aturan tipografi anti-overflow dibundel secara identik 1:1 di ketiga berkas cetak biru: [`themes/starter-blueprint.html`](themes/starter-blueprint.html), [`public/downloads/starter-blueprint.html`](public/downloads/starter-blueprint.html), dan [`theme-builder/starter/master.html`](theme-builder/starter/master.html). Dilengkapi kustomisasi seleksi kursor `::selection` berbasis token palet aktif.
+7. **Smart Auto-Hide Navigasi Dock & Home-Safe Floating Audio (`initSmartDock` / `initSmartControls`):**
+   - Seluruh tema mengadopsi mekanisme auto-hide pintar hardware-accelerated (`translate3d` & `opacity`).
+   - **Home-Safe Audio FAB:** Saat tamu berada di seksi pembuka `#home`, tombol audio FAB mengambang (`#musicToggle` / `.audio-fab`) disembunyikan secara mutlak (`fab-hidden`) agar keindahan panggung pembuka 100vh bebas polusi visual. Begitu tamu scroll melintasi batas seksi pembuka, tombol audio otomatis muncul dan menyelaraskan visibilitasnya dengan `.bottom-dock`.
+   - Saat tamu menggulir ke bawah cepat untuk membaca konten atau tiba di outro penutup, dock dan tombol musik mengambang meluncur keluar layar secara serentak demi menghadirkan viewport yang 100% bersih dan imersif.
+   - Saat tamu menggulir ke atas (delta $\ge$ 12px), mencapai footer, atau menekan menu navigasi, seluruh kontrol mengambang otomatis meluncur masuk kembali dengan transisi lembut (`cubic-bezier(0.16, 1, 0.3, 1)`). Jika tamu kembali ke `#home`, audio FAB otomatis tersembunyi kembali.
 8. **Smart Mobile Fullscreen (`requestSmartFullscreen()`):**
    - Seluruh 19 tema fisik master dan `starter-blueprint.html` mengeksekusi `requestSmartFullscreen()` saat tombol *"Buka Undangan"* diklik.
    - Memicu Fullscreen API native (`requestFullscreen`, `webkitRequestFullscreen`, `mozRequestFullScreen`, `msRequestFullscreen`) dengan penanganan fallback `window.scrollTo(0, 1)` untuk menyembunyikan address bar browser smartphone (Safari iOS / Chrome Android) demi menghadirkan viewport imersif bebas gangguan navigasi browser.
