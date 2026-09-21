@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { rateLimit, getClientIp } from "@/lib/rateLimit";
+import { rateLimitDb, getClientIp } from "@/lib/rateLimit";
 
 export async function GET(req: NextRequest) {
   try {
     const ip = getClientIp(req);
-    // Rate limit: 30 req/menit untuk mencegah scraping massal data tamu
-    if (!rateLimit(ip, 30, 60000)) {
+    // Rate limit: 30 req/menit untuk mencegah scraping massal data tamu (cross-process PM2 safe)
+    if (!(await rateLimitDb(`rsvp_get:${ip}`, 30, 60000))) {
       return NextResponse.json({ error: "Terlalu banyak permintaan. Silakan coba lagi sebentar." }, { status: 429 });
     }
 
@@ -83,8 +83,8 @@ async function withRsvpLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
 export async function POST(req: NextRequest) {
   try {
     const ip = getClientIp(req);
-    // Limit: 10 request RSVP per menit (60000ms) untuk mencegah spam buku tamu
-    if (!rateLimit(ip, 10, 60000)) {
+    // Limit: 10 request RSVP per menit (60000ms) untuk mencegah spam buku tamu (cross-process PM2 safe)
+    if (!(await rateLimitDb(`rsvp_post:${ip}`, 10, 60000))) {
       return NextResponse.json({ error: "Terlalu banyak pengiriman RSVP. Silakan coba lagi sebentar." }, { status: 429 });
     }
 

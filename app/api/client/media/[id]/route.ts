@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { VALID_MEDIA_SLOTS } from "@/lib/mediaSlots";
 
 export async function GET(
   _req: Request,
@@ -81,12 +82,12 @@ export async function POST(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const VALID_ENUM_SLOTS = ["LANDING_COVER", "LANDING_COVER_DESKTOP", "HOME_PHOTO", "DESKTOP_SIDEBAR", "GLOBAL_FIXED_BG", "GROOM_PHOTO", "BRIDE_PHOTO", "GALLERY", "CLOSING_COVER"];
+    // Gunakan konstanta terpusat dari lib/mediaSlots.ts (Single Source of Truth)
 
     for (const [slot, url] of Object.entries(body)) {
       if (!url) continue;
 
-      const enumSlot = VALID_ENUM_SLOTS.includes(slot) ? slot : "GALLERY";
+      const enumSlot = (VALID_MEDIA_SLOTS as readonly string[]).includes(slot) ? slot : "GALLERY";
 
       const existing = await prisma.invitationMedia.findFirst({
         where: { invitationId: id, mediaSlot: enumSlot as any },

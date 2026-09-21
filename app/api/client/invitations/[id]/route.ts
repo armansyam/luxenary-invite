@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { encryptPin, decryptPin, isPinEncrypted } from "@/lib/pinEncryption";
 import { isReservedSubdomain, isSubdomainExpired, getLatestEventDate } from "@/lib/domainUtils";
 import { getPlanMemoriesQuota } from "@/lib/settings";
+import { VALID_MEDIA_SLOTS } from "@/lib/mediaSlots";
 
 
 export function getInvitationLockStatus(inv: any) {
@@ -551,9 +552,9 @@ export async function PUT(
 
     // Save media updates
     if (body.media && typeof body.media === "object" && !Array.isArray(body.media)) {
-      const VALID_ENUM_SLOTS = ["LANDING_COVER", "LANDING_COVER_DESKTOP", "HOME_PHOTO", "DESKTOP_SIDEBAR", "GLOBAL_FIXED_BG", "GROOM_PHOTO", "BRIDE_PHOTO", "GALLERY", "CLOSING_COVER"];
+      // Gunakan konstanta terpusat dari lib/mediaSlots.ts (Single Source of Truth)
       for (const [slot, url] of Object.entries(body.media)) {
-        if (!VALID_ENUM_SLOTS.includes(slot)) continue;
+        if (!(VALID_MEDIA_SLOTS as readonly string[]).includes(slot)) continue;
         const urlStr = typeof url === "string" ? url.trim() : "";
 
         const existing = await prisma.invitationMedia.findFirst({

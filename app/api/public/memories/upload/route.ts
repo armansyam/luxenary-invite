@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getPublicPlatformSettings, hasPlanCapability, getPlanMemoriesQuota } from "@/lib/settings";
 import crypto from "crypto";
 import { uploadFile, deleteFile } from "@/lib/storage";
-import { rateLimit, getClientIp } from "@/lib/rateLimit";
+import { rateLimitDb, getClientIp } from "@/lib/rateLimit";
 import { sseEmitter } from "@/lib/sseEmitter";
 import { getMemoriesActiveSchedule, calculateSessionCumulativeQuota } from "@/lib/domainUtils";
 
@@ -40,8 +40,8 @@ function detectMimeFromMagicBytes(buffer: Buffer): { mimeType: string; ext: stri
 export async function POST(req: NextRequest) {
   try {
     const ip = getClientIp(req);
-    // Limit: 15 request per menit (60000ms) untuk mengakomodasi jaringan WiFi yang sama
-    if (!rateLimit(ip, 15, 60000)) {
+    // Limit: 15 request per menit (60000ms) untuk mengakomodasi jaringan WiFi yang sama (cross-process PM2 safe)
+    if (!(await rateLimitDb(`memories_upload:${ip}`, 15, 60000))) {
       return NextResponse.json({ error: "Terlalu banyak permintaan unggahan. Silakan coba lagi sebentar." }, { status: 429 });
     }
 

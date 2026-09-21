@@ -2,14 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sseEmitter } from "@/lib/sseEmitter";
 import { verifyPin } from "@/lib/pinEncryption";
-import { rateLimit, getClientIp } from "@/lib/rateLimit";
+import { rateLimitDb, getClientIp } from "@/lib/rateLimit";
 import { verifyReceptionistToken } from "@/lib/receptionistAuth";
 
 export async function POST(req: NextRequest) {
   try {
     const ip = getClientIp(req);
-    // Rate limit: max 30 scan per menit per IP (anti brute-force via scan endpoint)
-    if (!rateLimit(`scan:${ip}`, 30, 60 * 1000)) {
+    // Rate limit: max 30 scan per menit per IP (anti brute-force via scan endpoint, cross-process PM2 safe)
+    if (!(await rateLimitDb(`scan:${ip}`, 30, 60 * 1000))) {
       return NextResponse.json({ error: "Terlalu banyak permintaan. Silakan tunggu sebentar." }, { status: 429 });
     }
 

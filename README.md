@@ -2,7 +2,7 @@
 
 > **Platform Undangan Pernikahan Digital B2C Self-Service**  
 > Next.js 16.3.2 · Prisma 7.9 (PostgreSQL) · NextAuth v5 · Multi-Gateway (5 Gateway) · Nodemailer SMTP · Cloudflare R2  
-> **Versi Dokumen: 5.7.5 | Diperbarui: 16 September 2026**
+> **Versi Dokumen: 5.9.6 | Diperbarui: 22 September 2026**
 
 > [!IMPORTANT]
 > **PROTOKOL SINKRONISASI DOKUMENTASI OTOMATIS (MANDATORY POST-EDIT & PRE-PUSH PROTOCOL):**  
@@ -465,7 +465,12 @@ NEXT_PUBLIC_ROOT_DOMAIN="localhost:3000"
 
 ### 3. Setup Database
 ```bash
+# Untuk Development Lokal
 npx prisma db push
+npx prisma db seed
+
+# Untuk Deployment Produksi (VPS) — 12 migrasi terverifikasi
+npx prisma migrate deploy
 npx prisma db seed
 ```
 

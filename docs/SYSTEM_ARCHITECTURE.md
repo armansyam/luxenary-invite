@@ -1,5 +1,5 @@
 # PLATFORM UNDANGAN (WHITE-LABEL) — DOKUMENTASI ARSITEKTUR SISTEM
-## Versi: 5.9.5 | Diperbarui: 21 September 2026
+## Versi: 5.9.6 | Diperbarui: 22 September 2026
 
 > **SUMBER KEBENARAN TUNGGAL** untuk semua developer dan AI Agent yang bekerja di repositori ini.  
 > Dokumen ini WAJIB dibaca sebelum melakukan perubahan apapun pada kode.  
@@ -1089,7 +1089,20 @@ Model Utama:
   PromoCoupon    → Kupon diskon & promo (code, discountType, discountValue, quotaLimit, usageCount, perUserLimit, applicablePlans, validUntil, isActive)
   PromoHold      → Alokasi kupon checkout sementara (promoCode, orderId, userId, status, discountAmount, expiresAt)
   AffiliateCommission → Riwayat komisi afiliasi pesanan (partnerId, orderId, orderAmount, commissionAmount, status, payoutExpenseId)
+  RateLimitCounter → Tabel rate limiting atomic cross-worker PM2 berbasis PostgreSQL (key, count, expiresAt)
   ExpenseCategory (Enum) → INFRASTRUCTURE | UTILITIES | MARKETING | SOFTWARE_LICENSES | OPERATIONAL | OTHER
+
+Indeks Produksi & Hardening (Migration: 20260922010000_production_db_hardening):
+  - invitations: themeId, galleryExpiresAt (partial), expiresAt, status+galleryExpiresAt (composite cron), createdAt DESC
+  - orders: createdAt DESC, paidAt, status+createdAt (composite cron), planType
+  - rsvps: guestId, status, invitationId+guestId (composite)
+  - guests: invitationId+isTokenRedeemed (partial WHERE isTokenRedeemed=false), waStatus, invitationId+category
+  - guest_memories: invitationId+senderEmail (composite quota TOCTOU), invitationId+createdAt DESC
+  - media: invitationId+mediaSlot (composite fast lookup)
+  - users: createdAt DESC, role
+  - recurring_expenses: isActive, dueDayOfMonth
+  - webhook_logs: payload (GIN index JSONB)
+  - rate_limit_counters: expires_at (idx_rate_limit_expires)
 
 Field Kritis di Order:
   orderType       NEW | UPGRADE | GALLERY_EXTENSION | MEMORIES_TOPUP

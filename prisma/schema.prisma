@@ -500,3 +500,17 @@ model AffiliateCommission {
   @@index([partnerId, status])
   @@map("affiliate_commissions")
 }
+
+
+/// Tabel rate limiting cross-process berbasis PostgreSQL.
+/// Digunakan oleh rateLimitDb() di lib/rateLimit.ts untuk endpoint publik sensitif
+/// (RSVP, memories upload, scan resepsionis) di lingkungan PM2 multi-worker.
+/// Tidak memerlukan cron cleanup — expired rows otomatis di-reset via UPSERT.
+model RateLimitCounter {
+  key       String   @id
+  count     Int      @default(1)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz
+
+  @@index([expiresAt], name: "idx_rate_limit_expires")
+  @@map("rate_limit_counters")
+}

@@ -17,14 +17,19 @@ function isVideoMedia(url?: string | null): boolean {
   return /\.(mp4|webm|mov)(\?.*)?$/i.test(url.trim());
 }
 
-/** Escape HTML entities untuk mencegah XSS di konteks HTML biasa */
-function escapeHtmlAttr(str: string): string {
-  return str
-    .replace(/&/g, "&amp;")
+/** Escape HTML entities untuk mencegah Stored & Reflected XSS di konteks HTML & atribut */
+function escapeHtmlSafe(str: string): string {
+  if (!str) return "";
+  return String(str)
+    .replace(/&(?!([a-zA-Z0-9]+|#[0-9]+|#x[0-9a-fA-F]+);)/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#x27;");
+}
+
+function escapeHtmlAttr(str: string): string {
+  return escapeHtmlSafe(str);
 }
 
 const THEME_MAP: Record<string, { file: string; folder: "premium" | "traditional" | "modern" }> = {
@@ -2013,6 +2018,9 @@ export async function renderTemplateFile(
     }
   );
 
+  const RAW_HTML_KEY_REGEX = /(Html|html|Svg|svg|Style|Styles|Css|css|Script|Scripts)$/;
+  const URL_KEY_REGEX = /(Url|url|Src|src|Link|link)$/;
+
   return tpl.replace(/\{[\s\n]*\{[\s\n]*([\w.]+)[\s\n]*\}[\s\n]*\}/g, (_, key: string) => {
     let val = data[key];
     if (val === undefined && key.includes(".")) {
@@ -2028,7 +2036,24 @@ export async function renderTemplateFile(
       }
       val = curr;
     }
-    return val !== undefined && val !== null ? String(val) : "";
+    if (val === undefined || val === null) return "";
+
+    // Key yang secara eksplisit berisi blok HTML/CSS/Script pre-rendered tidak di-escape
+    if (RAW_HTML_KEY_REGEX.test(key)) {
+      return String(val);
+    }
+
+    // Key URL: sterilkan dari javascript: pseudoprotocol
+    if (URL_KEY_REGEX.test(key)) {
+      const strVal = String(val).trim();
+      if (/^javascript:/i.test(strVal) || /^data:(?!image\/)/i.test(strVal)) {
+        return "";
+      }
+      return strVal;
+    }
+
+    // Seluruh field teks pengguna di-escape untuk proteksi mutlak dari Stored XSS
+    return escapeHtmlSafe(String(val));
   });
 }
 

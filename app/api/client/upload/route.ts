@@ -7,17 +7,13 @@ import { optimizeWebVideo, optimizeWebAudio } from "@/lib/videoOptimizer";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rateLimit";
+import { MEDIA_SLOT_FILE_NAMES } from "@/lib/mediaSlots";
 
+// SLOT_FILE_NAMES = 9 slot resmi DB (dari lib/mediaSlots.ts) + slot upload tambahan non-DB
 const SLOT_FILE_NAMES: Record<string, string> = {
-  LANDING_COVER: "landing-cover",
-  LANDING_COVER_DESKTOP: "landing-cover-desktop",
-  HOME_PHOTO: "home-photo",
-  DESKTOP_SIDEBAR: "sidebar-desktop",
-  GLOBAL_FIXED_BG: "fixed-bg",
-  BRIDE_PHOTO: "bride-photo",
-  GROOM_PHOTO: "groom-photo",
+  ...MEDIA_SLOT_FILE_NAMES,
+  // Slot non-DB: tidak tersimpan di tabel media, tetapi diproses oleh upload handler
   QRIS: "qris",
-  CLOSING_COVER: "closing-cover",
   MEMORIES_COVER: "memories-cover",
   MUSIC: "wedding-song",
 };
