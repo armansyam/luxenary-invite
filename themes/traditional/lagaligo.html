@@ -189,17 +189,29 @@
       text-shadow: 0 4px 25px rgba(0, 0, 0, 0.6);
     }
 
-    /* Main Scroll Panel (Konten Undangan Utama) */
+    /* Main Scroll Panel (Konten Undangan Utama - Full Responsif Mobile & Tablet) */
     .app-container,
     .main-scroll-panel {
       width: 100%;
-      max-width: 640px;
-      margin: 0 auto;
       min-height: 100vh;
       background: transparent;
       position: relative;
       z-index: 20;
-      box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+    }
+
+    @media (max-width: 899px) {
+      .sidebar-desktop {
+        display: none !important;
+      }
+      .app-container,
+      .main-scroll-panel {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+        border-left: none !important;
+        border-right: none !important;
+      }
     }
 
     /* =================================================================== */
@@ -324,16 +336,16 @@
 
       .app-container,
       .main-scroll-panel {
-        width: 460px;
-        max-width: 460px;
-        margin-left: calc(100% - 460px);
-        margin-right: 0;
-        min-width: 0;
-        box-shadow: -12px 0 40px rgba(0, 0, 0, 0.6);
-        border-left: 1px solid var(--bugis-border);
+        width: 460px !important;
+        max-width: 460px !important;
+        margin-left: calc(100% - 460px) !important;
+        margin-right: 0 !important;
+        min-width: 0 !important;
+        box-shadow: -12px 0 40px rgba(0, 0, 0, 0.6) !important;
+        border-left: 1px solid var(--bugis-border) !important;
         position: relative;
         z-index: 2;
-        background: transparent;
+        background: transparent !important;
       }
 
       .fixed-bg-layer {
@@ -946,7 +958,8 @@
       display: flex;
       flex-direction: column;
       gap: 40px;
-      margin-top: 24px;
+      margin: 24px auto 0;
+      max-width: 480px;
       position: relative;
     }
 

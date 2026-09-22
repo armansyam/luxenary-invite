@@ -111,49 +111,60 @@ async function runPenetrationTests() {
   // TEST 4: Parallel Webhook Idempotency (Race Condition Simulation)
   // ---------------------------------------------------------------------------
   console.log("\n▶ [TEST 4] Pengujian Idempotensi Webhook Paralel (5 Panggilan Simultan)...");
-  // Buat order dummy untuk pengujian webhook
-  const testUser = await prisma.user.create({
-    data: {
-      name: "Pentest User",
-      email: `pentest-webhook-${Date.now()}@example.com`,
-      role: "CLIENT",
-    },
-  });
+  let testUserId = "";
+  let testOrderId = "";
 
-  const testOrder = await prisma.order.create({
-    data: {
-      userId: testUser.id,
-      invoiceNumber: `INV-PEN-${Date.now()}`,
-      amount: 199000,
-      planType: "TIER_1",
-      status: "PENDING",
-    },
-  });
+  try {
+    // Buat order dummy untuk pengujian webhook
+    const testUser = await prisma.user.create({
+      data: {
+        name: "Pentest User",
+        email: `pentest-webhook-${Date.now()}@example.com`,
+        role: "CLIENT",
+      },
+    });
+    testUserId = testUser.id;
 
-  // Tembak 5 simulasi update pembayaran paralel
-  const updatePromises = Array.from({ length: 5 }, () =>
-    prisma.order.updateMany({
-      where: { id: testOrder.id, status: "PENDING" },
-      data: { status: "PAID", paidAt: new Date() },
-    })
-  );
+    const testOrder = await prisma.order.create({
+      data: {
+        userId: testUser.id,
+        invoiceNumber: `INV-PEN-${Date.now()}`,
+        amount: 199000,
+        planType: "TIER_1",
+        status: "PENDING",
+      },
+    });
+    testOrderId = testOrder.id;
 
-  const updateResults = await Promise.all(updatePromises);
-  const updatedOrdersCount = updateResults.reduce((acc, curr) => acc + curr.count, 0);
+    // Tembak 5 simulasi update pembayaran paralel
+    const updatePromises = Array.from({ length: 5 }, () =>
+      prisma.order.updateMany({
+        where: { id: testOrder.id, status: "PENDING" },
+        data: { status: "PAID", paidAt: new Date() },
+      })
+    );
 
-  const webhookIdempotencyPassed = updatedOrdersCount === 1;
+    const updateResults = await Promise.all(updatePromises);
+    const updatedOrdersCount = updateResults.reduce((acc, curr) => acc + curr.count, 0);
 
-  results.push({
-    category: "IDEMPOTENCY",
-    name: "Parallel Webhook Concurrency Guard",
-    passed: webhookIdempotencyPassed,
-    detail: `Jumlah eksekusi status transition: ${updatedOrdersCount} (Expected: 1, 4 diabaikan secara idempotent)`,
-  });
-  console.log(`  ${webhookIdempotencyPassed ? "✅ PASS" : "❌ FAIL"}: Tepat 1 proses memicu transisi status, 4 lainnya diabaikan secara aman.`);
+    const webhookIdempotencyPassed = updatedOrdersCount === 1;
 
-  // Cleanup test user & order
-  await prisma.order.deleteMany({ where: { id: testOrder.id } });
-  await prisma.user.deleteMany({ where: { id: testUser.id } });
+    results.push({
+      category: "IDEMPOTENCY",
+      name: "Parallel Webhook Concurrency Guard",
+      passed: webhookIdempotencyPassed,
+      detail: `Jumlah eksekusi status transition: ${updatedOrdersCount} (Expected: 1, 4 diabaikan secara idempotent)`,
+    });
+    console.log(`  ${webhookIdempotencyPassed ? "✅ PASS" : "❌ FAIL"}: Tepat 1 proses memicu transisi status, 4 lainnya diabaikan secara aman.`);
+  } finally {
+    // Cleanup test user & order secara terjamin
+    if (testOrderId) {
+      await prisma.order.deleteMany({ where: { id: testOrderId } }).catch(() => {});
+    }
+    if (testUserId) {
+      await prisma.user.deleteMany({ where: { id: testUserId } }).catch(() => {});
+    }
+  }
 
   // ---------------------------------------------------------------------------
   // RINGKASAN
@@ -168,6 +179,8 @@ async function runPenetrationTests() {
     console.log(`${statusMark} - [${r.category}] ${r.name}: ${r.detail}`);
   }
 
+  await prisma.$disconnect();
+
   if (allPass) {
     console.log("\n🎉 SELURUH SKENARIO PENETRATION TESTING 100% LOLOS & AMAN!");
     process.exit(0);
@@ -177,7 +190,8 @@ async function runPenetrationTests() {
   }
 }
 
-runPenetrationTests().catch((err) => {
+runPenetrationTests().catch(async (err) => {
   console.error("Fatal test runner error:", err);
+  await prisma.$disconnect();
   process.exit(1);
 });

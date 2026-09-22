@@ -284,14 +284,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Ambil limit dari AdminSetting (max_upload_mb). Fallback 5MB sesuai default seed admin.
-    // Perubahan limit cukup dari Admin Dashboard — tanpa edit kode.
-    const settings = await getPublicPlatformSettings();
-    const effectiveMaxMb = settings.maxUploadMb > 0 ? settings.maxUploadMb : 5;
-    const maxUploadBytes = effectiveMaxMb * 1024 * 1024;
-
-    if (buffer.byteLength > maxUploadBytes) {
-      return NextResponse.json({ error: `Ukuran file melebihi batas maksimal ${effectiveMaxMb}MB.` }, { status: 400 });
+    // ── HARD SECURITY BARRIER (Anti-DoS & Payload Protection) ──
+    // Seluruh foto dari Virtual Disposable Camera terkompresi otomatis di sisi browser (~300-500 KB).
+    // Batas 5 MB ini adalah batas pengaman server internal mutlak untuk menangkis eksploitasi payload mentah / DoS.
+    const MAX_MEMORY_PAYLOAD_BYTES = 5 * 1024 * 1024; // 5 MB Hard Ceiling
+    if (buffer.byteLength > MAX_MEMORY_PAYLOAD_BYTES) {
+      return NextResponse.json(
+        { error: "Ukuran berkas melebihi batas pengaman server (maksimal 5 MB)." },
+        { status: 400 }
+      );
     }
 
     // Gunakan extension dari magic bytes (bukan dari client)
@@ -379,6 +380,7 @@ export async function POST(req: NextRequest) {
     }
 
     // ── TRIGGER NOTIFIKASI AMBANG BATAS ROLL DINAMIS (NON-BLOCKING BACKGROUND) ──
+    const settings = await getPublicPlatformSettings();
     const configuredMilestones: number[] = (settings.memoriesNotifyMilestones && settings.memoriesNotifyMilestones.length > 0)
       ? settings.memoriesNotifyMilestones
       : [50, 80, 100];

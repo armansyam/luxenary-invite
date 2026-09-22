@@ -574,7 +574,7 @@ Ketika undangan telah berstatus `ARCHIVED`, dasbor klien secara otomatis beralih
 4. **Pembersihan Total Media & Memori Tamu Saat Hapus Klien (`DELETE /api/admin/users`):**
    - Mengeliminasi berkas yatim piatu (*orphaned files*) di Cloudflare R2: Sistem secara otomatis mengiterasi dan menghapus seluruh media (`localPath`) dan memori tamu (`mediaUrl`) dari storage R2/lokal via `deleteFile()`, serta membersihkan folder direktori lokal `guest-memories/{id}/` dan `invitations/{id}/`.
 5. **Virtual Disposable Camera & Dynamic Roll Stack Architecture (Opsi B):**
-   - **Live WebRTC Viewfinder & Analog Shutter:** Menggantikan pemilih file konvensional dengan layar bidik kamera analog retro, tombol zoom digital (1x, 2x), torch/flash hardware toggle, kamera depan/belakang, dan suara klik shutter mekanis sintetis via Web Audio API tanpa berkas audio eksternal.
+   - **Live WebRTC Viewfinder & Analog Shutter with Strobe Pulse Flash & Film Winding Cooldown:** Menggantikan pemilih file konvensional dengan layar bidik kamera analog retro, tombol zoom digital (1x, 2x), flash arming mode dengan Strobe Pulse hardware burst (~120ms) & finally-block auto-turn-off, jeda winding roll film mekanik 1.5 detik (mencegah burst/race condition pada driver LED kamera), kamera depan/belakang, dan suara klik shutter serta putaran winding mekanis sintetis via Web Audio API tanpa berkas audio eksternal.
    - **5 Branded Film Filters:** Pilihan filter analog terkurasi: `aura_90s` (Analog 90s hangat), `heritage_romance` (Sepia klasik lembut), `botanical_mist` (Fuji herb sejuk), `cinema_noir` (Hitam putih Tri-X kontras tinggi), dan `pure_daylight` (Bersih jernih alami).
    - **Retro LED Date Stamp:** Stempel tanggal oranye retro analog khas kamera saku tahun 90-an (`#e8875a`) dengan pendar neon di sudut kanan bawah foto.
    - **Formula Kuota Dinamis (Total Kuota Foto Acara) & Jatah Roll Fleksibel:** Kuota foto diatur secara transparan dan efisien berdasarkan **Total Kuota Foto Acara** (`memories_total_quota_{plan}`) per paket (misal: Symphony = 250 Foto, Eternity = 1.000 Foto). Pengantin dibebaskan mengatur alokasi roll per tamu (1 - 30 Roll/Tamu) secara fleksibel, baik di Studio Editor maupun langsung dari dasbor kartu Galeri Kenangan via modal *Atur Jatah Roll Tamu* dengan estimasi kapasitas partisipasi dinamis: `~Floor(Sisa_Pool / Jatah_Roll) Tamu`.
@@ -1684,16 +1684,20 @@ Setiap inisialisasi tagihan ke payment gateway (Midtrans & Xendit) mengirimkan i
   - Mencegah NextAuth menginjeksi header `Set-Cookie` (`__Host-authjs.csrf-token`) pada file gambar WebP/audio di `/demo/*`, `/assets/*`, dan `/public/*`.
   - Tanpa `Set-Cookie`, Cloudflare Edge secara otomatis meng-cache aset secara penuh (`cf-cache-status: HIT`), memangkas waktu muat gambar dari ~7 detik (akibat bottleneck stream auth Node.js) menjadi <20 milidetik via Anycast CDN terdekat.
 
-### 15.10 — Arsitektur Kredensial Tunggal Terpadu & Resolusi Endpoint Otomatis
-- **Kredensial Tunggal Terpadu (Single Unified Credentials):**
-  - Gateway pembayaran (Midtrans dan Xendit) menggunakan set kredensial tunggal yang dikonfigurasi langsung di Portal Admin (`midtrans_server_key`, `midtrans_client_key`, `xendit_api_key`, `xendit_webhook_token`) tanpa pembagian mode atau form input duplikat.
-- **Resolusi Endpoint Otomatis Berdasarkan Prefix Kunci (Midtrans Auto-Detection):**
-  - Midtrans Gateway secara cerdas mendeteksi environment target langsung dari format server key yang dimasukkan:
-    - Jika key diawali prefix `SB-` (kunci resmi Midtrans Sandbox, misal `SB-Mid-server-...`), gateway otomatis mengarahkan panggilan transaksi ke server simulator Midtrans (`api.sandbox.midtrans.com` dan `app.sandbox.midtrans.com`).
-    - Jika key diawali prefix standar produksi (misal `Mid-server-...`), gateway otomatis mengarahkan panggilan transaksi ke server produksi live (`api.midtrans.com` dan `app.midtrans.com`).
-  - Menghilangkan kebutuhan toggle manual atau variabel environment tambahan, mencegah konflik kredensial secara mutlak.
+### 15.10 — Arsitektur Dual Slot Kredensial & Mode Lingkungan Eksplisit Midtrans
+- **Penyimpanan Dual Slot Terpisah (Independent Sandbox & Production Slots):**
+  - Midtrans Gateway menerapkan pemisahan penyimpanan kredensial independen di database (`admin_settings`):
+    - Slot Sandbox: `midtrans_sandbox_client_key` & `midtrans_sandbox_server_key`
+    - Slot Produksi: `midtrans_production_client_key` & `midtrans_production_server_key`
+  - Dilengkapi sinkronisasi otomatis ke key warisan (`midtrans_client_key`, `midtrans_server_key`) saat setting disimpan agar modul pihak ketiga/skrip tetap kompatibel.
+- **Mode Lingkungan Eksplisit (Midtrans Deterministic Environment Control):**
+  - Mode transaksi dikontrol via parameter `midtrans_environment` (`sandbox` atau `production`) di Admin Setting.
+  - Menghilangkan ketergantungan rapuh pada deteksi string prefix (seperti `SB-` atau `Mid-`) karena Midtrans pada portal Sandbox terbarunya mengeluarkan key berawalan `Mid-server-...` tanpa `SB-`.
+  - Jika mode `sandbox` aktif: gateway otomatis menggunakan kredensial slot Sandbox dan menembak ke server simulator Midtrans (`api.sandbox.midtrans.com` dan `app.sandbox.midtrans.com`).
+  - Jika mode `production` aktif: gateway otomatis menggunakan kredensial slot Produksi dan menembak ke server live Midtrans (`api.midtrans.com` dan `app.midtrans.com`).
+  - Dilengkapi tata letak form berurutan Client Key di atas dan Server Key di bawah (1:1 dengan dashboard Midtrans) serta *auto-swap guard* pencegah kunci tertukar.
 - **Verifikasi Webhook Terpadu:**
-  - Endpoint webhook (`/api/webhook/midtrans` dan `/api/webhook/xendit`) memverifikasi signature dan callback token terhadap kredensial aktif yang terdaftar di database.
+  - Endpoint webhook (`/api/webhook/midtrans`) memverifikasi signature terhadap seluruh kandidat Server Key (Sandbox maupun Produksi) sehingga pengujian simulasi dan transaksi nyata berjalan simultan tanpa kendala autentikasi.
 
 ### 15.11 — Rekonsiliasi Real-Time & Deteksi Host Dinamis
 - **Deteksi Host & Protokol Dinamis (Zero Domain Hardcode):**
@@ -2600,3 +2604,59 @@ Sistem telah melalui audit mendalam berbasis bukti empiris (*Empirical Verificat
 4. **Ekstraksi IP Aman dari Reverse Proxy (`lib/rateLimit.ts`):**
    - Menambahkan helper `getClientIp()` yang memprioritaskan header terpercaya dari cloud provider (`cf-connecting-ip`, `x-real-ip`, lalu IP paling kiri pada `x-forwarded-for`).
    - Mencegah penyerang mem-bypass rate limiter dengan memalsukan header `X-Forwarded-For`.
+
+---
+
+## 32. Master Industrial QA & Resilience Test Suite (`scripts/industrial-qa-suite.ts`)
+
+Untuk menjamin kesiapan industri (*enterprise-grade / production-ready*), sistem dilengkapi dengan test harness terpadu yang memverifikasi 7 pilar kehandalan sistem di bawah beban konkurensi ekstrem, isolasi data, dan invarian penyimpanan:
+
+1. **Domain 1 — Keamanan, RBAC & Multi-Tenant Isolation:**
+   - Membuktikan isolasi boundary antar-user: percobaan manipulasi data atau penghapusan silang oleh User B terhadap User A menghasilkan 0 row affected.
+   - Netralisasi terhadap 6 vektor path traversal & SQL injection identifier.
+   - Verifikasi enkripsi simetris dua arah AES-256-GCM pada PIN staf venue beserta tamper-resistance terhadap modifikasi auth-tag.
+   - Verifikasi tanda tangan HMAC-SHA256 pada token sesi resepsionis untuk mencegah pemalsuan dan penyusupan lintas undangan.
+
+2. **Domain 2 — Transaksi Finansial, Billing & Kupon Promo:**
+   - Idempotensi webhook pembayaran (Midtrans/Xendit): simulasi 8 callback paralel hanya mengeksekusi tepat 1 transisi status `PENDING` -> `PAID`.
+   - Concurrency race condition pada kupon terbatas (`quotaLimit = 1`): diuji menggunakan row-level lock `SELECT ... FOR UPDATE` dalam transaksi Prisma, memastikan tepat 1 user menang dan klaim berlebih ditolak secara atomik.
+   - Proteksi anti-downgrade paket (Tier 3 terkunci dari penurunan sepihak ke Tier 1).
+
+3. **Domain 3 — Konkurensi Ekstrem, Race Conditions & Atomic Locks:**
+   - Simulasi multi-scanner QR check-in simultan di beberapa pintu gerbang venue: atomic conditional update menjamin tepat 1 scanner berhasil dan scanner lainnya ditolak dengan flag *already redeemed*.
+   - Plafon katering tamu: 10 submisi RSVP serentak yang melebihi kuota katering otomatis di-clamp ke batas `guestQuota`.
+   - Rate limiting PostgreSQL: burst 25 request paralel ke tabel `rate_limit_counters` via UPSERT atomik terbukti memblokir lonjakan tanpa menimbulkan deadlock antar worker.
+
+4. **Domain 4 — Lifecycle Undangan & Invarian Penyimpanan:**
+   - Anti-collision unik subdomain mencegah pendaftaran URL ganda.
+   - Single Source of Truth publikasi kanonikal HTML di `public/published/ids/[id].html`.
+   - Invarian pembersihan 3 lapis saat penghapusan undangan: Published HTML, Draft HTML (`data/drafts/`), dan folder fisik `public/uploads/invitations/[id]/` terhapus 100% tanpa menyisakan disk leak.
+
+5. **Domain 5 — Theme Matrix, Token Dinamis & Sanitasi XSS:**
+   - Pengujian render matriks pada tema aktif menggunakan data ekstrem (string 250+ karakter) dan payload XSS (`<script>`, `onerror`, tanda kutip tunggal/ganda).
+   - Verifikasi ketiadaan placeholder mentah `{{variable}}` yang bocor pada berkas HTML hasil kompilasi.
+
+6. **Domain 6 — Basis Data, Indeks & Metrik Latensi:**
+   - Audit 36 indeks pencarian kritis pada PostgreSQL (mencegah Full Table Scan di bawah ratusan ribu record).
+   - Verifikasi cascade delete: penghapusan akun User membersihkan seluruh relasi (Invitation, Guest, RSVP) dengan 0 orphan.
+   - Engine telemetri latensi: mengukur durasi kueri dan mencatat latensi rata-rata, p50, p95, p99.
+
+7. **Domain 7 — Ketahanan Sistem & Fault Tolerance:**
+   - Penanganan graceful degradation terhadap format korup, ID fiktif, dan anomali input tanpa menyebabkan uncaught process crash.
+   - Teardown sandbox deterministik: seluruh entitas uji dengan namespace `qa_ind_*` otomatis dibersihkan pada blok `finally` (100% zero-leak database & disk).
+
+**Perintah Menjalankan Pengujian:**
+```bash
+# Menjalankan seluruh 7 domain pengujian:
+npm run test:industrial -- --suite=all
+
+# Menjalankan per domain spesifik:
+npm run test:industrial -- --suite=security
+npm run test:industrial -- --suite=concurrency
+npm run test:industrial -- --suite=financial
+npm run test:industrial -- --suite=lifecycle
+npm run test:industrial -- --suite=themes
+npm run test:industrial -- --suite=infra
+npm run test:industrial -- --suite=resilience
+```
+

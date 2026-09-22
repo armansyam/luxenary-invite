@@ -225,6 +225,8 @@ async function runThemeMatrixTest() {
   console.log(`✅ Lolos: ${successCount} / ${themes.length}`);
   console.log(`❌ Gagal: ${totalFailures} / ${themes.length}`);
 
+  await prisma.$disconnect();
+
   if (totalFailures > 0) {
     console.error(`\n⚠️ TERDAPAT ${totalFailures} TEMA DENGAN TEMUAN GAGAL!`);
     process.exit(1);
@@ -234,7 +236,8 @@ async function runThemeMatrixTest() {
   }
 }
 
-runThemeMatrixTest().catch((err) => {
+runThemeMatrixTest().catch(async (err) => {
   console.error("Fatal test runner error:", err);
+  await prisma.$disconnect();
   process.exit(1);
 });

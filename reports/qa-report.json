@@ -1,0 +1,170 @@
+{
+  "runId": 1790057646630,
+  "suite": "all",
+  "timestamp": "2026-09-22T06:14:07.151Z",
+  "totalDurationSec": 0.52,
+  "passedCount": 17,
+  "totalTests": 17,
+  "passPercentage": 100,
+  "status": "PRODUCTION_CERTIFIED",
+  "results": [
+    {
+      "domain": "SECURITY",
+      "code": "SEC-01",
+      "name": "Multi-Tenant Cross-Access Isolation Guard",
+      "passed": true,
+      "durationMs": 196.99,
+      "detail": "Isolasi Multi-Tenant 100% Kedap: Percobaan modifikasi & penghapusan silang ditolak (0 row affected)."
+    },
+    {
+      "domain": "SECURITY",
+      "code": "SEC-02",
+      "name": "Path Traversal & Identifier Neutralizer",
+      "passed": true,
+      "durationMs": 0.05,
+      "detail": "Seluruh 6 vektor path traversal & SQLi identifier berhasil dinetralisir."
+    },
+    {
+      "domain": "SECURITY",
+      "code": "SEC-03",
+      "name": "Staff PIN AES-256-GCM & Tamper Resistance",
+      "passed": true,
+      "durationMs": 0.86,
+      "detail": "Enkripsi AES-256-GCM valid, enkripsi dua arah simetris, dan manipulasi auth-tag berhasil ditolak."
+    },
+    {
+      "domain": "SECURITY",
+      "code": "SEC-04",
+      "name": "Receptionist HMAC Token Forgery Guard",
+      "passed": true,
+      "durationMs": 0.16,
+      "detail": "Token HMAC terverifikasi kokoh: token valid lolos, pemalsuan & token silang-undangan 100% ditolak."
+    },
+    {
+      "domain": "FINANCIAL",
+      "code": "FIN-01",
+      "name": "Parallel Webhook Callback Idempotency",
+      "passed": true,
+      "durationMs": 31.33,
+      "detail": "Idempotensi Webhook Sempurna: Tepat 1 dari 8 callback dieksekusi, 7 lainnya diabaikan secara aman."
+    },
+    {
+      "domain": "FINANCIAL",
+      "code": "FIN-02",
+      "name": "Promo Coupon Quota Race & Row-Level Lock",
+      "passed": true,
+      "durationMs": 31.16,
+      "detail": "Atomic Lock Sukses (SELECT FOR UPDATE): Dari 5 klaim simultan, tepat 1 menang (1) dan 4 ditolak (4). Usage count terkunci di 1."
+    },
+    {
+      "domain": "FINANCIAL",
+      "code": "FIN-03",
+      "name": "Order Upgrade Execution & Anti-Downgrade Hierarchy",
+      "passed": true,
+      "durationMs": 27.37,
+      "detail": "Upgrade tier berhasil naik ke TIER_3, dan aturan anti-downgrade ke TIER_1 terverifikasi aktif."
+    },
+    {
+      "domain": "CONCURRENCY",
+      "code": "CONC-01",
+      "name": "Multi-Gate QR Check-In Race Condition Guard",
+      "passed": true,
+      "durationMs": 14.4,
+      "detail": "Multi-Gate Atomic Lock Sempurna: Tepat 1 gerbang berhasil check-in (1), 4 gerbang lainnya ditolak seketika (4) sebagai tiket duplikat."
+    },
+    {
+      "domain": "CONCURRENCY",
+      "code": "CONC-02",
+      "name": "Catering Pax Hard-Cap Concurrency Clamping",
+      "passed": true,
+      "durationMs": 18.11,
+      "detail": "Plafon Katering Terkunci: Seluruh 10 submisi paralel berhasil di-clamp secara deterministik ke batas kuota katering (2 pax)."
+    },
+    {
+      "domain": "CONCURRENCY",
+      "code": "CONC-03",
+      "name": "PostgreSQL Atomic UPSERT Rate Limiting Burst",
+      "passed": true,
+      "durationMs": 13.85,
+      "detail": "Rate Limiter PostgreSQL Lolos: Dari 25 burst paralel, tepat 5 diizinkan dan 20 diblokir tanpa deadlock."
+    },
+    {
+      "domain": "LIFECYCLE",
+      "code": "LIFE-01",
+      "name": "Subdomain Anti-Collision Unique Constraint",
+      "passed": true,
+      "durationMs": 20.38,
+      "detail": "Unique Constraint DB Aktif: Subdomain 'sub46630' berhasil mencegah tabrakan URL."
+    },
+    {
+      "domain": "LIFECYCLE",
+      "code": "LIFE-02",
+      "name": "Single Source of Truth Static HTML Compilation",
+      "passed": true,
+      "durationMs": 58.23,
+      "detail": "Kanonikal HTML Sukses: Berkas statis dibakar ke /Users/armansyam/Documents/Project AmsDev/Luxenary-Invite/public/published/ids/71f8f05e-10bb-4b5d-b1c2-dc9131165b48.html (148224 bytes)."
+    },
+    {
+      "domain": "LIFECYCLE",
+      "code": "LIFE-03",
+      "name": "Three-Layer Storage Cleanup Invariant (Zero Disk Leak)",
+      "passed": true,
+      "durationMs": 1.27,
+      "detail": "Invarian 3 Lapis Penyimpanan Terbukti: Published HTML, Draft HTML, dan Folder Uploads terhapus 100% tanpa kebocoran disk."
+    },
+    {
+      "domain": "THEMES",
+      "code": "THM-01",
+      "name": "Theme Rendering Matrix & Extreme Data Stress",
+      "passed": true,
+      "durationMs": 7.94,
+      "detail": "Seluruh sampel 5 tema aktif sukses dirender di bawah data ekstrem & payload XSS."
+    },
+    {
+      "domain": "INFRA",
+      "code": "INF-01",
+      "name": "PostgreSQL Critical Search Indexes Audit",
+      "passed": true,
+      "durationMs": 50.51,
+      "detail": "Audit Indeks PostgreSQL Lolos: Ditemukan 36 indeks aktif pada tabel-tabel utama (mencegah Full Table Scan)."
+    },
+    {
+      "domain": "INFRA",
+      "code": "INF-02",
+      "name": "Foreign Key Cascade Delete & Zero-Orphan Integrity",
+      "passed": true,
+      "durationMs": 17.89,
+      "detail": "Cascade Delete Sempurna: Penghapusan User membersihkan seluruh relasi (Invitation, Guest, RSVP) dengan 0 orphan."
+    },
+    {
+      "domain": "RESILIENCE",
+      "code": "RES-01",
+      "name": "Graceful Degradation & Corrupted Input Handling",
+      "passed": true,
+      "durationMs": 1.23,
+      "detail": "Fault Tolerance Teruji: Input anomali, format korup, dan ID fiktif ditangani secara elegan tanpa crash proses."
+    }
+  ],
+  "benchmarks": [
+    {
+      "operation": "QR Check-in Atomic Update",
+      "iterations": 5,
+      "minMs": 2.66,
+      "maxMs": 3.73,
+      "avgMs": 3.32,
+      "p50Ms": 3.42,
+      "p95Ms": 3.73,
+      "p99Ms": 3.73
+    },
+    {
+      "operation": "PostgreSQL Rate Limiter UPSERT",
+      "iterations": 25,
+      "minMs": 7.52,
+      "maxMs": 10.73,
+      "avgMs": 8.64,
+      "p50Ms": 8.58,
+      "p95Ms": 10.06,
+      "p99Ms": 10.73
+    }
+  ]
+}

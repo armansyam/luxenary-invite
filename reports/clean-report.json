@@ -1,0 +1,17 @@
+{
+  "timestamp": "2026-09-22T06:14:21.505Z",
+  "durationMs": 144.78,
+  "database": {
+    "usersDeleted": 0,
+    "ordersDeleted": 0,
+    "invitationsDeleted": 0,
+    "promoCouponsDeleted": 0,
+    "promoHoldsDeleted": 0
+  },
+  "filesystem": {
+    "orphanedDraftsDeleted": 0,
+    "orphanedPublishedHtmlDeleted": 0,
+    "orphanedUploadDirsDeleted": 0,
+    "deletedFilesList": []
+  }
+}

@@ -48,7 +48,15 @@ export const GATEWAY_CATALOG: GatewayMeta[] = [
     docs: "https://docs.midtrans.com",
     features: ["QRIS (In-App)", "GoPay", "VA BCA", "VA Mandiri", "VA BNI", "VA BRI", "Kartu Kredit"],
     webhookPath: "/api/webhook/midtrans",
-    configKeys: ["midtrans_server_key", "midtrans_client_key"],
+    configKeys: [
+      "midtrans_environment",
+      "midtrans_sandbox_client_key",
+      "midtrans_sandbox_server_key",
+      "midtrans_production_client_key",
+      "midtrans_production_server_key",
+      "midtrans_client_key",
+      "midtrans_server_key",
+    ],
   },
   {
     id: "xendit",

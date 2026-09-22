@@ -10,56 +10,51 @@ import crypto from "crypto";
 import { PaymentGateway } from "@/lib/gateways/types";
 import { prisma } from "@/lib/prisma";
 
-// Cache in-memory hasil deteksi endpoint untuk serverKey Midtrans (TTL: 1 jam)
-const midtransEndpointCache = new Map<string, { isProduction: boolean; expiry: number }>();
-
-async function resolveMidtransEndpoint(serverKey: string): Promise<boolean> {
-  if (!serverKey) return false;
-  if (serverKey.startsWith("SB-")) return false; // Kunci diawali SB- pasti simulator sandbox
-  if (process.env.MIDTRANS_IS_PRODUCTION === "true") return true; // Dipaksa live via env
-  if (process.env.MIDTRANS_IS_PRODUCTION === "false") return false; // Dipaksa sandbox via env
-
-  const cached = midtransEndpointCache.get(serverKey);
-  if (cached && cached.expiry > Date.now()) {
-    return cached.isProduction;
-  }
-
-  // Auto-probe: verifikasi apakah kredensial valid di Production atau Sandbox
-  try {
-    const basicAuth = Buffer.from(`${serverKey}:`).toString("base64");
-    const liveRes = await fetch("https://api.midtrans.com/v2/dummy-check/status", {
-      headers: { Authorization: `Basic ${basicAuth}` },
-      signal: AbortSignal.timeout(2500),
-    });
-
-    // 401 Unauthorized berarti key tidak terdaftar di server Production -> akun Sandbox
-    const isProd = liveRes.status !== 401;
-    midtransEndpointCache.set(serverKey, { isProduction: isProd, expiry: Date.now() + 3600000 });
-    return isProd;
-  } catch {
-    const isProd = process.env.NODE_ENV === "production";
-    midtransEndpointCache.set(serverKey, { isProduction: isProd, expiry: Date.now() + 300000 });
-    return isProd;
-  }
-}
-
 export class MidtransGateway implements PaymentGateway {
   private async getConfig() {
     let serverKey = "";
     let clientKey = "";
+    let environment = "sandbox";
 
     try {
       const settings = await prisma.adminSetting.findMany({
-        where: { key: { in: ["midtrans_server_key", "midtrans_client_key"] } },
+        where: {
+          key: {
+            in: [
+              "midtrans_environment",
+              "midtrans_sandbox_client_key",
+              "midtrans_sandbox_server_key",
+              "midtrans_production_client_key",
+              "midtrans_production_server_key",
+              "midtrans_server_key",
+              "midtrans_client_key",
+            ],
+          },
+        },
       });
       const map: Record<string, string> = {};
-      settings.forEach((s) => (map[s.key] = s.value));
+      settings.forEach((s) => (map[s.key] = s.value?.trim() || ""));
 
-      serverKey = map["midtrans_server_key"] || process.env.MIDTRANS_SERVER_KEY || "";
-      clientKey = map["midtrans_client_key"] || process.env.MIDTRANS_CLIENT_KEY || "";
+      environment = map["midtrans_environment"] || (process.env.MIDTRANS_IS_PRODUCTION === "true" ? "production" : "sandbox");
+
+      const isProd =
+        process.env.MIDTRANS_IS_PRODUCTION === "true"
+          ? true
+          : process.env.MIDTRANS_IS_PRODUCTION === "false"
+          ? false
+          : environment.toLowerCase() === "production";
+
+      if (isProd) {
+        serverKey = map["midtrans_production_server_key"] || (environment === "production" ? map["midtrans_server_key"] : "") || process.env.MIDTRANS_SERVER_KEY || "";
+        clientKey = map["midtrans_production_client_key"] || (environment === "production" ? map["midtrans_client_key"] : "") || process.env.MIDTRANS_CLIENT_KEY || "";
+      } else {
+        serverKey = map["midtrans_sandbox_server_key"] || (environment !== "production" ? map["midtrans_server_key"] : "") || process.env.MIDTRANS_SERVER_KEY || "";
+        clientKey = map["midtrans_sandbox_client_key"] || (environment !== "production" ? map["midtrans_client_key"] : "") || process.env.MIDTRANS_CLIENT_KEY || "";
+      }
     } catch {
       serverKey = process.env.MIDTRANS_SERVER_KEY || "";
       clientKey = process.env.MIDTRANS_CLIENT_KEY || "";
+      environment = process.env.MIDTRANS_IS_PRODUCTION === "true" ? "production" : "sandbox";
     }
 
     // Auto-swap guard: jika Server Key dan Client Key tertukar di Admin Setting
@@ -72,9 +67,13 @@ export class MidtransGateway implements PaymentGateway {
       clientKey = temp;
     }
 
-    // Resolusi endpoint dinamis otomatis:
-    // Mampu membedakan kunci Sandbox vs Live secara presisi bahkan jika key sandbox tidak diawali 'SB-'
-    const isProduction = await resolveMidtransEndpoint(serverKey);
+    // Penentuan endpoint deterministik berdasarkan setting Admin Portal (default: sandbox)
+    const isProduction =
+      process.env.MIDTRANS_IS_PRODUCTION === "true"
+        ? true
+        : process.env.MIDTRANS_IS_PRODUCTION === "false"
+        ? false
+        : environment.toLowerCase() === "production";
 
     const snapUrl = isProduction
       ? "https://app.midtrans.com/snap/v1/transactions"

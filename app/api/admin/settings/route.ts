@@ -31,6 +31,11 @@ const DEFAULT_SETTINGS: Array<{ key: string; value: string; label: string; group
   { key: "service_status_contact_wa", value: "", label: "Nomor WhatsApp Kontak / Waiting List", group: "platform" },
   { key: "midtrans_server_key", value: "", label: "Server Key Midtrans", group: "midtrans" },
   { key: "midtrans_client_key", value: "", label: "Client Key Midtrans", group: "midtrans" },
+  { key: "midtrans_environment", value: "sandbox", label: "Mode Lingkungan Midtrans (sandbox/production)", group: "midtrans" },
+  { key: "midtrans_sandbox_client_key", value: "", label: "Client Key Midtrans (Sandbox)", group: "midtrans" },
+  { key: "midtrans_sandbox_server_key", value: "", label: "Server Key Midtrans (Sandbox)", group: "midtrans" },
+  { key: "midtrans_production_client_key", value: "", label: "Client Key Midtrans (Produksi)", group: "midtrans" },
+  { key: "midtrans_production_server_key", value: "", label: "Server Key Midtrans (Produksi)", group: "midtrans" },
   { key: "xendit_api_key", value: "", label: "Secret API Key Xendit", group: "xendit" },
   { key: "xendit_webhook_token", value: "", label: "Webhook Token Xendit", group: "xendit" },
   { key: "google_auth_enabled", value: "true", label: "Aktifkan Login Google", group: "google" },
@@ -162,6 +167,48 @@ export async function POST(req: NextRequest) {
             syncR2LifecycleRule(retentionDays).catch(console.error);
           });
         }
+      }
+    }
+
+    // Sinkronisasi otomatis ke key legacy midtrans_client_key & midtrans_server_key sesuai mode aktif
+    const hasMidtransUpdates = updates.some((u: any) => u.key && String(u.key).startsWith("midtrans_"));
+    if (hasMidtransUpdates) {
+      try {
+        const mtSettings = await prisma.adminSetting.findMany({
+          where: {
+            key: {
+              in: [
+                "midtrans_environment",
+                "midtrans_sandbox_client_key",
+                "midtrans_sandbox_server_key",
+                "midtrans_production_client_key",
+                "midtrans_production_server_key",
+              ],
+            },
+          },
+        });
+        const mtMap: Record<string, string> = {};
+        mtSettings.forEach((s) => (mtMap[s.key] = s.value?.trim() || ""));
+        const isProd = mtMap["midtrans_environment"] === "production";
+        const activeClient = isProd ? (mtMap["midtrans_production_client_key"] || "") : (mtMap["midtrans_sandbox_client_key"] || "");
+        const activeServer = isProd ? (mtMap["midtrans_production_server_key"] || "") : (mtMap["midtrans_sandbox_server_key"] || "");
+
+        if (activeClient) {
+          await prisma.adminSetting.upsert({
+            where: { key: "midtrans_client_key" },
+            create: { key: "midtrans_client_key", value: activeClient, group: "midtrans" },
+            update: { value: activeClient },
+          });
+        }
+        if (activeServer) {
+          await prisma.adminSetting.upsert({
+            where: { key: "midtrans_server_key" },
+            create: { key: "midtrans_server_key", value: activeServer, group: "midtrans" },
+            update: { value: activeServer },
+          });
+        }
+      } catch (syncErr) {
+        console.warn("[Admin Settings] Gagal sinkronisasi legacy Midtrans keys:", syncErr);
       }
     }
 

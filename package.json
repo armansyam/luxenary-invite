@@ -8,7 +8,15 @@
     "start": "NODE_OPTIONS='--dns-result-order=ipv4first' next start",
     "lint": "eslint",
     "theme:preview": "npx tsx theme-builder/preview.ts",
-    "theme:install": "npx tsx theme-builder/install.ts"
+    "theme:install": "npx tsx theme-builder/install.ts",
+    "test:all": "npx tsx scripts/industrial-qa-suite.ts --suite=all",
+    "test:industrial": "npx tsx scripts/industrial-qa-suite.ts",
+    "test:audit": "npx tsx scripts/complete-system-audit.ts",
+    "test:security": "npx tsx scripts/test-security-penetration.ts",
+    "test:stress": "npx tsx scripts/master-e2e-stress-test.ts",
+    "test:themes": "npx tsx scripts/test-theme-matrix.ts",
+    "test:clean": "npx tsx scripts/clean-test-artifacts.ts",
+    "cron:cleanup": "npx tsx scripts/cron-cleanup.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1119.0",

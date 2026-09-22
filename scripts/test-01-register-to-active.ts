@@ -79,6 +79,7 @@ async function runTest01() {
     
   } catch (err) {
     console.error("❌ Terjadi kesalahan:", err);
+    process.exit(1);
   } finally {
     await prisma.$disconnect();
   }

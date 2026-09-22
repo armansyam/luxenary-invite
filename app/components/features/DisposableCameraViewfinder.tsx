@@ -112,6 +112,39 @@ function playShutterSound() {
   }
 }
 
+// Sintesis suara winding roda roll film mekanik via Web Audio API
+function playWindingSound() {
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    const now = ctx.currentTime;
+    for (let click = 0; click < 4; click++) {
+      const startTime = now + click * 0.08;
+      const bufferSize = Math.floor(ctx.sampleRate * 0.015);
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * 0.35;
+      }
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+      const filter = ctx.createBiquadFilter();
+      filter.type = "highpass";
+      filter.frequency.value = 2400;
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.25, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.015);
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+      noise.start(startTime);
+    }
+  } catch {
+    // Silent fail jika audio context diblokir browser
+  }
+}
+
 export default function DisposableCameraViewfinder({
   invitationId,
   coupleName,
@@ -148,7 +181,7 @@ export default function DisposableCameraViewfinder({
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
   const [zoomLevel, setZoomLevel] = useState<number>(1);
-  const [flashOn, setFlashOn] = useState(true);
+  const [flashOn, setFlashOn] = useState(false);
   const [hasTorch, setHasTorch] = useState(false);
 
   // Identity & Quota
@@ -158,8 +191,9 @@ export default function DisposableCameraViewfinder({
   const [showIdentityModal, setShowIdentityModal] = useState(false);
   const [shotsTaken, setShotsTaken] = useState(0);
 
-  // Snapping / Uploading
+  // Snapping / Uploading / Film Winding Cooldown
   const [isSnapping, setIsSnapping] = useState(false);
+  const [isWinding, setIsWinding] = useState(false);
   const [screenFlash, setScreenFlash] = useState(false);
   const [pendingUploads, setPendingUploads] = useState<number>(0);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -250,11 +284,10 @@ export default function DisposableCameraViewfinder({
         const capabilities = (track.getCapabilities && track.getCapabilities()) as any;
         const torchCapable = Boolean(capabilities && capabilities.torch);
         setHasTorch(torchCapable);
-        if (flashOn && torchCapable) {
-          try {
-            await (track as any).applyConstraints({ advanced: [{ torch: true }] });
-          } catch {}
-        }
+        // Pastikan lampu senter selalu padam saat preview standby membidik
+        try {
+          await (track as any).applyConstraints({ advanced: [{ torch: false }] });
+        } catch {}
       }
 
       setCameraReady(true);
@@ -268,7 +301,7 @@ export default function DisposableCameraViewfinder({
       }
       setCameraError(msg);
     }
-  }, [facingMode, flashOn]);
+  }, [facingMode]);
 
   useEffect(() => {
     if (hasStartedCamera) {
@@ -276,27 +309,20 @@ export default function DisposableCameraViewfinder({
     }
     return () => {
       if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current.getTracks().forEach((track) => {
+          try {
+            (track as any).applyConstraints({ advanced: [{ torch: false }] });
+          } catch {}
+          track.stop();
+        });
         streamRef.current = null;
       }
     };
   }, [hasStartedCamera, startCamera]);
 
-  // Toggle Flash (Universal: Hardware Torch + Screen Flash + Exposure Boost)
-  const toggleFlash = async () => {
-    const nextFlash = !flashOn;
-    setFlashOn(nextFlash);
-
-    if (streamRef.current) {
-      const track = streamRef.current.getVideoTracks()[0];
-      if (track) {
-        try {
-          await (track as any).applyConstraints({ advanced: [{ torch: nextFlash }] });
-        } catch {
-          // Hardware torch tidak didukung di peramban ini (fallback screen flash tetap aktif)
-        }
-      }
-    }
+  // Toggle Flash (Arming mode: mengaktifkan blitz untuk jepretan berikutnya)
+  const toggleFlash = () => {
+    setFlashOn((prev) => !prev);
   };
 
   // Flip Kamera
@@ -328,7 +354,7 @@ export default function DisposableCameraViewfinder({
 
   // ── 4. PROSES JEPRET (SNAP & CANVAS BAKE-IN) ──
   const triggerSnap = async () => {
-    if (isSnapping || !cameraReady || !videoRef.current || !canvasRef.current) return;
+    if (isSnapping || isWinding || !cameraReady || !videoRef.current || !canvasRef.current) return;
 
     // Cek batas sesi waktu aktif (time-gate overrides roll quota)
     if (!isTestMode && isSessionActive === false) {
@@ -353,160 +379,187 @@ export default function DisposableCameraViewfinder({
     }
 
     setIsSnapping(true);
-    playShutterSound();
 
-    if (typeof navigator !== "undefined" && navigator.vibrate) {
-      navigator.vibrate(45);
-    }
+    const track = streamRef.current?.getVideoTracks()[0];
+    let torchTriggered = false;
 
-    // Efek flash visual di layar jika flashOn aktif
-    if (flashOn) {
-      setScreenFlash(true);
-      setTimeout(() => setScreenFlash(false), 120);
-    }
+    try {
+      // 1. Pemicu Strobe Pulse Flash Hardware (hanya jika flashOn aktif dan hardware mendukung)
+      if (flashOn && hasTorch && track) {
+        try {
+          await (track as any).applyConstraints({ advanced: [{ torch: true }] });
+          torchTriggered = true;
+          // Jeda mikro 120ms agar sensor kamera HP sempat adaptasi exposure dengan cahaya LED
+          await new Promise((resolve) => setTimeout(resolve, 120));
+        } catch {}
+      }
 
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
+      playShutterSound();
 
-    const vWidth = video.videoWidth || 1280;
-    const vHeight = video.videoHeight || 720;
+      if (typeof navigator !== "undefined" && navigator.vibrate) {
+        navigator.vibrate(45);
+      }
 
-    // Output target selalu rasio 3:4 portrait (810 x 1080) agar presisi 1:1 dengan viewfinder aspect-[3/4]
-    const targetW = 810;
-    const targetH = 1080;
+      // Efek flash visual di layar jika flashOn aktif
+      if (flashOn) {
+        setScreenFlash(true);
+        setTimeout(() => setScreenFlash(false), 120);
+      }
 
-    canvas.width = targetW;
-    canvas.height = targetH;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) {
-      setIsSnapping(false);
-      return;
-    }
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
 
-    // Hitung crop 3:4 yang sama persis dengan CSS object-cover pada aspect-[3/4]
-    const boxAspect = 3 / 4;
-    const videoAspect = vWidth / vHeight;
+      const vWidth = video.videoWidth || 1280;
+      const vHeight = video.videoHeight || 720;
 
-    let baseCropW = vWidth;
-    let baseCropH = vHeight;
-    let baseCropX = 0;
-    let baseCropY = 0;
+      // Output target selalu rasio 3:4 portrait (810 x 1080) agar presisi 1:1 dengan viewfinder aspect-[3/4]
+      const targetW = 810;
+      const targetH = 1080;
 
-    if (videoAspect > boxAspect) {
-      // Video lebih lebar dari 3:4 (misal 16:9 atau 4:3), potong sisi kiri dan kanan secara simetris
-      baseCropW = vHeight * boxAspect;
-      baseCropX = (vWidth - baseCropW) / 2;
-    } else {
-      // Video lebih ramping dari 3:4 (misal 9:16), potong sisi atas dan bawah secara simetris
-      baseCropH = vWidth / boxAspect;
-      baseCropY = (vHeight - baseCropH) / 2;
-    }
+      canvas.width = targetW;
+      canvas.height = targetH;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        setIsSnapping(false);
+        return;
+      }
 
-    // Terapkan digital zoom jika aktif
-    const finalCropW = baseCropW / zoomLevel;
-    const finalCropH = baseCropH / zoomLevel;
-    const centerX = baseCropX + baseCropW / 2;
-    const centerY = baseCropY + baseCropH / 2;
-    const finalCropX = centerX - finalCropW / 2;
-    const finalCropY = centerY - finalCropH / 2;
+      // Hitung crop 3:4 yang sama persis dengan CSS object-cover pada aspect-[3/4]
+      const boxAspect = 3 / 4;
+      const videoAspect = vWidth / vHeight;
 
-    // 1. Gambar frame video dengan crop 3:4 presisi
-    ctx.save();
-    if (facingMode === "user") {
-      // Mirroring untuk kamera depan
-      ctx.translate(targetW, 0);
-      ctx.scale(-1, 1);
-    }
-    ctx.drawImage(
-      video,
-      finalCropX,
-      finalCropY,
-      finalCropW,
-      finalCropH,
-      0,
-      0,
-      targetW,
-      targetH
-    );
-    ctx.restore();
+      let baseCropW = vWidth;
+      let baseCropH = vHeight;
+      let baseCropX = 0;
+      let baseCropY = 0;
 
-    // 2. Bakar Filter Color Grading (+ Xenon Flash Boost jika flashOn aktif)
-    const combinedFilter = flashOn
-      ? `${activePreset.canvasFilter || ""} brightness(1.14) contrast(1.08)`.trim()
-      : activePreset.canvasFilter;
+      if (videoAspect > boxAspect) {
+        // Video lebih lebar dari 3:4 (misal 16:9 atau 4:3), potong sisi kiri dan kanan secara simetris
+        baseCropW = vHeight * boxAspect;
+        baseCropX = (vWidth - baseCropW) / 2;
+      } else {
+        // Video lebih ramping dari 3:4 (misal 9:16), potong sisi atas dan bawah secara simetris
+        baseCropH = vWidth / boxAspect;
+        baseCropY = (vHeight - baseCropH) / 2;
+      }
 
-    if (combinedFilter) {
+      // Terapkan digital zoom jika aktif
+      const finalCropW = baseCropW / zoomLevel;
+      const finalCropH = baseCropH / zoomLevel;
+      const centerX = baseCropX + baseCropW / 2;
+      const centerY = baseCropY + baseCropH / 2;
+      const finalCropX = centerX - finalCropW / 2;
+      const finalCropY = centerY - finalCropH / 2;
+
+      // 1. Gambar frame video dengan crop 3:4 presisi
       ctx.save();
-      ctx.filter = combinedFilter;
-      ctx.globalCompositeOperation = "copy";
-      ctx.drawImage(canvas, 0, 0);
-      ctx.restore();
-    }
-
-    // 3. Lapisan Overlay Tint Warna Tambahan (jika ada di preset)
-    if (activePreset.overlayColor && activePreset.overlayBlend) {
-      ctx.save();
-      ctx.globalCompositeOperation = activePreset.overlayBlend;
-      ctx.fillStyle = activePreset.overlayColor;
-      ctx.fillRect(0, 0, targetW, targetH);
-      ctx.restore();
-    }
-
-    // 4. Lapisan Radial Vignette Lembut (khas lensa kamera disposable)
-    if (activePreset.vignetteStrength > 0) {
-      ctx.save();
-      const radius = Math.max(targetW, targetH) * 0.75;
-      const vignette = ctx.createRadialGradient(
-        targetW / 2,
-        targetH / 2,
-        radius * 0.35,
-        targetW / 2,
-        targetH / 2,
-        radius
+      if (facingMode === "user") {
+        // Mirroring untuk kamera depan
+        ctx.translate(targetW, 0);
+        ctx.scale(-1, 1);
+      }
+      ctx.drawImage(
+        video,
+        finalCropX,
+        finalCropY,
+        finalCropW,
+        finalCropH,
+        0,
+        0,
+        targetW,
+        targetH
       );
-      vignette.addColorStop(0, "rgba(0, 0, 0, 0)");
-      vignette.addColorStop(1, `rgba(0, 0, 0, ${activePreset.vignetteStrength})`);
-      ctx.fillStyle = vignette;
-      ctx.fillRect(0, 0, targetW, targetH);
       ctx.restore();
-    }
 
-    // 5. Cetak Stempel Tanggal LED Retro Oranye di Pojok Kanan Bawah
-    if (dateStampEnabled) {
-      ctx.save();
-      const dateText = getFormattedDateStamp();
-      const fontSize = Math.max(16, Math.round(targetW * 0.035));
-      ctx.font = `bold ${fontSize}px "Space Mono", "VT323", monospace`;
-      ctx.textAlign = "right";
-      ctx.textBaseline = "bottom";
+      // 2. Bakar Filter Color Grading (+ Xenon Flash Boost jika flashOn aktif)
+      const combinedFilter = flashOn
+        ? `${activePreset.canvasFilter || ""} brightness(1.14) contrast(1.08)`.trim()
+        : activePreset.canvasFilter;
 
-      // Efek pendar neon oranye analog
-      ctx.shadowColor = "rgba(232, 135, 90, 0.85)";
-      ctx.shadowBlur = 6;
-      ctx.fillStyle = "rgb(232, 135, 90)"; // Retro orange #e8875a
+      if (combinedFilter) {
+        ctx.save();
+        ctx.filter = combinedFilter;
+        ctx.globalCompositeOperation = "copy";
+        ctx.drawImage(canvas, 0, 0);
+        ctx.restore();
+      }
 
-      const paddingRight = Math.round(targetW * 0.04);
-      const paddingBottom = Math.round(targetH * 0.04);
-      ctx.fillText(dateText, targetW - paddingRight, targetH - paddingBottom);
-      ctx.restore();
-    }
+      // 3. Lapisan Overlay Tint Warna Tambahan (jika ada di preset)
+      if (activePreset.overlayColor && activePreset.overlayBlend) {
+        ctx.save();
+        ctx.globalCompositeOperation = activePreset.overlayBlend;
+        ctx.fillStyle = activePreset.overlayColor;
+        ctx.fillRect(0, 0, targetW, targetH);
+        ctx.restore();
+      }
 
-    // 6. Ekspor ke Blob JPEG ~300KB
-    const base64File = canvas.toDataURL("image/jpeg", 0.78);
+      // 4. Lapisan Radial Vignette Lembut (khas lensa kamera disposable)
+      if (activePreset.vignetteStrength > 0) {
+        ctx.save();
+        const radius = Math.max(targetW, targetH) * 0.75;
+        const vignette = ctx.createRadialGradient(
+          targetW / 2,
+          targetH / 2,
+          radius * 0.35,
+          targetW / 2,
+          targetH / 2,
+          radius
+        );
+        vignette.addColorStop(0, "rgba(0, 0, 0, 0)");
+        vignette.addColorStop(1, `rgba(0, 0, 0, ${activePreset.vignetteStrength})`);
+        ctx.fillStyle = vignette;
+        ctx.fillRect(0, 0, targetW, targetH);
+        ctx.restore();
+      }
 
-    // Update counter lokal
-    const nextTaken = shotsTaken + 1;
-    setShotsTaken(nextTaken);
-    if (typeof window !== "undefined") {
-      localStorage.setItem(`lux_shots_taken_${invitationId}_${guestToken}`, String(nextTaken));
-    }
+      // 5. Cetak Stempel Tanggal LED Retro Oranye di Pojok Kanan Bawah
+      if (dateStampEnabled) {
+        ctx.save();
+        const dateText = getFormattedDateStamp();
+        const fontSize = Math.max(16, Math.round(targetW * 0.035));
+        ctx.font = `bold ${fontSize}px "Space Mono", "VT323", monospace`;
+        ctx.textAlign = "right";
+        ctx.textBaseline = "bottom";
 
-    // 7. Unggah ke Server
-    uploadSnappedPhoto(base64File);
+        // Efek pendar neon oranye analog
+        ctx.shadowColor = "rgba(232, 135, 90, 0.85)";
+        ctx.shadowBlur = 6;
+        ctx.fillStyle = "rgb(232, 135, 90)"; // Retro orange #e8875a
 
-    setTimeout(() => {
+        const paddingRight = Math.round(targetW * 0.04);
+        const paddingBottom = Math.round(targetH * 0.04);
+        ctx.fillText(dateText, targetW - paddingRight, targetH - paddingBottom);
+        ctx.restore();
+      }
+
+      // 6. Ekspor ke Blob JPEG ~300KB
+      const base64File = canvas.toDataURL("image/jpeg", 0.78);
+
+      // Update counter lokal
+      const nextTaken = shotsTaken + 1;
+      setShotsTaken(nextTaken);
+      if (typeof window !== "undefined") {
+        localStorage.setItem(`lux_shots_taken_${invitationId}_${guestToken}`, String(nextTaken));
+      }
+
+      // 7. Unggah ke Server
+      uploadSnappedPhoto(base64File);
+
+      // 8. Cooldown Jeda Antar-Jepretan (Simulasi Film Winding & Flash Capacitor Recharge)
       setIsSnapping(false);
-    }, 700);
+      setIsWinding(true);
+      playWindingSound();
+      setTimeout(() => {
+        setIsWinding(false);
+      }, 1500);
+    } finally {
+      // WAJIB: Pastikan senter fisik selalu dimatikan kembali di blok finally
+      if (torchTriggered && track) {
+        try {
+          await (track as any).applyConstraints({ advanced: [{ torch: false }] });
+        } catch {}
+      }
+    }
   };
 
   // ── 5. DISPATCH UPLOAD KE BACKEND ──
@@ -622,20 +675,26 @@ export default function DisposableCameraViewfinder({
     reader.readAsDataURL(file);
   };
 
-  // Simpan Identitas Tamu
+  // Simpan Identitas Tamu (Nama Wajib Diisi)
   const saveGuestIdentity = (e: React.FormEvent) => {
     e.preventDefault();
-    if (typeof window !== "undefined") {
-      localStorage.setItem(`lux_guest_name_${invitationId}`, senderName);
-      localStorage.setItem(`lux_guest_msg_${invitationId}`, guestMessage);
+    const cleanName = senderName.trim();
+    if (!cleanName || cleanName.length < 2) {
+      setToastMessage("Silakan masukkan nama lengkap atau panggilan Anda (minimal 2 karakter).");
+      return;
     }
+    if (typeof window !== "undefined") {
+      localStorage.setItem(`lux_guest_name_${invitationId}`, cleanName);
+      localStorage.setItem(`lux_guest_msg_${invitationId}`, guestMessage.trim());
+    }
+    setSenderName(cleanName);
     setShowIdentityModal(false);
     if (!hasStartedCamera) {
       setHasStartedCamera(true);
     }
   };
 
-  // Komponen Modal Identitas Tamu
+  // Komponen Modal Identitas Tamu (Nama Wajib - Tanpa Tombol Lewati pada Pembuka Awal)
   const renderIdentityModal = () => (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
       <div className={`w-full max-w-sm ${themeStyles.modalBg} rounded-3xl p-6 shadow-2xl space-y-4 border`}>
@@ -644,21 +703,24 @@ export default function DisposableCameraViewfinder({
             Identitas Roll Kenangan
           </span>
           <h3 className="text-base font-serif font-bold">
-            {senderName ? "Perbarui Identitas" : "Siapa Nama Anda?"}
+            {hasStartedCamera ? "Perbarui Identitas" : "Siapa Nama Anda?"}
           </h3>
           <p className="text-xs opacity-70 mt-1">
-            Nama ini akan disematkan pada tumpukan foto Anda di galeri kenangan bersama.
+            {hasStartedCamera
+              ? "Ubah nama atau pesan doa yang disematkan pada foto kenangan Anda."
+              : "Nama Anda wajib diisi agar pengantin dan keluarga dapat mengenali momen yang Anda abadikan."}
           </p>
         </div>
 
         <form onSubmit={saveGuestIdentity} className="space-y-3">
           <div>
             <label className="block text-[11px] font-bold opacity-75 uppercase tracking-wider mb-1">
-              Nama Lengkap / Panggilan:
+              Nama Lengkap / Panggilan <span className="text-amber-600 dark:text-amber-400">*</span>:
             </label>
             <input
               type="text"
               required
+              minLength={2}
               value={senderName}
               onChange={(e) => setSenderName(e.target.value)}
               placeholder="Misal: Budi Santoso"
@@ -680,23 +742,22 @@ export default function DisposableCameraViewfinder({
           </div>
 
           <div className="pt-2 flex gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setShowIdentityModal(false);
-                if (!hasStartedCamera) {
-                  setHasStartedCamera(true);
-                }
-              }}
-              className="flex-1 py-2.5 bg-stone-200/80 hover:bg-stone-300 text-stone-700 font-bold rounded-xl text-xs transition cursor-pointer"
-            >
-              {hasStartedCamera ? "Tutup" : "Lewati"}
-            </button>
+            {hasStartedCamera && (
+              <button
+                type="button"
+                onClick={() => setShowIdentityModal(false)}
+                className="flex-1 py-2.5 bg-stone-200/80 hover:bg-stone-300 text-stone-700 font-bold rounded-xl text-xs transition cursor-pointer"
+              >
+                Batal
+              </button>
+            )}
             <button
               type="submit"
-              className="flex-1 py-2.5 bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-xl text-xs transition cursor-pointer shadow"
+              className={`bg-stone-900 hover:bg-stone-800 text-white font-bold rounded-xl text-xs transition cursor-pointer shadow ${
+                hasStartedCamera ? "flex-1 py-2.5" : "w-full py-3"
+              }`}
             >
-              {hasStartedCamera ? "Simpan Perubahan" : "Buka Kamera →"}
+              {hasStartedCamera ? "Simpan Perubahan" : "Lanjut ke Kamera →"}
             </button>
           </div>
         </form>
@@ -736,7 +797,7 @@ export default function DisposableCameraViewfinder({
           isSessionActive={isSessionActive}
           isAllFinished={isAllFinished}
           onStartCamera={() => {
-            if (!senderName) {
+            if (!senderName || !senderName.trim()) {
               setShowIdentityModal(true);
             } else {
               setHasStartedCamera(true);
@@ -924,15 +985,15 @@ export default function DisposableCameraViewfinder({
                 : "bg-stone-800/50 border-stone-600/50 text-stone-400 hover:text-stone-200"
             }`}
             aria-label={flashOn ? "Matikan Flash" : "Nyalakan Flash"}
-            title={flashOn ? "Flash ON" : "Flash OFF"}
+            title={flashOn ? "Flash ON (Blitz Aktif saat Jepret)" : "Flash OFF"}
           >
             <svg className="w-4 h-4" fill={flashOn ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
           </button>
 
-          <span className="text-[10px] font-mono opacity-60 uppercase tracking-widest font-medium">
-            {isUnlimited ? "Unlimited Roll" : `Sisa ${remainingShots} Foto`}
+          <span className={`text-[10px] font-mono uppercase tracking-widest font-medium transition-colors duration-200 ${isWinding ? "text-amber-500 animate-pulse font-bold" : "opacity-60"}`}>
+            {isWinding ? "Menggulung Roll..." : (isUnlimited ? "Unlimited Roll" : `Sisa ${remainingShots} Foto`)}
           </span>
 
           <button
@@ -958,6 +1019,10 @@ export default function DisposableCameraViewfinder({
                 Lihat Galeri &rarr;
               </Link>
             </div>
+          ) : isWinding ? (
+            <span className="text-[9px] font-mono text-amber-500 font-bold uppercase tracking-widest animate-pulse">
+              Menggulung Roll Film...
+            </span>
           ) : (
             <span className="text-[9px] font-mono opacity-40 uppercase tracking-widest">Kamera Siap Digunakan</span>
           )}
@@ -978,11 +1043,18 @@ export default function DisposableCameraViewfinder({
             <button
               type="button"
               onClick={triggerSnap}
-              disabled={isSnapping || (!isUnlimited && remainingShots <= 0)}
+              disabled={isSnapping || isWinding || (!isUnlimited && remainingShots <= 0)}
               className={`w-18 h-18 rounded-full p-1 shadow-xl active:scale-95 transition disabled:opacity-40 cursor-pointer ${themeStyles.shutterRing}`}
-              aria-label="Ambil Foto"
+              aria-label={isWinding ? "Menggulung Roll..." : "Ambil Foto"}
+              title={isWinding ? "Menggulung Roll Film..." : "Ambil Foto"}
             >
-              <div className={`w-full h-full rounded-full bg-amber-500 hover:bg-amber-400 border-4 ${themeStyles.shutterInnerBorder} flex items-center justify-center shadow-inner`} />
+              <div className={`w-full h-full rounded-full bg-amber-500 hover:bg-amber-400 border-4 ${themeStyles.shutterInnerBorder} flex items-center justify-center shadow-inner relative overflow-hidden`}>
+                {isWinding && (
+                  <div className="absolute inset-0 bg-stone-900/40 flex items-center justify-center">
+                    <div className="w-5 h-5 border-2 border-white/80 border-t-transparent rounded-full animate-spin" />
+                  </div>
+                )}
+              </div>
             </button>
           </div>
 

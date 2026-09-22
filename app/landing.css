@@ -3509,6 +3509,12 @@
       margin-top: 0.2rem;
     }
 
+.lux-landing-root .exp-cta-wrap {
+      margin-top: 2.6rem;
+      display: flex;
+      align-items: center;
+    }
+
 .lux-landing-root .feature-text {
       display: flex;
       flex-direction: column;
@@ -4937,6 +4943,10 @@
       }
 
 .lux-landing-root .exp-icon-dock {
+        justify-content: center;
+      }
+
+.lux-landing-root .exp-cta-wrap {
         justify-content: center;
       }
 

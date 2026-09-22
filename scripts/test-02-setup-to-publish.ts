@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { prisma } from '../lib/prisma';
-import * as bcrypt from 'bcryptjs';
+import { encryptPin } from '../lib/pinEncryption';
+import { buildAndSavePublishedHtml } from '../lib/staticPublisher';
 
 async function runTest02() {
   console.log("🚀 [TEST-02] Memulai simulasi: Setup Undangan -> Publish...");
@@ -47,9 +48,9 @@ async function runTest02() {
       { title: "Lamaran", year: "2023", description: "Dia melamar saya di pantai..." }
     ]);
 
-    // 3. Generate PIN Resepsionis (hashed)
+    // 3. Generate PIN Resepsionis (Enkripsi simetris dua arah AES-256-GCM)
     const rawPin = "123456";
-    const hashedPin = await bcrypt.hash(rawPin, 10);
+    const encryptedPin = encryptPin(rawPin);
 
     // 4. Update data dan ubah status ke PUBLISHED
     const publishedInv = await prisma.invitation.update({
@@ -57,7 +58,7 @@ async function runTest02() {
       data: {
         eventData: dummyEventData,
         loveStory: dummyLoveStory,
-        staffPin: hashedPin,
+        staffPin: encryptedPin,
         status: "PUBLISHED",
         publishedAt: new Date(),
         // Setup expires at (Contoh: 1 tahun sejak publish)
@@ -65,7 +66,11 @@ async function runTest02() {
       }
     });
 
-    console.log(`✅ Data Acara, Love Story, dan PIN berhasil disimpan.`);
+    // 4b. Bakar HTML Statis Kanonikal ke disk (Single Source of Truth)
+    await buildAndSavePublishedHtml(publishedInv.id);
+
+    console.log(`✅ Data Acara, Love Story, dan PIN (AES-256-GCM) berhasil disimpan.`);
+    console.log(`✅ HTML Statis Kanonikal berhasil dibakar ke public/published/ids/${publishedInv.id}.html.`);
     console.log(`✅ Status Undangan berhasil diubah menjadi: ${publishedInv.status}`);
     console.log(`✅ Undangan berhasil diterbitkan! Slug: /${publishedInv.invitationSlug}`);
     
@@ -105,6 +110,7 @@ async function runTest02() {
 
   } catch (err) {
     console.error("❌ Terjadi kesalahan:", err);
+    process.exit(1);
   } finally {
     await prisma.$disconnect();
   }

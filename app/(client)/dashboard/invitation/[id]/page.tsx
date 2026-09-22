@@ -4889,6 +4889,90 @@ export default function EditInvitation() {
               </div>
             </div>
 
+            {/* Group 4: Judul & Eyebrow Seksi Undangan */}
+            <div className="space-y-3 pt-3 border-t border-stone-100">
+              <h4 className="text-xs font-bold text-stone-900 uppercase tracking-wider text-amber-950 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+                Judul &amp; Eyebrow Seksi Undangan (Universal Label)
+              </h4>
+              <p className="text-[11px] text-stone-500">Kustomisasi judul, subjudul, dan teks pengantar di seluruh seksi undangan sesuai konsep acara Anda.</p>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+                <Input
+                  label="Judul Seksi Mempelai"
+                  value={getCustomLabel("coupleTitle", activeBlueprint?.coupleSectionTitle || "Mempelai")}
+                  onChange={(v) => updateCustomLabel("coupleTitle", v)}
+                  placeholder={activeBlueprint?.coupleSectionTitle || "Mempelai / The Couple"}
+                />
+                <Input
+                  label="Eyebrow Seksi Mempelai"
+                  value={getCustomLabel("coupleEyebrow", activeBlueprint?.coupleSectionEyebrow || "THE COUPLE")}
+                  onChange={(v) => updateCustomLabel("coupleEyebrow", v)}
+                  placeholder={activeBlueprint?.coupleSectionEyebrow || "DUA INSAN / THE COUPLE"}
+                />
+                <Input
+                  label="Judul Seksi Rangkaian Acara"
+                  value={getCustomLabel("eventsTitle", activeBlueprint?.eventsSectionTitle || "Rangkaian Acara")}
+                  onChange={(v) => updateCustomLabel("eventsTitle", v)}
+                  placeholder={activeBlueprint?.eventsSectionTitle || "Rangkaian Acara / Schedule"}
+                />
+                <Input
+                  label="Eyebrow Seksi Rangkaian Acara"
+                  value={getCustomLabel("eventsEyebrow", activeBlueprint?.eventsSectionEyebrow || "AGENDA ACARA")}
+                  onChange={(v) => updateCustomLabel("eventsEyebrow", v)}
+                  placeholder={activeBlueprint?.eventsSectionEyebrow || "AGENDA ACARA / SAVE THE DATE"}
+                />
+                <Input
+                  label="Eyebrow Kisah Kasih (Story)"
+                  value={getCustomLabel("storyEyebrow", activeBlueprint?.storySectionEyebrow || "OUR JOURNEY")}
+                  onChange={(v) => updateCustomLabel("storyEyebrow", v)}
+                  placeholder={activeBlueprint?.storySectionEyebrow || "OUR JOURNEY / KISAH KASIH"}
+                />
+                <Input
+                  label="Eyebrow Galeri Momen"
+                  value={getCustomLabel("galleryEyebrow", activeBlueprint?.gallerySectionEyebrow || "MOMEN BAHAGIA")}
+                  onChange={(v) => updateCustomLabel("galleryEyebrow", v)}
+                  placeholder={activeBlueprint?.gallerySectionEyebrow || "MOMEN BAHAGIA / GALLERY"}
+                />
+                <Input
+                  label="Judul Seksi Tanda Kasih / Kado"
+                  value={getCustomLabel("giftTitle", activeBlueprint?.giftSectionTitle || "Tanda Kasih")}
+                  onChange={(v) => updateCustomLabel("giftTitle", v)}
+                  placeholder={activeBlueprint?.giftSectionTitle || "Tanda Kasih / Wedding Gift"}
+                />
+                <Input
+                  label="Eyebrow Tanda Kasih"
+                  value={getCustomLabel("giftEyebrow", activeBlueprint?.giftSectionEyebrow || "WEDDING GIFT")}
+                  onChange={(v) => updateCustomLabel("giftEyebrow", v)}
+                  placeholder={activeBlueprint?.giftSectionEyebrow || "WEDDING GIFT / KADO DIGITAL"}
+                />
+                <Input
+                  label="Judul Turut Mengundang"
+                  value={getCustomLabel("turutMengundangTitle", activeBlueprint?.turutMengundangTitle || "Turut Mengundang")}
+                  onChange={(v) => updateCustomLabel("turutMengundangTitle", v)}
+                  placeholder={activeBlueprint?.turutMengundangTitle || "Turut Mengundang / Honored Guests"}
+                />
+                <Input
+                  label="Eyebrow Turut Mengundang"
+                  value={getCustomLabel("turutMengundangEyebrow", activeBlueprint?.turutMengundangEyebrow || "KELUARGA BESAR")}
+                  onChange={(v) => updateCustomLabel("turutMengundangEyebrow", v)}
+                  placeholder={activeBlueprint?.turutMengundangEyebrow || "KELUARGA BESAR / WITH RESPECT"}
+                />
+                <Input
+                  label="Judul Buku Tamu & Kehadiran"
+                  value={getCustomLabel("wishesTitle", activeBlueprint?.wishesSectionTitle || "Buku Tamu & Kehadiran")}
+                  onChange={(v) => updateCustomLabel("wishesTitle", v)}
+                  placeholder={activeBlueprint?.wishesSectionTitle || "Buku Tamu & Kehadiran / Guest Book"}
+                />
+                <Input
+                  label="Eyebrow Buku Tamu"
+                  value={getCustomLabel("wishesEyebrow", "WISHES & RSVP")}
+                  onChange={(v) => updateCustomLabel("wishesEyebrow", v)}
+                  placeholder="WISHES & RSVP / DOA RESTU"
+                />
+              </div>
+            </div>
+
             <div className="pt-4 border-t border-stone-100 flex justify-end">
               <button
                 type="button"

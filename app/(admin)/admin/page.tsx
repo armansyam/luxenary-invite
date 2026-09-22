@@ -3374,8 +3374,9 @@ export default function AdminPage() {
                               {(() => {
                                 const gw = settingsMap["active_payment_gateway"] || "midtrans";
                                 const isSandbox =
-                                  (gw === "midtrans" && (settingsMap["midtrans_server_key"] || "").startsWith("SB-")) ||
-                                  (gw === "xendit" && (settingsMap["xendit_api_key"] || "").startsWith("xnd_development"));
+                                  gw === "midtrans"
+                                    ? (settingsMap["midtrans_environment"] || "sandbox") === "sandbox"
+                                    : (settingsMap["xendit_api_key"] || "").startsWith("xnd_development");
                                 return isSandbox ? (
                                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 border border-slate-300">
                                     <span className="w-1.5 h-1.5 rounded-full bg-slate-500 animate-pulse"></span>
@@ -3574,32 +3575,40 @@ export default function AdminPage() {
                     description="Konfigurasi Midtrans Snap — payment gateway resmi berlisensi Bank Indonesia (GoTo Group)."
                     isEditing={Boolean(editSection["midtrans"])}
                     onEdit={() => toggleEditSection("midtrans")}
-                    onCancel={() => cancelEdit("midtrans", ["midtrans_server_key", "midtrans_client_key"])}
-                    onSave={() => saveSettings(["midtrans_server_key", "midtrans_client_key"], setSavingMidtrans, "midtrans")}
+                    onCancel={() => cancelEdit("midtrans", ["midtrans_environment", "midtrans_sandbox_client_key", "midtrans_sandbox_server_key", "midtrans_production_client_key", "midtrans_production_server_key"])}
+                    onSave={() => saveSettings(["midtrans_environment", "midtrans_sandbox_client_key", "midtrans_sandbox_server_key", "midtrans_production_client_key", "midtrans_production_server_key"], setSavingMidtrans, "midtrans")}
                     saving={savingMidtrans}
-                    isDirty={isSectionDirty(["midtrans_server_key", "midtrans_client_key"])}
+                    isDirty={isSectionDirty(["midtrans_environment", "midtrans_sandbox_client_key", "midtrans_sandbox_server_key", "midtrans_production_client_key", "midtrans_production_server_key"])}
                     saveSuccess={settingsSaved["midtrans"]}
                     saveSuccessMessage="Pengaturan Midtrans berhasil disimpan"
                     viewContent={
                       <div className="space-y-3">
                         {/* ── Badge Mode Gateway Midtrans ── */}
                         {(() => {
-                          const sk = settingsMap["midtrans_server_key"] || "";
-                          if (!sk) return (
+                          const isSandbox = (settingsMap["midtrans_environment"] || "sandbox") === "sandbox";
+                          const activeSk = isSandbox
+                            ? (settingsMap["midtrans_sandbox_server_key"] || settingsMap["midtrans_server_key"] || "").trim()
+                            : (settingsMap["midtrans_production_server_key"] || "").trim();
+
+                          if (!activeSk) return (
                             <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-rose-50 border border-rose-200">
                               <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0"></span>
                               <div>
-                                <span className="text-xs font-bold text-rose-700 uppercase tracking-wider">Belum Dikonfigurasi</span>
-                                <span className="text-[10px] text-rose-500 block mt-0.5">Klik Edit lalu isi Server Key dan Client Key dari dashboard Midtrans.</span>
+                                <span className="text-xs font-bold text-rose-700 uppercase tracking-wider">
+                                  {isSandbox ? "Sandbox Belum Dikonfigurasi" : "Produksi Belum Dikonfigurasi"}
+                                </span>
+                                <span className="text-[10px] text-rose-500 block mt-0.5">
+                                  Klik Ubah lalu isi Client Key dan Server Key pada slot {isSandbox ? "Sandbox" : "Produksi"}.
+                                </span>
                               </div>
                             </div>
                           );
-                          if (sk.startsWith("SB-")) return (
+                          if (isSandbox) return (
                             <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-slate-100 border border-slate-300">
                               <span className="w-2.5 h-2.5 rounded-full bg-slate-500 animate-pulse shrink-0"></span>
                               <div>
                                 <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Sandbox — Simulator Aktif</span>
-                                <span className="text-[10px] text-slate-500 block mt-0.5">Transaksi fiktif — tidak ada uang asli terpotong. Gunakan kartu uji coba Midtrans Sandbox.</span>
+                                <span className="text-[10px] text-slate-500 block mt-0.5">Transaksi fiktif — tidak ada uang asli terpotong. Terhubung ke server simulator (api.sandbox.midtrans.com).</span>
                               </div>
                             </div>
                           );
@@ -3608,39 +3617,85 @@ export default function AdminPage() {
                               <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0"></span>
                               <div>
                                 <span className="text-xs font-bold text-amber-800 uppercase tracking-wider">Production — Live Gateway</span>
-                                <span className="text-[10px] text-amber-700 block mt-0.5">Transaksi nyata aktif — setiap pembayaran memotong saldo rekening bank klien secara langsung.</span>
+                                <span className="text-[10px] text-amber-700 block mt-0.5">Transaksi nyata aktif — setiap pembayaran memotong saldo rekening bank klien secara langsung (api.midtrans.com).</span>
                               </div>
                             </div>
                           );
                         })()}
 
-                        {/* ── Peringatan Client Key Tertukar ── */}
-                        {(() => {
-                          const sk = settingsMap["midtrans_server_key"] || "";
-                          const ck = settingsMap["midtrans_client_key"] || "";
-                          const ckLooksLikeServerKey = ck && (ck.startsWith("Mid-server-") || ck.startsWith("SB-Mid-server-"));
-                          if (!ckLooksLikeServerKey) return null;
-                          return (
-                            <div className="flex items-start gap-2 px-3.5 py-2.5 rounded-xl bg-rose-50 border border-rose-200">
-                              <svg className="w-3.5 h-3.5 text-rose-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
-                              <span className="text-xs text-rose-700 font-medium">Client Key terisi dengan Server Key. Harusnya berawalan <code className="font-mono bg-rose-100 px-1 rounded">Mid-client-...</code> atau <code className="font-mono bg-rose-100 px-1 rounded">SB-Mid-client-...</code> — ambil dari Midtrans Dashboard → Settings → Access Keys.</span>
-                            </div>
-                          );
-                        })()}
+                        {/* ── Ringkasan Kredensial Dual Slot (Sandbox & Produksi) ── */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {/* Slot Sandbox */}
+                          {(() => {
+                            const isCurrentActive = (settingsMap["midtrans_environment"] || "sandbox") === "sandbox";
+                            const sbCk = settingsMap["midtrans_sandbox_client_key"] || settingsMap["midtrans_client_key"] || "";
+                            const sbSk = settingsMap["midtrans_sandbox_server_key"] || settingsMap["midtrans_server_key"] || "";
+                            return (
+                              <div className={`p-3.5 rounded-xl border transition ${
+                                isCurrentActive
+                                  ? "bg-slate-50/90 border-slate-300 ring-1 ring-slate-400"
+                                  : "bg-gray-50/60 border-gray-200 opacity-75"
+                              }`}>
+                                <div className="flex items-center justify-between gap-2 mb-2.5">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className={`w-2 h-2 rounded-full ${isCurrentActive ? "bg-slate-600 animate-pulse" : "bg-gray-300"}`}></span>
+                                    <span className="text-xs font-bold text-gray-900">Slot Sandbox (Simulator)</span>
+                                  </div>
+                                  {isCurrentActive && (
+                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-200 text-slate-800 border border-slate-300">
+                                      Sedang Aktif
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="space-y-1.5 text-xs">
+                                  <div>
+                                    <span className="text-gray-500 block text-[11px]">Client Key:</span>
+                                    <span className="font-mono font-medium text-gray-900">{sbCk ? "••••••••••••" : <em className="text-gray-400 font-sans font-normal">Belum diatur</em>}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-500 block text-[11px]">Server Key:</span>
+                                    <span className="font-mono font-medium text-gray-900">{sbSk ? "••••••••••••" : <em className="text-gray-400 font-sans font-normal">Belum diatur</em>}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })()}
 
-                        <div className="p-3 bg-white rounded-xl border border-gray-200 space-y-2">
-                          <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                            <span>Kredensial API Midtrans</span>
-                          </div>
-                          <div className="text-xs">
-                            <span className="text-gray-500 block">Server Key:</span>
-                            <span className="font-mono font-medium text-gray-900">{settingsMap["midtrans_server_key"] ? "••••••••••••" : <em className="text-gray-400 font-sans font-normal">Belum diatur</em>}</span>
-                          </div>
-                          <div className="text-xs">
-                            <span className="text-gray-500 block">Client Key:</span>
-                            <span className="font-mono font-medium text-gray-900">{settingsMap["midtrans_client_key"] ? "••••••••••••" : <em className="text-gray-400 font-sans font-normal">Belum diatur</em>}</span>
-                          </div>
+                          {/* Slot Produksi */}
+                          {(() => {
+                            const isCurrentActive = (settingsMap["midtrans_environment"] || "sandbox") === "production";
+                            const prodCk = settingsMap["midtrans_production_client_key"] || "";
+                            const prodSk = settingsMap["midtrans_production_server_key"] || "";
+                            return (
+                              <div className={`p-3.5 rounded-xl border transition ${
+                                isCurrentActive
+                                  ? "bg-emerald-50/70 border-emerald-400 ring-1 ring-emerald-500"
+                                  : "bg-gray-50/60 border-gray-200 opacity-75"
+                              }`}>
+                                <div className="flex items-center justify-between gap-2 mb-2.5">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className={`w-2 h-2 rounded-full ${isCurrentActive ? "bg-emerald-600" : "bg-gray-300"}`}></span>
+                                    <span className="text-xs font-bold text-gray-900">Slot Produksi (Live)</span>
+                                  </div>
+                                  {isCurrentActive && (
+                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                      Sedang Aktif
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="space-y-1.5 text-xs">
+                                  <div>
+                                    <span className="text-gray-500 block text-[11px]">Client Key:</span>
+                                    <span className="font-mono font-medium text-gray-900">{prodCk ? "••••••••••••" : <em className="text-gray-400 font-sans font-normal">Belum diatur</em>}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-gray-500 block text-[11px]">Server Key:</span>
+                                    <span className="font-mono font-medium text-gray-900">{prodSk ? "••••••••••••" : <em className="text-gray-400 font-sans font-normal">Belum diatur</em>}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </div>
 
                         <div className="p-3 bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-between gap-2 text-xs flex-wrap">
@@ -3655,24 +3710,107 @@ export default function AdminPage() {
                       </div>
                     }
                   >
-                    <div className="p-4 bg-emerald-50/50 rounded-xl border border-emerald-200 space-y-4">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
-                        <h4 className="text-xs font-bold text-emerald-900 uppercase tracking-wider">Kredensial Midtrans</h4>
+                    <div className="space-y-5">
+                      {/* Mode Lingkungan Selector */}
+                      <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
+                          <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider">Mode Lingkungan Aktif</h4>
+                        </div>
+                        <p className="text-xs text-gray-500">Pilih lingkungan yang aktif digunakan untuk memproses transaksi. Kedua slot kredensial tetap tersimpan aman di bawah.</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {[
+                            { id: "sandbox", label: "Sandbox (Simulator)", desc: "Gunakan untuk uji coba/testing pembayaran fiktif (api.sandbox.midtrans.com)" },
+                            { id: "production", label: "Produksi (Live)", desc: "Gunakan saat siap menerima pembayaran asli dari rekening klien (api.midtrans.com)" },
+                          ].map((envOpt) => (
+                            <button
+                              key={envOpt.id}
+                              type="button"
+                              onClick={() => setSetting("midtrans_environment", envOpt.id)}
+                              className={`p-3.5 rounded-xl border text-left transition cursor-pointer ${
+                                (settingsMap["midtrans_environment"] || "sandbox") === envOpt.id
+                                  ? "border-emerald-600 bg-emerald-50 text-emerald-950 ring-1 ring-emerald-500 shadow-2xs"
+                                  : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
+                              }`}
+                            >
+                              <div className="flex items-center gap-1.5">
+                                <span className={`w-2 h-2 rounded-full ${envOpt.id === "sandbox" ? "bg-slate-500" : "bg-emerald-500"}`}></span>
+                                <span className="text-xs font-bold">{envOpt.label}</span>
+                              </div>
+                              <span className="text-[11px] text-gray-500 block mt-1 leading-relaxed">{envOpt.desc}</span>
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                      <FieldRow label="Server Key" description="Midtrans Dashboard → Settings → Access Keys. Sandbox: SB-Mid-server-xxx | Production: Mid-server-xxx">
-                        <input type="password" value={settingsMap["midtrans_server_key"] || ""} onChange={(e) => setSetting("midtrans_server_key", e.target.value)}
-                          placeholder="SB-Mid-server-xxx (sandbox) atau Mid-server-xxx (production)"
-                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs" />
-                      </FieldRow>
-                      <FieldRow label="Client Key" description="Midtrans Dashboard → Settings → Access Keys. Sandbox: SB-Mid-client-xxx | Production: Mid-client-xxx">
-                        <input type="text" value={settingsMap["midtrans_client_key"] || ""} onChange={(e) => setSetting("midtrans_client_key", e.target.value)}
-                          placeholder="SB-Mid-client-xxx (sandbox) atau Mid-client-xxx (production)"
-                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs" />
-                      </FieldRow>
+
+                      {/* Slot 1: Kredensial Sandbox */}
+                      <div className="p-4 bg-slate-50/70 rounded-xl border border-slate-200 space-y-4">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-slate-600"></span>
+                            <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Kredensial Sandbox (Simulator)</h4>
+                          </div>
+                          <span className="text-[10px] font-mono text-slate-500 bg-slate-200/70 px-2 py-0.5 rounded border border-slate-300">
+                            api.sandbox.midtrans.com
+                          </span>
+                        </div>
+
+                        <FieldRow label="Client Key (Sandbox)" description="Midtrans Sandbox Dashboard → Settings → Access Keys">
+                          <input
+                            type="text"
+                            value={settingsMap["midtrans_sandbox_client_key"] ?? settingsMap["midtrans_client_key"] ?? ""}
+                            onChange={(e) => setSetting("midtrans_sandbox_client_key", e.target.value.trim())}
+                            placeholder="Mid-client-xxxxxxxxxxxx"
+                            className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
+                          />
+                        </FieldRow>
+
+                        <FieldRow label="Server Key (Sandbox)" description="Midtrans Sandbox Dashboard → Settings → Access Keys">
+                          <input
+                            type="password"
+                            value={settingsMap["midtrans_sandbox_server_key"] ?? settingsMap["midtrans_server_key"] ?? ""}
+                            onChange={(e) => setSetting("midtrans_sandbox_server_key", e.target.value.trim())}
+                            placeholder="Mid-server-xxxxxxxxxxxx"
+                            className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
+                          />
+                        </FieldRow>
+                      </div>
+
+                      {/* Slot 2: Kredensial Produksi */}
+                      <div className="p-4 bg-emerald-50/50 rounded-xl border border-emerald-200 space-y-4">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
+                            <h4 className="text-xs font-bold text-emerald-900 uppercase tracking-wider">Kredensial Produksi (Live)</h4>
+                          </div>
+                          <span className="text-[10px] font-mono text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300">
+                            api.midtrans.com
+                          </span>
+                        </div>
+
+                        <FieldRow label="Client Key (Produksi)" description="Midtrans Production Dashboard → Settings → Access Keys">
+                          <input
+                            type="text"
+                            value={settingsMap["midtrans_production_client_key"] || ""}
+                            onChange={(e) => setSetting("midtrans_production_client_key", e.target.value.trim())}
+                            placeholder="Mid-client-xxxxxxxxxxxx"
+                            className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
+                          />
+                        </FieldRow>
+
+                        <FieldRow label="Server Key (Produksi)" description="Midtrans Production Dashboard → Settings → Access Keys">
+                          <input
+                            type="password"
+                            value={settingsMap["midtrans_production_server_key"] || ""}
+                            onChange={(e) => setSetting("midtrans_production_server_key", e.target.value.trim())}
+                            placeholder="Mid-server-xxxxxxxxxxxx"
+                            className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
+                          />
+                        </FieldRow>
+                      </div>
                     </div>
 
-                    <FieldRow label="URL Webhook (Otomatis)" description="Daftarkan URL ini di Midtrans Dashboard → Settings → Configuration → Notification URL">
+                    <FieldRow label="URL Webhook (Otomatis)" description="Daftarkan URL ini di Midtrans Dashboard → Settings → Configuration → Notification URL (berlaku untuk Sandbox maupun Produksi)">
                       <div className="flex items-center gap-2">
                         <input type="text" readOnly value={`${settingsMap["platform_url"] || currentOrigin}/api/webhook/midtrans`}
                           className="flex-1 px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm font-mono bg-gray-100 text-gray-900 font-semibold shadow-2xs" />
@@ -4627,17 +4765,17 @@ export default function AdminPage() {
                   {/* Limit Upload Media & Galeri */}
                   <SettingsCard
                     title="Batas Upload Media &amp; Galeri"
-                    description="Tentukan batas ukuran file maksimum untuk media video &amp; foto di Studio Klien serta foto yang diunggah oleh tamu."
+                    description="Tentukan batas ukuran berkas maksimum untuk media video dan foto yang diunggah oleh calon pengantin di Studio Editor."
                     isEditing={Boolean(editSection["upload_limit"])}
                     onEdit={() => toggleEditSection("upload_limit")}
-                    onCancel={() => cancelEdit("upload_limit", ["max_upload_mb", "max_video_upload_mb", "max_photo_upload_mb"])}
-                    onSave={() => saveSettings(["max_upload_mb", "max_video_upload_mb", "max_photo_upload_mb"], setSavingPlatformCustom, "upload_limit")}
+                    onCancel={() => cancelEdit("upload_limit", ["max_video_upload_mb", "max_photo_upload_mb"])}
+                    onSave={() => saveSettings(["max_video_upload_mb", "max_photo_upload_mb"], setSavingPlatformCustom, "upload_limit")}
                     saving={savingPlatformCustom}
-                    isDirty={isSectionDirty(["max_upload_mb", "max_video_upload_mb", "max_photo_upload_mb"])}
+                    isDirty={isSectionDirty(["max_video_upload_mb", "max_photo_upload_mb"])}
                     saveSuccess={settingsSaved["upload_limit"]}
                     saveSuccessMessage="Batas upload berhasil disimpan"
                     viewContent={
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200">
                           <span className="text-xs text-gray-500 font-medium block">Video Studio Klien</span>
                           <div className="flex items-baseline gap-1 mt-1">
@@ -4649,13 +4787,6 @@ export default function AdminPage() {
                           <span className="text-xs text-gray-500 font-medium block">Foto Studio Klien</span>
                           <div className="flex items-baseline gap-1 mt-1">
                             <span className="text-2xl font-mono font-bold text-gray-900">{settingsMap["max_photo_upload_mb"] || "15"}</span>
-                            <span className="text-xs text-gray-500 font-medium">MB</span>
-                          </div>
-                        </div>
-                        <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200">
-                          <span className="text-xs text-gray-500 font-medium block">Foto Tamu (Memories)</span>
-                          <div className="flex items-baseline gap-1 mt-1">
-                            <span className="text-2xl font-mono font-bold text-gray-900">{settingsMap["max_upload_mb"] || "5"}</span>
                             <span className="text-xs text-gray-500 font-medium">MB</span>
                           </div>
                         </div>
@@ -4687,19 +4818,6 @@ export default function AdminPage() {
                             className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 transition shadow-2xs max-w-[200px]"
                           />
                           <p className="text-[11px] text-gray-500">Maksimal ukuran foto JPG/PNG/WebP sebelum dikompresi otomatis ke WebP.</p>
-                        </div>
-                      </FieldRow>
-                      <FieldRow label="Batas Foto Tamu Memories (MB)">
-                        <div className="space-y-1">
-                          <input
-                            type="number"
-                            min="1"
-                            max="50"
-                            value={settingsMap["max_upload_mb"] || "5"}
-                            onChange={(e) => setSetting("max_upload_mb", e.target.value)}
-                            className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 transition shadow-2xs max-w-[200px]"
-                          />
-                          <p className="text-[11px] text-gray-500">Batas ukuran foto yang diunggah oleh tamu di halaman galeri kenangan.</p>
                         </div>
                       </FieldRow>
                     </div>

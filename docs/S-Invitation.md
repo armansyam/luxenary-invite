@@ -345,7 +345,8 @@ Siklus hidup undangan diatur secara otomatis oleh cron job (`POST /api/cron/clea
    - **Formulir Studio Editor (`/dashboard/invitation/[id]` Seksi 14):** Styling & konfigurasi seksi: Toggle aktif (`showGuestMemories`), Judul Seksi, Eyebrow, Deskripsi, Mode Pengambilan (Disposable Camera vs Standard Form), Pilihan 5 Filter Analog (`aura_90s`, `heritage_romance`, `botanical_mist`, `cinema_noir`, `pure_daylight`), Toggle & Format LED Date Stamp (`#e8875a`), Kuota Dinamis Tamu Pengunggah (`memoriesMaxContributors`), Jatah Roll per Tamu bebas hingga 30 foto (`memoriesShotsQuota`), Jadwal Kamera Aktif Mandiri, dan Toggle Kamar Gelap Digital (*Delayed Reveal*).
    - **Dashboard Klien (`/dashboard` Seksi 5 & Card 4):** Pusat operasional & monitoring momen tamu: tautan album kenangan, widget unduh arsip ZIP client-side, status kuota real-time, rincian masa simpan transparan (*Masa Aktif: Base Days (Default) + Perpanjangan (XH) : Tanggal Mulai s.d. Tanggal Expired*), tombol & modal *Atur Jatah Roll Tamu* dengan estimasi kapasitas dinamis `~Floor(Sisa_Pool / Jatah_Roll) Tamu`, dan *Unified Addon Modal* bertema Warm Editorial Ivory & Royal Amber Gold untuk top-up kuota foto (+100, +250, +500), perpanjangan masa galeri (+30 hari via QRIS), dan upgrade tier paket.
    - **Fitur Kamera Disposable Retro & Galeri Masonry Roll Stack (Opsi B):**
-     - Foto dikompresi client-side Canvas menjadi WebP/JPEG ringan (~300KB) dengan filter analog terpilih dan cap tanggal oranye retro analog.
+     - Foto dikompresi client-side Canvas menjadi WebP/JPEG ringan (~300KB) dengan filter analog terpilih dan cap tanggal oranye retro analog. Dilengkapi **Strobe Pulse Flash Hardware Burst** (~120ms) dengan pemadaman mutlak di blok `finally` (tanpa lampu senter konstan saat membidik) dan **Film Winding Cooldown 1.5 Detik** dengan audio feedback mekanis sintetis untuk mencegah tabrakan promise / race condition pada driver kamera.
+     - **Hard Security Barrier 5 MB (Server-Side Anti-DoS):** Endpoint `/api/public/memories/upload` menerapkan batas pengaman internal mutlak 5 MB untuk menangkis eksploitasi payload mentah.
      - **Formula Kuota Acara, Invarian Anti-Hangus, & Smart Quota Boundary Guard:**
         - Kuota foto berpatokan pada Total Kuota Foto Acara (`memories_total_quota_{plan}`) dari Admin.
         - *Smart Quota Boundary Guard (Pembatas Kuota Multi-Sesi Real-Time):* Alokasi kuota per sesi di dasbor klien dibatasi otomatis (`Math.min(parsed, maxAllowed)`) terhadap sisa kuota yang belum dialokasikan ke sesi lain. Dilengkapi tombol toolbar *"Bagi Rata Kuota"* (membagi rata kuota ke seluruh sesi secara proporsional) dan *"Pakai Sisa (X)"* di tiap baris sesi. Backend API `/api/client/invitations/[id]/memories` menjamin validasi kuota server-side agar total alokasi tidak pernah melampaui `maxTotalPhotos`.
@@ -468,10 +469,10 @@ Platform mendukung arsitektur payment gateway 2-arah (*two-way handshake*) terin
 9. **Inline Action Confirmation (Zero Mouse Travel)**:
    - Tombol verifikasi konfirmasi lunas di portal `/admin` menerapkan *in-place micro-interaction* bebas dari popup browser `confirm()` dan `alert()`.
    - Tombol bertransisi halus di tempat menjadi `[Ya, Lunas]` dan `[Batal]` dengan auto-revert 5 detik.
-10. **Kredensial Tunggal Terpadu & Resolusi Endpoint Otomatis**:
-    - Gateway pembayaran (Midtrans dan Xendit) menggunakan set kredensial tunggal yang dikonfigurasi langsung di Portal Admin (`midtrans_server_key`, `midtrans_client_key`, `xendit_api_key`, `xendit_webhook_token`) tanpa konfigurasi mode ganda.
-    - Midtrans Gateway secara otomatis mendeteksi environment endpoint berdasarkan format server key yang dimasukkan: jika key diawali `SB-` (kunci sandbox Midtrans), panggilan diarahkan ke server simulator Midtrans (`api.sandbox.midtrans.com`); jika diawali format standar `Mid-`, otomatis diarahkan ke server produksi live (`api.midtrans.com`).
-    - Verifikasi signature webhook terpadu untuk memastikan callback transaksi terotentikasi secara presisi.
+10. **Dual Slot Kredensial & Mode Lingkungan Eksplisit Midtrans**:
+    - Midtrans Gateway menerapkan penyimpanan kredensial terpisah antara Sandbox (`midtrans_sandbox_client_key`, `midtrans_sandbox_server_key`) dan Produksi (`midtrans_production_client_key`, `midtrans_production_server_key`) dengan sinkronisasi otomatis ke key warisan (`midtrans_client_key`, `midtrans_server_key`).
+    - Mode lingkungan dikontrol secara deterministik melalui parameter `midtrans_environment` (`sandbox` atau `production`) tanpa ketergantungan rapuh pada prefix string `SB-`.
+    - Form antarmuka menyajikan Client Key di atas Server Key (1:1 dengan dashboard resmi Midtrans) dan verifikasi webhook mencakup Server Key dari kedua slot.
 11. **Sub-Tabs Vendor Payment Gateway di Admin Settings**:
     - Penyusunan form pengaturan 2 vendor gateway 2-arah ke dalam kontrol sub-tab segmented control horizontal (`Midtrans` dan `Xendit`).
     - Kartu global pusat kontrol tetap berada di posisi atas, sementara vendor cards diisolasi per tab sehingga antarmuka ringkas dan tidak memerlukan vertical scrolling panjang.
@@ -1142,3 +1143,11 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
 3. **Invarian 9 Slot Media & Aset Terisolasi:**
    - Setiap tema memiliki direktori demo terisolasi (`public/demo/{daerah}/`) dan folder ornamen mandiri (`public/assets/ornaments/{daerah}/`).
    - Mendukung penuh seluruh 9 slot media (`LANDING_COVER`, `LANDING_COVER_DESKTOP`, `HOME_PHOTO`, `DESKTOP_SIDEBAR`, `GLOBAL_FIXED_BG`, `GROOM_PHOTO`, `BRIDE_PHOTO`, `GALLERY`, `CLOSING_COVER`).
+
+## 28. Spesifikasi Pengujian Kesiapan Industri (v5.9.7)
+
+1. **Master Industrial-Grade QA Harness (`scripts/industrial-qa-suite.ts`):**
+   - Menghadirkan engine pengujian terpadu berstandar industri dengan 7 domain pengujian (Keamanan, Transaksi Finansial, Konkurensi Ekstrem, Invarian Penyimpanan, Render Matriks Tema, Indeks Database, dan Fault Tolerance).
+   - Dilengkapi benchmark latensi kueri database (p50, p95, p99) serta isolasi sandbox dengan jaminan zero-leak cleanup.
+   - Terintegrasi dengan skrip NPM `npm run test:industrial -- --suite=all` untuk otomatisasi pipeline CI/CD dan pre-deployment check.
+

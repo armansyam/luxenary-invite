@@ -270,9 +270,23 @@ async function main() {
     // CASE 6: Cron Cleanup & File Invariant (Pembersihan Tuntas Bebas Leak)
     // -------------------------------------------------------------------------
     console.log("\n▶ [CASE 6] Pengujian Siklus Pembersihan Cron (Anti-Disk Leak)...");
-    // Jalankan penghapusan file kanonikal HTML
+    // Invarian 1: Jalankan penghapusan file kanonikal HTML
     await deletePublishedHtml(testInvitation.id);
     const isHtmlDeleted = !fs.existsSync(publishedFilePath);
+
+    // Invarian 2: Hapus Draft HTML lokal jika ada
+    const draftFilePath = path.join(process.cwd(), "data", "drafts", `${testInvitation.id}.html`);
+    if (fs.existsSync(draftFilePath)) {
+      try { fs.unlinkSync(draftFilePath); } catch {}
+    }
+    const isDraftDeleted = !fs.existsSync(draftFilePath);
+
+    // Invarian 3: Hapus folder uploads fisik jika ada
+    const uploadsDir = path.join(process.cwd(), "public", "uploads", "invitations", testInvitation.id);
+    if (fs.existsSync(uploadsDir)) {
+      try { fs.rmSync(uploadsDir, { recursive: true, force: true }); } catch {}
+    }
+    const isUploadsDeleted = !fs.existsSync(uploadsDir);
 
     // Hapus relasi data uji coba secara atomik
     await prisma.guestMemory.deleteMany({ where: { invitationId: testInvitation.id } });
@@ -287,8 +301,8 @@ async function main() {
     const remainingInvs = await prisma.invitation.count({ where: { id: testInvitation.id } });
 
     results["CASE_6_CLEANUP_LIFECYCLE"] = {
-      pass: isHtmlDeleted && remainingOrders === 0 && remainingInvs === 0,
-      detail: `HTML File Disk Terhapus: ${isHtmlDeleted}, Sisa Data di PostgreSQL: 0 (Spotless)`,
+      pass: isHtmlDeleted && isDraftDeleted && isUploadsDeleted && remainingOrders === 0 && remainingInvs === 0,
+      detail: `File Disk (Published, Draft, Uploads) Terhapus: ${isHtmlDeleted && isDraftDeleted && isUploadsDeleted}, Sisa Data di PostgreSQL: 0 (Spotless)`,
     };
     console.log(`  ${results["CASE_6_CLEANUP_LIFECYCLE"].pass ? "✅" : "❌"} ${results["CASE_6_CLEANUP_LIFECYCLE"].detail}`);
 
@@ -309,6 +323,12 @@ async function main() {
   console.log("================================================================================");
   console.log(allPass ? "🎉 SELURUH SKENARIO UJI COBA BERHASIL 100% LOLOS!" : "⚠️ ADA PENGUJIAN YANG GAGAL!");
   console.log("================================================================================\n");
+  return allPass;
 }
 
-main();
+main().then((pass) => {
+  process.exit(pass ? 0 : 1);
+}).catch((err) => {
+  console.error("Fatal stress test error:", err);
+  process.exit(1);
+});

@@ -32,7 +32,18 @@ export async function POST(req: NextRequest) {
     if (process.env.MIDTRANS_SERVER_KEY) serverKeys.push(process.env.MIDTRANS_SERVER_KEY.trim());
     try {
       const settings = await prisma.adminSetting.findMany({
-        where: { key: { in: ["midtrans_server_key", "midtrans_client_key"] } },
+        where: {
+          key: {
+            in: [
+              "midtrans_server_key",
+              "midtrans_client_key",
+              "midtrans_sandbox_server_key",
+              "midtrans_sandbox_client_key",
+              "midtrans_production_server_key",
+              "midtrans_production_client_key",
+            ],
+          },
+        },
       });
       const map: Record<string, string> = {};
       settings.forEach((s) => (map[s.key] = s.value?.trim() || ""));
@@ -51,6 +62,8 @@ export async function POST(req: NextRequest) {
       }
 
       if (dbServerKey) serverKeys.push(dbServerKey);
+      if (map["midtrans_sandbox_server_key"]) serverKeys.push(map["midtrans_sandbox_server_key"]);
+      if (map["midtrans_production_server_key"]) serverKeys.push(map["midtrans_production_server_key"]);
       if (dbClientKey && (dbClientKey.startsWith("Mid-server-") || dbClientKey.startsWith("SB-Mid-server-"))) {
         serverKeys.push(dbClientKey);
       }

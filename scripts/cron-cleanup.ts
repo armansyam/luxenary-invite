@@ -1,14 +1,9 @@
-import { PrismaClient } from "@prisma/client";
-import { Pool } from 'pg';
-import { PrismaPg } from '@prisma/adapter-pg';
+import "dotenv/config";
+import { prisma, pool } from "../lib/prisma";
 import fs from "fs";
 import path from "path";
 import { isSubdomainExpired } from "../lib/domainUtils";
-
-const connectionString = process.env.DATABASE_URL;
-const pool = new Pool({ connectionString });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+import { deletePublishedHtml } from "../lib/staticPublisher";
 
 const DRY_RUN = process.argv.includes("--dry-run");
 
@@ -37,33 +32,29 @@ async function runCleanup() {
     console.log(`[CLEANUP] Ditemukan ${abandonedDrafts.length} undangan DRAFT yang diabaikan.`);
 
     const uploadsDir = path.join(process.cwd(), "public", "uploads", "invitations");
+    const draftsDir = path.join(process.cwd(), "data", "drafts");
     let totalDeleted = 0;
     let totalBytesFreed = 0;
 
     for (const draft of abandonedDrafts) {
       const draftFolder = path.join(uploadsDir, draft.id);
+      const draftHtmlFile = path.join(draftsDir, `${draft.id}.html`);
       
-      // Jika foldernya ada, hitung isinya lalu hapus
-      if (fs.existsSync(draftFolder)) {
-        const files = await fs.promises.readdir(draftFolder);
-        if (files.length > 0) {
-          console.log(`- Folder: ${draft.id} memiliki ${files.length} file usang.`);
-          
-          for (const file of files) {
-            const filePath = path.join(draftFolder, file);
-            const stats = await fs.promises.stat(filePath);
-            totalBytesFreed += stats.size;
-            
-            if (!DRY_RUN) {
-              await fs.promises.unlink(filePath);
-            }
-          }
-          
-          if (!DRY_RUN) {
-            await fs.promises.rmdir(draftFolder);
-          }
-          totalDeleted++;
+      // Hapus draft HTML fisik jika ada
+      if (fs.existsSync(draftHtmlFile)) {
+        const stat = await fs.promises.stat(draftHtmlFile);
+        totalBytesFreed += stat.size;
+        if (!DRY_RUN) {
+          try { await fs.promises.unlink(draftHtmlFile); } catch {}
         }
+      }
+
+      // Jika folder uploads ada, hapus seluruh isinya secara rekursif
+      if (fs.existsSync(draftFolder)) {
+        if (!DRY_RUN) {
+          try { await fs.promises.rm(draftFolder, { recursive: true, force: true }); } catch {}
+        }
+        totalDeleted++;
       }
     }
 
@@ -81,7 +72,7 @@ async function runCleanup() {
     
     const publishedInvitations = await prisma.invitation.findMany({
       where: {
-        status: "PUBLISHED",
+        status: { in: ["PUBLISHED", "EVENT_FINISHED"] },
         subdomain: { not: null }
       },
       select: {
@@ -92,7 +83,6 @@ async function runCleanup() {
     });
 
     let expiredCount = 0;
-    const publishedDir = path.join(process.cwd(), "public", "published");
 
     for (const inv of publishedInvitations) {
       if (isSubdomainExpired(inv.eventData, retentionDays)) {
@@ -100,22 +90,24 @@ async function runCleanup() {
         expiredCount++;
         
         if (!DRY_RUN) {
-          // 1. Hapus file fisik di public/published/ (TIDAK menghapus file di public/portfolio/)
-          const subPath = path.join(publishedDir, `${inv.subdomain}.html`);
-          try {
-            if (fs.existsSync(subPath)) {
-              await fs.promises.unlink(subPath);
-            }
-          } catch (e) {
-            console.error(`Gagal menghapus file statis untuk ${inv.subdomain}:`, e);
+          // 1. Hapus Single Source of Truth Canonical HTML (public/published/ids/[id].html)
+          await deletePublishedHtml(inv.id);
+
+          // 2. Hapus draft lokal data/drafts/[id].html jika ada
+          const draftHtml = path.join(process.cwd(), "data", "drafts", `${inv.id}.html`);
+          if (fs.existsSync(draftHtml)) {
+            try { await fs.promises.unlink(draftHtml); } catch {}
           }
 
-          // 2. Cabut subdomain dari database agar bisa dipakai pengguna lain
+          // 3. Cabut subdomain dari database dan ubah status menjadi ARCHIVED
           await prisma.invitation.update({
             where: { id: inv.id },
-            data: { subdomain: null }
+            data: {
+              subdomain: null,
+              status: "ARCHIVED"
+            }
           });
-          console.log(`  ✅ Subdomain [${inv.subdomain}] berhasil dilepas dan diarsipkan menjadi portofolio permanen.`);
+          console.log(`  ✅ Subdomain [${inv.subdomain}] berhasil dilepas dan status dialihkan ke ARCHIVED.`);
         }
       }
     }
@@ -130,6 +122,7 @@ async function runCleanup() {
     console.error("[CLEANUP ERROR]", error);
   } finally {
     await prisma.$disconnect();
+    await pool.end();
   }
 }
 

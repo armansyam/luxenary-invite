@@ -1,5 +1,8 @@
 import "dotenv/config";
 import { prisma } from '../lib/prisma';
+import { deletePublishedHtml } from '../lib/staticPublisher';
+import fs from 'fs';
+import path from 'path';
 
 async function runTest03() {
   console.log("🚀 [TEST-03] Memulai simulasi: Admin Cleanup...");
@@ -31,27 +34,46 @@ async function runTest03() {
     console.log(`⏱️  Simulasi waktu: Undangan berhasil diubah statusnya menjadi ARCHIVED (Expired).`);
 
     // 3. Simulasi Proses Cleanup Otomatis (Cron Job/Admin)
-    // Mencari undangan ARCHIVED (yang expired)
+    // Hanya bersihkan undangan uji coba yang ARCHIVED (agar aman dan tidak menyentuh data non-uji)
     const expiredInvitations = await prisma.invitation.findMany({
-      where: { status: "ARCHIVED" }
+      where: {
+        id: invitation.id,
+        status: "ARCHIVED"
+      }
     });
 
     console.log(`🧹 Memulai pembersihan... Ditemukan ${expiredInvitations.length} undangan kedaluwarsa.`);
 
     let deletedCount = 0;
     for (const inv of expiredInvitations) {
-      // Hapus data undangan (Cascade akan menghapus Guest, RSVP, Wish otomatis karena relasi di Prisma schema)
+      // Invarian 1: Hapus Published HTML
+      await deletePublishedHtml(inv.id);
+
+      // Invarian 2: Hapus Draft HTML lokal jika ada
+      const draftPath = path.join(process.cwd(), "data", "drafts", `${inv.id}.html`);
+      if (fs.existsSync(draftPath)) {
+        try { fs.unlinkSync(draftPath); } catch {}
+      }
+
+      // Invarian 3: Hapus folder uploads fisik
+      const uploadsDir = path.join(process.cwd(), "public", "uploads", "invitations", inv.id);
+      if (fs.existsSync(uploadsDir)) {
+        try { fs.rmSync(uploadsDir, { recursive: true, force: true }); } catch {}
+      }
+
+      // Hapus data undangan (Cascade membersihkan Guest, RSVP, GuestMemory di PostgreSQL)
       await prisma.invitation.delete({
         where: { id: inv.id }
       });
       deletedCount++;
     }
 
-    console.log(`✅ Berhasil membersihkan ${deletedCount} undangan kedaluwarsa beserta data relasinya (tamu, rsvp, momen).`);
+    console.log(`✅ Berhasil membersihkan ${deletedCount} undangan kedaluwarsa beserta 3 lapis berkas fisik dan data relasinya.`);
 
-    // 4. Simulasi Pembersihan User Akun Kosong (User tanpa order/undangan aktif)
+    // 4. Simulasi Pembersihan User Akun Kosong Uji Coba (client_... @test.luxenary.com)
     const emptyUsers = await prisma.user.findMany({
       where: {
+        email: { startsWith: "client_", contains: "@test.luxenary.com" },
         invitations: { none: {} },
         orders: { none: { status: { in: ["PAID", "PENDING"] } } }
       }
@@ -76,6 +98,7 @@ async function runTest03() {
 
   } catch (err) {
     console.error("❌ Terjadi kesalahan:", err);
+    process.exit(1);
   } finally {
     await prisma.$disconnect();
   }

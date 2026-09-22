@@ -171,15 +171,24 @@
 
     .main-scroll-panel {
       width: 100%;
-      max-width: 640px;
-      margin: 0 auto;
       min-height: 100vh;
       background: transparent;
       position: relative;
       z-index: 20;
-      box-shadow: 0 0 60px rgba(0, 0, 0, 0.85);
-      border-left: 1px solid color-mix(in srgb, var(--border-gold) 35%, transparent);
-      border-right: 1px solid color-mix(in srgb, var(--border-gold) 35%, transparent);
+    }
+
+    @media (max-width: 899px) {
+      .sidebar-desktop {
+        display: none !important;
+      }
+      .main-scroll-panel {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+        border-left: none !important;
+        border-right: none !important;
+      }
     }
 
     @media (min-width: 900px) {
