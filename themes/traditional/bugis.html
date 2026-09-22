@@ -227,18 +227,17 @@
     /* WALASUJI BAMBOO ARCH (FRONT LAYER Z-INDEX: 16) */
     .walasuji-arch-wrap {
       position: relative;
-      width: min(76vw, 300px);
-      max-height: min(38vh, 38dvh, 260px);
-      aspect-ratio: 1046 / 1504;
+      display: block;
+      width: fit-content;
       margin: 0 auto 0.4rem;
       z-index: 16;
       flex-shrink: 1;
     }
     .walasuji-photo-frame {
       position: absolute;
-      left: 15%;
-      top: 47.5%;
-      width: 70%;
+      left: 17%;
+      top: 47.3%;
+      width: 66%;
       height: 48%;
       z-index: 1;
       overflow: hidden;
@@ -254,18 +253,19 @@
     }
     .walasuji-sabbe-drape {
       position: absolute;
-      left: 23%;
-      width: 54%;
-      bottom: 2.5%;
+      left: 20%;
+      width: 60%;
+      bottom: 1.5%;
       z-index: 2;
       pointer-events: none;
       filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
     }
     .walasuji-arch-img {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
+      position: relative;
+      display: block;
+      height: min(38vh, 38dvh, 260px);
+      width: auto;
+      max-width: min(76vw, 240px);
       object-fit: contain;
       z-index: 3;
       pointer-events: none;
