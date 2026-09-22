@@ -3423,7 +3423,7 @@ export function composeDemoTemplateData(
     musicPlayerHtml: `
     ${effectiveAudioUrl ? `
     <!-- UNIVERSAL MUSIC PLAYER INJECTED BY DEMO ENGINE -->
-    <audio id="luxAudioPlayer" loop preload="auto">
+    <audio id="luxAudioPlayer" loop preload="none">
       <source src="${effectiveAudioUrl}" type="audio/ogg" />
       <source src="${effectiveAudioUrl}" type="audio/mpeg" />
     </audio>

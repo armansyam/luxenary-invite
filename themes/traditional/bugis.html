@@ -193,6 +193,9 @@
       position: fixed;
       inset: 0;
       z-index: 9999;
+      height: 100vh;
+      height: 100dvh;
+      max-height: 100dvh;
       background-color: var(--bg-dark, #140204);
       background-image: linear-gradient(
         180deg,
@@ -204,12 +207,17 @@
       background-position: center;
       display: flex;
       flex-direction: column;
-      justify-content: center;
+      justify-content: space-evenly;
       align-items: center;
-      padding: clamp(35px, 6vh, 60px) 1.2rem clamp(40px, 7vh, 65px);
+      padding: calc(1.5rem + env(safe-area-inset-top, 0px)) 1.2rem calc(1.5rem + env(safe-area-inset-bottom, 0px));
       text-align: center;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
       transition: transform 0.85s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.85s cubic-bezier(0.77, 0, 0.175, 1);
     }
+    .cover-screen::-webkit-scrollbar { display: none; }
     .cover-screen.opened {
       transform: translateY(-100%);
       opacity: 0;
@@ -219,10 +227,12 @@
     /* WALASUJI BAMBOO ARCH (FRONT LAYER Z-INDEX: 16) */
     .walasuji-arch-wrap {
       position: relative;
-      width: min(80vw, 320px);
+      width: min(76vw, 300px);
+      max-height: min(38vh, 38dvh, 260px);
       aspect-ratio: 1046 / 1504;
-      margin: clamp(0.6rem, 1.8vh, 1.2rem) auto 0.5rem;
+      margin: 0 auto 0.4rem;
       z-index: 16;
+      flex-shrink: 1;
     }
     .walasuji-photo-frame {
       position: absolute;
@@ -1303,7 +1313,7 @@
       <circle cx="18" cy="16" r="3"></circle>
     </svg>
   </button>
-  <audio id="bgAudio" src="{{audioUrl}}" loop preload="auto"></audio>
+  <audio id="bgAudio" src="{{audioUrl}}" loop preload="none"></audio>
 
   <!-- COVER SCREEN POP-UP (PORTAL GATE) -->
   <div id="coverScreen" class="cover-screen">

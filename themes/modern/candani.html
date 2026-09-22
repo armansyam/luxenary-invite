@@ -113,11 +113,15 @@
     /* 1. COVER SCREEN */
     .cover-screen, .cover-overlay {
       position: fixed; inset: 0; z-index: 9999;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      text-align: center; padding: 2.5rem 1.5rem;
+      height: 100vh; height: 100dvh; max-height: 100dvh;
+      display: flex; flex-direction: column; align-items: center; justify-content: space-evenly;
+      text-align: center; padding: calc(1.5rem + env(safe-area-inset-top, 0px)) 1.5rem calc(1.5rem + env(safe-area-inset-bottom, 0px));
+      overflow-y: auto; overscroll-behavior: contain;
+      -ms-overflow-style: none; scrollbar-width: none;
       background: radial-gradient(circle at center, color-mix(in srgb, var(--primary, #ab5e44) 28%, var(--bg-dark, #140c08) 90%) 0%, color-mix(in srgb, var(--bg-dark, #140c08) 98%, transparent) 100%), url('{{landingCoverUrl}}') center/cover no-repeat;
       transition: transform 0.85s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.85s ease;
     }
+    .cover-screen::-webkit-scrollbar, .cover-overlay::-webkit-scrollbar { display: none; }
     .cover-screen.opened, .cover-screen.slide-up-hidden, .cover-overlay.opened {
       transform: translateY(-100%); pointer-events: none; opacity: 0;
     }

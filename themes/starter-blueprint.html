@@ -508,6 +508,9 @@
       position: fixed;
       inset: 0;
       z-index: 9999;
+      height: 100vh;
+      height: 100dvh;
+      max-height: 100dvh;
       background: linear-gradient(180deg, rgba(0, 0, 0, 0.35) 0%, rgba(0, 0, 0, 0.75) 100%),
       url('{{landingCoverUrl}}') center/cover no-repeat;
       display: flex;
@@ -516,9 +519,14 @@
       justify-content: space-between;
       color: #ffffff;
       text-align: center;
-      padding: 60px 24px 48px;
+      padding: calc(2.5rem + env(safe-area-inset-top, 0px)) 24px calc(2rem + env(safe-area-inset-bottom, 0px));
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
       transition: transform 0.85s cubic-bezier(0.85, 0, 0.15, 1);
     }
+    .cover-overlay::-webkit-scrollbar { display: none; }
 
     .cover-overlay.opened {
       transform: translateY(-100%);

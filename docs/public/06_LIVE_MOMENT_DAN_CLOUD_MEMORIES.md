@@ -56,6 +56,10 @@ Setelah menekan tombol **"Buka Kamera"**, antarmuka bertransformasi menjadi kame
   - *Botanical Mist:* Nada hijau pastel teduh cocok untuk pernikahan outdoor / garden.
   - *Cinema Noir:* Monokrom kontras tinggi yang mewah dan dramatis.
   - *Pure Daylight:* Warna asli alami tanpa distorsi, jernih dan tajam.
+- **Live Digital Zoom (1x / 2x):**
+  Layar bidik dilengkapi toggle zoom digital instan yang menginterpolasi skala video langsung dan menyelaraskan pemotongan frame canvas secara presisi, dengan container viewfinder elastis adaptif viewport mobile (`100dvh`).
+- **Resilient Native Camera Fallback (Tier-2):**
+  Jika izin WebRTC ditolak atau dibuka di in-app browser media sosial (Instagram/TikTok), sistem menyediakan tombol cadangan kamera native HP dengan jaminan 1-shot auto-close, validasi kuota sisa roll sebelum unggah, pemotongan roll lokal instan, dan pengalihan ke galeri saat roll habis.
 - **Penghitung Sisa Roll Film (*Analog Frame Counter*):**
   Layar bidik menampilkan indikator sisa jepretan tamu (misal: `10 / 10`) yang berkurang otomatis setiap kali tombol shutter ditekan.
 - **Kompresi Klien Ringan (HTML5 Canvas to WebP):**

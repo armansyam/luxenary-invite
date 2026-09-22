@@ -906,7 +906,7 @@ export async function composeTemplateData(invitationId: string) {
   const musicPlayerHtml = `
     ${finalAudioUrl ? `
     <!-- UNIVERSAL MUSIC PLAYER INJECTED BY THEME ENGINE -->
-    <audio id="luxAudioPlayer" loop preload="auto">
+    <audio id="luxAudioPlayer" loop preload="none">
       <source src="${finalAudioUrl}" type="${isOgg ? "audio/ogg" : "audio/mpeg"}" />
     </audio>
     ` : ""}

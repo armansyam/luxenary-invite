@@ -2645,18 +2645,19 @@ Untuk menjamin kesiapan industri (*enterprise-grade / production-ready*), sistem
    - Penanganan graceful degradation terhadap format korup, ID fiktif, dan anomali input tanpa menyebabkan uncaught process crash.
    - Teardown sandbox deterministik: seluruh entitas uji dengan namespace `qa_ind_*` otomatis dibersihkan pada blok `finally` (100% zero-leak database & disk).
 
-**Perintah Menjalankan Pengujian:**
-```bash
-# Menjalankan seluruh 7 domain pengujian:
-npm run test:industrial -- --suite=all
-
-# Menjalankan per domain spesifik:
-npm run test:industrial -- --suite=security
-npm run test:industrial -- --suite=concurrency
-npm run test:industrial -- --suite=financial
-npm run test:industrial -- --suite=lifecycle
-npm run test:industrial -- --suite=themes
-npm run test:industrial -- --suite=infra
-npm run test:industrial -- --suite=resilience
-```
+### 17.20 — Standarisasi Viewport Responsif Cover Screen (100dvh), Live Zoom Kamera, & Optimasi Audio Universal
+1. **Dynamic Viewport (`100dvh`) & Safe-Area Padding pada Cover Screen:**
+   - Seluruh tema produksi (`themes/traditional/`, `themes/modern/`, `themes/premium/`) dan `starter-blueprint.html` distandarisasi menggunakan `height: 100vh; height: 100dvh; max-height: 100dvh;`.
+   - Menerapkan padding dinamis `padding: calc(1.5rem + env(safe-area-inset-top, 0px)) ... calc(1.5rem + env(safe-area-inset-bottom, 0px))` serta `overflow-y: auto; overscroll-behavior: contain;`.
+   - Mengeliminasi *bug* di mana tombol *"Buka Undangan"* tenggelam di balik navigation bar / URL bar browser mobile (seperti Brave & Safari di iOS) saat halaman pertama kali dibuka. Tamu dapat langsung menekan tombol tanpa perlu menggulir layar.
+2. **Live Digital Zoom (1x / 2x), Responsive Viewfinder, & Hardened Native Fallback:**
+   - Komponen `DisposableCameraViewfinder.tsx` menyinkronkan pembesaran visual secara *real-time* ke elemen `<video>` melalui CSS transform `scale(${zoomLevel})` dengan transisi halus (`transition: transform 0.2s ease-out`).
+   - Kontainer layar bidik menggunakan `h-full max-h-full aspect-[3/4] max-w-full` dengan `min-h-0 overflow-hidden`, mencegah bingkai kamera meluap ke belakang footer dan menjamin tombol kontrol zoom selalu tampil 100% utuh di atas footer pada perangkat mobile.
+   - **Hardened Native Camera Fallback (Tier-2):** Jalur cadangan kamera bawaan HP (`<input type="file" capture="environment">`) diperkuat dengan validasi pra-unggah kuota sisa roll, sinkronisasi pemotongan kuota lokal (`setShotsTaken` & `localStorage`) seketika pasca jepretan diproses canvas, pembersihan nilai input (`e.target.value = ""`), dan pengalihan dinamis ke tombol *"Buka Galeri Kenangan"* saat roll telah habis.
+3. **Standarisasi Non-Blocking Audio Preload (`preload="none"`):**
+   - Engine tema (`lib/themeEngine.ts`), Demo Registry (`lib/demoRegistry.ts`), dan seluruh template master distandarisasi dengan `<audio ... preload="none">`.
+   - Mengeliminasi *blocking network waterfall* saat awal buka dokumen HTML di browser seluler, sehingga indikator loading awal selesai instan (0 KB audio diunduh di awal). Musik baru di-stream saat tombol *"Buka Undangan"* ditekan.
+4. **Resilient Web Audio Optimizer (`lib/videoOptimizer.ts`):**
+   - Mengoptimalkan bitrate audio unggahan ke standar web 96 kbps Joint Stereo CD-quality.
+   - Dilengkapi fallback ganda ke encoder standalone LAME jika host FFmpeg mengalami kendala pustaka eksternal.
 

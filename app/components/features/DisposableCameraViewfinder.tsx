@@ -629,6 +629,13 @@ export default function DisposableCameraViewfinder({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Cek batas kuota film tersisa
+    if (!isUnlimited && remainingShots <= 0) {
+      setToastMessage("Roll film Anda telah habis!");
+      e.target.value = "";
+      return;
+    }
+
     // Cek batas sesi waktu aktif (time-gate overrides roll quota)
     if (!isTestMode && isSessionActive === false) {
       if (nextSessionName) {
@@ -636,11 +643,13 @@ export default function DisposableCameraViewfinder({
       } else {
         setToastMessage("Sesi foto saat ini sedang tidak aktif.");
       }
+      e.target.value = "";
       return;
     }
 
     if (!isTestMode && (isAllFinished || isUploadLocked)) {
       setToastMessage("Sesi foto tamu telah selesai.");
+      e.target.value = "";
       return;
     }
 
@@ -669,10 +678,19 @@ export default function DisposableCameraViewfinder({
           ctx.fillText(getFormattedDateStamp(), targetW - 40, targetH - 40);
         }
         const base64File = canvas.toDataURL("image/jpeg", 0.78);
+
+        // Update counter lokal konsisten dengan shutter utama
+        const nextTaken = shotsTaken + 1;
+        setShotsTaken(nextTaken);
+        if (typeof window !== "undefined") {
+          localStorage.setItem(`lux_shots_taken_${invitationId}_${guestToken}`, String(nextTaken));
+        }
+
         uploadSnappedPhoto(base64File);
       };
     };
     reader.readAsDataURL(file);
+    e.target.value = "";
   };
 
   // Simpan Identitas Tamu (Nama Wajib Diisi)
@@ -850,7 +868,7 @@ export default function DisposableCameraViewfinder({
   }
 
   return (
-    <div className={`fixed inset-0 w-full h-full ${themeStyles.bg} flex flex-col justify-between overflow-hidden select-none font-sans z-50`}>
+    <div className={`fixed inset-0 w-full h-full h-[100dvh] ${themeStyles.bg} flex flex-col justify-between overflow-hidden select-none font-sans z-50`}>
       <canvas ref={canvasRef} className="hidden" />
       <input
         ref={fallbackInputRef}
@@ -865,7 +883,7 @@ export default function DisposableCameraViewfinder({
       {screenFlash && <div className="fixed inset-0 bg-white z-50 pointer-events-none transition-opacity duration-100 opacity-90" />}
 
       {/* ── 1. HEADER ATAS KAMERA ── */}
-      <header className={`relative z-20 flex items-center justify-between px-4 py-3 backdrop-blur-md ${themeStyles.headerBg}`}>
+      <header className={`relative z-20 flex items-center justify-between px-4 py-3 backdrop-blur-md shrink-0 ${themeStyles.headerBg}`}>
         <button
           type="button"
           onClick={() => {
@@ -900,18 +918,30 @@ export default function DisposableCameraViewfinder({
       </header>
 
       {/* ── 2. VIEWFINDER UTAMA (LAYAR BIDIK FOTO) ── */}
-      <main className="relative flex-1 flex items-center justify-center p-2 sm:p-4 min-h-0">
-        <div className={`relative w-full max-w-sm aspect-[3/4] rounded-3xl overflow-hidden bg-black ${themeStyles.viewfinderFrame} flex items-center justify-center`}>
+      <main className="relative flex-1 flex items-center justify-center p-2 sm:p-4 min-h-0 overflow-hidden">
+        <div className={`relative h-full max-h-full aspect-[3/4] max-w-full rounded-3xl overflow-hidden bg-black ${themeStyles.viewfinderFrame} flex items-center justify-center shadow-2xl`}>
           {cameraError ? (
             <div className="p-6 text-center space-y-3">
               <p className="text-xs text-rose-400 font-medium">{cameraError}</p>
-              <button
-                type="button"
-                onClick={() => fallbackInputRef.current?.click()}
-                className="px-4 py-2 bg-amber-500 text-stone-950 text-xs font-bold rounded-xl transition"
-              >
-                Gunakan Kamera Bawaan HP
-              </button>
+              {!isUnlimited && remainingShots <= 0 ? (
+                <div className="space-y-2">
+                  <p className="text-xs text-amber-400 font-semibold">Roll Film Anda Sudah Habis</p>
+                  <Link
+                    href={galleryUrl}
+                    className="inline-block px-4 py-2 bg-amber-500 text-stone-950 text-xs font-bold rounded-xl transition"
+                  >
+                    Buka Galeri Kenangan
+                  </Link>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fallbackInputRef.current?.click()}
+                  className="px-4 py-2 bg-amber-500 text-stone-950 text-xs font-bold rounded-xl transition cursor-pointer"
+                >
+                  Gunakan Kamera Bawaan HP
+                </button>
+              )}
             </div>
           ) : (
             <>
@@ -920,10 +950,11 @@ export default function DisposableCameraViewfinder({
                 playsInline
                 autoPlay
                 muted
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover transition-transform duration-200 ease-out"
                 style={{
                   filter: activePreset.cssFilter,
-                  transform: facingMode === "user" ? "scaleX(-1)" : "none",
+                  transform: `${facingMode === "user" ? "scaleX(-1)" : ""} scale(${zoomLevel})`,
+                  transformOrigin: "center center",
                 }}
               />
 
@@ -951,15 +982,15 @@ export default function DisposableCameraViewfinder({
               </div>
 
               {/* Kontrol Zoom Digital */}
-              <div className="absolute bottom-3 inset-x-0 flex justify-center pointer-events-auto">
-                <div className="bg-black/50 backdrop-blur-md rounded-full p-0.5 flex gap-1 border border-white/10">
+              <div className="absolute bottom-3.5 inset-x-0 flex justify-center pointer-events-auto z-10">
+                <div className="bg-black/60 backdrop-blur-md rounded-full p-0.5 flex gap-1 border border-white/15 shadow-md">
                   {[1, 2].map((z) => (
                     <button
                       key={z}
                       type="button"
                       onClick={() => setZoomLevel(z)}
-                      className={`w-7 h-7 rounded-full font-mono text-[10px] font-bold transition flex items-center justify-center ${
-                        zoomLevel === z ? "bg-amber-500 text-stone-950" : "text-white/70 hover:text-white"
+                      className={`w-7 h-7 rounded-full font-mono text-[10px] font-bold transition-all flex items-center justify-center ${
+                        zoomLevel === z ? "bg-amber-500 text-stone-950 shadow-sm" : "text-white/75 hover:text-white"
                       }`}
                     >
                       {z}x
@@ -973,7 +1004,7 @@ export default function DisposableCameraViewfinder({
       </main>
 
       {/* ── 3. KONTROL BAWAH (SHUTTER, COUNTER & TOOLS) ── */}
-      <footer className={`relative z-20 px-6 pb-6 pt-2 ${themeStyles.footerBg} flex flex-col gap-2`}>
+      <footer className={`relative z-20 px-6 pb-6 pt-2 shrink-0 ${themeStyles.footerBg} flex flex-col gap-2 pb-[max(1.5rem,env(safe-area-inset-bottom))]`}>
         {/* Kontrol Cepat: Flash & Flip */}
         <div className="flex items-center justify-between max-w-sm mx-auto w-full px-4">
           <button

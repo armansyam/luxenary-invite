@@ -170,35 +170,56 @@ export async function optimizeWebAudio(inputBuffer: Buffer, baseName: string): P
   try {
     await fs.promises.writeFile(inputTempPath, inputBuffer);
 
-    const ffmpegPath = await getFfmpegPath();
+    let compressionSuccess = false;
 
-    const args = [
-      "-y",
-      "-i", inputTempPath,
-      // Audio codec: MP3 (libmp3lame) — universal browser support
-      "-c:a", "libmp3lame",
-      // Bitrate: 128kbps — jernih untuk musik, file ringan ~1MB/menit
-      "-b:a", "128k",
-      // Stereo output
-      "-ac", "2",
-      // Sample rate: 44100Hz (CD quality)
-      "-ar", "44100",
-      // Strip metadata yang tidak perlu
-      "-map_metadata", "-1",
-      outputTempPath,
-    ];
+    // 1. Coba kompresi via FFmpeg
+    try {
+      const ffmpegPath = await getFfmpegPath();
+      const args = [
+        "-y",
+        "-i", inputTempPath,
+        // Audio codec: MP3 (libmp3lame) — universal browser support
+        "-c:a", "libmp3lame",
+        // Bitrate: 96kbps — optimal untuk background audio undangan web
+        "-b:a", "96k",
+        // Stereo output
+        "-ac", "2",
+        // Sample rate: 44100Hz
+        "-ar", "44100",
+        // Strip metadata yang tidak perlu
+        "-map_metadata", "-1",
+        outputTempPath,
+      ];
+      await execFileAsync(ffmpegPath, args, { timeout: 30000 });
+      if (await fileExists(outputTempPath)) {
+        compressionSuccess = true;
+      }
+    } catch {
+      // 2. Fallback: LAME standalone encoder jika FFmpeg gagal/missing
+      try {
+        const lamePath = (await fileExists("/opt/homebrew/bin/lame"))
+          ? "/opt/homebrew/bin/lame"
+          : (await fileExists("/usr/local/bin/lame"))
+          ? "/usr/local/bin/lame"
+          : (await fileExists("/usr/bin/lame"))
+          ? "/usr/bin/lame"
+          : "lame";
+        await execFileAsync(lamePath, ["--mp3input", "-b", "96", inputTempPath, outputTempPath], { timeout: 30000 });
+        if (await fileExists(outputTempPath)) {
+          compressionSuccess = true;
+        }
+      } catch {}
+    }
 
-    await execFileAsync(ffmpegPath, args, { timeout: 30000 });
-
-    if (await fileExists(outputTempPath)) {
+    if (compressionSuccess && (await fileExists(outputTempPath))) {
       const compressedBuffer = await fs.promises.readFile(outputTempPath);
       const originalMB = (inputBuffer.length / 1024 / 1024).toFixed(1);
       const compressedMB = (compressedBuffer.length / 1024 / 1024).toFixed(1);
-      console.log(`[AudioOptimizer] ${baseName}: ${originalMB}MB → ${compressedMB}MB (MP3 128kbps)`);
+      console.log(`[AudioOptimizer] ${baseName}: ${originalMB}MB → ${compressedMB}MB (MP3 96kbps)`);
       return compressedBuffer;
     }
 
-    // Fallback: return original if ffmpeg failed
+    // Fallback jika kedua encoder tidak tersedia
     return inputBuffer;
   } catch (err) {
     console.warn("[AudioOptimizer] Compression skipped, using original audio:", err);
