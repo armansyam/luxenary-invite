@@ -75,7 +75,7 @@ export async function inspectBackupPath(configuredPath?: string): Promise<Backup
       isRelative = true;
     }
   } else if (effectiveConfigured.startsWith("./") || !path.isAbsolute(effectiveConfigured)) {
-    targetPath = path.resolve(process.cwd(), effectiveConfigured);
+    targetPath = path.resolve(/*turbopackIgnore: true*/ process.cwd(), effectiveConfigured);
     isRelative = true;
   } else {
     targetPath = path.normalize(effectiveConfigured);

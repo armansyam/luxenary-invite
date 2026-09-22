@@ -1,5 +1,5 @@
 # PLATFORM UNDANGAN (WHITE-LABEL) — DOKUMENTASI ARSITEKTUR SISTEM
-## Versi: 5.9.6 | Diperbarui: 22 September 2026
+## Versi: 5.9.8 | Diperbarui: 22 September 2026
 
 > **SUMBER KEBENARAN TUNGGAL** untuk semua developer dan AI Agent yang bekerja di repositori ini.  
 > Dokumen ini WAJIB dibaca sebelum melakukan perubahan apapun pada kode.  
@@ -46,7 +46,7 @@
 | **Penyimpanan Media** | Dual Mode: Cloudflare R2 (produksi) + Local `/uploads/` (development) via `lib/storage.ts` |
 | **Image Processing** | `sharp` v0.35.3 (WebP compression, resize, auto-rotate, sharpening) |
 | **Manajemen Proses** | PM2 |
-| **Middleware** | `middleware.ts` di root (Edge-compatible, async) |
+| **Request Proxy** | `proxy.ts` di root (Next.js 16 file convention, Edge-compatible, async) |
 | **Color Scheme** | Strictly Locked to Light Mode (`color-scheme: only light !important`, `<meta name="color-scheme" content="only light">`, warm ivory `#faf8f5`, proteksi total terhadap auto-inversi dark mode device/browser via W3C `only light` keyword) |
 
 ---
@@ -226,7 +226,7 @@
 │   ├── SYSTEM_ARCHITECTURE.md    # Dokumen arsitektur ini
 │   └── S-Invitation.md           # Catatan bisnis & fitur
 │
-├── middleware.ts             # ⭐ Edge routing utama (CRITICAL FILE)
+├── proxy.ts                  # ⭐ Edge request proxy & routing utama (Next.js 16)
 ├── auth.ts                   # NextAuth config entry
 ├── auth.config.ts            # NextAuth strategy config
 ├── README.md                 # Dokumentasi induk repositori (Root)

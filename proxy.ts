@@ -59,7 +59,7 @@ async function resolveCustomDomain(host: string, baseUrl: string): Promise<Custo
 }
 
 
-export default auth(async (req) => {
+export const proxy = auth(async (req) => {
   const { pathname } = req.nextUrl;
 
   // ── Guard Brute-Force Login: 5 percobaan per IP per 15 menit ──
@@ -345,6 +345,8 @@ export default auth(async (req) => {
 
   return NextResponse.next();
 });
+
+export default proxy;
 
 export const config = {
   matcher: [

@@ -2,7 +2,7 @@
 
 > **Platform Undangan Pernikahan Digital B2C Self-Service**  
 > Next.js 16.3.2 · Prisma 7.9 (PostgreSQL) · NextAuth v5 · Multi-Gateway (5 Gateway) · Nodemailer SMTP · Cloudflare R2  
-> **Versi Dokumen: 5.9.7 | Diperbarui: 22 September 2026**
+> **Versi Dokumen: 5.9.8 | Diperbarui: 22 September 2026**
 
 > [!IMPORTANT]
 > **PROTOKOL SINKRONISASI DOKUMENTASI OTOMATIS (MANDATORY POST-EDIT & PRE-PUSH PROTOCOL):**  
@@ -408,7 +408,7 @@ Luxenary-Invite/
 │       ├── 04_AMPLOP_DIGITAL_DAN_HADIAH_PERNIKAHAN.md # Rekening bank copy button, QRIS & kado fisik
 │       ├── 05_SISTEM_RESEPSIONIS_DAN_CHECKIN_QR.md # Portal resepsionis, HTML5 QR scanner & souvenir
 │       └── 06_LIVE_MOMENT_DAN_CLOUD_MEMORIES.md # Upload foto candid tamu, galeri kenangan live real-time & cloud memories
-├── middleware.ts               # ⭐ Edge routing utama (CRITICAL)
+├── proxy.ts                    # ⭐ Edge request proxy & routing utama (Next.js 16)
 ├── README.md                   # Dokumentasi induk repositori (Root)
 ├── AGENTS.md                   # Aturan perilaku AI Agent (Next.js & Engine)
 ├── CLAUDE.md                   # Pointer kontrak Anthropic Claude Code CLI
