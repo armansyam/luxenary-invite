@@ -905,6 +905,11 @@
       cursor: pointer;
     }
 
+    @keyframes rotateDisc {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
     .dock-music-btn.playing svg {
       animation: rotateDisc 6s linear infinite;
       color: var(--bugis-gold-antique);
