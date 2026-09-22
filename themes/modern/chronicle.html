@@ -335,8 +335,7 @@
         overflow-wrap: break-word !important;
       }
 
-      .sec-heading,
-      .sec-main-title {
+      .sec-heading {
         font-size: clamp(1.75rem, 2.1rem, 2.3rem) !important;
         overflow-wrap: break-word !important;
         word-break: break-word !important;
@@ -347,8 +346,6 @@
        FULL VIEWPORT ISOLATED SLIDES (100VH SETIAP SEKSI)
        ========================================================================== */
     .slide-section,
-    .section-block,
-    .sec-flow,
     #home,
     #section-quote,
     #section-couple,
@@ -474,13 +471,12 @@
       font-weight: 600;
     }
 
-    .sec-heading,
-    .sec-main-title {
+    .sec-heading {
       font-size: clamp(2.3rem, 7vw, 3.2rem);
       font-family: 'Bellefair', serif;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      color: #fff;
+      color: var(--text-main, #ffffff);
       margin-bottom: 0.6rem;
     }
 

@@ -73,11 +73,38 @@ export interface PublicPlatformSettings {
   serviceStatus: ServiceStatusSettings;
 }
 
+interface CacheEntry<T> {
+  value: T;
+  expiresAt: number;
+}
+
+const settingsCache = new Map<string, CacheEntry<string>>();
+let allSettingsCache: CacheEntry<Record<string, string>> | null = null;
+const SETTINGS_CACHE_TTL_MS = 60 * 1000; // 60-second TTL
+
+export function invalidateSettingsCache(key?: string): void {
+  if (key) {
+    settingsCache.delete(key);
+  } else {
+    settingsCache.clear();
+  }
+  allSettingsCache = null;
+}
+
 export async function getAdminSetting(key: string, defaultValue = ""): Promise<string> {
+  const now = Date.now();
+  const cached = settingsCache.get(key);
+  if (cached && cached.expiresAt > now) {
+    return cached.value;
+  }
+
   try {
     const setting = await prisma.adminSetting.findUnique({ where: { key } });
-    return setting?.value || defaultValue;
-  } catch {
+    const val = setting?.value ?? defaultValue;
+    settingsCache.set(key, { value: val, expiresAt: now + SETTINGS_CACHE_TTL_MS });
+    return val;
+  } catch (err) {
+    console.warn(`[getAdminSetting] Gagal membaca setting key "${key}":`, err);
     return defaultValue;
   }
 }
@@ -119,20 +146,26 @@ export async function getServiceAvailability(): Promise<ServiceStatusSettings> {
  * Directly queried from SQLite admin_settings table.
  */
 export async function getPublicPlatformSettings(): Promise<PublicPlatformSettings> {
+  const now = Date.now();
   let map: Record<string, string> = {};
   let themes: any[] = [];
   try {
-    const all = await prisma.adminSetting.findMany();
-    all.forEach((s) => {
-      map[s.key] = s.value;
-    });
+    if (allSettingsCache && allSettingsCache.expiresAt > now) {
+      map = { ...allSettingsCache.value };
+    } else {
+      const all = await prisma.adminSetting.findMany();
+      all.forEach((s) => {
+        map[s.key] = s.value;
+      });
+      allSettingsCache = { value: map, expiresAt: now + SETTINGS_CACHE_TTL_MS };
+    }
     
     themes = await prisma.theme.findMany({
       where: { isActive: true },
       select: { name: true, isPremium: true, series: true }
     });
   } catch (e) {
-    console.error("[getPublicPlatformSettings error]", e);
+    console.warn("[getPublicPlatformSettings error]", e);
   }
 
 

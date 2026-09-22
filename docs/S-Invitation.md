@@ -1,5 +1,5 @@
 # S-Invitation: Luxenary Invite System Architecture & Master Specification
-> **Versi: 5.9.8 | Diperbarui: 22 September 2026**
+> **Versi: 6.0.0 | Diperbarui: 23 September 2026**
 
 ## 1. Executive Summary & Core Philosophy
 **Luxenary Invite** adalah platform ekosistem undangan pernikahan digital modern berbasis Next.js 16 (App Router + Turbopack) yang menghadirkan pengalaman visual mewah (*haute couture*), kecepatan muat instan (<0.8 detik), self-service dashboard mandiri bagi klien, dan integrasi cloud edge caching.
@@ -1050,9 +1050,9 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - Tema etnik ke-8 (tema master ke-18) mengangkat keagungan adat bangsawan Bugis Saoraja berbalut Royal Maroon & Gold.
    - **Ornamen Budaya Otentik Bugis:**
       * *Gerbang Walasuji Bambu & Sabbe (Natural Intrinsic Sizing):* Arsitektur gerbang bambu Walasuji (`vapillion-bamboo2.webp`, rasio 1046x1504) dengan kontainer `width: fit-content` yang mengunci foto mempelai tepat di bawah atap (`top: 47.3%`, `left: 17%`, `width: 66%`, `height: 48%`) dan diapit pilar bambu secara presisi tanpa risiko bocor bingkai. Selempang sutra Bugis (`sabbe.webp`) menutup batas bawah secara dinamis.
-      * *Mahkota Rumbai Bugis Atas & Border Bawah:* Rumbai emas adat Bugis Saoraja (`bugis-atas.webp`) pada cover atas dan batas bawah emas (`frame-bottom.webp`) berbasis arsitektur **Seamless Repeat Tile (`repeat-x`)** anti-crop pada seluruh variasi resolusi (mobile, tablet, desktop).
+      * *Mahkota Rumbai Bugis Atas & Border Bawah Fluida:* Rumbai emas adat Bugis Saoraja (`bugis-atas.webp`) pada cover atas (`clamp(54px, 8vw, 75px)`) dan batas bawah emas (`frame-bottom.webp`) dengan skala fluida harmonis (`clamp(58px, 9vw, 88px)`) berbasis arsitektur **Seamless Repeat Tile (`repeat-x`)** anti-crop pada seluruh variasi resolusi (mobile, tablet, desktop).
       * *Penutup Adat Seimbang (Closing Roof Ornament):* Ornamen atap ukiran Walasuji pada footer diturunkan dengan padding aman `clamp(5.2rem, 9vh, 6.5rem)` di bawah rumbai emas dan diskalakan `clamp(140px, 36vw, 190px)` (+45% bobot visual) untuk keanggunan penutup kanvas 100dvh.
-      * *4 Sudut Bunga Emas:* Ornamen bunga sudut WebP transparan presisi flush (`flower-tl/tr/bl/br.webp`).
+      * *Aksen Sudut Bunga Emas:* Ornamen bunga atas WebP transparan presisi flush (`flower-tl.webp` & `flower-tr.webp`).
       * *Tekstur Marun Sakral:* Latar belakang tekstur marun bergradasi halus (`bg-maroon.webp`).
    - **Tipografi Luhur:** Kombinasi `Cinzel` (judul sakral), `Great Vibes` (aksen nama), `Cormorant Garamond` (kutipan doa), dan `Plus Jakarta Sans` (informasi acara).
    - **Narasi Adat Puitis (Bugis Wedding Lore):** Petuah luhur *"Sipakatau, sipakalebbi, sipakainge"* dan ungkapan syukur *"Kurru Sumanga'"*.

@@ -239,11 +239,11 @@
 
     /* SECTION COMMON */
     .sec-flow { padding: 4.8rem 1.8rem; text-align: center; position: relative; }
-    .sec-eyebrow, .eyebrow {
+    .eyebrow {
       font-family: 'Cormorant Infant', serif; font-size: 0.75rem; letter-spacing: 0.28em;
       text-transform: uppercase; color: var(--accent); display: block; margin-bottom: 0.5rem; font-weight: 600;
     }
-    .sec-main-title, .sec-title {
+    .sec-title {
       font-size: clamp(2.2rem, 7.5vw, 3.2rem); color: var(--text-heading);
       line-height: 1.1; margin-bottom: 0.6rem; text-transform: uppercase; font-family: 'Cormorant', serif; font-weight: 400;
     }
@@ -943,7 +943,7 @@
       .sec-hero-slideshow { padding: 4.5rem 1.8rem 4rem; }
       .cover-names { font-size: clamp(3.2rem, 6.2vw, 5.5rem) !important; overflow-wrap: break-word !important; }
       .hero-title { font-size: clamp(2.0rem, 2.4rem, 2.8rem) !important; overflow-wrap: break-word !important; }
-      .sec-main-title, .sec-heading { font-size: clamp(1.75rem, 2.1rem, 2.3rem) !important; overflow-wrap: break-word !important; word-break: break-word !important; }
+      .sec-title { font-size: clamp(1.75rem, 2.1rem, 2.3rem) !important; overflow-wrap: break-word !important; word-break: break-word !important; }
       .couple-name { font-size: clamp(1.8rem, 2.2rem, 2.4rem) !important; overflow-wrap: break-word !important; }
     }
 
@@ -1276,7 +1276,7 @@
       {{qrAccessCardHtml}}
       <div style="margin-top:1.2rem;padding:0.9rem;background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);text-align:center;">
         <span style="font-family:'Cormorant Infant',serif;font-size:0.65rem;letter-spacing:0.2em;color:var(--accent);text-transform:uppercase;font-weight:600;display:block;margin-bottom:0.4rem;">Voucher Souvenir</span>
-        <div style="font-family:monospace;font-weight:700;font-size:0.85rem;color:#ffffff;letter-spacing:0.12em;padding:0.45rem;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:4px;">SOUVENIR-{{invitationId}}</div>
+        <div style="font-family:monospace;font-weight:700;font-size:0.85rem;color:var(--text-main, #ffffff);letter-spacing:0.12em;padding:0.45rem;background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:4px;">SOUVENIR-{{invitationId}}</div>
       </div>
     </div>
   </div>

@@ -17,26 +17,30 @@ Master Orchestrator Deep-Dive Suites                    Micro-Tests        DevOp
     │                  │                                   │                  │
     ├─ industrial-qa   ├─ complete-system-audit (Alur E2E) ├─ test-01 (Reg)   ├─ cron-cleanup
     │  suite.ts        ├─ test-security-pen (Penetration)  ├─ test-02 (Pub)   ├─ clean-test-artifacts
-    └─ test:clean      ├─ master-e2e-stress (Konkurensi)   └─ test-03 (Clean) ├─ sync-themes
-                       └─ test-theme-matrix (Matriks Tema)                    ├─ thumbnails
-                                                                              └─ utilitas aset
+    ├─ audit-code-     ├─ master-e2e-stress (Konkurensi)   └─ test-03 (Clean) ├─ sync-themes
+    │  hygiene.ts      └─ test-theme-matrix (Matriks Tema)                    ├─ thumbnails
+    └─ test:clean                                                             └─ utilitas aset
 ```
 
 ---
 
-## 1. Tier 1: Master Industrial Orchestrator
+## 1. Tier 1: Master Industrial Orchestrator & Static Hygiene Linter
 
-Pusat kendali pengujian kesiapan industri (*enterprise-grade / production-ready*) dengan 7 domain pengujian terpadu, telemetri latensi P50/P95, garansi zero-leak sandbox, dan pembuatan laporan otomatis ke folder `reports/`.
+Pusat kendali pengujian kesiapan industri (*enterprise-grade / production-ready*) dengan 7 domain pengujian terpadu, linter AST CSS dead selector, pengecekan anti-hardcode hex tokens, telemetri latensi P50/P95, garansi zero-leak sandbox, dan pembuatan laporan otomatis ke folder `reports/`.
 
 | Berkas | Peran & Tugas | Perintah Shortcut |
 |---|---|---|
 | [`industrial-qa-suite.ts`](./industrial-qa-suite.ts) | Menjalankan pengujian 7 domain industri (Keamanan, Finansial, Konkurensi, Lifecycle, Render Tema, Indeks DB, dan Fault Tolerance). | `npm run test:all` / `npm run test:industrial` |
+| [`audit-code-hygiene.ts`](./audit-code-hygiene.ts) | Audit kebersihan kode: parsing AST CSS tema untuk mendeteksi dead selectors yang tidak terpakai di HTML/JS, larangan nilai heksadesimal mentah (Zero Hardcode Policy), dan zombie comments. | `npm run test:hygiene` |
 | [`clean-test-artifacts.ts`](./clean-test-artifacts.ts) | Memindai dan memusnahkan seluruh entitas uji di PostgreSQL serta berkas fisik yatim (*orphaned drafts, published HTML, uploads*) tanpa menyisakan disk leak. | `npm run test:clean` |
 
 **Opsi Modular CLI:**
 ```bash
 # Menjalankan seluruh domain + simpan laporan:
 npm run test:all
+
+# Menjalankan linter kebersihan kode & AST CSS:
+npm run test:hygiene
 
 # Menjalankan per domain tertentu:
 npm run test:industrial -- --suite=security

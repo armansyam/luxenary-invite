@@ -202,7 +202,6 @@
         overflow-wrap: break-word !important;
       }
       .bottom-dock { left: calc(100% - 230px) !important; }
-      .sec-main-title,
       .sec-heading {
         font-size: clamp(1.75rem, 2.1rem, 2.3rem) !important;
         overflow-wrap: break-word;
@@ -213,7 +212,7 @@
     /* ==========================================================================
        FULL VIEWPORT ISOLATED SLIDES (100VH SETIAP SEKSI)
        ========================================================================== */
-    .slide-section, .section-block, .sec-flow,
+    .slide-section,
     #home, #section-quote, #section-couple, #section-events, #story, #moments, #gift,
     #section-wishes, #access-pass, #dresscode, #live, #turut-mengundang {
       width: 100%;
@@ -311,10 +310,10 @@
     }
 
     .sec-eyebrow { font-size: 0.7rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--silver-muted); display: block; margin-bottom: 0.4rem; font-weight: 600; }
-    .sec-main-title, .sec-heading {
+    .sec-heading {
       font-size: clamp(2.3rem, 7vw, 3.2rem);
       font-family: 'Cinzel Decorative', serif;
-      color: #ffffff;
+      color: var(--text-main, #ffffff);
       margin-bottom: 0.5rem;
       font-weight: 300;
       overflow-wrap: break-word;

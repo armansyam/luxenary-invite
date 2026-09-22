@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { invalidateSettingsCache } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
@@ -219,6 +220,9 @@ export async function POST(req: NextRequest) {
     } catch (e) {
       console.warn("[settings revalidatePath error]", e);
     }
+
+    // Invalidate in-memory settings cache agar pembaruan langsung terbaca
+    invalidateSettingsCache();
 
     return NextResponse.json({ success: true, updated: results });
   } catch (error: any) {

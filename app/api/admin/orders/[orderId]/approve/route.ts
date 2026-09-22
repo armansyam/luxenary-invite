@@ -91,7 +91,9 @@ export async function POST(
           processedAt: new Date(),
         },
       });
-    } catch {}
+    } catch (logErr) {
+      console.warn("[Admin Approve Order Audit Log Error]", logErr);
+    }
 
     // If this is an UPGRADE order, update planType on the linked original order
     await applyUpgradePlan(orderId);
@@ -99,7 +101,9 @@ export async function POST(
     // Push notifikasi real-time ke browser klien via SSE
     try {
       paymentEmitter.emit(orderId, { status: "PAID", planType: order.planType });
-    } catch {}
+    } catch (emitErr) {
+      console.warn("[Admin Approve Order SSE Emit Error]", emitErr);
+    }
 
     return NextResponse.json({ success: true, message: "Order berhasil dikonfirmasi lunas" });
   } catch (error: any) {

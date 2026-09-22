@@ -441,8 +441,7 @@
     /* 5. SEKSI 1: HOME / OPENING HERO (100VH) */
     .sec-home,
     .sec-home#home,
-    section#home,
-    .slide-opening#home {
+    section#home {
       min-height: 100vh;
       min-height: 100dvh;
       display: flex;
@@ -491,8 +490,7 @@
       opacity: 0.20;
     }
     .sec-home#home::before,
-    section#home::before,
-    .slide-opening#home::before {
+    section#home::before {
       display: none !important;
     }
     .home-tongkonan-wrap {
@@ -994,14 +992,14 @@
     }
     .form-in, .form-sel, .form-ta {
       width: 100%; background: color-mix(in srgb, var(--bg-dark, #1a0404) 85%, transparent);
-      border: 1px solid var(--border-gold); color: #ffffff; padding: 0.75rem 1rem; border-radius: 10px;
+      border: 1px solid var(--border-gold); color: var(--text-main, #ffffff); padding: 0.75rem 1rem; border-radius: 10px;
       font-family: inherit; font-size: 16px; outline: none; transition: border-color 0.3s ease;
     }
     .form-in:focus, .form-sel:focus, .form-ta:focus {
       border-color: var(--border-gold-bright);
     }
     .btn-rsvp-submit {
-      width: 100%; background: var(--toraja-crimson); color: #ffffff; border: 1.5px solid var(--border-gold-bright);
+      width: 100%; background: var(--toraja-crimson); color: var(--text-main, #ffffff); border: 1.5px solid var(--border-gold-bright);
       padding: 0.85rem; border-radius: 12px; font-family: inherit; font-size: 0.85rem; font-weight: 600;
       letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: all 0.3s ease;
       box-shadow: 0 6px 20px var(--gold-glow);
@@ -1146,7 +1144,7 @@
       position: fixed; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); left: 50%;
       transform: translateX(-50%) translateY(20px); opacity: 0; pointer-events: none;
       background: color-mix(in srgb, var(--toraja-card) 95%, transparent);
-      border: 1px solid var(--border-gold-bright); color: #ffffff;
+      border: 1px solid var(--border-gold-bright); color: var(--text-main, #ffffff);
       padding: 0.7rem 1.6rem; border-radius: var(--radius-full); font-size: 0.8rem;
       font-weight: 600; letter-spacing: 0.08em; z-index: 99999;
       box-shadow: 0 10px 30px rgba(0,0,0,0.7), 0 0 20px var(--gold-glow);
@@ -1215,7 +1213,7 @@
         <div class="font-toraja-title" style="font-size: 0.8rem; letter-spacing: 0.28em; color: var(--toraja-gold); text-transform: uppercase; margin-bottom: 0.5rem;">
           {{weddingTagline}}
         </div>
-        <h1 class="font-toraja-title" style="font-size: 3.2rem; color: #ffffff; line-height: 1.1; margin-bottom: 0.8rem; font-weight: 600;">
+        <h1 class="font-toraja-title" style="font-size: 3.2rem; color: var(--text-main, #ffffff); line-height: 1.1; margin-bottom: 0.8rem; font-weight: 600;">
           {{firstName}} &amp; {{secondName}}
         </h1>
         <div class="font-toraja-title" style="font-size: 0.95rem; letter-spacing: 0.15em; color: var(--toraja-gold); text-transform: uppercase; margin-bottom: 1.2rem;">
@@ -1359,7 +1357,7 @@
             alt="Rumah Tongkonan" 
             style="width: 72px; height: auto; margin: 0 auto 1.2rem; display: block; filter: drop-shadow(0 6px 16px rgba(0,0,0,0.6));" 
           />
-          <p class="font-toraja-quote" style="font-size: 1.15rem; line-height: 1.7; color: #ffffff; margin-bottom: 1.2rem;" data-lux-field="customLabels.openingQuote">
+          <p class="font-toraja-quote" style="font-size: 1.15rem; line-height: 1.7; color: var(--text-main, #ffffff); margin-bottom: 1.2rem;" data-lux-field="customLabels.openingQuote">
             "{{openingQuote}}"
           </p>
           <span style="font-size: 0.78rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--toraja-gold); font-weight: 600;" data-lux-field="customLabels.openingQuoteRef">
@@ -1551,13 +1549,13 @@
         <img src="/assets/ornaments/toraja/tongkonan-depan-3d.webp" alt="Rumah Tongkonan Toraja" class="tongkonan-closing-hero" />
         <div class="closing-content-box">
           <div class="closing-thankyou">Kurresumanga'</div>
-          <p class="font-toraja-quote" style="font-size: 1.15rem; line-height: 1.7; color: #ffffff; max-width: 360px; margin: 0 auto 1.5rem;" data-lux-field="customLabels.closingQuote">
+          <p class="font-toraja-quote" style="font-size: 1.15rem; line-height: 1.7; color: var(--text-main, #ffffff); max-width: 360px; margin: 0 auto 1.5rem;" data-lux-field="customLabels.closingQuote">
             "{{closingQuote}}"
           </p>
           <span style="font-size: 0.82rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--toraja-gold); font-weight: 600;" data-lux-field="customLabels.closingSub">
             {{closingSub}}
           </span>
-          <div class="font-toraja-title" style="font-size: 1.8rem; color: #ffffff; margin-top: 1.8rem; font-weight: 600;">
+          <div class="font-toraja-title" style="font-size: 1.8rem; color: var(--text-main, #ffffff); margin-top: 1.8rem; font-weight: 600;">
             {{firstName}} &amp; {{secondName}}
           </div>
         </div>
@@ -1923,7 +1921,7 @@
         if (wishesStream) {
           const item = document.createElement('div');
           item.className = 'wish-item';
-          item.innerHTML = '<strong style="color: var(--toraja-gold); font-size: 0.9rem;">' + escapeHtml(name) + '</strong><span style="font-size: 0.72rem; color: var(--text-muted); margin-left: 0.6rem;">Baru saja</span><p style="margin-top: 0.4rem; font-size: 0.85rem; line-height: 1.5; color: #ffffff;">' + escapeHtml(message) + '</p>';
+          item.innerHTML = '<strong style="color: var(--toraja-gold); font-size: 0.9rem;">' + escapeHtml(name) + '</strong><span style="font-size: 0.72rem; color: var(--text-muted); margin-left: 0.6rem;">Baru saja</span><p style="margin-top: 0.4rem; font-size: 0.85rem; line-height: 1.5; color: var(--text-main, #ffffff);">' + escapeHtml(message) + '</p>';
           wishesStream.insertBefore(item, wishesStream.firstChild);
         }
 

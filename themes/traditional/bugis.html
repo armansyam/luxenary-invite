@@ -34,6 +34,7 @@
       --bg-light: {{colorBgLight}};
       --bg-dark: {{colorBgDark}};
       --text-dark: {{colorTextDark}};
+      --text-main: #ffffff;
       --bugis-maroon: var(--primary, #5a0b10);
       --bugis-gold: var(--accent, #dfb76c);
       --bugis-dark: var(--bg-dark, #140204);
@@ -42,7 +43,7 @@
       --border-gold: color-mix(in srgb, var(--accent, #dfb76c) 18%, transparent);
       --border-gold-bright: color-mix(in srgb, var(--accent, #dfb76c) 70%, transparent);
       --gold-glow: color-mix(in srgb, var(--accent, #dfb76c) 25%, transparent);
-      --text-muted: color-mix(in srgb, #ffffff 75%, transparent);
+      --text-muted: color-mix(in srgb, var(--text-main, #ffffff) 75%, transparent);
       --timeline-gold: var(--bugis-gold);
     }
 
@@ -132,7 +133,7 @@
       transform: translateY(0);
     }
 
-    /* 4-CORNER FLORAL ORNAMENTS */
+    /* TOP FLORAL CORNER ACCENTS */
     .corner-floral {
       position: absolute;
       width: clamp(75px, 20vw, 95px);
@@ -162,21 +163,17 @@
     }
     .cover-screen .bugis-frame-top {
       height: clamp(80px, 14vw, 115px);
-      background-image: url('/assets/ornaments/bugis/bugis-atas.webp');
-      background-repeat: repeat-x;
-      background-position: top center;
-      background-size: auto 100%;
     }
     .bugis-frame-bottom {
       position: absolute;
       bottom: 0;
       left: 0;
       width: 100%;
-      height: 88px;
+      height: clamp(58px, 9vw, 88px);
       background-image: url('/assets/ornaments/bugis/frame-bottom.webp');
       background-repeat: repeat-x;
       background-position: bottom center;
-      background-size: auto 88px;
+      background-size: auto 100%;
       pointer-events: none;
       z-index: 14;
       opacity: 0.98;
@@ -331,7 +328,7 @@
     .btn-buka-undangan:hover {
       transform: translateY(-2px);
       box-shadow: 0 12px 32px var(--border-gold-bright);
-      border-color: #ffffff;
+      border-color: var(--text-main, #ffffff);
     }
 
     /* DESKTOP SPLIT-SCREEN 460PX ARCHITECTURE */
@@ -965,7 +962,7 @@
       margin-top: 0.8rem !important;
     }
     .btn-map-outline:hover {
-      border-color: #ffffff !important;
+      border-color: var(--text-main, #ffffff) !important;
       transform: translateY(-2px) !important;
     }
 
@@ -1397,7 +1394,7 @@
         <h2 class="sec-main-title reveal-on-scroll" data-lux-field="customLabels.quoteTitle">{{quoteSectionTitle}}</h2>
         
         <div class="reveal-on-scroll" style="max-width: 360px; margin: 0 auto;">
-          <p class="font-bugis-quote" style="font-size: 1.15rem; line-height: 1.7; color: #ffffff; margin-bottom: 1.2rem;" data-lux-field="customLabels.openingQuote">
+          <p class="font-bugis-quote" style="font-size: 1.15rem; line-height: 1.7; color: var(--text-main, #ffffff); margin-bottom: 1.2rem;" data-lux-field="customLabels.openingQuote">
             {{openingQuote}}
           </p>
           {{#if openingQuoteRef}}
@@ -1584,7 +1581,7 @@
 
         <!-- Closing Content Box (Merapat ke Bawah saat Ada Foto) -->
         <div class="closing-content">
-          <p class="font-bugis-quote reveal-on-scroll" style="font-size: 1.15rem; line-height: 1.7; color: #ffffff; max-width: 360px; margin: 0 auto 1.5rem;" data-lux-field="customLabels.closingQuote">
+          <p class="font-bugis-quote reveal-on-scroll" style="font-size: 1.15rem; line-height: 1.7; color: var(--text-main, #ffffff); max-width: 360px; margin: 0 auto 1.5rem;" data-lux-field="customLabels.closingQuote">
             {{closingQuote}}
           </p>
           
@@ -1592,7 +1589,7 @@
             {{closingSub}}
           </div>
 
-          <div class="font-bugis-title reveal-on-scroll" style="font-size: 1.8rem; color: #ffffff; margin-top: 1.8rem; font-weight: 600;">
+          <div class="font-bugis-title reveal-on-scroll" style="font-size: 1.8rem; color: var(--text-main, #ffffff); margin-top: 1.8rem; font-weight: 600;">
             {{firstName}} &amp; {{secondName}}
           </div>
         </div>
@@ -1957,7 +1954,7 @@
         if (stream && msg) {
           const item = document.createElement('div');
           item.className = 'wish-item';
-          item.innerHTML = '<strong style="color: var(--bugis-gold); font-size: 0.9rem;">' + escapeHtml(name) + '</strong><span style="font-size: 0.72rem; color: var(--text-muted); margin-left: 0.6rem;">Baru saja</span><p style="margin-top: 0.4rem; font-size: 0.85rem; line-height: 1.5; color: #ffffff;">' + escapeHtml(msg) + '</p>';
+          item.innerHTML = '<strong style="color: var(--bugis-gold); font-size: 0.9rem;">' + escapeHtml(name) + '</strong><span style="font-size: 0.72rem; color: var(--text-muted); margin-left: 0.6rem;">Baru saja</span><p style="margin-top: 0.4rem; font-size: 0.85rem; line-height: 1.5; color: var(--text-main, #ffffff);">' + escapeHtml(msg) + '</p>';
           stream.prepend(item);
         }
 
