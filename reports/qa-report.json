@@ -1,8 +1,8 @@
 {
-  "runId": 1790084939400,
+  "runId": 1790086640200,
   "suite": "all",
-  "timestamp": "2026-09-22T13:49:00.080Z",
-  "totalDurationSec": 0.68,
+  "timestamp": "2026-09-22T14:17:20.681Z",
+  "totalDurationSec": 0.48,
   "passedCount": 17,
   "totalTests": 17,
   "passPercentage": 100,
@@ -13,7 +13,7 @@
       "code": "SEC-01",
       "name": "Multi-Tenant Cross-Access Isolation Guard",
       "passed": true,
-      "durationMs": 170.95,
+      "durationMs": 147.8,
       "detail": "Isolasi Multi-Tenant 100% Kedap: Percobaan modifikasi & penghapusan silang ditolak (0 row affected)."
     },
     {
@@ -29,7 +29,7 @@
       "code": "SEC-03",
       "name": "Staff PIN AES-256-GCM & Tamper Resistance",
       "passed": true,
-      "durationMs": 0.84,
+      "durationMs": 0.71,
       "detail": "Enkripsi AES-256-GCM valid, enkripsi dua arah simetris, dan manipulasi auth-tag berhasil ditolak."
     },
     {
@@ -37,7 +37,7 @@
       "code": "SEC-04",
       "name": "Receptionist HMAC Token Forgery Guard",
       "passed": true,
-      "durationMs": 0.19,
+      "durationMs": 0.15,
       "detail": "Token HMAC terverifikasi kokoh: token valid lolos, pemalsuan & token silang-undangan 100% ditolak."
     },
     {
@@ -45,7 +45,7 @@
       "code": "FIN-01",
       "name": "Parallel Webhook Callback Idempotency",
       "passed": true,
-      "durationMs": 35.82,
+      "durationMs": 57.81,
       "detail": "Idempotensi Webhook Sempurna: Tepat 1 dari 8 callback dieksekusi, 7 lainnya diabaikan secara aman."
     },
     {
@@ -53,7 +53,7 @@
       "code": "FIN-02",
       "name": "Promo Coupon Quota Race & Row-Level Lock",
       "passed": true,
-      "durationMs": 37.24,
+      "durationMs": 36.93,
       "detail": "Atomic Lock Sukses (SELECT FOR UPDATE): Dari 5 klaim simultan, tepat 1 menang (1) dan 4 ditolak (4). Usage count terkunci di 1."
     },
     {
@@ -61,7 +61,7 @@
       "code": "FIN-03",
       "name": "Order Upgrade Execution & Anti-Downgrade Hierarchy",
       "passed": true,
-      "durationMs": 25.25,
+      "durationMs": 23.84,
       "detail": "Upgrade tier berhasil naik ke TIER_3, dan aturan anti-downgrade ke TIER_1 terverifikasi aktif."
     },
     {
@@ -69,7 +69,7 @@
       "code": "CONC-01",
       "name": "Multi-Gate QR Check-In Race Condition Guard",
       "passed": true,
-      "durationMs": 13.12,
+      "durationMs": 9.95,
       "detail": "Multi-Gate Atomic Lock Sempurna: Tepat 1 gerbang berhasil check-in (1), 4 gerbang lainnya ditolak seketika (4) sebagai tiket duplikat."
     },
     {
@@ -77,7 +77,7 @@
       "code": "CONC-02",
       "name": "Catering Pax Hard-Cap Concurrency Clamping",
       "passed": true,
-      "durationMs": 34.41,
+      "durationMs": 30.52,
       "detail": "Plafon Katering Terkunci: Seluruh 10 submisi paralel berhasil di-clamp secara deterministik ke batas kuota katering (2 pax)."
     },
     {
@@ -85,7 +85,7 @@
       "code": "CONC-03",
       "name": "PostgreSQL Atomic UPSERT Rate Limiting Burst",
       "passed": true,
-      "durationMs": 10.66,
+      "durationMs": 10.24,
       "detail": "Rate Limiter PostgreSQL Lolos: Dari 25 burst paralel, tepat 5 diizinkan dan 20 diblokir tanpa deadlock."
     },
     {
@@ -93,23 +93,23 @@
       "code": "LIFE-01",
       "name": "Subdomain Anti-Collision Unique Constraint",
       "passed": true,
-      "durationMs": 19.81,
-      "detail": "Unique Constraint DB Aktif: Subdomain 'sub39400' berhasil mencegah tabrakan URL."
+      "durationMs": 19.71,
+      "detail": "Unique Constraint DB Aktif: Subdomain 'sub40200' berhasil mencegah tabrakan URL."
     },
     {
       "domain": "LIFECYCLE",
       "code": "LIFE-02",
       "name": "Single Source of Truth Static HTML Compilation",
       "passed": true,
-      "durationMs": 76.98,
-      "detail": "Kanonikal HTML Sukses: Berkas statis dibakar ke /Users/armansyam/Documents/Project AmsDev/Luxenary-Invite/public/published/ids/645381c6-7f09-40a4-a3d7-c53b8297005f.html (148549 bytes)."
+      "durationMs": 56.55,
+      "detail": "Kanonikal HTML Sukses: Berkas statis dibakar ke /Users/armansyam/Documents/Project AmsDev/Luxenary-Invite/public/published/ids/958a5561-2257-4370-9fe1-773c1d2b7d0b.html (148549 bytes)."
     },
     {
       "domain": "LIFECYCLE",
       "code": "LIFE-03",
       "name": "Three-Layer Storage Cleanup Invariant (Zero Disk Leak)",
       "passed": true,
-      "durationMs": 1.34,
+      "durationMs": 1.09,
       "detail": "Invarian 3 Lapis Penyimpanan Terbukti: Published HTML, Draft HTML, dan Folder Uploads terhapus 100% tanpa kebocoran disk."
     },
     {
@@ -117,7 +117,7 @@
       "code": "THM-01",
       "name": "Theme Rendering Matrix & Extreme Data Stress",
       "passed": true,
-      "durationMs": 30.35,
+      "durationMs": 8.82,
       "detail": "Seluruh sampel 5 tema aktif sukses dirender di bawah data ekstrem & payload XSS."
     },
     {
@@ -125,7 +125,7 @@
       "code": "INF-01",
       "name": "PostgreSQL Critical Search Indexes Audit",
       "passed": true,
-      "durationMs": 180.04,
+      "durationMs": 18.05,
       "detail": "Audit Indeks PostgreSQL Lolos: Ditemukan 36 indeks aktif pada tabel-tabel utama (mencegah Full Table Scan)."
     },
     {
@@ -133,7 +133,7 @@
       "code": "INF-02",
       "name": "Foreign Key Cascade Delete & Zero-Orphan Integrity",
       "passed": true,
-      "durationMs": 16.3,
+      "durationMs": 30.62,
       "detail": "Cascade Delete Sempurna: Penghapusan User membersihkan seluruh relasi (Invitation, Guest, RSVP) dengan 0 orphan."
     },
     {
@@ -141,7 +141,7 @@
       "code": "RES-01",
       "name": "Graceful Degradation & Corrupted Input Handling",
       "passed": true,
-      "durationMs": 0.74,
+      "durationMs": 0.63,
       "detail": "Fault Tolerance Teruji: Input anomali, format korup, dan ID fiktif ditangani secara elegan tanpa crash proses."
     }
   ],
@@ -149,22 +149,22 @@
     {
       "operation": "QR Check-in Atomic Update",
       "iterations": 5,
-      "minMs": 4.05,
-      "maxMs": 5.06,
-      "avgMs": 4.53,
-      "p50Ms": 4.47,
-      "p95Ms": 5.06,
-      "p99Ms": 5.06
+      "minMs": 2.49,
+      "maxMs": 3.06,
+      "avgMs": 2.82,
+      "p50Ms": 2.8,
+      "p95Ms": 3.06,
+      "p99Ms": 3.06
     },
     {
       "operation": "PostgreSQL Rate Limiter UPSERT",
       "iterations": 25,
-      "minMs": 5.62,
-      "maxMs": 7.78,
-      "avgMs": 6.7,
-      "p50Ms": 6.52,
-      "p95Ms": 7.75,
-      "p99Ms": 7.78
+      "minMs": 5.57,
+      "maxMs": 8.33,
+      "avgMs": 6.38,
+      "p50Ms": 6.22,
+      "p95Ms": 7.42,
+      "p99Ms": 8.33
     }
   ]
 }

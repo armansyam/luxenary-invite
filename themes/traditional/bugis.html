@@ -111,7 +111,6 @@
     .font-bugis-title { font-family: 'Cinzel', 'Cinzel Decorative', serif; letter-spacing: 0.12em; }
     .font-bugis-accent { font-family: 'Great Vibes', cursive; }
     .font-bugis-quote { font-family: 'Cormorant Garamond', serif; font-style: italic; }
-    .font-bugis-sans { font-family: 'Plus Jakarta Sans', sans-serif; }
 
     /* ANIMATIONS & MICRO-INTERACTIONS */
     @keyframes bugisFloat {
@@ -144,10 +143,6 @@
     }
     .corner-tl { top: 0; left: 0; }
     .corner-tr { top: 0; right: 0; }
-    .corner-bl { bottom: 0; left: 0; }
-    .corner-br { bottom: 0; right: 0; }
-    .cover-screen .corner-bl,
-    .cover-screen .corner-br { display: none !important; }
 
     /* BORDER FRAMES (SEAMLESS REPEAT-X ARCHITECTURE) */
     .bugis-frame-top {
@@ -337,32 +332,6 @@
       transform: translateY(-2px);
       box-shadow: 0 12px 32px var(--border-gold-bright);
       border-color: #ffffff;
-    }
-
-    .btn-open-qr-cover, .btn-qr-ghost {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      margin-top: 0.85rem;
-      background: color-mix(in srgb, var(--bg-dark) 80%, transparent);
-      color: var(--bugis-gold);
-      border: 1px solid var(--border-gold);
-      border-radius: 9999px;
-      padding: 0.45rem 1.2rem;
-      font-size: 0.75rem;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      cursor: pointer;
-      backdrop-filter: blur(10px);
-      transition: all 0.3s ease;
-      position: relative;
-      z-index: 20;
-    }
-    .btn-open-qr-cover:hover, .btn-qr-ghost:hover {
-      background: var(--bugis-gold);
-      color: var(--bg-dark);
-      border-color: var(--bugis-gold);
     }
 
     /* DESKTOP SPLIT-SCREEN 460PX ARCHITECTURE */
