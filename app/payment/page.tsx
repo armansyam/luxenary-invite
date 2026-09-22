@@ -22,6 +22,7 @@ function PaymentContent() {
 
   // QRIS Gateway State
   const [qrData, setQrData] = useState<string | null>(null);
+  const [snapRedirectUrl, setSnapRedirectUrl] = useState<string | null>(null);
   const [qrisExpiry, setQrisExpiry] = useState<number | null>(null);
   const [qrisTotalDuration, setQrisTotalDuration] = useState<number>(0);
   const [countdownStr, setCountdownStr] = useState<string>("");
@@ -140,7 +141,7 @@ function PaymentContent() {
         setPaymentMode("GATEWAY");
       }
 
-      // Parse Snap Token jika QRIS
+      // Parse Snap Token jika QRIS atau URL Snap
       if (data.snapToken) {
         try {
           const parsed = JSON.parse(data.snapToken);
@@ -151,7 +152,10 @@ function PaymentContent() {
             if (duration > 0) setQrisTotalDuration(duration);
           }
         } catch {
-          // Token format lama
+          // Token format URL direct (Snap)
+          if (typeof data.snapToken === "string" && data.snapToken.startsWith("http")) {
+            setSnapRedirectUrl(data.snapToken);
+          }
         }
       }
 
@@ -188,6 +192,8 @@ function PaymentContent() {
         }
         const duration = data.expiryTimestamp - (data.serverTime || Date.now());
         if (duration > 0) setQrisTotalDuration(duration);
+      } else if (res.ok && data.checkoutUrl) {
+        setSnapRedirectUrl(data.checkoutUrl);
       }
     } catch (e) {
       console.error("[Payment] Gagal inisialisasi QRIS:", e);
@@ -274,14 +280,19 @@ function PaymentContent() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Gagal memperbarui sesi QRIS");
 
-      setQrData(data.qrString);
-      setQrisExpiry(data.expiryTimestamp);
-      setIsGatewayExpired(false);
-      if (data.serverTime) {
-        setServerTimeOffset(data.serverTime - Date.now());
+      if (data.qrString) {
+        setQrData(data.qrString);
+        setQrisExpiry(data.expiryTimestamp);
+        setIsGatewayExpired(false);
+        if (data.serverTime) {
+          setServerTimeOffset(data.serverTime - Date.now());
+        }
+        const duration = data.expiryTimestamp - (data.serverTime || Date.now());
+        if (duration > 0) setQrisTotalDuration(duration);
+      } else if (data.checkoutUrl) {
+        setSnapRedirectUrl(data.checkoutUrl);
+        setIsGatewayExpired(false);
       }
-      const duration = data.expiryTimestamp - data.serverTime;
-      if (duration > 0) setQrisTotalDuration(duration);
     } catch (err: any) {
       setPaymentNotice({ type: "error", message: err.message || "Gagal memperbarui QRIS" });
     } finally {
@@ -672,9 +683,60 @@ function PaymentContent() {
                   )}
                 </div>
               </div>
+            ) : snapRedirectUrl ? (
+              /* Tampilan Snap Checkout (Fallback saat Core API belum aktif) */
+              <div className="bg-white/5 border border-amber-500/20 rounded-2xl sm:rounded-3xl p-5 sm:p-7 space-y-4 sm:space-y-6 backdrop-blur-xs text-center relative overflow-hidden">
+                <div className="space-y-1.5 pt-2">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[10px] font-bold tracking-widest uppercase">
+                    Gateway Pembayaran Resmi
+                  </div>
+                  <h3 className="text-white font-bold text-base sm:text-lg">Selesaikan Pembayaran via Midtrans</h3>
+                  <div className="text-amber-400 font-serif font-bold text-2xl sm:text-3xl">
+                    Rp {Number(order.amount).toLocaleString("id-ID")}
+                  </div>
+                  <p className="text-stone-400 text-xs max-w-sm mx-auto leading-relaxed">
+                    Mendukung pembayaran aman melalui QRIS (BCA, Mandiri, GoPay, OVO, Dana) dan metode resmi lainnya.
+                  </p>
+                </div>
+
+                <div className="p-4 bg-white/5 rounded-2xl border border-white/10 max-w-sm mx-auto space-y-3">
+                  <a
+                    href={snapRedirectUrl}
+                    className="block w-full py-3.5 px-6 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 font-bold text-xs sm:text-sm rounded-xl shadow-lg transition transform active:scale-95"
+                  >
+                    Buka Halaman Pembayaran Midtrans
+                  </a>
+                  <p className="text-[10px] text-stone-400">
+                    Klik tombol di atas untuk membuka tagihan resmi. Selesai membayar, status otomatis terverifikasi.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  {sseError ? (
+                    <div className="px-4 py-3 bg-amber-950/60 border border-amber-500/40 rounded-2xl text-center space-y-2">
+                      <p className="text-[11px] text-stone-400">
+                        Koneksi realtime terputus. Jika sudah membayar, klik tombol di bawah untuk verifikasi status:
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleCheckStatus}
+                        disabled={isCheckingStatus}
+                        className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs rounded-xl cursor-pointer"
+                      >
+                        {isCheckingStatus ? "Memeriksa..." : "Cek Status Pembayaran"}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center gap-2 text-amber-400 font-bold text-xs">
+                      <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                      <span>Menunggu Pembayaran Otomatis...</span>
+                    </div>
+                  )}
+                </div>
+              </div>
             ) : (
               <div className="bg-white/5 border border-white/10 rounded-3xl p-6 text-center text-xs text-stone-400 font-mono">
-                Menyiapkan sesi QRIS...
+                Menyiapkan sesi pembayaran...
               </div>
             )}
           </div>
