@@ -60,6 +60,7 @@
       --shadow-subtle: 0 4px 20px rgba(0, 0, 0, 0.3);
       --shadow-elevated: 0 12px 36px rgba(0, 0, 0, 0.45);
       --gold-glow: 0 0 20px rgba(249, 231, 188, 0.2);
+      --bugis-gold-logo: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--accent, #f9e7bc) 90%, white) 0%, color-mix(in srgb, var(--accent, #f9e7bc) 65%, #8c6d1f) 45%, #9a7638 85%, #694e1e 100%);
     }
 
     * {
@@ -786,7 +787,7 @@
       width: 24px;
       height: 24px;
       border-radius: var(--radius-full);
-      background: radial-gradient(circle at 35% 30%, #fff1cf 0%, #deb974 45%, #9a7638 85%, #694e1e 100%);
+      background: var(--bugis-gold-logo);
       border: 1.5px solid color-mix(in srgb, var(--accent, #f9e7bc) 65%, transparent);
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6), var(--gold-glow);
       display: flex;
@@ -1041,8 +1042,8 @@
     }
 
     .couple-ig:hover {
-      color: #ffffff;
-      border-color: #ffffff;
+      color: var(--text-main, #ffffff);
+      border-color: var(--text-main, #ffffff);
     }
 
     /* =================================================================== */
@@ -1385,7 +1386,7 @@
       width: 100%;
       padding: 14px;
       border-radius: var(--radius-sm);
-      background: linear-gradient(135deg, #f9e7bc 0%, #e2cb98 50%, #c4aa6f 100%);
+      background: linear-gradient(135deg, var(--bugis-gold-antique) 0%, color-mix(in srgb, var(--bugis-gold-antique) 65%, #8c6d1f) 50%, color-mix(in srgb, var(--bugis-gold-antique) 40%, #694e1e) 100%);
       color: #032119;
       font-size: 12px;
       font-weight: 700;
