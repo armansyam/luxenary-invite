@@ -324,6 +324,7 @@ Siklus hidup undangan diatur secara otomatis oleh cron job (`POST /api/cron/clea
    - Klien dapat memperpanjang masa simpan sebelum kedaluwarsa melalui Add-on QRIS: **+30 Hari (Rp50.000)** atau **+1 Tahun (Rp150.000)**.
 3. **Pembersihan Terpadu Sekali Jalan (Single Unified Cleanup Phase saat `now > effectiveExpiry`)**:
    - Seluruh foto kenangan tamu (`GuestMemory`) di Cloudflare R2 (`deleteFile`) dan direktori lokal `public/uploads/guest-memories/{id}/` dihapus permanen.
+   - Jika Cold Storage NAS aktif (`lib/nasArchive.ts`), berkas media di Cloudflare R2 (`invitations/{id}/`) dibersihkan total sehingga storage R2 kembali 0 KB, setelah dipastikan salinan mandiri telah aman tersimpan di NAS.
    - Subdomain dilepaskan kembali ke pool umum (`subdomain = null`) agar dapat digunakan kembali oleh pasangan lain.
    - Custom domain dinonaktifkan/dilepas.
    - Data formulir RSVP dibersihkan demi privasi tamu.
@@ -331,16 +332,17 @@ Siklus hidup undangan diatur secara otomatis oleh cron job (`POST /api/cron/clea
 4. **Kebijakan Nol Penghapusan Akun & Portofolio Abadi**:
    - **Zero Account Deletion:** Akun klien (`User`) di PostgreSQL tidak pernah dihapus (<1 KB). Klien dapat login kapan saja ke dasbor.
    - **Zero Portfolio Deletion:** Portofolio admin (`public/portfolio/`) adalah aset abadi yang tidak tersentuh oleh siklus retensi klien.
-5. **Dasbor Klien 1 Halaman Rangkuman & Arsip Digital (`/dashboard` saat `ARCHIVED`)**:
+5. **Dasbor Klien 1 Halaman Rangkuman & Vault Undangan Abadi (`/dashboard` saat `ARCHIVED`)**:
    - Ketika undangan telah berstatus `ARCHIVED`, tampilan dasbor klien otomatis beralih menjadi 1 halaman memorial eksklusif:
      - Surat Penutup Hangat dan apresiasi kepada kedua mempelai.
+     - **Kartu Vault Undangan Kenangan (Cold Vault Archive):** Tautan kanonikal abadi `luxvite.id/[invitationSlug]` yang menyajikan undangan dari Cold Storage NAS selama 1 tahun, lengkap dengan tombol *Buka Undangan* dan *Salin Tautan*.
      - 4 Kartu Metrik Ringkasan Eksekutif: Doa Restu Masuk, Tamu Hadir (Pax), Total Buku Tamu, dan Tanggal Acara.
      - Pusat Unduhan Arsip Digital: Unduh Rekapan Doa (.CSV) dan Unduh Rekapitulasi Kehadiran & RSVP (.CSV).
      - Bersih tanpa tombol "Buat Undangan Baru" dan tanpa tombol "Reaktivasi".
-6. **Smart Fallback ke Portofolio / Beranda**:
-   - Jika slug diakses saat undangan berstatus `ARCHIVED`, sistem memeriksa apakah salinan portofolio ada di `/portfolio/[slug]`.
-   - Jika ada portofolio, otomatis dialihkan (*HTTP 307*) ke halaman portofolio sebagai arsip kenangan abadi.
-   - Jika tidak ada, sistem langsung mengalihkan (*HTTP 302/307*) pengunjung kembali ke Halaman Utama (`/`) secara elegan tanpa memunculkan error 404.
+6. **Smart Fallback & Penyajian Arsip Mandiri NAS (`app/(public)/[slug]/route.ts`)**:
+   - **Prioritas 1 (Cold Storage NAS Vault):** Jika slug diakses saat undangan berstatus `ARCHIVED` dan fitur NAS aktif, sistem langsung menyajikan file HTML mandiri dari NAS (`readNasArchiveHtml`) dengan status HTTP 200 dan streaming aset dari `/archives/[slug]/assets/[file]`. Undangan tetap hidup dan utuh selama 1 tahun.
+   - **Prioritas 2 (Portofolio):** Jika arsip NAS tidak aktif/tidak ada, sistem memeriksa apakah salinan portofolio ada di `/portfolio/[slug]` dan mengalihkan (*HTTP 307*) ke halaman portofolio.
+   - **Prioritas 3 (Fallback Beranda):** Jika tidak ada portofolio dan tidak ada arsip NAS, sistem langsung mengalihkan (*HTTP 307*) pengunjung kembali ke Halaman Utama (`/`) secara elegan tanpa error 404.
 4. **Pemisahan Desain & Operasional Galeri Kenangan Tamu**:
    - **Formulir Studio Editor (`/dashboard/invitation/[id]` Seksi 14):** Styling & konfigurasi seksi: Toggle aktif (`showGuestMemories`), Judul Seksi, Eyebrow, Deskripsi, Mode Pengambilan (Disposable Camera vs Standard Form), Pilihan 5 Filter Analog (`aura_90s`, `heritage_romance`, `botanical_mist`, `cinema_noir`, `pure_daylight`), Toggle & Format LED Date Stamp (`#e8875a`), Kuota Dinamis Tamu Pengunggah (`memoriesMaxContributors`), Jatah Roll per Tamu bebas hingga 30 foto (`memoriesShotsQuota`), Jadwal Kamera Aktif Mandiri, dan Toggle Kamar Gelap Digital (*Delayed Reveal*).
    - **Dashboard Klien (`/dashboard` Seksi 5 & Card 4):** Pusat operasional & monitoring momen tamu: tautan album kenangan, widget unduh arsip ZIP client-side, status kuota real-time, rincian masa simpan transparan (*Masa Aktif: Base Days (Default) + Perpanjangan (XH) : Tanggal Mulai s.d. Tanggal Expired*), tombol & modal *Atur Jatah Roll Tamu* dengan estimasi kapasitas dinamis `~Floor(Sisa_Pool / Jatah_Roll) Tamu`, dan *Unified Addon Modal* bertema Warm Editorial Ivory & Royal Amber Gold untuk top-up kuota foto (+100, +250, +500), perpanjangan masa galeri (+30 hari via QRIS), dan upgrade tier paket.

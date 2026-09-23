@@ -6328,6 +6328,83 @@ export default function AdminPage() {
                     </div>
                   </SettingsCard>
 
+                  {/* ── Card 2.5: Cold Storage & Arsip Mandiri NAS (Luxenary Vault) ── */}
+                  <SettingsCard
+                    title="Cold Storage & Arsip Mandiri NAS (Luxenary Vault)"
+                    description="Kelola penyimpanan arsip dingin jangka panjang (1 tahun) ke direktori mount NAS lokal pasca retensi galeri tamu berakhir."
+                    isEditing={Boolean(editSection["nas_archive"])}
+                    onEdit={() => toggleEditSection("nas_archive")}
+                    onCancel={() => cancelEdit("nas_archive", ["nas_archive_enabled", "nas_archive_path", "nas_archive_retention_days"])}
+                    onSave={() => saveSettings(["nas_archive_enabled", "nas_archive_path", "nas_archive_retention_days"], setSavingBackupSettings, "nas_archive")}
+                    saving={savingBackupSettings}
+                    isDirty={isSectionDirty(["nas_archive_enabled", "nas_archive_path", "nas_archive_retention_days"])}
+                    saveSuccess={settingsSaved["nas_archive"]}
+                    saveSuccessMessage="Pengaturan Cold Storage NAS berhasil disimpan"
+                    viewContent={
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                          <span className="text-xs text-gray-500 block font-medium">Status Fitur Cold Storage</span>
+                          <span className={`text-sm font-bold mt-0.5 inline-block ${
+                            settingsMap["nas_archive_enabled"] === "true" ? "text-emerald-700" : "text-stone-500"
+                          }`}>
+                            {settingsMap["nas_archive_enabled"] === "true" ? "Aktif (Duplikasi NAS)" : "Nonaktif (Dormant)"}
+                          </span>
+                        </div>
+                        <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                          <span className="text-xs text-gray-500 block font-medium">Direktori Arsip NAS</span>
+                          <span className="text-xs font-mono font-bold text-amber-900 mt-0.5 inline-block truncate max-w-full" title={settingsMap["nas_archive_path"] || "./data/archives"}>
+                            {settingsMap["nas_archive_path"] || "./data/archives"}
+                          </span>
+                        </div>
+                        <div className="p-3 bg-gray-50 rounded-xl border border-gray-200">
+                          <span className="text-xs text-gray-500 block font-medium">Masa Simpan Arsip</span>
+                          <span className="text-sm font-bold text-gray-800 mt-0.5 inline-block">
+                            {settingsMap["nas_archive_retention_days"] || "365"} Hari (1 Tahun)
+                          </span>
+                        </div>
+                      </div>
+                    }
+                  >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FieldRow label="Status Cold Storage NAS">
+                        <select
+                          value={settingsMap["nas_archive_enabled"] ?? "false"}
+                          onChange={(e) => setSetting("nas_archive_enabled", e.target.value)}
+                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
+                        >
+                          <option value="false">Nonaktif (Hanya gunakan R2 / VPS default)</option>
+                          <option value="true">Aktif (Duplikasi berkas mandiri ke folder NAS)</option>
+                        </select>
+                      </FieldRow>
+
+                      <FieldRow label="Masa Tayang Arsip (Hari)" description="Durasi penyimpanan arsip setelah status beralih ke ARCHIVED">
+                        <input
+                          type="number"
+                          min="30"
+                          max="3650"
+                          value={settingsMap["nas_archive_retention_days"] || "365"}
+                          onChange={(e) => setSetting("nas_archive_retention_days", e.target.value)}
+                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs"
+                        />
+                      </FieldRow>
+
+                      <div className="md:col-span-2">
+                        <FieldRow
+                          label="Path Direktori Arsip NAS"
+                          description="Direktori mount NAS di server VPS (contoh: /mnt/nas/archives) atau folder lokal cadangan (contoh: ./data/archives)."
+                        >
+                          <input
+                            type="text"
+                            value={settingsMap["nas_archive_path"] !== undefined ? settingsMap["nas_archive_path"] : "./data/archives"}
+                            onChange={(e) => setSetting("nas_archive_path", e.target.value)}
+                            placeholder="./data/archives"
+                            className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-2xs font-mono"
+                          />
+                        </FieldRow>
+                      </div>
+                    </div>
+                  </SettingsCard>
+
                   {/* ── Card 3: Daftar Riwayat Snapshot Server ── */}
                   <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                     <div className="p-6 border-b border-gray-100 flex items-center justify-between">

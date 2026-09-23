@@ -113,13 +113,30 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
 
   // Jika undangan sudah berstatus ARCHIVED (masa galeri telah berakhir)
   if (invitation.status === "ARCHIVED") {
+    // 1. Prioritaskan penyajian arsip mandiri dari Cold Storage NAS jika tersedia
+    try {
+      const { readNasArchiveHtml } = await import("@/lib/nasArchive");
+      const nasHtml = await readNasArchiveHtml(slug);
+      if (nasHtml) {
+        return new NextResponse(nasHtml, {
+          status: 200,
+          headers: {
+            "Content-Type": "text/html; charset=utf-8",
+            "Cache-Control": "public, max-age=3600, s-maxage=86400",
+          },
+        });
+      }
+    } catch (nasErr) {
+      console.warn(`[Public Slug Route] Gagal membaca arsip NAS (${slug}):`, nasErr);
+    }
+
     const rootUrl = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `https://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "https://luxvite.id")).replace(/\/$/, "");
     const portfolioExists = await hasPortfolio(slug);
     if (portfolioExists) {
       return NextResponse.redirect(`${rootUrl}/portfolio/${slug}`, 307);
     }
 
-    // Jika tidak ada portofolio, langsung alihkan ke halaman utama
+    // Jika tidak ada portofolio dan arsip NAS belum siap, alihkan ke halaman utama
     return NextResponse.redirect(`${rootUrl}/`, 307);
   }
 

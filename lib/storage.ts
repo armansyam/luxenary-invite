@@ -216,6 +216,13 @@ export async function syncDraftToR2(invitationId: string): Promise<void> {
     });
     if (!inv) return;
 
+    // Sinkronisasi ganda non-blocking ke NAS Cold Storage selagi berkas fisik masih ada di disk lokal VPS
+    import("./nasArchive").then(({ syncInvitationToNasArchive }) => {
+      syncInvitationToNasArchive(invitationId).catch((err) => {
+        console.warn("[syncDraftToR2] NAS archive sync failed:", err);
+      });
+    }).catch(() => {});
+
     const mimeTypes: Record<string, string> = {
       ".webp": "image/webp",
       ".jpg": "image/jpeg",

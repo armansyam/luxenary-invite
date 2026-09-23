@@ -207,7 +207,7 @@ Arsitektur perutean lalu lintas jaringan:
 - **Evaluasi Keamanan Jaringan:**
   Pendekatan ini adalah standar emas industri untuk multi-tenant custom domain (*SaaS custom domains*):
   1. **Perlindungan Terhadap SSL DoS Exhaustion:** Penyerang tidak bisa mengarahkan domain sembarang ke IP VPS untuk memaksa Caddy meminta ribuan sertifikat SSL ke Let's Encrypt hingga terkena *Rate Limit BAN*. Caddy akan memanggil endpoint `/api/public/resolve-custom-domain` terlebih dahulu.
-  2. **Verifikasi Database Cepat:** Endpoint memeriksa tabel `invitations` dengan kolom `customDomain` yang berstatus `@unique`. Hanya domain yang benar-benar terdaftar pada undangan aktif (`PUBLISHED` atau `EVENT_FINISHED`) yang diizinkan menerbitkan SSL.
+  2. **Verifikasi Database Cepat:** Endpoint memeriksa tabel `invitations` dengan kolom `customDomain` yang berstatus `@unique`. Hanya domain yang benar-benar terdaftar pada undangan aktif (`DRAFT`, `PUBLISHED`, atau `EVENT_FINISHED`) yang diizinkan menerbitkan SSL, sehingga domain klien langsung memiliki sertifikat SSL HTTPS valid sejak draf awal dan dapat menyajikan halaman splash screen resmi saat belum dipublikasikan.
   3. **In-Memory Cache (TTL 5 Menit):** Middleware Next.js memiliki cache internal `customDomainCache` dengan kapasitas 500 entri dan pembersihan otomatis (*lazy cleanup*) untuk mencegah amplifikasi self-fetch loop.
 
 ### 4.3 Perlindungan Subdomain Khusus (Reserved Subdomains Guard)

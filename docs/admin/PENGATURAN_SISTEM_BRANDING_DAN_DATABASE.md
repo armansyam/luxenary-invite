@@ -97,14 +97,13 @@ Menyediakan antarmuka Disaster Recovery mandiri untuk database PostgreSQL:
 
 Mengatur struktur biaya dinamis platform yang langsung tersinkronisasi dua arah ke dashboard klien tanpa hardcode:
 - **Paket Undangan Utama:** TIER_1 (Serenade), TIER_2 (Symphony), TIER_3 (Eternity).
-- **Layanan Tambahan (Add-Ons) & Perpanjangan (2 Layanan Resmi):**
-  1. **Jasa Integrasi Custom Domain (1 Tahun Penuh) (`addon_custom_domain_price`):**
-     - Mengatur tarif jasa integrasi domain pribadi milik klien (DNS CNAME / Record A & Auto-SSL Caddy).
-     - Otomatis menjamin masa aktif URL asli undangan serta galeri kenangan tamu selama 1 tahun penuh (+365 hari).
-     - Terhubung langsung secara real-time ke halaman Pengaturan Klien (`/dashboard/settings` -> `/api/client/custom-domain/buy`).
-  2. **Perpanjangan Masa Aktif URL Asli / Galeri (Bulanan / 30 Hari) (`gallery_extension_price_per_month`):**
-     - Nominal tagihan QRIS dinamis per 30 hari untuk mempertahankan eksistensi URL Asli undangan (yang pasca acara beralih fungsi menjadi galeri kenangan tamu) dan penyimpanan file foto tamu di server Cloudflare R2 agar tidak dibersihkan oleh cron cleanup.
-     - Diperuntukkan bagi klien pengguna subdomain platform bawaan yang ingin memperpanjang masa simpan foto kenangan tamu setelah masa retensi default habis.
+- **Layanan Tambahan (Add-Ons) Resmi:**
+  1. **Top-Up Kuota Foto Momen Tamu (`addon_memories_topup_price` & `addon_memories_topup_photos`):**
+     - Penambahan kapasitas kuota foto candid tamu di album kenangan (default: Rp35.000 per +100 foto).
+  2. **Perpanjangan Masa Aktif Galeri / Retensi (`gallery_extension_price_per_month`):**
+     - Nominal tagihan dinamis untuk memperpanjang masa simpan foto kenangan tamu di server Cloudflare R2 setelah masa retensi default habis (bulanan atau tahunan).
+- **Integrasi Custom Domain (Inklusif Paket TIER_3 Eternity):**
+  - Fitur custom domain pribadi klien (DNS CNAME / Record A & Auto-SSL Caddy) melekat gratis pada paket TIER_3 Eternity, dikelola langsung di halaman Pengaturan Klien (`/dashboard/settings` -> `POST /api/client/custom-domain`).
 
 ---
 

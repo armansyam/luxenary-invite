@@ -195,6 +195,56 @@ function DashboardHomeContent() {
           </div>
         </div>
 
+        {/* Luxury Cold Vault Archive Card */}
+        {invitation.invitationSlug && (
+          <div className="bg-stone-900 rounded-3xl p-6 sm:p-7 border border-stone-800 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 relative overflow-hidden">
+            <div className="absolute -right-10 -top-10 w-48 h-48 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
+            <div className="space-y-2 z-10">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-500/15 border border-amber-500/30 text-amber-300 rounded-full text-[11px] font-bold uppercase tracking-wider">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                <span>Cold Vault &bull; Tersimpan Abadi (1 Tahun)</span>
+              </div>
+              <h2 className="text-lg sm:text-xl font-serif font-bold text-white tracking-tight">
+                Undangan Pernikahan Tetap Aktif
+              </h2>
+              <p className="text-xs sm:text-sm text-stone-300 max-w-xl leading-relaxed">
+                Undangan digital pernikahan Anda tersimpan mandiri di Cold Storage kami dan tetap dapat Anda nikmati kembali kapan saja melalui tautan kanonikal abadi.
+              </p>
+              <div className="pt-1 flex items-center gap-2 text-xs font-mono text-amber-200/90 truncate">
+                <svg className="w-3.5 h-3.5 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                </svg>
+                <span className="truncate">/{invitation.invitationSlug}</span>
+              </div>
+            </div>
+            <div className="flex sm:flex-col gap-2.5 w-full sm:w-auto shrink-0 z-10 pt-1 sm:pt-0">
+              <a
+                href={`/${invitation.invitationSlug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 sm:flex-initial py-2.5 px-5 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white font-bold rounded-xl text-xs transition text-center shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>Buka Undangan</span>
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </a>
+              <button
+                type="button"
+                onClick={() => {
+                  const url = `${window.location.origin}/${invitation.invitationSlug}`;
+                  navigator.clipboard.writeText(url);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+                className="py-2.5 px-4 bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-700 font-medium rounded-xl text-xs transition text-center flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>{copied ? "Tersalin!" : "Salin Tautan"}</span>
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* 4 Summary Metric Cards */}
         <div>
           <h2 className="text-xs font-bold uppercase tracking-wider text-stone-500 mb-3 px-1">

@@ -122,6 +122,13 @@ export async function buildAndSavePublishedHtml(invitationId: string): Promise<s
 
   console.log(`[Static Publisher] HTML baked (Single Source of Truth): ${masterPath} | size=${(standaloneHtml.length / 1024).toFixed(1)}KB`);
 
+  // Sinkronisasi non-blocking ke arsip NAS jika fitur diaktifkan
+  import("./nasArchive").then(({ syncInvitationToNasArchive }) => {
+    syncInvitationToNasArchive(invitationId).catch((err) => {
+      console.warn("[staticPublisher] NAS archive sync failed:", err);
+    });
+  }).catch(() => {});
+
   return standaloneHtml;
 }
 

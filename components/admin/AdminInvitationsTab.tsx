@@ -464,7 +464,10 @@ export default function AdminInvitationsTab({ onNavigateToThemes }: AdminInvitat
                           </div>
                         )}
                         {(inv.status === "ARCHIVED" || inv.status === "TAKEN_DOWN") && (
-                          <span className="text-stone-400">Masa Tayang Selesai</span>
+                          <div>
+                            <div className="font-semibold text-amber-800">Cold Vault (1 Thn)</div>
+                            <div className="text-[10px] text-stone-400">Arsip Mandiri NAS</div>
+                          </div>
                         )}
                       </td>
 
@@ -550,6 +553,21 @@ export default function AdminInvitationsTab({ onNavigateToThemes }: AdminInvitat
                                 )}
                               </svg>
                             </button>
+                          )}
+
+                          {/* Buka Arsip Cold Storage (Khusus ARCHIVED) */}
+                          {inv.status === "ARCHIVED" && inv.invitationSlug && (
+                            <a
+                              href={`/${inv.invitationSlug}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-1.5 rounded-lg text-amber-700 hover:bg-amber-50 border border-stone-200 hover:border-amber-300 transition cursor-pointer"
+                              title="Buka Arsip Cold Storage Undangan"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              </svg>
+                            </a>
                           )}
                         </div>
                       </td>

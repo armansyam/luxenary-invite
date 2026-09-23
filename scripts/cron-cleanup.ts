@@ -99,6 +99,23 @@ async function runCleanup() {
             try { await fs.promises.unlink(draftHtml); } catch {}
           }
 
+          // 2.5 Sinkronisasi arsip NAS & pembersihan media R2 jika Cold Storage aktif
+          try {
+            const { isNasArchiveEnabled, syncInvitationToNasArchive } = await import("../lib/nasArchive");
+            const nasEnabled = await isNasArchiveEnabled();
+            if (nasEnabled) {
+              await syncInvitationToNasArchive(inv.id);
+              const invMedia = await prisma.invitationMedia.findMany({ where: { invitationId: inv.id } });
+              if (invMedia.length > 0) {
+                const { deleteFile } = await import("../lib/storage");
+                await Promise.all(invMedia.map(m => m.localPath ? deleteFile(m.localPath) : Promise.resolve()))
+                  .catch(() => {});
+              }
+            }
+          } catch (e: any) {
+            console.warn(`[Cron Cleanup] Gagal sinkron arsip NAS (${inv.id}):`, e.message);
+          }
+
           // 3. Cabut subdomain dari database dan ubah status menjadi ARCHIVED
           await prisma.invitation.update({
             where: { id: inv.id },

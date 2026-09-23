@@ -80,7 +80,7 @@ Memerlukan sesi aktif klien (`role: CLIENT` atau Admin Remote Session):
 | | `DELETE` | `/api/client/guests/{id}` | Menghapus tamu dari daftar buku tamu. |
 | **RSVP** | `GET` | `/api/client/rsvps` | Mengambil data kehadiran dan ucapan dari tamu untuk dimoderasi. |
 | **Domain** | `GET` | `/api/client/subdomain/check` | Memeriksa ketersediaan nama subdomain secara instan. |
-| | `POST` | `/api/client/custom-domain/buy` | Membuat pesanan lisensi custom domain pribadi. |
+| | `POST` | `/api/client/custom-domain` | Menyimpan, memperbarui, atau melepaskan tautan custom domain pribadi. |
 | **Moments** | `GET` | `/api/client/invitations/{id}/memories` | Mengambil feed kenangan tamu, status order perpanjangan pending, dan kalkulasi kuota foto (`baseTotalPhotos`, `extraMemoriesQuota`, `usedPhotos`, `remainingPhotos`). |
 | | `PATCH` | `/api/client/invitations/{id}/memories` | Mengonfigurasi kamera tamu (`memoriesOpeningLayout`, `memoriesCardInstruction`, `memoriesFilter`, `memoriesDateStamp`, jatah roll, dan jadwal `memoriesSessions` dengan pembatas kuota server-side). |
 | | `GET` | `/api/client/memories/download` | Mengunduh seluruh foto kenangan tamu dalam satu berkas `.zip`. |

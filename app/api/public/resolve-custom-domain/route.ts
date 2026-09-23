@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
         { customDomain: hostWithoutWww },
         { customDomain: hostWithWww },
       ],
-      status: { in: ["PUBLISHED", "EVENT_FINISHED"] },
+      status: { in: ["DRAFT", "PUBLISHED", "EVENT_FINISHED"] },
     },
     select: {
       subdomain: true,

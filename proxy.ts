@@ -237,6 +237,7 @@ export const proxy = auth(async (req) => {
 
       if (slug) {
         const isFinished = resolution.status === "EVENT_FINISHED";
+        const isArchived = resolution.status === "ARCHIVED";
 
         if (pathname === "/" || pathname === "") {
           if (isFinished) {
@@ -247,6 +248,9 @@ export const proxy = auth(async (req) => {
           return NextResponse.rewrite(rewriteUrl);
         }
         if (pathname === "/memories" || pathname === "/galery" || pathname === "/gallery") {
+          if (isArchived) {
+            return NextResponse.rewrite(new URL(`/${slug}${req.nextUrl.search}`, req.url));
+          }
           return NextResponse.rewrite(new URL(`/${slug}/memories${req.nextUrl.search}`, req.url));
         }
         if (pathname === "/receptionist") {
@@ -293,6 +297,7 @@ export const proxy = auth(async (req) => {
     "/how-it-works",
     "/sharemoment",
     "/memories",
+    "/archives",
     "/s/",
   ];
 
@@ -300,7 +305,7 @@ export const proxy = auth(async (req) => {
     const segments = pathname.split("/").filter(Boolean);
 
     // Exclusion list — path-path sistem yang tidak boleh di-intercept
-    const SYSTEM_PATHS = ["uploads", "css", "js", "fonts", "images", "music", "assets", "downloads", "published", "favicon.ico"];
+    const SYSTEM_PATHS = ["uploads", "archives", "css", "js", "fonts", "images", "music", "assets", "downloads", "published", "favicon.ico"];
 
     if (segments.length >= 1 && !SYSTEM_PATHS.includes(segments[0])) {
       let slug = segments[0]; // Default slug is the first segment

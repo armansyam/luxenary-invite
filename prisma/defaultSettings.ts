@@ -87,6 +87,30 @@ export const defaultSettings: DefaultSettingItem[] = [
     "updatedAt": "2026-09-16T06:28:33.007Z"
   },
   {
+    "id": "c1f7a01a-8e2b-4d5c-9a1f-3b7c8d9e0f12",
+    "key": "nas_archive_enabled",
+    "value": "false",
+    "label": "Aktifkan Cold Storage Arsip NAS",
+    "group": "backup",
+    "updatedAt": "2026-09-23T06:00:00.000Z"
+  },
+  {
+    "id": "d2f8b02b-9f3c-5e6d-0b2a-4c8d9e0f1a23",
+    "key": "nas_archive_path",
+    "value": "./data/archives",
+    "label": "Path Direktori Arsip NAS",
+    "group": "backup",
+    "updatedAt": "2026-09-23T06:00:00.000Z"
+  },
+  {
+    "id": "e3f9c03c-0a4d-6f7e-1c3b-5d9e0f1a2b34",
+    "key": "nas_archive_retention_days",
+    "value": "365",
+    "label": "Masa Retensi Arsip NAS (Hari)",
+    "group": "backup",
+    "updatedAt": "2026-09-23T06:00:00.000Z"
+  },
+  {
     "id": "cdac08d5-8351-449d-9c4f-1638e000133c",
     "key": "bank_account_holder",
     "value": "",

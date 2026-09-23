@@ -141,6 +141,23 @@ export async function POST(req: NextRequest) {
           if (await fileExists(legacyMemoriesDir)) await fs.promises.rm(legacyMemoriesDir, { recursive: true, force: true });
         } catch {}
 
+        // 2.5 Sinkronisasi arsip NAS & bersihkan media inti di R2 jika Cold Storage aktif
+        try {
+          const { isNasArchiveEnabled, syncInvitationToNasArchive } = await import("@/lib/nasArchive");
+          const nasEnabled = await isNasArchiveEnabled();
+          if (nasEnabled) {
+            await syncInvitationToNasArchive(inv.id);
+            const invMedia = await prisma.invitationMedia.findMany({ where: { invitationId: inv.id } });
+            if (invMedia.length > 0) {
+              const { deleteFile } = await import("@/lib/storage");
+              await Promise.all(invMedia.map(m => m.localPath ? deleteFile(m.localPath) : Promise.resolve()))
+                .catch((e) => console.warn(`[Cron Cleanup] Partial invMedia file delete failed:`, e.message));
+            }
+          }
+        } catch (e: any) {
+          console.warn(`[Cron Cleanup] Gagal sinkron/bersihkan media arsip NAS (inv: ${inv.id}):`, e.message);
+        }
+
         // 3. Bersihkan formulir RSVP kedaluwarsa demi privasi
         await prisma.rsvp.deleteMany({ where: { invitationId: inv.id } });
 

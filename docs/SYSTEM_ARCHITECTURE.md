@@ -476,7 +476,8 @@ Ketika undangan telah berstatus `ARCHIVED`, dasbor klien secara otomatis beralih
 - **Pusat Unduhan Arsip Digital (Download Center):**
   - Unduh Rekapan Doa & Ucapan Tamu format `.CSV` (`/api/client/invitations/[id]/export?type=wishes`).
   - Unduh Rekapitulasi Kehadiran & RSVP format `.CSV` (`/api/client/invitations/[id]/export?type=guests`).
-- **Tanpa Tombol Menyesatkan:** Tidak ada tombol "Buat Undangan Baru" dan tidak ada tombol "Reaktivasi" (karena foto sudah dibersihkan permanen dari server).
+- **Kartu Vault Undangan Kenangan (Cold Vault Archive):** Pengantin dapat membuka kembali undangan digital asli mereka yang tersimpan mandiri di Cold Storage NAS kapan saja via tautan kanonikal abadi `luxvite.id/[invitationSlug]`, lengkap dengan tombol *Buka Undangan* dan *Salin Tautan*.
+- **Tanpa Tombol Menyesatkan:** Tidak ada tombol "Buat Undangan Baru" dan tidak ada tombol "Reaktivasi" (karena foto galeri tamu sudah dibersihkan permanen dari server).
 
 ### 6.5 — Layanan Tambahan (Add-Ons) & Perpanjangan Masa Aktif
 1. **Perpanjangan Masa Simpan Bulanan (+30 Hari) (`orderType: GALLERY_EXTENSION`):**
@@ -490,10 +491,22 @@ Ketika undangan telah berstatus `ARCHIVED`, dasbor klien secara otomatis beralih
 1. **Fase Acara Selesai (`EVENT_FINISHED` / H+7 Pasca-Acara):**
    - **Paket dengan kapabilitas `guest_memories`:** Pengunjung yang mengakses `/[slug]` otomatis dialihkan ke Galeri Kenangan Tamu (`/[slug]/memories`).
    - **Paket tanpa `guest_memories`:** Pengunjung disajikan layar penutup resmi yang anggun (*Graceful Event Closed Page*) bertema dark luxury yang berisi ucapan terima kasih tulus dari kedua mempelai, tanpa diarahkan ke galeri kosong.
-2. **Fase Arsip Total (`ARCHIVED` / Masa Galeri Selesai):**
-   - Sistem memeriksa keberadaan file salinan portofolio mandiri secara otomatis melalui `hasPortfolio(slug)`.
-   - **Kondisi A (Ada Portofolio):** Pengunjung yang mengakses URL Asli otomatis dialihkan (*HTTP 307*) ke `/portfolio/[slug]` sebagai arsip kenangan abadi.
-   - **Kondisi B (Tanpa Portofolio):** Pengunjung langsung dialihkan (*HTTP 302/307*) kembali ke Halaman Utama (`/`) secara elegan tanpa error 404.
+2. **Fase Arsip Total (`ARCHIVED` / Masa Galeri Selesai / 1 Tahun Abadi):**
+   - **Prioritas 1 (Cold Storage NAS / Luxenary Vault):** Sistem memeriksa keberadaan arsip mandiri di direktori NAS melalui `readNasArchiveHtml(slug)` ([lib/nasArchive.ts](./lib/nasArchive.ts)). Jika aktif dan berkas tersedia, sistem menyajikan berkas HTML statis mandiri langsung dengan status HTTP 200 dan aset media di-stream dari `/archives/[slug]/assets/[file]`. Undangan tetap hidup dan utuh selama 1 tahun (365 hari) tanpa memakan kuota cloud storage R2.
+   - **Prioritas 2 (Portofolio Admin):** Jika arsip NAS tidak aktif atau tidak ditemukan, sistem memeriksa apakah undangan dijadikan portofolio melalui `hasPortfolio(slug)` dan mengalihkan (*HTTP 307*) ke `/portfolio/[slug]`.
+   - **Prioritas 3 (Fallback Beranda):** Jika tidak ada portofolio dan tidak ada arsip NAS, pengunjung dialihkan (*HTTP 307*) ke Halaman Utama (`/`) secara aman.
+
+### 6.6 — Arsitektur Penyimpanan Bertingkat: Hot Storage (Cloudflare R2) & Cold Storage (NAS Archive Vault)
+Sistem menerapkan prinsip *Tiered Storage* untuk memisahkan beban operasional live dan retensi jangka panjang:
+1. **Tier Panas / Hot Storage (Cloudflare R2):**
+   - Aktif selama H-30 persiapan hingga H+14/30 pasca acara (`DRAFT`, `PUBLISHED`, `EVENT_FINISHED`).
+   - Menyajikan berkas media dengan latensi milidetik melalui Cloudflare Global CDN Edge.
+   - Menampung ratusan foto candid tamu (*Guest Memories / Virtual Disposable Camera*).
+2. **Tier Dingin / Cold Storage (NAS Lokal Standby / Luxenary Vault):**
+   - Modul: `lib/nasArchive.ts` dan route stream `app/archives/[slug]/assets/[...file]/route.ts`.
+   - Menggunakan konfigurasi dinamis `nas_archive_enabled`, `nas_archive_path`, dan `nas_archive_retention_days`.
+   - Bekerja secara *Plug-and-Play (Dormant Ready)*: default `false` atau path lokal `./data/archives`.
+   - Saat status berubah ke `ARCHIVED`: seluruh foto di Cloudflare R2 dibersihkan total (kuota R2 kembali 0 KB), sedangkan berkas mandiri HTML dan aset inti undangan disajikan langsung dari harddisk NAS lokal.
 
 ### 6.5.1 — Manajemen Projek Undangan di Admin Dashboard (`app/(admin)/admin/page.tsx`)
 1. **Nama Tab & Elevasi Konseptual:** Tab navigasi diubah dari sekadar "Undangan" menjadi **"Projek Undangan" (Invitation Projects)** untuk mencerminkan satu siklus hidup utuh (persiapan, tayang, pasca-acara, hingga pengarsipan).
@@ -958,7 +971,7 @@ Fitur *Remote* memungkinkan Admin untuk masuk ke dasbor Klien dan mengendalikann
 5. **Pemulihan Bersih (Restore 1-Klik & Auto Cleanup on Logout):** Saat Admin mengklik tombol *"Kembali ke Admin"* atau *"Hentikan Sesi Remote"*, sistem mengirim request `DELETE /api/admin/remote-session` yang menghapus cookie `lux_remote_client_id`. Selain itu, saat Admin melakukan Logout dari panel admin, cookie remote otomatis dihapus agar admin tidak terjebak cookie remote pada sesi login berikutnya.
 6. **Segmentasi Klien di Admin:** Endpoint `/api/admin/users` menyediakan filter `all`, `active` (berbayar/punya undangan), dan `leads` (calon klien belum checkout). Admin dapat mem-follow-up calon klien via WhatsApp atau menghapus akun abandoned lead yang menumpuk.
 7. **Realtime SSE Checkout & Zero-Leak Gatekeeper (PostgreSQL LISTEN/NOTIFY Multi-Process Bridge):** Halaman checkout mendengarkan status pembayaran secara realtime melalui Server-Sent Events (SSE) murni (`/api/payments/status-stream/[orderId]`) tanpa interval polling yang membebani browser maupun database. Untuk mendukung PM2 Cluster Mode (multi-worker process), sistem mengintegrasikan jembatan event-driven native PostgreSQL `LISTEN payment_events` dan `NOTIFY payment_events` (`lib/paymentEvents.ts`). Ketika webhook pembayaran (Midtrans/Xendit) atau approval Admin (`/api/admin/orders/[orderId]/approve`) dieksekusi di instance PM2 manapun, PostgreSQL mem-broadcast sinyal secara instan (<5ms) ke seluruh instance PM2 aktif. Instance yang memegang koneksi SSE klien langsung menerima notifikasi, mem-push event `PAID` atau `REJECTED` (beserta `rejectReason`), dan menutup koneksi secara rapi. Heartbeat pasif (15 detik) melengkapi stream sebagai fail-safe cadangan tanpa polling aktif. Saat status `PAID` diterima, modal transisi sukses bertema *Dark Luxury* muncul mengonfirmasi invoice lunas dan memberikan jeda persiapan visual (1.8s) sebelum mengalihkan pengguna ke `/dashboard/setup`. Tidak ada data dasbor atau undangan yang dapat diakses sebelum status transaksi benar-benar berstatus `PAID`.
-8. **Resolusi Dinamis Mode Pembayaran Add-on Dasbor Klien:** Seluruh transaksi pembelian add-on di dalam dasbor klien (perpanjangan galeri kenangan `/api/client/memories/extend`, pembelian domain kustom `/api/client/custom-domain/buy`, dan upgrade paket `/api/payments/upgrade`) tidak lagi di-hardcode ke metode tertentu, melainkan secara dinamis membaca konfigurasi `payment_mode` dari `AdminSetting` (`GATEWAY`, `MANUAL`, atau `BOTH`) untuk menentukan `paymentMethod` (`GATEWAY` atau `MANUAL_TRANSFER`).
+8. **Resolusi Dinamis Mode Pembayaran Add-on Dasbor Klien:** Seluruh transaksi pembelian add-on di dalam dasbor klien (perpanjangan galeri kenangan `/api/client/memories/extend`, checkout bundle `/api/client/orders/checkout-bundle`, dan upgrade paket `/api/payments/upgrade`) tidak lagi di-hardcode ke metode tertentu, melainkan secara dinamis membaca konfigurasi `payment_mode` dari `AdminSetting` (`GATEWAY`, `MANUAL`, atau `BOTH`) untuk menentukan `paymentMethod` (`GATEWAY` atau `MANUAL_TRANSFER`).
 
 ---
 
@@ -989,7 +1002,7 @@ CLIENT (auth required, role=USER):
   GET       /api/client/orders/{id}/status → Cek status tagihan terpadu (menyertakan itemsJson rincian layanan)
   POST      /api/client/memories/extend   → Buat order perpanjangan galeri (+30 hari via QRIS)
   POST      /api/payments/upgrade         → Upgrade paket undangan mandiri dengan auto-supersede & checkoutConfirmedAt
-  POST      /api/client/custom-domain/buy → Beli add-on Jasa Integrasi Custom Domain
+  POST      /api/client/custom-domain     → Hubungkan atau lepaskan (set/unlink) Custom Domain pribadi (Inklusif Paket Tier 3)
   (Catatan WA: Route wa-link dihapus; digantikan client-side wa.me direct linking + auto-format +62)
 
 ADMIN (auth required, role=ADMIN/SUPER_ADMIN):

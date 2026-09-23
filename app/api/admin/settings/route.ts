@@ -69,6 +69,9 @@ const DEFAULT_SETTINGS: Array<{ key: string; value: string; label: string; group
   { key: "backup_auto_time", value: "02:00", label: "Waktu Eksekusi Auto-Backup (HH:mm)", group: "backup" },
   { key: "backup_path", value: "./data/backups", label: "Path Direktori Backup", group: "backup" },
   { key: "backup_retention_count", value: "10", label: "Batas Jumlah Snapshot Disimpan", group: "backup" },
+  { key: "nas_archive_enabled", value: "false", label: "Aktifkan Cold Storage Arsip NAS", group: "backup" },
+  { key: "nas_archive_path", value: "./data/archives", label: "Path Direktori Arsip NAS", group: "backup" },
+  { key: "nas_archive_retention_days", value: "365", label: "Masa Retensi Arsip NAS (Hari)", group: "backup" },
   { key: "subdomain_grace_days", value: "7", label: "Masa Tenggang Subdomain (Hari Pasca Acara)", group: "subdomain" },
   { key: "subdomain_auto_recycle", value: "true", label: "Otomatis Lepas Subdomain ke Pool", group: "subdomain" },
   // Retensi order — terpisah dari retensi undangan
@@ -140,6 +143,9 @@ export async function POST(req: NextRequest) {
       google_client_id: "GOOGLE_CLIENT_ID",
       google_client_secret: "GOOGLE_CLIENT_SECRET",
       platform_url: "APP_URL",
+      nas_archive_enabled: "NAS_ARCHIVE_ENABLED",
+      nas_archive_path: "NAS_ARCHIVE_PATH",
+      nas_archive_retention_days: "NAS_ARCHIVE_RETENTION_DAYS",
     };
 
     const envUpdates: Record<string, string> = {};
