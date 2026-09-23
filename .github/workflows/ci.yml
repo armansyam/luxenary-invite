@@ -1,0 +1,81 @@
+name: CI — Quality Gate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality-gate:
+    name: TypeScript + Unit & Integration Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: luxenary_test
+          POSTGRES_USER: luxenary
+          POSTGRES_PASSWORD: ci_test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://luxenary:ci_test_password@localhost:5432/luxenary_test
+      AUTH_SECRET: ci-test-secret-minimum-32-chars-ok-here
+      NEXTAUTH_URL: http://localhost:3000
+      NEXT_PUBLIC_ROOT_DOMAIN: localhost:3000
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      STORAGE_PROVIDER: local
+      NODE_ENV: test
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: TypeScript Gate (tsc --noEmit)
+        run: npx tsc --noEmit
+
+      - name: Prisma Generate
+        run: npx prisma generate
+
+      - name: Prisma Migrate (Test DB)
+        run: npx prisma migrate deploy
+
+      - name: Unit & Integration Tests (Vitest)
+        run: npm run test:unit
+
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report-${{ github.sha }}
+          path: coverage/
+          retention-days: 14
+
+  lint:
+    name: ESLint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run lint --if-present

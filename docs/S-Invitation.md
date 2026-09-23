@@ -1,5 +1,5 @@
 # S-Invitation: Luxenary Invite System Architecture & Master Specification
-> **Versi: 6.0.1 | Diperbarui: 23 September 2026**
+> **Versi: 6.1.0 | Diperbarui: 23 September 2026**
 
 ## 1. Executive Summary & Core Philosophy
 **Luxenary Invite** adalah platform ekosistem undangan pernikahan digital modern berbasis Next.js 16 (App Router + Turbopack) yang menghadirkan pengalaman visual mewah (*haute couture*), kecepatan muat instan (<0.8 detik), self-service dashboard mandiri bagi klien, dan integrasi cloud edge caching.
@@ -1170,3 +1170,41 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
 3. **Perluasan Domain QA LIFE-04 — NAS Archive Vault:**
    - `scripts/industrial-qa-suite.ts` kini mencakup 18 kasus uji (sebelumnya 17) dengan tambahan LIFE-04.
    - LIFE-04 memverifikasi: pembuatan arsip mandiri di NAS, rewriting path aset, validasi metadata di database, dan teardown arsip tanpa kebocoran disk maupun entri database.
+
+## Changelog v6.1.0 — Konsolidasi Admin & Testing Infrastructure
+
+### A. Restrukturisasi Sub-Tab Pengaturan Admin (6 → 5 Tab)
+- Tab `Pembayaran` + `Gateway QRIS` **digabung** menjadi satu konteks finansial: **`Keuangan & Gateway`**.
+- Tab `Setup & Integrasi` → diubah namanya menjadi **`Integrasi & API`**.
+- Tab `Platform & Tampilan` → diubah namanya menjadi **`Operasional`**.
+- Navigasi backward-compat: URL lama `?sub=pembayaran`, `?sub=gateway`, `?sub=setup`, `?sub=platform` dinormalisasi otomatis ke ID tab baru via `LEGACY_SUB_MAP` di `useState` initializer tanpa redirect.
+- Tooltip hint domain ditambahkan di bawah setiap label tab aktif.
+
+### B. Dashboard Admin — 8 Widget Monitoring Komprehensif
+**Row 1 — Finansial & Klien:**
+| Widget | Data Utama | Sub-info |
+|---|---|---|
+| Pendapatan Bersih | Total revenue order PAID | Jumlah transaksi + % konversi |
+| Menunggu Pembayaran | Nominal pending | Jumlah invoice aktif |
+| Klien Sudah Bayar | Count user terverifikasi PAID | + registrasi baru hari ini |
+| Tamu & Interaksi | Total guest count | RSVP + video wish |
+
+**Row 2 — Hari-H & Lifecycle:**
+| Widget | Data Utama | Sub-info |
+|---|---|---|
+| Hari-H Hari Ini | Resepsi berlangsung hari ini | Highlight merah jika > 0 |
+| Hari-H Minggu Ini | Resepsi minggu berjalan | + total bulan ini |
+| Undangan Lifecycle | Total semua undangan | Live / Draft / Selesai / Arsip |
+| Registrasi Klien | Daftar hari ini | Total klien aktif |
+
+API `/api/admin/overview` diperluas dengan 10 stats field baru (in-memory filter hari-H dari `eventData` JSON).
+
+### C. Bug Fix — `hasPlanCapability(null)` (`lib/settings.ts`)
+- **Root cause:** `normalizePlanType(null)` fallback ke `TIER_1` → klien tanpa paket mendapat capability `music` / `gallery` secara tidak sah.
+- **Fix:** Guard `if (planType == null) return false` di awal fungsi sebelum normalisasi. Aman: `normalizePlanType` tidak diubah (fallback TIER_1 tetap benar untuk konteks string input).
+
+### D. Vitest CI Testing Infrastructure
+- **56/56 tests PASS.** Setup: `vitest.config.ts`, `__tests__/setup.ts`, Prisma mock global.
+- Unit: `pinEncryption` (AES-256-GCM), `receptionistAuth` (HMAC), `renderTemplate` (XSS escaping), `settings` (capability + null guard + cache invalidation).
+- API integration: `invitations` (auth guard + 403 cross-tenant), `orders` (admin isolation + service availability), `rsvp` (demo mode + lifecycle guard).
+- CI: `.github/workflows/ci.yml` dengan PostgreSQL 16 service container — dipicu setiap push ke `main`.

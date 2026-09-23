@@ -353,6 +353,9 @@ export async function getPublicPlatformSettings(): Promise<PublicPlatformSetting
  * Reads dynamically from AdminSetting DB with sensible fallbacks.
  */
 export async function hasPlanCapability(planType: string | null | undefined, capability: string): Promise<boolean> {
+  // Klien tanpa planType (belum berlangganan) tidak punya capability apapun
+  if (planType == null) return false;
+
   const canonical = normalizePlanType(planType);
   const tierKey = canonical.toLowerCase().replace("_", ""); // "tier1", "tier2", "tier3"
   try {

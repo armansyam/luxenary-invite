@@ -2,7 +2,7 @@
 
 > **Platform Undangan Pernikahan Digital B2C Self-Service**  
 > Next.js 16.3.2 · Prisma 7.9 (PostgreSQL) · NextAuth v5 · Multi-Gateway (5 Gateway) · Nodemailer SMTP · Cloudflare R2  
-> **Versi Dokumen: 6.0.1 | Diperbarui: 23 September 2026**
+> **Versi Dokumen: 6.1.0 | Diperbarui: 23 September 2026**
 
 > [!IMPORTANT]
 > **PROTOKOL SINKRONISASI DOKUMENTASI OTOMATIS (MANDATORY POST-EDIT & PRE-PUSH PROTOCOL):**  
@@ -631,3 +631,8 @@ Setiap developer atau AI Agent yang melakukan modifikasi pada codebase **WAJIB**
   * **Unifikasi AUTH_SECRET (NextAuth v5):** Menghapus `NEXTAUTH_SECRET` dari `.env` dan `.env.example` yang berpotensi konflik dual-secret. Sistem kini bergantung sepenuhnya pada `AUTH_SECRET` sebagai satu-satunya kunci sesi. Tidak ada sesi yang di-invalidate karena nilai `AUTH_SECRET` tidak berubah.
   * **Domain QA LIFE-04 — Cold Storage NAS Archive Vault:** Suite `industrial-qa-suite.ts` diperluas dengan domain pengujian LIFE-04 yang memverifikasi siklus lengkap tiered storage: dual-bake HTML mandiri, rewriting URL aset, verifikasi status arsip, dan purge 100% bersih tanpa kebocoran disk.
   * **Standarisasi Pool Termination Seluruh Script QA:** Seluruh script pengujian distandardisasi dengan `$disconnect()` eksplisit di blok `finally` untuk mencegah proses menggantung pasca eksekusi.
+- **Konsolidasi Admin Settings, Dashboard Monitoring & Testing Infrastructure (v6.1.0)**:
+  * **Restrukturisasi Sub-Tab Pengaturan (6 → 5 Tab):** Tab `Pembayaran` + `Gateway QRIS` digabung menjadi `Keuangan & Gateway`. Tab `Setup & Integrasi` → `Integrasi & API`. Tab `Platform & Tampilan` → `Operasional`. URL bookmark lama tetap berfungsi via alias map backward-compat.
+  * **Dashboard Admin 8 Widget Komprehensif:** Row 1 (Pendapatan PAID, Pending, Klien Bayar, Tamu). Row 2 (Hari-H hari ini, Hari-H minggu/bulan ini, Undangan Lifecycle, Registrasi Klien). API `/api/admin/overview` ditambah 10 stats field baru.
+  * **Bug Fix `hasPlanCapability(null)`:** Null guard mencegah klien tanpa langganan mendapatkan capability TIER_1 secara tidak sengaja.
+  * **Vitest Testing Infrastructure (56/56 PASS):** Unit + integration tests untuk `pinEncryption`, `receptionistAuth`, `renderTemplate`, `settings`, `invitations`, `orders`, `rsvp`. CI pipeline GitHub Actions dengan PostgreSQL service container.

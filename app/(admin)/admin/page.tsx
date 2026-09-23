@@ -333,9 +333,13 @@ const VALID_ADMIN_TABS = [
 
 const VALID_SETTINGS_SUBS = [
   "akun",
+  "keuangan",
+  "paket",
+  "integrasi",
+  "operasional",
+  // Legacy aliases — redirect lama ke baru via URL restore logic
   "pembayaran",
   "gateway",
-  "paket",
   "setup",
   "platform",
 ];
@@ -493,16 +497,29 @@ export default function AdminPage() {
   const [savingMemoriesMilestones, setSavingMemoriesMilestones] = useState(false);
   const [detectingServerIp, setDetectingServerIp] = useState(false);
   const [detectIpResult, setDetectIpResult] = useState<{ success: boolean; message: string } | null>(null);
-  const [activeSettingsTab, setActiveSettingsTab] = useState<"akun" | "pembayaran" | "gateway" | "paket" | "setup" | "platform">(() => {
+  const [activeSettingsTab, setActiveSettingsTab] = useState<"akun" | "keuangan" | "paket" | "integrasi" | "operasional">(() => {
+    // Pemetaan alias lama ke ID tab baru (untuk backward-compat URL/localStorage)
+    const LEGACY_SUB_MAP: Record<string, "akun" | "keuangan" | "paket" | "integrasi" | "operasional"> = {
+      pembayaran: "keuangan",
+      gateway: "keuangan",
+      setup: "integrasi",
+      platform: "operasional",
+    };
+    const normalize = (val: string): "akun" | "keuangan" | "paket" | "integrasi" | "operasional" | null => {
+      const NEW_VALID = ["akun", "keuangan", "paket", "integrasi", "operasional"] as const;
+      if (NEW_VALID.includes(val as any)) return val as any;
+      return LEGACY_SUB_MAP[val] ?? null;
+    };
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const urlSub = params.get("sub");
-      if (urlSub && VALID_SETTINGS_SUBS.includes(urlSub as any)) return urlSub as any;
+      if (urlSub) { const n = normalize(urlSub); if (n) return n; }
       const stored = localStorage.getItem("lux_admin_settings_subtab");
-      if (stored && VALID_SETTINGS_SUBS.includes(stored as any)) return stored as any;
+      if (stored) { const n = normalize(stored); if (n) return n; }
     }
     return "akun";
   });
+
 
   // Sinkronisasi Tab Utama & Sub-Tab Pengaturan ke URL (?tab=...&sub=...) dan localStorage
   useEffect(() => {
@@ -2181,7 +2198,7 @@ export default function AdminPage() {
                     </div>
                   </div>
 
-                  {/* ── Primary Financial & Growth Metrics (4 Cards) ── */}
+                  {/* ── Row 1: Financial & Client Metrics (4 Cards) ── */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     {/* 1. Total Revenue */}
                     <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-gray-200 shadow-2xs flex flex-col justify-between relative overflow-hidden group hover:border-emerald-300 transition">
@@ -2197,9 +2214,9 @@ export default function AdminPage() {
                         </p>
                       </div>
                       <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-500">
-                        <span>{paidCount} transaksi berhasil</span>
+                        <span>{paidCount} transaksi lunas</span>
                         <span className="font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
-                          {conversionRate}% Konversi
+                          {stats.conversionRate ?? conversionRate}% Konversi
                         </span>
                       </div>
                     </div>
@@ -2220,32 +2237,33 @@ export default function AdminPage() {
                         </p>
                       </div>
                       <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-500">
-                        <span>{pendingCount} invoice checkout aktif</span>
-                        <span className="font-semibold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md">
-                          Pending
-                        </span>
+                        <span>{stats.pendingOrderCount ?? pendingCount} invoice aktif</span>
+                        <span className="font-semibold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md">Pending</span>
                       </div>
                     </div>
 
-                    {/* 3. Total Undangan */}
-                    <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-gray-200 shadow-2xs flex flex-col justify-between relative overflow-hidden group hover:border-purple-300 transition">
+                    {/* 3. Klien yang Sudah Bayar */}
+                    <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-gray-200 shadow-2xs flex flex-col justify-between relative overflow-hidden group hover:border-sky-300 transition">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-gray-500">Undangan Mempelai</span>
-                        <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold text-xs">
+                        <span className="text-xs font-semibold text-gray-500">Klien Sudah Bayar</span>
+                        <div className="w-8 h-8 rounded-xl bg-sky-50 text-sky-700 flex items-center justify-center">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
                           </svg>
                         </div>
                       </div>
                       <div className="my-3">
-                        <p className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
-                          {stats.invitationCount || 0}
+                        <p className="text-2xl sm:text-3xl font-bold text-sky-800 tracking-tight">
+                          {stats.paidUserCount ?? 0}
                         </p>
                       </div>
                       <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-500">
-                        <span>{stats.publishedInvitationCount || invitations.filter(i=>i.status==='PUBLISHED').length} Online Aktif</span>
-                        <span className="font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md">
-                          {stats.draftInvitationCount || invitations.filter(i=>i.status==='DRAFT').length} Draf
+                        <span>dari {stats.userCount || 0} klien aktif</span>
+                        <span
+                          className="font-semibold text-sky-700 bg-sky-50 px-2 py-0.5 rounded-md cursor-pointer hover:underline"
+                          onClick={() => setActiveTab("users")}
+                        >
+                          {(stats.newRegistrationsToday ?? 0) > 0 ? `+${stats.newRegistrationsToday} hari ini` : "Lihat Klien"}
                         </span>
                       </div>
                     </div>
@@ -2253,7 +2271,7 @@ export default function AdminPage() {
                     {/* 4. Tamu & Interaksi */}
                     <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-gray-200 shadow-2xs flex flex-col justify-between relative overflow-hidden group hover:border-blue-300 transition">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-gray-500">Tamu &amp; Interaksi</span>
+                        <span className="text-xs font-semibold text-gray-500">Tamu & Interaksi</span>
                         <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold text-xs">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -2268,11 +2286,111 @@ export default function AdminPage() {
                       <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-500">
                         <span>{stats.rsvpCount || 0} RSVP Konfirmasi</span>
                         <span className="font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md">
-                          {stats.userCount || 0} Akun Klien
+                          {stats.videoWishCount || 0} Video Wish
                         </span>
                       </div>
                     </div>
                   </div>
+
+                  {/* ── Row 2: Invitation Lifecycle & Event-Day Monitoring (4 Cards) ── */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {/* 5. Hari-H Hari Ini */}
+                    <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-gray-200 shadow-2xs flex flex-col justify-between relative overflow-hidden group hover:border-rose-300 transition">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-gray-500">Hari-H Hari Ini</span>
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${(stats.eventTodayCount ?? 0) > 0 ? "bg-rose-50 text-rose-700" : "bg-gray-50 text-gray-400"}`}>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                          </svg>
+                        </div>
+                      </div>
+                      <div className="my-3">
+                        <p className={`text-2xl sm:text-3xl font-bold tracking-tight ${(stats.eventTodayCount ?? 0) > 0 ? "text-rose-700" : "text-gray-400"}`}>
+                          {stats.eventTodayCount ?? 0}
+                        </p>
+                      </div>
+                      <div className="pt-2 border-t border-gray-100 text-[11px] text-gray-500">
+                        {(stats.eventTodayCount ?? 0) > 0
+                          ? <span className="text-rose-700 font-semibold">Pasangan sedang menikah hari ini</span>
+                          : <span>Tidak ada resepsi hari ini</span>
+                        }
+                      </div>
+                    </div>
+
+                    {/* 6. Hari-H Minggu Ini */}
+                    <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-gray-200 shadow-2xs flex flex-col justify-between relative overflow-hidden group hover:border-orange-300 transition">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-gray-500">Hari-H Minggu Ini</span>
+                        <div className="w-8 h-8 rounded-xl bg-orange-50 text-orange-700 flex items-center justify-center">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                      </div>
+                      <div className="my-3">
+                        <p className="text-2xl sm:text-3xl font-bold text-orange-700 tracking-tight">
+                          {stats.eventThisWeekCount ?? 0}
+                        </p>
+                      </div>
+                      <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-500">
+                        <span>Resepsi minggu ini</span>
+                        <span className="font-semibold text-orange-700 bg-orange-50 px-2 py-0.5 rounded-md">
+                          {stats.eventThisMonthCount ?? 0} bulan ini
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 7. Undangan Mempelai (Lifecycle) */}
+                    <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-gray-200 shadow-2xs flex flex-col justify-between relative overflow-hidden group hover:border-purple-300 transition">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-gray-500">Undangan Mempelai</span>
+                        <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold text-xs">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                      </div>
+                      <div className="my-3">
+                        <p className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
+                          {stats.invitationCount || 0}
+                        </p>
+                      </div>
+                      <div className="pt-2 border-t border-gray-100 flex items-center gap-2 flex-wrap text-[11px] text-gray-500">
+                        <span className="text-emerald-700 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded-md">{stats.publishedInvitationCount || 0} Live</span>
+                        <span className="text-amber-700 font-semibold bg-amber-50 px-1.5 py-0.5 rounded-md">{stats.draftInvitationCount || 0} Draft</span>
+                        <span className="text-purple-700 font-semibold bg-purple-50 px-1.5 py-0.5 rounded-md">{stats.eventFinishedCount ?? 0} Selesai</span>
+                        <span className="text-gray-500 font-semibold bg-gray-100 px-1.5 py-0.5 rounded-md">{stats.archivedCount ?? 0} Arsip</span>
+                      </div>
+                    </div>
+
+                    {/* 8. Registrasi Baru */}
+                    <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-gray-200 shadow-2xs flex flex-col justify-between relative overflow-hidden group hover:border-teal-300 transition">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-gray-500">Registrasi Klien</span>
+                        <div className="w-8 h-8 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                          </svg>
+                        </div>
+                      </div>
+                      <div className="my-3">
+                        <p className="text-2xl sm:text-3xl font-bold text-teal-800 tracking-tight">
+                          {stats.newRegistrationsToday ?? 0}
+                          <span className="text-sm font-normal text-gray-400 ml-1">hari ini</span>
+                        </p>
+                      </div>
+                      <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-500">
+                        <span>Total {stats.userCount || 0} klien aktif</span>
+                        <span
+                          className="font-semibold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-md cursor-pointer hover:underline"
+                          onClick={() => setActiveTab("users")}
+                        >
+                          Lihat Semua
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
 
                   {/* ── Analytics Visual Grid (2 Cards: Package Sales Breakdown & Theme Popularity) ── */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -2602,7 +2720,7 @@ export default function AdminPage() {
                   onRefresh={() => loadOverviewData()}
                   onNavigateToSetup={() => {
                     setActiveTab("settings");
-                    setActiveSettingsTab("setup");
+                    setActiveSettingsTab("integrasi");
                   }}
                 />
               )}
@@ -3145,30 +3263,33 @@ export default function AdminPage() {
                 <div className="space-y-6 max-w-7xl w-full">
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900">Pengaturan Platform</h2>
-                    <p className="text-sm text-gray-500 mt-0.5">Konfigurasi payment gateway, Google OAuth API, harga paket, dan platform</p>
+                    <p className="text-sm text-gray-500 mt-0.5">Akun, keuangan &amp; payment gateway, paket harga, integrasi API, dan operasional platform</p>
                   </div>
 
-                  {/* ── Sub-Tab Navigation (Widescreen Responsive Grid) ── */}
-                  <div className="w-full grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5 p-1.5 bg-gray-100 rounded-2xl border border-gray-200">
+                  {/* ── Sub-Tab Navigation ── */}
+                  <div className="w-full grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-1.5 p-1.5 bg-gray-100 rounded-2xl border border-gray-200">
                     {([
-                      { id: "akun",        label: "Akun & Keamanan" },
-                      { id: "pembayaran",  label: "Pembayaran" },
-                      { id: "gateway",     label: "Gateway QRIS" },
-                      { id: "paket",       label: "Paket & Harga" },
-                      { id: "setup",       label: "Setup & Integrasi" },
-                      { id: "platform",    label: "Platform & Tampilan" },
+                      { id: "akun",         label: "Akun & Keamanan",      hint: "Profil & password admin" },
+                      { id: "keuangan",     label: "Keuangan & Gateway",   hint: "Pembayaran, QRIS, bank" },
+                      { id: "paket",        label: "Paket & Harga",        hint: "Tier pricing & kapabilitas" },
+                      { id: "integrasi",    label: "Integrasi & API",      hint: "OAuth, SMTP, DNS, domain" },
+                      { id: "operasional",  label: "Operasional",          hint: "Status layanan, WA, landing" },
                     ] as const).map((t) => (
                       <button
                         key={t.id}
                         type="button"
                         onClick={() => setActiveSettingsTab(t.id)}
-                        className={`w-full py-2.5 px-3 rounded-xl text-xs transition cursor-pointer text-center flex items-center justify-center truncate ${
+                        title={t.hint}
+                        className={`w-full py-2.5 px-3 rounded-xl text-xs transition cursor-pointer text-center flex flex-col items-center justify-center gap-0.5 ${
                           activeSettingsTab === t.id
                             ? "bg-white text-gray-900 shadow-sm border border-gray-200 font-bold"
                             : "text-gray-500 hover:text-gray-700 hover:bg-gray-50 font-semibold"
                         }`}
                       >
-                        {t.label}
+                        <span className="truncate w-full text-center">{t.label}</span>
+                        {activeSettingsTab === t.id && (
+                          <span className="text-[9px] font-normal text-gray-400 truncate w-full text-center hidden sm:block">{t.hint}</span>
+                        )}
                       </button>
                     ))}
                   </div>
@@ -3178,8 +3299,8 @@ export default function AdminPage() {
                     <AdminProfileSettings sessionUser={session?.user} />
                   )}
 
-                  {/* ══ TAB: PEMBAYARAN ══ */}
-                  {activeSettingsTab === "pembayaran" && (
+                  {/* ══ TAB: KEUANGAN & GATEWAY ══ */}
+                  {activeSettingsTab === "keuangan" && (
                   <>
                   {/* Mode Pembayaran & Rekening Bank Manual */}
                   <SettingsCard
@@ -3340,8 +3461,8 @@ export default function AdminPage() {
                   </>
                   )}
 
-                  {/* ══ TAB: GATEWAY QRIS ══ */}
-                  {activeSettingsTab === "gateway" && (
+                  {/* ══ LANJUTAN TAB KEUANGAN: GATEWAY QRIS ══ */}
+                  {activeSettingsTab === "keuangan" && (
                   <>
                   {/* ═══ PUSAT KONTROL & BASE SETTING GATEWAY GLOBAL ═══ */}
                   <SettingsCard
@@ -4375,8 +4496,8 @@ export default function AdminPage() {
                   </>
                   )}
 
-                  {/* ══ TAB: SETUP & INTEGRASI ══ */}
-                  {activeSettingsTab === "setup" && (
+                  {/* ══ TAB: INTEGRASI & API ══ */}
+                  {activeSettingsTab === "integrasi" && (
                   <>
                   {/* Integrasi Domain & DNS Server */}
                   <SettingsCard
@@ -5205,8 +5326,8 @@ export default function AdminPage() {
                   </>
                   )}
 
-                  {/* ══ TAB: PLATFORM & TAMPILAN ══ */}
-                  {activeSettingsTab === "platform" && (
+                  {/* ══ TAB: OPERASIONAL ══ */}
+                  {activeSettingsTab === "operasional" && (
                   <>
 
                   {/* ── Status Layanan & Pembatasan Registrasi (Service Availability / Close Order) ── */}

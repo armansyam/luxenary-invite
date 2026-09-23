@@ -18,7 +18,11 @@
     "test:nas": "npx tsx scripts/test-nas-archive-lifecycle.ts",
     "test:clean": "npx tsx scripts/clean-test-artifacts.ts",
     "test:hygiene": "npx tsx scripts/audit-code-hygiene.ts",
-    "cron:cleanup": "npx tsx scripts/cron-cleanup.ts"
+    "cron:cleanup": "npx tsx scripts/cron-cleanup.ts",
+    "test:unit": "vitest run --reporter=verbose",
+    "test:unit:watch": "vitest --reporter=verbose",
+    "test:unit:coverage": "vitest run --coverage",
+    "test:ci": "vitest run --reporter=verbose"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1119.0",
@@ -48,10 +52,14 @@
     "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/supertest": "^7.2.1",
+    "@vitest/coverage-v8": "^3.2.7",
     "eslint": "^9",
     "eslint-config-next": "16.3.2",
+    "supertest": "^7.3.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.7"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"

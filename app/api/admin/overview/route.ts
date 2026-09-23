@@ -114,15 +114,30 @@ export async function GET() {
       };
     });
 
+    // Boundary waktu untuk filter event & registrasi
+    const nowTs = new Date();
+    const todayStart = new Date(nowTs); todayStart.setHours(0, 0, 0, 0);
+    const todayEnd   = new Date(nowTs); todayEnd.setHours(23, 59, 59, 999);
+    const weekStart  = new Date(nowTs); weekStart.setDate(nowTs.getDate() - nowTs.getDay()); weekStart.setHours(0, 0, 0, 0);
+    const weekEnd    = new Date(weekStart); weekEnd.setDate(weekStart.getDate() + 6); weekEnd.setHours(23, 59, 59, 999);
+    const monthStart = new Date(nowTs.getFullYear(), nowTs.getMonth(), 1, 0, 0, 0, 0);
+    const monthEnd   = new Date(nowTs.getFullYear(), nowTs.getMonth() + 1, 0, 23, 59, 59, 999);
+
     const [
       invitationCount,
       publishedInvitationCount,
       draftInvitationCount,
+      eventFinishedCount,
+      archivedCount,
       orderCount,
+      paidOrderCount,
+      pendingOrderCount,
       guestCount,
       rsvpCount,
       videoWishCount,
       userCount,
+      paidUserCount,
+      newRegistrationsToday,
       allOrders,
       recentOrders,
       recentUsers,
@@ -133,11 +148,17 @@ export async function GET() {
       prisma.invitation.count(),
       prisma.invitation.count({ where: { status: "PUBLISHED" } }),
       prisma.invitation.count({ where: { status: "DRAFT" } }),
+      prisma.invitation.count({ where: { status: "EVENT_FINISHED" } }),
+      prisma.invitation.count({ where: { status: "ARCHIVED" } }),
       prisma.order.count(),
+      // Order LUNAS
+      prisma.order.count({ where: { status: "PAID" } }),
+      // Order MENUNGGU BAYAR (aktif, belum expired)
+      prisma.order.count({ where: { status: "PENDING" } }),
       prisma.guest.count(),
       prisma.rsvp.count().catch(() => 0),
       prisma.guest.count({ where: { videoWishUrl: { not: null } } }).catch(() => 0),
-      // Hanya hitung klien yang SUDAH LUNAS (PAID) atau memiliki undangan
+      // Klien aktif: sudah PAID atau sudah punya undangan
       prisma.user.count({
         where: {
           role: "CLIENT",
@@ -147,12 +168,22 @@ export async function GET() {
           ],
         },
       }),
-      prisma.order.findMany({
+      // Klien yang sudah PAID (konversi terverifikasi)
+      prisma.user.count({
         where: {
-          status: {
-            notIn: ["EXPIRED", "FAILED"],
-          },
+          role: "CLIENT",
+          orders: { some: { status: "PAID" } },
         },
+      }),
+      // Registrasi baru hari ini (semua role CLIENT, kapanpun)
+      prisma.user.count({
+        where: {
+          role: "CLIENT",
+          createdAt: { gte: todayStart, lte: todayEnd },
+        },
+      }),
+      prisma.order.findMany({
+        where: { status: { notIn: ["EXPIRED", "FAILED"] } },
         select: { id: true, amount: true, status: true, planType: true, createdAt: true },
       }),
       prisma.order.findMany({
@@ -232,17 +263,58 @@ export async function GET() {
       }),
     ]);
 
+    // --- Hitung hari-H dari eventData JSON (in-memory: data sudah di-fetch) ---
+    // eventData adalah JSON array berisi { date: "YYYY-MM-DD", ... }
+    const parseEventDates = (eventData: any): Date[] => {
+      try {
+        const events = typeof eventData === "string" ? JSON.parse(eventData) : (eventData || []);
+        if (!Array.isArray(events)) return [];
+        return events
+          .filter((e: any) => e?.date)
+          .map((e: any) => { const d = new Date(e.date); d.setHours(12, 0, 0, 0); return d; })
+          .filter((d: Date) => !isNaN(d.getTime()));
+      } catch { return []; }
+    };
+
+    let eventTodayCount = 0;
+    let eventThisWeekCount = 0;
+    let eventThisMonthCount = 0;
+
+    for (const inv of recentInvitations) {
+      const dates = parseEventDates(inv.eventData);
+      for (const d of dates) {
+        if (d >= todayStart && d <= todayEnd) eventTodayCount++;
+        if (d >= weekStart && d <= weekEnd) eventThisWeekCount++;
+        if (d >= monthStart && d <= monthEnd) eventThisMonthCount++;
+      }
+    }
+
+    // Konversi rate (PAID / total ORDER non-expired non-failed × 100)
+    const conversionRate = orderCount > 0
+      ? Math.round((paidOrderCount / orderCount) * 100)
+      : 0;
+
     return NextResponse.json({
       success: true,
       stats: {
         invitationCount,
         publishedInvitationCount,
         draftInvitationCount,
+        eventFinishedCount,
+        archivedCount,
         orderCount,
+        paidOrderCount,
+        pendingOrderCount,
         guestCount,
         rsvpCount,
         videoWishCount,
         userCount,
+        paidUserCount,
+        newRegistrationsToday,
+        eventTodayCount,
+        eventThisWeekCount,
+        eventThisMonthCount,
+        conversionRate,
       },
       allOrders,
       orders: recentOrders,
@@ -252,6 +324,7 @@ export async function GET() {
       logs: webhookLogs,
       customDomainOrders,
     });
+
   } catch (error: any) {
     console.error("[Admin Overview Server Error]:", error);
     return NextResponse.json({ error: process.env.NODE_ENV === "production" ? "Failed to load admin overview" : (error.message || "Failed to load admin overview") }, { status: 500 });

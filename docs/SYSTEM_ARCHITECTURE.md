@@ -1,5 +1,5 @@
 # PLATFORM UNDANGAN (WHITE-LABEL) — DOKUMENTASI ARSITEKTUR SISTEM
-## Versi: 6.0.1 | Diperbarui: 23 September 2026
+## Versi: 6.1.0 | Diperbarui: 23 September 2026
 
 > **SUMBER KEBENARAN TUNGGAL** untuk semua developer dan AI Agent yang bekerja di repositori ini.  
 > Dokumen ini WAJIB dibaca sebelum melakukan perubahan apapun pada kode.  
@@ -954,6 +954,15 @@ Guard di middleware & layout:
 Persistensi Navigasi Admin (Tab Memory Persistence):
   Navigasi tab (/admin?tab=...&sub=...) dan sub-tab pengaturan/monitoring disimpan secara otomatis ke URL search params dan localStorage (lux_admin_active_tab & lux_admin_settings_subtab).
   Saat pengguna me-reload halaman (F5) atau kembali dari rute lain, portal admin tidak pernah terpental kembali ke tab ringkasan ("overview").
+
+Sub-Tab Pengaturan Admin (5 Grup, v6.1.0):
+  Sebelumnya 6 tab terpisah (pembayaran, gateway, setup, platform, dll) — kini dikonsolidasikan menjadi 5 tab domain-grouped yang lebih intuitif:
+  - akun       → Akun & Keamanan (profil & password admin)
+  - keuangan   → Keuangan & Gateway (mode pembayaran, bank manual, QRIS, Midtrans/Xendit)
+  - paket      → Paket & Harga (tier pricing & capabilities)
+  - integrasi  → Integrasi & API (OAuth, SMTP, DNS, custom domain)
+  - operasional → Operasional (status layanan, WhatsApp, landing page)
+  URL backward-compat: ?sub=pembayaran, ?sub=gateway, ?sub=setup, ?sub=platform diredirect otomatis ke grup baru via LEGACY_SUB_MAP di useState initializer.
 ```
 
 ### 9.1 Mekanisme Remote Klien (Cookie-Based Workspace Override)
@@ -2420,6 +2429,7 @@ Sistem telah melalui audit mendalam berbasis bukti empiris (*Empirical Verificat
      - **TIER_2 (Symphony):** Seluruh fitur Tier 1 + Resepsionis QR Check-In Scanner (`qr_checkin`) + Kamera Momen Tamu / Disposable Photo Drop (`guest_memories`) (Kuota tamu: 500).
      - **TIER_3 (Eternity):** Seluruh fitur Tier 2 + Custom Domain Pribadi (`custom_domain`) + Kuota Tamu & Foto Tamu Maksimal.
    - Fallback kapabilitas di `lib/settings.ts` (`hasPlanCapability`) dan `app/(client)/dashboard/invitation/[id]/page.tsx` (`allowedCaps`) diselaraskan 100% sehingga paket Tier 2 (Symphony) secara konsisten mendapatkan akses ke modul `qr_checkin` dan `guest_memories`.
+   - **Fix v6.1.0:** `hasPlanCapability(null, ...)` kini mengembalikan `false` secara eksplisit (null guard) tanpa jatuh ke fallback TIER_1 — klien yang belum berlangganan tidak mendapatkan capability apapun secara tidak sengaja.
 
 3. **Sesi Acara Utama (Single Primary Event Anchor) sebagai Patokan Mutlak Masa Berlaku:**
    - Klien menandai tepat 1 sesi acara sebagai **Sesi Acara Utama** (`isPrimary: true`, misal: Akad Nikah atau Resepsi Utama) yang menjadi jangkar tunggal (*single source of truth*) untuk:
@@ -2694,4 +2704,30 @@ Untuk menjamin kesiapan industri (*enterprise-grade / production-ready*), sistem
 4. **Standarisasi Pool Termination Script QA:**
    - Seluruh script pengujian (`industrial-qa-suite.ts`, `test-01-*`, `test-02-*`, `test-03-*`, `test-security-penetration.ts`) distandardisasi dengan `prisma.$disconnect()` eksplisit di blok `finally`.
    - Mencegah proses Node.js menggantung (*hanging process*) yang memerlukan `Ctrl+C` manual pasca eksekusi, terutama di lingkungan PM2 Cluster.
+
+### 17.22 — Konsolidasi Admin Settings Tab, Dashboard Widget Komprehensif & Testing Infrastructure (v6.1.0)
+
+1. **Restrukturisasi Sub-Tab Pengaturan Admin (6 → 5 Tab):**
+   - Tab sebelumnya: `Akun & Keamanan`, `Pembayaran`, `Gateway QRIS`, `Paket & Harga`, `Setup & Integrasi`, `Platform & Tampilan`.
+   - Tab baru (lebih intuitif, domain-grouped): `Akun & Keamanan`, `Keuangan & Gateway`, `Paket & Harga`, `Integrasi & API`, `Operasional`.
+   - `Keuangan & Gateway` menggabungkan seluruh konten tab `Pembayaran` + `Gateway QRIS` dalam satu konteks finansial.
+   - Backward-compat penuh: URL lama `?sub=pembayaran`, `?sub=gateway`, `?sub=setup`, `?sub=platform` otomatis dinormalisasi ke ID baru via `LEGACY_SUB_MAP` tanpa redirect.
+   - Tooltip hint ditambahkan pada setiap tab (tampil saat tab aktif, di bawah label).
+
+2. **Dashboard Admin — 8 Widget Komprehensif (naik dari 4):**
+   - **Row 1 (Finansial & Klien):** Pendapatan Bersih (PAID), Menunggu Pembayaran, Klien Sudah Bayar, Tamu & Interaksi.
+   - **Row 2 (Hari-H & Lifecycle):** Hari-H Hari Ini, Hari-H Minggu Ini (+ bulan ini), Undangan Lifecycle (Live/Draft/Selesai/Arsip), Registrasi Klien (baru hari ini + total).
+   - API `/api/admin/overview` diperluas dengan 10 field stats baru: `paidUserCount`, `paidOrderCount`, `pendingOrderCount`, `eventFinishedCount`, `archivedCount`, `newRegistrationsToday`, `eventTodayCount`, `eventThisWeekCount`, `eventThisMonthCount`, `conversionRate`.
+   - Filter hari-H dihitung in-memory dari `recentInvitations.eventData` JSON untuk menghindari query tambahan ke DB.
+
+3. **Bug Fix — `hasPlanCapability(null, ...)` Null Guard (`lib/settings.ts`):**
+   - Sebelumnya: `normalizePlanType(null)` fallback ke `TIER_1` → `hasPlanCapability(null, "music")` mengembalikan `true` (palsu).
+   - Sesudah: Guard `if (planType == null) return false` dipasang sebelum normalisasi, mencegah false-positive capability grant pada klien tanpa langganan.
+
+4. **Testing Infrastructure Vitest (56 Tests):**
+   - Setup: `vitest.config.ts`, `__tests__/setup.ts`, Prisma mock global.
+   - Unit tests: `pinEncryption`, `receptionistAuth`, `renderTemplate`, `settings` (termasuk `hasPlanCapability` null guard).
+   - API integration tests: `invitations`, `orders`, `rsvp` menggunakan `supertest` + `next-test-api-route-handler`.
+   - CI workflow: `.github/workflows/ci.yml` dengan PostgreSQL service container.
+   - Hasil: **56/56 PASS**, TypeScript gate Exit Code 0.
 
