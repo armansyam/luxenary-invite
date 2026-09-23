@@ -2,7 +2,7 @@
 
 > **Platform Undangan Pernikahan Digital B2C Self-Service**  
 > Next.js 16.3.2 · Prisma 7.9 (PostgreSQL) · NextAuth v5 · Multi-Gateway (5 Gateway) · Nodemailer SMTP · Cloudflare R2  
-> **Versi Dokumen: 6.0.0 | Diperbarui: 23 September 2026**
+> **Versi Dokumen: 6.0.1 | Diperbarui: 23 September 2026**
 
 > [!IMPORTANT]
 > **PROTOKOL SINKRONISASI DOKUMENTASI OTOMATIS (MANDATORY POST-EDIT & PRE-PUSH PROTOCOL):**  
@@ -626,3 +626,8 @@ Setiap developer atau AI Agent yang melakukan modifikasi pada codebase **WAJIB**
   * **Decoupled Dynamic Wishes Feed**: Pemuatan ucapan & konfirmasi doa dipisahkan dari HTML statis via pemanggilan asinkron `GET /api/public/rsvp?invitationId=...` di browser, menjamin data doa selalu mutakhir tanpa membatalkan cache HTML Cloudflare.
   * **Atomic Re-publish & URL-Specific Purge (`DEPLOY_AND_LOCK`)**: Aksi "Update Publikasi & Kunci Kembali" di studio secara atomik membakar ulang HTML, mengunci kembali studio, dan memicu purge terisolasi khusus URL undangan terkait (`subdomain`, `slug`, `customDomain`) tanpa mengganggu cache undangan klien lain.
   * **Tombol Mandiri "Bakar Ulang & Purge" di Dasbor Admin**: Endpoint `POST /api/admin/invitations/[id]/purge` dan tombol aksi instan di tabel undangan Dasbor Admin untuk fleksibilitas maintenance administrator.
+- **Zero-Hardcode CSS Theme Tokenization & Auth Secret Unification (v6.0.1)**:
+  * **Tokenisasi 100% Bebas Hardcode Seluruh 14 Tema Aktif:** Seluruh nilai warna statis (`#hex`) pada 14 berkas tema produksi (`papercut`, `kalandra`, `valente`, `ameera`, `wave`, `prameswari`, `dillalucky`, `artisan`, `aurelia`, `lagaligo`, `solaria`, `badrika`, `lumina`, `chronicle`) digantikan token dinamis CSS (`var(--bg-dark)`, `var(--primary)`, `var(--accent)`, `color-mix(in srgb, ...)`) sesuai kontrak Zero-Hardcode Policy. Total 100 nilai statis dieliminasi. Audit hygiene: 0 violations.
+  * **Unifikasi AUTH_SECRET (NextAuth v5):** Menghapus `NEXTAUTH_SECRET` dari `.env` dan `.env.example` yang berpotensi konflik dual-secret. Sistem kini bergantung sepenuhnya pada `AUTH_SECRET` sebagai satu-satunya kunci sesi. Tidak ada sesi yang di-invalidate karena nilai `AUTH_SECRET` tidak berubah.
+  * **Domain QA LIFE-04 — Cold Storage NAS Archive Vault:** Suite `industrial-qa-suite.ts` diperluas dengan domain pengujian LIFE-04 yang memverifikasi siklus lengkap tiered storage: dual-bake HTML mandiri, rewriting URL aset, verifikasi status arsip, dan purge 100% bersih tanpa kebocoran disk.
+  * **Standarisasi Pool Termination Seluruh Script QA:** Seluruh script pengujian distandardisasi dengan `$disconnect()` eksplisit di blok `finally` untuk mencegah proses menggantung pasca eksekusi.

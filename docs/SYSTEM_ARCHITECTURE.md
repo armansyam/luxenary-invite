@@ -1,5 +1,5 @@
 # PLATFORM UNDANGAN (WHITE-LABEL) — DOKUMENTASI ARSITEKTUR SISTEM
-## Versi: 6.0.0 | Diperbarui: 23 September 2026
+## Versi: 6.0.1 | Diperbarui: 23 September 2026
 
 > **SUMBER KEBENARAN TUNGGAL** untuk semua developer dan AI Agent yang bekerja di repositori ini.  
 > Dokumen ini WAJIB dibaca sebelum melakukan perubahan apapun pada kode.  
@@ -2673,4 +2673,25 @@ Untuk menjamin kesiapan industri (*enterprise-grade / production-ready*), sistem
 4. **Resilient Web Audio Optimizer (`lib/videoOptimizer.ts`):**
    - Mengoptimalkan bitrate audio unggahan ke standar web 96 kbps Joint Stereo CD-quality.
    - Dilengkapi fallback ganda ke encoder standalone LAME jika host FFmpeg mengalami kendala pustaka eksternal.
+
+### 17.21 — Zero-Hardcode CSS Tokenization (14 Tema) & Unifikasi Auth Secret
+1. **Tokenisasi 100% Bebas Hardcode pada 14 Tema Aktif:**
+   - Seluruh nilai warna statis (`#hex`) pada berkas tema produksi `papercut`, `kalandra`, `valente`, `ameera`, `wave`, `prameswari`, `dillalucky`, `artisan`, `aurelia`, `lagaligo`, `solaria`, `badrika`, `lumina`, dan `chronicle` digantikan token dinamis CSS.
+   - Token yang digunakan: `var(--bg-dark)`, `var(--primary)`, `var(--accent)`, `var(--text-main)`, `var(--text-heading)`, `var(--bg-main)`, `var(--bg-root)`, `var(--bg-surface-dark)`, dan `color-mix(in srgb, var(--bg-main) X%, white)`.
+   - Total 100 nilai statis dieliminasi. Linter `audit-code-hygiene.ts` menghasilkan 0 violations pasca tokenisasi.
+   - Dua token baru ditambahkan ke `:root` pada `valente.html`: `--bg-root: #000000` dan `--bg-surface-dark: #0c0c0e` untuk cover screen dan background body.
+
+2. **Unifikasi Kunci Sesi — Hapus `NEXTAUTH_SECRET` (NextAuth v5):**
+   - `.env`: `NEXTAUTH_SECRET` dihapus. Sistem kini hanya mengandalkan `AUTH_SECRET` sebagai kunci enkripsi sesi tunggal (sesuai spesifikasi NextAuth v5).
+   - `.env.example`: Diperbarui untuk mencerminkan skema single-secret dan menghapus entri `NEXTAUTH_SECRET` agar tidak membingungkan developer baru.
+   - `auth.config.ts` tetap mempertahankan fallback `process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET` sebagai lapisan keamanan backward-compatible.
+   - Tidak ada invalidasi sesi: nilai `AUTH_SECRET` tidak diubah, token JWT yang sudah diterbitkan tetap valid.
+
+3. **Domain QA LIFE-04 — Cold Storage NAS Archive Vault:**
+   - Suite `scripts/industrial-qa-suite.ts` diperluas dari 17 ke 18 kasus uji dengan domain LIFE-04.
+   - Memverifikasi siklus lengkap tiered cold storage: dual-bake HTML mandiri di NAS, rewriting URL aset ke jalur `/archives/{id}/assets/..`, validasi status `ARCHIVED` di database, dan purge volume arsip uji 100% tanpa kebocoran disk.
+
+4. **Standarisasi Pool Termination Script QA:**
+   - Seluruh script pengujian (`industrial-qa-suite.ts`, `test-01-*`, `test-02-*`, `test-03-*`, `test-security-penetration.ts`) distandardisasi dengan `prisma.$disconnect()` eksplisit di blok `finally`.
+   - Mencegah proses Node.js menggantung (*hanging process*) yang memerlukan `Ctrl+C` manual pasca eksekusi, terutama di lingkungan PM2 Cluster.
 

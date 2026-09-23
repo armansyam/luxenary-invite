@@ -1,5 +1,5 @@
 # S-Invitation: Luxenary Invite System Architecture & Master Specification
-> **Versi: 6.0.0 | Diperbarui: 23 September 2026**
+> **Versi: 6.0.1 | Diperbarui: 23 September 2026**
 
 ## 1. Executive Summary & Core Philosophy
 **Luxenary Invite** adalah platform ekosistem undangan pernikahan digital modern berbasis Next.js 16 (App Router + Turbopack) yang menghadirkan pengalaman visual mewah (*haute couture*), kecepatan muat instan (<0.8 detik), self-service dashboard mandiri bagi klien, dan integrasi cloud edge caching.
@@ -1154,3 +1154,19 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - Dilengkapi benchmark latensi kueri database (p50, p95, p99) serta isolasi sandbox dengan jaminan zero-leak cleanup.
    - Terintegrasi dengan skrip NPM `npm run test:industrial -- --suite=all` untuk otomatisasi pipeline CI/CD dan pre-deployment check.
 
+
+## 29. Zero-Hardcode CSS Tokenization & Unifikasi Kunci Sesi (v6.0.1)
+
+1. **Tokenisasi Dynamic CSS Token pada 14 Tema Aktif:**
+   - Seluruh nilai warna statis (`#ffffff`, `#000000`, `#0c0c0e`, `#101010`, `#161618`) pada 14 berkas tema produksi digantikan token dinamis CSS (`var(--bg-dark)`, `var(--primary)`, `var(--accent)`, `var(--text-main)`, `var(--text-heading)`, `color-mix(in srgb, ...)`).
+   - Jaminan: seluruh elemen hover state tombol (CTA, RSVP submit, btn-buka, btn-cal, btn-ig, btn-outline-box) dan background section tunduk pada palet tema yang dipilih klien melalui Admin Studio.
+   - Linter `scripts/audit-code-hygiene.ts` memverifikasi 0 violations pada 4 domain kontrak: Token Hex, Integritas Aset, AST CSS, dan Komentar Zombi.
+
+2. **Unifikasi Kunci Enkripsi Sesi (`AUTH_SECRET`):**
+   - `NEXTAUTH_SECRET` dihapus dari `.env` dan `.env.example`. NextAuth v5 hanya memerlukan `AUTH_SECRET`.
+   - `auth.config.ts` mempertahankan fallback `AUTH_SECRET || NEXTAUTH_SECRET` untuk backward-compatibility.
+   - Tidak ada invalidasi sesi: nilai `AUTH_SECRET` tidak berubah, semua token JWT aktif tetap valid.
+
+3. **Perluasan Domain QA LIFE-04 — NAS Archive Vault:**
+   - `scripts/industrial-qa-suite.ts` kini mencakup 18 kasus uji (sebelumnya 17) dengan tambahan LIFE-04.
+   - LIFE-04 memverifikasi: pembuatan arsip mandiri di NAS, rewriting path aset, validasi metadata di database, dan teardown arsip tanpa kebocoran disk maupun entri database.
