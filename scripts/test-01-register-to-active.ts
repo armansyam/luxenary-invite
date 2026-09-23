@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { prisma } from '../lib/prisma';
+import { prisma, pool } from '../lib/prisma';
 
 async function runTest01() {
   console.log("🚀 [TEST-01] Memulai simulasi: Registrasi -> Klien Aktif...");
@@ -32,7 +32,7 @@ async function runTest01() {
     console.log(`✅ Order PENDING berhasil dibuat (Invoice: ${order.invoiceNumber})`);
 
     // 3. Simulasi Klien Upload Bukti Transfer
-    const updatedOrder = await prisma.order.update({
+    await prisma.order.update({
       where: { id: order.id },
       data: {
         proofImageUrl: "https://example.com/dummy-proof.jpg",
@@ -52,12 +52,12 @@ async function runTest01() {
     });
     console.log(`✅ Admin menyetujui order. Status berubah menjadi PAID.`);
 
-    // 5. Buat entitas Invitation berdasarkan order yang sudah PAID
+    // 5. Buat entitas Invitation berdasarkan order yang sudah PAID (menggunakan tema aktif candani)
     const invitation = await prisma.invitation.create({
       data: {
         userId: user.id,
         orderId: paidOrder.id,
-        themeId: "aruna",
+        themeId: "candani",
         invitationSlug: `test-wedding-${Date.now()}`,
         groomSlug: "test-groom",
         brideSlug: "test-bride",
@@ -75,13 +75,14 @@ async function runTest01() {
     console.log(`USER_ID: ${user.id}`);
     console.log(`ORDER_ID: ${paidOrder.id}`);
     console.log(`INVITATION_ID: ${invitation.id}`);
-    console.log("Gunakan INVITATION_ID di atas untuk menjalankan TEST-02 (jika diubah manual).");
+    console.log("Gunakan INVITATION_ID di atas untuk menjalankan TEST-02.");
     
   } catch (err) {
     console.error("❌ Terjadi kesalahan:", err);
-    process.exit(1);
+    process.exitCode = 1;
   } finally {
     await prisma.$disconnect();
+    await pool.end();
   }
 }
 

@@ -15,6 +15,7 @@
     "test:security": "npx tsx scripts/test-security-penetration.ts",
     "test:stress": "npx tsx scripts/master-e2e-stress-test.ts",
     "test:themes": "npx tsx scripts/test-theme-matrix.ts",
+    "test:nas": "npx tsx scripts/test-nas-archive-lifecycle.ts",
     "test:clean": "npx tsx scripts/clean-test-artifacts.ts",
     "test:hygiene": "npx tsx scripts/audit-code-hygiene.ts",
     "cron:cleanup": "npx tsx scripts/cron-cleanup.ts"

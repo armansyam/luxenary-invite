@@ -4,7 +4,8 @@ import { rateLimitDb } from "../lib/rateLimit";
 import { generateReceptionistToken, verifyReceptionistToken } from "../lib/receptionistAuth";
 import { encryptPin, verifyPin, decryptPin } from "../lib/pinEncryption";
 import { buildAndSavePublishedHtml, deletePublishedHtml } from "../lib/staticPublisher";
-import { hasPlanCapability } from "../lib/settings";
+import { isNasArchiveEnabled, syncInvitationToNasArchive, readNasArchiveHtml, verifyNasArchiveStatus, purgeNasArchive, getNasArchivePath } from "../lib/nasArchive";
+import { hasPlanCapability, invalidateSettingsCache } from "../lib/settings";
 import { applyUpgradePlan } from "../lib/upgradeHelper";
 import { renderTemplateFile } from "../lib/renderTemplate";
 import fs from "fs";
@@ -864,6 +865,104 @@ export class IndustrialQASuite {
       }
 
       this.recordResult("LIFECYCLE", "LIFE-03", "Three-Layer Storage Cleanup Invariant (Zero Disk Leak)", passed, start, detail);
+    }
+
+    // TEST 4.4: Cold Storage NAS Archive Vault (Tiered Storage Lifecycle)
+    {
+      const start = performance.now();
+      let passed = false;
+      let detail = "";
+
+      const testNasPath = path.join(process.cwd(), "data", `test-qa-archives-${this.runId}`);
+
+      try {
+        await prisma.adminSetting.upsert({
+          where: { key: "nas_archive_enabled" },
+          update: { value: "true" },
+          create: { key: "nas_archive_enabled", value: "true" },
+        });
+        await prisma.adminSetting.upsert({
+          where: { key: "nas_archive_path" },
+          update: { value: testNasPath },
+          create: { key: "nas_archive_path", value: testNasPath },
+        });
+        invalidateSettingsCache();
+
+        const user = await prisma.user.create({
+          data: {
+            email: `${this.prefix}_nas@example.com`,
+            name: "NAS Tester",
+          },
+        });
+        this.trackedUserIds.push(user.id);
+
+        const testSlug = `${this.prefix}-nas-vault`;
+        const uploadsDir = path.join(process.cwd(), "public", "uploads", "invitations", `${this.prefix}-nas`);
+        fs.mkdirSync(uploadsDir, { recursive: true });
+        fs.writeFileSync(path.join(uploadsDir, "cover.webp"), "RIFF....WEBPVP8 ...DUMMY_IMAGE_DATA...", "utf-8");
+
+        const inv = await prisma.invitation.create({
+          data: {
+            userId: user.id,
+            invitationSlug: testSlug,
+            groomSlug: "gnas",
+            brideSlug: "bnas",
+            groomName: "Groom NAS",
+            brideName: "Bride NAS",
+            themeId: "candani",
+            status: "EVENT_FINISHED",
+            eventData: JSON.stringify([{ title: "Akad", date: "2026-12-26" }]),
+            media: {
+              create: [
+                {
+                  mediaSlot: "LANDING_COVER",
+                  localPath: `/uploads/invitations/${this.prefix}-nas/cover.webp`,
+                },
+              ],
+            },
+          },
+        });
+        this.trackedInvitationIds.push(inv.id);
+
+        // Eksekusi sinkronisasi ke NAS Vault
+        const syncRes = await syncInvitationToNasArchive(inv.id);
+        const resolvedNasPath = await getNasArchivePath();
+        const diskHtmlPath = path.join(resolvedNasPath, testSlug, "index.html");
+        const diskAssetPath = path.join(resolvedNasPath, testSlug, "assets", "cover.webp");
+
+        const indexExists = fs.existsSync(diskHtmlPath);
+        const assetExists = fs.existsSync(diskAssetPath);
+        const readContent = await readNasArchiveHtml(testSlug);
+        const urlRewritten = readContent ? readContent.includes(`/archives/${testSlug}/assets/cover.webp`) : false;
+        const statusReport = await verifyNasArchiveStatus(testSlug);
+
+        // Purge dari NAS
+        await purgeNasArchive(testSlug);
+        const isPurged = !fs.existsSync(path.join(testNasPath, testSlug));
+
+        // Bersihkan dummy uploads
+        if (fs.existsSync(uploadsDir)) fs.rmSync(uploadsDir, { recursive: true, force: true });
+        if (fs.existsSync(testNasPath)) fs.rmSync(testNasPath, { recursive: true, force: true });
+
+        passed = syncRes.success && indexExists && assetExists && urlRewritten && statusReport.exists && isPurged;
+        detail = passed
+          ? `Tiered Storage NAS Vault Sukses: Dual-bake HTML mandiri, rewriting URL aset (/archives/${testSlug}/assets/..), verifikasi status & purge 100% sempurna.`
+          : `Gagal Tiered Storage: sync=${syncRes.success}, index=${indexExists}, asset=${assetExists}, rewrite=${urlRewritten}, purged=${isPurged}`;
+      } catch (err: any) {
+        detail = `Exception: ${err?.message}`;
+      } finally {
+        await prisma.adminSetting.upsert({
+          where: { key: "nas_archive_enabled" },
+          update: { value: "false" },
+          create: { key: "nas_archive_enabled", value: "false" },
+        }).catch(() => {});
+        invalidateSettingsCache();
+        if (fs.existsSync(testNasPath)) {
+          try { fs.rmSync(testNasPath, { recursive: true, force: true }); } catch {}
+        }
+      }
+
+      this.recordResult("LIFECYCLE", "LIFE-04", "Cold Storage NAS Archive Vault (Tiered Storage Lifecycle)", passed, start, detail);
     }
   }
 

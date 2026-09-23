@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { prisma } from "../lib/prisma";
+import { prisma, pool } from "../lib/prisma";
 import fs from "fs";
 import path from "path";
 import {
@@ -181,6 +181,7 @@ async function runTest() {
     process.exit(1);
   } finally {
     await prisma.$disconnect();
+    await pool.end();
   }
 }
 

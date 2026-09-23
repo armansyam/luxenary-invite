@@ -18,19 +18,19 @@ Master Orchestrator Deep-Dive Suites                    Micro-Tests        DevOp
     ├─ industrial-qa   ├─ complete-system-audit (Alur E2E) ├─ test-01 (Reg)   ├─ cron-cleanup
     │  suite.ts        ├─ test-security-pen (Penetration)  ├─ test-02 (Pub)   ├─ clean-test-artifacts
     ├─ audit-code-     ├─ master-e2e-stress (Konkurensi)   └─ test-03 (Clean) ├─ sync-themes
-    │  hygiene.ts      └─ test-theme-matrix (Matriks Tema)                    ├─ thumbnails
-    └─ test:clean                                                             └─ utilitas aset
+    │  hygiene.ts      ├─ test-theme-matrix (Matriks Tema)                    ├─ thumbnails
+    └─ test:clean      └─ test-nas-archive (Vault NAS)                        └─ utilitas aset
 ```
 
 ---
 
 ## 1. Tier 1: Master Industrial Orchestrator & Static Hygiene Linter
 
-Pusat kendali pengujian kesiapan industri (*enterprise-grade / production-ready*) dengan 7 domain pengujian terpadu, linter AST CSS dead selector, pengecekan anti-hardcode hex tokens, telemetri latensi P50/P95, garansi zero-leak sandbox, dan pembuatan laporan otomatis ke folder `reports/`.
+Pusat kendali pengujian kesiapan industri (*enterprise-grade / production-ready*) dengan 7 domain pengujian terpadu (termasuk verifikasi Cold Storage NAS Vault), linter AST CSS dead selector, pengecekan anti-hardcode hex tokens, telemetri latensi P50/P95, garansi zero-leak sandbox, dan pembuatan laporan otomatis ke folder `reports/`.
 
 | Berkas | Peran & Tugas | Perintah Shortcut |
 |---|---|---|
-| [`industrial-qa-suite.ts`](./industrial-qa-suite.ts) | Menjalankan pengujian 7 domain industri (Keamanan, Finansial, Konkurensi, Lifecycle, Render Tema, Indeks DB, dan Fault Tolerance). | `npm run test:all` / `npm run test:industrial` |
+| [`industrial-qa-suite.ts`](./industrial-qa-suite.ts) | Menjalankan pengujian 7 domain industri: Keamanan, Finansial, Konkurensi, Lifecycle & NAS Vault, Render Tema, Indeks DB, dan Fault Tolerance. | `npm run test:all` / `npm run test:industrial` |
 | [`audit-code-hygiene.ts`](./audit-code-hygiene.ts) | Audit kebersihan kode: parsing AST CSS tema untuk mendeteksi dead selectors yang tidak terpakai di HTML/JS, larangan nilai heksadesimal mentah (Zero Hardcode Policy), dan zombie comments. | `npm run test:hygiene` |
 | [`clean-test-artifacts.ts`](./clean-test-artifacts.ts) | Memindai dan memusnahkan seluruh entitas uji di PostgreSQL serta berkas fisik yatim (*orphaned drafts, published HTML, uploads*) tanpa menyisakan disk leak. | `npm run test:clean` |
 
@@ -64,6 +64,7 @@ Skrip pengujian mendalam yang berfokus menguji area teknis tertentu secara ekste
 | [`test-security-penetration.ts`](./test-security-penetration.ts) | **Pengujian Penetrasi & Keamanan:** Burst rate limiter PostgreSQL (20+ hit simultan), proteksi reserved subdomains, sanitasi path traversal & SQL injection identifier, dan idempotensi replay webhook. | `npm run test:security` |
 | [`master-e2e-stress-test.ts`](./master-e2e-stress-test.ts) | **Uji Ketahanan Beban & Konkurensi:** Simulasi lonjakan submisi RSVP simultan, pembatasan katering pax, dan idempotensi pembayaran paralel. | `npm run test:stress` |
 | [`test-theme-matrix.ts`](./test-theme-matrix.ts) | **Matriks Kompatibilitas 18+ Tema Fisik:** Menguji seluruh tema aktif di database terhadap dataset normal, ekstrem (nama 250+ karakter), minimalis, palet warna, payload injeksi XSS, dan deteksi unparsed placeholder `{{variable}}`. | `npm run test:themes` |
+| [`test-nas-archive-lifecycle.ts`](./test-nas-archive-lifecycle.ts) | **Siklus Hidup Cold Storage NAS Archive (Luxenary Vault):** Menguji dual-bake arsip mandiri, rewriting URL aset relatif `/archives/${slug}/assets/...`, endpoint stream media HTTP 206, verifikasi status berkas fisik, dan pembersihan permanen (*purge*). | `npm run test:nas` / `npx tsx scripts/test-nas-archive-lifecycle.ts` |
 
 ---
 

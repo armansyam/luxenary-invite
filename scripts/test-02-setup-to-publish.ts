@@ -1,7 +1,8 @@
 import "dotenv/config";
-import { prisma } from '../lib/prisma';
+import { prisma, pool } from '../lib/prisma';
 import { encryptPin } from '../lib/pinEncryption';
 import { buildAndSavePublishedHtml } from '../lib/staticPublisher';
+import { randomUUID } from 'crypto';
 
 async function runTest02() {
   console.log("🚀 [TEST-02] Memulai simulasi: Setup Undangan -> Publish...");
@@ -74,7 +75,7 @@ async function runTest02() {
     console.log(`✅ Status Undangan berhasil diubah menjadi: ${publishedInv.status}`);
     console.log(`✅ Undangan berhasil diterbitkan! Slug: /${publishedInv.invitationSlug}`);
     
-    // 5. Tambahkan 2 Tamu (Guest) secara dummy
+    // 5. Tambahkan 2 Tamu (Guest) dengan Token QR Unik (randomUUID)
     const guest1 = await prisma.guest.create({
       data: {
         invitationId: publishedInv.id,
@@ -82,7 +83,7 @@ async function runTest02() {
         slug: "budi-santoso",
         category: "VIP",
         guestQuota: 2,
-        qrToken: `LUX|${publishedInv.id}|Budi Santoso|VIP`,
+        qrToken: randomUUID(),
         isTokenRedeemed: false
       }
     });
@@ -94,7 +95,7 @@ async function runTest02() {
         slug: "siti-aminah",
         category: "UMUM",
         guestQuota: 1,
-        qrToken: `LUX|${publishedInv.id}|Siti Aminah|UMUM`,
+        qrToken: randomUUID(),
         isTokenRedeemed: false
       }
     });
@@ -110,9 +111,10 @@ async function runTest02() {
 
   } catch (err) {
     console.error("❌ Terjadi kesalahan:", err);
-    process.exit(1);
+    process.exitCode = 1;
   } finally {
     await prisma.$disconnect();
+    await pool.end();
   }
 }
 

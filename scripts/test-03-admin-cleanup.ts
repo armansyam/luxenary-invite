@@ -1,6 +1,8 @@
 import "dotenv/config";
-import { prisma } from '../lib/prisma';
+import { prisma, pool } from '../lib/prisma';
 import { deletePublishedHtml } from '../lib/staticPublisher';
+import { purgeNasArchive } from '../lib/nasArchive';
+import { deleteFile } from '../lib/storage';
 import fs from 'fs';
 import path from 'path';
 
@@ -55,10 +57,20 @@ async function runTest03() {
         try { fs.unlinkSync(draftPath); } catch {}
       }
 
-      // Invarian 3: Hapus folder uploads fisik
+      // Invarian 3: Hapus folder uploads fisik & R2 storage
       const uploadsDir = path.join(process.cwd(), "public", "uploads", "invitations", inv.id);
       if (fs.existsSync(uploadsDir)) {
         try { fs.rmSync(uploadsDir, { recursive: true, force: true }); } catch {}
+      }
+
+      const invMedia = await prisma.invitationMedia.findMany({ where: { invitationId: inv.id } });
+      if (invMedia.length > 0) {
+        await Promise.all(invMedia.map(m => m.localPath ? deleteFile(m.localPath) : Promise.resolve())).catch(() => {});
+      }
+
+      // Invarian 4: Pembersihan Arsip NAS Cold Storage jika ada
+      if (inv.invitationSlug) {
+        await purgeNasArchive(inv.invitationSlug);
       }
 
       // Hapus data undangan (Cascade membersihkan Guest, RSVP, GuestMemory di PostgreSQL)
@@ -68,7 +80,7 @@ async function runTest03() {
       deletedCount++;
     }
 
-    console.log(`✅ Berhasil membersihkan ${deletedCount} undangan kedaluwarsa beserta 3 lapis berkas fisik dan data relasinya.`);
+    console.log(`✅ Berhasil membersihkan ${deletedCount} undangan kedaluwarsa beserta 4 lapis berkas fisik dan data relasinya.`);
 
     // 4. Simulasi Pembersihan User Akun Kosong Uji Coba (client_... @test.luxenary.com)
     const emptyUsers = await prisma.user.findMany({
@@ -81,7 +93,6 @@ async function runTest03() {
 
     let deletedUserCount = 0;
     for (const user of emptyUsers) {
-      // Abaikan admin atau super admin
       if (user.role === "CLIENT") {
         await prisma.user.delete({
           where: { id: user.id }
@@ -98,9 +109,10 @@ async function runTest03() {
 
   } catch (err) {
     console.error("❌ Terjadi kesalahan:", err);
-    process.exit(1);
+    process.exitCode = 1;
   } finally {
     await prisma.$disconnect();
+    await pool.end();
   }
 }
 

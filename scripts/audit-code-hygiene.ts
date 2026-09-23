@@ -88,46 +88,65 @@ export class CodeHygieneAuditor {
 
         // 1. Audit Inline Styles & Runtime JS innerHTML
         if (line.includes("style=") || line.includes("innerHTML")) {
-          const lineWithoutVar = line.replace(/var\(--[a-zA-Z0-9_\-]+,\s*#[0-9a-fA-F]{3,8}\)/g, "");
-          let m: RegExpExecArray | null;
-          while ((m = rawHexRegex.exec(lineWithoutVar)) !== null) {
-            if (lineWithoutVar.substring(Math.max(0, m.index - 2), m.index) === "&#") continue;
-            if (lineWithoutVar.includes(".replace(")) continue;
+          // Extract style="..." attributes
+          const styleMatches = line.matchAll(/style\s*=\s*["']([^"']*)["']/gi);
+          for (const sMatch of styleMatches) {
+            const styleContent = sMatch[1];
+            const declarations = styleContent.split(";");
+            for (const decl of declarations) {
+              const colonIdx = decl.indexOf(":");
+              if (colonIdx === -1) continue;
+              const prop = decl.substring(0, colonIdx).trim().toLowerCase();
+              const val = decl.substring(colonIdx + 1).trim();
 
-            this.issues.push({
-              domain: "ZERO-HARDCODE-INLINE",
-              severity: "ERROR",
-              file: relFile,
-              line: idx + 1,
-              message: `Ditemukan nilai heksadesimal mentah (#${m[1]}) pada inline style atau JS. Gunakan token dinamis var(--token, #${m[1]}).`,
-              codeSnippet: trimmed,
-            });
+              if (DYNAMIC_CSS_PROPERTIES.includes(prop)) {
+                const valWithoutTokens = val
+                  .replace(/var\(--[a-zA-Z0-9_\-]+(?:,\s*#[0-9a-fA-F]{3,8})?\)/g, "")
+                  .replace(/color-mix\([^\)]*\)/g, "");
+
+                let m: RegExpExecArray | null;
+                while ((m = rawHexRegex.exec(valWithoutTokens)) !== null) {
+                  this.issues.push({
+                    domain: "ZERO-HARDCODE-INLINE",
+                    severity: "ERROR",
+                    file: relFile,
+                    line: idx + 1,
+                    message: `Ditemukan nilai heksadesimal mentah (#${m[1]}) pada properti '${prop}' di inline style. Gunakan token dinamis var(--token).`,
+                    codeSnippet: decl.trim(),
+                  });
+                }
+              }
+            }
           }
           return;
         }
 
         // 2. Audit CSS Properties (Kanvas, Overlay, Kartu, Tombol, Border)
         if (inStyle) {
-          const isDynamicProp = DYNAMIC_CSS_PROPERTIES.some((prop) => {
-            const regex = new RegExp(`^${prop}\\s*:`, "i");
-            return regex.test(trimmed);
-          });
+          const declarations = trimmed.split(";");
+          for (const decl of declarations) {
+            const colonIdx = decl.indexOf(":");
+            if (colonIdx === -1) continue;
+            const prop = decl.substring(0, colonIdx).trim().toLowerCase();
+            const val = decl.substring(colonIdx + 1).trim();
 
-          if (isDynamicProp) {
-            const lineWithoutTokens = line
-              .replace(/var\(--[a-zA-Z0-9_\-]+(?:,\s*#[0-9a-fA-F]{3,8})?\)/g, "")
-              .replace(/color-mix\([^\)]*\)/g, "");
+            if (DYNAMIC_CSS_PROPERTIES.includes(prop)) {
+              const valWithoutTokens = val
+                .replace(/var\(--[a-zA-Z0-9_\-]+(?:,\s*#[0-9a-fA-F]{3,8})?\)/g, "")
+                .replace(/color-mix\([^\)]*\)/g, "");
 
-            let m: RegExpExecArray | null;
-            while ((m = rawHexRegex.exec(lineWithoutTokens)) !== null) {
-              this.issues.push({
-                domain: "ZERO-HARDCODE-CSS",
-                severity: "ERROR",
-                file: relFile,
-                line: idx + 1,
-                message: `Ditemukan warna statis (#${m[1]}) pada komponen kanvas/border/background. Wajib menggunakan token dinamis: var(--bg-dark), var(--primary), var(--accent), atau color-mix().`,
-                codeSnippet: trimmed,
-              });
+              let m: RegExpExecArray | null;
+              while ((m = rawHexRegex.exec(valWithoutTokens)) !== null) {
+                if (valWithoutTokens.substring(Math.max(0, m.index - 2), m.index) === "&#") continue;
+                this.issues.push({
+                  domain: "ZERO-HARDCODE-CSS",
+                  severity: "ERROR",
+                  file: relFile,
+                  line: idx + 1,
+                  message: `Ditemukan warna statis (#${m[1]}) pada properti '${prop}'. Wajib menggunakan token dinamis: var(--bg-dark), var(--primary), var(--accent), atau color-mix().`,
+                  codeSnippet: decl.trim(),
+                });
+              }
             }
           }
         }
