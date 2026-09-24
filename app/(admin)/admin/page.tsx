@@ -728,8 +728,8 @@ export default function AdminPage() {
   const [themeForm, setThemeForm] = useState({
     id: "",
     name: "",
-    category: "premium",
-    series: "Premium",
+    category: "minimalist",
+    series: "Minimalist",
     description: "",
     sortOrder: 1,
     isActive: true,
@@ -749,7 +749,7 @@ export default function AdminPage() {
   }, [themeSyncResult]);
 
   const [themeError, setThemeError] = useState<string | null>(null);
-  const [themeCategoryFilter, setThemeCategoryFilter] = useState<string>("premium");
+  const [themeCategoryFilter, setThemeCategoryFilter] = useState<string>("minimalist");
   const [themeFile, setThemeFile] = useState<File | null>(null);
 
   // Theme Demo Studio State
@@ -1340,8 +1340,8 @@ export default function AdminPage() {
     setThemeForm({
       id: "",
       name: "",
-      category: "premium",
-      series: "Premium",
+      category: "minimalist",
+      series: "Minimalist",
       description: "",
       sortOrder: (themes.length + 1),
       isActive: true,
@@ -1357,8 +1357,8 @@ export default function AdminPage() {
     setThemeForm({
       id: th.id,
       name: th.name,
-      category: th.category || "premium",
-      series: th.series || (th.category === "traditional" ? "Traditional" : "Premium"),
+      category: th.category || "minimalist",
+      series: th.series || (th.category === "traditional" ? "Traditional" : th.category === "modern" ? "Modern" : "Minimalist"),
       description: th.description || "",
       sortOrder: th.sortOrder || 1,
       isActive: th.isActive !== false,
@@ -2837,18 +2837,22 @@ export default function AdminPage() {
                   {/* Category Filter Tabs */}
                   {(() => {
                     const validThemes = themes.filter((t) => t.id !== "starter-blueprint");
-                    const countPremium = validThemes.filter((t) => (t.category || "").toLowerCase() === "premium").length;
+                    const countMinimalist = validThemes.filter((t) => (t.category || "").toLowerCase() === "minimalist" || (t.category || "").toLowerCase() === "premium").length;
                     const countModern = validThemes.filter((t) => (t.category || "").toLowerCase() === "modern").length;
                     const countTraditional = validThemes.filter((t) => (t.category || "").toLowerCase() === "traditional").length;
                     const displayedThemes = themeCategoryFilter === "all"
                       ? validThemes
-                      : validThemes.filter((t) => (t.category || "").toLowerCase() === themeCategoryFilter);
+                      : validThemes.filter((t) => {
+                          const cat = (t.category || "").toLowerCase();
+                          if (themeCategoryFilter === "minimalist") return cat === "minimalist" || cat === "premium";
+                          return cat === themeCategoryFilter;
+                        });
 
                     return (
                       <>
                         <div className="flex items-center gap-2 border-b border-gray-200 pb-3 overflow-x-auto no-scrollbar">
                           {[
-                            { id: "premium", label: `Premium (${countPremium})` },
+                            { id: "minimalist", label: `Minimalis (${countMinimalist})` },
                             { id: "modern", label: `Modern (${countModern})` },
                             { id: "traditional", label: `Traditional (${countTraditional})` },
                             { id: "all", label: `Semua Tema (${validThemes.length})` },
@@ -6759,7 +6763,7 @@ export default function AdminPage() {
                   required
                 />
                 <p className="text-[10px] text-gray-500 mt-1">
-                  File HTML disimpan di <code className="font-mono text-gray-700 font-semibold">themes/premium/{themeForm.id || "id"}.html</code> atau <code className="font-mono text-gray-700 font-semibold">themes/traditional/{themeForm.id || "id"}.html</code>.{" "}
+                  File HTML disimpan di <code className="font-mono text-gray-700 font-semibold">themes/minimalist/{themeForm.id || "id"}.html</code> atau <code className="font-mono text-gray-700 font-semibold">themes/traditional/{themeForm.id || "id"}.html</code>.{" "}
                   <a href="/downloads/starter-blueprint.html" download="starter-blueprint.html" className="text-amber-700 font-bold hover:underline">
                     Unduh Starter Blueprint HTML
                   </a>
@@ -6783,10 +6787,10 @@ export default function AdminPage() {
                   <label className="block text-xs font-bold text-gray-800 mb-1">Kategori</label>
                   <select
                     value={themeForm.category}
-                    onChange={(e) => setThemeForm({ ...themeForm, category: e.target.value, series: e.target.value === "traditional" ? "Traditional" : e.target.value === "modern" ? "Modern" : "Premium" })}
+                    onChange={(e) => setThemeForm({ ...themeForm, category: e.target.value, series: e.target.value === "traditional" ? "Traditional" : e.target.value === "modern" ? "Modern" : "Minimalist" })}
                     className="w-full px-3.5 py-2 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 font-medium focus:outline-none focus:border-amber-500"
                   >
-                    <option value="premium">Premium</option>
+                    <option value="minimalist">Minimalis</option>
                     <option value="modern">Modern</option>
                     <option value="traditional">Traditional</option>
                   </select>

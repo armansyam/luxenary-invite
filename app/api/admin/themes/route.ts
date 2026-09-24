@@ -16,11 +16,11 @@ async function verifyAdminSession() {
 }
 
 export const DEFAULT_THEMES = [
-  // Premium Series (4)
-  { id: "kalandra", name: "Kalandra", category: "premium", series: "Premium", description: "THE WEDDING OF — Modern, Elegan & Minimalis Editorial", isPremium: true, sortOrder: 1, isActive: true },
-  { id: "valente", name: "Valente", category: "premium", series: "Premium", description: "A CELEBRATION OF LOVE — Elegan, Mewah & Berkelas", isPremium: true, sortOrder: 2, isActive: true },
-  { id: "aurelia", name: "Aurelia", category: "premium", series: "Premium", description: "ROYAL LUXURY CELEBRATION — Sentuhan Emas & Kemegahan Kerajaan", isPremium: true, sortOrder: 3, isActive: true },
-  { id: "artisan", name: "Artisan", category: "premium", series: "Premium", description: "HANDCRAFTED IN LOVE — Sentuhan Artistik & Tipografi Organik", isPremium: true, sortOrder: 4, isActive: true },
+  // Minimalist Series (4)
+  { id: "kalandra", name: "Kalandra", category: "minimalist", series: "Minimalist", description: "THE WEDDING OF — Modern, Elegan & Minimalis Editorial", isPremium: true, sortOrder: 1, isActive: true },
+  { id: "valente", name: "Valente", category: "minimalist", series: "Minimalist", description: "A CELEBRATION OF LOVE — Elegan, Mewah & Berkelas", isPremium: true, sortOrder: 2, isActive: true },
+  { id: "aurelia", name: "Aurelia", category: "minimalist", series: "Minimalist", description: "ROYAL LUXURY CELEBRATION — Sentuhan Emas & Kemegahan Kerajaan", isPremium: true, sortOrder: 3, isActive: true },
+  { id: "artisan", name: "Artisan", category: "minimalist", series: "Minimalist", description: "HANDCRAFTED IN LOVE — Sentuhan Artistik & Tipografi Organik", isPremium: true, sortOrder: 4, isActive: true },
   // Modern Series (6)
   { id: "ameera", name: "Ameera", category: "modern", series: "Modern", description: "CONTEMPORARY HERITAGE — Perpaduan Estetika Timur & Modern", isPremium: false, sortOrder: 5, isActive: true },
   { id: "chronicle", name: "Chronicle", category: "modern", series: "Modern", description: "HIGH-FASHION VOGUE EDITORIAL — Estetika Majalah Mode Kontemporer", isPremium: false, sortOrder: 6, isActive: true },
@@ -168,7 +168,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Tema dengan ID "${cleanId}" sudah ada.` }, { status: 409 });
     }
 
-    const cat = category.toLowerCase() as "premium" | "modern" | "traditional";
+    const cat = category.toLowerCase() as "minimalist" | "premium" | "modern" | "traditional";
     const fs = await import("fs/promises");
     const path = await import("path");
 
@@ -188,8 +188,8 @@ export async function POST(req: NextRequest) {
         name: name.trim(),
         category: cat,
         description: description || "",
-        series: series || (cat === "traditional" ? "Traditional" : cat === "premium" ? "Premium" : "Modern"),
-        isPremium: Boolean(isPremium || cat === "premium"),
+        series: series || (cat === "traditional" ? "Traditional" : (cat === "minimalist" || cat === "premium") ? "Minimalist" : "Modern"),
+        isPremium: Boolean(isPremium || cat === "minimalist" || cat === "premium"),
         isActive: isActive !== false,
         sortOrder: Number(sortOrder || 99),
       },

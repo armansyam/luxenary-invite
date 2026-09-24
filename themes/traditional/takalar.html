@@ -1,0 +1,1650 @@
+<!--
+ _      _   _  __  __  _____   _   _      _     ____   __   __
+| |    | | | | \ \/ / | ____| | \ | |    / \   |  _ \  \ \ / /
+| |    | | | |  \  /  |  _|   |  \| |   / _ \  | |_) |  \ V / 
+| |___ | |_| |  /  \  | |___  | |\  |  / ___ \ |  _ <    | |  
+|_____| \___/  /_/\_\ |_____| |_| \_| /_/   \_\|_| \_\   |_|  
+
+  ==============================================================
+  STOP! PERHATIAN!
+  --------------------------------------------------------------
+  Sistem dan desain tema ini adalah milik eksklusif Luxenary.
+  Dilarang keras menyalin, menduplikasi, atau menjual ulang 
+  tanpa izin resmi dari pihak Luxenary (luxenary.id).
+  
+  Hak cipta dilindungi undang-undang.
+  ==============================================================
+-->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>The Wedding of {{firstName}} &amp; {{secondName}}</title>
+  
+  <!-- THEME TYPOGRAPHY: Self-Hosted Local Google Fonts -->
+  <link rel="stylesheet" href="/fonts/fonts.css">
+  <link rel="stylesheet" href="/css/modules.css">
+  
+  <style>
+    :root {
+      --primary: #061a33;
+      --secondary: #0f325e;
+      --accent: #e2be75;
+      --bg-light: #f0f5fa;
+      --bg-dark: #020914;
+      --text-dark: #061830;
+      --makassar-navy: var(--primary, #061a33);
+      --makassar-gold: var(--accent, #e2be75);
+      --makassar-dark: var(--bg-dark, #020914);
+      --makassar-card: color-mix(in srgb, var(--primary, #061a33) 28%, var(--bg-dark, #020914) 86%);
+      --theme-card: var(--makassar-card);
+      --border-gold: color-mix(in srgb, var(--accent, #e2be75) 35%, transparent);
+      --border-gold-bright: color-mix(in srgb, var(--accent, #e2be75) 80%, transparent);
+      --gold-glow: color-mix(in srgb, var(--accent, #e2be75) 25%, transparent);
+      --text-muted: color-mix(in srgb, #ffffff 75%, transparent);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    html {
+      scroll-behavior: smooth;
+      overflow-x: hidden;
+      width: 100%;
+      max-width: 100%;
+    }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg-dark, #030914);
+      color: #ffffff;
+      overflow-x: hidden;
+      width: 100%;
+      max-width: 100%;
+      position: relative;
+    }
+
+    /* FIXED BACKGROUND LAYER */
+    .fixed-bg-layer {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100vh;
+      background-image: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--bg-dark, #030914) 82%, transparent) 0%,
+        color-mix(in srgb, var(--primary, #0a192f) 65%, transparent) 35%,
+        color-mix(in srgb, var(--bg-dark, #030914) 88%, transparent) 75%,
+        color-mix(in srgb, var(--bg-dark, #030914) 96%, transparent) 100%
+      ), url('/assets/ornaments/bugis/bg-makassar.webp'), url('{{globalBgUrl}}'), url('{{homePhotoCssUrl}}');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* TYPOGRAPHY CLASSES */
+    .font-makassar-title { font-family: 'Cinzel', 'Cinzel Decorative', serif; letter-spacing: 0.12em; }
+    .font-makassar-accent { font-family: 'Great Vibes', cursive; }
+    .font-makassar-quote { font-family: 'Cormorant Garamond', serif; font-style: italic; }
+    .font-makassar-sans { font-family: 'Plus Jakarta Sans', sans-serif; }
+
+    /* ANIMATIONS & MICRO-INTERACTIONS */
+    @keyframes phinisiFloat {
+      0%, 100% { transform: translateY(0px) rotate(0deg); filter: drop-shadow(0 8px 25px var(--gold-glow)); }
+      50% { transform: translateY(-8px) rotate(-1deg); filter: drop-shadow(0 14px 35px var(--border-gold-bright)); }
+    }
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 0.8; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.04); }
+    }
+
+    .reveal-on-scroll {
+      opacity: 0;
+      transform: translateY(25px);
+      transition: all 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reveal-on-scroll.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* 4-CORNER FLORAL ORNAMENTS */
+    .corner-floral {
+      position: absolute;
+      width: 105px;
+      height: 105px;
+      object-fit: contain;
+      pointer-events: none;
+      z-index: 15;
+      filter: drop-shadow(0 4px 14px rgba(0,0,0,0.6));
+    }
+    .corner-tl { top: 0; left: 0; }
+    .corner-tr { top: 0; right: 0; }
+    .corner-bl { bottom: 0; left: 0; }
+    .corner-br { bottom: 0; right: 0; }
+
+    /* MAKASSAR BORDER FRAMES */
+    .makassar-frame-top {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 38px;
+      object-fit: fill;
+      pointer-events: none;
+      z-index: 14;
+      opacity: 0.9;
+    }
+    .makassar-frame-bottom {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 44px;
+      object-fit: fill;
+      pointer-events: none;
+      z-index: 14;
+      opacity: 0.9;
+    }
+
+    /* COVER SCREEN (PORTAL GATEWAY) */
+    .cover-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background-color: var(--bg-dark, #030914);
+      background-image: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--bg-dark, #030914) 75%, transparent) 0%,
+        color-mix(in srgb, var(--primary, #0a192f) 55%, transparent) 40%,
+        color-mix(in srgb, var(--bg-dark, #030914) 92%, transparent) 100%
+      ), url('/assets/ornaments/bugis/bg-makassar.webp'), url('{{landingCoverUrl}}');
+      background-size: cover;
+      background-position: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 2.5rem 1.5rem;
+      text-align: center;
+      transition: transform 0.85s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.85s cubic-bezier(0.77, 0, 0.175, 1);
+    }
+    .cover-screen.opened {
+      transform: translateY(-100%);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .cover-emblem-wrap {
+      width: 130px;
+      height: 120px;
+      margin-bottom: 1.25rem;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .cover-emblem-img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 6px 22px var(--gold-glow));
+      animation: phinisiFloat 6s ease-in-out infinite;
+    }
+    .cover-tagline {
+      font-size: 0.75rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--makassar-gold);
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+    .cover-names {
+      font-size: 2.4rem;
+      line-height: 1.15;
+      color: #ffffff;
+      margin-bottom: 1.5rem;
+      text-shadow: 0 4px 18px rgba(0,0,0,0.7);
+    }
+    .cover-names span {
+      display: block;
+      font-family: 'Great Vibes', cursive;
+      font-size: 2.1rem;
+      color: var(--makassar-gold);
+      margin: 0.2rem 0;
+    }
+    .cover-guest-box {
+      background: color-mix(in srgb, var(--primary, #0a192f) 35%, var(--bg-dark, #030914) 80%);
+      border: 1px solid var(--border-gold);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-radius: 16px;
+      padding: 1.2rem 1.6rem;
+      margin-bottom: 1.75rem;
+      width: 100%;
+      max-width: 320px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .cover-guest-lbl { font-size: 0.75rem; color: var(--text-muted); letter-spacing: 0.08em; text-transform: uppercase; }
+    .cover-guest-val { font-family: 'Cinzel', serif; font-size: 1.2rem; color: #fff; margin-top: 0.25rem; font-weight: 600; letter-spacing: 0.05em; }
+
+    .btn-buka-undangan {
+      background: linear-gradient(135deg, var(--makassar-navy), color-mix(in srgb, var(--makassar-navy) 70%, #000));
+      color: #ffffff;
+      border: 1.5px solid var(--border-gold-bright);
+      padding: 0.85rem 2.2rem;
+      border-radius: 9999px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      box-shadow: 0 8px 24px var(--gold-glow);
+      transition: all 0.3s ease;
+      position: relative;
+      z-index: 20;
+    }
+    .btn-buka-undangan:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px var(--border-gold-bright);
+      border-color: #ffffff;
+    }
+
+    /* DESKTOP SPLIT-SCREEN 460PX ARCHITECTURE */
+    .layout-wrapper {
+      position: relative;
+      width: 100%;
+      min-height: 100vh;
+      z-index: 2;
+    }
+
+    @media (min-width: 900px) {
+      .sidebar-desktop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: calc(100% - 460px);
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        padding: 4rem 3.5rem;
+        z-index: 10;
+        background-image: linear-gradient(
+          to right,
+          color-mix(in srgb, var(--bg-dark, #030914) 40%, transparent) 0%,
+          color-mix(in srgb, var(--bg-dark, #030914) 95%, transparent) 100%
+        ), url('{{sidebarPhotoUrl}}'), url('/assets/ornaments/bugis/bg-makassar.webp');
+        background-size: cover;
+        background-position: center;
+      }
+      .sidebar-desktop .sb-brand {
+        font-family: 'Cinzel', serif;
+        font-size: 1.1rem;
+        letter-spacing: 0.25em;
+        color: var(--makassar-gold);
+        margin-bottom: 1.5rem;
+        text-transform: uppercase;
+      }
+      .sidebar-desktop .sb-names {
+        font-family: 'Cinzel', serif;
+        font-size: 3.8rem;
+        color: #fff;
+        line-height: 1.1;
+        margin-bottom: 1.2rem;
+      }
+      .sidebar-desktop .sb-names span {
+        font-family: 'Great Vibes', cursive;
+        color: var(--makassar-gold);
+        font-size: 3.4rem;
+        display: block;
+        margin: 0.2rem 0;
+      }
+      .sidebar-desktop .sb-date {
+        font-size: 1.05rem;
+        letter-spacing: 0.15em;
+        color: var(--text-muted);
+        text-transform: uppercase;
+      }
+
+      .main-scroll-panel {
+        width: 460px !important;
+        margin-left: calc(100% - 460px) !important;
+        background: transparent !important;
+        border-left: 1px solid var(--border-gold);
+        box-shadow: -15px 0 45px rgba(0,0,0,0.6);
+        min-height: 100vh;
+      }
+
+      .fixed-bg-layer {
+        width: 460px !important;
+        left: calc(100% - 460px) !important;
+      }
+
+      .bottom-dock {
+        left: calc(100% - 230px) !important;
+        transform: translate3d(-50%, 0, 0) !important;
+        width: calc(460px - 28px) !important;
+        max-width: calc(460px - 28px) !important;
+        box-sizing: border-box !important;
+        padding: 0.35rem 0.45rem !important;
+        gap: 0.15rem !important;
+        justify-content: space-around !important;
+      }
+      .bottom-dock.dock-hidden {
+        transform: translate3d(-50%, calc(100% + 48px), 0) !important;
+      }
+      .bottom-dock .dock-a,
+      .bottom-dock .dock-btn,
+      .bottom-dock .nav-item {
+        width: auto !important;
+        height: auto !important;
+        padding: 0.25rem 0.25rem !important;
+        font-size: 0.58rem !important;
+        letter-spacing: 0 !important;
+        flex: 1 1 0 !important;
+        min-width: 0 !important;
+      }
+      .bottom-dock .dock-a span,
+      .bottom-dock .dock-btn span,
+      .bottom-dock .nav-item span {
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        font-size: 0.55rem !important;
+        max-width: 100% !important;
+      }
+      .bottom-dock .dock-a svg,
+      .bottom-dock .dock-btn svg,
+      .bottom-dock .nav-item svg {
+        width: 16px !important;
+        height: 16px !important;
+      }
+    }
+
+    @media (max-width: 899px) {
+      .sidebar-desktop { display: none !important; }
+      .main-scroll-panel { width: 100% !important; margin: 0 !important; }
+    }
+
+    /* SECTIONS COMMON STYLING */
+    .sec-flow {
+      position: relative;
+      padding: 4.5rem 1.8rem;
+      text-align: center;
+      z-index: 5;
+    }
+    .sec-eyebrow {
+      font-size: 0.72rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--makassar-gold);
+      margin-bottom: 0.6rem;
+      display: block;
+      font-weight: 600;
+    }
+    .sec-main-title {
+      font-family: 'Cinzel', serif;
+      font-size: 2.1rem;
+      color: #ffffff;
+      letter-spacing: 0.08em;
+      margin-bottom: 1.2rem;
+      line-height: 1.25;
+      overflow-wrap: break-word;
+    }
+
+    /* SECTION HERO / HOME */
+    .sec-home {
+      min-height: 100vh;
+      min-height: 100dvh;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: clamp(2rem, 5vh, 3.5rem) 1.5rem;
+      position: relative;
+      background: radial-gradient(circle at center, color-mix(in srgb, var(--primary, #0a192f) 35%, transparent) 0%, transparent 70%);
+    }
+    .home-phinisi-wrap {
+      width: 150px;
+      margin-bottom: 1.2rem;
+    }
+    .home-phinisi-wrap img {
+      width: 100%;
+      height: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 8px 24px var(--gold-glow));
+    }
+    /* HOME ARCH PHOTO FRAME — SANROBONE LONTAR CROSS-WEAVE FRAME */
+    .home-arch-wrap {
+      position: relative;
+      width: clamp(190px, 54vw, 230px);
+      height: clamp(250px, 68vw, 295px);
+      margin: 0.6rem auto 1.2rem;
+      border-radius: 130px 130px 48px 48px;
+      padding: 5px;
+      background: linear-gradient(
+        135deg,
+        var(--makassar-gold) 0%,
+        color-mix(in srgb, var(--bg-dark) 80%, transparent) 50%,
+        var(--makassar-gold) 100%
+      );
+      box-shadow: 0 0 0 2px var(--makassar-gold), 0 0 0 5px color-mix(in srgb, var(--bg-dark) 90%, transparent), 0 0 0 7px var(--border-gold), 0 16px 36px rgba(0, 0, 0, 0.85);
+    }
+    .home-arch-inner {
+      width: 100%;
+      height: 100%;
+      border-radius: 126px 126px 44px 44px;
+      overflow: hidden;
+      position: relative;
+      background: var(--bg-dark);
+      border: 1px solid var(--border-gold);
+    }
+    .home-arch-inner img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center top;
+      display: block;
+      filter: contrast(1.03) saturate(1.05);
+    }
+    .home-arch-inner::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to bottom,
+        transparent 60%,
+        color-mix(in srgb, var(--bg-dark) 55%, transparent) 100%
+      );
+      pointer-events: none;
+    }
+    .home-names {
+      font-family: 'Cinzel', serif;
+      font-size: 2.6rem;
+      color: #ffffff;
+      line-height: 1.15;
+      margin-bottom: 1.2rem;
+    }
+    .home-names span {
+      font-family: 'Great Vibes', cursive;
+      font-size: 2.3rem;
+      color: var(--makassar-gold);
+      display: block;
+    }
+    .home-date-badge {
+      display: inline-block;
+      border-top: 1px solid var(--border-gold);
+      border-bottom: 1px solid var(--border-gold);
+      padding: 0.55rem 1.8rem;
+      font-size: 0.85rem;
+      letter-spacing: 0.2em;
+      color: var(--makassar-gold);
+      text-transform: uppercase;
+      margin-top: 0.5rem;
+    }
+
+    /* COUNTDOWN SHRINE */
+    .countdown-wrap {
+      margin-top: 2rem;
+      width: 100%;
+      max-width: 380px;
+    }
+    .countdown-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.6rem;
+    }
+    .cd-item {
+      background: var(--theme-card);
+      border: 1px solid var(--border-gold);
+      border-radius: 12px;
+      padding: 0.75rem 0.3rem;
+      text-align: center;
+      backdrop-filter: blur(10px);
+    }
+    .cd-num {
+      font-family: 'Cinzel', serif;
+      font-size: 1.45rem;
+      color: var(--makassar-gold);
+      font-weight: 700;
+      line-height: 1;
+    }
+    .cd-lbl {
+      font-size: 0.62rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-top: 0.35rem;
+    }
+
+    /* THE COUPLE SECTION */
+    .couple-card {
+      background: var(--theme-card);
+      border: 1px solid var(--border-gold);
+      border-radius: 20px;
+      padding: 2.2rem 1.6rem;
+      margin-bottom: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .couple-photo-wrap {
+      width: 160px;
+      height: 220px;
+      margin: 0 auto 1.4rem;
+      border-radius: 80px 80px 16px 16px;
+      overflow: hidden;
+      border: 2px solid var(--border-gold-bright);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      position: relative;
+    }
+    .couple-photo-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .couple-name {
+      font-family: 'Cinzel', serif;
+      font-size: 1.45rem;
+      color: #ffffff;
+      margin-bottom: 0.6rem;
+    }
+    .couple-parents {
+      font-size: 0.85rem;
+      line-height: 1.6;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+    }
+    .couple-ig {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      color: var(--makassar-gold);
+      font-size: 0.8rem;
+      text-decoration: none;
+      border: 1px solid var(--border-gold);
+      padding: 0.35rem 0.9rem;
+      border-radius: 9999px;
+      transition: all 0.3s ease;
+    }
+    .couple-ig:hover {
+      background: var(--border-gold);
+      color: #ffffff;
+    }
+
+    /* EVENTS & SESSIONS */
+    .event-card {
+      background: var(--theme-card);
+      border: 1px solid var(--border-gold);
+      border-radius: 18px;
+      padding: 2rem 1.6rem;
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+    .ev-badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--makassar-gold);
+      border-bottom: 1px solid var(--border-gold);
+      padding-bottom: 0.3rem;
+      margin-bottom: 0.8rem;
+    }
+    .ev-title {
+      font-family: 'Cinzel', serif;
+      font-size: 1.35rem;
+      color: #ffffff;
+      margin-bottom: 0.8rem;
+    }
+    .ev-date, .ev-time {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      margin-bottom: 0.3rem;
+    }
+    .ev-venue {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #ffffff;
+      margin-top: 1rem;
+      margin-bottom: 0.4rem;
+    }
+    .ev-address {
+      font-size: 0.85rem;
+      line-height: 1.5;
+      color: var(--text-muted);
+      margin-bottom: 1.4rem;
+    }
+    .btn-maps {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--makassar-navy);
+      color: #fff;
+      border: 1px solid var(--border-gold);
+      padding: 0.65rem 1.4rem;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-decoration: none;
+      transition: all 0.3s ease;
+    }
+    .btn-maps:hover {
+      border-color: var(--makassar-gold);
+      transform: translateY(-2px);
+    }
+
+    /* LOVE STORY TIMELINE */
+    .journey-timeline {
+      position: relative;
+      margin-top: 2rem;
+      padding-left: 2rem;
+      text-align: left;
+    }
+    .journey-timeline::before {
+      content: '';
+      position: absolute;
+      left: 7px;
+      top: 10px;
+      bottom: 10px;
+      width: 2px;
+      background: linear-gradient(to bottom, var(--makassar-gold), color-mix(in srgb, var(--makassar-gold) 40%, transparent) 70%, transparent);
+    }
+    .story-chapter-block {
+      position: relative;
+      margin-bottom: 2.2rem;
+    }
+    .story-chapter-block::before {
+      content: '';
+      position: absolute;
+      left: -2rem;
+      top: 5px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--makassar-gold);
+      border: 3px solid var(--bg-dark, #030914);
+      box-shadow: 0 0 12px var(--border-gold-bright);
+    }
+    .sc-label {
+      font-size: 0.72rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--makassar-gold);
+      font-weight: 600;
+    }
+    .sc-title {
+      font-family: 'Cinzel', serif;
+      font-size: 1.15rem;
+      color: #ffffff;
+      margin: 0.25rem 0 0.5rem;
+    }
+    .sc-desc {
+      font-size: 0.85rem;
+      line-height: 1.65;
+      color: var(--text-muted);
+    }
+
+    /* GALLERY MASONRY */
+    .gallery-masonry-grid {
+      columns: 2;
+      column-gap: 8px;
+      margin-top: 1.5rem;
+    }
+    .gallery-masonry-item {
+      break-inside: avoid;
+      margin-bottom: 8px;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border-gold);
+      position: relative;
+    }
+    .gallery-masonry-item img {
+      width: 100%;
+      height: auto;
+      display: block;
+      transition: transform 0.4s ease;
+    }
+    .gallery-masonry-item:hover img {
+      transform: scale(1.04);
+    }
+
+    /* WEDDING GIFT SECTION */
+    .gift-card {
+      background: var(--theme-card);
+      border: 1px solid var(--border-gold);
+      border-radius: 18px;
+      padding: 1.8rem 1.4rem;
+      margin-bottom: 1.4rem;
+      text-align: center;
+    }
+    .gift-bank-name {
+      font-family: 'Cinzel', serif;
+      font-size: 1.15rem;
+      color: var(--makassar-gold);
+      margin-bottom: 0.5rem;
+    }
+    .gift-acc-num {
+      font-family: 'Cinzel', monospace;
+      font-size: 1.35rem;
+      letter-spacing: 0.1em;
+      color: #ffffff;
+      margin-bottom: 0.4rem;
+    }
+    .gift-acc-holder {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 1.2rem;
+    }
+    .btn-copy {
+      background: color-mix(in srgb, var(--bg-dark, #030914) 85%, transparent);
+      color: var(--makassar-gold);
+      border: 1px solid var(--border-gold);
+      padding: 0.5rem 1.4rem;
+      border-radius: 9999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .btn-copy:hover {
+      background: var(--makassar-gold);
+      color: var(--bg-dark, #030914);
+    }
+
+    /* RSVP & WISHES */
+    .rsvp-form-box {
+      background: var(--theme-card);
+      border: 1px solid var(--border-gold);
+      border-radius: 20px;
+      padding: 2rem 1.6rem;
+      text-align: left;
+    }
+    .form-group {
+      margin-bottom: 1.2rem;
+    }
+    .form-group label {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--makassar-gold);
+      margin-bottom: 0.4rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+    .form-in, .form-sel, .form-ta {
+      width: 100%;
+      background: color-mix(in srgb, var(--bg-dark, #030914) 85%, transparent);
+      border: 1px solid var(--border-gold);
+      color: #ffffff;
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 16px;
+      outline: none;
+      transition: border-color 0.3s ease;
+    }
+    .form-in:focus, .form-sel:focus, .form-ta:focus {
+      border-color: var(--border-gold-bright);
+    }
+    .btn-rsvp-submit {
+      width: 100%;
+      background: var(--makassar-navy);
+      color: #ffffff;
+      border: 1.5px solid var(--border-gold-bright);
+      padding: 0.85rem;
+      border-radius: 12px;
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 6px 20px var(--gold-glow);
+    }
+    .btn-rsvp-submit:hover {
+      box-shadow: 0 10px 28px var(--border-gold-bright);
+    }
+
+    .wishes-stream-wrap {
+      margin-top: 2rem;
+      max-height: 320px;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding-right: 0.4rem;
+    }
+    .wish-item {
+      background: var(--theme-card);
+      border: 1px solid var(--border-gold);
+      border-radius: 14px;
+      padding: 1.1rem 1.2rem;
+      margin-bottom: 0.8rem;
+      text-align: left;
+    }
+
+    /* OUTRO 100VH (GLOBAL STANDARDIZATION) */
+    .site-footer {
+      min-height: 100vh;
+      min-height: 100dvh;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      text-align: center;
+      padding: clamp(2.5rem, 6vh, 4rem) 1.5rem calc(90px + env(safe-area-inset-bottom, 0px));
+      background: transparent;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    /* 1. KONDISI TANPA FOTO: Center Murni */
+    .site-footer.no-closing-photo {
+      justify-content: center;
+      align-items: center;
+      background: transparent;
+    }
+
+    /* 2. KONDISI ADA FOTO: Space-Between Memisahkan Ornamen Atas & Konten Bawah */
+    .site-footer.has-closing-photo {
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Scrim Gradient Gelap Dinamis Melindungi Keterbacaan Teks di Atas Foto */
+    .site-footer.has-closing-photo::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0.15) 0%,
+        color-mix(in srgb, var(--bg-dark, #060b14) 45%, transparent) 45%,
+        color-mix(in srgb, var(--bg-dark, #060b14) 92%, transparent) 100%
+      );
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Ornamen Budaya Atas (Kapal Phinisi) */
+    .site-footer .closing-top-ornament {
+      position: relative;
+      z-index: 2;
+      width: 110px;
+      margin: 0 auto 1.5rem;
+    }
+    .site-footer.has-closing-photo .closing-top-ornament {
+      width: 90px;
+      margin: 0 auto 0.8rem;
+    }
+
+    /* Kontainer Konten Penutup (Di Bawah, Di Atas Scrim) */
+    .site-footer .closing-content {
+      position: relative;
+      z-index: 2;
+      max-width: 520px;
+      width: 100%;
+      margin: 0 auto;
+    }
+    .site-footer.has-closing-photo .closing-content {
+      margin-top: auto;
+    }
+
+    /* BOTTOM DOCK & MUSIC FAB */
+    .bottom-dock {
+      position: fixed;
+      bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+      left: 50%;
+      transform: translate3d(-50%, 0, 0);
+      background: color-mix(in srgb, var(--bg-dark, #030914) 85%, transparent);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border-gold);
+      border-radius: 9999px;
+      padding: 0.35rem 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      gap: 0.15rem;
+      z-index: 100;
+      box-shadow: 0 10px 35px rgba(0,0,0,0.5);
+      transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+      width: calc(100% - 24px);
+      max-width: 436px;
+      box-sizing: border-box;
+    }
+    .music-fab.fab-hidden {
+      transform: scale(0.6) translateY(-20px) !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+    .bottom-dock.dock-hidden {
+      transform: translate3d(-50%, calc(100% + 48px), 0) !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+    .dock-a, .bottom-dock .dock-btn, .bottom-dock .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      text-decoration: none;
+      padding: 0.25rem 0.3rem;
+      border-radius: 8px;
+      font-size: 0.62rem;
+      letter-spacing: 0;
+      transition: all 0.25s ease;
+      flex: 1 1 0;
+      min-width: 0;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+    }
+    .dock-a span, .bottom-dock .dock-btn span, .bottom-dock .nav-item span {
+      font-size: 0.55rem;
+      margin-top: 0.2rem;
+      font-weight: 500;
+      color: inherit;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    .dock-a svg, .bottom-dock .dock-btn svg, .bottom-dock .nav-item svg {
+      width: 17px;
+      height: 17px;
+      fill: none;
+      stroke: currentColor;
+    }
+    .dock-a:hover, .dock-a.active,
+    .bottom-dock .dock-btn:hover, .bottom-dock .dock-btn.active,
+    .bottom-dock .nav-item:hover, .bottom-dock .nav-item.active {
+      color: var(--makassar-gold);
+      background: color-mix(in srgb, var(--makassar-gold) 15%, transparent);
+    }
+    .bottom-dock .qr-btn, .bottom-dock button.nav-item {
+      background: transparent !important;
+      border: none !important;
+      color: var(--text-muted) !important;
+      box-shadow: none !important;
+    }
+    .bottom-dock .qr-btn:hover, .bottom-dock button.nav-item:hover {
+      color: var(--makassar-gold) !important;
+      background: color-mix(in srgb, var(--makassar-gold) 15%, transparent) !important;
+    }
+
+    .music-fab {
+      position: fixed;
+      top: calc(18px + env(safe-area-inset-top, 0px));
+      right: calc(18px + env(safe-area-inset-right, 0px));
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: color-mix(in srgb, var(--bg-dark, #030914) 85%, transparent);
+      border: 1px solid var(--border-gold);
+      color: var(--makassar-gold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 100;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+      transition: all 0.3s ease;
+    }
+    .music-fab.playing {
+      animation: pulseGlow 2s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- FIXED BACKGROUND LAYER -->
+  <div class="fixed-bg-layer"></div>
+
+  <!-- FLOATING AUDIO CONTROL -->
+  <button id="musicToggle" class="music-fab" aria-label="Toggle Musik" onclick="toggleAudio()">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9 18V5l12-2v13"></path>
+      <circle cx="6" cy="18" r="3"></circle>
+      <circle cx="18" cy="16" r="3"></circle>
+    </svg>
+  </button>
+  <audio id="bgAudio" src="{{audioUrl}}" loop preload="auto"></audio>
+
+  <!-- COVER SCREEN POP-UP (PORTAL GATE) -->
+  <div id="coverScreen" class="cover-screen">
+    <!-- 4 Corner Floral Ornaments -->
+    <img src="/assets/ornaments/flowers/flower-tl.webp" alt="Ornament" class="corner-floral corner-tl">
+    <img src="/assets/ornaments/flowers/flower-tr.webp" alt="Ornament" class="corner-floral corner-tr">
+    <img src="/assets/ornaments/flowers/flower-bl.webp" alt="Ornament" class="corner-floral corner-bl">
+    <img src="/assets/ornaments/flowers/flower-br.webp" alt="Ornament" class="corner-floral corner-br">
+    
+    <!-- Top & Bottom Makassar Gold Borders -->
+    <img src="/assets/ornaments/bugis/frame-makassar-top.webp" alt="Border" class="makassar-frame-top">
+    <img src="/assets/ornaments/bugis/frame-makassar-bottom.webp" alt="Border" class="makassar-frame-bottom">
+
+    <div class="cover-emblem-wrap">
+      <img src="/assets/ornaments/bugis/kapal-phinisi.webp" alt="Kapal Phinisi" class="cover-emblem-img">
+    </div>
+
+    <div class="cover-tagline" data-lux-field="customLabels.coverBadge">{{coverBadge}}</div>
+    
+    <h1 class="cover-names font-makassar-title">
+      {{firstName}}
+      <span>&amp;</span>
+      {{secondName}}
+    </h1>
+
+    <div class="cover-guest-box">
+      <div class="cover-guest-lbl" data-lux-field="customLabels.coverGuestLabel">KEPADA YTH. BAPAK/IBU/SAUDARA/I</div>
+      <div class="cover-guest-val" id="guestNameSlot">{{guestName}}</div>
+    </div>
+
+    <button type="button" class="btn-buka-undangan" onclick="openInvitation()" data-lux-field="customLabels.openBtn">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <polyline points="7 10 12 15 17 10"></polyline>
+        <line x1="12" y1="15" x2="12" y2="3"></line>
+      </svg>
+      {{openBtnText}}
+    </button>
+  </div>
+
+  <!-- MAIN LAYOUT WRAPPER (DESKTOP SPLIT 460PX) -->
+  <div class="layout-wrapper">
+    
+    <!-- DESKTOP SIDEBAR (HERO WIDESCREEN) -->
+    <aside class="sidebar-desktop"></aside>
+
+    <!-- RIGHT SCROLLABLE PANEL (460PX) -->
+    <main class="main-scroll-panel">
+
+      <!-- SECTION 1: HOME / OPENING HERO -->
+      <section id="home" class="sec-home">
+        <!-- Top & Bottom Makassar Gold Borders -->
+        <img src="/assets/ornaments/bugis/frame-makassar-top.webp" alt="Border" class="makassar-frame-top">
+        <img src="/assets/ornaments/bugis/frame-makassar-bottom.webp" alt="Border" class="makassar-frame-bottom">
+
+        <div class="home-phinisi-wrap reveal-on-scroll">
+          <img src="/assets/ornaments/bugis/kapal-phinisi.webp" alt="Kapal Phinisi">
+        </div>
+        
+        <span class="sec-eyebrow reveal-on-scroll" data-lux-field="customLabels.coverSubtitle">{{coverSubtitle}}</span>
+        
+        <div class="reveal-on-scroll" style="width: 100%;">
+          <div class="home-arch-wrap">
+            <div class="home-arch-inner">
+              <img src="{{homePhotoUrl}}" alt="{{firstName}} &amp; {{secondName}}" />
+            </div>
+          </div>
+        </div>
+        
+        <h2 class="home-names reveal-on-scroll">
+          {{firstName}}
+          <span>&amp;</span>
+          {{secondName}}
+        </h2>
+
+        <div class="home-date-badge reveal-on-scroll">
+          {{primaryEventDate}}
+        </div>
+
+        <!-- COUNTDOWN SHRINE -->
+        <div class="countdown-wrap reveal-on-scroll">
+          <div class="countdown-grid" id="countdownGrid" data-target="{{targetDate}}">
+            <div class="cd-item"><div class="cd-num" id="cdDays">00</div><div class="cd-lbl" data-lux-field="customLabels.cdDays">Hari</div></div>
+            <div class="cd-item"><div class="cd-num" id="cdHours">00</div><div class="cd-lbl" data-lux-field="customLabels.cdHours">Jam</div></div>
+            <div class="cd-item"><div class="cd-num" id="cdMins">00</div><div class="cd-lbl" data-lux-field="customLabels.cdMins">Menit</div></div>
+            <div class="cd-item"><div class="cd-num" id="cdSecs">00</div><div class="cd-lbl" data-lux-field="customLabels.cdSecs">Detik</div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 2: QUOTE / DOA ADAT MAKASSAR -->
+      <section class="sec-flow sec-quote">
+        <span class="sec-eyebrow reveal-on-scroll" data-lux-field="customLabels.quoteEyebrow">{{quoteSectionEyebrow}}</span>
+        <h2 class="sec-main-title reveal-on-scroll" data-lux-field="customLabels.quoteTitle">{{quoteSectionTitle}}</h2>
+        
+        <div class="reveal-on-scroll" style="max-width: 360px; margin: 0 auto;">
+          <p class="font-makassar-quote" style="font-size: 1.15rem; line-height: 1.7; color: #ffffff; margin-bottom: 1.2rem;" data-lux-field="customLabels.openingQuote">
+            {{openingQuote}}
+          </p>
+          <div style="font-size: 0.8rem; letter-spacing: 0.15em; color: var(--makassar-gold); text-transform: uppercase;" data-lux-field="customLabels.openingQuoteRef">
+            {{openingQuoteRef}}
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 3: THE COUPLE -->
+      <section id="couple" class="sec-flow sec-couple">
+        <span class="sec-eyebrow reveal-on-scroll" data-lux-field="customLabels.coupleEyebrow">{{coupleSectionEyebrow}}</span>
+        <h2 class="sec-main-title reveal-on-scroll" data-lux-field="customLabels.coupleTitle">{{coupleSectionTitle}}</h2>
+        <p class="reveal-on-scroll" style="font-size: 0.85rem; color: var(--text-muted); max-width: 340px; margin: 0 auto 2.5rem;" data-lux-field="customLabels.coupleSub">
+          {{coupleSectionSub}}
+        </p>
+
+        <!-- GROOM CARD -->
+        <div class="couple-card reveal-on-scroll">
+          <div class="couple-photo-wrap">
+            <img src="{{groomPhotoUrl}}" alt="{{groomName}}">
+          </div>
+          <h3 class="couple-name">{{groomFullName}}</h3>
+          <div class="couple-parents">
+            {{firstParentPrefix}}<br>
+            <strong>{{firstFather}}</strong> &amp; <strong>{{firstMother}}</strong>
+          </div>
+          {{#if groomIg}}
+          <a href="https://instagram.com/{{groomIg}}" target="_blank" class="couple-ig">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+            @{{groomIg}}
+          </a>
+          {{/if}}
+        </div>
+
+        <div class="reveal-on-scroll" style="font-family: 'Great Vibes', cursive; font-size: 2.8rem; color: var(--makassar-gold); margin: 0.5rem 0 2rem;">&amp;</div>
+
+        <!-- BRIDE CARD -->
+        <div class="couple-card reveal-on-scroll">
+          <div class="couple-photo-wrap">
+            <img src="{{bridePhotoUrl}}" alt="{{brideName}}">
+          </div>
+          <h3 class="couple-name">{{brideFullName}}</h3>
+          <div class="couple-parents">
+            {{secondParentPrefix}}<br>
+            <strong>{{secondFather}}</strong> &amp; <strong>{{secondMother}}</strong>
+          </div>
+          {{#if brideIg}}
+          <a href="https://instagram.com/{{brideIg}}" target="_blank" class="couple-ig">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+            @{{brideIg}}
+          </a>
+          {{/if}}
+        </div>
+      </section>
+
+      <!-- SECTION 4: EVENTS / ACARA -->
+      <section id="events" class="sec-flow sec-events">
+        <span class="sec-eyebrow reveal-on-scroll" data-lux-field="customLabels.eventsEyebrow">{{eventsSectionEyebrow}}</span>
+        <h2 class="sec-main-title reveal-on-scroll" data-lux-field="customLabels.eventsTitle">{{eventsSectionTitle}}</h2>
+        <p class="reveal-on-scroll" style="font-size: 0.85rem; color: var(--text-muted); max-width: 340px; margin: 0 auto 2.5rem;" data-lux-field="customLabels.eventsSub">
+          {{eventsSectionSub}}
+        </p>
+
+        {{eventDataHtml}}
+      </section>
+
+      <!-- SECTION 5: LOVE STORY -->
+      {{#if showStory}}
+      <section id="story" class="sec-flow sec-story">
+        <span class="sec-eyebrow reveal-on-scroll" data-lux-field="customLabels.storyEyebrow">{{storySectionEyebrow}}</span>
+        <h2 class="sec-main-title reveal-on-scroll" data-lux-field="customLabels.storyTitle">{{storySectionTitle}}</h2>
+        
+        <div class="journey-timeline reveal-on-scroll">
+          {{storyItemsHtml}}
+        </div>
+      </section>
+      {{/if}}
+
+      <!-- SECTION 6: GALLERY / OUR MOMENTS -->
+      {{#if showGallery}}
+      <section id="gallery" class="sec-flow sec-gallery">
+        <span class="sec-eyebrow reveal-on-scroll" data-lux-field="customLabels.galleryEyebrow">{{gallerySectionEyebrow}}</span>
+        <h2 class="sec-main-title reveal-on-scroll" data-lux-field="customLabels.galleryTitle">{{gallerySectionTitle}}</h2>
+        
+        <div class="gallery-masonry-grid reveal-on-scroll">
+          {{galleryItemsHtml}}
+        </div>
+      </section>
+      {{/if}}
+
+      <!-- SECTION 7: WEDDING GIFT -->
+      {{#if showGift}}
+      <section id="gift" class="sec-flow sec-gift">
+        <span class="sec-eyebrow reveal-on-scroll" data-lux-field="customLabels.giftEyebrow">{{giftSectionEyebrow}}</span>
+        <h2 class="sec-main-title reveal-on-scroll" data-lux-field="customLabels.giftTitle">{{giftSectionTitle}}</h2>
+        <p class="reveal-on-scroll" style="font-size: 0.85rem; color: var(--text-muted); max-width: 340px; margin: 0 auto 2rem;" data-lux-field="customLabels.giftDesc">
+          {{giftSectionDesc}}
+        </p>
+
+        {{giftSectionHtml}}
+      </section>
+      {{/if}}
+
+      <!-- SECTION 8: RSVP & WISHES -->
+      <section id="rsvp" class="sec-flow sec-rsvp">
+        <span class="sec-eyebrow reveal-on-scroll" data-lux-field="customLabels.rsvpEyebrow">KONFIRMASI KEHADIRAN</span>
+        <h2 class="sec-main-title reveal-on-scroll" data-lux-field="customLabels.rsvpTitle">{{rsvpTitle}}</h2>
+        
+        <div class="rsvp-form-box reveal-on-scroll">
+          <form id="rsvpForm" onsubmit="luxSubmitRsvp(event)">
+            <div class="form-group">
+              <label for="rsvpName" data-lux-field="customLabels.rsvpNameLabel">Nama Lengkap</label>
+              <input type="text" id="rsvpName" name="name" class="form-in" value="{{guestName}}" required placeholder="Tulis nama Anda">
+            </div>
+            <div class="form-group">
+              <label for="rsvpStatus" data-lux-field="customLabels.rsvpStatusLabel">Konfirmasi Kehadiran</label>
+              <select id="rsvpStatus" name="status" class="form-sel" required>
+                <option value="HADIR">Hadir</option>
+                <option value="TIDAK_HADIR">Tidak Hadir</option>
+                <option value="RAGU">Masih Ragu</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="rsvpPax" data-lux-field="customLabels.rsvpPaxLabel">Jumlah Tamu</label>
+              <select id="rsvpPax" name="pax" class="form-sel">
+                <option value="1">1 Orang</option>
+                <option value="2">2 Orang</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="rsvpMessage" data-lux-field="customLabels.rsvpMsgLabel">Ucapan &amp; Doa Restu</label>
+              <textarea id="rsvpMessage" name="message" class="form-ta" rows="3" required placeholder="Tuliskan doa restu untuk kedua mempelai"></textarea>
+            </div>
+            <button type="submit" class="btn-rsvp-submit" data-lux-field="customLabels.rsvpBtnText">
+              {{rsvpBtnText}}
+            </button>
+          </form>
+        </div>
+
+        <!-- WISHES FEED -->
+        <div class="wishes-stream-wrap reveal-on-scroll" id="wishesStream">
+          {{wishesItemsHtml}}
+        </div>
+      </section>
+
+      <!-- VENDORS SECTION -->
+      {{vendorsSectionHtml}}
+
+      <!-- SECTION 9: OUTRO / CLOSING FOOTER 100VH -->
+      <footer class="site-footer {{closingPhotoClass}}" style="{{closingBgStyle}}">
+        <!-- 4 Corner Floral Ornaments -->
+        <img src="/assets/ornaments/flowers/flower-tl.webp" alt="Ornament" class="corner-floral corner-tl">
+        <img src="/assets/ornaments/flowers/flower-tr.webp" alt="Ornament" class="corner-floral corner-tr">
+        <img src="/assets/ornaments/flowers/flower-bl.webp" alt="Ornament" class="corner-floral corner-bl">
+        <img src="/assets/ornaments/flowers/flower-br.webp" alt="Ornament" class="corner-floral corner-br">
+        
+        <!-- Top & Bottom Makassar Gold Borders -->
+        <img src="/assets/ornaments/bugis/frame-makassar-top.webp" alt="Border" class="makassar-frame-top">
+        <img src="/assets/ornaments/bugis/frame-makassar-bottom.webp" alt="Border" class="makassar-frame-bottom">
+
+        <!-- Top Cultural Ornament (Statis di Atas) -->
+        <div class="closing-top-ornament reveal-on-scroll">
+          <img src="/assets/ornaments/bugis/kapal-phinisi.webp" alt="Kapal Phinisi" style="width: 100%; height: auto; filter: drop-shadow(0 6px 18px var(--gold-glow));">
+        </div>
+
+        <!-- Closing Content Box (Merapat ke Bawah saat Ada Foto) -->
+        <div class="closing-content">
+          <p class="font-makassar-quote reveal-on-scroll" style="font-size: 1.15rem; line-height: 1.7; color: #ffffff; max-width: 360px; margin: 0 auto 1.5rem;" data-lux-field="customLabels.closingQuote">
+            {{closingQuote}}
+          </p>
+          
+          <div class="reveal-on-scroll" style="font-size: 0.85rem; letter-spacing: 0.15em; color: var(--makassar-gold); text-transform: uppercase;" data-lux-field="customLabels.closingSub">
+            {{closingSub}}
+          </div>
+
+          <div class="font-makassar-title reveal-on-scroll" style="font-size: 1.8rem; color: #ffffff; margin-top: 1.8rem; font-weight: 600;">
+            {{firstName}} &amp; {{secondName}}
+          </div>
+        </div>
+      </footer>
+
+    </main>
+  </div>
+
+  <!-- FLOATING BOTTOM DOCK NAVIGATION -->
+  <nav class="bottom-dock">
+    <a href="#home" class="dock-a" aria-label="Home">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+      <span>Home</span>
+    </a>
+    <a href="#couple" class="dock-a" aria-label="Mempelai">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg>
+      <span>Couple</span>
+    </a>
+    <a href="#events" class="dock-a" aria-label="Acara">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+      <span>Acara</span>
+    </a>
+    <a href="#rsvp" class="dock-a" aria-label="RSVP &amp; Ucapan">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+      <span>RSVP</span>
+    </a>
+    {{qrDockButtonHtml}}
+  </nav>
+
+  <!-- THEME RUNTIME SCRIPTS -->
+  <script>
+    // SMART MOBILE FULLSCREEN HELPER
+    function requestSmartFullscreen() {
+      try {
+        const elem = document.documentElement;
+        if (elem.requestFullscreen) {
+          elem.requestFullscreen().catch(function() {});
+        } else if (elem.webkitRequestFullscreen) {
+          elem.webkitRequestFullscreen();
+        } else if (elem.mozRequestFullScreen) {
+          elem.mozRequestFullScreen();
+        } else if (elem.msRequestFullscreen) {
+          elem.msRequestFullscreen();
+        }
+      } catch (e) {}
+
+      // Fallback for mobile browser minimal-UI scroll
+      setTimeout(function() {
+        window.scrollTo(0, 1);
+      }, 100);
+    }
+
+    // OPEN INVITATION HANDLER
+    function openInvitation() {
+      const cover = document.getElementById('coverScreen');
+      if (cover) {
+        cover.classList.add('opened');
+      }
+
+      // Smart Mobile Fullscreen
+      requestSmartFullscreen();
+
+      // Autoplay audio
+      const audio = document.getElementById('bgAudio');
+      const btn = document.getElementById('musicToggle');
+      if (audio) {
+        audio.play().then(function() {
+          if (btn) btn.classList.add('playing');
+        }).catch(function() {});
+      }
+
+      // Init scroll animations
+      document.body.classList.remove('lux-at-home-zone');
+      initDockScrollSpy();
+    }
+
+    // AUDIO TOGGLE
+    function toggleAudio() {
+      const audio = document.getElementById('bgAudio');
+      const btn = document.getElementById('musicToggle');
+      if (!audio) return;
+      if (audio.paused) {
+        audio.play().then(function() {
+          if (btn) btn.classList.add('playing');
+        });
+      } else {
+        audio.pause();
+        if (btn) btn.classList.remove('playing');
+      }
+    }
+
+    // LIVE COUNTDOWN TIMER
+    function initCountdown() {
+      const grid = document.getElementById('countdownGrid');
+      if (!grid) return;
+      const targetStr = grid.getAttribute('data-target');
+      if (!targetStr) return;
+      const targetDate = new Date(targetStr).getTime();
+      if (isNaN(targetDate)) return;
+
+      function update() {
+        const now = Date.now();
+        const diff = Math.max(0, targetDate - now);
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+        const dEl = document.getElementById('cdDays');
+        const hEl = document.getElementById('cdHours');
+        const mEl = document.getElementById('cdMinutes');
+        const sEl = document.getElementById('cdSeconds');
+        if (dEl) dEl.textContent = String(days).padStart(2, '0');
+        if (hEl) hEl.textContent = String(hours).padStart(2, '0');
+        if (mEl) mEl.textContent = String(minutes).padStart(2, '0');
+        if (sEl) sEl.textContent = String(seconds).padStart(2, '0');
+      }
+      update();
+      setInterval(update, 1000);
+    }
+
+    // REVEAL ON SCROLL & SMART DOCK HOME ZONE GUARD
+    function initScrollInteractions() {
+      const items = document.querySelectorAll('.reveal-on-scroll');
+      const observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(e) {
+          if (e.isIntersecting) {
+            e.target.classList.add('is-visible');
+          }
+        });
+      }, { threshold: 0.12 });
+
+      items.forEach(function(el) { observer.observe(el); });
+
+    }
+
+    // SMART DOCK & CONTROLS AUTOHIDE ON SCROLL
+    (function initSmartControls() {
+      const dock = document.querySelector('.bottom-dock');
+      const fab = document.getElementById('musicToggle');
+      if (!dock && !fab) return;
+
+      let lastScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+      let ticking = false;
+      const SCROLL_THRESHOLD = 12;
+      const TOP_REVEAL_ZONE = 70;
+
+      function setVisible(visible) {
+        if (visible) {
+          if (dock) dock.classList.remove('dock-hidden');
+          if (fab) fab.classList.remove('fab-hidden');
+        } else {
+          if (dock) dock.classList.add('dock-hidden');
+          if (fab) fab.classList.add('fab-hidden');
+        }
+      }
+
+      function updateControls() {
+        const currentScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+        const windowHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+        const docHeight = Math.max(
+          document.body.scrollHeight,
+          document.documentElement.scrollHeight,
+          document.body.offsetHeight,
+          document.documentElement.offsetHeight
+        );
+        const isNearBottom = (currentScrollY + windowHeight) >= (docHeight - 70);
+
+        if (currentScrollY <= TOP_REVEAL_ZONE) {
+          setVisible(true);
+          lastScrollY = currentScrollY;
+          ticking = false;
+          return;
+        }
+
+        const delta = currentScrollY - lastScrollY;
+
+        // Ultra-Clean Outro: Sembunyikan dock dan tombol musik di ujung bawah
+        // Jika tamu scroll-up (delta < -SCROLL_THRESHOLD), segera munculkan kembali kontrol
+        if (isNearBottom) {
+          if (delta < -SCROLL_THRESHOLD) {
+            setVisible(true);
+          } else {
+            setVisible(false);
+          }
+          lastScrollY = currentScrollY;
+          ticking = false;
+          return;
+        }
+
+        if (Math.abs(delta) >= SCROLL_THRESHOLD) {
+          if (delta > 0) {
+            setVisible(false);
+          } else {
+            setVisible(true);
+          }
+          lastScrollY = currentScrollY;
+        }
+
+        ticking = false;
+      }
+
+      window.addEventListener('scroll', () => {
+        if (!ticking) {
+          window.requestAnimationFrame(updateControls);
+          ticking = true;
+        }
+      }, { passive: true });
+
+      if (dock) {
+        dock.querySelectorAll('a, .dock-btn, .dock-a, .nav-item').forEach(link => {
+          link.addEventListener('click', () => {
+            setVisible(true);
+          });
+        });
+      }
+    })();
+
+    // Smart Dock ScrollSpy & Click State Sync
+    function initDockScrollSpy() {
+      const dock = document.getElementById('bottomDock') || document.querySelector('.bottom-dock');
+      if (!dock) return;
+
+      const links = Array.from(dock.querySelectorAll('a.dock-btn, a.dock-a, a.nav-item'));
+      const sectionMap = [];
+
+      links.forEach(link => {
+        const href = link.getAttribute('href');
+        if (href && href.startsWith('#')) {
+          const targetId = href.slice(1);
+          const targetEl = document.getElementById(targetId);
+          if (targetEl) {
+            sectionMap.push({ id: targetId, link, el: targetEl });
+          }
+        }
+      });
+
+      function setActive(targetId) {
+        links.forEach(link => {
+          const href = link.getAttribute('href');
+          if (href === '#' + targetId) {
+            link.classList.add('active');
+          } else {
+            link.classList.remove('active');
+          }
+        });
+      }
+
+      setActive('home');
+
+      links.forEach(link => {
+        link.addEventListener('click', function () {
+          const href = this.getAttribute('href');
+          if (href && href.startsWith('#')) {
+            setActive(href.slice(1));
+          }
+        });
+      });
+
+      if ('IntersectionObserver' in window && sectionMap.length > 0) {
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              setActive(entry.target.id);
+            }
+          });
+        }, {
+          rootMargin: '-20% 0px -60% 0px',
+          threshold: 0
+        });
+
+        sectionMap.forEach(item => observer.observe(item.el));
+      }
+    }
+    document.addEventListener('DOMContentLoaded', initDockScrollSpy);
+
+    // COPY CLIPBOARD
+    function copyText(val, btn) {
+      if (!val) return;
+      navigator.clipboard.writeText(val).then(function() {
+        if (btn) {
+          const old = btn.textContent;
+          btn.textContent = 'TERSALIN!';
+          setTimeout(function() { btn.textContent = old; }, 2000);
+        }
+      });
+    }
+
+    // SUBMIT RSVP
+    async function luxSubmitRsvp(e) {
+      e.preventDefault();
+      const form = e.target;
+      const btn = form.querySelector('button[type="submit"]');
+      const oldBtnText = btn ? btn.textContent : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'MENGIRIM...';
+      }
+
+      const name = form.name.value;
+      const status = form.status.value;
+      const pax = form.pax ? form.pax.value : '1';
+      const msg = form.message.value;
+
+      try {
+        const res = await fetch('/api/public/rsvp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            invitationId: '{{invitationId}}',
+            name: name,
+            status: status,
+            pax: parseInt(pax) || 1,
+            message: msg
+          })
+        });
+
+        // Prepend wish to stream
+        const stream = document.getElementById('wishesStream');
+        if (stream && msg) {
+          const item = document.createElement('div');
+          item.className = 'wish-item';
+          item.innerHTML = '<strong style="color: var(--makassar-gold); font-size: 0.9rem;">' + escapeHtml(name) + '</strong><span style="font-size: 0.72rem; color: var(--text-muted); margin-left: 0.6rem;">Baru saja</span><p style="margin-top: 0.4rem; font-size: 0.85rem; line-height: 1.5; color: #ffffff;">' + escapeHtml(msg) + '</p>';
+          stream.prepend(item);
+        }
+
+        form.reset();
+        if (btn) btn.textContent = 'TERKIRIM!';
+        setTimeout(function() {
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = oldBtnText;
+          }
+        }, 2500);
+      } catch (err) {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = oldBtnText;
+        }
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      initCountdown();
+      initScrollInteractions();
+    });
+  </script>
+</body>
+</html>

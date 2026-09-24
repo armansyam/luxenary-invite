@@ -161,16 +161,11 @@
 │
 ├── prisma.config.ts           # Konfigurasi Prisma 7 DB URL
 │
-├── themes/                   # Template HTML tema undangan (28 Tema + 1 Blueprint)
+├── themes/                   # Template HTML tema undangan (34 Tema + 1 Blueprint)
 │   ├── premium/              # kalandra, valente, aurelia, artisan
-│   ├── modern/               # wave, papercut, ameera, chronicle, lumina, solaria, badrika, candani, mayang
+│   ├── modern/               # wave, papercut, ameera, chronicle, lumina, solaria, badrika, candani, mayang, pink-castle, starlit-dreams, minimalist-elegant, minimalist-elegant-04, burgundy-royale, vintage-forest
 │   ├── traditional/          # prameswari, dillalucky, lagaligo, toraja, rantepao, makale, bugis, bone, wajo, soppeng, makassar, gowa, maros, takalar, bulukumba
 │   └── starter-blueprint.html# Standard acuan template baru
-│
-├── theme-builder/             # Lingkungan mandiri isolasi perancangan & kompilasi tema baru
-│   ├── dummy-media/           # ⭐ Single source of truth foto slot dummy standar (zero-bloat)
-│   ├── starter/               # Paket starter blueprint resmi
-│   └── workspaces/            # Workspace pengembangan tema mandiri
 │
 ├── public/
 │   ├── published/            # ⭐ Output HTML statis (subdomain.html + invitationSlug.html)
@@ -688,10 +683,10 @@ Sistem menerapkan prinsip *Tiered Storage* untuk memisahkan beban operasional li
 **Files:** `lib/themeEngine.ts` (~81KB), `lib/renderTemplate.ts`, `themes/`
 
 ```
-Katalog Tema Aktual (16 File Template Fisik + 1 Blueprint):
+Katalog Tema Aktual (34 File Template Fisik + 1 Blueprint):
   Premium (4)    : kalandra.html, valente.html, aurelia.html, artisan.html
-  Modern (9)     : wave.html, papercut.html, ameera.html, chronicle.html, lumina.html, solaria.html, badrika.html, candani.html, mayang.html
-  Traditional    : prameswari.html, dillalucky.html, lagaligo.html, toraja.html, bugis.html, dll.
+  Modern (15)    : wave.html, papercut.html, ameera.html, chronicle.html, lumina.html, solaria.html, badrika.html, candani.html, mayang.html, pink-castle.html, starlit-dreams.html, minimalist-elegant.html, minimalist-elegant-04.html, burgundy-royale.html, vintage-forest.html
+  Traditional (15): prameswari.html, dillalucky.html, lagaligo.html, toraja.html, rantepao.html, makale.html, bugis.html, bone.html, wajo.html, soppeng.html, makassar.html, gowa.html, maros.html, takalar.html, bulukumba.html
   Blueprint      : starter-blueprint.html
 
 Backward Compatibility Alias Mapping (di lib/renderTemplate.ts):
@@ -798,11 +793,10 @@ HTML standalone lengkap (self-contained, inline CSS/JS)
       - Begitu tamu men-scroll melewati seksi `#home` (`currentScrollY > homeThreshold`), tombol audio FAB muncul dan secara harmonis mengikuti visibilitas `.bottom-dock`.
       - Pada pergerakan scroll ke bawah cepat, kedua kontrol bersembunyi bersamaan; pada scroll ke atas, kedua kontrol meluncur masuk kembali bersamaan.
       - Jika tamu scroll kembali ke atas memasuki `#home`, audio FAB kembali tersembunyi secara otomatis (`setControls(true, false)`).
-    - **Sinkronisasi Baku Cetak Biru (Triple Blueprint 1:1 Synchronization):**
-      - Seluruh 3 berkas cetak biru sistem dijaga 100% identik tanpa deviasi baris kode (*zero drift*):
+    - **Sinkronisasi Baku Cetak Biru (Blueprint 1:1 Synchronization):**
+      - Seluruh berkas cetak biru sistem dijaga 100% identik tanpa deviasi baris kode (*zero drift*):
         1. [`themes/starter-blueprint.html`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/themes/starter-blueprint.html) (Master Sistem).
         2. [`public/downloads/starter-blueprint.html`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/public/downloads/starter-blueprint.html) (File Unduhan Desainer di UI Admin).
-        3. [`theme-builder/starter/master.html`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/theme-builder/starter/master.html) (Starter Kit Theme Builder Lokal).
       - Dilengkapi kustomisasi gaya seleksi kursor `::selection` dinamis berbasis `color-mix(in srgb, var(--primary) 30%, transparent)`.
     - **Ultra-Clean Outro Auto-Hide:** Saat tamu tiba di seksi penutup / outro footer paling bawah (`isNearBottom`), dock navigasi (`.bottom-dock`) dan kontrol mengambang (`.music-fab` / `#musicToggle`) otomatis tersembunyi (*autohide*) secara mutlak agar tampilan outro 100vh bebas gangguan visual dan bersih total. Seluruh kontrol akan meluncur masuk kembali (*reveal*) secara instan begitu tamu melakukan gestur scroll ke atas (`delta < -SCROLL_THRESHOLD`).
     - **Akar Masalah Kebocoran Visual (Visual Leak):** Pada peramban ponsel atau jaringan lambat, DOM HTML di-parse lebih cepat daripada unduhan berkas gambar cover pembuka (`landingCoverUrl`). Jika layar penutup (*cover screen*) memiliki gradasi transparan, seksi isi undangan di bawahnya (`.page-wrap`, profil mempelai, floating bar) sempat bocor terlihat sekejap (*flash of unstyled/underlying content*).
@@ -1942,7 +1936,7 @@ Untuk memberikan pengalaman interaktif penuh bagi calon klien sebelum memesan pa
 1. **Registri Kamus Budaya & Narasi Bawaan (`lib/themeDefaults.ts`):**
    - Mendefinisikan cetak biru teks narasi spesifik untuk seluruh 28 tema fisik master lintas 3 kategori:
      - **Tradisional (15 Tema):** Sentuhan bahasa adat & doa kedaerahan (Jawa Keraton Dillalucky, Keraton Prameswari, La Galigo, Toraja, Rantepao, Makale, Bugis, Makassar, Bone, Wajo, Soppeng, Gowa, Maros, Takalar, Bulukumba).
-     - **Modern Editorial & Floral (9 Tema):** Narasi puitis editorial majalah & estetika modern floral kontemporer (Ameera, Chronicle, Lumina, Papercut, Solaria, Wave, Badrika, Candani, Mayang).
+     - **Modern Editorial & Floral (15 Tema):** Narasi puitis editorial majalah & estetika modern floral kontemporer (Ameera, Chronicle, Lumina, Papercut, Solaria, Wave, Badrika, Candani, Mayang, Pink Castle, Starlit Dreams, Minimalist Elegant, Minimalist Elegant 04, Burgundy Royale, Vintage Forest).
      - **Premium Exclusive (4 Tema):** Diksi mewah monokrom dan formal terhormat (Artisan, Aurelia, Kalandra, Valente).
    - **Tipografi Harmonis (Title Case vs Uppercase):** Menyesuaikan karakteristik font khas tema; tema berskrip kaligrafi (*Parisienne* di Candani) dikonfigurasi dengan Title Case (`Dress Code`, `Live Streaming`, `Love Story`, `Our Moments`, `Turut Mengundang`) guna mengeliminasi tabrakan glif huruf bersambung yang rusak saat dijadikan all-caps.
 2. **Tab Khusus di Admin Demo Studio (`app/(admin)/admin/page.tsx`):**
@@ -2021,7 +2015,7 @@ Untuk memberikan pengalaman interaktif penuh bagi calon klien sebelum memesan pa
 ### 17.11 — Standardisasi Universal Seksi Kisah Cinta (Love Story / Journey Timeline): Vertical Glowing Luxury Standard
 1. **Latar Belakang & Eliminasi Card Box Statis:**
    - Seksi Kisah Cinta (Love Story / Journey) sebelumnya menampilkan wadah kartu kaku (`.journey-card` / `.journey-previews`) dengan 2 foto preview bujur sangkar yang memakan ruang vertikal dan memberikan kesan generik/standar.
-   - Desain timeline editorial mewah yang sebelumnya hanya aktif di Kalandra (`themes/premium/kalandra.html`) kini distandarisasi ke seluruh 19 tema master (Modern, Traditional, dan Premium) serta Engine default (`lib/themeEngine.ts` dan `lib/demoRegistry.ts`).
+   - Desain timeline editorial mewah yang sebelumnya hanya aktif di Kalandra (`themes/minimalist/kalandra.html`) kini distandarisasi ke seluruh 19 tema master (Modern, Traditional, dan Minimalis) serta Engine default (`lib/themeEngine.ts` dan `lib/demoRegistry.ts`).
 2. **Arsitektur Sumbu Rel & Node Simpul Berpendar (Vertical Glowing Rail):**
    - **Garis Rel Vertikal:** Diterapkan via pseudo-elemen `::before` pada kontainer timeline (`.journey-timeline, .journey-chapters, .kalandra-timeline, .mayang-story-flow, .candani-story-flow, .lagaligo-story-flow`) dengan gradien pendar linier:
      ```css
@@ -2247,7 +2241,7 @@ Untuk memberikan pengalaman interaktif penuh bagi calon klien sebelum memesan pa
    - Pintu publik tak berautentikasi (`/memories` & `/sharemoment`) otomatis dialihkan ke sandbox demo interaktif (`/demo/memories` & `/demo/sharemoment`), mencegah hambatan auth wall bagi calon klien.
    - Endpoint publik RSVP (`/api/public/rsvp`) diperkaya simulasi instan untuk ID `demo-*`, memungkinkan pengujian pengiriman ucapan doa & konfirmasi kehadiran secara interaktif tanpa kendala database 404.
 6. **Standarisasi Menyeluruh Ekosistem 17 Master Tema Fisik:**
-   - Seluruh 19 tema fisik (`themes/premium/`, `themes/modern/`, `themes/traditional/`) 100% konsisten menyematkan modul Salam Pembuka Universal `{{openingGreeting}}`, Mitra Vendor `{{vendorsSectionHtml}}`, Galeri Kenangan Tamu Kamera Virtual `{{memoriesSectionHtml}}` (Photo Only), serta formulir RSVP interaktif dengan container scroll aman (`max-height: 290px-320px`, `overscroll-behavior: contain`, dan custom thin luxury scrollbar) dan proteksi hak cipta Luxenary.
+   - Seluruh 19 tema fisik (`themes/minimalist/`, `themes/modern/`, `themes/traditional/`) 100% konsisten menyematkan modul Salam Pembuka Universal `{{openingGreeting}}`, Mitra Vendor `{{vendorsSectionHtml}}`, Galeri Kenangan Tamu Kamera Virtual `{{memoriesSectionHtml}}` (Photo Only), serta formulir RSVP interaktif dengan container scroll aman (`max-height: 290px-320px`, `overscroll-behavior: contain`, dan custom thin luxury scrollbar) dan proteksi hak cipta Luxenary.
 
 ### 20.6 — Mobile UI/UX Overhaul: Edge-to-Edge Canvas, Anti-Matryoshka Card & Sticky Quick-Save Bar
 1. **Eliminasi "Matryoshka Card Syndrome" (Pelepasan Padding Berlapis Mobile):**
@@ -2554,7 +2548,7 @@ Sistem telah melalui audit mendalam berbasis bukti empiris (*Empirical Verificat
    - Mode `DRAFT` atau `preview` tetap memancarkan `no-store, no-cache, must-revalidate` untuk menjamin interaktivitas kanvas studio secara real-time.
 
 2. **Pemisahan Data Dinamis Doa & Ucapan (Decoupled Dynamic Wishes Feed):**
-   - Seluruh 18 tema produksi dan sistem *Triple Blueprint* (`themes/starter-blueprint.html`, `public/downloads/starter-blueprint.html`, `theme-builder/starter/master.html`, dan `lib/themeEngine.ts`) dilengkapi pemanggil otomatis asinkron `fetch('/api/public/rsvp?invitationId=...')` saat halaman dimuat.
+   - Seluruh tema produksi dan sistem *Blueprint* (`themes/starter-blueprint.html`, `public/downloads/starter-blueprint.html`, dan `lib/themeEngine.ts`) dilengkapi pemanggil otomatis asinkron `fetch('/api/public/rsvp?invitationId=...')` saat halaman dimuat.
    - Kotak doa dan ucapan tamu selalu terisi real-time dari database tanpa perlu membakar ulang file HTML atau membatalkan cache edge Cloudflare.
 
 3. **URL-Specific Purge Otomatis pada Aksi "Update Publikasi" (`DEPLOY_AND_LOCK`):**
@@ -2670,7 +2664,7 @@ Untuk menjamin kesiapan industri (*enterprise-grade / production-ready*), sistem
 
 ### 17.20 — Standarisasi Viewport Responsif Cover Screen (100dvh), Live Zoom Kamera, & Optimasi Audio Universal
 1. **Dynamic Viewport (`100dvh`) & Safe-Area Padding pada Cover Screen:**
-   - Seluruh tema produksi (`themes/traditional/`, `themes/modern/`, `themes/premium/`) dan `starter-blueprint.html` distandarisasi menggunakan `height: 100vh; height: 100dvh; max-height: 100dvh;`.
+   - Seluruh tema produksi (`themes/traditional/`, `themes/modern/`, `themes/minimalist/`) dan `starter-blueprint.html` distandarisasi menggunakan `height: 100vh; height: 100dvh; max-height: 100dvh;`.
    - Menerapkan padding dinamis `padding: calc(1.5rem + env(safe-area-inset-top, 0px)) ... calc(1.5rem + env(safe-area-inset-bottom, 0px))` serta `overflow-y: auto; overscroll-behavior: contain;`.
    - Mengeliminasi *bug* di mana tombol *"Buka Undangan"* tenggelam di balik navigation bar / URL bar browser mobile (seperti Brave & Safari di iOS) saat halaman pertama kali dibuka. Tamu dapat langsung menekan tombol tanpa perlu menggulir layar.
 2. **Live Digital Zoom (1x / 2x), Responsive Viewfinder, & Hardened Native Fallback:**

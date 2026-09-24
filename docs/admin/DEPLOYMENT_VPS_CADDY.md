@@ -349,7 +349,7 @@ Di arsitektur Luxenary Invite, aset terbagi 3 jenis:
 1. **Stateless / Build-time:** Kode Next.js (`app/`, `lib/`, `components/`, `.next/`). Cukup disinkronkan via `git pull` & `npm run build` di tiap server.
 2. **Centralized Object Storage:** Foto mempelai, cover, galeri kenangan, audio musik latar (`public/uploads/` saat di cloud dialihkan ke Cloudflare R2 via `STORAGE_PROVIDER=r2`). Ini otomatis tersimpan di cloud R2, jadi tidak membutuhkan harddisk lokal bersama.
 3. **Stateful Filesystem yang Wajib Disinkronkan (Shared Directory):**
-   - `themes/`: Tempat Admin mengunggah template master `.html` baru via UI (`themes/premium/`, `themes/modern/`, dll.).
+   - `themes/`: Tempat Admin mengunggah template master `.html` baru via UI (`themes/minimalist/`, `themes/modern/`, dll.).
    - `public/demo/`: Berkas demo statis hasil kompilasi master tema.
    - `data/drafts/`: Piring draft mandiri HTML klien yang sedang diedit di Studio Editor.
    - `public/published/`: Berkas HTML undangan final yang telah diterbitkan (*baked standalone HTML*).

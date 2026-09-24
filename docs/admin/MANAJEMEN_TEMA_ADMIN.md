@@ -9,7 +9,7 @@ Dokumen ini adalah referensi resmi untuk operasional dan arsitektur teknis dari 
 Sistem undangan pernikahan **Luxenary Invite** menggunakan arsitektur **100% Native Standalone HTML Template**:
 1. **Tidak Ada Dependensi Server Runtime Luar:** Setiap tema adalah file `.html` mandiri lengkap dengan CSS dan JavaScript interaktif di dalamnya.
 2. **Koleksi Fisik Mandiri:** Semua master file tema tersimpan di direktori fisik:
-   * `themes/premium/` (Seri Haute Couture / Eksklusif)
+   * `themes/minimalist/` (Seri Minimalis Editorial)
    * `themes/modern/` (Seri Kontemporer & Editorial)
    * `themes/traditional/` (Seri Adat & Budaya Keraton)
 3. **Single Source of Truth:** File fisik di folder `themes/` adalah acuan tunggal yang sah. Tidak boleh ada tema yang terdaftar di database tanpa memiliki file fisik `.html` di folder tersebut.
@@ -134,7 +134,7 @@ Bagaimana jika tema dihapus saat ada klien yang sedang dalam tahap penyusunan dr
 
 Tombol hijau **"Sinkronisasi Tema & Cache"** di bagian atas tab Manajemen Tema berfungsi sebagai sistem pemindaian menyeluruh (*full filesystem scan*):
 
-1. **Auto-Discovery:** Memindai subfolder `themes/premium`, `themes/modern`, dan `themes/traditional`. Setiap file `.html` baru yang diletakkan langsung via Git/filesystem akan otomatis didaftarkan ke database.
+1. **Auto-Discovery:** Memindai subfolder `themes/minimalist`, `themes/modern`, dan `themes/traditional`. Setiap file `.html` baru yang diletakkan langsung via Git/filesystem akan otomatis didaftarkan ke database.
 2. **Safety Guard Anti-Wipeout:** Memastikan jika 0 file terdeteksi di disk (misal saat proses deploy belum selesai), operasi langsung dibatalkan secara aman tanpa merusak database.
 3. **Auto-Purge Tema Zombie:** Memeriksa seluruh baris tema di tabel database. Jika ada record di database yang file fisiknya **tidak ditemukan** di disk, record tersebut otomatis dihapus dari database demi menjaga integritas data.
 4. **Preservasi Pengaturan Kustom:** Mempertahankan kustomisasi admin (`sortOrder`, thumbnail kustom, deskripsi, dan status aktif/nonaktif tema yang pernah diatur di dashboard).

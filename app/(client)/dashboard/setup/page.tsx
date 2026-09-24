@@ -94,7 +94,7 @@ function SetupWizardContent() {
   const [resepsiStart, setResepsiStart] = useState("");
   const [resepsiEnd, setResepsiEnd] = useState("");
   const [themeId, setThemeId] = useState("");
-  const [activeCategory, setActiveCategory] = useState<"all" | "premium" | "modern" | "traditional">("all");
+  const [activeCategory, setActiveCategory] = useState<"all" | "minimalist" | "modern" | "traditional">("all");
 
   const [isDraftLoaded, setIsDraftLoaded] = useState(false);
 
@@ -659,7 +659,7 @@ function SetupWizardContent() {
         {step === 3 && (() => {
           const categories = [
             { id: "all", label: "Semua" },
-            { id: "premium", label: "Premium" },
+            { id: "minimalist", label: "Minimalis" },
             { id: "modern", label: "Modern" },
             { id: "traditional", label: "Tradisional" },
           ] as const;

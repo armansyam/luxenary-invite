@@ -10,24 +10,28 @@
 
 Sistem template undangan menggunakan arsitektur HTML multi-layer mandiri dengan placeholder `{{variabel}}` yang diinjeksi oleh `lib/themeEngine.ts` dan dipetakan oleh `lib/renderTemplate.ts`:
 
-### A. Premium Series (`themes/premium/`)
-1. **Kalandra (`themes/premium/kalandra.html`)** *(Legacy Alias: `kila`)*
+### A. Minimalist Series (`themes/minimalist/`)
+1. **Kalandra (`themes/minimalist/kalandra.html`)** *(Legacy Alias: `kila`)*
    - Desktop split-screen hero photo (lebar sisa layar) dengan panel undangan 460px dan subtle bottom scrim (25%).
    - Full-bleed vertical photo slides 100vh untuk Pengantin Pria & Wanita.
    - Live Countdown, Google Calendar sync, dan floating glass dock.
-2. **Valente (`themes/premium/valente.html`)**
+2. **Valente (`themes/minimalist/valente.html`)**
    - High-fashion editorial spread dengan framing foto portrait 3:4 dan badge peran pasangan minimalis.
    - Countdown tipografis minimalis bergaris hairline editorial tanpa box kaku.
    - Side Navigation Floating Frosted Glass Card ala daftar isi majalah (*Table of Contents*) bernomor urut (01 Home s.d. 08 RSVP & Wishes), auto-height dengan backdrop click-outside dismissal, dan cover berlabel special issue.
    - Responsif 100% full-bleed di layar mobile/tablet dan desktop split-screen 460px.
-3. **Aurelia (`themes/premium/aurelia.html`)**
+3. **Aurelia (`themes/minimalist/aurelia.html`)**
    - Kanvas video sutra bergerak (*Video Canvas Backdrop*) dengan fallback poster.
    - Partikel kelopak bunga melayang lembut (*ambient petals*).
    - Kartu kapsul kaca frosted glass asimetris (32px radius).
-4. **Artisan (`themes/premium/artisan.html`)**
+4. **Artisan (`themes/minimalist/artisan.html`)**
    - Estetika tipografi atelier kontemporer dengan palet monokromatik hangat.
    - Transisi foto asimetris dan galeri grid editorial dinamis.
    - Multi-Layer Visual Slots: Layar Sampul Fullscreen Global Desktop, Fixed Parallax Background Layer (`globalBgUrl`), Seksi Pembuka Khusus (`homePhotoCssUrl`), dan Penutup Adaptif Full-Height (`closingPhotoUrl`).
+5. **Minimalist Elegant (`themes/minimalist/minimalist-elegant.html`)**
+   - Estetika editorial modern minimalis dengan tipografi serif elegan dan tata letak majalah berkelas.
+6. **Minimalist Elegant 04 (`themes/minimalist/minimalist-elegant-04.html`)**
+   - Desain minimalis bersih dengan whitespace lega, aksen tipografi fluid, dan harmoni palet tonal halus.
 
 ### B. Traditional Series (`themes/traditional/`)
 1. **Prameswari (`themes/traditional/prameswari.html`)**
@@ -77,6 +81,35 @@ Sistem template undangan menggunakan arsitektur HTML multi-layer mandiri dengan 
    - Identifikasi seksi pembuka menggunakan ID `#home` yang kompatibel penuh dengan injeksi template engine (`homePhotoCssUrl` untuk kanvas bersih tanpa fallback tekstur jika kosong).
    - Integrasi seksi kisah `#story` (`{{storyItemsHtml}}`), monogram pembatas modern SVG murni tanpa emoji OS, Smart Bottom Dock dengan audio toggle terintegrasi (`luxToggleAudio()`), serta modal voucher souvenir QR (`#modalBg`).
    - Terpasang atribut `data-lux-field` lengkap untuk mendukung pengalaman Live Visual Studio Click-to-Edit.
+10. **Pink Castle (`themes/modern/pink-castle.html`)**
+    - Fairy tale castle aesthetic berpadu palet pastel romantic (`rose`, `blush`, `gold`).
+    - Fitur visual khas: gerbang kastil vintage (*castle gate arch*), floating fairy sparkle animation, dan ribbon floral accents.
+    - Kepatuhan penuh Standar Emas Blueprint: desktop split 460px, 3-layer background stack, discrete parents architecture, universal audio & RSVP handling, dan dynamic CSS tokens tanpa hex mati.
+11. **Starlit Dreams (`themes/modern/starlit-dreams.html`)**
+    - Celestial Midnight Elegance berpadu palet emerald mendalam (`#1b4332`, `#2d6a4f`, `#d7bb83`) dan aksen bintang bersinar (*starlit sparkle*).
+    - Tipografi mewah dual font lokal: *Geraldo Island* (display serif berkelas untuk nama mempelai) & *Romland* (signature accent script untuk sub-judul & floating monogram).
+    - Ornamen visual khas: *Midnight Baroque Mirror Oval Frame* (`midnight-icon.webp`) sebagai wadah lencana cover & hero photo, serta aksen *Watercolor Yellow Florals with Mint Ribbon Bow* (`couple-frame-1.webp` & `couple-frame-2.webp`).
+    - Kepatuhan penuh Standar Emas Blueprint: desktop split 460px, 3-layer background stack, discrete parents architecture, universal audio & RSVP handling, countdown timer hari H, dan dynamic CSS tokens tanpa hex mati.
+12. **Minimalist Elegant (`themes/modern/minimalist-elegant.html`)**
+    - High-End Contemporary Editorial berpadu palet hangat champagne sand & deep charcoal (`--primary`, `--secondary`, `--accent`, `--bg-light`).
+    - Tipografi editorial prestisius: *Playfair Display*, *Cormorant Garamond*, *The Nautigal* (`public/fonts/minimalist-elegant/TheNautigal.woff2`), dan *Gloriousity Two*.
+    - Visual framing asimetris arsitektural (*Asymmetric Arch Framing*): lengkung sudut diagonal 100px pada wadah hero dan bingkai foto mempelai.
+    - Kepatuhan penuh Standar Emas Blueprint: desktop split 460px, 3-layer background stack, discrete parents architecture, countdown timer hari H, interactive inline RSVP feed, dan dynamic CSS tokens 100% bebas hardcode.
+13. **Minimalist Elegant 04 (`themes/modern/minimalist-elegant-04.html`)**
+    - Contemporary Monochrome & Charcoal Luxury berpadu tipografi khas *Yaqoote Script* (`public/fonts/minimalist-elegant-04/YaqooteScript.woff2`) dan *Cormorant Garamond*.
+    - Nuansa warna modern minimalis berbalut slate grey, charcoal black, dan off-white.
+    - Visual asymmetric arch framing (100px) pada foto hero pembuka dan foto profil mempelai.
+    - Kepatuhan penuh Standar Emas Blueprint: desktop split 460px, 3-layer background stack, discrete parents architecture, countdown timer hari H, interactive inline RSVP feed, dan dynamic CSS tokens 100% bebas hardcode.
+14. **Burgundy Royale (`themes/modern/burgundy-royale.html`)**
+    - Opulent Vintage Burgundy Royale berpadu tipografi prestisius *Iskry Regular* (`public/fonts/burgundy-royale/Iskry-Regular.woff2`), *Vidaloka* (Bodoni serif), *Cinzel* (Roman capitals), dan *Imperial Script*.
+    - Nuansa warna burgundy merah tua anggur mewah (`--primary`), rose wine (`--secondary`), dan sampanye antik hangat (`--accent`).
+    - Ornamen visual khas: lukisan cat minyak mawar burgundy mewah (`bunga-burgundy-royale.png`) di sudut-sudut kartu, ornamen pemisah simetris vintage, dan bingkai kubah katedral romanesque (*Cathedral Romanesque Arch Framing* `border-radius: 500px 500px 0 0`).
+    - Kepatuhan penuh Standar Emas Blueprint: desktop split 460px, 3-layer background stack, discrete parents architecture, universal countdown timer hari H, interactive inline RSVP & ucapan live feed, dan dynamic CSS tokens 100% bebas hardcode.
+15. **Vintage Forest (`themes/modern/vintage-forest.html`)**
+    - Botanical Vintage Elegance berpadu tipografi khas *Mea Culpa* (kaligrafi skrip romantis), *Caudex* (serif klasik), *Cinzel* (kapital megah), dan *Aboreto* (huruf ukir geometris).
+    - Nuansa warna hijau botani mendalam (`--primary`), sage olive green (`--secondary`), dan aksen emas antik / pasir hangat (`--accent`).
+    - Ornamen visual khas: dedaunan eukaliptus botani rimbun (`bunga-botani2.png`) yang mengambang anggun di sudut kartu cover, hero arch, dan footer penutup, dipadukan bingkai kubah arsitektural (*Romanesque Arch Framing* `border-radius: 350px 350px 0 0`).
+    - Kepatuhan penuh Standar Emas Blueprint: desktop split 460px, 3-layer background stack, discrete parents architecture, universal countdown timer hari H, interactive inline RSVP & ucapan live feed, dan dynamic CSS tokens 100% bebas hardcode.
 
 ### D. Developer Blueprint
 - **Starter Blueprint (`themes/starter-blueprint.html` & `public/downloads/starter-blueprint.html`)**
@@ -111,8 +144,8 @@ Seluruh 19 tema fisik master dan starter blueprint mengimplementasikan standaris
 5. **Standar Tipografi Anti-Overflow Panel Kanan:**
    - Karena perhitungan unit `vw` mengevaluasi layar monitor penuh (1440–1920px), seluruh judul seksi `.sec-main-title, .sec-heading` dikunci maksimal pada `font-size: clamp(1.75rem, 2.1rem, 2.3rem) !important;` dengan aturan protektif `overflow-wrap: break-word !important; word-break: break-word !important;`.
    - Padding seksi desktop dinormalisasi menjadi `1.8rem` (~57px), menjamin ruang konten efektif sebesar ~404px yang identik dengan layar mobile sesungguhnya.
-6. **Integrasi Starter Blueprint Triple Synchronization:**
-   - Arsitektur Golden Standard split 460px, seksi pembuka 100vh `#home`, dan aturan tipografi anti-overflow dibundel secara identik 1:1 di ketiga berkas cetak biru: [`themes/starter-blueprint.html`](themes/starter-blueprint.html), [`public/downloads/starter-blueprint.html`](public/downloads/starter-blueprint.html), dan [`theme-builder/starter/master.html`](theme-builder/starter/master.html). Dilengkapi kustomisasi seleksi kursor `::selection` berbasis token palet aktif.
+6. **Integrasi Starter Blueprint Synchronization:**
+   - Arsitektur Golden Standard split 460px, seksi pembuka 100vh `#home`, dan aturan tipografi anti-overflow dibundel secara identik 1:1 di kedua berkas cetak biru: [`themes/starter-blueprint.html`](themes/starter-blueprint.html) dan [`public/downloads/starter-blueprint.html`](public/downloads/starter-blueprint.html). Dilengkapi kustomisasi seleksi kursor `::selection` berbasis token palet aktif.
 7. **Smart Auto-Hide Navigasi Dock & Home-Safe Floating Audio (`initSmartDock` / `initSmartControls`):**
    - Seluruh tema mengadopsi mekanisme auto-hide pintar hardware-accelerated (`translate3d` & `opacity`).
    - **Home-Safe Audio FAB:** Saat tamu berada di seksi pembuka `#home`, tombol audio FAB mengambang (`#musicToggle` / `.audio-fab`) disembunyikan secara mutlak (`fab-hidden`) agar keindahan panggung pembuka 100vh bebas polusi visual. Begitu tamu scroll melintasi batas seksi pembuka, tombol audio otomatis muncul dan menyelaraskan visibilitasnya dengan `.bottom-dock`.

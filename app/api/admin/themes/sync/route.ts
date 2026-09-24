@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 interface DiscoveredTheme {
   id: string;
   name: string;
-  category: "premium" | "modern" | "traditional";
+  category: "minimalist" | "modern" | "traditional";
   series: string;
   filePath: string;
   hasStory: boolean;
@@ -37,7 +37,7 @@ export async function POST() {
     const discovered: DiscoveredTheme[] = [];
 
     const folders = [
-      { name: "premium", category: "premium" as const, series: "Premium" },
+      { name: "minimalist", category: "minimalist" as const, series: "Minimalist" },
       { name: "modern", category: "modern" as const, series: "Modern" },
       { name: "traditional", category: "traditional" as const, series: "Traditional" },
       { name: "", category: "modern" as const, series: "Modern" },

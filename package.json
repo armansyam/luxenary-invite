@@ -7,8 +7,6 @@
     "build": "next build",
     "start": "NODE_OPTIONS='--dns-result-order=ipv4first' next start",
     "lint": "eslint",
-    "theme:preview": "npx tsx theme-builder/preview.ts",
-    "theme:install": "npx tsx theme-builder/install.ts",
     "test:all": "npx tsx scripts/industrial-qa-suite.ts --suite=all",
     "test:industrial": "npx tsx scripts/industrial-qa-suite.ts",
     "test:audit": "npx tsx scripts/complete-system-audit.ts",

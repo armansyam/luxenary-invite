@@ -32,12 +32,14 @@ function escapeHtmlAttr(str: string): string {
   return escapeHtmlSafe(str);
 }
 
-const THEME_MAP: Record<string, { file: string; folder: "premium" | "traditional" | "modern" }> = {
-  // Premium Series
-  "kalandra": { file: "kalandra.html", folder: "premium" },
-  "valente": { file: "valente.html", folder: "premium" },
-  "aurelia": { file: "aurelia.html", folder: "premium" },
-  "artisan": { file: "artisan.html", folder: "premium" },
+const THEME_MAP: Record<string, { file: string; folder: "minimalist" | "premium" | "traditional" | "modern" }> = {
+  // Minimalist Series
+  "kalandra": { file: "kalandra.html", folder: "minimalist" },
+  "valente": { file: "valente.html", folder: "minimalist" },
+  "aurelia": { file: "aurelia.html", folder: "minimalist" },
+  "artisan": { file: "artisan.html", folder: "minimalist" },
+  "minimalist-elegant": { file: "minimalist-elegant.html", folder: "minimalist" },
+  "minimalist-elegant-04": { file: "minimalist-elegant-04.html", folder: "minimalist" },
 
   // Traditional Series
   "prameswari": { file: "prameswari.html", folder: "traditional" },
@@ -68,7 +70,7 @@ const THEME_MAP: Record<string, { file: string; folder: "premium" | "traditional
   "solaria": { file: "solaria.html", folder: "modern" },
 
   // Backward compatibility alias mapping
-  "kila": { file: "kalandra.html", folder: "premium" },
+  "kila": { file: "kalandra.html", folder: "minimalist" },
 };
 
 export const LUXENARY_BANNER = `<!--
@@ -1287,7 +1289,7 @@ const UNIFIED_CLIENT_RUNTIME_SCRIPT = `
 
 /**
  * Render a template file by replacing {{key}} placeholders with values from `data`.
- * Automatically resolves from themes/premium/, themes/traditional/, or themes/modern/.
+ * Automatically resolves from themes/minimalist/, themes/traditional/, or themes/modern/.
  */
 export async function renderTemplateFile(
   templateName: string,
@@ -1296,7 +1298,7 @@ export async function renderTemplateFile(
 ): Promise<string> {
 
 
-  const info = THEME_MAP[templateName] || { file: `${templateName}.html`, folder: "premium" };
+  const info = THEME_MAP[templateName] || { file: `${templateName}.html`, folder: "minimalist" };
 
   let tplPath = path.join(process.cwd(), "themes", info.folder, info.file);
 
@@ -1343,17 +1345,20 @@ export async function renderTemplateFile(
   // --- 2. JIKA TIDAK ADA DRAFT, CEK MASTER FILE ---
   if (!draftFound) {
     if (!(await fileExists(tplPath))) {
+      const minimalistCheck = path.join(process.cwd(), "themes", "minimalist", `${templateName}.html`);
       const premiumCheck = path.join(process.cwd(), "themes", "premium", `${templateName}.html`);
       const traditionalCheck = path.join(process.cwd(), "themes", "traditional", `${templateName}.html`);
       const modernLegacyCheck = path.join(process.cwd(), "themes", "modern", `${templateName}.html`);
       const rootThemesCheck = path.join(process.cwd(), "themes", `${templateName}.html`);
       
-      if (await fileExists(premiumCheck)) {
-        tplPath = premiumCheck;
+      if (await fileExists(minimalistCheck)) {
+        tplPath = minimalistCheck;
       } else if (await fileExists(traditionalCheck)) {
         tplPath = traditionalCheck;
       } else if (await fileExists(modernLegacyCheck)) {
         tplPath = modernLegacyCheck;
+      } else if (await fileExists(premiumCheck)) {
+        tplPath = premiumCheck;
       } else if (await fileExists(rootThemesCheck)) {
         tplPath = rootThemesCheck;
       } else {

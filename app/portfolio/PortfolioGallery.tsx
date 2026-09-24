@@ -7,7 +7,7 @@ export interface PortfolioGalleryItem {
   id: string;
   coupleName: string;
   themeId: string;
-  category: "premium" | "traditional" | "modern" | string;
+  category: "minimalist" | "premium" | "traditional" | "modern" | string;
   coverImage: string;
   publicUrl: string;
 }
@@ -90,14 +90,14 @@ export function PortfolioGallery({ items }: PortfolioGalleryProps) {
         </button>
         <button
           type="button"
-          onClick={() => handleCategoryChange("premium")}
+          onClick={() => handleCategoryChange("minimalist")}
           className={`px-4 py-1.5 rounded-full text-xs font-bold transition cursor-pointer whitespace-nowrap shrink-0 ${
-            selectedCategory === "premium"
+            selectedCategory === "minimalist"
               ? "bg-stone-900 text-white shadow-xs"
               : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-50"
           }`}
         >
-          Premium
+          Minimalis
         </button>
         <button
           type="button"

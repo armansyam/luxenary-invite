@@ -1,0 +1,1965 @@
+<!--
+ _      _   _  __  __  _____   _   _      _     ____   __   __
+| |    | | | | \ \/ / | ____| | \ | |    / \   |  _ \  \ \ / /
+| |    | | | |  \  /  |  _|   |  \| |   / _ \  | |_) |  \ V / 
+| |___ | |_| |  /  \  | |___  | |\  |  / ___ \ |  _ <    | |  
+|_____| \___/  /_/\_\ |_____| |_| \_| /_/   \_\|_| \_\   |_|  
+
+  ==============================================================
+  THEME BUILDER WORKSPACE: PINK CASTLE
+  Fairy-Tale Romantic Theme with Floating Florals & Custom Script
+  Hak Cipta (c) Luxenary. Dilindungi undang-undang.
+  ==============================================================
+-->
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Wedding of {{firstName}} &amp; {{secondName}} — Pink Castle</title>
+
+  <!-- =================================================================== -->
+  <!-- 1. TYPOGRAPHY & SELF-HOSTED FONTS                                   -->
+  <!-- =================================================================== -->
+  <link rel="stylesheet" href="/fonts/fonts.css" />
+
+  <style>
+    @font-face {
+      font-family: "Just Sunday";
+      src: url("/fonts/pink-castle/Just-Sunday.woff2") format("woff2");
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: "Gardenisa";
+      src: url("/fonts/pink-castle/Gardenisa.woff2") format("woff2");
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: "Bartes Malaga";
+      src: url("/fonts/pink-castle/Bartes-Malaga.woff2") format("woff2");
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    /* =================================================================== */
+    /* 2. DESIGN SYSTEM & DYNAMIC PALETTE (GOLDEN STANDARD)                */
+    /* =================================================================== */
+    :root {
+      --primary: {{colorPrimary}};
+      --secondary: {{colorSecondary}};
+      --accent: {{colorAccent}};
+      --bg-light: {{colorBgLight}};
+      --bg-dark: {{colorBgDark}};
+      --text-main: {{colorTextDark}};
+      --text-muted: color-mix(in srgb, {{colorTextDark}} 70%, transparent);
+      --radius-sm: 10px;
+      --radius-md: 18px;
+      --radius-lg: 28px;
+      --radius-full: 9999px;
+      --shadow-soft: 0 8px 24px color-mix(in srgb, var(--primary) 12%, transparent);
+      --shadow-elevated: 0 16px 40px color-mix(in srgb, var(--primary) 20%, transparent);
+      --glass-bg: color-mix(in srgb, var(--bg-light) 86%, transparent);
+      --glass-border: color-mix(in srgb, var(--primary) 18%, transparent);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    ::selection {
+      background: color-mix(in srgb, var(--primary) 35%, transparent);
+      color: #ffffff;
+    }
+
+    ::-moz-selection {
+      background: color-mix(in srgb, var(--primary) 35%, transparent);
+      color: #ffffff;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    body {
+      font-family: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-main);
+      line-height: 1.6;
+      overflow-x: hidden;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    html::-webkit-scrollbar,
+    body::-webkit-scrollbar {
+      display: none;
+      width: 0;
+      height: 0;
+    }
+
+    /* Headings & Scripts */
+    .font-script,
+    .script-title {
+      font-family: "Just Sunday", "Great Vibes", cursive;
+      font-weight: 400;
+      letter-spacing: 0.01em;
+    }
+
+    .serif,
+    h1, h2, h3, h4,
+    .font-serif {
+      font-family: "Gardenisa", "Bartes Malaga", "Cinzel", "Marcellus", Georgia, serif;
+      letter-spacing: 0.03em;
+    }
+
+    /* =================================================================== */
+    /* 3. ARSITEKTUR DESKTOP SPLIT & MOBILE CONTAINER                      */
+    /* =================================================================== */
+    .layout-wrapper {
+      display: flex;
+      width: 100%;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    .sidebar-desktop {
+      display: none;
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: calc(100% - 460px);
+      height: 100vh;
+      background: url("{{sidebarPhotoUrl}}") center/cover no-repeat;
+      z-index: 10;
+    }
+
+    .sidebar-desktop::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to top,
+        color-mix(in srgb, var(--bg-dark) 92%, transparent) 0%,
+        color-mix(in srgb, var(--bg-dark) 40%, transparent) 50%,
+        rgba(0, 0, 0, 0.25) 100%
+      );
+    }
+
+    .sidebar-desktop-content {
+      position: absolute;
+      bottom: 4.5rem;
+      left: 4rem;
+      right: 4rem;
+      z-index: 20;
+      color: #ffffff;
+    }
+
+    .sidebar-desktop-tagline {
+      font-size: 0.82rem;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.8rem;
+      font-weight: 600;
+    }
+
+    .sidebar-desktop-names {
+      font-size: clamp(2.8rem, 3.8vw, 4.4rem);
+      line-height: 1.1;
+      color: #ffffff;
+      margin-bottom: 1rem;
+      text-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
+    }
+
+    .sidebar-desktop-names span {
+      font-family: "Just Sunday", "Great Vibes", cursive;
+      color: var(--accent);
+      font-size: 1.1em;
+      display: inline-block;
+      margin: 0 0.3rem;
+    }
+
+    .sidebar-desktop-date {
+      font-size: 1rem;
+      letter-spacing: 0.18em;
+      color: var(--secondary);
+      text-transform: uppercase;
+      margin-bottom: 1.25rem;
+      font-weight: 500;
+    }
+
+    .sidebar-desktop-quote {
+      font-size: 1.05rem;
+      line-height: 1.7;
+      color: rgba(255, 255, 255, 0.88);
+      max-width: 540px;
+      text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
+    }
+
+    .app-container,
+    .main-scroll-panel {
+      width: 100%;
+      min-height: 100vh;
+      background: transparent;
+      position: relative;
+      z-index: 20;
+    }
+
+    @media (min-width: 900px) {
+      .sidebar-desktop {
+        display: block;
+      }
+      .app-container,
+      .main-scroll-panel {
+        width: 460px;
+        margin-left: auto;
+        box-shadow: -10px 0 35px rgba(0, 0, 0, 0.4);
+        border-left: 1px solid color-mix(in srgb, var(--primary) 25%, transparent);
+      }
+    }
+
+    /* =================================================================== */
+    /* 4. TIGA LAPISAN KANVAS LATAR (ANTI-TABRAKAN)                        */
+    /* =================================================================== */
+    .fixed-bg-layer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 100%;
+      height: 100vh;
+      background-image: url("{{globalBgUrl}}");
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.22;
+      filter: saturate(1.1);
+    }
+
+    @media (min-width: 900px) {
+      .fixed-bg-layer {
+        width: 460px;
+      }
+    }
+
+    .scrim-canvas {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 100%;
+      height: 100vh;
+      background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--bg-light) 94%, transparent) 0%,
+        color-mix(in srgb, var(--bg-light) 88%, transparent) 60%,
+        color-mix(in srgb, var(--bg-light) 96%, transparent) 100%
+      );
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    @media (min-width: 900px) {
+      .scrim-canvas {
+        width: 460px;
+      }
+    }
+
+    /* =================================================================== */
+    /* 5. COVER SCREEN (SAMPUL ELEGAN BERBUNGA FLOATING)                    */
+    /* =================================================================== */
+    .cover-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: var(--bg-dark);
+      background-image:
+        radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--primary) 30%, transparent) 0%, transparent 70%),
+        url("{{landingCoverUrl}}");
+      background-size: cover;
+      background-position: center;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 1.5rem;
+      transition: transform 0.95s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.85s ease;
+      overflow: hidden;
+    }
+
+    .cover-overlay.opened {
+      transform: translateY(-100%);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .cover-scrim {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to bottom,
+        color-mix(in srgb, var(--bg-dark) 78%, transparent) 0%,
+        color-mix(in srgb, var(--bg-dark) 92%, transparent) 100%
+      );
+      z-index: 1;
+    }
+
+    /* Floating Florals on Card */
+    .card-floral {
+      position: absolute;
+      width: clamp(110px, 32vw, 150px);
+      height: auto;
+      pointer-events: none;
+      z-index: 10;
+      opacity: 0.96;
+      filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.22));
+    }
+
+    .card-floral-tl {
+      top: -45px;
+      left: -38px;
+      animation: floralSwayTL 7s ease-in-out infinite;
+      transform-origin: bottom right;
+    }
+
+    .card-floral-tr {
+      top: -45px;
+      right: -38px;
+      transform: scaleX(-1);
+      animation: floralSwayTR 8s ease-in-out infinite;
+      transform-origin: bottom left;
+    }
+
+    @keyframes floralSwayTL {
+      0%, 100% { transform: translate(0, 0) rotate(0deg); }
+      50% { transform: translate(3px, 3px) rotate(2deg); }
+    }
+    @keyframes floralSwayTR {
+      0%, 100% { transform: scaleX(-1) translate(0, 0) rotate(0deg); }
+      50% { transform: scaleX(-1) translate(3px, 3px) rotate(-2deg); }
+    }
+
+    .cover-card {
+      position: relative;
+      z-index: 5;
+      width: 100%;
+      max-width: 390px;
+      background: color-mix(in srgb, var(--bg-light) 92%, transparent);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid color-mix(in srgb, var(--primary) 28%, transparent);
+      border-radius: var(--radius-lg);
+      padding: clamp(2rem, 5vh, 2.8rem) 1.5rem;
+      text-align: center;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+      animation: coverCardPop 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes coverCardPop {
+      0% { opacity: 0; transform: translateY(30px) scale(0.96); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .cover-badge-pill {
+      display: inline-block;
+      padding: 5px 18px;
+      border-radius: var(--radius-full);
+      background: color-mix(in srgb, var(--primary) 14%, transparent);
+      border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
+      color: var(--primary);
+      font-size: 0.72rem;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
+
+    .cover-tagline {
+      font-size: 0.78rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 0.6rem;
+    }
+
+    .cover-names {
+      font-family: "Just Sunday", "Great Vibes", cursive;
+      font-size: clamp(2.8rem, 10vw, 3.8rem);
+      line-height: 1.12;
+      color: var(--text-main);
+      margin: 0.2rem 0 0.8rem;
+    }
+
+    .cover-names span {
+      display: inline-block;
+      color: var(--primary);
+      margin: 0 0.3rem;
+      font-size: 0.9em;
+    }
+
+    .cover-date-row {
+      font-size: 0.86rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--secondary);
+      font-weight: 600;
+      margin-bottom: 1.4rem;
+    }
+
+    .cover-guest-box {
+      margin-top: 1.2rem;
+      padding: 1rem 1.2rem;
+      background: color-mix(in srgb, var(--primary) 8%, transparent);
+      border: 1px dashed color-mix(in srgb, var(--primary) 30%, transparent);
+      border-radius: var(--radius-md);
+      margin-bottom: 1.5rem;
+    }
+
+    .cover-guest-lbl {
+      font-size: 0.72rem;
+      letter-spacing: 0.18em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 0.35rem;
+      display: block;
+    }
+
+    .cover-guest-name {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-main);
+      letter-spacing: 0.02em;
+    }
+
+    .btn-open-pink {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 13px 26px;
+      border-radius: var(--radius-full);
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      color: #ffffff;
+      border: none;
+      font-size: 0.86rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: 0 8px 24px color-mix(in srgb, var(--primary) 45%, transparent);
+      transition: all 0.3s ease;
+    }
+
+    .btn-open-pink:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px color-mix(in srgb, var(--primary) 60%, transparent);
+    }
+
+    .btn-open-pink svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+      transition: transform 0.3s ease;
+    }
+
+    .btn-open-pink:hover svg {
+      transform: translateX(4px);
+    }
+
+    /* =================================================================== */
+    /* 6. MAIN CONTENT SECTIONS                                             */
+    /* =================================================================== */
+    .main-content {
+      position: relative;
+      z-index: 10;
+      padding-bottom: 90px;
+    }
+
+    .sec-flow {
+      padding: 3.5rem 1.5rem;
+      text-align: center;
+      position: relative;
+    }
+
+    .sec-eyebrow {
+      display: inline-block;
+      font-size: 0.72rem;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--primary);
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .sec-main-title {
+      font-size: clamp(1.8rem, 5vw, 2.3rem);
+      color: var(--text-main);
+      line-height: 1.25;
+      margin-bottom: 0.75rem;
+    }
+
+    .sec-sub {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      max-width: 360px;
+      margin: 0 auto 1.8rem;
+      line-height: 1.6;
+    }
+
+    /* HERO / HOME SECTION */
+    .sec-home {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 4rem 1.5rem 3rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-arch-frame {
+      width: clamp(230px, 60vw, 270px);
+      height: clamp(310px, 75vw, 360px);
+      border-radius: 140px 140px 20px 20px;
+      border: 3px solid color-mix(in srgb, var(--primary) 35%, transparent);
+      box-shadow: 0 18px 45px rgba(157, 92, 99, 0.2);
+      overflow: hidden;
+      margin-bottom: 1.6rem;
+      position: relative;
+      background: var(--bg-light);
+    }
+
+    .hero-arch-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 1.2s ease;
+    }
+
+    .hero-arch-frame:hover img {
+      transform: scale(1.05);
+    }
+
+    .hero-sticker-badge {
+      position: absolute;
+      bottom: -10px;
+      right: -10px;
+      width: 78px;
+      height: 78px;
+      filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15));
+      animation: floatBadge 6s ease-in-out infinite;
+    }
+
+    @keyframes floatBadge {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-5px) rotate(3deg); }
+    }
+
+    .hero-names {
+      font-family: "Just Sunday", "Great Vibes", cursive;
+      font-size: clamp(2.6rem, 8.5vw, 3.4rem);
+      color: var(--text-main);
+      line-height: 1.15;
+      margin: 0.3rem 0;
+    }
+
+    .hero-names span {
+      color: var(--primary);
+      margin: 0 0.2rem;
+    }
+
+    .hero-date-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 18px;
+      border-radius: var(--radius-full);
+      background: color-mix(in srgb, var(--primary) 12%, transparent);
+      border: 1px solid color-mix(in srgb, var(--primary) 24%, transparent);
+      color: var(--primary);
+      font-size: 0.8rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-weight: 600;
+      margin-top: 0.6rem;
+      margin-bottom: 1.8rem;
+    }
+
+    /* COUNTDOWN TIMER */
+    .countdown-wrap {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      max-width: 360px;
+      margin: 0 auto 1.5rem;
+    }
+
+    .countdown-card {
+      flex: 1;
+      padding: 10px 6px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-sm);
+      text-align: center;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .cd-number {
+      display: block;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--primary);
+      line-height: 1.2;
+      font-family: "Cinzel", Georgia, serif;
+    }
+
+    .cd-label {
+      font-size: 0.65rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-top: 3px;
+      display: block;
+    }
+
+    .btn-cal-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 20px;
+      border-radius: var(--radius-full);
+      background: transparent;
+      border: 1px solid color-mix(in srgb, var(--primary) 35%, transparent);
+      color: var(--text-main);
+      font-size: 0.76rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      text-decoration: none;
+      transition: all 0.3s ease;
+    }
+
+    .btn-cal-link:hover {
+      background: color-mix(in srgb, var(--primary) 14%, transparent);
+      border-color: var(--primary);
+    }
+
+    /* QUOTE SECTION */
+    .quote-box {
+      max-width: 390px;
+      margin: 0 auto;
+      padding: 2rem 1.6rem;
+      background: var(--glass-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-soft);
+      position: relative;
+    }
+
+    .quote-greeting {
+      font-size: 1.8rem;
+      color: var(--primary);
+      margin-bottom: 1rem;
+      line-height: 1.3;
+    }
+
+    .quote-body {
+      font-size: 0.9rem;
+      font-style: italic;
+      color: var(--text-main);
+      line-height: 1.8;
+      margin-bottom: 1.2rem;
+    }
+
+    .quote-ref {
+      font-size: 0.78rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    /* COUPLE SECTION */
+    .couple-cards-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      max-width: 380px;
+      margin: 0 auto;
+    }
+
+    .couple-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      padding: 1.8rem 1.4rem;
+      box-shadow: var(--shadow-soft);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .couple-avatar-wrap {
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      margin: 0 auto 1.2rem;
+      padding: 4px;
+      border: 2px solid var(--primary);
+      box-shadow: 0 8px 20px color-mix(in srgb, var(--primary) 25%, transparent);
+      overflow: hidden;
+    }
+
+    .couple-avatar-wrap img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .couple-name {
+      font-size: 1.35rem;
+      color: var(--text-main);
+      margin-bottom: 0.4rem;
+    }
+
+    .couple-parent-text {
+      font-size: 0.84rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+
+    .couple-parent-text strong {
+      color: var(--text-main);
+    }
+
+    .btn-ig-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 14px;
+      border-radius: var(--radius-full);
+      background: color-mix(in srgb, var(--primary) 10%, transparent);
+      border: 1px solid color-mix(in srgb, var(--primary) 25%, transparent);
+      color: var(--primary);
+      font-size: 0.74rem;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.25s ease;
+    }
+
+    .btn-ig-pill:hover {
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    .couple-divider-amp {
+      font-family: "Just Sunday", cursive;
+      font-size: 3rem;
+      color: var(--primary);
+      line-height: 1;
+      margin: -0.5rem 0;
+    }
+
+    /* EVENTS & AGENDA (BLUEPRINT TOKEN INJECTION) */
+    .events-unified-container {
+      max-width: 390px;
+      margin: 0 auto;
+    }
+
+    .events-sessions-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+      margin-bottom: 1.4rem;
+    }
+
+    .event-block-item {
+      background: var(--glass-bg);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-md);
+      padding: 1.5rem 1.2rem;
+      text-align: center;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .ev-cat {
+      display: inline-block;
+      padding: 3px 12px;
+      border-radius: var(--radius-full);
+      background: color-mix(in srgb, var(--primary) 14%, transparent);
+      border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
+      color: var(--primary);
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      font-weight: 700;
+      margin-bottom: 0.6rem;
+    }
+
+    .ev-name {
+      font-size: 1.25rem;
+      color: var(--text-main);
+      margin-bottom: 0.4rem;
+    }
+
+    .ev-time {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .event-unified-venue-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-md);
+      padding: 1.5rem 1.2rem;
+      text-align: center;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .venue-card-lbl {
+      display: block;
+      font-size: 0.7rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--primary);
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+    }
+
+    .ev-venue-unified,
+    .ev-venue {
+      font-size: 1.2rem;
+      color: var(--text-main);
+      margin-bottom: 0.4rem;
+    }
+
+    .ev-address-unified,
+    .ev-addr-unified,
+    .ev-addr {
+      font-size: 0.84rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 1.2rem;
+    }
+
+    .btn-map-outline {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 9px 22px;
+      border-radius: var(--radius-full);
+      background: var(--primary);
+      color: #ffffff;
+      text-decoration: none;
+      font-size: 0.76rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      transition: all 0.3s ease;
+      box-shadow: 0 6px 18px color-mix(in srgb, var(--primary) 35%, transparent);
+    }
+
+    .btn-map-outline:hover {
+      background: var(--secondary);
+      transform: translateY(-2px);
+    }
+
+    /* STORY SECTION */
+    .journey-timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+      max-width: 390px;
+      margin: 0 auto;
+    }
+
+    .story-chapter-block {
+      background: var(--glass-bg);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-md);
+      padding: 1.4rem 1.2rem;
+      text-align: left;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .sc-label {
+      display: inline-block;
+      font-size: 0.68rem;
+      letter-spacing: 0.2em;
+      color: var(--primary);
+      font-weight: 700;
+      margin-bottom: 0.35rem;
+    }
+
+    .sc-title {
+      font-size: 1.15rem;
+      color: var(--text-main);
+      margin-bottom: 0.5rem;
+    }
+
+    .sc-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.65;
+    }
+
+    .journey-footer {
+      margin-top: 1.8rem;
+      text-align: center;
+    }
+
+    .jf-signature {
+      font-family: "Just Sunday", cursive;
+      font-size: 1.8rem;
+      color: var(--primary);
+    }
+
+    /* GALLERY GRID */
+    .gallery-grid-clean {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+
+    .moment-photo-item {
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      aspect-ratio: 1 / 1;
+      cursor: pointer;
+      position: relative;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid var(--glass-border);
+    }
+
+    .moment-photo-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.6s ease;
+    }
+
+    .moment-photo-item:hover img {
+      transform: scale(1.08);
+    }
+
+    /* GIFT & REKENING */
+    .gift-cards-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+      max-width: 380px;
+      margin: 0 auto;
+    }
+
+    .gift-bank-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-md);
+      padding: 1.5rem 1.2rem;
+      text-align: center;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .gb-bank-name {
+      display: block;
+      font-size: 1.2rem;
+      color: var(--primary);
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+    }
+
+    .gb-account-num {
+      display: block;
+      font-size: 1.15rem;
+      letter-spacing: 0.12em;
+      color: var(--text-main);
+      font-weight: 600;
+      margin-bottom: 0.3rem;
+      font-family: monospace;
+    }
+
+    .gb-account-owner {
+      display: block;
+      font-size: 0.84rem;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+    }
+
+    .btn-copy-gift {
+      padding: 7px 18px;
+      border-radius: var(--radius-full);
+      background: color-mix(in srgb, var(--primary) 12%, transparent);
+      border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
+      color: var(--primary);
+      font-size: 0.74rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+
+    .btn-copy-gift:hover {
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    /* DRESS CODE PALETTE PILLS */
+    .dresscode-palette-row {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .dress-color-pill {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: 2px solid #ffffff;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+      transition: transform 0.25s ease;
+    }
+
+    .dress-color-pill:hover {
+      transform: scale(1.15);
+    }
+
+    /* WISHES & RSVP FORM */
+    .rsvp-form-card {
+      max-width: 390px;
+      margin: 0 auto 2rem;
+      background: var(--glass-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      padding: 1.8rem 1.4rem;
+      box-shadow: var(--shadow-soft);
+      text-align: left;
+    }
+
+    .form-group {
+      margin-bottom: 1.1rem;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.76rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      border: 1px solid color-mix(in srgb, var(--primary) 25%, transparent);
+      background: #ffffff;
+      color: var(--text-main);
+      font-size: 0.88rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.25s ease;
+    }
+
+    .form-control:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);
+    }
+
+    textarea.form-control {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .btn-submit-rsvp {
+      width: 100%;
+      padding: 12px 20px;
+      border-radius: var(--radius-full);
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      color: #ffffff;
+      border: none;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: 0 8px 20px color-mix(in srgb, var(--primary) 40%, transparent);
+      transition: all 0.3s ease;
+      margin-top: 0.5rem;
+    }
+
+    .btn-submit-rsvp:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px color-mix(in srgb, var(--primary) 55%, transparent);
+    }
+
+    .wishes-stream-wrap {
+      max-width: 390px;
+      margin: 0 auto;
+      max-height: 360px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    /* CLOSING SECTION */
+    .sec-closing {
+      padding: 4rem 1.5rem 3rem;
+      text-align: center;
+      position: relative;
+    }
+
+    .closing-photo-wrap {
+      width: 130px;
+      height: 130px;
+      border-radius: 50%;
+      margin: 0 auto 1.5rem;
+      overflow: hidden;
+      border: 3px solid var(--primary);
+      box-shadow: 0 10px 30px color-mix(in srgb, var(--primary) 25%, transparent);
+    }
+
+    .closing-photo-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .closing-quote {
+      font-size: 0.92rem;
+      color: var(--text-main);
+      line-height: 1.7;
+      max-width: 380px;
+      margin: 0 auto 1rem;
+    }
+
+    .closing-sub {
+      font-size: 0.84rem;
+      color: var(--text-muted);
+      margin-bottom: 1.8rem;
+    }
+
+    .closing-sign {
+      font-family: "Just Sunday", cursive;
+      font-size: 2.8rem;
+      color: var(--primary);
+      margin-bottom: 1rem;
+    }
+
+    /* =================================================================== */
+    /* 7. FLOATING DOCK, AUDIO FAB & MODAL                                  */
+    /* =================================================================== */
+    .bottom-dock {
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: color-mix(in srgb, var(--bg-light) 90%, transparent);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-full);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+      z-index: 1000;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @media (min-width: 900px) {
+      .bottom-dock {
+        left: calc(100% - 230px);
+      }
+    }
+
+    .bottom-dock.dock-hidden {
+      transform: translateX(-50%) translateY(120%);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .dock-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 6px 10px;
+      border-radius: var(--radius-full);
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.62rem;
+      font-weight: 600;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+
+    .dock-btn svg {
+      width: 17px;
+      height: 17px;
+      fill: currentColor;
+    }
+
+    .dock-btn:hover,
+    .dock-btn.active {
+      color: var(--primary);
+      background: color-mix(in srgb, var(--primary) 14%, transparent);
+    }
+
+    /* Floating Audio FAB */
+    .audio-fab {
+      position: fixed;
+      bottom: 80px;
+      right: 20px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: color-mix(in srgb, var(--bg-light) 90%, transparent);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 999;
+      transition: all 0.35s ease;
+    }
+
+    @media (min-width: 900px) {
+      .audio-fab {
+        right: 24px;
+      }
+    }
+
+    .audio-fab.fab-hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.6);
+    }
+
+    .audio-fab.playing svg {
+      animation: spinVinyl 5s linear infinite;
+    }
+
+    @keyframes spinVinyl {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* MODAL TIKET QR */
+    .modal-bg {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      z-index: 10000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-bg.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      width: 100%;
+      max-width: 360px;
+      background: var(--bg-light);
+      border-radius: var(--radius-lg);
+      padding: 2rem 1.5rem;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+      position: relative;
+      text-align: center;
+      transform: translateY(20px) scale(0.96);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .modal-bg.open .modal-card {
+      transform: translateY(0) scale(1);
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      background: #ffffff;
+      color: #333;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* LIGHTBOX ZOOM */
+    .lightbox-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.92);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10001;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .lightbox-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .lightbox-overlay img {
+      max-width: 90vw;
+      max-height: 85vh;
+      border-radius: var(--radius-md);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    }
+
+    .lightbox-close {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: #fff;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    /* SCROLL REVEAL ANIMATIONS */
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .reveal.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .delay-1 { transition-delay: 0.12s; }
+    .delay-2 { transition-delay: 0.24s; }
+    .delay-3 { transition-delay: 0.36s; }
+  </style>
+</head>
+
+<body>
+
+  <!-- =================================================================== -->
+  <!-- TIGA LAPISAN KANVAS LATAR                                           -->
+  <!-- =================================================================== -->
+  <div class="fixed-bg-layer" aria-hidden="true"></div>
+  <div class="scrim-canvas" aria-hidden="true"></div>
+
+  <!-- =================================================================== -->
+  <!-- SAMPUL UNDANGAN ELEGAN (COVER OVERLAY)                              -->
+  <!-- =================================================================== -->
+  <div id="coverOverlay" class="cover-overlay">
+    <div class="cover-scrim"></div>
+
+    <div class="cover-card">
+      <img src="/assets/ornaments/pink-castle/bunga-pink-palace.webp" alt="Floral TL" class="card-floral card-floral-tl" />
+      <img src="/assets/ornaments/pink-castle/bunga-pink-palace.webp" alt="Floral TR" class="card-floral card-floral-tr" />
+      <span class="cover-badge-pill" data-lux-field="customLabels.coverBadge">{{coverBadge}}</span>
+      <p class="cover-tagline">THE WEDDING OF</p>
+      <h1 class="cover-names">{{firstName}} <span>&amp;</span> {{secondName}}</h1>
+      <p class="cover-date-row">{{weddingDate}}</p>
+
+      <div class="cover-guest-box">
+        <span class="cover-guest-lbl">Kepada Yth. Bapak/Ibu/Saudara/i:</span>
+        <div id="coverGuestName" class="cover-guest-name">Nama Tamu</div>
+      </div>
+
+      <button id="openInvitationBtn" class="btn-open-pink" onclick="openInvitation()">
+        <span data-lux-field="customLabels.openBtn">{{openBtn}}</span>
+        <svg viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- STRUKTUR LAYOUT DESKTOP SPLIT & MOBILE                              -->
+  <!-- =================================================================== -->
+  <div class="layout-wrapper">
+
+    <!-- SIDEBAR DESKTOP (FIXED LEFT PANEL) -->
+    <aside class="sidebar-desktop" aria-hidden="true">
+      <div class="sidebar-desktop-content">
+        <p class="sidebar-desktop-tagline">THE WEDDING CELEBRATION</p>
+        <h2 class="sidebar-desktop-names">{{firstName}} <span>&amp;</span> {{secondName}}</h2>
+        <p class="sidebar-desktop-date">{{weddingDate}}</p>
+        <p class="sidebar-desktop-quote">
+          "Dan di antara tanda-tanda kebesaran-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri, agar kamu cenderung dan merasa tenteram kepadanya."
+        </p>
+      </div>
+    </aside>
+
+    <!-- MAIN SCROLL PANEL (KONTEN UNDANGAN) -->
+    <main class="app-container main-scroll-panel">
+      <div class="main-content">
+
+        <!-- 1. HERO SECTION -->
+        <section class="sec-home" id="home">
+          <div class="hero-arch-frame reveal">
+            <img src="{{homePhotoUrl}}" alt="{{firstName}} &amp; {{secondName}}" />
+            <img src="/assets/ornaments/pink-castle/sticker-save-the-date.svg" alt="Save The Date" class="hero-sticker-badge" />
+          </div>
+
+          <span class="sec-eyebrow reveal delay-1">THE WEDDING OF</span>
+          <h2 class="hero-names reveal delay-2">{{firstName}} <span>&amp;</span> {{secondName}}</h2>
+          <div class="hero-date-badge reveal delay-3">{{weddingDate}}</div>
+
+          <!-- COUNTDOWN TIMER -->
+          <div class="countdown-wrap reveal delay-3">
+            <div class="countdown-card">
+              <span class="cd-number" id="cdDays">00</span>
+              <span class="cd-label">Hari</span>
+            </div>
+            <div class="countdown-card">
+              <span class="cd-number" id="cdHours">00</span>
+              <span class="cd-label">Jam</span>
+            </div>
+            <div class="countdown-card">
+              <span class="cd-number" id="cdMins">00</span>
+              <span class="cd-label">Menit</span>
+            </div>
+            <div class="countdown-card">
+              <span class="cd-number" id="cdSecs">00</span>
+              <span class="cd-label">Detik</span>
+            </div>
+          </div>
+
+          <a href="{{googleCalendarUrl}}" target="_blank" rel="noopener noreferrer" class="btn-cal-link reveal delay-3">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
+            Simpan ke Kalender
+          </a>
+        </section>
+
+        <!-- 2. QUOTE / OPENING GREETING -->
+        <section class="sec-flow" id="quote">
+          <div class="quote-box reveal">
+            <span class="sec-eyebrow" data-lux-field="customLabels.quoteEyebrow">{{quoteSectionEyebrow}}</span>
+            <h2 class="sec-main-title serif" data-lux-field="customLabels.quoteTitle">{{quoteSectionTitle}}</h2>
+            <div class="quote-greeting" data-lux-field="customLabels.openingGreeting">{{openingGreeting}}</div>
+            <blockquote class="quote-body" data-lux-field="openingQuote">{{openingQuote}}</blockquote>
+            <cite class="quote-ref" data-lux-field="openingQuoteRef">{{openingQuoteRef}}</cite>
+          </div>
+        </section>
+
+        <!-- 3. COUPLE SECTION -->
+        <section class="sec-flow" id="couple">
+          <img src="/assets/ornaments/pink-castle/icon-wedding-couple.svg" alt="Couple Icon" style="width: 44px; height: 44px; margin: 0 auto 0.6rem; opacity: 0.85;" class="reveal" />
+          <span class="sec-eyebrow reveal" data-lux-field="customLabels.coupleEyebrow">{{coupleSectionEyebrow}}</span>
+          <h2 class="sec-main-title serif reveal delay-1" data-lux-field="customLabels.coupleTitle">{{coupleSectionTitle}}</h2>
+          <p class="sec-sub reveal delay-2">{{coupleSectionSub}}</p>
+
+          <div class="couple-cards-stack">
+            <!-- GROOM CARD -->
+            <div class="couple-card reveal">
+              <div class="couple-avatar-wrap">
+                <img src="{{secondPhotoUrl}}" alt="{{secondDisplayName}}" />
+              </div>
+              <h3 class="couple-name serif">{{secondDisplayName}}</h3>
+              <p class="couple-parent-text">
+                {{secondParentPrefix}}<br />
+                <strong>{{secondFather}}</strong> &amp; <strong>{{secondMother}}</strong>
+              </p>
+              <a href="https://instagram.com/{{secondInstagram}}" target="_blank" rel="noopener noreferrer" class="btn-ig-pill">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                @{{secondInstagram}}
+              </a>
+            </div>
+
+            <div class="couple-divider-amp">&amp;</div>
+
+            <!-- BRIDE CARD -->
+            <div class="couple-card reveal">
+              <div class="couple-avatar-wrap">
+                <img src="{{firstPhotoUrl}}" alt="{{firstDisplayName}}" />
+              </div>
+              <h3 class="couple-name serif">{{firstDisplayName}}</h3>
+              <p class="couple-parent-text">
+                {{firstParentPrefix}}<br />
+                <strong>{{firstFather}}</strong> &amp; <strong>{{firstMother}}</strong>
+              </p>
+              <a href="https://instagram.com/{{firstInstagram}}" target="_blank" rel="noopener noreferrer" class="btn-ig-pill">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                @{{firstInstagram}}
+              </a>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. EVENTS & AGENDA (UNIVERSAL TOKEN: {{eventDataHtml}}) -->
+        <section class="sec-flow" id="events">
+          <img src="/assets/ornaments/pink-castle/icon-wedding-arch.svg" alt="Wedding Arch" style="width: 44px; height: 44px; margin: 0 auto 0.6rem; opacity: 0.85;" class="reveal" />
+          <span class="sec-eyebrow reveal" data-lux-field="customLabels.eventsEyebrow">{{eventsSectionEyebrow}}</span>
+          <h2 class="sec-main-title serif reveal delay-1" data-lux-field="customLabels.eventsTitle">{{eventsSectionTitle}}</h2>
+          <p class="sec-sub reveal delay-2">Dengan memohon ridho dan rahmat-Nya, rangkaian acara akan diselenggarakan pada:</p>
+
+          <div class="reveal delay-3">
+            {{eventDataHtml}}
+          </div>
+        </section>
+
+        <!-- 5. STORY SECTION (UNIVERSAL TOKEN: {{storySectionHtml}}) -->
+        {{storySectionHtml}}
+
+        <!-- 6. GALLERY SECTION (UNIVERSAL TOKEN: {{gallerySectionHtml}}) -->
+        {{gallerySectionHtml}}
+
+        <!-- 7. DRESS CODE SECTION (UNIVERSAL TOKEN: {{dressCodeHtml}}) -->
+        {{dressCodeHtml}}
+
+        <!-- 8. GIFT SECTION (UNIVERSAL TOKEN: {{giftSectionHtml}}) -->
+        {{giftSectionHtml}}
+
+        <!-- 9. TURUT MENGUNDANG (UNIVERSAL TOKEN: {{turutMengundangHtml}}) -->
+        {{turutMengundangHtml}}
+
+        <!-- 10. WISHES & RSVP SECTION -->
+        <section class="sec-flow" id="rsvp">
+          <img src="/assets/ornaments/pink-castle/congratulations.svg" alt="Wishes Icon" style="width: 42px; height: 42px; margin: 0 auto 0.6rem; opacity: 0.85;" class="reveal" />
+          <span class="sec-eyebrow reveal" data-lux-field="customLabels.wishesEyebrow">{{wishesSectionEyebrow}}</span>
+          <h2 class="sec-main-title serif reveal delay-1" data-lux-field="customLabels.wishesTitle">{{wishesSectionTitle}}</h2>
+          <p class="sec-sub reveal delay-2">{{wishesSectionSub}}</p>
+
+          <!-- RSVP FORM -->
+          <div class="rsvp-form-card reveal delay-3">
+            <form id="rsvpForm" onsubmit="luxSubmitRsvp(event)">
+              <div class="form-group">
+                <label class="form-label" for="rsvpName">Nama Tamu</label>
+                <input type="text" id="rsvpName" name="guestName" class="form-control" placeholder="Nama Anda" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="rsvpStatus">Konfirmasi Kehadiran</label>
+                <select id="rsvpStatus" name="status" class="form-control" required>
+                  <option value="HADIR">✓ Hadir</option>
+                  <option value="TIDAK_HADIR">✕ Maaf, Tidak Bisa Hadir</option>
+                  <option value="RAGU">? Masih Ragu</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="rsvpMessage">Doa &amp; Ucapan Restu</label>
+                <textarea id="rsvpMessage" name="message" class="form-control" placeholder="Tuliskan ucapan restu dan doa hangat Anda..." required></textarea>
+              </div>
+              <button type="submit" class="btn-submit-rsvp">KIRIM UCAPAN &amp; DOA</button>
+            </form>
+          </div>
+
+          <!-- WISHES STREAM (UNIVERSAL TOKEN: {{wishesHtml}}) -->
+          <div class="wishes-stream-wrap reveal delay-3" id="wishesContainer">
+            {{wishesHtml}}
+          </div>
+        </section>
+
+        <!-- 11. CLOSING SECTION -->
+        <section class="sec-closing" id="closing">
+          <div class="closing-photo-wrap reveal">
+            <img src="{{closingPhotoUrl}}" alt="{{firstName}} &amp; {{secondName}}" />
+          </div>
+          <p class="closing-quote reveal delay-1" data-lux-field="customLabels.closingQuote">{{closingQuote}}</p>
+          <p class="closing-sub reveal delay-2" data-lux-field="customLabels.closingSub">{{closingSub}}</p>
+          <h3 class="closing-sign reveal delay-3">{{firstName}} &amp; {{secondName}}</h3>
+          <img src="/assets/ornaments/pink-castle/sticker-love-never-fails.svg" alt="Love Never Fails" style="width: 80px; height: 80px; margin: 1.2rem auto 0; display: block;" class="reveal delay-3" />
+        </section>
+
+      </div><!-- end main-content -->
+    </main>
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- FLOATING NAVIGATION DOCK & AUDIO                                    -->
+  <!-- =================================================================== -->
+  <nav class="bottom-dock dock-hidden">
+    <a href="#home" class="dock-btn">
+      <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      <span>Home</span>
+    </a>
+    <a href="#couple" class="dock-btn">
+      <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+      <span>Couple</span>
+    </a>
+    <a href="#events" class="dock-btn">
+      <svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
+      <span>Acara</span>
+    </a>
+    <a href="#story" class="dock-btn">
+      <svg viewBox="0 0 24 24"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg>
+      <span>Kisah</span>
+    </a>
+    <a href="#rsvp" class="dock-btn">
+      <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+      <span>Ucapan</span>
+    </a>
+    {{qrDockButtonHtml}}
+  </nav>
+
+  <!-- MODAL TIKET QR -->
+  <div class="modal-bg" id="modalBg" onclick="closeModal(event)">
+    <div class="modal-card" onclick="event.stopPropagation()">
+      <button class="modal-close" onclick="closeModal()" aria-label="Tutup Modal">✕</button>
+      {{qrAccessCardHtml}}
+      <div style="margin-top: 1.2rem; padding: 0.9rem; background: rgba(0, 0, 0, 0.03); border: 1px solid rgba(0, 0, 0, 0.08); text-align: center; border-radius: 10px;">
+        <span style="font-size: 0.65rem; letter-spacing: 0.2em; color: var(--text-muted); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 0.4rem;">Voucher Souvenir</span>
+        <div style="font-family: monospace; font-weight: 700; font-size: 0.85rem; color: var(--primary); letter-spacing: 0.12em; padding: 0.45rem; background: rgba(0, 0, 0, 0.05); border: 1px solid rgba(0, 0, 0, 0.08); border-radius: 6px;">SOUVENIR-{{invitationId}}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIGHTBOX GALLERY -->
+  <div class="lightbox-overlay" id="luxLightbox" onclick="luxCloseZoom()">
+    <button class="lightbox-close" onclick="luxCloseZoom()" aria-label="Tutup Zoom">✕</button>
+    <img id="luxLightboxImg" src="" alt="Zoom Foto" onclick="event.stopPropagation()" />
+  </div>
+
+  <!-- AUDIO ELEMENT & FAB -->
+  <audio id="luxAudioPlayer" src="{{audioUrl}}" loop preload="auto"></audio>
+  <button id="musicToggle" class="audio-fab fab-hidden" onclick="luxToggleAudio()" title="Putar / Hentikan Musik">
+    <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+      <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
+    </svg>
+  </button>
+
+  <!-- =================================================================== -->
+  <!-- JAVASCRIPT LOGIC ENGINE (100% GOLDEN STANDARD)                      -->
+  <!-- =================================================================== -->
+  <script>
+    // A. Smart Mobile Fullscreen
+    function requestSmartFullscreen() {
+      const isMobile = window.innerWidth <= 1024 || ("ontouchstart" in window) || (navigator.maxTouchPoints > 0);
+      if (!isMobile) return;
+      try {
+        const docEl = document.documentElement;
+        const req = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+        if (req) {
+          const res = req.call(docEl);
+          if (res && res.catch) res.catch(function () {});
+        }
+      } catch (err) {}
+    }
+
+    // B. Buka Undangan
+    function openInvitation() {
+      requestSmartFullscreen();
+      const cover = document.getElementById("coverOverlay");
+      if (cover) {
+        cover.classList.add("opened");
+        cover.style.pointerEvents = "none";
+        setTimeout(function () {
+          cover.style.display = "none";
+        }, 950);
+      }
+      const fab = document.getElementById("musicToggle");
+      if (fab) fab.classList.remove("fab-hidden");
+      const dock = document.querySelector(".bottom-dock");
+      if (dock) dock.classList.remove("dock-hidden");
+
+      const audio = document.getElementById("luxAudioPlayer");
+      if (audio) {
+        audio.play().then(function () {
+          if (fab) fab.classList.add("playing");
+        }).catch(function () {
+          console.log("Autoplay ditahan oleh browser policy");
+        });
+      }
+
+      setTimeout(function () {
+        triggerScrollReveal();
+        startCountdown();
+      }, 300);
+    }
+
+    // C. Dynamic URL Guest Resolver (?to=, ?v=, ?u=)
+    function resolveGuestName() {
+      try {
+        const p = new URLSearchParams(window.location.search);
+        const gn = p.get("to") || p.get("v") || p.get("u") || "";
+        if (!gn) return;
+        const selectors = [
+          "#coverGuestName", "#guestName", "#guestNameDisplay", ".cover-guest-val", "#guestNameSlot",
+          "#modalGuestName", "#passGuestName", ".guest-recipient-name", "#recipientName"
+        ];
+        selectors.forEach(function (sel) {
+          document.querySelectorAll(sel).forEach(function (el) {
+            el.textContent = gn;
+          });
+        });
+        const rsvpInput = document.getElementById("rsvpName");
+        if (rsvpInput && !rsvpInput.value) {
+          rsvpInput.value = gn;
+        }
+      } catch (e) {}
+    }
+    resolveGuestName();
+    document.addEventListener("DOMContentLoaded", resolveGuestName);
+
+    // D. Toggle Audio
+    function luxToggleAudio() {
+      const audio = document.getElementById("luxAudioPlayer") || document.getElementById("bgAudio");
+      const fab = document.getElementById("musicToggle");
+      if (!audio) return;
+      if (audio.paused) {
+        audio.play().then(function () {
+          if (fab) fab.classList.add("playing");
+        }).catch(function (e) {
+          console.warn("Audio play error:", e);
+        });
+      } else {
+        audio.pause();
+        if (fab) fab.classList.remove("playing");
+      }
+    }
+    window.luxToggleAudio = luxToggleAudio;
+    window.toggleAudio = luxToggleAudio;
+
+    // E. Salin Teks Rekening / Alamat
+    function copyText(text) {
+      if (!navigator.clipboard) {
+        const input = document.createElement("input");
+        input.value = text;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand("copy");
+        document.body.removeChild(input);
+      } else {
+        navigator.clipboard.writeText(text);
+      }
+      showCopyToast("Berhasil disalin: " + text);
+    }
+    window.copyText = copyText;
+    window.luxCopy = function(text, btn) {
+      copyText(text);
+      if (btn) {
+        const oldText = btn.textContent;
+        btn.textContent = "✓ Tersalin!";
+        setTimeout(function() { btn.textContent = oldText; }, 2000);
+      }
+    };
+
+    function showCopyToast(msg) {
+      let toast = document.getElementById("luxCopyToast");
+      if (!toast) {
+        toast = document.createElement("div");
+        toast.id = "luxCopyToast";
+        toast.style.cssText = "position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#231416; color:#fbf5f5; padding:10px 22px; border-radius:999px; font-size:13px; font-weight:600; box-shadow:0 10px 30px rgba(0,0,0,0.4); z-index:99999; border:1px solid rgba(255,255,255,0.18); transition:all 0.3s ease; opacity:0; pointer-events:none;";
+        document.body.appendChild(toast);
+      }
+      toast.textContent = msg;
+      toast.style.opacity = "1";
+      toast.style.transform = "translateX(-50%) translateY(0)";
+      clearTimeout(window._luxCopyToastTimer);
+      window._luxCopyToastTimer = setTimeout(function () {
+        toast.style.opacity = "0";
+        toast.style.transform = "translateX(-50%) translateY(10px)";
+      }, 2200);
+    }
+
+    // F. Modal QR Tiket
+    function openModal() {
+      const modal = document.getElementById("modalBg");
+      if (modal) modal.classList.add("open");
+    }
+    window.openModal = openModal;
+
+    function closeModal(e) {
+      if (!e || e.target === document.getElementById("modalBg") || (e.target && e.target.classList && e.target.classList.contains("modal-close"))) {
+        const modal = document.getElementById("modalBg");
+        if (modal) modal.classList.remove("open");
+      }
+    }
+    window.closeModal = closeModal;
+
+    // G. Form RSVP & Pengiriman Ucapan Real-Time
+    async function luxSubmitRsvp(e) {
+      e.preventDefault();
+      const form = e.target;
+      const btn = form.querySelector("button[type="submit"]");
+      const oldBtnText = btn ? btn.textContent : "";
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = "MENGIRIM...";
+      }
+
+      const name = form.guestName ? form.guestName.value.trim() : (form.name ? form.name.value.trim() : "");
+      const status = form.status ? form.status.value : "HADIR";
+      const message = form.message ? form.message.value.trim() : "";
+
+      try {
+        // Optimistic UI Append to Wishes Stream
+        const container = document.getElementById("wishesContainer");
+        if (container) {
+          const item = document.createElement("div");
+          item.className = "wish-item-card";
+          item.style.cssText = "background: rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.08); border-radius: 12px; padding: 1rem 1.2rem; margin-bottom: 0.75rem; text-align: left; animation: fadeIn 0.5s ease;";
+          item.innerHTML = "<div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.35rem;"><strong style="color: var(--primary); font-size: 0.92rem;">" + (name || "Tamu") + "</strong><span style="font-size: 0.72rem; color: var(--text-muted);">Baru saja (" + status + ")</span></div><p style="margin: 0; font-size: 0.85rem; line-height: 1.5; color: var(--text-main);">" + (message || "Selamat berbahagia!") + "</p>";
+          container.prepend(item);
+        }
+
+        form.reset();
+        showCopyToast("Terima kasih, konfirmasi & doa berhasil dikirim!");
+        if (btn) {
+          btn.textContent = "✓ TERKIRIM!";
+          setTimeout(function () {
+            btn.disabled = false;
+            btn.textContent = oldBtnText;
+          }, 2500);
+        }
+      } catch (err) {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = oldBtnText;
+        }
+      }
+    }
+    window.luxSubmitRsvp = luxSubmitRsvp;
+
+    // H. Countdown Timer
+    function startCountdown() {
+      const targetStr = "{{targetDate}}";
+      const target = new Date(targetStr).getTime();
+      function update() {
+        const now = Date.now();
+        const diff = target - now;
+        if (isNaN(diff) || diff <= 0) {
+          document.getElementById("cdDays").textContent = "00";
+          document.getElementById("cdHours").textContent = "00";
+          document.getElementById("cdMins").textContent = "00";
+          document.getElementById("cdSecs").textContent = "00";
+          return;
+        }
+        document.getElementById("cdDays").textContent = String(Math.floor(diff / 86400000)).padStart(2, "0");
+        document.getElementById("cdHours").textContent = String(Math.floor((diff % 86400000) / 3600000)).padStart(2, "0");
+        document.getElementById("cdMins").textContent = String(Math.floor((diff % 3600000) / 60000)).padStart(2, "0");
+        document.getElementById("cdSecs").textContent = String(Math.floor((diff % 60000) / 1000)).padStart(2, "0");
+      }
+      update();
+      setInterval(update, 1000);
+    }
+
+    // I. Lightbox Zoom
+    function luxOpenZoom(idx) {
+      const photos = document.querySelectorAll(".moment-photo-item img");
+      if (photos[idx]) {
+        const src = photos[idx].getAttribute("src");
+        const box = document.getElementById("luxLightbox");
+        const img = document.getElementById("luxLightboxImg");
+        if (box && img) {
+          img.src = src;
+          box.classList.add("open");
+        }
+      }
+    }
+    window.luxOpenZoom = luxOpenZoom;
+
+    function luxCloseZoom() {
+      const box = document.getElementById("luxLightbox");
+      if (box) box.classList.remove("open");
+    }
+    window.luxCloseZoom = luxCloseZoom;
+
+    // J. Scroll Reveal & Smart Outro Autohide
+    function triggerScrollReveal() {
+      const observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) {
+            e.target.classList.add("is-visible");
+          }
+        });
+      }, { threshold: 0.12 });
+
+      document.querySelectorAll(".reveal").forEach(function (el) {
+        observer.observe(el);
+      });
+    }
+
+    // Smart Outro Autohide: Hide dock & audio when near bottom footer
+    window.addEventListener("scroll", function () {
+      const dock = document.querySelector(".bottom-dock");
+      const fab = document.getElementById("musicToggle");
+      const closing = document.getElementById("closing");
+      if (!closing || !dock) return;
+
+      const closingRect = closing.getBoundingClientRect();
+      const isNearFooter = closingRect.top < window.innerHeight - 70;
+
+      if (isNearFooter) {
+        dock.classList.add("dock-hidden");
+        if (fab) fab.classList.add("fab-hidden");
+      } else {
+        const cover = document.getElementById("coverOverlay");
+        if (cover && cover.classList.contains("opened")) {
+          dock.classList.remove("dock-hidden");
+          if (fab) fab.classList.remove("fab-hidden");
+        }
+      }
+    }, { passive: true });
+
+    document.addEventListener("DOMContentLoaded", function () {
+      triggerScrollReveal();
+    });
+  </script>
+
+</body>
+</html>

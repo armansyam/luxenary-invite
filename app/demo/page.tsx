@@ -9,7 +9,7 @@ interface ThemeItem {
   id: string;
   name: string;
   series: string;
-  category: "premium" | "traditional" | "modern" | string;
+  category: "minimalist" | "premium" | "traditional" | "modern" | string;
   desc: string;
   thumbnailMobile?: string;
   thumbnailDesktop?: string;
@@ -143,9 +143,9 @@ export default function CatalogGridShowcase() {
             <div className="flex items-center gap-2 mt-6 overflow-x-auto scrollbar-none px-4 -mx-4 sm:mx-0 sm:px-0 justify-start sm:justify-center flex-nowrap py-1">
               {[
                 { id: "all", label: "Semua Tema" },
-                { id: "premium", label: "Premium" },
+                { id: "minimalist", label: "Minimalis" },
                 { id: "modern", label: "Modern" },
-                { id: "traditional", label: "Traditional" },
+                { id: "traditional", label: "Tradisional" },
               ].map((cat) => (
                 <button
                   key={cat.id}

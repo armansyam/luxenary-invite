@@ -46,11 +46,27 @@ Sistem memisahkan secara tegas antara aset bawaan tema dan wadah unggahan person
    - **Cakupan:** `COVER_PHOTO` (`{{homePhotoUrl}}`), `LANDING_COVER_DESKTOP` (`{{sidebarPhotoUrl}}`), `GLOBAL_FIXED_BG` (`{{globalBgUrl}}`), `GROOM_PHOTO` (`{{firstPhotoUrl}}`), `BRIDE_PHOTO` (`{{secondPhotoUrl}}`), `CLOSING_COVER` (`{{closingBgStyle}}`), dan `BACKGROUND_MUSIC`.
    - **Implementasi:** Disuntikkan runtime secara dinamis melalui kurung kurawal ganda `{{token}}`.
 
-### E. Pewarisan Palet Bawaan Tema (Default Theme Palette Inheritance)
-Setiap tema master memiliki **identitas warna bawaan (default palette)** yang tercatat di `lib/themeDefaults.ts` dan tabel `Theme` di Admin Settings (`Theme.defaultPalette`):
-- Saat klien memilih tema baru, sistem secara otomatis mewarisi palet bawaan tema tersebut ke undangan klien.
-- Engine menyuntikkan token warna palet (`--primary`, `--secondary`, `--accent`, `--bg-dark`, `--bg-light`) ke dalam `:root`.
-- Fallback di CSS tema (misal `var(--bg-dark, #140204)`) wajib menggunakan nilai hex resmi dari palet default tema tersebut agar 100% harmonis.
+### E. Pewarisan Palet Dinamis & Larangan Mutlak Fallback Hex (Zero Hex Fallback in CSS)
+Setiap tema master memiliki **identitas warna bawaan (default palette)** yang tercatat di `lib/themeDefaults.ts` dan tabel `Theme` di database (`Theme.defaultPalette`):
+- Saat klien memilih tema, sistem secara otomatis menginjeksi palet ke dalam `:root` via token template:
+  ```css
+  :root {
+    --primary: {{colorPrimary}};
+    --secondary: {{colorSecondary}};
+    --accent: {{colorAccent}};
+    --bg-light: {{colorBgLight}};
+    --bg-dark: {{colorBgDark}};
+    --text-main: {{colorTextDark}};
+    --text-muted: color-mix(in srgb, {{colorTextDark}} 70%, transparent);
+  }
+  ```
+- **DILARANG KERAS MENYISIPKAN FALLBACK HEX DI DALAM `var()`:**
+  Di seluruh file CSS tema, gunakan token murni: `var(--primary)`, `var(--bg-dark)`, `var(--text-main)`. Jangan pernah menulis `var(--primary, #hex)` atau `var(--bg-dark, #hex)`. Nilai hex statis di dalam CSS membatalkan fleksibilitas palet dinamis.
+
+### F. Kontrak Mutlak 100% Kustomisasi via CustomLabels (Zero-Edit HTML Contract)
+Tema master yang telah selesai dibangun **TIDAK BOLEH MEMERLUKAN PERUBAHAN KODE HTML LAGI** oleh klien ataupun admin:
+- Seluruh teks antarmuka (badge cover, salam, judul seksi, subjudul, label form RSVP, countdown, hingga salam keluarga di footer) **WAJIB TERIKAT** ke atribut dua arah `data-lux-field="customLabels.<key>"`.
+- Klien dapat mengubah setiap kata di undangan secara instan dari Dashboard/Studio Form Editor tanpa menyentuh satu baris kode pun.
 
 ---
 
@@ -71,6 +87,8 @@ Semua token diapit kurung kurawal ganda `{{...}}`. Saat dirender oleh engine, to
 | `{{weddingDateDay}}` | Hari tanggal (cth: *24*) | — |
 | `{{weddingDateMonth}}` | Bulan angka (cth: *10*) | — |
 | `{{weddingDateYear}}` | Tahun angka (cth: *2026*) | — |
+| `{{coverGuestLabel}}`| Keterangan penerima tamu (*Kepada Yth. Bapak/Ibu/Saudara/i*) | `data-lux-field="customLabels.coverGuestLabel"` |
+| — | Nama tamu undangan di cover (dinamis via `?to=`) | `data-lux-field="guestName"` |
 | `{{openBtn}}` | Label tombol buka (cth: *Buka Undangan*) | `data-lux-field="customLabels.openBtn"` |
 | `{{qrCoverButtonHtml}}`| Tombol akses kartu QR Pass (otomatis dirender jika QR aktif) | — |
 
@@ -94,12 +112,12 @@ Semua token diapit kurung kurawal ganda `{{...}}`. Saat dirender oleh engine, to
 | `{{coupleSectionSub}}` | Pengantar profil mempelai | `data-lux-field="customLabels.coupleSub"` |
 | `{{firstPhotoUrl}}` | Foto mempelai pria | — |
 | `{{firstDisplayName}}` | Nama lengkap mempelai pria | `data-lux-field="groomName"` |
-| `{{groomRole}}` | Peran mempelai pria (cth: *Mempelai Pria*) | — |
+| `{{firstRoleLabel}}` | Peran mempelai pria (cth: *Mempelai Pria*) | `data-lux-field="customLabels.groomRole"` |
 | `{{firstParents}}` | Keterangan putra dari bapak & ibu | `data-lux-field="groomParents"` |
 | `{{firstInstagram}}` | Username Instagram pria (tanpa tanda @) | — |
 | `{{secondPhotoUrl}}` | Foto mempelai wanita | — |
 | `{{secondDisplayName}}`| Nama lengkap mempelai wanita | `data-lux-field="brideName"` |
-| `{{brideRole}}` | Peran mempelai wanita (cth: *Mempelai Wanita*) | — |
+| `{{secondRoleLabel}}` | Peran mempelai wanita (cth: *Mempelai Wanita*) | `data-lux-field="customLabels.brideRole"` |
 | `{{secondParents}}` | Keterangan putri dari bapak & ibu | `data-lux-field="brideParents"` |
 | `{{secondInstagram}}` | Username Instagram wanita (tanpa tanda @) | — |
 
@@ -107,11 +125,25 @@ Semua token diapit kurung kurawal ganda `{{...}}`. Saat dirender oleh engine, to
 
 | Token | Kegunaan | Atribut Binding Live Editor |
 | :--- | :--- | :--- |
+| `{{eventsSectionEyebrow}}` | Subjudul / Eyebrow seksi acara (cth: *SCHEDULE & VENUE*) | `data-lux-field="customLabels.eventsEyebrow"` |
 | `{{eventsSectionTitle}}` | Judul seksi acara (cth: *Rangkaian Acara*) | `data-lux-field="customLabels.eventsTitle"` |
 | `{{eventsSectionSub}}` | Subjudul seksi acara | `data-lux-field="customLabels.eventsSub"` |
 | `{{eventDataHtml}}` | **WAJIB:** Container kartu acara dinamis (Akad, Resepsi, dll.) | — |
 
-### E. Modul Ekosistem Dinamis (Dynamic Feature Modules)
+### E. Seksi 4: Hitung Mundur (Countdown Timer & Kalender)
+
+| Token | Kegunaan | Atribut Binding Live Editor |
+| :--- | :--- | :--- |
+| — | Eyebrow countdown (cth: *SAVE THE DATE*) | `data-lux-field="customLabels.countdownEyebrow"` |
+| — | Judul countdown (cth: *Menghitung Hari Bahagia*) | `data-lux-field="customLabels.countdownTitle"` |
+| — | Subjudul countdown pengantar kehadiran tamu | `data-lux-field="customLabels.countdownSub"` |
+| — | Label satuan hari (*Hari*) | `data-lux-field="customLabels.cdDays"` |
+| — | Label satuan jam (*Jam*) | `data-lux-field="customLabels.cdHours"` |
+| — | Label satuan menit (*Menit*) | `data-lux-field="customLabels.cdMins"` |
+| — | Label satuan detik (*Detik*) | `data-lux-field="customLabels.cdSecs"` |
+| `{{googleCalendarUrl}}` | Tombol simpan kalender (*Simpan ke Google Calendar*) | `data-lux-field="customLabels.saveDateBtn"` |
+
+### F. Modul Ekosistem Dinamis (Dynamic Feature Modules)
 
 Gunakan token mandiri berikut agar tema otomatis terhubung dengan seluruh modul fitur Luxenary:
 
@@ -152,7 +184,7 @@ Gunakan token mandiri berikut agar tema otomatis terhubung dengan seluruh modul 
 {{qrAccessSectionHtml}}
 ```
 
-### F. Seksi Buku Tamu & RSVP (Guest Book)
+### G. Seksi Buku Tamu & RSVP (Guest Book)
 
 ```html
 <section class="sec-flow" id="rsvp">
@@ -214,7 +246,7 @@ Setiap tema **WAJIB** mengirim payload JSON yang cocok dengan kontrak backend:
 ```
 **Aturan Anti-Fake Success:** Dilarang menampilkan status `"TERKIRIM!"` jika `res.ok` bernilai `false`. Selalu tangkap error JSON dari backend dan tampilkan pesan kesalahan nyata kepada pengguna. Prepend ucapan baru ke container feed `#wishesList` secara reaktif.
 
-### G. Seksi Footer & Salam Penutup (Closing Section)
+### H. Seksi Footer & Salam Penutup (Closing Section)
 
 Area footer penutup (`closing-sec` / `site-footer`) wajib menggunakan kanvas **transparan** dan menyematkan token foto dinamis `{{closingBgStyle}}`:
 
@@ -237,7 +269,7 @@ Area footer penutup (`closing-sec` / `site-footer`) wajib menggunakan kanvas **t
     <h2 class="footer-names serif" style="font-size:2.4rem; color:var(--primary); margin-bottom:0.4rem;">
       {{firstName}} &amp; {{secondName}}
     </h2>
-    <p style="font-size:0.75rem; color:rgba(255,255,255,0.7); letter-spacing:0.15em; text-transform:uppercase; margin-top:0.5rem;">
+    <p style="font-size:0.75rem; color:rgba(255,255,255,0.7); letter-spacing:0.15em; text-transform:uppercase; margin-top:0.5rem;" data-lux-field="customLabels.closingFamily">
       Beserta Keluarga Besar Kedua Mempelai
     </p>
   </div>
@@ -283,8 +315,8 @@ Area footer penutup (`closing-sec` / `site-footer`) wajib menggunakan kanvas **t
   background: linear-gradient(
     to bottom,
     rgba(0, 0, 0, 0.15) 0%,
-    color-mix(in srgb, var(--bg-dark, #050507) 45%, transparent) 45%,
-    color-mix(in srgb, var(--bg-dark, #050507) 92%, transparent) 100%
+    color-mix(in srgb, var(--bg-dark) 45%, transparent) 45%,
+    color-mix(in srgb, var(--bg-dark) 92%, transparent) 100%
   );
   pointer-events: none;
   z-index: 1;
@@ -313,11 +345,11 @@ Area footer penutup (`closing-sec` / `site-footer`) wajib menggunakan kanvas **t
 }
 ```
 
-### H. Standar Modal QR Check-In &amp; Voucher Souvenir (Ticket Gateway)
+### I. Standar Modal QR Check-In & Voucher Souvenir (Ticket Gateway)
 
 Engine menyediakan token `{{qrCoverButtonHtml}}` (pada sampul) dan `{{qrDockButtonHtml}}` (pada dock navigasi bawah). Kedua tombol ini memicu pemanggilan JavaScript `onclick="openModal()"`.
 
-Setiap tema **WAJIB** menyertakan markup modal, styling CSS, dan pengendali fungsi berikut:
+Setiap tema **WAJIB** menyertakan markup modal, styling CSS tokenized (tanpa hex fallback), dan pengendali fungsi berikut:
 
 ```html
 <!-- HTML Wajib: Letakkan tepat sebelum </body> atau setelah </nav> -->
@@ -325,9 +357,9 @@ Setiap tema **WAJIB** menyertakan markup modal, styling CSS, dan pengendali fung
   <div class="modal-card" onclick="event.stopPropagation()">
     <button class="modal-close" onclick="closeModal()" aria-label="Tutup Modal">✕</button>
     {{qrAccessCardHtml}}
-    <div style="margin-top: 1.2rem; padding: 0.9rem; background: rgba(0, 0, 0, 0.04); border: 1px solid var(--border, rgba(0,0,0,0.1)); text-align: center; border-radius: 10px;">
-      <span style="font-size: 0.65rem; letter-spacing: 0.2em; color: var(--text-muted); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 0.4rem;">Voucher Souvenir</span>
-      <div style="font-family: monospace; font-weight: 700; font-size: 0.85rem; color: var(--primary); letter-spacing: 0.12em; padding: 0.45rem; background: rgba(0, 0, 0, 0.05); border: 1px solid var(--border, rgba(0,0,0,0.1)); border-radius: 6px;">SOUVENIR-{{invitationId}}</div>
+    <div style="margin-top: 1.2rem; padding: 0.9rem; background: color-mix(in srgb, var(--primary) 5%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 15%, transparent); text-align: center; border-radius: 10px;">
+      <span style="font-size: 0.65rem; letter-spacing: 0.2em; color: var(--text-muted); text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 0.4rem;" data-lux-field="customLabels.souvenirTitle">Voucher Souvenir</span>
+      <div style="font-family: monospace; font-weight: 700; font-size: 0.85rem; color: var(--primary); letter-spacing: 0.12em; padding: 0.45rem; background: color-mix(in srgb, var(--primary) 8%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent); border-radius: 6px;">SOUVENIR-{{invitationId}}</div>
     </div>
   </div>
 </div>
@@ -348,7 +380,45 @@ function closeModal(e) {
 }
 ```
 
-### I. Standar Floating Audio FAB & Visibilitas Dock (Home-Safe Audio & Outro Autohide)
+### J. Standar Dock Navigasi Bawah (Bottom Navigation Dock)
+
+Untuk menjamin seluruh label navigasi dock dapat diterjemahkan atau dikustomisasi oleh klien tanpa mengubah berkas template HTML:
+
+| Label Menu | Teks Default | Atribut Binding Dua Arah |
+| :--- | :--- | :--- |
+| Home | `Home` | `data-lux-field="customLabels.navHome"` |
+| Couple | `Couple` | `data-lux-field="customLabels.navCouple"` |
+| Acara | `Acara` | `data-lux-field="customLabels.navEvents"` |
+| Kisah | `Kisah` | `data-lux-field="customLabels.navStory"` |
+| Ucapan | `Ucapan` | `data-lux-field="customLabels.navWishes"` |
+
+```html
+<nav class="bottom-dock dock-hidden">
+  <a href="#home" class="dock-btn">
+    <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+    <span data-lux-field="customLabels.navHome">Home</span>
+  </a>
+  <a href="#couple" class="dock-btn">
+    <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+    <span data-lux-field="customLabels.navCouple">Couple</span>
+  </a>
+  <a href="#events" class="dock-btn">
+    <svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
+    <span data-lux-field="customLabels.navEvents">Acara</span>
+  </a>
+  <a href="#story" class="dock-btn">
+    <svg viewBox="0 0 24 24"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg>
+    <span data-lux-field="customLabels.navStory">Kisah</span>
+  </a>
+  <a href="#rsvp" class="dock-btn">
+    <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+    <span data-lux-field="customLabels.navWishes">Ucapan</span>
+  </a>
+  {{qrDockButtonHtml}}
+</nav>
+```
+
+### K. Standar Floating Audio FAB & Visibilitas Dock (Home-Safe Audio & Outro Autohide)
 
 Tombol audio mengambang (`#musicToggle` / `.audio-fab`) dan dock navigasi bawah (`.bottom-dock`) wajib mengimplementasikan sinkronisasi visibilitas terpadu:
 1. **Tersembunyi di Seksi Pembuka `#home` (`fab-hidden`):**
@@ -383,7 +453,7 @@ Ikuti 5 langkah mudah berikut setiap kali ingin merilis tema baru ke ekosistem L
    Salin berkas [`themes/starter-blueprint.html`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/themes/starter-blueprint.html) ke subfolder kategori tema Anda:
    - Modern: `themes/modern/<nama_tema>.html`
    - Traditional: `themes/traditional/<nama_tema>.html`
-   - Premium: `themes/premium/<nama_tema>.html`
+   - Minimalis: `themes/minimalist/<nama_tema>.html`
 
 2. **Kustomisasi Gaya & Estetika (CSS):**
    - Atur Google Font lokal tanpa latensi di `<link rel="stylesheet" href="/fonts/fonts.css" />`.

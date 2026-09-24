@@ -36,7 +36,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - **WAJIB VALIDASI RUNTIME & UI/UX NYATA:**
   - Periksa respons aktual endpoint API (status HTTP riil, data JSON faktual, tidak ada pesan error palsu/halusinasi catch-block).
   - Periksa perilaku antarmuka pengguna (UI/UX): transisi halaman tidak hang/deadlock, tidak ada layar macet, dan navigasi berpindah mulus ke halaman tujuan yang tepat.
-  - Sediakan bukti empiris konkret (terminal execution logs, respons API nyata, atau log/rekaman interaksi browser faktual) sebelum menyerahkan hasil ke pengguna.
+  - Sediakan bukti empiris konkret (terminal execution logs, respons API nyata via curl/test script, atau query database riil) sebelum menyerahkan hasil ke pengguna.
 - **Typecheck Statis Tetap Wajib:** `npx tsc --noEmit` tetap harus menghasilkan Exit Code 0 sebagai batas minimum kebersihan kode.
 
 ## 4. Strict Scope Isolation
@@ -64,6 +64,16 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   3. Eksekusi bedah bersih + hapus komentar usang (`replace_file_content`).
   4. Sinkronisasi 4 layer arsitektur (Database riil, Prisma Seeder, Backend API, Frontend UI).
   5. Gerbang bukti empiris (Output `grep_search` 0 match, output `psql` bersih, output `tsc --noEmit` Exit 0).
+
+## 7. LARANGAN PENGGUNAAN BROWSER TOOLS UNTUK KONFIRMASI (CODE-FIRST VERIFICATION ONLY)
+- **DILARANG MENGGUNAKAN BROWSER TOOLS / SUBAGENT UNTUK KONFIRMASI RUTIN:**
+  - Menjalankan browser subagent, merekam video WebP, atau mengambil screenshot browser untuk sekadar "konfirmasi" memakan waktu sangat lama (2-5 menit), berbobot berat, rentan timeout, dan membuang-buang waktu kerja pengguna.
+  - Pengecekan visual browser BUKAN alat verifikasi integritas kode dan tidak boleh dipakai untuk pembuktian rutin.
+- **WAJIB CODE-FIRST & TERMINAL-FIRST VERIFICATION (FAKTUAL, AMAN & CEPAT):**
+  - Seluruh verifikasi fungsional dan integritas sistem WAJIB diperiksa langsung melalui kode sumber (`view_file`, `grep_search`), eksekusi skrip runtime/unit test (`npx tsx`, `curl`, API handler tests), inspeksi data database langsung (`psql`), dan typecheck statis (`npx tsc --noEmit`).
+  - Cara ini 10x lebih cepat, 100% deterministik, tidak membuang waktu, dan langsung menyasar akar logika kode secara faktual.
+- **HANYA BISA DIAKTIFKAN ATAS PERMINTAAN EKSPLISIT PENGGUNA:**
+  - Browser subagent HANYA BOLEH dipanggil apabila pengguna secara eksplisit dan tertulis memberikan perintah: *"buka browser"*, *"uji di browser"*, atau *"rekam layar browser"*. Tanpa instruksi eksplisit tersebut, browser tool TERLARANG digunakan.
 
 # 🎯 Expert Critic & Anti-Yes-Man Protocol (Kritikus Ahli Objektif & Ilmiah)
 - **Bertindak sebagai Kritikus Ahli yang Objektif dan Jujur:**

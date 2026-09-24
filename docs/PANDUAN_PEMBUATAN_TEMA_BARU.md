@@ -8,7 +8,7 @@ Dokumen ini adalah panduan teknis bagi perancang tema (*Theme Designer / Develop
 ## 1. Filosofi Arsitektur Tema: *Single File Component (HTML + CSS + JS)*
 
 Platform Luxenary Invite menggunakan arsitektur **Tema Fisik Mandiri**:
-- Setiap tema disimpan dalam 1 file `.html` utuh di direktori `themes/<series>/<nama-tema>.html` (contoh: `themes/premium/kalandra.html`, `themes/traditional/badrika.html`).
+- Setiap tema disimpan dalam 1 file `.html` utuh di direktori `themes/<series>/<nama-tema>.html` (contoh: `themes/minimalist/kalandra.html`, `themes/traditional/bugis.html`).
 - Tidak memerlukan kompilasi JavaScript rumit di browser tamu; tema disajikan secara instan dengan performa *Core Web Vitals* maksimal.
 - Seluruh aset font menggunakan font lokal mandiri (`/fonts/fonts.css`) berlatensi 0 ms.
 
@@ -103,12 +103,12 @@ function openInvitation() {
 ## 5. Cara Registrasi Tema Baru ke Sistem
 
 1. Buat file HTML baru di dalam folder tema yang sesuai:
-   - `themes/premium/<nama-tema>.html`
+   - `themes/minimalist/<nama-tema>.html`
    - `themes/traditional/<nama-tema>.html`
    - `themes/modern/<nama-tema>.html`
 2. Daftarkan mapping tema di [lib/renderTemplate.ts](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/lib/renderTemplate.ts) pada objek `THEME_MAP`:
    ```typescript
-   "nama-tema": { file: "nama-tema.html", folder: "premium" },
+   "nama-tema": { file: "nama-tema.html", folder: "minimalist" },
    ```
 3. Buka browser dan login ke **Admin Dashboard** (`/admin`).
 4. Masuk ke menu **Themes**, lalu klik tombol **"Sinkronisasi Tema (Scan Disk)"**.

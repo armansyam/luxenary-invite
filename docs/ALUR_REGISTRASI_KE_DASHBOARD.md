@@ -396,10 +396,10 @@ Master file HTML fisik yang menjadi basis kompilasi undangan:
 
 | ID Tema | Nama Tema | Kategori / Seri | Path File Template | Karakter Visual |
 | :--- | :--- | :--- | :--- | :--- |
-| `kalandra` | Kalandra | Premium | `themes/premium/kalandra.html` | Modern, Elegan & Minimalis Editorial |
-| `valente` | Valente | Premium | `themes/premium/valente.html` | High-Fashion, Editorial & Mewah |
-| `aurelia` | Aurelia | Premium | `themes/premium/aurelia.html` | Romantis, Sinematik & Anggun |
-| `artisan` | Artisan | Premium | `themes/premium/artisan.html` | Artistik, Hangat & Vintage |
+| `kalandra` | Kalandra | Minimalist | `themes/minimalist/kalandra.html` | Modern, Elegan & Minimalis Editorial |
+| `valente` | Valente | Minimalist | `themes/minimalist/valente.html` | High-Fashion, Editorial & Mewah |
+| `aurelia` | Aurelia | Minimalist | `themes/minimalist/aurelia.html` | Romantis, Sinematik & Anggun |
+| `artisan` | Artisan | Minimalist | `themes/minimalist/artisan.html` | Artistik, Hangat & Vintage |
 | `badrika` | Badrika | Traditional | `themes/traditional/badrika.html` | Walimatul 'Urs & Saoraja Royal |
 | `candani` | Candani | Traditional | `themes/traditional/candani.html` | Pesona Nusantara Floral |
 | `dillalucky` | Dilla Lucky | Traditional | `themes/traditional/dillalucky.html` | Islami Sakral — Batik Ornament |

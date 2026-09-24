@@ -1,0 +1,1929 @@
+<!--
+ _      _   _  __  __  _____   _   _      _     ____   __   __
+| |    | | | | \ \/ / | ____| | \ | |    / \   |  _ \  \ \ / /
+| |    | | | |  \  /  |  _|   |  \| |   / _ \  | |_) |  \ V / 
+| |___ | |_| |  /  \  | |___  | |\  |  / ___ \ |  _ <    | |  
+|_____| \___/  /_/\_\ |_____| |_| \_| /_/   \_\|_| \_\   |_|  
+
+  ==============================================================
+  STOP! PERHATIAN!
+  --------------------------------------------------------------
+  Sistem dan desain tema ini adalah milik eksklusif Luxenary.
+  Dilarang keras menyalin, menduplikasi, atau menjual ulang 
+  tanpa izin resmi dari pihak Luxenary (luxenary.id).
+  
+  Hak cipta dilindungi undang-undang.
+  ==============================================================
+-->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>The Wedding of {{firstName}} &amp; {{secondName}}</title>
+  
+  <!-- THEME TYPOGRAPHY: 100% Self-Hosted Local Google Fonts (Zero External Latency) -->
+  <link rel="stylesheet" href="/fonts/fonts.css">
+  <link rel="stylesheet" href="/css/modules.css">
+  
+  <style>
+    :root {
+      --primary: #750b0a;
+      --secondary: #9e1514;
+      --accent: #f1d17e;
+      --bg-light: #fbf6ed;
+      --bg-dark: #1a0404;
+      --text-dark: #230808;
+      --toraja-gold: var(--accent, #f1d17e);
+      --toraja-crimson: var(--primary, #750b0a);
+      --toraja-dark: var(--bg-dark, #1a0404);
+      --timeline-gold: var(--toraja-gold);
+      --toraja-card: color-mix(in srgb, var(--primary, #750b0a) 24%, var(--bg-dark, #1a0404) 86%);
+      --theme-card: var(--toraja-card);
+      --border-gold: color-mix(in srgb, var(--accent, #f1d17e) 35%, transparent);
+      --border-gold-bright: color-mix(in srgb, var(--accent, #f1d17e) 80%, transparent);
+      --gold-glow: color-mix(in srgb, var(--accent, #f1d17e) 25%, transparent);
+      --text-muted: color-mix(in srgb, #ffffff 75%, transparent);
+      --radius-sm: 8px;
+      --radius-md: 16px;
+      --radius-lg: 24px;
+      --radius-full: 9999px;
+      --shadow-subtle: 0 4px 20px rgba(0, 0, 0, 0.4);
+      --shadow-elevated: 0 12px 36px rgba(0, 0, 0, 0.6);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html {
+      scroll-behavior: smooth;
+      overflow-x: hidden;
+      width: 100%;
+      max-width: 100%;
+    }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg-dark, #1a0404);
+      color: #ffffff;
+      overflow-x: hidden;
+      width: 100%;
+      max-width: 100%;
+      position: relative;
+      line-height: 1.6;
+    }
+
+    /* TYPOGRAPHY CLASSES */
+    .font-toraja-title, .serif, h1, h2, h3, h4 {
+      font-family: 'Cinzel', 'Cinzel Decorative', Georgia, serif;
+      letter-spacing: 0.08em;
+    }
+    .font-toraja-accent { font-family: 'Great Vibes', cursive; }
+    .font-toraja-quote { font-family: 'Cormorant Garamond', serif; font-style: italic; }
+    .font-toraja-sans { font-family: 'Plus Jakarta Sans', sans-serif; }
+
+    /* ANIMATIONS & MICRO-INTERACTIONS */
+    @keyframes torajaFloat {
+      0%, 100% { transform: translateY(0px) scale(1); filter: drop-shadow(0 8px 25px var(--gold-glow)); }
+      50% { transform: translateY(-8px) scale(1.02); filter: drop-shadow(0 14px 35px var(--border-gold-bright)); }
+    }
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 0.8; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.04); }
+    }
+    @keyframes bounceDown {
+      0%, 100% { transform: translateY(0); opacity: 0.8; }
+      50% { transform: translateY(8px); opacity: 1; }
+    }
+
+    .reveal-on-scroll {
+      opacity: 0;
+      transform: translateY(25px);
+      transition: all 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reveal-on-scroll.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* 1. FIXED BACKGROUND LAYER */
+    .fixed-bg-layer {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100vh;
+      background-image: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--bg-dark, #1a0404) 70%, transparent) 0%,
+        color-mix(in srgb, var(--bg-dark, #1a0404) 70%, transparent) 100%
+      ), url('{{globalBgUrl}}');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* 2. ARSITEKTUR DESKTOP SPLIT & EMULASI MOBILE (GOLDEN RATIO) */
+    .layout-wrapper {
+      display: flex;
+      width: 100%;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    .sidebar-desktop {
+      display: none;
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: calc(100% - 460px);
+      height: 100vh;
+      background: url('{{sidebarPhotoUrl}}') center/cover no-repeat;
+      border-right: 1px solid var(--border-gold);
+      z-index: 10;
+    }
+    .sidebar-desktop::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to top,
+        color-mix(in srgb, var(--bg-dark, #1a0404) 92%, transparent) 0%,
+        color-mix(in srgb, var(--bg-dark, #1a0404) 30%, transparent) 30%,
+        transparent 60%
+      );
+      pointer-events: none;
+    }
+
+    .sidebar-desktop-content {
+      position: absolute;
+      bottom: 4rem;
+      left: 3.5rem;
+      right: 3.5rem;
+      z-index: 20;
+      color: #fff;
+    }
+
+    .sidebar-desktop-content .pa-barre-allo-side {
+      width: 80px;
+      height: auto;
+      margin-bottom: 1.2rem;
+      filter: drop-shadow(0 4px 10px rgba(0,0,0,0.45));
+    }
+
+    .main-scroll-panel {
+      width: 100%;
+      min-height: 100vh;
+      background: transparent;
+      position: relative;
+      z-index: 20;
+    }
+
+    @media (max-width: 899px) {
+      .sidebar-desktop {
+        display: none !important;
+      }
+      .main-scroll-panel {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+        border-left: none !important;
+        border-right: none !important;
+      }
+    }
+
+    @media (min-width: 900px) {
+      .global-background {
+        left: calc(100% - 460px);
+        width: 460px;
+      }
+
+      .sidebar-desktop {
+        display: block;
+        width: calc(100% - 460px);
+      }
+
+      .main-scroll-panel {
+        width: 460px;
+        max-width: 460px;
+        margin-left: calc(100% - 460px);
+        margin-right: 0;
+        min-width: 0;
+        box-shadow: -10px 0 35px rgba(0, 0, 0, 0.5);
+      }
+
+      .cover-overlay {
+        width: 460px !important;
+        left: calc(100% - 460px) !important;
+      }
+
+      .bottom-dock {
+        left: calc(100% - 230px) !important;
+        transform: translate3d(-50%, 0, 0) !important;
+        width: calc(460px - 28px) !important;
+        max-width: calc(460px - 28px) !important;
+        box-sizing: border-box !important;
+        padding: 0.35rem 0.45rem !important;
+        gap: 0.15rem !important;
+        justify-content: space-around !important;
+      }
+      .bottom-dock.dock-hidden {
+        transform: translate3d(-50%, calc(100% + 48px), 0) !important;
+      }
+      .bottom-dock .dock-btn,
+      .bottom-dock .nav-item {
+        padding: 0.25rem 0.25rem !important;
+        font-size: 0.58rem !important;
+        letter-spacing: 0 !important;
+        flex: 1 1 0 !important;
+        min-width: 0 !important;
+      }
+      .bottom-dock .dock-btn span,
+      .bottom-dock .nav-item span {
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        font-size: 0.55rem !important;
+        max-width: 100% !important;
+      }
+      .bottom-dock .dock-btn svg,
+      .bottom-dock .nav-item svg {
+        width: 16px !important;
+        height: 16px !important;
+      }
+
+      .fixed-bg-layer {
+        left: calc(100% - 460px);
+        width: 460px;
+      }
+
+      .cover-names {
+        font-size: clamp(2.2rem, 2.8rem, 3.2rem) !important;
+        overflow-wrap: break-word !important;
+      }
+
+      .sec-main-title,
+      .section-title {
+        font-size: clamp(1.75rem, 2.1rem, 2.3rem) !important;
+        overflow-wrap: break-word !important;
+        word-break: break-word !important;
+      }
+
+      .sec-flow,
+      .toraja-section {
+        padding: 4.5rem 1.8rem;
+      }
+    }
+
+    /* 3. COVER SCREEN POP-UP (PINTU GERBANG PEMBUKA) */
+    .cover-overlay {
+      position: fixed; inset: 0; z-index: 9999;
+      display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+      text-align: center; padding: calc(3rem + env(safe-area-inset-top, 0px)) 1.5rem calc(2.8rem + env(safe-area-inset-bottom, 0px));
+      overflow: hidden;
+      height: 100vh; height: 100dvh;
+      background: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0.35) 0%,
+        color-mix(in srgb, var(--primary, #750b0a) 35%, transparent) 35%,
+        color-mix(in srgb, var(--bg-dark, #1a0404) 82%, transparent) 70%,
+        var(--bg-dark, #1a0404) 100%
+      ), url('{{landingCoverUrl}}') center/cover no-repeat;
+      transition: transform 0.85s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.85s ease;
+    }
+    .cover-overlay.opened {
+      transform: translateY(-100%); pointer-events: none; opacity: 0;
+    }
+
+    .cover-top {
+      display: flex; flex-direction: column; align-items: center; width: 100%;
+    }
+    .pa-barre-allo-hero {
+      width: 100%; max-width: 96px; height: auto; margin-bottom: 0.8rem;
+      animation: torajaFloat 5s ease-in-out infinite;
+      filter: drop-shadow(0 6px 20px rgba(0,0,0,0.7));
+    }
+    .cover-badge {
+      font-size: 0.72rem; letter-spacing: 0.32em; text-transform: uppercase; color: var(--toraja-gold);
+      font-weight: 600; text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+    }
+
+    .cover-bottom {
+      display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 100%;
+      position: relative; z-index: 2;
+    }
+    .cover-watermark-left,
+    .cover-watermark-center,
+    .cover-watermark-right {
+      position: absolute;
+      bottom: 0;
+      height: auto;
+      pointer-events: none;
+      z-index: 1;
+      filter: drop-shadow(0 4px 15px rgba(0, 0, 0, 0.8));
+    }
+    .cover-watermark-left {
+      left: clamp(-15px, -2vw, 0px);
+      width: clamp(130px, 34vw, 185px);
+      opacity: 0.22;
+    }
+    .cover-watermark-center {
+      left: 50%;
+      transform: translateX(-50%);
+      width: clamp(95px, 25vw, 140px);
+      opacity: 0.20;
+    }
+    .cover-watermark-right {
+      right: clamp(-15px, -2vw, 0px);
+      transform: scaleX(-1);
+      width: clamp(130px, 34vw, 185px);
+      opacity: 0.22;
+    }
+    .cover-names {
+      font-size: clamp(2.4rem, 8vw, 3.6rem); font-family: 'Cinzel', serif; color: var(--toraja-gold);
+      text-shadow: 0 4px 25px rgba(0,0,0,0.9); margin-bottom: 1.2rem; font-weight: 600; line-height: 1.15;
+      letter-spacing: 0.08em;
+    }
+    .cover-guest-card {
+      background: color-mix(in srgb, var(--primary, #750b0a) 32%, var(--bg-dark, #1a0404) 80%);
+      border: 1px solid var(--border-gold);
+      border-radius: var(--radius-md); padding: 1.1rem 1.8rem; margin-bottom: 1.4rem;
+      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 20px var(--gold-glow);
+      max-width: 340px; width: 100%;
+    }
+    .cover-guest-lbl { font-size: 0.68rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--toraja-gold); }
+    .cover-guest-val { font-family: 'Cinzel', serif; font-size: 1.2rem; color: #fff; margin-top: 0.25rem; font-weight: 600; letter-spacing: 0.05em; }
+
+    .btn-buka-undangan {
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem;
+      background: linear-gradient(135deg, var(--toraja-crimson), color-mix(in srgb, var(--toraja-crimson) 80%, black));
+      color: #ffffff; border: 1.5px solid var(--border-gold-bright);
+      padding: 0.95rem 2.4rem; border-radius: var(--radius-full);
+      font-size: 0.85rem; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase;
+      cursor: pointer; transition: all 0.35s ease;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.6), 0 0 20px var(--gold-glow);
+    }
+    .btn-buka-undangan:hover {
+      transform: translateY(-2px) scale(1.03);
+      box-shadow: 0 12px 30px rgba(0,0,0,0.7), 0 0 30px var(--border-gold-bright);
+      background: var(--toraja-gold); color: var(--toraja-dark);
+    }
+
+    /* 4. SECTIONS COMMON STYLES & LIVING TORAJAN BORDERS */
+    .sec-flow, .toraja-section {
+      padding: 4.8rem 1.8rem; text-align: center; position: relative;
+    }
+    .toraja-frame-top {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 24px;
+      background-image: url('/assets/ornaments/toraja/border-pa-kadang-pao-seamless.webp');
+      background-repeat: repeat-x;
+      background-size: 256px 24px;
+      z-index: 5;
+      opacity: 0.72;
+      pointer-events: none;
+      animation: scrollTorajaBorder 28s linear infinite;
+      -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.95) 20%, rgba(0,0,0,0) 100%);
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,0.95) 20%, rgba(0,0,0,0) 100%);
+    }
+    .toraja-frame-bottom {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 24px;
+      background-image: url('/assets/ornaments/toraja/border-pa-kadang-pao-seamless.webp');
+      background-repeat: repeat-x;
+      background-size: 256px 24px;
+      z-index: 5;
+      opacity: 0.72;
+      pointer-events: none;
+      animation: scrollTorajaBorderReverse 28s linear infinite;
+      -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0.95) 20%, rgba(0,0,0,0) 100%);
+      mask-image: linear-gradient(to top, rgba(0,0,0,0.95) 20%, rgba(0,0,0,0) 100%);
+    }
+
+    @keyframes scrollTorajaBorder {
+      0% { background-position-x: 0; }
+      100% { background-position-x: -256px; }
+    }
+    @keyframes scrollTorajaBorderReverse {
+      0% { background-position-x: 0; }
+      100% { background-position-x: 256px; }
+    }
+    .sec-eyebrow, .section-eyebrow {
+      font-size: 0.72rem; letter-spacing: 0.28em; text-transform: uppercase; color: var(--toraja-gold);
+      font-weight: 600; margin-bottom: 0.5rem; display: block;
+    }
+    .sec-main-title, .section-title {
+      font-family: 'Cinzel', serif; font-size: 2.1rem; color: #ffffff; letter-spacing: 0.08em;
+      margin-bottom: 1rem; line-height: 1.25;
+    }
+    .sec-sub, .section-subtitle {
+      font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; max-width: 360px; margin: 0 auto 2.2rem;
+    }
+
+    /* 5. SEKSI 1: HOME / OPENING HERO (100VH) */
+    .sec-home,
+    .sec-home#home,
+    section#home,
+    .slide-opening#home {
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding: clamp(2rem, 5vh, 3.5rem) 1.5rem clamp(1.5rem, 4vh, 2.5rem);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      background: transparent !important;
+      background-image: none !important;
+      background-color: transparent !important;
+      box-sizing: border-box;
+    }
+    .sec-home > .reveal-on-scroll {
+      position: relative;
+      z-index: 2;
+    }
+    /* TORAJA HOME SKYLINE WATERMARK SILHOUETTES */
+    .home-watermark-left,
+    .home-watermark-center,
+    .home-watermark-right {
+      position: absolute;
+      bottom: 0;
+      height: auto;
+      pointer-events: none;
+      z-index: 1;
+      filter: drop-shadow(0 4px 15px rgba(0, 0, 0, 0.8));
+    }
+    .home-watermark-left {
+      left: clamp(-20px, -3vw, 0px);
+      width: clamp(135px, 35vw, 190px);
+      opacity: 0.20;
+    }
+    .home-watermark-center {
+      left: 50%;
+      transform: translateX(-50%);
+      width: clamp(95px, 24vw, 135px);
+      opacity: 0.18;
+    }
+    .home-watermark-right {
+      right: clamp(-20px, -3vw, 0px);
+      transform: scaleX(-1);
+      width: clamp(135px, 35vw, 190px);
+      opacity: 0.20;
+    }
+    .sec-home#home::before,
+    section#home::before,
+    .slide-opening#home::before {
+      display: none !important;
+    }
+    .home-tongkonan-wrap {
+      width: 110px;
+      height: auto;
+      margin: 0 auto 1.2rem;
+      animation: torajaFloat 5s ease-in-out infinite;
+    }
+    .home-tongkonan-wrap img {
+      width: 100%;
+      height: auto;
+      filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.45));
+    }
+    .home-tongkonan-wrap.mini {
+      width: 44px;
+      margin: 0 auto 0.4rem;
+      animation: none;
+    }
+    /* HOME ARCH PHOTO FRAME */
+    .home-arch-wrap {
+      position: relative;
+      width: clamp(190px, 54vw, 230px);
+      height: clamp(250px, 68vw, 295px);
+      margin: 0.5rem auto 0.7rem;
+      border-radius: 160px 160px 16px 16px;
+      padding: 5px;
+      background: linear-gradient(
+        135deg,
+        var(--toraja-gold) 0%,
+        color-mix(in srgb, var(--bg-dark) 80%, transparent) 50%,
+        var(--toraja-gold) 100%
+      );
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65), 0 0 15px color-mix(in srgb, var(--toraja-gold) 20%, transparent);
+    }
+    .home-arch-inner {
+      width: 100%;
+      height: 100%;
+      border-radius: 156px 156px 12px 12px;
+      overflow: hidden;
+      position: relative;
+      background: var(--bg-dark);
+      border: 1px solid var(--border-gold);
+    }
+    .home-arch-inner img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center top;
+      display: block;
+      filter: contrast(1.03) saturate(1.05);
+    }
+    .home-arch-inner::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to bottom,
+        transparent 60%,
+        color-mix(in srgb, var(--bg-dark) 55%, transparent) 100%
+      );
+      pointer-events: none;
+    }
+    .home-arch-bottom-ornament {
+      position: absolute;
+      bottom: -14px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 96%;
+      height: auto;
+      max-height: 44px;
+      object-fit: contain !important;
+      z-index: 10;
+      pointer-events: none;
+      filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.9));
+    }
+
+    /* HORIZONTAL RESPONSIVE NAMES WHEN HOME PHOTO IS ACTIVE */
+    .home-names-row {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(1.3rem, 4.8vw, 1.9rem);
+      color: var(--toraja-gold);
+      line-height: 1.15;
+      margin: 0.35rem auto 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      white-space: nowrap;
+      max-width: 92%;
+      text-shadow: 0 3px 15px rgba(0,0,0,0.85);
+      letter-spacing: 0.04em;
+    }
+    .home-names-row .amp {
+      font-family: 'Great Vibes', cursive;
+      font-size: 1.15em;
+      color: #ffffff;
+      font-weight: normal;
+    }
+
+    .home-names {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(2.4rem, 8vw, 3.4rem);
+      color: var(--toraja-gold);
+      line-height: 1.15;
+      margin-bottom: 1rem;
+      text-shadow: 0 4px 20px rgba(0,0,0,0.8);
+    }
+    .home-names span {
+      font-family: 'Great Vibes', cursive;
+      font-size: 0.8em;
+      color: #ffffff;
+      display: block;
+      margin: 0.2rem 0;
+    }
+    .home-date-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: color-mix(in srgb, var(--toraja-card) 85%, transparent);
+      border: 1px solid var(--border-gold);
+      border-radius: var(--radius-full);
+      padding: 0.5rem 1.4rem;
+      font-size: 0.8rem;
+      letter-spacing: 0.15em;
+      color: var(--toraja-gold);
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+    }
+
+    /* COUNTDOWN TIMER SHRINE */
+    .countdown-wrap {
+      width: 100%;
+      max-width: 360px;
+      margin: 0 auto 1.5rem;
+    }
+    .countdown-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.6rem;
+    }
+    .cd-item, .countdown-item {
+      background: color-mix(in srgb, var(--toraja-card) 90%, transparent);
+      border: 1px solid var(--border-gold);
+      border-radius: var(--radius-md);
+      padding: 0.9rem 0.4rem;
+      text-align: center;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+    }
+    .cd-num, .countdown-num {
+      font-family: 'Cinzel', serif;
+      font-size: 1.6rem;
+      color: var(--toraja-gold);
+      font-weight: 700;
+      line-height: 1;
+    }
+    .cd-lbl, .countdown-lbl {
+      font-size: 0.62rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-top: 0.35rem;
+    }
+    .btn-cal {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: color-mix(in srgb, var(--toraja-crimson) 40%, transparent);
+      border: 1px solid var(--border-gold);
+      color: var(--toraja-gold);
+      padding: 0.65rem 1.4rem;
+      border-radius: var(--radius-full);
+      font-size: 0.78rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      text-decoration: none;
+      transition: all 0.3s;
+      margin-top: 0.8rem;
+    }
+    .btn-cal:hover {
+      background: var(--toraja-gold);
+      color: var(--toraja-dark);
+    }
+
+    /* 5B. SEKSI PETUAH & DOA RESTU (QUOTE PLAQUE) */
+    .quote-plaque {
+      background: var(--toraja-card);
+      border: 1px solid var(--border-gold);
+      border-radius: var(--radius-lg);
+      padding: 2.4rem 1.6rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      position: relative;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    /* 6. COUPLE SECTION (SEAMLESS PROFILE - NO CARD) */
+    .couple-profile-wrap {
+      width: 100%;
+      max-width: 440px;
+      margin: 0 auto 2.8rem;
+      position: relative;
+      text-align: center;
+    }
+    /* TORAJA COUPLE PHOTO FRAME (3D ATAP TONGKONAN MAHKOTA & PORTRAIT BOX) */
+    .couple-photo-frame {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 0 auto 1.4rem;
+      position: relative;
+    }
+    .couple-atap-mahkota {
+      width: clamp(165px, 48vw, 205px);
+      height: auto;
+      margin-bottom: -38px;
+      z-index: 1;
+      position: relative;
+      pointer-events: none;
+      filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.75));
+      mask-image: linear-gradient(to bottom, black 70%, rgba(0, 0, 0, 0.2) 95%, transparent 100%);
+      -webkit-mask-image: linear-gradient(to bottom, black 70%, rgba(0, 0, 0, 0.2) 95%, transparent 100%);
+    }
+    .couple-photo-box {
+      width: clamp(145px, 42vw, 175px);
+      height: clamp(195px, 56vw, 235px);
+      border-radius: 8px;
+      padding: 4px;
+      background: linear-gradient(
+        135deg,
+        var(--toraja-gold) 0%,
+        color-mix(in srgb, var(--toraja-crimson) 60%, var(--bg-dark) 40%) 50%,
+        var(--toraja-gold) 100%
+      );
+      box-shadow: 
+        0 -6px 20px rgba(0, 0, 0, 0.8),
+        0 10px 28px rgba(0, 0, 0, 0.65), 
+        0 0 16px var(--gold-glow);
+      position: relative;
+      z-index: 2;
+      box-sizing: border-box;
+    }
+    .couple-photo-inner {
+      width: 100%;
+      height: 100%;
+      border-radius: 5px;
+      overflow: hidden;
+      position: relative;
+      background: var(--bg-dark);
+      border: 1px solid var(--border-gold);
+    }
+    .couple-photo-inner img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center top;
+      display: block;
+      filter: contrast(1.03) saturate(1.05);
+    }
+    .couple-photo-inner::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to bottom,
+        transparent 65%,
+        color-mix(in srgb, var(--bg-dark) 50%, transparent) 100%
+      );
+      pointer-events: none;
+    }
+    /* SUDUT SIKU PASSURA' PADA BINGKAI FOTO PROFIL COUPLE (4 SUDUT) */
+    .couple-corner-passura {
+      position: absolute;
+      width: clamp(34px, 10vw, 40px);
+      height: auto;
+      z-index: 6;
+      pointer-events: none;
+      filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.85));
+    }
+    .couple-corner-passura.corner-tl {
+      top: -4px;
+      left: -4px;
+      transform: scaleX(-1);
+    }
+    .couple-corner-passura.corner-tr {
+      top: -4px;
+      right: -4px;
+    }
+    .couple-corner-passura.corner-bl {
+      bottom: -4px;
+      left: -4px;
+      transform: scale(-1);
+    }
+    .couple-corner-passura.corner-br {
+      bottom: -4px;
+      right: -4px;
+      transform: scaleY(-1);
+    }
+    .couple-name {
+      font-family: 'Cinzel', serif; font-size: clamp(1.4rem, 5vw, 1.8rem); color: var(--toraja-gold); font-weight: 600;
+      margin-bottom: 0.35rem; letter-spacing: 0.05em; line-height: 1.25;
+    }
+    .couple-title-full {
+      font-size: 0.95rem; color: #ffffff; margin-bottom: 0.8rem; font-weight: 500; line-height: 1.4;
+    }
+    .couple-parents {
+      font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 1.2rem;
+    }
+    .couple-parents strong {
+      color: #ffffff; font-weight: 600;
+    }
+    .couple-ig {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: color-mix(in srgb, var(--toraja-crimson) 40%, transparent);
+      border: 1px solid var(--border-gold); border-radius: var(--radius-full);
+      padding: 0.5rem 1.2rem; font-size: 0.78rem; color: var(--toraja-gold);
+      text-decoration: none; transition: all 0.3s ease;
+    }
+    .couple-ig:hover {
+      background: var(--toraja-gold); color: var(--toraja-dark);
+    }
+
+    /* COUPLE ETHNIC DIVIDER */
+    .couple-divider {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1.2rem;
+      margin: 0.5rem auto 2.4rem;
+      width: 100%;
+      max-width: 260px;
+    }
+    .couple-divider-line {
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(
+        to right,
+        transparent,
+        var(--border-gold),
+        transparent
+      );
+    }
+    .couple-divider-symbol {
+      font-family: 'Great Vibes', cursive;
+      font-size: 2.8rem;
+      color: var(--toraja-gold);
+      line-height: 1;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
+    }
+
+    /* TORAJA EVENTS & VENUE HARMONIZATION */
+    .event-unified-venue-card {
+      background: var(--toraja-card) !important;
+      border: 1px solid var(--border-gold) !important;
+      border-radius: var(--radius-lg) !important;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .ev-venue-unified {
+      font-family: 'Cinzel', serif !important;
+      color: var(--toraja-gold) !important;
+      font-weight: 600;
+    }
+    .btn-map-outline {
+      border-radius: var(--radius-full) !important;
+      border: 1px solid var(--border-gold) !important;
+      color: var(--toraja-gold) !important;
+      background: color-mix(in srgb, var(--toraja-crimson) 30%, transparent) !important;
+      padding: 0.65rem 1.8rem !important;
+      font-weight: 600 !important;
+      letter-spacing: 0.15em !important;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+      transition: all 0.3s ease !important;
+    }
+    .btn-map-outline:hover {
+      background: var(--toraja-gold) !important;
+      color: var(--toraja-dark) !important;
+      box-shadow: 0 6px 20px var(--gold-glow);
+    }
+
+    /* TORAJA CARD CORNER WATERMARK (OPSI 1: 2 SUDUT DIAGONAL 12%) */
+    .quote-plaque,
+    .event-unified-venue-card,
+    .bank-card,
+    .gift-card,
+    .access-pass-card,
+    .rsvp-form-box {
+      position: relative;
+      overflow: hidden;
+    }
+    .quote-plaque::before,
+    .event-unified-venue-card::before,
+    .bank-card::before,
+    .gift-card::before,
+    .access-pass-card::before,
+    .rsvp-form-box::before {
+      content: '';
+      position: absolute;
+      top: -4px;
+      left: -4px;
+      width: clamp(75px, 22vw, 95px);
+      height: clamp(75px, 22vw, 95px);
+      background: url('/assets/ornaments/toraja/sudut-flourish-acanthus-toraja.webp') no-repeat top left / contain;
+      opacity: 0.12;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .quote-plaque::after,
+    .event-unified-venue-card::after,
+    .bank-card::after,
+    .gift-card::after,
+    .access-pass-card::after,
+    .rsvp-form-box::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      right: -4px;
+      width: clamp(75px, 22vw, 95px);
+      height: clamp(75px, 22vw, 95px);
+      background: url('/assets/ornaments/toraja/sudut-flourish-acanthus-toraja.webp') no-repeat bottom right / contain;
+      transform: rotate(180deg);
+      opacity: 0.12;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .quote-plaque > *,
+    .event-unified-venue-card > *,
+    .bank-card > *,
+    .gift-card > *,
+    .access-pass-card > *,
+    .rsvp-form-box > * {
+      position: relative;
+      z-index: 2;
+    }
+
+    /* TORAJA LOVE STORY TIMELINE CONTRAST */
+    .journey-timeline .sc-label,
+    .journey-chapters .sc-label {
+      color: var(--toraja-gold) !important;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.85) !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.28em !important;
+    }
+    .journey-timeline::before,
+    .journey-chapters::before {
+      background: linear-gradient(
+        to bottom,
+        var(--toraja-gold),
+        color-mix(in srgb, var(--toraja-gold) 40%, transparent) 70%,
+        transparent
+      ) !important;
+    }
+    .journey-timeline .story-chapter-block::before,
+    .journey-chapters .story-chapter-block::before {
+      background: var(--toraja-gold) !important;
+      box-shadow: 0 0 10px 2px color-mix(in srgb, var(--toraja-gold) 65%, transparent),
+                  0 0 20px color-mix(in srgb, var(--toraja-gold) 35%, transparent) !important;
+    }
+
+    /* 7. GALLERY & GIFT & RSVP STYLES */
+    .gift-card, .bank-card {
+      background: var(--theme-card); border: 1px solid var(--border-gold);
+      border-radius: var(--radius-md); padding: 1.8rem 1.4rem; margin-bottom: 1.4rem;
+      text-align: center;
+    }
+    .access-pass-card {
+      background: var(--toraja-card) !important;
+      border: 1px solid var(--border-gold) !important;
+    }
+    .gift-bank-name {
+      font-family: 'Cinzel', serif; font-size: 1.15rem; color: var(--toraja-gold); margin-bottom: 0.5rem;
+    }
+    .gift-acc-num {
+      font-family: 'Cinzel', monospace; font-size: 1.35rem; letter-spacing: 0.1em; color: #ffffff; margin-bottom: 0.4rem;
+    }
+    .gift-acc-holder {
+      font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.2rem;
+    }
+    .btn-copy {
+      background: color-mix(in srgb, var(--bg-dark, #1a0404) 85%, transparent);
+      color: var(--toraja-gold); border: 1px solid var(--border-gold);
+      padding: 0.55rem 1.4rem; border-radius: var(--radius-full);
+      font-size: 0.78rem; font-weight: 600; letter-spacing: 0.1em; cursor: pointer; transition: all 0.3s ease;
+    }
+    .btn-copy:hover {
+      background: var(--toraja-gold); color: var(--toraja-dark);
+    }
+
+    .rsvp-form-box {
+      background: var(--theme-card); border: 1px solid var(--border-gold);
+      border-radius: var(--radius-lg); padding: 2rem 1.6rem; text-align: left;
+    }
+    .form-group { margin-bottom: 1.2rem; }
+    .form-group label {
+      display: block; font-size: 0.78rem; color: var(--toraja-gold); margin-bottom: 0.4rem; font-weight: 600; letter-spacing: 0.05em;
+    }
+    .form-in, .form-sel, .form-ta {
+      width: 100%; background: color-mix(in srgb, var(--bg-dark, #1a0404) 85%, transparent);
+      border: 1px solid var(--border-gold); color: #ffffff; padding: 0.75rem 1rem; border-radius: 10px;
+      font-family: inherit; font-size: 16px; outline: none; transition: border-color 0.3s ease;
+    }
+    .form-in:focus, .form-sel:focus, .form-ta:focus {
+      border-color: var(--border-gold-bright);
+    }
+    .btn-rsvp-submit {
+      width: 100%; background: var(--toraja-crimson); color: #ffffff; border: 1.5px solid var(--border-gold-bright);
+      padding: 0.85rem; border-radius: 12px; font-family: inherit; font-size: 0.85rem; font-weight: 600;
+      letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: all 0.3s ease;
+      box-shadow: 0 6px 20px var(--gold-glow);
+    }
+    .btn-rsvp-submit:hover { box-shadow: 0 10px 28px var(--border-gold-bright); }
+
+    .wishes-stream-wrap {
+      margin-top: 2rem; max-height: 340px; overflow-y: auto; overscroll-behavior: contain; padding-right: 0.4rem;
+    }
+    .wish-item {
+      background: var(--theme-card); border: 1px solid var(--border-gold);
+      border-radius: 14px; padding: 1.1rem 1.2rem; margin-bottom: 0.8rem; text-align: left;
+    }
+
+    /* 8. OUTRO 100VH ADAPTIVE FOOTER */
+    .site-footer {
+      min-height: 100vh;
+      min-height: 100dvh;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: clamp(2.5rem, 6vh, 4.5rem) 1.5rem calc(80px + env(safe-area-inset-bottom, 0px));
+      text-align: center;
+      position: relative;
+      background-size: cover;
+      background-position: center;
+    }
+    .site-footer.has-closing-photo {
+      justify-content: space-between !important;
+    }
+    .site-footer.has-closing-photo::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to top,
+        color-mix(in srgb, var(--bg-dark, #1a0404) 95%, transparent) 0%,
+        color-mix(in srgb, var(--bg-dark, #1a0404) 55%, transparent) 45%,
+        color-mix(in srgb, var(--bg-dark, #1a0404) 15%, transparent) 100%
+      );
+      z-index: 1;
+      pointer-events: none;
+    }
+    .site-footer.has-closing-photo > * {
+      position: relative;
+      z-index: 2;
+    }
+    .tongkonan-closing-hero {
+      width: 100%;
+      max-width: 100px;
+      height: auto;
+      margin: 0 auto 1.4rem;
+      display: block;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.6));
+    }
+    .site-footer.has-closing-photo .tongkonan-closing-hero {
+      max-width: 75px;
+      margin: 0 auto 0.8rem;
+    }
+    .site-footer.has-closing-photo .closing-content-box {
+      margin-top: auto;
+    }
+    .closing-thankyou {
+      font-family: 'Great Vibes', cursive; font-size: 3.2rem; color: var(--toraja-gold);
+      margin-bottom: 0.8rem; line-height: 1.2; text-shadow: 0 4px 20px rgba(0,0,0,0.8);
+    }
+
+    /* 9. FLOATING BOTTOM DOCK & AUDIO FAB */
+    .bottom-dock {
+      position: fixed; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); left: 50%;
+      transform: translate3d(-50%, 0, 0); z-index: 100; display: flex; align-items: center; justify-content: space-around;
+      gap: 0.15rem;
+      background: color-mix(in srgb, var(--bg-dark, #1a0404) 85%, transparent);
+      border: 1px solid var(--border-gold); border-radius: var(--radius-full);
+      padding: 0.35rem 0.5rem; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 10px 35px rgba(0,0,0,0.7), 0 0 20px var(--gold-glow);
+      transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+      width: calc(100% - 24px);
+      max-width: 436px;
+      box-sizing: border-box;
+    }
+    body.lux-at-home-zone .bottom-dock {
+      transform: translate3d(-50%, calc(100% + 48px), 0) !important; opacity: 0 !important; pointer-events: none !important;
+    }
+    body.lux-at-home-zone .music-fab,
+    .music-fab.fab-hidden {
+      transform: scale(0.6) translateY(-20px) !important; opacity: 0 !important; pointer-events: none !important;
+    }
+    .bottom-dock.dock-hidden {
+      transform: translate3d(-50%, calc(100% + 48px), 0) !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+    .dock-btn, .bottom-dock .nav-item {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      color: var(--text-muted); text-decoration: none; padding: 0.25rem 0.3rem;
+      border-radius: var(--radius-full); font-size: 0.62rem; letter-spacing: 0; transition: all 0.25s;
+      flex: 1 1 0; min-width: 0; background: transparent; border: none; cursor: pointer;
+    }
+    .dock-btn span, .bottom-dock .nav-item span {
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.55rem; max-width: 100%;
+    }
+    .dock-btn svg, .bottom-dock .nav-item svg { width: 17px; height: 17px; fill: currentColor; margin-bottom: 0.15rem; }
+    .dock-btn:hover, .dock-btn.active, .bottom-dock .nav-item:hover, .bottom-dock .nav-item.active {
+      color: var(--toraja-gold); background: color-mix(in srgb, var(--toraja-crimson) 40%, transparent);
+    }
+    /* Harmonized QR TAMU in dock */
+    .bottom-dock .qr-btn, .bottom-dock button.nav-item {
+      background: transparent !important;
+      border: none !important;
+      color: var(--text-muted) !important;
+      box-shadow: none !important;
+    }
+    .bottom-dock .qr-btn:hover, .bottom-dock button.nav-item:hover {
+      color: var(--toraja-gold) !important;
+      background: color-mix(in srgb, var(--toraja-crimson) 40%, transparent) !important;
+    }
+
+    .music-fab {
+      position: fixed; top: calc(18px + env(safe-area-inset-top, 0px)); right: calc(18px + env(safe-area-inset-right, 0px));
+      width: 44px; height: 44px; border-radius: 50%;
+      background: color-mix(in srgb, var(--toraja-crimson) 80%, transparent);
+      border: 1.5px solid var(--border-gold-bright); color: var(--toraja-gold);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; box-shadow: 0 6px 20px rgba(0,0,0,0.6); z-index: 100;
+      backdrop-filter: blur(14px); transition: all 0.3s ease;
+    }
+    .music-fab.playing { animation: pulseGlow 2s infinite ease-in-out; }
+    .music-fab svg { width: 20px; height: 20px; fill: currentColor; }
+
+    /* TOAST NOTIFICATION */
+    .lux-toast {
+      position: fixed; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); left: 50%;
+      transform: translateX(-50%) translateY(20px); opacity: 0; pointer-events: none;
+      background: color-mix(in srgb, var(--toraja-card) 95%, transparent);
+      border: 1px solid var(--border-gold-bright); color: #ffffff;
+      padding: 0.7rem 1.6rem; border-radius: var(--radius-full); font-size: 0.8rem;
+      font-weight: 600; letter-spacing: 0.08em; z-index: 99999;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.7), 0 0 20px var(--gold-glow);
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .lux-toast.show {
+      transform: translateX(-50%) translateY(0); opacity: 1; pointer-events: auto;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- FIXED BACKGROUND LAYER -->
+  <div class="fixed-bg-layer"></div>
+
+  <!-- FLOATING AUDIO CONTROL -->
+  <button id="musicToggle" class="music-fab" aria-label="Toggle Musik" onclick="luxToggleAudio()">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9 18V5l12-2v13"></path>
+      <circle cx="6" cy="18" r="3"></circle>
+      <circle cx="18" cy="16" r="3"></circle>
+    </svg>
+  </button>
+  <audio id="bgAudio" src="{{audioUrl}}" loop preload="auto"></audio>
+
+  <!-- 1. COVER OVERLAY (PINTU GERBANG PEMBUKA) -->
+  <div id="coverOverlay" class="cover-overlay">
+    <!-- Watermark Tongkonan 3D (Sudut Bawah Kiri, Tengah Tampak Depan, Kanan Mirror) -->
+    <img src="/assets/ornaments/toraja/tongkonan-perspektif-3d.webp" alt="" class="cover-watermark-left" aria-hidden="true">
+    <img src="/assets/ornaments/toraja/tongkonan-depan-3d.webp" alt="" class="cover-watermark-center" aria-hidden="true">
+    <img src="/assets/ornaments/toraja/tongkonan-perspektif-3d.webp" alt="" class="cover-watermark-right" aria-hidden="true">
+
+    <div class="cover-top">
+      <img src="/assets/ornaments/toraja/tongkonan-depan-3d.webp" alt="Rumah Tongkonan" class="pa-barre-allo-hero" />
+      <span class="cover-badge" data-lux-field="customLabels.coverBadge">{{coverBadge}}</span>
+    </div>
+
+    <div class="cover-bottom">
+      <h1 class="cover-names font-toraja-title">{{firstName}} &amp; {{secondName}}</h1>
+      
+      <div class="cover-guest-card">
+        <div class="cover-guest-lbl" data-lux-field="customLabels.coverGuestLabel">KEPADA YTH. BAPAK/IBU/SAUDARA/I:</div>
+        <div class="cover-guest-val" id="guestNameSlot">{{guestName}}</div>
+      </div>
+
+      <button type="button" class="btn-buka-undangan" onclick="openInvitation()" data-lux-field="customLabels.openBtn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+        <span>{{openBtnText}}</span>
+      </button>
+
+      {{qrCoverButtonHtml}}
+    </div>
+  </div>
+
+  <!-- 2. DESKTOP SPLIT LAYOUT (>= 900px) -->
+  <div class="layout-wrapper">
+    <!-- DESKTOP FIXED SIDEBAR (HERO WIDESCREEN) -->
+    <aside class="sidebar-desktop">
+      <div class="sidebar-desktop-content">
+        <img 
+          src="/assets/ornaments/toraja/tongkonan-depan-3d.webp" 
+          alt="Rumah Tongkonan" 
+          class="pa-barre-allo-side" 
+          style="width: 78px; height: auto; margin-bottom: 1.2rem; filter: drop-shadow(0 6px 18px rgba(0,0,0,0.6));" 
+        />
+        <div class="font-toraja-title" style="font-size: 0.8rem; letter-spacing: 0.28em; color: var(--toraja-gold); text-transform: uppercase; margin-bottom: 0.5rem;">
+          {{weddingTagline}}
+        </div>
+        <h1 class="font-toraja-title" style="font-size: 3.2rem; color: #ffffff; line-height: 1.1; margin-bottom: 0.8rem; font-weight: 600;">
+          {{firstName}} &amp; {{secondName}}
+        </h1>
+        <div class="font-toraja-title" style="font-size: 0.95rem; letter-spacing: 0.15em; color: var(--toraja-gold); text-transform: uppercase; margin-bottom: 1.2rem;">
+          {{weddingDate}}
+        </div>
+        <p class="font-toraja-quote" style="font-size: 1.1rem; line-height: 1.6; max-width: 480px; color: var(--text-muted); font-style: italic;">
+          "{{openingQuote}}"
+        </p>
+      </div>
+    </aside>
+
+    <!-- MAIN SCROLL PANEL (460PX) -->
+    <main class="main-scroll-panel">
+      
+      <!-- SEKSI 1: OPENING HERO (100VH STANDALONE) -->
+      <section class="sec-home" id="home">
+        <!-- Top & Bottom Toraja Frames -->
+        <div class="toraja-frame-top"></div>
+        <div class="toraja-frame-bottom"></div>
+
+        <!-- Siluet Atap Tongkonan Bawah (Kiri Perspektif, Tengah Depan, Kanan Mirror) -->
+        <img src="/assets/ornaments/toraja/atap-tongkonan-perspektif.webp" alt="" class="home-watermark-left" aria-hidden="true" />
+        <img src="/assets/ornaments/toraja/atap-tongkonan-depan.webp" alt="" class="home-watermark-center" aria-hidden="true" />
+        <img src="/assets/ornaments/toraja/atap-tongkonan-perspektif.webp" alt="" class="home-watermark-right" aria-hidden="true" />
+
+        {{#if hasCustomHomePhoto}}
+        <!-- MODE DENGAN FOTO HOME (ARCH FRAME) -->
+        <div class="reveal-on-scroll" style="width: 100%;">
+          <div class="home-tongkonan-wrap mini">
+            <img src="/assets/ornaments/toraja/tongkonan-depan-3d.webp" alt="Rumah Tongkonan" />
+          </div>
+          <span class="sec-eyebrow" data-lux-field="customLabels.openingGreeting" style="font-size:0.62rem; margin-bottom:2px;">{{openingGreeting}}</span>
+          <span class="sec-eyebrow" data-lux-field="weddingTagline" style="letter-spacing:0.25em; font-size:0.58rem; opacity:0.85;">{{weddingTagline}}</span>
+        </div>
+
+        <div class="reveal-on-scroll" style="width: 100%;">
+          <div class="home-arch-wrap">
+            <div class="home-arch-inner">
+              <img src="{{homePhotoUrl}}" alt="{{firstName}} &amp; {{secondName}}" />
+            </div>
+            <!-- Ornamen Pembatas Bawah Bingkai Foto Home (Opsi 3) -->
+            <img src="/assets/ornaments/toraja/divider-spiral-tedong-toraja.webp" alt="" class="home-arch-bottom-ornament" aria-hidden="true" />
+          </div>
+          
+          <h1 class="home-names-row">
+            <span>{{firstName}}</span>
+            <span class="amp">&amp;</span>
+            <span>{{secondName}}</span>
+          </h1>
+
+          <div class="home-date-badge" style="margin-bottom: 0.6rem; padding: 0.35rem 1rem; font-size: 0.72rem;">
+            <span>{{weddingDateDay}}</span>/<span>{{weddingDateMonth}}</span> • <span>{{weddingDateYear}}</span>
+          </div>
+        </div>
+
+        <div class="reveal-on-scroll" style="width: 100%; max-width: 380px;">
+          <!-- COUNTDOWN SHRINE -->
+          <div class="countdown-wrap" style="margin-bottom: 0.6rem;">
+            <div class="countdown-grid" id="countdownGrid" data-target="{{targetDate}}">
+              <div class="cd-item"><div class="cd-num" id="cdDays">00</div><div class="cd-lbl" data-lux-field="customLabels.cdDays">Hari</div></div>
+              <div class="cd-item"><div class="cd-num" id="cdHours">00</div><div class="cd-lbl" data-lux-field="customLabels.cdHours">Jam</div></div>
+              <div class="cd-item"><div class="cd-num" id="cdMinutes">00</div><div class="cd-lbl" data-lux-field="customLabels.cdMins">Menit</div></div>
+              <div class="cd-item"><div class="cd-num" id="cdSeconds">00</div><div class="cd-lbl" data-lux-field="customLabels.cdSecs">Detik</div></div>
+            </div>
+            
+            <!-- Tombol Google Calendar -->
+            <a href="{{googleCalendarUrl}}" target="_blank" class="btn-cal" style="padding: 0.5rem 1rem; font-size: 0.75rem; margin-top: 0.6rem;">
+              <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              Simpan ke Google Calendar
+            </a>
+          </div>
+
+          <div class="scroll-indicator" style="display:flex; justify-content:center; animation: bounceDown 2.2s infinite; color: var(--toraja-gold); margin-top: 6px;">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path d="M12 5v14M5 12l7 7 7-7" />
+            </svg>
+          </div>
+        </div>
+        {{/if}}
+
+        {{#unless hasCustomHomePhoto}}
+        <!-- MODE TANPA FOTO (KONSEP AWAL TIPOGRAFI & ILUSTRASI MEGAH) -->
+        <div class="reveal-on-scroll" style="width: 100%;">
+          <div class="home-tongkonan-wrap">
+            <img src="/assets/ornaments/toraja/tongkonan-depan-3d.webp" alt="Rumah Tongkonan" />
+          </div>
+          <span class="sec-eyebrow" data-lux-field="customLabels.openingGreeting">{{openingGreeting}}</span>
+          <span class="sec-eyebrow" data-lux-field="weddingTagline" style="letter-spacing:0.32em; margin-top:4px; font-size:0.68rem;">{{weddingTagline}}</span>
+          
+          <div class="home-date-badge">
+            <span>{{weddingDateDay}}</span>/<span>{{weddingDateMonth}}</span> • <span>{{weddingDateYear}}</span>
+          </div>
+        </div>
+
+        <div class="reveal-on-scroll" style="width: 100%; margin: auto 0; padding: 1rem 0;">
+          <h1 class="home-names">
+            {{firstName}}
+            <span>&amp;</span>
+            {{secondName}}
+          </h1>
+        </div>
+
+        <div class="reveal-on-scroll" style="width: 100%; max-width: 380px;">
+          <!-- COUNTDOWN SHRINE -->
+          <div class="countdown-wrap">
+            <div class="countdown-grid" id="countdownGrid" data-target="{{targetDate}}">
+              <div class="cd-item"><div class="cd-num" id="cdDays">00</div><div class="cd-lbl" data-lux-field="customLabels.cdDays">Hari</div></div>
+              <div class="cd-item"><div class="cd-num" id="cdHours">00</div><div class="cd-lbl" data-lux-field="customLabels.cdHours">Jam</div></div>
+              <div class="cd-item"><div class="cd-num" id="cdMinutes">00</div><div class="cd-lbl" data-lux-field="customLabels.cdMins">Menit</div></div>
+              <div class="cd-item"><div class="cd-num" id="cdSeconds">00</div><div class="cd-lbl" data-lux-field="customLabels.cdSecs">Detik</div></div>
+            </div>
+            
+            <!-- Tombol Google Calendar -->
+            <a href="{{googleCalendarUrl}}" target="_blank" class="btn-cal">
+              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              Simpan ke Google Calendar
+            </a>
+          </div>
+
+          <div class="scroll-indicator" style="display:flex; justify-content:center; animation: bounceDown 2.2s infinite; color: var(--toraja-gold); margin-top: 10px;">
+            <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path d="M12 5v14M5 12l7 7 7-7" />
+            </svg>
+          </div>
+        </div>
+        {{/unless}}
+      </section>
+
+      <!-- SEKSI 2: PETUAH & AYAT SUCI (QUOTE) -->
+      <section id="quote" class="sec-flow reveal-on-scroll">
+        <span class="sec-eyebrow" data-lux-field="customLabels.quoteEyebrow">{{quoteSectionEyebrow}}</span>
+        <h2 class="sec-main-title" data-lux-field="customLabels.quoteTitle">{{quoteSectionTitle}}</h2>
+        
+        <div class="quote-plaque">
+          <img 
+            src="/assets/ornaments/toraja/tongkonan-depan-3d.webp" 
+            alt="Rumah Tongkonan" 
+            style="width: 72px; height: auto; margin: 0 auto 1.2rem; display: block; filter: drop-shadow(0 6px 16px rgba(0,0,0,0.6));" 
+          />
+          <p class="font-toraja-quote" style="font-size: 1.15rem; line-height: 1.7; color: #ffffff; margin-bottom: 1.2rem;" data-lux-field="customLabels.openingQuote">
+            "{{openingQuote}}"
+          </p>
+          <span style="font-size: 0.78rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--toraja-gold); font-weight: 600;" data-lux-field="customLabels.openingQuoteRef">
+            {{openingQuoteRef}}
+          </span>
+        </div>
+      </section>
+
+      <!-- SEKSI 3: MEMPELAI (THE COUPLE) -->
+      <section id="couple" class="sec-flow reveal-on-scroll">
+        <span class="sec-eyebrow" data-lux-field="customLabels.coupleEyebrow">{{coupleSectionEyebrow}}</span>
+        <h2 class="sec-main-title" data-lux-field="customLabels.coupleTitle">{{coupleSectionTitle}}</h2>
+        <p class="sec-sub" data-lux-field="customLabels.coupleSub">{{coupleSectionSub}}</p>
+
+        <!-- MEMPELAI PRIA -->
+        <div class="couple-profile-wrap">
+          <div class="couple-photo-frame">
+            <img 
+              src="/assets/ornaments/toraja/atap-tongkonan-depan.webp" 
+              alt="" 
+              class="couple-atap-mahkota" 
+              aria-hidden="true" 
+            />
+            <div class="couple-photo-box">
+              <div class="couple-photo-inner">
+                <img src="{{groomPhotoUrl}}" alt="{{groomName}}" />
+              </div>
+              <!-- 4 Sudut Siku Passura' Toraja -->
+              <img src="/assets/ornaments/toraja/sudut-siku-passura-toraja.webp" alt="" class="couple-corner-passura corner-tl" aria-hidden="true" />
+              <img src="/assets/ornaments/toraja/sudut-siku-passura-toraja.webp" alt="" class="couple-corner-passura corner-tr" aria-hidden="true" />
+              <img src="/assets/ornaments/toraja/sudut-siku-passura-toraja.webp" alt="" class="couple-corner-passura corner-bl" aria-hidden="true" />
+              <img src="/assets/ornaments/toraja/sudut-siku-passura-toraja.webp" alt="" class="couple-corner-passura corner-br" aria-hidden="true" />
+            </div>
+          </div>
+          <span class="sec-eyebrow" style="font-size:0.75rem; margin-bottom: 0.3rem;">{{groomRole}}</span>
+          <h3 class="couple-name">{{groomDisplayName}}</h3>
+          <div class="couple-title-full">{{groomFullName}}</div>
+          <p class="couple-parents">
+            {{firstParentPrefix}}<br>
+            <strong>{{firstFather}}</strong> &amp; <strong>{{firstMother}}</strong>
+          </p>
+          {{#if groomInstagram}}
+          <a href="https://instagram.com/{{groomInstagram}}" target="_blank" rel="noopener noreferrer" class="couple-ig">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+            <span>@{{groomInstagram}}</span>
+          </a>
+          {{/if}}
+        </div>
+
+        <!-- COUPLE ETHNIC DIVIDER -->
+        <div class="couple-divider reveal-on-scroll">
+          <span class="couple-divider-line"></span>
+          <span class="couple-divider-symbol">&amp;</span>
+          <span class="couple-divider-line"></span>
+        </div>
+
+        <!-- MEMPELAI WANITA -->
+        <div class="couple-profile-wrap">
+          <div class="couple-photo-frame">
+            <img 
+              src="/assets/ornaments/toraja/atap-tongkonan-depan.webp" 
+              alt="" 
+              class="couple-atap-mahkota" 
+              aria-hidden="true" 
+            />
+            <div class="couple-photo-box">
+              <div class="couple-photo-inner">
+                <img src="{{bridePhotoUrl}}" alt="{{brideName}}" />
+              </div>
+              <!-- 4 Sudut Siku Passura' Toraja -->
+              <img src="/assets/ornaments/toraja/sudut-siku-passura-toraja.webp" alt="" class="couple-corner-passura corner-tl" aria-hidden="true" />
+              <img src="/assets/ornaments/toraja/sudut-siku-passura-toraja.webp" alt="" class="couple-corner-passura corner-tr" aria-hidden="true" />
+              <img src="/assets/ornaments/toraja/sudut-siku-passura-toraja.webp" alt="" class="couple-corner-passura corner-bl" aria-hidden="true" />
+              <img src="/assets/ornaments/toraja/sudut-siku-passura-toraja.webp" alt="" class="couple-corner-passura corner-br" aria-hidden="true" />
+            </div>
+          </div>
+          <span class="sec-eyebrow" style="font-size:0.75rem; margin-bottom: 0.3rem;">{{brideRole}}</span>
+          <h3 class="couple-name">{{brideDisplayName}}</h3>
+          <div class="couple-title-full">{{brideFullName}}</div>
+          <p class="couple-parents">
+            {{secondParentPrefix}}<br>
+            <strong>{{secondFather}}</strong> &amp; <strong>{{secondMother}}</strong>
+          </p>
+          {{#if brideInstagram}}
+          <a href="https://instagram.com/{{brideInstagram}}" target="_blank" rel="noopener noreferrer" class="couple-ig">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+            <span>@{{brideInstagram}}</span>
+          </a>
+          {{/if}}
+        </div>
+      </section>
+
+      <!-- SEKSI 4: RANGKAIAN ACARA (EVENTS) -->
+      <section id="events" class="sec-flow reveal-on-scroll">
+        <span class="sec-eyebrow" data-lux-field="customLabels.eventsEyebrow">{{eventsSectionEyebrow}}</span>
+        <h2 class="sec-main-title" data-lux-field="customLabels.eventsTitle">{{eventsSectionTitle}}</h2>
+        <p class="sec-sub" data-lux-field="customLabels.eventsSub">{{eventsSectionSub}}</p>
+
+        <!-- EVENT CARDS CONTAINER -->
+        {{eventDataHtml}}
+      </section>
+
+      <!-- SEKSI 5: KISAH KASIH (LOVE STORY) -->
+      {{#if showStory}}
+      <section id="story" class="sec-flow reveal-on-scroll">
+        <span class="sec-eyebrow" data-lux-field="customLabels.storyEyebrow">{{storySectionEyebrow}}</span>
+        <h2 class="sec-main-title" data-lux-field="customLabels.storyTitle">{{storySectionTitle}}</h2>
+        
+        <div class="journey-timeline reveal-on-scroll">
+          {{storyItemsHtml}}
+        </div>
+      </section>
+      {{/if}}
+
+      <!-- SEKSI 6: GALERI KENANGAN (GALLERY) -->
+      <a id="gallery" style="display:none;"></a>
+      {{gallerySectionHtml}}
+
+      <!-- SEKSI 7: PANDUAN BUSANA (DRESS CODE) -->
+      {{dressCodeHtml}}
+
+      <!-- SEKSI 8: SIARAN LANGSUNG (LIVE STREAMING) -->
+      {{liveStreamingHtml}}
+
+      <!-- SEKSI 9: FILTER INSTAGRAM STORY -->
+      {{weddingFilterHtml}}
+
+      <!-- SEKSI 10: TANDA KASIH (WEDDING GIFT) -->
+      {{giftSectionHtml}}
+
+      <!-- SEKSI 11: TURUT MENGUNDANG -->
+      {{turutMengundangHtml}}
+
+      <!-- SEKSI 12: KENANGAN TAMU (GUEST MEMORIES BOOTH) -->
+      {{memoriesSectionHtml}}
+
+      <!-- SEKSI 13: KARTU AKSES QR CHECK-IN TAMU -->
+      {{qrAccessSectionHtml}}
+
+      <!-- SEKSI 14: RSVP & UNTAIAN DOA (WISHES) -->
+      <section id="rsvp" class="sec-flow reveal-on-scroll">
+        <span class="sec-eyebrow" data-lux-field="customLabels.rsvpEyebrow">BUKU TAMU DIGITAL</span>
+        <h2 class="sec-main-title" data-lux-field="customLabels.rsvpTitle">{{rsvpTitle}}</h2>
+        <p class="sec-sub" data-lux-field="customLabels.wishesSub">{{wishesSectionSub}}</p>
+
+        <div class="rsvp-form-box">
+          <form id="rsvpForm" onsubmit="luxSubmitRsvp(event)">
+            <div class="form-group">
+              <label class="form-lbl" for="rsvpName" data-lux-field="customLabels.rsvpNameLabel">Nama Tamu</label>
+              <input type="text" id="rsvpName" name="name" class="form-in" required placeholder="Nama Anda" value="{{guestName}}">
+            </div>
+            <div class="form-group">
+              <label class="form-lbl" for="rsvpStatus" data-lux-field="customLabels.rsvpStatusLabel">Konfirmasi Kehadiran</label>
+              <select id="rsvpStatus" name="status" class="form-sel">
+                <option value="HADIR">Hadir dengan Sukacita</option>
+                <option value="TIDAK_HADIR">Mohon Maaf, Berhalangan Hadir</option>
+                <option value="RAGU">Masih Ragu / Menyesuaikan</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-lbl" for="rsvpPax" data-lux-field="customLabels.rsvpCountLabel">Jumlah Tamu</label>
+              <select id="rsvpPax" name="pax" class="form-sel">
+                <option value="1">1 Orang</option>
+                <option value="2">2 Orang</option>
+                <option value="3">3 Orang</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-lbl" for="rsvpMessage" data-lux-field="customLabels.rsvpMessageLabel">Untaian Doa &amp; Harapan</label>
+              <textarea id="rsvpMessage" name="message" class="form-ta" rows="4" required placeholder="Tuliskan doa restu untuk kedua mempelai..."></textarea>
+            </div>
+            <button type="submit" id="rsvpSubmitBtn" class="btn-rsvp-submit" data-lux-field="customLabels.rsvpBtnText">
+              {{rsvpBtnText}}
+            </button>
+          </form>
+        </div>
+
+        <!-- DAFTAR UCAPAN & DOA -->
+        <div class="wishes-stream-wrap" id="wishesStream">
+          {{wishesHtml}}
+        </div>
+      </section>
+
+      <!-- SEKSI 15: VENDOR PERNIKAHAN (WEDDING VENDORS) -->
+      {{vendorsSectionHtml}}
+
+      <!-- SEKSI 16: PENUTUP (KURRESUMANGA' - 100VH ADAPTIVE FOOTER) -->
+      <footer class="site-footer {{closingPhotoClass}}" style="{{closingBgStyle}}">
+        <img src="/assets/ornaments/toraja/tongkonan-depan-3d.webp" alt="Rumah Tongkonan Toraja" class="tongkonan-closing-hero" />
+        <div class="closing-content-box">
+          <div class="closing-thankyou">Kurresumanga'</div>
+          <p class="font-toraja-quote" style="font-size: 1.15rem; line-height: 1.7; color: #ffffff; max-width: 360px; margin: 0 auto 1.5rem;" data-lux-field="customLabels.closingQuote">
+            "{{closingQuote}}"
+          </p>
+          <span style="font-size: 0.82rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--toraja-gold); font-weight: 600;" data-lux-field="customLabels.closingSub">
+            {{closingSub}}
+          </span>
+          <div class="font-toraja-title" style="font-size: 1.8rem; color: #ffffff; margin-top: 1.8rem; font-weight: 600;">
+            {{firstName}} &amp; {{secondName}}
+          </div>
+        </div>
+      </footer>
+
+    </main>
+  </div>
+
+  <!-- FLOATING BOTTOM DOCK NAVIGATION -->
+  <nav class="bottom-dock" id="bottomDock">
+    <a href="#home" class="dock-btn">
+      <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+      <span>Home</span>
+    </a>
+    <a href="#couple" class="dock-btn">
+      <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+      <span>Couple</span>
+    </a>
+    <a href="#events" class="dock-btn">
+      <svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/></svg>
+      <span>Acara</span>
+    </a>
+    <a href="#story" class="dock-btn">
+      <svg viewBox="0 0 24 24"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg>
+      <span>Kisah</span>
+    </a>
+    <a href="#gallery" class="dock-btn">
+      <svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+      <span>Galeri</span>
+    </a>
+    <a href="#gift" class="dock-btn">
+      <svg viewBox="0 0 24 24"><path d="M20 6h-2.18c.11-.31.18-.65.18-1 0-1.66-1.34-3-3-3-1.05 0-1.96.54-2.5 1.35l-.5.67-.5-.68C10.96 2.54 10.05 2 9 2 7.34 2 6 3.34 6 5c0 .35.07.69.18 1H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-5-2c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM9 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm11 15H4v-2h16v2zm0-5H4V8h5.08L7 10.83 8.62 12 11 8.76V14h2V8.76L15.38 12 17 10.83 14.92 8H20v6z"/></svg>
+      <span>Kado</span>
+    </a>
+    <a href="#rsvp" class="dock-btn">
+      <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+      <span>Ucapan</span>
+    </a>
+    {{qrDockButtonHtml}}
+  </nav>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="luxToast" class="lux-toast">Berhasil disalin!</div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    // Smart Mobile Fullscreen
+    function requestSmartFullscreen() {
+      const isMobile = window.innerWidth <= 1024 || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+      if (!isMobile) return;
+      try {
+        const docEl = document.documentElement;
+        const req = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+        if (req) {
+          const res = req.call(docEl);
+          if (res && res.catch) res.catch(function () {});
+        }
+      } catch (err) {}
+    }
+
+    // Buka Undangan
+    function openInvitation() {
+      requestSmartFullscreen();
+      const cover = document.getElementById('coverOverlay');
+      if (cover) cover.classList.add('opened');
+      const dock = document.getElementById('bottomDock');
+      if (dock) dock.classList.remove('dock-hidden');
+      const audio = document.getElementById('bgAudio');
+      if (audio && !window.__DISABLE_AUDIO__ && new URLSearchParams(window.location.search).get("autoplay") !== "1" && window === window.top) {
+        audio.play().then(function () {
+          const btn = document.getElementById('musicToggle');
+          if (btn) btn.classList.add('playing');
+        }).catch(function () {});
+      }
+      startCountdown();
+      initScrollAnimations();
+      initHomeZoneGuard();
+      initDockScrollSpy();
+    }
+
+    // Home Zone Guard (Auto-hide dock at 100vh hero)
+    function initHomeZoneGuard() {
+      const home = document.getElementById('home');
+      function checkHomeZone() {
+        if (!home) return;
+        const rect = home.getBoundingClientRect();
+        if (rect.bottom > 150) {
+          document.body.classList.add('lux-at-home-zone');
+        } else {
+          document.body.classList.remove('lux-at-home-zone');
+        }
+      }
+      window.addEventListener('scroll', checkHomeZone, { passive: true });
+      checkHomeZone();
+    }
+
+    // Smart Dock & Controls Autohide on Scroll
+    (function initSmartControls() {
+      const dock = document.getElementById('bottomDock') || document.querySelector('.bottom-dock');
+      const fab = document.getElementById('musicToggle');
+      if (!dock && !fab) return;
+
+      let lastScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+      let ticking = false;
+      const SCROLL_THRESHOLD = 12;
+      const TOP_REVEAL_ZONE = 70;
+
+      function setVisible(visible) {
+        if (visible) {
+          if (dock) dock.classList.remove('dock-hidden');
+          if (fab) fab.classList.remove('fab-hidden');
+        } else {
+          if (dock) dock.classList.add('dock-hidden');
+          if (fab) fab.classList.add('fab-hidden');
+        }
+      }
+
+      function updateControls() {
+        const currentScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+        const windowHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+        const docHeight = Math.max(
+          document.body.scrollHeight,
+          document.documentElement.scrollHeight,
+          document.body.offsetHeight,
+          document.documentElement.offsetHeight
+        );
+        const isNearBottom = (currentScrollY + windowHeight) >= (docHeight - 70);
+
+        if (currentScrollY <= TOP_REVEAL_ZONE) {
+          setVisible(true);
+          lastScrollY = currentScrollY;
+          ticking = false;
+          return;
+        }
+
+        const delta = currentScrollY - lastScrollY;
+
+        // Opsi 2 (Ultra-Clean Outro): Sembunyikan dock dan tombol musik di ujung bawah
+        // Jika tamu scroll-up (delta < -SCROLL_THRESHOLD), segera munculkan kembali kontrol
+        if (isNearBottom) {
+          if (delta < -SCROLL_THRESHOLD) {
+            setVisible(true);
+          } else {
+            setVisible(false);
+          }
+          lastScrollY = currentScrollY;
+          ticking = false;
+          return;
+        }
+
+        if (Math.abs(delta) >= SCROLL_THRESHOLD) {
+          if (delta > 0) {
+            setVisible(false);
+          } else {
+            setVisible(true);
+          }
+          lastScrollY = currentScrollY;
+        }
+
+        ticking = false;
+      }
+
+      window.addEventListener('scroll', () => {
+        if (!ticking) {
+          window.requestAnimationFrame(updateControls);
+          ticking = true;
+        }
+      }, { passive: true });
+
+      if (dock) {
+        dock.querySelectorAll('a, .dock-btn, .nav-item').forEach(link => {
+          link.addEventListener('click', () => {
+            setVisible(true);
+          });
+        });
+      }
+    })();
+
+    // Smart Dock ScrollSpy & Click State Sync
+    function initDockScrollSpy() {
+      const dock = document.getElementById('bottomDock') || document.querySelector('.bottom-dock');
+      if (!dock) return;
+
+      const links = Array.from(dock.querySelectorAll('a.dock-btn, a.nav-item'));
+      const sectionMap = [];
+
+      links.forEach(link => {
+        const href = link.getAttribute('href');
+        if (href && href.startsWith('#')) {
+          const targetId = href.slice(1);
+          const targetEl = document.getElementById(targetId);
+          if (targetEl) {
+            sectionMap.push({ id: targetId, link, el: targetEl });
+          }
+        }
+      });
+
+      function setActive(targetId) {
+        links.forEach(link => {
+          const href = link.getAttribute('href');
+          if (href === '#' + targetId) {
+            link.classList.add('active');
+          } else {
+            link.classList.remove('active');
+          }
+        });
+      }
+
+      // Default active to home
+      setActive('home');
+
+      // 1. Click Handler: immediate highlight
+      links.forEach(link => {
+        link.addEventListener('click', function () {
+          const href = this.getAttribute('href');
+          if (href && href.startsWith('#')) {
+            setActive(href.slice(1));
+          }
+        });
+      });
+
+      // 2. ScrollSpy via IntersectionObserver
+      if ('IntersectionObserver' in window && sectionMap.length > 0) {
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              setActive(entry.target.id);
+            }
+          });
+        }, {
+          rootMargin: '-20% 0px -60% 0px',
+          threshold: 0
+        });
+
+        sectionMap.forEach(item => observer.observe(item.el));
+      }
+    }
+    document.addEventListener('DOMContentLoaded', initDockScrollSpy);
+
+    // Toggle Audio
+    function luxToggleAudio() {
+      const audio = document.getElementById('bgAudio');
+      const btn = document.getElementById('musicToggle');
+      if (!audio) return;
+      if (audio.paused) {
+        audio.play().then(function () {
+          if (btn) btn.classList.add('playing');
+        }).catch(function () {});
+      } else {
+        audio.pause();
+        if (btn) btn.classList.remove('playing');
+      }
+    }
+
+    // Countdown Timer
+    function startCountdown() {
+      const grid = document.getElementById('countdownGrid');
+      const targetStr = (grid && grid.getAttribute('data-target')) || "{{targetDate}}";
+      const targetTime = new Date(targetStr).getTime();
+      if (isNaN(targetTime)) return;
+
+      function update() {
+        const now = new Date().getTime();
+        const diff = targetTime - now;
+        if (diff <= 0) {
+          const d = document.getElementById('cdDays'); if (d) d.textContent = '00';
+          const h = document.getElementById('cdHours'); if (h) h.textContent = '00';
+          const m = document.getElementById('cdMinutes'); if (m) m.textContent = '00';
+          const s = document.getElementById('cdSeconds'); if (s) s.textContent = '00';
+          return;
+        }
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const secs = Math.floor((diff % (1000 * 60)) / 1000);
+
+        const cdD = document.getElementById('cdDays'); if (cdD) cdD.textContent = String(days).padStart(2, '0');
+        const cdH = document.getElementById('cdHours'); if (cdH) cdH.textContent = String(hours).padStart(2, '0');
+        const cdM = document.getElementById('cdMinutes'); if (cdM) cdM.textContent = String(mins).padStart(2, '0');
+        const cdS = document.getElementById('cdSeconds'); if (cdS) cdS.textContent = String(secs).padStart(2, '0');
+      }
+      update();
+      setInterval(update, 1000);
+    }
+
+    // Scroll Animations Observer
+    function initScrollAnimations() {
+      const elements = document.querySelectorAll('.reveal-on-scroll');
+      if (!('IntersectionObserver' in window)) {
+        elements.forEach(el => el.classList.add('is-visible'));
+        return;
+      }
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+          }
+        });
+      }, { threshold: 0.12 });
+      elements.forEach(el => observer.observe(el));
+    }
+
+    // Toast Notification & Salin Rekening
+    function showToast(msg) {
+      const toast = document.getElementById('luxToast');
+      if (!toast) return;
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => { toast.classList.remove('show'); }, 2500);
+    }
+
+    function copyText(text, btn) {
+      if (!navigator.clipboard) {
+        const input = document.createElement('input');
+        input.value = text;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+      } else {
+        navigator.clipboard.writeText(text);
+      }
+      if (btn) {
+        const orig = btn.innerHTML;
+        btn.innerHTML = '<span style="color:var(--toraja-gold);">✓ Disalin</span>';
+        setTimeout(() => { btn.innerHTML = orig; }, 2000);
+      }
+      showToast('Nomor berhasil disalin: ' + text);
+    }
+
+    // Clean UI RSVP Submit Handler (Non-Blocking / AJAX)
+    async function luxSubmitRsvp(e) {
+      e.preventDefault();
+      const form = e.target;
+      const btn = form.querySelector('button[type="submit"]');
+      const name = (document.getElementById('rsvpName') || {}).value || '';
+      const status = (document.getElementById('rsvpStatus') || {}).value || 'HADIR';
+      const pax = (document.getElementById('rsvpPax') || {}).value || '1';
+      const message = (document.getElementById('rsvpMessage') || {}).value || '';
+
+      if (!name || !message) return;
+
+      const origBtnText = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = 'Mengirim Doa...';
+      }
+
+      try {
+        const res = await fetch('/api/public/rsvp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            invitationId: '{{invitationId}}',
+            name,
+            status,
+            pax: parseInt(pax) || 1,
+            message
+          })
+        });
+
+        const wishesStream = document.getElementById('wishesStream');
+        if (wishesStream) {
+          const item = document.createElement('div');
+          item.className = 'wish-item';
+          item.innerHTML = '<strong style="color: var(--toraja-gold); font-size: 0.9rem;">' + escapeHtml(name) + '</strong><span style="font-size: 0.72rem; color: var(--text-muted); margin-left: 0.6rem;">Baru saja</span><p style="margin-top: 0.4rem; font-size: 0.85rem; line-height: 1.5; color: #ffffff;">' + escapeHtml(message) + '</p>';
+          wishesStream.insertBefore(item, wishesStream.firstChild);
+        }
+
+        showToast('Terima kasih atas doa restu Anda!');
+        const msgEl = document.getElementById('rsvpMessage');
+        if (msgEl) msgEl.value = '';
+      } catch (err) {
+        showToast('Ucapan tersimpan di perangkat.');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = origBtnText;
+        }
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+</html>

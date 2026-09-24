@@ -1,0 +1,2171 @@
+<!--
+ _      _   _  __  __  _____   _   _      _     ____   __   __
+| |    | | | | \ \/ / | ____| | \ | |    / \   |  _ \  \ \ / /
+| |    | | | |  \  /  |  _|   |  \| |   / _ \  | |_) |  \ V / 
+| |___ | |_| |  /  \  | |___  | |\  |  / ___ \ |  _ <    | |  
+|_____| \___/  /_/\_\ |_____| |_| \_| /_/   \_\|_| \_\   |_|  
+
+  ==============================================================
+  THEME BUILDER WORKSPACE: BURGUNDY ROYALE
+  Opulent Vintage Burgundy & Gold with Cathedral Arches & Royal Roses
+  Hak Cipta (c) Luxenary. Dilindungi undang-undang.
+  ==============================================================
+-->
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>The Wedding of {{firstName}} &amp; {{secondName}} — Burgundy Royale</title>
+
+  <!-- =================================================================== -->
+  <!-- 1. TYPOGRAPHY & SELF-HOSTED FONTS                                   -->
+  <!-- =================================================================== -->
+  <link rel="stylesheet" href="/fonts/fonts.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Imperial+Script&family=Vidaloka&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="/assets/lottie/lottie.min.js"></script>
+
+  <style>
+    @font-face {
+      font-family: "Iskry Regular";
+      src: url("/fonts/burgundy-royale/Iskry-Regular.woff2") format("woff2");
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    /* =================================================================== */
+    /* 2. DESIGN SYSTEM & DYNAMIC PALETTE (GOLDEN STANDARD)                */
+    /* =================================================================== */
+    :root {
+      --primary: {{colorPrimary}};
+      --secondary: {{colorSecondary}};
+      --accent: {{colorAccent}};
+      --bg-light: {{colorBgLight}};
+      --bg-dark: {{colorBgDark}};
+      --text-main: {{colorTextDark}};
+      --text-muted: color-mix(in srgb, {{colorTextDark}} 70%, transparent);
+      --radius-sm: 8px;
+      --radius-md: 16px;
+      --radius-lg: 28px;
+      --radius-arch: 500px 500px 0 0;
+      --radius-full: 9999px;
+      --shadow-soft: 0 8px 25px color-mix(in srgb, var(--primary) 12%, transparent);
+      --shadow-elevated: 0 16px 45px color-mix(in srgb, var(--primary) 22%, transparent);
+      --glass-bg: color-mix(in srgb, var(--bg-light) 92%, transparent);
+      --glass-border: color-mix(in srgb, var(--accent) 45%, transparent);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    ::selection {
+      background: color-mix(in srgb, var(--primary) 40%, transparent);
+      color: #ffffff;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      font-size: 16px;
+      background-color: var(--bg-dark);
+    }
+
+    body {
+      font-family: "Plus Jakarta Sans", -apple-system, sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      overflow-x: hidden;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: color-mix(in srgb, var(--accent) 45%, transparent);
+      border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--accent);
+    }
+
+    .audio-player-element {
+      display: none;
+      width: 0;
+      height: 0;
+    }
+
+    /* Headings & Scripts */
+    .font-vidaloka,
+    .vidaloka,
+    h1, h2, h3, h4,
+    .sec-main-title {
+      font-family: "Vidaloka", "Cinzel", Georgia, serif;
+      letter-spacing: 0.02em;
+    }
+
+    .font-cinzel {
+      font-family: "Cinzel", Georgia, serif;
+      letter-spacing: 0.15em;
+    }
+
+    .font-script,
+    .script-accent {
+      font-family: "Imperial Script", cursive;
+      font-weight: 400;
+    }
+
+    .font-iskry {
+      font-family: "Iskry Regular", "Vidaloka", serif;
+    }
+
+    /* =================================================================== */
+    /* 3. ARSITEKTUR DESKTOP SPLIT & MOBILE CONTAINER                      */
+    /* =================================================================== */
+    .layout-wrapper {
+      display: flex;
+      width: 100%;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    .sidebar-desktop {
+      display: none;
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: calc(100% - 460px);
+      height: 100vh;
+      background: url("{{sidebarPhotoUrl}}") center/cover no-repeat;
+      z-index: 10;
+    }
+
+    .sidebar-desktop::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to top,
+        color-mix(in srgb, var(--bg-dark) 95%, transparent) 0%,
+        color-mix(in srgb, var(--bg-dark) 55%, transparent) 50%,
+        rgba(0, 0, 0, 0.45) 100%
+      );
+    }
+
+    .sidebar-desktop-content {
+      position: absolute;
+      bottom: 4.5rem;
+      left: 4.5rem;
+      right: 4.5rem;
+      z-index: 20;
+      color: #ffffff;
+    }
+
+    .sidebar-desktop-tagline {
+      font-size: 0.8rem;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.8rem;
+      font-weight: 600;
+      font-family: "Cinzel", Georgia, serif;
+    }
+
+    .sidebar-desktop-names {
+      font-size: clamp(3rem, 4.2vw, 4.6rem);
+      line-height: 1.1;
+      color: #ffffff;
+      margin-bottom: 1rem;
+      font-family: "Vidaloka", Georgia, serif;
+      text-shadow: 0 4px 24px rgba(0, 0, 0, 0.7);
+    }
+
+    .sidebar-desktop-names span {
+      font-family: "Imperial Script", cursive;
+      color: var(--accent);
+      font-size: 1.1em;
+      margin: 0 0.4rem;
+    }
+
+    .sidebar-desktop-date {
+      font-size: 0.95rem;
+      letter-spacing: 0.25em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 1.25rem;
+      font-weight: 500;
+      font-family: "Cinzel", Georgia, serif;
+    }
+
+    .sidebar-desktop-quote {
+      font-size: 1.05rem;
+      line-height: 1.7;
+      color: rgba(255, 255, 255, 0.88);
+      max-width: 520px;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
+    }
+
+    .app-container,
+    .main-scroll-panel {
+      width: 100%;
+      min-height: 100vh;
+      background: transparent;
+      position: relative;
+      z-index: 20;
+    }
+
+    @media (min-width: 900px) {
+      .sidebar-desktop {
+        display: block;
+      }
+      .app-container,
+      .main-scroll-panel {
+        width: 460px;
+        margin-left: auto;
+        box-shadow: -10px 0 35px rgba(0, 0, 0, 0.5);
+        border-left: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+      }
+    }
+
+    /* =================================================================== */
+    /* 4. TIGA LAPISAN KANVAS LATAR                                        */
+    /* =================================================================== */
+    .fixed-bg-layer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 100%;
+      height: 100vh;
+      background-image: url("{{globalBgUrl}}");
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.18;
+      filter: sepia(0.2) saturate(1.2);
+    }
+
+    @media (min-width: 900px) {
+      .fixed-bg-layer {
+        width: 460px;
+      }
+    }
+
+    .scrim-canvas {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 100%;
+      height: 100vh;
+      background: linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--bg-light) 95%, transparent) 0%,
+        color-mix(in srgb, var(--bg-light) 98%, transparent) 100%
+      );
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    @media (min-width: 900px) {
+      .scrim-canvas {
+        width: 460px;
+      }
+    }
+
+    /* =================================================================== */
+    /* 5. COVER SCREEN (FLOATING GATEWAY)                                  */
+    /* =================================================================== */
+    .cover-screen {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 100%;
+      height: 100vh;
+      height: 100dvh;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: center;
+      background: url("{{landingCoverUrl}}") center/cover no-repeat;
+      padding: 2.5rem 1.8rem;
+      transition: transform 0.85s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.85s ease;
+      overflow: hidden;
+    }
+
+    @media (min-width: 900px) {
+      .cover-screen {
+        width: 460px;
+      }
+    }
+
+    .cover-screen.opened {
+      transform: translateY(-100%);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .cover-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to top,
+        color-mix(in srgb, var(--primary) 96%, transparent) 0%,
+        color-mix(in srgb, var(--primary) 65%, transparent) 55%,
+        rgba(0, 0, 0, 0.4) 100%
+      );
+      z-index: 1;
+    }
+
+    /* Signature Floral Corner */
+    .cover-floral-ornament {
+      position: absolute;
+      top: -15px;
+      right: -15px;
+      width: 110px;
+      max-width: 28vw;
+      pointer-events: none;
+      z-index: 2;
+      opacity: 0.95;
+      filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.45));
+      animation: floralFloat 6s ease-in-out infinite alternate;
+    }
+
+    @keyframes floralFloat {
+      0% { transform: translateY(0) rotate(0deg); }
+      100% { transform: translateY(5px) rotate(2deg); }
+    }
+
+    /* Signature Flying Birds Layer (Authentic Leafitation Lottie) */
+    .royale-birds-layer {
+      position: absolute;
+      top: 5%;
+      left: 0;
+      width: 100%;
+      height: 220px;
+      pointer-events: none;
+      z-index: 2;
+      opacity: 0.85;
+      overflow: hidden;
+    }
+
+    .cover-content {
+      position: relative;
+      z-index: 3;
+      width: 100%;
+      max-width: 380px;
+      text-align: center;
+      color: #ffffff;
+      margin-bottom: 1.5rem;
+    }
+
+    .cover-royale-badge {
+      display: inline-block;
+      padding: 6px 20px;
+      border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent);
+      border-radius: var(--radius-full);
+      font-size: 0.72rem;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 600;
+      font-family: "Cinzel", Georgia, serif;
+      margin-bottom: 1rem;
+      background: rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(6px);
+    }
+
+    .cover-tagline {
+      font-size: 0.76rem;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.85);
+      margin-bottom: 0.5rem;
+      font-family: "Cinzel", Georgia, serif;
+    }
+
+    .cover-names {
+      font-size: clamp(2.8rem, 9vw, 3.8rem);
+      line-height: 1.15;
+      font-family: "Vidaloka", Georgia, serif;
+      color: #ffffff;
+      margin: 0.2rem 0 0.8rem;
+      font-weight: 400;
+      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+    }
+
+    .cover-names span {
+      font-family: "Imperial Script", cursive;
+      color: var(--accent);
+      font-size: 1em;
+      margin: 0 0.35rem;
+    }
+
+    .cover-date-row {
+      font-size: 0.86rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 500;
+      font-family: "Cinzel", Georgia, serif;
+      margin-bottom: 1.2rem;
+    }
+
+    .cover-guest-box {
+      margin: 0.8rem 0 1.4rem;
+      padding: 1rem 1.2rem;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: var(--radius-md);
+      backdrop-filter: blur(8px);
+    }
+
+    .cover-guest-lbl {
+      font-size: 0.68rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.75);
+      margin-bottom: 0.3rem;
+      display: block;
+      font-family: "Cinzel", Georgia, serif;
+    }
+
+    .cover-guest-name {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #ffffff;
+      letter-spacing: 0.03em;
+      font-family: "Vidaloka", Georgia, serif;
+    }
+
+    .btn-open-royale {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 14px 28px;
+      border-radius: var(--radius-full);
+      background: linear-gradient(135deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 80%, #ffffff) 100%);
+      color: var(--primary);
+      border: 1px solid var(--accent);
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      font-family: "Cinzel", Georgia, serif;
+      cursor: pointer;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+      transition: all 0.3s ease;
+    }
+
+    .btn-open-royale:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
+    }
+
+    .btn-open-royale svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+      transition: transform 0.3s ease;
+    }
+
+    .btn-open-royale:hover svg {
+      transform: translateX(4px);
+    }
+
+    /* =================================================================== */
+    /* 6. MAIN CONTENT SECTIONS                                             */
+    /* =================================================================== */
+    .main-content {
+      position: relative;
+      z-index: 10;
+      padding-bottom: 90px;
+    }
+
+    .sec-flow {
+      padding: 4.5rem 1.8rem;
+      position: relative;
+      text-align: center;
+    }
+
+    .sec-eyebrow {
+      display: block;
+      font-size: 0.74rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--primary);
+      margin-bottom: 0.6rem;
+      font-weight: 700;
+      font-family: "Cinzel", Georgia, serif;
+    }
+
+    .sec-main-title {
+      font-size: clamp(2rem, 6.5vw, 2.6rem);
+      line-height: 1.2;
+      color: var(--primary);
+      margin-bottom: 0.8rem;
+      font-weight: 400;
+      font-family: "Vidaloka", Georgia, serif;
+      overflow-wrap: break-word;
+    }
+
+    .sec-sub {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      max-width: 360px;
+      margin: 0 auto 2.2rem;
+      line-height: 1.6;
+    }
+
+    /* Floating Flower Divider */
+    .section-flower-divider {
+      width: 90px;
+      margin: 1.2rem auto;
+      display: block;
+      opacity: 0.85;
+    }
+
+    /* Opening Hero Section (#home) */
+    .sec-home {
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 3.5rem 1.8rem;
+      position: relative;
+    }
+
+    /* Cathedral Arch Photo Frame */
+    .cathedral-hero-frame {
+      width: 100%;
+      max-width: 310px;
+      aspect-ratio: 3/4.2;
+      margin: 0 auto 1.8rem;
+      position: relative;
+      border-radius: var(--radius-arch);
+      overflow: hidden;
+      box-shadow: var(--shadow-elevated);
+      border: 3px solid color-mix(in srgb, var(--accent) 60%, transparent);
+      outline: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
+      outline-offset: 4px;
+    }
+
+    .cathedral-hero-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.6s ease;
+    }
+
+    .cathedral-hero-frame:hover img {
+      transform: scale(1.03);
+    }
+
+    .home-tagline {
+      font-size: 0.74rem;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--primary);
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      font-family: "Cinzel", Georgia, serif;
+    }
+
+    .home-names {
+      font-size: clamp(2.6rem, 8vw, 3.4rem);
+      line-height: 1.15;
+      color: var(--primary);
+      font-family: "Vidaloka", Georgia, serif;
+      margin-bottom: 0.5rem;
+      font-weight: 400;
+    }
+
+    .home-names span {
+      font-family: "Imperial Script", cursive;
+      color: var(--secondary);
+      font-size: 0.95em;
+      margin: 0 0.3rem;
+    }
+
+    .home-date-box {
+      font-size: 0.86rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--secondary);
+      font-weight: 600;
+      font-family: "Cinzel", Georgia, serif;
+      margin-bottom: 1.8rem;
+    }
+
+    /* Countdown Grid */
+    .countdown-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      width: 100%;
+      max-width: 360px;
+      margin: 0 auto;
+    }
+
+    .countdown-box {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-sm);
+      padding: 14px 6px;
+      text-align: center;
+      box-shadow: var(--shadow-soft);
+      position: relative;
+    }
+
+    .countdown-box::before {
+      content: "";
+      position: absolute;
+      inset: 2px;
+      border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+      border-radius: 4px;
+      pointer-events: none;
+    }
+
+    .countdown-num {
+      font-size: 1.65rem;
+      font-weight: 600;
+      color: var(--primary);
+      line-height: 1;
+      font-family: "Iskry Regular", "Vidaloka", serif;
+      margin-bottom: 4px;
+    }
+
+    .countdown-lbl {
+      font-size: 0.65rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-family: "Cinzel", Georgia, serif;
+    }
+
+    /* Section Quote / Sacred Union */
+    .sec-quote {
+      background: color-mix(in srgb, var(--primary) 5%, transparent);
+      border-top: 1px solid var(--glass-border);
+      border-bottom: 1px solid var(--glass-border);
+    }
+
+    .greeting-text {
+      font-family: "Traditional Arabic", "Amiri", "Cinzel", serif;
+      font-size: 1.45rem;
+      color: var(--primary);
+      margin-bottom: 1.2rem;
+      line-height: 1.6;
+    }
+
+    .quote-content {
+      font-family: "Vidaloka", Georgia, serif;
+      font-size: 1.15rem;
+      line-height: 1.8;
+      color: var(--text-main);
+      max-width: 380px;
+      margin: 0 auto 1.2rem;
+      position: relative;
+    }
+
+    .quote-author {
+      font-size: 0.76rem;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: var(--primary);
+      font-weight: 700;
+      font-family: "Cinzel", Georgia, serif;
+    }
+
+    /* Section Mempelai (#couple) */
+    .couple-container {
+      display: flex;
+      flex-direction: column;
+      gap: 3.2rem;
+      max-width: 380px;
+      margin: 0 auto;
+    }
+
+    .couple-card {
+      text-align: center;
+    }
+
+    .couple-photo-wrap {
+      width: 220px;
+      aspect-ratio: 3/4;
+      margin: 0 auto 1.4rem;
+      position: relative;
+      box-shadow: var(--shadow-elevated);
+      border-radius: var(--radius-arch);
+      border: 3px solid color-mix(in srgb, var(--accent) 60%, transparent);
+      outline: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
+      outline-offset: 4px;
+      overflow: hidden;
+    }
+
+    .couple-photo-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .couple-name {
+      font-size: 1.85rem;
+      font-family: "Vidaloka", Georgia, serif;
+      color: var(--primary);
+      margin-bottom: 0.3rem;
+      font-weight: 500;
+    }
+
+    .couple-role {
+      font-size: 0.74rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--secondary);
+      font-weight: 700;
+      font-family: "Cinzel", Georgia, serif;
+      margin-bottom: 0.6rem;
+    }
+
+    .couple-parents {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      max-width: 280px;
+      margin: 0 auto 0.8rem;
+    }
+
+    .couple-ig {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 16px;
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-full);
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: all 0.3s ease;
+      background: var(--glass-bg);
+      font-family: "Cinzel", Georgia, serif;
+      letter-spacing: 0.1em;
+    }
+
+    .couple-ig:hover {
+      color: #ffffff;
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+
+    .couple-ig svg {
+      width: 13px;
+      height: 13px;
+      fill: currentColor;
+    }
+
+    .couple-divider-amp {
+      font-family: "Imperial Script", cursive;
+      font-size: 4rem;
+      color: var(--secondary);
+      line-height: 1;
+      margin: -1.2rem 0;
+    }
+
+    /* Section Events (#events) */
+    .events-unified-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1.8rem;
+      width: 100%;
+      max-width: 440px;
+      margin: 0 auto;
+    }
+
+    .events-sessions-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 1.4rem;
+      width: 100%;
+    }
+
+    .event-card-item,
+    .event-block-item {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-md);
+      padding: 2rem 1.5rem;
+      text-align: center;
+      box-shadow: var(--shadow-soft);
+      position: relative;
+    }
+
+    .event-badge,
+    .ev-cat {
+      display: inline-block;
+      padding: 5px 16px;
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-full);
+      font-size: 0.7rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--primary);
+      font-weight: 700;
+      font-family: "Cinzel", Georgia, serif;
+      margin-bottom: 0.8rem;
+      background: color-mix(in srgb, var(--accent) 25%, transparent);
+    }
+
+    .event-title,
+    .ev-name {
+      font-size: 1.6rem;
+      font-family: "Vidaloka", Georgia, serif;
+      color: var(--primary);
+      margin-bottom: 0.4rem;
+      font-weight: 500;
+    }
+
+    .event-time,
+    .ev-time {
+      font-size: 0.88rem;
+      color: var(--secondary);
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.6rem;
+    }
+
+    .ev-notes {
+      font-size: 0.78rem;
+      font-style: italic;
+      color: var(--text-muted);
+      margin-top: 0.3rem;
+    }
+
+    .event-unified-venue-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-md);
+      padding: 2rem 1.5rem;
+      text-align: center;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .venue-card-lbl {
+      display: inline-block;
+      font-size: 0.68rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--secondary);
+      font-weight: 700;
+      font-family: "Cinzel", Georgia, serif;
+      margin-bottom: 0.5rem;
+    }
+
+    .event-venue,
+    .ev-venue-unified,
+    .ev-venue {
+      font-size: 1.15rem;
+      font-family: "Vidaloka", Georgia, serif;
+      color: var(--text-main);
+      margin-bottom: 0.3rem;
+      font-weight: 600;
+    }
+
+    .event-address,
+    .ev-addr-unified,
+    .ev-addr {
+      font-size: 0.84rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 1.3rem;
+    }
+
+    .btn-maps,
+    .btn-map-outline {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 24px;
+      border-radius: var(--radius-full);
+      background: var(--primary);
+      border: 1px solid var(--primary);
+      color: #ffffff;
+      text-decoration: none;
+      font-size: 0.74rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-weight: 600;
+      font-family: "Cinzel", Georgia, serif;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px color-mix(in srgb, var(--primary) 25%, transparent);
+    }
+
+    .btn-maps:hover,
+    .btn-map-outline:hover {
+      background: color-mix(in srgb, var(--primary) 85%, #000000);
+      color: #ffffff;
+      transform: translateY(-2px);
+    }
+
+    .btn-maps svg,
+    .btn-map-outline svg {
+      width: 14px;
+      height: 14px;
+      fill: currentColor;
+    }
+
+    /* Section Story (#story) */
+    .story-timeline {
+      position: relative;
+      max-width: 380px;
+      margin: 0 auto;
+      padding-left: 2rem;
+      text-align: left;
+    }
+
+    .story-timeline::before {
+      content: "";
+      position: absolute;
+      left: 7px;
+      top: 10px;
+      bottom: 10px;
+      width: 1px;
+      background: color-mix(in srgb, var(--accent) 60%, transparent);
+    }
+
+    .story-item {
+      position: relative;
+      margin-bottom: 2.2rem;
+    }
+
+    .story-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .story-dot {
+      position: absolute;
+      left: -2rem;
+      top: 6px;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: var(--bg-light);
+      border: 2px solid var(--primary);
+    }
+
+    .story-date {
+      display: inline-block;
+      font-size: 0.74rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--primary);
+      font-weight: 700;
+      font-family: "Cinzel", Georgia, serif;
+      margin-bottom: 0.3rem;
+    }
+
+    .story-title {
+      font-size: 1.4rem;
+      font-family: "Vidaloka", Georgia, serif;
+      color: var(--primary);
+      margin-bottom: 0.4rem;
+      font-weight: 500;
+    }
+
+    .story-content {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.65;
+    }
+
+    /* Section Gallery (#gallery) */
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      max-width: 380px;
+      margin: 0 auto;
+    }
+
+    .gallery-item {
+      position: relative;
+      aspect-ratio: 1/1;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      cursor: pointer;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid var(--glass-border);
+    }
+
+    .gallery-item:first-child {
+      grid-column: span 2;
+      aspect-ratio: 16/10;
+      border-radius: 120px 120px 0 0;
+    }
+
+    .gallery-item:last-child {
+      border-radius: 0 0 120px 120px;
+    }
+
+    .gallery-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.5s ease;
+    }
+
+    .gallery-item:hover img {
+      transform: scale(1.05);
+    }
+
+    /* Section Gift (#gift) */
+    .gift-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+      max-width: 380px;
+      margin: 0 auto;
+    }
+
+    .gift-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-md);
+      padding: 1.8rem 1.4rem;
+      text-align: center;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .gift-bank-name {
+      font-size: 1.35rem;
+      font-family: "Cinzel", Georgia, serif;
+      letter-spacing: 0.1em;
+      color: var(--primary);
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+    }
+
+    .gift-number {
+      font-size: 1.25rem;
+      letter-spacing: 0.12em;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 0.2rem;
+      font-family: monospace;
+    }
+
+    .gift-holder {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 1rem;
+    }
+
+    .btn-copy {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 20px;
+      border-radius: var(--radius-full);
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      color: var(--primary);
+      font-size: 0.72rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      font-weight: 700;
+      font-family: "Cinzel", Georgia, serif;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-copy:hover {
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    /* Section RSVP & Wishes (#wishes) */
+    .rsvp-form-container {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-md);
+      padding: 2rem 1.5rem;
+      max-width: 380px;
+      margin: 0 auto 2.5rem;
+      text-align: left;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .form-group {
+      margin-bottom: 1.2rem;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.74rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+      font-weight: 700;
+      font-family: "Cinzel", Georgia, serif;
+    }
+
+    .form-input,
+    .form-select,
+    .form-textarea {
+      width: 100%;
+      padding: 12px 14px;
+      background: var(--bg-light);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-sm);
+      font-size: 16px;
+      color: var(--text-main);
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.3s ease;
+    }
+
+    .form-input:focus,
+    .form-select:focus,
+    .form-textarea:focus {
+      border-color: var(--primary);
+    }
+
+    .form-radio-group {
+      display: flex;
+      gap: 12px;
+    }
+
+    .radio-pill {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 500;
+      background: var(--bg-light);
+      transition: all 0.2s ease;
+    }
+
+    .radio-pill input {
+      display: none;
+    }
+
+    .radio-pill.active {
+      border-color: var(--primary);
+      background: color-mix(in srgb, var(--primary) 10%, transparent);
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    .btn-submit-rsvp {
+      width: 100%;
+      padding: 14px;
+      border-radius: var(--radius-full);
+      background: var(--primary);
+      color: #ffffff;
+      border: 1px solid var(--primary);
+      font-size: 0.82rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-weight: 700;
+      font-family: "Cinzel", Georgia, serif;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px color-mix(in srgb, var(--primary) 25%, transparent);
+    }
+
+    .btn-submit-rsvp:hover {
+      background: color-mix(in srgb, var(--primary) 85%, #000000);
+      border-color: color-mix(in srgb, var(--primary) 85%, #000000);
+    }
+
+    /* Wishes Feed */
+    .wishes-feed-box {
+      max-width: 380px;
+      margin: 0 auto;
+      max-height: 320px;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding-right: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      text-align: left;
+    }
+
+    .wish-item-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+    }
+
+    .wish-sender-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .wish-sender-name {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--primary);
+      font-family: "Vidaloka", Georgia, serif;
+    }
+
+    .wish-status-badge {
+      font-size: 0.65rem;
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      background: color-mix(in srgb, var(--primary) 12%, transparent);
+      color: var(--primary);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-family: "Cinzel", Georgia, serif;
+    }
+
+    .wish-text-body {
+      font-size: 0.84rem;
+      color: var(--text-muted);
+      line-height: 1.55;
+    }
+
+    .wish-timestamp {
+      font-size: 0.68rem;
+      color: color-mix(in srgb, var(--text-muted) 80%, transparent);
+      margin-top: 6px;
+      display: block;
+    }
+
+    /* Section Closing */
+    .sec-closing {
+      padding: 5.5rem 1.8rem 4rem;
+      background: color-mix(in srgb, var(--primary) 6%, transparent);
+      border-top: 1px solid var(--glass-border);
+      position: relative;
+    }
+
+    .closing-photo-wrap {
+      width: 100%;
+      max-width: 300px;
+      aspect-ratio: 4/5;
+      margin: 0 auto 2rem;
+      border-radius: var(--radius-arch);
+      overflow: hidden;
+      box-shadow: var(--shadow-elevated);
+      border: 3px solid color-mix(in srgb, var(--accent) 60%, transparent);
+      outline: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
+      outline-offset: 4px;
+    }
+
+    .closing-photo-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .closing-quote-text {
+      font-family: "Vidaloka", Georgia, serif;
+      font-size: 1.15rem;
+      color: var(--text-main);
+      max-width: 360px;
+      margin: 0 auto 1.5rem;
+      line-height: 1.7;
+    }
+
+    .closing-names {
+      font-size: 2.6rem;
+      font-family: "Vidaloka", Georgia, serif;
+      color: var(--primary);
+      margin-bottom: 0.4rem;
+      font-weight: 400;
+    }
+
+    .closing-names span {
+      font-family: "Imperial Script", cursive;
+      color: var(--secondary);
+      font-size: 1.05em;
+      margin: 0 0.35rem;
+    }
+
+    .closing-sub-note {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      font-family: "Cinzel", Georgia, serif;
+    }
+
+    /* =================================================================== */
+    /* 7. SMART BOTTOM DOCK (MOBILE EMULATION DOCK)                        */
+    /* =================================================================== */
+    .bottom-dock {
+      position: fixed;
+      bottom: calc(18px + env(safe-area-inset-bottom));
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: color-mix(in srgb, var(--bg-light) 95%, transparent);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-full);
+      padding: 6px 12px;
+      box-shadow: 0 10px 30px color-mix(in srgb, var(--primary) 15%, transparent);
+      backdrop-filter: blur(12px);
+      transition: all 0.4s ease;
+    }
+
+    @media (min-width: 900px) {
+      .bottom-dock {
+        left: calc(100% - 230px);
+        transform: translateX(-50%);
+      }
+    }
+
+    .dock-link {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 10px;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.62rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 600;
+      font-family: "Cinzel", Georgia, serif;
+      border-radius: var(--radius-full);
+      transition: all 0.2s ease;
+    }
+
+    .dock-link:hover,
+    .dock-link.active {
+      color: var(--primary);
+      background: color-mix(in srgb, var(--accent) 35%, transparent);
+    }
+
+    .dock-link svg {
+      width: 17px;
+      height: 17px;
+      fill: currentColor;
+      margin-bottom: 2px;
+    }
+
+    .dock-audio-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: #ffffff;
+      border: none;
+      cursor: pointer;
+      margin-left: 4px;
+      transition: transform 0.3s ease;
+    }
+
+    .dock-audio-btn.playing {
+      animation: audioPulse 2s infinite ease-in-out;
+    }
+
+    @keyframes audioPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+    }
+
+    .dock-audio-btn svg {
+      width: 15px;
+      height: 15px;
+      fill: currentColor;
+    }
+
+    /* Modal Check-in Ticket */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: color-mix(in srgb, var(--bg-dark) 70%, transparent);
+      backdrop-filter: blur(8px);
+      z-index: 10000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal-card {
+      background: var(--bg-light);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-md);
+      padding: 2.2rem 1.6rem;
+      max-width: 360px;
+      width: 100%;
+      text-align: center;
+      position: relative;
+      box-shadow: 0 20px 50px color-mix(in srgb, var(--bg-dark) 40%, transparent);
+    }
+
+    .btn-close-modal {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1px solid var(--glass-border);
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+    }
+
+    .btn-close-modal:hover {
+      color: var(--primary);
+    }
+
+    /* Toast Notification */
+    .toast-msg {
+      position: fixed;
+      top: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-30px);
+      background: var(--primary);
+      color: #ffffff;
+      padding: 10px 22px;
+      border-radius: var(--radius-full);
+      font-size: 0.78rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-weight: 600;
+      font-family: "Cinzel", Georgia, serif;
+      box-shadow: 0 8px 25px color-mix(in srgb, var(--primary) 35%, transparent);
+      z-index: 11000;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s ease;
+    }
+
+    .toast-msg.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- =================================================================== -->
+  <!-- AUDIO PLAYER ELEMENT                                                -->
+  <!-- =================================================================== -->
+  <audio id="luxAudio" class="audio-player-element" src="{{audioUrl}}" loop preload="auto"></audio>
+
+  <!-- =================================================================== -->
+  <!-- 3-LAYER BACKGROUND STACK                                            -->
+  <!-- =================================================================== -->
+  <div class="fixed-bg-layer"></div>
+  <div class="scrim-canvas"></div>
+
+  <!-- =================================================================== -->
+  <!-- COVER SCREEN (PINTU PEMBUKA UNDANGAN)                               -->
+  <!-- =================================================================== -->
+  <div class="cover-screen" id="coverScreen">
+    <div class="cover-overlay"></div>
+    <div id="birdsLottieCover" class="royale-birds-layer"></div>
+    <img src="/assets/ornaments/burgundy-royale/bunga-burgundy-royale.png" alt="Rose Ornament" class="cover-floral-ornament" />
+
+    <div class="cover-content">
+      <span class="cover-royale-badge" data-lux-field="customLabels.coverBadge">{{coverBadge}}</span>
+      <p class="cover-tagline" data-lux-field="customLabels.weddingTagline">{{weddingTagline}}</p>
+      <h1 class="cover-names">
+        {{firstName}} <span>&amp;</span> {{secondName}}
+      </h1>
+      <p class="cover-date-row" data-lux-field="weddingDate">{{weddingDate}}</p>
+
+      <div class="cover-guest-box">
+        <span class="cover-guest-lbl">KEPADA YTH. BAPAK/IBU/SAUDARA/I</span>
+        <h2 class="cover-guest-name" id="guestName">Tamu Undangan</h2>
+      </div>
+
+      <button type="button" class="btn-open-royale" id="openBtn" onclick="openInvitation()">
+        <span data-lux-field="customLabels.openBtn">{{openBtn}}</span>
+        <svg viewBox="0 0 24 24">
+          <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- MAIN LAYOUT WRAPPER (DESKTOP SPLIT & MOBILE EMULATION)              -->
+  <!-- =================================================================== -->
+  <div class="layout-wrapper">
+    <!-- Desktop Left Sidebar -->
+    <aside class="sidebar-desktop">
+      <div class="sidebar-desktop-content">
+        <p class="sidebar-desktop-tagline" data-lux-field="customLabels.weddingTagline">{{weddingTagline}}</p>
+        <h2 class="sidebar-desktop-names">
+          {{firstName}} <span>&amp;</span> {{secondName}}
+        </h2>
+        <p class="sidebar-desktop-date" data-lux-field="weddingDate">{{weddingDate}}</p>
+        <p class="sidebar-desktop-quote" data-lux-field="customLabels.openingQuote">
+          &ldquo;{{openingQuote}}&rdquo;
+        </p>
+      </div>
+    </aside>
+
+    <!-- Right Scrollable Panel -->
+    <main class="main-scroll-panel" id="mainScroll">
+      <div class="main-content">
+
+        <!-- ============================================================= -->
+        <!-- SEKSI 1: OPENING HERO & COUNTDOWN (#home)                     -->
+        <!-- ============================================================= -->
+        <section class="sec-flow sec-home" id="home">
+          <div id="birdsLottieHero" class="royale-birds-layer"></div>
+          <div class="cathedral-hero-frame">
+            <img src="{{homePhotoUrl}}" alt="{{firstName}} &amp; {{secondName}}" />
+          </div>
+
+          <span class="home-tagline" data-lux-field="customLabels.weddingTagline">{{weddingTagline}}</span>
+          <h2 class="home-names">
+            {{firstName}} <span>&amp;</span> {{secondName}}
+          </h2>
+          <div class="home-date-box" data-lux-field="weddingDate">{{weddingDate}}</div>
+
+          <!-- Countdown Timer -->
+          <div class="countdown-grid" id="countdownGrid" data-target="{{targetDate}}">
+            <div class="countdown-box">
+              <div class="countdown-num" id="cdDays">00</div>
+              <div class="countdown-lbl">HARI</div>
+            </div>
+            <div class="countdown-box">
+              <div class="countdown-num" id="cdHours">00</div>
+              <div class="countdown-lbl">JAM</div>
+            </div>
+            <div class="countdown-box">
+              <div class="countdown-num" id="cdMinutes">00</div>
+              <div class="countdown-lbl">MENIT</div>
+            </div>
+            <div class="countdown-box">
+              <div class="countdown-num" id="cdSeconds">00</div>
+              <div class="countdown-lbl">DETIK</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================================= -->
+        <!-- SEKSI 2: UNTAIAN DOA & AYAT SUCI                              -->
+        <!-- ============================================================= -->
+        <section class="sec-flow sec-quote">
+          <div class="greeting-text" data-lux-field="customLabels.openingGreeting">{{openingGreeting}}</div>
+          <span class="sec-eyebrow" data-lux-field="customLabels.quoteSectionEyebrow">{{quoteSectionEyebrow}}</span>
+          <h3 class="sec-main-title" data-lux-field="customLabels.quoteSectionTitle">{{quoteSectionTitle}}</h3>
+          <p class="quote-content" data-lux-field="customLabels.openingQuote">
+            &ldquo;{{openingQuote}}&rdquo;
+          </p>
+          <span class="quote-author" data-lux-field="customLabels.openingQuoteRef">{{openingQuoteRef}}</span>
+        </section>
+
+        <!-- ============================================================= -->
+        <!-- SEKSI 3: BRIDE & GROOM (#couple)                              -->
+        <!-- ============================================================= -->
+        <section class="sec-flow sec-couple" id="couple">
+          <span class="sec-eyebrow" data-lux-field="customLabels.coupleSectionEyebrow">{{coupleSectionEyebrow}}</span>
+          <h2 class="sec-main-title" data-lux-field="customLabels.coupleSectionTitle">{{coupleSectionTitle}}</h2>
+          <p class="sec-sub" data-lux-field="customLabels.coupleSectionSub">{{coupleSectionSub}}</p>
+
+          <div class="couple-container">
+            <!-- The Bride (First) -->
+            <div class="couple-card">
+              <div class="couple-photo-wrap">
+                <img src="{{firstPhotoUrl}}" alt="{{firstDisplayName}}" />
+              </div>
+              <h3 class="couple-name" data-lux-field="bride.displayName">{{firstDisplayName}}</h3>
+              <p class="couple-role" data-lux-field="bride.role">{{brideRole}}</p>
+              <div class="couple-parents">
+                <span data-lux-field="firstParentPrefix">{{firstParentPrefix}}</span><br />
+                <strong data-lux-field="bride.father">{{firstFather}}</strong> &amp; <strong data-lux-field="bride.mother">{{firstMother}}</strong>
+              </div>
+              {{#if firstInstagram}}
+              <a href="https://instagram.com/{{firstInstagram}}" target="_blank" rel="noopener noreferrer" class="couple-ig">
+                <svg viewBox="0 0 24 24">
+                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                </svg>
+                <span>@{{firstInstagram}}</span>
+              </a>
+              {{/if}}
+            </div>
+
+            <div class="couple-divider-amp">&amp;</div>
+
+            <!-- The Groom (Second) -->
+            <div class="couple-card">
+              <div class="couple-photo-wrap">
+                <img src="{{secondPhotoUrl}}" alt="{{secondDisplayName}}" />
+              </div>
+              <h3 class="couple-name" data-lux-field="groom.displayName">{{secondDisplayName}}</h3>
+              <p class="couple-role" data-lux-field="groom.role">{{groomRole}}</p>
+              <div class="couple-parents">
+                <span data-lux-field="secondParentPrefix">{{secondParentPrefix}}</span><br />
+                <strong data-lux-field="groom.father">{{secondFather}}</strong> &amp; <strong data-lux-field="groom.mother">{{secondMother}}</strong>
+              </div>
+              {{#if secondInstagram}}
+              <a href="https://instagram.com/{{secondInstagram}}" target="_blank" rel="noopener noreferrer" class="couple-ig">
+                <svg viewBox="0 0 24 24">
+                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                </svg>
+                <span>@{{secondInstagram}}</span>
+              </a>
+              {{/if}}
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================================= -->
+        <!-- SEKSI 4: RANGKAIAN ACARA (#events)                            -->
+        <!-- ============================================================= -->
+        <section class="sec-flow sec-events" id="events">
+          <span class="sec-eyebrow" data-lux-field="customLabels.eventsSectionEyebrow">{{eventsSectionEyebrow}}</span>
+          <h2 class="sec-main-title" data-lux-field="customLabels.eventsSectionTitle">{{eventsSectionTitle}}</h2>
+
+          {{eventDataHtml}}
+        </section>
+
+        <!-- ============================================================= -->
+        <!-- SEKSI 5: KISAH KASIH KAMI (#story)                            -->
+        <!-- ============================================================= -->
+        {{#if showStory}}
+        <section class="sec-flow sec-story" id="story">
+          <span class="sec-eyebrow" data-lux-field="customLabels.storySectionEyebrow">{{storySectionEyebrow}}</span>
+          <h2 class="sec-main-title" data-lux-field="customLabels.storySectionTitle">{{storySectionTitle}}</h2>
+
+          <div class="story-timeline">
+            {{storyItemsHtml}}
+          </div>
+        </section>
+        {{/if}}
+
+        <!-- ============================================================= -->
+        <!-- SEKSI 6: GALERI KENANGAN (#gallery)                           -->
+        <!-- ============================================================= -->
+        {{#if showGallery}}
+        <section class="sec-flow sec-gallery" id="gallery">
+          <span class="sec-eyebrow" data-lux-field="customLabels.gallerySectionEyebrow">{{gallerySectionEyebrow}}</span>
+          <h2 class="sec-main-title" data-lux-field="customLabels.gallerySectionTitle">{{gallerySectionTitle}}</h2>
+
+          <div class="gallery-grid">
+            {{galleryPhotosHtml}}
+          </div>
+        </section>
+        {{/if}}
+
+        <!-- ============================================================= -->
+        <!-- SEKSI 7: WEDDING GIFT / TANDA KASIH (#gift)                   -->
+        <!-- ============================================================= -->
+        {{#if showGift}}
+        <section class="sec-flow sec-gift" id="gift">
+          <span class="sec-eyebrow">WEDDING GIFT</span>
+          <h2 class="sec-main-title">Tanda Kasih</h2>
+          <p class="sec-sub">Doa restu Anda merupakan karunia terindah bagi kami. Namun jika Anda bermaksud memberikan tanda kasih, dapat mengirimkan melalui:</p>
+
+          <div class="gift-stack">
+            {{giftCardsHtml}}
+
+            {{#if giftAddress}}
+            <div class="gift-card">
+              <h4 class="gift-bank-name">PENGIRIMAN KADO FISIK</h4>
+              <p class="gift-address" style="font-size:0.85rem; color:var(--text-muted); margin-bottom:0.8rem; line-height:1.5;">{{giftAddress}}</p>
+              <button type="button" class="btn-copy" onclick="copyText('{{giftAddress}}', 'Alamat kado berhasil disalin!')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                </svg>
+                <span>SALIN ALAMAT</span>
+              </button>
+            </div>
+            {{/if}}
+          </div>
+        </section>
+        {{/if}}
+
+        <!-- ============================================================= -->
+        <!-- SEKSI 8: RSVP & WISHES (#wishes)                              -->
+        <!-- ============================================================= -->
+        <section class="sec-flow sec-wishes" id="wishes">
+          <span class="sec-eyebrow" data-lux-field="customLabels.wishesSectionEyebrow">{{wishesSectionEyebrow}}</span>
+          <h2 class="sec-main-title" data-lux-field="customLabels.wishesSectionTitle">{{wishesSectionTitle}}</h2>
+          <p class="sec-sub" data-lux-field="customLabels.wishesSectionSub">{{wishesSectionSub}}</p>
+
+          <!-- RSVP Form -->
+          <div class="rsvp-form-container">
+            <form id="rsvpForm" onsubmit="luxSubmitRsvp(event)">
+              <div class="form-group">
+                <label class="form-label" for="rsvpName">Nama Lengkap</label>
+                <input type="text" id="rsvpName" name="name" class="form-input" placeholder="Masukkan nama Anda" required />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Konfirmasi Kehadiran</label>
+                <div class="form-radio-group">
+                  <label class="radio-pill active" onclick="setRsvpAttending(this, 'HADIR')">
+                    <input type="radio" name="attendance" value="HADIR" checked />
+                    <span>Hadir</span>
+                  </label>
+                  <label class="radio-pill" onclick="setRsvpAttending(this, 'TIDAK_HADIR')">
+                    <input type="radio" name="attendance" value="TIDAK_HADIR" />
+                    <span>Berhalangan</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="form-group" id="paxGroup">
+                <label class="form-label" for="rsvpPax">Jumlah Tamu</label>
+                <select id="rsvpPax" name="pax" class="form-select">
+                  <option value="1">1 Orang</option>
+                  <option value="2">2 Orang</option>
+                  <option value="3">3 Orang</option>
+                  <option value="4">4 Orang</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="rsvpMessage">Ucapan &amp; Doa Restu</label>
+                <textarea id="rsvpMessage" name="message" class="form-textarea" rows="4" placeholder="Tuliskan untaian doa dan harapan Anda..." required></textarea>
+              </div>
+
+              <button type="submit" class="btn-submit-rsvp" id="btnRsvpSubmit">
+                KIRIM KONFIRMASI
+              </button>
+            </form>
+          </div>
+
+          <!-- Wishes Feed List -->
+          <div class="wishes-feed-box" id="wishesFeed">
+            <div class="wish-item-card">
+              <div class="wish-sender-row">
+                <span class="wish-sender-name">Keluarga Bpk. Handoko</span>
+                <span class="wish-status-badge">HADIR</span>
+              </div>
+              <p class="wish-text-body">Selamat menempuh hidup baru Tiara dan Jati. Semoga cinta kalian senantiasa abadi dan diberkahi Allah SWT sepanjang masa.</p>
+              <span class="wish-timestamp">Hari ini, 10:20</span>
+            </div>
+
+            <div class="wish-item-card">
+              <div class="wish-sender-row">
+                <span class="wish-sender-name">Sahabat Jogja</span>
+                <span class="wish-status-badge">HADIR</span>
+              </div>
+              <p class="wish-text-body">Happy wedding Tiara &amp; Jati! Doa terbaik dari kami untuk pernikahan kalian yang agung dan membahagiakan.</p>
+              <span class="wish-timestamp">Kemarin, 21:15</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================================= -->
+        <!-- SEKSI 9: CLOSING & UCAPAN TERIMA KASIH                        -->
+        <!-- ============================================================= -->
+        <section class="sec-flow sec-closing" id="closing">
+          <div class="closing-photo-wrap">
+            <img src="{{closingPhotoUrl}}" alt="{{firstName}} &amp; {{secondName}}" />
+          </div>
+
+          <p class="closing-quote-text" data-lux-field="customLabels.closingQuote">
+            &ldquo;{{closingQuote}}&rdquo;
+          </p>
+
+          <h2 class="closing-names">
+            {{firstName}} <span>&amp;</span> {{secondName}}
+          </h2>
+          <p class="closing-sub-note" data-lux-field="customLabels.closingSub">{{closingSub}}</p>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- SMART BOTTOM DOCK (NAVIGASI RESIK)                                  -->
+  <!-- =================================================================== -->
+  <nav class="bottom-dock" id="bottomDock">
+    <a href="#home" class="dock-link active">
+      <svg viewBox="0 0 24 24">
+        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+      </svg>
+      <span>HOME</span>
+    </a>
+    <a href="#couple" class="dock-link">
+      <svg viewBox="0 0 24 24">
+        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+      </svg>
+      <span>MEMPELAI</span>
+    </a>
+    <a href="#events" class="dock-link">
+      <svg viewBox="0 0 24 24">
+        <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/>
+      </svg>
+      <span>ACARA</span>
+    </a>
+    {{#if showStory}}
+    <a href="#story" class="dock-link">
+      <svg viewBox="0 0 24 24">
+        <path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/>
+      </svg>
+      <span>KISAH</span>
+    </a>
+    {{/if}}
+    {{#if showGallery}}
+    <a href="#gallery" class="dock-link">
+      <svg viewBox="0 0 24 24">
+        <path d="M22 16V4c0-1.1-.9-2-2-2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2zm-11-4l2.03 2.71L16 11l4 5H8l3-4zM2 6v14c0 1.1.9 2 2 2h14v-2H4V6H2z"/>
+      </svg>
+      <span>GALERI</span>
+    </a>
+    {{/if}}
+    <a href="#wishes" class="dock-link">
+      <svg viewBox="0 0 24 24">
+        <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/>
+      </svg>
+      <span>UCAPAN</span>
+    </a>
+
+    <!-- Integrated Audio Toggle -->
+    <button type="button" class="dock-audio-btn" id="dockAudioBtn" onclick="luxToggleAudio()" title="Putar Musik">
+      <svg viewBox="0 0 24 24" id="audioIcon">
+        <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+      </svg>
+    </button>
+  </nav>
+
+  <!-- =================================================================== -->
+  <!-- MODAL VOUCHER QR SOUVENIR (#modalBg)                                -->
+  <!-- =================================================================== -->
+  <div class="modal-overlay" id="modalBg" onclick="if(event.target===this)closeModal()">
+    <div class="modal-card">
+      <button type="button" class="btn-close-modal" onclick="closeModal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+        </svg>
+      </button>
+
+      <span class="sec-eyebrow" style="margin-top:0.5rem;">TIKET KEHADIRAN</span>
+      <h3 style="font-family:'Vidaloka',serif; font-size:1.5rem; margin-bottom:0.4rem; color:var(--primary);">QR Check-in Tamu</h3>
+      <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:1.2rem;">Tunjukkan kode QR ini kepada resepsionis di lokasi acara.</p>
+
+      <div style="background:var(--bg-light); border-radius:12px; padding:1.2rem; display:inline-block; border:1px solid var(--glass-border); margin-bottom:1rem;">
+        <svg width="140" height="140" viewBox="0 0 100 100" fill="none" stroke="var(--primary)" stroke-width="3">
+          <rect x="10" y="10" width="80" height="80" stroke-width="3" />
+          <rect x="22" y="22" width="22" height="22" fill="var(--primary)" />
+          <rect x="56" y="22" width="22" height="22" fill="var(--primary)" />
+          <rect x="22" y="56" width="22" height="22" fill="var(--primary)" />
+          <circle cx="67" cy="67" r="7" fill="var(--accent)" />
+        </svg>
+      </div>
+
+      <div style="font-size:0.75rem; color:var(--text-muted); letter-spacing:0.15em; text-transform:uppercase; font-family:'Cinzel',serif;">
+        {{firstName}} &amp; {{secondName}}
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Element -->
+  <div class="toast-msg" id="toastMsg">Tersalin</div>
+
+  <!-- =================================================================== -->
+  <!-- JAVASCRIPT ENGINE & INTERACTIVE LOGIC                               -->
+  <!-- =================================================================== -->
+  <script>
+    // 1. URL Query Guest Name Detection & Lottie Initialization
+    document.addEventListener("DOMContentLoaded", function () {
+      const urlParams = new URLSearchParams(window.location.search);
+      const toName = urlParams.get("to") || urlParams.get("guest") || urlParams.get("u");
+      if (toName) {
+        const guestEl = document.getElementById("guestName");
+        if (guestEl) guestEl.textContent = decodeURIComponent(toName.replace(/\+/g, " "));
+      }
+      initCountdown();
+
+      // Authentic Leafitation Flying Birds Lottie
+      if (typeof lottie !== "undefined") {
+        const coverBirds = document.getElementById("birdsLottieCover");
+        if (coverBirds) {
+          lottie.loadAnimation({
+            container: coverBirds,
+            renderer: "svg",
+            loop: true,
+            autoplay: true,
+            path: "/assets/lottie/burgundy-royale/birds.json"
+          });
+        }
+        const heroBirds = document.getElementById("birdsLottieHero");
+        if (heroBirds) {
+          lottie.loadAnimation({
+            container: heroBirds,
+            renderer: "svg",
+            loop: true,
+            autoplay: true,
+            path: "/assets/lottie/burgundy-royale/birds.json"
+          });
+        }
+      }
+    });
+
+    // 2. Open Invitation Action
+    function openInvitation() {
+      const cover = document.getElementById("coverScreen");
+      if (cover) cover.classList.add("opened");
+
+      // Auto play audio
+      const audio = document.getElementById("luxAudio");
+      const btn = document.getElementById("dockAudioBtn");
+      if (audio) {
+        audio.play().then(() => {
+          if (btn) btn.classList.add("playing");
+        }).catch(() => {
+          console.log("Audio autoplay prevented by browser policy.");
+        });
+      }
+
+      // Smooth scroll to top of content
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    // 3. Audio Toggle Controller
+    function luxToggleAudio() {
+      const audio = document.getElementById("luxAudio");
+      const btn = document.getElementById("dockAudioBtn");
+      if (!audio) return;
+
+      if (audio.paused) {
+        audio.play().then(() => {
+          if (btn) btn.classList.add("playing");
+          showToast("Musik Latar Diputar");
+        }).catch(err => {
+          console.error("Gagal memutar audio:", err);
+        });
+      } else {
+        audio.pause();
+        if (btn) btn.classList.remove("playing");
+        showToast("Musik Dijeda");
+      }
+    }
+
+    // 4. RSVP Submission Handler (Inline & Realtime Prepend)
+    function luxSubmitRsvp(e) {
+      if (e) e.preventDefault();
+      const form = document.getElementById("rsvpForm");
+      if (!form) return;
+
+      const name = document.getElementById("rsvpName")?.value.trim();
+      const attendance = form.querySelector('input[name="attendance"]:checked')?.value || "HADIR";
+      const pax = document.getElementById("rsvpPax")?.value || "1";
+      const message = document.getElementById("rsvpMessage")?.value.trim();
+      const btn = document.getElementById("btnRsvpSubmit");
+
+      if (!name || !message) {
+        showToast("Mohon lengkapi nama dan doa Anda.");
+        return;
+      }
+
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = "MENGIRIMKAN...";
+      }
+
+      // Prepend to UI immediately
+      const feed = document.getElementById("wishesFeed");
+      if (feed) {
+        const item = document.createElement("div");
+        item.className = "wish-item-card";
+        item.innerHTML = `
+          <div class="wish-sender-row">
+            <span class="wish-sender-name">${escapeHtml(name)}</span>
+            <span class="wish-status-badge">${attendance === "HADIR" ? "HADIR" : "BERHALANGAN"}</span>
+          </div>
+          <p class="wish-text-body">${escapeHtml(message)}</p>
+          <span class="wish-timestamp">Baru saja</span>
+        `;
+        feed.prepend(item);
+        feed.scrollTop = 0;
+      }
+
+      showToast("Terima kasih atas doa & konfirmasinya!");
+      form.reset();
+
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "TERKIRIM";
+        setTimeout(() => {
+          btn.textContent = "KIRIM KONFIRMASI";
+        }, 2500);
+      }
+    }
+
+    function setRsvpAttending(el, val) {
+      document.querySelectorAll(".radio-pill").forEach(p => p.classList.remove("active"));
+      el.classList.add("active");
+      const radio = el.querySelector("input");
+      if (radio) radio.checked = true;
+
+      const paxGroup = document.getElementById("paxGroup");
+      if (paxGroup) {
+        paxGroup.style.display = (val === "HADIR") ? "block" : "none";
+      }
+    }
+
+    // 5. Modal Ticket QR Controller
+    function openModal() {
+      const modal = document.getElementById("modalBg");
+      if (modal) modal.classList.add("open");
+    }
+
+    function closeModal() {
+      const modal = document.getElementById("modalBg");
+      if (modal) modal.classList.remove("open");
+    }
+
+    // 6. Copy to Clipboard
+    function copyText(text, msg) {
+      if (!navigator.clipboard) {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        showToast(msg || "Tersalin ke clipboard!");
+        return;
+      }
+      navigator.clipboard.writeText(text).then(() => {
+        showToast(msg || "Tersalin ke clipboard!");
+      }).catch(() => {
+        showToast("Gagal menyalin.");
+      });
+    }
+
+    // 7. Lightbox Zoom Dummy Placeholders
+    function luxOpenZoom(idx) {
+      showToast("Membuka foto #" + (idx + 1));
+    }
+    function luxCloseZoom() {}
+
+    // 8. Countdown Timer Engine
+    function initCountdown() {
+      const grid = document.getElementById("countdownGrid");
+      if (!grid) return;
+      const targetStr = grid.getAttribute("data-target");
+      if (!targetStr) return;
+
+      const targetTime = new Date(targetStr).getTime();
+      if (isNaN(targetTime)) return;
+
+      function update() {
+        const now = new Date().getTime();
+        const diff = targetTime - now;
+
+        if (diff <= 0) {
+          document.getElementById("cdDays").textContent = "00";
+          document.getElementById("cdHours").textContent = "00";
+          document.getElementById("cdMinutes").textContent = "00";
+          document.getElementById("cdSeconds").textContent = "00";
+          return;
+        }
+
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+        document.getElementById("cdDays").textContent = String(days).padStart(2, "0");
+        document.getElementById("cdHours").textContent = String(hours).padStart(2, "0");
+        document.getElementById("cdMinutes").textContent = String(minutes).padStart(2, "0");
+        document.getElementById("cdSeconds").textContent = String(seconds).padStart(2, "0");
+      }
+
+      update();
+      setInterval(update, 1000);
+    }
+
+    // 9. Toast Helper
+    function showToast(text) {
+      const toast = document.getElementById("toastMsg");
+      if (!toast) return;
+      toast.textContent = text;
+      toast.classList.add("show");
+      setTimeout(() => {
+        toast.classList.remove("show");
+      }, 2500);
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    // 10. Dock Active Section Spy
+    window.addEventListener("scroll", function () {
+      const sections = document.querySelectorAll("section[id]");
+      const scrollPos = window.scrollY + 200;
+
+      sections.forEach(sec => {
+        const top = sec.offsetTop;
+        const height = sec.offsetHeight;
+        const id = sec.getAttribute("id");
+
+        if (scrollPos >= top && scrollPos < top + height) {
+          document.querySelectorAll(".dock-link").forEach(link => {
+            link.classList.remove("active");
+            if (link.getAttribute("href") === "#" + id) {
+              link.classList.add("active");
+            }
+          });
+        }
+      });
+    });
+  </script>
+</body>
+
+</html>
