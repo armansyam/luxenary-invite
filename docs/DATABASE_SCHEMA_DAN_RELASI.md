@@ -55,11 +55,24 @@ erDiagram
         string customDomain UK
         string invitationSlug UK
         enum status
+        enum eventType
         string themeId
+        string participantsJson
         string staffPin
         datetime publishedAt
         datetime expiresAt
         datetime galleryExpiresAt
+    }
+
+    Theme {
+        string id PK
+        string name
+        enum eventType
+        string category
+        string series
+        boolean isActive
+        boolean isPremium
+        decimal price
     }
 
     Guest {
@@ -177,7 +190,15 @@ Menyimpan riwayat callback / IPN dari payment gateway untuk idempotency dan debu
 Entitas pusat platform yang menyimpan konfigurasi undangan:
 - `id` (UUID, Primary Key): Identitas unik undangan.
 - `userId` (UUID, Foreign Key): Pemilik undangan (`onDelete: Cascade`).
-- `themeId` (String): ID template tema (contoh: `kalandra`, `badrika`, `wave`).
+- `eventType` (Enum `EventType` — 6 Nilai Resmi):
+  - `WEDDING`: Pernikahan sakral tradisional & modern (default).
+  - `BIRTHDAY`: Perayaan ulang tahun anak & dewasa.
+  - `KHITAN`: Tasyakuran walimatul khitan.
+  - `AQIQAH`: Syukuran aqiqah buah hati.
+  - `WISUDA`: Perayaan kelulusan sarjana & wisudawan.
+  - `GATHERING`: Acara komunitas, reuni, & family gathering.
+- `themeId` (String): ID template tema (contoh: `kalandra`, `bugis`, `festivo`, `al-fariz`).
+- `participantsJson` (JSON String, Nullable): Data spesifik celebrant/partisipan (nama anak/bayi/wisudawan, usia, universitas, orang tua).
 - `subdomain` (String, Unique, Nullable): Subdomain unik platform (contoh: `yoga-nisa`).
 - `customDomain` (String, Unique, Nullable): Domain pribadi klien (contoh: `yoganisa.com`).
 - `invitationSlug` (String, Unique): Slug publik cadangan (contoh: `yoga-dan-nisa`).
@@ -187,9 +208,9 @@ Entitas pusat platform yang menyimpan konfigurasi undangan:
   - `EVENT_FINISHED`: Acara selesai, dialihkan menjadi galeri kenangan.
   - `TAKEN_DOWN`: Di-takedown manual oleh admin karena pelanggaran.
   - `ARCHIVED`: Diarsipkan permanen.
-- `staffPin` (String, Nullable): 4-digit PIN terenkripsi untuk panitia buku tamu.
+- `staffPin` (String, Nullable): 4-digit PIN terenkripsi (AES-256-GCM) untuk panitia buku tamu.
 - `memoriesUploadLocked` (Boolean): Flag penutup fitur upload foto tamu.
-- `eventData` (JSON String): Detail tanggal, jam, zona waktu, nama venue akad/resepsi.
+- `eventData` (JSON String): Detail tanggal, jam, zona waktu, nama venue akad/resepsi atau acara utama.
 - `bankAccounts` (JSON String): Daftar nomor rekening dan e-wallet tanda kasih.
 - `featureSettings` (JSON String): Pengaturan aktif/nonaktif seksi undangan, konfigurasi kamera momen (`memoriesOpeningLayout`, `memoriesCardInstruction`, `memoriesFilter`, `memoriesDateStamp`, `memoriesSessions` dengan alokasi kuota), alamat kado fisik (`shippingAddress`), dan URL gambar QRIS (`qrisImageUrl`).
 
@@ -201,11 +222,24 @@ Menyimpan daftar aset visual mempelai:
   - `HOME_PHOTO`: Foto hero pembuka di awal undangan.
   - `DESKTOP_SIDEBAR`: Foto/video panel sisi kiri layar desktop.
   - `GLOBAL_FIXED_BG`: Foto latar belakang tetap (*fixed background*).
-  - `GROOM_PHOTO`: Foto potret mempelai pria.
+  - `GROOM_PHOTO`: Foto potret mempelai pria (atau foto utama celebrant non-wedding).
   - `BRIDE_PHOTO`: Foto potret mempelai wanita.
   - `GALLERY`: Foto-foto album pre-wedding / galeri momen.
   - `CLOSING_COVER`: Banner visual penutup di akhir undangan.
 - `localPath` (String): URL file di Cloudflare R2 CDN atau path storage lokal.
+
+#### 3. Tabel `themes` (Model `Theme`)
+Master katalog tema fisik resmi di sistem (40 tema terdaftar):
+- `id` (String, Primary Key): Identifier unik tema (contoh: `kalandra`, `artisan`, `festivo`).
+- `name` (String): Nama komersial tema.
+- `eventType` (Enum `EventType`): Afiliasi tipe acara (`WEDDING`, `BIRTHDAY`, `KHITAN`, `AQIQAH`, `WISUDA`, `GATHERING`).
+- `category` (String): Kategori gaya desain (`minimalist`, `modern`, `traditional`).
+- `series` (String, Nullable): Lini koleksi tema.
+- `previewUrl` (String, Nullable): Rute demo publik (contoh: `/demo/kalandra`).
+- `isPremium` (Boolean): Flag status premium tema.
+- `isActive` (Boolean): Flag status aktif di katalog showroom & kasir.
+- `sortOrder` (Int): Urutan penampilan di galeri.
+- `defaultMusicUrl` (String, Nullable): Lagu latar bawaan tema.
 
 > **Media Khusus Non-Enum (`app/api/client/upload/route.ts`):**
 > Media berikut dikelola secara langsung melalui penamaan file deterministik:

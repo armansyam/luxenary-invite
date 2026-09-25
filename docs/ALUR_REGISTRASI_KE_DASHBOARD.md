@@ -38,8 +38,8 @@ flowchart TD
     L -->|Bayar QRIS / Transfer Bank| M[Webhook Gateway / Verifikasi Admin]
     M -->|Status Berubah Menjadi PAID| J
     
-    J -->|Form 3 Langkah + localStorage Draft| N[POST /api/client/invitations/create]
-    N -->|Generate Canonical Slug + Default Events| O[Database: Record Invitation DRAFT]
+    J -->|Wizard 4 Langkah Multi-Event + Local Draft| N[POST /api/client/invitations/create]
+    N -->|Generate Canonical Slug + Event Context| O[Database: Record Invitation DRAFT]
     O -->|Redirect Langsung| P[app/client/dashboard/invitation/ID/page.tsx]
     P -->|Split Editor & Live Preview| Q[Selesai: Siap Desain & Sebar]
 ```
@@ -163,39 +163,43 @@ flowchart TD
 
 ---
 
-## Fase 5: Wizard Penyiapan Undangan Awal (Setup Wizard)
+## Fase 5: Wizard Penyiapan Undangan Awal (Setup Wizard Multi-Event)
 
-### 1. Form Penyiapan 3 Langkah
+### 1. Form Penyiapan 4 Langkah Adaptif
 *   **File:** [`app/(client)/dashboard/setup/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/%28client%29/dashboard/setup/page.tsx)
 *   **Fitur Keamanan Draft Lokal:**
-    Menggunakan `localStorage ("luxenary_setup_draft")`. Jika koneksi terputus atau halaman ter-refresh di tengah jalan, seluruh data nama dan tanggal yang sudah diketik tidak akan hilang.
-*   **Tahapan Form:**
-    1. **Langkah 1: Mempelai Pria & Wanita:** Input nama lengkap dan nama panggilan kedua mempelai.
-    2. **Langkah 2: Hari Bahagia & Lokasi:** Input tanggal pernikahan dan kota utama acara.
-    3. **Langkah 3: Pilihan Tema:** Menampilkan tema yang difilter khusus sesuai tier paket yang sudah dibayar.
+    Menggunakan `localStorage ("luxenary_setup_draft")`. Jika koneksi terputus atau halaman ter-refresh di tengah jalan, seluruh data input pulih otomatis.
+*   **Tahapan Form Wizard:**
+    1. **Langkah 0: Pilihan Jenis Acara (`eventType`):**
+       - Pilihan: `WEDDING`, `BIRTHDAY`, `KHITAN`, `AQIQAH`, `WISUDA`, `GATHERING`.
+       - Menentukan skema formulir langkah berikutnya serta memfilter katalog tema secara eksklusif.
+    2. **Langkah 1: Profil Penyelenggara / Persona (Adaptif):**
+       - **Wedding:** Nama lengkap & panggilan kedua mempelai (Pria & Wanita).
+       - **Birthday:** Nama lengkap, nama panggilan, dan usia/milad persona utama.
+       - **Khitan & Aqiqah:** Nama anak/bayi dan nama kedua orang tua (Ayah & Ibu).
+       - **Wisuda:** Nama wisudawan, gelar akademik, program studi, dan institusi.
+       - **Gathering:** Nama acara utama, sub-tema, dan organisasi penyelenggara.
+    3. **Langkah 2: Hari Bahagia, Wilayah & Waktu Sesi Terstruktur:**
+       - Tanggal acara utama dan wilayah/kota dengan pendeteksian zona waktu otomatis (`WIB`, `WITA`, `WIT`).
+       - Penentuan waktu sesi terstruktur (Akad/Sesi 1 dan Resepsi/Sesi 2).
+    4. **Langkah 3: Pemilihan Desain Tema (Terisolasi per Jenis Acara):**
+       - Menampilkan tema yang **hanya relevan** dengan `eventType` yang dipilih.
+       - Navigasi tab kategori gaya dinamis (`all`, `minimalist`, `modern`, `traditional`) menyesuaikan tema yang tersedia pada jenis acara tersebut.
 
 ### 2. Backend Pembuat Undangan
 *   **File:** [`app/api/client/invitations/create/route.ts`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/api/client/invitations/create/route.ts)
 *   **Operasi Kritis yang Dilakukan:**
-    1. **Guard Validasi:** Memverifikasi bahwa order ID benar-benar berstatus `PAID` dan milik user yang bersangkutan.
+    1. **Guard Validasi Order & Event Type:** Memverifikasi bahwa order ID benar-benar berstatus `PAID`, milik user yang bersangkutan, dan jika `themeId` diisi, temanya wajib memiliki `eventType` yang sesuai (jika tidak cocok, sistem fallback aman ke `DEFAULT_THEME_BY_EVENT`).
     2. **Pembuatan Canonical Flat Slug Permanen:**
-       Formula: `{groomSlug}-{brideSlug}-{DDMMYY}`
-       *Contoh:* Dimas & Clarissa tanggal 12 Desember 2026 ➔ `dimas-clarissa-121226`.
-       *Collision Resolver:* Jika ada pasangan dengan nama dan tanggal sama persis, sistem otomatis menambahkan nama kota: `dimas-clarissa-121226-makassar`.
-    3. **Inisialisasi Rangkaian Acara Default:**
-       Menyuntikkan 2 agenda standar ke kolom `eventData`:
-       - Sesi 1: Akad Nikah / Pemberkatan (Pukul 08.00 - 10.00 WITA).
-       - Sesi 2: Resepsi Pernikahan (Pukul 11.00 - 14.00 WITA).
+       - **Wedding:** `{groomSlug}-{brideSlug}-{DDMMYY}` (Contoh: `dimas-clarissa-121226`).
+       - **Non-Wedding:** `{personaSlug}-{DDMMYY}` (Contoh: `kenzo-150826`).
+       - *Collision Resolver:* Jika ada benturan slug yang sama persis, sistem otomatis menyematkan nama kota di belakangnya (`dimas-clarissa-121226-makassar`).
+    3. **Inisialisasi Rangkaian Acara Default Berbasis Event Type:**
+       - Wedding: Akad & Resepsi.
+       - Non-Wedding: Sesi Utama & Syukuran / Ramah Tamah.
     4. **Inisialisasi Fitur & Label Standar:**
-       Menyimpan konfigurasi default ke `featureSettings`:
-       - `colorPalette: "champagne"`
-       - `weddingTagline: "THE WEDDING OF"`
-       - `displayOrder: "GROOM_FIRST"`
-       - `showMusic: true`, `showRsvp: true`, `showQrCheckin: true`, `showGift: true`.
-    5. **Penerbitan ID:** Record dibuat dengan status `DRAFT`.
-    6. **Pembersihan Draft:** `localStorage.removeItem("luxenary_setup_draft")`.
-    7. **Pengalihan Otomatis:** API mengembalikan ID baru, dan klien langsung diantar masuk ke Studio Editor:
-       `/dashboard/invitation/${invitation.id}`.
+       - Menyimpan konfigurasi default ke `featureSettings` (`colorPalette: "champagne"`, `displayOrder`, `showMusic: true`, `showRsvp: true`, `showQrCheckin: true`, `showGift: true`).
+    5. **Penerbitan ID & Pengalihan Otomatis:** Record dibuat dengan status `DRAFT`, draft lokal dibersihkan (`localStorage.removeItem("luxenary_setup_draft")`), dan klien langsung diantar masuk ke Studio Editor: `/dashboard/invitation/${invitation.id}`.
 
 ---
 
@@ -392,26 +396,26 @@ Salam bahagia,
 ---
 
 ### B. Katalog Tema Undangan Website (`themes/`)
-Master file HTML fisik yang menjadi basis kompilasi undangan:
+Master file HTML fisik yang menjadi basis kompilasi undangan tersimpan secara modular dalam hierarki `themes/{eventType}/{style}/{nama-tema}.html`:
 
-| ID Tema | Nama Tema | Kategori / Seri | Path File Template | Karakter Visual |
-| :--- | :--- | :--- | :--- | :--- |
-| `kalandra` | Kalandra | Minimalist | `themes/minimalist/kalandra.html` | Modern, Elegan & Minimalis Editorial |
-| `valente` | Valente | Minimalist | `themes/minimalist/valente.html` | High-Fashion, Editorial & Mewah |
-| `aurelia` | Aurelia | Minimalist | `themes/minimalist/aurelia.html` | Romantis, Sinematik & Anggun |
-| `artisan` | Artisan | Minimalist | `themes/minimalist/artisan.html` | Artistik, Hangat & Vintage |
-| `badrika` | Badrika | Traditional | `themes/traditional/badrika.html` | Walimatul 'Urs & Saoraja Royal |
-| `candani` | Candani | Traditional | `themes/traditional/candani.html` | Pesona Nusantara Floral |
-| `dillalucky` | Dilla Lucky | Traditional | `themes/traditional/dillalucky.html` | Islami Sakral — Batik Ornament |
-| `mayang` | Mayang | Traditional | `themes/traditional/mayang.html` | Nuansa Adat Bugis/Makassar Anggun |
-| `prameswari` | Prameswari | Traditional | `themes/traditional/prameswari.html` | Sakral, Megah & Royal Keraton Jawa |
-| `ameera` | Ameera | Modern | `themes/modern/ameera.html` | Heritage Modern — Elegan Dark |
-| `chronicle` | Chronicle | Modern | `themes/modern/chronicle.html` | High-Fashion Vogue Editorial |
-| `lumina` | Lumina | Modern | `themes/modern/lumina.html` | Minimalist Glass & Cinema |
-| `papercut` | Papercut | Modern | `themes/modern/papercut.html` | Moody Papercut — Kraft Paper Aesthetic |
-| `solaria` | Solaria | Modern | `themes/modern/solaria.html` | Romantic Sunset Glow |
-| `wave` | Wave | Modern | `themes/modern/wave.html` | Dark, Moody & Dramatic Gelombang |
-| `blueprint` | Starter Blueprint | Core | `themes/starter-blueprint.html` | Standar acuan struktur template baku |
+| ID Tema | Nama Tema | Event Type | Gaya / Kategori | Path File Template Fisik | Karakter Visual |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `kalandra` | Kalandra | Wedding | Minimalist | `themes/wedding/minimalist/kalandra.html` | Modern, Elegan & Minimalis Editorial |
+| `valente` | Valente | Wedding | Minimalist | `themes/wedding/minimalist/valente.html` | High-Fashion, Editorial & Mewah |
+| `aurelia` | Aurelia | Wedding | Minimalist | `themes/wedding/minimalist/aurelia.html` | Romantis, Sinematik & Anggun |
+| `artisan` | Artisan | Wedding | Minimalist | `themes/wedding/minimalist/artisan.html` | Artistik, Hangat & Vintage |
+| `badrika` | Badrika | Wedding | Traditional | `themes/wedding/traditional/badrika.html` | Walimatul 'Urs & Saoraja Royal |
+| `candani` | Candani | Wedding | Traditional | `themes/wedding/traditional/candani.html` | Pesona Nusantara Floral |
+| `dillalucky` | Dilla Lucky | Wedding | Traditional | `themes/wedding/traditional/dillalucky.html` | Islami Sakral — Batik Ornament |
+| `mayang` | Mayang | Wedding | Traditional | `themes/wedding/traditional/mayang.html` | Nuansa Adat Bugis/Makassar Anggun |
+| `prameswari` | Prameswari | Wedding | Traditional | `themes/wedding/traditional/prameswari.html` | Sakral, Megah & Royal Keraton Jawa |
+| `ameera` | Ameera | Wedding | Modern | `themes/wedding/modern/ameera.html` | Heritage Modern — Elegan Dark |
+| `chronicle` | Chronicle | Wedding | Modern | `themes/wedding/modern/chronicle.html` | High-Fashion Vogue Editorial |
+| `lumina` | Lumina | Wedding | Modern | `themes/wedding/modern/lumina.html` | Minimalist Glass & Cinema |
+| `papercut` | Papercut | Wedding | Modern | `themes/wedding/modern/papercut.html` | Moody Papercut — Kraft Paper Aesthetic |
+| `solaria` | Solaria | Wedding | Modern | `themes/wedding/modern/solaria.html` | Romantic Sunset Glow |
+| `wave` | Wave | Wedding | Modern | `themes/wedding/modern/wave.html` | Dark, Moody & Dramatic Gelombang |
+| `blueprints` | Starter Blueprints | Multi-Event | Core | `themes/_blueprints/{eventType}/` | Cetak biru acuan baku untuk 6 jenis acara |
 
 ---
 *Dokumentasi ini disusun secara faktual berdasarkan kode sumber yang aktif di dalam repositori Luxenary-Invite.*

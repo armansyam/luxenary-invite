@@ -6,12 +6,16 @@ Dokumen ini adalah referensi resmi untuk operasional dan arsitektur teknis dari 
 
 ## 1. Filosofi & Arsitektur Tema (*Single Source of Truth*)
 
-Sistem undangan pernikahan **Luxenary Invite** menggunakan arsitektur **100% Native Standalone HTML Template**:
+Sistem undangan platform **Luxenary Invite** menggunakan arsitektur **100% Native Standalone HTML Template** dengan pengelompokan hierarki dua tingkat (*Two-Tier Event & Style Hierarchy*):
 1. **Tidak Ada Dependensi Server Runtime Luar:** Setiap tema adalah file `.html` mandiri lengkap dengan CSS dan JavaScript interaktif di dalamnya.
-2. **Koleksi Fisik Mandiri:** Semua master file tema tersimpan di direktori fisik:
-   * `themes/minimalist/` (Seri Minimalis Editorial)
-   * `themes/modern/` (Seri Kontemporer & Editorial)
-   * `themes/traditional/` (Seri Adat & Budaya Keraton)
+2. **Koleksi Fisik Mandiri:** Semua master file tema tersimpan di direktori fisik berjenjang:
+   * `themes/wedding/` (Subfolder: `minimalist/`, `modern/`, `traditional/`)
+   * `themes/birthday/` (Subfolder: `modern/`, `minimalist/`)
+   * `themes/khitan/` (Subfolder: `traditional/`, `modern/`)
+   * `themes/aqiqah/` (Subfolder: `minimalist/`, `traditional/`)
+   * `themes/wisuda/` (Subfolder: `modern/`, `minimalist/`)
+   * `themes/general/` (Subfolder: `modern/`, `minimalist/`)
+   * `themes/_blueprints/` (Starter blueprints resmi untuk 6 jenis acara)
 3. **Single Source of Truth:** File fisik di folder `themes/` adalah acuan tunggal yang sah. Tidak boleh ada tema yang terdaftar di database tanpa memiliki file fisik `.html` di folder tersebut.
 
 ---
@@ -23,17 +27,17 @@ Mulai versi ini, Admin dapat menambahkan tema baru secara langsung dari Dashboar
 ```
 [ Admin Dashboard: Modal Tambah Tema ]
         │
-        ├─ 1. Isi Metadata: ID Tema (e.g. 'aurora'), Nama, Kategori, Deskripsi, Urutan
+        ├─ 1. Isi Metadata: ID Tema (e.g. 'aurora'), Nama, Jenis Acara (EventType), Kategori/Style, Deskripsi, Urutan
         ├─ 2. Unggah File Master: 'aurora.html' (Wajib format .html)
         │
         ▼
 [ API: POST /api/admin/themes ] (Multipart FormData)
         │
         ├─ Step A: Validasi Ekstensi & Duplikasi ID
-        ├─ Step B: Simpan Fisik File ke `themes/{kategori}/{id}.html`
+        ├─ Step B: Simpan Fisik File ke `themes/{eventType}/{style}/{id}.html`
         ├─ Step C: Simpan Metadata ke Tabel PostgreSQL `themes`
         ├─ Step D: Jalankan `compileAndSaveStaticDemo(id)`
-        │          (Menggabungkan template master dengan mock data pengantin)
+        │          (Menggabungkan template master dengan mock data pengantin/persona)
         ├─ Step E: Simpan HTML Demo ke `public/demo/{id}/index.html`
         ├─ Step F: Invalidate Cache Next.js (`/demo`, `/admin`, `/`)
         │
@@ -46,7 +50,8 @@ Mulai versi ini, Admin dapat menambahkan tema baru secara langsung dari Dashboar
 |---|---|---|
 | **ID Tema** | Teks (Slug) | Wajib unik, huruf kecil, angka, dan strip (contoh: `aurora`). ID ini menjadi nama file `aurora.html`. |
 | **Nama Tema** | Teks | Nama display tema (contoh: `Aurora Borealis`). |
-| **Kategori** | Pilihan | `Premium`, `Modern`, atau `Traditional`. Menentukan subfolder di dalam `themes/`. |
+| **Jenis Acara (Event Type)** | Pilihan | `Wedding`, `Birthday`, `Khitan`, `Aqiqah`, `Wisuda`, atau `Gathering`. Menentukan direktori utama acara. |
+| **Kategori / Style** | Pilihan | `Minimalist`, `Modern`, atau `Traditional`. Menentukan subfolder gaya di dalam jenis acara. |
 | **Urutan (Sort)** | Angka | Posisi urutan penampilan di katalog showroom dan daftar setup klien. |
 | **Deskripsi Singkat** | Teks | Ringkasan estetika tema yang muncul pada kartu katalog. |
 | **File Master Template** | File `.html` | **Wajib diunggah**. File HTML standalone yang memuat markup dan placeholder variabel `{{...}}`. |
@@ -134,7 +139,7 @@ Bagaimana jika tema dihapus saat ada klien yang sedang dalam tahap penyusunan dr
 
 Tombol hijau **"Sinkronisasi Tema & Cache"** di bagian atas tab Manajemen Tema berfungsi sebagai sistem pemindaian menyeluruh (*full filesystem scan*):
 
-1. **Auto-Discovery:** Memindai subfolder `themes/minimalist`, `themes/modern`, dan `themes/traditional`. Setiap file `.html` baru yang diletakkan langsung via Git/filesystem akan otomatis didaftarkan ke database.
+1. **Auto-Discovery Multi-Event:** Memindai seluruh folder acara dan gayanya (`themes/wedding/`, `themes/birthday/`, `themes/khitan/`, `themes/aqiqah/`, `themes/wisuda/`, `themes/general/`). Setiap file `.html` baru yang diletakkan langsung via Git/filesystem akan otomatis didaftarkan ke tabel `themes` dengan `eventType` dan `style` yang tepat.
 2. **Safety Guard Anti-Wipeout:** Memastikan jika 0 file terdeteksi di disk (misal saat proses deploy belum selesai), operasi langsung dibatalkan secara aman tanpa merusak database.
 3. **Auto-Purge Tema Zombie:** Memeriksa seluruh baris tema di tabel database. Jika ada record di database yang file fisiknya **tidak ditemukan** di disk, record tersebut otomatis dihapus dari database demi menjaga integritas data.
 4. **Preservasi Pengaturan Kustom:** Mempertahankan kustomisasi admin (`sortOrder`, thumbnail kustom, deskripsi, dan status aktif/nonaktif tema yang pernah diatur di dashboard).
@@ -143,26 +148,30 @@ Tombol hijau **"Sinkronisasi Tema & Cache"** di bagian atas tab Manajemen Tema b
 
 ---
 
-## 6. Standar Blueprint Template Tema (`starter-blueprint.html`)
+## 6. Standar Blueprint Template Tema Multi-Event (`themes/_blueprints/`)
 
-Admin atau desainer dapat mengunduh starter blueprint resmi melalui tombol **Download Blueprint** di toolbar Admin.
+Admin atau desainer dapat mengunduh dan meniru starter blueprint resmi untuk 6 jenis acara yang tersimpan di `themes/_blueprints/{eventType}/`.
 
-### Daftar Placeholder Wajib (*Mandatory Placeholders*):
-| Variabel Placeholder | Fungsi Injeksi |
-|---|---|
-| `{{groomName}}`, `{{brideName}}` | Nama panggilan kedua mempelai |
-| `{{groomDisplayName}}`, `{{brideDisplayName}}` | Nama lengkap mempelai pria dan wanita |
-| `{{groomParents}}`, `{{brideParents}}` | Nama orang tua / keluarga mempelai |
-| `{{openingQuote}}`, `{{openingQuoteRef}}` | Ayat suci / kutipan mutiara pembuka |
-| `{{globalBgUrl}}` | URL foto latar belakang utama |
-| `{{groomPhotoUrl}}`, `{{bridePhotoUrl}}` | URL foto individual mempelai pria & wanita |
-| `{{sidebarPhotoUrl}}`, `{{landingCoverUrl}}` | URL foto cover kartu & cover pembuka |
-| `{{eventDataHtml}}` | Kontainer acara (Akad Nikah, Resepsi, Waktu, Lokasi & Maps) |
-| `{{storySectionHtml}}` | Seksi perjalanan cinta (*Love Story Timeline*) |
-| `{{gallerySectionHtml}}` | Seksi galeri foto (*Grid / Carousel Moments*) |
-| `{{giftSectionHtml}}` | Seksi amplop digital (*Direct Bank Transfer & Kado Fisik*) |
-| `{{qrAccessSectionHtml}}` | Seksi & tombol QR Pass Buku Tamu Digital |
-| `{{musicAudioUrl}}` | URL file lagu latar belakang romantis |
+### Daftar Placeholder Universal Multi-Event:
+| Variabel Placeholder | Fungsi Injeksi | Relevansi Event |
+|---|---|---|
+| `{{groomName}}`, `{{brideName}}` | Nama panggilan mempelai pria & wanita | Wedding |
+| `{{groomDisplayName}}`, `{{brideDisplayName}}` | Nama lengkap mempelai pria dan wanita | Wedding |
+| `{{groomParents}}`, `{{brideParents}}` | Nama orang tua / keluarga mempelai | Wedding |
+| `{{personName}}`, `{{personNickname}}` | Nama lengkap & panggilan persona utama | Birthday, Khitan, Aqiqah, Wisuda |
+| `{{fatherName}}`, `{{motherName}}` | Nama ayah & ibu kandung | Khitan, Aqiqah, Birthday |
+| `{{degree}}`, `{{major}}`, `{{institution}}` | Gelar akademik, prodi, dan perguruan tinggi | Wisuda |
+| `{{eventTitle}}`, `{{eventSubtitle}}`, `{{organizer}}` | Judul kegiatan, tema, dan institusi | Gathering / Umum |
+| `{{openingQuote}}`, `{{openingQuoteRef}}` | Ayat suci / kutipan mutiara pembuka | Seluruh Acara |
+| `{{globalBgUrl}}` | URL foto latar belakang utama | Seluruh Acara |
+| `{{groomPhotoUrl}}`, `{{bridePhotoUrl}}` / `{{personPhotoUrl}}` | URL foto profil | Seluruh Acara |
+| `{{sidebarPhotoUrl}}`, `{{landingCoverUrl}}` | URL foto cover kartu & cover pembuka | Seluruh Acara |
+| `{{eventDataHtml}}` | Kontainer acara (Sesi 1, Sesi 2, Waktu, Lokasi & Maps) | Seluruh Acara |
+| `{{storySectionHtml}}` | Seksi perjalanan cinta / kilas balik cerita | Seluruh Acara |
+| `{{gallerySectionHtml}}` | Seksi galeri foto (*Grid / Carousel Moments*) | Seluruh Acara |
+| `{{giftSectionHtml}}` | Seksi amplop digital (*Direct Bank Transfer & Kado Fisik*) | Seluruh Acara |
+| `{{qrAccessSectionHtml}}` | Seksi & tombol QR Pass Buku Tamu Digital | Seluruh Acara |
+| `{{musicAudioUrl}}` | URL file lagu latar belakang | Seluruh Acara |
 
 ---
 

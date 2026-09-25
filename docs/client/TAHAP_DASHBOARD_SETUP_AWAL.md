@@ -11,13 +11,14 @@ Dokumen ini memuat spesifikasi teknis dan alur faktual sistem pada tahap **Dashb
    ```
    /dashboard/setup?order={orderId}&plan={planType}
    ```
-2. **Setup Bertahap 3 Langkah Ringkas (Zero Friction):** Calon pengantin tidak langsung dibebani ratusan kolom formulir rumit. Penyiapan awal dibagi menjadi 3 langkah terarah:
-   - **Langkah 1:** Identitas Pasangan Mempelai (Nama Panggilan & Nama Lengkap).
-   - **Langkah 2:** Hari Bahagia & Wilayah Utama (Tanggal Pernikahan & Kota).
-   - **Langkah 3:** Pemilihan Desain Tema Perdana (Disesuaikan dengan tier paket yang dibeli).
+2. **Setup Bertahap 4 Langkah Adaptif Multi-Event (Zero Friction):** Calon pengantin atau penyelenggara tidak langsung dibebani ratusan kolom formulir rumit. Penyiapan awal dibagi menjadi 4 langkah terarah:
+   - **Langkah 0:** Pemilihan Jenis Acara (`eventType`: Wedding, Birthday, Khitan, Aqiqah, Wisuda, Gathering).
+   - **Langkah 1:** Identitas Penyelenggara / Pasangan (Formulir adaptif sesuai jenis acara yang dipilih).
+   - **Langkah 2:** Hari Bahagia & Wilayah Utama (Tanggal Acara, Kota dengan zona waktu otomatis WIB/WITA/WIT, dan waktu sesi terstruktur).
+   - **Langkah 3:** Pemilihan Desain Tema Perdana (Difilter ketat hanya menampilkan tema untuk jenis acara terpilih).
 3. **Prinsip Anti-Hardcode & Zero Fake Data (Clean State):**
-   - **Tidak Ada Tema Default:** State awal tema bernilai kosong murni (`themeId = ""`). Tidak ada auto-select ke tema tertentu. Calon pengantin bebas menentukan tema pilihannya sendiri.
-   - **Validasi Submit:** Jika klien menyelesaikan setup form 3 langkah, sistem mewajibkan pemilihan salah satu tema sebelum formulir dapat dikirimkan ke server.
+   - **Tidak Ada Tema Default:** State awal tema bernilai kosong murni (`themeId = ""`). Tidak ada auto-select ke tema tertentu. Klien bebas menentukan tema pilihannya sendiri.
+   - **Validasi Submit:** Jika klien menyelesaikan setup form 4 langkah, sistem mewajibkan pemilihan salah satu tema sebelum formulir dapat dikirimkan ke server.
 4. **Fleksibilitas Penuh (Opsi Lewati Setup Murni Kosong):**
    - Klien memiliki opsi *"Lewati Setup (Atur Nanti)"*.
    - Jika dilewati, backend menyimpan record dengan data murni kosong (`themeId: ""`, `eventData: []`, `loveStory: []`, `bankAccounts: []`).
@@ -27,7 +28,7 @@ Dokumen ini memuat spesifikasi teknis dan alur faktual sistem pada tahap **Dashb
    - **Di Studio Editor (`/dashboard/invitation/[id]`):**
      - Header editor menampilkan badge *"Belum Memilih Tema"*.
      - Banner tahap wajib pertama muncul di atas canvas editor.
-     - Seksi 1 (Tema Desain & Palet Warna) otomatis dibuka (*auto-expanded*) saat editor pertama kali dimuat jika tema belum ditentukan.
+     - Seksi 1 (Tema Desain & Palet Warna) otomatis dibuka (*auto-expanded*) saat editor pertama kali dimuat jika tema belum ditentukan, dan daftar tema di Seksi 1 difilter ketat sesuai `invitation.eventType`.
      - Jika Seksi 1 diminimalkan, kartu menampilkan alert ramah *"Belum Memilih Tema Undangan"* dengan tombol akses cepat *"Pilih Tema Sekarang"*.
    - **Di Route Pratinjau (`/api/client/invitations/[id]/preview`):** Menampilkan halaman peringatan elegan *"Tema Belum Dipilih"* tanpa memaksakan fallback tema apapun.
    - **Di Syarat Publikasi (`/dashboard/settings` & `lib/staticPublisher.ts`):** Publikasi undangan diblokir (`isPublishable = false`) dan compiler statis menolak proses rendering hingga tema resmi telah dipilih oleh klien.
@@ -44,35 +45,40 @@ flowchart TD
     
     C --> D[Cek Draft Tersimpan di localStorage: luxenary_setup_draft]
     D -->|Ada Draft Lama| E[Auto-Restore State Input & Step]
-    D -->|Tidak Ada Draft| F[Inisialisasi State Kosong: themeId = kosong]
+    D -->|Tidak Ada Draft| F[Inisialisasi State Kosong: themeId = kosong, eventType = WEDDING]
     
     E & F --> G[Fetch Hak Akses Paket: Onboarding-State / Query Param]
     G --> H[Identifikasi Tier Paket Klien: TIER_1 / TIER_2 / TIER_3]
     
-    H --> I[LANGKAH 1: Profil Pasangan]
-    I -->|Wajib| I1[Nama Panggilan Pria & Wanita]
-    I -->|Opsional| I2[Nama Lengkap & Gelar Pria & Wanita]
+    H --> I0[LANGKAH 0: Pilihan Jenis Acara]
+    I0 -->|Pilih Acara| I0A[Wedding / Birthday / Khitan / Aqiqah / Wisuda / Gathering]
+    
+    I0A --> I[LANGKAH 1: Profil Penyelenggara / Persona Adaptif]
+    I -->|Wedding| I1[Nama Panggilan & Lengkap Pria & Wanita]
+    I -->|Non-Wedding| I2[Nama Utama, Usia/Gelar, Nama Orang Tua / Organisasi]
     I --> J{Pilihan Aksi Klien}
     
     J -->|Klik: Lewati Setup| K[handleSkipSetup: themeId = kosong, eventData = kosong]
-    J -->|Klik: Lanjut ke Tanggal Acara| L[LANGKAH 2: Tanggal & Lokasi Utama]
+    J -->|Klik: Lanjut ke Tanggal Acara| L[LANGKAH 2: Tanggal, Lokasi & Waktu Acara]
     
-    L -->|Wajib| L1[Tanggal Pernikahan Utama: YYYY-MM-DD]
+    L -->|Wajib| L1[Tanggal Acara: YYYY-MM-DD]
     L -->|Wajib| L2[Kota / Wilayah Utama Acara]
+    L -->|Otomatis| L3[Deteksi Zona Waktu Browser: WIB / WITA / WIT]
+    L -->|Opsional| L4[Waktu Sesi Akad / Resepsi Terstruktur]
     L --> M[Klik: Pilih Desain Tema]
     
-    M --> N[LANGKAH 3: Pemilihan Desain Tema Perdana]
-    N --> O[Tampilkan Tema Sesuai Hak Akses Tier Paket - Tanpa Auto-Select]
+    M --> N[LANGKAH 3: Pemilihan Desain Tema Terisolasi]
+    N --> O[Filter Tema Eksklusif sesuai eventType - Tanpa Auto-Select]
     O --> P{Apakah Klien Sudah Memilih Tema?}
     P -->|Belum Memilih| P1[Tombol Submit Dinonaktifkan / Peringatan Muncul]
     P -->|Sudah Memilih 1 Tema| Q[Klik: Selesai & Masuk ke Studio Undangan]
     
-    Q --> R[API Backend: POST /api/client/invitations/create dengan themeId Terpilih]
+    Q --> R[API Backend: POST /api/client/invitations/create dengan eventType & themeId Terpilih]
     K --> R2[API Backend: POST /api/client/invitations/create dengan themeId KOSONG]
     
     R & R2 --> S[Verifikasi Keamanan: User Memiliki Order PAID]
-    S --> T[Rakit Slug Kanonikal: Flat Unik atau Random Fallback]
-    T --> U[Simpan Record Baru di Database Prisma]
+    S --> T[Rakit Slug Kanonikal Multi-Event & Validasi Guard Tema]
+    T --> U[Simpan Record Baru di Database PostgreSQL via Prisma]
     U --> V[Hapus Draft localStorage: luxenary_setup_draft]
     
     V --> W[Auto-Redirect ke Studio Editor: /dashboard/invitation/ID]
@@ -86,57 +92,53 @@ flowchart TD
 
 ## 3. Rincian Teknis per Langkah Wizard
 
-### LANGKAH 1: Identitas Pasangan Mempelai
+### LANGKAH 0: Pilihan Jenis Acara (Event Type Selector)
+* **Komponen:** [`app/(client)/dashboard/setup/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/(client)/dashboard/setup/page.tsx) (`step === 0`)
+* **Tujuan:** Menentukan kategori acara digital yang akan dibuat:
+  - `WEDDING` (Pernikahan / Walimatul 'Urs)
+  - `BIRTHDAY` (Ulang Tahun / Sweet Seventeen / Milad)
+  - `KHITAN` (Khitanan / Walimatul Khitan)
+  - `AQIQAH` (Aqiqah / Tasyakuran Kelahiran)
+  - `WISUDA` (Wisuda / Graduation / Yudisium)
+  - `GATHERING` (Reuni / Halal Bihalal / Corporate Gathering)
+* **Dampak Sistem:** Mengubah skema input pada Langkah 1, format slug kanonikal, serta memfilter tema di Langkah 3.
+
+---
+
+### LANGKAH 1: Identitas Penyelenggara / Pasangan (Adaptif)
 * **Komponen:** [`app/(client)/dashboard/setup/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/(client)/dashboard/setup/page.tsx) (`step === 1`)
-* **Tujuan:** Menangkap nama panggilan kedua calon mempelai yang akan digunakan sebagai identitas tautan web, headline sampul undangan, dan sapaan utama.
+* **Tujuan:** Menangkap profil utama penyelenggara/tokoh sesuai jenis acara.
 * **Elemen Formulir:**
-  1. **Nama Panggilan Pria (`groomNickname`) — *Wajib*:**
-     - Placeholder: *"Masukkan nama panggilan mempelai pria"*.
-  2. **Nama Panggilan Wanita (`brideNickname`) — *Wajib*:**
-     - Placeholder: *"Masukkan nama panggilan mempelai wanita"*.
-  3. **Nama Lengkap & Gelar Pria (`groomName`) — *Opsional*:**
-     - Placeholder: *"Masukkan nama lengkap mempelai pria"*.
-  4. **Nama Lengkap & Gelar Wanita (`brideName`) — *Opsional*:**
-     - Placeholder: *"Masukkan nama lengkap mempelai wanita"*.
-* **Validasi Frontend:** Jika tombol *"Lanjut ke Tanggal Acara"* diklik saat nama panggilan masih kosong, muncul pesan inline: *"Harap isi nama panggilan kedua mempelai."*.
+  1. **Wedding:**
+     - `groomNickname` & `brideNickname` (*Wajib*): Nama panggilan mempelai.
+     - `groomName` & `brideName` (*Opsional*): Nama lengkap & gelar kedua mempelai.
+  2. **Non-Wedding (Birthday, Khitan, Aqiqah, Wisuda, Gathering):**
+     - `personName` / `eventTitle` (*Wajib*): Nama tokoh utama atau nama agenda acara.
+     - `personNickname` / `eventSubtitle` (*Opsional*): Panggilan atau tema pendukung.
+     - `fatherName` & `motherName` (*Opsional*): Nama orang tua (khusus Khitan & Aqiqah).
+     - `degree`, `major`, `institution` (*Opsional*): Gelar dan almamater (khusus Wisuda).
+     - `organizer` (*Opsional*): Nama lembaga/panitia (khusus Gathering).
 
 ---
 
-### LANGKAH 2: Hari Bahagia, Wilayah & Waktu Acara
+### LANGKAH 2: Hari Bahagia, Wilayah & Waktu Acara Terstruktur
 * **Komponen:** [`app/(client)/dashboard/setup/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/(client)/dashboard/setup/page.tsx) (`step === 2`)
-* **Tujuan:** Menentukan patokan tanggal, kota lokasi sentral, zona waktu resmi, serta perkiraan jam akad dan resepsi secara 100% dinamis.
+* **Tujuan:** Menentukan patokan tanggal, kota lokasi sentral, zona waktu resmi, serta waktu sesi terstruktur.
 * **Elemen Formulir:**
-  1. **Tanggal Pernikahan Utama (`weddingDate`) — *Wajib*:**
-     - Format: Input tipe `date` (YYYY-MM-DD).
-     - Menjadi dasar perhitungan tanggal DDMMYY untuk slug URL kanonikal serta target jam hitung mundur.
-  2. **Kota / Wilayah Utama Acara (`city`) — *Wajib*:**
-     - Tipe: Text input.
-     - Contoh: `Jakarta`, `Surabaya`, `Makassar`, `Medan`, `Bandung`.
-  3. **Zona Waktu Acara (`timeZone`) — *Pilihan Interaktif*:**
-     - Opsi tombol chip: `WIB (Barat)`, `WITA (Tengah)`, `WIT (Timur)`.
-     - Otomatis mendeteksi zona waktu browser klien saat dimuat (misal Makassar/Bali auto `WITA`, Jakarta/Jawa auto `WIB`, Papua/Maluku auto `WIT`) dan dapat diubah secara bebas oleh klien.
-  4. **Perkiraan Jam Akad & Resepsi (`akadTime` & `resepsiTime`) — *Opsional*:**
-     - Klien dapat memasukkan jam acara jika sudah memiliki jadwal pasti (contoh: `08:00 - 10:00` atau `09:00 - Selesai`).
-     - Sistem secara otomatis menggabungkan waktu dengan zona waktu terpilih (contoh: `08:00 - 10:00 WIB`).
-     - Jika dikosongkan, data waktu disimpan murni kosong `""` tanpa ada pemaksaan jam fiktif.
-* **Catatan Edukasi Klien di Layar:** Terdapat kotak panduan ramah yang menginformasikan bahwa rincian detail seperti nama gedung, alamat lengkap, peta Google Maps, dan multi-sesi adat dapat ditambahkan dengan leluasa di dalam Studio Editor.
+  1. **Tanggal Acara Utama (`weddingDate`) — *Wajib*:** Format `YYYY-MM-DD`.
+  2. **Kota / Wilayah Utama Acara (`city`) — *Wajib*:** Autocomplete daftar kota/kabupaten se-Indonesia dengan saran cepat.
+  3. **Zona Waktu Acara (`timeZone`) — *Pilihan Interaktif*:** Opsi chip: `WIB`, `WITA`, `WIT`. Otomatis terdeteksi dari zona waktu browser klien.
+  4. **Waktu Sesi Terstruktur (Akad & Resepsi) — *Opsional*:** Input jam mulai dan jam selesai terpisah (`akadStart`, `akadEnd`, `resepsiStart`, `resepsiEnd`) untuk menjamin validitas format tanpa free-text rentan error.
 
 ---
 
-### LANGKAH 3: Pemilihan Desain Tema Perdana
+### LANGKAH 3: Pemilihan Desain Tema Terisolasi
 * **Komponen:** [`app/(client)/dashboard/setup/page.tsx`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/app/(client)/dashboard/setup/page.tsx) (`step === 3`)
-* **Tujuan:** Memberikan kebebasan visual penuh bagi calon pengantin untuk memilih gaya estetika tema pertama mereka tanpa paksaan bawaan.
-* **Logika Hak Akses Tema (All-Access Themes):**
-  Daftar tema diambil secara dinamis dari database melalui `GET /api/public/themes`. Sesuai kebijakan *All-Access Themes*, seluruh 19 tema terbuka 100% untuk semua tingkatan paket (`TIER_1`, `TIER_2`, `TIER_3`). Pembeda antar paket murni bertumpu pada kapabilitas fitur (*Feature Gating*).
-* **Clean State Tanpa Default Tema:**
-  - Variabel `themeId` diinisialisasi sebagai string kosong `""`.
-  - Tidak ada auto-select ke `availableThemes[0]`.
-  - Jika klien mengganti paket atau filter berubah, tema hanya dipilih jika klien mengklik kartu secara sadar.
-* **Validasi Sebelum Finalisasi:**
-  - Jika klien mencoba menekan *"Selesai & Masuk ke Studio Undangan"* sebelum memilih tema, proses dicegah dan muncul pesan: *"Silakan pilih salah satu desain tema terlebih dahulu."*.
-* **Kotak Ringkasan (*Summary Box*):**
-  - Jika tema sudah dipilih: Menampilkan badge emas dengan nama tema terpilih.
-  - Jika tema belum dipilih: Menampilkan badge netral dengan status *"Belum Memilih Tema"*.
+* **Tujuan:** Memilih tema perdana yang difilter secara ketat sesuai `eventType` yang dipilih di Langkah 0.
+* **Navigasi Kategori Dinamis:** Tab filter kategori gaya (`all`, `minimalist`, `modern`, `traditional`) secara cerdas hanya menampilkan tab kategori yang memang memiliki tema pada jenis acara tersebut.
+* **Clean State Tanpa Default Tema:** Variabel `themeId` diinisialisasi sebagai string kosong `""`. Tidak ada auto-select sembarangan.
+* **Validasi Sebelum Finalisasi:** Klien wajib memilih satu tema sebelum menekan tombol submit (kecuali jika memilih alur lewati setup).
+
 
 ---
 
@@ -190,12 +192,14 @@ Saat tombol *"Lewati Setup (Atur Nanti)"* diklik:
 
 | Komponen Input | Kolom Tabel `Invitation` | Tipe Data | Perilaku Saat Setup Lengkap | Perilaku Saat Lewati Setup |
 | :--- | :--- | :--- | :--- | :--- |
-| **Nama Panggilan Pria** | `groomNickname` | `String` | Input klien (contoh: `Arman`) | `"Mempelai Pria"` |
-| **Nama Panggilan Wanita** | `brideNickname` | `String` | Input klien (contoh: `Siti`) | `"Mempelai Wanita"` |
-| **Tanggal Pernikahan** | `eventData` | `String (JSON)` | Disimpan dalam susunan acara | `[]` (Array Kosong) |
+| **Jenis Acara** | `eventType` | `EventType` (Enum) | `WEDDING`, `BIRTHDAY`, `KHITAN`, `AQIQAH`, `WISUDA`, `GATHERING` | Sesuai pilihan step 0 (default: `WEDDING`) |
+| **Nama Panggilan Pria / Tokoh** | `groomNickname` | `String?` | Input klien (contoh: `Arman`) | `"Mempelai Pria"` / Nama Persona |
+| **Nama Panggilan Wanita** | `brideNickname` | `String?` | Input klien (contoh: `Siti`) | `"Mempelai Wanita"` |
+| **Data Persona Non-Wedding** | `participantsJson` | `String? (JSON)` | Disimpan JSON persona (usia, ortu, gelar, dll) | `null` |
+| **Tanggal Acara** | `eventData` | `String (JSON)` | Disimpan dalam susunan acara | `[]` (Array Kosong) |
 | **Kota Utama** | `eventData` | `String (JSON)` | Disimpan dalam lokasi acara | `[]` (Array Kosong) |
 | **Tema Pilihan** | `themeId` | `String` | ID tema terpilih (contoh: `kalandra`) | `""` (String Kosong) |
-| **Kanonikal Slug** | `invitationSlug` | `String (Unique)` | `{pria}-{wanita}-{DDMMYY}` | `undangan-{randomId}` |
+| **Kanonikal Slug** | `invitationSlug` | `String (Unique)` | `{pria}-{wanita}-{DDMMYY}` atau `{tokoh}-{DDMMYY}` | `undangan-{randomId}` |
 | **Status Publikasi** | `status` | `InvitationStatus` | `DRAFT` | `DRAFT` |
 | **Syarat Publish** | `isPublishable` | `Boolean` | `false` (Menunggu biodata & PIN) | `false` (Wajib pilih tema + isi data) |
 

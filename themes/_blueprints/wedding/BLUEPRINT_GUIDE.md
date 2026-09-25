@@ -2,7 +2,7 @@
 
 Dokumen ini adalah **standar teknis resmi (Golden Standard)** bagi para desainer, pengembang, dan AI Agent dalam merancang serta memodifikasi tema undangan digital di platform Luxenary.
 
-Template cetak biru utama berada di: [`themes/starter-blueprint.html`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/themes/starter-blueprint.html).
+Template cetak biru utama berada di: [`themes/_blueprints/wedding/starter-blueprint.html`](file:///Users/armansyam/Documents/Project%20AmsDev/Luxenary-Invite/themes/_blueprints/wedding/starter-blueprint.html).
 
 ---
 
