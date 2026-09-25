@@ -3,11 +3,23 @@ import { getGoogleDriveFolderPhotos } from "@/lib/driveHelper";
 import { escapeHtml } from "@/lib/escapeHtml";
 import { getThemeBlueprint } from "@/lib/themeDefaults";
 import { getAdminSetting } from "@/lib/settings";
+import { safeParseParticipants } from "@/lib/participantUtils";
+import { buildCalendarTitle } from "@/lib/invitationUtils";
 
 
 function nl2br(str: string): string {
   if (!str) return "";
   return escapeHtml(str).replace(/\r\n|\r|\n/g, "<br />");
+}
+
+function formatDateId(dateStr: string | Date): string {
+  try {
+    const d = typeof dateStr === "string" ? new Date(dateStr) : dateStr;
+    if (isNaN(d.getTime())) return String(dateStr);
+    return d.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  } catch {
+    return String(dateStr);
+  }
 }
 
 const NUMBER_WORDS = ["One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve"];
@@ -72,6 +84,26 @@ export async function composeTemplateData(invitationId: string) {
 
   if (!inv) return null;
 
+  switch (inv.eventType || "WEDDING") {
+    case "WEDDING":
+      return composeWeddingData(inv);
+    case "BIRTHDAY":
+      return composeBirthdayData(inv);
+    case "KHITAN":
+      return composeKhitanData(inv);
+    case "AQIQAH":
+      return composeAqiqahData(inv);
+    case "WISUDA":
+      return composeWisudaData(inv);
+    case "GATHERING":
+      return composeGatheringData(inv);
+    default:
+      return composeWeddingData(inv);
+  }
+}
+
+export async function composeWeddingData(inv: any) {
+  const invitationId = inv.id;
   const mediaMap = new Map<string, string>();
   for (const m of inv.media) {
     if (m.localPath) mediaMap.set(String(m.mediaSlot), m.localPath);
@@ -493,8 +525,8 @@ export async function composeTemplateData(invitationId: string) {
     });
   }
 
-  const galleryMedia = inv.media.filter((m) => String(m.mediaSlot).startsWith("GALLERY"));
-  galleryMedia.forEach((gm) => {
+  const galleryMedia = (inv.media || []).filter((m: any) => String(m.mediaSlot).startsWith("GALLERY"));
+  galleryMedia.forEach((gm: any) => {
     const u = gm.localPath;
     if (u && !allPhotos.includes(u)) allPhotos.push(u);
   });
@@ -1267,7 +1299,8 @@ export async function composeTemplateData(invitationId: string) {
 
   // Google Calendar URL (Prioritaskan lokasi dari Acara Utama)
   const calendarLocation = primaryEvent?.location || primaryEvent?.address || events[0]?.location || events[0]?.address || "Makassar";
-  const googleCalendarUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`The Wedding of ${firstName} & ${secondName}`)}&dates=${weddingDateYear}${weddingDateMonth}${weddingDateDay}T010000Z/${weddingDateYear}${weddingDateMonth}${weddingDateDay}T140000Z&location=${encodeURIComponent(calendarLocation)}`;
+  const calTitle = buildCalendarTitle("WEDDING", { groomName: firstName, brideName: secondName });
+  const googleCalendarUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(calTitle)}&dates=${weddingDateYear}${weddingDateMonth}${weddingDateDay}T010000Z/${weddingDateYear}${weddingDateMonth}${weddingDateDay}T140000Z&location=${encodeURIComponent(calendarLocation)}`;
 
   // ─── Guest Memories (After-Event Moments Drop & Stream) ───
   const showGuestMemories = featureSettings.showGuestMemories !== false;
@@ -1959,7 +1992,1038 @@ export async function composeTemplateData(invitationId: string) {
     <meta name="twitter:image" content="${absoluteCover}">
     `,
     
-    // Feature Settings & Custom Labels for Rendering Engine
+    featureSettings,
+    customLabels,
+  };
+}
+
+export async function composeBirthdayData(inv: any) {
+  const p = safeParseParticipants(inv.participantsJson);
+  const invitationId = inv.id;
+
+  const mediaMap = new Map<string, string>();
+  for (const m of inv.media || []) {
+    if (m.localPath) mediaMap.set(String(m.mediaSlot), m.localPath);
+  }
+
+  let events: any[] = [];
+  try {
+    events = typeof inv.eventData === "string" ? JSON.parse(inv.eventData) : inv.eventData || [];
+  } catch (e) {
+    events = [];
+  }
+
+  let bankAccounts: any[] = [];
+  try {
+    bankAccounts = typeof inv.bankAccounts === "string" ? JSON.parse(inv.bankAccounts) : inv.bankAccounts || [];
+  } catch (e) {
+    bankAccounts = [];
+  }
+
+  let featureSettings: any = {};
+  try {
+    featureSettings = typeof inv.featureSettings === "string" ? JSON.parse(inv.featureSettings) : inv.featureSettings || {};
+  } catch (e) {
+    featureSettings = {};
+  }
+
+  const customLabels = featureSettings.customLabels || {};
+
+  // Theme Blueprint Defaults Resolution
+  let customDemoData: any = null;
+  try {
+    const customSetting = await prisma.adminSetting.findUnique({
+      where: { key: `theme_demo_${(inv.themeId || "kalandra-birthday").toLowerCase()}` },
+      select: { value: true },
+    });
+    if (customSetting?.value) {
+      customDemoData = JSON.parse(customSetting.value);
+    }
+  } catch {}
+
+  const blueprint = getThemeBlueprint(inv.themeId || "kalandra-birthday", customDemoData || undefined);
+
+  let dbThemeDefaultMusic = "";
+  try {
+    const dbTheme = await prisma.theme.findUnique({
+      where: { id: (inv.themeId || "kalandra-birthday").toLowerCase() },
+      select: { defaultMusicUrl: true },
+    });
+    if (dbTheme?.defaultMusicUrl) dbThemeDefaultMusic = dbTheme.defaultMusicUrl;
+  } catch {}
+
+  const showGallery = featureSettings.showGallery !== undefined ? Boolean(featureSettings.showGallery) : true;
+  const showGift = featureSettings.showGift !== undefined ? Boolean(featureSettings.showGift) : true;
+  const showDresscode = featureSettings.showDresscode !== undefined ? Boolean(featureSettings.showDresscode) : true;
+  const showQrCheckin = featureSettings.showQrCheckin !== undefined ? Boolean(featureSettings.showQrCheckin) : true;
+  const showLiveStream = featureSettings.showLiveStream !== undefined ? Boolean(featureSettings.showLiveStream) : true;
+  const showTurutMengundang = featureSettings.showTurutMengundang !== undefined ? Boolean(featureSettings.showTurutMengundang) : true;
+
+  // Persona Fields
+  const personName = p.person?.name || inv.groomName || "Sahabat";
+  const personNickname = p.person?.nickname || inv.groomNickname || personName;
+  const personAge = String(p.person?.age || "");
+  const personInstagram = (p.person?.instagram || "").replace(/^@+/, "");
+  const parentName = p.person?.parentName || inv.groomParents || "";
+
+  // Photos
+  const themeFolder = inv.themeId || "festivo";
+  const customCover = mediaMap.get("LANDING_COVER");
+  const customCoverDesktop = mediaMap.get("LANDING_COVER_DESKTOP");
+  const customHome = mediaMap.get("HOME_PHOTO");
+  const customPersonPhoto = mediaMap.get("GROOM_PHOTO") || mediaMap.get("HERO_PHOTO") || customCover;
+
+  const defaultHeroFallback = `/demo/${themeFolder}/hero.webp`;
+  const defaultCoverFallback = `/demo/${themeFolder}/cover.webp`;
+  const defaultBgFallback = `/demo/${themeFolder}/background.webp`;
+
+  const coverHeroUrl = customCover || defaultCoverFallback;
+  const landingCoverUrl = coverHeroUrl;
+  const landingCoverDesktopUrl = customCoverDesktop || coverHeroUrl;
+  const homePhotoUrl = customHome || defaultHeroFallback;
+  const personPhotoUrl = customPersonPhoto || defaultHeroFallback;
+  const sidebarPhotoUrl = personPhotoUrl;
+  const globalBgUrl = defaultBgFallback;
+  const footerPhotoUrl = mediaMap.get("CLOSING_PHOTO") || "";
+
+  // Date & Countdown
+  const primaryEvent = events[0] || {};
+  const rawTargetDate = primaryEvent.date || inv.weddingDate || "2026-12-31";
+  let targetDate = "2026-12-31T19:00:00";
+  if (rawTargetDate) {
+    const rawTime = (primaryEvent.startTime || primaryEvent.time || "19:00").replace(".", ":");
+    const cleanTime = rawTime.includes(":") ? rawTime.split(/[^0-9:]/)[0] : "19:00";
+    const datePart = rawTargetDate.includes("T") ? rawTargetDate.split("T")[0] : rawTargetDate;
+    targetDate = `${datePart}T${cleanTime.length === 5 ? cleanTime : "19:00"}:00`;
+  }
+
+  const dObj = new Date(targetDate);
+  const isValidDate = !isNaN(dObj.getTime());
+  const weddingDateDay = isValidDate ? String(dObj.getDate()).padStart(2, "0") : "01";
+  const weddingDateMonth = isValidDate ? String(dObj.getMonth() + 1).padStart(2, "0") : "01";
+  const weddingDateYear = isValidDate ? String(dObj.getFullYear()) : "2026";
+  const monthsIndo = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+  const daysIndo = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+  const eventDateFormatted = isValidDate ? `${daysIndo[dObj.getDay()]}, ${dObj.getDate()} ${monthsIndo[dObj.getMonth()]} ${dObj.getFullYear()}` : "Waktu Acara";
+  const eventTime = primaryEvent.time || (primaryEvent.startTime ? `${primaryEvent.startTime} - ${primaryEvent.endTime || "Selesai"}` : "19.00 WIB");
+  const venueName = primaryEvent.location || primaryEvent.venueName || "Lokasi Acara";
+  const venueAddress = primaryEvent.address || "";
+  const mapsUrl = primaryEvent.mapsUrl || "";
+
+  // Calendar
+  const calendarLocation = venueName || venueAddress || "Makassar";
+  const calTitle = buildCalendarTitle("BIRTHDAY", { personName, personAge });
+  const googleCalendarUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(calTitle)}&dates=${weddingDateYear}${weddingDateMonth}${weddingDateDay}T010000Z/${weddingDateYear}${weddingDateMonth}${weddingDateDay}T140000Z&location=${encodeURIComponent(calendarLocation)}`;
+
+  // Countdown HTML
+  const countdownHtml = `
+    <div class="countdown-timer" data-target="${targetDate}">
+      <div class="cd-item"><span class="cd-val" id="cdDays">00</span><span class="cd-lbl">Hari</span></div>
+      <div class="cd-item"><span class="cd-val" id="cdHours">00</span><span class="cd-lbl">Jam</span></div>
+      <div class="cd-item"><span class="cd-val" id="cdMinutes">00</span><span class="cd-lbl">Menit</span></div>
+      <div class="cd-item"><span class="cd-val" id="cdSeconds">00</span><span class="cd-lbl">Detik</span></div>
+    </div>
+  `;
+
+  // Gallery
+  const rawGalleryUrls: string[] = [];
+  for (let i = 1; i <= 12; i++) {
+    const p = mediaMap.get(`GALLERY_${i}`);
+    if (p) rawGalleryUrls.push(p);
+  }
+  const galleryPhotos = rawGalleryUrls.length > 0 ? rawGalleryUrls : [
+    `/demo/${themeFolder}/gallery_01.webp`,
+    `/demo/${themeFolder}/gallery_02.webp`,
+    `/demo/${themeFolder}/gallery_03.webp`,
+    `/demo/${themeFolder}/gallery_04.webp`,
+  ];
+
+  const galleryItemsHtml = galleryPhotos.map((src, idx) => `
+    <div class="gallery-cell" onclick="openPhotoModal('${src}')">
+      <img src="${src}" alt="Momen ${idx + 1}" loading="lazy" />
+    </div>
+  `).join("");
+
+  const gallerySectionHtml = showGallery ? `
+    <section class="sec-flow" id="gallery">
+      <div class="sec-header">
+        <span class="sec-eyebrow">GALLERY</span>
+        <h2 class="sec-title serif">${customLabels.galleryTitle || "Galeri Foto"}</h2>
+      </div>
+      <div class="gallery-mosaic">
+        ${galleryItemsHtml}
+      </div>
+    </section>
+  ` : "";
+
+  // RSVP & Wishes
+  const wishesList = (inv.rsvps || []).map((r: any) => `
+    <div class="wish-item">
+      <div class="wish-header">
+        <span class="wish-name">${escapeHtml(r.name || "Sahabat")}</span>
+        <span class="wish-badge ${r.attendance === "HADIR" ? "badge-hadir" : "badge-absen"}">
+          ${r.attendance === "HADIR" ? `Hadir (${r.guestCount || 1} Tamu)` : "Berhalangan"}
+        </span>
+      </div>
+      ${r.message ? `<p class="wish-text">“${escapeHtml(r.message)}”</p>` : ""}
+    </div>
+  `).join("");
+
+  const wishesHtml = `
+    <div class="wishes-stream" id="wishesList">
+      ${wishesList || `<p class="wishes-empty">Jadilah yang pertama mengirimkan ucapan & doa!</p>`}
+    </div>
+  `;
+
+  const wishesSectionHtml = `
+    <section class="sec-flow" id="wishes">
+      <div class="sec-header">
+        <span class="sec-eyebrow">WISHES &amp; PRAYERS</span>
+        <h2 class="sec-title serif">${customLabels.wishesTitle || "Ucapan & Doa"}</h2>
+      </div>
+      <div class="wishes-card">
+        <form onsubmit="submitRsvp(event)" class="rsvp-form">
+          <input type="text" id="rsvpName" placeholder="Nama Anda" required class="input-field" />
+          <select id="rsvpStatus" class="input-field">
+            <option value="hadir">Konfirmasi Hadir</option>
+            <option value="tidak_hadir">Berhalangan Hadir</option>
+          </select>
+          <input type="number" id="rsvpCount" min="1" max="10" value="1" placeholder="Jumlah Tamu" class="input-field" />
+          <textarea id="rsvpMessage" placeholder="Tuliskan ucapan selamat & doa terbaik Anda..." rows="3" class="input-field"></textarea>
+          <button type="submit" id="btnSubmit" class="btn-submit">${customLabels.rsvpBtnText || "Kirim Ucapan & Konfirmasi"}</button>
+        </form>
+        ${wishesHtml}
+      </div>
+    </section>
+  `;
+
+  // Bank Accounts / Gift
+  const bankCardsHtml = bankAccounts.map((b: any) => `
+    <div class="bank-card">
+      <span class="bank-name">${escapeHtml(b.bank || "Bank")}</span>
+      <span class="bank-number">${escapeHtml(b.number || b.accountNumber || "")}</span>
+      <span class="bank-owner">a.n ${escapeHtml(b.name || b.accountName || personName)}</span>
+      <button class="btn-copy" onclick="copyText('${escapeHtml(b.number || b.accountNumber || "")}')">Salin Rekening</button>
+    </div>
+  `).join("");
+
+  const giftSectionHtml = showGift && bankAccounts.length > 0 ? `
+    <section class="sec-flow" id="gift">
+      <div class="sec-header">
+        <span class="sec-eyebrow">BIRTHDAY GIFT</span>
+        <h2 class="sec-title serif">${customLabels.giftTitle || "Kado Digital"}</h2>
+        <p class="sec-sub">Doa restu Anda adalah karunia terindah bagi kami. Namun jika ingin memberikan tanda kasih secara digital, Anda dapat melalui rekening berikut:</p>
+      </div>
+      <div class="bank-grid">
+        ${bankCardsHtml}
+      </div>
+    </section>
+  ` : "";
+
+  // Guest Memories
+  const showGuestMemories = featureSettings.showGuestMemories !== false;
+  const memoriesSectionHtml = showGuestMemories ? `
+    <section class="sec-flow" id="memories">
+      <div class="sec-header">
+        <span class="sec-eyebrow">MOMENTS &amp; MEMORIES</span>
+        <h2 class="sec-title serif">${customLabels.memoriesTitle || "Album Kenangan Tamu"}</h2>
+        <p class="sec-sub">Bagikan momen keseruan Anda selama menghadiri perayaan ulang tahun ini:</p>
+      </div>
+      <div class="memories-actions" style="text-align:center; margin-top:1rem;">
+        <a href="/invitations/${inv.invitationSlug}/sharemoment" class="btn-action-outline">
+          Unggah Foto Momen
+        </a>
+      </div>
+    </section>
+  ` : "";
+
+  // Music Player
+  const clientUploadedSong = mediaMap.get("AUDIO_TRACK") || inv.musicUrl;
+  const finalAudioUrl = clientUploadedSong || dbThemeDefaultMusic || blueprint.defaultMusicUrl || "/music/canon-in-d.ogg";
+
+  const musicPlayerHtml = `
+    <audio id="luxAudioPlayer" loop preload="none">
+      <source src="${finalAudioUrl}" type="audio/ogg" />
+      <source src="${finalAudioUrl}" type="audio/mpeg" />
+    </audio>
+  `;
+
+  const platformName = await getAdminSetting("platform_name", "Platform Undangan");
+  const absoluteCover = coverHeroUrl.startsWith("http") ? coverHeroUrl : `https://${inv.invitationSlug || "inv"}/${coverHeroUrl.replace(/^\//, "")}`;
+
+  return {
+    invitationId: inv.id,
+    invitationSlug: inv.invitationSlug,
+    themeId: inv.themeId || "kalandra-birthday",
+    eventType: "BIRTHDAY",
+    weddingTagline: `CELEBRATING THE BIRTHDAY OF`,
+    
+    // Birthday Persona
+    personName,
+    personNickname,
+    personAge,
+    personInstagram,
+    parentName,
+    personPhotoUrl,
+    
+    // Couple compatibility (safe fallbacks, zero wedding leaks)
+    firstNickname: personNickname,
+    secondNickname: "",
+    firstName: personName,
+    secondName: "",
+    groomNickname: "",
+    brideNickname: "",
+    groomName: "",
+    brideName: "",
+    firstFullName: personName,
+    secondFullName: "",
+    firstDisplayName: personName,
+    secondDisplayName: "",
+    groomDisplayName: "",
+    brideDisplayName: "",
+    firstRole: "Yang Berulang Tahun",
+    secondRole: "",
+    groomRole: "",
+    brideRole: "",
+    firstParents: parentName,
+    secondParents: "",
+    groomParents: parentName,
+    brideParents: "",
+    firstInstagram: personInstagram,
+    secondInstagram: "",
+    groomInstagram: personInstagram,
+    brideInstagram: "",
+    coupleMonogram: (personNickname || "Z").charAt(0).toUpperCase(),
+    monogramInitial: (personNickname || "Z").charAt(0).toUpperCase(),
+    firstInitial: (personNickname || "Z").charAt(0).toUpperCase(),
+    secondInitial: "",
+
+    // Standardized Photo Assets
+    landingCoverUrl,
+    landingCoverDesktopUrl,
+    coverHeroUrl,
+    homePhotoUrl,
+    sidebarPhotoUrl,
+    globalBgUrl,
+    footerPhotoUrl,
+    groomPhotoUrl: personPhotoUrl,
+    bridePhotoUrl: "",
+    firstPhotoUrl: personPhotoUrl,
+    secondPhotoUrl: "",
+    galleryPhoto1: galleryPhotos[0] || landingCoverUrl,
+    galleryPhoto2: galleryPhotos[1] || landingCoverUrl,
+    galleryPhoto3: galleryPhotos[2] || landingCoverUrl,
+    galleryPhoto4: galleryPhotos[3] || landingCoverUrl,
+    galleryPhoto5: galleryPhotos[4] || landingCoverUrl,
+    galleryPhoto6: galleryPhotos[5] || landingCoverUrl,
+    
+    // Event Details
+    targetDate,
+    weddingDate: eventDateFormatted,
+    weddingDateDay,
+    weddingDateMonth,
+    weddingDateYear,
+    eventDateFormatted,
+    eventTime,
+    venueName,
+    venueAddress,
+    mapsUrl,
+    googleCalendarUrl,
+
+    // Composed HTML Blocks
+    countdownHtml,
+    gallerySectionHtml,
+    wishesHtml,
+    wishesSectionHtml,
+    rsvpSectionHtml: wishesSectionHtml,
+    giftSectionHtml,
+    memoriesSectionHtml,
+    musicPlayerHtml,
+    storySectionHtml: "",
+    storyItemsHtml: "",
+    weddingFilterHtml: "",
+    dressCodeHtml: "",
+    liveStreamingHtml: "",
+    turutMengundangHtml: "",
+    vendorsSectionHtml: "",
+    qrAccessSectionHtml: "",
+    qrAccessCardHtml: "",
+    qrCoverButtonHtml: "",
+    qrDockButtonHtml: "",
+    qrSideNavButtonHtml: "",
+    
+    // Flags
+    showStory: false,
+    showWeddingFilter: false,
+    showGallery,
+    showGift,
+    showDressCode: showDresscode,
+    showStreaming: showLiveStream,
+    showTurutMengundang,
+    showVendors: false,
+    showQrCheckin,
+
+    // Labels
+    openBtn: customLabels.openBtn || "Buka Undangan",
+    coverSubtitle: customLabels.coverSubtitle || `The ${personAge}th Birthday Celebration`,
+    coverBadge: customLabels.coverBadge || `BIRTHDAY CELEBRATION`,
+    coupleSectionTitle: "Profil",
+    coupleSectionEyebrow: "CELEBRATION",
+    coupleTitle: "Profil",
+    coupleEyebrow: "CELEBRATION",
+    coupleSectionSub: "Merayakan momen pertambahan usia penuh suka cita bersama keluarga dan sahabat.",
+    eventsSectionTitle: customLabels.eventsTitle || "Waktu & Tempat",
+    eventsSectionEyebrow: "EVENT DETAILS",
+    eventsTitle: customLabels.eventsTitle || "Waktu & Tempat",
+    eventsEyebrow: "EVENT DETAILS",
+    gallerySectionTitle: customLabels.galleryTitle || "Galeri Foto",
+    gallerySectionEyebrow: "GALLERY",
+    galleryTitle: customLabels.galleryTitle || "Galeri Foto",
+    galleryEyebrow: "GALLERY",
+    wishesSectionTitle: customLabels.wishesTitle || "Ucapan & Doa",
+    wishesSectionEyebrow: "WISHES & RSVP",
+    wishesTitle: customLabels.wishesTitle || "Ucapan & Doa",
+    wishesEyebrow: "WISHES & RSVP",
+    rsvpTitle: customLabels.rsvpTitle || "Konfirmasi Kehadiran",
+    rsvpBtnText: customLabels.rsvpBtnText || "Kirim Ucapan & Konfirmasi",
+    closingQuote: inv.closingQuote || "Terima kasih atas kehadiran, doa, dan cinta yang telah dibagikan.",
+    closingSub: inv.closingSub || "Sampai jumpa di hari perayaan!",
+    audioUrl: finalAudioUrl,
+
+    // Meta Tags
+    metaTagsHtml: `
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>Ulang Tahun ${personNickname} — Undangan Digital</title>
+    <meta name="description" content="Perayaan ulang tahun ${personName}. Simak informasi rangkaian acara, lokasi, dan konfirmasi kehadiran.">
+    <meta property="og:site_name" content="${escapeHtml(platformName)}">
+    <meta property="og:title" content="Ulang Tahun ${personNickname} — Undangan Digital">
+    <meta property="og:description" content="Perayaan ulang tahun ${personName}.">
+    <meta property="og:image" content="${absoluteCover}">
+    <meta property="og:image:secure_url" content="${absoluteCover}">
+    <meta property="og:type" content="website">
+    `,
+
+    featureSettings,
+    customLabels,
+  };
+}
+
+// ==========================================
+// UNIVERSAL SECTION BUILDERS (NON-WEDDING)
+// ==========================================
+
+function buildUniversalGallerySection(
+  mediaMap: Map<string, string>,
+  themeFolder: string,
+  galleryTitle: string = "Dokumentasi Momen",
+  showGallery: boolean = true
+): string {
+  if (!showGallery) return "";
+  const rawGalleryUrls: string[] = [];
+  for (let i = 1; i <= 12; i++) {
+    const p = mediaMap.get(`GALLERY_${i}`);
+    if (p) rawGalleryUrls.push(p);
+  }
+  const galleryPhotos = rawGalleryUrls.length > 0 ? rawGalleryUrls : [
+    `/demo/${themeFolder}/gallery_01.webp`,
+    `/demo/${themeFolder}/gallery_02.webp`,
+    `/demo/${themeFolder}/gallery_03.webp`,
+    `/demo/${themeFolder}/gallery_04.webp`,
+  ];
+
+  const galleryItemsHtml = galleryPhotos.map((src, idx) => `
+    <div style="aspect-ratio: 1/1; border-radius: var(--radius-md, 14px); overflow: hidden; border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); background: var(--card-bg);">
+      <img src="${src}" alt="Momen ${idx + 1}" style="width: 100%; height: 100%; object-fit: cover; display: block;" loading="lazy" />
+    </div>
+  `).join("");
+
+  return `
+    <section class="sec-block" id="gallery">
+      <span class="sec-lbl">Galeri</span>
+      <h2 class="sec-h2 serif">${escapeHtml(galleryTitle)}</h2>
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 16px;">
+        ${galleryItemsHtml}
+      </div>
+    </section>
+  `;
+}
+
+function buildUniversalGiftSection(
+  bankAccounts: any[],
+  giftTitle: string = "Kado Digital",
+  fallbackOwnerName: string = "",
+  showGift: boolean = true
+): string {
+  if (!showGift || !bankAccounts || bankAccounts.length === 0) return "";
+  const bankCardsHtml = bankAccounts.map((b: any) => `
+    <div style="background: var(--card-bg); border: 1px solid color-mix(in srgb, var(--primary) 25%, transparent); border-radius: var(--radius-md, 14px); padding: 18px; text-align: center;">
+      <span style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--primary); letter-spacing: 1px;">${escapeHtml(b.bank || "Bank")}</span>
+      <div style="font-family: monospace; font-size: 18px; font-weight: 700; color: var(--text-main); margin: 8px 0; letter-spacing: 1px;">${escapeHtml(b.number || b.accountNumber || "")}</div>
+      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">a.n ${escapeHtml(b.name || b.accountName || fallbackOwnerName)}</p>
+      <button type="button" onclick="navigator.clipboard.writeText('${escapeHtml(b.number || b.accountNumber || "")}').then(function(){alert('Nomor rekening berhasil disalin!');})" style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 20px; border-radius: var(--radius-full, 9999px); background: color-mix(in srgb, var(--primary) 15%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 40%, transparent); color: var(--primary); font-size: 12px; font-weight: 700; cursor: pointer;">Salin No. Rekening</button>
+    </div>
+  `).join("");
+
+  return `
+    <section class="sec-block" id="gift">
+      <span class="sec-lbl">Tanda Kasih</span>
+      <h2 class="sec-h2 serif">${escapeHtml(giftTitle)}</h2>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Doa restu Anda merupakan karunia terindah bagi kami. Namun apabila bermaksud memberikan tanda kasih, Anda dapat melalui:</p>
+      <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 16px;">
+        ${bankCardsHtml}
+      </div>
+    </section>
+  `;
+}
+
+function buildUniversalRsvpSection(
+  invitationId: string,
+  recipientName: string = ""
+): string {
+  const defaultGuest = recipientName && recipientName !== "Tamu Undangan" ? escapeHtml(recipientName) : "";
+  return `
+    <div class="rsvp-card-box" style="text-align: left; margin-bottom: 24px;">
+      <span class="sec-lbl" style="display: block; text-align: center; margin-bottom: 4px;">Konfirmasi</span>
+      <h2 class="sec-h2 serif" style="text-align: center; font-size: 22px; margin-bottom: 16px;">RSVP &amp; Kehadiran</h2>
+      <form onsubmit="handleUniversalRsvpSubmit(event, '${escapeHtml(invitationId || "")}')" style="display: flex; flex-direction: column; gap: 12px; background: var(--card-bg); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); padding: 20px; border-radius: var(--radius-md, 14px);">
+        <div>
+          <label style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">Nama Lengkap</label>
+          <input type="text" id="universalRsvpName" required placeholder="Nama Anda" value="${defaultGuest}" style="width: 100%; box-sizing: border-box; padding: 10px 14px; border-radius: var(--radius-sm, 8px); background: color-mix(in srgb, var(--bg-canvas) 80%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); color: var(--text-main); font-size: 13px;" />
+        </div>
+        <div>
+          <label style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">Konfirmasi Kehadiran</label>
+          <select id="universalRsvpStatus" style="width: 100%; box-sizing: border-box; padding: 10px 14px; border-radius: var(--radius-sm, 8px); background: color-mix(in srgb, var(--bg-canvas) 80%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); color: var(--text-main); font-size: 13px;">
+            <option value="hadir">Hadir</option>
+            <option value="tidak_hadir">Berhalangan Hadir</option>
+          </select>
+        </div>
+        <div>
+          <label style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">Jumlah Tamu</label>
+          <input type="number" id="universalRsvpCount" min="1" max="10" value="1" style="width: 100%; box-sizing: border-box; padding: 10px 14px; border-radius: var(--radius-sm, 8px); background: color-mix(in srgb, var(--bg-canvas) 80%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); color: var(--text-main); font-size: 13px;" />
+        </div>
+        <div>
+          <label style="display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;">Ucapan &amp; Doa</label>
+          <textarea id="universalRsvpMessage" rows="3" placeholder="Tuliskan ucapan dan doa terbaik Anda..." style="width: 100%; box-sizing: border-box; padding: 10px 14px; border-radius: var(--radius-sm, 8px); background: color-mix(in srgb, var(--bg-canvas) 80%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); color: var(--text-main); font-size: 13px; resize: vertical;"></textarea>
+        </div>
+        <button type="submit" id="universalRsvpBtn" style="padding: 12px; border-radius: var(--radius-full, 9999px); background: linear-gradient(135deg, var(--primary), var(--secondary)); color: #ffffff; font-size: 13px; font-weight: 700; border: none; cursor: pointer; margin-top: 4px;">Kirim Konfirmasi</button>
+        <div id="universalRsvpAlert" style="display: none; text-align: center; font-size: 12px; font-weight: 600; color: var(--primary); margin-top: 6px;"></div>
+      </form>
+    </div>
+    <script>
+      async function handleUniversalRsvpSubmit(e, invId) {
+        e.preventDefault();
+        var btn = document.getElementById("universalRsvpBtn");
+        var alertBox = document.getElementById("universalRsvpAlert");
+        var name = (document.getElementById("universalRsvpName") || {}).value || "";
+        var status = (document.getElementById("universalRsvpStatus") || {}).value || "hadir";
+        var count = (document.getElementById("universalRsvpCount") || {}).value || "1";
+        var msg = (document.getElementById("universalRsvpMessage") || {}).value || "";
+        if (!name.trim()) return;
+        if (btn) { btn.disabled = true; btn.textContent = "Mengirim..."; }
+        try {
+          var res = await fetch("/api/public/rsvp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ invitationId: invId, guestName: name, status: status, guestCount: count, message: msg })
+          });
+          var data = await res.json();
+          if (data && data.success) {
+            if (alertBox) { alertBox.style.display = "block"; alertBox.textContent = "✓ Konfirmasi dan ucapan Anda telah kami terima!"; }
+            var list = document.getElementById("universalWishesList");
+            if (list && msg) {
+              var esc = function(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); };
+              var item = document.createElement("div");
+              item.style = "background: color-mix(in srgb, var(--card-bg) 70%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent); border-radius: var(--radius-md, 14px); padding: 14px; margin-bottom: 10px;";
+              item.innerHTML = '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;"><strong style="font-size: 13px; color: var(--text-main);">' + esc(name) + '</strong><span style="font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: var(--radius-full, 9999px); background: color-mix(in srgb, var(--primary) 25%, transparent); color: var(--primary);">' + (status === "hadir" ? "Hadir (" + esc(count) + ")" : "Berhalangan") + '</span></div><p style="font-size: 12px; color: var(--text-muted); line-height: 1.5; margin: 0;">“' + esc(msg) + '”</p>';
+              list.insertBefore(item, list.firstChild);
+            }
+            var msgBox = document.getElementById("universalRsvpMessage");
+            if (msgBox) msgBox.value = "";
+          } else {
+            if (alertBox) { alertBox.style.display = "block"; alertBox.textContent = (data && data.error) || "Gagal mengirim RSVP"; }
+          }
+        } catch(err) {
+          if (alertBox) { alertBox.style.display = "block"; alertBox.textContent = "Koneksi terganggu. Silakan coba lagi."; }
+        } finally {
+          if (btn) { btn.disabled = false; btn.textContent = "Kirim Konfirmasi"; }
+        }
+      }
+    </script>
+  `;
+}
+
+function buildUniversalWishesSection(rsvps: any[] = []): string {
+  const wishesList = (rsvps || []).map((r: any) => `
+    <div style="background: color-mix(in srgb, var(--card-bg) 70%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent); border-radius: var(--radius-md, 14px); padding: 14px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <strong style="font-size: 13px; color: var(--text-main);">${escapeHtml(r.guestName || r.name || "Tamu")}</strong>
+        <span style="font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: var(--radius-full, 9999px); background: ${r.status === "hadir" || r.attendance === "HADIR" ? "color-mix(in srgb, var(--primary) 25%, transparent)" : "color-mix(in srgb, var(--text-muted) 20%, transparent)"}; color: ${r.status === "hadir" || r.attendance === "HADIR" ? "var(--primary)" : "var(--text-muted)"};">${r.status === "hadir" || r.attendance === "HADIR" ? `Hadir (${r.guestCount || 1})` : "Berhalangan"}</span>
+      </div>
+      ${r.message ? `<p style="font-size: 12px; color: var(--text-muted); line-height: 1.5; margin: 0;">“${escapeHtml(r.message)}”</p>` : ""}
+    </div>
+  `).join("");
+
+  return `
+    <div class="wishes-stream-box" style="text-align: left;">
+      <h3 class="serif" style="font-size: 18px; color: var(--text-main); margin-bottom: 12px; text-align: center;">Ucapan &amp; Doa Restu</h3>
+      <div id="universalWishesList" style="display: flex; flex-direction: column; gap: 10px; max-height: 380px; overflow-y: auto;">
+        ${wishesList || `<p style="text-align: center; font-size: 12px; color: var(--text-muted); padding: 16px 0;">Belum ada ucapan. Jadilah yang pertama memberikan doa restu!</p>`}
+      </div>
+    </div>
+  `;
+}
+
+export async function composeKhitanData(inv: any) {
+  const p = safeParseParticipants(inv.participantsJson);
+  const child = p.child || {};
+  const parents = p.parents || {};
+  const invitationId = inv.id;
+
+  const mediaMap = new Map<string, string>();
+  for (const m of inv.media || []) {
+    if (m.localPath) mediaMap.set(String(m.mediaSlot), m.localPath);
+  }
+
+  let events: any[] = [];
+  try {
+    events = typeof inv.eventData === "string" ? JSON.parse(inv.eventData) : inv.eventData || [];
+  } catch (e) {
+    events = [];
+  }
+
+  let bankAccounts: any[] = [];
+  try {
+    bankAccounts = typeof inv.bankAccounts === "string" ? JSON.parse(inv.bankAccounts) : inv.bankAccounts || [];
+  } catch (e) {
+    bankAccounts = [];
+  }
+
+  let featureSettings: any = {};
+  try {
+    featureSettings = typeof inv.featureSettings === "string" ? JSON.parse(inv.featureSettings) : inv.featureSettings || {};
+  } catch (e) {
+    featureSettings = {};
+  }
+
+  const customLabels = featureSettings.customLabels || {};
+
+  let dbThemeDefaultMusic = "";
+  try {
+    const dbTheme = await prisma.theme.findUnique({
+      where: { id: (inv.themeId || "al-fariz").toLowerCase() },
+      select: { defaultMusicUrl: true },
+    });
+    if (dbTheme?.defaultMusicUrl) dbThemeDefaultMusic = dbTheme.defaultMusicUrl;
+  } catch {}
+
+  const childName = child.name || inv.groomName || "Ananda";
+  const childNickname = child.nickname || inv.groomNickname || childName;
+  const childAge = String(child.age || "9");
+  const childBirthOrder = child.birthOrder || "Putra";
+  const fatherName = parents.fatherName || inv.groomFather || "Bapak";
+  const motherName = parents.motherName || inv.groomMother || "Ibu";
+
+  const host = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `http://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "http://localhost:3000")).replace(/\/$/, "");
+  const landingCoverUrl = mediaMap.get("LANDING_COVER") || `/demo/al-fariz/cover.webp`;
+  const childPhotoUrl = mediaMap.get("GROOM") || mediaMap.get("AVATAR") || `/demo/al-fariz/hero.webp`;
+  const absoluteCover = landingCoverUrl.startsWith("http") ? landingCoverUrl : `${host}${landingCoverUrl.startsWith("/") ? "" : "/"}${landingCoverUrl}`;
+  const finalAudioUrl = inv.audioUrl || dbThemeDefaultMusic || "/audio/sample.mp3";
+  const platformName = await getAdminSetting("platform_name", "Platform Undangan");
+
+  const eventDateFormatted = events[0]?.date ? formatDateId(events[0].date) : "Sabtu, 12 Desember 2026";
+  const guestName = inv.recipientName || "Tamu Undangan";
+
+  const parentsHtml = `<p>Putra tercinta dari Pasangan:</p><h4 class="serif" style="color: var(--text-main); font-size: 16px; margin: 4px 0;">${escapeHtml(fatherName)} &amp; ${escapeHtml(motherName)}</h4>`;
+
+  const eventsListHtml = events.map((ev: any) => `
+    <div style="background: color-mix(in srgb, var(--card-bg) 60%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); border-radius: var(--radius-md, 14px); padding: 18px; margin-bottom: 12px; text-align: left;">
+      <span style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 1px;">${escapeHtml(ev.title || "Acara")}</span>
+      <h3 class="serif" style="font-size: 18px; color: var(--text-main); margin: 6px 0 4px;">${escapeHtml(ev.name || ev.title || "Walimatul Khitan")}</h3>
+      <p style="font-size: 13px; color: var(--text-muted);">${escapeHtml(ev.time || "09:00 - Selesai")}</p>
+      <p style="font-size: 13px; color: var(--text-main); margin-top: 6px;"><b>${escapeHtml(ev.location || "Kediaman Mempelai")}</b></p>
+      <p style="font-size: 12px; color: var(--text-muted);">${escapeHtml(ev.address || "")}</p>
+      ${ev.mapsUrl ? `<a href="${escapeHtml(ev.mapsUrl)}" target="_blank" rel="noopener noreferrer" style="display: inline-block; margin-top: 10px; font-size: 12px; color: var(--primary); text-decoration: underline; font-weight: 600;">Petunjuk Lokasi Google Maps</a>` : ""}
+    </div>
+  `).join("");
+
+  const eventSectionHtml = `<div class="events-stack">${eventsListHtml}</div>`;
+  const gallerySectionHtml = buildUniversalGallerySection(mediaMap, "al-fariz", customLabels.galleryTitle || "Dokumentasi Momen", featureSettings.showGallery !== false);
+  const giftSectionHtml = buildUniversalGiftSection(bankAccounts, customLabels.giftTitle || "Kado Digital", childName, featureSettings.showGift !== false);
+  const rsvpSectionHtml = buildUniversalRsvpSection(invitationId, guestName);
+  const wishesSectionHtml = buildUniversalWishesSection(inv.rsvps || []);
+
+  return {
+    ...inv,
+    primaryTitle: childName,
+    secondaryTitle: "Walimatul Khitan",
+    childName,
+    childNickname,
+    childAge,
+    childBirthOrder,
+    fatherName,
+    motherName,
+    parentsHtml,
+    childPhotoUrl,
+    landingCoverUrl,
+    eventDateFormatted,
+    guestName,
+    audioUrl: finalAudioUrl,
+    eventSectionHtml,
+    gallerySectionHtml,
+    giftSectionHtml,
+    rsvpSectionHtml,
+    wishesSectionHtml,
+    brandWatermarkHtml: `<span style="font-size: 10px; color: var(--primary);">Powered by ${escapeHtml(platformName)}</span>`,
+    metaTagsHtml: `
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>Walimatul Khitan ${childName} — Undangan Digital</title>
+    <meta name="description" content="Tasyakuran Walimatul Khitan ${childName}.">
+    <meta property="og:title" content="Walimatul Khitan ${childName} — Undangan Digital">
+    <meta property="og:image" content="${absoluteCover}">
+    `,
+    featureSettings,
+    customLabels,
+  };
+}
+
+export async function composeAqiqahData(inv: any) {
+  const p = safeParseParticipants(inv.participantsJson);
+  const baby = p.baby || {};
+  const parents = p.parents || {};
+  const invitationId = inv.id;
+
+  const mediaMap = new Map<string, string>();
+  for (const m of inv.media || []) {
+    if (m.localPath) mediaMap.set(String(m.mediaSlot), m.localPath);
+  }
+
+  let events: any[] = [];
+  try {
+    events = typeof inv.eventData === "string" ? JSON.parse(inv.eventData) : inv.eventData || [];
+  } catch (e) {
+    events = [];
+  }
+
+  let bankAccounts: any[] = [];
+  try {
+    bankAccounts = typeof inv.bankAccounts === "string" ? JSON.parse(inv.bankAccounts) : inv.bankAccounts || [];
+  } catch (e) {
+    bankAccounts = [];
+  }
+
+  let featureSettings: any = {};
+  try {
+    featureSettings = typeof inv.featureSettings === "string" ? JSON.parse(inv.featureSettings) : inv.featureSettings || {};
+  } catch (e) {
+    featureSettings = {};
+  }
+
+  const customLabels = featureSettings.customLabels || {};
+
+  let dbThemeDefaultMusic = "";
+  try {
+    const dbTheme = await prisma.theme.findUnique({
+      where: { id: (inv.themeId || "al-khalid").toLowerCase() },
+      select: { defaultMusicUrl: true },
+    });
+    if (dbTheme?.defaultMusicUrl) dbThemeDefaultMusic = dbTheme.defaultMusicUrl;
+  } catch {}
+
+  const babyName = baby.name || inv.groomName || "Buah Hati";
+  const babyNickname = baby.nickname || inv.groomNickname || babyName;
+  const birthDateFormatted = baby.birthDate ? formatDateId(baby.birthDate) : "15 September 2026";
+  const birthWeight = baby.birthWeight || "3.4 kg";
+  const birthLength = baby.birthLength || "50 cm";
+  const fatherName = parents.fatherName || inv.groomFather || "Bapak";
+  const motherName = parents.motherName || inv.groomMother || "Ibu";
+
+  const host = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `http://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "http://localhost:3000")).replace(/\/$/, "");
+  const landingCoverUrl = mediaMap.get("LANDING_COVER") || `/demo/al-khalid/cover.webp`;
+  const babyPhotoUrl = mediaMap.get("GROOM") || mediaMap.get("AVATAR") || `/demo/al-khalid/hero.webp`;
+  const absoluteCover = landingCoverUrl.startsWith("http") ? landingCoverUrl : `${host}${landingCoverUrl.startsWith("/") ? "" : "/"}${landingCoverUrl}`;
+  const finalAudioUrl = inv.audioUrl || dbThemeDefaultMusic || "/audio/sample.mp3";
+  const platformName = await getAdminSetting("platform_name", "Platform Undangan");
+
+  const eventDateFormatted = events[0]?.date ? formatDateId(events[0].date) : "Ahad, 22 September 2026";
+  const guestName = inv.recipientName || "Tamu Undangan";
+
+  const parentsHtml = `<p>Putra/Putri tercinta dari Pasangan:</p><h4 class="serif" style="color: var(--text-main); font-size: 16px; margin: 4px 0;">${escapeHtml(fatherName)} &amp; ${escapeHtml(motherName)}</h4>`;
+
+  const eventsListHtml = events.map((ev: any) => `
+    <div style="background: color-mix(in srgb, var(--card-bg) 60%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); border-radius: var(--radius-md, 14px); padding: 18px; margin-bottom: 12px; text-align: left;">
+      <span style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 1px;">${escapeHtml(ev.title || "Acara")}</span>
+      <h3 class="serif" style="font-size: 18px; color: var(--text-main); margin: 6px 0 4px;">${escapeHtml(ev.name || ev.title || "Tasyakuran Aqiqah")}</h3>
+      <p style="font-size: 13px; color: var(--text-muted);">${escapeHtml(ev.time || "10:00 - Selesai")}</p>
+      <p style="font-size: 13px; color: var(--text-main); margin-top: 6px;"><b>${escapeHtml(ev.location || "Kediaman")}</b></p>
+      <p style="font-size: 12px; color: var(--text-muted);">${escapeHtml(ev.address || "")}</p>
+      ${ev.mapsUrl ? `<a href="${escapeHtml(ev.mapsUrl)}" target="_blank" rel="noopener noreferrer" style="display: inline-block; margin-top: 10px; font-size: 12px; color: var(--primary); text-decoration: underline; font-weight: 600;">Petunjuk Lokasi Google Maps</a>` : ""}
+    </div>
+  `).join("");
+
+  const eventSectionHtml = `<div class="events-stack">${eventsListHtml}</div>`;
+  const gallerySectionHtml = buildUniversalGallerySection(mediaMap, "al-khalid", customLabels.galleryTitle || "Dokumentasi Momen", featureSettings.showGallery !== false);
+  const giftSectionHtml = buildUniversalGiftSection(bankAccounts, customLabels.giftTitle || "Kado Digital", fatherName || babyName, featureSettings.showGift !== false);
+  const rsvpSectionHtml = buildUniversalRsvpSection(invitationId, guestName);
+  const wishesSectionHtml = buildUniversalWishesSection(inv.rsvps || []);
+
+  return {
+    ...inv,
+    primaryTitle: babyName,
+    secondaryTitle: "Tasyakuran Aqiqah",
+    babyName,
+    babyNickname,
+    birthDateFormatted,
+    birthWeight,
+    birthLength,
+    fatherName,
+    motherName,
+    parentsHtml,
+    babyPhotoUrl,
+    landingCoverUrl,
+    eventDateFormatted,
+    guestName,
+    audioUrl: finalAudioUrl,
+    eventSectionHtml,
+    gallerySectionHtml,
+    giftSectionHtml,
+    rsvpSectionHtml,
+    wishesSectionHtml,
+    brandWatermarkHtml: `<span style="font-size: 10px; color: var(--primary);">Powered by ${escapeHtml(platformName)}</span>`,
+    metaTagsHtml: `
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>Tasyakuran Aqiqah ${babyName} — Undangan Digital</title>
+    <meta name="description" content="Tasyakuran Aqiqah ${babyName}.">
+    <meta property="og:title" content="Tasyakuran Aqiqah ${babyName} — Undangan Digital">
+    <meta property="og:image" content="${absoluteCover}">
+    `,
+    featureSettings,
+    customLabels,
+  };
+}
+
+export async function composeWisudaData(inv: any) {
+  const p = safeParseParticipants(inv.participantsJson);
+  const grad = p.graduate || {};
+  const parents = p.parents || {};
+  const invitationId = inv.id;
+
+  const mediaMap = new Map<string, string>();
+  for (const m of inv.media || []) {
+    if (m.localPath) mediaMap.set(String(m.mediaSlot), m.localPath);
+  }
+
+  let events: any[] = [];
+  try {
+    events = typeof inv.eventData === "string" ? JSON.parse(inv.eventData) : inv.eventData || [];
+  } catch (e) {
+    events = [];
+  }
+
+  let bankAccounts: any[] = [];
+  try {
+    bankAccounts = typeof inv.bankAccounts === "string" ? JSON.parse(inv.bankAccounts) : inv.bankAccounts || [];
+  } catch (e) {
+    bankAccounts = [];
+  }
+
+  let featureSettings: any = {};
+  try {
+    featureSettings = typeof inv.featureSettings === "string" ? JSON.parse(inv.featureSettings) : inv.featureSettings || {};
+  } catch (e) {
+    featureSettings = {};
+  }
+
+  const customLabels = featureSettings.customLabels || {};
+
+  let dbThemeDefaultMusic = "";
+  try {
+    const dbTheme = await prisma.theme.findUnique({
+      where: { id: (inv.themeId || "cendekia").toLowerCase() },
+      select: { defaultMusicUrl: true },
+    });
+    if (dbTheme?.defaultMusicUrl) dbThemeDefaultMusic = dbTheme.defaultMusicUrl;
+  } catch {}
+
+  const graduateName = grad.name || inv.groomName || "Wisudawan/Wisudawati";
+  const graduateNickname = grad.nickname || inv.groomNickname || graduateName;
+  const graduateDegree = grad.degree || "Sarjana Komputer (S.Kom.)";
+  const graduateMajor = grad.major || "Teknik Informatika";
+  const graduateFaculty = grad.faculty || "Fakultas Ilmu Komputer";
+  const universityName = grad.university || "Universitas Hasanuddin";
+  const honors = grad.honors || "Cum Laude";
+  const fatherName = parents.fatherName || inv.groomFather || "";
+  const motherName = parents.motherName || inv.groomMother || "";
+
+  const host = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `http://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "http://localhost:3000")).replace(/\/$/, "");
+  const landingCoverUrl = mediaMap.get("LANDING_COVER") || `/demo/cendekia/cover.webp`;
+  const graduatePhotoUrl = mediaMap.get("GROOM") || mediaMap.get("AVATAR") || `/demo/cendekia/hero.webp`;
+  const absoluteCover = landingCoverUrl.startsWith("http") ? landingCoverUrl : `${host}${landingCoverUrl.startsWith("/") ? "" : "/"}${landingCoverUrl}`;
+  const finalAudioUrl = inv.audioUrl || dbThemeDefaultMusic || "/audio/sample.mp3";
+  const platformName = await getAdminSetting("platform_name", "Platform Undangan");
+
+  const eventDateFormatted = events[0]?.date ? formatDateId(events[0].date) : "Sabtu, 24 Oktober 2026";
+  const guestName = inv.recipientName || "Rekan & Sahabat";
+
+  const parentsHtml = fatherName && motherName ? `<p>Putra/Putri tercinta dari:</p><h4 class="serif" style="color: var(--text-main); font-size: 15px; margin: 4px 0;">${escapeHtml(fatherName)} &amp; ${escapeHtml(motherName)}</h4>` : "";
+  const graduateHonorsBadgeHtml = honors ? `<span style="display: inline-block; padding: 4px 12px; border-radius: var(--radius-full, 9999px); background: color-mix(in srgb, var(--accent) 20%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); color: var(--accent); font-size: 11px; font-weight: 700; margin-top: 8px;">Predikat: ${escapeHtml(honors)}</span>` : "";
+
+  const eventsListHtml = events.map((ev: any) => `
+    <div style="background: color-mix(in srgb, var(--card-bg) 60%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); border-radius: var(--radius-md, 14px); padding: 18px; margin-bottom: 12px; text-align: left;">
+      <span style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 1px;">${escapeHtml(ev.title || "Acara")}</span>
+      <h3 class="serif" style="font-size: 18px; color: var(--text-main); margin: 6px 0 4px;">${escapeHtml(ev.name || ev.title || "Syukuran Kelulusan")}</h3>
+      <p style="font-size: 13px; color: var(--text-muted);">${escapeHtml(ev.time || "11:00 - Selesai")}</p>
+      <p style="font-size: 13px; color: var(--text-main); margin-top: 6px;"><b>${escapeHtml(ev.location || "Ballroom Kampus / Gedung")}</b></p>
+      <p style="font-size: 12px; color: var(--text-muted);">${escapeHtml(ev.address || "")}</p>
+      ${ev.mapsUrl ? `<a href="${escapeHtml(ev.mapsUrl)}" target="_blank" rel="noopener noreferrer" style="display: inline-block; margin-top: 10px; font-size: 12px; color: var(--primary); text-decoration: underline; font-weight: 600;">Petunjuk Lokasi Google Maps</a>` : ""}
+    </div>
+  `).join("");
+
+  const eventSectionHtml = `<div class="events-stack">${eventsListHtml}</div>`;
+  const gallerySectionHtml = buildUniversalGallerySection(mediaMap, "cendekia", customLabels.galleryTitle || "Dokumentasi Momen", featureSettings.showGallery !== false);
+  const giftSectionHtml = buildUniversalGiftSection(bankAccounts, customLabels.giftTitle || "Kado Digital", graduateName, featureSettings.showGift !== false);
+  const rsvpSectionHtml = buildUniversalRsvpSection(invitationId, guestName);
+  const wishesSectionHtml = buildUniversalWishesSection(inv.rsvps || []);
+
+  return {
+    ...inv,
+    primaryTitle: graduateName,
+    secondaryTitle: "Syukuran Kelulusan",
+    graduateName,
+    graduateNickname,
+    graduateDegree,
+    graduateMajor,
+    graduateFaculty,
+    universityName,
+    graduateHonorsBadgeHtml,
+    fatherName,
+    motherName,
+    parentsHtml,
+    graduatePhotoUrl,
+    landingCoverUrl,
+    eventDateFormatted,
+    guestName,
+    audioUrl: finalAudioUrl,
+    eventSectionHtml,
+    gallerySectionHtml,
+    giftSectionHtml,
+    rsvpSectionHtml,
+    wishesSectionHtml,
+    brandWatermarkHtml: `<span style="font-size: 10px; color: var(--primary);">Powered by ${escapeHtml(platformName)}</span>`,
+    metaTagsHtml: `
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>Wisuda ${graduateName} — Undangan Digital</title>
+    <meta name="description" content="Syukuran kelulusan ${graduateName}.">
+    <meta property="og:title" content="Wisuda ${graduateName} — Undangan Digital">
+    <meta property="og:image" content="${absoluteCover}">
+    `,
+    featureSettings,
+    customLabels,
+  };
+}
+
+export async function composeGatheringData(inv: any) {
+  const p = safeParseParticipants(inv.participantsJson);
+  const evInfo = p.event || {};
+  const invitationId = inv.id;
+
+  const mediaMap = new Map<string, string>();
+  for (const m of inv.media || []) {
+    if (m.localPath) mediaMap.set(String(m.mediaSlot), m.localPath);
+  }
+
+  let events: any[] = [];
+  try {
+    events = typeof inv.eventData === "string" ? JSON.parse(inv.eventData) : inv.eventData || [];
+  } catch (e) {
+    events = [];
+  }
+
+  let bankAccounts: any[] = [];
+  try {
+    bankAccounts = typeof inv.bankAccounts === "string" ? JSON.parse(inv.bankAccounts) : inv.bankAccounts || [];
+  } catch (e) {
+    bankAccounts = [];
+  }
+
+  let featureSettings: any = {};
+  try {
+    featureSettings = typeof inv.featureSettings === "string" ? JSON.parse(inv.featureSettings) : inv.featureSettings || {};
+  } catch (e) {
+    featureSettings = {};
+  }
+
+  const customLabels = featureSettings.customLabels || {};
+
+  let dbThemeDefaultMusic = "";
+  try {
+    const dbTheme = await prisma.theme.findUnique({
+      where: { id: (inv.themeId || "sinergi").toLowerCase() },
+      select: { defaultMusicUrl: true },
+    });
+    if (dbTheme?.defaultMusicUrl) dbThemeDefaultMusic = dbTheme.defaultMusicUrl;
+  } catch {}
+
+  const eventTitle = evInfo.title || inv.groomName || "Peresmian & Syukuran";
+  const eventSubtitle = evInfo.subtitle || inv.groomNickname || "Melangkah Maju Bersama Menuju Masa Depan Gemilang";
+  const organizerName = evInfo.organizer || "Panitia Penyelenggara";
+  const hostName = evInfo.hostName || "";
+  const dresscode = evInfo.dresscode || "Batik Modern / Smart Casual";
+
+  const host = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `http://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "http://localhost:3000")).replace(/\/$/, "");
+  const landingCoverUrl = mediaMap.get("LANDING_COVER") || `/demo/sinergi/cover.webp`;
+  const eventPhotoUrl = mediaMap.get("GROOM") || mediaMap.get("AVATAR") || `/demo/sinergi/hero.webp`;
+  const absoluteCover = landingCoverUrl.startsWith("http") ? landingCoverUrl : `${host}${landingCoverUrl.startsWith("/") ? "" : "/"}${landingCoverUrl}`;
+  const finalAudioUrl = inv.audioUrl || dbThemeDefaultMusic || "/audio/sample.mp3";
+  const platformName = await getAdminSetting("platform_name", "Platform Undangan");
+
+  const eventDateFormatted = events[0]?.date ? formatDateId(events[0].date) : "Senin, 10 November 2026";
+  const guestName = inv.recipientName || "Rekan / Tamu Undangan";
+  const dresscodeHtml = dresscode ? `<p style="font-size: 12px; color: var(--primary); margin-top: 6px;">Dress Code: <b>${escapeHtml(dresscode)}</b></p>` : "";
+
+  const eventsListHtml = events.map((ev: any) => `
+    <div style="background: color-mix(in srgb, var(--card-bg) 60%, transparent); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); border-radius: var(--radius-md, 14px); padding: 18px; margin-bottom: 12px; text-align: left;">
+      <span style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 1px;">${escapeHtml(ev.title || "Rangkaian")}</span>
+      <h3 class="serif" style="font-size: 18px; color: var(--text-main); margin: 6px 0 4px;">${escapeHtml(ev.name || ev.title || eventTitle)}</h3>
+      <p style="font-size: 13px; color: var(--text-muted);">${escapeHtml(ev.time || "09:00 - 13:00 WITA")}</p>
+      <p style="font-size: 13px; color: var(--text-main); margin-top: 6px;"><b>${escapeHtml(ev.location || "Auditorium / Gedung Pertemuan")}</b></p>
+      <p style="font-size: 12px; color: var(--text-muted);">${escapeHtml(ev.address || "")}</p>
+      ${ev.mapsUrl ? `<a href="${escapeHtml(ev.mapsUrl)}" target="_blank" rel="noopener noreferrer" style="display: inline-block; margin-top: 10px; font-size: 12px; color: var(--primary); text-decoration: underline; font-weight: 600;">Petunjuk Lokasi Google Maps</a>` : ""}
+    </div>
+  `).join("");
+
+  const eventSectionHtml = `<div class="events-stack">${eventsListHtml}</div>`;
+  const gallerySectionHtml = buildUniversalGallerySection(mediaMap, "sinergi", customLabels.galleryTitle || "Dokumentasi Momen", featureSettings.showGallery !== false);
+  const giftSectionHtml = buildUniversalGiftSection(bankAccounts, customLabels.giftTitle || "Kado Digital / Donasi", organizerName, featureSettings.showGift !== false);
+  const rsvpSectionHtml = buildUniversalRsvpSection(invitationId, guestName);
+  const wishesSectionHtml = buildUniversalWishesSection(inv.rsvps || []);
+
+  return {
+    ...inv,
+    primaryTitle: eventTitle,
+    secondaryTitle: eventSubtitle,
+    eventTitle,
+    eventSubtitle,
+    organizerName,
+    hostName,
+    dresscodeHtml,
+    eventPhotoUrl,
+    landingCoverUrl,
+    eventDateFormatted,
+    guestName,
+    audioUrl: finalAudioUrl,
+    eventSectionHtml,
+    gallerySectionHtml,
+    giftSectionHtml,
+    rsvpSectionHtml,
+    wishesSectionHtml,
+    brandWatermarkHtml: `<span style="font-size: 10px; color: var(--primary);">Powered by ${escapeHtml(platformName)}</span>`,
+    metaTagsHtml: `
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>${eventTitle} — Undangan Resmi</title>
+    <meta name="description" content="${eventSubtitle}">
+    <meta property="og:title" content="${eventTitle} — Undangan Resmi">
+    <meta property="og:image" content="${absoluteCover}">
+    `,
     featureSettings,
     customLabels,
   };

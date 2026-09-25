@@ -98,6 +98,8 @@ model Invitation {
   orderId              String?           @unique
   userId               String
   themeId              String            @default("kalandra")
+  eventType            EventType         @default(WEDDING)
+  participantsJson     String?
   subdomain            String?           @unique
   customDomain         String?           @unique
   invitationSlug       String            @unique
@@ -174,8 +176,7 @@ model Guest {
   waSentAt        DateTime?
   qrToken         String?    @unique
   isTokenRedeemed Boolean    @default(false)
-  videoWishUrl    String?
-  videoRecordedAt DateTime?
+
   sessionInfo     String?
   createdAt       DateTime   @default(now())
   invitation      Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
@@ -248,7 +249,9 @@ model Theme {
   name             String
   description      String?
   thumbnail        String?
-  category         String   @default("minimalist")
+  category         String    @default("minimalist")
+  eventType        EventType @default(WEDDING)
+  parentTheme      String?
   series           String?
   previewUrl       String?
   isPremium        Boolean  @default(false)
@@ -315,6 +318,15 @@ enum InvitationStatus {
   TAKEN_DOWN
   ARCHIVED
   EVENT_FINISHED
+}
+
+enum EventType {
+  WEDDING
+  BIRTHDAY
+  KHITAN
+  AQIQAH
+  WISUDA
+  GATHERING
 }
 
 enum WaStatus {

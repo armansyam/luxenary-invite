@@ -172,15 +172,29 @@ export default async function Home() {
 =========================== */}
 <section id="koleksi" aria-labelledby="koleksi-heading">
   <div className="koleksi-text">
-    <p className="section-label reveal">Koleksi</p>
+    <p className="section-label reveal">Koleksi Desain</p>
     <h2 className="koleksi-heading reveal reveal-delay-1" id="koleksi-heading">
-      Desain Eksklusif<br />untuk Setiap Kisah
+      Desain Eksklusif<br />untuk Semua Momen Spesial
     </h2>
     <p className="koleksi-desc reveal reveal-delay-2">
-      Dari yang modern hingga tradisional, setiap rancangan kami dibuat dengan detail untuk mencerminkan keunikan perjalanan cinta Anda.
+      Dari pesta pernikahan, perayaan ulang tahun istimewa, hingga momen syukuran keluarga, setiap rancangan dibuat dengan detail untuk mencerminkan keunikan acara Anda.
     </p>
+    <div className="flex flex-wrap gap-2 my-4 reveal reveal-delay-2">
+      <Link href="/demo?event=wedding" className="text-xs font-semibold px-3 py-1.5 rounded-full border border-stone-700/60 text-stone-300 hover:border-amber-500/80 hover:text-amber-300 transition">
+        Pernikahan
+      </Link>
+      <Link href="/demo?event=birthday" className="text-xs font-semibold px-3 py-1.5 rounded-full border border-stone-700/60 text-stone-300 hover:border-amber-500/80 hover:text-amber-300 transition">
+        Ulang Tahun
+      </Link>
+      <Link href="/demo?event=khitan" className="text-xs font-semibold px-3 py-1.5 rounded-full border border-stone-700/60 text-stone-300 hover:border-amber-500/80 hover:text-amber-300 transition">
+        Khitanan
+      </Link>
+      <Link href="/demo?event=wisuda" className="text-xs font-semibold px-3 py-1.5 rounded-full border border-stone-700/60 text-stone-300 hover:border-amber-500/80 hover:text-amber-300 transition">
+        Wisuda
+      </Link>
+    </div>
     <Link href="/demo" className="koleksi-link reveal reveal-delay-3">
-      Lihat Semua Koleksi
+      Jelajahi Semua Koleksi
     </Link>
   </div>
 

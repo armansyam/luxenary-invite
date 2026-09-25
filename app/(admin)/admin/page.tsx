@@ -19,6 +19,7 @@ import AdminMonitoringTab from "@/components/admin/AdminMonitoringTab";
 import { startRemoteSession } from "./actions/remote";
 import { compressImageToWebP } from "@/lib/clientImageCompressor";
 import { getThemeBlueprint } from "@/lib/themeDefaults";
+import { resolveInvitationDisplayName, buildCanonicalPath } from "@/lib/invitationUtils";
 
 const tabs = [
   {
@@ -452,7 +453,7 @@ export default function AdminPage() {
   }, [status, session, router]);
 
   // Data state
-  const [stats, setStats] = useState<any>({ invitationCount: 0, orderCount: 0, guestCount: 0, userCount: 0, publishedInvitationCount: 0, draftInvitationCount: 0, rsvpCount: 0, videoWishCount: 0 });
+  const [stats, setStats] = useState<any>({ invitationCount: 0, orderCount: 0, guestCount: 0, userCount: 0, publishedInvitationCount: 0, draftInvitationCount: 0, rsvpCount: 0 });
   const [orders, setOrders] = useState<any[]>([]);
   const [allOrders, setAllOrders] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
@@ -728,6 +729,7 @@ export default function AdminPage() {
   const [themeForm, setThemeForm] = useState({
     id: "",
     name: "",
+    eventType: "WEDDING",
     category: "minimalist",
     series: "Minimalist",
     description: "",
@@ -750,7 +752,9 @@ export default function AdminPage() {
   }, [themeSyncResult]);
 
   const [themeError, setThemeError] = useState<string | null>(null);
-  const [themeCategoryFilter, setThemeCategoryFilter] = useState<string>("minimalist");
+  const [themeCategoryFilter, setThemeCategoryFilter] = useState<string>("all");
+  const [themeEventTypeFilter, setThemeEventTypeFilter] = useState<string>("all");
+  const [themeSearch, setThemeSearch] = useState<string>("");
   const [themeFile, setThemeFile] = useState<File | null>(null);
 
   // Theme Demo Studio State
@@ -1344,6 +1348,7 @@ export default function AdminPage() {
     setThemeForm({
       id: "",
       name: "",
+      eventType: "WEDDING",
       category: "minimalist",
       series: "Minimalist",
       description: "",
@@ -1365,6 +1370,7 @@ export default function AdminPage() {
     setThemeForm({
       id: th.id,
       name: th.name,
+      eventType: th.eventType || "WEDDING",
       category: th.category || "minimalist",
       series: th.series || (th.category === "traditional" ? "Traditional" : th.category === "modern" ? "Modern" : "Minimalist"),
       description: th.description || "",
@@ -1400,6 +1406,7 @@ export default function AdminPage() {
       const formData = new FormData();
       formData.append("id", themeForm.id);
       formData.append("name", themeForm.name);
+      formData.append("eventType", themeForm.eventType || "WEDDING");
       formData.append("category", themeForm.category);
       formData.append("series", themeForm.series);
       formData.append("description", themeForm.description);
@@ -1766,6 +1773,9 @@ export default function AdminPage() {
       setInitialDemoStudioData(JSON.parse(JSON.stringify(nextDemoData)));
       setStagedDemoFiles({});
       setStagedDeletedSlots({});
+      fetch("/api/admin/themes").then((r) => r.json()).then((d) => {
+        if (d.success && Array.isArray(d.themes)) setThemes(d.themes);
+      }).catch(() => {});
       setDemoStudioUploadSuccess(`✓ Semua perubahan demo tema ${demoStudioTheme.name} berhasil disimpan permanen!`);
       setTimeout(() => setDemoStudioUploadSuccess(null), 4000);
     } catch (err: any) {
@@ -2231,199 +2241,222 @@ export default function AdminPage() {
                     </div>
                   </div>
 
-                  {/* ── Row 1: Financial & Client Metrics (4 Cards) ── */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {/* 1. Total Revenue */}
-                    <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-gray-200 shadow-2xs flex flex-col justify-between relative overflow-hidden group hover:border-emerald-300 transition">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-gray-500">Pendapatan Bersih (PAID)</span>
-                        <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-xs">
-                          Rp
+                  {/* ── Unified KPI + Operational Panel — Responsive Dual Layout ── */}
+                  <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
+
+                    {/* ── DESKTOP (lg+): Horizontal 4-col dengan divider ── */}
+                    <div className="hidden lg:grid grid-cols-4 divide-x divide-gray-100">
+
+                      {/* Desktop Col 1: Revenue Hero */}
+                      <div className="px-6 py-5 flex flex-col gap-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Pendapatan Bersih</span>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${(stats.conversionRate ?? conversionRate) > 0 ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-400"}`}>
+                            {stats.conversionRate ?? conversionRate}% konversi
+                          </span>
+                        </div>
+                        <p className="text-2xl font-bold text-emerald-700 tracking-tight">Rp {totalRevenue.toLocaleString("id-ID")}</p>
+                        <p className="text-[11px] text-gray-400">{paidCount} lunas · {stats.pendingOrderCount ?? pendingCount} pending</p>
+                      </div>
+
+                      {/* Desktop Col 2: Pending */}
+                      <div className="px-5 py-5 flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[11px] text-gray-400 font-medium">Menunggu Bayar</p>
+                          <p className="text-lg font-bold text-amber-700 tracking-tight">Rp {totalPending.toLocaleString("id-ID")}</p>
+                          <p className="text-[10px] text-gray-400">{stats.pendingOrderCount ?? pendingCount} invoice aktif</p>
                         </div>
                       </div>
-                      <div className="my-3">
-                        <p className="text-2xl sm:text-3xl font-bold text-emerald-700 tracking-tight">
-                          Rp {totalRevenue.toLocaleString("id-ID")}
-                        </p>
+
+                      {/* Desktop Col 3: Klien */}
+                      <div className="px-5 py-5 flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[11px] text-gray-400 font-medium">Klien</p>
+                          <p className="text-lg font-bold text-sky-700 tracking-tight">
+                            {stats.paidUserCount ?? 0}<span className="text-[11px] font-normal text-gray-400 ml-1">bayar</span>
+                            <span className="text-gray-300 mx-1.5">/</span>
+                            <span className="text-gray-500 text-base">{stats.userCount || 0}</span><span className="text-[11px] font-normal text-gray-400 ml-1">total</span>
+                          </p>
+                          <p className="text-[10px] text-gray-400">
+                            {(stats.userCount || 0) - (stats.paidUserCount ?? 0)} belum bayar
+                            {(stats.newRegistrationsToday ?? 0) > 0 && <span className="ml-1.5 text-emerald-600 font-semibold">+{stats.newRegistrationsToday} hari ini</span>}
+                          </p>
+                        </div>
                       </div>
-                      <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-500">
-                        <span>{paidCount} transaksi lunas</span>
-                        <span className="font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
-                          {stats.conversionRate ?? conversionRate}% Konversi
-                        </span>
+
+                      {/* Desktop Col 4: Tamu & RSVP */}
+                      <div className="px-5 py-5 flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[11px] text-gray-400 font-medium">Tamu Terdaftar</p>
+                          <p className="text-lg font-bold text-blue-700 tracking-tight">{stats.guestCount || 0}<span className="text-[11px] font-normal text-gray-400 ml-1">tamu</span></p>
+                          <p className="text-[10px] text-gray-400">
+                            {stats.rsvpCount || 0} RSVP · <span className={stats.guestCount > 0 ? "text-blue-600 font-semibold" : ""}>{stats.guestCount > 0 ? Math.round((stats.rsvpCount / stats.guestCount) * 100) : 0}%</span>
+                          </p>
+                        </div>
                       </div>
                     </div>
 
-                    {/* 2. Pending Revenue */}
-                    <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-gray-200 shadow-2xs flex flex-col justify-between relative overflow-hidden group hover:border-amber-300 transition">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-gray-500">Menunggu Pembayaran</span>
-                        <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold text-xs">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
+                    {/* ── TABLET (md–lg): 2×2 compact grid ── */}
+                    <div className="hidden md:grid lg:hidden grid-cols-2 divide-x divide-y divide-gray-100">
+                      <div className="px-5 py-4 flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 text-xs font-bold">Rp</div>
+                        <div className="min-w-0">
+                          <p className="text-[11px] text-gray-400 font-medium">Pendapatan · <span className={`font-bold ${(stats.conversionRate ?? conversionRate) > 0 ? "text-emerald-600" : "text-gray-400"}`}>{stats.conversionRate ?? conversionRate}% konversi</span></p>
+                          <p className="text-lg font-bold text-emerald-700 truncate">Rp {totalRevenue.toLocaleString("id-ID")}</p>
+                          <p className="text-[10px] text-gray-400">{paidCount} lunas · {stats.pendingOrderCount ?? pendingCount} pending</p>
                         </div>
                       </div>
-                      <div className="my-3">
-                        <p className="text-2xl sm:text-3xl font-bold text-amber-800 tracking-tight">
-                          Rp {totalPending.toLocaleString("id-ID")}
-                        </p>
+                      <div className="px-5 py-4 flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[11px] text-gray-400 font-medium">Menunggu Bayar</p>
+                          <p className="text-lg font-bold text-amber-700 truncate">Rp {totalPending.toLocaleString("id-ID")}</p>
+                          <p className="text-[10px] text-gray-400">{stats.pendingOrderCount ?? pendingCount} invoice</p>
+                        </div>
                       </div>
-                      <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-500">
-                        <span>{stats.pendingOrderCount ?? pendingCount} invoice aktif</span>
-                        <span className="font-semibold text-amber-800 bg-amber-50 px-2 py-0.5 rounded-md">Pending</span>
+                      <div className="px-5 py-4 flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[11px] text-gray-400 font-medium">Klien</p>
+                          <p className="text-lg font-bold text-sky-700">{stats.paidUserCount ?? 0}<span className="text-gray-300 mx-1">/</span><span className="text-gray-500">{stats.userCount || 0}</span></p>
+                          <p className="text-[10px] text-gray-400">{(stats.userCount || 0) - (stats.paidUserCount ?? 0)} belum bayar{(stats.newRegistrationsToday ?? 0) > 0 && <span className="ml-1 text-emerald-600 font-semibold">+{stats.newRegistrationsToday}</span>}</p>
+                        </div>
+                      </div>
+                      <div className="px-5 py-4 flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[11px] text-gray-400 font-medium">Tamu</p>
+                          <p className="text-lg font-bold text-blue-700">{stats.guestCount || 0}<span className="text-[11px] font-normal text-gray-400 ml-1">tamu</span></p>
+                          <p className="text-[10px] text-gray-400">{stats.rsvpCount || 0} RSVP · <span className={stats.guestCount > 0 ? "text-blue-600 font-semibold" : ""}>{stats.guestCount > 0 ? Math.round((stats.rsvpCount / stats.guestCount) * 100) : 0}%</span></p>
+                        </div>
                       </div>
                     </div>
 
-                    {/* 3. Klien yang Sudah Bayar */}
-                    <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-gray-200 shadow-2xs flex flex-col justify-between relative overflow-hidden group hover:border-sky-300 transition">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-gray-500">Klien Sudah Bayar</span>
-                        <div className="w-8 h-8 rounded-xl bg-sky-50 text-sky-700 flex items-center justify-center">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-                          </svg>
+                    {/* ── MOBILE (<md): List-row — label kiri, value kanan, zero wrapping ── */}
+                    <div className="block md:hidden divide-y divide-gray-100">
+                      <div className="flex items-center justify-between px-4 py-3.5">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center text-[10px] font-bold shrink-0">Rp</div>
+                          <span className="text-xs text-gray-600 font-medium">Pendapatan</span>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-bold text-emerald-700">Rp {totalRevenue.toLocaleString("id-ID")}</p>
+                          <p className="text-[10px] text-gray-400">{paidCount} lunas · {stats.conversionRate ?? conversionRate}% konversi</p>
                         </div>
                       </div>
-                      <div className="my-3">
-                        <p className="text-2xl sm:text-3xl font-bold text-sky-800 tracking-tight">
-                          {stats.paidUserCount ?? 0}
-                        </p>
+                      <div className="flex items-center justify-between px-4 py-3.5">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                          </div>
+                          <span className="text-xs text-gray-600 font-medium">Menunggu Bayar</span>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-bold text-amber-700">Rp {totalPending.toLocaleString("id-ID")}</p>
+                          <p className="text-[10px] text-gray-400">{stats.pendingOrderCount ?? pendingCount} invoice</p>
+                        </div>
                       </div>
-                      <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-500">
-                        <span>dari {stats.userCount || 0} klien aktif</span>
-                        <span
-                          className="font-semibold text-sky-700 bg-sky-50 px-2 py-0.5 rounded-md cursor-pointer hover:underline"
-                          onClick={() => setActiveTab("users")}
-                        >
-                          {(stats.newRegistrationsToday ?? 0) > 0 ? `+${stats.newRegistrationsToday} hari ini` : "Lihat Klien"}
-                        </span>
+                      <div className="flex items-center justify-between px-4 py-3.5">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>
+                          </div>
+                          <span className="text-xs text-gray-600 font-medium">Klien</span>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-bold text-sky-700">{stats.paidUserCount ?? 0}<span className="text-gray-400 font-normal text-xs"> / {stats.userCount || 0} total</span></p>
+                          <p className="text-[10px] text-gray-400">{(stats.userCount || 0) - (stats.paidUserCount ?? 0)} belum bayar{(stats.newRegistrationsToday ?? 0) > 0 && <span className="ml-1 text-emerald-600 font-semibold">+{stats.newRegistrationsToday}</span>}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between px-4 py-3.5">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                          </div>
+                          <span className="text-xs text-gray-600 font-medium">Tamu</span>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-bold text-blue-700">{stats.guestCount || 0} tamu</p>
+                          <p className="text-[10px] text-gray-400">{stats.rsvpCount || 0} RSVP · {stats.guestCount > 0 ? Math.round((stats.rsvpCount / stats.guestCount) * 100) : 0}%</p>
+                        </div>
                       </div>
                     </div>
 
-                    {/* 4. Tamu & Interaksi */}
-                    <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-gray-200 shadow-2xs flex flex-col justify-between relative overflow-hidden group hover:border-blue-300 transition">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-gray-500">Tamu & Interaksi</span>
-                        <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold text-xs">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                          </svg>
+                    {/* ── Operational Pulse Strip — responsif per breakpoint ── */}
+                    <div className="border-t border-gray-100 bg-gray-50/60">
+                      {/* sm+: 3-col inline */}
+                      <div className="hidden sm:grid grid-cols-3 divide-x divide-gray-200">
+                        <div className="flex items-start gap-2.5 px-5 py-3">
+                          <div className="w-6 h-6 rounded-md bg-purple-100 text-purple-600 flex items-center justify-center shrink-0 mt-0.5">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                          </div>
+                          <div>
+                            <p className="text-[11px] text-gray-500 font-medium">Undangan <span className="text-gray-400">({stats.invitationCount || 0})</span></p>
+                            <div className="flex items-center gap-1 mt-1 flex-wrap">
+                              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">{stats.publishedInvitationCount || 0} Live</span>
+                              <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">{stats.draftInvitationCount || 0} Draft</span>
+                              <span className="text-[10px] font-bold text-purple-600 bg-purple-100 px-1.5 py-0.5 rounded">{stats.eventFinishedCount ?? 0} Selesai</span>
+                              <span className="text-[10px] font-bold text-gray-500 bg-gray-200 px-1.5 py-0.5 rounded">{stats.archivedCount ?? 0} Arsip</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2.5 px-5 py-3">
+                          <div className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${(stats.eventTodayCount ?? 0) > 0 ? "bg-rose-100 text-rose-600" : "bg-gray-100 text-gray-400"}`}>
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                          </div>
+                          <span className="text-[11px] text-gray-500 font-medium">
+                            Hari-H: <span className={`font-bold ${(stats.eventTodayCount ?? 0) > 0 ? "text-rose-600" : "text-gray-400"}`}>{stats.eventTodayCount ?? 0} hari ini</span>
+                            <span className="text-gray-400 font-normal"> · {stats.eventThisWeekCount ?? 0} minggu · {stats.eventThisMonthCount ?? 0} bln</span>
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2.5 px-5 py-3">
+                          <div className="w-6 h-6 rounded-md bg-teal-100 text-teal-600 flex items-center justify-center shrink-0">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
+                          </div>
+                          <span className="text-[11px] text-gray-500 font-medium">
+                            Klien baru: <span className="font-bold text-teal-700">{stats.newRegistrationsToday ?? 0}</span> hari ini
+                            <button className="ml-2 text-teal-700 font-semibold hover:underline cursor-pointer" onClick={() => setActiveTab("users")}>Lihat →</button>
+                          </span>
                         </div>
                       </div>
-                      <div className="my-3">
-                        <p className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
-                          {stats.guestCount || 0}
-                        </p>
-                      </div>
-                      <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-500">
-                        <span>{stats.rsvpCount || 0} RSVP Konfirmasi</span>
-                        <span className="font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md">
-                          {stats.videoWishCount || 0} Video Wish
-                        </span>
+                      {/* Mobile: stacked list rows */}
+                      <div className="block sm:hidden divide-y divide-gray-100">
+                        <div className="flex items-center justify-between px-4 py-3">
+                          <span className="text-[11px] text-gray-500 font-medium">Undangan</span>
+                          <div className="flex items-center gap-1">
+                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">{stats.publishedInvitationCount || 0} Live</span>
+                            <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">{stats.draftInvitationCount || 0} Draft</span>
+                            <span className="text-[10px] font-bold text-gray-500 bg-gray-200 px-1.5 py-0.5 rounded">{(stats.eventFinishedCount ?? 0) + (stats.archivedCount ?? 0)} lainnya</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between px-4 py-3">
+                          <span className="text-[11px] text-gray-500 font-medium">Hari-H Acara</span>
+                          <span className={`text-[11px] font-bold ${(stats.eventTodayCount ?? 0) > 0 ? "text-rose-600" : "text-gray-400"}`}>
+                            {stats.eventTodayCount ?? 0} hari ini · {stats.eventThisWeekCount ?? 0} minggu
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between px-4 py-3">
+                          <span className="text-[11px] text-gray-500 font-medium">Klien Baru</span>
+                          <span className="text-[11px] font-bold text-teal-700">{stats.newRegistrationsToday ?? 0} hari ini</span>
+                        </div>
                       </div>
                     </div>
                   </div>
-
-                  {/* ── Row 2: Invitation Lifecycle & Event-Day Monitoring (4 Cards) ── */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {/* 5. Hari-H Hari Ini */}
-                    <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-gray-200 shadow-2xs flex flex-col justify-between relative overflow-hidden group hover:border-rose-300 transition">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-gray-500">Hari-H Hari Ini</span>
-                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${(stats.eventTodayCount ?? 0) > 0 ? "bg-rose-50 text-rose-700" : "bg-gray-50 text-gray-400"}`}>
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                          </svg>
-                        </div>
-                      </div>
-                      <div className="my-3">
-                        <p className={`text-2xl sm:text-3xl font-bold tracking-tight ${(stats.eventTodayCount ?? 0) > 0 ? "text-rose-700" : "text-gray-400"}`}>
-                          {stats.eventTodayCount ?? 0}
-                        </p>
-                      </div>
-                      <div className="pt-2 border-t border-gray-100 text-[11px] text-gray-500">
-                        {(stats.eventTodayCount ?? 0) > 0
-                          ? <span className="text-rose-700 font-semibold">Pasangan sedang menikah hari ini</span>
-                          : <span>Tidak ada resepsi hari ini</span>
-                        }
-                      </div>
-                    </div>
-
-                    {/* 6. Hari-H Minggu Ini */}
-                    <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-gray-200 shadow-2xs flex flex-col justify-between relative overflow-hidden group hover:border-orange-300 transition">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-gray-500">Hari-H Minggu Ini</span>
-                        <div className="w-8 h-8 rounded-xl bg-orange-50 text-orange-700 flex items-center justify-center">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                        </div>
-                      </div>
-                      <div className="my-3">
-                        <p className="text-2xl sm:text-3xl font-bold text-orange-700 tracking-tight">
-                          {stats.eventThisWeekCount ?? 0}
-                        </p>
-                      </div>
-                      <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-500">
-                        <span>Resepsi minggu ini</span>
-                        <span className="font-semibold text-orange-700 bg-orange-50 px-2 py-0.5 rounded-md">
-                          {stats.eventThisMonthCount ?? 0} bulan ini
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* 7. Undangan Mempelai (Lifecycle) */}
-                    <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-gray-200 shadow-2xs flex flex-col justify-between relative overflow-hidden group hover:border-purple-300 transition">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-gray-500">Undangan Mempelai</span>
-                        <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold text-xs">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                          </svg>
-                        </div>
-                      </div>
-                      <div className="my-3">
-                        <p className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
-                          {stats.invitationCount || 0}
-                        </p>
-                      </div>
-                      <div className="pt-2 border-t border-gray-100 flex items-center gap-2 flex-wrap text-[11px] text-gray-500">
-                        <span className="text-emerald-700 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded-md">{stats.publishedInvitationCount || 0} Live</span>
-                        <span className="text-amber-700 font-semibold bg-amber-50 px-1.5 py-0.5 rounded-md">{stats.draftInvitationCount || 0} Draft</span>
-                        <span className="text-purple-700 font-semibold bg-purple-50 px-1.5 py-0.5 rounded-md">{stats.eventFinishedCount ?? 0} Selesai</span>
-                        <span className="text-gray-500 font-semibold bg-gray-100 px-1.5 py-0.5 rounded-md">{stats.archivedCount ?? 0} Arsip</span>
-                      </div>
-                    </div>
-
-                    {/* 8. Registrasi Baru */}
-                    <div className="bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-6 border border-gray-200 shadow-2xs flex flex-col justify-between relative overflow-hidden group hover:border-teal-300 transition">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-gray-500">Registrasi Klien</span>
-                        <div className="w-8 h-8 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                          </svg>
-                        </div>
-                      </div>
-                      <div className="my-3">
-                        <p className="text-2xl sm:text-3xl font-bold text-teal-800 tracking-tight">
-                          {stats.newRegistrationsToday ?? 0}
-                          <span className="text-sm font-normal text-gray-400 ml-1">hari ini</span>
-                        </p>
-                      </div>
-                      <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-[11px] text-gray-500">
-                        <span>Total {stats.userCount || 0} klien aktif</span>
-                        <span
-                          className="font-semibold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-md cursor-pointer hover:underline"
-                          onClick={() => setActiveTab("users")}
-                        >
-                          Lihat Semua
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
 
                   {/* ── Analytics Visual Grid (2 Cards: Package Sales Breakdown & Theme Popularity) ── */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -2592,15 +2625,20 @@ export default function AdminPage() {
                             <div key={inv.id} className="py-3 flex items-center justify-between gap-3">
                               <div className="min-w-0">
                                 <p className="font-bold text-gray-900 text-sm truncate">
-                                  {inv.groomNickname || inv.groomName || "Mempelai Pria"} &amp; {inv.brideNickname || inv.brideName || "Mempelai Wanita"}
+                                  {resolveInvitationDisplayName(inv)}
                                 </p>
                                 <div className="flex items-center gap-2 mt-0.5">
                                   <span className="text-[11px] text-gray-500 font-mono">
-                                    /{inv.groomSlug || "pria"}-{inv.brideSlug || "wanita"}/{inv.invitationSlug || "wedding"}
+                                    {buildCanonicalPath(inv)}
                                   </span>
                                   <span className="text-[10px] font-semibold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/60 uppercase">
                                     {inv.themeId}
                                   </span>
+                                  {inv.eventType && inv.eventType !== "WEDDING" && (
+                                    <span className="text-[9px] font-bold text-amber-900 bg-amber-100 px-1.5 py-0.5 rounded uppercase">
+                                      {inv.eventType}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
 
@@ -2867,45 +2905,154 @@ export default function AdminPage() {
                     </div>
                   )}
 
-                  {/* Category Filter Tabs */}
+                  {/* EventType + Category Filter (Unified SaaS Control Bar) */}
                   {(() => {
                     const validThemes = themes.filter((t) => t.id !== "starter-blueprint");
-                    const countMinimalist = validThemes.filter((t) => (t.category || "").toLowerCase() === "minimalist" || (t.category || "").toLowerCase() === "premium").length;
-                    const countModern = validThemes.filter((t) => (t.category || "").toLowerCase() === "modern").length;
-                    const countTraditional = validThemes.filter((t) => (t.category || "").toLowerCase() === "traditional").length;
-                    const displayedThemes = themeCategoryFilter === "all"
+
+                    const countWedding   = validThemes.filter((t) => !t.eventType || t.eventType === "WEDDING").length;
+                    const countBirthday  = validThemes.filter((t) => t.eventType === "BIRTHDAY").length;
+                    const countKhitan    = validThemes.filter((t) => t.eventType === "KHITAN").length;
+                    const countAqiqah    = validThemes.filter((t) => t.eventType === "AQIQAH").length;
+                    const countWisuda    = validThemes.filter((t) => t.eventType === "WISUDA").length;
+                    const countGathering = validThemes.filter((t) => t.eventType === "GATHERING").length;
+
+                    const eventTypeFilteredThemes = themeEventTypeFilter === "all"
                       ? validThemes
-                      : validThemes.filter((t) => {
+                      : validThemes.filter((t) =>
+                          themeEventTypeFilter === "wedding"
+                            ? (!t.eventType || t.eventType === "WEDDING")
+                            : t.eventType === themeEventTypeFilter.toUpperCase()
+                        );
+
+                    const countMinimalist  = eventTypeFilteredThemes.filter((t) => (t.category || "").toLowerCase() === "minimalist" || (t.category || "").toLowerCase() === "premium").length;
+                    const countModern      = eventTypeFilteredThemes.filter((t) => (t.category || "").toLowerCase() === "modern").length;
+                    const countTraditional = eventTypeFilteredThemes.filter((t) => (t.category || "").toLowerCase() === "traditional").length;
+
+                    const categoryTabs = [
+                      countMinimalist  > 0 ? { id: "minimalist",  label: `Minimalis (${countMinimalist})` }  : null,
+                      countModern      > 0 ? { id: "modern",      label: `Modern (${countModern})` }          : null,
+                      countTraditional > 0 ? { id: "traditional", label: `Tradisional (${countTraditional})` } : null,
+                    ].filter(Boolean) as { id: string; label: string }[];
+
+                    const categoryFilteredThemes = themeCategoryFilter === "all"
+                      ? eventTypeFilteredThemes
+                      : eventTypeFilteredThemes.filter((t) => {
                           const cat = (t.category || "").toLowerCase();
                           if (themeCategoryFilter === "minimalist") return cat === "minimalist" || cat === "premium";
                           return cat === themeCategoryFilter;
                         });
 
+                    const displayedThemes = themeSearch.trim()
+                      ? categoryFilteredThemes.filter((t) =>
+                          t.name.toLowerCase().includes(themeSearch.toLowerCase()) ||
+                          t.id.toLowerCase().includes(themeSearch.toLowerCase())
+                        )
+                      : categoryFilteredThemes;
+
                     return (
-                      <>
-                        <div className="flex items-center gap-2 border-b border-gray-200 pb-3 overflow-x-auto no-scrollbar">
+                      <div className="space-y-4">
+                        {/* 1. Master Segmented Event Bar */}
+                        <div className="bg-stone-100/90 p-1.5 rounded-2xl flex items-center gap-1 overflow-x-auto no-scrollbar border border-stone-200/80">
                           {[
-                            { id: "minimalist", label: `Minimalis (${countMinimalist})` },
-                            { id: "modern", label: `Modern (${countModern})` },
-                            { id: "traditional", label: `Traditional (${countTraditional})` },
-                            { id: "all", label: `Semua Tema (${validThemes.length})` },
-                          ].map((cat) => (
-                            <button
-                              key={cat.id}
-                              type="button"
-                              onClick={() => setThemeCategoryFilter(cat.id)}
-                              className={`px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
-                                themeCategoryFilter === cat.id
-                                  ? "bg-amber-800 text-white shadow-xs"
-                                  : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
-                              }`}
-                            >
-                              {cat.label}
-                            </button>
-                          ))}
+                            { id: "all",       label: "Semua",         count: validThemes.length },
+                            { id: "wedding",   label: "Wedding",       count: countWedding },
+                            { id: "birthday",  label: "Birthday",      count: countBirthday },
+                            { id: "khitan",    label: "Khitan",        count: countKhitan },
+                            { id: "aqiqah",    label: "Aqiqah",        count: countAqiqah },
+                            { id: "wisuda",    label: "Wisuda",        count: countWisuda },
+                            { id: "gathering", label: "Umum / Acara",  count: countGathering },
+                          ].map((tab) => {
+                            const isActive = themeEventTypeFilter === tab.id;
+                            return (
+                              <button
+                                key={tab.id}
+                                type="button"
+                                onClick={() => {
+                                  setThemeEventTypeFilter(tab.id);
+                                  setThemeCategoryFilter("all");
+                                }}
+                                className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 shrink-0 ${
+                                  isActive
+                                    ? "bg-white text-stone-900 shadow-xs font-bold"
+                                    : "text-stone-600 hover:text-stone-900 hover:bg-white/60"
+                                }`}
+                              >
+                                <span>{tab.label}</span>
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
+                                  isActive
+                                    ? "bg-stone-900 text-white font-bold"
+                                    : "bg-stone-200 text-stone-600 font-medium"
+                                }`}>
+                                  {tab.count}
+                                </span>
+                              </button>
+                            );
+                          })}
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                        {/* 2. Sub-Filter Toolbar: Search + Style Category Chips + Counter */}
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pb-1 border-b border-stone-200/80">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <div className="relative w-full sm:w-64">
+                              <input
+                                type="text"
+                                value={themeSearch}
+                                onChange={(e) => setThemeSearch(e.target.value)}
+                                placeholder="Cari nama atau slug tema..."
+                                className="w-full pl-8 pr-7 py-1.5 bg-white border border-stone-200 rounded-xl text-xs text-stone-800 placeholder:text-stone-400 focus:outline-none focus:border-stone-400 focus:ring-1 focus:ring-stone-400"
+                              />
+                              <svg className="w-3.5 h-3.5 text-stone-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                              </svg>
+                              {themeSearch && (
+                                <button
+                                  type="button"
+                                  onClick={() => setThemeSearch("")}
+                                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 text-xs cursor-pointer"
+                                >
+                                  ✕
+                                </button>
+                              )}
+                            </div>
+
+                            {categoryTabs.length > 0 && (
+                              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                                {[
+                                  { id: "all", label: `Semua Gaya (${eventTypeFilteredThemes.length})` },
+                                  ...categoryTabs,
+                                ].map((cat) => {
+                                  const isCatActive = themeCategoryFilter === cat.id;
+                                  return (
+                                    <button
+                                      key={cat.id}
+                                      type="button"
+                                      onClick={() => setThemeCategoryFilter(cat.id)}
+                                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer shrink-0 ${
+                                        isCatActive
+                                          ? "bg-stone-800 text-white font-semibold shadow-2xs"
+                                          : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-50"
+                                      }`}
+                                    >
+                                      {cat.label}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="text-right text-[11px] text-stone-500 font-medium shrink-0">
+                            Menampilkan <span className="font-bold text-stone-800">{displayedThemes.length}</span> dari {validThemes.length} tema
+                          </div>
+                        </div>
+
+                        {displayedThemes.length === 0 ? (
+                          <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-stone-200 text-stone-500">
+                            <p className="text-sm font-semibold">Tidak ada tema yang cocok dengan filter aktif</p>
+                            <p className="text-xs text-stone-400 mt-1">Coba ganti kategori atau kosongkan pencarian</p>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                           {displayedThemes.map((theme) => {
                             const cat = (theme.category || "modern").toLowerCase();
                             return (
@@ -2935,14 +3082,6 @@ export default function AdminPage() {
                                             loading="lazy"
                                             decoding="async"
                                             className="w-full h-full object-cover object-top"
-                                            onError={(e) => {
-                                              const t = e.currentTarget;
-                                              if (!t.src.includes("hero.webp") && !t.src.includes("cover.webp")) {
-                                                t.src = `/demo/${theme.id}/hero.webp`;
-                                              } else if (t.src.includes("hero.webp")) {
-                                                t.src = `/demo/${theme.id}/cover.webp`;
-                                              }
-                                            }}
                                           />
                                           <div className="stp-glare"/>
                                         </div>
@@ -2974,14 +3113,6 @@ export default function AdminPage() {
                                           alt={`${theme.name} Mobile`}
                                           loading="lazy"
                                           decoding="async"
-                                          onError={(e) => {
-                                            const t = e.currentTarget;
-                                            if (!t.src.includes("cover.webp") && !t.src.includes("hero.webp")) {
-                                              t.src = `/demo/${theme.id}/cover.webp`;
-                                            } else if (t.src.includes("cover.webp")) {
-                                              t.src = `/demo/${theme.id}/hero.webp`;
-                                            }
-                                          }}
                                         />
                                         <div className="stp-glare"/>
                                       </div>
@@ -3029,7 +3160,24 @@ export default function AdminPage() {
                                   <div className="p-4 space-y-1.5">
                                     <div className="flex items-start justify-between gap-2">
                                       <div>
-                                        <h3 className="font-bold text-gray-900 text-base group-hover:text-amber-900 transition">{theme.name}</h3>
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                          <h3 className="font-bold text-gray-900 text-base group-hover:text-amber-900 transition">{theme.name}</h3>
+                                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider border ${
+                                            (!theme.eventType || theme.eventType === "WEDDING")
+                                              ? "bg-amber-50 text-amber-800 border-amber-200"
+                                              : theme.eventType === "BIRTHDAY"
+                                              ? "bg-purple-50 text-purple-700 border-purple-200"
+                                              : theme.eventType === "KHITAN"
+                                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                              : theme.eventType === "AQIQAH"
+                                              ? "bg-sky-50 text-sky-700 border-sky-200"
+                                              : theme.eventType === "WISUDA"
+                                              ? "bg-indigo-50 text-indigo-700 border-indigo-200"
+                                              : "bg-teal-50 text-teal-700 border-teal-200"
+                                          }`}>
+                                            {theme.eventType || "WEDDING"}
+                                          </span>
+                                        </div>
                                         <span className="text-[11px] font-mono text-gray-400">/{theme.id}</span>
                                       </div>
                                     </div>
@@ -3104,8 +3252,9 @@ export default function AdminPage() {
                             );
                           })}
                         </div>
-                      </>
-                    );
+                      )}
+                    </div>
+                  );
                   })()}
                 </div>
               ) : (
@@ -6804,9 +6953,13 @@ export default function AdminPage() {
                   required
                 />
                 <p className="text-[10px] text-gray-500 mt-1">
-                  File HTML disimpan di <code className="font-mono text-gray-700 font-semibold">themes/minimalist/{themeForm.id || "id"}.html</code> atau <code className="font-mono text-gray-700 font-semibold">themes/traditional/{themeForm.id || "id"}.html</code>.{" "}
-                  <a href="/downloads/starter-blueprint.html" download="starter-blueprint.html" className="text-amber-700 font-bold hover:underline">
-                    Unduh Starter Blueprint HTML
+                  File HTML disimpan di <code className="font-mono text-gray-700 font-semibold">themes/{themeForm.eventType === "GATHERING" ? "general" : (themeForm.eventType || "wedding").toLowerCase()}/{themeForm.category}/{themeForm.id || "id"}.html</code>.{" "}
+                  <a
+                    href={`/downloads/starter-blueprint-${themeForm.eventType === "GATHERING" ? "general" : (themeForm.eventType || "wedding").toLowerCase()}.html`}
+                    download={`starter-blueprint-${themeForm.eventType === "GATHERING" ? "general" : (themeForm.eventType || "wedding").toLowerCase()}.html`}
+                    className="text-amber-700 font-bold hover:underline"
+                  >
+                    Unduh Starter Blueprint HTML ({themeForm.eventType || "WEDDING"})
                   </a>
                 </p>
               </div>
@@ -6823,7 +6976,22 @@ export default function AdminPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-gray-800 mb-1">Tipe Acara</label>
+                  <select
+                    value={themeForm.eventType || "WEDDING"}
+                    onChange={(e) => setThemeForm({ ...themeForm, eventType: e.target.value })}
+                    className="w-full px-3.5 py-2 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 font-medium focus:outline-none focus:border-amber-500"
+                  >
+                    <option value="WEDDING">Wedding</option>
+                    <option value="BIRTHDAY">Birthday</option>
+                    <option value="KHITAN">Khitan</option>
+                    <option value="AQIQAH">Aqiqah</option>
+                    <option value="WISUDA">Wisuda</option>
+                    <option value="GATHERING">Gathering</option>
+                  </select>
+                </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-800 mb-1">Kategori</label>
                   <select
@@ -7850,122 +8018,170 @@ export default function AdminPage() {
                         </div>
                       </div>
 
-                      {/* Groom & Bride Info */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 p-4 bg-gray-50 border border-gray-200 rounded-2xl">
-                        {/* Groom */}
-                        <div className="space-y-3">
-                          <span className="text-xs font-bold text-amber-900 uppercase font-mono block">Mempelai Pria (Demo)</span>
-                          <div>
-                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Nama Panggilan</label>
-                            <input
-                              type="text"
-                              value={demoStudioData.groomName || ""}
-                              onChange={(e) => setDemoStudioData({ ...demoStudioData, groomName: e.target.value })}
-                              placeholder="Raditya"
-                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Nama Lengkap &amp; Gelar</label>
-                            <input
-                              type="text"
-                              value={demoStudioData.groomDisplayName || ""}
-                              onChange={(e) => setDemoStudioData({ ...demoStudioData, groomDisplayName: e.target.value })}
-                              placeholder="Raditya Pratama, S.T."
-                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
-                            />
-                          </div>
-                          <div className="grid grid-cols-2 gap-2">
+                      {/* Groom & Bride Info (Wedding) vs Persona Info (Non-Wedding) */}
+                      {(!demoStudioTheme?.eventType || demoStudioTheme?.eventType === "WEDDING") ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 p-4 bg-gray-50 border border-gray-200 rounded-2xl">
+                          {/* Groom */}
+                          <div className="space-y-3">
+                            <span className="text-xs font-bold text-amber-900 uppercase font-mono block">Mempelai Pria (Demo)</span>
                             <div>
-                              <label className="block text-[11px] font-bold text-gray-700 mb-1">Nama Ayah Pria</label>
+                              <label className="block text-[11px] font-bold text-gray-700 mb-1">Nama Panggilan</label>
+                              <input
+                                type="text"
+                                value={demoStudioData.groomName || ""}
+                                onChange={(e) => setDemoStudioData({ ...demoStudioData, groomName: e.target.value })}
+                                placeholder="Raditya"
+                                className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-bold text-gray-700 mb-1">Nama Lengkap &amp; Gelar</label>
+                              <input
+                                type="text"
+                                value={demoStudioData.groomDisplayName || ""}
+                                onChange={(e) => setDemoStudioData({ ...demoStudioData, groomDisplayName: e.target.value })}
+                                placeholder="Raditya Pratama, S.T."
+                                className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
+                              />
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="block text-[11px] font-bold text-gray-700 mb-1">Nama Ayah Pria</label>
+                                <input
+                                  type="text"
+                                  value={demoStudioData.groomFather || ""}
+                                  onChange={(e) => setDemoStudioData({ ...demoStudioData, groomFather: e.target.value })}
+                                  placeholder="Contoh: Ir. Hendra Pratama / Alm. Hendra Pratama"
+                                  className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[11px] font-bold text-gray-700 mb-1">Nama Ibu Pria</label>
+                                <input
+                                  type="text"
+                                  value={demoStudioData.groomMother || ""}
+                                  onChange={(e) => setDemoStudioData({ ...demoStudioData, groomMother: e.target.value })}
+                                  placeholder="Contoh: Ratna Dewi / Almh. Ratna Dewi"
+                                  className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-bold text-gray-700 mb-1">Instagram (@)</label>
+                              <input
+                                type="text"
+                                value={demoStudioData.groomInstagram || ""}
+                                onChange={(e) => setDemoStudioData({ ...demoStudioData, groomInstagram: e.target.value })}
+                                placeholder="raditya.pratama"
+                                className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Bride */}
+                          <div className="space-y-3">
+                            <span className="text-xs font-bold text-amber-900 uppercase font-mono block">Mempelai Wanita (Demo)</span>
+                            <div>
+                              <label className="block text-[11px] font-bold text-gray-700 mb-1">Nama Panggilan</label>
+                              <input
+                                type="text"
+                                value={demoStudioData.brideName || ""}
+                                onChange={(e) => setDemoStudioData({ ...demoStudioData, brideName: e.target.value })}
+                                placeholder="Alana"
+                                className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-bold text-gray-700 mb-1">Nama Lengkap &amp; Gelar</label>
+                              <input
+                                type="text"
+                                value={demoStudioData.brideDisplayName || ""}
+                                onChange={(e) => setDemoStudioData({ ...demoStudioData, brideDisplayName: e.target.value })}
+                                placeholder="Alana Khairunnisa, B.Des."
+                                className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
+                              />
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="block text-[11px] font-bold text-gray-700 mb-1">Nama Ayah Wanita</label>
+                                <input
+                                  type="text"
+                                  value={demoStudioData.brideFather || ""}
+                                  onChange={(e) => setDemoStudioData({ ...demoStudioData, brideFather: e.target.value })}
+                                  placeholder="Contoh: Dr. Faisal Basri / Alm. Faisal Basri"
+                                  className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[11px] font-bold text-gray-700 mb-1">Nama Ibu Wanita</label>
+                                <input
+                                  type="text"
+                                  value={demoStudioData.brideMother || ""}
+                                  onChange={(e) => setDemoStudioData({ ...demoStudioData, brideMother: e.target.value })}
+                                  placeholder="Contoh: Soraya Latief / Almh. Soraya Latief"
+                                  className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-bold text-gray-700 mb-1">Instagram (@)</label>
+                              <input
+                                type="text"
+                                value={demoStudioData.brideInstagram || ""}
+                                onChange={(e) => setDemoStudioData({ ...demoStudioData, brideInstagram: e.target.value })}
+                                placeholder="alana.khairunnisa"
+                                className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="p-4 bg-gray-50 border border-gray-200 rounded-2xl space-y-4">
+                          <span className="text-xs font-bold text-amber-900 uppercase font-mono block">Profil Utama (Demo {demoStudioTheme.eventType})</span>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-[11px] font-bold text-gray-700 mb-1">Nama Panggilan</label>
+                              <input
+                                type="text"
+                                value={demoStudioData.groomName || ""}
+                                onChange={(e) => setDemoStudioData({ ...demoStudioData, groomName: e.target.value })}
+                                placeholder="Farhan"
+                                className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-bold text-gray-700 mb-1">Nama Lengkap</label>
+                              <input
+                                type="text"
+                                value={demoStudioData.groomDisplayName || ""}
+                                onChange={(e) => setDemoStudioData({ ...demoStudioData, groomDisplayName: e.target.value })}
+                                placeholder="Farhan Pratama"
+                                className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-bold text-gray-700 mb-1">Nama Ayah</label>
                               <input
                                 type="text"
                                 value={demoStudioData.groomFather || ""}
                                 onChange={(e) => setDemoStudioData({ ...demoStudioData, groomFather: e.target.value })}
-                                placeholder="Contoh: Ir. Hendra Pratama / Alm. Hendra Pratama"
+                                placeholder="Bpk. Hendra"
                                 className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
                               />
                             </div>
                             <div>
-                              <label className="block text-[11px] font-bold text-gray-700 mb-1">Nama Ibu Pria</label>
+                              <label className="block text-[11px] font-bold text-gray-700 mb-1">Nama Ibu</label>
                               <input
                                 type="text"
                                 value={demoStudioData.groomMother || ""}
                                 onChange={(e) => setDemoStudioData({ ...demoStudioData, groomMother: e.target.value })}
-                                placeholder="Contoh: Ratna Dewi / Almh. Ratna Dewi"
+                                placeholder="Ibu Rina"
                                 className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
                               />
                             </div>
-                          </div>
-                          <div>
-                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Instagram (@)</label>
-                            <input
-                              type="text"
-                              value={demoStudioData.groomInstagram || ""}
-                              onChange={(e) => setDemoStudioData({ ...demoStudioData, groomInstagram: e.target.value })}
-                              placeholder="raditya.pratama"
-                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
-                            />
                           </div>
                         </div>
-
-                        {/* Bride */}
-                        <div className="space-y-3">
-                          <span className="text-xs font-bold text-amber-900 uppercase font-mono block">Mempelai Wanita (Demo)</span>
-                          <div>
-                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Nama Panggilan</label>
-                            <input
-                              type="text"
-                              value={demoStudioData.brideName || ""}
-                              onChange={(e) => setDemoStudioData({ ...demoStudioData, brideName: e.target.value })}
-                              placeholder="Alana"
-                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Nama Lengkap &amp; Gelar</label>
-                            <input
-                              type="text"
-                              value={demoStudioData.brideDisplayName || ""}
-                              onChange={(e) => setDemoStudioData({ ...demoStudioData, brideDisplayName: e.target.value })}
-                              placeholder="Alana Khairunnisa, B.Des."
-                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
-                            />
-                          </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <label className="block text-[11px] font-bold text-gray-700 mb-1">Nama Ayah Wanita</label>
-                              <input
-                                type="text"
-                                value={demoStudioData.brideFather || ""}
-                                onChange={(e) => setDemoStudioData({ ...demoStudioData, brideFather: e.target.value })}
-                                placeholder="Contoh: Dr. Faisal Basri / Alm. Faisal Basri"
-                                className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-[11px] font-bold text-gray-700 mb-1">Nama Ibu Wanita</label>
-                              <input
-                                type="text"
-                                value={demoStudioData.brideMother || ""}
-                                onChange={(e) => setDemoStudioData({ ...demoStudioData, brideMother: e.target.value })}
-                                placeholder="Contoh: Soraya Latief / Almh. Soraya Latief"
-                                className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
-                              />
-                            </div>
-                          </div>
-                          <div>
-                            <label className="block text-[11px] font-bold text-gray-700 mb-1">Instagram (@)</label>
-                            <input
-                              type="text"
-                              value={demoStudioData.brideInstagram || ""}
-                              onChange={(e) => setDemoStudioData({ ...demoStudioData, brideInstagram: e.target.value })}
-                              placeholder="alana.khairunnisa"
-                              className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white"
-                            />
-                          </div>
-                        </div>
-                      </div>
+                      )}
 
                       {/* Quotes & Dates */}
                       <div className="space-y-3">

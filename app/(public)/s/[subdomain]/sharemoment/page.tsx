@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import GuestMomentClient from "@/app/components/features/GuestMomentClient";
 import { getAdminSetting, getPlanMemoriesQuota, hasPlanCapability } from "@/lib/settings";
 import { getMemoriesActiveSchedule } from "@/lib/domainUtils";
+import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -21,10 +22,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!invitation) return {};
 
-  const coupleName = `${invitation.groomNickname || "Pria"} & ${invitation.brideNickname || "Wanita"}`;
+  const displayName = resolveInvitationDisplayName(invitation);
+  const isWedding = !invitation.eventType || invitation.eventType === "WEDDING";
   return {
-    title: `Guest Moment — ${coupleName} | ${platformName}`,
-    description: `Bagikan foto candid Anda secara real-time di pernikahan ${coupleName}.`,
+    title: `Guest Moment — ${displayName} | ${platformName}`,
+    description: isWedding
+      ? `Bagikan foto candid Anda secara real-time di pernikahan ${displayName}.`
+      : `Bagikan foto candid Anda secara real-time di acara ${displayName}.`,
   };
 }
 
@@ -58,7 +62,7 @@ export default async function GuestMemoriesStandalonePage({ params, searchParams
   }
 
   const memories: any[] = invitation.guestMemories || [];
-  const coupleName = `${invitation.groomNickname || "Mempelai Pria"} & ${invitation.brideNickname || "Mempelai Wanita"}`;
+  const coupleName = resolveInvitationDisplayName(invitation);
   
   // Parse featureSettings terlebih dahulu untuk membaca custom memoriesCoverPhoto
   const fs = (() => {

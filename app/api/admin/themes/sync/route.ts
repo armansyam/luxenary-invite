@@ -13,6 +13,7 @@ interface DiscoveredTheme {
   name: string;
   category: "minimalist" | "modern" | "traditional";
   series: string;
+  eventType?: string;
   filePath: string;
   hasStory: boolean;
   hasGallery: boolean;
@@ -36,15 +37,71 @@ export async function POST() {
     const themesDir = path.join(process.cwd(), "themes");
     const discovered: DiscoveredTheme[] = [];
 
-    const folders = [
-      { name: "minimalist", category: "minimalist" as const, series: "Minimalist" },
-      { name: "modern", category: "modern" as const, series: "Modern" },
-      { name: "traditional", category: "traditional" as const, series: "Traditional" },
-      { name: "", category: "modern" as const, series: "Modern" },
+    const EVENT_FOLDERS = [
+      { eventFolder: "wedding",  eventType: "WEDDING" as const },
+      { eventFolder: "birthday", eventType: "BIRTHDAY" as const },
+      { eventFolder: "khitan",   eventType: "KHITAN" as const },
+      { eventFolder: "aqiqah",   eventType: "AQIQAH" as const },
+      { eventFolder: "wisuda",   eventType: "WISUDA" as const },
+      { eventFolder: "general",  eventType: "GATHERING" as const },
     ];
 
-    for (const folder of folders) {
-      const targetDir = folder.name ? path.join(themesDir, folder.name) : themesDir;
+    const STYLE_FOLDERS = [
+      { styleFolder: "minimalist", category: "minimalist" as const, series: "Minimalist" },
+      { styleFolder: "modern", category: "modern" as const, series: "Modern" },
+      { styleFolder: "traditional", category: "traditional" as const, series: "Traditional" },
+    ];
+
+    // 1. Scan multi-event folders (themes/<eventType>/<style>/)
+    for (const ef of EVENT_FOLDERS) {
+      for (const sf of STYLE_FOLDERS) {
+        const targetDir = path.join(themesDir, ef.eventFolder, sf.styleFolder);
+        try {
+          await fs.promises.access(targetDir);
+        } catch {
+          continue;
+        }
+
+        const files = await fs.promises.readdir(targetDir);
+        for (const file of files) {
+          if (!file.endsWith(".html") || file.startsWith("starter-blueprint") || file.startsWith("_")) continue;
+
+          const id = file.replace(".html", "").toLowerCase();
+          if (discovered.some((d) => d.id === id)) continue;
+
+          const fullPath = path.join(targetDir, file);
+          const htmlContent = await fs.promises.readFile(fullPath, "utf-8");
+
+          const formattedName = id
+            .split(/[-_]/)
+            .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+            .join(" ");
+
+          const hasStory = htmlContent.includes("{{storySectionHtml}}") || htmlContent.includes("{{storyHtml}}") || htmlContent.includes("{{storyItemsHtml}}");
+          const hasGallery = htmlContent.includes("{{gallerySectionHtml}}") || htmlContent.includes("{{galleryHtml}}") || htmlContent.includes("{{galleryPhotosHtml}}") || htmlContent.includes("{{galleryItemsHtml}}");
+          const hasGift = htmlContent.includes("{{giftSectionHtml}}") || htmlContent.includes("{{giftHtml}}") || htmlContent.includes("{{giftCardsHtml}}") || htmlContent.includes("{{bankListHtml}}");
+          const hasQr = htmlContent.includes("{{qrAccessSectionHtml}}") || htmlContent.includes("{{qrDockButtonHtml}}") || htmlContent.includes("{{qrAccessCardHtml}}") || htmlContent.includes("{{qrCoverButtonHtml}}");
+
+          discovered.push({
+            id,
+            name: formattedName,
+            category: sf.category,
+            series: sf.series,
+            eventType: ef.eventType,
+            filePath: path.relative(process.cwd(), fullPath),
+            hasStory,
+            hasGallery,
+            hasGift,
+            hasQr,
+            isHealthValid: hasStory && hasGallery && hasGift,
+          });
+        }
+      }
+    }
+
+    // 2. Legacy fallback scan (themes/<style>/) jika belum dipindahkan
+    for (const sf of STYLE_FOLDERS) {
+      const targetDir = path.join(themesDir, sf.styleFolder);
       try {
         await fs.promises.access(targetDir);
       } catch {
@@ -53,16 +110,14 @@ export async function POST() {
 
       const files = await fs.promises.readdir(targetDir);
       for (const file of files) {
-        if (!file.endsWith(".html") || file === "starter-blueprint.html") continue;
+        if (!file.endsWith(".html") || file.startsWith("starter-blueprint") || file.startsWith("_")) continue;
 
         const id = file.replace(".html", "").toLowerCase();
-        // Skip duplicate IDs if already found in a subfolder
         if (discovered.some((d) => d.id === id)) continue;
 
         const fullPath = path.join(targetDir, file);
         const htmlContent = await fs.promises.readFile(fullPath, "utf-8");
 
-        // Format name e.g. "dillalucky" -> "Dilla Lucky", "kalandra" -> "Kalandra"
         const formattedName = id
           .split(/[-_]/)
           .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
@@ -76,8 +131,9 @@ export async function POST() {
         discovered.push({
           id,
           name: formattedName,
-          category: folder.category,
-          series: folder.series,
+          category: sf.category,
+          series: sf.series,
+          eventType: "WEDDING",
           filePath: path.relative(process.cwd(), fullPath),
           hasStory,
           hasGallery,
@@ -111,6 +167,7 @@ export async function POST() {
         update: {
           name: d.name,
           category: cat,
+          eventType: (d.eventType as any) || "WEDDING",
           series: d.series,
           sortOrder: existing?.sortOrder ?? (i + 1),
           description: existing?.description || defaultDesc,
@@ -122,6 +179,7 @@ export async function POST() {
           id: d.id,
           name: d.name,
           category: cat,
+          eventType: (d.eventType as any) || "WEDDING",
           series: d.series,
           description: defaultDesc,
           thumbnail: demoData?.sidebarPhotoUrl || demoData?.landingCoverUrl || null,
@@ -135,6 +193,15 @@ export async function POST() {
 
     // Purge any themes in Database that no longer exist in themes/ directory
     const discoveredIds = discovered.map((d) => d.id);
+    const existingCount = await prisma.theme.count();
+    const toDeleteCount = existingCount - discoveredIds.length;
+    if (existingCount > 0 && toDeleteCount > Math.floor(existingCount * 0.5)) {
+      return NextResponse.json({
+        success: false,
+        error: `Safety abort: ${toDeleteCount} dari ${existingCount} tema akan dihapus. Periksa konfigurasi folder sebelum sinkronisasi.`
+      }, { status: 400 });
+    }
+
     await prisma.theme.deleteMany({
       where: {
         id: { notIn: discoveredIds },

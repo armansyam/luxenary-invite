@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getInvitationPublicUrl, getApexRootDomain, resolveEffectiveInvitationUrl } from "@/lib/domainUtils";
 import { getPlanDisplayName } from "@/lib/planUtils";
+import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -210,29 +211,39 @@ export default function SettingsPage() {
     },
     {
       id: "couples",
-      title: "Profil Lengkap Kedua Mempelai",
-      desc: "Nama mempelai pria & wanita",
+      title: "Profil Lengkap Utama",
+      desc: "Informasi profil mempelai atau penyelenggara",
       hasToggle: false,
       isToggledOn: () => true,
-      hasData: (inv: any) =>
-        Boolean(
+      hasData: (inv: any) => {
+        if (inv?.eventType && inv.eventType !== "WEDDING") {
+          return Boolean(inv?.groomName && !inv.groomName.startsWith("Mempelai"));
+        }
+        return Boolean(
           inv?.groomName &&
             !inv.groomName.startsWith("Mempelai Pria") &&
             inv?.brideName &&
             !inv.brideName.startsWith("Mempelai Wanita")
-        ),
-      missingMessage: "Nama lengkap kedua mempelai belum diisi dengan benar. Harap lengkapi nama mempelai di Edit Undangan.",
+        );
+      },
+      missingMessage: "Profil utama belum diisi dengan benar. Harap lengkapi nama profil di Edit Undangan (Seksi 3).",
     },
     {
       id: "couplePhotos",
-      title: "Foto Profil Kedua Mempelai",
-      desc: "Foto portrait mempelai pria & wanita (Seksi 3)",
+      title: "Foto Profil Utama",
+      desc: "Foto portrait profil acara (Seksi 3)",
       hasToggle: false,
       isToggledOn: () => true,
       hasData: (inv: any) => {
+        if (inv?.eventType && inv.eventType !== "WEDDING") {
+          return checkMediaSlot(inv, "GROOM_PHOTO");
+        }
         return checkMediaSlot(inv, "GROOM_PHOTO") && checkMediaSlot(inv, "BRIDE_PHOTO");
       },
       getMissingMessage: (inv: any) => {
+        if (inv?.eventType && inv.eventType !== "WEDDING") {
+          return "Foto profil utama belum diunggah. Harap unggah foto di Edit Undangan (Seksi 3).";
+        }
         const groomMissing = !checkMediaSlot(inv, "GROOM_PHOTO");
         const brideMissing = !checkMediaSlot(inv, "BRIDE_PHOTO");
         if (groomMissing && brideMissing) {
@@ -243,7 +254,7 @@ export default function SettingsPage() {
         }
         return "Foto Mempelai Wanita belum diunggah. Harap unggah foto mempelai wanita di Edit Undangan (Seksi 3).";
       },
-      missingMessage: "Foto profil kedua mempelai belum lengkap diunggah. Harap unggah foto mempelai pria dan wanita di Edit Undangan (Seksi 3).",
+      missingMessage: "Foto profil belum lengkap diunggah. Harap unggah foto di Edit Undangan (Seksi 3).",
     },
     {
       id: "eventDate",
@@ -694,9 +705,11 @@ export default function SettingsPage() {
   };
 
   const handleShareWa = () => {
-    const groom = invitation?.groomNickname || invitation?.groomName || "Mempelai Pria";
-    const bride = invitation?.brideNickname || invitation?.brideName || "Mempelai Wanita";
-    const shareText = `Halo, kami mengundang Anda untuk menghadiri pernikahan ${groom} & ${bride}.\n\nInformasi lengkap serta susunan acara dapat dilihat melalui tautan resmi kami berikut:\n${officialUrl}\n\nTerima kasih atas doa dan kehadirannya.`;
+    const isWedding = !invitation?.eventType || invitation.eventType === "WEDDING";
+    const displayName = resolveInvitationDisplayName(invitation);
+    const shareText = isWedding
+      ? `Halo, kami mengundang Anda untuk menghadiri pernikahan ${displayName}.\n\nInformasi lengkap serta susunan acara dapat dilihat melalui tautan resmi kami berikut:\n${officialUrl}\n\nTerima kasih atas doa dan kehadirannya.`
+      : `Halo, kami mengundang Anda untuk menghadiri acara ${displayName}.\n\nInformasi lengkap serta susunan acara dapat dilihat melalui tautan resmi kami berikut:\n${officialUrl}\n\nTerima kasih atas doa dan kehadirannya.`;
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, "_blank");
   };
 
@@ -786,10 +799,14 @@ export default function SettingsPage() {
             {/* Sambutan Formal & Netral Layanan Klien */}
             <div className="space-y-1.5">
               <h2 className="text-2xl sm:text-3xl font-serif font-bold text-stone-100 leading-tight">
-                Selamat Berbahagia untuk {invitation?.groomName || "Mempelai Pria"} &amp; {invitation?.brideName || "Mempelai Wanita"}
+                {(!invitation?.eventType || invitation.eventType === "WEDDING")
+                  ? `Selamat Berbahagia untuk ${invitation?.groomName || "Mempelai Pria"} & ${invitation?.brideName || "Mempelai Wanita"}`
+                  : `Selamat & Sukses untuk ${resolveInvitationDisplayName(invitation)}`}
               </h2>
               <p className="text-xs sm:text-sm text-stone-300/90 leading-relaxed max-w-2xl">
-                Website undangan pernikahan resmi Anda kini telah aktif mengudara dan siap dibagikan kepada keluarga, sahabat, serta seluruh tamu kehormatan.
+                {(!invitation?.eventType || invitation.eventType === "WEDDING")
+                  ? "Website undangan pernikahan resmi Anda kini telah aktif mengudara dan siap dibagikan kepada keluarga, sahabat, serta seluruh tamu kehormatan."
+                  : "Website undangan resmi Anda kini telah aktif mengudara dan siap dibagikan kepada keluarga, sahabat, serta seluruh tamu kehormatan."}
               </p>
             </div>
 

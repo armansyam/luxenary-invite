@@ -24,8 +24,13 @@ export async function GET(req: NextRequest) {
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20", 10)));
     const search = searchParams.get("search")?.trim() || "";
     const status = searchParams.get("status") || "ALL";
+    const eventType = searchParams.get("eventType") || "ALL";
 
     const whereClause: Prisma.InvitationWhereInput = {};
+
+    if (eventType !== "ALL") {
+      whereClause.eventType = eventType as any;
+    }
 
     // 1. Status Filter
     if (status === "DRAFT") {
@@ -71,6 +76,8 @@ export async function GET(req: NextRequest) {
         select: {
           id: true,
           userId: true,
+          eventType: true,
+          participantsJson: true,
           groomSlug: true,
           brideSlug: true,
           invitationSlug: true,

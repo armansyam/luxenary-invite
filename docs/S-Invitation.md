@@ -1,46 +1,46 @@
 # S-Invitation: Luxenary Invite System Architecture & Master Specification
-> **Versi: 6.2.0 | Diperbarui: 24 September 2026**
+> **Versi: 6.3.0 | Diperbarui: 25 September 2026**
 
 ## 1. Executive Summary & Core Philosophy
-**Luxenary Invite** adalah platform ekosistem undangan pernikahan digital modern berbasis Next.js 16 (App Router + Turbopack) yang menghadirkan pengalaman visual mewah (*haute couture*), kecepatan muat instan (<0.8 detik), self-service dashboard mandiri bagi klien, dan integrasi cloud edge caching.
+**Luxenary Invite** adalah platform ekosistem undangan digital modern multi-event berbasis Next.js 16 (App Router + Turbopack) yang menghadirkan pengalaman visual mewah (*haute couture*), kecepatan muat instan (<0.8 detik), self-service dashboard mandiri bagi klien, dan integrasi cloud edge caching untuk aneka ragam perayaan: Wedding, Birthday, Khitan, Aqiqah, Wisuda, dan Gathering.
 
 ---
 
-## 2. Katalog & Arsitektur DOM Tema Aktual (28 Tema Fisik + 1 Blueprint)
+## 2. Katalog & Arsitektur DOM Tema Aktual (40 Tema Fisik Lintas 6 Kategori Acara)
 
 Sistem template undangan menggunakan arsitektur HTML multi-layer mandiri dengan placeholder `{{variabel}}` yang diinjeksi oleh `lib/themeEngine.ts` dan dipetakan oleh `lib/renderTemplate.ts`:
 
-### A. Minimalist Series (`themes/minimalist/`)
-1. **Kalandra (`themes/minimalist/kalandra.html`)** *(Legacy Alias: `kila`)*
+### A. Minimalist Wedding Series (`themes/wedding/minimalist/`)
+1. **Kalandra (`themes/wedding/minimalist/kalandra.html`)** *(Legacy Alias: `kila`)*
    - Desktop split-screen hero photo (lebar sisa layar) dengan panel undangan 460px dan subtle bottom scrim (25%).
    - Full-bleed vertical photo slides 100vh untuk Pengantin Pria & Wanita.
    - Live Countdown, Google Calendar sync, dan floating glass dock.
-2. **Valente (`themes/minimalist/valente.html`)**
+2. **Valente (`themes/wedding/minimalist/valente.html`)**
    - High-fashion editorial spread dengan framing foto portrait 3:4 dan badge peran pasangan minimalis.
    - Countdown tipografis minimalis bergaris hairline editorial tanpa box kaku.
    - Side Navigation Floating Frosted Glass Card ala daftar isi majalah (*Table of Contents*) bernomor urut (01 Home s.d. 08 RSVP & Wishes), auto-height dengan backdrop click-outside dismissal, dan cover berlabel special issue.
    - Responsif 100% full-bleed di layar mobile/tablet dan desktop split-screen 460px.
-3. **Aurelia (`themes/minimalist/aurelia.html`)**
+3. **Aurelia (`themes/wedding/minimalist/aurelia.html`)**
    - Kanvas video sutra bergerak (*Video Canvas Backdrop*) dengan fallback poster.
    - Partikel kelopak bunga melayang lembut (*ambient petals*).
    - Kartu kapsul kaca frosted glass asimetris (32px radius).
-4. **Artisan (`themes/minimalist/artisan.html`)**
+4. **Artisan (`themes/wedding/minimalist/artisan.html`)**
    - Estetika tipografi atelier kontemporer dengan palet monokromatik hangat.
    - Transisi foto asimetris dan galeri grid editorial dinamis.
    - Multi-Layer Visual Slots: Layar Sampul Fullscreen Global Desktop, Fixed Parallax Background Layer (`globalBgUrl`), Seksi Pembuka Khusus (`homePhotoCssUrl`), dan Penutup Adaptif Full-Height (`closingPhotoUrl`).
-5. **Minimalist Elegant (`themes/minimalist/minimalist-elegant.html`)**
+5. **Minimalist Elegant (`themes/wedding/minimalist/minimalist-elegant.html`)**
    - Estetika editorial modern minimalis dengan tipografi serif elegan dan tata letak majalah berkelas.
-6. **Minimalist Elegant 04 (`themes/minimalist/minimalist-elegant-04.html`)**
+6. **Minimalist Elegant 04 (`themes/wedding/minimalist/minimalist-elegant-04.html`)**
    - Desain minimalis bersih dengan whitespace lega, aksen tipografi fluid, dan harmoni palet tonal halus.
 
-### B. Traditional Series (`themes/traditional/`)
-1. **Prameswari (`themes/traditional/prameswari.html`)**
+### B. Traditional Wedding Series (`themes/wedding/traditional/`)
+1. **Prameswari (`themes/wedding/traditional/prameswari.html`)**
    - 3D Wax Seal Envelope opening modal dengan stempel lilin emas (`BUKA ✦`).
    - Portal kubah lengkung keraton (*Traditional Arch Portals*) berbingkai emas.
    - Tekstur kertas perkamen antik & ornamen klasik Nusantara.
-2. **Dillalucky (`themes/traditional/dillalucky.html`)**
+2. **Dillalucky (`themes/wedding/traditional/dillalucky.html`)**
    - Motif floral tradisional yang anggun dengan sentuhan pastel sakral.
-3. **La Galigo (`themes/traditional/lagaligo.html`)**
+3. **La Galigo (`themes/wedding/traditional/lagaligo.html`)**
    - Kemegahan Etnik Adat Bugis-Makassar berbalut Deep Emerald (`#003f30`), aksen Emerald Rich (`#059669`), dan kilau benang emas sutera Bugis (`#f9e7bc` / `#e5cb93`).
    - Pola ornamen tenun geometris khas Bugis (*cross-hatch lattice pattern* via CSS murni terisolasi).
    - Bingkai empat sudut emas klasik (*four-corner traditional filigree frames*) pada kartu mempelai dan kutipan ayat.
@@ -50,23 +50,23 @@ Sistem template undangan menggunakan arsitektur HTML multi-layer mandiri dengan 
    - Terintegrasi dengan tipografi aksara otentik Bugis **Lontara** (`public/fonts/Lontara.ttf`) sebagai aksen budaya luhur: ungkapan *Salama'* di Cover, Hero Sidebar, dan Footer, simbol *Botti'* di Seksi Mempelai, serta petuah sakral perkawinan *Sipakatau, Sipakalebbi, Sipakainge* di kartu kutipan pembuka.
    - Mengadopsi **Dynamic Palette Tokens 100% Bebas Hardcode** (`color-mix(...)`, `var(--bg-dark)`, `var(--primary)`, `var(--accent)`): seluruh layer gradasi cover overlay, sidebar hero desktop, amplop interaktif, form RSVP, dan kartu mengalir reaktif mengikuti palet showroom yang aktif tanpa warna mati.
 
-### C. Modern Series (`themes/modern/`)
-1. **Wave (`themes/modern/wave.html`)**
+### C. Modern Wedding Series (`themes/wedding/modern/`)
+1. **Wave (`themes/wedding/modern/wave.html`)**
    - Kurva lengkung dinamis (*organic fluid waves*) dengan aksen gradasi halus.
-2. **Papercut (`themes/modern/papercut.html`)**
+2. **Papercut (`themes/wedding/modern/papercut.html`)**
    - Kertas karton kraft daur ulang fisik dengan jahitan garis putus-putus (*2px dashed stitch*).
    - Foto cetak polaroid miring ($-2^\circ$ dan $+2^\circ$) dengan aksen washi tape.
-3. **Ameera (`themes/modern/ameera.html`)**
+3. **Ameera (`themes/wedding/modern/ameera.html`)**
    - Tipografi minimalis modern dengan layout kartu bersih dan palet dusty rose.
-4. **Chronicle (`themes/modern/chronicle.html`)**
+4. **Chronicle (`themes/wedding/modern/chronicle.html`)**
    - Gaya jurnal editorial majalah eksklusif dengan tipografi Times-style masthead. Mengusung struktur slot visual presisi: Dynamic Desktop Sidebar (`{{sidebarPhotoUrl}}`), Cover Pop-up (`{{landingCoverUrl}}`), Slide Hero Pembuka Editorial `#home` (`{{homePhotoCssUrl}}`), dan Wallpaper Kanvas `.fixed-bg-layer` yang fokus presisi di kolom undangan 460px (`{{globalBgUrl}}`). Kanvas Home bersih tanpa menimpa foto tekstur demo saat slot dikosongkan.
-5. **Lumina (`themes/modern/lumina.html`)**
+5. **Lumina (`themes/wedding/modern/lumina.html`)**
    - Sinematografi modern perak (*Modern Cinema / Silver Screen Aesthetics*) dengan pencahayaan prisma lembut, bingkai foto *Cinema Viewfinder* beraksen sudut kamera, dan *Cinematic Reel Timeline* (cardless dengan *silver lens aperture nodes* dan pemisah babak *dashed separator*).
-6. **Solaria (`themes/modern/solaria.html`)**
+6. **Solaria (`themes/wedding/modern/solaria.html`)**
    - Nuansa hangat terik matahari senja (*warm sunset aesthetics*) & kartu transparan.
-7. **Badrika (`themes/modern/badrika.html`)**
+7. **Badrika (`themes/wedding/modern/badrika.html`)**
    - Garis lengkung arsitektural mewah (*Architectural Arch Portals*) dengan palet emerald mendalam dan aksen emas kontemporer. Murni estetika modern tanpa ornamen adat.
-8. **Candani (`themes/modern/candani.html`)**
+8. **Candani (`themes/wedding/modern/candani.html`)**
    - Modern Botanical Floral berpadu palet warna bumi (*terracotta, sand, warm gold*) yang terkunci mandiri di `:root` tema master.
    - Arsitektur Desktop Split 460px presisi: `.sidebar-desktop .left-hero` dinamis (`calc(100% - 460px)`), panel undangan terisolasi 460px, serta kanvas `.fixed-bg-layer` fokus 460px di desktop dan 100% di mobile.
    - Home Section dinamis murni tanpa card (`#home` berpadu *optical center typography* dengan ritme vertikal kompak sehingga teks doa & countdown menyatu leluasa dengan kanvas latar belakang).
@@ -74,40 +74,73 @@ Sistem template undangan menggunakan arsitektur HTML multi-layer mandiri dengan 
    - Keterangan Orang Tua Terstruktur Anti-Orphan & Murni String Bebas (`.couple-parents`): Menggunakan pemisahan 4 kolom terstruktur (`groomFather`, `groomMother`, `brideFather`, `brideMother`) dengan deteksi awalan otomatis (`{{firstParentPrefix}}` = "Putra dari" / "Putri dari") dan penataan hierarki vertikal per baris tanpa paksaan awalan Bpk/Ibu, sehingga klien bebas menuliskan nama langsung, gelar akademik, atau status almarhum/almarhumah (`Alm.`, `Almh.`), tersusun rapi tanpa patah kata (*no orphan wrapping*).
    - Smart Bottom Dock dengan navigasi berlabel 'Home' (menuju `#home`), integrasi pemutar musik langsung di dock (`#musicToggle` berstatus pulsing animasi saat menyala, tanpa emoji OS), dan integrasi Universal Smart Dock Home Zone Guard (`body.lux-at-home-zone`).
    - Zero-hardcode dengan atribut `data-lux-field`, peranan mempelai dinamis (`{{groomRole}}` & `{{brideRole}}`), divider floral ornamen SVG khas, serta modal QR Check-in (`#modalBg`) terpadu.
-9. **Mayang (`themes/modern/mayang.html`)**
+9. **Mayang (`themes/wedding/modern/mayang.html`)**
    - Keanggunan kontemporer (*Contemporary Golden Chic*) dengan dukungan penuh Dynamic Modern Palette (`--mayang-gold`, `--mayang-gold-light`, `--mayang-dark`, `--mayang-card`, `--mayang-border`) berbasis `:root` tokens dan `color-mix(...)`.
    - Mengadopsi kanvas `.fixed-bg-layer` anti-lag iOS yang terkunci di dalam kolom layout wrapper 460px (tidak bocor ke background desktop).
    - Discrete Parents Architecture (`{{firstParentPrefix}}`, `{{firstFather}}`, `{{firstMother}}`, `{{secondParentPrefix}}`, `{{secondFather}}`, `{{secondMother}}`) lengkap dengan frame lengkung modern dan inisial monogram melayang.
    - Identifikasi seksi pembuka menggunakan ID `#home` yang kompatibel penuh dengan injeksi template engine (`homePhotoCssUrl` untuk kanvas bersih tanpa fallback tekstur jika kosong).
    - Integrasi seksi kisah `#story` (`{{storyItemsHtml}}`), monogram pembatas modern SVG murni tanpa emoji OS, Smart Bottom Dock dengan audio toggle terintegrasi (`luxToggleAudio()`), serta modal voucher souvenir QR (`#modalBg`).
    - Terpasang atribut `data-lux-field` lengkap untuk mendukung pengalaman Live Visual Studio Click-to-Edit.
-10. **Pink Castle (`themes/modern/pink-castle.html`)**
+10. **Pink Castle (`themes/wedding/modern/pink-castle.html`)**
     - Fairy tale castle aesthetic berpadu palet pastel romantic (`rose`, `blush`, `gold`).
     - Fitur visual khas: gerbang kastil vintage (*castle gate arch*), floating fairy sparkle animation, dan ribbon floral accents.
     - Kepatuhan penuh Standar Emas Blueprint: desktop split 460px, 3-layer background stack, discrete parents architecture, universal audio & RSVP handling, dan dynamic CSS tokens tanpa hex mati.
-11. **Starlit Dreams (`themes/modern/starlit-dreams.html`)**
+11. **Starlit Dreams (`themes/wedding/modern/starlit-dreams.html`)**
     - Celestial Midnight Elegance berpadu palet emerald mendalam (`#1b4332`, `#2d6a4f`, `#d7bb83`) dan aksen bintang bersinar (*starlit sparkle*).
     - Tipografi mewah dual font lokal: *Geraldo Island* (display serif berkelas untuk nama mempelai) & *Romland* (signature accent script untuk sub-judul & floating monogram).
     - Ornamen visual khas: *Midnight Baroque Mirror Oval Frame* (`midnight-icon.webp`) sebagai wadah lencana cover & hero photo, serta aksen *Watercolor Yellow Florals with Mint Ribbon Bow* (`couple-frame-1.webp` & `couple-frame-2.webp`).
     - Kepatuhan penuh Standar Emas Blueprint: desktop split 460px, 3-layer background stack, discrete parents architecture, universal audio & RSVP handling, countdown timer hari H, dan dynamic CSS tokens tanpa hex mati.
-12. **Burgundy Royale (`themes/modern/burgundy-royale.html`)**
+12. **Burgundy Royale (`themes/wedding/modern/burgundy-royale.html`)**
     - Opulent Vintage Burgundy Royale berpadu tipografi prestisius *Iskry Regular* (`public/fonts/burgundy-royale/Iskry-Regular.woff2`), *Vidaloka* (Bodoni serif), *Cinzel* (Roman capitals), dan *Imperial Script*.
     - Nuansa warna burgundy merah tua anggur mewah (`--primary`), rose wine (`--secondary`), dan sampanye antik hangat (`--accent`).
     - Ornamen visual khas: lukisan cat minyak mawar burgundy mewah (`bunga-burgundy-royale.png`) di sudut-sudut kartu, ornamen pemisah simetris vintage, dan bingkai kubah katedral romanesque (*Cathedral Romanesque Arch Framing* `border-radius: 500px 500px 0 0`).
     - Kepatuhan penuh Standar Emas Blueprint: desktop split 460px, 3-layer background stack, discrete parents architecture, universal countdown timer hari H, interactive inline RSVP & ucapan live feed, dan dynamic CSS tokens 100% bebas hardcode.
-13. **Vintage Forest (`themes/modern/vintage-forest.html`)**
+13. **Vintage Forest (`themes/wedding/modern/vintage-forest.html`)**
     - Botanical Vintage Elegance berpadu tipografi khas *Mea Culpa* (kaligrafi skrip romantis), *Caudex* (serif klasik), *Cinzel* (kapital megah), dan *Aboreto* (huruf ukir geometris).
     - Nuansa warna hijau botani mendalam (`--primary`), sage olive green (`--secondary`), dan aksen emas antik / pasir hangat (`--accent`).
     - Ornamen visual khas: dedaunan eukaliptus botani rimbun (`bunga-botani2.png`) yang mengambang anggun di sudut kartu cover, hero arch, dan footer penutup, dipadukan bingkai kubah arsitektural (*Romanesque Arch Framing* `border-radius: 350px 350px 0 0`).
     - Kepatuhan penuh Standar Emas Blueprint: desktop split 460px, 3-layer background stack, discrete parents architecture, universal countdown timer hari H, interactive inline RSVP & ucapan live feed, dan dynamic CSS tokens 100% bebas hardcode.
 
-### D. Developer Blueprint
-- **Starter Blueprint (`themes/starter-blueprint.html` & `public/downloads/starter-blueprint.html`)**
-  - Standar acuan struktur tag, layout split 460px, seksi pembuka 100vh (`#home` / `.slide-opening`), floating navigation dock, dan placeholder baku untuk para Theme Builder dan desainer tema baru.
-- **Theme Blueprint Guide (`themes/BLUEPRINT_GUIDE.md`)**
-  - Panduan master resmi untuk perancangan tema baru: aturan Zero Hardcode Text & Dynamic Palette Token, kamus lengkap token dinamis (`{{openingGreeting}}`, `{{coverBadge}}`, `{{quoteSectionEyebrow}}`, `{{quoteSectionTitle}}`, dll.), aturan atribut binding dua arah (`data-lux-field`), serta SOP 5-langkah registrasi tema baru ke engine database.
+### D. Birthday Series (`themes/birthday/`)
+1. **Festivo (`themes/birthday/modern/festivo.html`)**
+   - Perayaan ulang tahun modern penuh kemeriahan dengan tipografi display tebal dan confetti visual.
+   - Mengusung persona tunggal (`personName`, `nickname`, `personAge`, `fatherName`, `motherName`).
+   - Slot foto tunggal portrait persona (`GROOM_PHOTO`), countdown ulang tahun, jadwal pesta party, dan pesan doa sahabat.
+2. **Kalandra Birthday (`themes/birthday/minimalist/kalandra-birthday.html`)** *(Child theme dari `kalandra`)*
+   - Desain minimalis bersih dengan estetika editorial tinggi yang diadaptasikan khusus untuk perayaan ulang tahun personal.
+   - Warisan layout split-screen desktop 460px dan floating navigation dock dari tema induk `kalandra`.
 
-### E. Standar Kontrak Placeholder Nama Mempelai (Cover vs Profil)
+### E. Khitan Series (`themes/khitan/`)
+1. **Al-Fariz (`themes/khitan/traditional/al-fariz.html`)**
+   - Tema Walimatul Khitan tradisional dengan palet Emerald Islamic & ornamen islami elegan.
+   - Persona anak khitan (`childName`, `childNickname`, `childAge`, `childBirthOrder`) dan orang tua.
+   - Bebas 100% dari token mempelai atau kisah cinta; didedikasikan penuh untuk doa keberkahan khitan.
+
+### F. Aqiqah Series (`themes/aqiqah/`)
+1. **Al-Khalid (`themes/aqiqah/minimalist/al-khalid.html`)**
+   - Tema Tasyakuran Aqiqah & Kelahiran bayi dengan palet Sky Azure lembut dan tipografi bersih.
+   - Persona bayi (`babyName`, `babyNickname`, `birthDateFormatted`, `birthWeight`, `birthLength`) dan doa tahnik.
+
+### G. Wisuda Series (`themes/wisuda/`)
+1. **Cendekia (`themes/wisuda/modern/cendekia.html`)**
+   - Perayaan wisuda akademis modern dengan palet Royal Indigo & Gold.
+   - Persona sarjana/wisudawan (`graduateName`, `graduateDegree`, `graduateMajor`, `graduateFaculty`, `universityName`, `honors`).
+
+### H. Gathering / Acara Umum Series (`themes/general/`)
+1. **Sinergi (`themes/general/modern/sinergi.html`)**
+   - Desain modern korporat / peresmian / syukuran dengan palet Corporate Teal.
+   - Persona acara umum (`eventTitle`, `eventSubtitle`, `organizerName`, `hostName`, `dresscode`).
+
+### I. Developer Blueprints & Starter Kits (`themes/_blueprints/` & `public/downloads/`)
+- **Wedding Starter Blueprint (`starter-blueprint.html` & `starter-blueprint-wedding.html`)**
+- **Birthday Starter Blueprint (`starter-blueprint-birthday.html`)**
+- **Khitan Starter Blueprint (`starter-blueprint-khitan.html`)**
+- **Aqiqah Starter Blueprint (`starter-blueprint-aqiqah.html`)**
+- **Wisuda Starter Blueprint (`starter-blueprint-wisuda.html`)**
+- **General/Gathering Starter Blueprint (`starter-blueprint-general.html`)**
+- **Theme Blueprint Guide (`themes/_blueprints/wedding/BLUEPRINT_GUIDE.md`)**
+
+### F. Standar Kontrak Placeholder Nama Mempelai (Cover vs Profil)
 1. **Cover Buka Undangan, Hero Title, Sidebar Desktop, & Closing Footer**:
    - **MUTLAK** menggunakan Nama Panggilan murni dari field form `groomNickname` / `brideNickname` (`{{firstNickname}} & {{secondNickname}}` atau alias `{{firstName}} & {{secondName}}`).
    - Menghadirkan kesan visual yang intim, elegan, bersih, dan proporsional tanpa kepadatan gelar akademik atau nama panjang.
@@ -812,7 +845,8 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
 4. **Device Pair Mockup Showcase & Resolusi Ganda Thumbnail (Mobile & Desktop):**
    - Mengintegrasikan sistem showcase ganda presisi (*Device Pair Mockup*: `stp-tablet-screen` 16:10 di belakang dan `stp-phone` 1:2 di depan) pada kartu tema di `/admin?tab=themes`, `/dashboard/setup`, dan `/dashboard/invitation/[id]`.
    - Mengusung hirarki visual profesional: (1) Pratinjau Visual Ganda Responsive + status aktif toggle + kategori tier, (2) Nama Tema, slug, deskripsi, dan (3) Tombol aksi (`Preview`, `Studio`, `Edit`, `Delete`).
-   - Frame ponsel secara eksklusif memuat `thumbnailMobile` (1:2), sedangkan area layar tablet memuat `thumbnailDesktop` (16:10) dengan rantai fallback landscape aman (`cover_desktop.webp` $\rightarrow$ `hero.webp` $\rightarrow$ `cover.webp`). Layar tablet mengunci rasio 16:10 secara mandiri sehingga terbebas dari crop bilah atas.
+   - Frame ponsel secara eksklusif memuat `thumbnailMobile` (`thumbnail_mobile.webp` 400×800 px, rasio 1:2), sedangkan area layar tablet memuat `thumbnailDesktop` (`thumbnail_desktop.webp` 1280×800 px, rasio 16:10). Seluruh 40 tema di disk memiliki kedua aset fisik ini secara utuh dan diverifikasi via `npm run audit:integrity` tanpa manipulasi fallback atau bypass `onError`.
+   - Slot `LANDING_COVER_DESKTOP` (`cover_desktop.webp`) dipisahkan secara tegas dan hanya digunakan untuk layar pembuka undangan fisik PC/Laptop pada tema adat tertentu, bukan kartu mockup katalog. Layar tablet mengunci rasio 16:10 secara mandiri sehingga terbebas dari crop bilah atas.
 
 ---
 
@@ -863,7 +897,7 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
 3. **Pembersihan Berkas Usang & Query Redundan:**
    - Menghapus 2 file CSS usang/mati (`app/landing.scoped.css` dan `public/css/landing.css`, total ~195 KB).
    - Menghapus folder kosong `components/ui/`.
-   - Mengganti pemanggilan `prisma.wish` yang mati pada endpoint `/api/client/rsvps` dan `/api/admin/overview` dengan relasi aktif `rsvps.message` dan `guest.videoWishUrl`.
+   - Mengganti pemanggilan `prisma.wish` yang mati pada endpoint `/api/client/rsvps` dan `/api/admin/overview` dengan relasi aktif `rsvps.message`. Kolom orphan `guest.videoWishUrl` dan `guest.videoRecordedAt` telah dihapus permanen dari skema dan database.
    - Memutakhirkan default `themeId` Prisma model `Invitation` menjadi `"kalandra"`.
 
 4. **Standarisasi Ergonomi Antarmuka Mobile Halaman Publik:**
@@ -1029,7 +1063,7 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
 
 ## 23. Ekspansi Tema Tradisional Toraja & Smart Mobile Fullscreen (v5.9.0)
 
-1. **Master Tema Tradisional Toraja (`themes/traditional/toraja.html`):**
+1. **Master Tema Tradisional Toraja (`themes/wedding/traditional/toraja.html`):**
    - Tema etnik ke-7 (tema master ke-17) yang mengangkat seni ukir dan filosofi luhur masyarakat Toraja, Sulawesi Selatan.
    - **Ornamen Budaya Otentik Toraja (`public/assets/ornaments/toraja/`):**
       * *Pa'barre Allo:* Ukiran matahari penanda kemuliaan dan sumber kehidupan pada puncak seksi hero dan monogram.
@@ -1070,7 +1104,7 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
 
 ## 24. Ekspansi Master Tema Tradisional Bugis & Makassar (v5.9.1)
 
-1. **Master Tema Tradisional Bugis (`themes/traditional/bugis.html`):**
+1. **Master Tema Tradisional Bugis (`themes/wedding/traditional/bugis.html`):**
    - Tema etnik ke-8 (tema master ke-18) mengangkat keagungan adat bangsawan Bugis Saoraja berbalut Royal Maroon & Gold.
    - **Ornamen Budaya Otentik Bugis:**
       * *Gerbang Walasuji Bambu & Sabbe (Natural Intrinsic Sizing):* Arsitektur gerbang bambu Walasuji (`vapillion-bamboo2.webp`, rasio 1046x1504) dengan kontainer `width: fit-content` yang mengunci foto mempelai tepat di bawah atap (`top: 47.3%`, `left: 17%`, `width: 66%`, `height: 48%`) dan diapit pilar bambu secara presisi tanpa risiko bocor bingkai. Selempang sutra Bugis (`sabbe.webp`) menutup batas bawah secara dinamis.
@@ -1085,7 +1119,7 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
      * `accent`: `#dfb76c` (Bugis Gold).
      * `bgDark`: `#140204` (Obsidian Maroon).
 
-2. **Master Tema Tradisional Makassar (`themes/traditional/makassar.html`):**
+2. **Master Tema Tradisional Makassar (`themes/wedding/traditional/makassar.html`):**
    - Tema etnik ke-9 (tema master ke-19) mengangkat kebanggaan maritim dan kehormatan luhur Makassar berbalut Royal Navy & Gold.
    - **Ornamen Budaya Otentik Makassar:**
      * *Kapal Phinisi:* Lambang kebanggaan maritim warisan dunia UNESCO (`kapal-phinisi.webp`) pada cover pembuka, seksi hero, dan penutup.
@@ -1101,7 +1135,7 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
 
 ## 25. Ekspansi Master Tema Tradisional Toraja Rantepao (v5.9.2)
 
-1. **Master Tema Tradisional Toraja Rantepao (`themes/traditional/rantepao.html`):**
+1. **Master Tema Tradisional Toraja Rantepao (`themes/wedding/traditional/rantepao.html`):**
    - Tema etnik ke-10 (tema master ke-20) mengangkat kemegahan kultural adat Toraja Rantepao berbalut Crimson Marun & Kilau Emas Bambu.
    - **Integrasi 9 Slot Media Lengkap (100% Invarian Media):**
      * `LANDING_COVER`: Cover pop-up smartphone rasio portrait 9:16 (`/demo/rantepao/cover.webp`).
@@ -1126,7 +1160,7 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
 
 ## 26. Ekspansi Master Tema Tradisional Toraja Makale (v5.9.3)
 
-1. **Master Tema Tradisional Toraja Makale (`themes/traditional/makale.html`):**
+1. **Master Tema Tradisional Toraja Makale (`themes/wedding/traditional/makale.html`):**
    - Tema etnik ke-11 (tema master ke-21) mengangkat keagungan adat Tana Toraja Makale berbalut Royal Earth Crimson & Kilau Emas Tongkonan.
    - **Integrasi 9 Slot Media Lengkap (100% Invarian Media):**
      * `LANDING_COVER`: Cover pop-up smartphone rasio portrait 9:16 (`/demo/makale/cover.webp`).
@@ -1157,13 +1191,13 @@ Seluruh spesifikasi teknis dan alur data terperinci dipartisi ke dalam 3 domain 
    - Mengeliminasi `lux-at-home-zone` agar docking navigasi tetap terlihat stabil saat scroll ke atas dan hanya auto-hide saat mencapai seksi outro terbawah.
 
 2. **Koleksi 7 Master Tema Fisik Daerah Sulawesi Selatan:**
-   - **Bugis Bone (`themes/traditional/bone.html`):** Mengangkat kemegahan bangsawan Kerajaan Bone, Saoraja Lamurukung, dan filosofi Songkok To Bone. Folder ornamen: `public/assets/ornaments/bone/`.
-   - **Bugis Wajo (`themes/traditional/wajo.html`):** Mengangkat keindahan tenun sutera Sengkang, Danau Tempe, dan Saoraja Ranreng Bettempola. Folder ornamen: `public/assets/ornaments/wajo/`.
-   - **Bugis Soppeng (`themes/traditional/soppeng.html`):** Mengangkat keanggunan Bumi Latemmamala dan Villa Yuliana. Folder ornamen: `public/assets/ornaments/soppeng/`.
-   - **Makassar Gowa (`themes/traditional/gowa.html`):** Mengangkat keagungan Kesultanan Gowa, Istana Balla Lompoa Sungguminasa, dan Benteng Somba Opu. Folder ornamen: `public/assets/ornaments/gowa/`.
-   - **Makassar Maros (`themes/traditional/maros.html`):** Mengangkat kearifan Butta Salewangang, karst Rammang-Rammang, dan Marusu'. Folder ornamen: `public/assets/ornaments/maros/`.
-   - **Makassar Takalar (`themes/traditional/takalar.html`):** Mengangkat semangat Butta Panrannuangku dan Balla Lompoa Sanrobone. Folder ornamen: `public/assets/ornaments/takalar/`.
-   - **Makassar Bulukumba (`themes/traditional/bulukumba.html`):** Mengangkat kemegahan bahtera Phinisi Tanah Beru, filosofi Butta Panrita Lopi, dan tradisi Ammatoa. Folder ornamen: `public/assets/ornaments/bulukumba/`.
+   - **Bugis Bone (`themes/wedding/traditional/bone.html`):** Mengangkat kemegahan bangsawan Kerajaan Bone, Saoraja Lamurukung, dan filosofi Songkok To Bone. Folder ornamen: `public/assets/ornaments/bone/`.
+   - **Bugis Wajo (`themes/wedding/traditional/wajo.html`):** Mengangkat keindahan tenun sutera Sengkang, Danau Tempe, dan Saoraja Ranreng Bettempola. Folder ornamen: `public/assets/ornaments/wajo/`.
+   - **Bugis Soppeng (`themes/wedding/traditional/soppeng.html`):** Mengangkat keanggunan Bumi Latemmamala dan Villa Yuliana. Folder ornamen: `public/assets/ornaments/soppeng/`.
+   - **Makassar Gowa (`themes/wedding/traditional/gowa.html`):** Mengangkat keagungan Kesultanan Gowa, Istana Balla Lompoa Sungguminasa, dan Benteng Somba Opu. Folder ornamen: `public/assets/ornaments/gowa/`.
+   - **Makassar Maros (`themes/wedding/traditional/maros.html`):** Mengangkat kearifan Butta Salewangang, karst Rammang-Rammang, dan Marusu'. Folder ornamen: `public/assets/ornaments/maros/`.
+   - **Makassar Takalar (`themes/wedding/traditional/takalar.html`):** Mengangkat semangat Butta Panrannuangku dan Balla Lompoa Sanrobone. Folder ornamen: `public/assets/ornaments/takalar/`.
+   - **Makassar Bulukumba (`themes/wedding/traditional/bulukumba.html`):** Mengangkat kemegahan bahtera Phinisi Tanah Beru, filosofi Butta Panrita Lopi, dan tradisi Ammatoa. Folder ornamen: `public/assets/ornaments/bulukumba/`.
 
 3. **Invarian 9 Slot Media & Aset Terisolasi:**
    - Setiap tema memiliki direktori demo terisolasi (`public/demo/{daerah}/`) dan folder ornamen mandiri (`public/assets/ornaments/{daerah}/`).
@@ -1230,3 +1264,38 @@ API `/api/admin/overview` diperluas dengan 10 stats field baru (in-memory filter
 - Unit: `pinEncryption` (AES-256-GCM), `receptionistAuth` (HMAC), `renderTemplate` (XSS escaping), `settings` (capability + null guard + cache invalidation).
 - API integration: `invitations` (auth guard + 403 cross-tenant), `orders` (admin isolation + service availability), `rsvp` (demo mode + lifecycle guard).
 - CI: `.github/workflows/ci.yml` dengan PostgreSQL 16 service container — dipicu setiap push ke `main`.
+
+---
+
+## 30. Transformasi Multi-EventType & Persona Engine (v6.3.0)
+
+1. **Dukungan 6 Persona Acara Terpadu:**
+   - Platform kini mendukung 6 jenis acara: `WEDDING`, `BIRTHDAY`, `KHITAN`, `AQIQAH`, `WISUDA`, dan `GATHERING`.
+   - Database dilengkapi enum `EventType`, kolom `eventType` pada tabel `Theme` dan `Invitation`, serta kolom JSONB `participantsJson`.
+2. **Koleksi Tema & Blueprint Multi-Event (40/40 Tema Fisik):**
+   - 34 tema pernikahan direstrukturisasi ke `themes/wedding/{minimalist,modern,traditional}/`.
+   - 2 tema ulang tahun aktif: `themes/birthday/modern/festivo.html` dan `themes/birthday/minimalist/kalandra-birthday.html`.
+   - 1 tema khitanan aktif: `themes/khitan/traditional/al-fariz.html`.
+   - 1 tema aqiqah aktif: `themes/aqiqah/traditional/al-khalid.html`.
+   - 1 tema wisuda aktif: `themes/wisuda/modern/cendekia.html`.
+   - 1 tema gathering aktif: `themes/general/modern/sinergi.html`.
+   - Blueprint modular per kategori: `themes/_blueprints/` (`wedding/`, `birthday/`, `khitan/`, `aqiqah/`, `wisuda/`, `general/`).
+   - Seluruh 40 tema memiliki cetak biru mandiri (`THEME_BLUEPRINTS` di `lib/themeDefaults.ts`) dan terdaftar di `AdminSetting` (`theme_demo_*`) serta seeder Prisma (`prisma/defaultSettings.ts`).
+3. **Zero-Leak Data Composition & Multi-Event Defaults:**
+   - Seluruh handler komposer data (`composeBirthdayData`, `composeKhitanData`, `composeAqiqahData`, `composeWisudaData`, `composeGatheringData`) menjamin variabel khusus pengantin dikosongkan secara total untuk acara non-wedding.
+   - Pustaka wishes/ucapan tamu demo (`wishesSample`), modal unggah memori di halaman publik, filter Instagram, alamat tanda kasih fisik, serta label seksi profil beradaptasi dinamis tanpa kebocoran istilah pernikahan ("Mempelai", "Kediaman Mempelai", "The Wedding Of", dll.).
+   - Rute pembuatan draft klien (`POST /api/client/invitations/create`) menginisialisasi cover badge, label profil, vendor credits, wishes, dan kado secara adaptif dengan prioritas cetak biru tema.
+4. **Setup Wizard & Studio Editor Adaptif (Strict Theme Scoping):**
+   - Wizard Setup menyediakan Step 0 pemilihan jenis perayaan tanpa emoji sistem (clean modern SVG icons), tab kategori adaptif sesuai gaya desain yang tersedia, serta pembuatan slug kanonikal datar.
+   - Studio Editor mengisolasi Seksi Desain Tema secara ketat agar hanya menampilkan tema yang cocok dengan `eventType` aktif (zero cross-event leak). Seksi Profil menyesuaikan persona perayaan dan fitur khusus pernikahan (Love Story) disembunyikan secara dinamis.
+   - Penjaga Backend Lapis Ganda (`create` & `update` API routes) menolak secara deterministik percobaan pemasangan tema di luar tipe acara undangan serta menetapkan fallback tema default per event (`DEFAULT_THEME_BY_EVENT`).
+5. **Admin Panel Multi-Event:**
+   - Tab Projek Undangan dilengkapi filter tabs (`Semua`, `Wedding`, `Birthday`, `Khitan`, `Aqiqah`, `Wisuda`, `Gathering`).
+   - Manajemen tema mendukung upload, edit, dan preview tema dengan seleksi `eventType`.
+   - Gerbang Integritas Tema (`scripts/audit-theme-integrity.ts`) memvalidasi 100% kelengkapan 40 tema fisik, integritas rute publik, dan validasi aset tanpa bypass.
+6. **Universal Section Engine & CDP Thumbnail Suite (v6.3.2):**
+   - Registry Showroom (`lib/demoRegistry.ts`) dan Komposer Klien (`lib/themeEngine.ts`) kini 100% sinkron dan lengkap dengan generator seksi interaktif (`countdownHtml`, `eventSectionHtml`, `gallerySectionHtml`, `giftSectionHtml`, `rsvpSectionHtml`, dan `wishesSectionHtml`) untuk seluruh 6 perayaan non-wedding.
+   - Kepatuhan total Zero-Hardcode Policy dengan CSS tokens (`var(--primary)`, `var(--card-bg)`, `var(--text-main)`, dll).
+   - Thumbnail engine mandiri via Chrome DevTools Protocol (`scripts/generate-all-thumbnails.ts`) menghasilkan pratinjau autentik (Desktop 1280×800 16:10, Mobile 390×780 1:2) berstandar Lanczos3 + WebP Q92 tanpa artefak banding.
+
+

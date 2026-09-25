@@ -10,6 +10,8 @@ interface ThemeItem {
   name: string;
   series: string;
   category: "minimalist" | "traditional" | "modern" | string;
+  eventType: string;
+  parentTheme?: string | null;
   desc: string;
   thumbnailMobile?: string;
   thumbnailDesktop?: string;
@@ -17,6 +19,7 @@ interface ThemeItem {
 
 export default function CatalogGridShowcase() {
   const [themes, setThemes] = useState<ThemeItem[]>([]);
+  const [selectedEvent, setSelectedEvent] = useState<string>("all");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
   const [loading, setLoading] = useState(true);
@@ -30,6 +33,14 @@ export default function CatalogGridShowcase() {
       const params = new URLSearchParams(window.location.search);
       if (params.get("tab") === "features") {
         setMainTab("features");
+      }
+      const eventParam = params.get("event") || params.get("eventType");
+      if (eventParam) {
+        setSelectedEvent(eventParam.toLowerCase());
+      }
+      const styleParam = params.get("style") || params.get("category");
+      if (styleParam) {
+        setSelectedCategory(styleParam.toLowerCase());
       }
       setSiteHost(window.location.hostname);
     }
@@ -52,6 +63,8 @@ export default function CatalogGridShowcase() {
               name: t.name,
               series: t.series || (t.category?.toUpperCase() === "MINIMALIST" ? "Minimalis" : t.category?.toUpperCase() === "TRADITIONAL" ? "Traditional" : "Modern"),
               category: (t.category || "modern").toLowerCase(),
+              eventType: t.eventType || "WEDDING",
+              parentTheme: t.parentTheme || null,
               desc: t.tagline || t.desc || `Desain eksklusif ${platformName}`,
               thumbnailMobile: t.thumbnailMobile || `/demo/${t.id}/thumbnail_mobile.webp`,
               thumbnailDesktop: t.thumbnailDesktop || `/demo/${t.id}/thumbnail_desktop.webp`,
@@ -63,9 +76,11 @@ export default function CatalogGridShowcase() {
       .catch(() => setLoading(false));
   }, [platformName]);
 
-  const filteredThemes = selectedCategory === "all"
-    ? themes
-    : themes.filter((t) => t.category.toLowerCase() === selectedCategory.toLowerCase());
+  const filteredThemes = themes.filter((t) => {
+    const matchesEvent = selectedEvent === "all" || (t.eventType || "WEDDING").toLowerCase() === selectedEvent.toLowerCase();
+    const matchesCategory = selectedCategory === "all" || t.category.toLowerCase() === selectedCategory.toLowerCase();
+    return matchesEvent && matchesCategory;
+  });
 
   return (
     <div className="demo-catalog-root min-h-screen bg-[#faf8f5] text-stone-900 font-sans pb-24" style={{ colorScheme: "only light", backgroundColor: "#faf8f5", color: "#1c1917" }}>
@@ -136,24 +151,65 @@ export default function CatalogGridShowcase() {
               Pilih Desain Tema Eksklusif Anda
             </h2>
             <p className="text-xs sm:text-sm text-stone-600 max-w-2xl mx-auto">
-              Setiap tema dibangun dengan struktur visual unik, tata letak asli, dan dapat disesuaikan penuh dengan foto dan konsep pernikahan Anda.
+              Setiap tema dibangun dengan struktur visual unik, tata letak premium, dan dapat disesuaikan penuh dengan foto dan konsep acara Anda.
             </p>
 
-            {/* Category Filter Tabs — Horizontal Swipe Rail on Mobile, Centered on Desktop */}
-            <div className="flex items-center gap-2 mt-6 overflow-x-auto scrollbar-none px-4 -mx-4 sm:mx-0 sm:px-0 justify-start sm:justify-center flex-nowrap py-1">
+            {/* Level 1: Event Type Selector */}
+            <div className="flex items-center gap-1.5 sm:gap-2 mt-6 overflow-x-auto scrollbar-none px-4 -mx-4 sm:mx-0 sm:px-0 justify-start sm:justify-center flex-nowrap py-1">
               {[
-                { id: "all", label: "Semua Tema" },
+                { id: "all", label: "Semua Acara" },
+                { id: "wedding", label: "Pernikahan" },
+                { id: "birthday", label: "Ulang Tahun" },
+                { id: "khitan", label: "Khitanan" },
+                { id: "aqiqah", label: "Aqiqah" },
+                { id: "wisuda", label: "Wisuda" },
+                { id: "gathering", label: "Gathering" },
+              ].map((ev) => (
+                <button
+                  key={ev.id}
+                  onClick={() => {
+                    setSelectedEvent(ev.id);
+                    if (typeof window !== "undefined") {
+                      const url = new URL(window.location.href);
+                      if (ev.id === "all") url.searchParams.delete("event");
+                      else url.searchParams.set("event", ev.id);
+                      window.history.replaceState({}, "", url.toString());
+                    }
+                  }}
+                  className={`px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-full text-xs font-bold transition cursor-pointer whitespace-nowrap shrink-0 ${
+                    selectedEvent === ev.id
+                      ? "bg-amber-900 text-white shadow-xs"
+                      : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-50"
+                  }`}
+                >
+                  {ev.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Level 2: Style Filter Tabs */}
+            <div className="flex items-center gap-2 mt-2.5 overflow-x-auto scrollbar-none px-4 -mx-4 sm:mx-0 sm:px-0 justify-start sm:justify-center flex-nowrap py-1">
+              {[
+                { id: "all", label: "Semua Gaya" },
                 { id: "minimalist", label: "Minimalis" },
                 { id: "modern", label: "Modern" },
                 { id: "traditional", label: "Tradisional" },
               ].map((cat) => (
                 <button
                   key={cat.id}
-                  onClick={() => setSelectedCategory(cat.id)}
-                  className={`px-4 sm:px-5 py-2 rounded-full text-xs font-bold transition cursor-pointer whitespace-nowrap shrink-0 ${
+                  onClick={() => {
+                    setSelectedCategory(cat.id);
+                    if (typeof window !== "undefined") {
+                      const url = new URL(window.location.href);
+                      if (cat.id === "all") url.searchParams.delete("style");
+                      else url.searchParams.set("style", cat.id);
+                      window.history.replaceState({}, "", url.toString());
+                    }
+                  }}
+                  className={`px-3.5 sm:px-4 py-1.5 rounded-full text-[11px] font-semibold transition cursor-pointer whitespace-nowrap shrink-0 ${
                     selectedCategory === cat.id
                       ? "bg-stone-900 text-white shadow-xs"
-                      : "bg-white text-stone-600 border border-stone-200 hover:bg-stone-50"
+                      : "bg-stone-100 text-stone-600 border border-stone-200 hover:bg-white"
                   }`}
                 >
                   {cat.label}
@@ -226,14 +282,6 @@ export default function CatalogGridShowcase() {
                         <img
                           src={theme.thumbnailDesktop || `/demo/${theme.id}/thumbnail_desktop.webp`}
                           alt={`${theme.name} Desktop`}
-                          onError={(e) => {
-                            const t = e.currentTarget;
-                            if (!t.src.includes("hero.webp") && !t.src.includes("cover.webp")) {
-                              t.src = `/demo/${theme.id}/hero.webp`;
-                            } else if (t.src.includes("hero.webp")) {
-                              t.src = `/demo/${theme.id}/cover.webp`;
-                            }
-                          }}
                         />
                         <div className="dm-glare"></div>
                       </div>
@@ -256,14 +304,6 @@ export default function CatalogGridShowcase() {
                         <img
                           src={theme.thumbnailMobile || `/demo/${theme.id}/thumbnail_mobile.webp`}
                           alt={`${theme.name} Mobile`}
-                          onError={(e) => {
-                            const t = e.currentTarget;
-                            if (!t.src.includes("cover.webp") && !t.src.includes("hero.webp")) {
-                              t.src = `/demo/${theme.id}/cover.webp`;
-                            } else if (t.src.includes("cover.webp")) {
-                              t.src = `/demo/${theme.id}/hero.webp`;
-                            }
-                          }}
                         />
                         <div className="dm-glare"></div>
                       </div>
@@ -277,9 +317,16 @@ export default function CatalogGridShowcase() {
                       <h3 className="catalog-name">{theme.name}</h3>
                       <p className="catalog-desc">{theme.desc}</p>
                     </div>
-                    <span className={`catalog-badge ${theme.category}`}>
-                      {theme.category}
-                    </span>
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <span className={`catalog-badge ${theme.category}`}>
+                        {theme.category}
+                      </span>
+                      {theme.eventType && theme.eventType !== "WEDDING" && (
+                        <span className="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+                          {theme.eventType === "BIRTHDAY" ? "Ulang Tahun" : theme.eventType}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {/* ── CTA ── */}

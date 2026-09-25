@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { getInvitationPublicUrl, resolveEffectiveInvitationUrl } from "@/lib/domainUtils";
+import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
 
 interface Guest {
   id: string;
@@ -525,6 +526,7 @@ export default function GuestsPage() {
 
   // Helper to render customized text for a guest
   const renderWaText = (guestName: string, guestLimit: number = 2, sessionInfo: string = "Akad & Resepsi", qrToken?: string) => {
+    const isWedding = !invitationData?.eventType || invitationData.eventType === "WEDDING";
     const groom = invitationData?.groomNickname || invitationData?.groomName || "Mempelai Pria";
     const bride = invitationData?.brideNickname || invitationData?.brideName || "Mempelai Wanita";
     
@@ -534,7 +536,8 @@ export default function GuestsPage() {
     } catch {}
 
     const displayOrder = feat.displayOrder || "BRIDE_FIRST";
-    const coupleName = displayOrder === "BRIDE_FIRST" ? `${bride} & ${groom}` : `${groom} & ${bride}`;
+    const weddingCouple = displayOrder === "BRIDE_FIRST" ? `${bride} & ${groom}` : `${groom} & ${bride}`;
+    const coupleName = isWedding ? weddingCouple : resolveInvitationDisplayName(invitationData);
 
     const isPublished = invitationData?.status === "PUBLISHED" || invitationData?.status === "EVENT_FINISHED";
     const resolved = isPublished

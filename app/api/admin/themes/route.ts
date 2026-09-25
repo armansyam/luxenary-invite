@@ -17,24 +17,24 @@ async function verifyAdminSession() {
 
 export const DEFAULT_THEMES = [
   // Minimalist Series (4)
-  { id: "kalandra", name: "Kalandra", category: "minimalist", series: "Minimalist", description: "THE WEDDING OF — Modern, Elegan & Minimalis Editorial", isPremium: true, sortOrder: 1, isActive: true },
-  { id: "valente", name: "Valente", category: "minimalist", series: "Minimalist", description: "A CELEBRATION OF LOVE — Elegan, Mewah & Berkelas", isPremium: true, sortOrder: 2, isActive: true },
-  { id: "aurelia", name: "Aurelia", category: "minimalist", series: "Minimalist", description: "ROYAL LUXURY CELEBRATION — Sentuhan Emas & Kemegahan Kerajaan", isPremium: true, sortOrder: 3, isActive: true },
-  { id: "artisan", name: "Artisan", category: "minimalist", series: "Minimalist", description: "HANDCRAFTED IN LOVE — Sentuhan Artistik & Tipografi Organik", isPremium: true, sortOrder: 4, isActive: true },
+  { id: "kalandra", name: "Kalandra", category: "minimalist", eventType: "WEDDING" as const, series: "Minimalist", description: "THE WEDDING OF — Modern, Elegan & Minimalis Editorial", isPremium: true, sortOrder: 1, isActive: true },
+  { id: "valente", name: "Valente", category: "minimalist", eventType: "WEDDING" as const, series: "Minimalist", description: "A CELEBRATION OF LOVE — Elegan, Mewah & Berkelas", isPremium: true, sortOrder: 2, isActive: true },
+  { id: "aurelia", name: "Aurelia", category: "minimalist", eventType: "WEDDING" as const, series: "Minimalist", description: "ROYAL LUXURY CELEBRATION — Sentuhan Emas & Kemegahan Kerajaan", isPremium: true, sortOrder: 3, isActive: true },
+  { id: "artisan", name: "Artisan", category: "minimalist", eventType: "WEDDING" as const, series: "Minimalist", description: "HANDCRAFTED IN LOVE — Sentuhan Artistik & Tipografi Organik", isPremium: true, sortOrder: 4, isActive: true },
   // Modern Series (6)
-  { id: "ameera", name: "Ameera", category: "modern", series: "Modern", description: "CONTEMPORARY HERITAGE — Perpaduan Estetika Timur & Modern", isPremium: false, sortOrder: 5, isActive: true },
-  { id: "chronicle", name: "Chronicle", category: "modern", series: "Modern", description: "HIGH-FASHION VOGUE EDITORIAL — Estetika Majalah Mode Kontemporer", isPremium: false, sortOrder: 6, isActive: true },
-  { id: "lumina", name: "Lumina", category: "modern", series: "Modern", description: "MINIMALIST GLASS & CINEMA — Sinematik Bersih dengan Efek Glassmorphism", isPremium: false, sortOrder: 7, isActive: true },
-  { id: "papercut", name: "Papercut", category: "modern", series: "Modern", description: "TEXTURED CRAFT & MINIMALIST — Keanggunan Tekstur Kertas Alami", isPremium: false, sortOrder: 8, isActive: true },
-  { id: "solaria", name: "Solaria", category: "modern", series: "Modern", description: "WARM SUNSET BOTANICAL — Kehangatan Golden Hour & Botani Segar", isPremium: false, sortOrder: 9, isActive: true },
-  { id: "wave", name: "Wave", category: "modern", series: "Modern", description: "DYNAMIC FLUID OCEAN — Aliran Gelombang Modern Dinamis & Segar", isPremium: false, sortOrder: 10, isActive: true },
-  { id: "badrika", name: "Badrika", category: "modern", series: "Modern", description: "ARCHITECTURAL EDITORIAL — Garis Lengkung Mewah & Tipografi Kontemporer", isPremium: false, sortOrder: 11, isActive: true },
-  { id: "candani", name: "Candani", category: "modern", series: "Modern", description: "BOTANICAL WARMTH — Kehangatan Nuansa Alam & Tipografi Modern Bersih", isPremium: false, sortOrder: 12, isActive: true },
-  { id: "mayang", name: "Mayang", category: "modern", series: "Modern", description: "CONTEMPORARY GOLDEN CHIC — Kilau Emas Minimalis & Elegan", isPremium: false, sortOrder: 13, isActive: true },
+  { id: "ameera", name: "Ameera", category: "modern", eventType: "WEDDING" as const, series: "Modern", description: "CONTEMPORARY HERITAGE — Perpaduan Estetika Timur & Modern", isPremium: false, sortOrder: 5, isActive: true },
+  { id: "chronicle", name: "Chronicle", category: "modern", eventType: "WEDDING" as const, series: "Modern", description: "HIGH-FASHION VOGUE EDITORIAL — Estetika Majalah Mode Kontemporer", isPremium: false, sortOrder: 6, isActive: true },
+  { id: "lumina", name: "Lumina", category: "modern", eventType: "WEDDING" as const, series: "Modern", description: "MINIMALIST GLASS & CINEMA — Sinematik Bersih dengan Efek Glassmorphism", isPremium: false, sortOrder: 7, isActive: true },
+  { id: "papercut", name: "Papercut", category: "modern", eventType: "WEDDING" as const, series: "Modern", description: "TEXTURED CRAFT & MINIMALIST — Keanggunan Tekstur Kertas Alami", isPremium: false, sortOrder: 8, isActive: true },
+  { id: "solaria", name: "Solaria", category: "modern", eventType: "WEDDING" as const, series: "Modern", description: "WARM SUNSET BOTANICAL — Kehangatan Golden Hour & Botani Segar", isPremium: false, sortOrder: 9, isActive: true },
+  { id: "wave", name: "Wave", category: "modern", eventType: "WEDDING" as const, series: "Modern", description: "DYNAMIC FLUID OCEAN — Aliran Gelombang Modern Dinamis & Segar", isPremium: false, sortOrder: 10, isActive: true },
+  { id: "badrika", name: "Badrika", category: "modern", eventType: "WEDDING" as const, series: "Modern", description: "ARCHITECTURAL EDITORIAL — Garis Lengkung Mewah & Tipografi Kontemporer", isPremium: false, sortOrder: 11, isActive: true },
+  { id: "candani", name: "Candani", category: "modern", eventType: "WEDDING" as const, series: "Modern", description: "BOTANICAL WARMTH — Kehangatan Nuansa Alam & Tipografi Modern Bersih", isPremium: false, sortOrder: 12, isActive: true },
+  { id: "mayang", name: "Mayang", category: "modern", eventType: "WEDDING" as const, series: "Modern", description: "CONTEMPORARY GOLDEN CHIC — Kilau Emas Minimalis & Elegan", isPremium: false, sortOrder: 13, isActive: true },
   // Traditional Series
-  { id: "dillalucky", name: "Dilla Lucky", category: "traditional", series: "Traditional", description: "Kehangatan Adat Melayu & Padang Modern", isPremium: false, sortOrder: 14, isActive: true },
-  { id: "prameswari", name: "Prameswari", category: "traditional", series: "Traditional", description: "Royal Heritage Tradisional Agung Nan Sarat Makna", isPremium: false, sortOrder: 15, isActive: true },
-  { id: "lagaligo", name: "La Galigo", category: "traditional", series: "Traditional", description: "Kemegahan Adat Bugis-Makassar Berbalut Hijau Zamrud & Kilau Benang Emas", isPremium: false, sortOrder: 16, isActive: true },
+  { id: "dillalucky", name: "Dilla Lucky", category: "traditional", eventType: "WEDDING" as const, series: "Traditional", description: "Kehangatan Adat Melayu & Padang Modern", isPremium: false, sortOrder: 14, isActive: true },
+  { id: "prameswari", name: "Prameswari", category: "traditional", eventType: "WEDDING" as const, series: "Traditional", description: "Royal Heritage Tradisional Agung Nan Sarat Makna", isPremium: false, sortOrder: 15, isActive: true },
+  { id: "lagaligo", name: "La Galigo", category: "traditional", eventType: "WEDDING" as const, series: "Traditional", description: "Kemegahan Adat Bugis-Makassar Berbalut Hijau Zamrud & Kilau Benang Emas", isPremium: false, sortOrder: 16, isActive: true },
 ];
 
 export async function GET() {
@@ -80,7 +80,7 @@ export async function GET() {
 
       const defaultCoverFallback = t.thumbnail || `/demo/${themeKey}/cover.webp`;
       const rawThumbMobile = customData?.thumbnailMobileUrl || `/demo/${themeKey}/thumbnail_mobile.webp`;
-      const rawThumbDesktop = customData?.thumbnailDesktopUrl || customData?.landingCoverDesktopUrl || `/demo/${themeKey}/thumbnail_desktop.webp`;
+      const rawThumbDesktop = customData?.thumbnailDesktopUrl || `/demo/${themeKey}/thumbnail_desktop.webp`;
 
       return {
         ...t,
@@ -111,6 +111,7 @@ export async function POST(req: NextRequest) {
     let isActive = true;
     let sortOrder = 99;
     let defaultMusicUrl = "";
+    let eventType = "WEDDING";
     let file: File | null = null;
 
     const contentType = req.headers.get("content-type") || "";
@@ -121,6 +122,7 @@ export async function POST(req: NextRequest) {
       category = (formData.get("category") as string) || "modern";
       description = (formData.get("description") as string) || "";
       series = (formData.get("series") as string) || "";
+      if (formData.has("eventType")) eventType = (formData.get("eventType") as string) || "WEDDING";
       isPremium = formData.get("isPremium") === "true";
       isActive = formData.get("isActive") === null ? true : formData.get("isActive") === "true";
       sortOrder = Number(formData.get("sortOrder") || 99);
@@ -136,6 +138,7 @@ export async function POST(req: NextRequest) {
       category = body.category || "modern";
       description = body.description || "";
       series = body.series || "";
+      if (body.eventType) eventType = body.eventType || "WEDDING";
       isPremium = Boolean(body.isPremium);
       isActive = body.isActive !== false;
       sortOrder = Number(body.sortOrder || 99);
@@ -170,8 +173,9 @@ export async function POST(req: NextRequest) {
     const fs = await import("fs/promises");
     const path = await import("path");
 
-    // 1. Simpan fisik master file ke folder themes/[kategori]/[id].html
-    const targetDir = path.join(process.cwd(), "themes", cat);
+    // 1. Simpan fisik master file ke folder themes/[eventType]/[kategori]/[id].html
+    const eventFolder = eventType.toUpperCase() === "GATHERING" ? "general" : eventType.toLowerCase();
+    const targetDir = path.join(process.cwd(), "themes", eventFolder, cat);
     await fs.mkdir(targetDir, { recursive: true });
     const targetFilePath = path.join(targetDir, `${cleanId}.html`);
 
@@ -185,6 +189,7 @@ export async function POST(req: NextRequest) {
         id: cleanId,
         name: name.trim(),
         category: cat,
+        eventType: (eventType as any) || "WEDDING",
         description: description || "",
         series: series || (cat === "traditional" ? "Traditional" : cat === "minimalist" ? "Minimalist" : "Modern"),
         isPremium: Boolean(isPremium || cat === "minimalist"),
@@ -287,7 +292,8 @@ export async function PUT(req: NextRequest) {
         return NextResponse.json({ error: "Format file tidak valid. Wajib berekstensi .html." }, { status: 400 });
       }
 
-      const targetDir = path.join(process.cwd(), "themes", targetCat);
+      const eventFolder = (existing.eventType || "WEDDING").toLowerCase();
+      const targetDir = path.join(process.cwd(), "themes", eventFolder, targetCat);
       await fs.mkdir(targetDir, { recursive: true });
       const targetFilePath = path.join(targetDir, `${cleanId}.html`);
 
@@ -367,8 +373,18 @@ export async function DELETE(req: NextRequest) {
     // 3. Remove the master HTML file physically from the themes/ folder
     try {
       const categoryDir = existingTheme.category.toLowerCase();
-      const masterPath = path.join(process.cwd(), "themes", categoryDir, `${id.toLowerCase()}.html`);
-      await fs.unlink(masterPath);
+      const evType = (existingTheme.eventType || "WEDDING").toUpperCase();
+      const evFolder = evType === "GATHERING" ? "general" : evType.toLowerCase();
+      const possiblePaths = [
+        path.join(process.cwd(), "themes", evFolder, categoryDir, `${id.toLowerCase()}.html`),
+        path.join(process.cwd(), "themes", "wedding", categoryDir, `${id.toLowerCase()}.html`),
+        path.join(process.cwd(), "themes", categoryDir, `${id.toLowerCase()}.html`),
+      ];
+      for (const p of possiblePaths) {
+        try {
+          await fs.unlink(p);
+        } catch {}
+      }
     } catch {
       // Ignore if master file is already gone
     }

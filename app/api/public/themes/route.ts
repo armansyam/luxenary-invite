@@ -3,10 +3,19 @@ import { prisma } from "@/lib/prisma";
 import { DEMO_REGISTRY } from "@/lib/demoRegistry";
 
 export const dynamic = "force-dynamic";
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    const eventParam = searchParams.get("eventType") || searchParams.get("event");
+    const requestedEvent = eventParam && eventParam.toLowerCase() !== "all" ? eventParam.toUpperCase() : undefined;
+
+    const whereClause: any = { isActive: true };
+    if (requestedEvent) {
+      whereClause.eventType = requestedEvent;
+    }
+
     let dbThemes = await prisma.theme.findMany({
-      where: { isActive: true },
+      where: whereClause,
       orderBy: { sortOrder: "asc" },
     });
 
@@ -18,6 +27,7 @@ export async function GET() {
         name: demo.themeName,
         category: demo.category.toLowerCase(),
         series: demo.series,
+        eventType: (demo as any).eventType || "WEDDING",
         description: demo.tagline || `${demo.themeName} Series`,
         previewUrl: `/demo/${demo.themeId.toLowerCase()}`,
         isPremium: demo.category.toLowerCase() === "minimalist" || demo.category.toLowerCase() === "premium",
@@ -34,7 +44,7 @@ export async function GET() {
       }
 
       dbThemes = await prisma.theme.findMany({
-        where: { isActive: true },
+        where: whereClause,
         orderBy: { sortOrder: "asc" },
       });
     }
@@ -79,28 +89,66 @@ export async function GET() {
           : "Modern");
 
       const defaultCoverFallback = source?.landingCoverUrl || `/demo/${themeKey}/cover.webp`;
-      const desktopFallback = customData?.landingCoverDesktopUrl || `/demo/${themeKey}/cover_desktop.webp`;
       const rawThumbMobile = customData?.thumbnailMobileUrl || `/demo/${themeKey}/thumbnail_mobile.webp`;
-      const rawThumbDesktop = customData?.thumbnailDesktopUrl || desktopFallback;
+      const rawThumbDesktop = customData?.thumbnailDesktopUrl || `/demo/${themeKey}/thumbnail_desktop.webp`;
 
       const thumbMobile = rawThumbMobile;
       const thumbDesktop = rawThumbDesktop;
       const rawCoverUrl = defaultCoverFallback;
       const coverUrl = rawCoverUrl;
 
+      const eventType = t.eventType || (source as any)?.eventType || "WEDDING";
+      const evTypeUpper = eventType.toUpperCase();
+
+      let primaryName = source?.groomDisplayName || source?.groomName || "Pengantin Pria";
+      let secondaryName = source?.brideDisplayName || source?.brideName || "Pengantin Wanita";
+      let eyebrow = source?.tagline || tagline || "Wedding Invitation";
+
+      if (evTypeUpper === "BIRTHDAY") {
+        primaryName = (source as any)?.personName || (source as any)?.personNickname || "Birthday";
+        secondaryName = "";
+        eyebrow = (source as any)?.tagline || "Birthday Celebration";
+      } else if (evTypeUpper === "KHITAN") {
+        primaryName = (source as any)?.childName || (source as any)?.childNickname || "Walimatul Khitan";
+        secondaryName = "";
+        eyebrow = (source as any)?.tagline || "Walimatul Khitan";
+      } else if (evTypeUpper === "AQIQAH") {
+        primaryName = (source as any)?.babyName || (source as any)?.babyNickname || "Tasyakuran Aqiqah";
+        secondaryName = "";
+        eyebrow = (source as any)?.tagline || "Tasyakuran Aqiqah";
+      } else if (evTypeUpper === "WISUDA") {
+        primaryName = (source as any)?.graduateName || (source as any)?.graduateNickname || "Wisudawan";
+        secondaryName = "";
+        eyebrow = (source as any)?.tagline || "Graduation Celebration";
+      } else if (evTypeUpper === "GATHERING") {
+        primaryName = (source as any)?.eventTitle || t.name;
+        secondaryName = "";
+        eyebrow = (source as any)?.eventSubtitle || (source as any)?.tagline || "Undangan Resmi";
+      }
+
       return {
         id: t.id,
         name: t.name,
         series,
         category: t.category.toUpperCase(),
+        eventType,
+        parentTheme: t.parentTheme || null,
         tagline,
         desc: tagline,
         thumbnailMobile: thumbMobile,
         thumbnailDesktop: thumbDesktop,
         // Cover card data — DB-first, then registry, then fallback
-        groomName: source?.groomDisplayName || source?.groomName || "Pengantin Pria",
-        brideName: source?.brideDisplayName || source?.brideName || "Pengantin Wanita",
-        eyebrow: source?.tagline || tagline || "Wedding Invitation",
+        groomName: primaryName,
+        brideName: secondaryName,
+        primaryName,
+        secondaryName,
+        personName: (source as any)?.personName || "",
+        personAge: (source as any)?.personAge || "",
+        childName: (source as any)?.childName || "",
+        babyName: (source as any)?.babyName || "",
+        graduateName: (source as any)?.graduateName || "",
+        eventTitle: (source as any)?.eventTitle || "",
+        eyebrow,
         coverUrl,
         weddingDay: source?.weddingDateDay || "--",
         weddingMonth: source?.weddingDateMonth || "--",

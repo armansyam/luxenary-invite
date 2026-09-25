@@ -11,30 +11,40 @@ import fs from "fs";
 import path from "path";
 import { getThemeBlueprint } from "@/lib/themeDefaults";
 import { escapeHtml } from "@/lib/escapeHtml";
+import { buildCalendarTitle } from "@/lib/invitationUtils";
 
-export interface DemoThemeData {
+export interface BaseDemoData {
   themeId: string;
   themeName: string;
   series: string;
   category: "minimalist" | "modern" | "traditional";
   tagline: string;
+  eventType?: "WEDDING" | "BIRTHDAY" | "KHITAN" | "AQIQAH" | "WISUDA" | "GATHERING";
   
-  // Couple Profile
-  groomName: string;
-  brideName: string;
-  groomDisplayName: string;
-  brideDisplayName: string;
-  groomRole: string;
-  brideRole: string;
-  groomParents: string;
+  // Couple Profile (optional for non-wedding events)
+  groomName?: string;
+  brideName?: string;
+  groomDisplayName?: string;
+  brideDisplayName?: string;
+  groomRole?: string;
+  brideRole?: string;
+  groomParents?: string;
   groomFather?: string;
   groomMother?: string;
-  brideParents: string;
+  brideParents?: string;
   brideFather?: string;
   brideMother?: string;
-  groomInstagram: string;
-  brideInstagram: string;
-  monogramInitial: string;
+  groomInstagram?: string;
+  brideInstagram?: string;
+  monogramInitial?: string;
+  
+  // Single Persona (Birthday / Individual)
+  personName?: string;
+  personNickname?: string;
+  personAge?: number | string;
+  personPhotoUrl?: string;
+  personInstagram?: string;
+  parentName?: string;
   
   // Event & Date
   targetDate: string;
@@ -49,8 +59,8 @@ export interface DemoThemeData {
   // Curated Standardized WebP Photo Assets
   globalBgUrl: string;
   homePhotoUrl?: string;
-  groomPhotoUrl: string;
-  bridePhotoUrl: string;
+  groomPhotoUrl?: string;
+  bridePhotoUrl?: string;
   sidebarPhotoUrl: string;
   landingCoverUrl: string;
   landingCoverDesktopUrl?: string;
@@ -88,6 +98,91 @@ export interface DemoThemeData {
   audioUrl?: string;
   defaultMusicUrl?: string;
 }
+
+export interface WeddingDemoData extends BaseDemoData {
+  eventType?: "WEDDING";
+  groomName: string;
+  brideName: string;
+  groomDisplayName: string;
+  brideDisplayName: string;
+  groomRole: string;
+  brideRole: string;
+  groomParents: string;
+  groomFather?: string;
+  groomMother?: string;
+  brideParents: string;
+  brideFather?: string;
+  brideMother?: string;
+  groomInstagram: string;
+  brideInstagram: string;
+  monogramInitial: string;
+  groomPhotoUrl: string;
+  bridePhotoUrl: string;
+}
+
+export interface BirthdayDemoData extends BaseDemoData {
+  eventType: "BIRTHDAY";
+  personName: string;
+  personNickname: string;
+  personAge: number | string;
+  personPhotoUrl: string;
+  personInstagram?: string;
+  parentName?: string;
+  [key: string]: any;
+}
+
+export interface KhitanDemoData extends BaseDemoData {
+  eventType: "KHITAN";
+  childName: string;
+  childNickname: string;
+  childAge: number | string;
+  childBirthOrder?: string;
+  childPhotoUrl?: string;
+  [key: string]: any;
+}
+
+export interface AqiqahDemoData extends BaseDemoData {
+  eventType: "AQIQAH";
+  babyName: string;
+  babyNickname: string;
+  birthDateFormatted?: string;
+  birthWeight?: string;
+  birthLength?: string;
+  babyPhotoUrl?: string;
+  [key: string]: any;
+}
+
+export interface WisudaDemoData extends BaseDemoData {
+  eventType: "WISUDA";
+  graduateName: string;
+  graduateNickname: string;
+  graduateDegree?: string;
+  graduateMajor?: string;
+  graduateFaculty?: string;
+  universityName?: string;
+  honors?: string;
+  graduatePhotoUrl?: string;
+  [key: string]: any;
+}
+
+export interface GatheringDemoData extends BaseDemoData {
+  eventType: "GATHERING";
+  eventTitle: string;
+  eventSubtitle?: string;
+  organizerName?: string;
+  hostName?: string;
+  dresscode?: string;
+  eventPhotoUrl?: string;
+  [key: string]: any;
+}
+
+export type DemoThemeData =
+  | WeddingDemoData
+  | BirthdayDemoData
+  | KhitanDemoData
+  | AqiqahDemoData
+  | WisudaDemoData
+  | GatheringDemoData;
 
 export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
   kalandra: {
@@ -2430,6 +2525,999 @@ export const DEMO_REGISTRY: Record<string, DemoThemeData> = {
     dressCodeNote: "High Fashion / Black Tie & Champagne Editorial",
     turutMengundang: ["The Maverick Family", "The Hartono Family"],
   },
+  festivo: {
+    themeId: "festivo",
+    themeName: "Festivo",
+    series: "Modern",
+    category: "modern",
+    tagline: "CELEBRATING THE BIRTHDAY OF",
+    eventType: "BIRTHDAY",
+    personName: "Zara Kimberly",
+    personNickname: "Zara",
+    personAge: 17,
+    personPhotoUrl: "/demo/festivo/hero.webp",
+    groomName: "Zara",
+    brideName: "",
+    groomDisplayName: "Zara Kimberly",
+    brideDisplayName: "",
+    groomRole: "Yang Berulang Tahun",
+    brideRole: "",
+    groomParents: "Bpk. Hendra Kimberly & Ibu Citra",
+    groomInstagram: "zarakimberly",
+    brideInstagram: "",
+    monogramInitial: "ZK",
+    targetDate: "2026-11-20T19:00:00",
+    weddingDateFormatted: "Jumat, 20 November 2026",
+    weddingDateDay: "20",
+    weddingDateMonth: "11",
+    weddingDateYear: "2026",
+    openingQuote: "Menghitung hari, merayakan setiap detik perjalanan hidup yang penuh warna dan harapan baru.",
+    openingQuoteRef: "Sweet Seventeen",
+    city: "Jakarta",
+    globalBgUrl: "/demo/festivo/background.webp",
+    homePhotoUrl: "/demo/festivo/hero.webp",
+    groomPhotoUrl: "/demo/festivo/hero.webp",
+    bridePhotoUrl: "/demo/festivo/hero.webp",
+    sidebarPhotoUrl: "/demo/festivo/hero.webp",
+    landingCoverUrl: "/demo/festivo/cover.webp",
+    galleryPhotos: [
+      "/demo/festivo/gallery_01.webp",
+      "/demo/festivo/gallery_02.webp",
+      "/demo/festivo/gallery_03.webp",
+      "/demo/festivo/gallery_04.webp",
+    ],
+    events: [
+      {
+        badge: "Sweet 17 Party",
+        title: "Birthday Celebration",
+        time: "19.00 - 22.00 WIB",
+        location: "Sky Lounge & Ballroom Jakarta",
+        address: "Jl. Sudirman No. 45, Jakarta Selatan",
+        mapsUrl: "https://maps.google.com",
+      },
+    ],
+    stories: [
+      {
+        chapter: "Chapter 01",
+        title: "The Childhood Glow",
+        content: "Masa kecil yang dipenuhi tawa, rasa ingin tahu, dan pelukan hangat keluarga tercinta.",
+      },
+      {
+        chapter: "Chapter 02",
+        title: "Blooming into Seventeen",
+        content: "Melangkah ke usia 17 dengan mimpi besar, kedewasaan baru, dan semangat yang menyala.",
+      },
+    ],
+    banks: [
+      {
+        bank: "BCA",
+        number: "5420998871",
+        name: "Zara Kimberly",
+      },
+    ],
+    dressCodeColors: "#ec4899,#8b5cf6,#0f172a",
+    dressCodeNote: "Glam & Chic / Smart Casual",
+    turutMengundang: ["Keluarga Besar Kimberly", "Sahabat & Teman Sekolah"],
+    defaultPalette: "festivo-glow",
+  },
+  "kalandra-birthday": {
+    themeId: "kalandra-birthday",
+    themeName: "Kalandra Birthday",
+    series: "Minimalist",
+    category: "minimalist",
+    tagline: "CELEBRATING THE BIRTHDAY OF",
+    eventType: "BIRTHDAY",
+    personName: "Zara Kimberly",
+    personNickname: "Zara",
+    personAge: 17,
+    personPhotoUrl: "/demo/kalandra-birthday/hero.webp",
+    groomName: "Zara",
+    brideName: "",
+    groomDisplayName: "Zara Kimberly",
+    brideDisplayName: "",
+    groomRole: "Yang Berulang Tahun",
+    brideRole: "",
+    groomParents: "Bpk. Hendra Kimberly & Ibu Citra",
+    groomInstagram: "zarakimberly",
+    brideInstagram: "",
+    monogramInitial: "ZK",
+    targetDate: "2026-11-20T19:00:00",
+    weddingDateFormatted: "Jumat, 20 November 2026",
+    weddingDateDay: "20",
+    weddingDateMonth: "11",
+    weddingDateYear: "2026",
+    openingQuote: "A celebration of growth, laughter, and timeless memories.",
+    openingQuoteRef: "A Milestone Year",
+    city: "Jakarta",
+    globalBgUrl: "/demo/kalandra-birthday/background.webp",
+    homePhotoUrl: "/demo/kalandra-birthday/hero.webp",
+    groomPhotoUrl: "/demo/kalandra-birthday/hero.webp",
+    bridePhotoUrl: "/demo/kalandra-birthday/hero.webp",
+    sidebarPhotoUrl: "/demo/kalandra-birthday/hero.webp",
+    landingCoverUrl: "/demo/kalandra-birthday/cover.webp",
+    galleryPhotos: [
+      "/demo/kalandra-birthday/gallery_01.webp",
+      "/demo/kalandra-birthday/gallery_02.webp",
+      "/demo/kalandra-birthday/gallery_03.webp",
+      "/demo/kalandra-birthday/gallery_04.webp",
+    ],
+    events: [
+      {
+        badge: "Celebration",
+        title: "Birthday Dinner",
+        time: "18.30 - 21.30 WIB",
+        location: "The Glass House Cafe & Garden",
+        address: "Jl. Senopati No. 12, Jakarta Selatan",
+        mapsUrl: "https://maps.google.com",
+      },
+    ],
+    stories: [
+      {
+        chapter: "The Beginning",
+        title: "First Breath of Joy",
+        content: "Hari di mana senyuman pertama hadir dan mengubah hidup seluruh keluarga menjadi penuh sukacita.",
+      },
+      {
+        chapter: "Milestones",
+        title: "A Year of Growth",
+        content: "Langkah-langkah berharga, celoteh riang, dan cinta tanpa batas yang menemani setiap pertambahan usia.",
+      },
+    ],
+    banks: [
+      {
+        bank: "BCA",
+        number: "5420998871",
+        name: "Zara Kimberly",
+      },
+    ],
+    dressCodeColors: "#c5a880,#2c2c2c,#f5f2eb",
+    dressCodeNote: "Earth Tone / Minimalist Chic",
+    turutMengundang: ["Keluarga Besar Kimberly", "Sahabat Dekat"],
+    defaultPalette: "warm-editorial",
+  },
+  "al-fariz": {
+    themeId: "al-fariz",
+    themeName: "Al-Fariz Khitan",
+    series: "Traditional",
+    category: "traditional",
+    tagline: "TASYAKURAN WALIMATUL KHITAN",
+    eventType: "KHITAN",
+    childName: "Muhammad Fariz Al-Ghifari",
+    childNickname: "Fariz",
+    childAge: 9,
+    childBirthOrder: "Putra Pertama",
+    childPhotoUrl: "/demo/al-fariz/hero.webp",
+    groomName: "Fariz",
+    brideName: "",
+    groomDisplayName: "Muhammad Fariz Al-Ghifari",
+    brideDisplayName: "",
+    groomRole: "Ananda Khitan",
+    brideRole: "",
+    groomParents: "Bpk. Arief Kusuma, S.T. & Ibu Dewi Rahayu, S.Pd.",
+    groomInstagram: "",
+    brideInstagram: "",
+    monogramInitial: "MF",
+    targetDate: "2026-12-12T09:00:00",
+    weddingDateFormatted: "Sabtu, 12 Desember 2026",
+    weddingDateDay: "12",
+    weddingDateMonth: "12",
+    weddingDateYear: "2026",
+    openingQuote: "Semoga menjadi anak yang sholeh, berbakti kepada orang tua, dan bermanfaat bagi sesama.",
+    openingQuoteRef: "Doa Walimatul Khitan",
+    city: "Makassar",
+    landingCoverUrl: "/demo/al-fariz/cover.webp",
+    sidebarPhotoUrl: "/demo/al-fariz/hero.webp",
+    globalBgUrl: "/demo/al-fariz/background.webp",
+    homePhotoUrl: "/demo/al-fariz/hero.webp",
+    groomPhotoUrl: "/demo/al-fariz/hero.webp",
+    bridePhotoUrl: "/demo/al-fariz/hero.webp",
+    galleryPhotos: [
+      "/demo/al-fariz/gallery_01.webp",
+      "/demo/al-fariz/gallery_02.webp",
+      "/demo/al-fariz/gallery_03.webp",
+      "/demo/al-fariz/gallery_04.webp",
+    ],
+    events: [
+      {
+        badge: "Walimatul Khitan",
+        title: "Tasyakuran & Doa Bersama",
+        time: "09.00 - 13.00 WITA",
+        location: "Gedung Serbaguna Baruga",
+        address: "Jl. Perintis Kemerdekaan KM 10, Makassar",
+        mapsUrl: "https://maps.google.com",
+      },
+    ],
+    stories: [
+      {
+        chapter: "Langkah Pertama",
+        title: "Menunaikan Sunnah Suci",
+        content: "Menjalankan sunnah Rasulullah SAW dengan penuh keberanian, ketulusan, dan keikhlasan.",
+      },
+      {
+        chapter: "Doa & Harapan",
+        title: "Menuju Kedewasaan",
+        content: "Tumbuh menjadi anak yang sholeh, berbakti kepada kedua orang tua, dan menjadi pelita bagi umat serta bangsa.",
+      },
+    ],
+    banks: [
+      {
+        bank: "BSI",
+        number: "7123456789",
+        name: "Arief Kusuma",
+      },
+    ],
+    dressCodeColors: "#10b981,#047857,#f59e0b",
+    dressCodeNote: "Busana Muslim / Batik Rapi",
+    turutMengundang: ["Keluarga Besar Bpk. Arief Kusuma", "Keluarga Besar Ibu Dewi Rahayu"],
+    defaultPalette: "emerald-islamic",
+  },
+  "al-khalid": {
+    themeId: "al-khalid",
+    themeName: "Al-Khalid Aqiqah",
+    series: "Minimalist",
+    category: "minimalist",
+    tagline: "TASYAKURAN AQIQAH & KELAHIRAN",
+    eventType: "AQIQAH",
+    babyName: "Muhammad Khalid Azzam",
+    babyNickname: "Khalid",
+    birthDateFormatted: "15 September 2026",
+    birthWeight: "3.4 kg",
+    birthLength: "50 cm",
+    babyPhotoUrl: "/demo/al-khalid/hero.webp",
+    groomName: "Khalid",
+    brideName: "",
+    groomDisplayName: "Muhammad Khalid Azzam",
+    brideDisplayName: "",
+    groomRole: "Buah Hati",
+    brideRole: "",
+    groomParents: "Bpk. Ahmad Fauzi & Ibu Siti Nurhaliza",
+    groomInstagram: "",
+    brideInstagram: "",
+    monogramInitial: "MK",
+    targetDate: "2026-10-18T10:00:00",
+    weddingDateFormatted: "Ahad, 18 Oktober 2026",
+    weddingDateDay: "18",
+    weddingDateMonth: "10",
+    weddingDateYear: "2026",
+    openingQuote: "Barakallahu laka fil mauhubi laka wa syakartal wahib.",
+    openingQuoteRef: "Doa Aqiqah",
+    city: "Makassar",
+    landingCoverUrl: "/demo/al-khalid/cover.webp",
+    sidebarPhotoUrl: "/demo/al-khalid/hero.webp",
+    globalBgUrl: "/demo/al-khalid/background.webp",
+    homePhotoUrl: "/demo/al-khalid/hero.webp",
+    groomPhotoUrl: "/demo/al-khalid/hero.webp",
+    bridePhotoUrl: "/demo/al-khalid/hero.webp",
+    galleryPhotos: [
+      "/demo/al-khalid/gallery_01.webp",
+      "/demo/al-khalid/gallery_02.webp",
+      "/demo/al-khalid/gallery_03.webp",
+      "/demo/al-khalid/gallery_04.webp",
+    ],
+    events: [
+      {
+        badge: "Tasyakuran Aqiqah",
+        title: "Pemotongan Rambut & Doa",
+        time: "10.00 - 13.00 WITA",
+        location: "Kediaman Orang Tua",
+        address: "Kompleks Griya Asri Blok B No. 7, Makassar",
+        mapsUrl: "https://maps.google.com",
+      },
+    ],
+    stories: [
+      {
+        chapter: "Kurnia Illahi",
+        title: "Kehadiran Sang Buah Hati",
+        content: "Kelahiran ananda tercinta yang membawa kesejukan, berkah, dan senyum bahagia di tengah keluarga besar.",
+      },
+      {
+        chapter: "Tasyakuran",
+        title: "Untaian Doa & Syukur",
+        content: "Sebagai wujud syukur atas nikmat karunia-Nya, kami mengalirkan doa suci menyambut langkah awal ananda.",
+      },
+    ],
+    banks: [
+      {
+        bank: "BCA",
+        number: "8920112233",
+        name: "Ahmad Fauzi",
+      },
+    ],
+    dressCodeColors: "#0284c7,#38bdf8,#f0f9ff",
+    dressCodeNote: "Putih / Pastel Blue",
+    turutMengundang: ["Keluarga Besar Ahmad Fauzi", "Keluarga Besar Siti Nurhaliza"],
+    defaultPalette: "sky-azure",
+  },
+  "cendekia": {
+    themeId: "cendekia",
+    themeName: "Cendekia Graduation",
+    series: "Modern",
+    category: "modern",
+    tagline: "GRADUATION CELEBRATION",
+    eventType: "WISUDA",
+    graduateName: "Rina Oktaviani Sari, S.Kom.",
+    graduateNickname: "Rina",
+    graduateDegree: "Sarjana Komputer (S.Kom.)",
+    graduateMajor: "Teknik Informatika",
+    graduateFaculty: "Fakultas Ilmu Komputer",
+    universityName: "Universitas Hasanuddin",
+    honors: "Cum Laude",
+    graduatePhotoUrl: "/demo/cendekia/hero.webp",
+    groomName: "Rina",
+    brideName: "",
+    groomDisplayName: "Rina Oktaviani Sari, S.Kom.",
+    brideDisplayName: "",
+    groomRole: "Wisudawati",
+    brideRole: "",
+    groomParents: "Drs. H. Mulyadi & Hj. Endang Suryani",
+    groomInstagram: "rinaoktaviani",
+    brideInstagram: "",
+    monogramInitial: "RO",
+    targetDate: "2026-10-24T11:00:00",
+    weddingDateFormatted: "Sabtu, 24 Oktober 2026",
+    weddingDateDay: "24",
+    weddingDateMonth: "10",
+    weddingDateYear: "2026",
+    openingQuote: "The beautiful thing about learning is that no one can take it away from you.",
+    openingQuoteRef: "B.B. King",
+    city: "Makassar",
+    landingCoverUrl: "/demo/cendekia/cover.webp",
+    sidebarPhotoUrl: "/demo/cendekia/hero.webp",
+    globalBgUrl: "/demo/cendekia/background.webp",
+    homePhotoUrl: "/demo/cendekia/hero.webp",
+    groomPhotoUrl: "/demo/cendekia/hero.webp",
+    bridePhotoUrl: "/demo/cendekia/hero.webp",
+    galleryPhotos: [
+      "/demo/cendekia/gallery_01.webp",
+      "/demo/cendekia/gallery_02.webp",
+      "/demo/cendekia/gallery_03.webp",
+      "/demo/cendekia/gallery_04.webp",
+    ],
+    events: [
+      {
+        badge: "Graduation Party",
+        title: "Syukuran Kelulusan",
+        time: "11.00 - 15.00 WITA",
+        location: "Grand Clarion Hotel & Convention",
+        address: "Jl. A.P. Pettarani No. 3, Makassar",
+        mapsUrl: "https://maps.google.com",
+      },
+    ],
+    stories: [
+      {
+        chapter: "Jejak Langkah",
+        title: "Perjalanan Akademik",
+        content: "Tahun-tahun penuh perjuangan, riset larut malam, dan dedikasi demi menggapai cita-cita luhur.",
+      },
+      {
+        chapter: "Awal Pengabdian",
+        title: "Mempersembahkan Kelulusan",
+        content: "Mempersembahkan gelar sarjana sebagai bakti bagi orang tua tercinta dan awal dedikasi bagi nusa bangsa.",
+      },
+    ],
+    banks: [
+      {
+        bank: "Mandiri",
+        number: "1520034455667",
+        name: "Rina Oktaviani Sari",
+      },
+    ],
+    dressCodeColors: "#4f46e5,#f59e0b,#1e1b4b",
+    dressCodeNote: "Formal / Semi-Formal Elegance",
+    turutMengundang: ["Keluarga Besar Drs. H. Mulyadi", "Civitas Akademika Informatika"],
+    defaultPalette: "royal-indigo",
+  },
+  "sinergi": {
+    themeId: "sinergi",
+    themeName: "Sinergi Inauguration",
+    series: "Modern",
+    category: "modern",
+    tagline: "GRAND INAUGURATION & SYUKURAN",
+    eventType: "GATHERING",
+    eventTitle: "Peresmian Kantor Baru & Syukuran PT Sinergi Prima",
+    eventSubtitle: "Melangkah Bersama Menuju Masa Depan Digital",
+    organizerName: "Direksi & Manajemen PT Sinergi Prima",
+    hostName: "Bpk. Hendra Gunawan (Direktur Utama)",
+    dresscode: "Batik Modern / Smart Casual",
+    eventPhotoUrl: "/demo/sinergi/hero.webp",
+    groomName: "PT Sinergi Prima",
+    brideName: "",
+    groomDisplayName: "PT Sinergi Prima",
+    brideDisplayName: "",
+    groomRole: "Penyelenggara",
+    brideRole: "",
+    groomParents: "Direksi & Manajemen PT Sinergi Prima",
+    groomInstagram: "sinergiprima",
+    brideInstagram: "",
+    monogramInitial: "SP",
+    targetDate: "2026-11-10T09:00:00",
+    weddingDateFormatted: "Senin, 10 November 2026",
+    weddingDateDay: "10",
+    weddingDateMonth: "11",
+    weddingDateYear: "2026",
+    openingQuote: "Bersama kita membangun inovasi dan melayani negeri dengan integritas.",
+    openingQuoteRef: "PT Sinergi Prima",
+    city: "Makassar",
+    landingCoverUrl: "/demo/sinergi/cover.webp",
+    sidebarPhotoUrl: "/demo/sinergi/hero.webp",
+    globalBgUrl: "/demo/sinergi/background.webp",
+    homePhotoUrl: "/demo/sinergi/hero.webp",
+    groomPhotoUrl: "/demo/sinergi/hero.webp",
+    bridePhotoUrl: "/demo/sinergi/hero.webp",
+    galleryPhotos: [
+      "/demo/sinergi/gallery_01.webp",
+      "/demo/sinergi/gallery_02.webp",
+      "/demo/sinergi/gallery_03.webp",
+      "/demo/sinergi/gallery_04.webp",
+    ],
+    events: [
+      {
+        badge: "Grand Opening",
+        title: "Peresmian & Doa Syukuran",
+        time: "09.00 - 13.00 WITA",
+        location: "Gedung Menara Sinergi Prima Lt. 5",
+        address: "Jl. Jend. Sudirman No. 45, Makassar",
+        mapsUrl: "https://maps.google.com",
+      },
+    ],
+    stories: [
+      {
+        chapter: "Fondasi",
+        title: "Visi & Komitmen",
+        content: "Dibangun atas dasar integritas dan kolaborasi solid untuk menciptakan dampak positif dan kemajuan bersama.",
+      },
+      {
+        chapter: "Masa Depan",
+        title: "Sinergi Tanpa Batas",
+        content: "Melangkah bersama seluruh mitra strategis dan keluarga besar menuju era keemasan inovasi dan keunggulan.",
+      },
+    ],
+    banks: [
+      {
+        bank: "BCA",
+        number: "7880991122",
+        name: "PT Sinergi Prima",
+      },
+    ],
+    dressCodeColors: "#0d9488,#f59e0b,#134e4a",
+    dressCodeNote: "Smart Casual / Batik Modern",
+    turutMengundang: ["Dewan Komisaris & Direksi", "Seluruh Karyawan PT Sinergi Prima"],
+    defaultPalette: "corporate-teal",
+  },
+  "minimalist-elegant": {
+    themeId: "minimalist-elegant",
+    themeName: "Minimalist Elegant",
+    series: "Minimalist",
+    category: "minimalist",
+    tagline: "A MINIMALIST CELEBRATION OF TIMELESS DEVOTION",
+    groomName: "Adrian",
+    brideName: "Clara",
+    groomDisplayName: "Adrian Prasetya, S.T.",
+    brideDisplayName: "Clara Danastri, B.A.",
+    groomRole: "Mempelai Pria",
+    brideRole: "Mempelai Wanita",
+    groomParents: "Putra dari Bpk. Ir. Prasetya Hadi & Ibu Retno Wulandari",
+    groomFather: "Ir. Prasetya Hadi",
+    groomMother: "Retno Wulandari",
+    brideParents: "Putri dari Bpk. Drs. Danang Danastri & Ibu Maya Kusuma",
+    brideFather: "Drs. Danang Danastri",
+    brideMother: "Maya Kusuma",
+    groomInstagram: "adrianprasetya",
+    brideInstagram: "claradanastri",
+    monogramInitial: "A & C",
+    targetDate: "2026-11-14T09:00:00",
+    weddingDateFormatted: "Sabtu, 14 November 2026",
+    weddingDateDay: "14",
+    weddingDateMonth: "11",
+    weddingDateYear: "2026",
+    openingQuote: "Dalam kesederhanaan, kami menemukan ketulusan cinta yang abadi.",
+    openingQuoteRef: "THE ART OF SIMPLICITY",
+    city: "Jakarta",
+    globalBgUrl: "/demo/minimalist-elegant/background.webp",
+    groomPhotoUrl: "/demo/minimalist-elegant/groom.webp",
+    bridePhotoUrl: "/demo/minimalist-elegant/bride.webp",
+    sidebarPhotoUrl: "/demo/minimalist-elegant/hero.webp",
+    homePhotoUrl: "/demo/minimalist-elegant/home.webp",
+    landingCoverUrl: "/demo/minimalist-elegant/cover.webp",
+    landingCoverDesktopUrl: "/demo/minimalist-elegant/cover_desktop.webp",
+    thumbnailDesktopUrl: "/demo/minimalist-elegant/thumbnail_desktop.webp",
+    thumbnailMobileUrl: "/demo/minimalist-elegant/thumbnail_mobile.webp",
+    footerPhotoUrl: "/demo/minimalist-elegant/footer.webp",
+    closingCoverUrl: "/demo/minimalist-elegant/footer.webp",
+    galleryPhotos: [
+      "/demo/minimalist-elegant/gallery_01.webp",
+      "/demo/minimalist-elegant/gallery_02.webp",
+      "/demo/minimalist-elegant/gallery_03.webp",
+      "/demo/minimalist-elegant/gallery_04.webp",
+      "/demo/minimalist-elegant/gallery_05.webp",
+      "/demo/minimalist-elegant/gallery_06.webp",
+      "/demo/minimalist-elegant/gallery_07.webp",
+      "/demo/minimalist-elegant/gallery_08.webp",
+    ],
+    events: [
+      {
+        badge: "HOLY MATRIMONY",
+        title: "Pemberkatan Kudus",
+        time: "09.00 – 11.00 WIB",
+        location: "The Glass House Senayan",
+        address: "Jl. Gerbang Pemuda No. 3, Senayan, Jakarta Pusat",
+        mapsUrl: "https://maps.google.com",
+      },
+      {
+        badge: "DINNER RECEPTION",
+        title: "Evening Soiree",
+        time: "18.30 – 21.30 WIB",
+        location: "Plataran Dharmawangsa",
+        address: "Jl. Dharmawangsa Raya No. 6, Kebayoran Baru, Jakarta Selatan",
+        mapsUrl: "https://maps.google.com",
+      },
+    ],
+    stories: [
+      {
+        chapter: "The Encounter",
+        title: "Pertemuan di Galeri",
+        content: "Sebuah percakapan hangat tentang seni dan arsitektur yang membuka babak baru dalam hidup kami.",
+      },
+      {
+        chapter: "The Commitment",
+        title: "Janji Saling Menjaga",
+        content: "Memilih untuk saling melengkapi dan melangkah bersama menuju babak baru yang penuh berkah.",
+      },
+    ],
+    banks: [
+      { bank: "BCA", number: "5210987654", name: "Adrian Prasetya" },
+      { bank: "Bank Mandiri", number: "1370098765432", name: "Clara Danastri" },
+    ],
+    dressCodeColors: "#8c827a, #cfc6be, #faf8f5",
+    dressCodeNote: "Warm Oatmeal, Soft Linen & Charcoal Minimalist",
+    turutMengundang: ["Keluarga Besar Prasetya Hadi", "Keluarga Besar Danang Danastri"],
+    defaultPalette: "minimalist-sand",
+  },
+  "minimalist-elegant-04": {
+    themeId: "minimalist-elegant-04",
+    themeName: "Minimalist Elegant 04",
+    series: "Minimalist",
+    category: "minimalist",
+    tagline: "ELEGANCE IN PURITY AND PURPOSE",
+    groomName: "Kevin",
+    brideName: "Nadia",
+    groomDisplayName: "Kevin Sanjaya, M.Ds.",
+    brideDisplayName: "Nadia Pramudita, S.Sn.",
+    groomRole: "Mempelai Pria",
+    brideRole: "Mempelai Wanita",
+    groomParents: "Putra dari Bpk. Ir. Gunawan Sanjaya & Ibu Linda Hartono",
+    groomFather: "Ir. Gunawan Sanjaya",
+    groomMother: "Linda Hartono",
+    brideParents: "Putri dari Bpk. Hendra Pramudita & Ibu Dewi Sartika",
+    brideFather: "Hendra Pramudita",
+    brideMother: "Dewi Sartika",
+    groomInstagram: "kevinsanjaya.ds",
+    brideInstagram: "nadiapramudita",
+    monogramInitial: "K & N",
+    targetDate: "2026-12-05T09:00:00",
+    weddingDateFormatted: "Sabtu, 05 Desember 2026",
+    weddingDateDay: "05",
+    weddingDateMonth: "12",
+    weddingDateYear: "2026",
+    openingQuote: "Dua jiwa yang bersatu, mengukir keindahan dalam setiap hening dan kata.",
+    openingQuoteRef: "MINIMALIST ESSENCE",
+    city: "Bandung",
+    globalBgUrl: "/demo/minimalist-elegant-04/background.webp",
+    groomPhotoUrl: "/demo/minimalist-elegant-04/groom.webp",
+    bridePhotoUrl: "/demo/minimalist-elegant-04/bride.webp",
+    sidebarPhotoUrl: "/demo/minimalist-elegant-04/hero.webp",
+    homePhotoUrl: "/demo/minimalist-elegant-04/home.webp",
+    landingCoverUrl: "/demo/minimalist-elegant-04/cover.webp",
+    landingCoverDesktopUrl: "/demo/minimalist-elegant-04/cover_desktop.webp",
+    thumbnailDesktopUrl: "/demo/minimalist-elegant-04/thumbnail_desktop.webp",
+    thumbnailMobileUrl: "/demo/minimalist-elegant-04/thumbnail_mobile.webp",
+    footerPhotoUrl: "/demo/minimalist-elegant-04/footer.webp",
+    closingCoverUrl: "/demo/minimalist-elegant-04/footer.webp",
+    galleryPhotos: [
+      "/demo/minimalist-elegant-04/gallery_01.webp",
+      "/demo/minimalist-elegant-04/gallery_02.webp",
+      "/demo/minimalist-elegant-04/gallery_03.webp",
+      "/demo/minimalist-elegant-04/gallery_04.webp",
+      "/demo/minimalist-elegant-04/gallery_05.webp",
+      "/demo/minimalist-elegant-04/gallery_06.webp",
+      "/demo/minimalist-elegant-04/gallery_07.webp",
+      "/demo/minimalist-elegant-04/gallery_08.webp",
+    ],
+    events: [
+      {
+        badge: "CEREMONY",
+        title: "Sacred Matrimony",
+        time: "09.00 – 11.00 WIB",
+        location: "Green Forest Sanctuary Lembang",
+        address: "Jl. Sersan Bajuri No. 102, Lembang, Bandung Barat",
+        mapsUrl: "https://maps.google.com",
+      },
+      {
+        badge: "LUNCHEON",
+        title: "Intimate Reception",
+        time: "12.30 – 15.30 WIB",
+        location: "The Pavilion Lembang",
+        address: "Jl. Maribaya Timur No. 45, Lembang, Bandung Barat",
+        mapsUrl: "https://maps.google.com",
+      },
+    ],
+    stories: [
+      {
+        chapter: "Silent Symphony",
+        title: "Harmoni Dua Desainer",
+        content: "Pertemuan dua insan kreatif yang saling menemukan ketenangan dalam karya dan cinta.",
+      },
+      {
+        chapter: "The Vow",
+        title: "Janji Suci",
+        content: "Di bawah semilir angin Lembang, kami mengikat janji sehidup semati berpayung doa restu keluarga.",
+      },
+    ],
+    banks: [
+      { bank: "BCA", number: "7310987654", name: "Kevin Sanjaya" },
+      { bank: "BSI", number: "7098765432", name: "Nadia Pramudita" },
+    ],
+    dressCodeColors: "#a3998f, #e5dfd8, #2a2826",
+    dressCodeNote: "Ivory White, Warm Stone & Sage Mist",
+    turutMengundang: ["Keluarga Besar Gunawan Sanjaya", "Keluarga Besar Hendra Pramudita"],
+    defaultPalette: "sand-stone",
+  },
+  "pink-castle": {
+    themeId: "pink-castle",
+    themeName: "Pink Castle",
+    series: "Modern",
+    category: "modern",
+    tagline: "OUR ONCE UPON A TIME IS NOW",
+    groomName: "Julian",
+    brideName: "Aurelie",
+    groomDisplayName: "Julian Pratama, S.E.",
+    brideDisplayName: "Aurelie Valencia, B.Com.",
+    groomRole: "Mempelai Pria",
+    brideRole: "Mempelai Wanita",
+    groomParents: "Putra dari Bpk. Ir. Pratama Wijaya & Ibu Christine Tan",
+    groomFather: "Ir. Pratama Wijaya",
+    groomMother: "Christine Tan",
+    brideParents: "Putri dari Bpk. Hartono Valencia & Ibu Jessica Anggraini",
+    brideFather: "Hartono Valencia",
+    brideMother: "Jessica Anggraini",
+    groomInstagram: "julianpratama",
+    brideInstagram: "aurelielvalencia",
+    monogramInitial: "J & A",
+    targetDate: "2026-12-19T10:00:00",
+    weddingDateFormatted: "Sabtu, 19 Desember 2026",
+    weddingDateDay: "19",
+    weddingDateMonth: "12",
+    weddingDateYear: "2026",
+    openingQuote: "Cinta sejati bukanlah tentang dongeng, melainkan tentang dua hati yang memilih saling mencintai setiap hari.",
+    openingQuoteRef: "ROMANTIC ROYAL CHRONICLE",
+    city: "Surabaya",
+    globalBgUrl: "/demo/pink-castle/background.webp",
+    groomPhotoUrl: "/demo/pink-castle/groom.webp",
+    bridePhotoUrl: "/demo/pink-castle/bride.webp",
+    sidebarPhotoUrl: "/demo/pink-castle/hero.webp",
+    homePhotoUrl: "/demo/pink-castle/home.webp",
+    landingCoverUrl: "/demo/pink-castle/cover.webp",
+    landingCoverDesktopUrl: "/demo/pink-castle/cover_desktop.webp",
+    thumbnailDesktopUrl: "/demo/pink-castle/thumbnail_desktop.webp",
+    thumbnailMobileUrl: "/demo/pink-castle/thumbnail_mobile.webp",
+    footerPhotoUrl: "/demo/pink-castle/footer.webp",
+    closingCoverUrl: "/demo/pink-castle/footer.webp",
+    galleryPhotos: [
+      "/demo/pink-castle/gallery_01.webp",
+      "/demo/pink-castle/gallery_02.webp",
+      "/demo/pink-castle/gallery_03.webp",
+      "/demo/pink-castle/gallery_04.webp",
+      "/demo/pink-castle/gallery_05.webp",
+      "/demo/pink-castle/gallery_06.webp",
+      "/demo/pink-castle/gallery_07.webp",
+      "/demo/pink-castle/gallery_08.webp",
+    ],
+    events: [
+      {
+        badge: "MATRIMONY",
+        title: "The Royal Matrimony",
+        time: "10.00 – 12.00 WIB",
+        location: "The Grand Chapel Pakuwon",
+        address: "Pakuwon Golf & Family Club, Surabaya Barat",
+        mapsUrl: "https://maps.google.com",
+      },
+      {
+        badge: "RECEPTION",
+        title: "Grand Fairy Reception",
+        time: "18.30 – 21.30 WIB",
+        location: "Ballroom Pakuwon Imperial",
+        address: "Pakuwon Golf & Family Club, Surabaya Barat",
+        mapsUrl: "https://maps.google.com",
+      },
+    ],
+    stories: [
+      {
+        chapter: "A Gentle Beginning",
+        title: "Sebuah Awal yang Hangat",
+        content: "Pertemuan tak sengaja di kampus yang berlanjut menjadi jalinan kasih penuh pengertian dan kelembutan.",
+      },
+      {
+        chapter: "Under The Castle Lights",
+        title: "Momen Lamaran Indah",
+        content: "Di bawah kilau cahaya dan doa keluarga tercinta, cincin disematkan sebagai ikrar cinta abadi.",
+      },
+    ],
+    banks: [
+      { bank: "BCA", number: "0189283741", name: "Julian Pratama" },
+      { bank: "Bank Mandiri", number: "1420098765412", name: "Aurelie Valencia" },
+    ],
+    dressCodeColors: "#e89fb2, #f5d6dc, #ffffff",
+    dressCodeNote: "Pastel Blush, Rose Gold & Soft Champagne",
+    turutMengundang: ["Keluarga Besar Pratama Wijaya", "Keluarga Besar Hartono Valencia"],
+    defaultPalette: "blush-rose",
+  },
+  "starlit-dreams": {
+    themeId: "starlit-dreams",
+    themeName: "Starlit Dreams",
+    series: "Modern",
+    category: "modern",
+    tagline: "UNDER THE CANOPY OF A THOUSAND STARS",
+    groomName: "Arga",
+    brideName: "Stella",
+    groomDisplayName: "Arga Mahardika, S.T.",
+    brideDisplayName: "Stella Anggraini, S.Hub.Int.",
+    groomRole: "Mempelai Pria",
+    brideRole: "Mempelai Wanita",
+    groomParents: "Putra dari Bpk. Ir. Mahardika Wibawa & Ibu Ratna Susanti",
+    groomFather: "Ir. Mahardika Wibawa",
+    groomMother: "Ratna Susanti",
+    brideParents: "Putri dari Bpk. Surya Anggraini & Ibu Maya Kartika",
+    brideFather: "Surya Anggraini",
+    brideMother: "Maya Kartika",
+    groomInstagram: "argamahardika",
+    brideInstagram: "stellaanggraini",
+    monogramInitial: "A & S",
+    targetDate: "2026-11-21T17:00:00",
+    weddingDateFormatted: "Sabtu, 21 November 2026",
+    weddingDateDay: "21",
+    weddingDateMonth: "11",
+    weddingDateYear: "2026",
+    openingQuote: "Di antara miliaran bintang di angkasa, hatiku menemukan tempat berpulang yang abadi padamu.",
+    openingQuoteRef: "CELESTIAL SERENADE",
+    city: "Bali",
+    globalBgUrl: "/demo/starlit-dreams/background.webp",
+    groomPhotoUrl: "/demo/starlit-dreams/groom.webp",
+    bridePhotoUrl: "/demo/starlit-dreams/bride.webp",
+    sidebarPhotoUrl: "/demo/starlit-dreams/hero.webp",
+    homePhotoUrl: "/demo/starlit-dreams/home.webp",
+    landingCoverUrl: "/demo/starlit-dreams/cover.webp",
+    landingCoverDesktopUrl: "/demo/starlit-dreams/cover_desktop.webp",
+    thumbnailDesktopUrl: "/demo/starlit-dreams/thumbnail_desktop.webp",
+    thumbnailMobileUrl: "/demo/starlit-dreams/thumbnail_mobile.webp",
+    footerPhotoUrl: "/demo/starlit-dreams/footer.webp",
+    closingCoverUrl: "/demo/starlit-dreams/footer.webp",
+    galleryPhotos: [
+      "/demo/starlit-dreams/gallery_01.webp",
+      "/demo/starlit-dreams/gallery_02.webp",
+      "/demo/starlit-dreams/gallery_03.webp",
+      "/demo/starlit-dreams/gallery_04.webp",
+      "/demo/starlit-dreams/gallery_05.webp",
+      "/demo/starlit-dreams/gallery_06.webp",
+      "/demo/starlit-dreams/gallery_07.webp",
+      "/demo/starlit-dreams/gallery_08.webp",
+    ],
+    events: [
+      {
+        badge: "BLESSING",
+        title: "Sunset Cliffside Blessing",
+        time: "16.30 – 18.00 WITA",
+        location: "The Edge Cliffside Uluwatu",
+        address: "Jl. Pura Goa Lempeh, Pecatu, Uluwatu, Bali",
+        mapsUrl: "https://maps.google.com",
+      },
+      {
+        badge: "RECEPTION",
+        title: "Starlit Gala Reception",
+        time: "19.00 – 22.00 WITA",
+        location: "The Cliff Lawn Uluwatu",
+        address: "Jl. Pura Goa Lempeh, Pecatu, Uluwatu, Bali",
+        mapsUrl: "https://maps.google.com",
+      },
+    ],
+    stories: [
+      {
+        chapter: "Constellation of Us",
+        title: "Pertemuan di Bawah Bintang",
+        content: "Dua penikmat malam yang menemukan cahaya abadi dalam tatapan satu sama lain.",
+      },
+      {
+        chapter: "Forever Written",
+        title: "Ikrar Abadi",
+        content: "Di tebing Uluwatu saat senja berganti taburan bintang, janji suci kami abadikan selamanya.",
+      },
+    ],
+    banks: [
+      { bank: "BCA", number: "6240987651", name: "Arga Mahardika" },
+      { bank: "Bank Mandiri", number: "1450098765431", name: "Stella Anggraini" },
+    ],
+    dressCodeColors: "#0b132b, #d4af37, #f7f5ed",
+    dressCodeNote: "Midnight Navy, Starlit Gold & Deep Onyx",
+    turutMengundang: ["Keluarga Besar Mahardika Wibawa", "Keluarga Besar Surya Anggraini"],
+    defaultPalette: "midnight-gold",
+  },
+  "burgundy-royale": {
+    themeId: "burgundy-royale",
+    themeName: "Burgundy Royale",
+    series: "Modern",
+    category: "modern",
+    tagline: "A SYMPHONY OF PASSION AND MAJESTY",
+    groomName: "Raymond",
+    brideName: "Beatrice",
+    groomDisplayName: "Raymond Gunawan, B.Eng.",
+    brideDisplayName: "Beatrice Wijaya, B.A.",
+    groomRole: "Mempelai Pria",
+    brideRole: "Mempelai Wanita",
+    groomParents: "Putra dari Bpk. Ir. Gunawan Salim & Ibu Veronika Lee",
+    groomFather: "Ir. Gunawan Salim",
+    groomMother: "Veronika Lee",
+    brideParents: "Putri dari Bpk. Hendra Wijaya & Ibu Caroline Susanto",
+    brideFather: "Hendra Wijaya",
+    brideMother: "Caroline Susanto",
+    groomInstagram: "raymondgunawan",
+    brideInstagram: "beatricewijaya",
+    monogramInitial: "R & B",
+    targetDate: "2026-12-26T16:00:00",
+    weddingDateFormatted: "Sabtu, 26 Desember 2026",
+    weddingDateDay: "26",
+    weddingDateMonth: "12",
+    weddingDateYear: "2026",
+    openingQuote: "Cinta yang mulia adalah perpaduan rasa hormat, kesetiaan, dan gairah yang tak lekang oleh waktu.",
+    openingQuoteRef: "THE ROYAL CHRONICLE",
+    city: "Jakarta",
+    globalBgUrl: "/demo/burgundy-royale/background.webp",
+    groomPhotoUrl: "/demo/burgundy-royale/groom.webp",
+    bridePhotoUrl: "/demo/burgundy-royale/bride.webp",
+    sidebarPhotoUrl: "/demo/burgundy-royale/hero.webp",
+    homePhotoUrl: "/demo/burgundy-royale/home.webp",
+    landingCoverUrl: "/demo/burgundy-royale/cover.webp",
+    landingCoverDesktopUrl: "/demo/burgundy-royale/cover_desktop.webp",
+    thumbnailDesktopUrl: "/demo/burgundy-royale/thumbnail_desktop.webp",
+    thumbnailMobileUrl: "/demo/burgundy-royale/thumbnail_mobile.webp",
+    footerPhotoUrl: "/demo/burgundy-royale/footer.webp",
+    closingCoverUrl: "/demo/burgundy-royale/footer.webp",
+    galleryPhotos: [
+      "/demo/burgundy-royale/gallery_01.webp",
+      "/demo/burgundy-royale/gallery_02.webp",
+      "/demo/burgundy-royale/gallery_03.webp",
+      "/demo/burgundy-royale/gallery_04.webp",
+      "/demo/burgundy-royale/gallery_05.webp",
+      "/demo/burgundy-royale/gallery_06.webp",
+      "/demo/burgundy-royale/gallery_07.webp",
+      "/demo/burgundy-royale/gallery_08.webp",
+    ],
+    events: [
+      {
+        badge: "CEREMONY",
+        title: "Solemn Royal Vows",
+        time: "16.00 – 18.00 WIB",
+        location: "Cathedral of Grace Jakarta",
+        address: "Jl. Katedral No. 7, Pasar Baru, Jakarta Pusat",
+        mapsUrl: "https://maps.google.com",
+      },
+      {
+        badge: "GALA DINNER",
+        title: "Imperial Royale Banquet",
+        time: "19.00 – 22.00 WIB",
+        location: "Grand Hyatt Grand Ballroom",
+        address: "Jl. M.H. Thamrin Kav. 28-30, Jakarta Pusat",
+        mapsUrl: "https://maps.google.com",
+      },
+    ],
+    stories: [
+      {
+        chapter: "The Gala",
+        title: "Perjamuan Bersejarah",
+        content: "Sebuah perjamuan kehormatan keluarga yang mempertemukan kami dalam satu tatapan penuh takdir.",
+      },
+      {
+        chapter: "The Royal Oath",
+        title: "Ikrar Setia",
+        content: "Dengan restu kedua keluarga terhormat, kami melangkah mantap menuju mahligai rumah tangga yang agung.",
+      },
+    ],
+    banks: [
+      { bank: "BCA", number: "4019283710", name: "Raymond Gunawan" },
+      { bank: "Bank Mandiri", number: "1390098765411", name: "Beatrice Wijaya" },
+    ],
+    dressCodeColors: "#4a0e17, #800020, #e6c280",
+    dressCodeNote: "Deep Burgundy, Royal Wine & Champagne Silk",
+    turutMengundang: ["Keluarga Besar Gunawan Salim", "Keluarga Besar Hendra Wijaya"],
+    defaultPalette: "burgundy-royale",
+  },
+  "vintage-forest": {
+    themeId: "vintage-forest",
+    themeName: "Vintage Forest",
+    series: "Modern",
+    category: "modern",
+    tagline: "WHERE LOVE GROWS LIKE A PERENNIAL FOREST",
+    groomName: "Satria",
+    brideName: "Maya",
+    groomDisplayName: "Satria Wibisono, S.Hut.",
+    brideDisplayName: "Maya Larasati, M.Sc.",
+    groomRole: "Mempelai Pria",
+    brideRole: "Mempelai Wanita",
+    groomParents: "Putra dari Bpk. Ir. Bambang Wibisono & Ibu Siti Rahmi",
+    groomFather: "Ir. Bambang Wibisono",
+    groomMother: "Siti Rahmi",
+    brideParents: "Putri dari Bpk. Drs. Agus Larasati & Ibu Endang Sulastri",
+    brideFather: "Drs. Agus Larasati",
+    brideMother: "Endang Sulastri",
+    groomInstagram: "satriawibisono",
+    brideInstagram: "mayalarasati",
+    monogramInitial: "S & M",
+    targetDate: "2026-11-07T09:30:00",
+    weddingDateFormatted: "Sabtu, 07 November 2026",
+    weddingDateDay: "07",
+    weddingDateMonth: "11",
+    weddingDateYear: "2026",
+    openingQuote: "Seperti akar pohon yang saling menguatkan di dalam bumi, cinta kita bertumbuh kukuh menghadapi badai.",
+    openingQuoteRef: "WOODLAND DEVOTION",
+    city: "Malang",
+    globalBgUrl: "/demo/vintage-forest/background.webp",
+    groomPhotoUrl: "/demo/vintage-forest/groom.webp",
+    bridePhotoUrl: "/demo/vintage-forest/bride.webp",
+    sidebarPhotoUrl: "/demo/vintage-forest/hero.webp",
+    homePhotoUrl: "/demo/vintage-forest/home.webp",
+    landingCoverUrl: "/demo/vintage-forest/cover.webp",
+    landingCoverDesktopUrl: "/demo/vintage-forest/cover_desktop.webp",
+    thumbnailDesktopUrl: "/demo/vintage-forest/thumbnail_desktop.webp",
+    thumbnailMobileUrl: "/demo/vintage-forest/thumbnail_mobile.webp",
+    footerPhotoUrl: "/demo/vintage-forest/footer.webp",
+    closingCoverUrl: "/demo/vintage-forest/footer.webp",
+    galleryPhotos: [
+      "/demo/vintage-forest/gallery_01.webp",
+      "/demo/vintage-forest/gallery_02.webp",
+      "/demo/vintage-forest/gallery_03.webp",
+      "/demo/vintage-forest/gallery_04.webp",
+      "/demo/vintage-forest/gallery_05.webp",
+      "/demo/vintage-forest/gallery_06.webp",
+      "/demo/vintage-forest/gallery_07.webp",
+      "/demo/vintage-forest/gallery_08.webp",
+    ],
+    events: [
+      {
+        badge: "CEREMONY",
+        title: "Woodland Matrimony",
+        time: "09.30 – 11.30 WIB",
+        location: "Pine Cathedral Kusuma Agrowisata",
+        address: "Jl. Abdul Gani Atas, Batu, Malang, Jawa Timur",
+        mapsUrl: "https://maps.google.com",
+      },
+      {
+        badge: "BANQUET",
+        title: "Rustic Forest Banquet",
+        time: "13.00 – 16.30 WIB",
+        location: "The Pine Lodge Kusuma",
+        address: "Jl. Abdul Gani Atas, Batu, Malang, Jawa Timur",
+        mapsUrl: "https://maps.google.com",
+      },
+    ],
+    stories: [
+      {
+        chapter: "Echoes in the Pines",
+        title: "Harmoni di Balik Pinus",
+        content: "Bertemu di kaki gunung saat mendaki, menyatukan rasa cinta pada alam dan keheningan yang menenangkan.",
+      },
+      {
+        chapter: "The Perennial Vow",
+        title: "Janji Bertumbuh Bersama",
+        content: "Di hadapan alam dan keluarga tercinta, kami berikrar untuk saling menjaga dan menua bersama.",
+      },
+    ],
+    banks: [
+      { bank: "BCA", number: "3150987621", name: "Satria Wibisono" },
+      { bank: "BNI", number: "0891234567", name: "Maya Larasati" },
+    ],
+    dressCodeColors: "#1b3022, #38513b, #d9ccb9",
+    dressCodeNote: "Forest Green, Earthy Pine & Warm Cream",
+    turutMengundang: ["Keluarga Besar Bambang Wibisono", "Keluarga Besar Agus Larasati"],
+    defaultPalette: "forest-emerald",
+  },
 };
 
 export function getDemoThemeData(themeId: string): DemoThemeData {
@@ -2475,7 +3563,7 @@ export function composeDemoTemplateData(
   cacheVersion?: number | string
 ) {
   const baseDemo = getDemoThemeData(themeId);
-  const demo: DemoThemeData = customData ? { ...baseDemo, ...customData } : baseDemo;
+  const demo: DemoThemeData = (customData ? { ...baseDemo, ...customData } : baseDemo) as DemoThemeData;
   const blueprint = getThemeBlueprint(themeId, customData);
 
   const v = cacheVersion || (customData as any)?.cacheVersion || undefined;
@@ -2506,7 +3594,81 @@ export function composeDemoTemplateData(
     </div>
   `;
 
-  // 2. Love Story Section HTML
+  // Dedicated Event Section for single/multi event themes (al-fariz, al-khalid, cendekia, sinergi use {{eventSectionHtml}})
+  const eventSectionHtml = `
+    <div class="events-unified-stack" style="display: flex; flex-direction: column; gap: 14px; max-width: 440px; margin: 0 auto; text-align: left;">
+      ${demo.events.map((ev) => `
+        <div style="background: var(--card-bg); border: 1px solid var(--card-border, rgba(255,255,255,0.1)); border-radius: var(--radius-md, 14px); padding: 20px;">
+          <span style="display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--primary); margin-bottom: 4px;">${escapeHtml(ev.badge || "Agenda")}</span>
+          <h3 class="serif" style="font-size: 18px; font-weight: 700; color: var(--text-main, #fff); margin-bottom: 8px;">${escapeHtml(ev.title)}</h3>
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted, #a1a1aa); margin-bottom: 6px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            <span>${escapeHtml(ev.time)}</span>
+          </div>
+          <div style="display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--text-muted, #a1a1aa); margin-bottom: 14px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0; margin-top: 3px;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+            <div>
+              <b style="color: var(--text-main, #fff); display: block;">${escapeHtml(ev.location)}</b>
+              <span>${escapeHtml(ev.address || "")}</span>
+            </div>
+          </div>
+          ${ev.mapsUrl ? `
+            <a href="${escapeHtml(ev.mapsUrl)}" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 10px 18px; border-radius: var(--radius-full, 9999px); background: color-mix(in srgb, var(--primary) 15%, transparent); color: var(--primary); border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); font-size: 12px; font-weight: 700; text-decoration: none;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+              <span>Buka di Google Maps</span>
+            </a>
+          ` : ""}
+        </div>
+      `).join("")}
+    </div>
+  `;
+
+  // Countdown HTML for themes with {{countdownHtml}} (festivo, kalandra-birthday)
+  const countdownHtml = `
+    <div class="countdown-timer" data-target="${demo.targetDate}" style="display: flex; justify-content: center; gap: 10px; margin: 20px 0;">
+      <div style="background: var(--card-bg); border: 1px solid var(--card-border, rgba(255,255,255,0.1)); border-radius: var(--radius-md, 12px); min-width: 66px; padding: 12px 8px; text-align: center;">
+        <span id="cdDays" style="display: block; font-size: 22px; font-weight: 800; color: var(--text-main, #fff); line-height: 1.1;">00</span>
+        <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted, #a1a1aa);">Hari</span>
+      </div>
+      <div style="background: var(--card-bg); border: 1px solid var(--card-border, rgba(255,255,255,0.1)); border-radius: var(--radius-md, 12px); min-width: 66px; padding: 12px 8px; text-align: center;">
+        <span id="cdHours" style="display: block; font-size: 22px; font-weight: 800; color: var(--text-main, #fff); line-height: 1.1;">00</span>
+        <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted, #a1a1aa);">Jam</span>
+      </div>
+      <div style="background: var(--card-bg); border: 1px solid var(--card-border, rgba(255,255,255,0.1)); border-radius: var(--radius-md, 12px); min-width: 66px; padding: 12px 8px; text-align: center;">
+        <span id="cdMinutes" style="display: block; font-size: 22px; font-weight: 800; color: var(--text-main, #fff); line-height: 1.1;">00</span>
+        <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted, #a1a1aa);">Menit</span>
+      </div>
+      <div style="background: var(--card-bg); border: 1px solid var(--card-border, rgba(255,255,255,0.1)); border-radius: var(--radius-md, 12px); min-width: 66px; padding: 12px 8px; text-align: center;">
+        <span id="cdSeconds" style="display: block; font-size: 22px; font-weight: 800; color: var(--text-main, #fff); line-height: 1.1;">00</span>
+        <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted, #a1a1aa);">Detik</span>
+      </div>
+    </div>
+    <script>
+      (function() {
+        var target = new Date("${demo.targetDate}").getTime();
+        function updateCd() {
+          var now = new Date().getTime();
+          var diff = Math.max(0, target - now);
+          var d = Math.floor(diff / (1000 * 60 * 60 * 24));
+          var h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          var m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          var s = Math.floor((diff % (1000 * 60)) / 1000);
+          var elD = document.getElementById("cdDays");
+          var elH = document.getElementById("cdHours");
+          var elM = document.getElementById("cdMinutes");
+          var elS = document.getElementById("cdSeconds");
+          if (elD) elD.textContent = String(d).padStart(2, "0");
+          if (elH) elH.textContent = String(h).padStart(2, "0");
+          if (elM) elM.textContent = String(m).padStart(2, "0");
+          if (elS) elS.textContent = String(s).padStart(2, "0");
+        }
+        updateCd();
+        setInterval(updateCd, 1000);
+      })();
+    </script>
+  `;
+
+  // 2. Journey / Milestones / Love Story Section HTML
   const storyItemsHtml = demo.stories.map((s) => `
     <div class="story-chapter-block">
       <span class="sc-label">${s.chapter.toUpperCase()}</span>
@@ -2515,16 +3677,34 @@ export function composeDemoTemplateData(
     </div>
   `).join("");
 
-  const storySectionHtml = `
+  const storySectionEyebrow = blueprint.storySectionEyebrow || (
+    demo.eventType === "BIRTHDAY" ? "A MILESTONE JOURNEY" :
+    demo.eventType === "KHITAN" ? "JEJAK LANGKAH" :
+    demo.eventType === "AQIQAH" ? "DETIK-DETIK SYUKUR" :
+    demo.eventType === "WISUDA" ? "PERJUANGAN & DEDIKASI" :
+    demo.eventType === "GATHERING" ? "JOURNEY OF EXCELLENCE" :
+    "OUR JOURNEY"
+  );
+  const storySectionTitle = blueprint.storySectionTitle || (
+    demo.eventType === "BIRTHDAY" ? "Milestones" :
+    demo.eventType === "KHITAN" ? "Tumbuh Kembang" :
+    demo.eventType === "AQIQAH" ? "Kelahiran Buah Hati" :
+    demo.eventType === "WISUDA" ? "Perjalanan Akademik" :
+    demo.eventType === "GATHERING" ? "Pencapaian & Jejak Langkah" :
+    "Love Story"
+  );
+  const storySignature = (demo as any).personName || (demo as any).childName || (demo as any).babyName || (demo as any).graduateName || (demo as any).eventTitle || `${demo.groomName || ""} <em>&amp;</em> ${demo.brideName || ""}`;
+
+  const storySectionHtml = demo.stories.length === 0 ? "" : `
     <section class="sec-flow sec-journey" id="story">
-      <span class="sec-eyebrow reveal" data-lux-field="customLabels.storyEyebrow">${blueprint.storySectionEyebrow || "OUR JOURNEY"}</span>
-      <h2 class="sec-main-title journey-title serif reveal delay-1" data-lux-field="customLabels.storyTitle">${blueprint.storySectionTitle || "Love Story"}</h2>
+      <span class="sec-eyebrow reveal" data-lux-field="customLabels.storyEyebrow">${escapeHtml(storySectionEyebrow)}</span>
+      <h2 class="sec-main-title journey-title serif reveal delay-1" data-lux-field="customLabels.storyTitle">${escapeHtml(storySectionTitle)}</h2>
       <div class="journey-timeline journey-chapters reveal-up delay-2">
         ${storyItemsHtml}
       </div>
       <div class="journey-footer reveal-fade delay-3">
         <div class="jf-line"></div>
-        <span class="jf-signature serif">${demo.groomName} <em>&amp;</em> ${demo.brideName}</span>
+        <span class="jf-signature serif">${storySignature}</span>
       </div>
     </section>
   `;
@@ -2786,9 +3966,23 @@ export function composeDemoTemplateData(
       <div id="giftTabKado" style="display:none;" class="bank-card">
         <span class="bank-label">Alamat Pengiriman Kado</span>
         <p style="font-size:0.8rem; color:rgba(255,255,255,0.7); line-height:1.5; margin:0.4rem 0 0.8rem;">
-          Kediaman Mempelai, ${demo.city}, Indonesia
+          ${(() => {
+            if (demo.eventType === "BIRTHDAY") return `Kediaman ${(demo as any).personName || "Tuan Rumah"}, ${demo.city}, Indonesia`;
+            if (demo.eventType === "KHITAN") return `Kediaman ${(demo as any).childName || "Ananda"}, ${demo.city}, Indonesia`;
+            if (demo.eventType === "AQIQAH") return `Kediaman Orang Tua ${(demo as any).babyName || "Buah Hati"}, ${demo.city}, Indonesia`;
+            if (demo.eventType === "WISUDA") return `Kediaman ${(demo as any).graduateName || "Wisudawan"}, ${demo.city}, Indonesia`;
+            if (demo.eventType === "GATHERING") return `Kantor / Lokasi ${(demo as any).eventTitle || "Penyelenggara"}, ${demo.city}, Indonesia`;
+            return `Kediaman Mempelai, ${demo.city}, Indonesia`;
+          })()}
         </p>
-        <button class="btn-copy" onclick="copyText('Kediaman Mempelai, ${demo.city}, Indonesia')">Salin Alamat</button>
+        <button class="btn-copy" onclick="copyText('${(() => {
+          if (demo.eventType === "BIRTHDAY") return `Kediaman ${(demo as any).personName || "Tuan Rumah"}, ${demo.city}, Indonesia`;
+          if (demo.eventType === "KHITAN") return `Kediaman ${(demo as any).childName || "Ananda"}, ${demo.city}, Indonesia`;
+          if (demo.eventType === "AQIQAH") return `Kediaman Orang Tua ${(demo as any).babyName || "Buah Hati"}, ${demo.city}, Indonesia`;
+          if (demo.eventType === "WISUDA") return `Kediaman ${(demo as any).graduateName || "Wisudawan"}, ${demo.city}, Indonesia`;
+          if (demo.eventType === "GATHERING") return `Kantor / Lokasi ${(demo as any).eventTitle || "Penyelenggara"}, ${demo.city}, Indonesia`;
+          return `Kediaman Mempelai, ${demo.city}, Indonesia`;
+        })()}')">Salin Alamat</button>
       </div>
     </section>
   `;
@@ -2802,7 +3996,7 @@ export function composeDemoTemplateData(
       
       <div class="access-pass-card">
         <span class="pass-tagline">${demo.tagline}</span>
-        <h3 class="pass-names serif">${demo.groomName} <em>&amp;</em> ${demo.brideName}</h3>
+        <h3 class="pass-names serif">${demo.eventType === "BIRTHDAY" ? ((demo as any).personName || demo.groomName) : `${demo.groomName} <em>&amp;</em> ${demo.brideName}`}</h3>
         <p class="pass-date">${demo.weddingDateFormatted}</p>
         
         <div class="pass-qr-wrapper">
@@ -2895,39 +4089,200 @@ export function composeDemoTemplateData(
   `;
 
   // 10. Wishes Sample
-  const wishesHtml = `
-    <div class="wish-item">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
-        <span class="wish-name">Budi Santoso &amp; Rekan Kerja</span>
-        <span style="font-size:0.65rem; padding:2px 8px; border-radius:50px; background:rgba(74,222,128,0.15); color:#4ade80; font-weight:600;">Hadir (2 Orang)</span>
+  const isWedding = !demo.eventType || demo.eventType === "WEDDING";
+  let wishesHtml = "";
+  if (demo.eventType === "BIRTHDAY") {
+    wishesHtml = `
+      <div class="wish-item">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
+          <span class="wish-name">Sahabat Dekat</span>
+          <span style="font-size:0.65rem; padding:2px 8px; border-radius:50px; background:rgba(74,222,128,0.15); color:#4ade80; font-weight:600;">Hadir (2 Tamu)</span>
+        </div>
+        <p class="wish-msg">“Happy Birthday ${(demo as any).personNickname || (demo as any).personName || "Sahabat"}! Semoga di usia yang baru ini semakin bersinar, sehat selalu, dan tercapai semua impian!”</p>
       </div>
-      <p class="wish-msg">“Selamat berbahagia untuk ${demo.groomName} &amp; ${demo.brideName}! Semoga menjadi keluarga yang senantiasa dipenuhi rahmat dan cinta abadi.”</p>
-    </div>
-    <div class="wish-item">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
-        <span class="wish-name">Sahabat Terbaik</span>
-        <span style="font-size:0.65rem; padding:2px 8px; border-radius:50px; background:rgba(74,222,128,0.15); color:#4ade80; font-weight:600;">Hadir (1 Orang)</span>
+      <div class="wish-item">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
+          <span class="wish-name">Teman Sekolah / Kuliah</span>
+          <span style="font-size:0.65rem; padding:2px 8px; border-radius:50px; background:rgba(74,222,128,0.15); color:#4ade80; font-weight:600;">Hadir (1 Tamu)</span>
+        </div>
+        <p class="wish-msg">“Selamat ulang tahun! Can't wait to celebrate your special milestone party!”</p>
       </div>
-      <p class="wish-msg">“Lancar sampai hari H yaa! Cantik dan gagah banget, can't wait to celebrate your special day!”</p>
-    </div>
-    <div class="wish-item">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
-        <span class="wish-name">Keluarga Besar Makassar</span>
-        <span style="font-size:0.65rem; padding:2px 8px; border-radius:50px; background:rgba(74,222,128,0.15); color:#4ade80; font-weight:600;">Hadir (4 Orang)</span>
+      <div class="wish-item">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
+          <span class="wish-name">Keluarga Besar</span>
+          <span style="font-size:0.65rem; padding:2px 8px; border-radius:50px; background:rgba(74,222,128,0.15); color:#4ade80; font-weight:600;">Hadir (4 Tamu)</span>
+        </div>
+        <p class="wish-msg">“Barakallahu fii umrik. Semoga senantiasa dalam lindungan dan keberkahan-Nya selalu.”</p>
       </div>
-      <p class="wish-msg">“Barakallahu lakuma wa baraka alaikuma wa jama'a bainakuma fii khair. Turut berbahagia untuk kedua mempelai tercinta.”</p>
-    </div>
-    <div class="wish-item">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
-        <span class="wish-name">Alumni Kampus</span>
-        <span style="font-size:0.65rem; padding:2px 8px; border-radius:50px; background:rgba(74,222,128,0.15); color:#4ade80; font-weight:600;">Hadir (2 Orang)</span>
+    `;
+  } else if (demo.eventType === "KHITAN") {
+    wishesHtml = `
+      <div class="wish-item">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
+          <span class="wish-name">Paman &amp; Bibi</span>
+          <span style="font-size:0.65rem; padding:2px 8px; border-radius:50px; background:rgba(74,222,128,0.15); color:#4ade80; font-weight:600;">Hadir (2 Orang)</span>
+        </div>
+        <p class="wish-msg">“Selamat atas khitanan ananda ${(demo as any).childNickname || (demo as any).childName || "Tercinta"}. Semoga lekas pulih dan menjadi anak yang sholeh serta berbakti kepada orang tua.”</p>
       </div>
-      <p class="wish-msg">“Selamat menempuh hidup baru sahabatku! Bahagia selalu sampai kakek nenek.”</p>
+      <div class="wish-item">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
+          <span class="wish-name">Sahabat Keluarga</span>
+          <span style="font-size:0.65rem; padding:2px 8px; border-radius:50px; background:rgba(74,222,128,0.15); color:#4ade80; font-weight:600;">Hadir (3 Orang)</span>
+        </div>
+        <p class="wish-msg">“Barakallahu fiik. Turut bersyukur atas terlaksananya walimatul khitan ini dengan lancar dan penuh berkah.”</p>
+      </div>
+    `;
+  } else if (demo.eventType === "AQIQAH") {
+    wishesHtml = `
+      <div class="wish-item">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
+          <span class="wish-name">Kakek &amp; Nenek</span>
+          <span style="font-size:0.65rem; padding:2px 8px; border-radius:50px; background:rgba(74,222,128,0.15); color:#4ade80; font-weight:600;">Hadir (2 Orang)</span>
+        </div>
+        <p class="wish-msg">“Selamat atas kelahiran dan aqiqah cucu kami tercinta ${(demo as any).babyNickname || (demo as any).babyName || "Buah Hati"}. Semoga tumbuh sehat, cerdas, dan menjadi penyejuk hati keluarga.”</p>
+      </div>
+      <div class="wish-item">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
+          <span class="wish-name">Kerabat &amp; Sahabat</span>
+          <span style="font-size:0.65rem; padding:2px 8px; border-radius:50px; background:rgba(74,222,128,0.15); color:#4ade80; font-weight:600;">Hadir (2 Orang)</span>
+        </div>
+        <p class="wish-msg">“Barakallahu laka fil mauhubi laka wa syakartal wahib. Semoga menjadi anak yang sholeh/sholehah pembawa berkah.”</p>
+      </div>
+    `;
+  } else if (demo.eventType === "WISUDA") {
+    wishesHtml = `
+      <div class="wish-item">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
+          <span class="wish-name">Rekan Seangkatan</span>
+          <span style="font-size:0.65rem; padding:2px 8px; border-radius:50px; background:rgba(74,222,128,0.15); color:#4ade80; font-weight:600;">Hadir (2 Orang)</span>
+        </div>
+        <p class="wish-msg">“Happy graduation ${(demo as any).graduateNickname || (demo as any).graduateName || "Sahabat"}! Selamat atas gelar barunya, sukses selalu untuk karier dan masa depan gemilang!”</p>
+      </div>
+      <div class="wish-item">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
+          <span class="wish-name">Dosen &amp; Pembimbing</span>
+          <span style="font-size:0.65rem; padding:2px 8px; border-radius:50px; background:rgba(74,222,128,0.15); color:#4ade80; font-weight:600;">Hadir (1 Orang)</span>
+        </div>
+        <p class="wish-msg">“Selamat atas kelulusan dan diraihnya gelar akademik. Jadikan ilmu yang diperoleh sebagai berkah bagi masyarakat luas.”</p>
+      </div>
+    `;
+  } else if (demo.eventType === "GATHERING") {
+    wishesHtml = `
+      <div class="wish-item">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
+          <span class="wish-name">Mitra Strategis</span>
+          <span style="font-size:0.65rem; padding:2px 8px; border-radius:50px; background:rgba(74,222,128,0.15); color:#4ade80; font-weight:600;">Hadir (2 Orang)</span>
+        </div>
+        <p class="wish-msg">“Selamat dan sukses atas penyelenggaraan acara ${(demo as any).eventTitle || "Peresmian"}. Semoga sinergi dan kolaborasi ke depan semakin kokoh dan berbuah kesuksesan bersama.”</p>
+      </div>
+      <div class="wish-item">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
+          <span class="wish-name">Asosiasi Industri</span>
+          <span style="font-size:0.65rem; padding:2px 8px; border-radius:50px; background:rgba(74,222,128,0.15); color:#4ade80; font-weight:600;">Hadir (3 Orang)</span>
+        </div>
+        <p class="wish-msg">“Apresiasi setinggi-tingginya kepada seluruh jajaran pimpinan atas pencapaian milestone penting ini.”</p>
+      </div>
+    `;
+  } else {
+    wishesHtml = `
+      <div class="wish-item">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
+          <span class="wish-name">Budi Santoso &amp; Rekan Kerja</span>
+          <span style="font-size:0.65rem; padding:2px 8px; border-radius:50px; background:rgba(74,222,128,0.15); color:#4ade80; font-weight:600;">Hadir (2 Orang)</span>
+        </div>
+        <p class="wish-msg">“Selamat berbahagia untuk ${demo.groomName} &amp; ${demo.brideName}! Semoga menjadi keluarga yang senantiasa dipenuhi rahmat dan cinta abadi.”</p>
+      </div>
+      <div class="wish-item">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
+          <span class="wish-name">Sahabat Terbaik</span>
+          <span style="font-size:0.65rem; padding:2px 8px; border-radius:50px; background:rgba(74,222,128,0.15); color:#4ade80; font-weight:600;">Hadir (1 Orang)</span>
+        </div>
+        <p class="wish-msg">“Lancar sampai hari H yaa! Cantik dan gagah banget, can't wait to celebrate your special day!”</p>
+      </div>
+      <div class="wish-item">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
+          <span class="wish-name">Keluarga Besar Makassar</span>
+          <span style="font-size:0.65rem; padding:2px 8px; border-radius:50px; background:rgba(74,222,128,0.15); color:#4ade80; font-weight:600;">Hadir (4 Orang)</span>
+        </div>
+        <p class="wish-msg">“Barakallahu lakuma wa baraka alaikuma wa jama'a bainakuma fii khair. Turut berbahagia untuk kedua mempelai tercinta.”</p>
+      </div>
+      <div class="wish-item">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
+          <span class="wish-name">Alumni Kampus</span>
+          <span style="font-size:0.65rem; padding:2px 8px; border-radius:50px; background:rgba(74,222,128,0.15); color:#4ade80; font-weight:600;">Hadir (2 Orang)</span>
+        </div>
+        <p class="wish-msg">“Selamat menempuh hidup baru sahabatku! Bahagia selalu sampai kakek nenek.”</p>
+      </div>
+    `;
+  }
+
+  // Wishes Section HTML and Interactive RSVP Form for Non-Wedding / Universal Templates
+  const wishesSectionHtml = `
+    <div class="wishes-stream-container" id="wishesStreamList" style="max-width: 440px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; text-align: left;">
+      ${wishesHtml}
     </div>
   `;
 
-  // 11. Wedding Instagram Filter Section
-  const weddingFilterHtml = `
+  const rsvpSectionHtml = `
+    <div class="rsvp-card-box" style="max-width: 440px; margin: 0 auto 24px; text-align: left;">
+      <form onsubmit="luxHandleDemoRsvpSubmit(event)" style="display: flex; flex-direction: column; gap: 12px; background: var(--card-bg); border: 1px solid var(--card-border, rgba(255,255,255,0.1)); padding: 20px; border-radius: var(--radius-md, 14px);">
+        <div>
+          <label style="display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted, #a1a1aa); margin-bottom: 4px;">NAMA LENGKAP</label>
+          <input type="text" id="demoRsvpName" placeholder="Nama Anda" required style="width: 100%; box-sizing: border-box; padding: 10px 14px; border-radius: var(--radius-sm, 8px); background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: var(--text-main, #fff); font-size: 13px;" />
+        </div>
+        <div>
+          <label style="display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted, #a1a1aa); margin-bottom: 4px;">KONFIRMASI KEHADIRAN</label>
+          <select id="demoRsvpStatus" style="width: 100%; box-sizing: border-box; padding: 10px 14px; border-radius: var(--radius-sm, 8px); background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: var(--text-main, #fff); font-size: 13px;">
+            <option value="hadir" style="background: #18181b; color: #fff;">Hadir</option>
+            <option value="tidak_hadir" style="background: #18181b; color: #fff;">Berhalangan Hadir</option>
+          </select>
+        </div>
+        <div>
+          <label style="display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted, #a1a1aa); margin-bottom: 4px;">JUMLAH TAMU</label>
+          <input type="number" id="demoRsvpCount" min="1" max="10" value="1" style="width: 100%; box-sizing: border-box; padding: 10px 14px; border-radius: var(--radius-sm, 8px); background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: var(--text-main, #fff); font-size: 13px;" />
+        </div>
+        <div>
+          <label style="display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted, #a1a1aa); margin-bottom: 4px;">UCAPAN &amp; DOA</label>
+          <textarea id="demoRsvpMessage" rows="3" placeholder="Tuliskan ucapan selamat &amp; doa terbaik Anda..." style="width: 100%; box-sizing: border-box; padding: 10px 14px; border-radius: var(--radius-sm, 8px); background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: var(--text-main, #fff); font-size: 13px; resize: vertical;"></textarea>
+        </div>
+        <button type="submit" id="demoRsvpBtn" style="padding: 12px; border-radius: var(--radius-full, 9999px); background: linear-gradient(135deg, var(--primary), var(--secondary, var(--primary))); color: #fff; font-size: 13px; font-weight: 700; border: none; cursor: pointer; margin-top: 4px;">
+          Kirim Konfirmasi &amp; Doa
+        </button>
+        <div id="demoRsvpAlert" style="display: none; text-align: center; font-size: 12px; font-weight: 600; color: #4ade80; margin-top: 6px;">
+          ✓ Terima kasih! Konfirmasi kehadiran dan ucapan Anda telah kami terima.
+        </div>
+      </form>
+    </div>
+    <script>
+      function luxHandleDemoRsvpSubmit(e) {
+        e.preventDefault();
+        var btn = document.getElementById("demoRsvpBtn");
+        var alert = document.getElementById("demoRsvpAlert");
+        var nameInput = document.getElementById("demoRsvpName");
+        var msgInput = document.getElementById("demoRsvpMessage");
+        var name = nameInput ? nameInput.value : "";
+        var msg = msgInput ? msgInput.value : "";
+        if (btn) { btn.disabled = true; btn.textContent = "Mengirim..."; }
+        setTimeout(function() {
+          if (alert) alert.style.display = "block";
+          if (btn) { btn.disabled = false; btn.textContent = "Kirim Konfirmasi & Doa"; }
+          var stream = document.getElementById("wishesStreamList");
+          if (stream && name && msg) {
+            var item = document.createElement("div");
+            item.className = "wish-item-card";
+            item.style = "background: var(--card-bg); border: 1px solid var(--card-border, rgba(255,255,255,0.08)); border-radius: var(--radius-md, 12px); padding: 16px; margin-bottom: 10px;";
+            item.innerHTML = '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;"><span style="font-weight: 700; font-size: 14px; color: var(--text-main, #fff);">' + name + '</span><span style="font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 9999px; background: color-mix(in srgb, var(--primary) 15%, transparent); color: var(--primary);">Hadir</span></div><p style="font-size: 12px; color: var(--text-muted, rgba(255,255,255,0.7)); line-height: 1.5; margin: 0;">“' + msg + '”</p>';
+            stream.prepend(item);
+            if (nameInput) nameInput.value = "";
+            if (msgInput) msgInput.value = "";
+          }
+        }, 600);
+      }
+    </script>
+  `;
+
+  // 11. Wedding Instagram Filter Section (Only for wedding)
+  const weddingFilterHtml = !isWedding ? "" : `
     <section class="sec-flow" id="wedding-filter">
       <span class="sec-eyebrow">INSTAGRAM FILTER</span>
       <h2 class="sec-main-title serif">WEDDING FILTER</h2>
@@ -2981,7 +4336,7 @@ export function composeDemoTemplateData(
         <span class="sec-eyebrow">AFTER-EVENT MEMORIES</span>
         <h2 class="sec-main-title serif">KENANGAN TAMU</h2>
         <p class="sec-sub" style="max-width: 480px; margin: 0 auto 1.5rem auto; font-size: 0.82rem; line-height: 1.6; opacity: 0.8;">
-          Buka kamera dan jepret momen candid seru Anda selama menghadiri pernikahan kami langsung ke album kenangan bersama:
+          ${isWedding ? "Buka kamera dan jepret momen candid seru Anda selama menghadiri pernikahan kami langsung ke album kenangan bersama:" : "Buka kamera dan jepret momen candid seru Anda selama menghadiri acara kami langsung ke album kenangan bersama:"}
         </p>
 
         <!-- 1. TOMBOL BUKA KAMERA KENANGAN -->
@@ -3086,10 +4441,36 @@ export function composeDemoTemplateData(
     </script>
 
     <!-- IN-PAGE MEMORIES UPLOAD MODAL -->
+    ${(() => {
+      const uploadModalTitle = demo.eventType === "BIRTHDAY"
+        ? "Upload Momen Ulang Tahun"
+        : demo.eventType === "KHITAN"
+        ? "Upload Momen Walimatul Khitan"
+        : demo.eventType === "AQIQAH"
+        ? "Upload Momen Tasyakuran Aqiqah"
+        : demo.eventType === "WISUDA"
+        ? "Upload Momen Wisuda"
+        : demo.eventType === "GATHERING"
+        ? "Upload Momen Kebersamaan"
+        : "Upload Momen Kondangan";
+
+      const uploadModalSuccessText = demo.eventType === "BIRTHDAY"
+        ? "✓ Foto berhasil diunggah ke galeri momen ulang tahun!"
+        : demo.eventType === "KHITAN"
+        ? "✓ Foto berhasil diunggah ke galeri momen khitan!"
+        : demo.eventType === "AQIQAH"
+        ? "✓ Foto berhasil diunggah ke galeri momen aqiqah!"
+        : demo.eventType === "WISUDA"
+        ? "✓ Foto berhasil diunggah ke galeri momen wisuda!"
+        : demo.eventType === "GATHERING"
+        ? "✓ Foto berhasil diunggah ke galeri dokumentasi!"
+        : "✓ Foto berhasil diunggah ke galeri momen pernikahan!";
+
+      return `
     <div id="luxMemoryUploadModal" class="gallery-modal-backdrop" onclick="luxCloseUploadMemoryModal(event)" style="display:none; position:fixed; inset:0; z-index:99999; background:rgba(0,0,0,0.8); backdrop-filter:blur(10px); align-items:center; justify-content:center; padding:1rem;">
       <div class="gallery-modal-container" onclick="event.stopPropagation()" style="max-width:440px; width:100%; text-align:left; padding:1.5rem; background:#121216; border:1px solid rgba(255,255,255,0.18); border-radius:20px; box-shadow:0 20px 50px rgba(0,0,0,0.8);">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.2rem; border-bottom:1px solid rgba(255,255,255,0.12); padding-bottom:0.8rem;">
-          <h3 class="serif" style="margin:0; font-size:1.2rem; color:#fff;">Upload Momen Kondangan</h3>
+          <h3 class="serif" style="margin:0; font-size:1.2rem; color:#fff;">${uploadModalTitle}</h3>
           <button type="button" onclick="luxCloseUploadMemoryModal()" style="background:none; border:none; color:#aaa; font-size:1.4rem; cursor:pointer;">✕</button>
         </div>
         
@@ -3110,11 +4491,13 @@ export function composeDemoTemplateData(
             KIRIM FOTO MOMEN
           </button>
           <div id="demoMemSuccessAlert" style="display:none; color:#4ade80; font-size:0.8rem; text-align:center; margin-top:8px; font-weight:600;">
-            ✓ Foto berhasil diunggah ke galeri momen pernikahan!
+            ${uploadModalSuccessText}
           </div>
         </form>
       </div>
     </div>
+      `;
+    })()}
 
     <script>
       window.luxOpenUploadMemoryModal = function() {
@@ -3155,7 +4538,13 @@ export function composeDemoTemplateData(
 
   const primaryDemoEvent = demo.events.find((e) => (e as any).isPrimary) || demo.events[0];
   const calendarLocation = primaryDemoEvent?.location || primaryDemoEvent?.address || demo.events[0]?.location || demo.city || "Makassar";
-  const googleCalendarUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`The Wedding of ${demo.groomName} & ${demo.brideName}`)}&dates=${demo.weddingDateYear}${demo.weddingDateMonth}${demo.weddingDateDay}T010000Z/${demo.weddingDateYear}${demo.weddingDateMonth}${demo.weddingDateDay}T140000Z&location=${encodeURIComponent(calendarLocation)}`;
+  const calTitle = buildCalendarTitle(demo.eventType || "WEDDING", {
+    groomName: demo.groomName,
+    brideName: demo.brideName,
+    personName: (demo as any).personName,
+    personAge: (demo as any).personAge,
+  });
+  const googleCalendarUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(calTitle)}&dates=${demo.weddingDateYear}${demo.weddingDateMonth}${demo.weddingDateDay}T010000Z/${demo.weddingDateYear}${demo.weddingDateMonth}${demo.weddingDateDay}T140000Z&location=${encodeURIComponent(calendarLocation)}`;
 
   const demoDir = path.join(process.cwd(), "public", "demo", demo.themeId);
   const localHomeExists = fs.existsSync(path.join(demoDir, "home.webp"));
@@ -3274,22 +4663,70 @@ export function composeDemoTemplateData(
     weddingDateMonth: demo.weddingDateMonth,
     weddingDateYear: demo.weddingDateYear,
     weddingDate: demo.weddingDateFormatted,
-    firstInitial: (demo.groomName || "G").trim().charAt(0).toUpperCase(),
-    secondInitial: (demo.brideName || "B").trim().charAt(0).toUpperCase(),
-    firstNickname: demo.groomName,
-    secondNickname: demo.brideName,
-    firstName: demo.groomName,
-    secondName: demo.brideName,
-    groomNickname: demo.groomName,
-    brideNickname: demo.brideName,
-    groomName: demo.groomName,
-    brideName: demo.brideName,
-    firstFullName: demo.groomDisplayName,
-    secondFullName: demo.brideDisplayName,
-    firstDisplayName: demo.groomDisplayName,
-    secondDisplayName: demo.brideDisplayName,
-    groomDisplayName: demo.groomDisplayName,
-    brideDisplayName: demo.brideDisplayName,
+    firstInitial: ((demo as any).personNickname || (demo as any).personName || demo.groomName || "G").trim().charAt(0).toUpperCase(),
+    secondInitial: (demo.brideName || "").trim().charAt(0).toUpperCase(),
+    firstNickname: (demo as any).personNickname || (demo as any).personName || demo.groomName,
+    secondNickname: demo.brideName || "",
+    firstName: (demo as any).personName || demo.groomName,
+    secondName: demo.brideName || "",
+    groomNickname: (demo as any).personNickname || demo.groomName || "",
+    brideNickname: demo.brideName || "",
+    groomName: (demo as any).personName || demo.groomName || "",
+    brideName: demo.brideName || "",
+    firstFullName: (demo as any).personName || demo.groomDisplayName || "",
+    secondFullName: demo.brideDisplayName || "",
+    firstDisplayName: (demo as any).personName || demo.groomDisplayName || "",
+    secondDisplayName: demo.brideDisplayName || "",
+    groomDisplayName: (demo as any).personName || demo.groomDisplayName || "",
+    brideDisplayName: demo.brideDisplayName || "",
+    
+    // Multi-event Persona Variables
+    eventType: demo.eventType || "WEDDING",
+    personName: (demo as any).personName || (demo as any).childName || (demo as any).babyName || (demo as any).graduateName || (demo as any).eventTitle || demo.groomName || "",
+    personNickname: (demo as any).personNickname || (demo as any).childNickname || (demo as any).babyNickname || (demo as any).graduateNickname || (demo as any).personName || demo.groomName || "",
+    personAge: (demo as any).personAge || (demo as any).childAge || "",
+    personPhotoUrl: (demo as any).personPhotoUrl || (demo as any).childPhotoUrl || (demo as any).babyPhotoUrl || (demo as any).graduatePhotoUrl || (demo as any).eventPhotoUrl || effectiveGroom || "",
+    personInstagram: (demo as any).personInstagram || demo.groomInstagram || "",
+    eventDateFormatted: demo.weddingDateFormatted,
+    eventTime: demo.events[0]?.time || "19.00 WIB",
+    venueName: demo.events[0]?.location || "Ballroom",
+    venueAddress: demo.events[0]?.address || "",
+    mapsUrl: demo.events[0]?.mapsUrl || "",
+
+    // Khitan
+    childName: (demo as any).childName || (demo as any).personName || demo.groomName || "",
+    childNickname: (demo as any).childNickname || (demo as any).childName || "",
+    childAge: (demo as any).childAge || "",
+    childBirthOrder: (demo as any).childBirthOrder || "",
+    childPhotoUrl: (demo as any).childPhotoUrl || (demo as any).personPhotoUrl || effectiveGroom || "",
+    
+    // Aqiqah
+    babyName: (demo as any).babyName || (demo as any).personName || demo.groomName || "",
+    babyNickname: (demo as any).babyNickname || (demo as any).babyName || "",
+    birthDateFormatted: (demo as any).birthDateFormatted || demo.weddingDateFormatted || "",
+    birthWeight: (demo as any).birthWeight || "",
+    birthLength: (demo as any).birthLength || "",
+    babyPhotoUrl: (demo as any).babyPhotoUrl || (demo as any).personPhotoUrl || effectiveGroom || "",
+
+    // Wisuda
+    graduateName: (demo as any).graduateName || (demo as any).personName || demo.groomName || "",
+    graduateNickname: (demo as any).graduateNickname || (demo as any).graduateName || "",
+    graduateDegree: (demo as any).graduateDegree || "",
+    graduateMajor: (demo as any).graduateMajor || "",
+    graduateFaculty: (demo as any).graduateFaculty || "",
+    universityName: (demo as any).universityName || "",
+    graduateHonorsBadgeHtml: (demo as any).honors ? `<span class="badge-honors">${(demo as any).honors}</span>` : "",
+    graduatePhotoUrl: (demo as any).graduatePhotoUrl || (demo as any).personPhotoUrl || effectiveGroom || "",
+
+    // Gathering / General
+    eventTitle: (demo as any).eventTitle || demo.themeName || "",
+    eventSubtitle: (demo as any).eventSubtitle || (demo as any).tagline || "",
+    organizerName: (demo as any).organizerName || "",
+    hostName: (demo as any).hostName || "",
+    dresscodeHtml: (demo as any).dresscode ? `<p class="dresscode-text">Dress Code: ${(demo as any).dresscode}</p>` : "",
+    eventPhotoUrl: (demo as any).eventPhotoUrl || (demo as any).personPhotoUrl || effectiveGroom || "",
+
+    parentsHtml: demo.groomParents ? `<p>Putra/Putri dari: <b>${demo.groomParents}</b></p>` : (demo.groomFather && demo.groomMother ? `<p>Putra/Putri dari: <b>${demo.groomFather} &amp; ${demo.groomMother}</b></p>` : ""),
     
     firstRole: demo.groomRole,
     secondRole: demo.brideRole,
@@ -3345,7 +4782,7 @@ export function composeDemoTemplateData(
       : (blueprint.openingGreeting || ""),
     coverBadge: (customData as any)?.featureSettings?.customLabels?.coverBadge !== undefined
       ? (customData as any)?.featureSettings?.customLabels?.coverBadge
-      : (blueprint.coverBadge || (customData as any)?.featureSettings?.weddingTagline || "THE WEDDING OF"),
+      : (blueprint.coverBadge || (customData as any)?.featureSettings?.weddingTagline || demo.tagline || ""),
     openBtn: (customData as any)?.customLabels?.openBtn || blueprint.openBtn || "Buka Undangan",
     coverSubtitle: (customData as any)?.customLabels?.coverSubtitle || blueprint.coverSubtitle || "",
     coverGuestLabel: (customData as any)?.customLabels?.coverGuestLabel || "Kepada Yth. Bapak/Ibu/Saudara/i",
@@ -3353,11 +4790,11 @@ export function composeDemoTemplateData(
     quoteSectionEyebrow: (customData as any)?.customLabels?.quoteEyebrow || blueprint.quoteSectionEyebrow,
     quoteTitle: (customData as any)?.customLabels?.quoteTitle || blueprint.quoteSectionTitle,
     quoteEyebrow: (customData as any)?.customLabels?.quoteEyebrow || blueprint.quoteSectionEyebrow,
-    coupleSectionEyebrow: (customData as any)?.customLabels?.coupleEyebrow || blueprint.coupleSectionEyebrow || "THE COUPLE",
-    coupleSectionTitle: (customData as any)?.customLabels?.coupleTitle || blueprint.coupleSectionTitle || "Mempelai",
-    coupleSectionSub: (customData as any)?.customLabels?.coupleSub || blueprint.coupleSectionSub || "Dengan penuh rasa syukur dan sukacita, kami mengundang Anda untuk merayakan persatuan cinta kami dalam ikatan suci pernikahan.",
-    coupleTitle: (customData as any)?.customLabels?.coupleTitle || blueprint.coupleSectionTitle || "Mempelai",
-    coupleEyebrow: (customData as any)?.customLabels?.coupleEyebrow || blueprint.coupleSectionEyebrow || "THE COUPLE",
+    coupleSectionEyebrow: (customData as any)?.customLabels?.coupleEyebrow || blueprint.coupleSectionEyebrow || (demo.eventType === "BIRTHDAY" ? "CELEBRATION" : demo.eventType === "KHITAN" ? "PUTRA KAMI" : demo.eventType === "AQIQAH" ? "BUAH HATI" : demo.eventType === "WISUDA" ? "THE GRADUATE" : demo.eventType === "GATHERING" ? "THE HOST" : "THE COUPLE"),
+    coupleSectionTitle: (customData as any)?.customLabels?.coupleTitle || blueprint.coupleSectionTitle || (demo.eventType === "BIRTHDAY" ? "Profil" : demo.eventType === "KHITAN" ? "Putra Yang Dikhitan" : demo.eventType === "AQIQAH" ? "Putra Tercinta" : demo.eventType === "WISUDA" ? "Wisudawan" : demo.eventType === "GATHERING" ? "Tuan Rumah Acara" : "Mempelai"),
+    coupleSectionSub: (customData as any)?.customLabels?.coupleSub || blueprint.coupleSectionSub || (demo.eventType === "BIRTHDAY" ? "Merayakan momen pertambahan usia penuh suka cita bersama keluarga dan sahabat." : isWedding ? "Dengan penuh rasa syukur dan sukacita, kami mengundang Anda untuk merayakan persatuan cinta kami dalam ikatan suci pernikahan." : "Dengan penuh rasa syukur dan sukacita, kami mengundang Anda untuk menghadiri acara bahagia kami."),
+    coupleTitle: (customData as any)?.customLabels?.coupleTitle || blueprint.coupleSectionTitle || (demo.eventType === "BIRTHDAY" ? "Profil" : demo.eventType === "KHITAN" ? "Putra Yang Dikhitan" : demo.eventType === "AQIQAH" ? "Putra Tercinta" : demo.eventType === "WISUDA" ? "Wisudawan" : demo.eventType === "GATHERING" ? "Tuan Rumah Acara" : "Mempelai"),
+    coupleEyebrow: (customData as any)?.customLabels?.coupleEyebrow || blueprint.coupleSectionEyebrow || (demo.eventType === "BIRTHDAY" ? "CELEBRATION" : demo.eventType === "KHITAN" ? "PUTRA KAMI" : demo.eventType === "AQIQAH" ? "BUAH HATI" : demo.eventType === "WISUDA" ? "THE GRADUATE" : demo.eventType === "GATHERING" ? "THE HOST" : "THE COUPLE"),
     eventsSectionTitle: (customData as any)?.customLabels?.eventsTitle || blueprint.eventsSectionTitle || "Rangkaian Acara",
     eventsSectionSub: (customData as any)?.customLabels?.eventsSub || blueprint.eventsSectionSub || "",
     eventsSectionEyebrow: (customData as any)?.customLabels?.eventsEyebrow || blueprint.eventsSectionEyebrow || "AGENDA ACARA",
@@ -3384,14 +4821,16 @@ export function composeDemoTemplateData(
     
     // Complete Composed Section Blocks
     eventDataHtml,
+    eventSectionHtml,
+    countdownHtml,
     storySectionHtml,
     storyItemsHtml,
-    showStory: (customData as any)?.featureSettings?.showStory !== undefined ? Boolean((customData as any).featureSettings.showStory) : true,
+    showStory: demo.stories.length > 0,
     showGallery: true,
     showGift: true,
     showDressCode: true,
     showStreaming: true,
-    showWeddingFilter: true,
+    showWeddingFilter: isWedding,
     showTurutMengundang: true,
     gallerySectionHtml,
     giftSectionHtml,
@@ -3406,15 +4845,31 @@ export function composeDemoTemplateData(
     qrCoverButtonHtml,
     qrDockButtonHtml,
     wishesHtml,
+    rsvpSectionHtml,
+    wishesSectionHtml,
     bankAccountsHtml: bankCardsHtml,
-    shippingAddress: `Kediaman Mempelai, ${demo.city}, Indonesia`,
+    shippingAddress: (() => {
+      if (demo.eventType === "BIRTHDAY") return `Kediaman ${(demo as any).personName || "Tuan Rumah"}, ${demo.city}, Indonesia`;
+      if (demo.eventType === "KHITAN") return `Kediaman ${(demo as any).childName || "Ananda"}, ${demo.city}, Indonesia`;
+      if (demo.eventType === "AQIQAH") return `Kediaman Orang Tua ${(demo as any).babyName || "Buah Hati"}, ${demo.city}, Indonesia`;
+      if (demo.eventType === "WISUDA") return `Kediaman ${(demo as any).graduateName || "Wisudawan"}, ${demo.city}, Indonesia`;
+      if (demo.eventType === "GATHERING") return `Kantor / Lokasi ${(demo as any).eventTitle || "Penyelenggara"}, ${demo.city}, Indonesia`;
+      return `Kediaman Mempelai, ${demo.city}, Indonesia`;
+    })(),
     showVendors: isVendorsEnabled,
     vendorTitle,
     vendorEyebrow,
     vendorSubtitle,
     
     googleCalendarUrl,
-    waLink: `https://wa.me/6281234567890?text=Halo%20${encodeURIComponent(demo.groomName)}%20dan%20${encodeURIComponent(demo.brideName)}`,
+    waLink: (() => {
+      if (demo.eventType === "BIRTHDAY") return `https://wa.me/6281234567890?text=Halo%20${encodeURIComponent((demo as any).personName || "Sahabat")}`;
+      if (demo.eventType === "KHITAN") return `https://wa.me/6281234567890?text=Halo%20${encodeURIComponent((demo as any).childName || "Ananda")}`;
+      if (demo.eventType === "AQIQAH") return `https://wa.me/6281234567890?text=Halo%20${encodeURIComponent((demo as any).babyName || "Buah Hati")}`;
+      if (demo.eventType === "WISUDA") return `https://wa.me/6281234567890?text=Halo%20${encodeURIComponent((demo as any).graduateName || "Wisudawan")}`;
+      if (demo.eventType === "GATHERING") return `https://wa.me/6281234567890?text=Halo%20${encodeURIComponent((demo as any).eventTitle || "Penyelenggara")}`;
+      return `https://wa.me/6281234567890?text=Halo%20${encodeURIComponent(demo.groomName || "")}%20dan%20${encodeURIComponent(demo.brideName || "")}`;
+    })(),
     audioUrl: effectiveAudioUrl,
     musicPlayerHtml: `
     ${effectiveAudioUrl ? `

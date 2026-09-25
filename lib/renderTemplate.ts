@@ -32,45 +32,71 @@ function escapeHtmlAttr(str: string): string {
   return escapeHtmlSafe(str);
 }
 
-const THEME_MAP: Record<string, { file: string; folder: "minimalist" | "traditional" | "modern" }> = {
-  // Minimalist Series
-  "kalandra": { file: "kalandra.html", folder: "minimalist" },
-  "valente": { file: "valente.html", folder: "minimalist" },
-  "aurelia": { file: "aurelia.html", folder: "minimalist" },
-  "artisan": { file: "artisan.html", folder: "minimalist" },
-  "minimalist-elegant": { file: "minimalist-elegant.html", folder: "minimalist" },
-  "minimalist-elegant-04": { file: "minimalist-elegant-04.html", folder: "minimalist" },
+export interface ThemeEntry {
+  file: string;
+  eventType: "wedding" | "birthday" | "khitan" | "aqiqah" | "wisuda" | "gathering";
+  style: "minimalist" | "modern" | "traditional";
+}
 
-  // Traditional Series
-  "prameswari": { file: "prameswari.html", folder: "traditional" },
-  "dillalucky": { file: "dillalucky.html", folder: "traditional" },
-  "lagaligo": { file: "lagaligo.html", folder: "traditional" },
-  "toraja": { file: "toraja.html", folder: "traditional" },
-  "rantepao": { file: "rantepao.html", folder: "traditional" },
-  "makale": { file: "makale.html", folder: "traditional" },
-  "bugis": { file: "bugis.html", folder: "traditional" },
-  "bone": { file: "bone.html", folder: "traditional" },
-  "wajo": { file: "wajo.html", folder: "traditional" },
-  "soppeng": { file: "soppeng.html", folder: "traditional" },
-  "makassar": { file: "makassar.html", folder: "traditional" },
-  "gowa": { file: "gowa.html", folder: "traditional" },
-  "maros": { file: "maros.html", folder: "traditional" },
-  "takalar": { file: "takalar.html", folder: "traditional" },
-  "bulukumba": { file: "bulukumba.html", folder: "traditional" },
+export const THEME_MAP: Record<string, ThemeEntry> = {
+  // Minimalist Series (6)
+  "kalandra": { file: "kalandra.html", eventType: "wedding", style: "minimalist" },
+  "valente": { file: "valente.html", eventType: "wedding", style: "minimalist" },
+  "aurelia": { file: "aurelia.html", eventType: "wedding", style: "minimalist" },
+  "artisan": { file: "artisan.html", eventType: "wedding", style: "minimalist" },
+  "minimalist-elegant": { file: "minimalist-elegant.html", eventType: "wedding", style: "minimalist" },
+  "minimalist-elegant-04": { file: "minimalist-elegant-04.html", eventType: "wedding", style: "minimalist" },
 
-  // Modern Series
-  "badrika": { file: "badrika.html", folder: "modern" },
-  "mayang": { file: "mayang.html", folder: "modern" },
-  "candani": { file: "candani.html", folder: "modern" },
-  "wave": { file: "wave.html", folder: "modern" },
-  "papercut": { file: "papercut.html", folder: "modern" },
-  "ameera": { file: "ameera.html", folder: "modern" },
-  "chronicle": { file: "chronicle.html", folder: "modern" },
-  "lumina": { file: "lumina.html", folder: "modern" },
-  "solaria": { file: "solaria.html", folder: "modern" },
+  // Traditional Series (15)
+  "prameswari": { file: "prameswari.html", eventType: "wedding", style: "traditional" },
+  "dillalucky": { file: "dillalucky.html", eventType: "wedding", style: "traditional" },
+  "lagaligo": { file: "lagaligo.html", eventType: "wedding", style: "traditional" },
+  "toraja": { file: "toraja.html", eventType: "wedding", style: "traditional" },
+  "rantepao": { file: "rantepao.html", eventType: "wedding", style: "traditional" },
+  "makale": { file: "makale.html", eventType: "wedding", style: "traditional" },
+  "bugis": { file: "bugis.html", eventType: "wedding", style: "traditional" },
+  "bone": { file: "bone.html", eventType: "wedding", style: "traditional" },
+  "wajo": { file: "wajo.html", eventType: "wedding", style: "traditional" },
+  "soppeng": { file: "soppeng.html", eventType: "wedding", style: "traditional" },
+  "makassar": { file: "makassar.html", eventType: "wedding", style: "traditional" },
+  "gowa": { file: "gowa.html", eventType: "wedding", style: "traditional" },
+  "maros": { file: "maros.html", eventType: "wedding", style: "traditional" },
+  "takalar": { file: "takalar.html", eventType: "wedding", style: "traditional" },
+  "bulukumba": { file: "bulukumba.html", eventType: "wedding", style: "traditional" },
+
+  // Modern Series (13)
+  "badrika": { file: "badrika.html", eventType: "wedding", style: "modern" },
+  "mayang": { file: "mayang.html", eventType: "wedding", style: "modern" },
+  "candani": { file: "candani.html", eventType: "wedding", style: "modern" },
+  "wave": { file: "wave.html", eventType: "wedding", style: "modern" },
+  "papercut": { file: "papercut.html", eventType: "wedding", style: "modern" },
+  "ameera": { file: "ameera.html", eventType: "wedding", style: "modern" },
+  "chronicle": { file: "chronicle.html", eventType: "wedding", style: "modern" },
+  "lumina": { file: "lumina.html", eventType: "wedding", style: "modern" },
+  "solaria": { file: "solaria.html", eventType: "wedding", style: "modern" },
+  "burgundy-royale": { file: "burgundy-royale.html", eventType: "wedding", style: "modern" },
+  "pink-castle": { file: "pink-castle.html", eventType: "wedding", style: "modern" },
+  "starlit-dreams": { file: "starlit-dreams.html", eventType: "wedding", style: "modern" },
+  "vintage-forest": { file: "vintage-forest.html", eventType: "wedding", style: "modern" },
+
+  // Birthday Series (2 themes)
+  "festivo": { file: "festivo.html", eventType: "birthday", style: "modern" },
+  "kalandra-birthday": { file: "kalandra-birthday.html", eventType: "birthday", style: "minimalist" },
+
+  // Khitan Series (1 theme)
+  "al-fariz": { file: "al-fariz.html", eventType: "khitan", style: "traditional" },
+
+  // Aqiqah Series (1 theme)
+  "al-khalid": { file: "al-khalid.html", eventType: "aqiqah", style: "minimalist" },
+
+  // Wisuda Series (1 theme)
+  "cendekia": { file: "cendekia.html", eventType: "wisuda", style: "modern" },
+
+  // General / Gathering Series (1 theme)
+  "sinergi": { file: "sinergi.html", eventType: "gathering", style: "modern" },
 
   // Backward compatibility alias mapping
-  "kila": { file: "kalandra.html", folder: "minimalist" },
+  "kila": { file: "kalandra.html", eventType: "wedding", style: "minimalist" },
 };
 
 export const LUXENARY_BANNER = `<!--
@@ -1262,18 +1288,31 @@ const UNIFIED_CLIENT_RUNTIME_SCRIPT = `
 
 /**
  * Render a template file by replacing {{key}} placeholders with values from `data`.
- * Automatically resolves from themes/minimalist/, themes/traditional/, or themes/modern/.
+ * Automatically resolves from themes/[eventType]/[style]/[file].
  */
 export async function renderTemplateFile(
   templateName: string,
   data: Record<string, any>,
-  options?: { editMode?: boolean; invitationId?: string }
+  options?: { editMode?: boolean; invitationId?: string; eventType?: string }
 ): Promise<string> {
 
+  const info = THEME_MAP[templateName];
+  if (!info) {
+    throw new Error(`[renderTemplate] Tema "${templateName}" tidak terdaftar di THEME_MAP.`);
+  }
 
-  const info = THEME_MAP[templateName] || { file: `${templateName}.html`, folder: "minimalist" };
-
-  let tplPath = path.join(process.cwd(), "themes", info.folder, info.file);
+  const eventFolder = info.eventType === "gathering" ? "general" : info.eventType;
+  let tplPath = path.join(process.cwd(), "themes", eventFolder, info.style, info.file);
+  if (!fs.existsSync(tplPath) && info.eventType === "gathering") {
+    tplPath = path.join(process.cwd(), "themes", "gathering", info.style, info.file);
+  }
+  // Fallback ke legacy path bila direktori bertingkat baru belum dipindahkan
+  if (!fs.existsSync(tplPath)) {
+    const legacyPath = path.join(process.cwd(), "themes", info.style, info.file);
+    if (fs.existsSync(legacyPath)) {
+      tplPath = legacyPath;
+    }
+  }
 
   // Helper to check file existence asynchronously
   async function fileExists(p: string): Promise<boolean> {
@@ -1296,12 +1335,18 @@ export async function renderTemplateFile(
     }
 
     if (await fileExists(draftPath)) {
-      // Periksa apakah piring draft cocok dengan templateName yang diminta
+      // Periksa apakah piring draft cocok dengan templateName & eventType yang diminta
       try {
         const draftContentHead = await fs.promises.readFile(draftPath, "utf-8");
         const themeMatch = draftContentHead.slice(0, 300).match(/<!--\s*lux-theme:\s*([a-zA-Z0-9_-]+)\s*-->/);
-        if (themeMatch && themeMatch[1].toLowerCase() !== templateName.toLowerCase()) {
-          // Tema telah berganti! Hapus draft usang agar draft baru disalin dari master tema baru
+        const eventMatch = draftContentHead.slice(0, 300).match(/<!--\s*lux-event:\s*([a-zA-Z0-9_-]+)\s*-->/);
+        const currentEvent = (options?.eventType || data?.eventType || info.eventType || "WEDDING").toUpperCase();
+
+        const isThemeMismatched = themeMatch && themeMatch[1].toLowerCase() !== templateName.toLowerCase();
+        const isEventMismatched = eventMatch && eventMatch[1].toUpperCase() !== currentEvent;
+
+        if (isThemeMismatched || isEventMismatched) {
+          // Tema atau eventType telah berganti! Hapus draft usang agar draft baru disalin dari master tema baru
           await fs.promises.unlink(draftPath).catch(() => {});
           draftFound = false;
         } else {
@@ -1343,14 +1388,17 @@ export async function renderTemplateFile(
       }
     }
 
-    // Karena draft belum ada dan master file tersedia, beri tag tema dan simpan ke draft
+    // Karena draft belum ada dan master file tersedia, beri tag tema dan eventType lalu simpan ke draft
     if (options?.invitationId) {
       const draftPath = path.join(process.cwd(), "data", "drafts", `${options.invitationId}.html`);
       try {
         const masterContent = await fs.promises.readFile(tplPath, "utf-8");
-        const taggedContent = masterContent.startsWith("<!-- lux-theme:")
-          ? masterContent
-          : `<!-- lux-theme:${templateName} -->\n${masterContent}`;
+        const currentEvent = (options?.eventType || data?.eventType || info.eventType || "WEDDING").toUpperCase();
+        const headerTags = `<!-- lux-theme:${templateName} -->\n<!-- lux-event:${currentEvent} -->\n`;
+        const cleanedMaster = masterContent
+          .replace(/<!--\s*lux-theme:[^>]*-->\n?/g, "")
+          .replace(/<!--\s*lux-event:[^>]*-->\n?/g, "");
+        const taggedContent = `${headerTags}${cleanedMaster}`;
         await fs.promises.writeFile(draftPath, taggedContent, "utf-8");
         tplPath = draftPath;
       } catch (err) {
@@ -1772,31 +1820,71 @@ export async function renderTemplateFile(
   let universalPreloaderHtml = "";
 
   if (!hasCustomPreloader) {
-    const firstInitial = escapeHtmlAttr(
-      String(
-        data.firstInitial ||
-        (data.firstName ? String(data.firstName).trim().charAt(0).toUpperCase() : "") ||
-        (data.groomName ? String(data.groomName).trim().charAt(0).toUpperCase() : "") ||
-        "L"
-      )
-    );
+    const rawEventType = String(
+      options?.eventType ||
+      data?.eventType ||
+      info?.eventType ||
+      "wedding"
+    ).toLowerCase().trim();
 
-    const secondInitial = escapeHtmlAttr(
-      String(
-        data.secondInitial ||
-        (data.secondName ? String(data.secondName).trim().charAt(0).toUpperCase() : "") ||
-        (data.brideName ? String(data.brideName).trim().charAt(0).toUpperCase() : "") ||
-        "I"
-      )
-    );
+    const isNonWedding = ["birthday", "khitan", "aqiqah", "wisuda", "gathering", "general", "umum"].includes(rawEventType);
+
+    let defaultTagline = "THE WEDDING INVITATION";
+    if (rawEventType === "birthday") {
+      defaultTagline = "BIRTHDAY CELEBRATION";
+    } else if (rawEventType === "khitan") {
+      defaultTagline = "WALIMATUL KHITAN";
+    } else if (rawEventType === "aqiqah") {
+      defaultTagline = "SYUKURAN AQIQAH";
+    } else if (rawEventType === "wisuda") {
+      defaultTagline = "GRADUATION CELEBRATION";
+    } else if (rawEventType === "gathering" || rawEventType === "general" || rawEventType === "umum") {
+      defaultTagline = "EXCLUSIVE INVITATION";
+    }
 
     const preloaderTagline = escapeHtmlAttr(
       String(
         data.featureSettings?.customLabels?.theWedding ||
         data.customLabels?.theWedding ||
-        "THE WEDDING INVITATION"
+        data.featureSettings?.customLabels?.preloaderTagline ||
+        data.customLabels?.preloaderTagline ||
+        defaultTagline
       )
     );
+
+    // Monogram: Prioritaskan monogramInitial eksplisit dari data
+    let monogramText = "";
+    if (data.monogramInitial && String(data.monogramInitial).trim()) {
+      monogramText = escapeHtmlAttr(String(data.monogramInitial).trim());
+    } else {
+      const firstInitial = escapeHtmlAttr(
+        String(
+          data.firstInitial ||
+          (data.firstName ? String(data.firstName).trim().charAt(0).toUpperCase() : "") ||
+          (data.personName ? String(data.personName).trim().charAt(0).toUpperCase() : "") ||
+          (data.personNickname ? String(data.personNickname).trim().charAt(0).toUpperCase() : "") ||
+          (data.childName ? String(data.childName).trim().charAt(0).toUpperCase() : "") ||
+          (data.studentName ? String(data.studentName).trim().charAt(0).toUpperCase() : "") ||
+          (data.eventName ? String(data.eventName).trim().charAt(0).toUpperCase() : "") ||
+          (data.groomName ? String(data.groomName).trim().charAt(0).toUpperCase() : "") ||
+          "L"
+        )
+      );
+
+      const rawSecondInitial = (
+        data.secondInitial ||
+        (data.secondName ? String(data.secondName).trim().charAt(0).toUpperCase() : "") ||
+        (data.brideName ? String(data.brideName).trim().charAt(0).toUpperCase() : "") ||
+        ""
+      );
+      const secondInitial = rawSecondInitial ? escapeHtmlAttr(String(rawSecondInitial)) : "";
+
+      if (isNonWedding) {
+        monogramText = secondInitial ? `${firstInitial} &amp; ${secondInitial}` : firstInitial;
+      } else {
+        monogramText = secondInitial ? `${firstInitial} &amp; ${secondInitial}` : `${firstInitial}`;
+      }
+    }
 
     preloaderStyles += `
 <style id="luxUniversalPreloaderStyle">
@@ -1874,7 +1962,7 @@ export async function renderTemplateFile(
 <div id="themePreloader" class="lux-universal-preloader" aria-label="Loading Invitation">
   <div class="lux-preloader-inner">
     <div class="lux-preloader-badge">${preloaderTagline}</div>
-    <div class="lux-preloader-monogram">${firstInitial} &amp; ${secondInitial}</div>
+    <div class="lux-preloader-monogram">${monogramText}</div>
     <div class="lux-preloader-track" aria-hidden="true">
       <div class="lux-preloader-bar"></div>
     </div>

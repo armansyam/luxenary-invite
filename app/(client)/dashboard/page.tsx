@@ -8,6 +8,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { getInvitationPublicUrl, resolveEffectiveInvitationUrl, getLatestEventDate } from "@/lib/domainUtils";
 import UnifiedAddonModal from "@/components/client/UnifiedAddonModal";
 import { getPlanDisplayName, getPlanDisplayDescription, normalizePlanType } from "@/lib/planUtils";
+import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
 
 function DashboardHomeContent() {
   const { data: session } = useSession();
@@ -133,9 +134,7 @@ function DashboardHomeContent() {
 
   const displayOrder: string = featureSettings?.displayOrder || "GROOM_FIRST";
   const coupleDisplayName = invitation
-    ? displayOrder === "BRIDE_FIRST"
-      ? `${invitation.brideName || "Mempelai Wanita"} & ${invitation.groomName || "Mempelai Pria"}`
-      : `${invitation.groomName || "Mempelai Pria"} & ${invitation.brideName || "Mempelai Wanita"}`
+    ? resolveInvitationDisplayName(invitation)
     : null;
 
   const handleCopyLink = () => {
@@ -181,13 +180,13 @@ function DashboardHomeContent() {
             </h1>
 
             <p className="text-base sm:text-lg font-serif italic text-amber-900 font-medium">
-              {coupleDisplayName || "Mempelai Pria & Mempelai Wanita"}
+              {coupleDisplayName || "Undangan Acara"}
             </p>
 
             <div className="h-px w-24 bg-gradient-to-r from-transparent via-amber-300 to-transparent mx-auto my-2" />
 
             <p className="text-xs sm:text-sm text-stone-600 leading-relaxed">
-              Terima kasih telah mempercayakan perayaan momen sakral perjalanan cinta Anda kepada platform kami. Rangkaian acara pernikahan Anda telah terlaksana dengan indah dan penuh berkah.
+              Terima kasih telah mempercayakan perayaan momen berharga Anda kepada platform kami. Rangkaian acara Anda telah terlaksana dengan indah dan penuh kebahagiaan.
             </p>
             <p className="text-xs text-stone-500 leading-relaxed">
               Sesuai standar retensi privasi sistem terpadu (14 hari pasca acara), file foto candid tamu serta tautan subdomain dan custom domain telah didaur ulang secara aman. Seluruh catatan doa restu serta rekapitulasi kehadiran tamu tetap tersimpan abadi dan dapat Anda unduh kapan saja.
@@ -586,7 +585,7 @@ function DashboardHomeContent() {
 
           <div className="space-y-1">
             <h1 className="text-base sm:text-lg md:text-xl lg:text-2xl font-serif font-bold text-stone-900 leading-snug tracking-tight">
-              {coupleDisplayName || "Mempelai Pria & Mempelai Wanita"}
+              {coupleDisplayName || "Undangan Acara"}
             </h1>
             <p className="text-xs sm:text-sm text-stone-500">
               Kelola seluruh konten, galeri, susunan acara, dan tamu undangan Anda dari satu panel kontrol.

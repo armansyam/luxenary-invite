@@ -10,6 +10,7 @@ import { resolveEffectiveInvitationUrl, getLatestEventDate, getMemoriesActiveSch
 import UnifiedAddonModal from "@/components/client/UnifiedAddonModal";
 import PrintableQRCardModal from "@/components/client/PrintableQRCardModal";
 import GuestOpeningSetupModal from "@/components/client/GuestOpeningSetupModal";
+import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
 
 const FILTER_PRESETS_LIST = [
   {
@@ -361,7 +362,7 @@ export default function MomentsSetupPage() {
   const activeOpeningObj = OPENING_LAYOUTS.find((l) => l.id === openingLayoutId) || OPENING_LAYOUTS[0];
   const activeOpeningName = activeOpeningObj.name;
 
-  const coupleTitle = `${invitation?.groomNickname || "Mempelai Pria"} & ${invitation?.brideNickname || "Mempelai Wanita"}`;
+  const coupleTitle = invitation ? resolveInvitationDisplayName(invitation) : "Undangan";
   const coverPhoto = getFeatureSetting("memoriesCoverPhoto", "") || invitation?.media?.find((m: any) => m.mediaSlot === "LANDING_COVER")?.localPath || "/demo/candani/gallery_01.webp";
   const instructionText = getFeatureSetting("memoriesCardInstruction", "Pindai kode QR untuk mengabadikan momen istimewa dari sudut pandang Anda.");
 

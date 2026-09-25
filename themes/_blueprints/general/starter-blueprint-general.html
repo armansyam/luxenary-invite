@@ -1,0 +1,232 @@
+<!--
+ _      _   _  __  __  _____   _   _      _     ____   __   __
+| |    | | | | \ \/ / | ____| | \ | |    / \   |  _ \  \ \ / /
+| |    | | | |  \  /  |  _|   |  \| |   / _ \  | |_) |  \ V / 
+| |___ | |_| |  /  \  | |___  | |\  |  / ___ \ |  _ <    | |  
+|_____| \___/  /_/\_\ |_____| |_| \_| /_/   \_\|_| \_\   |_|  
+
+  ==============================================================
+  STARTER BLUEPRINT: GENERAL / GATHERING / SYUKURAN UMUM
+  --------------------------------------------------------------
+  Blueprint master resmi Luxenary untuk tema Acara Umum:
+  Peresmian Kantor, Syukuran Rumah Baru, Reuni, Family Gathering.
+  Hak cipta dilindungi undang-undang.
+  ==============================================================
+-->
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{eventTitle}}</title>
+  <link rel="stylesheet" href="/fonts/fonts.css" />
+
+  <style>
+    :root {
+      --primary: #0d9488;
+      --secondary: #0f766e;
+      --accent: #f59e0b;
+      --bg-dark: #134e4a;
+      --bg-canvas: #042f2e;
+      --card-bg: #115e59;
+      --text-main: #f0fdfa;
+      --text-muted: #99f6e4;
+      --radius-sm: 8px;
+      --radius-md: 16px;
+      --radius-lg: 24px;
+      --radius-full: 9999px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    ::selection { background: color-mix(in srgb, var(--primary) 40%, transparent); color: #ffffff; }
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      background: var(--bg-canvas);
+      color: var(--text-main);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+    .serif { font-family: 'Playfair Display', Georgia, serif; }
+
+    .lux-wrapper {
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100vh;
+      background: var(--bg-dark);
+      position: relative;
+      box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Cover */
+    .cover-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: var(--bg-dark);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 32px 24px;
+      transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.8s ease;
+      background-size: cover;
+      background-position: center;
+    }
+    .cover-screen.opened { transform: translateY(-100%); opacity: 0; pointer-events: none; }
+    .cover-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(4, 47, 46, 0.6) 0%, rgba(4, 47, 46, 0.95) 100%);
+      z-index: 1;
+    }
+    .cover-content { position: relative; z-index: 2; max-width: 380px; }
+
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 16px;
+      border-radius: var(--radius-full);
+      background: color-mix(in srgb, var(--primary) 20%, transparent);
+      border: 1px solid color-mix(in srgb, var(--primary) 40%, transparent);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #5eead4;
+      margin-bottom: 20px;
+    }
+
+    .cover-title {
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 8px;
+      color: #ffffff;
+    }
+    .cover-sub { font-size: 14px; color: var(--text-muted); margin-bottom: 24px; }
+
+    .guest-box {
+      background: color-mix(in srgb, var(--card-bg) 60%, transparent);
+      border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
+      padding: 16px 20px;
+      border-radius: var(--radius-md);
+      margin-bottom: 24px;
+    }
+    .guest-lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); margin-bottom: 4px; }
+    .guest-name { font-size: 18px; font-weight: 700; color: #ffffff; }
+
+    .btn-open {
+      padding: 14px 32px;
+      border-radius: var(--radius-full);
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(13, 148, 136, 0.4);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-open:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(13, 148, 136, 0.6); }
+
+    /* Sections */
+    .sec-block { padding: 48px 24px; text-align: center; border-bottom: 1px solid color-mix(in srgb, var(--primary) 15%, transparent); }
+    .sec-lbl { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #5eead4; margin-bottom: 8px; }
+    .sec-h2 { font-size: 24px; font-weight: 800; color: #ffffff; margin-bottom: 16px; }
+
+    .event-card {
+      background: var(--card-bg);
+      border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
+      border-radius: var(--radius-lg);
+      padding: 28px 20px;
+      margin-top: 20px;
+    }
+    .event-logo {
+      width: 110px;
+      height: 110px;
+      border-radius: var(--radius-md);
+      object-fit: cover;
+      margin: 0 auto 16px;
+      border: 2px solid var(--primary);
+    }
+    .event-name { font-size: 22px; font-weight: 800; color: #ffffff; margin-bottom: 6px; }
+    .event-desc { font-size: 14px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5; }
+    .host-info { font-size: 13px; color: var(--text-main); line-height: 1.6; }
+  </style>
+</head>
+
+<body>
+  <div class="lux-wrapper">
+    <!-- Cover -->
+    <div class="cover-screen" id="coverScreen" style="background-image: url('{{landingCoverUrl}}');">
+      <div class="cover-overlay"></div>
+      <div class="cover-content">
+        <span class="badge-pill">{{eventBadge || "Undangan Resmi"}}</span>
+        <h1 class="cover-title serif">{{eventTitle}}</h1>
+        <p class="cover-sub">{{eventSubtitle}}</p>
+        <div class="guest-box">
+          <p class="guest-lbl">Kepada Yth. Rekan / Tamu Undangan</p>
+          <h3 class="guest-name">{{guestName}}</h3>
+        </div>
+        <button class="btn-open" onclick="openInvitation()">Buka Undangan</button>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <main>
+      <!-- Hero -->
+      <section class="sec-block" style="padding-top: 60px;">
+        <span class="sec-lbl">Undangan & Sambutan</span>
+        <h2 class="sec-h2 serif">{{eventTitle}}</h2>
+
+        <div class="event-card">
+          <img src="{{eventPhotoUrl}}" alt="{{eventTitle}}" class="event-logo" onerror="this.src='/demo/sinergi/hero.webp'" />
+          <h3 class="event-name serif">{{eventTitle}}</h3>
+          <p class="event-desc">{{eventSubtitle}}</p>
+          <div class="host-info">
+            <p style="font-weight: 700; color: #ffffff;">{{organizerName}}</p>
+            <p>{{hostName}}</p>
+            {{dresscodeHtml}}
+          </div>
+        </div>
+      </section>
+
+      <!-- Event Section -->
+      <section class="sec-block">
+        <span class="sec-lbl">Waktu & Tempat</span>
+        <h2 class="sec-h2 serif">Agenda Acara</h2>
+        {{eventSectionHtml}}
+      </section>
+
+      <!-- Gallery -->
+      {{gallerySectionHtml}}
+
+      <!-- Gift / Dukungan Section -->
+      {{giftSectionHtml}}
+
+      <!-- RSVP & Wishes -->
+      <section class="sec-block">
+        {{rsvpSectionHtml}}
+        {{wishesSectionHtml}}
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer style="padding: 32px 20px; text-align: center; font-size: 11px; color: var(--text-muted);">
+      <p>{{eventTitle}}</p>
+      <p style="margin-top: 6px;">{{brandWatermarkHtml}}</p>
+    </footer>
+  </div>
+
+  <script>
+    function openInvitation() {
+      const cover = document.getElementById('coverScreen');
+      if (cover) cover.classList.add('opened');
+      if (window.luxAudioPlay) window.luxAudioPlay();
+    }
+  </script>
+</body>
+</html>

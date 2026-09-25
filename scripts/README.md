@@ -86,9 +86,7 @@ Skrip operasional produksi dan pemeliharaan server (bukan untuk pengujian):
 
 | Berkas | Fungsi & Peruntukan | Perintah |
 |---|---|---|
-| [`cron-cleanup.ts`](./cron-cleanup.ts) | **Pembersihan Rutin Server (Crontab VPS):** Menghapus order pending kedaluwarsa (>24 jam), membersihkan berkas fisik undangan `ARCHIVED`, dan melepas subdomain unik kembali ke pool. | `npm run cron:cleanup` |
-| [`sync-themes.ts`](./sync-themes.ts) | Memindai file template HTML di folder `themes/` dan menyinkronkan status/daftar tema ke tabel `Theme` PostgreSQL. | `npx tsx scripts/sync-themes.ts` |
-| [`generate-thumbnails.ts`](./generate-thumbnails.ts) | Mengambil cover tema dan mengonversi menjadi thumbnail WebP berukuran ringkas. | `npx tsx scripts/generate-thumbnails.ts` |
+| [`generate-all-thumbnails.ts`](./generate-all-thumbnails.ts) | Menghasilkan thumbnail retina otentik (Mobile 400x800 & Desktop 1280x800) untuk seluruh 40 tema via Chrome DevTools Protocol (`Page.captureScreenshot`). | `npm run generate:thumbnails` / `npx tsx scripts/generate-all-thumbnails.ts` |
 | `compress_example_images.mjs` | Kompresi aset gambar showroom / demo ke format WebP teroptimasi. | `node scripts/compress_example_images.mjs` |
 | `download_local_fonts.mjs` | Mengunduh font Google Fonts ke direktori lokal VPS untuk kemandirian aset. | `node scripts/download_local_fonts.mjs` |
 | `setup_demo_assets.mjs` | Menyiapkan aset placeholder demo tema. | `node scripts/setup_demo_assets.mjs` |

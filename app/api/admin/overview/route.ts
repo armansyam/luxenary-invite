@@ -96,7 +96,7 @@ export async function GET() {
 
       const defaultCoverFallback = t.thumbnail || `/demo/${themeKey}/cover.webp`;
       const rawThumbMobile = customData?.thumbnailMobileUrl || `/demo/${themeKey}/thumbnail_mobile.webp`;
-      const rawThumbDesktop = customData?.thumbnailDesktopUrl || customData?.landingCoverDesktopUrl || `/demo/${themeKey}/thumbnail_desktop.webp`;
+      const rawThumbDesktop = customData?.thumbnailDesktopUrl || `/demo/${themeKey}/thumbnail_desktop.webp`;
 
       return {
         ...t,
@@ -125,7 +125,6 @@ export async function GET() {
       pendingOrderCount,
       guestCount,
       rsvpCount,
-      videoWishCount,
       userCount,
       paidUserCount,
       newRegistrationsToday,
@@ -148,7 +147,6 @@ export async function GET() {
       prisma.order.count({ where: { status: "PENDING" } }),
       prisma.guest.count(),
       prisma.rsvp.count().catch(() => 0),
-      prisma.guest.count({ where: { videoWishUrl: { not: null } } }).catch(() => 0),
       // Klien aktif: sudah PAID atau sudah punya undangan
       prisma.user.count({
         where: {
@@ -217,6 +215,8 @@ export async function GET() {
         select: {
           id: true,
           userId: true,
+          eventType: true,
+          participantsJson: true,
           groomSlug: true,
           brideSlug: true,
           invitationSlug: true,
@@ -298,7 +298,6 @@ export async function GET() {
         pendingOrderCount,
         guestCount,
         rsvpCount,
-        videoWishCount,
         userCount,
         paidUserCount,
         newRegistrationsToday,

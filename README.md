@@ -1,8 +1,8 @@
 # Luxenary Invite — S-Invite Platform
 
-> **Platform Undangan Pernikahan Digital B2C Self-Service**  
+> **Platform Undangan Digital Multi-Event B2C Self-Service (Wedding, Birthday, Khitan, Aqiqah, Wisuda, Gathering)**  
 > Next.js 16.3.2 · Prisma 7.9 (PostgreSQL) · NextAuth v5 · Multi-Gateway (5 Gateway) · Nodemailer SMTP · Cloudflare R2  
-> **Versi Dokumen: 6.2.0 | Diperbarui: 24 September 2026**
+> **Versi Dokumen: 6.3.0 | Diperbarui: 25 September 2026**
 
 > [!IMPORTANT]
 > **PROTOKOL SINKRONISASI DOKUMENTASI OTOMATIS (MANDATORY POST-EDIT & PRE-PUSH PROTOCOL):**  
@@ -30,7 +30,8 @@ Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model 
      │
      ▼
 1. LANDING PAGE (/) & SHOWROOM KATALOG (/demo)
-   - Katalog paket + demo tema interaktif (28 tema fisik master & 18 palet warna)
+   - Katalog paket + demo tema interaktif multi-event (40 tema fisik master: 34 Wedding, 2 Birthday, 1 Khitan, 1 Aqiqah, 1 Wisuda, 1 Gathering & 18 palet warna)
+   - Filter persona perayaan langsung di showroom (`Semua`, `Wedding`, `Birthday`, `Khitan`, `Aqiqah`, `Wisuda`, `Gathering`)
    - **Studio Mandiri Showcase (Dual-Device Live Sync):** Simulasi visual panggung Laptop Editor bersanding dengan Mobile Phone Preview 1:1, live typing, gallery & audio player, serta sebar link WhatsApp instan.
    - **Alternating Zig-Zag Showcase (Koleksi, Studio, Pengalaman):** Ritme visual editorial berimbang selang-seling (Koleksi: Mockup Kanan, Studio: Mockup Kiri, Pengalaman: Mockup 3D iPad Kanan dengan *3D perspective mirroring* dan teks narasi bebas tabrakan foto latar).
    - **Panduan Terdedikasi (`/how-it-works`):** Edukasi alur mandiri dengan bahasa santun & intuitif, anti-jargon, simulasi interaktif dasbor klien 5 tab (Live Canvas, Tema Nusantara, Buku Tamu VIP, RSVP, serta Pre-Publish Audit Launchpad & Sliding Ticker sekuensial), dan FAQ lengkap.
@@ -74,16 +75,19 @@ Luxenary Invite adalah platform SaaS undangan pernikahan digital berbasis model 
      │
      ▼
 4. ONBOARDING & SETUP IDEMPOTEN (/dashboard/setup)
-   - Setup awal: nama mempelai, tanggal acara, dan tema perdana
+   - Step 0: Pemilih Jenis Acara (Wedding, Birthday, Khitan, Aqiqah, Wisuda, Gathering) dengan ikon SVG modern & bersih
+   - Step 1: Data Persona Adaptif (Pengantin untuk Wedding, Data Individu & Usia untuk Birthday, Anak & Ortu untuk Khitan/Aqiqah, Wisudawan & Kampus untuk Wisuda)
+   - Step 2: Tanggal & Lokasi Acara (label kontekstual)
+   - Step 3: Katalog Tema Terfilter sesuai jenis acara yang dipilih
    - Idempotent Setup & Auto-Bypass: Jika klien sudah memiliki draft terdaftar, sistem langsung mengarahkan ke Studio Undangan tanpa form ganda atau error bentrokan orderId.
    - Lewati Setup (Atur Nanti): Membuat draft netral seketika untuk langsung melompat ke Studio.
      │
      ▼
 5. STUDIO UNDANGAN (/dashboard/invitation/[id])
-   - Pilih & ganti tema: Bebas memilih dari seluruh **24 tema fisik aktif** (Minimalis, Modern, Traditional) & **18 palet warna** tanpa batasan tingkatan paket.
+   - Pilih & ganti tema: Bebas memilih dari seluruh **40 tema fisik aktif** yang difilter ketat sesuai jenis acara (`eventType`) aktif klien (zero cross-event leakage) & **18 palet warna** tanpa batasan tingkatan paket.
    - Sesi Acara Utama (`isPrimary: true`) sebagai patokan mutlak (*single source of truth*) masa aktif sistem (`expiresAt`), batas retensi galeri foto tamu (`galleryExpiresAt`), Countdown Timer, dan header tanggal tema.
-   - Isi data pengantin & keluarga (4 kolom terpisah: Ayah & Ibu dengan deteksi otomatis awalan "Putra dari" / "Putri dari" tanpa dropdown anak ke-n), jadwal acara multi-event (auto-sort kronologis: Tanggal -> Jam).
-   - Pengaturan Musik Latar Pernikahan (Audio background, preset sakral, unggah MP3/M4A, sinkronisasi otomatis tombol Buka Undangan & fallback interaksi)
+   - Formulir Profil Adaptif (Seksi 3): Menyesuaikan secara otomatis sesuai `eventType`. Single photo slot `GROOM_PHOTO` digunakan untuk persona non-wedding dengan label dinamis. Seksi Love Story (Seksi 7) otomatis disembunyikan untuk non-wedding.
+   - Pengaturan Musik Latar Acara (Audio background, preset sakral/perayaan, unggah MP3/M4A, sinkronisasi otomatis tombol Buka Undangan & fallback interaksi)
    - Upload foto (cover, groom, bride, gallery, dll)
    - Kustomisasi seksi (Universal Vertical Glowing Luxury Timeline untuk Kisah Cinta / Love Story di seluruh 19 tema master, Smart Puzzle Grid Galeri Momen 4-kolom, Gift, QR Check-in, Teks Galeri Kenangan Tamu)
    - Kelola tamu + generate WhatsApp link personal (Deteksi cerdas Custom Domain / Subdomain & proteksi draft) dengan filter toolbar **Borderless Glowing Beam Tabs** (`Semua Tamu`, `Sudah Terkirim`, `Belum Dikirim`) dan badge kategori minimalis.
@@ -341,11 +345,13 @@ Luxenary-Invite/
 │   ├── sseEmitter.ts          # SSE emitter (momen real-time)
 │   └── videoOptimizer.ts      # Kompres video sebelum upload
 ├── themes/
-│   ├── minimalist/            # 6 tema: kalandra, valente, aurelia, artisan, minimalist-elegant, minimalist-elegant-04
-│   ├── modern/                # 13 tema: ameera, chronicle, lumina, papercut, solaria, wave, badrika, candani, mayang, pink-castle, starlit-dreams, burgundy-royale, vintage-forest
-│   ├── traditional/           # 15 tema fisik: prameswari, dillalucky, lagaligo, toraja, bugis, bone, bulukumba, gowa, makale, makassar, maros, rantepao, soppeng, takalar, wajo
-│   ├── starter-blueprint.html # Standar acuan struktur template tema master (Zero-Hardcode & Two-Way Binding)
-│   └── BLUEPRINT_GUIDE.md     # Spesifikasi teknis arsitektur tema & standar token data-lux-field
+│   ├── _blueprints/           # Blueprint modular per jenis acara (wedding, birthday, khitan, aqiqah, wisuda, general)
+│   ├── wedding/               # 34 tema pernikahan: minimalist (6), modern (13), traditional (15)
+│   ├── birthday/              # 2 tema ulang tahun: festivo, kalandra-birthday
+│   ├── khitan/                # 1 tema walimatul khitan: al-fariz
+│   ├── aqiqah/                # 1 tema walimatul aqiqah: al-khalid
+│   ├── wisuda/                # 1 tema wisuda & kelulusan: cendekia
+│   └── general/               # 1 tema gathering & reuni: sinergi
 ├── components/
 │   ├── BrandLogo.tsx
 │   ├── client/
@@ -545,10 +551,10 @@ Setiap developer atau AI Agent yang melakukan modifikasi pada codebase **WAJIB**
 
 ### Aturan Baku Dokumentasi:
 1. **Dilarang keras push tanpa menyelaraskan docs:** Jika ada penambahan endpoint, migrasi kolom database, gateway baru, atau perubahan alur UI, ketiga file dokumen (`README.md`, `docs/SYSTEM_ARCHITECTURE.md`, `docs/S-Invitation.md`) wajib langsung disinkronkan di commit yang sama.
-2. **Katalog Tema Fisik:** Pastikan jumlah tema fisik yang aktif di database dan template selalu sinkron (19 tema fisik aktif).
+2. **Katalog Tema Fisik:** Pastikan jumlah tema fisik yang aktif di database dan template selalu sinkron (40 tema fisik aktif: 34 Wedding, 2 Birthday, 1 Khitan, 1 Aqiqah, 1 Wisuda, 1 Gathering).
 3. **No Phantom Docs:** Dokumentasi harus mencantumkan path dan nama variabel lingkungan aktual (misal format AWS SDK `S3_*` untuk R2, bukan format lama).
 4. **Standar Kontrak Placeholder Nama Mempelai:** Cover buka undangan, hero title, sidebar desktop, dan closing footer **MUTLAK** menggunakan Nama Panggilan (`{{firstName}} & {{secondName}}`). Nama lengkap beserta gelar (`{{firstDisplayName}} & {{secondDisplayName}}`) hanya digunakan pada Seksi Profil Pasangan (*The Couple*).
-5. **Standar Navigasi Imersif (Smart Auto-Hide):** Seluruh 19 tema fisik master dan starter blueprint menerapkan interaksi smart auto-hide untuk dock navigasi dan floating audio player saat pengguna menggulir ke bawah, dan otomatis kembali meluncur masuk saat menggulir ke atas atau mencapai footer.
+5. **Standar Navigasi Imersif (Smart Auto-Hide):** Seluruh tema fisik master dan starter blueprint menerapkan interaksi smart auto-hide untuk dock navigasi dan floating audio player saat pengguna menggulir ke bawah, dan otomatis kembali meluncur masuk saat menggulir ke atas atau mencapai footer.
 6. **Standar Watermark Monogram & Wording Universal:** Tema desktop sidebar mendukung watermark monogram inisial (`{{coupleMonogram}}`, `{{firstInitial}}`, `{{secondInitial}}`) dan salam pembuka universal non-sektarian (`{{coupleSectionSub}}`) untuk fleksibilitas multikultural.
 7. **Standar UI Bersih & Purifikasi Tipografi Tombol:** Dilarang keras menyisipkan emoji default sistem operasi maupun simbol panah AI (`↗`) ke dalam label tombol atau badge (seperti Google Maps, Live Streaming, Instagram Filter, atau Galeri Momen). Seluruh tombol aksi wajib menggunakan tipografi bersih, elegan, atau ikon vektor SVG murni.
 8. **Standar Theme Freedom & Conditional Blocks (`{{#if}}`):** Tema master memiliki kebebasan penuh merancang struktur DOM, ornamen, dan seninya sendiri tanpa dipaksa memakai kartu seragam dari Engine. Template renderer (`lib/renderTemplate.ts`) mendukung blok `{{#if <key>}} ... {{/if}}` sehingga sakelar tampil/sembunyi klien di dashboard tetap 100% dinamis dan bersih dari elemen hantu saat dinonaktifkan.
@@ -628,8 +634,18 @@ Setiap developer atau AI Agent yang melakukan modifikasi pada codebase **WAJIB**
   * **Unifikasi AUTH_SECRET (NextAuth v5):** Menghapus `NEXTAUTH_SECRET` dari `.env` dan `.env.example` yang berpotensi konflik dual-secret. Sistem kini bergantung sepenuhnya pada `AUTH_SECRET` sebagai satu-satunya kunci sesi. Tidak ada sesi yang di-invalidate karena nilai `AUTH_SECRET` tidak berubah.
   * **Domain QA LIFE-04 — Cold Storage NAS Archive Vault:** Suite `industrial-qa-suite.ts` diperluas dengan domain pengujian LIFE-04 yang memverifikasi siklus lengkap tiered storage: dual-bake HTML mandiri, rewriting URL aset, verifikasi status arsip, dan purge 100% bersih tanpa kebocoran disk.
   * **Standarisasi Pool Termination Seluruh Script QA:** Seluruh script pengujian distandardisasi dengan `$disconnect()` eksplisit di blok `finally` untuk mencegah proses menggantung pasca eksekusi.
-- **Konsolidasi Admin Settings, Dashboard Monitoring & Testing Infrastructure (v6.1.0)**:
-  * **Restrukturisasi Sub-Tab Pengaturan (6 → 5 Tab):** Tab `Pembayaran` + `Gateway QRIS` digabung menjadi `Keuangan & Gateway`. Tab `Setup & Integrasi` → `Integrasi & API`. Tab `Platform & Tampilan` → `Operasional`. URL bookmark lama tetap berfungsi via alias map backward-compat.
-  * **Dashboard Admin 8 Widget Komprehensif:** Row 1 (Pendapatan PAID, Pending, Klien Bayar, Tamu). Row 2 (Hari-H hari ini, Hari-H minggu/bulan ini, Undangan Lifecycle, Registrasi Klien). API `/api/admin/overview` ditambah 10 stats field baru.
-  * **Bug Fix `hasPlanCapability(null)`:** Null guard mencegah klien tanpa langganan mendapatkan capability TIER_1 secara tidak sengaja.
-  * **Vitest Testing Infrastructure (56/56 PASS):** Unit + integration tests untuk `pinEncryption`, `receptionistAuth`, `renderTemplate`, `settings`, `invitations`, `orders`, `rsvp`. CI pipeline GitHub Actions dengan PostgreSQL service container.
+- **Standarisasi Kontrak Fisik Thumbnail Ganda & Automated Integrity Gate (v6.3.1)**:
+  * **Standarisasi Aset Fisik 100% (40/40 Tema):** Seluruh 40 tema di database memiliki aset fisik `thumbnail_desktop.webp` dan `thumbnail_mobile.webp` di disk. Eliminasi total seluruh manipulasi fallback `onError` di `app/demo/page.tsx`, `app/(admin)/admin/page.tsx`, dan dasbor klien.
+  * **Pemisahan Tegas `cover_desktop` vs `thumbnail_desktop`:** Slot `LANDING_COVER_DESKTOP` (`cover_desktop.webp`) dikhususkan untuk layar pembuka undangan fisik PC/Laptop pada tema adat tertentu, bukan untuk mockup kartu katalog showroom.
+  * **Universal Preloader Multi-Event:** Injeksi preloader di `lib/renderTemplate.ts` otomatis menyesuaikan teks badge dengan `eventType` (`BIRTHDAY CELEBRATION`, `WALIMATUL KHITAN`, `SYUKURAN AQIQAH`, `GRADUATION CELEBRATION`, `EXCLUSIVE INVITATION`, `THE WEDDING INVITATION`) serta menampilkan monogram tunggal untuk perayaan perseorangan (tanpa monogram palsu "& I").
+  * **Pintu Pengaman Otomatis (`npm run audit:integrity`):** Script `scripts/audit-theme-integrity.ts` menguji ketersediaan fisik aset 40 tema di disk, status HTTP 200 API publik, dan ketiadaan kebocoran teks pernikahan pada tema non-wedding dengan toleransi kegagalan nol (*Zero-Cheating Policy*).
+- **Penyempurnaan Seksi Non-Wedding Hulu-ke-Hilir & CDP High-Fidelity Thumbnails (v6.3.2)**:
+  * **Penyempurnaan Registry Showroom (`lib/demoRegistry.ts`)**: Pengisian data lengkap untuk seluruh seksi non-wedding (`countdownHtml`, `eventSectionHtml`, `gallerySectionHtml`, `giftSectionHtml`, `rsvpSectionHtml`, dan `wishesSectionHtml`) pada tema ulang tahun (`festivo`, `kalandra-birthday`), khitan (`al-fariz`), aqiqah (`al-khalid`), wisuda (`cendekia`), dan gathering (`sinergi`).
+  * **Universal Section Engine di Klien (`lib/themeEngine.ts`)**: Implementasi `buildUniversalGallerySection`, `buildUniversalGiftSection`, `buildUniversalRsvpSection`, dan `buildUniversalWishesSection` pada fungsi komposer klien (`composeKhitanData`, `composeAqiqahData`, `composeWisudaData`, `composeGatheringData`) dengan ketaatan 100% pada variabel CSS dinamis (`var(--primary)`, `var(--card-bg)`, `var(--text-main)`, dll) dan bebas hardcoded hex.
+  * **Generator Thumbnail Asli CDP Beresolusi Tinggi (`scripts/generate-all-thumbnails.ts` / `npm run generate:thumbnails`)**: Mesin tangkapan layar murni berbasis Chrome DevTools Protocol (`Page.captureScreenshot`) dengan emulasi perangkat native (tanpa pemotongan/crop frame):
+    - **Desktop Target**: 1280 × 800 px (Rasio 16:10, Desktop Emulation)
+    - **Mobile Target**: 400 × 800 px (Rasio 1:2, Mobile Emulation dengan Touch Emulation & Retina 2x)
+    - **Anti-Banding & Kualitas Visual**: Lanczos3 kernel resampling + WebP Q90 + smartSubsample di Sharp.
+    - **Konsolidasi Skrip**: Skrip usang (`generate-missing-desktop-thumbnails.ts` dan `generate-thumbnails.ts`) dihapus total; seluruh alur generasi disatukan dalam satu perintah standar `npm run generate:thumbnails`.
+  * **Audit Kepatuhan Ganda**: `npm run audit:integrity` LOLOS (40/40 tema fisik PASS, 40/40 hash unik tanpa duplikat kloning), `npm run test:hygiene` LOLOS (0 pelanggaran hex/token), dan `npx tsc --noEmit` Exit Code 0.
+

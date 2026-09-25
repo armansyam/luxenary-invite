@@ -6,6 +6,8 @@ import Link from "next/link";
 import { compressImageToWebP } from "@/lib/clientImageCompressor";
 import { getThemeBlueprint } from "@/lib/themeDefaults";
 import { getPlanDisplayName } from "@/lib/planUtils";
+import { safeParseParticipants } from "@/lib/participantUtils";
+import { resolveInvitationDisplayName, getMediaSlotLabel } from "@/lib/invitationUtils";
 
 // Pilihan tema dimuat secara dinamis dari API /api/public/themes untuk menjamin sinkronisasi status aktif
 
@@ -74,16 +76,49 @@ const THEME_DRESSCODE_MAP: Record<string, { name: string; colors: string[] }> = 
   ameera: { name: "Heritage Dark Modern Gray", colors: ["#736b5e", "#c2b69d", "#faf8f5"] },
 };
 
-const EVENT_PRESETS = [
-  "Akad Nikah",
-  "Resepsi Pernikahan",
-  "Mappacci / Korontigi",
-  "Mapparola",
-  "Mappasili",
-  "Pemberkatan Nikah",
-  "Syukuran & Pengajian",
-  "Custom Sesi Khusus",
-];
+const EVENT_PRESETS_BY_TYPE: Record<string, string[]> = {
+  WEDDING: [
+    "Akad Nikah",
+    "Resepsi Pernikahan",
+    "Mappacci / Korontigi",
+    "Mapparola",
+    "Mappasili",
+    "Pemberkatan Nikah",
+    "Syukuran & Pengajian",
+    "Custom Sesi Khusus",
+  ],
+  BIRTHDAY: [
+    "Pesta Ulang Tahun",
+    "Tiup Lilin & Potong Kue",
+    "Games & Hiburan",
+    "Ramah Tamah & Makan Bersama",
+    "After Party",
+  ],
+  KHITAN: [
+    "Walimatul Khitan",
+    "Tasyakuran & Doa Bersama",
+    "Ramah Tamah",
+    "Hiburan",
+  ],
+  AQIQAH: [
+    "Tasyakuran Aqiqah",
+    "Cukur Rambut & Tasmiyah",
+    "Tausiyah & Doa Bersama",
+    "Ramah Tamah",
+  ],
+  WISUDA: [
+    "Prosesi Wisuda",
+    "Syukuran Kelulusan",
+    "Ramah Tamah & Foto Bersama",
+  ],
+  GATHERING: [
+    "Registrasi & Welcome Drink",
+    "Opening Ceremony",
+    "Main Activity & Games",
+    "Gala Dinner & Hiburan",
+  ],
+};
+const EVENT_PRESETS = EVENT_PRESETS_BY_TYPE.WEDDING;
 
 function formatIndonesianDatePreview(dateStr?: string): string {
   if (!dateStr) return "";
@@ -874,8 +909,9 @@ export default function EditInvitation() {
       Boolean(getFeatureSetting("showMusic", true)) !== Boolean(getSavedFeatureSetting("showMusic", true))
     );
 
-    // Sec 3: Profil Mempelai
+    // Sec 3: Profil Mempelai / Persona Acara
     const dirty3 = (
+      (invitation.participantsJson || "") !== (savedSnapshot.invitation?.participantsJson || "") ||
       (invitation.groomName || "") !== (savedSnapshot.invitation?.groomName || "") ||
       (invitation.brideName || "") !== (savedSnapshot.invitation?.brideName || "") ||
       (invitation.groomNickname || "") !== (savedSnapshot.invitation?.groomNickname || "") ||
@@ -1169,6 +1205,46 @@ export default function EditInvitation() {
     broadcastToAllLiveIframes({ type: "LUX_REMOTE_EDIT_CHANGE", field: `bankAccounts.${index}.${field}`, value });
   };
 
+  const updateParticipantData = (updater: (prev: Record<string, any>) => Record<string, any>) => {
+    setInvitation((prev: any) => {
+      const current = safeParseParticipants(prev?.participantsJson);
+      const updated = updater(current);
+      const jsonStr = JSON.stringify(updated);
+      const nextInv: any = {
+        ...prev,
+        participantsJson: jsonStr,
+      };
+      if (prev?.eventType === "BIRTHDAY") {
+        if (updated.person?.name !== undefined) nextInv.groomName = updated.person.name;
+        if (updated.person?.nickname !== undefined) nextInv.groomNickname = updated.person.nickname;
+        if (updated.person?.fatherName !== undefined) nextInv.groomFather = updated.person.fatherName;
+        if (updated.person?.motherName !== undefined) nextInv.groomMother = updated.person.motherName;
+        if (updated.person?.instagram !== undefined) nextInv.groomInstagram = updated.person.instagram;
+      } else if (prev?.eventType === "KHITAN") {
+        if (updated.child?.name !== undefined) nextInv.groomName = updated.child.name;
+        if (updated.child?.nickname !== undefined) nextInv.groomNickname = updated.child.nickname;
+        if (updated.parents?.father !== undefined) nextInv.groomFather = updated.parents.father;
+        if (updated.parents?.mother !== undefined) nextInv.groomMother = updated.parents.mother;
+      } else if (prev?.eventType === "AQIQAH") {
+        if (updated.baby?.name !== undefined) nextInv.groomName = updated.baby.name;
+        if (updated.baby?.nickname !== undefined) nextInv.groomNickname = updated.baby.nickname;
+        if (updated.parents?.father !== undefined) nextInv.groomFather = updated.parents.father;
+        if (updated.parents?.mother !== undefined) nextInv.groomMother = updated.parents.mother;
+      } else if (prev?.eventType === "WISUDA") {
+        if (updated.person?.name !== undefined) nextInv.groomName = updated.person.name;
+        if (updated.person?.nickname !== undefined) nextInv.groomNickname = updated.person.nickname;
+      } else if (prev?.eventType === "GATHERING") {
+        if (updated.event?.title !== undefined) nextInv.groomName = updated.event.title;
+      }
+      return nextInv;
+    });
+    broadcastToAllLiveIframes({
+      type: "LUX_REMOTE_EDIT_CHANGE",
+      field: "participantsJson",
+      value: updater(safeParseParticipants(invitation?.participantsJson)),
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
@@ -1204,9 +1280,7 @@ export default function EditInvitation() {
   const showGuestMemoriesGlobal = hasCap("guest_memories") && getFeatureSetting("showGuestMemories", true);
   if (invitation.isLocked && !invitation.isEmergencyUnlocked) {
     const isPublishedLock = invitation.lockReason === "PUBLISHED" || (!invitation.lockReason && (invitation.status === "PUBLISHED" || invitation.status === "EVENT_FINISHED"));
-    const coupleName = displayOrder === "BRIDE_FIRST"
-      ? `${invitation.brideNickname || invitation.brideName || "Mempelai Wanita"} & ${invitation.groomNickname || invitation.groomName || "Mempelai Pria"}`
-      : `${invitation.groomNickname || invitation.groomName || "Mempelai Pria"} & ${invitation.brideNickname || invitation.brideName || "Mempelai Wanita"}`;
+    const coupleName = resolveInvitationDisplayName(invitation);
 
     return (
       <div className="max-w-4xl mx-auto space-y-6 pb-24 font-sans px-4 sm:px-0">
@@ -1300,10 +1374,32 @@ export default function EditInvitation() {
     {
       id: "sec3",
       num: "3",
-      title: "Profil Kedua Mempelai",
-      shortTitle: "Profil Mempelai",
-      summary: (invitation?.groomNickname || invitation?.brideNickname) ? `${invitation?.groomNickname || "Pria"} & ${invitation?.brideNickname || "Wanita"}` : "Nama belum lengkap",
-      isUrgent: !media["GROOM_PHOTO"] || !media["BRIDE_PHOTO"],
+      title: (!invitation?.eventType || invitation?.eventType === "WEDDING")
+        ? "Profil Kedua Mempelai"
+        : invitation?.eventType === "BIRTHDAY"
+        ? "Profil Yang Berulang Tahun"
+        : invitation?.eventType === "KHITAN"
+        ? "Profil Anak & Keluarga"
+        : invitation?.eventType === "AQIQAH"
+        ? "Profil Bayi & Keluarga"
+        : invitation?.eventType === "WISUDA"
+        ? "Profil Wisudawan"
+        : "Profil Acara",
+      shortTitle: (!invitation?.eventType || invitation?.eventType === "WEDDING")
+        ? "Profil Mempelai"
+        : invitation?.eventType === "BIRTHDAY"
+        ? "Profil Ultah"
+        : invitation?.eventType === "KHITAN"
+        ? "Profil Khitan"
+        : invitation?.eventType === "AQIQAH"
+        ? "Profil Aqiqah"
+        : invitation?.eventType === "WISUDA"
+        ? "Profil Wisuda"
+        : "Profil Acara",
+      summary: resolveInvitationDisplayName(invitation),
+      isUrgent: (!invitation?.eventType || invitation?.eventType === "WEDDING")
+        ? (!media["GROOM_PHOTO"] || !media["BRIDE_PHOTO"])
+        : !media["GROOM_PHOTO"],
     },
     {
       id: "sec4",
@@ -1333,11 +1429,12 @@ export default function EditInvitation() {
       title: "Kisah Cinta (Journey of Love)",
       shortTitle: "Kisah Cinta",
       summary: showStory ? `${stories.length} Babak Cerita` : "Nonaktif",
+      hide: Boolean(invitation?.eventType && invitation?.eventType !== "WEDDING"),
     },
     {
       id: "sec8",
       num: "8",
-      title: "Galeri Foto Pre-Wedding & Video Teaser",
+      title: (!invitation?.eventType || invitation?.eventType === "WEDDING") ? "Galeri Foto Pre-Wedding & Video Teaser" : "Galeri Foto & Video Teaser",
       shortTitle: "Galeri & Video",
       summary: showGallery ? (getFeatureSetting("galleryDriveFolderUrl", "") ? "Drive Stream CDN" : "Grid Dinamis") : "Nonaktif",
     },
@@ -1365,7 +1462,7 @@ export default function EditInvitation() {
     {
       id: "sec12",
       num: "12",
-      title: "Filter Instagram (Wedding Frame AR)",
+      title: (!invitation?.eventType || invitation?.eventType === "WEDDING") ? "Filter Instagram (Wedding Frame AR)" : "Filter Instagram (Frame AR)",
       shortTitle: "Filter Instagram",
       summary: showFilter ? "Aktif" : "Nonaktif",
     },
@@ -1394,8 +1491,8 @@ export default function EditInvitation() {
     {
       id: "sec16",
       num: "16",
-      title: "Mitra & Vendor Pernikahan (Wedding Credits)",
-      shortTitle: "Vendor Pernikahan",
+      title: (!invitation?.eventType || invitation?.eventType === "WEDDING") ? "Mitra & Vendor Pernikahan (Wedding Credits)" : "Mitra & Vendor Acara (Credits)",
+      shortTitle: (!invitation?.eventType || invitation?.eventType === "WEDDING") ? "Vendor Pernikahan" : "Vendor Acara",
       summary: getFeatureSetting("showVendors", false)
         ? `${(() => {
             const raw = getFeatureSetting("vendors", []);
@@ -1530,7 +1627,7 @@ export default function EditInvitation() {
           <div>
             <span className="text-[10px] font-bold tracking-widest text-amber-800 uppercase block">Studio Editor Undangan</span>
             <h1 className="text-base sm:text-lg font-serif font-bold text-stone-900 mt-0.5 leading-snug">
-              {displayOrder === "BRIDE_FIRST" ? `${invitation.brideNickname || "Mempelai Wanita"} & ${invitation.groomNickname || "Mempelai Pria"}` : `${invitation.groomNickname || "Mempelai Pria"} & ${invitation.brideNickname || "Mempelai Wanita"}`}
+              {resolveInvitationDisplayName(invitation)}
             </h1>
             <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 flex-wrap">
               <span className="text-xs text-stone-500">
@@ -1642,7 +1739,12 @@ export default function EditInvitation() {
           </div>
 
           {/* Dynamic Action Chips (Pengingat Foto Ringkas & Terpadu) — Hanya di Tab Form Data */}
-          {activeStudioTab === "form" && Boolean(invitation.themeId) && (!media["GROOM_PHOTO"] || !media["BRIDE_PHOTO"] || !media["LANDING_COVER"]) && (
+          {activeStudioTab === "form" && Boolean(invitation.themeId) && (
+            (!media["LANDING_COVER"]) ||
+            ((!invitation?.eventType || invitation?.eventType === "WEDDING")
+              ? (!media["GROOM_PHOTO"] || !media["BRIDE_PHOTO"])
+              : (!media["GROOM_PHOTO"]))
+          ) && (
             <div className="flex items-center justify-between sm:justify-end gap-2 border-t border-stone-200/60 sm:border-t-0 pt-2 sm:pt-0 w-full sm:w-auto px-1 sm:px-0">
               <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-800 bg-amber-50/90 border border-amber-200/70 px-2 py-1 rounded-lg shrink-0">
                 <svg className="w-3 h-3 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1663,7 +1765,9 @@ export default function EditInvitation() {
                     + Sampul
                   </button>
                 )}
-                {(!media["GROOM_PHOTO"] || !media["BRIDE_PHOTO"]) && (
+                {((!invitation?.eventType || invitation?.eventType === "WEDDING")
+                  ? (!media["GROOM_PHOTO"] || !media["BRIDE_PHOTO"])
+                  : (!media["GROOM_PHOTO"])) && (
                   <button
                     type="button"
                     onClick={() => {
@@ -1672,7 +1776,7 @@ export default function EditInvitation() {
                     }}
                     className="px-2.5 py-1 bg-amber-800 hover:bg-amber-900 text-white font-semibold rounded-lg text-[11px] transition cursor-pointer shadow-2xs"
                   >
-                    + Foto Mempelai
+                    {(!invitation?.eventType || invitation?.eventType === "WEDDING") ? "+ Foto Mempelai" : "+ Foto Profil"}
                   </button>
                 )}
               </div>
@@ -2142,8 +2246,13 @@ export default function EditInvitation() {
           <div className="p-3.5 sm:p-7 space-y-5 sm:space-y-6">
             {/* Theme Mockups for this Category / Store */}
             {(() => {
-              // Seluruh tema desain bebas dipilih di semua paket (All-Access Themes)
-              const availableThemes = themesList;
+              // Seluruh tema desain bebas dipilih di semua paket (All-Access Themes), difilter presisi sesuai eventType
+              const clientEventType = (invitation?.eventType || "WEDDING").toUpperCase();
+              const eventThemes = themesList.filter((t) => {
+                const tEvent = (t.eventType || "WEDDING").toUpperCase();
+                return tEvent === clientEventType;
+              });
+              const availableThemes = eventThemes.length > 0 ? eventThemes : themesList;
 
               // Dapatkan daftar kategori unik sesuai paket klien
               const CATEGORY_ORDER = ["MINIMALIST", "MODERN", "TRADITIONAL"];
@@ -2270,14 +2379,6 @@ export default function EditInvitation() {
                                   src={thumbDesktop}
                                   alt={`${th.name} desktop`}
                                   loading="lazy"
-                                  onError={(e) => {
-                                    const el = e.currentTarget;
-                                    if (!el.src.includes("hero.webp") && !el.src.includes("cover.webp")) {
-                                      el.src = `/demo/${th.id}/hero.webp`;
-                                    } else if (el.src.includes("hero.webp")) {
-                                      el.src = `/demo/${th.id}/cover.webp`;
-                                    }
-                                  }}
                                 />
                                 <div className="stp-glare"/>
                               </div>
@@ -2291,10 +2392,6 @@ export default function EditInvitation() {
                                   src={thumbMobile}
                                   alt={`${th.name} mobile`}
                                   loading="lazy"
-                                  onError={(e) => {
-                                    const el = e.currentTarget;
-                                    if (!el.src.includes("cover.webp")) el.src = `/demo/${th.id}/cover.webp`;
-                                  }}
                                 />
                                 <div className="stp-glare"/>
                               </div>
@@ -2339,32 +2436,54 @@ export default function EditInvitation() {
             })()}
 
             {/* Tagline / Judul Header Undangan */}
-            <div className="p-4 bg-stone-50 border border-stone-200 rounded-2xl space-y-2.5">
-              <div>
-                <label className="block text-xs font-bold text-stone-900">Tagline / Label Header Undangan</label>
-                <p className="text-[10px] text-stone-500">Teks pembuka di atas nama kedua mempelai pada sampul &amp; kartu undangan</p>
-              </div>
-              <input
-                type="text"
-                value={getFeatureSetting("weddingTagline", "THE WEDDING OF")}
-                onChange={(e) => updateFeatureSetting("weddingTagline", e.target.value)}
-                placeholder="THE WEDDING OF"
-                className="w-full p-2.5 bg-white border border-stone-200 rounded-xl text-xs font-bold text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700/30 uppercase tracking-wider"
-              />
-              <div className="flex items-center gap-1.5 flex-wrap pt-1">
-                <span className="text-[10px] text-stone-500 font-medium">Pilihan Cepat:</span>
-                {["THE WEDDING OF", "WALIMATUL 'URS", "THE WEDDING CELEBRATION", "HOLY MATRIMONY", "PAWIWAHAN", "UNDANGAN PERNIKAHAN"].map((tag) => (
-                  <button
-                    key={tag}
-                    type="button"
-                    onClick={() => updateFeatureSetting("weddingTagline", tag)}
-                    className="px-2.5 py-1 bg-white hover:bg-amber-50 hover:text-amber-900 border border-stone-200 rounded-lg text-[10px] font-semibold transition cursor-pointer text-stone-600"
-                  >
-                    {tag}
-                  </button>
-                ))}
-              </div>
-            </div>
+            {(() => {
+              const evType = invitation?.eventType || "WEDDING";
+              const defaultTagline = evType === "BIRTHDAY" ? "BIRTHDAY CELEBRATION"
+                : evType === "KHITAN" ? "WALIMATUL KHITAN"
+                : evType === "AQIQAH" ? "TASYAKURAN AQIQAH"
+                : evType === "WISUDA" ? "GRADUATION CELEBRATION"
+                : evType === "GATHERING" ? "GATHERING CELEBRATION"
+                : "THE WEDDING OF";
+              const tagOptions = evType === "BIRTHDAY"
+                ? ["BIRTHDAY CELEBRATION", "SWEET SEVENTEEN", "HAPPY BIRTHDAY", "MILAD MUBARAK", "UNDANGAN ULANG TAHUN"]
+                : evType === "KHITAN"
+                ? ["WALIMATUL KHITAN", "TASYAKURAN KHITAN", "UNDANGAN KHITANAN"]
+                : evType === "AQIQAH"
+                ? ["TASYAKURAN AQIQAH", "WALIMATUL AQIQAH", "UNDANGAN AQIQAH"]
+                : evType === "WISUDA"
+                ? ["GRADUATION CELEBRATION", "SYUKURAN KELULUSAN", "UNDANGAN WISUDA"]
+                : evType === "GATHERING"
+                ? ["ANNUAL GATHERING", "FAMILY GATHERING", "COMMUNITY MEETUP", "REUNI AKBAR"]
+                : ["THE WEDDING OF", "WALIMATUL 'URS", "THE WEDDING CELEBRATION", "HOLY MATRIMONY", "PAWIWAHAN", "UNDANGAN PERNIKAHAN"];
+              return (
+                <div className="p-4 bg-stone-50 border border-stone-200 rounded-2xl space-y-2.5">
+                  <div>
+                    <label className="block text-xs font-bold text-stone-900">Tagline / Label Header Undangan</label>
+                    <p className="text-[10px] text-stone-500">Teks pembuka di atas nama pada sampul &amp; kartu undangan</p>
+                  </div>
+                  <input
+                    type="text"
+                    value={getFeatureSetting("weddingTagline", defaultTagline)}
+                    onChange={(e) => updateFeatureSetting("weddingTagline", e.target.value)}
+                    placeholder={defaultTagline}
+                    className="w-full p-2.5 bg-white border border-stone-200 rounded-xl text-xs font-bold text-stone-900 focus:outline-none focus:ring-2 focus:ring-amber-700/30 uppercase tracking-wider"
+                  />
+                  <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                    <span className="text-[10px] text-stone-500 font-medium">Pilihan Cepat:</span>
+                    {tagOptions.map((tag) => (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => updateFeatureSetting("weddingTagline", tag)}
+                        className="px-2.5 py-1 bg-white hover:bg-amber-50 hover:text-amber-900 border border-stone-200 rounded-lg text-[10px] font-semibold transition cursor-pointer text-stone-600"
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Section Save Button */}
             <div className="pt-4 border-t border-stone-100 flex justify-end">
@@ -2770,20 +2889,34 @@ export default function EditInvitation() {
         >
           <div className="min-w-0">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="text-sm sm:text-base font-bold text-stone-900">3. Profil Kedua Mempelai</h2>
+              <h2 className="text-sm sm:text-base font-bold text-stone-900">
+                {(!invitation?.eventType || invitation?.eventType === "WEDDING")
+                  ? "3. Profil Kedua Mempelai"
+                  : invitation?.eventType === "BIRTHDAY"
+                  ? "3. Profil Yang Berulang Tahun"
+                  : invitation?.eventType === "KHITAN"
+                  ? "3. Profil Anak & Keluarga"
+                  : invitation?.eventType === "AQIQAH"
+                  ? "3. Profil Bayi & Keluarga"
+                  : invitation?.eventType === "WISUDA"
+                  ? "3. Profil Wisudawan"
+                  : "3. Profil Acara"}
+              </h2>
               {collapsed.sec3 && (
                 <span className="text-xs text-stone-500 font-normal truncate flex items-center gap-1.5">
                   <span className="text-stone-300">•</span>
                   <span className="font-medium text-stone-700">
-                    {displayOrder === "BRIDE_FIRST"
-                      ? `${invitation.brideNickname || "Wanita"} & ${invitation.groomNickname || "Pria"}`
-                      : `${invitation.groomNickname || "Pria"} & ${invitation.brideNickname || "Wanita"}`}
+                    {resolveInvitationDisplayName(invitation)}
                   </span>
                 </span>
               )}
             </div>
             {!collapsed.sec3 && (
-              <p className="text-xs text-stone-500 mt-0.5">Data lengkap, akun sosial media, dan foto portrait pengantin</p>
+              <p className="text-xs text-stone-500 mt-0.5">
+                {(!invitation?.eventType || invitation?.eventType === "WEDDING")
+                  ? "Data lengkap, akun sosial media, dan foto portrait pengantin"
+                  : "Informasi profil penyelenggara acara, keluarga, dan foto utama"}
+              </p>
             )}
           </div>
           <div onClick={(e) => e.stopPropagation()}>
@@ -2800,90 +2933,230 @@ export default function EditInvitation() {
 
         {!collapsed.sec3 && (
           <div className="p-3.5 sm:p-7 space-y-5 sm:space-y-6">
-            <div className="flex items-center p-1 bg-stone-100 rounded-xl border border-stone-200 self-start sm:self-auto w-fit">
-              <button
-                type="button"
-                onClick={() => updateFeatureSetting("displayOrder", "BRIDE_FIRST")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                  displayOrder === "BRIDE_FIRST"
-                    ? "bg-white text-rose-900 shadow-xs border border-stone-200/80"
-                    : "text-stone-600 hover:text-stone-900"
-                }`}
-              >
-                Mempelai Wanita Dahulu
-              </button>
-              <button
-                type="button"
-                onClick={() => updateFeatureSetting("displayOrder", "GROOM_FIRST")}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                  displayOrder === "GROOM_FIRST"
-                    ? "bg-white text-amber-900 shadow-xs border border-stone-200/80"
-                    : "text-stone-600 hover:text-stone-900"
-                }`}
-              >
-                Mempelai Pria Dahulu
-              </button>
-            </div>
+            {/* Form Wedding / Multi-Event Persona */}
+            {(!invitation.eventType || invitation.eventType === "WEDDING") ? (
+              <>
+                <div className="flex items-center p-1 bg-stone-100 rounded-xl border border-stone-200 self-start sm:self-auto w-fit">
+                  <button
+                    type="button"
+                    onClick={() => updateFeatureSetting("displayOrder", "BRIDE_FIRST")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                      displayOrder === "BRIDE_FIRST"
+                        ? "bg-white text-rose-900 shadow-xs border border-stone-200/80"
+                        : "text-stone-600 hover:text-stone-900"
+                    }`}
+                  >
+                    Mempelai Wanita Dahulu
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateFeatureSetting("displayOrder", "GROOM_FIRST")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                      displayOrder === "GROOM_FIRST"
+                        ? "bg-white text-amber-900 shadow-xs border border-stone-200/80"
+                        : "text-stone-600 hover:text-stone-900"
+                    }`}
+                  >
+                    Mempelai Pria Dahulu
+                  </button>
+                </div>
 
-            <div className="space-y-5">
-              {displayOrder === "BRIDE_FIRST" ? (
-                <>
-                  {/* Card Data Mempelai Wanita */}
-                  <div className="p-4 sm:p-5 rounded-2xl border border-rose-200/80 bg-rose-50/20 space-y-4">
-                    <div className="flex items-center justify-between border-b border-rose-100 pb-2">
-                      <h3 className="text-xs font-bold text-rose-950 uppercase tracking-wider">Mempelai Wanita (The Bride) — Tampil Pertama</h3>
-                      <span className="text-[10px] font-bold bg-rose-100 text-rose-800 px-2.5 py-0.5 rounded-full">Pihak Mengundang</span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <Input label="Nama Lengkap Wanita *" value={invitation.brideName || ""} onChange={(v) => updateField("brideName", v)} placeholder="Masukkan nama lengkap mempelai wanita" />
-                      <Input label="Nama Panggilan Wanita" value={invitation.brideNickname || ""} onChange={(v) => updateField("brideNickname", v)} placeholder="Masukkan panggilan wanita" />
-                      <Input label="Nama Ayah (Mempelai Wanita)" value={invitation.brideFather || ""} onChange={(v) => updateField("brideFather", v)} placeholder="Contoh: Tomm Posma / Alm. Tomm Posma / Bpk. Tomm Posma" />
-                      <Input label="Nama Ibu (Mempelai Wanita)" value={invitation.brideMother || ""} onChange={(v) => updateField("brideMother", v)} placeholder="Contoh: Endang Noffiyanti / Almh. Endang Noffiyanti / Ibu Endang Noffiyanti" />
-                      <Input label="Username Instagram Wanita" value={invitation.brideInstagram || ""} onChange={(v) => updateField("brideInstagram", v)} placeholder="usernameig (tanpa @)" />
-                    </div>
-                  </div>
+                <div className="space-y-5">
+                  {displayOrder === "BRIDE_FIRST" ? (
+                    <>
+                      {/* Card Data Mempelai Wanita */}
+                      <div className="p-4 sm:p-5 rounded-2xl border border-rose-200/80 bg-rose-50/20 space-y-4">
+                        <div className="flex items-center justify-between border-b border-rose-100 pb-2">
+                          <h3 className="text-xs font-bold text-rose-950 uppercase tracking-wider">Mempelai Wanita (The Bride) — Tampil Pertama</h3>
+                          <span className="text-[10px] font-bold bg-rose-100 text-rose-800 px-2.5 py-0.5 rounded-full">Pihak Mengundang</span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <Input label="Nama Lengkap Wanita *" value={invitation.brideName || ""} onChange={(v) => updateField("brideName", v)} placeholder="Masukkan nama lengkap mempelai wanita" />
+                          <Input label="Nama Panggilan Wanita" value={invitation.brideNickname || ""} onChange={(v) => updateField("brideNickname", v)} placeholder="Masukkan panggilan wanita" />
+                          <Input label="Nama Ayah (Mempelai Wanita)" value={invitation.brideFather || ""} onChange={(v) => updateField("brideFather", v)} placeholder="Contoh: Tomm Posma / Alm. Tomm Posma / Bpk. Tomm Posma" />
+                          <Input label="Nama Ibu (Mempelai Wanita)" value={invitation.brideMother || ""} onChange={(v) => updateField("brideMother", v)} placeholder="Contoh: Endang Noffiyanti / Almh. Endang Noffiyanti / Ibu Endang Noffiyanti" />
+                          <Input label="Username Instagram Wanita" value={invitation.brideInstagram || ""} onChange={(v) => updateField("brideInstagram", v)} placeholder="usernameig (tanpa @)" />
+                        </div>
+                      </div>
 
-                  {/* Card Data Mempelai Pria */}
-                  <div className="p-4 sm:p-5 rounded-2xl border border-stone-200 bg-stone-50/40 space-y-4">
-                    <div className="flex items-center justify-between border-b border-stone-200/80 pb-2">
-                      <h3 className="text-xs font-bold text-stone-900 uppercase tracking-wider">Mempelai Pria (The Groom)</h3>
-                      <span className="text-[10px] font-bold bg-stone-200/70 text-stone-800 px-2.5 py-0.5 rounded-full">Pria</span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <Input label="Nama Lengkap Pria *" value={invitation.groomName || ""} onChange={(v) => updateField("groomName", v)} placeholder="Masukkan nama lengkap mempelai pria" />
-                      <Input label="Nama Panggilan Pria" value={invitation.groomNickname || ""} onChange={(v) => updateField("groomNickname", v)} placeholder="Masukkan panggilan pria" />
-                      <Input label="Nama Ayah (Mempelai Pria)" value={invitation.groomFather || ""} onChange={(v) => updateField("groomFather", v)} placeholder="Contoh: Arif Yaniadi / Alm. Arif Yaniadi / Bpk. Arif Yaniadi" />
-                      <Input label="Nama Ibu (Mempelai Pria)" value={invitation.groomMother || ""} onChange={(v) => updateField("groomMother", v)} placeholder="Contoh: Yuni Widiastuti / Almh. Yuni Widiastuti / Ibu Yuni Widiastuti" />
-                      <Input label="Username Instagram Pria" value={invitation.groomInstagram || ""} onChange={(v) => updateField("groomInstagram", v)} placeholder="usernameig (tanpa @)" />
-                    </div>
-                  </div>
+                      {/* Card Data Mempelai Pria */}
+                      <div className="p-4 sm:p-5 rounded-2xl border border-stone-200 bg-stone-50/40 space-y-4">
+                        <div className="flex items-center justify-between border-b border-stone-200/80 pb-2">
+                          <h3 className="text-xs font-bold text-stone-900 uppercase tracking-wider">Mempelai Pria (The Groom)</h3>
+                          <span className="text-[10px] font-bold bg-stone-200/70 text-stone-800 px-2.5 py-0.5 rounded-full">Pria</span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <Input label="Nama Lengkap Pria *" value={invitation.groomName || ""} onChange={(v) => updateField("groomName", v)} placeholder="Masukkan nama lengkap mempelai pria" />
+                          <Input label="Nama Panggilan Pria" value={invitation.groomNickname || ""} onChange={(v) => updateField("groomNickname", v)} placeholder="Masukkan panggilan pria" />
+                          <Input label="Nama Ayah (Mempelai Pria)" value={invitation.groomFather || ""} onChange={(v) => updateField("groomFather", v)} placeholder="Contoh: Arif Yaniadi / Alm. Arif Yaniadi / Bpk. Arif Yaniadi" />
+                          <Input label="Nama Ibu (Mempelai Pria)" value={invitation.groomMother || ""} onChange={(v) => updateField("groomMother", v)} placeholder="Contoh: Yuni Widiastuti / Almh. Yuni Widiastuti / Ibu Yuni Widiastuti" />
+                          <Input label="Username Instagram Pria" value={invitation.groomInstagram || ""} onChange={(v) => updateField("groomInstagram", v)} placeholder="usernameig (tanpa @)" />
+                        </div>
+                      </div>
 
-                  {/* Foto Portrait Berdampingan di Bagian Bawah */}
-                  <div className="pt-1 space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-xs font-bold text-stone-900">Foto Portrait Kedua Mempelai</h3>
-                        <p className="text-[10px] text-stone-500">Foto portrait khusus masing-masing mempelai</p>
+                      {/* Foto Portrait Berdampingan di Bagian Bawah */}
+                      <div className="pt-1 space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="text-xs font-bold text-stone-900">Foto Portrait Kedua Mempelai</h3>
+                            <p className="text-[10px] text-stone-500">Foto portrait khusus masing-masing mempelai</p>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <PhotoInput
+                            label="Foto Portrait Mempelai Wanita"
+                            desc="Foto portrait khusus mempelai wanita"
+                            value={media["BRIDE_PHOTO"] || ""}
+                            onChange={(url) => updateMedia("BRIDE_PHOTO", url)}
+                            placeholder="https://.../bride-portrait.jpg"
+                            invitationId={invitationId}
+                            slot="BRIDE_PHOTO"
+                            onUploadStart={handleUploadStart}
+                            onUploadEnd={handleUploadEnd}
+                          />
+                          <PhotoInput
+                            label="Foto Portrait Mempelai Pria"
+                            desc="Foto portrait khusus mempelai pria"
+                            value={media["GROOM_PHOTO"] || ""}
+                            onChange={(url) => updateMedia("GROOM_PHOTO", url)}
+                            placeholder="https://.../groom-portrait.jpg"
+                            invitationId={invitationId}
+                            slot="GROOM_PHOTO"
+                            onUploadStart={handleUploadStart}
+                            onUploadEnd={handleUploadEnd}
+                          />
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Card Data Mempelai Pria */}
+                      <div className="p-4 sm:p-5 rounded-2xl border border-amber-200/80 bg-amber-50/20 space-y-4">
+                        <div className="flex items-center justify-between border-b border-amber-100 pb-2">
+                          <h3 className="text-xs font-bold text-amber-950 uppercase tracking-wider">Mempelai Pria (The Groom) — Tampil Pertama</h3>
+                          <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full">Pihak Mengundang</span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <Input label="Nama Lengkap Pria *" value={invitation.groomName || ""} onChange={(v) => updateField("groomName", v)} placeholder="Masukkan nama lengkap mempelai pria" />
+                          <Input label="Nama Panggilan Pria" value={invitation.groomNickname || ""} onChange={(v) => updateField("groomNickname", v)} placeholder="Masukkan panggilan pria" />
+                          <Input label="Nama Ayah (Mempelai Pria)" value={invitation.groomFather || ""} onChange={(v) => updateField("groomFather", v)} placeholder="Contoh: Arif Yaniadi / Alm. Arif Yaniadi / Bpk. Arif Yaniadi" />
+                          <Input label="Nama Ibu (Mempelai Pria)" value={invitation.groomMother || ""} onChange={(v) => updateField("groomMother", v)} placeholder="Contoh: Yuni Widiastuti / Almh. Yuni Widiastuti / Ibu Yuni Widiastuti" />
+                          <Input label="Username Instagram Pria" value={invitation.groomInstagram || ""} onChange={(v) => updateField("groomInstagram", v)} placeholder="usernameig (tanpa @)" />
+                        </div>
+                      </div>
+
+                      {/* Card Data Mempelai Wanita */}
+                      <div className="p-4 sm:p-5 rounded-2xl border border-stone-200 bg-stone-50/40 space-y-4">
+                        <div className="flex items-center justify-between border-b border-stone-200/80 pb-2">
+                          <h3 className="text-xs font-bold text-stone-900 uppercase tracking-wider">Mempelai Wanita (The Bride)</h3>
+                          <span className="text-[10px] font-bold bg-stone-200/70 text-stone-800 px-2.5 py-0.5 rounded-full">Wanita</span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <Input label="Nama Lengkap Wanita *" value={invitation.brideName || ""} onChange={(v) => updateField("brideName", v)} placeholder="Masukkan nama lengkap mempelai wanita" />
+                          <Input label="Nama Panggilan Wanita" value={invitation.brideNickname || ""} onChange={(v) => updateField("brideNickname", v)} placeholder="Masukkan panggilan wanita" />
+                          <Input label="Nama Ayah (Mempelai Wanita)" value={invitation.brideFather || ""} onChange={(v) => updateField("brideFather", v)} placeholder="Contoh: Tomm Posma / Alm. Tomm Posma / Bpk. Tomm Posma" />
+                          <Input label="Nama Ibu (Mempelai Wanita)" value={invitation.brideMother || ""} onChange={(v) => updateField("brideMother", v)} placeholder="Contoh: Endang Noffiyanti / Almh. Endang Noffiyanti / Ibu Endang Noffiyanti" />
+                          <Input label="Username Instagram Wanita" value={invitation.brideInstagram || ""} onChange={(v) => updateField("brideInstagram", v)} placeholder="usernameig (tanpa @)" />
+                        </div>
+                      </div>
+
+                      {/* Foto Portrait Berdampingan di Bagian Bawah */}
+                      <div className="pt-1 space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="text-xs font-bold text-stone-900">Foto Portrait Kedua Mempelai</h3>
+                            <p className="text-[10px] text-stone-500">Foto portrait khusus masing-masing mempelai</p>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <PhotoInput
+                            label="Foto Portrait Mempelai Pria"
+                            desc="Foto portrait khusus mempelai pria"
+                            value={media["GROOM_PHOTO"] || ""}
+                            onChange={(url) => updateMedia("GROOM_PHOTO", url)}
+                            placeholder="https://.../groom-portrait.jpg"
+                            invitationId={invitationId}
+                            slot="GROOM_PHOTO"
+                            onUploadStart={handleUploadStart}
+                            onUploadEnd={handleUploadEnd}
+                          />
+                          <PhotoInput
+                            label="Foto Portrait Mempelai Wanita"
+                            desc="Foto portrait khusus mempelai wanita"
+                            value={media["BRIDE_PHOTO"] || ""}
+                            onChange={(url) => updateMedia("BRIDE_PHOTO", url)}
+                            placeholder="https://.../bride-portrait.jpg"
+                            invitationId={invitationId}
+                            slot="BRIDE_PHOTO"
+                            onUploadStart={handleUploadStart}
+                            onUploadEnd={handleUploadEnd}
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </>
+            ) : (() => {
+              const p = safeParseParticipants(invitation?.participantsJson);
+              const evType = invitation.eventType;
+
+              if (evType === "BIRTHDAY") {
+                const person = p.person || {};
+                return (
+                  <div className="space-y-5">
+                    <div className="p-4 sm:p-5 rounded-2xl border border-amber-200/80 bg-amber-50/20 space-y-4">
+                      <div className="flex items-center justify-between border-b border-amber-100 pb-2">
+                        <h3 className="text-xs font-bold text-amber-950 uppercase tracking-wider">Profil Yang Berulang Tahun</h3>
+                        <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full">Birthday Person</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <Input
+                          label="Nama Lengkap *"
+                          value={person.name || invitation.groomName || ""}
+                          onChange={(v) => updateParticipantData((prev) => ({ ...prev, person: { ...prev.person, name: v } }))}
+                          placeholder="Masukkan nama lengkap"
+                        />
+                        <Input
+                          label="Nama Panggilan *"
+                          value={person.nickname || invitation.groomNickname || ""}
+                          onChange={(v) => updateParticipantData((prev) => ({ ...prev, person: { ...prev.person, nickname: v } }))}
+                          placeholder="Nama panggilan (cth: Sarah / Rian)"
+                        />
+                        <Input
+                          label="Ulang Tahun Ke-"
+                          value={person.age !== undefined ? String(person.age) : ""}
+                          onChange={(v) => updateParticipantData((prev) => ({ ...prev, person: { ...prev.person, age: v ? parseInt(v, 10) || undefined : undefined } }))}
+                          placeholder="Contoh: 17, 21, 25"
+                        />
+                        <Input
+                          label="Username Instagram"
+                          value={person.instagram || invitation.groomInstagram || ""}
+                          onChange={(v) => updateParticipantData((prev) => ({ ...prev, person: { ...prev.person, instagram: v } }))}
+                          placeholder="usernameig (tanpa @)"
+                        />
+                        <Input
+                          label="Nama Ayah (Opsional)"
+                          value={person.fatherName || invitation.groomFather || ""}
+                          onChange={(v) => updateParticipantData((prev) => ({ ...prev, person: { ...prev.person, fatherName: v } }))}
+                          placeholder="Bpk. ..."
+                        />
+                        <Input
+                          label="Nama Ibu (Opsional)"
+                          value={person.motherName || invitation.groomMother || ""}
+                          onChange={(prevVal) => updateParticipantData((prev) => ({ ...prev, person: { ...prev.person, motherName: prevVal } }))}
+                          placeholder="Ibu ..."
+                        />
                       </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                    <div className="pt-1 space-y-2.5">
                       <PhotoInput
-                        label="Foto Portrait Mempelai Wanita"
-                        desc="Foto portrait khusus mempelai wanita"
-                        value={media["BRIDE_PHOTO"] || ""}
-                        onChange={(url) => updateMedia("BRIDE_PHOTO", url)}
-                        placeholder="https://.../bride-portrait.jpg"
-                        invitationId={invitationId}
-                        slot="BRIDE_PHOTO"
-                        onUploadStart={handleUploadStart}
-                        onUploadEnd={handleUploadEnd}
-                      />
-                      <PhotoInput
-                        label="Foto Portrait Mempelai Pria"
-                        desc="Foto portrait khusus mempelai pria"
+                        label={getMediaSlotLabel("GROOM_PHOTO", "BIRTHDAY")}
+                        desc="Foto portrait utama yang berulang tahun"
                         value={media["GROOM_PHOTO"] || ""}
                         onChange={(url) => updateMedia("GROOM_PHOTO", url)}
-                        placeholder="https://.../groom-portrait.jpg"
+                        placeholder="https://.../birthday-portrait.jpg"
                         invitationId={invitationId}
                         slot="GROOM_PHOTO"
                         onUploadStart={handleUploadStart}
@@ -2891,75 +3164,232 @@ export default function EditInvitation() {
                       />
                     </div>
                   </div>
-                </>
-              ) : (
-                <>
-                  {/* Card Data Mempelai Pria */}
-                  <div className="p-4 sm:p-5 rounded-2xl border border-amber-200/80 bg-amber-50/20 space-y-4">
-                    <div className="flex items-center justify-between border-b border-amber-100 pb-2">
-                      <h3 className="text-xs font-bold text-amber-950 uppercase tracking-wider">Mempelai Pria (The Groom) — Tampil Pertama</h3>
-                      <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full">Pihak Mengundang</span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <Input label="Nama Lengkap Pria *" value={invitation.groomName || ""} onChange={(v) => updateField("groomName", v)} placeholder="Masukkan nama lengkap mempelai pria" />
-                      <Input label="Nama Panggilan Pria" value={invitation.groomNickname || ""} onChange={(v) => updateField("groomNickname", v)} placeholder="Masukkan panggilan pria" />
-                      <Input label="Nama Ayah (Mempelai Pria)" value={invitation.groomFather || ""} onChange={(v) => updateField("groomFather", v)} placeholder="Contoh: Arif Yaniadi / Alm. Arif Yaniadi / Bpk. Arif Yaniadi" />
-                      <Input label="Nama Ibu (Mempelai Pria)" value={invitation.groomMother || ""} onChange={(v) => updateField("groomMother", v)} placeholder="Contoh: Yuni Widiastuti / Almh. Yuni Widiastuti / Ibu Yuni Widiastuti" />
-                      <Input label="Username Instagram Pria" value={invitation.groomInstagram || ""} onChange={(v) => updateField("groomInstagram", v)} placeholder="usernameig (tanpa @)" />
-                    </div>
-                  </div>
+                );
+              }
 
-                  {/* Card Data Mempelai Wanita */}
-                  <div className="p-4 sm:p-5 rounded-2xl border border-stone-200 bg-stone-50/40 space-y-4">
-                    <div className="flex items-center justify-between border-b border-stone-200/80 pb-2">
-                      <h3 className="text-xs font-bold text-stone-900 uppercase tracking-wider">Mempelai Wanita (The Bride)</h3>
-                      <span className="text-[10px] font-bold bg-stone-200/70 text-stone-800 px-2.5 py-0.5 rounded-full">Wanita</span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <Input label="Nama Lengkap Wanita *" value={invitation.brideName || ""} onChange={(v) => updateField("brideName", v)} placeholder="Masukkan nama lengkap mempelai wanita" />
-                      <Input label="Nama Panggilan Wanita" value={invitation.brideNickname || ""} onChange={(v) => updateField("brideNickname", v)} placeholder="Masukkan panggilan wanita" />
-                      <Input label="Nama Ayah (Mempelai Wanita)" value={invitation.brideFather || ""} onChange={(v) => updateField("brideFather", v)} placeholder="Contoh: Tomm Posma / Alm. Tomm Posma / Bpk. Tomm Posma" />
-                      <Input label="Nama Ibu (Mempelai Wanita)" value={invitation.brideMother || ""} onChange={(v) => updateField("brideMother", v)} placeholder="Contoh: Endang Noffiyanti / Almh. Endang Noffiyanti / Ibu Endang Noffiyanti" />
-                      <Input label="Username Instagram Wanita" value={invitation.brideInstagram || ""} onChange={(v) => updateField("brideInstagram", v)} placeholder="usernameig (tanpa @)" />
-                    </div>
-                  </div>
-
-                  {/* Foto Portrait Berdampingan di Bagian Bawah */}
-                  <div className="pt-1 space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-xs font-bold text-stone-900">Foto Portrait Kedua Mempelai</h3>
-                        <p className="text-[10px] text-stone-500">Foto portrait khusus masing-masing mempelai</p>
+              if (evType === "KHITAN") {
+                const child = p.child || {};
+                const parents = p.parents || {};
+                return (
+                  <div className="space-y-5">
+                    <div className="p-4 sm:p-5 rounded-2xl border border-emerald-200/80 bg-emerald-50/20 space-y-4">
+                      <div className="flex items-center justify-between border-b border-emerald-100 pb-2">
+                        <h3 className="text-xs font-bold text-emerald-950 uppercase tracking-wider">Profil Anak Yang Dikhitan</h3>
+                        <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full">Khitan</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <Input
+                          label="Nama Lengkap Anak *"
+                          value={child.name || invitation.groomName || ""}
+                          onChange={(v) => updateParticipantData((prev) => ({ ...prev, child: { ...prev.child, name: v } }))}
+                          placeholder="Masukkan nama lengkap anak"
+                        />
+                        <Input
+                          label="Nama Panggilan *"
+                          value={child.nickname || invitation.groomNickname || ""}
+                          onChange={(v) => updateParticipantData((prev) => ({ ...prev, child: { ...prev.child, nickname: v } }))}
+                          placeholder="Nama panggilan anak"
+                        />
+                        <Input
+                          label="Usia Anak"
+                          value={child.age !== undefined ? String(child.age) : ""}
+                          onChange={(v) => updateParticipantData((prev) => ({ ...prev, child: { ...prev.child, age: v ? parseInt(v, 10) || undefined : undefined } }))}
+                          placeholder="Contoh: 7, 10"
+                        />
+                        <Input
+                          label="Nama Ayah"
+                          value={parents.father || invitation.groomFather || ""}
+                          onChange={(v) => updateParticipantData((prev) => ({ ...prev, parents: { ...prev.parents, father: v } }))}
+                          placeholder="Bpk. ..."
+                        />
+                        <Input
+                          label="Nama Ibu"
+                          value={parents.mother || invitation.groomMother || ""}
+                          onChange={(v) => updateParticipantData((prev) => ({ ...prev, parents: { ...prev.parents, mother: v } }))}
+                          placeholder="Ibu ..."
+                        />
                       </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                    <div className="pt-1 space-y-2.5">
                       <PhotoInput
-                        label="Foto Portrait Mempelai Pria"
-                        desc="Foto portrait khusus mempelai pria"
+                        label={getMediaSlotLabel("GROOM_PHOTO", "KHITAN")}
+                        desc="Foto portrait anak yang dikhitan"
                         value={media["GROOM_PHOTO"] || ""}
                         onChange={(url) => updateMedia("GROOM_PHOTO", url)}
-                        placeholder="https://.../groom-portrait.jpg"
+                        placeholder="https://.../khitan-portrait.jpg"
                         invitationId={invitationId}
                         slot="GROOM_PHOTO"
                         onUploadStart={handleUploadStart}
                         onUploadEnd={handleUploadEnd}
                       />
+                    </div>
+                  </div>
+                );
+              }
+
+              if (evType === "AQIQAH") {
+                const baby = p.baby || {};
+                const parents = p.parents || {};
+                return (
+                  <div className="space-y-5">
+                    <div className="p-4 sm:p-5 rounded-2xl border border-teal-200/80 bg-teal-50/20 space-y-4">
+                      <div className="flex items-center justify-between border-b border-teal-100 pb-2">
+                        <h3 className="text-xs font-bold text-teal-950 uppercase tracking-wider">Profil Bayi &amp; Keluarga</h3>
+                        <span className="text-[10px] font-bold bg-teal-100 text-teal-800 px-2.5 py-0.5 rounded-full">Aqiqah</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <Input
+                          label="Nama Lengkap Bayi *"
+                          value={baby.name || invitation.groomName || ""}
+                          onChange={(v) => updateParticipantData((prev) => ({ ...prev, baby: { ...prev.baby, name: v } }))}
+                          placeholder="Masukkan nama lengkap bayi"
+                        />
+                        <Input
+                          label="Nama Panggilan *"
+                          value={baby.nickname || invitation.groomNickname || ""}
+                          onChange={(v) => updateParticipantData((prev) => ({ ...prev, baby: { ...prev.baby, nickname: v } }))}
+                          placeholder="Nama panggilan bayi"
+                        />
+                        <Input
+                          label="Nama Ayah"
+                          value={parents.father || invitation.groomFather || ""}
+                          onChange={(v) => updateParticipantData((prev) => ({ ...prev, parents: { ...prev.parents, father: v } }))}
+                          placeholder="Bpk. ..."
+                        />
+                        <Input
+                          label="Nama Ibu"
+                          value={parents.mother || invitation.groomMother || ""}
+                          onChange={(v) => updateParticipantData((prev) => ({ ...prev, parents: { ...prev.parents, mother: v } }))}
+                          placeholder="Ibu ..."
+                        />
+                      </div>
+                    </div>
+
+                    <div className="pt-1 space-y-2.5">
                       <PhotoInput
-                        label="Foto Portrait Mempelai Wanita"
-                        desc="Foto portrait khusus mempelai wanita"
-                        value={media["BRIDE_PHOTO"] || ""}
-                        onChange={(url) => updateMedia("BRIDE_PHOTO", url)}
-                        placeholder="https://.../bride-portrait.jpg"
+                        label={getMediaSlotLabel("GROOM_PHOTO", "AQIQAH")}
+                        desc="Foto portrait buah hati / bayi"
+                        value={media["GROOM_PHOTO"] || ""}
+                        onChange={(url) => updateMedia("GROOM_PHOTO", url)}
+                        placeholder="https://.../baby-portrait.jpg"
                         invitationId={invitationId}
-                        slot="BRIDE_PHOTO"
+                        slot="GROOM_PHOTO"
                         onUploadStart={handleUploadStart}
                         onUploadEnd={handleUploadEnd}
                       />
                     </div>
                   </div>
-                </>
-              )}
-            </div>
+                );
+              }
+
+              if (evType === "WISUDA") {
+                const person = p.person || {};
+                return (
+                  <div className="space-y-5">
+                    <div className="p-4 sm:p-5 rounded-2xl border border-indigo-200/80 bg-indigo-50/20 space-y-4">
+                      <div className="flex items-center justify-between border-b border-indigo-100 pb-2">
+                        <h3 className="text-xs font-bold text-indigo-950 uppercase tracking-wider">Profil Wisudawan</h3>
+                        <span className="text-[10px] font-bold bg-indigo-100 text-indigo-800 px-2.5 py-0.5 rounded-full">Graduation</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <Input
+                          label="Nama Lengkap &amp; Gelar *"
+                          value={person.name || invitation.groomName || ""}
+                          onChange={(v) => updateParticipantData((prev) => ({ ...prev, person: { ...prev.person, name: v } }))}
+                          placeholder="Contoh: Rian Pratama, S.Kom."
+                        />
+                        <Input
+                          label="Nama Panggilan *"
+                          value={person.nickname || invitation.groomNickname || ""}
+                          onChange={(v) => updateParticipantData((prev) => ({ ...prev, person: { ...prev.person, nickname: v } }))}
+                          placeholder="Nama panggilan wisudawan"
+                        />
+                        <Input
+                          label="Gelar Akademik"
+                          value={person.degree || ""}
+                          onChange={(v) => updateParticipantData((prev) => ({ ...prev, person: { ...prev.person, degree: v } }))}
+                          placeholder="Contoh: Sarjana Komputer (S.Kom.)"
+                        />
+                        <Input
+                          label="Program Studi / Jurusan"
+                          value={person.major || ""}
+                          onChange={(v) => updateParticipantData((prev) => ({ ...prev, person: { ...prev.person, major: v } }))}
+                          placeholder="Contoh: Teknik Informatika"
+                        />
+                        <Input
+                          label="Universitas / Institusi"
+                          value={person.institution || ""}
+                          onChange={(v) => updateParticipantData((prev) => ({ ...prev, person: { ...prev.person, institution: v } }))}
+                          placeholder="Contoh: Universitas Hasanuddin"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="pt-1 space-y-2.5">
+                      <PhotoInput
+                        label={getMediaSlotLabel("GROOM_PHOTO", "WISUDA")}
+                        desc="Foto portrait wisudawan dengan toga / jas"
+                        value={media["GROOM_PHOTO"] || ""}
+                        onChange={(url) => updateMedia("GROOM_PHOTO", url)}
+                        placeholder="https://.../wisuda-portrait.jpg"
+                        invitationId={invitationId}
+                        slot="GROOM_PHOTO"
+                        onUploadStart={handleUploadStart}
+                        onUploadEnd={handleUploadEnd}
+                      />
+                    </div>
+                  </div>
+                );
+              }
+
+              // GATHERING / Default
+              const eventInfo = p.event || {};
+              return (
+                <div className="space-y-5">
+                  <div className="p-4 sm:p-5 rounded-2xl border border-stone-200 bg-stone-50/40 space-y-4">
+                    <div className="flex items-center justify-between border-b border-stone-200 pb-2">
+                      <h3 className="text-xs font-bold text-stone-900 uppercase tracking-wider">Informasi Acara Gathering</h3>
+                      <span className="text-[10px] font-bold bg-stone-200 text-stone-800 px-2.5 py-0.5 rounded-full">Gathering</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Input
+                        label="Nama / Judul Acara *"
+                        value={eventInfo.title || invitation.groomName || ""}
+                        onChange={(v) => updateParticipantData((prev) => ({ ...prev, event: { ...prev.event, title: v } }))}
+                        placeholder="Contoh: Reuni Akbar Angkatan 2015"
+                      />
+                      <Input
+                        label="Sub-judul / Tema Acara"
+                        value={eventInfo.subtitle || ""}
+                        onChange={(v) => updateParticipantData((prev) => ({ ...prev, event: { ...prev.event, subtitle: v } }))}
+                        placeholder="Contoh: Menjalin Silaturahmi Tanpa Batas"
+                      />
+                      <Input
+                        label="Penyelenggara / Komunitas"
+                        value={eventInfo.organizer || ""}
+                        onChange={(v) => updateParticipantData((prev) => ({ ...prev, event: { ...prev.event, organizer: v } }))}
+                        placeholder="Contoh: Ikatan Alumni SMAN 1"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-1 space-y-2.5">
+                    <PhotoInput
+                      label="Foto / Banner Acara"
+                      desc="Banner atau foto visual identitas acara"
+                      value={media["GROOM_PHOTO"] || ""}
+                      onChange={(url) => updateMedia("GROOM_PHOTO", url)}
+                      placeholder="https://.../event-banner.jpg"
+                      invitationId={invitationId}
+                      slot="GROOM_PHOTO"
+                      onUploadStart={handleUploadStart}
+                      onUploadEnd={handleUploadEnd}
+                    />
+                  </div>
+                </div>
+              );
+            })()}
 
             <div className="pt-4 border-t border-stone-100 flex justify-end">
               <button
@@ -2975,7 +3405,7 @@ export default function EditInvitation() {
                 }`}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                <span>{saving ? "Menyimpan..." : isUploading ? "Sedang Mengunggah Foto..." : !isDirty.sec3 ? "Tersimpan" : "Simpan Profil Mempelai"}</span>
+                <span>{saving ? "Menyimpan..." : isUploading ? "Sedang Mengunggah Foto..." : !isDirty.sec3 ? "Tersimpan" : (!invitation.eventType || invitation.eventType === "WEDDING") ? "Simpan Profil Mempelai" : "Simpan Profil Acara"}</span>
               </button>
             </div>
             {renderSectionNavFooter("sec3")}
@@ -3235,7 +3665,11 @@ export default function EditInvitation() {
               )}
             </div>
             {!collapsed.sec5 && (
-              <p className="text-xs text-stone-500 mt-0.5">Atur seluruh agenda adat dan resepsi (Akad, Resepsi, Mappacci, dll.)</p>
+              <p className="text-xs text-stone-500 mt-0.5">
+                {(!invitation?.eventType || invitation?.eventType === "WEDDING")
+                  ? "Atur seluruh agenda adat dan resepsi (Akad, Resepsi, Mappacci, dll.)"
+                  : "Atur seluruh rangkaian sesi agenda acara Anda"}
+              </p>
             )}
           </div>
           <div onClick={(e) => e.stopPropagation()}>
@@ -3255,7 +3689,7 @@ export default function EditInvitation() {
             <div className="flex items-center justify-between gap-2 flex-wrap pb-2 border-b border-stone-100">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="text-[11px] font-bold text-stone-500 mr-1">Quick Add:</span>
-                {EVENT_PRESETS.slice(0, 4).map((p) => (
+                {(EVENT_PRESETS_BY_TYPE[invitation?.eventType || "WEDDING"] || EVENT_PRESETS_BY_TYPE.WEDDING).slice(0, 4).map((p) => (
                   <button
                     key={p}
                     type="button"
@@ -3555,7 +3989,7 @@ export default function EditInvitation() {
       )}
 
       {/* 7. SEKSI KISAH CINTA (SEC7) */}
-      {(activeSectionTab === "sec7") && (
+      {(activeSectionTab === "sec7") && (!invitation?.eventType || invitation?.eventType === "WEDDING") && (
       <section id="section-sec7" className="bg-white rounded-none sm:rounded-3xl shadow-none sm:shadow-xs border-y sm:border border-stone-200 overflow-hidden transition-all duration-200">
         <div
           onClick={() => toggleSection("sec7")}

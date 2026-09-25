@@ -4,10 +4,13 @@ import React, { useState, useEffect, useCallback } from "react";
 import { startRemoteSession } from "@/app/(admin)/admin/actions/remote";
 
 import { getLatestEventDate } from "@/lib/domainUtils";
+import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
 
 interface InvitationItem {
   id: string;
   userId: string;
+  eventType?: string | null;
+  participantsJson?: string | null;
   groomSlug: string;
   brideSlug: string;
   invitationSlug: string;
@@ -44,6 +47,7 @@ export default function AdminInvitationsTab({ onNavigateToThemes }: AdminInvitat
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "DRAFT" | "PUBLISHED" | "EVENT_FINISHED" | "ARCHIVED">("ALL");
+  const [eventTypeFilter, setEventTypeFilter] = useState<"ALL" | "WEDDING" | "BIRTHDAY" | "KHITAN" | "AQIQAH" | "WISUDA" | "GATHERING">("ALL");
   const [counts, setCounts] = useState({ ALL: 0, DRAFT: 0, PUBLISHED: 0, EVENT_FINISHED: 0, ARCHIVED: 0 });
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, totalPages: 1 });
 
@@ -67,6 +71,7 @@ export default function AdminInvitationsTab({ onNavigateToThemes }: AdminInvitat
         page: String(page),
         limit: String(limit),
         status: statusFilter,
+        eventType: eventTypeFilter,
       });
       if (debouncedSearch) params.set("search", debouncedSearch);
 
@@ -83,7 +88,7 @@ export default function AdminInvitationsTab({ onNavigateToThemes }: AdminInvitat
     } finally {
       setLoading(false);
     }
-  }, [page, limit, debouncedSearch, statusFilter]);
+  }, [page, limit, debouncedSearch, statusFilter, eventTypeFilter]);
 
   useEffect(() => {
     fetchInvitations();
@@ -295,6 +300,36 @@ export default function AdminInvitationsTab({ onNavigateToThemes }: AdminInvitat
             </button>
           ))}
         </div>
+
+        {/* Event Type Filter Tabs */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs font-semibold pt-2 border-t border-gray-100">
+          <span className="text-[11px] font-bold text-gray-400 mr-1 shrink-0 uppercase tracking-wider">Tipe:</span>
+          {[
+            { id: "ALL", label: "Semua Acara" },
+            { id: "WEDDING", label: "Wedding" },
+            { id: "BIRTHDAY", label: "Birthday" },
+            { id: "KHITAN", label: "Khitan" },
+            { id: "AQIQAH", label: "Aqiqah" },
+            { id: "WISUDA", label: "Wisuda" },
+            { id: "GATHERING", label: "Gathering" },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => {
+                setEventTypeFilter(tab.id as any);
+                setPage(1);
+              }}
+              className={`px-3 py-1.5 rounded-lg transition text-xs font-medium cursor-pointer whitespace-nowrap ${
+                eventTypeFilter === tab.id
+                  ? "bg-amber-800 text-white shadow-2xs"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* ── Feedback Message Banner ── */}
@@ -347,7 +382,7 @@ export default function AdminInvitationsTab({ onNavigateToThemes }: AdminInvitat
                 </tr>
               ) : (
                 invitations.map((inv) => {
-                  const coupleName = `${inv.groomNickname || inv.groomName || "Pria"} & ${inv.brideNickname || inv.brideName || "Wanita"}`;
+                  const coupleName = resolveInvitationDisplayName(inv);
                   const isEmergencyUnlocked = inv.adminUnlockedUntil && new Date(inv.adminUnlockedUntil) > new Date();
                   const eventDate = getEventDate(inv.eventData);
                   const defaultGalleryExpiry = eventDate ? new Date(eventDate.getTime() + 30 * 24 * 60 * 60 * 1000) : null;
@@ -356,7 +391,14 @@ export default function AdminInvitationsTab({ onNavigateToThemes }: AdminInvitat
                     <tr key={inv.id} className="hover:bg-gray-50/80 transition">
                       {/* Pasangan & Klien */}
                       <td className="px-5 py-3.5">
-                        <div className="font-semibold text-gray-900 text-sm">{coupleName}</div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-gray-900 text-sm">{coupleName}</span>
+                          {inv.eventType && inv.eventType !== "WEDDING" && (
+                            <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-900 px-2 py-0.5 rounded-md">
+                              {inv.eventType}
+                            </span>
+                          )}
+                        </div>
                         <div className="text-[11px] text-gray-500 mt-0.5">
                           {inv.user?.name || "Klien"} &bull; <span className="font-mono text-gray-400">{inv.user?.email || "-"}</span>
                         </div>

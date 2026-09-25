@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { composeTemplateData } from "@/lib/themeEngine";
 import { renderTemplateFile } from "@/lib/renderTemplate";
 import { getAdminSetting } from "@/lib/settings";
+import { resolveInvitationDisplayName, buildCalendarTitle } from "@/lib/invitationUtils";
 
 const PUBLISHED_DIR = path.join(process.cwd(), "public", "published");
 
@@ -68,10 +69,13 @@ export async function buildAndSavePublishedHtml(invitationId: string): Promise<s
   if (!data) return null;
 
 
-  // 1. Generate Meta Tags (Generic to Couple, No Guest Name)
-  const coupleName = `${invitation.groomNickname || invitation.groomName || "Groom"} & ${invitation.brideNickname || invitation.brideName || "Bride"}`;
-  const title = `The Wedding of ${coupleName}`;
-  const description = `Kami mengundang Anda untuk hadir di hari bahagia kami.`;
+  // 1. Generate Meta Tags (Generic to Event, No Guest Name)
+  const isWedding = !invitation.eventType || invitation.eventType === "WEDDING";
+  const displayName = resolveInvitationDisplayName(invitation);
+  const title = (data as any).calendarTitle || (isWedding ? `The Wedding of ${displayName}` : displayName);
+  const description = isWedding
+    ? `Kami mengundang Anda untuk hadir di hari bahagia pernikahan kami.`
+    : `Kami mengundang Anda untuk hadir di acara ${displayName}.`;
   
   const coverMedia = await prisma.invitationMedia.findFirst({
     where: { 

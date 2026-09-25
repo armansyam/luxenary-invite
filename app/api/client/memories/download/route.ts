@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const archiver = require("archiver");
 import { streamMemoriesToZip } from "@/lib/storage";
+import { buildZipFileName } from "@/lib/invitationUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +25,7 @@ export async function GET(req: NextRequest) {
     // Verify ownership
     const invitation = await prisma.invitation.findUnique({
       where: { id: invitationId },
-      select: { userId: true, groomSlug: true, brideSlug: true, invitationSlug: true }
+      select: { userId: true, eventType: true, groomSlug: true, brideSlug: true, invitationSlug: true }
     });
 
     if (!invitation) {
@@ -45,7 +46,7 @@ export async function GET(req: NextRequest) {
 
     const headers = new Headers();
     headers.set("Content-Type", "application/zip");
-    headers.set("Content-Disposition", `attachment; filename="Guest_Memories_${invitation.groomSlug}_${invitation.brideSlug}.zip"`);
+    headers.set("Content-Disposition", `attachment; filename="${buildZipFileName(invitation)}"`);
 
     const stream = new ReadableStream({
       async start(controller) {

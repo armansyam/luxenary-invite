@@ -1,5 +1,5 @@
 # PLATFORM UNDANGAN (WHITE-LABEL) — DOKUMENTASI ARSITEKTUR SISTEM
-## Versi: 6.2.0 | Diperbarui: 24 September 2026
+## Versi: 6.3.0 | Diperbarui: 25 September 2026
 
 > **SUMBER KEBENARAN TUNGGAL** untuk semua developer dan AI Agent yang bekerja di repositori ini.  
 > Dokumen ini WAJIB dibaca sebelum melakukan perubahan apapun pada kode.  
@@ -24,13 +24,14 @@
 13. [Panduan Kerja Agent AI (Mandatory Reading)](#13-panduan-kerja-agent-ai-mandatory-reading)
 14. [Sistem Portofolio Mandiri](#14-sistem-portofolio-mandiri)
 15. [Orkestrasi Multi-Payment Gateway & Dynamic Fee](#15-orkestrasi-multi-payment-gateway--dynamic-fee)
-16. [Sistem Notifikasi Email & Faktur Transaksi](#16-sistem-notifikasi-email--faktur-transaksi)
+16: [Sistem Notifikasi Email & Faktur Transaksi](#16-sistem-notifikasi-email--faktur-transaksi)
 17. [Arsitektur Infrastruktur & Deployment (VPS)](#17-arsitektur-infrastruktur--deployment-vps)
 18. [Sistem Finance & Rekapitulasi Kas Terpusat](#18-sistem-finance--rekapitulasi-kas-terpusat)
 19. [Arsitektur Pemantauan Server & Kesehatan Sistem (Monitoring Hub)](#19-arsitektur-pemantauan-server--kesehatan-sistem-monitoring-hub)
 20. [Arsitektur Antarmuka Dasbor Klien Modern (Borderless Glowing Beam & Sliding Magnetic Pill)](#20-arsitektur-antarmuka-dasbor-klien-modern-borderless-glowing-beam--sliding-magnetic-pill)
 21. [Arsitektur Status Layanan & Pembatasan Registrasi](#21-arsitektur-status-layanan--pembatasan-registrasi)
 22. [Sistem Pemasaran & Afiliasi (Kupon Promo, Mitra Referral, & Payout Komisi)](#22-sistem-pemasaran--afiliasi-kupon-promo-mitra-referral--payout-komisi)
+23. [Arsitektur Multi-EventType & Persona Engine](#23-arsitektur-multi-eventtype--persona-engine)
 
 ---
 
@@ -72,7 +73,7 @@
 │   │
 │   ├── (public)/             # Halaman publik (tanpa autentikasi)
 │   │   ├── [slug]/           # ← CANONICAL ROUTE UTAMA (flat slug baru)
-│   │   │   ├── page.tsx      # Serve undangan HTML (dimas-clarissa-030326)
+│   │   │   ├── page.tsx      # Serve undangan HTML (dimas-clarissa-030326 atau arkan-birthday-17)
 │   │   │   ├── route.ts      # Redirect pintar (EVENT_FINISHED → memories, ARCHIVED → portfolio/graceful)
 │   │   │   ├── memories/     # Galeri momen tamu (real-time SSE)
 │   │   │   ├── sharemoment/  # Upload foto tamu (real-time)
@@ -128,9 +129,11 @@
 │   └── globals.css           # Global CSS
 │
 ├── lib/                      # Business logic & service layer
-│   ├── themeEngine.ts        # ⭐ Mesin render tema HTML (~81KB, CORE)
+│   ├── themeEngine.ts        # ⭐ Mesin render tema HTML multi-event (~124KB, CORE)
 │   ├── staticPublisher.ts    # ⭐ Bake HTML statis saat publish (CORE)
 │   ├── renderTemplate.ts     # Injeksi data ke template .html & mapping alias tema
+│   ├── participantUtils.ts   # ⭐ Parser & normalisasi partisipan multi-event (safeParseParticipants)
+│   ├── invitationUtils.ts    # ⭐ Resolver nama, path, judul kalender & label slot multi-event
 │   ├── storage.ts            # Upload/delete file (R2, S3, atau Local switch env)
 │   ├── mailer.ts             # ⭐ Nodemailer invoice & transactional email generator
 │   ├── settings.ts           # Single source of truth admin_settings dari DB
@@ -146,7 +149,7 @@
 │   ├── paymentEvents.ts      # Event bus pembayaran
 │   ├── upgradeHelper.ts      # Eksekutor upgrade paket & perpanjangan galeri (+30 hari)
 │   ├── demoPublisher.ts      # Publish demo tema ke /public/demo/
-│   ├── demoRegistry.ts       # Registry konten demo tema (~78KB)
+│   ├── demoRegistry.ts       # Registry konten demo tema (~164KB)
 │   ├── databaseBackup.ts     # Hot-backup PostgreSQL (pg_dump)
 │   ├── auth.ts               # Utility auth session
 │   ├── session.tsx           # Session provider wrapper
@@ -160,11 +163,20 @@
 │
 ├── prisma.config.ts           # Konfigurasi Prisma 7 DB URL
 │
-├── themes/                   # Template HTML tema undangan (34 Tema + 1 Blueprint)
-│   ├── minimalist/           # kalandra, valente, aurelia, artisan, minimalist-elegant, minimalist-elegant-04
-│   ├── modern/               # wave, papercut, ameera, chronicle, lumina, solaria, badrika, candani, mayang, pink-castle, starlit-dreams, burgundy-royale, vintage-forest
-│   ├── traditional/          # prameswari, dillalucky, lagaligo, toraja, rantepao, makale, bugis, bone, wajo, soppeng, makassar, gowa, maros, takalar, bulukumba
-│   └── starter-blueprint.html# Standard acuan template baru
+├── themes/                   # Template HTML tema undangan (40 Tema Fisik Lintas 6 Kategori Acara)
+│   ├── _blueprints/          # Master Blueprints per EventType
+│   │   ├── wedding/          # starter-blueprint.html
+│   │   ├── birthday/         # starter-blueprint-birthday.html
+│   │   ├── khitan/           # starter-blueprint-khitan.html
+│   │   ├── aqiqah/           # starter-blueprint-aqiqah.html
+│   │   ├── wisuda/           # starter-blueprint-wisuda.html
+│   │   └── general/          # starter-blueprint-general.html
+│   ├── wedding/              # 34 Tema Pernikahan (Minimalist, Modern, Traditional)
+│   ├── birthday/             # 2 Tema Ulang Tahun (kalandra-birthday, festivo)
+│   ├── khitan/               # 1 Tema Khitan (al-fariz)
+│   ├── aqiqah/               # 1 Tema Aqiqah (al-khalid)
+│   ├── wisuda/               # 1 Tema Wisuda (cendekia)
+│   └── general/              # 1 Tema Acara Umum / Gathering (sinergi)
 │
 ├── public/
 │   ├── published/            # ⭐ Output HTML statis (subdomain.html + invitationSlug.html)
@@ -679,30 +691,39 @@ Sistem menerapkan prinsip *Tiered Storage* untuk memisahkan beban operasional li
 
 ## 8. TEMA & TEMPLATE ENGINE
 
-**Files:** `lib/themeEngine.ts` (~81KB), `lib/renderTemplate.ts`, `themes/`
+**Files:** `lib/themeEngine.ts` (~124KB), `lib/renderTemplate.ts`, `lib/participantUtils.ts`, `lib/invitationUtils.ts`, `themes/`
 
 ```
-Katalog Tema Aktual (34 File Template Fisik + 1 Blueprint):
-  Minimalist (6) : kalandra.html, valente.html, aurelia.html, artisan.html, minimalist-elegant.html, minimalist-elegant-04.html
-  Modern (9)     : wave.html, papercut.html, ameera.html, chronicle.html, lumina.html, solaria.html, badrika.html, candani.html, mayang.html, pink-castle.html, starlit-dreams.html, burgundy-royale.html, vintage-forest.html
-  Traditional (15): prameswari.html, dillalucky.html, lagaligo.html, toraja.html, rantepao.html, makale.html, bugis.html, bone.html, wajo.html, soppeng.html, makassar.html, gowa.html, maros.html, takalar.html, bulukumba.html
-  Blueprint      : starter-blueprint.html
+Katalog Tema Aktual: 36 Tema Fisik (34 Wedding + 2 Birthday):
+  Wedding (34 Tema):
+    Minimalist (6) : kalandra.html, valente.html, aurelia.html, artisan.html, minimalist-elegant.html, minimalist-elegant-04.html
+    Modern (13)    : wave.html, papercut.html, ameera.html, chronicle.html, lumina.html, solaria.html, badrika.html, candani.html, mayang.html, pink-castle.html, starlit-dreams.html, burgundy-royale.html, vintage-forest.html
+    Traditional (15): prameswari.html, dillalucky.html, lagaligo.html, toraja.html, rantepao.html, makale.html, bugis.html, bone.html, wajo.html, soppeng.html, makassar.html, gowa.html, maros.html, takalar.html, bulukumba.html
+  Birthday (2 Tema):
+    Minimalist (1) : kalandra-birthday.html (child theme dari kalandra)
+    Modern (1)     : festivo.html
+  Blueprints:
+    themes/_blueprints/wedding/starter-blueprint.html
+    themes/_blueprints/birthday/starter-blueprint-birthday.html
 
 Backward Compatibility Alias Mapping (di lib/renderTemplate.ts):
-  - "kila"                   → mapped ke kalandra.html (fallback backward compatibility)
-  - Modern Floral & Luxury Standard (Candani, Mayang, Badrika): Dynamic Palette Tokens (`:root`, `color-mix(...)`), Discrete Parents Architecture (`{{firstParentPrefix}}`, `{{firstFather}}`, `{{firstMother}}`), `.fixed-bg-layer` layout-wrapper encapsulation, dan full click-to-edit `data-lux-field`.
-  - Bugis Heritage Standard (La Galigo): Integrasi tipografi aksara otentik Lontara (`/fonts/Lontara.ttf`, `.font-lontara`) untuk frasa sakral adat (*Salama'*, *Botti'*, *Sipakatau Sipakalebbi Sipakainge*), ornamen tenun geometris Bugis, arsitektur Zero-Fake Fallback & Infinite Seamless Flow, serta implementasi Dynamic Palette Tokens 100% bebas hardcode (`color-mix(...)`, `var(--bg-dark)`, `var(--primary)`, `var(--accent)`) pada seluruh layer desktop sidebar, cover overlay, kartu, dan tombol.
+  - "kila"                   → mapped ke wedding/minimalist/kalandra.html
+  - THEME_MAP deterministik 36 tema dengan resolusi path terstruktur:
+    `themes/{eventType}/{category}/{themeId}.html` (Zero greedy directory traversal)
 ```
 
-**Alur render:**
+**Alur render Multi-Event:**
 ```
-themes/{category}/{themeId}.html   ← File template mentah
+themes/{eventType}/{category}/{themeId}.html   ← File template mentah
         ↓
-renderTemplateFile(themeId, data, options)
+renderTemplateFile(themeId, data, options)     ← Prioritas: data/drafts/{id}.html > master theme file
         ↓
-themeEngine.composeTemplateData(invitationId) ← Ambil semua data dari DB
+themeEngine.composeTemplateData(invitationId)   ← Router per eventType:
+        ├── WEDDING   → composeWeddingData() (Data pengantin, akad, resepsi, love story)
+        ├── BIRTHDAY  → composeBirthdayData() (Data person, umur, orang tua, party)
+        └── LAINNYA   → composePersonaData() (Khitan, Aqiqah, Wisuda, Gathering)
         ↓
-Injeksi: nama pasangan, foto, acara, RSVP form, countdown, musik
+Injeksi: persona/pasangan, foto, acara, RSVP form, countdown, musik
         ↓
 HTML standalone lengkap (self-contained, inline CSS/JS)
 ```
@@ -1088,6 +1109,7 @@ Model Utama:
   Admin          → Akun admin terpisah dari User (role: SUPER_ADMIN | ADMIN | FINANCE | SUPPORT)
   Order          → Pesanan paket undangan & perpanjangan galeri
   Invitation     → Inti undangan (DRAFT | PUBLISHED | EVENT_FINISHED | TAKEN_DOWN | ARCHIVED)
+  Theme          → Katalog tema fisik (id, name, eventType: EventType, category, series, parentTheme, previewUrl, isActive, isPremium, price)
   Guest          → Daftar tamu per undangan (phone, waStatus: PENDING | SENT, qrToken)
   Rsvp           → Konfirmasi kehadiran & untaian doa ucapan tamu (Single Source of Truth di kolom message)
   GuestMemory    → Foto candid tamu (hari H & pasca-acara)
@@ -1104,10 +1126,12 @@ Model Utama:
   PromoHold      → Alokasi kupon checkout sementara (promoCode, orderId, userId, status, discountAmount, expiresAt)
   AffiliateCommission → Riwayat komisi afiliasi pesanan (partnerId, orderId, orderAmount, commissionAmount, status, payoutExpenseId)
   RateLimitCounter → Tabel rate limiting atomic cross-worker PM2 berbasis PostgreSQL (key, count, expiresAt)
+  EventType (Enum) → WEDDING | BIRTHDAY | KHITAN | AQIQAH | WISUDA | GATHERING
   ExpenseCategory (Enum) → INFRASTRUCTURE | UTILITIES | MARKETING | SOFTWARE_LICENSES | OPERATIONAL | OTHER
 
 Indeks Produksi & Hardening (Migration: 20260922010000_production_db_hardening):
-  - invitations: themeId, galleryExpiresAt (partial), expiresAt, status+galleryExpiresAt (composite cron), createdAt DESC
+  - invitations: themeId, galleryExpiresAt (partial), expiresAt, status+galleryExpiresAt (composite cron), createdAt DESC, eventType
+  - themes: eventType, category, isActive, sortOrder
   - orders: createdAt DESC, paidAt, status+createdAt (composite cron), planType
   - rsvps: guestId, status, invitationId+guestId (composite)
   - guests: invitationId+isTokenRedeemed (partial WHERE isTokenRedeemed=false), waStatus, invitationId+category
@@ -1128,7 +1152,9 @@ Field Kritis di Order:
   checkoutConfirmedAt DateTime? ← Timestamp konfirmasi checkout klien untuk validasi proteksi anti-bounce di /payment
 
 Field Kritis di Invitation:
-  invitationSlug  @unique   ← Flat slug canonical: dimas-clarissa-030326
+  eventType       EventType @default(WEDDING) ← Jenis perayaan: WEDDING, BIRTHDAY, KHITAN, AQIQAH, WISUDA, GATHERING
+  participantsJson String?  ← JSON terstruktur data peserta / persona non-wedding (safeParseParticipants)
+  invitationSlug  @unique   ← Flat slug canonical: dimas-clarissa-030326 atau arkan-birthday-17
   subdomain       @unique   ← Subdomain: dimas-clarissa (nullable saat di-recycle)
   customDomain    @unique   ← Custom domain klien (nullable, fitur & UI aktif)
   groomFather     String?   ← Nama Ayah Mempelai Pria (terpisah)
@@ -1932,16 +1958,21 @@ Untuk memberikan pengalaman interaktif penuh bagi calon klien sebelum memesan pa
 
 ### 17.9 — Arsitektur Theme-Specific Blueprint, Theme-Locked Standalone Palette & Dynamic Custom Labels
 1. **Registri Kamus Budaya & Narasi Bawaan (`lib/themeDefaults.ts`):**
-   - Mendefinisikan cetak biru teks narasi spesifik untuk seluruh 34 tema fisik master lintas 3 kategori resmi:
-     - **Tradisional (15 Tema):** Sentuhan bahasa adat & doa kedaerahan (Jawa Keraton Dillalucky, Keraton Prameswari, La Galigo, Toraja, Rantepao, Makale, Bugis, Makassar, Bone, Wajo, Soppeng, Gowa, Maros, Takalar, Bulukumba).
-     - **Modern Editorial & Floral (13 Tema):** Narasi puitis editorial majalah & estetika modern floral kontemporer (Ameera, Chronicle, Lumina, Papercut, Solaria, Wave, Badrika, Candani, Mayang, Pink Castle, Starlit Dreams, Burgundy Royale, Vintage Forest).
-     - **Minimalist Series (6 Tema):** Diksi elegan monokrom dan formal terhormat (Artisan, Aurelia, Kalandra, Valente, Minimalist Elegant, Minimalist Elegant 04).
+   - Mendefinisikan cetak biru teks narasi spesifik untuk seluruh 40 tema fisik master lintas 6 jenis acara resmi (`EventType`):
+     - **Wedding — Tradisional (15 Tema):** Sentuhan bahasa adat & doa kedaerahan (Jawa Keraton Dillalucky, Keraton Prameswari, La Galigo, Toraja, Rantepao, Makale, Bugis, Makassar, Bone, Wajo, Soppeng, Gowa, Maros, Takalar, Bulukumba).
+     - **Wedding — Modern Editorial & Floral (13 Tema):** Narasi puitis editorial majalah & estetika modern floral kontemporer (Ameera, Chronicle, Lumina, Papercut, Solaria, Wave, Badrika, Candani, Mayang, Pink Castle, Starlit Dreams, Burgundy Royale, Vintage Forest).
+     - **Wedding — Minimalist Series (6 Tema):** Diksi elegan monokrom dan formal terhormat (Artisan, Aurelia, Kalandra, Valente, Minimalist Elegant, Minimalist Elegant 04).
+     - **Birthday Celebration (2 Tema):** Narasi pesta ulang tahun modern dan perayaan ceria (Festivo, Kalandra Birthday).
+     - **Walimatul Khitan (1 Tema):** Narasi doa keberkahan syukuran khitanan putra (Al-Fariz Khitan).
+     - **Walimatul Aqiqah (1 Tema):** Narasi tasyakuran kelahiran dan fitrah kesucian aqiqah (Al-Khalid Aqiqah).
+     - **Wisuda & Graduation (1 Tema):** Diksi apresiasi kelulusan akademis dan gelar kehormatan (Cendekia Wisuda).
+     - **Gathering & Reuni (1 Tema):** Narasi silaturahmi kebersamaan komunitas dan korporat (Sinergi Gathering).
    - **Tipografi Harmonis (Title Case vs Uppercase):** Menyesuaikan karakteristik font khas tema; tema berskrip kaligrafi (*Parisienne* di Candani) dikonfigurasi dengan Title Case (`Dress Code`, `Live Streaming`, `Love Story`, `Our Moments`, `Turut Mengundang`) guna mengeliminasi tabrakan glif huruf bersambung yang rusak saat dijadikan all-caps.
 2. **Tab Khusus di Admin Demo Studio (`app/(admin)/admin/page.tsx`):**
    - **Tab 1 (Aset Visual & Media Tema):** Mengontrol aset foto/video per slot serta audio bawaan tema tanpa pemilih palet warna dinamis.
-   - **Tab 2 (Mempelai & Rangkaian Acara):** Formulir Timeline Acara demo yang dapat ditambah (`+ Tambah Acara`) atau dihapus per item secara dinamis.
-   - **Tab 3 (Kisah Cinta & Tanda Kasih):** Formulir Bab Cerita demo yang dapat ditambah (`+ Tambah Bab Cerita`) atau dihapus per item secara dinamis, serta rekening bank demo dengan `+ Tambah Rekening` & `Hapus Rekening`.
-   - **Tab 4 (Teks Seksi & Narasi Bawaan):** 6 Sub-Panel lengkap yang mengontrol seluruh narasi dan label kustom tema.
+   - **Tab 2 (Mempelai / Profil & Rangkaian Acara):** Formulir Timeline Acara demo yang dapat ditambah (`+ Tambah Acara`) atau dihapus per item secara dinamis, adaptif terhadap persona acara.
+   - **Tab 3 (Kisah Cinta / Sorotan & Tanda Kasih):** Formulir Bab Cerita demo yang dapat ditambah (`+ Tambah Bab Cerita`) atau dihapus per item secara dinamis, serta rekening bank demo dengan `+ Tambah Rekening` & `Hapus Rekening`.
+   - **Tab 4 (Teks Seksi & Narasi Bawaan):** 6 Sub-Panel lengkap yang mengontrol seluruh narasi dan label kustom tema secara kontekstual.
 3. **Pewarisan Dinamis Klien (Inheritance Architecture):**
    - Saat klien membuat undangan via `POST /api/client/invitations/create`, sistem mengambil konfigurasi `theme_demo_${themeId}` dari `prisma.adminSetting` dan menggabungkannya dengan `getThemeBlueprint(themeId)`.
    - Hal ini menjamin bahwa seluruh perbaikan label, narasi, dan audio default yang disetel Admin di Demo Studio terwariskan secara otomatis ke setiap undangan baru yang dibuat klien tanpa memerlukan hardcode.
@@ -1952,7 +1983,7 @@ Untuk memberikan pengalaman interaktif penuh bagi calon klien sebelum memesan pa
      - `DEFAULT_MINIMALIST_BLUEPRINT`: Diksi luxury monokrom, Sacred Vows, The Solemnity, The Tapestry, Curated Frames, Wedding Registry, Expressions of Grace.
    - Nama tema diturunkan otomatis dari database (`theme.name`) atau kapitalisasi `themeId`. Saat Admin membuka Demo Studio pertama kali (`GET /api/admin/themes/[id]/demo-data`), seluruh formulir 4 Tab sudah 100% terisi data awal yang rapi tanpa ada input kosong.
 5. **Garansi Kompatibilitas Mundur 100% (Zero-Breaking Policy):**
-   - Seluruh 34 tema master tetap berfungsi normal tanpa regresi karena Engine tetap mengekspor fallback token lama (`storySectionHtml`, dll.).
+   - Seluruh 40 tema master tetap berfungsi normal tanpa regresi karena Engine tetap mengekspor fallback token lama (`storySectionHtml`, dll.).
 6. **Standarisasi Warna Tema Mandiri (Theme-Locked Standalone Palette):**
    - **Warna Terkunci di Master File:** Warna tema (`:root { --primary, --secondary, --accent, --bg-light, --bg-dark }`) dikunci secara permanen di berkas master HTML/CSS masing-masing tema (`themes/**/*.html`).
    - **Penghapusan Palet Dinamis:** Fitur 18 pemilih palet warna dinamis telah dieliminasi total dari Studio Admin dan Dasbor Klien demi menjaga konsistensi kontras tipografi dan orisinalitas desain visual masing-masing tema.
@@ -2273,9 +2304,11 @@ Untuk memberikan pengalaman interaktif penuh bagi calon klien sebelum memesan pa
    - Seluruh aset dikompresi dengan WebP effort 6 serta unsharp mask filter (`sharp.sharpen({ sigma: 1.0, m1: 0.75, m2: 2.0 })`) dengan bobot 100% di bawah 200 KB untuk menjamin metrik LCP < 2.5s.
 3. **Penyelarasan Teks Panduan Demo Studio:**
    - Menghapus referensi rancu "iPad Mini" pada form Demo Studio, menyajikan label dan ukuran presisi yang langsung pada intinya bagi administrator.
-4. **Device Pair Mockup Showcase & Resolusi Ganda Thumbnail (Mobile & Desktop):**
-   - Mengintegrasikan sistem panggung ganda presisi (*Device Pair Mockup*: `stp-tablet-screen` 16:10 di belakang dan `stp-phone` 1:2 di depan) pada kartu tema di panel admin (`/admin?tab=themes`), Setup Wizard (`/dashboard/setup`), dan Studio Visual Editor (`/dashboard/invitation/[id]`).
-   - Menerapkan arsitektur pembagian aset yang presisi: Frame ponsel menampilkan `thumbnailMobile` (`thumbnail_mobile.webp` rasio 1:2), sedangkan frame tablet menampilkan `thumbnailDesktop` (`thumbnail_desktop.webp` rasio 16:10 dengan fallback cerdas ke `cover_desktop.webp`, `hero.webp`, dan `cover.webp`).
+4. **Device Pair Mockup Showcase & Kontrak Fisik Thumbnail Ganda (Mobile & Desktop):**
+   - Mengintegrasikan sistem panggung ganda presisi (*Device Pair Mockup*: `stp-tablet-screen` 16:10 di belakang dan `stp-phone` 1:2 di depan) pada kartu tema di panel admin (`/admin?tab=themes`), Setup Wizard (`/dashboard/setup`), Studio Visual Editor (`/dashboard/invitation/[id]`), dan Showroom Publik (`/demo`).
+   - Menerapkan arsitektur pembagian aset yang presisi: Frame ponsel menampilkan `thumbnailMobile` (`thumbnail_mobile.webp` rasio 1:2), sedangkan frame tablet menampilkan `thumbnailDesktop` (`thumbnail_desktop.webp` rasio 16:10, 1920×1200). Seluruh 40 tema di disk memiliki kedua file fisik ini secara lengkap dan diverifikasi lolos HTTP 200 via `npm run audit:integrity` tanpa bypass `onError`.
+   - **Pemisahan Konsep `cover_desktop` vs `thumbnail_desktop`:** Slot `LANDING_COVER_DESKTOP` (`cover_desktop.webp`) diperuntukkan khusus bagi mode background layar pembuka PC/Laptop saat tamu membuka undangan fisik bertema adat (Toraja, Bugis, Makassar, La Galigo), BUKAN aset kartu mockup katalog.
+   - **Universal Preloader Multi-Event:** Injeksi preloader di `lib/renderTemplate.ts` secara cerdas mengikat teks badge ke `eventType` (`BIRTHDAY CELEBRATION`, `WALIMATUL KHITAN`, `SYUKURAN AQIQAH`, `GRADUATION CELEBRATION`, `EXCLUSIVE INVITATION`, `THE WEDDING INVITATION`) serta menampilkan monogram tunggal untuk perayaan single celebrant tanpa menyisipkan monogram palsu.
    - Area layar tablet (`*-screen`) mengunci `aspect-ratio: 16 / 10` secara langsung sehingga terbebas dari pemotongan topbar (*Zero-Crop Architecture*).
    - Endpoint `/api/admin/themes`, `/api/admin/overview`, dan `/api/public/themes` secara serentak mengembalikan kedua properti `thumbnailMobile` dan `thumbnailDesktop` dari konfigurasi Demo Studio atau disk fisik VPS guna menjamin konsistensi visual instan tanpa refresh halaman.
 5. **Clean Editorial Button Architecture & Eliminasi Total Ornamen Panah AI (`app/page.tsx` & `app/landing.css`):**
@@ -2370,7 +2403,7 @@ Sistem telah melalui audit mendalam berbasis bukti empiris (*Empirical Verificat
    - Menghapus file CSS duplikat/mati: `app/landing.scoped.css` (98 KB) dan `public/css/landing.css` (96 KB) yang tidak pernah diimpor oleh sistem (sistem murni mengimpor `app/landing.css`).
    - Menghapus direktori kosong `components/ui/`.
    - Standardisasi default skema Prisma: Mengubah default `themeId` pada model `Invitation` dari alias warisan `"kila"` menjadi `"kalandra"`.
-   - Eliminasi query model mati: Mengeliminasi pemanggilan `prisma.wish` yang redundan pada endpoint `/api/client/rsvps` dan `/api/admin/overview`. Seluruh doa dan ucapan tamu dikelola tunggal (*Single Source of Truth*) melalui kolom `rsvps.message`, sedangkan `videoWishCount` dihitung faktual dari `prisma.guest.count({ where: { videoWishUrl: { not: null } } })`.
+   - Eliminasi query model mati: Mengeliminasi pemanggilan `prisma.wish` yang redundan pada endpoint `/api/client/rsvps` dan `/api/admin/overview`. Seluruh doa dan ucapan tamu dikelola tunggal (*Single Source of Truth*) melalui kolom `rsvps.message`. Kolom orphan `videoWishUrl` dan `videoRecordedAt` pada model `Guest` telah dihapus permanen — fitur Video Wish tidak pernah diimplementasikan dan tidak ada UI/endpoint yang mengisinya.
 
 2. **Sinkronisasi Daur Ulang Subdomain (Subdomain Recycling):**
    - Menyelaraskan logika pada `app/api/client/invitations/[id]/route.ts` dengan `invitations/create` dan `/api/client/subdomain/check`.
@@ -2718,4 +2751,53 @@ Untuk menjamin kesiapan industri (*enterprise-grade / production-ready*), sistem
    - API integration tests: `invitations`, `orders`, `rsvp` menggunakan `supertest` + `next-test-api-route-handler`.
    - CI workflow: `.github/workflows/ci.yml` dengan PostgreSQL service container.
    - Hasil: **56/56 PASS**, TypeScript gate Exit Code 0.
+
+---
+
+## 23. ARSITEKTUR MULTI-EVENTTYPE & PERSONA ENGINE (v6.3.0)
+
+### 23.1 Latar Belakang & Filosofi Desain
+Luxenary-Invite dielevasi dari sistem undangan pernikahan murni menjadi platform undangan digital multi-event terpadu. Sistem kini mendukung 6 persona perayaan:
+1. **WEDDING:** Pasangan pengantin (mempelai pria & wanita, akad, resepsi, love story).
+2. **BIRTHDAY:** Perayaan ulang tahun (individu, usia, orang tua, party).
+3. **KHITAN:** Walimatul khitan (anak, ayah, ibu, syukuran).
+4. **AQIQAH:** Tasyakuran aqiqah & kelahiran (bayi, tanggal lahir, jenis kelamin, ayah, ibu).
+5. **WISUDA:** Kelulusan akademik (wisudawan, gelar, jurusan, fakultas, universitas).
+6. **GATHERING:** Pertemuan formal & komunal (organisasi/komunitas, tajuk acara, penanggung jawab).
+
+### 23.2 Prinsip Inti Rekayasa
+1. **Zero-Leak Convention (Tanpa Kebocoran Istilah Pernikahan):**
+   - Saat me-render undangan non-wedding (seperti BIRTHDAY), `themeEngine` (`composeBirthdayData`) mengosongkan variabel pengantin (`groomName: ""`, `brideName: ""`, `groomNickname: ""`, `brideNickname: ""`) dan menyuntikkan persona relevan (`personName`, `nickname`, `personAge`, `fatherName`, `motherName`).
+   - Meta tag HTML, pratinjau sosial WhatsApp, dan title kalender disesuaikan secara dinamis via `resolveInvitationDisplayName()` dan `buildCalendarTitle()`.
+2. **Backward Compatibility 100%:**
+   - 34 tema wedding eksisting tetap bekerja utuh tanpa regresi sintaks maupun fungsional.
+   - Kolom `eventType` di database memiliki default `'WEDDING'::"EventType"`, sehingga seluruh data undangan dan transaksi lama tetap beroperasi tanpa migrasi manual.
+3. **Struktur Folder Master Template yang Rapi:**
+   - `themes/{eventType}/{category}/{themeId}.html`
+   - `themes/_blueprints/{eventType}/starter-blueprint-{eventType}.html`
+   - Resolusi template di `lib/renderTemplate.ts` memetakan tema fisik secara deterministik dengan prioritas: `data/drafts/{id}.html` > file master di disk.
+4. **Setup Wizard & Studio Adaptif (Strict Event Scoping):**
+   - `setup/page.tsx`: Menyediakan Step 0 visual selector jenis acara (bebas emoji bawaan OS, menggunakan ikon SVG modern), menyaring tema serta kategori tab adaptif sesuai jenis acara yang dipilih, dan menghasilkan slug canonical datar (`/{slug}`) untuk non-wedding.
+   - `invitation/[id]/page.tsx`: Seksi 1 (Desain Tema) terisolasi ketat hanya menyajikan tema yang sesuai dengan `eventType` undangan (zero cross-event leakage). Seksi 3 (Data Profil) bertransformasi adaptif sesuai `eventType`. Seksi Love Story (Seksi 7) otomatis disembunyikan untuk acara non-wedding.
+   - Slot foto profil menggunakan `GROOM_PHOTO` secara cerdas untuk persona non-wedding dengan label dinamis via `getMediaSlotLabel()` (misal: "Foto Yang Berulang Tahun", "Foto Anak", "Foto Wisudawan").
+   - **Backend Cross-Event Guard:** Endpoint `POST /api/client/invitations/create` dan `PATCH /api/client/invitations/[id]` menerapkan validasi ketat kecocokan `eventType` tema dengan tipe acara undangan serta pemetaan default dinamis (`DEFAULT_THEME_BY_EVENT`).
+5. **Admin Panel Multi-Event:**
+   - Tab Projek Undangan dilengkapi filter tabs (`Semua`, `Wedding`, `Birthday`, `Khitan`, `Aqiqah`, `Wisuda`, `Gathering`).
+   - Manajemen tema mendukung upload, edit, dan preview tema dengan seleksi `eventType`.
+
+### 23.3 Universal Section Engine & High-Fidelity Thumbnail System (v6.3.2)
+1. **Showroom Registry & Client Generator Parity:**
+   - Seluruh seksi interaktif (`countdownHtml`, `eventSectionHtml`, `gallerySectionHtml`, `giftSectionHtml`, `rsvpSectionHtml`, dan `wishesSectionHtml`) memiliki implementasi lengkap di Showroom Demo Registry (`lib/demoRegistry.ts`) dan Komposer Klien (`lib/themeEngine.ts`).
+   - Helper modular `buildUniversalGallerySection`, `buildUniversalGiftSection`, `buildUniversalRsvpSection`, dan `buildUniversalWishesSection` mengeliminasi duplikasi kode serta menjamin ketaatan 100% pada variabel CSS dinamis (`var(--primary)`, `var(--card-bg)`, `var(--text-main)`, dll).
+2. **Headless Chrome DevTools Protocol (CDP) Screenshot Engine:**
+   - Menggunakan `scripts/generate-all-thumbnails.ts` (`npm run generate:thumbnails`) untuk mengotomatisasi pembuatan thumbnail autentik tanpa memodifikasi template fisik master via native `Page.captureScreenshot`:
+     - **Desktop Target**: 1280 × 800 px (Rasio 16:10, DevTools Emulation)
+     - **Mobile Target**: 400 × 800 px (Rasio 1:2, DevTools Emulation dengan Touch Emulation & Retina 2x)
+     - **Anti-Banding Filter**: Lanczos3 resampling kernel + Sharp WebP Q90 dengan `smartSubsample: true` dan `effort: 4`.
+   - **Isolasi Target Bersih**: Setiap tema diproses dalam tab target terisolasi (`Target.createTarget` -> render -> capture -> `Target.closeTarget`), menjamin zero-leak memori dan eksekusi bebas macet.
+3. **Pintu Gerbang Kepatuhan Terpadu:**
+   - `npm run audit:integrity`: Memverifikasi 100% dari 40 tema di disk memiliki file `thumbnail_desktop.webp` dan `thumbnail_mobile.webp`, merespons HTTP 200, bebas duplikasi hash, dan bersih dari kebocoran teks pernikahan.
+   - `npm run test:hygiene`: Menguji ketiadaan kode hex mati (Zero-Hardcode Policy) pada tema dan komponen dinamis.
+
+
 

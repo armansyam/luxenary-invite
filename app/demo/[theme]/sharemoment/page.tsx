@@ -17,11 +17,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const cleanId = (theme || "kalandra").toLowerCase().trim();
   const demo = getDemoThemeData(cleanId);
   const platformName = await getAdminSetting("platform_name", "Platform Undangan");
-  const coupleName = demo ? `${demo.groomName} & ${demo.brideName}` : "Demo";
+  const coupleName = demo ? (demo.eventType === "BIRTHDAY" ? ((demo as any).personName || "Ulang Tahun") : `${demo.groomName} & ${demo.brideName}`) : "Demo";
 
   return {
     title: `Upload Momen (${coupleName}) — ${platformName}`,
-    description: `Demo fitur bagikan foto candid dan ucapan untuk pernikahan ${coupleName}.`,
+    description: `Demo fitur bagikan foto candid dan ucapan untuk acara ${coupleName}.`,
   };
 }
 
@@ -34,7 +34,7 @@ export default async function DemoGuestMemoriesStandalonePage({ params }: PagePr
     notFound();
   }
 
-  const coupleName = `${demo.groomName} & ${demo.brideName}`;
+  const coupleName = demo.eventType === "BIRTHDAY" ? ((demo as any).personName || "Ulang Tahun") : `${demo.groomName} & ${demo.brideName}`;
   const invitationId = `demo-${demo.themeId}`;
   
   // Use theme cover photo for demo background

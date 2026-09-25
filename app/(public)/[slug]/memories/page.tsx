@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getAdminSetting, hasPlanCapability } from "@/lib/settings";
+import { resolveInvitationDisplayName } from "@/lib/invitationUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -19,10 +20,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!invitation) return {};
 
-  const coupleName = `${invitation.groomNickname || "Pria"} & ${invitation.brideNickname || "Wanita"}`;
+  const displayName = resolveInvitationDisplayName(invitation);
+  const isWedding = !invitation.eventType || invitation.eventType === "WEDDING";
   return {
-    title: `Galeri Kenangan Tamu — ${coupleName} | ${platformName}`,
-    description: `Kumpulan foto candid dan ucapan dari sahabat & keluarga di pernikahan ${coupleName}.`,
+    title: `Galeri Kenangan Tamu — ${displayName} | ${platformName}`,
+    description: isWedding
+      ? `Kumpulan foto candid dan ucapan dari sahabat & keluarga di pernikahan ${displayName}.`
+      : `Kumpulan foto candid dan ucapan dari sahabat & keluarga di acara ${displayName}.`,
   };
 }
 
@@ -50,7 +54,7 @@ export default async function GuestMemoriesGalleryPage({ params }: PageProps) {
   }
 
   const memories: any[] = invitation.guestMemories || [];
-  const coupleName = `${invitation.groomNickname || "Mempelai Pria"} & ${invitation.brideNickname || "Mempelai Wanita"}`;
+  const coupleName = resolveInvitationDisplayName(invitation);
   const invitationUrl = `/${slug}`;
 
   // ── 1. PARSE FEATURE SETTINGS & DELAYED REVEAL STATUS ──

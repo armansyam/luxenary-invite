@@ -99,7 +99,19 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
   <div class="card">
     <span class="badge">Belum Dipublikasikan</span>
     <h1>Undangan Sedang Disiapkan</h1>
-    <p>Halaman undangan pernikahan ini masih dalam tahap penyusunan dan belum dipublikasikan secara resmi oleh penyelenggara.</p>
+    <p>Halaman ${
+      !invitation.eventType || invitation.eventType === "WEDDING"
+        ? "undangan pernikahan"
+        : invitation.eventType === "BIRTHDAY"
+        ? "undangan ulang tahun"
+        : invitation.eventType === "KHITAN"
+        ? "undangan khitanan"
+        : invitation.eventType === "AQIQAH"
+        ? "undangan aqiqah"
+        : invitation.eventType === "WISUDA"
+        ? "undangan wisuda"
+        : "undangan acara"
+    } ini masih dalam tahap penyusunan dan belum dipublikasikan secara resmi oleh penyelenggara.</p>
   </div>
 </body>
 </html>`;

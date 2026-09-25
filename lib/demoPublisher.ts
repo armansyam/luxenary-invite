@@ -39,10 +39,26 @@ export async function compileAndSaveStaticDemo(
   const demoHost = (process.env.NEXT_PUBLIC_APP_URL || (process.env.NEXT_PUBLIC_ROOT_DOMAIN ? `http://${process.env.NEXT_PUBLIC_ROOT_DOMAIN}` : "http://localhost:3000")).replace(/\/$/, "");
   const rawCover = (data as any).landingCoverUrl || (data as any).sidebarPhotoUrl || `/demo/${cleanId}/cover.webp`;
   const absoluteCover = rawCover.startsWith("http") ? rawCover : `${demoHost}${rawCover.startsWith("/") ? "" : "/"}${rawCover}`;
-  const groom = (data as any).groomName || "Groom";
-  const bride = (data as any).brideName || "Bride";
-  const demoTitle = `The Wedding of ${groom} & ${bride}`;
-  const demoDesc = `Undangan pernikahan digital eksklusif. Desain elegan, split desktop view, RSVP real-time & galeri momen.`;
+  const evType = ((data as any).eventType || "WEDDING").toUpperCase();
+  let demoTitle = `The Wedding of ${(data as any).groomName || "Groom"} & ${(data as any).brideName || "Bride"}`;
+  let demoDesc = `Undangan pernikahan digital eksklusif. Desain elegan, split desktop view, RSVP real-time & galeri momen.`;
+
+  if (evType === "BIRTHDAY") {
+    demoTitle = `Birthday Celebration of ${(data as any).personName || (data as any).personNickname || "Special One"}`;
+    demoDesc = `Undangan ulang tahun digital eksklusif. Desain elegan, responsif, RSVP real-time & galeri momen.`;
+  } else if (evType === "KHITAN") {
+    demoTitle = `Walimatul Khitan ${(data as any).childName || "Ananda"}`;
+    demoDesc = `Undangan Walimatul Khitan digital eksklusif. Doa bersama, agenda acara, dan konfirmasi kehadiran.`;
+  } else if (evType === "AQIQAH") {
+    demoTitle = `Tasyakuran Aqiqah ${(data as any).babyName || "Buah Hati"}`;
+    demoDesc = `Undangan tasyakuran kelahiran dan aqiqah digital eksklusif.`;
+  } else if (evType === "WISUDA") {
+    demoTitle = `Wisuda & Kelulusan ${(data as any).graduateName || "Wisudawan"}`;
+    demoDesc = `Undangan syukuran kelulusan akademik digital eksklusif.`;
+  } else if (evType === "GATHERING") {
+    demoTitle = (data as any).eventTitle || "Undangan Resmi Acara";
+    demoDesc = (data as any).eventSubtitle || `Undangan resmi pertemuan dan silaturahmi.`;
+  }
   const platformName = await getAdminSetting("platform_name", "Platform Undangan");
 
   (data as any).metaTagsHtml = `

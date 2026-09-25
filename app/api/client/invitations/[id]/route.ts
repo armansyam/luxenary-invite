@@ -391,12 +391,22 @@ export async function PUT(
       // 2. All-Access Themes: Seluruh paket berhak memilih seluruh tema aktif
       const requestedTheme = await prisma.theme.findUnique({
         where: { id: body.themeId },
-        select: { id: true, name: true, isActive: true },
+        select: { id: true, name: true, isActive: true, eventType: true },
       });
 
       if (!requestedTheme || !requestedTheme.isActive) {
         return NextResponse.json(
           { error: "Tema yang dipilih tidak tersedia atau sedang nonaktif." },
+          { status: 400 }
+        );
+      }
+
+      // 3. EventType Cross-Guard: Cegah memasang tema yang tidak cocok dengan tipe acara
+      const currentEventType = (currentInv.eventType || "WEDDING").toUpperCase();
+      const targetThemeEventType = (requestedTheme.eventType || "WEDDING").toUpperCase();
+      if (targetThemeEventType !== currentEventType) {
+        return NextResponse.json(
+          { error: `Tema '${requestedTheme.name}' dirancang khusus untuk acara ${targetThemeEventType}, tidak cocok untuk undangan ${currentEventType} Anda.` },
           { status: 400 }
         );
       }
@@ -526,6 +536,9 @@ export async function PUT(
         liveStreamUrl: body.liveStreamUrl !== undefined ? body.liveStreamUrl : undefined,
         eventData: eventDataToSave,
         featureSettings: mergedFeatureSettings,
+        participantsJson: body.participantsJson !== undefined
+          ? (typeof body.participantsJson === "string" ? body.participantsJson : JSON.stringify(body.participantsJson))
+          : undefined,
         // Enkripsi staffPin dengan AES-256 sebelum simpan ke database (cegah re-encrypt jika sudah terenkripsi)
         staffPin: body.staffPin !== undefined
           ? (body.staffPin
@@ -680,6 +693,12 @@ export async function PATCH(
       }
 
       updateData.featureSettings = JSON.stringify(parsedFeatures);
+    }
+
+    if (body.participantsJson !== undefined) {
+      updateData.participantsJson = typeof body.participantsJson === "string"
+        ? body.participantsJson
+        : JSON.stringify(body.participantsJson);
     }
 
     const updated = await prisma.invitation.update({

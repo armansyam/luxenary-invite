@@ -1,3 +1,6 @@
+-- CreateSchema
+CREATE SCHEMA IF NOT EXISTS "public";
+
 -- CreateEnum
 CREATE TYPE "AdminRole" AS ENUM ('SUPER_ADMIN', 'ADMIN', 'FINANCE', 'SUPPORT');
 
@@ -187,8 +190,6 @@ CREATE TABLE "guests" (
     "waSentAt" TIMESTAMP(3),
     "qrToken" TEXT,
     "isTokenRedeemed" BOOLEAN NOT NULL DEFAULT false,
-    "videoWishUrl" TEXT,
-    "videoRecordedAt" TIMESTAMP(3),
     "sessionInfo" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 

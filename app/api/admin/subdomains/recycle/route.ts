@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { isSubdomainExpired, getLatestEventDate } from "@/lib/domainUtils";
+import { buildCanonicalPath, resolveInvitationDisplayName } from "@/lib/invitationUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +31,8 @@ export async function GET() {
     const invitations = await prisma.invitation.findMany({
       select: {
         id: true,
+        eventType: true,
+        participantsJson: true,
         groomNickname: true,
         brideNickname: true,
         groomSlug: true,
@@ -61,9 +64,9 @@ export async function GET() {
 
       return {
         id: inv.id,
-        coupleName: `${inv.groomNickname || "Pria"} & ${inv.brideNickname || "Wanita"}`,
+        coupleName: resolveInvitationDisplayName(inv),
         subdomain: inv.subdomain,
-        canonicalPath: `/${inv.groomSlug}-${inv.brideSlug}/${inv.invitationSlug}`,
+        canonicalPath: buildCanonicalPath(inv),
         eventDate,
         hasSubdomain,
         isExpired,
