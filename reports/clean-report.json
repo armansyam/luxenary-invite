@@ -1,6 +1,6 @@
 {
-  "timestamp": "2026-09-25T05:06:15.946Z",
-  "durationMs": 146.11,
+  "timestamp": "2026-09-25T05:12:42.534Z",
+  "durationMs": 134.34,
   "database": {
     "usersDeleted": 0,
     "ordersDeleted": 0,
@@ -9,13 +9,11 @@
     "promoHoldsDeleted": 0
   },
   "filesystem": {
-    "orphanedDraftsDeleted": 2,
+    "orphanedDraftsDeleted": 1,
     "orphanedPublishedHtmlDeleted": 0,
-    "orphanedUploadDirsDeleted": 1,
+    "orphanedUploadDirsDeleted": 0,
     "deletedFilesList": [
-      "data/drafts/1d00b19e-0632-4f19-85dd-3101627bd5f5.html",
-      "data/drafts/6fe1d8c3-e066-45d5-a060-441fd0f582b6.html",
-      "public/uploads/invitations/81b283d2-ec24-4485-aa75-fb9f36375c22/"
+      "data/drafts/e48f447b-da17-43eb-9053-93e007967d2c.html"
     ]
   }
 }
